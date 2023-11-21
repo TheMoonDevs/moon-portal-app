@@ -1,7 +1,8 @@
 {
     "theme_color": "#ffffff",
     "background_color": "#000000",
-    "display": "browser",
+    "display": "standalone",
+  "orientation": "portrait",
     "scope": ".",
     "start_url": "/",
     "name": "TheMoonDevs",

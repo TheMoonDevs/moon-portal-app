@@ -1,15 +1,17 @@
 const runtimeCaching = require("next-pwa/cache");
-const withPWA = require("@ducanh2912/next-pwa").default({
+const withPWA = require("next-pwa")({
     //dest: "public",
+    //reactStrictMode: true,
     dest: "public",
     register: true,
-    skipWaiting: false,
+    disable: process.env.NODE_ENV === "development",
+    skipWaiting: true,
     runtimeCaching,
+    buildExcludes: [/middleware-manifest.json$/],
     // cacheOnFrontEndNav: true,
     // aggressiveFrontEndNavCaching: true,
     // reloadOnOnline: true,
     // swcMinify: true,
-    disable: process.env.NODE_ENV === "development",
     // workboxOptions: {
     //     disableDevLogs: true,
     // },
