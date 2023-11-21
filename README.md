@@ -10,6 +10,7 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-# PWA
+# Tools, Deps & Links
 
-- <https://ducanh-next-pwa.vercel.app/docs>
+- PWA <https://ducanh-next-pwa.vercel.app/docs>
+- Manifest Generator <https://www.simicart.com/manifest-generator.html/>
