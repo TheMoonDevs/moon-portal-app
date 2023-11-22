@@ -20,6 +20,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <link
+          href="https://fonts.googleapis.com/icon?family=Material+Icons"
+          rel="stylesheet"
+        ></link>
+      </head>
       <body className={inter.className}>
         <MUIThemeRegistry options={{ key: "mui" }}>
           <ReduxProvider>

@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { LoginBox, LoginButtons, LoginPassCode, LoginState } from "./Login";
 import { useState } from "react";
-import { InstallState } from "./Install";
+import { InstallButton, InstallState } from "./Install";
 
 export const HomePage = () => {
   const [tab, setTab] = useState<InstallState | LoginState>(
@@ -24,6 +24,11 @@ export const HomePage = () => {
           </div>
           <h4 className="text-3xl font-bold text-neutral-100">TheMoonDevs</h4>
         </div>
+        <InstallButton
+          onInstallUpdate={(inst) => {
+            if (inst) setTab(InstallState.INSTALL_CHECK);
+          }}
+        />
         {tab === LoginState.LOGIN_CODE && (
           <LoginPassCode
             onPassCodeFilled={(passCode) => {

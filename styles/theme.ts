@@ -78,6 +78,8 @@ export const lightTheme = {
     'invert(85%) sepia(42%) saturate(2239%) hue-rotate(358deg) brightness(101%) contrast(106%)',
   primary:
     'invert(85%) sepia(42%) saturate(2239%) hue-rotate(358deg) brightness(101%) contrast(106%)',
+    yellow: 
+    'invert(85%) sepia(42%) saturate(2239%) hue-rotate(358deg) brightness(101%) contrast(106%)',
     white:
       'invert(100%) sepia(100%) saturate(0%) hue-rotate(288deg) brightness(102%) contrast(102%)',
     grey:
@@ -155,6 +157,8 @@ export const darkTheme = {
     primary:
       'invert(85%) sepia(42%) saturate(2239%) hue-rotate(358deg) brightness(101%) contrast(106%)',
     white: 'unset',
+    yellow: 
+    'invert(85%) sepia(42%) saturate(2239%) hue-rotate(358deg) brightness(101%) contrast(106%)',
     grey:
       'invert(85%) sepia(1%) saturate(0%) hue-rotate(28deg) brightness(85%) contrast(90%)',
     green:
