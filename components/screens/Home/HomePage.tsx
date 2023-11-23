@@ -11,9 +11,9 @@ export const HomePage = () => {
   );
 
   return (
-    <div className="flex flex-col items-center justify-center py-2 bg-neutral-900 h-screen">
+    <div className="flex flex-col items-center justify-center py-2 bg-neutral-700 md:bg-neutral-900 h-screen">
       <LoginBox>
-        <div className="flex flex-col grow items-center justify-center">
+        <div className="flex flex-col grow gap-4 items-center justify-center">
           <div className="bg-neutral-100  p-4 rounded-full">
             <Image
               src="/icon-512x512.png"

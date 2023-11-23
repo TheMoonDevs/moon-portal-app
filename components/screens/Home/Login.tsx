@@ -12,7 +12,7 @@ export enum UserType {
 
 export const LoginBox = ({ children }: { children: React.ReactNode }) => {
   return (
-    <div className="flex flex-col items-center justify-start p-[20px] bg-black w-1/4 h-4/5 shadow-md rounded-lg">
+    <div className="flex flex-col items-center justify-start p-[20px] md:p-[40px] bg-black w-[95%] md:w-[350px] lg:w-1/4 h-[98%] md:h-4/5 shadow-md rounded-lg">
       {children}
     </div>
   );
@@ -31,15 +31,21 @@ export const LoginButtons = ({
       <div className="flex flex-row mt-1 gap-4 x">
         <button
           onClick={() => onSelectUserType(UserType.MEMBER)}
-          className="mt-4 bg-neutral-800 hover:bg-neutral-700 py-2 px-10 rounded-lg shadow-md"
+          className="group flex flex-row gap-3 mt-4 bg-neutral-800 hover:bg-neutral-700 py-2 px-5 rounded-lg shadow-md"
         >
+          <span className="material-icons text-neutral-500 group-hover:text-white">
+            chevron_left
+          </span>
           Member
         </button>
         <button
           onClick={() => onSelectUserType(UserType.CLIENT)}
-          className="mt-4 bg-blue-600 hover:bg-blue-700 py-2 px-10 rounded-lg shadow-md"
+          className="group flex flex-row gap-3 mt-4 bg-blue-600 hover:bg-blue-700 py-2 px-5 rounded-lg shadow-md"
         >
           Client
+          <span className="material-icons text-blue-300 group-hover:text-white">
+            chevron_right
+          </span>
         </button>
       </div>
     </div>
