@@ -21,7 +21,7 @@ const withPWA = require("next-pwa")({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     experimental: {
-        esmExternals: "loose", // <-- add this
+        //esmExternals: "loose", // <-- add this
         serverComponentsExternalPackages: ["mongoose"] // <-- and this
     },
     webpack: (config) => {

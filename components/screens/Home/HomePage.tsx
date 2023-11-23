@@ -9,6 +9,31 @@ export const HomePage = () => {
   const [tab, setTab] = useState<InstallState | LoginState>(
     LoginState.SELECT_USER_TYPE
   );
+  const [loading, setLoading] = useState(false);
+
+  const loginWithPassCode = (passCode: string) => {
+    setLoading(true);
+    fetch("/api/login", {
+      method: "GET",
+      body: JSON.stringify({
+        username: passCode.substring(0, 3),
+        password: passCode.substring(3),
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        setLoading(false);
+        if (data.success) {
+          console.log("Logged in!", data);
+        } else {
+          console.log("Failed to login!", data);
+        }
+      })
+      .catch((err) => {
+        setLoading(false);
+        console.log("Failed to login!");
+      });
+  };
 
   return (
     <div className="flex flex-col items-center justify-center py-2 bg-neutral-700 md:bg-neutral-900 h-screen">
@@ -32,6 +57,7 @@ export const HomePage = () => {
         {tab === LoginState.LOGIN_CODE && (
           <LoginPassCode
             onPassCodeFilled={(passCode) => {
+              loginWithPassCode(passCode);
               setTab(InstallState.SPLASH);
             }}
           />
