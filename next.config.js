@@ -21,12 +21,14 @@ const withPWA = require("next-pwa")({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     experimental: {
-        //esmExternals: "loose", // <-- add this
+        //looseMode: true,
+        esmExternals: "loose", // <-- add this
         serverComponentsExternalPackages: ["mongoose"] // <-- and this
     },
     webpack: (config) => {
         config.experiments = {
-            topLevelAwait: true
+            topLevelAwait: true,
+            layers: true,
         };
         return config;
     },

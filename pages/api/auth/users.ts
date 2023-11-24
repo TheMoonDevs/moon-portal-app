@@ -5,7 +5,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 //import { login } from '../../lib/auth';
 
 type ResponseData = {
-    user?: any;
+    users?: any[];
     error?: any;
     success?: boolean;
   }
@@ -17,15 +17,13 @@ export default async function handler(
     const { username, password } = req.body;
     await dbConnect();
     switch (req.method) {
-        case 'POST':
+        case 'GET':
           try {
-            const user = await User.findOne({
-                username: username,
-                password: password
-            }) /* find all the data in our database */
+            const users = await User.find({
+            }).lean() /* find all the data in our database */
             //console.log(user);
-            if(user)
-            res.status(200).json({ success: true, user })
+            if(users)
+            res.status(200).json({ success: true, users })
             else
             res.status(400).json({ success: false })
           } catch (error) {

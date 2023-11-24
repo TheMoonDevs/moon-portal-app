@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { LoginBox, LoginButtons, LoginPassCode, LoginState } from "./Login";
+import { MobileBox, LoginButtons, LoginPassCode, LoginState } from "./Login";
 import { useState } from "react";
 import { InstallButton, InstallState } from "./Install";
 
@@ -13,8 +13,9 @@ export const HomePage = () => {
 
   const loginWithPassCode = (passCode: string) => {
     setLoading(true);
-    fetch("/api/login", {
-      method: "GET",
+    console.log("Logging in with passcode", passCode);
+    fetch("/api/auth/login", {
+      method: "POST",
       body: JSON.stringify({
         username: passCode.substring(0, 3),
         password: passCode.substring(3),
@@ -30,6 +31,7 @@ export const HomePage = () => {
         }
       })
       .catch((err) => {
+        console.log(err);
         setLoading(false);
         console.log("Failed to login!");
       });
@@ -37,7 +39,7 @@ export const HomePage = () => {
 
   return (
     <div className="flex flex-col items-center justify-center py-2 bg-neutral-700 md:bg-neutral-900 h-screen">
-      <LoginBox>
+      <MobileBox>
         <div className="flex flex-col grow gap-4 items-center justify-center">
           <div className="bg-neutral-100  p-4 rounded-full">
             <Image
@@ -48,6 +50,9 @@ export const HomePage = () => {
             />
           </div>
           <h4 className="text-3xl font-bold text-neutral-100">TheMoonDevs</h4>
+          <p className="text-neutral-400 tracking-[0.5em] uppercase text-xs text-center">
+            Welcome to
+          </p>
         </div>
         <InstallButton
           onInstallUpdate={(inst) => {
@@ -69,7 +74,7 @@ export const HomePage = () => {
             }}
           />
         )}
-      </LoginBox>
+      </MobileBox>
     </div>
   );
 };

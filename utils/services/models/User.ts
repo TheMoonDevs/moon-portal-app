@@ -4,6 +4,7 @@ export interface Users extends mongoose.Document {
   name: string
   username: string
   password: string
+  avatar: string
 }
 
 /* UserSchema will correspond to a collection in your MongoDB database. */
@@ -23,6 +24,9 @@ const UserSchema = new mongoose.Schema<Users>({
     maxlength: [60, 'Name cannot be more than 60 characters'],
   },
   name: {
+    type: String,
+  },
+  avatar: {
     type: String,
   },
 })

@@ -19,17 +19,11 @@ export default async function handler(
     switch (req.method) {
         case 'POST':
           try {
-            const user = await User.findOne({
-                username: username,
-                password: password
-            }) /* find all the data in our database */
-            //console.log(user);
-            if(user)
-            res.status(200).json({ success: true, user })
-            else
-            res.status(400).json({ success: false })
+            const user = await User.create(
+              req.body
+            ) /* create a new model in the database */
+            res.status(201).json({ success: true, user })
           } catch (error) {
-            console.log(error);
             res.status(400).json({ success: false })
           }
           break

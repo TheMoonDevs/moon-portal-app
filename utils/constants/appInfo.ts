@@ -5,6 +5,8 @@ export enum APP_ROUTES {
     docs = '/docs',
     login = '/login',
     signup = '/signup',
+    admin = '/admin',
+    userEditor = '/admin/user/editor',
 };
 
 export enum APP_SOCIAL {

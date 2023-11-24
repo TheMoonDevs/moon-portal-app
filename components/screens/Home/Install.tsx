@@ -1,3 +1,5 @@
+"use client";
+
 import { IconFilter, MoonIcon } from "@/components/elements/Icon";
 import media from "@/styles/media";
 import { useMediaQuery } from "@mui/material";
