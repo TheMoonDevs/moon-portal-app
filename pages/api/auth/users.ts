@@ -15,15 +15,19 @@ export default async function handler(
     req: NextApiRequest,
     res: NextApiResponse<ResponseData>
     ) {
-    const user_in = JSON.parse(req.body);
+    const user_in = req.body ? JSON.parse(req.body) :{};
     const _id = user_in._id?.toString();
     delete user_in._id;
     await dbConnect();
     switch (req.method) {
         case 'GET':
           try {
-            const users = await MongooseUser.find({
-            }).lean() /* find all the data in our database */
+            const userQuery:any = {};
+            if(req.query.id)
+            userQuery['_id'] = req.query.id;
+            if(req.query.usertype)
+            userQuery['usertype'] = req.query.usertype;
+            const users = await MongooseUser.find(userQuery).lean() /* find all the data in our database */
             //console.log(user);
             if(users)
             res.status(200).json({ success: true, users })

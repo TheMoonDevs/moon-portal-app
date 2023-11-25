@@ -7,16 +7,19 @@ import Link from "next/link";
 import { Users } from "@/utils/services/models/User";
 import { GreyButton } from "@/components/elements/Button";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
+import { useRouter } from "next/navigation";
 
 export const AdminUsers = () => {
+  const router = useRouter();
   const [users, setUsers] = useState<Users[]>([]);
   const [loading, setLoading] = useState(false);
   useEffect(() => {
     setLoading(true);
-    fetch("/api/admin/users")
+    fetch("/api/auth/users")
       .then((res) => res.json())
       .then((data) => {
-        setUsers(data);
+        console.log(data);
+        setUsers(data.users);
         setLoading(false);
       })
       .catch((err) => {
@@ -35,17 +38,24 @@ export const AdminUsers = () => {
         {users.map((user) => (
           <div
             key={user._id}
-            className="flex flex-row gap-4 items-center justify-center"
+            className="flex flex-row gap-4 items-center justify-center hover:bg-neutral-800 px-4 py-2 rounded-lg cursor-pointer"
+            onClick={() => {
+              console.log("clicked", user._id);
+              router.push(`${APP_ROUTES.userEditor}?id=${user._id}`);
+            }}
           >
-            <div className="bg-neutral-100  p-4 rounded-full">
-              <Image
-                src={user.avatar}
-                alt={user.username}
-                width={80}
-                height={80}
-              />
+            <div className="bg-neutral-900  p-4 rounded-full">
+              <Image src={user.avatar} alt={user.name} width={10} height={10} />
             </div>
-            <p>{user.username}</p>
+            <div>
+              <p className="text-neutral-300">{user.name}</p>
+              <p className="text-sm text-neutral-600">
+                {user.usertype} | {user.username}-{user.password}
+              </p>
+            </div>
+            <span className="material-icons text-neutral-400">
+              chevron_right
+            </span>
           </div>
         ))}
       </div>

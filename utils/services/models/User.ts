@@ -140,4 +140,8 @@ const UserSchema = new mongoose.Schema<Users>({
   },
 })
 
+if (process.env.NODE_ENV === 'development' && mongoose.models && mongoose.models['User']) {
+	mongoose.connection.models['User'].schema = UserSchema;
+}
+
 export const MongooseUser = mongoose.models?.User || mongoose.model<Users>('User', UserSchema)

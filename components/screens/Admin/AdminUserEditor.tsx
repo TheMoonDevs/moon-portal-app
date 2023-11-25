@@ -2,7 +2,7 @@
 
 import { LandscapeCard } from "@/components/elements/Cards";
 import { MobileBox } from "../Home/Login";
-import { ChangeEvent, useMemo, useState } from "react";
+import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import {
   DbUser,
   OVERLAPTYPE,
@@ -26,8 +26,12 @@ import { DatePicker, TimePicker } from "@mui/x-date-pickers";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { Spinner } from "@/components/elements/Loaders";
+import { useRouter, useSearchParams } from "next/navigation";
+import { AdminHeader } from "./AdminHeader";
 
 export const AdminUserEditor = () => {
+  const router = useRouter();
+  const query = useSearchParams();
   const [loading, setLoading] = useState(false);
   const countryData = useMemo(() => getCountryDataList(), []);
 
@@ -53,6 +57,24 @@ export const AdminUserEditor = () => {
       overlap: [],
     },
   });
+
+  useEffect(() => {
+    const id = query?.get("id");
+    if (id) {
+      setLoading(true);
+      fetch(`/api/auth/users?id=${id}`)
+        .then((res) => res.json())
+        .then((data) => {
+          console.log(data);
+          if (data.users.length > 0) setUser(data.users[0]);
+          setLoading(false);
+        })
+        .catch((err) => {
+          console.log(err);
+          setLoading(false);
+        });
+    }
+  }, [query]);
 
   const updateOverlap = (index: number, field: string, value: any) => {
     setUser((u) => ({
@@ -120,17 +142,18 @@ export const AdminUserEditor = () => {
 
   return (
     <div className="flex flex-row flex-wrap gap-4 items-center justify-center py-10 bg-neutral-100">
-      <LandscapeCard className="items-start justify-between">
-        <div className="flex flex-row mb-8 w-fill gap-4 items-center justify-start">
+      <AdminHeader />
+      <LandscapeCard className="items-stretch justify-between">
+        <div className="flex flex-row mb-8 w-full gap-4 items-center justify-between">
           <p className="text-neutral-400 tracking-[0.5em] uppercase text-xs text-center">
             ADD NEW CLIENT / MEMBER
           </p>
           <button
             onClick={saveUser}
-            className="flex flex-row items-center py-1 gap-3 bg-black text-neutral-100 rounded-lg px-2"
+            className="flex flex-row items-center py-1 gap-3 bg-green-100 text-green-800 rounded-lg px-2"
           >
             {loading && (
-              <Spinner className="w-4 h-4 fill-green-400 text-green-600" />
+              <Spinner className="w-3 h-3 fill-green-400 text-green-600" />
             )}
             {!loading && <span className="material-icons">done_all</span>}
             Save User
