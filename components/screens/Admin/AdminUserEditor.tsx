@@ -28,12 +28,14 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { Spinner } from "@/components/elements/Loaders";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AdminHeader } from "./AdminHeader";
+import { useToast } from "@/components/elements/Toast";
 
 export const AdminUserEditor = () => {
   const router = useRouter();
   const query = useSearchParams();
   const [loading, setLoading] = useState(false);
   const countryData = useMemo(() => getCountryDataList(), []);
+  const { showToast } = useToast();
 
   const [user, setUser] = useState<DbUser>({
     _id: "",
@@ -132,10 +134,22 @@ export const AdminUserEditor = () => {
       .then((res) => res.json())
       .then((data) => {
         setLoading(false);
+        showToast({
+          id: "user-saved",
+          message: "User Succesfully Saved",
+          icon: "done_all",
+          color: "green",
+        });
         console.log(data);
       })
       .catch((err) => {
         setLoading(false);
+        showToast({
+          id: "user-not-saved",
+          message: "Error saving user",
+          icon: "close",
+          color: "red",
+        });
         console.log(err);
       });
   };

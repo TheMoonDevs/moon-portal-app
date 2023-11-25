@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { MUIThemeRegistry } from "@/styles/provider";
 import { ReduxProvider } from "@/utils/redux/provider";
+import { ToastsContainer } from "@/components/elements/Toast";
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -32,6 +33,7 @@ export default function RootLayout({
             {/* <Header /> */}
             {/* <Sidebar /> */}
             {children}
+            <ToastsContainer />
           </ReduxProvider>
         </MUIThemeRegistry>
       </body>

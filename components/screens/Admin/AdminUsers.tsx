@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -29,23 +30,27 @@ export const AdminUsers = () => {
   }, []);
   return (
     <MobileBox>
-      <div className="flex flex-col grow gap-4 items-center justify-start">
-        <p className="text-neutral-400 tracking-[0.5em] uppercase text-xs text-center">
+      <div className="flex flex-col gap-4 items-center justify-start">
+        <p className="text-neutral-400 tracking-[0.5em] uppercase text-xs text-center mb-4">
           CLIENTS / MEMBER
         </p>
       </div>
-      <div className="flex flex-col grow gap-4 items-center justify-center">
+      <div className="flex flex-col grow gap-4 items-center justify-start">
         {users.map((user) => (
           <div
             key={user._id}
-            className="flex flex-row gap-4 items-center justify-center hover:bg-neutral-800 px-4 py-2 rounded-lg cursor-pointer"
+            className="flex flex-row gap-4 items-center justify-center border border-neutral-700 hover:bg-neutral-800 px-4 py-2 rounded-lg cursor-pointer"
             onClick={() => {
               console.log("clicked", user._id);
               router.push(`${APP_ROUTES.userEditor}?id=${user._id}`);
             }}
           >
-            <div className="bg-neutral-900  p-4 rounded-full">
-              <Image src={user.avatar} alt={user.name} width={10} height={10} />
+            <div className=" rounded-full p-1 ">
+              <img
+                src={user.avatar}
+                alt={user.name}
+                className="w-12 h-12 object-cover object-center rounded-full "
+              />
             </div>
             <div>
               <p className="text-neutral-300">{user.name}</p>
@@ -59,9 +64,9 @@ export const AdminUsers = () => {
           </div>
         ))}
       </div>
-      <div className="flex flex-col grow gap-4 items-center justify-center">
+      <div className="flex flex-col gap-4 items-center justify-center">
         <Link href={APP_ROUTES.userEditor}>
-          <GreyButton rightIcon={"chevron_right"}>Add New User</GreyButton>
+          <GreyButton rightIcon={"add"}>Add New User</GreyButton>
         </Link>
       </div>
     </MobileBox>

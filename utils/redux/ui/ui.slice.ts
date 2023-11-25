@@ -6,8 +6,15 @@ export const uiSlice = createSlice({
     isSidebarOpen: false,
     isLoading: false,
     globalToast: false,
+    toasts: [] as any[],
   },
   reducers: {
+    pushToast: (state, action) => {
+      state.toasts.push(action.payload);
+    },
+    popToast: (state, action) => {
+      state.toasts = state.toasts.filter((t) => t.id !== action.payload);
+    },
     setIsSidebarOpen: (state, action) => {
       state.isSidebarOpen = action.payload;
     },
@@ -24,6 +31,8 @@ const { actions, reducer } = uiSlice;
 export const {
   setGlobalToast,
   setIsSidebarOpen,
+  pushToast,
+  popToast,
 } = actions;
 
 export default reducer;
