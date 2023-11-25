@@ -1,7 +1,7 @@
 import { createTheme,  } from '@mui/material/styles'
 import {PaletteMode} from '@mui/material';
 
-const IS_DARK_MODE = true
+const IS_DARK_MODE = false
 
 const commonTheme = {
   customTransitions: {

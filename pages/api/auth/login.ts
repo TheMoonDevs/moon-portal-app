@@ -1,5 +1,5 @@
 // write next.js api handler
-import User from '@/utils/services/models/User';
+import {MongooseUser} from '@/utils/services/models/User';
 import { dbConnect } from '@/utils/services/mongoose';
 import { NextApiRequest, NextApiResponse } from 'next';
 //import { login } from '../../lib/auth';
@@ -19,7 +19,7 @@ export default async function handler(
     switch (req.method) {
         case 'POST':
           try {
-            const user = await User.findOne({
+            const user = await MongooseUser.findOne({
                 username: username,
                 password: password
             }) /* find all the data in our database */

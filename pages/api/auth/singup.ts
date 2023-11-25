@@ -1,5 +1,5 @@
 // write next.js api handler
-import User from '@/utils/services/models/User';
+import {MongooseUser} from '@/utils/services/models/User';
 import { dbConnect } from '@/utils/services/mongoose';
 import { NextApiRequest, NextApiResponse } from 'next';
 //import { login } from '../../lib/auth';
@@ -19,7 +19,7 @@ export default async function handler(
     switch (req.method) {
         case 'POST':
           try {
-            const user = await User.create(
+            const user = await MongooseUser.create(
               req.body
             ) /* create a new model in the database */
             res.status(201).json({ success: true, user })
