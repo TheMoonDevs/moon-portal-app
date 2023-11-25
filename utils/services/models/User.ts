@@ -89,7 +89,7 @@ const UserSchema = new mongoose.Schema<Users>({
     /* The name of this pet */
 
     type: String,
-    required: [true, 'Please provide a name for this pet.'],
+    required: [true, 'Please provide a password for this user.'],
     maxlength: [60, 'Name cannot be more than 60 characters'],
   },
   email: {

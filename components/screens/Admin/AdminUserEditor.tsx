@@ -25,8 +25,10 @@ import dayjs from "dayjs";
 import { DatePicker, TimePicker } from "@mui/x-date-pickers";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { Spinner } from "@/components/elements/Loaders";
 
 export const AdminUserEditor = () => {
+  const [loading, setLoading] = useState(false);
   const countryData = useMemo(() => getCountryDataList(), []);
 
   const [user, setUser] = useState<DbUser>({
@@ -99,13 +101,40 @@ export const AdminUserEditor = () => {
     }
   };
 
+  const saveUser = () => {
+    setLoading(true);
+    fetch("/api/auth/users", {
+      method: user._id.length > 0 ? "PUT" : "POST",
+      body: JSON.stringify(user),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        setLoading(false);
+        console.log(data);
+      })
+      .catch((err) => {
+        setLoading(false);
+        console.log(err);
+      });
+  };
+
   return (
     <div className="flex flex-row flex-wrap gap-4 items-center justify-center py-10 bg-neutral-100">
-      <LandscapeCard className="items-start justify-start">
-        <div className="flex flex-col mb-8 gap-4 items-center justify-start">
+      <LandscapeCard className="items-start justify-between">
+        <div className="flex flex-row mb-8 w-fill gap-4 items-center justify-start">
           <p className="text-neutral-400 tracking-[0.5em] uppercase text-xs text-center">
             ADD NEW CLIENT / MEMBER
           </p>
+          <button
+            onClick={saveUser}
+            className="flex flex-row items-center py-1 gap-3 bg-black text-neutral-100 rounded-lg px-2"
+          >
+            {loading && (
+              <Spinner className="w-4 h-4 fill-green-400 text-green-600" />
+            )}
+            {!loading && <span className="material-icons">done_all</span>}
+            Save User
+          </button>
         </div>
         <div className="flex flex-row items-start justify-start gap-4">
           <div className="flex flex-col grow gap-4 items-start justify-start">
