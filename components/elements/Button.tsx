@@ -5,10 +5,9 @@ export const GreyButton = ({
   ...props
 }: {
   children: React.ReactNode;
-  props?: any;
   rightIcon?: string;
   leftIcon?: string;
-}) => {
+} & any) => {
   return (
     <button
       {...props}

@@ -4,6 +4,9 @@ import './globals.css'
 import { MUIThemeRegistry } from "@/styles/provider";
 import { ReduxProvider } from "@/utils/redux/provider";
 import { ToastsContainer } from "@/components/elements/Toast";
+import { SessionProvider } from "next-auth/react";
+import type { Session } from "next-auth";
+import NextAuthProvider from "@/utils/services/NextAuthProvider";
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -16,8 +19,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
+  session,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
+  session: Session;
 }) {
   return (
     <html lang="en">
@@ -28,14 +33,16 @@ export default function RootLayout({
         ></link>
       </head>
       <body className={inter.className}>
-        <MUIThemeRegistry options={{ key: "mui" }}>
-          <ReduxProvider>
-            {/* <Header /> */}
-            {/* <Sidebar /> */}
-            {children}
-            <ToastsContainer />
-          </ReduxProvider>
-        </MUIThemeRegistry>
+        <NextAuthProvider session={session}>
+          <MUIThemeRegistry options={{ key: "mui" }}>
+            <ReduxProvider>
+              {/* <Header /> */}
+              {/* <Sidebar /> */}
+              {children}
+              <ToastsContainer />
+            </ReduxProvider>
+          </MUIThemeRegistry>
+        </NextAuthProvider>
       </body>
     </html>
   );

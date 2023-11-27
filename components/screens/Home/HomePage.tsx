@@ -2,8 +2,10 @@
 
 import Image from "next/image";
 import { MobileBox, LoginButtons, LoginPassCode, LoginState } from "./Login";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { InstallButton, InstallState } from "./Install";
+import { useSession, signIn, signOut } from "next-auth/react";
+import { GreyButton } from "@/components/elements/Button";
 
 export const HomePage = () => {
   const [tab, setTab] = useState<InstallState | LoginState>(
@@ -11,20 +13,34 @@ export const HomePage = () => {
   );
   const [loading, setLoading] = useState(false);
 
+  const { data, status } = useSession();
+
+  useEffect(() => {
+    console.log("login status");
+    console.log(status);
+    console.log(data);
+  }, [data, status]);
+
   const loginWithPassCode = (passCode: string) => {
     setLoading(true);
     console.log("Logging in with passcode", passCode);
-    fetch("/api/auth/login", {
-      method: "POST",
-      body: JSON.stringify({
-        username: passCode.substring(0, 3),
-        password: passCode.substring(3),
-      }),
+    signIn("credentials", {
+      username: passCode.substring(0, 3).toUpperCase(),
+      password: passCode.substring(3).toUpperCase(),
+      redirect: false,
     })
-      .then((res) => res.json())
+      // fetch("/api/auth/login", {
+      //   method: "POST",
+      //   body: JSON.stringify({
+      //     username: passCode.substring(0, 3),
+      //     password: passCode.substring(3),
+      //   }),
+      // })
+      //.then((res) => res.json())
       .then((data) => {
         setLoading(false);
-        if (data.success) {
+        console.log("signIn callback", data);
+        if (data?.ok) {
           console.log("Logged in!", data);
         } else {
           console.log("Failed to login!", data);
@@ -73,6 +89,15 @@ export const HomePage = () => {
               setTab(LoginState.LOGIN_CODE);
             }}
           />
+        )}
+        {status === "authenticated" && (
+          <GreyButton
+            onClick={() => {
+              signOut();
+            }}
+          >
+            Sign out
+          </GreyButton>
         )}
       </MobileBox>
     </div>
