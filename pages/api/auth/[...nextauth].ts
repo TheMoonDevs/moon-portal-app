@@ -44,7 +44,7 @@ export const authOptions = {
   ],
   callbacks: {
     async session({ session, user, token }: any) {
-      console.log('session', session, user, token)
+      //console.log('session', session, user, token)
       if (token) {
         // session.accountId = token.accountId;
         const user = await MongooseUser.findOne({
@@ -55,7 +55,7 @@ export const authOptions = {
       return session
     },
     async jwt({ token, user, account, profile, isNewUser }: any) {
-      console.log('jwt', user, account, profile, isNewUser)
+      //console.log('jwt', user, account, profile, isNewUser)
       if (account) {
         token.accountId = account.providerAccountId
         token.isAdmin = account.isAdmin

@@ -1,5 +1,5 @@
 import { getServerSession } from "next-auth/next"
-import { authOptions } from "../auth/[nextAuth]"
+import { authOptions } from "../auth/[...nextauth]"
 import { NextApiRequest, NextApiResponse } from 'next'
 import { dbConnect } from '@/utils/services/mongoose'
 import Survey from '@/utils/services/models/Survey'
