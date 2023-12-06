@@ -47,8 +47,8 @@ export const AdminUsers = () => {
           >
             <div className=" rounded-full p-1 ">
               <img
-                src={user.avatar}
-                alt={user.name}
+                src={user?.avatar}
+                alt={user?.name}
                 className="w-12 h-12 object-cover object-center rounded-full "
               />
             </div>

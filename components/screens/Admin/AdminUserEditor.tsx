@@ -197,7 +197,7 @@ export const AdminUserEditor = () => {
               <input
                 id="name"
                 type="text"
-                value={user.name}
+                value={user?.name}
                 onChange={updateField}
                 autoComplete="off"
                 className="border border-neutral-400 rounded-lg p-2"
@@ -348,7 +348,7 @@ export const AdminUserEditor = () => {
                 </option>
                 {countryData.map((country) => (
                   <option key={country.iso2} value={country.iso2}>
-                    {country.name}
+                    {country?.name}
                   </option>
                 ))}
               </select>

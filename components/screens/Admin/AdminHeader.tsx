@@ -18,7 +18,7 @@ export const AdminHeader = () => {
       {AdminLinks.map((link) => (
         <Link key={link.path} href={link.path}>
           <div className="flex flex-row gap-2 items-center justify-center text-black hover:text-neutral-500 px-4 py-2 rounded-lg cursor-pointer">
-            <p className="">{link.name}</p>
+            <p className="">{link?.name}</p>
           </div>
         </Link>
       ))}

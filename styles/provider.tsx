@@ -32,10 +32,10 @@ export const MUIThemeRegistry = (props: any) => {
     let inserted: string[] = [];
     cache.insert = (...args: any[]) => {
       const serialized = args[1];
-      if (cache.inserted[serialized.name] === undefined) {
-        inserted.push(serialized.name);
+      if (cache.inserted[serialized?.name] === undefined) {
+        inserted.push(serialized?.name);
       }
-      return prevInsert([...args]);
+      return prevInsert(...args);
     };
     const flush = () => {
       const prevInserted = inserted;
