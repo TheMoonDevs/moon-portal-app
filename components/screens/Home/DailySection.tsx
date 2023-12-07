@@ -14,6 +14,7 @@ export const DailySection = ({ user }: { user: DbUser }) => {
     const seconds = date.getSeconds();
     return `${hours}:${minutes} ${date.getHours() >= 12 ? "PM" : "AM"}`;
   };
+  
   const getDate = (pattern: string) => {
     const date = new Date();
     const day = date.getDay();
@@ -24,12 +25,13 @@ export const DailySection = ({ user }: { user: DbUser }) => {
     const monthShortName = date.toLocaleString("default", { month: "short" });
     if (pattern === "full") return `${dayName}, ${day} ${monthName} ${year}`;
     if (pattern === "dayname") return `${dayName}`;
-    if (pattern === "mmm") return `${monthShortName} ${day}`;
+    if (pattern === "mmm") return `${monthShortName} ${date.getDate()}`;
     // check if day is weekday
     const isWeekday = day > 0 && day < 6;
     if (pattern === "daytype") return `${isWeekday ? "weekdays" : "weekends"}`;
     return `${monthName} ${day}`;
   };
+
   return (
     <div className=" flex flex-col py-1 px-1 mx-2 my-1 gap-3 bg-white rounded-[1.15em]">
       <div className="flex flex-row justify-between border-neutral-400 border-b text-sm px-2 py-3 w-full">
