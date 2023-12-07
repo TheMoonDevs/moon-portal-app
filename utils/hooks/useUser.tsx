@@ -2,7 +2,7 @@
 import { useSession } from "next-auth/react";
 import { DbUser } from "../services/models/User";
 import { useEffect, useMemo, useState } from "react";
-import { PortalSdk } from "../services/portalSDK";
+import { PortalSdk } from "../services/PortalSdk";
 
 export const useUser = (newfetch?: boolean) => {
   const { data, status } = useSession();

@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 import { DbUser, USERROLE } from "@/utils/services/models/User";
-import { PortalSdk } from "@/utils/services/portalSDK";
+import { PortalSdk } from "@/utils/services/PortalSdk";
 import { useEffect, useState } from "react";
 
 export const TeamUsersList = () => {

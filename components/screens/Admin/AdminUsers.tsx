@@ -9,7 +9,7 @@ import { Users } from "@/utils/services/models/User";
 import { GreyButton } from "@/components/elements/Button";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
 import { useRouter } from "next/navigation";
-import { PortalSdk } from "@/utils/services/portalSDK";
+import { PortalSdk } from "@/utils/services/PortalSdk";
 
 export const AdminUsers = () => {
   const router = useRouter();
