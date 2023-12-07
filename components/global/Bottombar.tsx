@@ -20,6 +20,11 @@ const NAVIGATION_OPTIONS = [
     icon: "format_overline",
   },
   {
+    name: "Growth",
+    path: APP_ROUTES.growth,
+    icon: "trending_up",
+  },
+  {
     name: "Notifications",
     path: APP_ROUTES.notifications,
     icon: "notifications",
@@ -30,7 +35,7 @@ export const Bottombar = () => {
   const path = usePathname();
   const router = useRouter();
   return (
-    <div className="flex flex-row fixed bottom-0 left-0 right-0 py-1 px-2 gap-6 bg-neutral-900">
+    <div className="flex flex-row fixed bottom-0 left-0 right-0 py-1 px-1 mx-1 my-1 gap-6 bg-neutral-900 rounded-[1.15em]">
       {NAVIGATION_OPTIONS.map((option) => (
         <div
           onClick={() => {
@@ -39,7 +44,7 @@ export const Bottombar = () => {
           key={option.path}
           className={` ${
             option.path === path ? "bg-white text-black" : "bg-black text-white"
-          } flex flex-col items-center justify-center py-1 w-1/3 cursor-pointer rounded-2xl`}
+          } flex flex-col items-center justify-center py-1 w-1/3 cursor-pointer rounded-[1em]`}
         >
           <span
             className={` ${
