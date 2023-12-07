@@ -18,7 +18,7 @@ export const useUser = (newfetch?: boolean) => {
     PortalSdk.getData("/api/users/users?id=" + user._id, null)
       .then((data) => {
         if (data?.users?.length === 0) return;
-        console.log("fetched user", data.users[0]);
+        // console.log("fetched user", data.users[0]);
         setFetchedUser(data.users[0]);
       })
       .catch((err) => {

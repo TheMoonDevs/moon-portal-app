@@ -29,6 +29,8 @@ export default async function handler(
             userQuery['_id'] = req.query.id;
             if(req.query.usertype)
             userQuery['usertype'] = req.query.usertype;
+            if(req.query.role)
+            userQuery['role'] = req.query.role;
             const users = await MongooseUser.find(userQuery).lean() /* find all the data in our database */
             //console.log(user);
             if(users)
