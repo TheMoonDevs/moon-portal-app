@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import Image from "next/image";
@@ -8,6 +9,8 @@ import { useSession, signIn, signOut } from "next-auth/react";
 import { GreyButton } from "@/components/elements/Button";
 import { useRouter } from "next/navigation";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
+import { useUser } from "@/utils/hooks/useUser";
+import { Logout } from "./Logout";
 
 export const LoginPage = () => {
   const [tab, setTab] = useState<InstallState | LoginState>(
@@ -16,13 +19,12 @@ export const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-
-  const { data, status } = useSession();
+  const { data, status, user } = useUser();
 
   useEffect(() => {
-    console.log("login status");
-    console.log(status);
-    console.log(data);
+    if (status === "authenticated") {
+      setTab(InstallState.SPLASH);
+    }
   }, [data, status]);
 
   const loginWithPassCode = (passCode: string) => {
@@ -98,15 +100,7 @@ export const LoginPage = () => {
             }}
           />
         )}
-        {status === "authenticated" && (
-          <GreyButton
-            onClick={() => {
-              signOut();
-            }}
-          >
-            Sign out
-          </GreyButton>
-        )}
+        {status === "authenticated" && <Logout user={user} signOut={signOut} />}
         {error && (
           <p className="text-red-500 text-xs text-center mt-4">{error}</p>
         )}
