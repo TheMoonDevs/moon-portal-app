@@ -1,7 +1,7 @@
 import { useUser } from "@/utils/hooks/useUser";
+import { DbUser } from "@/utils/services/models/User";
 
-export const DailySection = () => {
-  const { user } = useUser();
+export const DailySection = ({ user }: { user: DbUser }) => {
   const getTime = () => {
     const date = new Date();
     // get time in a timezone
@@ -49,6 +49,13 @@ export const DailySection = () => {
       </div>
       <div className="flex flex-row justify-between text-sm p-2 w-full">
         <p>Overlaps</p>
+        {user?.workData?.overlaps?.map((overlap: any, index: number) => (
+          <div className="flex flex-row gap-2" key={overlap.start + index}>
+            <p className="text-xs">{overlap.start}</p>
+            <p className="text-xs">to</p>
+            <p className="text-xs">{overlap.end}</p>
+          </div>
+        ))}
       </div>
     </div>
   );

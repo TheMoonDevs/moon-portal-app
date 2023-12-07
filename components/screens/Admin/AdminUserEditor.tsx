@@ -383,6 +383,16 @@ export const AdminUserEditor = () => {
                 />
               </div>
               <div className="flex flex-row gap-4 items-center justify-start">
+                <p>Work Hours Per Week</p>
+                <input
+                  id="workData.workHours"
+                  type="text"
+                  value={user.workData.workHours}
+                  onChange={updateField}
+                  className="border border-neutral-400 rounded-lg p-2"
+                />
+              </div>
+              <div className="flex flex-row gap-4 items-center justify-start">
                 <p className="text-neutral-400 tracking-[0.5em] uppercase text-xs text-center">
                   Work Overlap
                 </p>
