@@ -9,6 +9,7 @@ import { Users } from "@/utils/services/models/User";
 import { GreyButton } from "@/components/elements/Button";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
 import { useRouter } from "next/navigation";
+import { PortalSdk } from "@/utils/services/portalSDK";
 
 export const AdminUsers = () => {
   const router = useRouter();
@@ -16,8 +17,7 @@ export const AdminUsers = () => {
   const [loading, setLoading] = useState(false);
   useEffect(() => {
     setLoading(true);
-    fetch("/api/users/users")
-      .then((res) => res.json())
+    PortalSdk.getData("/api/users/users", null)
       .then((data) => {
         console.log(data);
         setUsers(data.users);
