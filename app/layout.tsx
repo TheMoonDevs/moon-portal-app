@@ -4,11 +4,15 @@ import './globals.css'
 import { MUIThemeRegistry } from "@/styles/provider";
 import { ReduxProvider } from "@/utils/redux/provider";
 import { ToastsContainer } from "@/components/elements/Toast";
-import { SessionProvider } from "next-auth/react";
+import { SessionProvider, useSession } from "next-auth/react";
 import type { Session } from "next-auth";
 import NextAuthProvider from "@/utils/services/NextAuthProvider";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { APP_ROUTES } from "@/utils/constants/appInfo";
+import { AppLayout } from "@/components/global/AppLayout";
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   manifest: "/manifest.json", // we are accessing our manifest file here
@@ -36,9 +40,7 @@ export default function RootLayout({
         <NextAuthProvider session={session}>
           <MUIThemeRegistry options={{ key: "mui" }}>
             <ReduxProvider>
-              {/* <Header /> */}
-              {/* <Sidebar /> */}
-              {children}
+              <AppLayout>{children}</AppLayout>
               <ToastsContainer />
             </ReduxProvider>
           </MUIThemeRegistry>

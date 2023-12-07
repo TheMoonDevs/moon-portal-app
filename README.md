@@ -18,4 +18,3 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 - Offline <https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Tutorials/js13kGames/Offline_Service_workers>
 - Next-PWA <https://github.com/shadowwalker/next-pwa>
 - PWA Notifications <https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Tutorials/js13kGames/Re-engageable_Notifications_Push>
-

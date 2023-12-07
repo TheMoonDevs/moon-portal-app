@@ -1,4 +1,4 @@
-import { MobileBox } from "../Home/Login";
+import { MobileBox } from "../Login/Login";
 import { AdminUsers } from "./AdminUsers";
 
 export const AdminPage = () => {

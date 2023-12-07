@@ -93,7 +93,7 @@ export const InstallButton = ({
       </p>
       <button
         onClick={installApp}
-        className="text-lg py-3 gap-4 flex flex-row items-center justify-center mt-4 bg-neutral-800 hover:bg-neutral-700 py-2 px-10 rounded-lg shadow-md"
+        className="text-lg text-white py-3 gap-4 flex flex-row items-center justify-center mt-4 bg-neutral-800 hover:bg-neutral-700 py-2 px-10 rounded-lg shadow-md"
       >
         <span className="material-icons text-yellow-500">bolt</span>
         Quick Install App

@@ -1,7 +1,7 @@
 "use client";
 
 import { LandscapeCard } from "@/components/elements/Cards";
-import { MobileBox } from "../Home/Login";
+import { MobileBox } from "../Login/Login";
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import {
   DbUser,

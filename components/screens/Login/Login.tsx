@@ -32,19 +32,19 @@ export const LoginButtons = ({
       <div className="flex flex-row mt-1 gap-4 x">
         <button
           onClick={() => onSelectUserType(UserType.MEMBER)}
-          className="group flex flex-row gap-3 mt-4 bg-neutral-800 hover:bg-neutral-700 text-white py-2 px-5 rounded-lg shadow-md"
+          className="font-bold group flex flex-row gap-3 mt-4 bg-neutral-800 hover:bg-neutral-700 text-white py-2 px-5 rounded-lg shadow-md"
         >
-          <span className="material-icons text-neutral-500 group-hover:text-white">
+          <span className="material-icons font-bold text-neutral-500 group-hover:text-white">
             chevron_left
           </span>
           Member
         </button>
         <button
           onClick={() => onSelectUserType(UserType.CLIENT)}
-          className="group flex flex-row gap-3 mt-4 bg-blue-600 hover:bg-blue-700 text-white py-2 px-5 rounded-lg shadow-md"
+          className="font-bold group flex flex-row gap-3 mt-4 bg-blue-600 hover:bg-blue-700 text-white py-2 px-5 rounded-lg shadow-md"
         >
           Client
-          <span className="material-icons text-blue-300 group-hover:text-white">
+          <span className="material-icons font-bold text-blue-300 group-hover:text-white">
             chevron_right
           </span>
         </button>
@@ -103,6 +103,7 @@ export const LoginPassCode = ({
       <div ref={passParentRef} className="flex flex-row mt-8 gap-2 text-4xl ">
         {passCodes.map((code, index) => (
           <input
+            type={index > 2 ? "number" : "text"}
             key={code + index}
             className="w-[1em] uppercase text-center border-b border-neutral-600 bg-transparent text-neutral-100 focus:outline-none focus:border-blue-600"
             placeholder=""

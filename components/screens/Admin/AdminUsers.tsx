@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MobileBox } from "../Home/Login";
+import { MobileBox } from "../Login/Login";
 import Image from "next/image";
 import Link from "next/link";
 import { Users } from "@/utils/services/models/User";
