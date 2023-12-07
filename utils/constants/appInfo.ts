@@ -8,6 +8,7 @@ export enum APP_ROUTES {
     analytics= '/analytics',
     docs = '/docs',
     login = '/login',
+    logout = '/logout',
     signup = '/signup',
     admin = '/admin',
     userEditor = '/admin/user/editor',

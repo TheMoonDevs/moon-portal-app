@@ -1,6 +1,8 @@
 /* eslint-disable @next/next/no-img-element */
+import { APP_ROUTES } from "@/utils/constants/appInfo";
 import { useUser } from "@/utils/hooks/useUser";
 import { DbUser } from "@/utils/services/models/User";
+import Link from "next/link";
 
 export const ProfileSection = ({ user }: { user: DbUser }) => {
   if (!user?._id) return null;
@@ -21,10 +23,12 @@ export const ProfileSection = ({ user }: { user: DbUser }) => {
         </div>
       </div>
       <div className="absolute top-1 right-1">
-        <button className="text-xs border border-neutral-400 rounded-lg px-2 text-neutral-900 hover:text-neutral-700">
-          <span className="icon_size material-icons"></span>
-          sign out
-        </button>
+        <Link href={APP_ROUTES.logout}>
+          <button className="text-xs border border-neutral-400 rounded-lg px-2 text-neutral-900 hover:text-neutral-700">
+            <span className="icon_size material-icons"></span>
+            sign out
+          </button>
+        </Link>
       </div>
     </div>
   );

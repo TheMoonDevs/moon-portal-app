@@ -100,7 +100,7 @@ export const LoginPage = () => {
             }}
           />
         )}
-        {status === "authenticated" && <Logout user={user} signOut={signOut} />}
+        {/* {status === "authenticated" && <Logout user={user} signOut={signOut} />} */}
         {error && (
           <p className="text-red-500 text-xs text-center mt-4">{error}</p>
         )}

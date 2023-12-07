@@ -11,6 +11,11 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const { data, status } = useSession();
   const path = usePathname();
   const router = useRouter();
+  const isBottomBarVisible =
+    status === "authenticated" &&
+    data &&
+    path != APP_ROUTES.logout &&
+    path != APP_ROUTES.login;
 
   useEffect(() => {
     if (status === "unauthenticated" && path !== APP_ROUTES.login) {
@@ -32,7 +37,7 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
     <div>
       {/* <Header /> */}
       {/* <Sidebar /> */}
-      {status === "authenticated" && data && <Bottombar />}
+      {isBottomBarVisible && <Bottombar />}
       {children}
     </div>
   );
