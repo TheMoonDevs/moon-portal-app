@@ -15,9 +15,11 @@ export default async function handler(
     req: NextApiRequest,
     res: NextApiResponse<ResponseData>
     ) {
+     // console.log(req.body);
     const user_in = 
     typeof req.body === "object" ? req.body :
-    typeof req.body === "string"  ? JSON.parse(req.body) :{};
+    typeof req.body === "string"  &&
+    req.body != ""? JSON.parse(req.body) :{};
     const _id = user_in._id?.toString();
     delete user_in._id;
     await dbConnect();

@@ -29,6 +29,7 @@ import { Spinner } from "@/components/elements/Loaders";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AdminHeader } from "./AdminHeader";
 import { useToast } from "@/components/elements/Toast";
+import { PortalSdk } from "@/utils/services/PortalSdk";
 
 export const AdminUserEditor = () => {
   const router = useRouter();
@@ -64,8 +65,8 @@ export const AdminUserEditor = () => {
     const id = query?.get("id");
     if (id) {
       setLoading(true);
-      fetch(`/api/users/users?id=${id}`)
-        .then((res) => res.json())
+
+      PortalSdk.getData(`/api/users/users?id=${id}`, null)
         .then((data) => {
           console.log(data);
           if (data.users.length > 0) setUser(data.users[0]);
