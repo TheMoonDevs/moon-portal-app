@@ -1,38 +1,54 @@
+"use client";
+
 import { APP_ROUTES } from "@/utils/constants/appInfo";
+import { usePathname, useRouter } from "next/navigation";
 
 const NAVIGATION_OPTIONS = [
   {
     name: "Home",
     path: APP_ROUTES.home,
-    icon: "home",
+    icon: "perm_identity",
   },
   {
     name: "Teams",
     path: APP_ROUTES.teams,
-    icon: "magnify",
+    icon: "workspaces",
   },
   {
     name: "Engagements",
     path: APP_ROUTES.engagements,
-    icon: "",
+    icon: "format_overline",
   },
   {
     name: "Notifications",
     path: APP_ROUTES.notifications,
-    icon: "",
+    icon: "notifications",
   },
 ];
 
 export const Bottombar = () => {
+  const path = usePathname();
+  const router = useRouter();
   return (
-    <div className="flex flex-row abosulte bottom-0 left-0 right-0 bg-black">
+    <div className="flex flex-row fixed bottom-0 left-0 right-0 py-1 px-2 gap-6 bg-neutral-900">
       {NAVIGATION_OPTIONS.map((option) => (
         <div
+          onClick={() => {
+            router.push(option.path);
+          }}
           key={option.path}
-          className="flex flex-col items-center justify-center w-1/3"
+          className={` ${
+            option.path === path ? "bg-white text-black" : "bg-black text-white"
+          } flex flex-col items-center justify-center py-1 w-1/3 cursor-pointer rounded-2xl`}
         >
-          <span className="material-icons ">{option.icon}</span>
-          <p className="text-white text-xs">{option.name}</p>
+          <span
+            className={` ${
+              option.path === path ? "text-black" : "text-white"
+            } font-thin material-icons-outlined text-md `}
+          >
+            {option.icon}
+          </span>
+          <p className="text-[0.5em] opacity-[0.75]">{option.name}</p>
         </div>
       ))}
     </div>

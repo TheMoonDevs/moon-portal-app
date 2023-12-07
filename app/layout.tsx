@@ -35,6 +35,10 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/icon?family=Material+Icons"
           rel="stylesheet"
         ></link>
+        <link
+          href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined"
+          rel="stylesheet"
+        ></link>
       </head>
       <body className={inter.className}>
         <NextAuthProvider session={session}>
