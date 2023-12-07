@@ -16,7 +16,7 @@ export const AdminUsers = () => {
   const [loading, setLoading] = useState(false);
   useEffect(() => {
     setLoading(true);
-    fetch("/api/auth/users")
+    fetch("/api/users/users")
       .then((res) => res.json())
       .then((data) => {
         console.log(data);

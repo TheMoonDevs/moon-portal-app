@@ -64,7 +64,7 @@ export const AdminUserEditor = () => {
     const id = query?.get("id");
     if (id) {
       setLoading(true);
-      fetch(`/api/auth/users?id=${id}`)
+      fetch(`/api/users/users?id=${id}`)
         .then((res) => res.json())
         .then((data) => {
           console.log(data);
@@ -127,7 +127,7 @@ export const AdminUserEditor = () => {
 
   const saveUser = () => {
     setLoading(true);
-    fetch("/api/auth/users", {
+    fetch("/api/users/users", {
       method: user._id.length > 0 ? "PUT" : "POST",
       body: JSON.stringify(user),
     })
