@@ -24,6 +24,7 @@ export const LoginPage = () => {
   useEffect(() => {
     if (status === "authenticated") {
       setTab(InstallState.SPLASH);
+      router.push(APP_ROUTES.home);
     }
   }, [data, status]);
 
