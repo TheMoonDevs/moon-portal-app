@@ -40,3 +40,7 @@ body {
 .icon_size {
   font-size: unset !important;
 }
+
+.cursor-pointer {
+  user-select: none;
+}

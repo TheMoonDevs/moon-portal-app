@@ -8,6 +8,7 @@ import { ProfileSection } from "./ProfileSection";
 import { DailySection } from "./DailySection";
 import { useUser } from "@/utils/hooks/useUser";
 import { USERTYPE } from "@/utils/services/models/User";
+import { ActionsSection } from "./ActionsSection";
 
 export const HomePage = () => {
   const { user } = useUser(true);
@@ -15,6 +16,8 @@ export const HomePage = () => {
     <div className="home_bg min-h-screen">
       <ProfileSection user={user} />
       {user.usertype == USERTYPE.MEMBER && <DailySection user={user} />}
+      {user.usertype == USERTYPE.MEMBER && <ActionsSection user={user} />}
+      <div className="h-[300px]"></div>
     </div>
   );
 };

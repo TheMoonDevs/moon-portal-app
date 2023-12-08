@@ -488,6 +488,16 @@ export const AdminUserEditor = () => {
                 />
               </div>
               <div className="flex flex-row gap-4 items-center justify-start">
+                <p>Work Logs Public Link (Clickup)</p>
+                <input
+                  id="workData.worklogPubLink"
+                  type="text"
+                  value={user.workData.worklogPubLink}
+                  onChange={updateField}
+                  className="border border-neutral-400 rounded-lg p-2"
+                />
+              </div>
+              <div className="flex flex-row gap-4 items-center justify-start">
                 <p>Work Exp Link (Clickup)</p>
                 <input
                   id="workData.workExpLink"

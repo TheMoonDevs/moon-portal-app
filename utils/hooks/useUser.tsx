@@ -10,11 +10,12 @@ export const useUser = (newfetch?: boolean) => {
   const [fetchedUser, setFetchedUser] = useState<DbUser>({} as DbUser);
 
   useEffect(() => {
-    if (!user._id) return;
+    if (!user._id || !newfetch) return;
     if (!newfetch && user._id) {
       setFetchedUser(user);
       return;
     }
+    //console.log("fetching user", user._id);
     PortalSdk.getData("/api/users/users?id=" + user._id, null)
       .then((data) => {
         if (data?.users?.length === 0) return;

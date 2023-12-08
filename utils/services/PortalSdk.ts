@@ -7,7 +7,7 @@ export const PortalSdk = {
         }
         if(body && Object.keys(body).length > 0)
         options.body = JSON.stringify(body);
-        console.log(url, options);
+        //console.log(url, options);
         const res = await fetch(url, options)
         if (res.ok) {
           const result = await res.json()
