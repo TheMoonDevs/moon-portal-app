@@ -11,6 +11,7 @@ export const useUser = (newfetch?: boolean) => {
   const router = useRouter();
   const user: DbUser = useMemo(() => (data?.user as DbUser) || {}, [data]);
   const [fetchedUser, setFetchedUser] = useState<DbUser>({} as DbUser);
+  const [localUser, setLocalUser] = useState<DbUser>({} as DbUser);
 
   //sync to local storage (if null)
   useEffect(() => {
@@ -24,23 +25,24 @@ export const useUser = (newfetch?: boolean) => {
 
   // fetch from local storage
   useEffect(() => {
-    if (newfetch) return;
+    //if (newfetch) return;
     let _user: any = localStorage.getItem(LOCAL_STORAGE.user);
     //console.log("fetching from local storage", _user);
     if (_user) {
       _user = JSON.parse(_user);
       if (_user?._id) setFetchedUser(_user);
+      if (_user?._id) setLocalUser(_user);
     }
-  }, [newfetch]);
+  }, []);
 
   useEffect(() => {
-    if (!user._id || !newfetch) return;
-    if (!newfetch && user._id) {
-      setFetchedUser(user);
+    if (!localUser._id || !newfetch) return;
+    if (!newfetch && localUser._id) {
+      setFetchedUser(localUser);
       return;
     }
     //console.log("fetching user", user._id);
-    PortalSdk.getData("/api/users/users?id=" + user._id, null)
+    PortalSdk.getData("/api/users/users?id=" + localUser._id, null)
       .then((data) => {
         if (data?.users?.length === 0) return;
         // console.log("fetched user", data.users[0]);
@@ -50,10 +52,10 @@ export const useUser = (newfetch?: boolean) => {
       .catch((err) => {
         console.log(err);
       });
-  }, [user, newfetch]);
+  }, [localUser, newfetch]);
 
   return {
-    user: fetchedUser?._id ? fetchedUser : user,
+    user: fetchedUser?._id ? fetchedUser : localUser?._id ? localUser : user,
     status: fetchedUser?._id != null ? "authenticated" : status,
     data,
     signOutUser: () => {
