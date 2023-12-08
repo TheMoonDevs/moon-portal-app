@@ -1,6 +1,6 @@
 "use client";
 
-import { APP_ROUTES } from "@/utils/constants/appInfo";
+import { APP_ROUTES, LOCAL_STORAGE } from "@/utils/constants/appInfo";
 import { useUser } from "@/utils/hooks/useUser";
 import { DbUser } from "@/utils/services/models/User";
 import { usePathname, useRouter } from "next/navigation";
@@ -20,6 +20,11 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     if (status === "unauthenticated" && path !== APP_ROUTES.login) {
       router.push(APP_ROUTES.login);
+    }
+    if (status === "loading") {
+      let _user: any = localStorage.getItem(LOCAL_STORAGE.user);
+      _user = _user ? JSON.parse(_user) : null;
+      if (!_user?._id) router.push(APP_ROUTES.login);
     }
     if (path?.startsWith("/admin")) {
       if (status === "loading") return;
