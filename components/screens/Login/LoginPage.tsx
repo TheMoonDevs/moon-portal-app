@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { InstallButton, InstallState } from "./Install";
 import { LoginButtons, LoginPassCode, LoginState, MobileBox } from "./Login";
+import { GreyButton } from "@/components/elements/Button";
 
 export const LoginPage = () => {
   const [tab, setTab] = useState<InstallState | LoginState>(
@@ -22,7 +23,7 @@ export const LoginPage = () => {
   useEffect(() => {
     if (status === "authenticated") {
       setTab(InstallState.SPLASH);
-      router.push(APP_ROUTES.home);
+      //router.push(APP_ROUTES.home);
     }
   }, [user, status, router]);
 
@@ -98,6 +99,15 @@ export const LoginPage = () => {
               setTab(LoginState.LOGIN_CODE);
             }}
           />
+        )}
+        {status === "authenticated" && (
+          <GreyButton
+            onClick={() => {
+              router.push(APP_ROUTES.home);
+            }}
+          >
+            Enter App
+          </GreyButton>
         )}
         {/* {status === "authenticated" && <Logout user={user} signOut={signOut} />} */}
         {error && (
