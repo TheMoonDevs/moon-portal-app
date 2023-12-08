@@ -24,4 +24,8 @@ export enum APP_SOCIAL {
     youtube = '',
 }
 
+export enum LOCAL_STORAGE {
+    user = 'moon_portal_user',
+}
+
 export const IS_TESTNET = process.env.NEXT_PUBLIC_IS_TESTNET === 'true';

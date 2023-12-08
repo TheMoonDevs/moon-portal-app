@@ -5,7 +5,6 @@ import Image from "next/image";
 import { MobileBox, LoginButtons, LoginPassCode, LoginState } from "./Login";
 import { useEffect, useState } from "react";
 import { InstallButton, InstallState } from "./Install";
-import { useSession, signIn, signOut } from "next-auth/react";
 import { GreyButton } from "@/components/elements/Button";
 import { useRouter } from "next/navigation";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
@@ -13,7 +12,7 @@ import { useUser } from "@/utils/hooks/useUser";
 import { Logout } from "./Logout";
 
 export const LogoutPage = () => {
-  const { data, status, user } = useUser(false);
+  const { data, status, user, signOutUser } = useUser(false);
 
   return (
     <div className="flex flex-col items-center justify-center py-2 bg-neutral-700 md:bg-neutral-900 h-screen">
@@ -32,7 +31,9 @@ export const LogoutPage = () => {
           </p>
           {/* <h4 className="text-3xl font-bold text-neutral-100">TheMoonDevs</h4> */}
         </div>
-        {status === "authenticated" && <Logout user={user} signOut={signOut} />}
+        {status === "authenticated" && (
+          <Logout user={user} signOut={signOutUser} />
+        )}
       </MobileBox>
     </div>
   );

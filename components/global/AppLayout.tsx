@@ -1,19 +1,19 @@
 "use client";
 
 import { APP_ROUTES } from "@/utils/constants/appInfo";
-import { useSession } from "next-auth/react";
+import { useUser } from "@/utils/hooks/useUser";
+import { DbUser } from "@/utils/services/models/User";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Bottombar } from "./Bottombar";
-import { DbUser } from "@/utils/services/models/User";
 
 export const AppLayout = ({ children }: { children: React.ReactNode }) => {
-  const { data, status } = useSession();
+  const { user, status } = useUser();
   const path = usePathname();
   const router = useRouter();
   const isBottomBarVisible =
     status === "authenticated" &&
-    data &&
+    user &&
     path != APP_ROUTES.logout &&
     path != APP_ROUTES.login;
 
@@ -23,15 +23,11 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
     }
     if (path?.startsWith("/admin")) {
       if (status === "loading") return;
-      if (
-        status === "authenticated" &&
-        data?.user &&
-        (data.user as DbUser).isAdmin
-      )
+      if (status === "authenticated" && user && (user as DbUser).isAdmin)
         return;
       router.push(APP_ROUTES.home);
     }
-  }, [path, data, status, router]);
+  }, [path, user, status, router]);
 
   return (
     <div>

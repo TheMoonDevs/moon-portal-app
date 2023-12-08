@@ -1,16 +1,14 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
+import { APP_ROUTES, LOCAL_STORAGE } from "@/utils/constants/appInfo";
+import { useUser } from "@/utils/hooks/useUser";
+import { signIn } from "next-auth/react";
 import Image from "next/image";
-import { MobileBox, LoginButtons, LoginPassCode, LoginState } from "./Login";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { InstallButton, InstallState } from "./Install";
-import { useSession, signIn, signOut } from "next-auth/react";
-import { GreyButton } from "@/components/elements/Button";
-import { useRouter } from "next/navigation";
-import { APP_ROUTES } from "@/utils/constants/appInfo";
-import { useUser } from "@/utils/hooks/useUser";
-import { Logout } from "./Logout";
+import { LoginButtons, LoginPassCode, LoginState, MobileBox } from "./Login";
 
 export const LoginPage = () => {
   const [tab, setTab] = useState<InstallState | LoginState>(
@@ -19,14 +17,14 @@ export const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  const { data, status, user } = useUser();
+  const { data, status, user } = useUser(false);
 
   useEffect(() => {
     if (status === "authenticated") {
       setTab(InstallState.SPLASH);
       router.push(APP_ROUTES.home);
     }
-  }, [data, status]);
+  }, [user, status, router]);
 
   const loginWithPassCode = (passCode: string) => {
     setLoading(true);

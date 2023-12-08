@@ -1,14 +1,10 @@
 "use client";
 
-import Image from "next/image";
-import { useEffect, useState } from "react";
-import { useSession, signIn, signOut } from "next-auth/react";
-import { GreyButton } from "@/components/elements/Button";
-import { ProfileSection } from "./ProfileSection";
-import { DailySection } from "./DailySection";
 import { useUser } from "@/utils/hooks/useUser";
 import { USERTYPE } from "@/utils/services/models/User";
 import { ActionsSection } from "./ActionsSection";
+import { DailySection } from "./DailySection";
+import { ProfileSection } from "./ProfileSection";
 
 export const HomePage = () => {
   const { user } = useUser(true);

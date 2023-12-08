@@ -14,7 +14,7 @@ export const WorklogsPage = () => {
             <span className="icon_size material-icons">arrow_back</span>
           </div>
         </Link>
-        <h1 className="uppercase tracking-widest">YOUR Work Logs</h1>
+        <h1 className="uppercase tracking-widest">Your Work Logs</h1>
         <div className="text-xl rounded-lg px-2 text-neutral-900 hover:text-neutral-700">
           <span className="icon_size material-icons">add_circle_outline</span>
         </div>
