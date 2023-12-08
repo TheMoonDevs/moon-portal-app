@@ -6,6 +6,8 @@ import Link from "next/link";
 
 export const WorklogsPage = () => {
   const { user } = useUser(false);
+
+  if (!user?.workData) return null;
   return (
     <div className="flex flex-col">
       <div className="absolute left-0 right-0 top-0 bg-white flex flex-row gap-3 py-3 items-center justify-between border-b border-neutral-400">
@@ -19,14 +21,16 @@ export const WorklogsPage = () => {
           <span className="icon_size material-icons">add_circle_outline</span>
         </div>
       </div>
-      <iframe
-        src={user.workData?.worklogPubLink}
-        style={{
-          width: "100%",
-          height: "100vh",
-          border: "none",
-        }}
-      ></iframe>
+      {user.workData?.worklogPubLink && (
+        <iframe
+          src={user.workData?.worklogPubLink}
+          style={{
+            width: "100%",
+            height: "100vh",
+            border: "none",
+          }}
+        ></iframe>
+      )}
       <Link
         href={user?.workData?.worklogLink}
         rel="noopener noreferrer"

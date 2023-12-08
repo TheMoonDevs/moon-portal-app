@@ -34,7 +34,7 @@ export const authOptions = {
           username: credentials.username,
           password: credentials.password,
         })
-        console.log(user)
+        //console.log(user)
         if (user?._id) return user
 
         return null
