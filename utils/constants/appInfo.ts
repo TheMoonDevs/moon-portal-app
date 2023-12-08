@@ -12,6 +12,7 @@ export enum APP_ROUTES {
     signup = '/signup',
     admin = '/admin',
     userEditor = '/admin/user/editor',
+    userWorklogs = '/user/worklogs',
 };
 
 export enum APP_SOCIAL {

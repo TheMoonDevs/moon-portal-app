@@ -7,7 +7,7 @@ export const ActionsSection = ({ user }: { user: DbUser }) => {
   return (
     <div className=" flex flex-col mx-3 mt-6 gap-3 border border-neutral-400 rounded-[1.15em]">
       <div className="flex flex-col ">
-        <Link href={APP_ROUTES.home}>
+        <Link href={APP_ROUTES.userWorklogs}>
           <div className="text-xl flex flex-row items-center gap-4 border-b border-neutral-400 px-5 py-3">
             <span className="icon_size text-neutral-800 icon_size material-icons-outlined">
               update

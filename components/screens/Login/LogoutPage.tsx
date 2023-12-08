@@ -13,7 +13,7 @@ import { useUser } from "@/utils/hooks/useUser";
 import { Logout } from "./Logout";
 
 export const LogoutPage = () => {
-  const { data, status, user } = useUser();
+  const { data, status, user } = useUser(false);
 
   return (
     <div className="flex flex-col items-center justify-center py-2 bg-neutral-700 md:bg-neutral-900 h-screen">
