@@ -38,7 +38,7 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
     <div>
       {/* <Header /> */}
       {/* <Sidebar /> */}
-      {isBottomBarVisible && <Bottombar />}
+      <Bottombar visible={isBottomBarVisible} />
       {children}
     </div>
   );
