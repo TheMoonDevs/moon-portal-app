@@ -1,8 +1,10 @@
 "use client";
 
 import { Button, GreyButton } from "@/components/elements/Button";
+import NewJobPostModal from "@/pages/create-jobpost/page";
 import { useUser } from "@/utils/hooks/useUser";
 import { USERVERTICAL } from "@/utils/services/models/User";
+import { useState } from "react";
 
 const Dropdown = ({
   options,
@@ -38,6 +40,17 @@ const Dropdown = ({
 export const ScreeningPage = () => {
   const { user, status } = useUser();
   const isVisible = user?.vertical == USERVERTICAL.HR || user?.isAdmin;
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const handleNewPostSubmit = async (formData: any) => {
+    try {
+      console.log("Submitted data:", formData);
+
+      // Close the modal
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error("Error handling submitted data:", error);
+    }
+  };
   if (!isVisible) return <></>;
   return (
     <div className="table_box">
@@ -53,9 +66,16 @@ export const ScreeningPage = () => {
         </div>
         <div className="flex flex-row gap-4">
           <button className="btn btn-primary">Save to Excel</button>
-          <Button>Add New Post</Button>
+          <Button onClick={() => setIsModalOpen(true)}>Add New Post</Button>
         </div>
       </div>
+      {
+        <NewJobPostModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSubmit={handleNewPostSubmit} // Pass the submit handler
+        />
+      }
     </div>
   );
 };
