@@ -22,7 +22,9 @@ export const PortalSdk = {
       }
     })
   },
-  postData: async (url: string, params: any) => {
+  postData: (url: string, params: any) => {
+    return new Promise<any>(async (resolve, reject) => {
+    try {
     const res = await fetch(url, {
       method: 'POST',
       headers: {
@@ -30,6 +32,17 @@ export const PortalSdk = {
       },
       body: JSON.stringify(params.data),
     })
-    return res.json()
+    if (res.ok) {
+      const result = await res.json()
+      return resolve(result)
+    }
+    else {
+      return reject(res.status as any)
+    }
+  }
+  catch(e) {
+    console.log(e)
+        return reject(e as any)
+  }})
   },
 }

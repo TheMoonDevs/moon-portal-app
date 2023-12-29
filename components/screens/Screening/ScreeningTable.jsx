@@ -1,13 +1,17 @@
-import * as React from "react";
+import {useState,useEffect,useMemo} from "react";
 import { useTable } from "react-table";
 import EditJobPostModal from "@/pages/edit-jobpost/page";
+import { NewJobPostModal } from "./Modals/NewJobPostModal";
+import { useAppSelector } from "@/utils/redux/store";
+import { PortalSdk } from "@/utils/services/PortalSdk";
 
 function ScreeningTable() {
-  const [data, setData] = React.useState([]);
-  const [selectedJobPost, setSelectedJobPost] = React.useState({});
-  const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
+  const [data, setData] =useState([]);
+  const [selectedJobPost, setSelectedJobPost] =useState({});
+  const [isEditModalOpen, setIsEditModalOpen] =useState(false);
+  const jobPostsRefresh = useAppSelector((state) => state.ui.jobPostsRefresh);
 
-  const columns = React.useMemo(
+  const columns =useMemo(
     () => [
       {
         Header: "S.No",
@@ -84,9 +88,11 @@ function ScreeningTable() {
     try {
       const response = await fetch(`/api/jobpost/${id}`);
       if (response.ok) {
-        const selectedPost = await response.json();
-        console.log(selectedPost);
-        setSelectedJobPost(selectedPost);
+        const selectedPostsData = await response.json();
+        console.log(selectedPostsData);
+        if(selectedPostsData.jobPosts.length > 0) {
+          setSelectedJobPost(selectedPostsData.jobPosts[0]);
+        }
         setIsEditModalOpen(true);
       } else {
         console.error("Error fetching job post for editing");
@@ -121,13 +127,12 @@ function ScreeningTable() {
     }
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     // Fetch data from your API endpoint
-    fetch("/api/jobpost/getall")
-      .then((response) => response.json())
+    PortalSdk.getData("/api/jobpost/getall")
       .then((data) => setData(data.jobPosts))
       .catch((error) => console.error("Error fetching data:", error));
-  }, []); // Empty dependency array to run the effect only once on mount
+  }, [jobPostsRefresh]); // Empty dependency array to run the effect only once on mount
 
   return (
     <div className="shadow-md overflow-x-auto">
@@ -136,10 +141,11 @@ function ScreeningTable() {
         className="min-w-full divide-y divide-gray-200"
       >
         <thead className="bg-gray-50">
-          {headerGroups.map((headerGroup) => (
-            <tr {...headerGroup.getHeaderGroupProps()}>
-              {headerGroup.headers.map((column) => (
+          {headerGroups.map((headerGroup,index) => (
+            <tr key={index} {...headerGroup.getHeaderGroupProps()}>
+              {headerGroup.headers.map((column,index2) => (
                 <th
+                  key={index2}
                   {...column.getHeaderProps()}
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
@@ -153,12 +159,13 @@ function ScreeningTable() {
           {...getTableBodyProps()}
           className="bg-white divide-y divide-gray-200"
         >
-          {rows.map((row) => {
+          {rows.map((row,index) => {
             prepareRow(row);
             return (
-              <tr {...row.getRowProps()}>
-                {row.cells.map((cell) => (
+              <tr key={index} {...row.getRowProps()}>
+                {row.cells.map((cell,index2) => (
                   <td
+                    key={index2}
                     {...cell.getCellProps()}
                     className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
                   >
@@ -171,7 +178,7 @@ function ScreeningTable() {
         </tbody>
       </table>
 
-      <EditJobPostModal
+      <NewJobPostModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         onSubmit={handleEditSubmit} // Add the handleEditSubmit function

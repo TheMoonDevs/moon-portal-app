@@ -7,8 +7,12 @@ export const uiSlice = createSlice({
     isLoading: false,
     globalToast: false,
     toasts: [] as any[],
+    jobPostsRefresh: false,
   },
   reducers: {
+    setJobPostsRefresh: (state, action) => {
+      state.jobPostsRefresh = !state.jobPostsRefresh;
+    },
     pushToast: (state, action) => {
       state.toasts.push(action.payload);
     },
@@ -33,6 +37,7 @@ export const {
   setIsSidebarOpen,
   pushToast,
   popToast,
+  setJobPostsRefresh,
 } = actions;
 
 export default reducer;

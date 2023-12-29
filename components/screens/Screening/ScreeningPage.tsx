@@ -42,16 +42,17 @@ export const ScreeningPage = () => {
   const { user, status } = useUser();
   const isVisible = user?.vertical == USERVERTICAL.HR || user?.isAdmin;
   const [isModalOpen, setIsModalOpen] = useState(false);
+  
   const handleNewPostSubmit = async (formData: any) => {
     try {
       console.log("Submitted data:", formData);
-
       // Close the modal
       setIsModalOpen(false);
     } catch (error) {
       console.error("Error handling submitted data:", error);
     }
   };
+
   if (!isVisible) return <></>;
   return (
     <div className="table_box">
@@ -76,6 +77,7 @@ export const ScreeningPage = () => {
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           onSubmit={handleNewPostSubmit} // Pass the submit handler
+          jobPostData={null}
         />
       }
       <div className="mt-7">
