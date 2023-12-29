@@ -4,7 +4,8 @@ import { Button } from "./Button";
 
 const customStyles = {
   overlay: {
-    backgroundColor: "rgba(0, 0, 0, 0.5)", // Adjust overlay background color and transparency
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    width: "70%",
   },
 };
 

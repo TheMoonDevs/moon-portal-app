@@ -1,13 +1,13 @@
 import React, { ChangeEvent, useState } from "react";
-import GeneralModal from "../../components/elements/Modal";
+import GeneralModal from "../../../elements/Modal";
 
-interface NewJobPostModalProps {
+export interface NewJobPostModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (formData: any) => void; // Adjust the type based on your needs
 }
 
-const NewJobPostModal: React.FC<NewJobPostModalProps> = ({
+export const NewJobPostModal: React.FC<NewJobPostModalProps> = ({
   isOpen,
   onClose,
   onSubmit,
@@ -113,5 +113,3 @@ const NewJobPostModal: React.FC<NewJobPostModalProps> = ({
     </GeneralModal>
   );
 };
-
-export default NewJobPostModal;

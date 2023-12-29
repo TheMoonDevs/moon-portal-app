@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, GreyButton } from "@/components/elements/Button";
-import NewJobPostModal from "@/pages/create-jobpost/page";
+import { NewJobPostModal } from "@/components/screens/Screening/Modals/NewJobPostModal";
 import { useUser } from "@/utils/hooks/useUser";
 import { USERVERTICAL } from "@/utils/services/models/User";
 import ScreeningTable from "./ScreeningTable";
