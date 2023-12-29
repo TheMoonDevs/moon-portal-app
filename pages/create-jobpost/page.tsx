@@ -22,6 +22,10 @@ const NewJobPostModal: React.FC<NewJobPostModalProps> = ({
     work_hours_requirement: "",
     min_contract_period: "",
     expected_salary_range: "",
+    location: "",
+    status: "",
+    jobpost: "",
+    created_at: "",
   };
 
   const [formData, setFormData] = useState(initialFormData);
@@ -45,6 +49,7 @@ const NewJobPostModal: React.FC<NewJobPostModalProps> = ({
       if (response.ok) {
         console.log("Job Post created successfully");
         onClose();
+        window.location.reload();
       } else {
         console.error("Error creating Job Post");
       }

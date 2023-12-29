@@ -42,18 +42,6 @@ export default async function handler(
       }
       break;
 
-    case "POST":
-      try {
-        const candidate = await new Candidate(req.body);
-        await candidate.save();
-
-        res.status(201).json({ success: true, candidate: candidate });
-      } catch (error) {
-        console.error(error);
-        res.status(400).json({ success: false });
-      }
-      break;
-
     case "PUT" /* Edit a model by its ID */:
       try {
         const updatedCandidate = await Candidate.findByIdAndUpdate(

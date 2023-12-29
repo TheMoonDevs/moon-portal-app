@@ -14,10 +14,10 @@ export default async function handler(
   } = req;
   const session = await getServerSession(req, res, authOptions);
 
-  if (!session) {
-    res.status(401).json({ success: false });
-    return;
-  }
+  // if (!session) {
+  //   res.status(401).json({ success: false });
+  //   return;
+  // }
 
   await dbConnect();
 
@@ -43,27 +43,18 @@ export default async function handler(
       }
       break;
 
-    case "POST":
+    case "PATCH" /* Partial update a model by its ID */:
       try {
-        const newJobPost = new JobPost(req.body);
-        const savedJobPost = await newJobPost.save();
+        const updatedJobPost = await JobPost.findByIdAndUpdate(
+          id,
+          { $set: req.body }, // Use $set to perform partial update
+          { new: true, runValidators: true }
+        );
 
-        res.status(201).json({ success: true, data: savedJobPost });
-      } catch (error) {
-        console.error(error);
-        res.status(400).json({ success: false });
-      }
-      break;
-
-    case "PUT" /* Edit a model by its ID */:
-      try {
-        const updatedJobPost = await JobPost.findByIdAndUpdate(id, req.body, {
-          new: true,
-          runValidators: true,
-        });
         if (!updatedJobPost) {
           return res.status(400).json({ success: false });
         }
+
         res.status(200).json({ success: true, data: updatedJobPost });
       } catch (error) {
         res.status(400).json({ success: false });

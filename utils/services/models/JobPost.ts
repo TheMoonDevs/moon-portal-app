@@ -10,6 +10,22 @@ export interface JobPost extends mongoose.Document {
   work_hours_requirement: string;
   min_contract_period: string;
   expected_salary_range: string;
+  location: string;
+  status: string;
+  jobpost: string;
+  created_at: Date;
+  deadline: Date;
+}
+
+export enum JOBPOST {
+  FULLTIME = "fulltime",
+  PARTTIME = "parttime",
+  INTERN = "intern",
+}
+
+export enum JOBSTATUS {
+  ACTIVE = "active",
+  INACTIVE = "inactive",
 }
 
 const JobPostSchema = new mongoose.Schema<JobPost>({
@@ -58,6 +74,23 @@ const JobPostSchema = new mongoose.Schema<JobPost>({
     type: String,
     maxlength: [50, "Expected salary range cannot be more than 50 characters"],
   },
+  location: {
+    type: String,
+    maxlength: [50, "Location for the Job"],
+  },
+  status: {
+    type: String,
+    default: JOBSTATUS.ACTIVE,
+  },
+  jobpost: {
+    type: String,
+    default: JOBPOST.FULLTIME,
+  },
+  created_at: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
-export default mongoose.model<JobPost>("JobPost", JobPostSchema);
+export default mongoose.models.JobPost ||
+  mongoose.model<JobPost>("JobPost", JobPostSchema);

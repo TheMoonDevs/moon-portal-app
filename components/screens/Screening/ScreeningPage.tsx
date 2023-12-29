@@ -4,6 +4,7 @@ import { Button, GreyButton } from "@/components/elements/Button";
 import NewJobPostModal from "@/pages/create-jobpost/page";
 import { useUser } from "@/utils/hooks/useUser";
 import { USERVERTICAL } from "@/utils/services/models/User";
+import ScreeningTable from "./ScreeningTable";
 import { useState } from "react";
 
 const Dropdown = ({
@@ -54,7 +55,7 @@ export const ScreeningPage = () => {
   if (!isVisible) return <></>;
   return (
     <div className="table_box">
-      <div className="w-full fixed flex flex-row justify-between items-center border-b py-2 px-4">
+      <div className="w-full  flex flex-row justify-between items-center border-b py-2 px-4">
         <div className="flex flex-row gap-4">
           <h1 className="text-xl font-bold mr-4">Screening</h1>
           <button className="btn btn-primary flex items-center">
@@ -69,6 +70,7 @@ export const ScreeningPage = () => {
           <Button onClick={() => setIsModalOpen(true)}>Add New Post</Button>
         </div>
       </div>
+
       {
         <NewJobPostModal
           isOpen={isModalOpen}
@@ -76,6 +78,9 @@ export const ScreeningPage = () => {
           onSubmit={handleNewPostSubmit} // Pass the submit handler
         />
       }
+      <div className="mt-7">
+        <ScreeningTable />
+      </div>
     </div>
   );
 };
