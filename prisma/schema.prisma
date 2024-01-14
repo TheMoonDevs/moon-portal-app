@@ -1,0 +1,104 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String        @id @default(auto()) @map("_id") @db.ObjectId
+  username  String
+  password  String
+  email     String?
+  name      String?
+  avatar    String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @default(now())
+  usertype  USERTYPE?     @default(MEMBER)
+  role      USERROLE?     @default(CORETEAM)
+  vertical  USERVERTICAL? @default(DEV)
+  status    USERSTATUS?   @default(ACTIVE)
+  isAdmin   Boolean       @default(false)
+  timezone  String?
+  country   String?
+}
+
+model Candidate {
+  id                      String  @id @default(auto()) @map("_id") @db.ObjectId
+  jobpost_id              String
+  name                    String
+  email                   String
+  mobile_number           Int
+  education_qualification String?
+  skill_qualification     String?
+  work_exp                String?
+}
+
+model JobPost {
+  id                      String    @id @default(auto()) @map("_id") @db.ObjectId
+  title                   String
+  dept_name               String
+  description             String
+  skill_requirement       String?
+  education_qualification String?
+  work_exp                String?
+  work_hours_requirement  String?
+  min_contract_period     String?
+  expected_salary_range   String?
+  location                String?
+  status                  JOBSTATUS @default(ACTIVE)
+  jobpost                 JOBPOST   @default(FULLTIME)
+  created_at              DateTime  @default(now())
+}
+
+model Survey {
+  id       String  @id @default(auto()) @map("_id") @db.ObjectId
+  username String
+  password String
+  name     String?
+}
+
+enum JOBPOST {
+  FULLTIME
+  PARTTIME
+  INTERN
+}
+
+enum JOBSTATUS {
+  ACTIVE
+  INACTIVE
+}
+
+enum USERTYPE {
+  MEMBER
+  CLIENT
+}
+
+enum USERSTATUS {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+}
+
+enum USERROLE {
+  CORETEAM
+  ASSOCIATE
+  FREELANCER
+  INTERN
+}
+
+enum USERVERTICAL {
+  DEV
+  DESIGN
+  MARKETING
+  COMMUNITY
+  FINANCE
+  LEGAL
+  HR
+  OPERATIONS
+}
