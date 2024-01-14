@@ -55,7 +55,7 @@ export const DailySection = ({ user }: { user: DbUser }) => {
         </div>
         <div className="flex flex-col  gap-2 ">
           <Link
-            href={user?.workData?.worklogLink}
+            href={user?.workData?.worklogLink || ""}
             rel="noopener noreferrer"
             target="_blank"
           >

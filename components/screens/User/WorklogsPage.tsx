@@ -32,7 +32,7 @@ export const WorklogsPage = () => {
         ></iframe>
       )}
       <Link
-        href={user?.workData?.worklogLink}
+        href={user?.workData?.worklogLink || ""}
         rel="noopener noreferrer"
         target="_blank"
       >
