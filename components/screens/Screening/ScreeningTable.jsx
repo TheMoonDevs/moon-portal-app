@@ -1,4 +1,4 @@
-import {useState,useEffect,useMemo} from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useTable } from "react-table";
 import EditJobPostModal from "@/pages/edit-jobpost/page";
 import { NewJobPostModal } from "./Modals/NewJobPostModal";
@@ -6,12 +6,12 @@ import { useAppSelector } from "@/utils/redux/store";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 
 function ScreeningTable() {
-  const [data, setData] =useState([]);
-  const [selectedJobPost, setSelectedJobPost] =useState({});
-  const [isEditModalOpen, setIsEditModalOpen] =useState(false);
+  const [data, setData] = useState([]);
+  const [selectedJobPost, setSelectedJobPost] = useState({});
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const jobPostsRefresh = useAppSelector((state) => state.ui.jobPostsRefresh);
 
-  const columns =useMemo(
+  const columns = useMemo(
     () => [
       {
         Header: "S.No",
@@ -68,7 +68,7 @@ function ScreeningTable() {
 
   const handleDelete = async (id) => {
     try {
-      const response = await fetch(`/api/jobpost/${id}`, {
+      const response = await fetch(`/api/jobPost?id=${id}}`, {
         method: "DELETE",
       });
 
@@ -86,11 +86,11 @@ function ScreeningTable() {
 
   const handleEdit = async (id) => {
     try {
-      const response = await fetch(`/api/jobpost/${id}`);
+      const response = await fetch(`/api/jobPost?id=${id}`);
       if (response.ok) {
         const selectedPostsData = await response.json();
         console.log(selectedPostsData);
-        if(selectedPostsData.jobPosts.length > 0) {
+        if (selectedPostsData.jobPosts.length > 0) {
           setSelectedJobPost(selectedPostsData.jobPosts[0]);
         }
         setIsEditModalOpen(true);
@@ -104,12 +104,12 @@ function ScreeningTable() {
 
   const handleEditSubmit = async (formData) => {
     try {
-      const response = await fetch(`/api/jobpost/${selectedJobPost._id}`, {
-        method: "PATCH",
+      const response = await fetch(`/api/jobPost`, {
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, id: selectedJobPost.id }),
       });
 
       if (response.ok) {
@@ -129,8 +129,8 @@ function ScreeningTable() {
 
   useEffect(() => {
     // Fetch data from your API endpoint
-    PortalSdk.getData("/api/jobpost/getall")
-      .then((data) => setData(data.jobPosts))
+    PortalSdk.getData("/api/jobPost/getAll")
+      .then((data) => setData(data?.data?.jobPost))
       .catch((error) => console.error("Error fetching data:", error));
   }, [jobPostsRefresh]); // Empty dependency array to run the effect only once on mount
 
@@ -141,9 +141,9 @@ function ScreeningTable() {
         className="min-w-full divide-y divide-gray-200"
       >
         <thead className="bg-gray-50">
-          {headerGroups.map((headerGroup,index) => (
+          {headerGroups.map((headerGroup, index) => (
             <tr key={index} {...headerGroup.getHeaderGroupProps()}>
-              {headerGroup.headers.map((column,index2) => (
+              {headerGroup.headers.map((column, index2) => (
                 <th
                   key={index2}
                   {...column.getHeaderProps()}
@@ -159,11 +159,11 @@ function ScreeningTable() {
           {...getTableBodyProps()}
           className="bg-white divide-y divide-gray-200"
         >
-          {rows.map((row,index) => {
+          {rows.map((row, index) => {
             prepareRow(row);
             return (
               <tr key={index} {...row.getRowProps()}>
-                {row.cells.map((cell,index2) => (
+                {row.cells.map((cell, index2) => (
                   <td
                     key={index2}
                     {...cell.getCellProps()}

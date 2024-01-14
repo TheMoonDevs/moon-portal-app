@@ -3,7 +3,6 @@
 import { Button, GreyButton } from "@/components/elements/Button";
 import { NewJobPostModal } from "@/components/screens/Screening/Modals/NewJobPostModal";
 import { useUser } from "@/utils/hooks/useUser";
-import { USERVERTICAL } from "@/utils/services/models/User";
 import ScreeningTable from "./ScreeningTable";
 import { useState } from "react";
 
@@ -40,9 +39,9 @@ const Dropdown = ({
 
 export const ScreeningPage = () => {
   const { user, status } = useUser();
-  const isVisible = user?.vertical == USERVERTICAL.HR || user?.isAdmin;
+  const isVisible = user?.vertical == "HR" || user?.isAdmin;
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
+
   const handleNewPostSubmit = async (formData: any) => {
     try {
       console.log("Submitted data:", formData);

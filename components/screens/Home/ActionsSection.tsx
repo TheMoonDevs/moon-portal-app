@@ -1,9 +1,8 @@
 import { APP_ROUTES } from "@/utils/constants/appInfo";
-import { DbUser } from "@/utils/services/models/User";
 import Link from "next/link";
 import React from "react";
 
-export const ActionsSection = ({ user }: { user: DbUser }) => {
+export const ActionsSection = () => {
   return (
     <div className=" flex flex-col mx-3 mt-6 gap-3 border border-neutral-400 rounded-[1.15em]">
       <div className="flex flex-col ">

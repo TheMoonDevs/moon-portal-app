@@ -5,13 +5,11 @@ import React, {
   useRef,
   useState,
 } from "react";
-import GeneralModal from "../../../elements/Modal";
 import { Backdrop } from "@mui/material";
 import { Button } from "@/components/elements/Button";
 import { useAppDispatch } from "@/utils/redux/store";
 import { setJobPostsRefresh } from "@/utils/redux/ui/ui.slice";
 import { PortalSdk } from "@/utils/services/PortalSdk";
-import { JobPost } from "@/utils/services/models/JobPost";
 
 export interface NewJobPostModalProps {
   isOpen: boolean;
@@ -60,7 +58,7 @@ export const NewJobPostModal: React.FC<NewJobPostModalProps> = ({
 
   const handleFormSubmit = () => {
     onSubmit(formData);
-    PortalSdk.postData("/api/jobpost/new", { data: formData })
+    PortalSdk.postData("/api/jobPost", { data: formData })
       .then((response) => {
         console.log(response);
         dispatch(setJobPostsRefresh(null));

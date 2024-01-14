@@ -20,7 +20,7 @@ const EditJobPostModal: React.FC<EditJobPostModalProps> = ({
     const fetchJobPostData = async () => {
       try {
         if (jobPostData && jobPostData._id) {
-          const response = await fetch(`/api/jobpost/${jobPostData._id}`, {
+          const response = await fetch(`/api/jobPost?id=${jobPostData.id}`, {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
@@ -55,16 +55,13 @@ const EditJobPostModal: React.FC<EditJobPostModalProps> = ({
   const handleFormSubmit = async () => {
     try {
       if (jobPostData && jobPostData._id) {
-        const response = await fetch(
-          `/api/jobpost/${jobPostData.jobPosts._id}`,
-          {
-            method: "PATCH", // Use PATCH for updating
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(formData),
-          }
-        );
+        const response = await fetch(`/api/jobPost`, {
+          method: "PUT", // Use PATCH for updating
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ ...formData, id: jobPostData.jobPosts.id }),
+        });
 
         if (response.ok) {
           console.log("Job Post updated successfully");

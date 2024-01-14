@@ -1,26 +1,10 @@
 "use client";
 
 import { LandscapeCard } from "@/components/elements/Cards";
-import { MobileBox } from "../Login/Login";
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
-import {
-  DbUser,
-  OVERLAPTYPE,
-  USERINDUSTRY,
-  USERROLE,
-  USERSTATUS,
-  USERTYPE,
-  USERVERTICAL,
-} from "@/utils/services/models/User";
+
 import TimezoneSelect from "react-timezone-select";
-import Select from "react-select";
-import {
-  getCountryData,
-  countries,
-  languages,
-  TCountryCode,
-  getCountryDataList,
-} from "countries-list";
+import { getCountryDataList } from "countries-list";
 import dayjs from "dayjs";
 import { DatePicker, TimePicker } from "@mui/x-date-pickers";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -30,6 +14,15 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { AdminHeader } from "./AdminHeader";
 import { useToast } from "@/components/elements/Toast";
 import { PortalSdk } from "@/utils/services/PortalSdk";
+import {
+  USERINDUSTRY,
+  USERROLE,
+  USERSTATUS,
+  USERVERTICAL,
+  User,
+} from "@prisma/client";
+import { JsonArray, JsonObject } from "@prisma/client/runtime/library";
+import { OVERLAPTYPE, USERTYPE } from "@/utils/constants/userInfo";
 
 export const AdminUserEditor = () => {
   const router = useRouter();
@@ -38,22 +31,22 @@ export const AdminUserEditor = () => {
   const countryData = useMemo(() => getCountryDataList(), []);
   const { showToast } = useToast();
 
-  const [user, setUser] = useState<DbUser>({
-    _id: "",
+  const [user, setUser] = useState<User>({
+    id: "",
     name: "",
     username: "",
     password: "",
     email: "",
     avatar: "",
-    usertype: USERTYPE.MEMBER,
-    role: USERROLE.CORETEAM,
-    vertical: USERVERTICAL.DEV,
-    industry: USERINDUSTRY.OTHERS,
+    userType: "MEMBER",
+    role: "CORETEAM",
+    vertical: "DEV",
+    industry: "OTHERS",
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     country: "",
     createdAt: new Date(),
     updatedAt: new Date(),
-    status: USERSTATUS.ACTIVE,
+    status: "ACTIVE",
     isAdmin: false,
     workData: {
       joining: dayjs().format("YYYY-MM-DD"),
@@ -66,7 +59,7 @@ export const AdminUserEditor = () => {
     if (id) {
       setLoading(true);
 
-      PortalSdk.getData(`/api/users/users?id=${id}`, null)
+      PortalSdk.getData(`/api/user?id=${id}`, null)
         .then((data) => {
           console.log(data);
           if (data.users.length > 0) setUser(data.users[0]);
@@ -83,16 +76,19 @@ export const AdminUserEditor = () => {
     setUser((u) => ({
       ...u,
       workData: {
-        ...u.workData,
-        overlap: u.workData.overlap.map((overlap: any, i: number) => {
-          if (i === index) {
-            return {
-              ...overlap,
-              [field]: value,
-            };
-          }
-          return overlap;
-        }),
+        ...(u.workData as JsonObject),
+        overlap:
+          ((u?.workData as JsonObject)?.overlap as JsonArray)?.map(
+            (overlap: any, i: number) => {
+              if (i === index) {
+                return {
+                  ...overlap,
+                  [field]: value,
+                };
+              }
+              return overlap;
+            }
+          ) || [],
       },
     }));
   };
@@ -100,8 +96,8 @@ export const AdminUserEditor = () => {
   const updateField = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
-    let _id: string | string[] = e.target.id;
-    _id = _id.indexOf(".") > -1 ? _id.split(".") : _id;
+    let id: string | string[] = e.target.id;
+    id = id.indexOf(".") > -1 ? id.split(".") : id;
     let _value =
       e.target instanceof HTMLInputElement
         ? e.target.type == "checkbox"
@@ -110,26 +106,26 @@ export const AdminUserEditor = () => {
         : e.target instanceof HTMLSelectElement
         ? e.target.value
         : "";
-    if (_id instanceof Array) {
+    if (id instanceof Array) {
       setUser((u) => ({
         ...u,
-        [_id[0]]: {
-          ...u[_id[0] as keyof DbUser],
-          [_id[1]]: _value,
+        [id[0]]: {
+          ...(u[id[0] as keyof typeof u] as Record<string, any>),
+          [id[1]]: _value,
         },
       }));
     } else {
       setUser((u) => ({
         ...u,
-        [_id as keyof DbUser]: _value,
+        [id as keyof typeof user]: _value,
       }));
     }
   };
 
   const saveUser = () => {
     setLoading(true);
-    fetch("/api/users/users", {
-      method: user._id.length > 0 ? "PUT" : "POST",
+    fetch("/api/user", {
+      method: user.id.length > 0 ? "PUT" : "POST",
       body: JSON.stringify(user),
     })
       .then((res) => res.json())
@@ -198,7 +194,7 @@ export const AdminUserEditor = () => {
               <input
                 id="name"
                 type="text"
-                value={user?.name}
+                value={user?.name || ""}
                 onChange={updateField}
                 autoComplete="off"
                 className="border border-neutral-400 rounded-lg p-2"
@@ -209,7 +205,7 @@ export const AdminUserEditor = () => {
               <input
                 id="email"
                 type="text"
-                value={user.email}
+                value={user.email || ""}
                 onChange={updateField}
                 className="border border-neutral-400 rounded-lg p-2"
               />
@@ -219,7 +215,7 @@ export const AdminUserEditor = () => {
               <input
                 id="avatar"
                 type="text"
-                value={user.avatar}
+                value={user.avatar || ""}
                 onChange={updateField}
                 className="border border-neutral-400 rounded-lg p-2"
               />
@@ -229,7 +225,7 @@ export const AdminUserEditor = () => {
                 <p>Type</p>
                 <select
                   id="usertype"
-                  value={user.usertype}
+                  value={user.userType || ""}
                   onChange={updateField}
                   className="border border-neutral-400 rounded-lg p-2"
                 >
@@ -245,7 +241,7 @@ export const AdminUserEditor = () => {
                 <p>Status</p>
                 <select
                   id="status"
-                  value={user.status}
+                  value={user.status || ""}
                   onChange={updateField}
                   className="border border-neutral-400 rounded-lg p-2"
                 >
@@ -258,13 +254,13 @@ export const AdminUserEditor = () => {
                 </select>
               </div>
             </div>
-            {user.usertype === USERTYPE.MEMBER && (
+            {user.userType === "MEMBER" && (
               <div className="flex flex-row gap-4 items-center justify-start">
                 <div>
                   <p>Role</p>
                   <select
                     id="role"
-                    value={user.role}
+                    value={user.role || ""}
                     onChange={updateField}
                     className="border border-neutral-400 rounded-lg p-2"
                   >
@@ -280,7 +276,7 @@ export const AdminUserEditor = () => {
                   <p>Vertical</p>
                   <select
                     id="vertical"
-                    value={user.vertical}
+                    value={user.vertical || ""}
                     onChange={updateField}
                     className="border border-neutral-400 rounded-lg p-2"
                   >
@@ -304,13 +300,13 @@ export const AdminUserEditor = () => {
                 </div>
               </div>
             )}
-            {user.usertype === USERTYPE.CLIENT && (
+            {user.userType === "CLIENT" && (
               <div className="flex flex-row gap-4 items-center justify-start">
                 <div>
                   <p>Industry</p>
                   <select
                     id="role"
-                    value={user.industry}
+                    value={user.industry || ""}
                     onChange={updateField}
                     className="border border-neutral-400 rounded-lg p-2"
                   >
@@ -330,7 +326,7 @@ export const AdminUserEditor = () => {
               <p>Timezone</p>
               <TimezoneSelect
                 inputId="timezone"
-                value={user.timezone}
+                value={user.timezone || ""}
                 onChange={(timezone) => {
                   setUser((u) => ({ ...u, timezone: timezone.value }));
                 }}
@@ -340,7 +336,7 @@ export const AdminUserEditor = () => {
               <h2>Country</h2>
               <select
                 id="country"
-                value={user.country}
+                value={user.country || ""}
                 onChange={updateField}
                 className="border border-neutral-400 rounded-lg p-2"
               >
@@ -371,12 +367,12 @@ export const AdminUserEditor = () => {
                 <p>Joining Date</p>
                 <DatePicker
                   label="Controlled picker"
-                  value={dayjs(user.workData.joining)}
+                  value={dayjs((user?.workData as any)?.joining)}
                   onChange={(newValue) =>
                     setUser((u) => ({
                       ...u,
                       workData: {
-                        ...u.workData,
+                        ...(u.workData as JsonObject),
                         joining: newValue?.format("YYYY-MM-DD"),
                       },
                     }))
@@ -388,7 +384,7 @@ export const AdminUserEditor = () => {
                 <input
                   id="workData.workHours"
                   type="text"
-                  value={user.workData.workHours}
+                  value={(user?.workData as any)?.workHours}
                   onChange={updateField}
                   className="border border-neutral-400 rounded-lg p-2"
                 />
@@ -403,9 +399,9 @@ export const AdminUserEditor = () => {
                     setUser((u) => ({
                       ...u,
                       workData: {
-                        ...u.workData,
+                        ...(u.workData as JsonObject),
                         overlap: [
-                          ...u.workData.overlap,
+                          ...((u?.workData as any)?.overlap as any),
                           {
                             scheduleType: OVERLAPTYPE.WEEKDAYS,
                             start: "00:00",
@@ -419,70 +415,72 @@ export const AdminUserEditor = () => {
                   Add Overlap
                 </button>
               </div>
-              {user.workData.overlap.map((overlap: any, index: number) => (
-                <div
-                  key={index}
-                  className="flex flex-row gap-4 items-center justify-start"
-                >
-                  <select
-                    id="scheduleType"
-                    value={overlap.scheduleType}
-                    onChange={(e) =>
-                      updateOverlap(index, e.target.id, e.target.value)
-                    }
-                    className="border border-neutral-400 rounded-lg p-2"
+              {(user.workData as any).overlap.map(
+                (overlap: any, index: number) => (
+                  <div
+                    key={index}
+                    className="flex flex-row gap-4 items-center justify-start"
                   >
-                    {Object.values(OVERLAPTYPE).map((typevalue) => (
-                      <option key={typevalue} value={typevalue}>
-                        {typevalue.charAt(0).toUpperCase() +
-                          typevalue.slice(1).toLowerCase()}
-                      </option>
-                    ))}
-                  </select>
-                  <TimePicker
-                    label="Start Time"
-                    value={dayjs()
-                      .set("hour", overlap.start.split(":")[0])
-                      .set("minute", overlap.start.split(":")[1])
-                      .set("second", 0)}
-                    onChange={(newValue) =>
-                      updateOverlap(index, "start", newValue?.format("HH:mm"))
-                    }
-                  />
-                  <TimePicker
-                    label="End Time"
-                    value={dayjs()
-                      .set("hour", overlap.end.split(":")[0])
-                      .set("minute", overlap.end.split(":")[1])
-                      .set("second", 0)}
-                    onChange={(newValue) =>
-                      updateOverlap(index, "end", newValue?.format("HH:mm"))
-                    }
-                  />
-                  <button
-                    onClick={() => {
-                      setUser((u) => ({
-                        ...u,
-                        workData: {
-                          ...u.workData,
-                          overlap: u.workData.overlap.filter(
-                            (o: any, i: number) => i !== index
-                          ),
-                        },
-                      }));
-                    }}
-                    className="bg-red-400 text-neutral-100 rounded-lg px-2"
-                  >
-                    Delete Overlap
-                  </button>
-                </div>
-              ))}
+                    <select
+                      id="scheduleType"
+                      value={overlap.scheduleType}
+                      onChange={(e) =>
+                        updateOverlap(index, e.target.id, e.target.value)
+                      }
+                      className="border border-neutral-400 rounded-lg p-2"
+                    >
+                      {Object.values(OVERLAPTYPE).map((typevalue) => (
+                        <option key={typevalue} value={typevalue}>
+                          {typevalue.charAt(0).toUpperCase() +
+                            typevalue.slice(1).toLowerCase()}
+                        </option>
+                      ))}
+                    </select>
+                    <TimePicker
+                      label="Start Time"
+                      value={dayjs()
+                        .set("hour", overlap.start.split(":")[0])
+                        .set("minute", overlap.start.split(":")[1])
+                        .set("second", 0)}
+                      onChange={(newValue) =>
+                        updateOverlap(index, "start", newValue?.format("HH:mm"))
+                      }
+                    />
+                    <TimePicker
+                      label="End Time"
+                      value={dayjs()
+                        .set("hour", overlap.end.split(":")[0])
+                        .set("minute", overlap.end.split(":")[1])
+                        .set("second", 0)}
+                      onChange={(newValue) =>
+                        updateOverlap(index, "end", newValue?.format("HH:mm"))
+                      }
+                    />
+                    <button
+                      onClick={() => {
+                        setUser((u) => ({
+                          ...u,
+                          workData: {
+                            ...(u.workData as JsonObject),
+                            overlap: (
+                              (u?.workData as any)?.overlap as any
+                            ).filter((o: any, i: number) => i !== index),
+                          },
+                        }));
+                      }}
+                      className="bg-red-400 text-neutral-100 rounded-lg px-2"
+                    >
+                      Delete Overlap
+                    </button>
+                  </div>
+                )
+              )}
               <div className="flex flex-row gap-4 items-center justify-start">
                 <p>Work Logs Link (Clickup)</p>
                 <input
                   id="workData.worklogLink"
                   type="text"
-                  value={user.workData.worklogLink}
+                  value={(user.workData as any)?.worklogLink || ""}
                   onChange={updateField}
                   className="border border-neutral-400 rounded-lg p-2"
                 />
@@ -492,7 +490,7 @@ export const AdminUserEditor = () => {
                 <input
                   id="workData.worklogPubLink"
                   type="text"
-                  value={user.workData.worklogPubLink}
+                  value={(user.workData as any).worklogPubLink || ""}
                   onChange={updateField}
                   className="border border-neutral-400 rounded-lg p-2"
                 />
@@ -502,7 +500,7 @@ export const AdminUserEditor = () => {
                 <input
                   id="workData.workExpLink"
                   type="text"
-                  value={user.workData.workExpLink}
+                  value={(user.workData as any).workExpLink || ""}
                   onChange={updateField}
                   className="border border-neutral-400 rounded-lg p-2"
                 />

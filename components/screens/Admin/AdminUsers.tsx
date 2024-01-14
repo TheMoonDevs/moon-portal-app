@@ -3,24 +3,23 @@
 
 import { useEffect, useState } from "react";
 import { MobileBox } from "../Login/Login";
-import Image from "next/image";
 import Link from "next/link";
-import { Users } from "@/utils/services/models/User";
 import { GreyButton } from "@/components/elements/Button";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
 import { useRouter } from "next/navigation";
 import { PortalSdk } from "@/utils/services/PortalSdk";
+import { User } from "@prisma/client";
 
 export const AdminUsers = () => {
   const router = useRouter();
-  const [users, setUsers] = useState<Users[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   useEffect(() => {
     setLoading(true);
-    PortalSdk.getData("/api/users/users", null)
+    PortalSdk.getData("/api/user", null)
       .then((data) => {
         console.log(data);
-        setUsers(data.users);
+        setUsers(data?.data?.user || []);
         setLoading(false);
       })
       .catch((err) => {
@@ -38,24 +37,24 @@ export const AdminUsers = () => {
       <div className="flex flex-col grow gap-4 items-center justify-start">
         {users.map((user) => (
           <div
-            key={user._id}
+            key={user.id}
             className="flex flex-row gap-4 items-center justify-center border border-neutral-700 hover:bg-neutral-800 px-4 py-2 rounded-lg cursor-pointer"
             onClick={() => {
-              console.log("clicked", user._id);
-              router.push(`${APP_ROUTES.userEditor}?id=${user._id}`);
+              console.log("clicked", user.id);
+              router.push(`${APP_ROUTES.userEditor}?id=${user.id}`);
             }}
           >
             <div className=" rounded-full p-1 ">
               <img
-                src={user?.avatar}
-                alt={user?.name}
+                src={user?.avatar || undefined}
+                alt={user?.name || ""}
                 className="w-12 h-12 object-cover object-center rounded-full "
               />
             </div>
             <div>
               <p className="text-neutral-300">{user.name}</p>
               <p className="text-sm text-neutral-600">
-                {user.usertype} | {user.username}-{user.password}
+                {user.userType} | {user.username}-{user.password}
               </p>
             </div>
             <span className="material-icons text-neutral-400">

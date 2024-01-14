@@ -1,17 +1,15 @@
 "use client";
 
-/* eslint-disable @next/next/no-img-element */
-import { DbUser, USERROLE } from "@/utils/services/models/User";
 import { PortalSdk } from "@/utils/services/PortalSdk";
+import { User } from "@prisma/client";
 import { useEffect, useState } from "react";
 
 export const TeamUsersList = () => {
-  const [coreTeam, setCoreTeam] = useState<DbUser[]>([]);
+  const [coreTeam, setCoreTeam] = useState<User[]>([]);
   useEffect(() => {
-    PortalSdk.getData("/api/users/users?role=" + USERROLE.CORETEAM, null)
+    PortalSdk.getData("/api/user?role=" + "CORETEAM", null)
       .then((data) => {
-        console.log(data);
-        setCoreTeam(data.users);
+        setCoreTeam(data?.data?.user || []);
       })
       .catch((err) => {
         console.log(err);
@@ -28,13 +26,14 @@ export const TeamUsersList = () => {
           <div className="flex flex-row flex-nowrap gap-4 items-center justify-start">
             {coreTeam.map((user) => (
               <div
-                key={user._id}
+                key={user.id}
                 className="flex flex-col gap-1 items-center justify-center px-2 rounded-lg cursor-pointer"
               >
                 <div className=" rounded-full ">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={user?.avatar}
-                    alt={user?.name}
+                    src={user?.avatar || undefined}
+                    alt={user?.name || ""}
                     className="w-12 h-12 object-cover object-center rounded-full "
                   />
                 </div>

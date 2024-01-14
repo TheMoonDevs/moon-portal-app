@@ -1,18 +1,17 @@
 /* eslint-disable @next/next/no-img-element */
 import { APP_ROUTES } from "@/utils/constants/appInfo";
-import { useUser } from "@/utils/hooks/useUser";
-import { DbUser } from "@/utils/services/models/User";
+import { User } from "@prisma/client";
 import Link from "next/link";
 
-export const ProfileSection = ({ user }: { user: DbUser }) => {
-  if (!user?._id) return null;
+export const ProfileSection = ({ user }: { user: User }) => {
+  if (!user?.id) return null;
   return (
     <div className="flex flex-col items-start justify-start px-5 pt-4">
       <div className="flex flex-row items-center justify-start my-3 gap-4">
         <div className=" rounded-full p-1 ">
           <img
-            src={user?.avatar}
-            alt={user?.name + " avatar"}
+            src={user?.avatar || ""}
+            alt={user?.name || ""}
             className="w-24 h-24 object-cover object-center rounded-full "
           />
         </div>

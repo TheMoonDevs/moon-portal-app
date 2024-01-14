@@ -2,7 +2,6 @@
 
 import { APP_ROUTES, LOCAL_STORAGE } from "@/utils/constants/appInfo";
 import { useUser } from "@/utils/hooks/useUser";
-import { DbUser } from "@/utils/services/models/User";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Bottombar } from "./Bottombar";
@@ -28,8 +27,7 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
     }
     if (path?.startsWith("/admin")) {
       if (status === "loading") return;
-      if (status === "authenticated" && user && (user as DbUser).isAdmin)
-        return;
+      if (status === "authenticated" && user && user.isAdmin) return;
       router.push(APP_ROUTES.home);
     }
   }, [path, user, status, router]);
