@@ -29,17 +29,21 @@ export const authOptions = {
         // e.g. return { id: 1, name: 'J Smith', email: 'jsmith@example.com' }
         // You can also use the `req` object to obtain additional parameters
         // (i.e., the request IP address)
-
-        const user = await prisma.user.findFirst({
-          where: {
-            username: credentials.username,
-            password: credentials.password,
-          },
-        });
-        //console.log(user)
-        if (user?.id) return user;
-
-        return null;
+        //console.log("credentials", credentials);
+        try {
+          const user = await prisma.user.findFirst({
+            where: {
+              username: credentials.username,
+              password: credentials.password,
+            },
+          });
+          //console.log("user", user);
+          if (user?.id) return user;
+          return null;
+        } catch (e) {
+          console.log("error", e);
+          //return null;
+        }
       },
     }),
     // ...add more providers here

@@ -10,6 +10,16 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## DB & prisma
+
+Required  `node v18.x.x`
+
+1. `npm i`
+2. `npm run dev`
+3. `npx prisma generate`
+4. `npx prisma db push`
+5. `npx prisma studio` - optional to edit db
+
 # Tools, Deps & Links
 
 - PWA <https://ducanh-next-pwa.vercel.app/docs> Deprecated

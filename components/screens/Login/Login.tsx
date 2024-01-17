@@ -1,14 +1,9 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
-
+import { USERTYPE } from "@prisma/client";
 export enum LoginState {
   SELECT_USER_TYPE = "SELECT_USER_TYPE",
   LOGIN_CODE = "LOGIN_CODE",
-}
-
-export enum UserType {
-  MEMBER = "MEMBER",
-  CLIENT = "CLIENT",
 }
 
 export const MobileBox = ({ children }: { children: React.ReactNode }) => {
@@ -22,7 +17,7 @@ export const MobileBox = ({ children }: { children: React.ReactNode }) => {
 export const LoginButtons = ({
   onSelectUserType,
 }: {
-  onSelectUserType: (type: UserType) => void;
+  onSelectUserType: (type: USERTYPE) => void;
 }) => {
   return (
     <div className="mt-auto">
@@ -31,7 +26,7 @@ export const LoginButtons = ({
       </p>
       <div className="flex flex-row mt-1 gap-4 x">
         <button
-          onClick={() => onSelectUserType(UserType.MEMBER)}
+          onClick={() => onSelectUserType(USERTYPE.MEMBER)}
           className="font-bold group flex flex-row gap-3 mt-4 bg-neutral-800 hover:bg-neutral-700 text-white py-2 px-5 rounded-lg shadow-md"
         >
           <span className="material-icons font-bold text-neutral-500 group-hover:text-white">
@@ -40,7 +35,7 @@ export const LoginButtons = ({
           Member
         </button>
         <button
-          onClick={() => onSelectUserType(UserType.CLIENT)}
+          onClick={() => onSelectUserType(USERTYPE.CLIENT)}
           className="font-bold group flex flex-row gap-3 mt-4 bg-blue-600 hover:bg-blue-700 text-white py-2 px-5 rounded-lg shadow-md"
         >
           Client

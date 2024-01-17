@@ -1,6 +1,6 @@
 "use client";
 
-import { APP_ROUTES } from "@/utils/constants/appInfo";
+import { APP_ROUTES, AppRoutesHelper } from "@/utils/constants/appInfo";
 import { usePathname, useRouter } from "next/navigation";
 
 const NAVIGATION_OPTIONS = [
@@ -36,7 +36,7 @@ export const Bottombar = ({ visible }: { visible: boolean }) => {
   const router = useRouter();
 
   if (!visible) return null;
-  if (path?.startsWith("/admin")) return null;
+  if (!AppRoutesHelper.bottomBarShown(path)) return null;
   return (
     <div className="flex flex-row fixed bottom-0 left-0 right-0 py-1 px-1 mx-1 my-1 gap-6 bg-neutral-900 rounded-[1.15em]">
       {NAVIGATION_OPTIONS.map((option) => (

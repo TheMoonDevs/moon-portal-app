@@ -1,9 +1,9 @@
 import { useUser } from "@/utils/hooks/useUser";
-import { DbUser } from "@/utils/services/models/User";
+import { User } from "@prisma/client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-export const DailySection = ({ user }: { user: DbUser }) => {
+export const DailySection = ({ user }: { user: User }) => {
   const router = useRouter();
   const getTime = () => {
     const date = new Date();
@@ -14,7 +14,7 @@ export const DailySection = ({ user }: { user: DbUser }) => {
     const seconds = date.getSeconds();
     return `${hours}:${minutes} ${date.getHours() >= 12 ? "PM" : "AM"}`;
   };
-  
+
   const getDate = (pattern: string) => {
     const date = new Date();
     const day = date.getDay();
@@ -55,7 +55,7 @@ export const DailySection = ({ user }: { user: DbUser }) => {
         </div>
         <div className="flex flex-col  gap-2 ">
           <Link
-            href={user?.workData?.worklogLink || ""}
+            href={(user?.workData as any)?.worklogLink || ""}
             rel="noopener noreferrer"
             target="_blank"
           >
@@ -77,7 +77,7 @@ export const DailySection = ({ user }: { user: DbUser }) => {
       <div className="flex flex-row items-center justify-start text-sm p-2 w-full">
         <p className="text-xs mr-2">Overlaps</p>
         <div className="flex flex-row gap-2">
-          {user?.workData?.overlap
+          {(user?.workData as any)?.overlap
             ?.filter(
               (overlap: any) =>
                 overlap.scheduleType === "alldays" ||

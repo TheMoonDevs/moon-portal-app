@@ -18,11 +18,12 @@ import {
   USERINDUSTRY,
   USERROLE,
   USERSTATUS,
+  USERTYPE,
   USERVERTICAL,
   User,
 } from "@prisma/client";
 import { JsonArray, JsonObject } from "@prisma/client/runtime/library";
-import { OVERLAPTYPE, USERTYPE } from "@/utils/constants/userInfo";
+import { OVERLAPTYPE } from "@/utils/constants/dbExtras";
 
 export const AdminUserEditor = () => {
   const router = useRouter();
@@ -38,15 +39,15 @@ export const AdminUserEditor = () => {
     password: "",
     email: "",
     avatar: "",
-    userType: "MEMBER",
-    role: "CORETEAM",
-    vertical: "DEV",
-    industry: "OTHERS",
+    userType: USERTYPE.MEMBER,
+    role: USERROLE.CORETEAM,
+    vertical: USERVERTICAL.DEV,
+    industry: USERINDUSTRY.OTHERS,
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     country: "",
     createdAt: new Date(),
     updatedAt: new Date(),
-    status: "ACTIVE",
+    status: USERSTATUS.ACTIVE,
     isAdmin: false,
     workData: {
       joining: dayjs().format("YYYY-MM-DD"),
@@ -60,9 +61,9 @@ export const AdminUserEditor = () => {
       setLoading(true);
 
       PortalSdk.getData(`/api/user?id=${id}`, null)
-        .then((data) => {
+        .then(({ data, status }) => {
           console.log(data);
-          if (data.users.length > 0) setUser(data.users[0]);
+          if (data.user.length > 0) setUser(data.user[0]);
           setLoading(false);
         })
         .catch((err) => {
@@ -224,7 +225,7 @@ export const AdminUserEditor = () => {
               <div>
                 <p>Type</p>
                 <select
-                  id="usertype"
+                  id="userType"
                   value={user.userType || ""}
                   onChange={updateField}
                   className="border border-neutral-400 rounded-lg p-2"

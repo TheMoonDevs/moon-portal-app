@@ -1,18 +1,25 @@
 export enum APP_ROUTES {
-    home = '/',
-    teams = '/teams',
-    engagements = '/engagements',
-    growth = '/growth',
-    notifications = '/notifications',
-    dashboard= '/dashboard',
-    analytics= '/analytics',
-    docs = '/docs',
-    login = '/login',
-    logout = '/logout',
-    signup = '/signup',
-    admin = '/admin',
-    userEditor = '/admin/user/editor',
-    userWorklogs = '/user/worklogs',
+  home = "/",
+  teams = "/teams",
+  engagements = "/engagements",
+  growth = "/growth",
+  notifications = "/notifications",
+  dashboard = "/dashboard",
+  analytics = "/analytics",
+  docs = "/docs",
+  login = "/login",
+  logout = "/logout",
+  signup = "/signup",
+  admin = "/admin",
+  userEditor = "/admin/user/editor",
+  userWorklogs = "/user/worklogs",
+  hrScreening = "/hr/screening",
+}
+
+export const AppRoutesHelper = {
+  bottomBarShown: (path?: string | null) => {
+    return !path?.startsWith("/admin") && !path?.startsWith("/hr");
+  },
 };
 
 export enum APP_SOCIAL {
