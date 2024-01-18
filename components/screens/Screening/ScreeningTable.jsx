@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useTable } from "react-table";
 import EditJobPostModal from "@/pages/edit-jobpost/page";
-import { NewJobPostModal } from "./Modals/NewJobPostModal";
+import { NewJobPostModal } from "./JobPosts/_JobPostModal";
 import { useAppSelector } from "@/utils/redux/store";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 

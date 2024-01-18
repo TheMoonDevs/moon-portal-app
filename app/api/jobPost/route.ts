@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/prisma/prisma";
 import { JOBPOST } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -45,8 +45,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: Request) {
+  //console.log(request.body);
   try {
-    const json = await request.json();
+    const {id, ...json} = await request.json();
 
     const jobPost = await prisma.jobPost.create({
       data: {
@@ -63,8 +64,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json(json_response);
   } catch (e) {
+    console.log(e);
     return new NextResponse(JSON.stringify(e), {
-      status: 404,
+      status: 501,
       headers: { "Content-Type": "application/json" },
     });
   }
@@ -92,7 +94,7 @@ export async function PUT(request: Request) {
     return NextResponse.json(json_response);
   } catch (e) {
     return new NextResponse(JSON.stringify(e), {
-      status: 404,
+      status: 501,
       headers: { "Content-Type": "application/json" },
     });
   }
@@ -134,7 +136,7 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json(json_response);
   } catch (e) {
     return new NextResponse(JSON.stringify(e), {
-      status: 404,
+      status: 501,
       headers: { "Content-Type": "application/json" },
     });
   }

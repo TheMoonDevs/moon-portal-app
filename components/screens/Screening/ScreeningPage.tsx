@@ -1,12 +1,15 @@
 "use client";
 
 import { Button, GreyButton } from "@/components/elements/Button";
-import { NewJobPostModal } from "@/components/screens/Screening/Modals/NewJobPostModal";
+import { NewJobPostModal } from "@/components/screens/Screening/JobPosts/_JobPostModal";
 import { useUser } from "@/utils/hooks/useUser";
 import ScreeningTable from "./ScreeningTable";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { JobPost, USERVERTICAL } from "@prisma/client";
-import { JobPostsTable } from "./Lists/JobPostsTable";
+import { JobPostsTable } from "./JobPosts/JobPostsTable";
+import { useAppSelector } from "@/utils/redux/store";
+import { PortalSdk } from "@/utils/services/PortalSdk";
+import { JobDefaultReqModal } from "./JobPosts/JobDefaultReqModal";
 
 const Dropdown = ({
   options,
@@ -45,18 +48,24 @@ export const ScreeningPage = () => {
     user?.vertical == USERVERTICAL.HR ||
     USERVERTICAL.OPERATIONS ||
     user?.isAdmin;
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isJobPostModalOpen, setIsJobPostModalOpen] = useState(false);
+  const [isJobReqModalOpen, setIsJobReqModalOpen] = useState<string | null>(
+    null
+  );
   const [jobPosts, setJobPosts] = useState<JobPost[]>([]);
+  const [selectedJobPost, setSelectedJobPost] = useState<JobPost | null>(null);
+  const jobPostsRefresh = useAppSelector((state) => state.ui.jobPostsRefresh);
 
-  const handleNewPostSubmit = async (formData: any) => {
-    try {
-      console.log("Submitted data:", formData);
-      // Close the modal
-      setIsModalOpen(false);
-    } catch (error) {
-      console.error("Error handling submitted data:", error);
-    }
-  };
+  useEffect(() => {
+    PortalSdk.getData("/api/jobPost", null)
+      .then(({ data }) => {
+        console.log("Fetched job posts:", data);
+        setJobPosts(data.jobPost);
+      })
+      .catch((error) => {
+        console.error("Error fetching job posts:", error);
+      });
+  }, [jobPostsRefresh]);
 
   if (!isVisible) return <></>;
   return (
@@ -76,22 +85,46 @@ export const ScreeningPage = () => {
         </div>
         <div className="flex flex-row gap-4">
           <button className="btn btn-primary">Save to Excel</button>
-          <Button onClick={() => setIsModalOpen(true)}>Add New Post</Button>
+          <Button
+            onClick={() => {
+              setIsJobPostModalOpen(true);
+              setSelectedJobPost(null);
+            }}
+          >
+            Add New Post
+          </Button>
         </div>
       </div>
-
-      {
-        <NewJobPostModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          onSubmit={handleNewPostSubmit} // Pass the submit handler
-          jobPostData={null}
-        />
-      }
       <div className="">
-        <JobPostsTable />
-        {/* <ScreeningTable /> */}
+        <JobPostsTable
+          jobPosts={jobPosts}
+          setJobPosts={setJobPosts}
+          openModal={(type: string, _jobpost: JobPost) => {
+            setSelectedJobPost(_jobpost);
+            if (type === "basics") {
+              setIsJobPostModalOpen(true);
+            } else {
+              setIsJobReqModalOpen(type);
+            }
+          }}
+        />
       </div>
+      <NewJobPostModal
+        isOpen={isJobPostModalOpen}
+        handleClose={() => {
+          setSelectedJobPost(null);
+          setIsJobPostModalOpen(false);
+        }}
+        jobPostData={selectedJobPost}
+      />
+      <JobDefaultReqModal
+        isOpen={isJobReqModalOpen === "defaultReq"}
+        handleClose={() => {
+          setSelectedJobPost(null);
+          setIsJobReqModalOpen(null);
+        }}
+        jobPostData={selectedJobPost}
+      />
     </div>
   );
 };
