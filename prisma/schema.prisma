@@ -47,13 +47,10 @@ model JobPost {
   title                  String
   deptName               String
   description            String
-  skillRequirement       String?
-  educationQualification String?
-  workExp                String?
-  workHoursRequirement   String?
-  minContractPeriod      String?
-  expectedSalaryRange    String?
-  location               String?
+  defaultReq             Json?
+  deptReq                Json?
+  adminReq               Json?
+  hrReq                  Json?
   status                 JOBSTATUS   @default(ACTIVE)
   jobpost                JOBPOST     @default(FULLTIME)
   createdAt              DateTime    @default(now())

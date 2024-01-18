@@ -10,6 +10,13 @@ import { Button } from "@/components/elements/Button";
 import { useAppDispatch } from "@/utils/redux/store";
 import { setJobPostsRefresh } from "@/utils/redux/ui/ui.slice";
 import { PortalSdk } from "@/utils/services/PortalSdk";
+import {
+  JOBPOST,
+  JOBSTATUS,
+  JobPost,
+  USERROLE,
+  USERVERTICAL,
+} from "@prisma/client";
 
 export interface NewJobPostModalProps {
   isOpen: boolean;
@@ -24,23 +31,17 @@ export const NewJobPostModal: React.FC<NewJobPostModalProps> = ({
   onSubmit,
   jobPostData,
 }) => {
-  const initialFormData = {
+  const initialFormData: JobPost = {
     title: "",
-    dept_name: "",
+    deptName: USERVERTICAL.DEV,
     description: "",
-    skill_requirement: "",
-    education_qualification: "",
-    work_exp: "",
-    work_hours_requirement: "",
-    min_contract_period: "",
-    expected_salary_range: "",
     location: "",
-    status: "",
-    jobpost: "",
-    created_at: "",
+    status: JOBSTATUS.ACTIVE,
+    jobpost: JOBPOST.INTERN,
+    createdAt: new Date(),
   };
 
-  const [formData, setFormData] = useState<any>(initialFormData);
+  const [formData, setFormData] = useState<JobPost>(initialFormData);
   const dispatch = useAppDispatch();
 
   useEffect(() => {
@@ -78,13 +79,6 @@ export const NewJobPostModal: React.FC<NewJobPostModalProps> = ({
   };
 
   return (
-    // <GeneralModal
-    //   isOpen={isOpen}
-    //   onClose={onClose}
-    //   onSubmit={handleFormSubmit}
-    //   defaultValues={initialFormData}
-    //   modalTitle="Job Post"
-    // >
     <Backdrop open={isOpen} onAbort={onClose} onClick={onBackdropOutside}>
       <div
         ref={paperRef}
@@ -92,7 +86,7 @@ export const NewJobPostModal: React.FC<NewJobPostModalProps> = ({
       >
         <p className="text-2xl font-bold">Create Job Post</p>
         <p className="text-sm text-gray-500">
-          Create a new job post for your company | job id - {formData._id}
+          Create/Edit a job post for your company | job id - {formData.id}
         </p>
         <label className="block">
           Job Title:
@@ -110,7 +104,7 @@ export const NewJobPostModal: React.FC<NewJobPostModalProps> = ({
           <input
             type="text"
             name="dept_name"
-            value={formData.dept_name}
+            value={formData.deptName}
             onChange={handleInputChange}
             className="mt-1 p-2 border border-gray-300 rounded-md w-full"
           />
@@ -126,23 +120,12 @@ export const NewJobPostModal: React.FC<NewJobPostModalProps> = ({
           />
         </label>
 
-        <label className="block mt-4">
-          Skill Requirement:
-          <input
-            type="text"
-            name="skill_requirement"
-            value={formData.skill_requirement}
-            onChange={handleInputChange}
-            className="mt-1 p-2 border border-gray-300 rounded-md w-full"
-          />
-        </label>
         <div className="flex flex-row mt-8">
           <Button onClick={handleFormSubmit}>
-            {formData._id ? "Save Job Post" : "Create Job Post"}
+            {formData.id ? "Save Job Post" : "Create Job Post"}
           </Button>
         </div>
       </div>
     </Backdrop>
-    // </GeneralModal>
   );
 };

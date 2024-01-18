@@ -5,6 +5,8 @@ import { NewJobPostModal } from "@/components/screens/Screening/Modals/NewJobPos
 import { useUser } from "@/utils/hooks/useUser";
 import ScreeningTable from "./ScreeningTable";
 import { useState } from "react";
+import { JobPost, USERVERTICAL } from "@prisma/client";
+import { JobPostsTable } from "./Lists/JobPostsTable";
 
 const Dropdown = ({
   options,
@@ -39,8 +41,12 @@ const Dropdown = ({
 
 export const ScreeningPage = () => {
   const { user, status } = useUser();
-  const isVisible = user?.vertical == "HR" || user?.isAdmin;
+  const isVisible =
+    user?.vertical == USERVERTICAL.HR ||
+    USERVERTICAL.OPERATIONS ||
+    user?.isAdmin;
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [jobPosts, setJobPosts] = useState<JobPost[]>([]);
 
   const handleNewPostSubmit = async (formData: any) => {
     try {
@@ -56,10 +62,13 @@ export const ScreeningPage = () => {
   return (
     <div className="table_box">
       <div className="w-full  flex flex-row justify-between items-center border-b py-2 px-4">
-        <div className="flex flex-row gap-4">
+        <div className="flex flex-row gap-4 items-center">
           <h1 className="text-xl font-bold mr-4">Screening</h1>
+          <p className="text-sm font-bold border-l-2 ml-[-20px] pl-2">
+            All Jobs
+          </p>
           <button className="btn btn-primary flex items-center">
-            Select Post
+            Select Dept.
           </button>
           <Dropdown options={["all"]} selected="" onSelected={() => {}} />
           <button className="btn btn-primary">Filter by</button>
@@ -79,8 +88,9 @@ export const ScreeningPage = () => {
           jobPostData={null}
         />
       }
-      <div className="mt-7">
-        <ScreeningTable />
+      <div className="">
+        <JobPostsTable />
+        {/* <ScreeningTable /> */}
       </div>
     </div>
   );

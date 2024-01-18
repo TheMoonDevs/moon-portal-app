@@ -23,7 +23,7 @@ import {
   User,
 } from "@prisma/client";
 import { JsonArray, JsonObject } from "@prisma/client/runtime/library";
-import { OVERLAPTYPE } from "@/utils/constants/dbExtras";
+import { OVERLAPTYPE } from "@/prisma/dbExtras";
 
 export const AdminUserEditor = () => {
   const router = useRouter();
