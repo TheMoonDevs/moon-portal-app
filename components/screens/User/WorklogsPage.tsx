@@ -21,9 +21,9 @@ export const WorklogsPage = () => {
           <span className="icon_size material-icons">add_circle_outline</span>
         </div>
       </div>
-      {user.workData?.worklogPubLink && (
+      {(user.workData as any)?.worklogPubLink && (
         <iframe
-          src={user.workData?.worklogPubLink}
+          src={(user.workData as any)?.worklogPubLink}
           style={{
             width: "100%",
             height: "100vh",
@@ -32,7 +32,7 @@ export const WorklogsPage = () => {
         ></iframe>
       )}
       <Link
-        href={user?.workData?.worklogLink || ""}
+        href={(user.workData as any)?.worklogLink || ""}
         rel="noopener noreferrer"
         target="_blank"
       >

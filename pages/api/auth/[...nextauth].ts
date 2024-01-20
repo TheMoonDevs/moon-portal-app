@@ -38,11 +38,13 @@ export const authOptions = {
             },
           });
           //console.log("user", user);
-          if (user?.id) return user;
+          if (user) {
+            return user;
+          }
           return null;
         } catch (e) {
           console.log("error", e);
-          //return null;
+          return null;
         }
       },
     }),
@@ -71,4 +73,5 @@ export const authOptions = {
     },
   },
 };
+
 export default NextAuth(authOptions);
