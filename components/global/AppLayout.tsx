@@ -14,7 +14,9 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
     status === "authenticated" &&
     user &&
     path != APP_ROUTES.logout &&
-    path != APP_ROUTES.login;
+    path != APP_ROUTES.login &&
+    !path?.startsWith("/application/position/") &&
+    path !== "/application/position/";
 
   useEffect(() => {
     if (status === "unauthenticated" && path !== APP_ROUTES.login) {
@@ -29,6 +31,12 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
       if (status === "loading") return;
       if (status === "authenticated" && user && user.isAdmin) return;
       router.push(APP_ROUTES.home);
+    }
+    if (
+      path?.startsWith("/application/position/") &&
+      path !== "/application/position/"
+    ) {
+      router.push(path);
     }
   }, [path, user, status, router]);
 
