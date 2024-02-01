@@ -66,3 +66,43 @@ export interface JobPostHRReq {
   targetCoreHireDate?: Date;
   applicantQuestions?: ApplicantQuestion[];
 }
+
+export interface Candidate {
+  name: string;
+  email: string;
+  mobileNumber: number;
+  applicantAnswers: {
+    question: string;
+    answer: string;
+  }[];
+  portfolio?: string;
+  resume?: string;
+  educationQualification?: string;
+  skillQualification?: string;
+  workExp?: string;
+  screeningRound1: ScreeningRound1;
+  screeningRound2: ScreeningRound2;
+}
+interface ScreeningDetails {
+  name: string;
+  rating: number;
+  comments: string;
+}
+
+interface Reviewer extends ScreeningDetails {}
+interface Interviewer extends ScreeningDetails {}
+
+interface ScreeningRound {
+  reviewer: Reviewer;
+  interviewer: Interviewer;
+  result: CANDIDATERESULT;
+}
+
+export interface ScreeningRound1 extends ScreeningRound {}
+export interface ScreeningRound2 extends ScreeningRound {}
+
+export enum CANDIDATERESULT {
+  APPROVED = "Approved",
+  REJECTED = "Rejected",
+  PENDING = "Pending",
+}
