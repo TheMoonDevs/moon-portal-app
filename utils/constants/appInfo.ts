@@ -16,6 +16,10 @@ export enum APP_ROUTES {
   hrScreening = "/hr/screening",
 }
 
+export enum GLOBAL_ROUTES {
+  applicationForm = "/application/position/",
+}
+
 export const AppRoutesHelper = {
   bottomBarShown: (path?: string | null) => {
     return !path?.startsWith("/admin") && !path?.startsWith("/hr");
@@ -23,16 +27,16 @@ export const AppRoutesHelper = {
 };
 
 export enum APP_SOCIAL {
-    discord = '',
-    twitter = '',
-    telegram = '',
-    instagram = '',
-    linkedin = '',
-    youtube = '',
+  discord = "",
+  twitter = "",
+  telegram = "",
+  instagram = "",
+  linkedin = "",
+  youtube = "",
 }
 
 export enum LOCAL_STORAGE {
-    user = 'moon_portal_user',
+  user = "moon_portal_user",
 }
 
-export const IS_TESTNET = process.env.NEXT_PUBLIC_IS_TESTNET === 'true';
+export const IS_TESTNET = process.env.NEXT_PUBLIC_IS_TESTNET === "true";

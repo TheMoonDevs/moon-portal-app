@@ -1,6 +1,10 @@
 "use client";
 
-import { APP_ROUTES, LOCAL_STORAGE } from "@/utils/constants/appInfo";
+import {
+  APP_ROUTES,
+  GLOBAL_ROUTES,
+  LOCAL_STORAGE,
+} from "@/utils/constants/appInfo";
 import { useUser } from "@/utils/hooks/useUser";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -15,8 +19,7 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
     user &&
     path != APP_ROUTES.logout &&
     path != APP_ROUTES.login &&
-    !path?.startsWith("/application/position/") &&
-    path !== "/application/position/";
+    !path?.startsWith(GLOBAL_ROUTES.applicationForm);
 
   useEffect(() => {
     if (status === "unauthenticated" && path !== APP_ROUTES.login) {
@@ -33,8 +36,8 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
       router.push(APP_ROUTES.home);
     }
     if (
-      path?.startsWith("/application/position/") &&
-      path !== "/application/position/"
+      path?.startsWith(GLOBAL_ROUTES.applicationForm) &&
+      path !== GLOBAL_ROUTES.applicationForm
     ) {
       router.push(path);
     }
