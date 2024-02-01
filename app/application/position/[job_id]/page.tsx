@@ -3,22 +3,7 @@ import { CandidateApplicationForm } from "@/components/screens/Public/CandidateA
 export default function ApplicationPage({
   params,
 }: {
-  params: { jobID: string };
+  params: { job_id: string };
 }) {
-  /* TODO:
-    1. Name
-    2. Email
-    3. Mobile Number
-    5. Applicant Answers
-  */
-
-  return <CandidateApplicationForm />;
+  return <CandidateApplicationForm jobID={params.job_id} />;
 }
-
-// export async function generateStaticParams() {
-//   const posts = await fetch("https://.../posts").then((res) => res.json());
-
-//   return posts.map((post) => ({
-//     jobID: post.slug,
-//   }));
-// }

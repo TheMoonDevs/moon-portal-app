@@ -1,55 +1,62 @@
 "use client";
 
-import { Button } from "@/components/elements/Button";
-import { Spinner } from "@/components/elements/Loaders";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { CircularProgress } from "@mui/material";
+import Image from "next/image";
 
-export const CandidateApplicationForm = () => {
+import { Button } from "@/components/elements/Button";
+import { MoonToast } from "@/components/elements/Toast";
+
+import { useAppDispatch } from "@/utils/redux/store";
+import { setGlobalToast } from "@/utils/redux/ui/ui.slice";
+import { PortalSdk } from "@/utils/services/PortalSdk";
+import useAsyncState from "@/utils/hooks/useAsyncState";
+
+interface JobSummary {
+  title: string;
+  description: string;
+  status: string;
+  jobpost: string;
+}
+
+export const CandidateApplicationForm = ({ jobID }: { jobID: string }) => {
+  const dispatch = useAppDispatch();
+
+  const { loading, error, success, setLoading, setSuccess, setError } =
+    useAsyncState();
+  const [jobSummary, setJobSummary] = useState<JobSummary | null>(null);
+  const [pageLoadingError, setPageLoadingError] = useState({
+    isError: false,
+    description: "",
+  });
+  const [pageLoading, setPageLoading] = useState(true);
+
   const questions = [
     {
       question:
-        "Q. Lorem ipsum dolor, repellendus quam quos ducimus id, cupiditate modi fugiat eius, tenetur error pariatur assumenda?",
+        "Lorem ipsum dolor, repellendus quam quos ducimus id, cupiditate modi fugiat eius, tenetur error pariatur assumenda?",
       answer: "",
     },
     {
       question:
-        "Q. Lorem ipsum dolor, repellendus quam quos ducimus id, cupiditate modi fugiat eius, tenetur error pariatur assumenda?",
+        "Lorem ipsum dolor, repellendus quam quos ducimus id, cupiditate modi fugiat eius, tenetur error pariatur assumenda?",
       answer: "",
     },
     {
       question:
-        "Q. Lorem ipsum dolor, repellendus quam quos ducimus id, cupiditate modi fugiat eius, tenetur error pariatur assumenda?",
+        "Lorem ipsum dolor, repellendus quam quos ducimus id, cupiditate modi fugiat eius, tenetur error pariatur assumenda?",
       answer: "",
     },
     {
       question:
-        "Q. Lorem ipsum dolor, repellendus quam quos ducimus id, cupiditate modi fugiat eius, tenetur error pariatur assumenda?",
-      answer: "",
-    },
-    {
-      question:
-        "Q. Lorem ipsum dolor, repellendus quam quos ducimus id, cupiditate modi fugiat eius, tenetur error pariatur assumenda?",
-      answer: "",
-    },
-    {
-      question:
-        "Q. Lorem ipsum dolor, repellendus quam quos ducimus id, cupiditate modi fugiat eius, tenetur error pariatur assumenda?",
-      answer: "",
-    },
-    {
-      question:
-        "Q. Lorem ipsum dolor, repellendus quam quos ducimus id, cupiditate modi fugiat eius, tenetur error pariatur assumenda?",
-      answer: "",
-    },
-    {
-      question:
-        "Q. Lorem ipsum dolor, repellendus quam quos ducimus id, cupiditate modi fugiat eius, tenetur error pariatur assumenda?",
+        "Lorem ipsum dolor, repellendus quam quos ducimus id, cupiditate modi fugiat eius, tenetur error pariatur assumenda?",
       answer: "",
     },
   ];
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setLoading(true);
     const form = e.currentTarget;
     const formData = new FormData(form);
     const firstName = formData.get("firstName") || "";
@@ -58,144 +65,230 @@ export const CandidateApplicationForm = () => {
     const mobileNumber = formData.get("mobileNumber") || "";
     const portfolioLink = formData.get("portfolioLink") || "";
     const answers = formData.getAll("answer") || [];
-    const response = questions.map((question, index) => ({
+
+    const candidateQuestionResponse = questions.map((question, index) => ({
       question: question.question,
       answer: answers[index] || "",
     }));
 
     const data = {
-      firstName,
-      lastName,
+      name: `${firstName} ${lastName}`,
       email,
-      mobileNumber,
-      portfolioLink,
-      response,
+      mobileNumber: Number(mobileNumber) || mobileNumber,
+      portfolio: portfolioLink,
+      applicantAnswers: candidateQuestionResponse,
+      jobPostId: jobID,
     };
 
-    console.log(data);
+    try {
+      const response = await PortalSdk.postData("/api/candidate", { data });
+
+      setError({ isError: false, description: "" });
+      setLoading(false);
+      setSuccess(true);
+    } catch (error: any) {
+      setError({ isError: true, description: error?.message || error });
+      dispatch(setGlobalToast(true));
+      setSuccess(false);
+      setLoading(false);
+    }
   };
 
-  const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    const fetchJobData = async () => {
+      try {
+        const response = await PortalSdk.getData(
+          `/api/jobPost/jobById/${jobID}`,
+          null
+        );
+        setJobSummary(response);
+        setPageLoading(false);
+      } catch (error: any) {
+        setPageLoadingError({
+          isError: true,
+          description: `${error.status} ${error.statusText}`,
+        });
+        setPageLoading(false);
+      }
+    };
+    fetchJobData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jobID]);
 
-  return (
-    <div>
-      <h1 className="text-4xl font-bold p-6 px-8 ">Application Form</h1>
-      {/* Job Summary */}
-      <div className="flex gap-10 p-8 bg-gray-100">
-        <div className="w-full max-w-md p-6 rounded-lg shadow-md bg-white max-h-[40vh]">
-          <h2 className="text-2xl font-bold text-gray-800">
-            Software Engineer
-          </h2>
-          <p className="mt-2 text-sm text-gray-600 ">
-            Location: San Francisco, CA
-          </p>
-          <p className="mt-2 text-sm text-gray-600 ">Position: Full-time</p>
-          <div className="mt-4 space-y-2">
-            <h3 className="text-lg font-semibold text-gray-700 ">
-              Job Details:
-            </h3>
-            <p className="text-sm text-gray-600 ">
-              We are looking for a skilled software engineer with experience in
-              building scalable applications using modern technologies. The
-              ideal candidate should have a strong understanding of software
-              development principles and be able to work in a fast-paced
-              environment.
-            </p>
+  if (pageLoading && jobSummary === null) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <CircularProgress color="inherit" />
+      </div>
+    );
+  } else {
+    if (pageLoadingError.isError) {
+      return (
+        <div
+          className="flex justify-center items-center h-screen  
+      "
+        >
+          <span className="text-white bg-red-400 rounded-sm p-6">
+            {pageLoadingError.description}!
+          </span>
+        </div>
+      );
+    }
+
+    if (success) {
+      return (
+        <div>
+          <div className="flex flex-col gap-4 justify-center items-center h-screen">
+            <span className="material-icons-outlined !text-6xl">task_alt</span>
+            <h1 className="text-3xl md:text-4xl font-bold">
+              Thank you for applying!
+            </h1>
+            <span className="text-gray-600 text-center md:pl-3 font-normal">
+              Job ID: {jobID}
+            </span>
           </div>
         </div>
-        {/* Application Form */}
-        <form
-          className="flex flex-col gap-10 rounded-md  p-6 bg-white"
-          onSubmit={handleSubmit}
-        >
-          <div className="flex flex-col gap-3 ">
-            <p className=" text-lg font-semibold">Name</p>
-            <div className="flex flex-row space-x-4">
-              <div className="flex flex-col w-full">
-                <label className="text-sm font-medium">First Name</label>
-                <input
-                  type="text"
-                  name="firstName"
-                  className="mt-1 p-2 border border-gray-300 rounded-md"
-                />
-              </div>
-              <div className="flex flex-col w-full">
-                <label className=" text-sm font-medium">Last Name</label>
-                <input
-                  type="text"
-                  name="lastName"
-                  className="mt-1 p-2 border border-gray-300 rounded-md"
-                />
-              </div>
-            </div>
-          </div>
-          <div className="flex flex-col gap-3">
-            <p className=" text-lg font-semibold">Contact</p>
-            <div className="flex flex-row space-x-4">
-              <label className="flex flex-col text-sm w-full font-medium">
-                Email
-                <input
-                  type="text"
-                  name="email"
-                  className="mt-1 p-2 border border-gray-300 rounded-md"
-                />
-              </label>
-
-              <label className="flex flex-col text-sm w-full font-medium">
-                Mobile Number
-                <input
-                  type="text"
-                  name="mobileNumber"
-                  className="mt-1 p-2 border border-gray-300 rounded-md"
-                />
-              </label>
-            </div>
-          </div>
-          <div className="flex flex-col">
-            <label className="text-lg font-semibold">Portfolio Link</label>
-            <input
-              type="text"
-              name="portfolioLink"
-              className="mt-1 p-2 border border-gray-300 rounded-md"
+      );
+    }
+    return (
+      <div>
+        <MoonToast
+          message={
+            `Something went wrong! Request denied with status code ${error.description}` ||
+            "Something went wrong!"
+          }
+          position={{ vertical: "top", horizontal: "left" }}
+          severity="error"
+        />
+        <div className="flex p-6 px-8 border-b-2 md:divide-x-2 gap-3 items-center md:flex-nowrap flex-wrap">
+          <div className="flex gap-3 items-center">
+            <Image
+              src="/logo/logo.png"
+              alt="The Moon Devs"
+              width={36}
+              height={36}
             />
+            <h1 className="text-xl md:text-xl tracking-[0.25rem] uppercase font-light">
+              The Moon Devs
+            </h1>
           </div>
-          <div className="flex flex-col">
-            <p className="text-lg font-semibold mb-3">
-              Please answer the following questions
+          <span className="text-gray-600 text-center md:pl-3 font-normal text-sm">
+            Job ID: {jobID}
+          </span>
+        </div>
+
+        {/* Job Summary */}
+        <div className="flex flex-col md:flex md:flex-row md:gap-10 md:p-8 bg-gray-100">
+          <div className="w-full md:max-w-md p-8 md:p-10 md:rounded-lg md:shadow-md bg-white self-start max-h-fit">
+            <h2 className="text-2xl font-bold text-gray-800">
+              {jobSummary?.title}
+            </h2>
+            <p className="mt-2 text-sm text-gray-600 ">
+              Location: Bangalore, India
             </p>
-            {questions.map((question, index) => (
-              <div className="flex flex-col gap-3" key={index}>
-                <label className=" font-medium">{question.question}</label>
-                <input
-                  type="text"
-                  name="answer"
-                  className="mt-1 p-2 border border-gray-300 rounded-md"
-                />
+            <p className="mt-2 text-sm text-gray-600">
+              Position: {jobSummary?.jobpost}
+            </p>
+            <div className="mt-4 space-y-2">
+              <h3 className="text-lg font-semibold text-gray-700 ">
+                Job Details:
+              </h3>
+              <p className="text-sm text-gray-600 ">
+                {jobSummary?.description}
+              </p>
+            </div>
+          </div>
+          {/* Application Form */}
+          <form
+            className="flex flex-col gap-10 rounded-md md:p-10 p-8 bg-white"
+            onSubmit={handleSubmit}
+          >
+            <div className="flex flex-col gap-3 ">
+              <p className=" text-lg font-semibold">Personal Details</p>
+              <div className="flex flex-col space-y-4">
+                <div className="flex flex-row gap-4 flex-wrap lg:flex-nowrap">
+                  <div className="flex flex-col w-full">
+                    <label className="text-sm font-medium">First Name</label>
+                    <input
+                      required
+                      type="text"
+                      name="firstName"
+                      className="mt-1 p-2 border border-gray-300 rounded-md"
+                    />
+                  </div>
+                  <div className="flex flex-col w-full">
+                    <label className=" text-sm font-medium">Last Name</label>
+                    <input
+                      required
+                      type="text"
+                      name="lastName"
+                      className="mt-1 p-2 border border-gray-300 rounded-md"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-row gap-4 flex-wrap lg:flex-nowrap">
+                  <div className="flex flex-col w-full">
+                    <label className="text-sm  font-medium">Email</label>
+                    <input
+                      required
+                      type="email"
+                      name="email"
+                      className="mt-1 p-2 border border-gray-300 rounded-md"
+                    />
+                  </div>
+                  <div className="flex flex-col w-full">
+                    <label className="text-sm font-medium">Mobile Number</label>
+                    <input
+                      required
+                      type="tel"
+                      name="mobileNumber"
+                      pattern="[0-9]*"
+                      minLength={10}
+                      maxLength={12}
+                      title="Enter a valid 10 digit number."
+                      inputMode="numeric"
+                      className="mt-1 p-2 border border-gray-300 rounded-md"
+                    />
+                  </div>
+                </div>
               </div>
-            ))}
-            {/* <label className=" font-medium">
-              Q. Lorem ipsum dolor, repellendus quam quos ducimus id, cupiditate
-              modi fugiat eius, tenetur error pariatur assumenda?
-            </label>
-            <input
-              type="text"
-              name="answer"
-              className="mt-1 p-2 border border-gray-300 rounded-md"
-            /> */}
-          </div>
-          <div className=" w-1/3">
-            <Button
-              // onClick={handleFormSubmit}
-              className="flex flex-row items-center gap-2 w-1/4"
-            >
-              {loading && (
-                <Spinner className="w-3 h-3 fill-green-400 text-green-600" />
-              )}
-              Save
-            </Button>
-          </div>
-        </form>
+            </div>
+            <div className="flex flex-col gap-3">
+              <label className="text-lg font-semibold">
+                Portfolio Link (optional)
+              </label>
+              <input
+                placeholder="https://example.com"
+                type="url"
+                name="portfolioLink"
+                className="mt-1 p-2 border border-gray-300 rounded-md"
+              />
+            </div>
+            <div className="flex flex-col">
+              <p className="text-lg font-semibold">
+                Please answer the following questions
+              </p>
+              {questions.map((question, index) => (
+                <div className="flex flex-col gap-3 mt-4" key={index}>
+                  <label className=" font-medium">{question.question}</label>
+                  <textarea
+                    name="answer"
+                    className="mt-1 p-2 border border-gray-300 rounded-md"
+                    required
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="w-full">
+              <Button disabled={loading} type="submit">
+                {loading && <CircularProgress color="inherit" size={20} />}
+                Submit
+              </Button>
+            </div>
+          </form>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
 };
