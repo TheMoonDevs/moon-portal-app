@@ -2,7 +2,9 @@ import { MoonIcon } from "@/components/elements/Icon";
 import { prettyPrintDateInMMMDD } from "@/utils/helpers/prettyprint";
 import { Tooltip } from "@mui/material";
 import { JOBSTATUS, JobPost } from "@prisma/client";
+import Link from "next/link";
 import { Dispatch, SetStateAction, useState } from "react";
+import { usePathname } from "next/navigation";
 //const fields = Object.keys(JobPost);
 
 export const JobPostsTable = ({
@@ -14,6 +16,7 @@ export const JobPostsTable = ({
   setJobPosts: Dispatch<SetStateAction<JobPost[]>>;
   openModal: (modalType: string, _jobpost: JobPost) => void;
 }) => {
+  const path = usePathname();
   return (
     <div className="flex flex-col">
       <div className="flex flex-row w-full gap-3 bg-neutral-100 rounded-lg">
@@ -47,9 +50,12 @@ export const JobPostsTable = ({
           key={job.id}
           className="flex flex-row border-b-2 border-neutral-200 w-full gap-3"
         >
-          <div className="flex-1 text-sm cursor-pointer p-2 border-r-2 flex items-center">
+          <Link
+            href={`${path}/position/${job.id}`}
+            className="flex-1 text-sm cursor-pointer p-2 border-r-2 flex items-center"
+          >
             {job.title} | {prettyPrintDateInMMMDD(new Date(job.createdAt))}
-          </div>
+          </Link>
           <div className="flex-1 text-sm cursor-pointer p-2 border-r-2">
             {job.deptName}
           </div>
