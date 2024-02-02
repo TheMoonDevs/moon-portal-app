@@ -31,15 +31,21 @@ model User {
 }
 
 model Candidate {
-  id                     String  @id @default(auto()) @map("_id") @db.ObjectId
+  id                     String            @id @default(auto()) @map("_id") @db.ObjectId
   name                   String
   email                  String
   mobileNumber           Int
+  portfolio              String?
+  resume                 String?
+  applicantAnswers       Json[]
   educationQualification String?
   skillQualification     String?
   workExp                String?
-  jobPost                JobPost @relation(fields: [jobPostId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  jobPostId              String  @db.ObjectId
+  jobPost                JobPost           @relation(fields: [jobPostId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  jobPostId              String            @db.ObjectId
+  screeningRound1        Json? 
+  screeningRound2        Json?  
+  // result              CandidateResult   @default(PENDING)
 }
 
 model JobPost {
@@ -62,6 +68,14 @@ model Survey {
   username String
   password String
   name     String?
+}
+
+model ShortLink {
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  slug        String  @unique
+  redirectTo  String  
+  params      Json?  
+  createdAt   DateTime @default(now())
 }
 
 enum JOBPOST {
@@ -114,4 +128,10 @@ enum USERINDUSTRY {
   GAMING
   SOCIAL
   OTHERS
+}
+
+enum CANDIDATERESULT {
+  APPROVED
+  REJECTED
+  PENDING
 }
