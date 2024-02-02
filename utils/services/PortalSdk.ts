@@ -13,7 +13,7 @@ export const PortalSdk = {
           const result = await res.json();
           return resolve(result as any);
         } else {
-          return reject(res.status as any);
+          return reject((await res.json()) as any);
         }
       } catch (e) {
         console.log(e);
@@ -35,7 +35,7 @@ export const PortalSdk = {
           const result = await res.json();
           return resolve(result);
         } else {
-          return reject(res.status as any);
+          return reject((await res.json()) as any);
         }
       } catch (e) {
         console.log(e);

@@ -55,6 +55,24 @@ export async function POST(request: Request) {
   try {
     const json = await request.json();
 
+    // check if phone number already exists
+
+    const existedMobileNumber = await prisma.candidate.count({
+      where: {
+        mobileNumber: json.mobileNumber,
+      },
+    });
+
+    if (existedMobileNumber > 0) {
+      return new NextResponse(
+        JSON.stringify({ message: "Mobile number already exists" }),
+        {
+          status: 409,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
     const candidate = await prisma.candidate.create({
       data: {
         ...json,

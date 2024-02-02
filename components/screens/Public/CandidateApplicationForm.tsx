@@ -153,11 +153,8 @@ export const CandidateApplicationForm = ({ jobID }: { jobID: string }) => {
     return (
       <div>
         <MoonToast
-          message={
-            `Something went wrong! Request denied with status code ${error.description}` ||
-            "Something went wrong!"
-          }
-          position={{ vertical: "top", horizontal: "left" }}
+          message={error.description}
+          position={{ vertical: "top", horizontal: "center" }}
           severity="error"
         />
         <div className="flex p-6 px-8 border-b-2 md:divide-x-2 gap-3 items-center md:flex-nowrap flex-wrap">
@@ -198,6 +195,7 @@ export const CandidateApplicationForm = ({ jobID }: { jobID: string }) => {
               </p>
             </div>
           </div>
+
           {/* Application Form */}
           <form
             className="flex flex-col gap-10 rounded-md md:p-10 p-8 bg-white"
