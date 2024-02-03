@@ -5,7 +5,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { Backdrop, Modal, Portal } from "@mui/material";
+import { Backdrop, Modal, Portal, Tooltip } from "@mui/material";
 import { Button } from "@/components/elements/Button";
 import { useAppDispatch } from "@/utils/redux/store";
 import { setJobPostsRefresh } from "@/utils/redux/ui/ui.slice";
@@ -32,6 +32,8 @@ export const JobDefaultReqModal: React.FC<NewJobPostModalProps> = ({
   const [formData, setFormData] = useState<JobPostDefaultReq>(initialFormData);
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
+  const [isInputFocused, setInputFocused] = useState(false);
+  const [inputQuestion, setInputQuestion] = useState("");
 
   // load default req
   useEffect(() => {
@@ -77,7 +79,7 @@ export const JobDefaultReqModal: React.FC<NewJobPostModalProps> = ({
           <p className="text-sm text-gray-500">
             Create/Edit a job post for your company | job id - {jobPostData.id}
           </p>
-          <label className="block">
+          <label className="block mt-2">
             Target Group
             <input
               type="text"
@@ -104,23 +106,69 @@ export const JobDefaultReqModal: React.FC<NewJobPostModalProps> = ({
             -will be shown on application form to candidate. Keep the no. of
             questions as less as possible.
           </p>
-          <div className="flex flex-row mt-8">
+
+          {/* ADD QUESTIONS */}
+          <div className="flex flex-col mt-8">
+            <div>
+              {/* ADDED QUESTIONS */}
+              {formData.applicantQuestions?.map((question, index) => (
+                <div
+                  key={index}
+                  className="flex flex-row justify-between items-center gap-2 p-3 bg-gray-100 rounded-md"
+                >
+                  <p className="font-medium text-gray-700">
+                    Q{index + 1}. {question.question}
+                  </p>
+                  <div className="flex flex-row gap-2">
+                    <Tooltip title="Edit" className="cursor-pointer">
+                      <span className="material-symbols-outlined">edit</span>
+                    </Tooltip>
+                    <Tooltip
+                      title="Delete"
+                      className=" hover:text-red-500 cursor-pointer"
+                      onClick={() => {
+                        const newApplicantQuestions = [
+                          ...(formData.applicantQuestions || []),
+                        ];
+                        newApplicantQuestions.splice(index, 1);
+                        setFormData((f) => ({
+                          ...f,
+                          applicantQuestions: newApplicantQuestions,
+                        }));
+                      }}
+                    >
+                      <span className="material-symbols-outlined">delete</span>
+                    </Tooltip>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <input
+              type="text"
+              onFocus={() => setInputFocused(true)}
+              onBlur={() => setInputFocused(false)}
+              value={inputQuestion}
+              onChange={(e) => setInputQuestion(e.target.value)}
+              className="mt-1 p-2 border border-gray-300 rounded-md w-full"
+            />
             <div
-              onClick={() =>
+              onClick={() => {
                 setFormData((f) => ({
                   ...f,
                   applicantQuestions: [
                     ...(f.applicantQuestions || []),
-                    { question: "", description: "", type: "text" },
+                    { question: inputQuestion, description: "", type: "text" },
                   ],
-                }))
-              }
-              className="cursor-pointer flex flex-row items-center gap-2 bg-neutral-100 p-2 rounded-md hover:bg-neutral-200 transition-all duration-100 ease-in-out"
+                }));
+                setInputQuestion("");
+              }}
+              className={`cursor-pointer flex flex-row mt-3 items-center w-fit gap-2 p-2 rounded-md transition-all duration-100 ease-in-out ${
+                isInputFocused
+                  ? "bg-neutral-800 text-white"
+                  : "bg-neutral-100 hover:bg-neutral-200"
+              }`}
             >
-              {loading && (
-                <Spinner className="w-3 h-3 fill-green-400 text-green-600" />
-              )}
-              {"Add Question"}
+              Add Question
             </div>
           </div>
 
