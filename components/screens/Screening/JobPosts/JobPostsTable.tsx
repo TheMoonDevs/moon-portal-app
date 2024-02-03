@@ -88,11 +88,19 @@ export const JobPostsTable = ({
             <span className="material-symbols-outlined text-[10px]">add</span>
             {job.deptReq ? Object.keys(job.deptReq).length : "0"} filled.
           </div>
-          <div className="flex-1 text-sm cursor-pointer p-2 border-r-2 flex items-center gap-2">
-            {job.title}
+          <div
+            className="flex-1 text-sm cursor-pointer p-2 border-r-2 flex items-center gap-2"
+            onClick={() => openModal("adminReq", job)}
+          >
+            <span className="material-symbols-outlined text-[10px]">add</span>
+            {job.adminReq ? Object.keys(job.adminReq).length : "0"} filled.
           </div>
-          <div className="flex-1 text-sm cursor-pointer p-2 border-r-2 flex items-center gap-2">
-            {job.title}
+          <div
+            className="flex-1 text-sm cursor-pointer p-2 border-r-2 flex items-center gap-2"
+            onClick={() => openModal("hrReq", job)}
+          >
+            <span className="material-symbols-outlined text-[10px]">add</span>
+            {job.hrReq ? Object.keys(job.hrReq).length : "0"} filled.
           </div>
         </div>
       ))}

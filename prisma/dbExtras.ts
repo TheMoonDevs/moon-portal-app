@@ -25,14 +25,22 @@ export enum JobPositionType {
   CONTRACTUAL = "Contractual",
 }
 
+export enum workExpInYears {
+  FRESHER = "Fresher/Entry-Level",
+  ONE_TO_THREE = "1-3 Years",
+  THREE_TO_FIVE = "3-5 Years",
+  FIVE_TO_SEVEN = "5-7 Years",
+  SEVEN_PLUS = "7+ Years",
+}
+
 export interface JobPostDefaultReq {
   characterTags?: string[];
   attitudeTags?: string[];
   positionType?: JobPositionType;
   targetGroup?: ApplicantTargetGroup;
   applicantQuestions?: ApplicantQuestion[];
-  isRemote?: boolean;
-  jobLocation?: string; // global
+  isRemote?: boolean; //not required for now
+  jobLocation?: string; // global //not required for now
 }
 
 export interface JobPostDeptReq {
@@ -52,7 +60,7 @@ export interface JobPostAdminReq {
 }
 
 export interface JobPostHRReq {
-  publicPosting: {
+  publicPosting?: {
     platform: string;
     url: string;
   }[];

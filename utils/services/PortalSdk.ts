@@ -47,12 +47,13 @@ export const PortalSdk = {
     return new Promise<any>(async (resolve, reject) => {
       try {
         const res = await fetch(url, {
-          method: "PUt",
+          method: "PUT",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify(params.data),
         });
+        // console.log(await res.json());
         if (res.ok) {
           const result = await res.json();
           return resolve(result);

@@ -47,7 +47,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: Request) {
   //console.log(request.body);
   try {
-    const {id, ...json} = await request.json();
+    const { id, ...json } = await request.json();
+    // console.log(json);
 
     const jobPost = await prisma.jobPost.create({
       data: {
@@ -75,6 +76,7 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     const { id, ...rest } = await request.json();
+    console.log(rest);
 
     const jobPost = await prisma.jobPost.upsert({
       where: {
@@ -83,6 +85,7 @@ export async function PUT(request: Request) {
       create: { ...rest },
       update: { ...rest },
     });
+    console.log(jobPost);
 
     let json_response = {
       status: "success",
@@ -93,6 +96,7 @@ export async function PUT(request: Request) {
 
     return NextResponse.json(json_response);
   } catch (e) {
+    console.log(e);
     return new NextResponse(JSON.stringify(e), {
       status: 501,
       headers: { "Content-Type": "application/json" },
