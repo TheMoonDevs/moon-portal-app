@@ -131,6 +131,7 @@ export const CandidateListPage = ({ job_id }: { job_id: string }) => {
           setSelectedCandidate(null);
           setIsModalOpen(null);
         }}
+        title="Screening Round 1"
         handleScreeningRoundSave={handleScreeningRound1Save}
         screeningData={selectedCandidate?.screeningRound1}
       />
@@ -141,6 +142,7 @@ export const CandidateListPage = ({ job_id }: { job_id: string }) => {
           setSelectedCandidate(null);
           setIsModalOpen(null);
         }}
+        title="Screening Round 2"
         handleScreeningRoundSave={handleScreeningRound2Save}
         screeningData={selectedCandidate?.screeningRound2}
       />

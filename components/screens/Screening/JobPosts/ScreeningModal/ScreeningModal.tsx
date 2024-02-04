@@ -7,6 +7,7 @@ export const ScreeningModal = ({
   handleClose,
   screeningData,
   handleScreeningRoundSave,
+  title,
 }: {
   isOpen: boolean;
   handleClose: () => void;
@@ -16,6 +17,7 @@ export const ScreeningModal = ({
     data: any,
     candidateId: string
   ) => Promise<any>;
+  title: string;
 }) => {
   const [currentTabIndex, setCurrentTabIndex] = useState(0);
 
@@ -27,14 +29,19 @@ export const ScreeningModal = ({
     <Portal>
       <Modal onClose={handleClose} open={isOpen}>
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-md p-8 w-4/5 md:w-1/2 h-1/2 md:h-4/5 overflow-y-auto">
+          <h1 className="text-2xl font-bold mb-4">{title}</h1>
           <Tabs
             value={currentTabIndex}
             onChange={handleTabChange}
             aria-label="screening modal tabs"
             textColor="inherit"
             TabIndicatorProps={{
-              style: { backgroundColor: "rgba(0, 0, 0, 0.8)", height: "1px" },
+              style: {
+                backgroundColor: "rgba(0, 0, 0, 0.8)",
+                height: "1px",
+              },
             }}
+            sx={{ borderBottom: "1px solid rgba(0, 0, 0, 0.2)" }}
             variant="fullWidth"
           >
             <Tab label="Reviewer" />
