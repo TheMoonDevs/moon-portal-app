@@ -58,6 +58,7 @@ export const ScreeningPage = () => {
   const [jobPosts, setJobPosts] = useState<JobPost[]>([]);
   const [selectedJobPost, setSelectedJobPost] = useState<JobPost | null>(null);
   const jobPostsRefresh = useAppSelector((state) => state.ui.jobPostsRefresh);
+  const [refreshTable, setRefreshTable] = useState(false);
 
   useEffect(() => {
     PortalSdk.getData("/api/jobPost", null)
@@ -68,7 +69,7 @@ export const ScreeningPage = () => {
       .catch((error) => {
         console.error("Error fetching job posts:", error);
       });
-  }, [jobPostsRefresh]);
+  }, [jobPostsRefresh, refreshTable]);
 
   if (!isVisible) return <></>;
   return (
@@ -110,6 +111,8 @@ export const ScreeningPage = () => {
               setIsJobReqModalOpen(type);
             }
           }}
+          setRefreshTable={setRefreshTable}
+          refreshTable={refreshTable}
         />
       </div>
       <NewJobPostModal

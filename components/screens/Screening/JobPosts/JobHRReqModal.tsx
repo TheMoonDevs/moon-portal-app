@@ -171,7 +171,14 @@ export const JobHRReqModal: React.FC<NewJobPostModalProps> = ({
                 <div className="flex flex-row mt-2">
                   <Button
                     onClick={() => {
-                      setShowPlatformFields(false);
+                      if (
+                        !inputData.platformName.trim() ||
+                        !inputData.jobPostUrl.trim()
+                      ) {
+                        setShowPlatformFields(false);
+                        return;
+                      }
+
                       setAddPlatformData([
                         ...addPlatformData,
                         {

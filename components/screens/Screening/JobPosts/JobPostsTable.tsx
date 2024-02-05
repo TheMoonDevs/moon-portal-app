@@ -1,6 +1,6 @@
-import { MoonIcon } from "@/components/elements/Icon";
 import { prettyPrintDateInMMMDD } from "@/utils/helpers/prettyprint";
-import { Tooltip } from "@mui/material";
+import { PortalSdk } from "@/utils/services/PortalSdk";
+import { Skeleton, Tooltip } from "@mui/material";
 import { JOBSTATUS, JobPost } from "@prisma/client";
 import { Dispatch, SetStateAction, useState } from "react";
 //const fields = Object.keys(JobPost);
@@ -9,11 +9,35 @@ export const JobPostsTable = ({
   jobPosts,
   setJobPosts,
   openModal,
+  setRefreshTable,
+  refreshTable,
 }: {
   jobPosts: JobPost[];
   setJobPosts: Dispatch<SetStateAction<JobPost[]>>;
   openModal: (modalType: string, _jobpost: JobPost) => void;
+  setRefreshTable: Dispatch<SetStateAction<boolean>>;
+  refreshTable: boolean;
 }) => {
+  const [jobStatus, setJobStatus] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const handleDuplicatePost = async (jobPost: JobPost) => {
+    try {
+      setLoading(true);
+      const response = await PortalSdk.postData("/api/jobPost", {
+        data: jobPost,
+      });
+      console.log("response", response);
+      if (response.status === "success") {
+        setLoading(false);
+        setRefreshTable(!refreshTable);
+        const newJobPost = await response.json();
+        setJobPosts([newJobPost]);
+      }
+    } catch (error) {
+      console.error("Error duplicating job post:", error);
+    }
+  };
+
   return (
     <div className="flex flex-col">
       <div className="flex flex-row w-full gap-3 bg-neutral-100 rounded-lg">
@@ -59,7 +83,7 @@ export const JobPostsTable = ({
             </span>{" "}
             {job.status}
           </div>
-          <div className="flex-1 text-xs cursor-pointer p-2 border-r-2 gap-3">
+          <div className="flex-1 text-xs cursor-pointer p-2 border-r-2">
             <Tooltip title="Edit Job Details">
               <span
                 className="material-symbols-outlined text-[10px]"
@@ -68,10 +92,29 @@ export const JobPostsTable = ({
                 edit
               </span>
             </Tooltip>
-            <Tooltip title="Duplicate Post">
+            <Tooltip
+              title="Duplicate Post"
+              className="ml-2"
+              onClick={() => handleDuplicatePost(job)}
+            >
               <span className="material-symbols-outlined text-xs">
                 copy_all
               </span>
+            </Tooltip>
+            <Tooltip
+              title={`${jobStatus ? "Set Inactive" : "Set Active"}`}
+              className="ml-2"
+              onClick={() => setJobStatus(!jobStatus)}
+            >
+              {jobStatus ? (
+                <span className="material-symbols-outlined text-xs hover:text-red-500">
+                  pause_circle
+                </span>
+              ) : (
+                <span className="material-symbols-outlined text-xs hover:text-green-500">
+                  play_circle
+                </span>
+              )}
             </Tooltip>
           </div>
           <div
@@ -104,6 +147,7 @@ export const JobPostsTable = ({
           </div>
         </div>
       ))}
+      {loading && <Skeleton variant="rectangular" className="w-full h-auto" />}
     </div>
   );
 };
