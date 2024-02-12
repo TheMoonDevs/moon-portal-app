@@ -9,14 +9,10 @@ export const JobPostsTable = ({
   jobPosts,
   setJobPosts,
   openModal,
-  setRefreshTable,
-  refreshTable,
 }: {
   jobPosts: JobPost[];
   setJobPosts: Dispatch<SetStateAction<JobPost[]>>;
   openModal: (modalType: string, _jobpost: JobPost) => void;
-  setRefreshTable: Dispatch<SetStateAction<boolean>>;
-  refreshTable: boolean;
 }) => {
   const [jobStatus, setJobStatus] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -28,13 +24,12 @@ export const JobPostsTable = ({
       });
       console.log("response", response);
       if (response.status === "success") {
+        setJobPosts((prevJobPosts) => [...prevJobPosts, response.data.jobPost]);
         setLoading(false);
-        setRefreshTable(!refreshTable);
-        const newJobPost = await response.json();
-        setJobPosts([newJobPost]);
       }
     } catch (error) {
       console.error("Error duplicating job post:", error);
+      setLoading(false);
     }
   };
 
