@@ -78,6 +78,18 @@ model ShortLink {
   createdAt   DateTime @default(now())
 }
 
+model ClientLeadForm {
+  id                    String  @id @default(auto()) @map("_id") @db.ObjectId
+  teamSize              String? 
+  industry              String?
+  requirementType       String?  
+  budget                Int?
+  time                  String?
+  stage                 String?
+  contact               Json
+  createdAt             DateTime @default(now())
+}
+
 enum JOBPOST {
   FULLTIME
   PARTTIME
