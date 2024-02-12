@@ -1,39 +1,26 @@
-import React, {
-  ChangeEvent,
-  MouseEvent,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
-import { Backdrop, Modal, Portal, Tooltip } from "@mui/material";
-import { Button } from "@/components/elements/Button";
-import { useAppDispatch } from "@/utils/redux/store";
-import { setJobPostsRefresh } from "@/utils/redux/ui/ui.slice";
-import { PortalSdk } from "@/utils/services/PortalSdk";
-import {
-  JOBPOST,
-  JOBSTATUS,
-  JobPost,
-  USERROLE,
-  USERVERTICAL,
-} from "@prisma/client";
-import { AppDropdown } from "@/components/elements/Dropdown";
-import { Spinner } from "@/components/elements/Loaders";
-import { JobPositionType, JobPostDefaultReq } from "@/prisma/dbExtras";
 import { NewJobPostModalProps, modalCenterStyle } from "./_JobPostModal";
+import { Modal, Portal, Tooltip } from "@mui/material";
+import { Button } from "@/components/elements/Button";
+import { Spinner } from "@/components/elements/Loaders";
+import { ChangeEvent, useEffect, useState } from "react";
+import { JobPostAdminReq } from "@/prisma/dbExtras";
+import { PortalSdk } from "@/utils/services/PortalSdk";
+import { setJobPostsRefresh } from "@/utils/redux/ui/ui.slice";
+import { useAppDispatch } from "@/utils/redux/store";
 
-export const JobDefaultReqModal: React.FC<NewJobPostModalProps> = ({
+export const JobAdminReqModal: React.FC<NewJobPostModalProps> = ({
   isOpen,
   handleClose,
   jobPostData,
 }) => {
-  const initialFormData: JobPostDefaultReq = {};
+  const initialFormData: JobPostAdminReq = {};
+  const [formData, setFormData] = useState<JobPostAdminReq>(initialFormData);
 
-  const [formData, setFormData] = useState<JobPostDefaultReq>(initialFormData);
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
   const [isInputFocused, setInputFocused] = useState(false);
   const [inputQuestion, setInputQuestion] = useState("");
+  const [inputSkill, setInputSkill] = useState("");
 
   // load default req
   useEffect(() => {
@@ -75,29 +62,21 @@ export const JobDefaultReqModal: React.FC<NewJobPostModalProps> = ({
           style={{ ...modalCenterStyle }}
           className="bg-white rounded-md p-4 w-[50%] h-[80%] overflow-y-auto"
         >
-          <p className="text-2xl font-bold">Default Requirements</p>
+          <p className="text-2xl font-bold">Admin Requirements</p>
           <p className="text-sm text-gray-500">
             Create/Edit a job post for your company | job id - {jobPostData.id}
           </p>
+
           <label className="block mt-2">
-            Target Group
+            Stipend Per Month
             <input
               type="text"
-              name="targetGroup"
-              value={formData.targetGroup}
+              name="stipendPerMonth"
+              value={formData.stipendPerMonth}
               onChange={handleInputChange}
               className="mt-1 p-2 border border-gray-300 rounded-md w-full"
             />
           </label>
-
-          <AppDropdown
-            className="mt-4 w-full flex flex-col items-stretch"
-            id="positionType"
-            label="Position Type"
-            options={Object.values(JobPositionType)}
-            value={formData.positionType || ""}
-            onChange={(e) => handleInputChange(e as any)}
-          />
 
           <p className="text-2xl font-bold mt-8 pt-8 border-t-2">
             Applicant Questions (Optional)
@@ -107,7 +86,6 @@ export const JobDefaultReqModal: React.FC<NewJobPostModalProps> = ({
             questions as less as possible.
           </p>
 
-          {/* ADD QUESTIONS */}
           <div className="flex flex-col mt-8">
             <div>
               {/* ADDED QUESTIONS */}
@@ -143,6 +121,8 @@ export const JobDefaultReqModal: React.FC<NewJobPostModalProps> = ({
                 </div>
               ))}
             </div>
+
+            {/* ADD QUESTIONS */}
             <input
               type="text"
               onFocus={() => setInputFocused(true)}
@@ -168,7 +148,10 @@ export const JobDefaultReqModal: React.FC<NewJobPostModalProps> = ({
                   : "bg-neutral-100 hover:bg-neutral-200"
               }`}
             >
-              Add Question
+              {loading && (
+                <Spinner className="w-3 h-3 fill-green-400 text-green-600" />
+              )}
+              {"Add Question"}
             </div>
           </div>
 

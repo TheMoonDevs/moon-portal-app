@@ -10,6 +10,9 @@ import { JobPostsTable } from "./JobPosts/JobPostsTable";
 import { useAppSelector } from "@/utils/redux/store";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { JobDefaultReqModal } from "./JobPosts/JobDefaultReqModal";
+import { JobDeptReqModal } from "./JobPosts/JobDeptReqModal";
+import { JobAdminReqModal } from "./JobPosts/JobAdminReqModal";
+import { JobHRReqModal } from "./JobPosts/JobHRReqModal";
 import { Dropdown } from "./Dropdown";
 
 export const ScreeningPage = () => {
@@ -89,6 +92,30 @@ export const ScreeningPage = () => {
       />
       <JobDefaultReqModal
         isOpen={isJobReqModalOpen === "defaultReq"}
+        handleClose={() => {
+          setSelectedJobPost(null);
+          setIsJobReqModalOpen(null);
+        }}
+        jobPostData={selectedJobPost}
+      />
+      <JobDeptReqModal
+        isOpen={isJobReqModalOpen === "deptReq"}
+        handleClose={() => {
+          setSelectedJobPost(null);
+          setIsJobReqModalOpen(null);
+        }}
+        jobPostData={selectedJobPost}
+      />
+      <JobAdminReqModal
+        isOpen={isJobReqModalOpen === "adminReq"}
+        handleClose={() => {
+          setSelectedJobPost(null);
+          setIsJobReqModalOpen(null);
+        }}
+        jobPostData={selectedJobPost}
+      />
+      <JobHRReqModal
+        isOpen={isJobReqModalOpen === "hrReq"}
         handleClose={() => {
           setSelectedJobPost(null);
           setIsJobReqModalOpen(null);
