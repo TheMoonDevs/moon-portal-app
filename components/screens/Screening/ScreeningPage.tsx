@@ -1,9 +1,8 @@
 "use client";
 
-import { Button, GreyButton } from "@/components/elements/Button";
+import { Button } from "@/components/elements/Button";
 import { NewJobPostModal } from "@/components/screens/Screening/JobPosts/_JobPostModal";
 import { useUser } from "@/utils/hooks/useUser";
-import ScreeningTable from "./ScreeningTable";
 import { useEffect, useState } from "react";
 import { JobPost, USERVERTICAL } from "@prisma/client";
 import { JobPostsTable } from "./JobPosts/JobPostsTable";
@@ -68,20 +67,18 @@ export const ScreeningPage = () => {
           </Button>
         </div>
       </div>
-      <div className="">
-        <JobPostsTable
-          jobPosts={jobPosts}
-          setJobPosts={setJobPosts}
-          openModal={(type: string, _jobpost: JobPost) => {
-            setSelectedJobPost(_jobpost);
-            if (type === "basics") {
-              setIsJobPostModalOpen(true);
-            } else {
-              setIsJobReqModalOpen(type);
-            }
-          }}
-        />
-      </div>
+      <JobPostsTable
+        jobPosts={jobPosts}
+        setJobPosts={setJobPosts}
+        openModal={(type: string, _jobpost: JobPost) => {
+          setSelectedJobPost(_jobpost);
+          if (type === "basics") {
+            setIsJobPostModalOpen(true);
+          } else {
+            setIsJobReqModalOpen(type);
+          }
+        }}
+      />
       <NewJobPostModal
         isOpen={isJobPostModalOpen}
         handleClose={() => {
