@@ -180,7 +180,13 @@ export const JobPostsTable = ({
             </tr>
           ))}
           {loading && (
-            <Skeleton variant="rectangular" className="w-full h-auto" />
+            <tr className="w-full relative">
+              <Skeleton
+                variant="rectangular"
+                className="!w-full !block !absolute top-0 left-0"
+                height={40}
+              />
+            </tr>
           )}
         </tbody>
       </table>
