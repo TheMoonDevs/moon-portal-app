@@ -100,7 +100,7 @@ export const LoginPassCode = ({
           <input
             type={index > 2 ? "number" : "text"}
             key={code + index}
-            className="w-[1em] uppercase text-center border-b border-neutral-600 bg-transparent text-neutral-100 focus:outline-none focus:border-blue-600"
+            className="w-[1em] uppercase text-center border-b border-neutral-600 bg-transparent text-neutral-100 focus:outline-none focus:border-blue-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             placeholder=""
             autoFocus={index === 0 && code === ""}
             value={code}
@@ -119,7 +119,7 @@ export const LoginPassCode = ({
           />
         ))}
       </div>
-      <p className="mt-4 text-neutral-400 text-xs text-center mt-4">
+      <p className="mt-4 text-neutral-400 text-xs text-center">
         Please enter your pass code.
       </p>
     </div>
