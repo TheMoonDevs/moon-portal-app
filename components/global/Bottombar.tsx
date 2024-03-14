@@ -10,14 +10,14 @@ const NAVIGATION_OPTIONS = [
     icon: "perm_identity",
   },
   {
+    name: "Worklogs",
+    path: APP_ROUTES.userWorklogs,
+    icon: "task_alt",
+  },
+  {
     name: "Teams",
     path: APP_ROUTES.teams,
     icon: "workspaces",
-  },
-  {
-    name: "Engagements",
-    path: APP_ROUTES.engagements,
-    icon: "format_overline",
   },
   {
     name: "Growth",
@@ -31,7 +31,7 @@ const NAVIGATION_OPTIONS = [
   },
 ];
 
-export const Bottombar = ({ visible }: { visible: boolean }) => {
+export const Bottombar = ({ visible = true }: { visible?: boolean }) => {
   const path = usePathname();
   const router = useRouter();
 

@@ -1,5 +1,11 @@
-import { WorklogsPage } from "@/components/screens/User/WorklogsPage";
+import { Bottombar } from "@/components/global/Bottombar";
+import { WorklogsPage } from "@/components/screens/Worklogs/WorklogsPage";
 
 export default function Worklogs() {
-  return <WorklogsPage />;
+  return (
+    <>
+      <WorklogsPage />
+      <Bottombar />
+    </>
+  );
 }
