@@ -28,6 +28,23 @@ export const ShortUrlSdk = {
     });
   },
 
+  getAllShortUrls: (endpoint: string) => {
+    return new Promise<any>(async (resolve, reject) => {
+      try {
+        const res = await fetch(endpoint);
+        if (res.ok) {
+          const result = await res.json();
+          return resolve(result);
+        } else {
+          return reject((await res.json()) as any);
+        }
+      } catch (e) {
+        console.log(e);
+        return reject(e as any);
+      }
+    });
+  },
+
   //   getLongUrlFromShortUrl: (url: string, body: any) => {
   //     return new Promise<any>(async (resolve, reject) => {
   //       try {
