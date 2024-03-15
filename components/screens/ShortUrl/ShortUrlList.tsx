@@ -9,7 +9,6 @@ import { useEffect, useRef, useState } from "react";
 export const ShortUrlList = () => {
   const { isLoading, error, success } = useAppSelector((state) => state.ui);
   const { allLinks } = useAppSelector((state) => state.shortUrl);
-  console.log(allLinks);
   const { copyToClipboard, copied } = useCopyToClipboard();
   const [activeCopyIndex, setActiveCopyIndex] = useState<null | number>(null);
   const textRef = useRef<HTMLSpanElement | null>(null);
@@ -23,7 +22,6 @@ export const ShortUrlList = () => {
   };
 
   useEffect(() => {
-    console.log("useEffect");
     dispatch(setLoading(true));
     const getAllLinks = async () => {
       try {
