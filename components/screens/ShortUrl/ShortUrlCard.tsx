@@ -9,9 +9,10 @@ import { ShortUrlSdk } from "@/utils/services/ShortUrlSdk";
 import { addLink } from "@/utils/redux/shortUrl/shortUrl.slice";
 import { useAppDispatch } from "@/utils/redux/store";
 export const ShortUrlCard = () => {
-  const router = useRouter();
+  const [newLinkButtonClicked, setNewLinkButtonClicked] = useState(false);
   const [formData, setFormData] = useState({ slug: "", url: "" });
   const textRef = useRef<HTMLSpanElement | null>(null);
+
   const dispatch = useAppDispatch();
 
   const { loading, error, success, setLoading, setSuccess, setError } =
@@ -98,7 +99,7 @@ export const ShortUrlCard = () => {
     }
   };
 
-  if (success) {
+  if (success && !newLinkButtonClicked) {
     return (
       <div className="flex flex-col gap-4 justify-center items-center">
         <div className="flex flex-col gap-4 justify-center items-center shadow-md p-6">
@@ -135,7 +136,7 @@ export const ShortUrlCard = () => {
           <Button
             variant="contained"
             className="!bg-stone-800 !text-white w-full !mt-8"
-            onClick={router.back}
+            onClick={() => setNewLinkButtonClicked(true)}
           >
             Create New
           </Button>
