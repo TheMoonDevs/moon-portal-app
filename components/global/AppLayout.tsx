@@ -10,30 +10,21 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Bottombar } from "./Bottombar";
 
-export const AppLayout = ({ children }: { children: React.ReactNode }) => {
+export interface PageReactFC extends React.FC {
+  isAuthRequired: boolean;
+}
+
+export const AppLayout = (props: { children: any }) => {
   const { user, status } = useUser();
   const path = usePathname();
   const router = useRouter();
 
   useEffect(() => {
-    if (status === "unauthenticated" && path !== APP_ROUTES.login) {
-      router.push(APP_ROUTES.login);
-    }
     if (status === "loading") {
       let _user: any = localStorage.getItem(LOCAL_STORAGE.user);
       _user = _user ? JSON.parse(_user) : null;
+      console.log("stored in local", _user);
       //if (!_user?._id) router.push(APP_ROUTES.login);
-    }
-    if (path?.startsWith("/admin")) {
-      if (status === "loading") return;
-      if (status === "authenticated" && user && user.isAdmin) return;
-      router.push(APP_ROUTES.home);
-    }
-    if (
-      path?.startsWith(GLOBAL_ROUTES.applicationForm) &&
-      path !== GLOBAL_ROUTES.applicationForm
-    ) {
-      router.push(path);
     }
   }, [path, user, status, router]);
 
@@ -41,7 +32,7 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
     <div>
       {/* <Header /> */}
       {/* <Sidebar /> */}
-      {children}
+      {props.children}
     </div>
   );
 };
