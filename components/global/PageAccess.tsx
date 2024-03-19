@@ -1,0 +1,46 @@
+"use client";
+
+import { APP_ROUTES } from "@/utils/constants/appInfo";
+import { useUser } from "@/utils/hooks/useUser";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+
+export const usePageAccess = () => {};
+
+export const PageAccess = ({
+  isAuthRequired,
+  isAdminRequired,
+  children,
+}: {
+  children: any;
+  isAuthRequired?: boolean;
+  isAdminRequired?: boolean;
+}) => {
+  const { user, status } = useUser();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (status === "unauthenticated" && isAuthRequired) {
+      router.push(APP_ROUTES.login);
+      return;
+    }
+    if (status === "authenticated" && isAdminRequired && !user.isAdmin) {
+      router.push(APP_ROUTES.home);
+      return;
+    }
+  }, [user, status, isAuthRequired, isAdminRequired, router]);
+
+  if (status === "loading") {
+    if (isAuthRequired || isAdminRequired)
+      return (
+        <div className="flex flex-col items-center justify-center py-2 bg-neutral-700 md:bg-neutral-900 h-screen">
+          <div className="flex flex-row items-center justify-center gap-2">
+            <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-neutral-100"></div>
+            <p className="text-neutral-100">Verifying Connection...</p>
+          </div>
+        </div>
+      );
+    else return children;
+  }
+  return children;
+};
