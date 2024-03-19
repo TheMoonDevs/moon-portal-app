@@ -1,3 +1,4 @@
+import { PageReactFC } from "@/components/global/AppLayout";
 import { LoginPage } from "@/components/screens/Login/LoginPage";
 import React from "react";
 
