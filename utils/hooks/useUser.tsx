@@ -9,19 +9,9 @@ import { User } from "@prisma/client";
 export const useUser = (newfetch?: boolean) => {
   const { data, status } = useSession();
   const router = useRouter();
-  const user = useMemo(() => (data?.user as User) || {}, [data]);
+  const sessionUser = useMemo(() => (data?.user as User) || {}, [data]);
   const [fetchedUser, setFetchedUser] = useState<User | null>(null);
   const [localUser, setLocalUser] = useState<User | null>(null);
-
-  //sync to local storage (if null)
-  useEffect(() => {
-    //console.log("fetching from session", user);
-    if (user?.id && status == "authenticated") {
-      const _user = localStorage.getItem(LOCAL_STORAGE.user);
-      if (!_user)
-        localStorage.setItem(LOCAL_STORAGE.user, JSON.stringify(user));
-    }
-  }, [status, user]);
 
   // fetch from local storage
   useEffect(() => {
@@ -30,23 +20,26 @@ export const useUser = (newfetch?: boolean) => {
     //console.log("fetching from local storage", _user);
     if (_user) {
       _user = JSON.parse(_user);
-      if (_user?.id) setFetchedUser(_user);
+      //if (_user?.id) setFetchedUser(_user);
       if (_user?.id) setLocalUser(_user);
     }
   }, []);
 
   useEffect(() => {
-    if (!localUser?.id || !newfetch) return;
-    if (!newfetch && localUser.id) {
-      setFetchedUser(localUser);
+    let _local_user: any = localStorage.getItem(LOCAL_STORAGE.user);
+    //console.log("fetching from local storage", _user);
+    if (_local_user) _local_user = JSON.parse(_local_user);
+    if (!sessionUser?.id || !newfetch || fetchedUser) return;
+    // unless new fetch is demanded, default fetchedUser to LocalUser
+    if (!newfetch && _local_user?.id) {
+      setFetchedUser(_local_user);
       return;
     }
-    //console.log("fetching user", user.id);
-    PortalSdk.getData("/api/user?id=" + localUser.id, null)
+    //console.log("fetching user", sessionUser, newfetch, fetchedUser);
+    PortalSdk.getData("/api/user?id=" + sessionUser.id, null)
       .then((data) => {
         if (data?.users?.length === 0) return;
         // console.log("fetched user", data.users[0]);
-
         if (data?.data?.user?.[0]) {
           localStorage.setItem(
             LOCAL_STORAGE.user,
@@ -58,10 +51,10 @@ export const useUser = (newfetch?: boolean) => {
       .catch((err) => {
         console.log(err);
       });
-  }, [localUser, newfetch]);
+  }, [newfetch, sessionUser, fetchedUser]);
 
   return {
-    user: fetchedUser?.id ? fetchedUser : localUser?.id ? localUser : user,
+    user: fetchedUser?.id ? fetchedUser : localUser?.id ? localUser : null,
     status: fetchedUser?.id != null ? "authenticated" : status,
     data,
     signOutUser: () => {

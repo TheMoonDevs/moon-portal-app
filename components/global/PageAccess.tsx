@@ -24,7 +24,7 @@ export const PageAccess = ({
       router.push(APP_ROUTES.login);
       return;
     }
-    if (status === "authenticated" && isAdminRequired && !user.isAdmin) {
+    if (status === "authenticated" && isAdminRequired && !user?.isAdmin) {
       router.push(APP_ROUTES.home);
       return;
     }
