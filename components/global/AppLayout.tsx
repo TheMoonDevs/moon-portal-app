@@ -14,12 +14,6 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const { user, status } = useUser();
   const path = usePathname();
   const router = useRouter();
-  const isBottomBarVisible =
-    status === "authenticated" &&
-    user &&
-    path != APP_ROUTES.logout &&
-    path != APP_ROUTES.login &&
-    !path?.startsWith(GLOBAL_ROUTES.applicationForm);
 
   useEffect(() => {
     if (status === "unauthenticated" && path !== APP_ROUTES.login) {
@@ -28,7 +22,7 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
     if (status === "loading") {
       let _user: any = localStorage.getItem(LOCAL_STORAGE.user);
       _user = _user ? JSON.parse(_user) : null;
-      if (!_user?._id) router.push(APP_ROUTES.login);
+      //if (!_user?._id) router.push(APP_ROUTES.login);
     }
     if (path?.startsWith("/admin")) {
       if (status === "loading") return;
@@ -47,7 +41,6 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
     <div>
       {/* <Header /> */}
       {/* <Sidebar /> */}
-      <Bottombar visible={isBottomBarVisible} />
       {children}
     </div>
   );
