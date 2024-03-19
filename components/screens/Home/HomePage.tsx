@@ -5,10 +5,12 @@ import { ActionsSection } from "./ActionsSection";
 import { DailySection } from "./DailySection";
 import { ProfileSection } from "./ProfileSection";
 import { USERTYPE } from "@prisma/client";
+import { LoaderScreen } from "@/components/elements/Loaders";
 
 export const HomePage = () => {
-  const { user } = useUser(true);
+  const { user } = useUser();
 
+  if (!user) return <LoaderScreen />;
   return (
     <div className="home_bg min-h-screen">
       <ProfileSection user={user} />

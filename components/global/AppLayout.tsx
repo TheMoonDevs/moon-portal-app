@@ -15,18 +15,9 @@ export interface PageReactFC extends React.FC {
 }
 
 export const AppLayout = (props: { children: any }) => {
-  const { user, status } = useUser();
+  const { user, status } = useUser(true);
   const path = usePathname();
   const router = useRouter();
-
-  useEffect(() => {
-    if (status === "loading") {
-      let _user: any = localStorage.getItem(LOCAL_STORAGE.user);
-      _user = _user ? JSON.parse(_user) : null;
-      console.log("stored in local", _user);
-      //if (!_user?._id) router.push(APP_ROUTES.login);
-    }
-  }, [path, user, status, router]);
 
   return (
     <div>

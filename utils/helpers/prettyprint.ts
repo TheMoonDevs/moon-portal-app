@@ -113,3 +113,32 @@ export const prettyPrintDateInMMMDD = (date: Date) => {
   const day = date.getDate();
   return `${month} ${day}`;
 };
+
+export const getDateInFormat = (
+  pattern: "full" | "dayname" | "mmm" | "daytype" | ""
+) => {
+  const date = new Date();
+  const day = date.getDay();
+  const month = date.getMonth();
+  const year = date.getFullYear();
+  const dayName = date.toLocaleString("default", { weekday: "long" });
+  const monthName = date.toLocaleString("default", { month: "long" });
+  const monthShortName = date.toLocaleString("default", { month: "short" });
+  if (pattern === "full") return `${dayName}, ${day} ${monthName} ${year}`;
+  if (pattern === "dayname") return `${dayName}`;
+  if (pattern === "mmm") return `${monthShortName} ${date.getDate()}`;
+  // check if day is weekday
+  const isWeekday = day > 0 && day < 6;
+  if (pattern === "daytype") return `${isWeekday ? "weekdays" : "weekends"}`;
+  return `${monthName} ${day}`;
+};
+
+export const getTimeInFormat = () => {
+  const date = new Date();
+  // get time in a timezone
+  const time = date.toLocaleTimeString();
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  const seconds = date.getSeconds();
+  return `${hours}:${minutes} ${date.getHours() >= 12 ? "PM" : "AM"}`;
+};
