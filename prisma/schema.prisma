@@ -90,6 +90,14 @@ model ClientLeadForm {
   createdAt             DateTime @default(now())
 }
 
+model ZeroRecords {
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String?  @db.ObjectId
+  config      String?
+  year        String?
+  allZeros    Json[]
+}
+
 enum JOBPOST {
   FULLTIME
   PARTTIME

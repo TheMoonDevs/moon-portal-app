@@ -3,6 +3,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
 import { MUIThemeRegistry } from "@/styles/provider";
 import { ReduxProvider } from "@/utils/redux/provider";
 import { ToastsContainer } from "@/components/elements/Toast";
