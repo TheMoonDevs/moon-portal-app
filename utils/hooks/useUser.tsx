@@ -22,6 +22,7 @@ export const useUser = (newfetch?: boolean) => {
       _user = JSON.parse(_user);
       //if (_user?.id) setFetchedUser(_user);
       if (_user?.id) setLocalUser(_user);
+      if (_user?.id) setFetchedUser(_user);
     }
   }, []);
 
@@ -29,7 +30,7 @@ export const useUser = (newfetch?: boolean) => {
     let _local_user: any = localStorage.getItem(LOCAL_STORAGE.user);
     //console.log("fetching from local storage", _user);
     if (_local_user) _local_user = JSON.parse(_local_user);
-    if (!sessionUser?.id || !newfetch || fetchedUser) return;
+    if (!sessionUser?.id || !newfetch) return;
     // unless new fetch is demanded, default fetchedUser to LocalUser
     if (!newfetch && _local_user?.id) {
       setFetchedUser(_local_user);
@@ -51,7 +52,7 @@ export const useUser = (newfetch?: boolean) => {
       .catch((err) => {
         console.log(err);
       });
-  }, [newfetch, sessionUser, fetchedUser]);
+  }, [newfetch, sessionUser]);
 
   return {
     user: fetchedUser?.id ? fetchedUser : localUser?.id ? localUser : null,

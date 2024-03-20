@@ -61,7 +61,7 @@ export const authOptions = {
         // });
         // console.log("session user", token, user);
         session.user = {
-          name : token?.name,
+          name: token?.name,
           email: token?.email,
           id: token?.accountId,
         };
