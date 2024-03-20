@@ -16,17 +16,21 @@ export const ZeroTrackerPage = () => {
     "leave" | "zero" | "normal" | "extra"
   >("normal");
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   useEffect(() => {
     if (!user) return;
+    setIsLoading(true);
     PortalSdk.getData(`/api/user/zeros?userId=${user?.id}`, null)
       .then(({ data }) => {
         //console.log(data);
         if (data?.zeroRecords?.length === 0 || !data?.zeroRecords) return;
         setZeroRecord(data.zeroRecords[0]);
+        setIsLoading(false);
       })
       .catch((error) => {
         console.error(error);
+        setIsLoading(false);
       });
   }, [user]);
 
@@ -98,6 +102,32 @@ export const ZeroTrackerPage = () => {
     totalWorkingDays
   ).toFixed(1);
   const zeroUsage = ((totalZeros / 30) * 100).toFixed(0);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col">
+        <div className="bg-white flex flex-row gap-3 py-3 px-3 items-center justify-start border-b border-neutral-400">
+          <Link
+            href={APP_ROUTES.home}
+            className="cursor-pointer rounded-lg p-2 pt-3 text-neutral-900 hover:text-neutral-700"
+          >
+            <span className="icon_size material-icons">arrow_back</span>
+          </Link>
+          <h1 className="uppercase tracking-[0.2em] font-mono text-xl">
+            ZERO TRACKER
+          </h1>
+          <div className="text-xs flex flex-row gap-1 ml-auto rounded-lg text-neutral-900 hover:text-neutral-700">
+            <span>{dayjsLib.format("MMMM")}</span>
+            <span>{dayjsLib.format("YYYY")}</span>
+          </div>
+        </div>
+        <div className="flex flex-row items-center justify-center gap-2 h-[400px]">
+          <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-neutral-800"></div>
+          <p className="text-neutral-900">Initialising...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col">
@@ -274,6 +304,7 @@ export const ZeroTrackerPage = () => {
               {" "}
               THIS MONTH
             </p>
+            <div></div>
           </div>
           <div className="flex flex-col gap-2">
             <div
@@ -342,7 +373,7 @@ export const ZeroTrackerPage = () => {
           <div className="flex flex-row items-center justify-start gap-1  overflow-hidden text-neutral-900">
             <p className="text-[1.5em] font-bold  ">
               {" "}
-              Select your Dates in Calendar
+              Select your Leaves in Calendar
             </p>
             {/* <span className="icon_size material-icons">ios_arrow_forward</span> */}
           </div>
@@ -404,7 +435,7 @@ export const ZeroTrackerPage = () => {
           <div className="flex flex-row items-center justify-start gap-1  overflow-hidden text-neutral-900">
             <p className="text-[1.5em] font-bold ">
               {" "}
-              Select your Dates in Calendar
+              Select your Zeros in Calendar
             </p>
             {/* <span className="icon_size material-icons">ios_arrow_forward</span> */}
           </div>
