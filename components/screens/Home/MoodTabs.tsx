@@ -23,7 +23,7 @@ export const MoodTabs = ({
       <Slider
         dots={true}
         infinite={true}
-        speed={1000}
+        speed={300}
         slidesToShow={1}
         slidesToScroll={1}
         arrows={false}
@@ -39,15 +39,15 @@ export const MoodTabs = ({
               break;
           }
         }}
-        className="h-[100px]"
+        className="h-[150px]"
       >
         <div className="w-full relative bg-black rounded-[1.15em]">
           <img
             src={"/images/lexica/man_walk_landscape_fields.jpg"}
             alt={""}
-            className="static w-full h-[100px] opacity-[0.9] object-cover object-center rounded-[1.15em]"
+            className="static w-full h-[150px] opacity-[0.9] object-cover object-center rounded-[1.15em]"
           />
-          <div className="absolute text-4xl left-[20px] right-[20px] top-0 bottom-0 h-[100px] flex items-center justify-between">
+          <div className="absolute text-4xl left-[20px] right-[20px] top-0 bottom-0 h-[150px] flex items-center justify-between">
             <div>
               <p className="text-xl  bottom-auto text-left font-black tracking-[0.2em] text-neutral-100 text-sm">
                 GOOD MORNING
@@ -65,9 +65,9 @@ export const MoodTabs = ({
           <img
             src={"/images/lexica/blowing_green.jpg"}
             alt={""}
-            className="static w-full h-[100px] opacity-[0.9] object-cover object-center rounded-[1.15em]"
+            className="static w-full h-[150px] opacity-[0.9] object-cover object-center rounded-[1.15em]"
           />
-          <div className="absolute text-4xl left-[20px] right-[20px] top-0 bottom-0 h-[100px] flex items-center justify-between">
+          <div className="absolute text-4xl left-[20px] right-[20px] top-0 bottom-0 h-[150px] flex items-center justify-between">
             <div>
               <p className="text-xl  bottom-auto text-left font-black tracking-[0.2em] text-neutral-100 text-sm">
                 CHARGING
@@ -85,9 +85,9 @@ export const MoodTabs = ({
           <img
             src={"/images/lexica/workroom.jpg"}
             alt={""}
-            className="static w-full h-[100px] opacity-[0.9] object-cover object-center rounded-[1.15em]"
+            className="static w-full h-[150px] opacity-[0.9] object-cover object-center rounded-[1.15em]"
           />
-          <div className="absolute text-4xl left-[20px] right-[20px] top-0 bottom-0 h-[100px] flex items-center justify-between">
+          <div className="absolute text-4xl left-[20px] right-[20px] top-0 bottom-0 h-[150px] flex items-center justify-between">
             <div>
               <p className="text-xl  bottom-auto text-left font-black tracking-[0.2em] text-neutral-100 text-sm">
                 IN THE ZONE
@@ -105,9 +105,9 @@ export const MoodTabs = ({
           <img
             src={"/images/lexica/universe_orange.jpg"}
             alt={""}
-            className="static w-full h-[100px] opacity-[0.9] object-cover object-center rounded-[1.15em]"
+            className="static w-full h-[150px] opacity-[0.9] object-cover object-center rounded-[1.15em]"
           />
-          <div className="absolute text-4xl left-[20px] right-[20px] top-0 bottom-0 h-[100px] flex items-center justify-between">
+          <div className="absolute text-4xl left-[20px] right-[20px] top-0 bottom-0 h-[150px] flex items-center justify-between">
             <div>
               <p className="text-xl  bottom-auto text-left font-black tracking-[0.2em] text-neutral-100 text-sm">
                 PLAN TOMORROW
