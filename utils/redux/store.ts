@@ -5,11 +5,12 @@ import { TypedUseSelectorHook } from "react-redux/es/types";
 
 import uiReducer from "./ui/ui.slice";
 import shortUrlReducer from "./shortUrl/shortUrl.slice";
+import authReducer from "./auth/auth.slice";
 //import suggestionsReducer from './suggestions/suggestions.slice';
 
 const store = configureStore({
   reducer: {
-    // auth: authReducer,
+    auth: authReducer,
     ui: uiReducer,
     shortUrl: shortUrlReducer,
     //suggestions: suggestionsReducer,
