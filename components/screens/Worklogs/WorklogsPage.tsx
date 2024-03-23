@@ -1,8 +1,14 @@
 "use client";
 
+import { MdxAppEditor } from "@/utils/configure/MdxAppEditor";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
 import { useUser } from "@/utils/hooks/useUser";
+import { PortalSdk } from "@/utils/services/PortalSdk";
+import { WorkLogs } from "@prisma/client";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { diffSourcePlugin } from "@mdxeditor/editor";
+import store from "@/utils/redux/store";
 
 const tempData = [
   {
@@ -29,7 +35,22 @@ const tempData = [
   },
 ];
 export const WorklogsPage = () => {
-  const { user } = useUser(false);
+  const { user } = useUser();
+
+  const [logsList, setLogsList] = useState<WorkLogs[]>([]);
+
+  useEffect(() => {
+    const _user = store.getState().auth.user;
+    if (!_user) return;
+    PortalSdk.getData(`/api/user/worklogs?userId=${_user.id}`, null)
+      .then((data) => {
+        console.log(data);
+        setLogsList(data?.data?.workLogs || []);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }, []);
 
   if (!user?.workData) return null;
 
@@ -78,26 +99,36 @@ export const WorklogsPage = () => {
           <h4 className="text-xs font-bold p-2 px-4">March</h4>
         </div>
         <div className="grid grid-cols-2 gap-3 p-2">
-          {tempData.map((data) => (
+          {logsList.map((data) => (
             <Link
               href={APP_ROUTES.userWorklogs + "/" + data.id}
               key={data.id}
               className="flex flex-col gap-3 rounded-lg border border-neutral-200 p-3"
             >
               <h1 className="text-xs font-bold">{data.title}</h1>
-              <div className="flex flex-col">
-                {data.works.map((work) => (
-                  <div key={work.id} className="flex flex-row items-center">
-                    <p className="text-sm font-light line-clamp-1">
-                      {work.text}
-                    </p>
-                    {work.status == "done" && (
-                      <span className="icon_size material-icons text-green-500">
-                        task_alt
-                      </span>
-                    )}
-                  </div>
-                ))}
+              <div className="flex flex-col max-h-[200px]">
+                {data.works //.flatMap((wk) => (wk as any)?.pointInfos)
+                  //.slice(0, 3)
+                  .map((point: any) => (
+                    <div
+                      key={point.project}
+                      className="flex flex-row items-center"
+                    >
+                      <div className="text-sm font-light">
+                        <MdxAppEditor
+                          markdown={point?.content}
+                          readOnly={true}
+                          contentEditableClassName="mdx_ce min leading-0 imp-p-0 grow w-full h-full line-clamp-3"
+                          // plugins={[
+                          //   diffSourcePlugin({
+                          //     diffMarkdown: "An older version",
+                          //     viewMode: "diff",
+                          //   }),
+                          // ]}
+                        />
+                      </div>
+                    </div>
+                  ))}
               </div>
             </Link>
           ))}

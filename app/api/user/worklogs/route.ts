@@ -4,23 +4,25 @@ import { NextResponse, NextRequest } from "next/server";
 
 export async function GET(request: NextRequest) {
   const userId = request.nextUrl.searchParams.get("userId") as string;
-  const config = request.nextUrl.searchParams.get("config") as string;
+  const logType = request.nextUrl.searchParams.get("logType") as string;
+  const date = request.nextUrl.searchParams.get("date") as string;
 
   //let error_response: any;
   //console.log("fetching zeros on server", userId, config);
   try {
     //console.log("fetching user on server", id, userType, role);
-    const _zeroRecords = await prisma.zeroRecords.findMany({
+    const _workLogs = await prisma.workLogs.findMany({
       where: {
         ...(userId && { userId }),
-        ...(config && { config }),
+        ...(logType && { logType }),
+        ...(date && { date }),
       },
     });
 
     let json_response = {
       status: "success",
       data: {
-        zeroRecords: _zeroRecords,
+        workLogs: _workLogs,
       },
     };
 
@@ -38,10 +40,10 @@ export async function PUT(request: Request) {
   try {
     const { id, ...rest } = await request.json();
 
-    console.log("updating zeros on server", id, rest);
-    let zeroRecords;
-    if (id)
-      zeroRecords = await prisma.zeroRecords.upsert({
+    //console.log("updating worklogs on server", id, rest);
+    let workLogs;
+    if (id && id.length > 2)
+      workLogs = await prisma.workLogs.upsert({
         where: {
           id,
         },
@@ -49,14 +51,14 @@ export async function PUT(request: Request) {
         update: { ...rest },
       });
     else
-      zeroRecords = await prisma.zeroRecords.create({
+      workLogs = await prisma.workLogs.create({
         data: { ...rest },
       });
 
     let json_response = {
       status: "success",
       data: {
-        zeroRecords,
+        workLogs,
       },
     };
 
