@@ -5,6 +5,7 @@ import { NextResponse, NextRequest } from "next/server";
 export async function GET(request: NextRequest) {
   const userId = request.nextUrl.searchParams.get("userId") as string;
   const config = request.nextUrl.searchParams.get("config") as string;
+  const year = request.nextUrl.searchParams.get("year") as string;
 
   //let error_response: any;
   //console.log("fetching zeros on server", userId, config);
@@ -14,6 +15,7 @@ export async function GET(request: NextRequest) {
       where: {
         ...(userId && { userId }),
         ...(config && { config }),
+        ...(year && { year }),
       },
     });
 
