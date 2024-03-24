@@ -64,11 +64,11 @@ body {
   margin: 0.3em 0;
 }
 
-.mdx_ce.min li {
+.mdx_ce_min li {
   margin: 0.1em 0;
 }
 
-.mdx_ce.min p {
+.mdx_ce_min p {
   display: none;
 }
 

@@ -24,7 +24,7 @@ export const ButtonBoard = () => {
             calendar_month
           </span>
           <span className="text-[0.4em] leading-none tracking-[0.2em] ">
-            ZEROS
+            TRACK
           </span>
         </div>
       </Link>

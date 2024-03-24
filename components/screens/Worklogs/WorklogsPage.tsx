@@ -7,8 +7,9 @@ import { PortalSdk } from "@/utils/services/PortalSdk";
 import { WorkLogs } from "@prisma/client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { diffSourcePlugin } from "@mdxeditor/editor";
 import store from "@/utils/redux/store";
+import dayjs from "dayjs";
+import { WorkLogsHelper } from "./WorklogsHelper";
 
 const tempData = [
   {
@@ -37,15 +38,36 @@ const tempData = [
 export const WorklogsPage = () => {
   const { user } = useUser();
 
+  const thisMonth = dayjs().month();
+  const thisDate = dayjs().date();
+  const [monthTab, setMonthTab] = useState<number>(thisMonth);
   const [logsList, setLogsList] = useState<WorkLogs[]>([]);
 
   useEffect(() => {
     const _user = store.getState().auth.user;
+
     if (!_user) return;
     PortalSdk.getData(`/api/user/worklogs?userId=${_user.id}`, null)
       .then((data) => {
         console.log(data);
-        setLogsList(data?.data?.workLogs || []);
+        const _total_days_in_month = dayjs().month(monthTab).daysInMonth();
+        const _logList = Array.from({
+          length:
+            _total_days_in_month <= thisDate + 2
+              ? _total_days_in_month
+              : thisDate + 2,
+        })
+          .map((_, i) => {
+            const _date = dayjs()
+              .date(i + 1)
+              .format("YYYY-MM-DD");
+            const _worklog = data?.data?.workLogs.find(
+              (wl: WorkLogs) => wl.date === _date
+            );
+            return _worklog || WorkLogsHelper.defaultWorklogs(_date, _user);
+          })
+          .reverse();
+        setLogsList(_logList);
       })
       .catch((err) => {
         console.log(err);
@@ -56,7 +78,7 @@ export const WorklogsPage = () => {
 
   return (
     <div className="flex flex-col">
-      <div className="fixed left-0 right-0 top-0 bg-white flex flex-row gap-3 py-2 px-3 items-center justify-between border-b border-neutral-400">
+      <div className="fixed left-0 right-0 top-0 z-10 bg-white flex flex-row gap-3 py-2 px-3 items-center justify-between border-b border-neutral-400">
         <h1 className="tracking-widest text-sm">My Worklogs</h1>
         <div className="flex flex-row gap-1">
           <Link href={APP_ROUTES.home}>
@@ -95,14 +117,14 @@ export const WorklogsPage = () => {
             ))}
           </div>
         </div>
-        <div className="flex flex-row justify-between">
-          <h4 className="text-xs font-bold p-2 px-4">March</h4>
+        <div className="flex flex-row justify-between sticky top-[3.5rem] bg-neutral-100 z-10">
+          <h4 className="text-sm font-bold p-2 px-4">March</h4>
         </div>
         <div className="grid grid-cols-2 gap-3 p-2">
           {logsList.map((data) => (
             <Link
               href={APP_ROUTES.userWorklogs + "/" + data.id}
-              key={data.id}
+              key={data.id + "-" + data.date + "-" + data.userId}
               className="flex flex-col gap-3 rounded-lg border border-neutral-200 p-3"
             >
               <h1 className="text-xs font-bold">{data.title}</h1>
@@ -118,7 +140,7 @@ export const WorklogsPage = () => {
                         <MdxAppEditor
                           markdown={point?.content}
                           readOnly={true}
-                          contentEditableClassName="mdx_ce min leading-0 imp-p-0 grow w-full h-full line-clamp-3"
+                          contentEditableClassName="mdx_ce_min leading-0 imp-p-0 grow w-full h-full line-clamp-3"
                           // plugins={[
                           //   diffSourcePlugin({
                           //     diffMarkdown: "An older version",
@@ -133,8 +155,7 @@ export const WorklogsPage = () => {
             </Link>
           ))}
         </div>
-        <div className="flex flex-col gap-3"></div>
-        <div className="h-[50em]"></div>
+        <div className="flex flex-col gap-3 h-[5rem]"></div>
       </div>
     </div>
   );
