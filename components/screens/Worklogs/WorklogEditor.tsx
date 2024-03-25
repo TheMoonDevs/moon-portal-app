@@ -227,8 +227,10 @@ export const WorklogEditor = ({
           </p>
         ) : (
           <p className="text-xs flex item-center gap-2 leading-3 mt-3 text-neutral-500">
-            {dayjs(workLog?.date).format("DD-MM-YYYY")} | {workLog?.logType} |
-            saved
+            {workLog?.logType === "dayLog"
+              ? dayjs(workLog?.date).format("DD-MM-YYYY")
+              : "My logs"}{" "}
+            | {workLog?.logType} | saved
             <span className="icon_size material-symbols-outlined text-neutral-500">
               {saving ? "" : "done"}
             </span>
