@@ -246,7 +246,7 @@ export const WorklogEditor = ({
           <div className=" flex flex-row items-stretch px-4 mb-3">
             {_markdownDat.content && (
               <MdxAppEditor
-                id={_markdownDat.project}
+                //id={_markdownDat.project}
                 markdown={
                   _markdownDat.content
                     ? _markdownDat.content
