@@ -30,4 +30,17 @@ export const WorkLogsHelper = {
       works: DEFAULT_MARKDOWN_DATA as any[],
     };
   },
+  defaultPrivateBoard: (month: string | null, user?: any) => {
+    //const this_date = date || dayjs().format("YYYY-MM-DD");
+    return {
+      id: "",
+      userId: user?.id,
+      logType: "privateLog",
+      title: `My Private Board`,
+      date: "",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      works: DEFAULT_MARKDOWN_DATA as any[],
+    };
+  },
 };

@@ -35,6 +35,70 @@ const tempData = [
     ],
   },
 ];
+
+export const WorkLogItem = ({ data }: { data: WorkLogs }) => {
+  return (
+    <Link
+      href={
+        APP_ROUTES.userWorklogs +
+        "/" +
+        (data.id || "new") +
+        "?logType=" +
+        data.logType
+      }
+      className="flex flex-col gap-3 rounded-lg border border-neutral-200 p-3"
+    >
+      <div
+        className={`flex flex-row justify-between ${
+          data.logType === "privateLog"
+            ? "text-neutral-800"
+            : dayjs(data.date).isSame(dayjs(), "date")
+            ? "text-blue-400"
+            : data.id === ""
+            ? "text-neutral-500"
+            : "text-green-500"
+        }`}
+      >
+        <h1 className={`text-xs font-bold `}>{data.title}</h1>
+        {data.logType === "dayLog" && (
+          <span className={`icon_size material-symbols-outlined `}>
+            {data.id === "" ? "add_box" : "checklist"}
+          </span>
+        )}
+      </div>
+      <div className="flex flex-col max-h-[100px] min-h-[100px] p-1">
+        {data.id != "" &&
+          data.works //.flatMap((wk) => (wk as any)?.pointInfos)
+            //.slice(0, 3)
+            .map((point: any) => (
+              <div key={point.project} className="flex flex-row items-center">
+                <div className="text-sm font-light">
+                  <MdxAppEditor
+                    markdown={point?.content}
+                    readOnly={true}
+                    contentEditableClassName="mdx_ce_min font-mono leading-0 imp-p-0 grow w-full h-full line-clamp-3"
+                    // plugins={[
+                    //   diffSourcePlugin({
+                    //     diffMarkdown: "An older version",
+                    //     viewMode: "diff",
+                    //   }),
+                    // ]}
+                  />
+                </div>
+              </div>
+            ))}
+        {data.id === "" && (
+          <div className="">
+            <p className="text-sm font-mono text-neutral-300">
+              Tap to jot down your logs...
+            </p>
+          </div>
+        )}
+      </div>
+    </Link>
+  );
+};
+
 export const WorklogsPage = () => {
   const { user } = useUser();
 
@@ -42,6 +106,7 @@ export const WorklogsPage = () => {
   const thisDate = dayjs().date();
   const [monthTab, setMonthTab] = useState<number>(thisMonth);
   const [logsList, setLogsList] = useState<WorkLogs[]>([]);
+  const [privateBoard, setPrivateBoard] = useState<WorkLogs | null>(null);
 
   useEffect(() => {
     const _user = store.getState().auth.user;
@@ -53,7 +118,9 @@ export const WorklogsPage = () => {
         const _total_days_in_month = dayjs().month(monthTab).daysInMonth();
         const _logList = Array.from({
           length:
-            _total_days_in_month <= thisDate + 2
+            monthTab != thisMonth
+              ? _total_days_in_month
+              : _total_days_in_month <= thisDate + 2
               ? _total_days_in_month
               : thisDate + 2,
         })
@@ -68,6 +135,17 @@ export const WorklogsPage = () => {
           })
           .reverse();
         setLogsList(_logList);
+
+        const _privateboard = data?.data?.workLogs.find(
+          (wl: WorkLogs) => wl.logType === "privateLog"
+        );
+        setPrivateBoard(
+          _privateboard ||
+            WorkLogsHelper.defaultPrivateBoard(
+              dayjs().month(monthTab).format("MM-YYYY"),
+              _user
+            )
+        );
       })
       .catch((err) => {
         console.log(err);
@@ -79,80 +157,70 @@ export const WorklogsPage = () => {
   return (
     <div className="flex flex-col">
       <div className="fixed left-0 right-0 top-0 z-10 bg-white flex flex-row gap-3 py-2 px-3 items-center justify-between border-b border-neutral-400">
-        <h1 className="tracking-widest text-sm">My Worklogs</h1>
+        <h1 className="tracking-widest text-sm font-bold">My Worklogs</h1>
         <div className="flex flex-row gap-1">
-          <Link href={APP_ROUTES.home}>
+          <Link href={APP_ROUTES.userWorklogs}>
             <div className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700">
-              <span className="icon_size material-icons">arrow_back</span>
+              <span className="icon_size material-symbols-outlined">
+              timeline
+              </span>
             </div>
           </Link>
           <Link href={APP_ROUTES.userWorklogs}>
             <div className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700">
-              <span className="icon_size material-icons">refresh</span>
-            </div>
-          </Link>
-          <Link href={APP_ROUTES.userWorklogs}>
-            <div className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700">
-              <span className="icon_size material-icons">
-                add_circle_outline
+              <span className="icon_size material-symbols-outlined">
+                description
               </span>
             </div>
           </Link>
         </div>
       </div>
       <div className="scrollable_list">
-        <div className="h-[4em]"></div>
-        <div className="flex flex-col gap-3 rounded-lg border border-neutral-200 p-3 m-2">
-          <h4 className="text-xs font-bold">My Private Board</h4>
-          <div className="flex flex-col">
-            {tempData[0].works.map((work) => (
-              <div key={work.id} className="flex flex-row items-center">
-                <p className="text-sm font-light line-clamp-1">{work.text}</p>
-                {work.status == "done" && (
-                  <span className="icon_size material-icons text-green-500">
-                    task_alt
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
+        <div className="h-[3.5rem]"></div>
+        <div
+          className="flex flex-row justify-between sticky top-[3.5rem] bg-neutral-100 z-10
+         overflow-x-scroll p-2 "
+        >
+          {Array.from({ length: 12 }).map((_, month_tab: number) => (
+            <div
+              key={month_tab}
+              onClick={() => setMonthTab(month_tab)}
+              className={` rounded-3xl cursor-pointer ${
+                dayjs().month() === month_tab ? "border border-neutral-600" : ""
+              }`}
+            >
+              <h4
+                className={`text-sm ${
+                  dayjs().month() === month_tab
+                    ? "font-bold text-neutral-800"
+                    : "text-neutral-400"
+                } p-2 px-4`}
+              >
+                {dayjs().month(month_tab).format("MMMM")}
+              </h4>
+            </div>
+          ))}
         </div>
-        <div className="flex flex-row justify-between sticky top-[3.5rem] bg-neutral-100 z-10">
-          <h4 className="text-sm font-bold p-2 px-4">March</h4>
+        <div className="p-2">
+          {privateBoard && (
+            <WorkLogItem
+              key={
+                privateBoard.id +
+                "-" +
+                privateBoard.date +
+                "-" +
+                privateBoard.userId
+              }
+              data={privateBoard}
+            />
+          )}
         </div>
         <div className="grid grid-cols-2 gap-3 p-2">
           {logsList.map((data) => (
-            <Link
-              href={APP_ROUTES.userWorklogs + "/" + data.id}
+            <WorkLogItem
               key={data.id + "-" + data.date + "-" + data.userId}
-              className="flex flex-col gap-3 rounded-lg border border-neutral-200 p-3"
-            >
-              <h1 className="text-xs font-bold">{data.title}</h1>
-              <div className="flex flex-col max-h-[200px]">
-                {data.works //.flatMap((wk) => (wk as any)?.pointInfos)
-                  //.slice(0, 3)
-                  .map((point: any) => (
-                    <div
-                      key={point.project}
-                      className="flex flex-row items-center"
-                    >
-                      <div className="text-sm font-light">
-                        <MdxAppEditor
-                          markdown={point?.content}
-                          readOnly={true}
-                          contentEditableClassName="mdx_ce_min leading-0 imp-p-0 grow w-full h-full line-clamp-3"
-                          // plugins={[
-                          //   diffSourcePlugin({
-                          //     diffMarkdown: "An older version",
-                          //     viewMode: "diff",
-                          //   }),
-                          // ]}
-                        />
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </Link>
+              data={data}
+            />
           ))}
         </div>
         <div className="flex flex-col gap-3 h-[5rem]"></div>
