@@ -1,3 +1,4 @@
+import { getDateInFormat, getTimeInFormat } from "@/utils/helpers/prettyprint";
 import { useUser } from "@/utils/hooks/useUser";
 import { User } from "@prisma/client";
 import Link from "next/link";
@@ -5,39 +6,13 @@ import { useRouter } from "next/navigation";
 
 export const DailySection = ({ user }: { user: User }) => {
   const router = useRouter();
-  const getTime = () => {
-    const date = new Date();
-    // get time in a timezone
-    const time = date.toLocaleTimeString();
-    const hours = date.getHours();
-    const minutes = date.getMinutes();
-    const seconds = date.getSeconds();
-    return `${hours}:${minutes} ${date.getHours() >= 12 ? "PM" : "AM"}`;
-  };
-
-  const getDate = (pattern: string) => {
-    const date = new Date();
-    const day = date.getDay();
-    const month = date.getMonth();
-    const year = date.getFullYear();
-    const dayName = date.toLocaleString("default", { weekday: "long" });
-    const monthName = date.toLocaleString("default", { month: "long" });
-    const monthShortName = date.toLocaleString("default", { month: "short" });
-    if (pattern === "full") return `${dayName}, ${day} ${monthName} ${year}`;
-    if (pattern === "dayname") return `${dayName}`;
-    if (pattern === "mmm") return `${monthShortName} ${date.getDate()}`;
-    // check if day is weekday
-    const isWeekday = day > 0 && day < 6;
-    if (pattern === "daytype") return `${isWeekday ? "weekdays" : "weekends"}`;
-    return `${monthName} ${day}`;
-  };
 
   return (
     <div className=" flex flex-col py-1 px-1 mx-2 my-1 gap-3 bg-white rounded-[1.15em]">
       <div className="flex flex-row justify-between border-neutral-400 border-b text-sm px-2 py-3 w-full">
         <h4>
           It&apos;s &nbsp;
-          <strong>{getTime()}</strong> &nbsp; now.
+          <strong>{getTimeInFormat()}</strong> &nbsp; now.
         </h4>
         <p className="flex items-center gap-2 pl-2 text-xs border-neutral-400 border-l">
           <span className="icon_size text-neutral-800  material-icons">
@@ -48,12 +23,12 @@ export const DailySection = ({ user }: { user: User }) => {
       </div>
       <div className="flex flex-row items-center justify-between text-sm p-2 w-full">
         <div className="pl-2">
-          <h1 className="font-black text-3xl">{getDate("mmm")}</h1>
+          <h1 className="font-black text-3xl">{getDateInFormat("mmm")}</h1>
           <p className="text-xs">
-            {getDate("dayname")} | {user?.timezone}
+            {getDateInFormat("dayname")} | {user?.timezone}
           </p>
         </div>
-        <div className="flex flex-col  gap-2 ">
+        {/* <div className="flex flex-col  gap-2 ">
           <Link
             href={(user?.workData as any)?.worklogLink || ""}
             rel="noopener noreferrer"
@@ -72,9 +47,9 @@ export const DailySection = ({ user }: { user: User }) => {
             </span>
             <p className="text-[0.65em] tracking-widest mb-0">Schedule Meet</p>
           </div>
-        </div>
+        </div> */}
       </div>
-      <div className="flex flex-row items-center justify-start text-sm p-2 w-full">
+      {/* <div className="flex flex-row items-center justify-start text-sm p-2 w-full">
         <p className="text-xs mr-2">Overlaps</p>
         <div className="flex flex-row gap-2">
           {(user?.workData as any)?.overlap
@@ -97,7 +72,7 @@ export const DailySection = ({ user }: { user: User }) => {
               </div>
             ))}
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };

@@ -10,6 +10,7 @@ export async function GET(request: NextRequest) {
   let error_response: any;
 
   try {
+    //console.log("fetching user on server", id, userType, role);
     const user = await prisma.user.findMany({
       where: {
         ...(id && { id }),

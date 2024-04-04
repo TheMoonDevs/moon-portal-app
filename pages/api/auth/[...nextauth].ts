@@ -37,7 +37,7 @@ export const authOptions = {
               password: credentials.password,
             },
           });
-          //console.log("user", user);
+          console.log("authorise user", user);
           if (user) {
             return user;
           }
@@ -56,10 +56,15 @@ export const authOptions = {
       if (token) {
         // session.accountId = token.accountId;
 
-        const user = await prisma.user.findFirst({
-          where: { id: token.accountId },
-        });
-        session.user = user;
+        // const _user = await prisma.user.findFirst({
+        //   where: { id: token.accountId },
+        // });
+        // console.log("session user", token, user);
+        session.user = {
+          name: token?.name,
+          email: token?.email,
+          id: token?.accountId,
+        };
       }
       return session;
     },

@@ -4,7 +4,7 @@ import { APP_ROUTES } from "@/utils/constants/appInfo";
 import { useUser } from "@/utils/hooks/useUser";
 import Link from "next/link";
 
-export const WorklogsPage = () => {
+export const ClickupWorklogsPage = () => {
   const { user } = useUser(false);
 
   if (!user?.workData) return null;

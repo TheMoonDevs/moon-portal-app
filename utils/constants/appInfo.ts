@@ -12,6 +12,7 @@ export enum APP_ROUTES {
   signup = "/signup",
   admin = "/admin",
   userEditor = "/admin/user/editor",
+  userZeroTracker = "/user/zero-tracker",
   userWorklogs = "/user/worklogs",
   hrScreening = "/hr/screening",
   urlShortener = "/url-shortener",
