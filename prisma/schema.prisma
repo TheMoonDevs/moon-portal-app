@@ -11,27 +11,28 @@ datasource db {
 }
 
 model User {
-  id        String        @id @default(auto()) @map("_id") @db.ObjectId
-  username  String
-  password  String
-  email     String?
-  name      String?
-  avatar    String?
-  userType  USERTYPE?     @default(MEMBER)
-  role      USERROLE?     @default(CORETEAM)
-  vertical  USERVERTICAL? @default(DEV)
-  status    USERSTATUS?   @default(ACTIVE)
-  industry  USERINDUSTRY?
-  isAdmin   Boolean       @default(false)
-  timezone  String?
-  country   String?
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @default(now())
-  workData  Json?
+  id             String        @id @default(auto()) @map("_id") @db.ObjectId
+  username       String
+  password       String
+  email          String?
+  name           String?
+  avatar         String?
+  userType       USERTYPE?     @default(MEMBER)
+  role           USERROLE?     @default(CORETEAM)
+  vertical       USERVERTICAL? @default(DEV)
+  status         USERSTATUS?   @default(ACTIVE)
+  industry       USERINDUSTRY?
+  isAdmin        Boolean       @default(false)
+  timezone       String?
+  country        String?
+  createdLinks   Link[]        @relation("CreatedLinks")
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @default(now())
+  workData       Json?
 }
 
 model Candidate {
-  id                     String            @id @default(auto()) @map("_id") @db.ObjectId
+  id                     String  @id @default(auto()) @map("_id") @db.ObjectId
   name                   String
   email                  String
   mobileNumber           Int
@@ -41,26 +42,26 @@ model Candidate {
   educationQualification String?
   skillQualification     String?
   workExp                String?
-  jobPost                JobPost           @relation(fields: [jobPostId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  jobPostId              String            @db.ObjectId
-  screeningRound1        Json? 
-  screeningRound2        Json?  
+  jobPost                JobPost @relation(fields: [jobPostId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  jobPostId              String  @db.ObjectId
+  screeningRound1        Json?
+  screeningRound2        Json?
   // result              CandidateResult   @default(PENDING)
 }
 
 model JobPost {
-  id                     String      @id @default(auto()) @map("_id") @db.ObjectId
-  title                  String
-  deptName               String
-  description            String
-  defaultReq             Json?
-  deptReq                Json?
-  adminReq               Json?
-  hrReq                  Json?
-  status                 JOBSTATUS   @default(ACTIVE)
-  jobpost                JOBPOST     @default(FULLTIME)
-  createdAt              DateTime    @default(now())
-  Candidate              Candidate[]
+  id          String      @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  deptName    String
+  description String
+  defaultReq  Json?
+  deptReq     Json?
+  adminReq    Json?
+  hrReq       Json?
+  status      JOBSTATUS   @default(ACTIVE)
+  jobpost     JOBPOST     @default(FULLTIME)
+  createdAt   DateTime    @default(now())
+  Candidate   Candidate[]
 }
 
 model Survey {
@@ -71,24 +72,89 @@ model Survey {
 }
 
 model ShortLink {
-  id          String  @id @default(auto()) @map("_id") @db.ObjectId
-  slug        String  @unique
-  redirectTo  String  
-  params      Json?  
-  createdAt   DateTime @default(now())
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  slug       String   @unique
+  redirectTo String
+  params     Json?
+  createdAt  DateTime @default(now())
 }
 
 model ClientLeadForm {
-  id                    String  @id @default(auto()) @map("_id") @db.ObjectId
-  teamSize              String? 
-  industry              String?
-  requirementType       String?  
-  budget                Int?
-  time                  String?
-  stage                 String?
-  contact               Json
-  createdAt             DateTime @default(now())
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  teamSize        String?
+  industry        String?
+  requirementType String?
+  budget          Int?
+  time            String?
+  stage           String?
+  contact         Json
+  createdAt       DateTime @default(now())
 }
+
+// ---------------------------------------QUICKLINKS---------------------------
+model Department {
+  id    String @id @default(auto()) @map("_id") @db.ObjectId
+  title String
+  logo  String
+  slug  String
+  type  ROOTTYPE?
+  links Link[]
+}
+
+model UserLink {
+  id      String @id @default(auto()) @map("_id") @db.ObjectId
+  linkType USERLINKTYPE //  Favorited Links or top used or custom_link_list
+  linkData Link @relation( fields: [linkId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  linkId   String @db.ObjectId
+  userId   String
+  directoryId String?
+  topUsed Int @default(0)
+  isFavorite Boolean?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+}
+
+model Link {
+  id            String      @id @default(auto()) @map("_id") @db.ObjectId
+  title         String
+  description   String
+  logo          String
+  url           String
+  clickCount    Int
+  isFavorite    Boolean     @default(false)
+  department    Department? @relation(fields: [departmentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  departmentId  String?     @db.ObjectId
+  author        User?       @relation(name: "CreatedLinks", fields: [authorId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userLink      UserLink[]
+  authorId      String?     @db.ObjectId
+  directoryId   String?     @db.ObjectId
+
+
+  @@index([departmentId])
+  @@index([authorId])
+  @@map("Links")
+}
+
+model Directory {
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  logo        String
+  slug        String
+  parentDirId String?
+}
+
+enum ROOTTYPE {
+  DEPARTMENT
+  COMMON_RESOURCES
+}
+
+enum USERLINKTYPE {
+  FAVORITED
+  TOPUSED
+  CUSTOM
+}
+
+//------------------------------------------------------------------------------
 
 enum JOBPOST {
   FULLTIME
