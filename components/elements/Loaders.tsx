@@ -21,3 +21,14 @@ export const Spinner = ({ className }: { className?: string }) => {
     </div>
   );
 };
+
+export const LoaderScreen = ({ text }: { text?: string }) => {
+  return (
+    <div className="flex flex-col items-center justify-center py-2 bg-neutral-700 md:bg-neutral-900 h-screen">
+      <div className="flex flex-row items-center justify-center gap-2">
+        <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-neutral-100"></div>
+        <p className="text-neutral-100">{text}...</p>
+      </div>
+    </div>
+  );
+};

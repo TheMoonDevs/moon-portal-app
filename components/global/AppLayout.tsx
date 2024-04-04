@@ -10,45 +10,20 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Bottombar } from "./Bottombar";
 
-export const AppLayout = ({ children }: { children: React.ReactNode }) => {
-  const { user, status } = useUser();
+export interface PageReactFC extends React.FC {
+  isAuthRequired: boolean;
+}
+
+export const AppLayout = (props: { children: any }) => {
+  const { user, status } = useUser(true);
   const path = usePathname();
   const router = useRouter();
-  const isBottomBarVisible =
-    status === "authenticated" &&
-    user &&
-    path != APP_ROUTES.logout &&
-    path != APP_ROUTES.login &&
-    !path?.startsWith(GLOBAL_ROUTES.applicationForm);
-
-  useEffect(() => {
-    if (status === "unauthenticated" && path !== APP_ROUTES.login) {
-      router.push(APP_ROUTES.login);
-    }
-    if (status === "loading") {
-      let _user: any = localStorage.getItem(LOCAL_STORAGE.user);
-      _user = _user ? JSON.parse(_user) : null;
-      if (!_user?._id) router.push(APP_ROUTES.login);
-    }
-    if (path?.startsWith("/admin")) {
-      if (status === "loading") return;
-      if (status === "authenticated" && user && user.isAdmin) return;
-      router.push(APP_ROUTES.home);
-    }
-    if (
-      path?.startsWith(GLOBAL_ROUTES.applicationForm) &&
-      path !== GLOBAL_ROUTES.applicationForm
-    ) {
-      router.push(path);
-    }
-  }, [path, user, status, router]);
 
   return (
     <div>
       {/* <Header /> */}
       {/* <Sidebar /> */}
-      <Bottombar visible={isBottomBarVisible} />
-      {children}
+      {props.children}
     </div>
   );
 };

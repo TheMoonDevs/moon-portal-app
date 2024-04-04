@@ -3,6 +3,9 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import "@mdxeditor/editor/style.css";
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
 import { MUIThemeRegistry } from "@/styles/provider";
 import { ReduxProvider } from "@/utils/redux/provider";
 import { ToastsContainer } from "@/components/elements/Toast";
@@ -43,7 +46,7 @@ export default function RootLayout({
         ></link>
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,100..700,0,0"
         ></link>
       </head>
       <body className={inter.className}>

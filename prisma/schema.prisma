@@ -156,6 +156,25 @@ enum USERLINKTYPE {
 
 //------------------------------------------------------------------------------
 
+model ZeroRecords {
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String?  @db.ObjectId
+  config      String?
+  year        String?
+  allZeros    Json[]
+}
+
+model WorkLogs {
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  logType     String?
+  userId      String?  @db.ObjectId
+  title       String?
+  date        String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @default(now())
+  works       Json[]
+}
+
 enum JOBPOST {
   FULLTIME
   PARTTIME

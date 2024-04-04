@@ -34,14 +34,15 @@ export const AdminUsers = () => {
           CLIENTS / MEMBER
         </p>
       </div>
-      <div className="flex flex-col grow gap-4 items-center justify-start">
+      <div className="flex flex-col grow gap-4 items-stretch justify-start">
         {users.map((user) => (
-          <div
+          <Link
             key={user.id}
             className="flex flex-row gap-4 items-center justify-center border border-neutral-700 hover:bg-neutral-800 px-4 py-2 rounded-lg cursor-pointer"
+            href={`${APP_ROUTES.userEditor}?id=${user.id}`}
             onClick={() => {
               console.log("clicked", user.id);
-              router.push(`${APP_ROUTES.userEditor}?id=${user.id}`);
+              //router.push(`${APP_ROUTES.userEditor}?id=${user.id}`);
             }}
           >
             <div className=" rounded-full p-1 ">
@@ -60,7 +61,7 @@ export const AdminUsers = () => {
             <span className="material-icons text-neutral-400">
               chevron_right
             </span>
-          </div>
+          </Link>
         ))}
       </div>
       <div className="flex flex-col gap-4 items-center justify-center">
