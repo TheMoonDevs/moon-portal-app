@@ -26,10 +26,10 @@ import { APP_ROUTES } from "@/utils/constants/appInfo";
 const MARKDOWN_PLACHELODER = `* `;
 
 export const WorklogEditor = ({
-  editworkLogs,
+  editWorkLogs,
   refreshWorklogs,
 }: {
-  editworkLogs: WorkLogs | null;
+  editWorkLogs: WorkLogs | null;
   refreshWorklogs: () => void;
 }) => {
   const { user } = useUser();
@@ -53,7 +53,7 @@ export const WorklogEditor = ({
 
   useEffect(() => {
     if (!user) return;
-    if (!editworkLogs) {
+    if (!editWorkLogs) {
       setWorkLog({
         id: "",
         userId: user?.id,
@@ -67,11 +67,12 @@ export const WorklogEditor = ({
       return;
     }
     isAuotSaving.current = false;
-    setWorkLog(editworkLogs);
-    setServerLog(editworkLogs);
-    setMarkdownDatas(editworkLogs.works as any[]);
+    setWorkLog(editWorkLogs);
+    setServerLog(editWorkLogs);
+    setMarkdownDatas(editWorkLogs.works as any[]);
+    console.log("placed ", editWorkLogs);
     isAuotSaving.current = true;
-  }, [editworkLogs]);
+  }, [editWorkLogs]);
 
   const saveWorkLog = useCallback(
     (_workLog: { works: WorkLogPoints[] } | null) => {
@@ -143,7 +144,7 @@ export const WorklogEditor = ({
     () => {
       if (
         JSON.stringify(serverLog) === JSON.stringify(workLog) ||
-        !editworkLogs ||
+        !editWorkLogs ||
         !workLog ||
         !isAuotSaving
       ) {
