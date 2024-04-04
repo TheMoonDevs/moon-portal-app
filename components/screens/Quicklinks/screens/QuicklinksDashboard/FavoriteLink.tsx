@@ -16,13 +16,13 @@ export default function FavoriteLink() {
   const { favoriteList } = useAppSelector((state) => state.quicklinks);
 
   useEffect(() => {
-    if (!user.id) return;
+    if (!user?.id) return;
 
     const getFavoriteLinks = async () => {
       setLoading(true);
       try {
         const favoriteLinksData = await QuicklinksSdk.getData(
-          `/api/quicklinks/link/user-link?userId=${user.id}&linkType=${USERLINKTYPE.FAVORITED}`
+          `/api/quicklinks/link/user-link?userId=${user?.id}&linkType=${USERLINKTYPE.FAVORITED}`
         );
 
         dispatch(setFavoriteList(favoriteLinksData));
@@ -33,7 +33,7 @@ export default function FavoriteLink() {
     };
 
     getFavoriteLinks();
-  }, [dispatch, user.id, setLoading]);
+  }, [dispatch, user?.id, setLoading]);
 
   return (
     <div className="bg-gray-100 p-8 rounded-sm">
