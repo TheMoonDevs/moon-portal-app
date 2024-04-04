@@ -34,7 +34,7 @@ export const WorklogView = ({
       .then((data) => {
         console.log(data);
         setWorkLog(
-          data?.data?.worklogs?.[0] ||
+          data?.data?.workLogs?.[0] ||
             (_logType === "privateLog"
               ? WorkLogsHelper.defaultPrivateBoard(
                   dayjs().format("MM-YYYY"),
@@ -73,7 +73,7 @@ export const WorklogView = ({
         .then((data) => {
           console.log(data);
           setWorkLog(
-            data?.data?.worklogs?.[0] ||
+            data?.data?.workLogs?.[0] ||
               (_logType === "privateLog"
                 ? WorkLogsHelper.defaultPrivateBoard(
                     dayjs().format("MM-YYYY"),
@@ -89,6 +89,6 @@ export const WorklogView = ({
   }, [id, date, workLog, _date, _logType]);
 
   return (
-    <WorklogEditor editworkLogs={workLog} refreshWorklogs={refreshWorklogs} />
+    <WorklogEditor editWorkLogs={workLog} refreshWorklogs={refreshWorklogs} />
   );
 };
