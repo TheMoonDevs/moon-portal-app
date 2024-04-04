@@ -11,6 +11,7 @@ export const ShortUrlList = () => {
   const { allLinks } = useAppSelector((state) => state.shortUrl);
   const { copyToClipboard, copied } = useCopyToClipboard();
   const [activeCopyIndex, setActiveCopyIndex] = useState<null | number>(null);
+  const [activeDeleteId, setActiveDeleteId] = useState<null | string>(null);
   const textRef = useRef<HTMLSpanElement | null>(null);
   const dispatch = useAppDispatch();
 
@@ -19,6 +20,27 @@ export const ShortUrlList = () => {
       `${process.env.NEXT_PUBLIC_SHORT_LINK_BASE_URL}/l/${allLinks[index].slug}`
     );
     setActiveCopyIndex(index);
+  };
+
+  const handleDelete = async (id: string) => {
+    dispatch(setLoading(true));
+    setActiveDeleteId(id);
+
+    try {
+      const response = await ShortUrlSdk.deleteShortUrl(
+        "/api/short-url/delete-link",
+        id
+      );
+      if (response) {
+        const updatedData = allLinks.filter((item) => item.id !== id);
+        dispatch(setAllLinks(updatedData));
+        dispatch(setLoading(false));
+      }
+    } catch (error: any) {
+      dispatch(setLoading(false));
+      dispatch(setError({ isError: true, description: error.message }));
+      console.error(error);
+    }
   };
 
   useEffect(() => {
@@ -59,25 +81,39 @@ export const ShortUrlList = () => {
 
               return (
                 <tr key={link.id} className="border-b border-gray-200">
-                  <td className="px-4 py-2 ">
+                  <td className="px-2 py-2 flex flex-col gap-4">
                     <span ref={textRef}>
                       {process.env.NEXT_PUBLIC_SHORT_LINK_BASE_URL}/l/
                       {link.slug}
                     </span>
-                    <Tooltip title={isCopied ? "Copied!" : "Copy"}>
-                      {isCopied ? (
-                        <span className="material-icons-outlined !text-xl cursor-pointer">
-                          check
-                        </span>
-                      ) : (
-                        <span
-                          className="material-icons-outlined !text-xl cursor-pointer"
-                          onClick={() => handleCopy(index)}
-                        >
-                          content_copy
-                        </span>
-                      )}
-                    </Tooltip>
+                    <div className="flex gap-2">
+                      <Tooltip title={isCopied ? "Copied!" : "Copy"}>
+                        {isCopied ? (
+                          <span className="material-icons-outlined !text-xl cursor-pointer">
+                            check
+                          </span>
+                        ) : (
+                          <span
+                            className="material-icons-outlined !text-xl cursor-pointer"
+                            onClick={() => handleCopy(index)}
+                          >
+                            content_copy
+                          </span>
+                        )}
+                      </Tooltip>
+                      <Tooltip title={"Delete"}>
+                        {isLoading && activeDeleteId === link.id ? (
+                          <span>Deleting...</span>
+                        ) : (
+                          <span
+                            className="material-icons-outlined !text-xl cursor-pointer"
+                            onClick={() => handleDelete(link.id)}
+                          >
+                            delete
+                          </span>
+                        )}
+                      </Tooltip>
+                    </div>
                   </td>
                   <td className="px-4 py-2">{link.redirectTo}</td>
                   <td className="px-4 py-2">
