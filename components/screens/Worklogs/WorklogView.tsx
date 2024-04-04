@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { WorklogEditor } from "./WorklogEditor";
 import dayjs from "dayjs";
 import { WorkLogsHelper } from "./WorklogsHelper";
+import store from "@/utils/redux/store";
 
 export const WorklogView = ({
   date,
@@ -33,7 +34,7 @@ export const WorklogView = ({
       .then((data) => {
         console.log(data);
         setWorkLog(
-          data?.data?.worklogs?.[0] ||
+          data?.data?.workLogs?.[0] ||
             (_logType === "privateLog"
               ? WorkLogsHelper.defaultPrivateBoard(
                   dayjs().format("MM-YYYY"),
@@ -48,7 +49,8 @@ export const WorklogView = ({
   };
 
   useEffect(() => {
-    if (workLog || !user) return;
+    const _user = store.getState().auth.user;
+    if (workLog || !_user) return;
     //setMarkdownData(`testing`)
     let _id = id && id?.length > 5 ? id : null;
     if (_id) {
@@ -62,31 +64,31 @@ export const WorklogView = ({
         });
     } else {
       let query = "";
-      if (!_id && _date)
+      if (_logType === "dayLog" && _date)
         query = `?date=${
           date || _date || dayjs().format("YYYY-MM-DD")
-        }&userId=${user?.id}`;
-      if (!_id && _logType) query = `?logType=${_logType}&userId=${user?.id}`;
+        }&userId=${_user?.id}`;
+      else if (_logType) query = `?logType=${_logType}&userId=${_user?.id}`;
       PortalSdk.getData(`/api/user/worklogs${query}`, null)
         .then((data) => {
           console.log(data);
           setWorkLog(
-            data?.data?.worklogs?.[0] ||
+            data?.data?.workLogs?.[0] ||
               (_logType === "privateLog"
                 ? WorkLogsHelper.defaultPrivateBoard(
                     dayjs().format("MM-YYYY"),
-                    user
+                    _user
                   )
-                : WorkLogsHelper.defaultWorklogs(_date, user))
+                : WorkLogsHelper.defaultWorklogs(_date, _user))
           );
         })
         .catch((err) => {
           console.log(err);
         });
     }
-  }, [id, date, workLog, _date]);
+  }, [id, date, workLog, _date, _logType]);
 
   return (
-    <WorklogEditor editworkLogs={workLog} refreshWorklogs={refreshWorklogs} />
+    <WorklogEditor editWorkLogs={workLog} refreshWorklogs={refreshWorklogs} />
   );
 };

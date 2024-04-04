@@ -119,7 +119,8 @@ export const ZeroTrackerPage = () => {
       });
   };
 
-  if (!user?.workData) return null;
+  // TO-DO : need to enable as a fail-safe for must-adding workData.
+  //if (!user?.workData) return null;
 
   const today = new Date();
   const _today = currentMonthDayjs;
@@ -157,7 +158,7 @@ export const ZeroTrackerPage = () => {
           <span className="icon_size material-icons">arrow_back</span>
         </Link>
         <h1 className="uppercase tracking-[0.2em] font-mono text-xl">
-        TRACKER
+          TRACKER
         </h1>
         <div className="ml-auto flex flex-row items-center justify-end gap-3 ">
           <div
@@ -440,38 +441,41 @@ export const ZeroTrackerPage = () => {
             </p>
             <div className="w-full">
               {zeroUsers
-              .filter((_zeros:any) => currentMonthDayjs.month() === dayjs(_zeros.date).month())
-              .map((zeroWithUsers: any, _index: number) => (
-                <div
-                  key={zeroWithUsers.date + _index}
-                  className="p-2 flex flex-row justify-between items-center gap-4 w-full border-b border-neutral-300"
-                >
-                  <div className="flex flex-row items-center gap-2">
-                    <span
-                      className={`${
-                        zeroWithUsers.type === "zero"
-                          ? "bg-blue-500"
-                          : zeroWithUsers.type === "meeting"
-                          ? "bg-red-500"
-                          : "bg-neutral-200"
-                      } w-2 h-2 rounded-full`}
-                    ></span>
-                    <p className="text-[0.9em] text-neutral-500  font-bold">
-                      {dayjs(zeroWithUsers.date).format("DD MMM")}
-                    </p>
+                .filter(
+                  (_zeros: any) =>
+                    currentMonthDayjs.month() === dayjs(_zeros.date).month()
+                )
+                .map((zeroWithUsers: any, _index: number) => (
+                  <div
+                    key={zeroWithUsers.date + _index}
+                    className="p-2 flex flex-row justify-between items-center gap-4 w-full border-b border-neutral-300"
+                  >
+                    <div className="flex flex-row items-center gap-2">
+                      <span
+                        className={`${
+                          zeroWithUsers.type === "zero"
+                            ? "bg-blue-500"
+                            : zeroWithUsers.type === "meeting"
+                            ? "bg-red-500"
+                            : "bg-neutral-200"
+                        } w-2 h-2 rounded-full`}
+                      ></span>
+                      <p className="text-[0.9em] text-neutral-500  font-bold">
+                        {dayjs(zeroWithUsers.date).format("DD MMM")}
+                      </p>
+                    </div>
+                    <div className="flex flex-row items-center justify-between">
+                      {zeroWithUsers.users.map((z_user: User) => (
+                        <img
+                          key={z_user.id}
+                          src={z_user.avatar || ""}
+                          className="w-6 h-6 rounded-full border border-neutral-200"
+                          alt={z_user.name || ""}
+                        />
+                      ))}
+                    </div>
                   </div>
-                  <div className="flex flex-row items-center justify-between">
-                    {zeroWithUsers.users.map((z_user: User) => (
-                      <img
-                        key={z_user.id}
-                        src={z_user.avatar || ""}
-                        className="w-6 h-6 rounded-full border border-neutral-200"
-                        alt={z_user.name || ""}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ))}
+                ))}
             </div>
           </div>
         </div>
