@@ -107,8 +107,10 @@ export const CreateLinkModal = () => {
     if (!formData) return;
 
     const link = formData.get("link") as string;
-
     try {
+      if (!user?.id) {
+        throw new Error("User not found");
+      }
       const metadata = await QuicklinksSdk.getLinkMetaData(link);
       // store the metadata in db
       const newLinkData = {
@@ -122,7 +124,7 @@ export const CreateLinkModal = () => {
           departmentId ||
           (selectedDepartment.id !== "" && selectedDepartment.id) ||
           null,
-        authorId: user.id,
+        authorId: user?.id,
       };
 
       const response = await QuicklinksSdk.createData(
