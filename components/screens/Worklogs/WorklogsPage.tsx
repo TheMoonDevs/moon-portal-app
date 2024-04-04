@@ -106,6 +106,7 @@ export const WorklogsPage = () => {
   const thisDate = dayjs().date();
   const [monthTab, setMonthTab] = useState<number>(thisMonth);
   const [logsList, setLogsList] = useState<WorkLogs[]>([]);
+  const [yearLogData, setYearLogData] = useState<any>();
   const [privateBoard, setPrivateBoard] = useState<WorkLogs | null>(null);
 
   useEffect(() => {
@@ -115,26 +116,7 @@ export const WorklogsPage = () => {
     PortalSdk.getData(`/api/user/worklogs?userId=${_user.id}`, null)
       .then((data) => {
         console.log(data);
-        const _total_days_in_month = dayjs().month(monthTab).daysInMonth();
-        const _logList = Array.from({
-          length:
-            monthTab != thisMonth
-              ? _total_days_in_month
-              : _total_days_in_month <= thisDate + 2
-              ? _total_days_in_month
-              : thisDate + 2,
-        })
-          .map((_, i) => {
-            const _date = dayjs()
-              .date(i + 1)
-              .format("YYYY-MM-DD");
-            const _worklog = data?.data?.workLogs.find(
-              (wl: WorkLogs) => wl.date === _date
-            );
-            return _worklog || WorkLogsHelper.defaultWorklogs(_date, _user);
-          })
-          .reverse();
-        setLogsList(_logList);
+        setYearLogData(data);
 
         const _privateboard = data?.data?.workLogs.find(
           (wl: WorkLogs) => wl.logType === "privateLog"
@@ -152,7 +134,32 @@ export const WorklogsPage = () => {
       });
   }, []);
 
-  if (!user?.workData) return null;
+  useEffect(() => {
+    const _user = store.getState().auth.user;
+    const _total_days_in_month = dayjs().month(monthTab).daysInMonth();
+    const _logList = Array.from({
+      length:
+        monthTab != dayjs().month()
+          ? _total_days_in_month
+          : _total_days_in_month <= dayjs().date() + 2
+          ? _total_days_in_month
+          : dayjs().date() + 2,
+    })
+      .map((_, i) => {
+        const _date = dayjs()
+          .month(monthTab)
+          .date(i + 1)
+          .format("YYYY-MM-DD");
+        const _worklog = yearLogData?.data?.workLogs.find(
+          (wl: WorkLogs) => wl.date === _date
+        );
+        return _worklog || WorkLogsHelper.defaultWorklogs(_date, _user);
+      })
+      .reverse();
+    setLogsList(_logList);
+  }, [monthTab, yearLogData]);
+
+  //if (!user?.workData) return null;
 
   return (
     <div className="flex flex-col">
@@ -162,7 +169,7 @@ export const WorklogsPage = () => {
           <Link href={APP_ROUTES.userWorklogs}>
             <div className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700">
               <span className="icon_size material-symbols-outlined">
-              timeline
+                timeline
               </span>
             </div>
           </Link>
@@ -186,12 +193,12 @@ export const WorklogsPage = () => {
               key={month_tab}
               onClick={() => setMonthTab(month_tab)}
               className={` rounded-3xl cursor-pointer ${
-                dayjs().month() === month_tab ? "border border-neutral-600" : ""
+                monthTab === month_tab ? "border border-neutral-600" : ""
               }`}
             >
               <h4
                 className={`text-sm ${
-                  dayjs().month() === month_tab
+                  monthTab === month_tab
                     ? "font-bold text-neutral-800"
                     : "text-neutral-400"
                 } p-2 px-4`}
