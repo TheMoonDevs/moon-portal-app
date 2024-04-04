@@ -19,7 +19,7 @@ export const QuicklinksDashboard = () => {
   const { topUsedList } = useAppSelector((state) => state.quicklinks);
 
   useEffect(() => {
-    if (!user.id) {
+    if (!user?.id) {
       return;
     }
     const getTopUsedLinks = async () => {
@@ -40,7 +40,7 @@ export const QuicklinksDashboard = () => {
     };
 
     getTopUsedLinks();
-  }, [dispatch, user.id, setLoading]);
+  }, [dispatch, user?.id, setLoading]);
   return (
     <div className="mt-10 w-full">
       <TopUsedLink>
