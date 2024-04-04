@@ -16,9 +16,13 @@ export const shortUrlSlice = createSlice({
     directories: [],
     favoriteList: [],
     topUsedList: [],
-    currentView: localStorage.getItem("currentView")
-      ? (localStorage.getItem("currentView") as "list" | "group" | "thumbnail")
-      : "group",
+    currentView:
+      typeof window !== "undefined" && localStorage.getItem("currentView")
+        ? (localStorage.getItem("currentView") as
+            | "list"
+            | "group"
+            | "thumbnail")
+        : "group",
     activeDirectoryId: null,
     isCreateLinkModalOpen: false,
     toast: {
@@ -126,7 +130,8 @@ export const shortUrlSlice = createSlice({
     },
 
     setCurrentView: (state, action) => {
-      localStorage.setItem("currentView", action.payload);
+      if (typeof window !== "undefined")
+        localStorage.setItem("currentView", action.payload);
       state.currentView = action.payload;
     },
   },

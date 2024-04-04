@@ -21,7 +21,7 @@ export default function QuicklinkHeader() {
       <div>
         <h1 className="text-3xl pb-2">
           {path?.startsWith(Path.dashboard) &&
-            `${user.name?.split(" ")[0] || user.username}'s Dashboard`}
+            `${user?.name?.split(" ")[0] || user?.username}'s Dashboard`}
 
           {path?.startsWith(Path.department) &&
             path.split("/")[3].toLocaleUpperCase()}
