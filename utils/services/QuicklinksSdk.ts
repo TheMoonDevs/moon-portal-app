@@ -1,7 +1,10 @@
 const METADATA_API_URL =
+  process.env.METADATA_API_URL ||
   "https://apps.themoondevs.com/birthdaybook/links/metadata";
 
-const METADATA_API_TOKEN = "kjbdvfelrkbviAkjelknfvjdknvkndknvikbvroiebsrjvb";
+const METADATA_API_TOKEN =
+  process.env.METADATA_API_TOKEN ||
+  "kjbdvfelrkbviAkjelknfvjdknvkndknvikbvroiebsrjvb";
 
 export const QuicklinksSdk = {
   getData: async (endpoint: string) => {
