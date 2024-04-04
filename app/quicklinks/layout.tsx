@@ -1,14 +1,40 @@
-import QuicklinksHeader from "@/components/screens/Quicklinks/global/Header";
-import QuicklinksSidebar from "@/components/screens/Quicklinks/global/Sidebar";
+import { QuicklinksLayout } from "@/components/screens/Quicklinks/global/QuicklinksLayout";
+import { APP_BASE_URL } from "@/utils/constants/appInfo";
+import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
+import { Department, Directory } from "@prisma/client";
 
-export default function Layout({ children }: { children: React.ReactNode }) {
-  return (
-    <main className="flex gap-4">
-      <QuicklinksSidebar />
-      <div className="p-6 pr-8 pl-4 w-full">
-        <QuicklinksHeader />
-        {children}
-      </div>
-    </main>
-  );
+const getDirectoryAndDepartment = async () => {
+  try {
+    const ArrayOfPromises = [
+      QuicklinksSdk.getData(`${APP_BASE_URL}/api/quicklinks/department`),
+      QuicklinksSdk.getData(`${APP_BASE_URL}/api/quicklinks/directory`),
+    ];
+    const responses = await Promise.all(ArrayOfPromises);
+    const [departmentRes, directoryRes] = responses;
+    const departments: Department[] = departmentRes.data.departments;
+    const directories: Directory[] = directoryRes.data.directoryList;
+
+    return { departments, directories };
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+export const revalidate = 0;
+
+export default async function Layout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  let response = await getDirectoryAndDepartment();
+
+  if (!response) {
+    response = {
+      departments: [],
+      directories: [],
+    };
+  }
+
+  return <QuicklinksLayout response={response}>{children}</QuicklinksLayout>;
 }
