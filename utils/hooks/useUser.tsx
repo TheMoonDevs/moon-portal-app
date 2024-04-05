@@ -6,7 +6,7 @@ import { APP_ROUTES, LOCAL_STORAGE } from "../constants/appInfo";
 import { useRouter } from "next/navigation";
 import { User } from "@prisma/client";
 import { useAppDispatch, useAppSelector } from "../redux/store";
-import { setReduxUser } from "../redux/auth/auth.slice";
+import { setReduxUser,setGoogleVerificationStatus } from "../redux/auth/auth.slice";
 
 export const useUser = (newfetch?: boolean) => {
   const { data, status } = useSession();
@@ -15,6 +15,7 @@ export const useUser = (newfetch?: boolean) => {
   const sessionUser = useMemo(() => (data?.user as User) || {}, [data]);
   const fetchedUser = useAppSelector((state) => state.auth.user);
   const [localUser, setLocalUser] = useState<User | null>(null);
+  const isGoogleVerified = useAppSelector((state) => state.auth.isGoogleVerified);
 
   // fetch from local storage
   useEffect(() => {
@@ -61,10 +62,12 @@ export const useUser = (newfetch?: boolean) => {
 
   return {
     user: fetchedUser?.id ? fetchedUser : localUser?.id ? localUser : null,
-    status: fetchedUser?.id != null ? "authenticated" : status,
+    isUserVerified: isGoogleVerified,
+    status: fetchedUser?.id != null ? 'authenticated' : status,
     data,
     signOutUser: () => {
       localStorage.removeItem(LOCAL_STORAGE.user);
+      localStorage.removeItem('isGoogleVerified');
       signOut({
         callbackUrl: APP_ROUTES.login,
       });

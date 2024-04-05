@@ -2,7 +2,8 @@
 "use client";
 
 import Image from "next/image";
-import { MobileBox, LoginButtons, LoginPassCode, LoginState } from "./Login";
+import { MobileBox, LoginButtons, LoginState } from "./Login";
+import { LoginPassCode } from "./LoginPassCode";
 import { useEffect, useState } from "react";
 import { InstallButton, InstallState } from "./Install";
 import { GreyButton } from "@/components/elements/Button";
