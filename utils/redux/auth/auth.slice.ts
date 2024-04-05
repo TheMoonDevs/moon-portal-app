@@ -5,10 +5,14 @@ export const uiSlice = createSlice({
   name: "ui",
   initialState: {
     user: null as User | null,
+    isGoogleVerified: false,
   },
   reducers: {
     setReduxUser: (state, action) => {
       state.user = action.payload;
+    },
+    setGoogleVerificationStatus: (state, action) => {
+      state.isGoogleVerified = action.payload;
     },
   },
 });
@@ -16,6 +20,6 @@ export const uiSlice = createSlice({
 const { actions, reducer } = uiSlice;
 
 // Only Slice Actions are generated here, refer sharedActions for others.
-export const { setReduxUser } = actions;
+export const { setReduxUser, setGoogleVerificationStatus } = actions; 
 
 export default reducer;
