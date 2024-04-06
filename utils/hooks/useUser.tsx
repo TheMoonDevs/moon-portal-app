@@ -67,7 +67,6 @@ export const useUser = (newfetch?: boolean) => {
     data,
     signOutUser: () => {
       localStorage.removeItem(LOCAL_STORAGE.user);
-      localStorage.removeItem('isGoogleVerified');
       signOut({
         callbackUrl: APP_ROUTES.login,
       });

@@ -21,6 +21,7 @@ export const LoginPage = () => {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const { data, status, user, isUserVerified, signOutUser } = useUser(false);
+  const [enteredPasscode, setEnteredPasscode] = useState<string | null>('');
 
   useEffect(() => {
     if (status === 'authenticated') {
@@ -43,6 +44,7 @@ export const LoginPage = () => {
         console.log('signIn callback', data);
         if (data?.ok) {
           console.log('Logged in!', data);
+          localStorage.setItem('passcode', passCode);
           // router.push(APP_ROUTES.home);
         } else {
           console.log('Failed to login!', data);
@@ -90,7 +92,11 @@ export const LoginPage = () => {
             ) : (
               <div>
                 <p className='text-neutral-400   text-xs text-center'>
-                  Are you {user?.email}? Please verify by signing in via google.
+                  Are you{' '}
+                  <span className='font-medium text-neutral-100 '>
+                    {user?.email}?
+                  </span>{' '}
+                  Please verify by signing in via google.
                 </p>{' '}
               </div>
             ))}
@@ -104,6 +110,7 @@ export const LoginPage = () => {
           <LoginPassCode
             onPassCodeFilled={(passCode) => {
               loginWithPassCode(passCode);
+              setEnteredPasscode(passCode);
               setTab(InstallState.SPLASH);
             }}
           />
@@ -116,7 +123,11 @@ export const LoginPage = () => {
           />
         )}
         {status === 'authenticated' && user && !isUserVerified && (
-          <GoogleVerifyPage signOutUser={signOutUser} setError={setError} />
+          <GoogleVerifyPage
+            signOutUser={signOutUser}
+            setError={setError}
+            passcode={enteredPasscode}
+          />
         )}
         {isUserVerified && (
           <GreyButton
