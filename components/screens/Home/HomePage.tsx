@@ -7,10 +7,12 @@ import { ProfileSection } from "./ProfileSection";
 import { USERTYPE } from "@prisma/client";
 import { LoaderScreen } from "@/components/elements/Loaders";
 import { MoodTabs } from "./MoodTabs";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { StartSection } from "./StartSection";
 import { HomeTabs } from "@/utils/@types/enums";
 import { ButtonBoard } from "./ButtonBoard";
+import { APP_ROUTES } from "@/utils/constants/appInfo";
+import { useRouter } from 'next/navigation';
 
 const MemberHomePage = () => {
   const { user } = useUser();
@@ -31,7 +33,13 @@ const MemberHomePage = () => {
 };
 
 export const HomePage = () => {
-  const { user } = useUser();
+  const { user, isUserVerified } = useUser();
+  const router = useRouter();
+  useEffect(() => {
+    if (!isUserVerified) {
+      router.push(APP_ROUTES.login);
+    }
+  }, [isUserVerified, router, user]);
   if (!user) return <LoaderScreen />;
   if (user.userType == USERTYPE.MEMBER) {
     return <MemberHomePage />;
