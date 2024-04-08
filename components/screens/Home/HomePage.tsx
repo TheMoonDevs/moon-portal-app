@@ -43,7 +43,6 @@ const ClientHomePage = () => {
     <div className="home_bg min-h-screen">
       <ProfileSection user={user} />
       <DailySection user={user} />
-      <ButtonBoard />
       <div className="h-[300px]"></div>
     </div>
   );

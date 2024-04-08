@@ -103,7 +103,7 @@ export const LoginPage = () => {
         {status === "authenticated" && (
           <GreyButton
             onClick={() => {
-              router.push(APP_ROUTES.dashboard);
+              router.push(APP_ROUTES.home);
             }}
           >
             Enter App

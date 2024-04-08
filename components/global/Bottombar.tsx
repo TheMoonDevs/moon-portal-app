@@ -1,6 +1,8 @@
 "use client";
 
 import { APP_ROUTES, AppRoutesHelper } from "@/utils/constants/appInfo";
+import { useUser } from "@/utils/hooks/useUser";
+import { USERTYPE } from "@prisma/client";
 import { usePathname, useRouter } from "next/navigation";
 
 const NAVIGATION_OPTIONS = [
@@ -31,16 +33,49 @@ const NAVIGATION_OPTIONS = [
   },
 ];
 
+const CLIENT_NAVIGATION_OPTIONS = [
+  {
+    name: "Home",
+    path: APP_ROUTES.home,
+    icon: "perm_identity",
+  },
+  {
+    name: "Engagements",
+    path: APP_ROUTES.engagements,
+    icon: "task_alt",
+  },
+  {
+    name: "Referrals",
+    path: APP_ROUTES.referrals,
+    icon: "group_add",
+  },
+  // {
+  //   name: "Growth",
+  //   path: APP_ROUTES.growth,
+  //   icon: "trending_up",
+  // },
+  {
+    name: "Notifications",
+    path: APP_ROUTES.notifications,
+    icon: "notifications",
+  },
+];
+
 export const Bottombar = ({ visible = true }: { visible?: boolean }) => {
   const path = usePathname();
   const router = useRouter();
+  const { user } = useUser();
 
+  const options =
+    user?.userType === USERTYPE.CLIENT
+      ? CLIENT_NAVIGATION_OPTIONS
+      : NAVIGATION_OPTIONS;
   if (!visible) return null;
   if (!AppRoutesHelper.bottomBarShown(path)) return null;
 
   return (
     <div className="flex flex-row fixed bottom-0 left-0 right-0 py-1 px-1 mx-1 my-1 gap-6 bg-neutral-900 rounded-[1.15em]">
-      {NAVIGATION_OPTIONS.map((option) => (
+      {options.map((option) => (
         <div
           onClick={() => {
             router.push(option.path);
