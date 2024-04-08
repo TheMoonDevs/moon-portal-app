@@ -33,7 +33,13 @@ export const MoodTabs = ({
               setTab(HomeTabs.START);
               break;
             case 1:
-              setTab(HomeTabs.ACTIONS);
+              setTab(HomeTabs.CHARGING);
+              break;
+            case 2:
+              setTab(HomeTabs.INWORK);
+              break;
+            case 3:
+              setTab(HomeTabs.PLANUP);
               break;
             default:
               break;
