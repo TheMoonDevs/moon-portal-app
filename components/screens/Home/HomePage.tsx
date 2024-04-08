@@ -34,11 +34,29 @@ const MemberHomePage = () => {
   );
 };
 
+const ClientHomePage = () => {
+  const { user } = useUser();
+
+  if (!user) return <LoaderScreen />;
+
+  return (
+    <div className="home_bg min-h-screen">
+      <ProfileSection user={user} />
+      <DailySection user={user} />
+      <ButtonBoard />
+      <div className="h-[300px]"></div>
+    </div>
+  );
+};
+
 export const HomePage = () => {
   const { user } = useUser();
   if (!user) return <LoaderScreen />;
   if (user.userType == USERTYPE.MEMBER) {
     return <MemberHomePage />;
+  }
+  if (user.userType == USERTYPE.CLIENT) {
+    return <ClientHomePage />;
   }
   return (
     <div className="home_bg min-h-screen">

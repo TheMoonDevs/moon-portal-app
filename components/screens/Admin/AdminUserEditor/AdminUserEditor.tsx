@@ -134,12 +134,13 @@ export const AdminUserEditor = () => {
       .then((res) => res.json())
       .then((data) => {
         setLoading(false);
-        showToast({
-          id: "user-saved",
-          message: "User Succesfully Saved",
-          icon: "done_all",
-          color: "green",
-        });
+        if (data.status === "success")
+          showToast({
+            id: "user-saved",
+            message: "User Succesfully Saved",
+            icon: "done_all",
+            color: "green",
+          });
         console.log(data);
       })
       .catch((err) => {
