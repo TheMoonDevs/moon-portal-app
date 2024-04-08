@@ -11,6 +11,8 @@ import { useState } from "react";
 import { StartSection } from "./StartSection";
 import { HomeTabs } from "@/utils/@types/enums";
 import { ButtonBoard } from "./ButtonBoard";
+import { InWorkSection } from "./InWorkSection";
+import { InPlanSection } from "./InPlanSection";
 
 const MemberHomePage = () => {
   const { user } = useUser();
@@ -24,7 +26,9 @@ const MemberHomePage = () => {
       <ButtonBoard />
       <MoodTabs user={user} setTab={setTab} />
       {tab === HomeTabs.START && <StartSection />}
-      {tab === HomeTabs.ACTIONS && <ActionsSection />}
+      {tab === HomeTabs.CHARGING && <ActionsSection />}
+      <InWorkSection visible={tab === HomeTabs.INWORK} />
+      <InPlanSection visible={tab === HomeTabs.PLANUP} />
       <div className="h-[300px]"></div>
     </div>
   );

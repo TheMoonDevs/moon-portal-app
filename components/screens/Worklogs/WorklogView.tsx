@@ -15,9 +15,13 @@ import store from "@/utils/redux/store";
 export const WorklogView = ({
   date,
   id,
+  compactView,
+  visible = true,
 }: {
   id?: string;
   date?: string | null;
+  compactView?: boolean;
+  visible?: boolean;
 }) => {
   const { user } = useUser();
   const [workLog, setWorkLog] = useState<WorkLogs | null>(null);
@@ -69,6 +73,11 @@ export const WorklogView = ({
           date || _date || dayjs().format("YYYY-MM-DD")
         }&userId=${_user?.id}`;
       else if (_logType) query = `?logType=${_logType}&userId=${_user?.id}`;
+      else if (date)
+        query = `?date=${date || dayjs().format("YYYY-MM-DD")}&userId=${
+          _user?.id
+        }`;
+      console.log(query);
       PortalSdk.getData(`/api/user/worklogs${query}`, null)
         .then((data) => {
           console.log(data);
@@ -79,7 +88,7 @@ export const WorklogView = ({
                     dayjs().format("MM-YYYY"),
                     _user
                   )
-                : WorkLogsHelper.defaultWorklogs(_date, _user))
+                : WorkLogsHelper.defaultWorklogs(_date || date, _user))
           );
         })
         .catch((err) => {
@@ -88,7 +97,13 @@ export const WorklogView = ({
     }
   }, [id, date, workLog, _date, _logType]);
 
+  if (!visible) return;
+
   return (
-    <WorklogEditor editWorkLogs={workLog} refreshWorklogs={refreshWorklogs} />
+    <WorklogEditor
+      editWorkLogs={workLog}
+      refreshWorklogs={refreshWorklogs}
+      compactView={compactView}
+    />
   );
 };
