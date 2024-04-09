@@ -163,7 +163,7 @@ export const WorklogsPage = () => {
 
   return (
     <div className="flex flex-col">
-      <div className="fixed left-0 right-0 top-0 z-10 bg-white flex flex-row gap-3 py-2 px-3 items-center justify-between border-b border-neutral-400">
+      <div className="fixed left-0 right-0 top-0 z-10 bg-white flex flex-row gap-3 py-2 px-3 items-center justify-between border-b border-neutral-400 md:pl-[6rem]">
         <h1 className="tracking-widest text-sm font-bold">My Worklogs</h1>
         <div className="flex flex-row gap-1">
           <Link href={APP_ROUTES.userWorklogs}>
