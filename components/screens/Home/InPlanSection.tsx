@@ -13,7 +13,6 @@ export const InPlanSection = ({ visible }: { visible?: boolean }) => {
         <WorklogView
           date={dayjs().add(1, "day").format("YYYY-MM-DD")}
           compactView={true}
-          visible={visible}
         />
         <Link
           href={`${APP_ROUTES.userWorklogs}?date=${dayjs().format(
