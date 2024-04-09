@@ -132,7 +132,7 @@ export const LoginPage = () => {
         {isUserVerified && (
           <GreyButton
             onClick={() => {
-              router.push(APP_ROUTES.dashboard);
+              router.push(APP_ROUTES.home);
             }}
           >
             Enter App

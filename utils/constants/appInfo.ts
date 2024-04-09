@@ -3,6 +3,7 @@ export enum APP_ROUTES {
   teams = "/teams",
   engagements = "/engagements",
   growth = "/growth",
+  referrals = "/referrals",
   notifications = "/notifications",
   dashboard = "/dashboard",
   analytics = "/analytics",

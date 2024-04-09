@@ -1,4 +1,6 @@
 export enum HomeTabs {
-  ACTIONS = "ACTIONS",
+  CHARGING = "CHARGING",
   START = "KICKSTART",
+  INWORK = "INWORK",
+  PLANUP = "PLANUP",
 }
