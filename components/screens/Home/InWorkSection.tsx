@@ -10,11 +10,7 @@ export const InWorkSection = ({ visible }: { visible?: boolean }) => {
         style={{ display: !visible ? "none" : "block" }}
         className="relative m-4 mt-8 py-2 px-0 border border-2 border-neutral-800 rounded-xl shadow-md"
       >
-        <WorklogView
-          date={dayjs().format("YYYY-MM-DD")}
-          compactView={true}
-          visible={visible}
-        />
+        <WorklogView date={dayjs().format("YYYY-MM-DD")} compactView={true} />
         <Link
           href={`${APP_ROUTES.userWorklogs}?date=${dayjs().format(
             "YYYY-MM-DD"
