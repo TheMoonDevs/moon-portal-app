@@ -1,6 +1,6 @@
 import { getDateInFormat, getTimeInFormat } from "@/utils/helpers/prettyprint";
 import { useUser } from "@/utils/hooks/useUser";
-import { User } from "@prisma/client";
+import { USERTYPE, User } from "@prisma/client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -14,12 +14,14 @@ export const DailySection = ({ user }: { user: User }) => {
           It&apos;s &nbsp;
           <strong>{getTimeInFormat()}</strong> &nbsp; now.
         </h4>
-        <p className="flex items-center gap-2 pl-2 text-xs border-neutral-400 border-l">
-          <span className="icon_size text-neutral-800  material-icons">
-            schedule
-          </span>
-          40Hrs per week
-        </p>
+        {user?.userType === USERTYPE.MEMBER && (
+          <p className="flex items-center gap-2 pl-2 text-xs border-neutral-400 border-l">
+            <span className="icon_size text-neutral-800  material-icons">
+              schedule
+            </span>
+            {(user?.workData as any)?.workHours || "40"}Hrs per week
+          </p>
+        )}
       </div>
       <div className="flex flex-row items-center justify-between text-sm p-2 w-full">
         <div className="pl-2">
