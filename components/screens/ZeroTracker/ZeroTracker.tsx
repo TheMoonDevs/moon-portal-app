@@ -29,7 +29,17 @@ export const ZeroTrackerPage = () => {
     PortalSdk.getData(`/api/user/zeros?userId=${user?.id}`, null)
       .then(({ data }) => {
         //console.log(data);
-        if (data?.zeroRecords?.length === 0 || !data?.zeroRecords) return;
+        if (data?.zeroRecords?.length === 0 || !data?.zeroRecords) {
+          setZeroRecord({
+            id: "",
+            userId: user.id,
+            year: dayjsLib.year().toString(),
+            config: "zero",
+            allZeros: [],
+          } as ZeroRecords);
+          setIsLoading(false);
+          return;
+        }
         setZeroRecord(data.zeroRecords[0]);
         setIsLoading(false);
       })
