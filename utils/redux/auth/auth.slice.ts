@@ -5,10 +5,19 @@ export const uiSlice = createSlice({
   name: "ui",
   initialState: {
     user: null as User | null,
+    verifiedUserEmail:
+      typeof window !== "undefined"
+        ? localStorage.getItem("verifiedUserEmail")
+        : null,
   },
   reducers: {
     setReduxUser: (state, action) => {
       state.user = action.payload;
+    },
+    setGoogleVerificationEmail: (state, action) => {
+      if (typeof window !== "undefined")
+        localStorage.setItem("verifiedUserEmail", action.payload);
+      state.verifiedUserEmail = action.payload;
     },
   },
 });
@@ -16,6 +25,6 @@ export const uiSlice = createSlice({
 const { actions, reducer } = uiSlice;
 
 // Only Slice Actions are generated here, refer sharedActions for others.
-export const { setReduxUser } = actions;
+export const { setReduxUser, setGoogleVerificationEmail } = actions;
 
 export default reducer;
