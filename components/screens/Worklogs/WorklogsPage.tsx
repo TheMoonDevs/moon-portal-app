@@ -46,7 +46,7 @@ export const WorkLogItem = ({ data }: { data: WorkLogs }) => {
         "?logType=" +
         data.logType
       }
-      className="flex flex-col gap-3 rounded-lg border border-neutral-200 p-3"
+      className={`flex flex-col gap-3 rounded-lg border border-neutral-200 p-3 ${data.logType === 'privateLog' ? 'h-full' : '' }`}
     >
       <div
         className={`flex flex-row justify-between ${
@@ -208,27 +208,29 @@ export const WorklogsPage = () => {
             </div>
           ))}
         </div>
-        <div className="p-2">
-          {privateBoard && (
-            <WorkLogItem
-              key={
-                privateBoard.id +
-                "-" +
-                privateBoard.date +
-                "-" +
-                privateBoard.userId
-              }
-              data={privateBoard}
-            />
-          )}
-        </div>
-        <div className="grid grid-cols-2 gap-3 p-2">
-          {logsList.map((data) => (
-            <WorkLogItem
-              key={data.id + "-" + data.date + "-" + data.userId}
-              data={data}
-            />
-          ))}
+        <div className="flex flex-row gap-1 max-lg:flex-col w-full">
+          <div className="p-2 w-[25%] max-lg:w-full">
+            {privateBoard && (
+              <WorkLogItem
+                key={
+                  privateBoard.id +
+                  "-" +
+                  privateBoard.date +
+                  "-" +
+                  privateBoard.userId
+                }
+                data={privateBoard}
+              />
+            )}
+          </div>
+          <div className="grid grid-cols-4 gap-3 p-2 max-lg:grid-cols-3 max-md:grid-cols-2">
+            {logsList.map((data) => (
+              <WorkLogItem
+                key={data.id + "-" + data.date + "-" + data.userId}
+                data={data}
+              />
+            ))}
+          </div>
         </div>
         <div className="flex flex-col gap-3 h-[5rem]"></div>
       </div>
