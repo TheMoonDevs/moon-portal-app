@@ -12,7 +12,7 @@ import { StartSection } from "./StartSection";
 import { HomeTabs } from "@/utils/@types/enums";
 import { ButtonBoard } from "./ButtonBoard";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
-import { useRouter } from 'next/navigation';
+import { useRouter } from "next/navigation";
 import { InWorkSection } from "./InWorkSection";
 import { InPlanSection } from "./InPlanSection";
 
@@ -51,13 +51,9 @@ const ClientHomePage = () => {
 };
 
 export const HomePage = () => {
-  const { user, isUserVerified } = useUser();
+  const { user } = useUser();
   const router = useRouter();
-  useEffect(() => {
-    if (!isUserVerified) {
-      router.push(APP_ROUTES.login);
-    }
-  }, [isUserVerified, router, user]);
+
   if (!user) return <LoaderScreen />;
   if (user.userType == USERTYPE.MEMBER) {
     return <MemberHomePage />;
