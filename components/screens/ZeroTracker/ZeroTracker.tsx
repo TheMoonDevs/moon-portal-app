@@ -205,6 +205,7 @@ export const ZeroTrackerPage = () => {
           </div>
         </div>
       </div>
+      <div className='w-[80%] mx-auto max-w-[400px] m-auto my-1 max-md:w-full '>
       {!isLoading && (
         <div className="calendar">
           <div className="calendar-body">
@@ -615,6 +616,7 @@ export const ZeroTrackerPage = () => {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };
