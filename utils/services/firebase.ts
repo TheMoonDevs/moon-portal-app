@@ -1,6 +1,6 @@
 // Import the functions you need from the SDKs you need
 import { getApp, getApps, initializeApp } from "firebase/app";
-import { getAnalytics, logEvent } from "firebase/analytics";
+import { getAnalytics, isSupported, logEvent } from "firebase/analytics";
 import { GoogleAuthProvider, getAuth } from "firebase/auth";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
@@ -14,12 +14,14 @@ const firebaseConfig = {
   storageBucket: "themoondevs.appspot.com",
   messagingSenderId: "731981843950",
   appId: "1:731981843950:web:3a4757641b028d603c92ff",
-  measurementId: "G-N7LB3LY627"
+  measurementId: "G-N7LB3LY627",
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+
+//https://stackoverflow.com/a/72167004/15236909
+const analytics = isSupported().then((yes) => (yes ? getAnalytics(app) : null));
 
 export const getFirebaseAuth = () => {
   const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
