@@ -3,18 +3,19 @@ import { useSession, signOut } from "next-auth/react";
 import { useEffect, useMemo, useState } from "react";
 import { PortalSdk } from "../services/PortalSdk";
 import { APP_ROUTES, LOCAL_STORAGE } from "../constants/appInfo";
-import { useRouter } from "next/navigation";
 import { User } from "@prisma/client";
 import { useAppDispatch, useAppSelector } from "../redux/store";
 import { setReduxUser } from "../redux/auth/auth.slice";
 
 export const useUser = (newfetch?: boolean) => {
   const { data, status } = useSession();
-  const router = useRouter();
   const dispatch = useAppDispatch();
   const sessionUser = useMemo(() => (data?.user as User) || {}, [data]);
   const fetchedUser = useAppSelector((state) => state.auth.user);
   const [localUser, setLocalUser] = useState<User | null>(null);
+  const verifiedUserEmail = useAppSelector(
+    (state) => state.auth.verifiedUserEmail
+  );
 
   // fetch from local storage
   useEffect(() => {
@@ -27,7 +28,7 @@ export const useUser = (newfetch?: boolean) => {
       if (_user?.id) setLocalUser(_user);
       if (_user?.id) dispatch(setReduxUser(_user));
     }
-  }, []);
+  }, [dispatch]);
 
   useEffect(() => {
     if (fetchedUser) return;
@@ -57,10 +58,11 @@ export const useUser = (newfetch?: boolean) => {
       .catch((err) => {
         console.log(err);
       });
-  }, [newfetch, sessionUser, fetchedUser]);
+  }, [newfetch, sessionUser, fetchedUser, dispatch]);
 
   return {
     user: fetchedUser?.id ? fetchedUser : localUser?.id ? localUser : null,
+    verifiedUserEmail: verifiedUserEmail,
     status: fetchedUser?.id != null ? "authenticated" : status,
     data,
     signOutUser: () => {
