@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { forwardRef } from "react";
+import { forwardRef, memo } from "react";
 import { type MDXEditorMethods, type MDXEditorProps } from "@mdxeditor/editor";
 // ForwardRefEditor.tsx
 
@@ -13,8 +13,11 @@ const Editor = dynamic(() => import("./InitializedMDXEditor"), {
 
 // This is what is imported by other components. Pre-initialized with plugins, and ready
 // to accept other props, including a ref.
-export const MdxAppEditor = forwardRef<MDXEditorMethods, MDXEditorProps>(
-  (props, ref) => <Editor {...props} editorRef={ref} />
+export const MdxAppEditor = memo(
+  forwardRef<MDXEditorMethods, MDXEditorProps>((props, ref) => (
+    <Editor {...props} editorRef={ref} />
+  )),
+  (prev, next) => prev.key === next.key
 );
 
 // TS complains without the following line

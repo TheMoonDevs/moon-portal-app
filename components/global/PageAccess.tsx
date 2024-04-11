@@ -16,9 +16,8 @@ export const PageAccess = ({
   isAuthRequired?: boolean;
   isAdminRequired?: boolean;
 }) => {
-  const { user, status } = useUser();
+  const { user, status, verifiedUserEmail } = useUser();
   const router = useRouter();
-
   useEffect(() => {
     if (status === "unauthenticated" && isAuthRequired) {
       router.push(APP_ROUTES.login);
@@ -28,7 +27,19 @@ export const PageAccess = ({
       router.push(APP_ROUTES.home);
       return;
     }
-  }, [user, status, isAuthRequired, isAdminRequired, router]);
+
+    if (status === "authenticated" && verifiedUserEmail !== user?.email) {
+      router.push(APP_ROUTES.login);
+      return;
+    }
+  }, [
+    user,
+    status,
+    isAuthRequired,
+    isAdminRequired,
+    router,
+    verifiedUserEmail,
+  ]);
 
   if (status === "loading") {
     if (isAuthRequired || isAdminRequired)

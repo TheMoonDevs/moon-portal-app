@@ -250,7 +250,6 @@ export const AdminUserBasicData = ({
               ))}
             </select>
           </div>
-          <p>Work-Overlap</p>
         </div>
       </div>
     </LandscapeCard>

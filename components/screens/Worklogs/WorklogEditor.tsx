@@ -28,9 +28,11 @@ const MARKDOWN_PLACHELODER = `* `;
 export const WorklogEditor = ({
   editWorkLogs,
   refreshWorklogs,
+  compactView = false,
 }: {
   editWorkLogs: WorkLogs | null;
   refreshWorklogs: () => void;
+  compactView?: boolean;
 }) => {
   const { user } = useUser();
   const [markdownDatas, setMarkdownDatas] = useState<WorkLogPoints[]>(
@@ -73,6 +75,10 @@ export const WorklogEditor = ({
     console.log("placed ", editWorkLogs);
     isAuotSaving.current = true;
   }, [editWorkLogs]);
+
+  // useEffect(() => {
+  //   console.log("markdown datas changed", markdownDatas);
+  // }, [markdownDatas]);
 
   const saveWorkLog = useCallback(
     (_workLog: { works: WorkLogPoints[] } | null) => {
@@ -181,34 +187,37 @@ export const WorklogEditor = ({
 
   return (
     <div className="flex flex-col max-w-[400px]">
-      <div id="header" className="flex flex-row justify-between">
-        <Link
-          href={APP_ROUTES.userWorklogs}
-          className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700"
-        >
-          <span className="icon_size material-icons">arrow_back</span>
-        </Link>
-        <div className="flex flex-row gap-1">
-          <div
-            onClick={refreshWorklogs}
+      {!compactView && (
+        <div id="header" className="flex flex-row justify-between">
+          <Link
+            href={APP_ROUTES.userWorklogs}
             className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700"
           >
-            <span className="icon_size material-icons">refresh</span>
-          </div>
-          {!isAutoSaved && (
-            <button
-              onClick={() => saveWorkLog(workLog as any)}
-              className="cursor-pointer rounded-lg p-2 text-red-500"
+            <span className="icon_size material-icons">arrow_back</span>
+          </Link>
+          <div className="flex flex-row gap-1">
+            <div
+              onClick={refreshWorklogs}
+              className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700"
             >
-              <span className="icon_size material-icons">done_all</span>
-            </button>
-          )}
+              <span className="icon_size material-icons">refresh</span>
+            </div>
+            {!isAutoSaved && (
+              <button
+                onClick={() => saveWorkLog(workLog as any)}
+                className="cursor-pointer rounded-lg p-2 text-red-500"
+              >
+                <span className="icon_size material-icons">done_all</span>
+              </button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
       <div className="p-4">
         <input
+          disabled={compactView}
           type="text"
-          className="text-2xl  outline-none"
+          className="text-2xl  outline-none bg-transparent"
           placeholder="Jotdown a new project/task/goal..."
           value={workLog?.title || "March 27 - Sunday"}
           onChange={(e) => {
@@ -237,17 +246,21 @@ export const WorklogEditor = ({
             </span>
           </p>
         )}
-        <div className="h-[3em]"></div>
+        <div className={`h-[${compactView ? "1em" : "3em"}]`}></div>
       </div>
       {markdownDatas.map((_markdownDat) => (
         <div key={_markdownDat.project} className="flex flex-col items-stretch">
           <p className="text-[0.5em] tracking-widest uppercase text-neutral-500 px-4">
-            {_markdownDat.project}
+            {_markdownDat.project} - {_markdownDat.pointInfos.length}
           </p>
           <div className=" flex flex-row items-stretch px-4 mb-3">
             {_markdownDat.content && (
               <MdxAppEditor
-                //id={_markdownDat.project}
+                key={
+                  _markdownDat.pointInfos.length <= 1
+                    ? "uninit"
+                    : _markdownDat.project + "-" + workLog?.title
+                }
                 markdown={
                   _markdownDat.content
                     ? _markdownDat.content
@@ -291,39 +304,41 @@ export const WorklogEditor = ({
           </div>
         </div>
       ))}
-      <div
-        id="bottom-bar"
-        className="fixed bottom-[0.5rem] left-0 right-0 mx-3 my-1 flex flex-row gap-3"
-      >
+      {!compactView && (
         <div
-          id="input-bar"
-          className="flex flex-row items-center flex-grow justify-between bg-white p-2 rounded-lg shadow-md"
+          id="bottom-bar"
+          className="fixed bottom-[0.5rem] left-0 right-0 mx-3 my-1 flex flex-row gap-3"
         >
-          <span className="icon_size material-icons px-2 ">
-            radio_button_unchecked
-          </span>
-          <input
-            type="text"
-            className="text-md flex-grow border-0 rounded-lg text-neutral-900 outline-none"
-            placeholder="New breakdown..."
-            value={newProjectText}
-            onChange={(e) => {
-              setNewProjectText(e.target.value);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") addNewProject();
-            }}
-          />
-        </div>
-        <div id="buttons" className="flex flex-row justify-between">
           <div
-            onClick={() => addNewProject()}
-            className="flex flex-row items-center cursor-pointer rounded-lg p-2 text-neutral-900  bg-white shadow-md"
+            id="input-bar"
+            className="flex flex-row items-center flex-grow justify-between bg-white p-2 rounded-lg shadow-md"
           >
-            <span className="icon_size material-icons">arrow_forward</span>
+            <span className="icon_size material-icons px-2 ">
+              radio_button_unchecked
+            </span>
+            <input
+              type="text"
+              className="text-md flex-grow border-0 rounded-lg text-neutral-900 outline-none"
+              placeholder="New breakdown..."
+              value={newProjectText}
+              onChange={(e) => {
+                setNewProjectText(e.target.value);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") addNewProject();
+              }}
+            />
+          </div>
+          <div id="buttons" className="flex flex-row justify-between">
+            <div
+              onClick={() => addNewProject()}
+              className="flex flex-row items-center cursor-pointer rounded-lg p-2 text-neutral-900  bg-white shadow-md"
+            >
+              <span className="icon_size material-icons">arrow_forward</span>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

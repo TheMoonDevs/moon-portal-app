@@ -44,11 +44,11 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: Request) {
   try {
-    const json = await request.json();
+    const { id, ...rest } = await request.json();
 
     const user = await prisma.user.create({
       data: {
-        ...json,
+        ...rest,
       },
     });
 
