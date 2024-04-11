@@ -8,8 +8,10 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { InstallButton, InstallState } from "./Install";
-import { LoginButtons, LoginPassCode, LoginState, MobileBox } from "./Login";
+import { LoginButtons, LoginState, MobileBox } from "./Login";
+import { LoginPassCode } from "./LoginPassCode";
 import { GreyButton } from "@/components/elements/Button";
+import GoogleVerifyPage from "./GoogleVerifyPage";
 
 export const LoginPage = () => {
   const [tab, setTab] = useState<InstallState | LoginState>(
@@ -18,7 +20,8 @@ export const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  const { data, status, user } = useUser(false);
+  const { data, status, user, verifiedUserEmail, signOutUser } = useUser(false);
+  const [enteredPasscode, setEnteredPasscode] = useState<string | null>("");
 
   useEffect(() => {
     if (status === "authenticated") {
@@ -41,7 +44,8 @@ export const LoginPage = () => {
         console.log("signIn callback", data);
         if (data?.ok) {
           console.log("Logged in!", data);
-          router.push(APP_ROUTES.home);
+          localStorage.setItem("passcode", passCode);
+          // router.push(APP_ROUTES.home);
         } else {
           console.log("Failed to login!", data);
           setError("Invalid passcode!");
@@ -79,6 +83,25 @@ export const LoginPage = () => {
               <p className="text-neutral-100">Logging in...</p>
             </div>
           )}
+          {status === "authenticated" &&
+            (!user ? (
+              <div className="flex flex-row items-center justify-center gap-2">
+                <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-neutral-100"></div>
+                <p className="text-neutral-100">Verifying...</p>
+              </div>
+            ) : (
+              verifiedUserEmail !== user?.email && (
+                <div>
+                  <p className="text-neutral-400   text-xs text-center">
+                    Are you{" "}
+                    <span className="font-medium text-neutral-100 ">
+                      {user?.email}?
+                    </span>{" "}
+                    Please verify by signing in via google.
+                  </p>{" "}
+                </div>
+              )
+            ))}
         </div>
         <InstallButton
           onInstallUpdate={(inst) => {
@@ -89,6 +112,7 @@ export const LoginPage = () => {
           <LoginPassCode
             onPassCodeFilled={(passCode) => {
               loginWithPassCode(passCode);
+              setEnteredPasscode(passCode);
               setTab(InstallState.SPLASH);
             }}
           />
@@ -100,15 +124,26 @@ export const LoginPage = () => {
             }}
           />
         )}
-        {status === "authenticated" && (
-          <GreyButton
-            onClick={() => {
-              router.push(APP_ROUTES.home);
-            }}
-          >
-            Enter App
-          </GreyButton>
-        )}
+        {status === "authenticated" &&
+          user &&
+          verifiedUserEmail !== user?.email && (
+            <GoogleVerifyPage
+              signOutUser={signOutUser}
+              setError={setError}
+              passcode={enteredPasscode}
+            />
+          )}
+        {status === "authenticated" &&
+          verifiedUserEmail === user?.email &&
+          user && (
+            <GreyButton
+              onClick={() => {
+                router.push(APP_ROUTES.home);
+              }}
+            >
+              Enter App
+            </GreyButton>
+          )}
         {/* {status === "authenticated" && <Logout user={user} signOut={signOut} />} */}
         {error && (
           <p className="text-red-500 text-xs text-center mt-4">{error}</p>

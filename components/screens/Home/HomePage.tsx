@@ -7,10 +7,12 @@ import { ProfileSection } from "./ProfileSection";
 import { USERTYPE } from "@prisma/client";
 import { LoaderScreen } from "@/components/elements/Loaders";
 import { MoodTabs } from "./MoodTabs";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { StartSection } from "./StartSection";
 import { HomeTabs } from "@/utils/@types/enums";
 import { ButtonBoard } from "./ButtonBoard";
+import { APP_ROUTES } from "@/utils/constants/appInfo";
+import { useRouter } from "next/navigation";
 import { InWorkSection } from "./InWorkSection";
 import { InPlanSection } from "./InPlanSection";
 
@@ -54,6 +56,8 @@ const ClientHomePage = () => {
 
 export const HomePage = () => {
   const { user } = useUser();
+  const router = useRouter();
+
   if (!user) return <LoaderScreen />;
   if (user.userType == USERTYPE.MEMBER) {
     return <MemberHomePage />;
