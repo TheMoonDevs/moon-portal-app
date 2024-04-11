@@ -15,32 +15,35 @@ import store from "@/utils/redux/store";
 export const WorklogView = ({
   date,
   id,
+  logType = "dayLog",
+  compactView,
+  visible = true,
 }: {
   id?: string;
   date?: string | null;
+  compactView?: boolean;
+  visible?: boolean;
+  logType?: string | null;
 }) => {
   const { user } = useUser();
   const [workLog, setWorkLog] = useState<WorkLogs | null>(null);
-  const queryParams = useSearchParams();
-  const _date = queryParams?.get("date");
-  const _logType = queryParams?.get("logType");
 
   const refreshWorklogs = () => {
     let query = `?id=${id}`;
     let _id = id && id?.length > 5 ? id : null;
-    if (!_id && _date) query = `?date=${_date}&userId=${user?.id}`;
-    if (!_id && _logType) query = `?logType=${_logType}&userId=${user?.id}`;
+    if (!_id && date) query = `?date=${date}&userId=${user?.id}`;
+    if (!_id && logType) query = `?logType=${logType}&userId=${user?.id}`;
     PortalSdk.getData(`/api/user/worklogs${query}`, null)
       .then((data) => {
         console.log(data);
         setWorkLog(
           data?.data?.workLogs?.[0] ||
-            (_logType === "privateLog"
+            (logType === "privateLog"
               ? WorkLogsHelper.defaultPrivateBoard(
                   dayjs().format("MM-YYYY"),
                   user
                 )
-              : WorkLogsHelper.defaultWorklogs(_date, user))
+              : WorkLogsHelper.defaultWorklogs(date, user))
         );
       })
       .catch((err) => {
@@ -64,31 +67,45 @@ export const WorklogView = ({
         });
     } else {
       let query = "";
-      if (_logType === "dayLog" && _date)
-        query = `?date=${
-          date || _date || dayjs().format("YYYY-MM-DD")
-        }&userId=${_user?.id}`;
-      else if (_logType) query = `?logType=${_logType}&userId=${_user?.id}`;
+      if (logType === "dayLog" && date)
+        query = `?date=${date || dayjs().format("YYYY-MM-DD")}&userId=${
+          _user?.id
+        }`;
+      else if (logType) query = `?logType=${logType}&userId=${_user?.id}`;
+      else if (date)
+        query = `?date=${date || dayjs().format("YYYY-MM-DD")}&userId=${
+          _user?.id
+        }`;
+      console.log(query);
       PortalSdk.getData(`/api/user/worklogs${query}`, null)
         .then((data) => {
           console.log(data);
           setWorkLog(
             data?.data?.workLogs?.[0] ||
-              (_logType === "privateLog"
+              (logType === "privateLog"
                 ? WorkLogsHelper.defaultPrivateBoard(
                     dayjs().format("MM-YYYY"),
                     _user
                   )
-                : WorkLogsHelper.defaultWorklogs(_date, _user))
+                : WorkLogsHelper.defaultWorklogs(
+                    date || dayjs().format("YYYY-MM-DD"),
+                    _user
+                  ))
           );
         })
         .catch((err) => {
           console.log(err);
         });
     }
-  }, [id, date, workLog, _date, _logType]);
+  }, [id, date, workLog, logType]);
+
+  if (!visible) return;
 
   return (
-    <WorklogEditor editWorkLogs={workLog} refreshWorklogs={refreshWorklogs} />
+    <WorklogEditor
+      editWorkLogs={workLog}
+      refreshWorklogs={refreshWorklogs}
+      compactView={compactView}
+    />
   );
 };

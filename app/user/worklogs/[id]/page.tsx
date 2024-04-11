@@ -10,9 +10,14 @@ export default function WorklogViewPage({
     slug: string;
   };
 }) {
+
+  const queryParams = useSearchParams();
+  const _date = queryParams?.get("date");
+  const _logType = queryParams?.get("logType");
+
   return (
     <PageAccess isAuthRequired={true}>
-      <WorklogView id={params.slug} />
+      <WorklogView id={params.slug} date={_date} logType={_logType} />
       <Bottombar visible={false} />
     </PageAccess>
   );

@@ -47,7 +47,7 @@ export const AdminUserWorkData = ({
     <LandscapeCard className="items-start justify-start">
       <div className="flex flex-col mb-8 gap-4 items-center justify-start">
         <p className="text-neutral-400 tracking-[0.5em] uppercase text-xs text-center">
-          WORK HOURS, JOINING DATE & STATS
+          WORK HOURS, JOINING DATE & OTHER USER DATA
         </p>
       </div>
       <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -79,7 +79,7 @@ export const AdminUserWorkData = ({
                 className="border border-neutral-400 rounded-lg p-2"
               />
             </div>
-            <div className="flex flex-row gap-4 items-center justify-start">
+            {/* <div className="flex flex-row gap-4 items-center justify-start">
               <p className="text-neutral-400 tracking-[0.5em] uppercase text-xs text-center">
                 Work Overlap
               </p>
@@ -104,8 +104,8 @@ export const AdminUserWorkData = ({
               >
                 Add Overlap
               </button>
-            </div>
-            {(user.workData as any).overlap?.map(
+            </div> */}
+            {/* {(user.workData as any).overlap?.map(
               (overlap: any, index: number) => (
                 <div
                   key={index}
@@ -164,8 +164,8 @@ export const AdminUserWorkData = ({
                   </button>
                 </div>
               )
-            )}
-            <div className="flex flex-row gap-4 items-center justify-start">
+            )} */}
+            {/* <div className="flex flex-row gap-4 items-center justify-start">
               <p>Work Logs Link (Clickup)</p>
               <input
                 id="workData.worklogLink"
@@ -194,7 +194,7 @@ export const AdminUserWorkData = ({
                 onChange={updateField}
                 className="border border-neutral-400 rounded-lg p-2"
               />
-            </div>
+            </div> */}
           </div>
         </div>
       </LocalizationProvider>
