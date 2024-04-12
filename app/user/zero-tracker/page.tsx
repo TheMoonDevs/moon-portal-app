@@ -1,10 +1,12 @@
 import { PageAccess } from "@/components/global/PageAccess";
-import ClientSideComponent from "@/components/screens/ZeroTracker/ClientSideComponent";
+import ShowHideBottomBar from "@/components/screens/ZeroTracker/ShowHideBottomBar";
+import { ZeroTrackerPage } from "@/components/screens/ZeroTracker/ZeroTracker";
 
 export default function Worklogs() {
   return (
     <PageAccess isAuthRequired={true}>
-      <ClientSideComponent />
+      <ZeroTrackerPage />
+      <ShowHideBottomBar />
     </PageAccess>
   );
 }
