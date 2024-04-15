@@ -59,5 +59,8 @@ export const PageAccess = ({
       );
     else return children;
   }
-  return children;
-};
+  return (
+    <div className="md:pl-20">
+      {children}
+    </div>
+  );};
