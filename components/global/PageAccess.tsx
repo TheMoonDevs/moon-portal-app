@@ -41,6 +41,12 @@ export const PageAccess = ({
     verifiedUserEmail,
   ]);
 
+  // useEffect(() => {
+  //   if(typeof window !== undefined){
+  //     document?.querySelector('html')?.classList.remove('dark')
+  //   }
+  // },[])
+
   if (status === "loading") {
     if (isAuthRequired || isAdminRequired)
       return (
