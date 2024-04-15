@@ -205,175 +205,185 @@ export const ZeroTrackerPage = () => {
           </div>
         </div>
       </div>
-      {!isLoading && (
-        <div className="calendar">
-          <div className="calendar-body">
-            <div className="grid grid-cols-7 gap-1 bg-neutral-100">
-              {days.map((day) => (
-                <div
-                  key={day}
-                  className="p-3 text-sm font-mono tracking-[0.1em]"
-                >
-                  <span>{day}</span>
-                </div>
-              ))}
-            </div>
-            <div className="grid grid-cols-7 gap-2">
-              {Array.from({ length: firstDayOfThisMonth }).map((_, index) => {
-                const date = currentMonthDayjs.date(
-                  lastDayOfPrevMonth - firstDayOfThisMonth + index + 1
-                );
-                return (
+      <div className="w-4/5 mx-auto max-w-[400px] m-auto my-1 max-md:w-full ">
+        {!isLoading && (
+          <div className="calendar">
+            <div className="calendar-body">
+              <div className="grid grid-cols-7 gap-1 bg-neutral-100">
+                {days.map((day) => (
                   <div
-                    key={index}
-                    className={`p-3 text-sm text-uppercase tracking-[0.1em]
-                      text-neutral-200`}
+                    key={day}
+                    className="p-3 text-sm font-mono tracking-[0.1em]"
                   >
-                    <span>{date.format("D")}</span>
+                    <span>{day}</span>
                   </div>
-                );
-              })}
-              {Array.from({ length: currentMonthDayjs.daysInMonth() }).map(
-                (_, index) => {
-                  const date = currentMonthDayjs.date(index + 1);
-                  const isToday = date.isSame(today, "date");
-                  const isWeekEnds = date.day() === 0 || date.day() === 6;
-                  const dateFromRecords = zeroRecord?.allZeros?.find(
-                    (a_zero: any) => a_zero.date === date.format("YYYY-MM-DD")
+                ))}
+              </div>
+              <div className="grid grid-cols-7 gap-2">
+                {Array.from({ length: firstDayOfThisMonth }).map((_, index) => {
+                  const date = currentMonthDayjs.date(
+                    lastDayOfPrevMonth - firstDayOfThisMonth + index + 1
                   );
-                  let isClickDisabled =
-                    (trackerMode == "leave" || trackerMode == "zero") &&
-                    isWeekEnds;
-                  if (!isClickDisabled)
-                    isClickDisabled =
-                      (trackerMode == "leave" || trackerMode == "zero") &&
-                      date.isBefore(_today, "date");
-                  return (
-                    <div
-                      key={index}
-                      className={`relative p-3 text-sm text-uppercase tracking-[0.1em] flex items-center justify-center ${
-                        isToday ? "bg-neutral-100 font-black rounded-full" : ""
-                      }`}
-                      onClick={() => {
-                        if (isClickDisabled) return;
-                        if (trackerMode === "leave" || trackerMode === "zero") {
-                          setSelectedDates((_dates) => {
-                            if (_dates.includes(date.format("YYYY-MM-DD")))
-                              return _dates.filter(
-                                (a_date) => a_date !== date.format("YYYY-MM-DD")
-                              );
-                            else return [..._dates, date.format("YYYY-MM-DD")];
-                          });
-                        }
-                        if (trackerMode === "normal" && dateFromRecords) {
-                          setTrackerMode(dateFromRecords.type);
-                          setSelectedDates(
-                            zeroRecord?.allZeros
-                              ?.filter(
-                                (a_zero: any) =>
-                                  a_zero.type === dateFromRecords.type
-                              )
-                              .map((a_zero: any) => a_zero.date) || []
-                          );
-                          //updateZeros([date.format("D")]);
-                        }
-                      }}
-                    >
-                      {trackerMode != "normal" &&
-                        selectedDates.includes(date.format("YYYY-MM-DD")) && (
-                          <span
-                            className={`border border-${
-                              trackerMode === "leave"
-                                ? "red"
-                                : trackerMode === "zero"
-                                ? "blue"
-                                : "unkown"
-                            }-500 rounded-full absolute top-0 bottom-0 w-full h-full`}
-                          ></span>
-                        )}
-                      <span
-                        className={`${
-                          isClickDisabled ? "text-neutral-200" : ""
-                        } `}
-                      >
-                        {date.format("D")}
-                      </span>
-                      {dateFromRecords && (
-                        <span
-                          className={`${
-                            dateFromRecords.type === "zero"
-                              ? "bg-blue-500"
-                              : dateFromRecords.type === "leave"
-                              ? "bg-red-500"
-                              : "bg-neutral-200"
-                          } absolute top-1 right-[40%] w-2 h-2 rounded-full`}
-                        ></span>
-                      )}
-                    </div>
-                  );
-                }
-              )}
-              {Array.from({ length: 7 - (lastDayOfThisMonth + 1) }).map(
-                (_, index) => {
-                  const date = currentMonthDayjs.date(index + 1);
                   return (
                     <div
                       key={index}
                       className={`p-3 text-sm text-uppercase tracking-[0.1em]
-                        text-neutral-200`}
+                      text-neutral-200`}
                     >
                       <span>{date.format("D")}</span>
                     </div>
                   );
-                }
-              )}
+                })}
+                {Array.from({ length: currentMonthDayjs.daysInMonth() }).map(
+                  (_, index) => {
+                    const date = currentMonthDayjs.date(index + 1);
+                    const isToday = date.isSame(today, "date");
+                    const isWeekEnds = date.day() === 0 || date.day() === 6;
+                    const dateFromRecords = zeroRecord?.allZeros?.find(
+                      (a_zero: any) => a_zero.date === date.format("YYYY-MM-DD")
+                    );
+                    let isClickDisabled =
+                      (trackerMode == "leave" || trackerMode == "zero") &&
+                      isWeekEnds;
+                    if (!isClickDisabled)
+                      isClickDisabled =
+                        (trackerMode == "leave" || trackerMode == "zero") &&
+                        date.isBefore(_today, "date");
+                    return (
+                      <div
+                        key={index}
+                        className={`relative p-3 text-sm text-uppercase tracking-[0.1em] flex items-center justify-center ${
+                          isToday
+                            ? "bg-neutral-100 font-black rounded-full"
+                            : ""
+                        }`}
+                        onClick={() => {
+                          if (isClickDisabled) return;
+                          if (
+                            trackerMode === "leave" ||
+                            trackerMode === "zero"
+                          ) {
+                            setSelectedDates((_dates) => {
+                              if (_dates.includes(date.format("YYYY-MM-DD")))
+                                return _dates.filter(
+                                  (a_date) =>
+                                    a_date !== date.format("YYYY-MM-DD")
+                                );
+                              else
+                                return [..._dates, date.format("YYYY-MM-DD")];
+                            });
+                          }
+                          if (trackerMode === "normal" && dateFromRecords) {
+                            setTrackerMode(dateFromRecords.type);
+                            setSelectedDates(
+                              zeroRecord?.allZeros
+                                ?.filter(
+                                  (a_zero: any) =>
+                                    a_zero.type === dateFromRecords.type
+                                )
+                                .map((a_zero: any) => a_zero.date) || []
+                            );
+                            //updateZeros([date.format("D")]);
+                          }
+                        }}
+                      >
+                        {trackerMode != "normal" &&
+                          selectedDates.includes(date.format("YYYY-MM-DD")) && (
+                            <span
+                              className={`border border-${
+                                trackerMode === "leave"
+                                  ? "red"
+                                  : trackerMode === "zero"
+                                  ? "blue"
+                                  : "unkown"
+                              }-500 rounded-full absolute top-0 bottom-0 w-full h-full`}
+                            ></span>
+                          )}
+                        <span
+                          className={`${
+                            isClickDisabled ? "text-neutral-200" : ""
+                          } `}
+                        >
+                          {date.format("D")}
+                        </span>
+                        {dateFromRecords && (
+                          <span
+                            className={`${
+                              dateFromRecords.type === "zero"
+                                ? "bg-blue-500"
+                                : dateFromRecords.type === "leave"
+                                ? "bg-red-500"
+                                : "bg-neutral-200"
+                            } absolute top-1 right-[40%] w-2 h-2 rounded-full`}
+                          ></span>
+                        )}
+                      </div>
+                    );
+                  }
+                )}
+                {Array.from({ length: 7 - (lastDayOfThisMonth + 1) }).map(
+                  (_, index) => {
+                    const date = currentMonthDayjs.date(index + 1);
+                    return (
+                      <div
+                        key={index}
+                        className={`p-3 text-sm text-uppercase tracking-[0.1em]
+                        text-neutral-200`}
+                      >
+                        <span>{date.format("D")}</span>
+                      </div>
+                    );
+                  }
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
-      {isLoading && (
-        <div className="flex flex-row items-center justify-center gap-2 h-[400px]">
-          <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-neutral-800"></div>
-          <p className="text-neutral-900">Initialising...</p>
-        </div>
-      )}
-      {!isLoading && trackerMode === "normal" && (
-        <div className="flex flex-row justify-between w-full py-2 px-3 gap-2">
-          <div className="relative flex-1 flex flex-col items-start justify-center gap-1 p-4 rounded-[0.75em] overflow-hidden bg-neutral-100 text-neutral-900">
-            <span
-              style={{ width: `${zeroUsage != "NaN" ? zeroUsage : 0}%` }}
-              className=" bg-blue-500 h-1 rounded-[1.15em] absolute top-0 left-0 right-0"
-            ></span>
-            <p className="text-[0.7em] text-neutral-500 leading-none tracking-[0.2em] ">
-              {" "}
-              MY ZEROS
-            </p>
-            <p className="text-[1.3em] font-bold leading-none ">
-              {" "}
-              {zeroRecord?.allZeros?.filter(
-                (_zero: any) => _zero.type === "zero"
-              ).length || "0"}{" "}
-              {/* / 30 */}
-            </p>
+        )}
+        {isLoading && (
+          <div className="flex flex-row items-center justify-center gap-2 h-[400px]">
+            <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-neutral-800"></div>
+            <p className="text-neutral-900">Initialising...</p>
           </div>
-          <div
-            onClick={() => {
-              setTrackerMode("zero");
-              setSelectedDates(
-                zeroRecord?.allZeros
-                  ?.filter((a_zero: any) => a_zero.type === "zero")
-                  .map((a_zero: any) => a_zero.date) || []
-              );
-            }}
-            className="flex flex-row items-center justify-between gap-1 p-4 rounded-[0.75em] overflow-hidden bg-blue-500 text-neutral-100"
-          >
-            <p className="text-[0.7em] font-bold tracking-[0.2em] ">
-              {" "}
-              ZERO MARKER
-            </p>
-            <span className="icon_size material-icons">add_circle_outline</span>
-          </div>
-          {/* <div className="relative flex-1 flex flex-col items-start justify-center gap-1 p-4 rounded-[0.75em] overflow-hidden bg-neutral-100 text-neutral-900">
+        )}
+        {!isLoading && trackerMode === "normal" && (
+          <div className="flex flex-row justify-between w-full py-2 px-3 gap-2">
+            <div className="relative flex-1 flex flex-col items-start justify-center gap-1 p-4 rounded-[0.75em] overflow-hidden bg-neutral-100 text-neutral-900">
+              <span
+                style={{ width: `${zeroUsage != "NaN" ? zeroUsage : 0}%` }}
+                className=" bg-blue-500 h-1 rounded-[1.15em] absolute top-0 left-0 right-0"
+              ></span>
+              <p className="text-[0.7em] text-neutral-500 leading-none tracking-[0.2em] ">
+                {" "}
+                MY ZEROS
+              </p>
+              <p className="text-[1.3em] font-bold leading-none ">
+                {" "}
+                {zeroRecord?.allZeros?.filter(
+                  (_zero: any) => _zero.type === "zero"
+                ).length || "0"}{" "}
+                {/* / 30 */}
+              </p>
+            </div>
+            <div
+              onClick={() => {
+                setTrackerMode("zero");
+                setSelectedDates(
+                  zeroRecord?.allZeros
+                    ?.filter((a_zero: any) => a_zero.type === "zero")
+                    .map((a_zero: any) => a_zero.date) || []
+                );
+              }}
+              className="flex flex-row items-center justify-between gap-1 p-4 rounded-[0.75em] overflow-hidden bg-blue-500 text-neutral-100"
+            >
+              <p className="text-[0.7em] font-bold tracking-[0.2em] ">
+                {" "}
+                ZERO MARKER
+              </p>
+              <span className="icon_size material-icons">
+                add_circle_outline
+              </span>
+            </div>
+            {/* <div className="relative flex-1 flex flex-col items-start justify-center gap-1 p-4 rounded-[0.75em] overflow-hidden bg-neutral-100 text-neutral-900">
             <span
               style={{ width: `${percentage != "NaN" ? -percentage : 0}%` }}
               className=" bg-red-500 h-1 rounded-[1.15em] absolute top-0 left-0 right-0"
@@ -387,19 +397,19 @@ export const ZeroTrackerPage = () => {
               {!percentage || isNaN(parseInt(percentage)) ? "0" : percentage}%
             </p>
           </div> */}
-        </div>
-      )}
-      {!isLoading && trackerMode === "normal" && (
-        <div className="flex flex-row justify-between w-full py-2 px-3 gap-2">
-          {/* <div className="h-[175px] flex-1 flex flex-col items-start justify-start gap-1 p-4 rounded-[0.75em] bg-neutral-100 text-neutral-900">
+          </div>
+        )}
+        {!isLoading && trackerMode === "normal" && (
+          <div className="flex flex-row justify-between w-full py-2 px-3 gap-2">
+            {/* <div className="h-[175px] flex-1 flex flex-col items-start justify-start gap-1 p-4 rounded-[0.75em] bg-neutral-100 text-neutral-900">
             <p className="text-[0.7em] text-neutral-500 leading-none tracking-[0.2em] ">
               {" "}
               THIS MONTH
             </p>
             <div></div>
           </div> */}
-          <div className="flex flex-col gap-2">
-            {/* <div
+            <div className="flex flex-col gap-2">
+              {/* <div
               onClick={() => {
                 //console.log("leave", zeroRecord);
                 setTrackerMode("leave");
@@ -420,7 +430,7 @@ export const ZeroTrackerPage = () => {
               </span>
             </div> */}
 
-            {/* <div
+              {/* <div
               onClick={() => {
                 // setTrackerMode("extra");
                 // setSelectedDates(
@@ -439,182 +449,183 @@ export const ZeroTrackerPage = () => {
                 add_circle_outline
               </span>
             </div> */}
+            </div>
           </div>
-        </div>
-      )}
-      {!isLoading && trackerMode === "normal" && (
-        <div className="flex flex-row justify-between w-full py-2 px-3 gap-2">
-          <div className="h-[175px] flex-1 flex flex-col items-start justify-start gap-1 p-4 rounded-[0.75em] bg-neutral-100 text-neutral-900">
-            <p className="text-[0.7em] text-neutral-500 leading-none tracking-[0.2em] mb-3">
-              {" "}
-              THIS MONTH
+        )}
+        {!isLoading && trackerMode === "normal" && (
+          <div className="flex flex-row justify-between w-full py-2 px-3 gap-2">
+            <div className="h-[175px] flex-1 flex flex-col items-start justify-start gap-1 p-4 rounded-[0.75em] bg-neutral-100 text-neutral-900">
+              <p className="text-[0.7em] text-neutral-500 leading-none tracking-[0.2em] mb-3">
+                {" "}
+                THIS MONTH
+              </p>
+              <div className="w-full">
+                {zeroUsers
+                  .filter(
+                    (_zeros: any) =>
+                      currentMonthDayjs.month() === dayjs(_zeros.date).month()
+                  )
+                  .map((zeroWithUsers: any, _index: number) => (
+                    <div
+                      key={zeroWithUsers.date + _index}
+                      className="p-2 flex flex-row justify-between items-center gap-4 w-full border-b border-neutral-300"
+                    >
+                      <div className="flex flex-row items-center gap-2">
+                        <span
+                          className={`${
+                            zeroWithUsers.type === "zero"
+                              ? "bg-blue-500"
+                              : zeroWithUsers.type === "meeting"
+                              ? "bg-red-500"
+                              : "bg-neutral-200"
+                          } w-2 h-2 rounded-full`}
+                        ></span>
+                        <p className="text-[0.9em] text-neutral-500  font-bold">
+                          {dayjs(zeroWithUsers.date).format("DD MMM")}
+                        </p>
+                      </div>
+                      <div className="flex flex-row items-center justify-between">
+                        {zeroWithUsers.users.map((z_user: User) => (
+                          <img
+                            key={z_user.id}
+                            src={z_user.avatar || ""}
+                            className="w-6 h-6 rounded-full border border-neutral-200"
+                            alt={z_user.name || ""}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          </div>
+        )}
+        {trackerMode === "leave" && (
+          <div className="flex flex-col justify-between w-full p-4 gap-2">
+            <div className="flex flex-row items-center justify-start gap-1  overflow-hidden text-neutral-900">
+              <p className="text-[1.5em] font-bold  ">
+                {" "}
+                Select your Leaves in Calendar
+              </p>
+              {/* <span className="icon_size material-icons">ios_arrow_forward</span> */}
+            </div>
+            <p className="text-[0.7em] text-neutral-500 leading-none ">
+              Note that leaves will cause a deduction in your stipend.
             </p>
-            <div className="w-full">
-              {zeroUsers
-                .filter(
-                  (_zeros: any) =>
-                    currentMonthDayjs.month() === dayjs(_zeros.date).month()
-                )
-                .map((zeroWithUsers: any, _index: number) => (
-                  <div
-                    key={zeroWithUsers.date + _index}
-                    className="p-2 flex flex-row justify-between items-center gap-4 w-full border-b border-neutral-300"
+            <div className="flex flex-row items-center justify-start gap-1 my-2">
+              {selectedDates.map((date, index) => (
+                <div
+                  key={index}
+                  className="flex flex-row items-center justify-center gap-1 p-2 rounded-[0.75em] bg-white-500 border border-red-500 text-neutral-900"
+                >
+                  <p className="text-[0.7em] font-bold tracking-[0.2em] ">
+                    {" "}
+                    {dayjs(date).format("DD")}
+                  </p>
+                  <span
+                    onClick={() => {
+                      if (dayjs(date).isBefore(_today, "date")) return;
+                      setSelectedDates((_dates) =>
+                        _dates.filter((a_date) => a_date !== date)
+                      );
+                    }}
+                    className="icon_size material-icons"
                   >
-                    <div className="flex flex-row items-center gap-2">
-                      <span
-                        className={`${
-                          zeroWithUsers.type === "zero"
-                            ? "bg-blue-500"
-                            : zeroWithUsers.type === "meeting"
-                            ? "bg-red-500"
-                            : "bg-neutral-200"
-                        } w-2 h-2 rounded-full`}
-                      ></span>
-                      <p className="text-[0.9em] text-neutral-500  font-bold">
-                        {dayjs(zeroWithUsers.date).format("DD MMM")}
-                      </p>
-                    </div>
-                    <div className="flex flex-row items-center justify-between">
-                      {zeroWithUsers.users.map((z_user: User) => (
-                        <img
-                          key={z_user.id}
-                          src={z_user.avatar || ""}
-                          className="w-6 h-6 rounded-full border border-neutral-200"
-                          alt={z_user.name || ""}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                ))}
+                    close
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="flex flex-row gap-2">
+              <div
+                onClick={() => setTrackerMode("normal")}
+                className="flex-1 flex-grow flex flex-row items-center justify-start gap-1 p-4 rounded-[0.75em] bg-neutral-100 text-neutral-900"
+              >
+                <span className="icon_size material-symbols-outlined">
+                  arrow_back
+                </span>
+                <p className="text-[0.7em] whitespace-nowrap font-bold tracking-[0.2em] ">
+                  {" "}
+                  BACK
+                </p>
+              </div>
+              <div
+                onClick={updateDates}
+                className="flex-1 flex-grow flex flex-row items-center justify-start gap-1 p-4 rounded-[0.75em] bg-red-500 text-neutral-100"
+              >
+                <p className="text-[0.7em] whitespace-nowrap font-bold tracking-[0.2em] ">
+                  {" "}
+                  SAVE CHANGES
+                </p>
+                <span className="icon_size material-icons">task_alt</span>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-      {trackerMode === "leave" && (
-        <div className="flex flex-col justify-between w-full p-4 gap-2">
-          <div className="flex flex-row items-center justify-start gap-1  overflow-hidden text-neutral-900">
-            <p className="text-[1.5em] font-bold  ">
-              {" "}
-              Select your Leaves in Calendar
+        )}
+        {trackerMode === "zero" && (
+          <div className="flex flex-col justify-between w-full p-4 gap-2">
+            <div className="flex flex-row items-center justify-start gap-1  overflow-hidden text-neutral-900">
+              <p className="text-[1.5em] font-bold ">
+                {" "}
+                Select your Zeros in Calendar
+              </p>
+              {/* <span className="icon_size material-icons">ios_arrow_forward</span> */}
+            </div>
+            <p className="text-[0.7em] text-neutral-500 leading-none ">
+              Note that zeros are paid holidays/vacations and will not effect
+              stipend.
             </p>
-            {/* <span className="icon_size material-icons">ios_arrow_forward</span> */}
-          </div>
-          <p className="text-[0.7em] text-neutral-500 leading-none ">
-            Note that leaves will cause a deduction in your stipend.
-          </p>
-          <div className="flex flex-row items-center justify-start gap-1 my-2">
-            {selectedDates.map((date, index) => (
+            <div className="flex flex-row items-center justify-start gap-1 my-2">
+              {selectedDates.map((date, index) => (
+                <div
+                  key={index}
+                  className="flex flex-row items-center justify-center gap-1 p-2 rounded-[0.75em] bg-white-500 border border-blue-500 text-neutral-900"
+                >
+                  <p className="text-[0.7em] font-bold tracking-[0.2em] ">
+                    {" "}
+                    {dayjs(date).format("DD")}
+                  </p>
+                  <span
+                    onClick={() => {
+                      if (dayjs(date).isBefore(_today, "date")) return;
+                      setSelectedDates((_dates) =>
+                        _dates.filter((a_date) => a_date !== date)
+                      );
+                    }}
+                    className="icon_size material-icons"
+                  >
+                    close
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="flex flex-row gap-2">
               <div
-                key={index}
-                className="flex flex-row items-center justify-center gap-1 p-2 rounded-[0.75em] bg-white-500 border border-red-500 text-neutral-900"
+                onClick={() => setTrackerMode("normal")}
+                className="flex-1 flex-grow flex flex-row items-center justify-start gap-1 p-4 rounded-[0.75em] bg-neutral-100 text-neutral-900"
+              >
+                <span className="icon_size material-symbols-outlined">
+                  arrow_back
+                </span>
+                <p className="text-[0.7em] whitespace-nowrap font-bold tracking-[0.2em] ">
+                  {" "}
+                  BACK
+                </p>
+              </div>
+              <div
+                onClick={updateDates}
+                className="flex flex-row items-center justify-between gap-1 p-4 rounded-[0.75em] overflow-hidden bg-blue-500 text-neutral-100"
               >
                 <p className="text-[0.7em] font-bold tracking-[0.2em] ">
                   {" "}
-                  {dayjs(date).format("DD")}
+                  SAVE CHANGES
                 </p>
-                <span
-                  onClick={() => {
-                    if (dayjs(date).isBefore(_today, "date")) return;
-                    setSelectedDates((_dates) =>
-                      _dates.filter((a_date) => a_date !== date)
-                    );
-                  }}
-                  className="icon_size material-icons"
-                >
-                  close
-                </span>
+                <span className="icon_size material-icons">task_alt</span>
               </div>
-            ))}
-          </div>
-          <div className="flex flex-row gap-2">
-            <div
-              onClick={() => setTrackerMode("normal")}
-              className="flex-1 flex-grow flex flex-row items-center justify-start gap-1 p-4 rounded-[0.75em] bg-neutral-100 text-neutral-900"
-            >
-              <span className="icon_size material-symbols-outlined">
-                arrow_back
-              </span>
-              <p className="text-[0.7em] whitespace-nowrap font-bold tracking-[0.2em] ">
-                {" "}
-                BACK
-              </p>
-            </div>
-            <div
-              onClick={updateDates}
-              className="flex-1 flex-grow flex flex-row items-center justify-start gap-1 p-4 rounded-[0.75em] bg-red-500 text-neutral-100"
-            >
-              <p className="text-[0.7em] whitespace-nowrap font-bold tracking-[0.2em] ">
-                {" "}
-                SAVE CHANGES
-              </p>
-              <span className="icon_size material-icons">task_alt</span>
             </div>
           </div>
-        </div>
-      )}
-      {trackerMode === "zero" && (
-        <div className="flex flex-col justify-between w-full p-4 gap-2">
-          <div className="flex flex-row items-center justify-start gap-1  overflow-hidden text-neutral-900">
-            <p className="text-[1.5em] font-bold ">
-              {" "}
-              Select your Zeros in Calendar
-            </p>
-            {/* <span className="icon_size material-icons">ios_arrow_forward</span> */}
-          </div>
-          <p className="text-[0.7em] text-neutral-500 leading-none ">
-            Note that zeros are paid holidays/vacations and will not effect
-            stipend.
-          </p>
-          <div className="flex flex-row items-center justify-start gap-1 my-2">
-            {selectedDates.map((date, index) => (
-              <div
-                key={index}
-                className="flex flex-row items-center justify-center gap-1 p-2 rounded-[0.75em] bg-white-500 border border-blue-500 text-neutral-900"
-              >
-                <p className="text-[0.7em] font-bold tracking-[0.2em] ">
-                  {" "}
-                  {dayjs(date).format("DD")}
-                </p>
-                <span
-                  onClick={() => {
-                    if (dayjs(date).isBefore(_today, "date")) return;
-                    setSelectedDates((_dates) =>
-                      _dates.filter((a_date) => a_date !== date)
-                    );
-                  }}
-                  className="icon_size material-icons"
-                >
-                  close
-                </span>
-              </div>
-            ))}
-          </div>
-          <div className="flex flex-row gap-2">
-            <div
-              onClick={() => setTrackerMode("normal")}
-              className="flex-1 flex-grow flex flex-row items-center justify-start gap-1 p-4 rounded-[0.75em] bg-neutral-100 text-neutral-900"
-            >
-              <span className="icon_size material-symbols-outlined">
-                arrow_back
-              </span>
-              <p className="text-[0.7em] whitespace-nowrap font-bold tracking-[0.2em] ">
-                {" "}
-                BACK
-              </p>
-            </div>
-            <div
-              onClick={updateDates}
-              className="flex flex-row items-center justify-between gap-1 p-4 rounded-[0.75em] overflow-hidden bg-blue-500 text-neutral-100"
-            >
-              <p className="text-[0.7em] font-bold tracking-[0.2em] ">
-                {" "}
-                SAVE CHANGES
-              </p>
-              <span className="icon_size material-icons">task_alt</span>
-            </div>
-          </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

@@ -22,16 +22,20 @@ const MemberHomePage = () => {
 
   if (!user) return <LoaderScreen />;
   return (
-    <div className="home_bg min-h-screen">
-      <ProfileSection user={user} />
-      <DailySection user={user} />
-      <ButtonBoard />
-      <MoodTabs user={user} setTab={setTab} />
-      {tab === HomeTabs.START && <StartSection />}
-      {tab === HomeTabs.CHARGING && <ActionsSection />}
-      <InWorkSection visible={tab === HomeTabs.INWORK} />
-      <InPlanSection visible={tab === HomeTabs.PLANUP} />
-      <div className="h-[300px]"></div>
+    <div className='home_bg min-h-screen flex justify-start max-md:flex-col max-lg:flex-col scroll-smooth'>
+      <div className='lg:w-[34%]'>
+        <ProfileSection user={user} />
+        <DailySection user={user} />
+        <ButtonBoard />
+        <MoodTabs user={user} setTab={setTab} />
+      </div>
+      <div className="w-full my-3 max-md:my-0">
+        {tab === HomeTabs.START && <StartSection />}
+        {tab === HomeTabs.CHARGING && <ActionsSection />}
+        <InWorkSection visible={tab === HomeTabs.INWORK} />
+        <InPlanSection visible={tab === HomeTabs.PLANUP} />
+      </div>
+        <div className="h-[300px]"></div>
     </div>
   );
 };

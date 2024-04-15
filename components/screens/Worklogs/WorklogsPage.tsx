@@ -46,7 +46,7 @@ export const WorkLogItem = ({ data }: { data: WorkLogs }) => {
         "?logType=" +
         data.logType
       }
-      className="flex flex-col gap-3 rounded-lg border border-neutral-200 p-3"
+      className={`flex flex-col gap-3 rounded-lg border border-neutral-200 p-3 ${data.logType === 'privateLog' ? 'h-full' : '' }`}
     >
       <div
         className={`flex flex-row justify-between ${
@@ -163,7 +163,7 @@ export const WorklogsPage = () => {
 
   return (
     <div className="flex flex-col">
-      <div className="fixed left-0 right-0 top-0 z-10 bg-white flex flex-row gap-3 py-2 px-3 items-center justify-between border-b border-neutral-400">
+      <div className="fixed left-0 right-0 top-0 z-10 bg-white flex flex-row gap-3 py-2 px-3 items-center justify-between border-b border-neutral-400 md:pl-[6rem]">
         <h1 className="tracking-widest text-sm font-bold">My Worklogs</h1>
         <div className="flex flex-row gap-1">
           <Link href={APP_ROUTES.userWorklogs}>
@@ -208,27 +208,29 @@ export const WorklogsPage = () => {
             </div>
           ))}
         </div>
-        <div className="p-2">
-          {privateBoard && (
-            <WorkLogItem
-              key={
-                privateBoard.id +
-                "-" +
-                privateBoard.date +
-                "-" +
-                privateBoard.userId
-              }
-              data={privateBoard}
-            />
-          )}
-        </div>
-        <div className="grid grid-cols-2 gap-3 p-2">
-          {logsList.map((data) => (
-            <WorkLogItem
-              key={data.id + "-" + data.date + "-" + data.userId}
-              data={data}
-            />
-          ))}
+        <div className="flex flex-row gap-1 max-lg:flex-col w-full">
+          <div className="p-2 w-[25%] max-lg:w-full">
+            {privateBoard && (
+              <WorkLogItem
+                key={
+                  privateBoard.id +
+                  "-" +
+                  privateBoard.date +
+                  "-" +
+                  privateBoard.userId
+                }
+                data={privateBoard}
+              />
+            )}
+          </div>
+          <div className="grid grid-cols-4 gap-3 p-2 max-lg:grid-cols-3 max-md:grid-cols-2">
+            {logsList.map((data) => (
+              <WorkLogItem
+                key={data.id + "-" + data.date + "-" + data.userId}
+                data={data}
+              />
+            ))}
+          </div>
         </div>
         <div className="flex flex-col gap-3 h-[5rem]"></div>
       </div>
