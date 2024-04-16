@@ -56,7 +56,7 @@ export const useUser = (newfetch?: boolean) => {
           }
           return;
         }
-        //console.log("fetched user", data.users[0]);
+        //console.log("fetched user", data?.data?.user?.[0]);
         if (data?.data?.user?.[0]) {
           localStorage.setItem(
             LOCAL_STORAGE.user,

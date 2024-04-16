@@ -307,7 +307,7 @@ export const WorklogEditor = ({
       {!compactView && (
         <div
           id="bottom-bar"
-          className="fixed bottom-[0.5rem] left-0 right-0 mx-3 my-1 flex flex-row gap-3"
+          className="fixed bottom-[0.5rem] left-0 md:hidden right-0 mx-3 my-1 flex flex-row gap-3"
         >
           <div
             id="input-bar"

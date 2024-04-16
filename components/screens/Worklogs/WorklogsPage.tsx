@@ -10,6 +10,9 @@ import { useEffect, useState } from "react";
 import store from "@/utils/redux/store";
 import dayjs from "dayjs";
 import { WorkLogsHelper } from "./WorklogsHelper";
+import { useMediaQuery } from "@mui/material";
+import media from "@/styles/media";
+import { WorklogView } from "./WorklogView";
 
 const tempData = [
   {
@@ -36,17 +39,24 @@ const tempData = [
   },
 ];
 
+const linkForWorkLog = (data: WorkLogs) => {
+  return (
+    APP_ROUTES.userWorklogs +
+    "/" +
+    (data.id || "new") +
+    "?logType=" +
+    data.logType +
+    (data.logType === "dayLog" ? "&date=" + data.date : "")
+  );
+};
+
 export const WorkLogItem = ({ data }: { data: WorkLogs }) => {
   return (
     <Link
-      href={
-        APP_ROUTES.userWorklogs +
-        "/" +
-        (data.id || "new") +
-        "?logType=" +
-        data.logType
-      }
-      className={`flex flex-col gap-3 rounded-lg border border-neutral-200 p-3 ${data.logType === 'privateLog' ? 'h-full' : '' }`}
+      href={linkForWorkLog(data)}
+      className={`flex flex-col gap-3 rounded-lg border border-neutral-200 p-3 ${
+        data.logType === "privateLog" ? "h-full" : ""
+      }`}
     >
       <div
         className={`flex flex-row justify-between ${
@@ -108,6 +118,7 @@ export const WorklogsPage = () => {
   const [logsList, setLogsList] = useState<WorkLogs[]>([]);
   const [yearLogData, setYearLogData] = useState<any>();
   const [privateBoard, setPrivateBoard] = useState<WorkLogs | null>(null);
+  const isTabletOrMore = useMediaQuery(media.moreTablet);
 
   useEffect(() => {
     const _user = store.getState().auth.user;
@@ -186,7 +197,7 @@ export const WorklogsPage = () => {
         <div className="h-[3.5rem]"></div>
         <div
           className="flex flex-row justify-between sticky top-[3.5rem] bg-neutral-100 z-10
-         overflow-x-scroll p-2 "
+         overflow-x-auto p-2 "
         >
           {Array.from({ length: 12 }).map((_, month_tab: number) => (
             <div
@@ -224,12 +235,39 @@ export const WorklogsPage = () => {
             )}
           </div>
           <div className="grid grid-cols-4 gap-3 p-2 max-lg:grid-cols-3 max-md:grid-cols-2">
-            {logsList.map((data) => (
-              <WorkLogItem
-                key={data.id + "-" + data.date + "-" + data.userId}
-                data={data}
-              />
-            ))}
+            {logsList.map(
+              (data) => (
+                // isTabletOrMore ? (
+                //   <div
+                //     key={data.id + "-" + data.date + "-" + data.userId}
+                //     className="relative flex flex-col m-2 pb-8 px-0 border border-2 border-neutral-800 rounded-xl shadow-md"
+                //   >
+                //     <Link
+                //       href={linkForWorkLog(data)}
+                //       className=" flex justify-center p-1 bg-black rounded-t-xl "
+                //     >
+                //       <p className="text-white text-xs text-center">
+                //         Click here to open editor
+                //       </p>
+                //       <span className="icon_size text-white material-icons-outlined">
+                //         chevron_right
+                //       </span>
+                //     </Link>
+                //     <WorklogView
+                //       //id={data.id}
+                //       date={data.date}
+                //       logType={data.logType}
+                //       compactView={true}
+                //     />
+                //   </div>
+                // ) : (
+                <WorkLogItem
+                  key={data.id + "-" + data.date + "-" + data.userId}
+                  data={data}
+                />
+              )
+              //)
+            )}
           </div>
         </div>
         <div className="flex flex-col gap-3 h-[5rem]"></div>
