@@ -6,6 +6,8 @@ import { USERTYPE } from "@prisma/client";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import { useMediaQuery } from "@mui/material";
+import media from "@/styles/media";
 
 const NAVIGATION_OPTIONS = [
   {
@@ -63,16 +65,26 @@ const CLIENT_NAVIGATION_OPTIONS = [
   },
 ];
 
-export const Bottombar = ({ visible = true }: { visible?: boolean }) => {
+export const Bottombar = ({
+  visible = true,
+  visibleOnlyOn,
+}: {
+  visible?: boolean;
+  visibleOnlyOn?: string;
+}) => {
   const path = usePathname();
   const router = useRouter();
   const { user } = useUser();
+  const visibleOnlyOnResponsiveSizes = useMediaQuery(
+    visibleOnlyOn ? visibleOnlyOn : media.default
+  );
 
   const options =
     user?.userType === USERTYPE.CLIENT
       ? CLIENT_NAVIGATION_OPTIONS
       : NAVIGATION_OPTIONS;
-  if (!visible) return null;
+  if (!visible && !visibleOnlyOn) return null;
+  if (visibleOnlyOn && !visibleOnlyOnResponsiveSizes) return null;
   if (!AppRoutesHelper.bottomBarShown(path)) return null;
 
   return (

@@ -1,8 +1,8 @@
 "use client";
 
-import { APP_ROUTES } from "@/utils/constants/appInfo";
+import { APP_ROUTES, AppRoutesHelper } from "@/utils/constants/appInfo";
 import { useUser } from "@/utils/hooks/useUser";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 export const usePageAccess = () => {};
@@ -18,6 +18,9 @@ export const PageAccess = ({
 }) => {
   const { user, status, verifiedUserEmail } = useUser();
   const router = useRouter();
+  const path = usePathname();
+  const bottomBarShown = AppRoutesHelper.bottomBarShown(path);
+
   useEffect(() => {
     if (status === "unauthenticated" && isAuthRequired) {
       router.push(APP_ROUTES.login);
@@ -60,7 +63,6 @@ export const PageAccess = ({
     else return children;
   }
   return (
-    <div className="md:pl-20">
-      {children}
-    </div>
-  );};
+    <div className={`${bottomBarShown ? "md:pl-20" : ""}`}>{children}</div>
+  );
+};
