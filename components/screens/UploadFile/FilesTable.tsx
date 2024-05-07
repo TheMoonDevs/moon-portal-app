@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { FileUpload } from "@prisma/client";
 import { useUser } from "@/utils/hooks/useUser";
 import Image from "next/image";
+import { Table } from "@mui/material";
 
 interface TableProps extends React.HTMLProps<HTMLTableCellElement> {
   children: React.ReactNode;
@@ -69,6 +70,7 @@ const FilesTable = () => {
       <table className="rounded-xl table-auto min-w-full divide-y divide-gray-200">
         <thead>
           <tr className="bg-gray-100">
+            {user.isAdmin && <TableHeading>Name</TableHeading>}
             <TableHeading>Document Name</TableHeading>
             <TableHeading>Document URL</TableHeading>
             <TableHeading>Document Type</TableHeading>
@@ -81,6 +83,18 @@ const FilesTable = () => {
         <tbody className="bg-white divide-y divide-gray-200">
           {files.map((file) => (
             <tr key={file.id}>
+              {user.isAdmin && (
+                <TableCell className="flex gap-x-3 items-start">
+                  <Image
+                    src={user.avatar!}
+                    width={24}
+                    height={24}
+                    className="rounded-full"
+                    alt="Profile Picture"
+                  />{" "}
+                  <span>{user.name}</span>
+                </TableCell>
+              )}
               <TableCell>{file.fileName}</TableCell>
               <TableCell
                 className="text-blue-400 cursor-pointer hover:underline underline-offset-2"
