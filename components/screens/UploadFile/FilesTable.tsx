@@ -108,8 +108,9 @@ const FilesTable = () => {
               <TableCell>
                 <span className="flex justify-center items-center w-1/3 bg-green-200 text-green-600 px-2 py-1 rounded-full text-xs">
                   {file.mimeType &&
-                    file.mimeType.replace(/application\/(.+)/, (_, match) =>
-                      match.toUpperCase()
+                    file.mimeType.replace(
+                      /(?:application|image|video|text)\/(.+)/,
+                      (_, match) => match.toUpperCase()
                     )}
                 </span>
               </TableCell>
