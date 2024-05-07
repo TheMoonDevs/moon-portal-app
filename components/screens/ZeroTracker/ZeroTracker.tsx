@@ -576,28 +576,34 @@ export const ZeroTrackerPage = () => {
               stipend.
             </p>
             <div className="flex flex-row items-center justify-start gap-1 my-2">
-              {selectedDates.map((date, index) => (
-                <div
-                  key={index}
-                  className="flex flex-row items-center justify-center gap-1 p-2 rounded-[0.75em] bg-white-500 border border-blue-500 text-neutral-900"
-                >
-                  <p className="text-[0.7em] font-bold tracking-[0.2em] ">
-                    {" "}
-                    {dayjs(date).format("DD")}
-                  </p>
-                  <span
-                    onClick={() => {
-                      if (dayjs(date).isBefore(_today, "date")) return;
-                      setSelectedDates((_dates) =>
-                        _dates.filter((a_date) => a_date !== date)
-                      );
-                    }}
-                    className="icon_size material-icons"
+              {selectedDates
+                .filter(
+                  (date) => dayjs(date).month() === currentMonthDayjs.month()
+                )
+                .map((date, index) => (
+                  <div
+                    key={index}
+                    className="flex flex-row items-center justify-center gap-1 p-2 rounded-[0.75em] bg-white-500 border border-blue-500 text-neutral-900"
                   >
-                    close
-                  </span>
-                </div>
-              ))}
+                    <p className="text-[0.7em] font-bold tracking-[0.2em] ">
+                      {" "}
+                      {dayjs(date).format("DD") +
+                        " " +
+                        dayjs(date).format("MMM")}
+                    </p>
+                    <span
+                      onClick={() => {
+                        if (dayjs(date).isBefore(_today, "date")) return;
+                        setSelectedDates((_dates) =>
+                          _dates.filter((a_date) => a_date !== date)
+                        );
+                      }}
+                      className="icon_size material-icons"
+                    >
+                      close
+                    </span>
+                  </div>
+                ))}
             </div>
             <div className="flex flex-row gap-2">
               <div
