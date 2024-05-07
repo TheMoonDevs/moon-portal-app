@@ -60,7 +60,7 @@ export function DropzoneButton() {
   };
 
   return (
-    <div className="border-2 border-dashed border-gray-400 rounded-xl m-4 p-2 cursor-pointer ">
+    <div className="border-2 border-dashed border-gray-400 rounded-xl md:my-4 md:mx-3 p-2 cursor-pointer ">
       <Dropzone
         onDrop={handleDrop}
         radius="md"
