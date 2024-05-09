@@ -48,6 +48,31 @@ const FilesTable = () => {
     throw new Error("User not found");
   }
 
+  const handleDelete = async (id: string, userId: string, fileName: string) => {
+    if (user) {
+      try {
+        const response = await fetch("/api/upload/file-upload", {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ id, userId, fileName }),
+        });
+        console.log(response);
+        if (response.ok) {
+          console.log("File deleted successfully!");
+          // setFiles((prevFiles) =>
+          //   prevFiles.filter((file) => file.id !== userId)
+          // );
+        } else {
+          console.error("Failed to delete file:", response.statusText);
+        }
+      } catch (error) {
+        console.error("Error deleting file:", error);
+      }
+    }
+  };
+
   useEffect(() => {
     if (user) {
       const fetchFiles = async () => {
@@ -131,6 +156,9 @@ const FilesTable = () => {
                   width={20}
                   height={20}
                   alt="Delete Icon"
+                  onClick={() =>
+                    handleDelete(file.id!, file.userId!, file.fileName!)
+                  }
                 />
               </TableCell>
             </tr>
