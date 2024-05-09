@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { FileUpload } from "@prisma/client";
 import { useUser } from "@/utils/hooks/useUser";
 import Image from "next/image";
-import { Table } from "@mui/material";
+import { useAppSelector } from "@/utils/redux/store";
 
 interface TableProps extends React.HTMLProps<HTMLTableCellElement> {
   children: React.ReactNode;
@@ -38,12 +38,16 @@ const TableCell: React.FC<TableProps> = ({ children, className, ...rest }) => {
     </td>
   );
 };
+
 const FilesTable = () => {
   const [files, setFiles] = useState<FileUpload[]>([]);
   const { user } = useUser();
+  const searchTerm = useAppSelector((state) => state.searchTerm.term);
+
   if (!user) {
     throw new Error("User not found");
   }
+
   useEffect(() => {
     if (user) {
       const fetchFiles = async () => {
@@ -65,6 +69,12 @@ const FilesTable = () => {
     }
   }, [user]);
 
+  const filteredFiles = searchTerm
+    ? files.filter((file) =>
+        file.fileName?.toLowerCase().startsWith(searchTerm.toLowerCase())
+      )
+    : files;
+
   return (
     <div className="overflow-x-auto mx-3 mt-6">
       <table className="rounded-xl table-auto min-w-full divide-y divide-gray-200">
@@ -76,12 +86,10 @@ const FilesTable = () => {
             <TableHeading>Document Type</TableHeading>
             <TableHeading>Document Date</TableHeading>
             <TableHeading>Actions</TableHeading>
-            {/* <TableHeading>File Size</TableHeading> */}
-            {/* <TableHeading>Updated At</TableHeading> */}
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
-          {files.map((file) => (
+          {filteredFiles.map((file) => (
             <tr key={file.id}>
               {user.isAdmin && (
                 <TableCell className="flex gap-x-3 items-start">
@@ -104,7 +112,6 @@ const FilesTable = () => {
                   ? `${file.fileUrl.substring(0, 40)}...`
                   : file.fileUrl}
               </TableCell>
-
               <TableCell>
                 <span className="flex justify-center items-center w-1/3 bg-green-200 text-green-600 px-2 py-1 rounded-full text-xs">
                   {file.mimeType &&
@@ -126,8 +133,6 @@ const FilesTable = () => {
                   alt="Delete Icon"
                 />
               </TableCell>
-              {/* <TableCell>{file.fileSize}</TableCell>
-              <TableCell>{file.updatedAt as any}</TableCell> */}
             </tr>
           ))}
         </tbody>
