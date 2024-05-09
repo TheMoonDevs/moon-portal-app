@@ -59,7 +59,7 @@ export function DropzoneButton() {
     return (
       <div className="relative group" key={index}>
         <span
-          className="material-symbols-outlined absolute -top-2 -right-2 cursor-pointer text-white bg-[rgba(0,0,0,0.5)] rounded-full p-1"
+          className="material-symbols-outlined absolute -top-5 -right-2 cursor-pointer text-white bg-[rgba(0,0,0,0.5)] rounded-full p-[0.1rem]"
           style={{ fontSize: "1rem" }}
           onClick={() =>
             dispatch(
@@ -86,7 +86,7 @@ export function DropzoneButton() {
             href={fileUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="hover:text-blue-500 hover:underline"
+            className="hover:text-blue-500 hover:underline border-2 border-gray-300 rounded-lg p-3 "
           >
             {file.path}
           </a>
@@ -96,7 +96,7 @@ export function DropzoneButton() {
   });
 
   return (
-    <div className="border-2 border-dashed border-gray-400 rounded-xl md:my-4 md:mx-3 p-2 ">
+    <div className=" border-2 border-dashed border-gray-300 rounded-xl md:my-4 md:mx-3 p-2 bg-gray-50 transition-colors hover:border-gray-400">
       <Dropzone
         onDrop={handleDrop}
         radius="md"
@@ -109,31 +109,38 @@ export function DropzoneButton() {
           MIME_TYPES.xls,
           MIME_TYPES.xlsx,
           MIME_TYPES.svg,
-          MIME_TYPES.webp
+          MIME_TYPES.webp,
         ]}
         maxSize={30 * 1024 ** 2}
-        className="py-8 cursor-pointer"
+        className="group relative flex h-48 cursor-pointer items-center justify-center rounded-lg "
         multiple
       >
-        <div style={{ pointerEvents: "none" }}>
-          <Group justify="center">
-            <Dropzone.Idle>
-              <IconCloudUpload
-                style={{ width: rem(20), height: rem(40) }}
-                stroke={1.5}
-              />
-            </Dropzone.Idle>
-          </Group>
-          <div className="flex justify-center items-center font-semibold text-gray-500">
-            <Dropzone.Idle>Drop your documents here, or</Dropzone.Idle>
-          </div>
+        <div className="pointer-events-none flex flex-col gap-2 text-center">
+          <svg
+            className="mx-auto h-8 w-8 text-gray-400 group-hover:text-gray-500 "
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          <Dropzone.Idle>
+            Drop your documents here, or{" "}
+            <span className="underline italic text-blue-500">
+              click to upload
+            </span>
+          </Dropzone.Idle>
         </div>
-        <p
-          className="cursor-pointer text-blue-500 underline underline-offset-2 flex justify-center items-center my-2"
-          onClick={() => openRef.current?.()}
-        >
-          click to browse
-        </p>
+        <input
+          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+          type="file"
+        />
       </Dropzone>
       <div className="flex gap-4 flex-wrap">{previews}</div>
       {files.length > 0 && (
