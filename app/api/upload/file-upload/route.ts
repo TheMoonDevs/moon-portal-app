@@ -98,24 +98,34 @@ export async function POST(req: Request) {
 
 export async function DELETE(req: Request) {
   try {
-    const { userId, fileName } = await req.json();
+    const { id, userId, fileName } = await req.json();
 
     const response = await fileUploadSdk.deleteFile({
       userId: userId,
       fileName: fileName,
     });
 
-    if (!response || response.$metadata.httpStatusCode !== 200) {
-      return NextResponse.json({ message: "Failed to delete file" });
+    console.log(response);
+    if (
+      !response ||
+      (response.$metadata.httpStatusCode !== 204 &&
+        response.$metadata.httpStatusCode !== 200)
+    ) {
+      // return NextResponse.json({ message: "Failed to delete file" });
+      throw new Error("Failed to delete file");
     }
 
     const DBresponse = await prisma.fileUpload.delete({
       where: {
-        userId,
+        id_userId: {
+          id: id,
+          userId: userId,
+        },
       },
     });
+    console.log(DBresponse);
 
-    return NextResponse.json(DBresponse);
+    return NextResponse.json(DBresponse.fileName);
   } catch (e) {
     console.log(e);
     return new NextResponse(JSON.stringify(e), {
