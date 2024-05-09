@@ -1,7 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-export interface FileWithPath {
-  path: string;
+export interface FileWithPath extends File {
+  path?: string;
   // Add other properties as needed
 }
 
@@ -18,11 +18,13 @@ export const filesUploadSlice = createSlice({
   initialState,
   reducers: {
     addFile: (state, action) => {
-      state.files.push(action.payload);
+      state.files = [...state.files, ...action.payload];
     },
     removeFile: (state, action) => {
       state.files = state.files.filter(
-        (file, index) => index !== action.payload
+        (file, index) =>
+          file.path !== action.payload.path &&
+          (file as any).lastModified !== action.payload.lastModified
       );
     },
   },
