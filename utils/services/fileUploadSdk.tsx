@@ -70,19 +70,19 @@ export const fileUploadSdk = {
   getPublicFileUrl: ({
     userId,
     file,
+    folder,
   }: {
     userId?: string;
     file: any;
+    folder?: string;
   }): string => {
     return userId
-      ? ` https://${
-          process.env.SPACES_NAME
-        }.nyc3.cdn.digitaloceanspaces.com/files/${userId}/${encodeURI(
-          file.name
-        )}`
-      : `https://${
-          process.env.SPACES_NAME
-        }.nyc3.cdn.digitaloceanspaces.com/files/${encodeURI(file.name)}`;
+      ? ` https://${process.env.SPACES_NAME}.nyc3.cdn.digitaloceanspaces.com/${
+          folder || config.folder
+        }/${userId}/${encodeURI(file.name)}`
+      : `https://${process.env.SPACES_NAME}.nyc3.cdn.digitaloceanspaces.com/${
+          folder || config.folder
+        }/${encodeURI(file.name)}`;
   },
   /**
    * Retrieves the private signed URL good for 24 hrs of the file associated with the provided key.
