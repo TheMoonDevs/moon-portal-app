@@ -100,9 +100,13 @@ const FilesTable = () => {
       const fetchFiles = async () => {
         try {
           setIsLoading(true);
-          const response = await fetch(
-            `/api/upload/file-upload?userId=${user.id}`
-          );
+          let response;
+
+          if (!user.isAdmin) {
+            response = await fetch(`/api/upload/file-upload?userId=${user.id}`);
+          } else {
+            response = await fetch("/api/upload/file-upload");
+          }
           if (!response.ok) {
             throw new Error(`Failed to fetch files: ${response.statusText}`);
           }
@@ -136,7 +140,7 @@ const FilesTable = () => {
   if (isLoading) {
     return (
       <div className="px-6">
-        <TableLoader />;
+        <TableLoader />
       </div>
     );
   }
@@ -152,7 +156,7 @@ const FilesTable = () => {
       <table className="rounded-xl table-auto min-w-full divide-y divide-gray-200">
         <thead>
           <tr className="bg-gray-100">
-            {user.isAdmin && <TableHeading>Name</TableHeading>}
+            {/* {user.isAdmin && <TableHeading>Name</TableHeading>} */}
             <TableHeading>Document Name</TableHeading>
             <TableHeading>Document URL</TableHeading>
             <TableHeading>Document Type</TableHeading>
@@ -163,7 +167,7 @@ const FilesTable = () => {
         <tbody className="bg-white divide-y divide-gray-200">
           {filteredFiles.map((file) => (
             <tr key={file.id}>
-              {user.isAdmin && (
+              {/* {user.isAdmin && (
                 <TableCell className="flex gap-x-3 items-start">
                   <Image
                     src={user.avatar!}
@@ -174,7 +178,7 @@ const FilesTable = () => {
                   />{" "}
                   <span>{user.name}</span>
                 </TableCell>
-              )}
+              )} */}
               <TableCell>{file.fileName}</TableCell>
               <TableCell
                 className="text-blue-400 cursor-pointer hover:underline underline-offset-2"
