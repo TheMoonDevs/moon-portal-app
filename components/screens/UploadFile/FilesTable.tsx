@@ -1,6 +1,6 @@
 "use client";
-import React, { useEffect, useState } from "react";
-import { FileUpload } from "@prisma/client";
+import React, { useEffect, useRef, useState } from "react";
+import { FileUpload, User } from "@prisma/client";
 import { useUser } from "@/utils/hooks/useUser";
 import Image from "next/image";
 import { useAppSelector } from "@/utils/redux/store";
@@ -8,6 +8,11 @@ import { Spinner } from "@/components/elements/Loaders";
 import TableLoader from "@/components/elements/TableLoader";
 import ConfirmationModal from "@/components/elements/DeleteModal"; // Import the ConfirmationModal component
 import { Button } from "@/components/elements/Button";
+import { useDispatch } from "react-redux";
+import {
+  deleteUploadedFile,
+  setUploadedFiles,
+} from "@/utils/redux/filesUpload/fileUpload.slice";
 
 interface TableProps extends React.HTMLProps<HTMLTableCellElement> {
   children: React.ReactNode;
@@ -43,13 +48,16 @@ const TableCell: React.FC<TableProps> = ({ children, className, ...rest }) => {
   );
 };
 
-const FilesTable = () => {
-  const [files, setFiles] = useState<FileUpload[]>([]);
+const FilesTable = ({ users }: { users?: User[] }) => {
   const { user } = useUser();
   const searchTerm = useAppSelector((state) => state.searchTerm.term);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [fileToDelete, setFileToDelete] = useState<FileUpload | null>(null);
+  const isMountedRef = useRef(false);
+
+  const dispatch = useDispatch();
+  const { uploadedFiles } = useAppSelector((state) => state.filesUpload);
   if (!user) {
     throw new Error("User not found");
   }
@@ -76,9 +84,7 @@ const FilesTable = () => {
         console.log(response);
         if (response.ok) {
           console.log("File deleted successfully!");
-          setFiles((prevFiles) =>
-            prevFiles.filter((file) => file.id !== fileToDelete.id)
-          );
+          dispatch(deleteUploadedFile(fileToDelete));
         } else {
           console.error("Failed to delete file:", response.statusText);
         }
@@ -96,38 +102,43 @@ const FilesTable = () => {
   };
 
   useEffect(() => {
-    if (user) {
-      const fetchFiles = async () => {
-        try {
-          setIsLoading(true);
-          let response;
-
-          if (!user.isAdmin) {
-            response = await fetch(`/api/upload/file-upload?userId=${user.id}`);
-          } else {
-            response = await fetch("/api/upload/file-upload");
-          }
-          if (!response.ok) {
-            throw new Error(`Failed to fetch files: ${response.statusText}`);
-          }
-          const filesData = await response.json();
-          setFiles(filesData);
-        } catch (error) {
-          console.error("Error fetching files:", error);
-        } finally {
-          setIsLoading(false); // Set loading state to false after fetching data
-        }
-      };
-
-      fetchFiles();
+    if (!isMountedRef.current) {
+      isMountedRef.current = true;
+      return;
     }
-  }, [user]);
+    if (!user) return;
+    const fetchFiles = async () => {
+      try {
+        setIsLoading(true);
+        let response;
+
+        if (!user.isAdmin) {
+          response = await fetch(`/api/upload/file-upload?userId=${user.id}`);
+        } else {
+          response = await fetch("/api/upload/file-upload");
+        }
+        if (!response.ok) {
+          throw new Error(`Failed to fetch files: ${response.statusText}`);
+        }
+        const filesData = await response.json();
+
+        dispatch(setUploadedFiles(filesData));
+      } catch (error) {
+        console.error("Error fetching files:", error);
+      } finally {
+        setIsLoading(false); // Set loading state to false after fetching data
+      }
+    };
+
+    fetchFiles();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch]);
 
   const filteredFiles = searchTerm
-    ? files.filter((file) =>
+    ? uploadedFiles.filter((file) =>
         file.fileName?.toLowerCase().startsWith(searchTerm.toLowerCase())
       )
-    : files;
+    : uploadedFiles;
 
   if (filteredFiles.length === 0 && searchTerm) {
     return (
@@ -159,6 +170,7 @@ const FilesTable = () => {
             {/* {user.isAdmin && <TableHeading>Name</TableHeading>} */}
             <TableHeading>Document Name</TableHeading>
             <TableHeading>Document URL</TableHeading>
+            {user.isAdmin && <TableHeading>OWNER</TableHeading>}
             <TableHeading>Document Type</TableHeading>
             <TableHeading>Document Date</TableHeading>
             <TableHeading>Actions</TableHeading>
@@ -167,18 +179,6 @@ const FilesTable = () => {
         <tbody className="bg-white divide-y divide-gray-200">
           {filteredFiles.map((file) => (
             <tr key={file.id}>
-              {/* {user.isAdmin && (
-                <TableCell className="flex gap-x-3 items-start">
-                  <Image
-                    src={user.avatar!}
-                    width={24}
-                    height={24}
-                    className="rounded-full"
-                    alt="Profile Picture"
-                  />{" "}
-                  <span>{user.name}</span>
-                </TableCell>
-              )} */}
               <TableCell>{file.fileName}</TableCell>
               <TableCell
                 className="text-blue-400 cursor-pointer hover:underline underline-offset-2"
@@ -188,6 +188,43 @@ const FilesTable = () => {
                   ? `${file.fileUrl.substring(0, 40)}...`
                   : file.fileUrl}
               </TableCell>
+              {user.isAdmin && (
+                <TableCell className="flex gap-y-3 items-start flex-col">
+                  <div className="flex gap-x-3">
+                    <Image
+                      src={users?.find((u) => u.id === file.userId)?.avatar!}
+                      width={24}
+                      height={24}
+                      className="rounded-full"
+                      alt="Profile Picture"
+                    />{" "}
+                    <span>
+                      {users?.find((u) => u.id === file.userId)?.name!}
+                    </span>
+                  </div>
+                  {file.uploadedByUserId && (
+                    <div className="flex gap-x-2">
+                      <span className="text-xs">Issued by</span>
+                      <Image
+                        src={
+                          users?.find((u) => u.id === file.uploadedByUserId)
+                            ?.avatar!
+                        }
+                        width={20}
+                        height={20}
+                        className="rounded-full"
+                        alt="Profile Picture"
+                      />{" "}
+                      <span className="text-xs">
+                        {
+                          users?.find((u) => u.id === file.uploadedByUserId)
+                            ?.name!
+                        }
+                      </span>
+                    </div>
+                  )}
+                </TableCell>
+              )}
               <TableCell>
                 <span className="flex justify-center items-center w-3/4 bg-green-200 text-green-600 px-2 py-1 rounded-full text-xs">
                   {file.mimeType &&
