@@ -6,9 +6,8 @@ import { TypedUseSelectorHook } from "react-redux/es/types";
 import uiReducer from "./ui/ui.slice";
 import shortUrlReducer from "./shortUrl/shortUrl.slice";
 import authReducer from "./auth/auth.slice";
-import filesUploadReducer from "./filesUpload/filesUpload.slice";
 import searchTermReducer from "./searchTerm/search.slice";
-import filesUploadAdminReducer from "./filesUpload/fileUploadAdmin.slice";
+import filesUploadReducer from "./filesUpload/fileUpload.slice";
 //import suggestionsReducer from './suggestions/suggestions.slice';
 
 const store = configureStore({
@@ -17,7 +16,6 @@ const store = configureStore({
     ui: uiReducer,
     shortUrl: shortUrlReducer,
     filesUpload: filesUploadReducer,
-    filesUploadAdmin: filesUploadAdminReducer,
     searchTerm: searchTermReducer,
     //suggestions: suggestionsReducer,
   },
