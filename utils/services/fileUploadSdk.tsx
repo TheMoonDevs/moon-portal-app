@@ -1,10 +1,12 @@
 import {
   DeleteObjectCommand,
   DeleteObjectCommandOutput,
+  GetObjectCommand,
   PutObjectCommand,
   PutObjectCommandOutput,
   S3,
 } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const config = {
   s3Client: new S3({
@@ -60,6 +62,54 @@ export const fileUploadSdk = {
         })
       );
       return res;
+    } catch (error) {
+      console.log(error);
+    }
+  },
+
+  getPublicFileUrl: ({
+    userId,
+    file,
+  }: {
+    userId?: string;
+    file: any;
+  }): string => {
+    return userId
+      ? ` https://${
+          process.env.SPACES_NAME
+        }.nyc3.cdn.digitaloceanspaces.com/files/${userId}/${encodeURI(
+          file.name
+        )}`
+      : `https://${
+          process.env.SPACES_NAME
+        }.nyc3.cdn.digitaloceanspaces.com/files/${encodeURI(file.name)}`;
+  },
+  /**
+   * Retrieves the private signed URL good for 24 hrs of the file associated with the provided key.
+   *
+   * @param {string} key - The key used to identify the file.
+   * @return {Promise<string | undefined>} The URL of the file if found, otherwise undefined.
+   */
+
+  getPrivateFileUrl: async ({
+    userId,
+    file,
+    folder,
+  }: {
+    userId?: string;
+    file: any;
+    folder?: string;
+  }): Promise<string | undefined> => {
+    let key;
+    if (!userId) key = file.name;
+    else key = `${folder || config.folder}/${userId}/${file.name}`;
+    try {
+      const url = await getSignedUrl(
+        config.s3Client,
+        new GetObjectCommand({ Bucket: config.bucket, Key: key }),
+        { expiresIn: 3600 * 24 }
+      );
+      return url;
     } catch (error) {
       console.log(error);
     }
