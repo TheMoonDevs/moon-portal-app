@@ -112,6 +112,7 @@ model WorkLogs {
 model CertificateUpload {
   id          String  @id @default(auto()) @map("_id") @db.ObjectId
   userId      String?  @db.ObjectId 
+  uploadedByUserId String?  @db.ObjectId
   fileName    String?
   mimeType    String?
   fileUrl     String?

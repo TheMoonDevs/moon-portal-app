@@ -44,11 +44,13 @@ export async function POST(req: Request) {
   try {
     const formData = await req.formData();
     const files = formData.getAll("file") as unknown as File[];
+
     if (!files || files.length === 0) {
       return NextResponse.json("File not found", { status: 404 });
     }
 
     const userId = formData.get("userId") as string;
+    const uploadedByUserId = formData.get("uploadedByUserId") as string;
 
     if (!userId) {
       return NextResponse.json("User not found", { status: 404 });
@@ -58,7 +60,6 @@ export async function POST(req: Request) {
       const s3Response = await fileUploadSdk.uploadFile({
         file,
         userId,
-        folder: "certificates",
       });
 
       if (!s3Response || s3Response.$metadata.httpStatusCode !== 200) {
@@ -66,11 +67,11 @@ export async function POST(req: Request) {
       }
 
       const fileInfo = {
-        fileUrl: `https://${
-          process.env.SPACES_NAME
-        }.nyc3.cdn.digitaloceanspaces.com/certificates/${userId}/${encodeURI(
-          file.name
-        )}`,
+        fileUrl: fileUploadSdk.getPublicFileUrl({
+          userId,
+          file,
+          folder: "certificates",
+        }),
         fileName: file.name,
         mimeType: file.type,
         fileSize: file.size,
@@ -78,6 +79,7 @@ export async function POST(req: Request) {
 
       return {
         userId,
+        uploadedByUserId: uploadedByUserId ? uploadedByUserId : null,
         ...fileInfo,
       };
     });
@@ -90,7 +92,7 @@ export async function POST(req: Request) {
       data: fileInfo,
     });
     // console.log(DBresponse);
-    return NextResponse.json(DBresponse);
+    return NextResponse.json({ DBresponse, fileInfo });
   } catch (reason) {
     console.log(reason);
     return NextResponse.json({ message: "failure" });
@@ -104,9 +106,9 @@ export async function DELETE(req: Request) {
     const response = await fileUploadSdk.deleteFile({
       userId: userId,
       fileName: fileName,
-      folder: "certificates",
     });
 
+    console.log(response);
     if (
       !response ||
       (response.$metadata.httpStatusCode !== 204 &&
@@ -118,9 +120,10 @@ export async function DELETE(req: Request) {
 
     const DBresponse = await prisma.certificateUpload.delete({
       where: {
-        id,
+        id: id,
       },
     });
+    console.log(DBresponse);
 
     return NextResponse.json(DBresponse);
   } catch (e) {
