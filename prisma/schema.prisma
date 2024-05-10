@@ -119,11 +119,11 @@ model CertificateUpload {
   userInfo    Json?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @default(now())
-  @@unique([id, userId])
 }
 model FileUpload {
   id          String  @id @default(auto()) @map("_id") @db.ObjectId
   userId      String?  @db.ObjectId 
+  uploadedByUserId String?  @db.ObjectId
   fileName    String?
   mimeType    String?
   fileUrl     String?
@@ -131,7 +131,6 @@ model FileUpload {
   userInfo    Json?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @default(now())
-  @@unique([id, userId])
 }
 
 enum JOBPOST {
