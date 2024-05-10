@@ -118,10 +118,7 @@ export async function DELETE(req: Request) {
 
     const DBresponse = await prisma.certificateUpload.delete({
       where: {
-        id_userId: {
-          id: id,
-          userId: userId,
-        },
+        id,
       },
     });
 
