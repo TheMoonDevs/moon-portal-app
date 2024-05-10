@@ -5,9 +5,9 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
   const loggedInUserId = req.nextUrl.searchParams.get("userId");
-  if (!loggedInUserId) {
-    return NextResponse.json("User not found", { status: 404 });
-  }
+  // if (!loggedInUserId) {
+  //   return NextResponse.json("User not found", { status: 404 });
+  // }
 
   try {
     let certificates;
