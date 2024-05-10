@@ -1,27 +1,24 @@
 "use client";
-import React, { useRef } from "react";
+import React from "react";
 import { Button } from "@/components/elements/Button";
 import { RootState, useAppDispatch } from "@/utils/redux/store";
 import { useSelector } from "react-redux";
-import {
-  FileWithPath,
-  addFile,
-  removeFile,
-} from "@/utils/redux/filesUpload/filesUpload.slice";
-import { Dropzone, MIME_TYPES } from "@mantine/dropzone";
-import { IconCloudUpload } from "@tabler/icons-react";
-import { Group, rem } from "@mantine/core";
+
+import { Dropzone, FileWithPath, MIME_TYPES } from "@mantine/dropzone";
 import { useUser } from "@/utils/hooks/useUser";
+import {
+  addFilesToPreview,
+  removeFilesFromPreview,
+} from "@/utils/redux/filesUpload/fileUpload.slice";
 
 export function DropzoneButton() {
   const dispatch = useAppDispatch();
   const { user } = useUser();
   const files = useSelector((state: RootState) => state.filesUpload.files);
-  const openRef = useRef<() => void>(null);
   const handleDrop = (droppedFiles: FileWithPath[]) => {
-    console.log(droppedFiles);
+    // console.log(droppedFiles);
     // Add the new file
-    dispatch(addFile(droppedFiles));
+    dispatch(addFilesToPreview(droppedFiles));
   };
 
   const handleUpload = async () => {
@@ -63,7 +60,7 @@ export function DropzoneButton() {
           style={{ fontSize: "1rem" }}
           onClick={() =>
             dispatch(
-              removeFile({
+              removeFilesFromPreview({
                 path: file.path,
                 lastModified: file.lastModified,
               })

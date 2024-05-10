@@ -6,36 +6,39 @@ import { User } from "@prisma/client";
 import { useAppSelector } from "@/utils/redux/store";
 import { Dropzone, FileWithPath, MIME_TYPES } from "@mantine/dropzone";
 import {
-  addFileFromAdmin,
-  removeFileFromAdmin,
-} from "@/utils/redux/filesUpload/fileUploadAdmin.slice";
+  addFilesToPreview,
+  removeFilesFromPreview,
+  resetPreview,
+} from "@/utils/redux/filesUpload/fileUpload.slice";
 import { useUser } from "@/utils/hooks/useUser";
+import { CircularProgress } from "@mui/material";
 
-export default function DropzoneAdminButton() {
+export default function DropzoneAdminButton({ users }: { users: User[] }) {
   const dispatch = useAppDispatch();
-  const [users, setUsers] = useState<User[]>([]);
+  // const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<string>("");
   const [selectedUserObj, setSelectedUserObj] = useState<User | null>(null);
+  const [isFileUploading, setIsFileUploading] = useState<boolean>(false);
   const { user } = useUser();
-  const [isLoading, setIsLoading] = useState(true);
 
-  const files = useAppSelector(
-    (state: RootState) => state.filesUploadAdmin.files
-  );
+  const files = useAppSelector((state: RootState) => state.filesUpload.files);
   const handleDrop = (droppedFiles: FileWithPath[]) => {
-    console.log(droppedFiles);
+    // console.log(droppedFiles);
     // Add the new file
-    dispatch(addFileFromAdmin(droppedFiles));
+    dispatch(addFilesToPreview(droppedFiles));
   };
   const handleSubmit = async () => {
+    setIsFileUploading(true);
     if (files.length > 0) {
       const formData = new FormData();
       files.forEach((file) => {
         formData.append("file", file, file.path);
       });
-      let userId;
-      if (selectedUserObj) {
+      let userId,
+        uploadedByUserId = null;
+      if (selectedUserObj && user) {
         userId = selectedUserObj.id;
+        uploadedByUserId = selectedUserObj.id !== user.id ? user.id : null;
       } else if (user) {
         userId = user.id;
       } else {
@@ -44,20 +47,28 @@ export default function DropzoneAdminButton() {
       }
 
       formData.append("userId", userId);
+      uploadedByUserId && formData.append("uploadedByUserId", uploadedByUserId);
       try {
         const response = await fetch(`api/upload/file-upload`, {
           method: "POST",
           body: formData,
         });
-
+        const responseJson = await response.json();
+        console.log(responseJson.fileInfo);
+        // console.log(responseJson);
         if (response.ok) {
+          dispatch(resetPreview());
+
           // Handle success, maybe show a success message
+          setIsFileUploading(false);
           console.log("File uploaded successfully!");
         } else {
+          setIsFileUploading(false);
           // Handle error
           console.error("Failed to upload file:", response.statusText);
         }
       } catch (error) {
+        setIsFileUploading(false);
         console.error("Error uploading file:", error);
         // Handle error
       }
@@ -72,14 +83,14 @@ export default function DropzoneAdminButton() {
           style={{ fontSize: "1rem" }}
           onClick={() =>
             dispatch(
-              removeFileFromAdmin({
+              removeFilesFromPreview({
                 path: file.path,
                 lastModified: file.lastModified,
               })
             )
           }
         >
-          X
+          close
         </span>
         {file.type === "image/png" || file.type === "image/jpeg" ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -103,28 +114,6 @@ export default function DropzoneAdminButton() {
       </div>
     );
   });
-  useEffect(() => {
-    setIsLoading(true); // Set loading state to true before fetching data
-
-    const fetchUsers = async () => {
-      try {
-        const response = await fetch(`api/users`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-        const data = await response.json();
-        setUsers(data?.data?.user as User[]);
-        setIsLoading(false);
-      } catch (error) {
-        console.error("Error:", error);
-        setIsLoading(false);
-      }
-    };
-
-    fetchUsers();
-  }, []);
 
   return (
     <div className="flex flex-col items-center justify-center  md:mt-4">
@@ -135,6 +124,7 @@ export default function DropzoneAdminButton() {
           </div>
           <div className="md:my-4 py-6 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 transition-colors hover:border-gray-400">
             <Dropzone
+              loading={isFileUploading}
               onDrop={handleDrop}
               radius="md"
               accept={[
@@ -172,7 +162,9 @@ export default function DropzoneAdminButton() {
                 type="file"
               />
             </Dropzone>
-            <div className="ml-4 flex gap-4 flex-wrap">{previews}</div>
+            {files.length > 0 && (
+              <div className="ml-4 flex gap-4 flex-wrap">{previews}</div>
+            )}
           </div>
 
           <div className="space-y-4">
@@ -199,7 +191,7 @@ export default function DropzoneAdminButton() {
                   <option value="" selected>
                     Select your option
                   </option>
-                  {isLoading ? (
+                  {users.length === 0 ? (
                     <option disabled>Loading...</option>
                   ) : users && users.length > 0 ? (
                     users.map((user) => (
@@ -212,11 +204,19 @@ export default function DropzoneAdminButton() {
                   )}
                 </select>
                 <Button
-                  className="w-1/3 rounded-md  py-2 px-4 text-sm font-medium text-white bg-black   focus:outline-none  "
+                  className="w-1/3 rounded-md  py-2 px-4 text-sm font-medium text-white bg-black focus:outline-none  "
                   type="submit"
                   onClick={handleSubmit}
+                  disabled={isFileUploading}
                 >
-                  Upload File
+                  {isFileUploading ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <CircularProgress size={20} color="inherit" />
+                      <span>Uploading...</span>
+                    </div>
+                  ) : (
+                    "Upload File"
+                  )}
                 </Button>
               </div>
             </div>
