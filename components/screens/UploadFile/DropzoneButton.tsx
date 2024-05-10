@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/elements/Button";
 import { RootState, useAppDispatch } from "@/utils/redux/store";
 import { useSelector } from "react-redux";
@@ -9,9 +9,13 @@ import { useUser } from "@/utils/hooks/useUser";
 import {
   addFilesToPreview,
   removeFilesFromPreview,
+  resetPreview,
 } from "@/utils/redux/filesUpload/fileUpload.slice";
+import { CircularProgress } from "@mui/material";
 
 export function DropzoneButton() {
+  const [isFileUploading, setIsFileUploading] = useState<boolean>(false);
+
   const dispatch = useAppDispatch();
   const { user } = useUser();
   const files = useSelector((state: RootState) => state.filesUpload.files);
@@ -22,6 +26,7 @@ export function DropzoneButton() {
   };
 
   const handleUpload = async () => {
+    setIsFileUploading(true);
     if (files.length > 0) {
       const formData = new FormData();
       files.forEach((file) => {
@@ -40,11 +45,15 @@ export function DropzoneButton() {
         if (response.ok) {
           // Handle success, maybe show a success message
           console.log("File uploaded successfully!");
+          dispatch(resetPreview());
+          setIsFileUploading(false);
         } else {
           // Handle error
+          setIsFileUploading(false);
           console.error("Failed to upload file:", response.statusText);
         }
       } catch (error) {
+        setIsFileUploading(false);
         console.error("Error uploading file:", error);
         // Handle error
       }
@@ -142,7 +151,16 @@ export function DropzoneButton() {
       <div className="flex gap-4 flex-wrap">{previews}</div>
       {files.length > 0 && (
         <div className="flex justify-center items-center">
-          <Button onClick={handleUpload}>Upload File</Button>
+          <Button onClick={handleUpload} disabled={isFileUploading}>
+            {isFileUploading ? (
+              <div className="flex items-center justify-center gap-2">
+                <CircularProgress size={20} color="inherit" />
+                <span>Uploading...</span>
+              </div>
+            ) : (
+              "Upload File"
+            )}
+          </Button>
         </div>
       )}
     </div>
