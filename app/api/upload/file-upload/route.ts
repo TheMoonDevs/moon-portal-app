@@ -5,9 +5,9 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
   const loggedInUserId = req.nextUrl.searchParams.get("userId");
-  if (!loggedInUserId) {
-    return NextResponse.json("User not found", { status: 404 });
-  }
+  // if (!loggedInUserId) {
+  //   return NextResponse.json("User not found", { status: 404 });
+  // }
 
   try {
     let files;
@@ -29,6 +29,7 @@ export async function GET(req: NextRequest) {
       });
     }
 
+    console.log(files);
     if (!files || files.length === 0) {
       return NextResponse.json("Certificate not found", { status: 404 });
     }
@@ -98,24 +99,34 @@ export async function POST(req: Request) {
 
 export async function DELETE(req: Request) {
   try {
-    const { userId, fileName } = await req.json();
+    const { id, userId, fileName } = await req.json();
 
     const response = await fileUploadSdk.deleteFile({
       userId: userId,
       fileName: fileName,
     });
 
-    if (!response || response.$metadata.httpStatusCode !== 200) {
-      return NextResponse.json({ message: "Failed to delete file" });
+    console.log(response);
+    if (
+      !response ||
+      (response.$metadata.httpStatusCode !== 204 &&
+        response.$metadata.httpStatusCode !== 200)
+    ) {
+      // return NextResponse.json({ message: "Failed to delete file" });
+      throw new Error("Failed to delete file");
     }
 
     const DBresponse = await prisma.fileUpload.delete({
       where: {
-        userId,
+        id_userId: {
+          id: id,
+          userId: userId,
+        },
       },
     });
+    console.log(DBresponse);
 
-    return NextResponse.json(DBresponse);
+    return NextResponse.json(DBresponse.fileName);
   } catch (e) {
     console.log(e);
     return new NextResponse(JSON.stringify(e), {
