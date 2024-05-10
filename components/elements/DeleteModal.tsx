@@ -1,8 +1,9 @@
-import React from "react";
+import { CircularProgress } from "@mui/material";
+import React, { useState } from "react";
 
 interface ConfirmationModalProps {
   isOpen: boolean;
-  onConfirm: () => void;
+  onConfirm: () => Promise<void>;
   onCancel: () => void;
   title: string;
   message: string;
@@ -15,6 +16,19 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   title,
   message,
 }) => {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleOnDeleteConfirmation = async () => {
+    try {
+      setIsLoading(true);
+      await onConfirm();
+      setIsLoading(false);
+    } catch (error) {
+      console.error(error);
+      setIsLoading(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -29,9 +43,10 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
           <p className="mb-6">{message}</p>
           <div className="flex justify-end">
             <button
-              className="bg-red-500 text-white px-4 py-2 rounded mr-2"
-              onClick={onConfirm}
+              className="bg-red-500 text-white px-4 py-2 rounded mr-2 flex justify-center items-center gap-2"
+              onClick={handleOnDeleteConfirmation}
             >
+              {isLoading && <CircularProgress size={16} />}
               Confirm
             </button>
             <button
