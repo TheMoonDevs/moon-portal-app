@@ -15,9 +15,9 @@ import { Fade, Tooltip } from "@mui/material";
 import { GroupView } from "./Views/GroupView";
 import { ListView } from "./Views/ListView";
 import { ThumbnailView } from "./Views/ThumbnailView";
-import { LinkButtonGroup } from "./LinkButtonGroup";
+import { LinkActions } from "./LinkActions";
 
-export const LinkListWithView = ({
+export const LinkItem = ({
   allQuicklinks,
   withView = "all",
   isLoading,
@@ -29,7 +29,6 @@ export const LinkListWithView = ({
   const dispatch = useAppDispatch();
   const { user } = useUser();
   const { currentView } = useAppSelector((state) => state.quicklinks);
-  const [deleteButtonId, setDeleteButtonId] = useState<string | null>();
 
   const handleLinkClick = async (linkId: string) => {
     if (!user?.id) {
@@ -127,9 +126,11 @@ export const LinkListWithView = ({
         <div
           className={`${
             (currentView === VIEW.list && withView === "all") ||
-            withView === "list"
+            (withView === "list"
               ? "flex flex-col"
-              : "grid grid-cols-4"
+              : withView === "group"
+              ? "flex flex-row flex-wrap gap-10"
+              : "grid grid-cols-4")
           } gap-10 py-12 w-full`}
         >
           {allQuicklinks?.map((link) => (
@@ -140,7 +141,7 @@ export const LinkListWithView = ({
               TransitionProps={{ timeout: 600 }}
               enterDelay={1000}
             >
-              <div className="group relative">
+              <div className="group relative rounded-md hover:bg-neutral-100 ">
                 {withView === "group" && (
                   <GroupView link={link} handleLinkClick={handleLinkClick} />
                 )}
@@ -166,12 +167,10 @@ export const LinkListWithView = ({
                     )}
                   </>
                 )}
-                <LinkButtonGroup
+                <LinkActions
                   link={link}
                   handleFavoriteClick={debouncedHandleFavoriteClick}
                   handleDeleteLink={handleDeleteLink}
-                  deleteButtonId={deleteButtonId}
-                  setDeleteButtonId={setDeleteButtonId}
                 />
               </div>
             </Tooltip>

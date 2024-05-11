@@ -4,7 +4,7 @@ import { CircularProgress } from "@mui/material";
 import { Link as Quicklink } from "@prisma/client";
 
 import { ViewButtonGroup } from "./ViewButtonGroup";
-import { LinkListWithView } from "./LinkListWithView";
+import { LinkItem } from "./LinkItem";
 
 export enum VIEW {
   list = "list",
@@ -33,7 +33,7 @@ export default function LinkList({
           </div>
         )}
 
-        <LinkListWithView
+        <LinkItem
           allQuicklinks={allQuicklinks}
           withView={withView}
           isLoading={isLoading}

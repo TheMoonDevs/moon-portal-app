@@ -13,18 +13,18 @@ export const GroupView = ({
       <Link
         href={link.url}
         target="_blank"
-        className="flex flex-col justify-between items-center gap-4"
+        className="flex p-4 flex-col justify-between items-center gap-2 "
       >
-        <div className="">
+        <div className="bg-white rounded-full p-4 shadow-md ">
           <Image
-            className="!h-[100px] !object-cover rounded-full"
+            className="!h-[40px] !w-[40px] !object-cover rounded-full"
             src={link.logo}
             alt={link.title}
             width={100}
             height={100}
           />
         </div>
-        <p className="text-sm text-center w-4/5 font-semibold">
+        <p className="text-xs text-center max-w-[60px] truncate font-regular ">
           {link.title.length > 50
             ? link.title.substring(0, 50) + " ..."
             : link.title}
