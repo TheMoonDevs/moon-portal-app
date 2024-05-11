@@ -2,6 +2,7 @@
 /* eslint-disable @next/next/google-font-display */
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import "@mantine/core/styles.css";
 import "./globals.css";
 import "@mdxeditor/editor/style.css";
 import "slick-carousel/slick/slick.css";
@@ -16,6 +17,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
 import { AppLayout } from "@/components/global/AppLayout";
+import { MantineProvider } from "@mantine/core";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -52,10 +54,12 @@ export default function RootLayout({
       <body className={inter.className}>
         <NextAuthProvider session={session}>
           <MUIThemeRegistry options={{ key: "mui" }}>
-            <ReduxProvider>
-              <AppLayout>{children}</AppLayout>
-              <ToastsContainer />
-            </ReduxProvider>
+            <MantineProvider>
+              <ReduxProvider>
+                <AppLayout>{children}</AppLayout>
+                <ToastsContainer />
+              </ReduxProvider>
+            </MantineProvider>
           </MUIThemeRegistry>
         </NextAuthProvider>
       </body>
