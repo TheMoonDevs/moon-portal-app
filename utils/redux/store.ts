@@ -7,6 +7,8 @@ import uiReducer from "./ui/ui.slice";
 import shortUrlReducer from "./shortUrl/shortUrl.slice";
 import authReducer from "./auth/auth.slice";
 import quicklinksReducer from "./quicklinks/quicklinks.slice";
+import searchTermReducer from "./searchTerm/search.slice";
+import filesUploadReducer from "./filesUpload/fileUpload.slice";
 //import suggestionsReducer from './suggestions/suggestions.slice';
 
 const store = configureStore({
@@ -15,6 +17,8 @@ const store = configureStore({
     quicklinks: quicklinksReducer,
     ui: uiReducer,
     shortUrl: shortUrlReducer,
+    filesUpload: filesUploadReducer,
+    searchTerm: searchTermReducer,
     //suggestions: suggestionsReducer,
   },
   middleware: (getDefaultMiddleware) =>
