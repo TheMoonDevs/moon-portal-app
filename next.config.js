@@ -8,7 +8,6 @@ const withPWA = require("next-pwa")({
   skipWaiting: true,
   runtimeCaching,
   buildExcludes: [/middleware-manifest.json$/],
-
   // cacheOnFrontEndNav: true,
   // aggressiveFrontEndNavCaching: true,
   // reloadOnOnline: true,

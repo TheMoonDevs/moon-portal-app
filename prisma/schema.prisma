@@ -175,6 +175,31 @@ model WorkLogs {
   works       Json[]
 }
 
+model CertificateUpload {
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String?  @db.ObjectId 
+  uploadedByUserId String?  @db.ObjectId
+  fileName    String?
+  mimeType    String?
+  fileUrl     String?
+  fileSize    Int?
+  userInfo    Json?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @default(now())
+}
+model FileUpload {
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String?  @db.ObjectId 
+  uploadedByUserId String?  @db.ObjectId
+  fileName    String?
+  mimeType    String?
+  fileUrl     String?
+  fileSize    Int?
+  userInfo    Json?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @default(now())
+}
+
 enum JOBPOST {
   FULLTIME
   PARTTIME
