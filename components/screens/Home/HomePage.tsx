@@ -15,6 +15,7 @@ import { APP_ROUTES } from "@/utils/constants/appInfo";
 import { useRouter } from "next/navigation";
 import { InWorkSection } from "./InWorkSection";
 import { InPlanSection } from "./InPlanSection";
+import PWAUpdate from "../Login/PWAUpdate";
 
 const MemberHomePage = () => {
   const { user } = useUser();
@@ -36,6 +37,7 @@ const MemberHomePage = () => {
         <InPlanSection visible={tab === HomeTabs.PLANUP} />
       </div>
         <div className="h-[300px]"></div>
+        <PWAUpdate/>
     </div>
   );
 };
