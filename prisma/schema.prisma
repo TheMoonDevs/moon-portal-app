@@ -96,6 +96,7 @@ model ZeroRecords {
   config      String?
   year        String?
   allZeros    Json[]
+  allMeetings Json[]
 }
 
 model WorkLogs {
