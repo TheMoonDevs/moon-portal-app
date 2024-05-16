@@ -133,6 +133,7 @@ export async function DELETE(req: Request) {
     const response = await fileUploadSdk.deleteFile({
       userId: userId,
       fileName: fileName,
+      folder: "certificates",
     });
 
     console.log(response);
@@ -183,14 +184,87 @@ export async function DELETE(req: Request) {
 
 export async function PUT(req: Request) {
   try {
-    const { certificateId, ...rest } = await req.json();
+    const { certificate: certificateData, deleteCertificateFromPrevId } =
+      await req.json();
 
+    if (deleteCertificateFromPrevId) {
+      const downloadedFile = await fileUploadSdk.downloadFile({
+        userId: deleteCertificateFromPrevId,
+        fileName: certificateData.file.fileName,
+        folder: "certificates",
+      });
+
+      if (
+        !downloadedFile ||
+        (downloadedFile.$metadata.httpStatusCode !== 200 &&
+          downloadedFile.$metadata.httpStatusCode !== 204)
+      ) {
+        throw new Error("Error updating the document!");
+      }
+
+      const fileData = (await fileUploadSdk.streamToBuffer(
+        downloadedFile?.Body!
+      )) as Buffer;
+
+      const addCertificateToNewIdInSpaces = await fileUploadSdk.uploadFile({
+        fileInfoWithFileBuffer: {
+          fileName: certificateData.file.fileName,
+          fileType: certificateData.file.mimeType,
+          fileBuffer: fileData,
+        },
+        userId: certificateData.userId,
+        folder: "certificates",
+      });
+
+      if (
+        !addCertificateToNewIdInSpaces ||
+        (addCertificateToNewIdInSpaces.$metadata.httpStatusCode !== 200 &&
+          addCertificateToNewIdInSpaces.$metadata.httpStatusCode !== 204)
+      ) {
+        throw new Error("Error updating the document!");
+      }
+
+      const response = await fileUploadSdk.deleteFile({
+        userId: deleteCertificateFromPrevId,
+        fileName: certificateData.file.fileName,
+        folder: "certificates",
+      });
+      if (
+        !response ||
+        (response.$metadata.httpStatusCode !== 204 &&
+          response.$metadata.httpStatusCode !== 200)
+      ) {
+        // return NextResponse.json({ message: "Failed to delete file" });
+        throw new Error("Error updating the document!");
+      }
+
+      const updateFileRecord = await prisma.fileUpload.update({
+        where: {
+          id: certificateData.file.id,
+        },
+        data: {
+          userId: certificateData.userId,
+          userInfo: certificateData.userInfo,
+        },
+      });
+    }
+    const { id: certificateId, ...certificateDataWithoutId } = certificateData;
     const certificate = await prisma.certificate.update({
       where: {
         id: certificateId,
       },
       data: {
-        ...rest,
+        ...certificateDataWithoutId,
+        file: {
+          ...certificateDataWithoutId.file,
+          fileUrl: fileUploadSdk.getPublicFileUrl({
+            userId: certificateDataWithoutId.userId,
+            file: certificateDataWithoutId.file,
+            folder: "certificates",
+          }),
+          userId: certificateDataWithoutId.userId,
+          userInfo: certificateDataWithoutId.userInfo,
+        },
       },
     });
     return NextResponse.json(certificate);
