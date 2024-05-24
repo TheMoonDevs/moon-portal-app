@@ -10,10 +10,10 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
-}
+    --foreground-rgb: 0, 0, 0;
+    --background-start-rgb: 214, 219, 220;
+    --background-end-rgb: 255, 255, 255;
+  }
 }
 
 input,
@@ -21,7 +21,7 @@ textarea,
 button,
 select,
 a {
-    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.15);
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0.15);
 }
 
 body {
@@ -36,7 +36,7 @@ body {
 }
 
 .material-symbols-outlined {
-  font-family: 'Material Symbols Outlined';
+  font-family: "Material Symbols Outlined";
   font-weight: normal;
   font-style: normal;
   font-size: 24px;
@@ -47,7 +47,7 @@ body {
   white-space: nowrap;
   word-wrap: normal;
   direction: ltr;
-  -webkit-font-feature-settings: 'liga';
+  -webkit-font-feature-settings: "liga";
   -webkit-font-smoothing: antialiased;
 }
 
@@ -56,7 +56,7 @@ body {
   content: "Jotdown your thougts...";
   opacity: 0.5;
   position: absolute;
-  pointer-events: none; 
+  pointer-events: none;
   display: block; /* For Firefox */
 }
 
@@ -92,4 +92,66 @@ body {
 
 .cursor-pointer {
   user-select: none;
+}
+
+@layer utilities {
+  .animated-border-box-glow {
+    max-height: 200px;
+    max-width: 250px;
+    height: 100%;
+    width: 100%;
+    position: absolute;
+    overflow: hidden;
+    z-index: 0;
+    border-radius: 10px;
+  }
+
+  .animated-border-box {
+    overflow: hidden;
+    border-radius: 7px;
+  }
+
+  .animated-border-box-glow {
+    overflow: hidden;
+    filter: blur(20px);
+  }
+
+  .animated-border-box:before,
+  .animated-border-box-glow:before {
+    content: "";
+    z-index: -2;
+    text-align: center;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(0deg);
+    position: absolute;
+    width: 99999px;
+    height: 99999px;
+    background-repeat: no-repeat;
+    background-position: 0 0;
+    background-image: conic-gradient(
+      rgba(0, 0, 0, 0),
+      rgba(255, 255, 255, 0.5),
+      rgba(0, 0, 0, 0) 50%
+    );
+    animation: rotate 4s linear infinite;
+  }
+
+  .animated-border-box:after {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    left: 2px;
+    top: 2px;
+    width: calc(100% - 4px);
+    height: calc(100% - 4px);
+    background: black;
+    border-radius: 7px;
+  }
+
+  @keyframes rotate {
+    100% {
+      transform: translate(-50%, -50%) rotate(1turn);
+    }
+  }
 }
