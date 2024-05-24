@@ -127,11 +127,13 @@ export const CreateLinkModal = () => {
         authorId: user?.id,
       };
 
+      console.log(newLinkData);
       const response = await QuicklinksSdk.createData(
         "/api/quicklinks/link",
         newLinkData
       );
 
+      //QL-TODO - the response does not user data attached to it.
       if (path !== "/quicklinks/dashboard") {
         dispatch(addNewQuicklink(response.data.link));
       }

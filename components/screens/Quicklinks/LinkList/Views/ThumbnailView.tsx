@@ -1,12 +1,17 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Link as Quicklink } from "@prisma/client";
+import { LinkActions } from "../LinkActions";
 export const ThumbnailView = ({
   link,
   handleLinkClick,
+  handleFavoriteClick,
+  handleDeleteLink,
 }: {
   link: Quicklink;
   handleLinkClick: (linkId: string) => void;
+  handleFavoriteClick: (link: Quicklink) => void;
+  handleDeleteLink: (linkId: string) => void;
 }) => {
   return (
     <>
@@ -36,6 +41,11 @@ export const ThumbnailView = ({
           {(link as any).author?.name}
         </p>
       </div>
+      <LinkActions
+        link={link}
+        handleFavoriteClick={handleFavoriteClick}
+        handleDeleteLink={handleDeleteLink}
+      />
     </>
   );
 };

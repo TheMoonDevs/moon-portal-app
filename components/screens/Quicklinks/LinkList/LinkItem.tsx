@@ -30,6 +30,8 @@ export const LinkItem = ({
   const { user } = useUser();
   const { currentView } = useAppSelector((state) => state.quicklinks);
 
+  console.log(allQuicklinks);
+
   const handleLinkClick = async (linkId: string) => {
     if (!user?.id) {
       return;
@@ -129,8 +131,8 @@ export const LinkItem = ({
             (withView === "list"
               ? "flex flex-col"
               : withView === "group"
-              ? "flex flex-row flex-wrap gap-10"
-              : "grid grid-cols-4")
+              ? "flex flex-row flex-wrap gap-2"
+              : "flex flex-row flex-wrap gap-2")
           } gap-10 py-12 w-full`}
         >
           {allQuicklinks?.map((link) => (
@@ -141,38 +143,35 @@ export const LinkItem = ({
               TransitionProps={{ timeout: 600 }}
               enterDelay={1000}
             >
-              <div className="group relative rounded-md hover:bg-neutral-100 ">
-                {withView === "group" && (
-                  <GroupView link={link} handleLinkClick={handleLinkClick} />
+              <>
+                {(withView === "group" ||
+                  (isViewGroup && withView == "all")) && (
+                  <div className="group relative rounded-md hover:bg-neutral-100 ">
+                    <GroupView
+                      link={link}
+                      handleLinkClick={handleLinkClick}
+                      handleFavoriteClick={debouncedHandleFavoriteClick}
+                      handleDeleteLink={handleDeleteLink}
+                    />
+                  </div>
                 )}
-                {withView === "list" && (
-                  <ListView link={link} handleLinkClick={handleLinkClick} />
+                {(withView === "list" || (isViewList && withView == "all")) && (
+                  <ListView
+                    link={link}
+                    handleLinkClick={handleLinkClick}
+                    handleFavoriteClick={debouncedHandleFavoriteClick}
+                    handleDeleteLink={handleDeleteLink}
+                  />
                 )}
-                {withView === "all" && (
-                  <>
-                    {isViewList && (
-                      <ListView link={link} handleLinkClick={handleLinkClick} />
-                    )}
-                    {isViewGroup && (
-                      <GroupView
-                        link={link}
-                        handleLinkClick={handleLinkClick}
-                      />
-                    )}
-                    {isViewThumbnail && (
-                      <ThumbnailView
-                        link={link}
-                        handleLinkClick={handleLinkClick}
-                      />
-                    )}
-                  </>
+                {withView === "all" && isViewThumbnail && (
+                  <ThumbnailView
+                    link={link}
+                    handleLinkClick={handleLinkClick}
+                    handleFavoriteClick={debouncedHandleFavoriteClick}
+                    handleDeleteLink={handleDeleteLink}
+                  />
                 )}
-                <LinkActions
-                  link={link}
-                  handleFavoriteClick={debouncedHandleFavoriteClick}
-                  handleDeleteLink={handleDeleteLink}
-                />
-              </div>
+              </>
             </Tooltip>
           ))}
         </div>
