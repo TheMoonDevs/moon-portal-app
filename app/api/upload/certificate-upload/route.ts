@@ -107,7 +107,7 @@ export async function POST(req: Request) {
         data: {
           userId: file.userId,
           title: certificateTitle,
-          uploadedByUserId: file.uploadedByUserId,
+          // uploadedByUserId: file.uploadedByUserId,
           fileId: file.id,
           file: file,
           userInfo: user,
