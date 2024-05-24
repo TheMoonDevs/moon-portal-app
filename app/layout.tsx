@@ -18,6 +18,7 @@ import { useEffect } from "react";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
 import { AppLayout } from "@/components/global/AppLayout";
 import { MantineProvider } from "@mantine/core";
+import { UpdatePWA } from "@/components/global/UpdatePWA";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -56,7 +57,9 @@ export default function RootLayout({
           <MUIThemeRegistry options={{ key: "mui" }}>
             <MantineProvider>
               <ReduxProvider>
-                <AppLayout>{children}</AppLayout>
+                <UpdatePWA>
+                  <AppLayout>{children}</AppLayout>
+                </UpdatePWA>
                 <ToastsContainer />
               </ReduxProvider>
             </MantineProvider>
