@@ -29,6 +29,7 @@ export const QuicklinksDashboard = () => {
           `/api/quicklinks/link/user-link?userId=${user.id}&linkType=${USERLINKTYPE.TOPUSED}`
         );
 
+        console.log("topused", topUsedLinksData);
         dispatch(
           setTopUsedList(topUsedLinksData.map((link) => (link as any).linkData))
         );

@@ -23,7 +23,7 @@ export const LinkActions = ({
   };
 
   const open = Boolean(anchorEl);
-  const id = open ? link.id + "simple-popover" : undefined;
+  const id = link ? link.id + "simple-popover" : undefined;
 
   const deletePopup = () => {
     return (
@@ -92,7 +92,7 @@ export const LinkActions = ({
     );
   };
 
-  console.log(id);
+  //console.log(id);
 
   return (
     <div className="flex flex-col gap-2 items-center absolute right-1 top-1">
