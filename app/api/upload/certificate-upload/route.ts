@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
     let certificates;
 
     if (loggedInUserId) {
-      certificates = await prisma.certificateUpload.findMany({
+      certificates = await prisma.certificate.findMany({
         where: {
           userId: loggedInUserId,
         },
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
         },
       });
     } else {
-      certificates = await prisma.certificateUpload.findMany({
+      certificates = await prisma.certificate.findMany({
         orderBy: {
           createdAt: "desc",
         },
@@ -51,7 +51,7 @@ export async function POST(req: Request) {
 
     const userId = formData.get("userId") as string;
     const uploadedByUserId = formData.get("uploadedByUserId") as string;
-
+    const certificateTitle = formData.get("certificateTitle") as string;
     if (!userId) {
       return NextResponse.json("User not found", { status: 404 });
     }
@@ -60,6 +60,7 @@ export async function POST(req: Request) {
       const s3Response = await fileUploadSdk.uploadFile({
         file,
         userId,
+        folder: "certificates",
       });
 
       if (!s3Response || s3Response.$metadata.httpStatusCode !== 200) {
@@ -79,20 +80,46 @@ export async function POST(req: Request) {
 
       return {
         userId,
-        uploadedByUserId: uploadedByUserId ? uploadedByUserId : null,
+        // uploadedByUserId: uploadedByUserId ? uploadedByUserId : null,
         ...fileInfo,
       };
     });
 
     const fileInfo = await Promise.all(filePromises);
 
-    // Save to db
-
-    const DBresponse = await prisma.certificateUpload.createMany({
-      data: fileInfo,
+    //fetch user info
+    const user = await prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
     });
+
+    // Save to db
+    const uploadFilesToDbPromises = fileInfo.map((file) => {
+      return prisma.fileUpload.create({
+        data: file,
+      });
+    });
+    const uploadFilesToDB = await Promise.all(uploadFilesToDbPromises);
+
+    const addCertificatesToDbPromises = uploadFilesToDB.map((file) => {
+      return prisma.certificate.create({
+        data: {
+          userId: file.userId,
+          title: certificateTitle,
+          // uploadedByUserId: file.uploadedByUserId,
+          fileId: file.id,
+          file: file,
+          userInfo: user,
+        },
+      });
+    });
+    const addCertificatesToDb = await Promise.all(addCertificatesToDbPromises);
+    // const DBresponse = await prisma.certificate.createMany({
+    //   data: fileInfo,
+    // });
     // console.log(DBresponse);
-    return NextResponse.json({ DBresponse, fileInfo });
+    return NextResponse.json({ certificates: addCertificatesToDb });
   } catch (reason) {
     console.log(reason);
     return NextResponse.json({ message: "failure" });
@@ -106,6 +133,7 @@ export async function DELETE(req: Request) {
     const response = await fileUploadSdk.deleteFile({
       userId: userId,
       fileName: fileName,
+      folder: "certificates",
     });
 
     console.log(response);
@@ -118,14 +146,128 @@ export async function DELETE(req: Request) {
       throw new Error("Failed to delete file");
     }
 
-    const DBresponse = await prisma.certificateUpload.delete({
+    const certificate = await prisma.certificate.findFirst({
       where: {
         id: id,
       },
     });
-    console.log(DBresponse);
+    const fileId = certificate?.fileId;
 
-    return NextResponse.json(DBresponse);
+    if (!fileId) {
+      throw new Error("Certificate file not found");
+    }
+
+    const deletedCertificateFile = await prisma.fileUpload.delete({
+      where: {
+        id: fileId,
+      },
+    });
+    const deletedCertificateDoc = await prisma.certificate.delete({
+      where: {
+        id: id,
+      },
+    });
+    return NextResponse.json({
+      message: "Certificate deleted successfully",
+      certificate: deletedCertificateDoc,
+    });
+
+    // return NextResponse.json(DBresponse);
+  } catch (e) {
+    console.log(e);
+    return new NextResponse(JSON.stringify(e), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+}
+
+export async function PUT(req: Request) {
+  try {
+    const { certificate: certificateData, deleteCertificateFromPrevId } =
+      await req.json();
+
+    if (deleteCertificateFromPrevId) {
+      const downloadedFile = await fileUploadSdk.downloadFile({
+        userId: deleteCertificateFromPrevId,
+        fileName: certificateData.file.fileName,
+        folder: "certificates",
+      });
+
+      if (
+        !downloadedFile ||
+        (downloadedFile.$metadata.httpStatusCode !== 200 &&
+          downloadedFile.$metadata.httpStatusCode !== 204)
+      ) {
+        throw new Error("Error updating the document!");
+      }
+
+      const fileData = (await fileUploadSdk.streamToBuffer(
+        downloadedFile?.Body!
+      )) as Buffer;
+
+      const addCertificateToNewIdInSpaces = await fileUploadSdk.uploadFile({
+        fileInfoWithFileBuffer: {
+          fileName: certificateData.file.fileName,
+          fileType: certificateData.file.mimeType,
+          fileBuffer: fileData,
+        },
+        userId: certificateData.userId,
+        folder: "certificates",
+      });
+
+      if (
+        !addCertificateToNewIdInSpaces ||
+        (addCertificateToNewIdInSpaces.$metadata.httpStatusCode !== 200 &&
+          addCertificateToNewIdInSpaces.$metadata.httpStatusCode !== 204)
+      ) {
+        throw new Error("Error updating the document!");
+      }
+
+      const response = await fileUploadSdk.deleteFile({
+        userId: deleteCertificateFromPrevId,
+        fileName: certificateData.file.fileName,
+        folder: "certificates",
+      });
+      if (
+        !response ||
+        (response.$metadata.httpStatusCode !== 204 &&
+          response.$metadata.httpStatusCode !== 200)
+      ) {
+        // return NextResponse.json({ message: "Failed to delete file" });
+        throw new Error("Error updating the document!");
+      }
+
+      const updateFileRecord = await prisma.fileUpload.update({
+        where: {
+          id: certificateData.file.id,
+        },
+        data: {
+          userId: certificateData.userId,
+          userInfo: certificateData.userInfo,
+        },
+      });
+    }
+    const { id: certificateId, ...certificateDataWithoutId } = certificateData;
+    const certificate = await prisma.certificate.update({
+      where: {
+        id: certificateId,
+      },
+      data: {
+        ...certificateDataWithoutId,
+        file: {
+          ...certificateDataWithoutId.file,
+          fileUrl: fileUploadSdk.getPublicFileUrl({
+            userId: certificateDataWithoutId.userId,
+            file: certificateDataWithoutId.file,
+            folder: "certificates",
+          }),
+          userId: certificateDataWithoutId.userId,
+          userInfo: certificateDataWithoutId.userInfo,
+        },
+      },
+    });
+    return NextResponse.json(certificate);
   } catch (e) {
     console.log(e);
     return new NextResponse(JSON.stringify(e), {
