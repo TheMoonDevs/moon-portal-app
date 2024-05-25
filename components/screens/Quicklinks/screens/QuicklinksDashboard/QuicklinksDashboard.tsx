@@ -47,7 +47,7 @@ export const QuicklinksDashboard = () => {
       <TopUsedLink>
         <LinkList
           allQuicklinks={topUsedList}
-          withView="group"
+          withView="thumbnail"
           isLoading={loading}
         />
       </TopUsedLink>

@@ -6,6 +6,7 @@ import LinkList from "../../LinkList/LinkList";
 import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import { setAllQuicklinks } from "@/utils/redux/quicklinks/quicklinks.slice";
 import useAsyncState from "@/utils/hooks/useAsyncState";
+import { LinkFiltersHeader } from "../../LinkList/LinkFiltersHeader";
 
 export const DepartmentLinksByDirId = ({
   directoryId,
@@ -33,5 +34,10 @@ export const DepartmentLinksByDirId = ({
 
     getData();
   }, [directoryId, dispatch, setLoading]);
-  return <LinkList allQuicklinks={allQuicklinks} isLoading={loading} />;
+  return (
+    <div className="flex flex-col w-full">
+      <LinkFiltersHeader />
+      <LinkList allQuicklinks={allQuicklinks} isLoading={loading} />
+    </div>
+  );
 };

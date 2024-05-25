@@ -12,16 +12,19 @@ import {
 import { ToastSeverity } from "@/components/elements/Toast";
 import { debounce } from "@/utils/helpers/functions";
 import { Fade, Tooltip } from "@mui/material";
-import { GroupView } from "./Views/GroupView";
-import { ListView } from "./Views/ListView";
 import { ThumbnailView } from "./Views/ThumbnailView";
+import { ListView } from "./Views/ListView";
+import { CardView } from "./Views/CardView";
 import { LinkActions } from "./LinkActions";
+import { LineView } from "./Views/LineView";
 
 export const LinkItem = ({
   allQuicklinks,
+  link,
   withView = "all",
   isLoading,
 }: {
+  link: Quicklink;
   allQuicklinks?: Quicklink[];
   withView?: withView;
   isLoading?: boolean;
@@ -29,8 +32,6 @@ export const LinkItem = ({
   const dispatch = useAppDispatch();
   const { user } = useUser();
   const { currentView } = useAppSelector((state) => state.quicklinks);
-
-  console.log(allQuicklinks);
 
   const handleLinkClick = async (linkId: string) => {
     if (!user?.id) {
@@ -118,64 +119,51 @@ export const LinkItem = ({
   const isViewList = currentView === VIEW.list;
   const isViewGroup = currentView === VIEW.group;
   const isViewThumbnail = currentView === VIEW.thumbnail;
+  const isViewLine = currentView === VIEW.line;
   return (
-    <>
-      {allQuicklinks?.length === 0 && !isLoading ? (
-        <div className="w-full flex justify-center h-52 items-center ">
-          Nothing to show
-        </div>
-      ) : (
-        <div
-          className={`${
-            (currentView === VIEW.list && withView === "all") ||
-            (withView === "list"
-              ? "flex flex-col"
-              : withView === "group"
-              ? "flex flex-row flex-wrap gap-2"
-              : "flex flex-row flex-wrap gap-2")
-          } gap-10 py-12 w-full`}
-        >
-          {allQuicklinks?.map((link) => (
-            <Tooltip
-              title={link.title}
-              key={link.id}
-              TransitionComponent={Fade}
-              TransitionProps={{ timeout: 600 }}
-              enterDelay={1000}
-            >
-              <>
-                {(withView === "group" ||
-                  (isViewGroup && withView == "all")) && (
-                  <div className="group relative rounded-md hover:bg-neutral-100 ">
-                    <GroupView
-                      link={link}
-                      handleLinkClick={handleLinkClick}
-                      handleFavoriteClick={debouncedHandleFavoriteClick}
-                      handleDeleteLink={handleDeleteLink}
-                    />
-                  </div>
-                )}
-                {(withView === "list" || (isViewList && withView == "all")) && (
-                  <ListView
-                    link={link}
-                    handleLinkClick={handleLinkClick}
-                    handleFavoriteClick={debouncedHandleFavoriteClick}
-                    handleDeleteLink={handleDeleteLink}
-                  />
-                )}
-                {withView === "all" && isViewThumbnail && (
-                  <ThumbnailView
-                    link={link}
-                    handleLinkClick={handleLinkClick}
-                    handleFavoriteClick={debouncedHandleFavoriteClick}
-                    handleDeleteLink={handleDeleteLink}
-                  />
-                )}
-              </>
-            </Tooltip>
-          ))}
-        </div>
-      )}
-    </>
+    <Tooltip
+      title={link.title}
+      TransitionComponent={Fade}
+      TransitionProps={{ timeout: 600 }}
+      enterDelay={1000}
+    >
+      <>
+        {(withView === "thumbnail" ||
+          (isViewThumbnail && withView == "all")) && (
+          <div className="group relative rounded-md hover:bg-neutral-100 ">
+            <ThumbnailView
+              link={link}
+              handleLinkClick={handleLinkClick}
+              handleFavoriteClick={debouncedHandleFavoriteClick}
+              handleDeleteLink={handleDeleteLink}
+            />
+          </div>
+        )}
+        {(withView === "list" || (isViewList && withView == "all")) && (
+          <ListView
+            link={link}
+            handleLinkClick={handleLinkClick}
+            handleFavoriteClick={debouncedHandleFavoriteClick}
+            handleDeleteLink={handleDeleteLink}
+          />
+        )}
+        {(withView === "line" || (isViewLine && withView == "all")) && (
+          <LineView
+            link={link}
+            handleLinkClick={handleLinkClick}
+            handleFavoriteClick={debouncedHandleFavoriteClick}
+            handleDeleteLink={handleDeleteLink}
+          />
+        )}
+        {withView === "all" && isViewGroup && (
+          <CardView
+            link={link}
+            handleLinkClick={handleLinkClick}
+            handleFavoriteClick={debouncedHandleFavoriteClick}
+            handleDeleteLink={handleDeleteLink}
+          />
+        )}
+      </>
+    </Tooltip>
   );
 };

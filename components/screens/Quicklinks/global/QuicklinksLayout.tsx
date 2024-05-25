@@ -33,7 +33,7 @@ export const QuicklinksLayout = ({
   }
   const { toast } = useAppSelector((state) => state.quicklinks);
   return (
-    <main className="flex gap-4">
+    <main className="flex min-h-screen ">
       <QuicklinksSidebar />
       <div className="relative my-8 pr-8 pl-4 w-full">
         <QuicklinksHeader />

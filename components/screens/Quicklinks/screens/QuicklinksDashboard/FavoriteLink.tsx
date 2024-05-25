@@ -8,6 +8,7 @@ import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
 import { USERLINKTYPE } from "@prisma/client";
 import { ViewButtonGroup } from "../../LinkList/ViewButtonGroup";
 import useAsyncState from "@/utils/hooks/useAsyncState";
+import { LinkFiltersHeader } from "../../LinkList/LinkFiltersHeader";
 
 export default function FavoriteLink() {
   const dispatch = useAppDispatch();
@@ -37,10 +38,10 @@ export default function FavoriteLink() {
 
   return (
     <div className="bg-gray-100 p-8 rounded-sm">
-      <h2 className="uppercase tracking-[0.5rem] text-base font-normal text-gray-500">
-        Added To My List
-      </h2>
-      <LinkList allQuicklinks={favoriteList} isLoading={loading} />
+      <div className="flex flex-col w-full">
+        <LinkFiltersHeader title={"Added To My List"} />
+        <LinkList allQuicklinks={favoriteList} isLoading={loading} />
+      </div>
     </div>
   );
 }
