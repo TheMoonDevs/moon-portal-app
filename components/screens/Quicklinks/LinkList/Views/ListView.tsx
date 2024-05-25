@@ -21,7 +21,7 @@ export const ListView = ({
           <div className="flex flex-row items-center justify-start">
             <div className="bg-white rounded-full shadow-md">
               <img
-                className="h-[30px] w-[30px] object-cover onject-center rounded-full"
+                className="h-[30px] w-[30px] object-cover object-center rounded-full"
                 src={link.logo}
                 alt={link.title}
               />

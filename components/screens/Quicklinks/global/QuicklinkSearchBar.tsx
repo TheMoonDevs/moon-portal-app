@@ -61,7 +61,7 @@ const QuicklinkSearchBar: React.FC = () => {
         className="border-b border-b-gray-300 focus:border-b-gray-500 p-2 w-full outline-none transition-all"
       />
       {showResults && (
-        <div className="absolute h-96 z-10 w-64 bg-white overflow-y-scroll shadow-md px-4 ">
+        <div className="absolute h-96 z-10 w-64 bg-white overflow-y-scroll overflow-x-hidden shadow-md px-4 ">
           {loading ? (
             <p>Loading...</p>
           ) : (
@@ -69,7 +69,7 @@ const QuicklinkSearchBar: React.FC = () => {
               <LinkList
                 allQuicklinks={results}
                 isLoading={loading}
-                withView="list"
+                withView="line"
               />
             )
           )}

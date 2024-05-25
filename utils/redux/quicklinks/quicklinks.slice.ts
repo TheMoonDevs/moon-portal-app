@@ -8,6 +8,8 @@ const toggleFavoriteList = (prevFavList: Link[], currentFavoriteLink: Link) => {
     return [...prevFavList, { ...currentFavoriteLink, isFavorite: true }];
   }
 };
+
+type listView = "list" | "widget" | "thumbnail" | "line";
 export const shortUrlSlice = createSlice({
   name: "quicklinks",
   initialState: {
@@ -18,11 +20,8 @@ export const shortUrlSlice = createSlice({
     topUsedList: [],
     currentView:
       typeof window !== "undefined" && localStorage.getItem("currentView")
-        ? (localStorage.getItem("currentView") as
-            | "list"
-            | "group"
-            | "thumbnail")
-        : "group",
+        ? (localStorage.getItem("currentView") as listView)
+        : "widget",
     activeDirectoryId: null,
     isCreateLinkModalOpen: false,
     toast: {
@@ -36,7 +35,7 @@ export const shortUrlSlice = createSlice({
     allQuicklinks: Link[];
     favoriteList: Link[];
     topUsedList: Link[];
-    currentView: "list" | "group" | "thumbnail";
+    currentView: listView;
     toast: {
       showToast: boolean;
       toastMsg: string;

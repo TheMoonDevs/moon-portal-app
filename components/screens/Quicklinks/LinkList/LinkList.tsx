@@ -5,14 +5,16 @@ import { Link as Quicklink } from "@prisma/client";
 
 import { ViewButtonGroup } from "./ViewButtonGroup";
 import { LinkItem } from "./LinkItem";
+import { useAppSelector } from "@/utils/redux/store";
 
 export enum VIEW {
   list = "list",
-  group = "group",
+  group = "widget",
   thumbnail = "thumbnail",
+  line = "line",
 }
 
-export type withView = "all" | "group" | "list" | "thumbnail";
+export type withView = "all" | "widget" | "list" | "thumbnail" | "line";
 
 export default function LinkList({
   allQuicklinks,
@@ -23,21 +25,42 @@ export default function LinkList({
   withView?: withView;
   isLoading?: boolean;
 }) {
+  const { currentView } = useAppSelector((state) => state.quicklinks);
+
   return (
     <>
       <div className="w-full">
-        {withView === "all" && <ViewButtonGroup />}
         {allQuicklinks?.length === 0 && isLoading && (
           <div className="w-full flex justify-center h-52 items-center ">
             <CircularProgress color="inherit" />
           </div>
         )}
 
-        <LinkItem
-          allQuicklinks={allQuicklinks}
-          withView={withView}
-          isLoading={isLoading}
-        />
+        {allQuicklinks?.length === 0 && !isLoading ? (
+          <div className="w-full flex justify-center h-52 items-center ">
+            Nothing to show
+          </div>
+        ) : (
+          <div
+            className={`${
+              (currentView === VIEW.list && withView === "all") ||
+              (withView === "list"
+                ? "flex flex-col"
+                : withView === "widget"
+                ? "flex flex-row flex-wrap gap-2"
+                : "flex flex-row flex-wrap gap-2")
+            } gap-10  w-full`}
+          >
+            {allQuicklinks?.map((link) => (
+              <LinkItem
+                key={link.id}
+                link={link}
+                withView={withView}
+                isLoading={isLoading}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </>
   );

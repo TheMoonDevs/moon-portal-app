@@ -11,6 +11,7 @@ import {
 import TopUsedLink from "../QuicklinksDashboard/TopUsedLink";
 import { Link } from "@prisma/client";
 import useAsyncState from "@/utils/hooks/useAsyncState";
+import { LinkFiltersHeader } from "../../LinkList/LinkFiltersHeader";
 
 export const DepartmentLinks = () => {
   const params = useSearchParams();
@@ -50,11 +51,14 @@ export const DepartmentLinks = () => {
       <TopUsedLink>
         <LinkList
           allQuicklinks={topUsedList}
-          withView="group"
+          withView="thumbnail"
           isLoading={loading}
         />
       </TopUsedLink>
-      <LinkList allQuicklinks={allQuicklinks} isLoading={loading} />
+      <div className="flex flex-col w-full">
+        <LinkFiltersHeader />
+        <LinkList allQuicklinks={allQuicklinks} isLoading={loading} />
+      </div>
     </div>
   );
 };
