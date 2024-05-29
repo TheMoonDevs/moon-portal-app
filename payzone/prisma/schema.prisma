@@ -1,0 +1,115 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String        @id @default(auto()) @map("_id") @db.ObjectId
+  username  String
+  password  String
+  email     String        @unique
+  name      String?
+  avatar    String?
+  userType  USERTYPE?     @default(MEMBER)
+  role      USERROLE?     @default(CORETEAM)
+  vertical  USERVERTICAL? @default(DEV)
+  status    USERSTATUS?   @default(ACTIVE)
+  isAdmin   Boolean       @default(false)
+  timezone  String?
+  country   String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @default(now())
+  workData  Json?
+  payData   Json?
+}
+
+model PayTransactions {
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  user        Json?        
+  userId      String        @db.ObjectId
+  joiningDate String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  txStatus    TRANSACTIONSTATUS
+  txType      TRANSACTIONTYPE
+  txCategory  TRANSACTIONCATEGORY
+  burnTxHash  String?
+  amount      Float
+}
+
+model UserReferrals {
+  id                      String        @id @default(auto()) @map("_id") @db.ObjectId
+  user                    Json?         
+  userId                  String        @db.ObjectId
+  referralName            String
+  currentReferralStatus   REFERRALSTATUS
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+  joiningDate             String?
+  engagementSpan          String
+  totalSpent              Float
+  // referredBy              String        @db.ObjectId
+}
+
+enum REFERRALSTATUS {
+  COLD
+  DISCOVERY
+  FIRST_CONTACT
+  TRIAL_PERIOD
+  IN_ENGAGEMENT
+  PAY_OVERDUE
+  FINISHED
+}
+
+enum TRANSACTIONSTATUS {
+  DONE
+  PROCESSING
+  PENDING
+}
+
+enum TRANSACTIONTYPE {
+  CRYPTO
+  FIAT
+}
+
+enum TRANSACTIONCATEGORY {
+  CLAIM
+  STIPEND
+  BONUS
+}
+
+enum USERTYPE {
+  MEMBER
+  CLIENT
+}
+
+enum USERSTATUS {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+}
+
+enum USERROLE {
+  CORETEAM
+  ASSOCIATE
+  FREELANCER
+  INTERN
+}
+
+enum USERVERTICAL {
+  DEV
+  DESIGN
+  MARKETING
+  COMMUNITY
+  FINANCE
+  LEGAL
+  HR
+  OPERATIONS
+}

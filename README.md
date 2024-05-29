@@ -1,30 +1,31 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Intrrnal Apps of TheMoonDevs
 
-## Getting Started
+Most repos us shared databases, hence when you make a change in prisma, please update it in all places accordingly.
 
-First, run the development server:
+## Portal App - /portal
 
-```bash
-npm run dev
-```
+For all internal functionalities accessible to the team & clients.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Deployed on
 
-## DB & prisma
+- Vercel
+- [portal.themoondevs.com](http://portal.themoondevs.com)
 
-Required  `node v18.x.x`
 
-1. `npm i`
-2. `npm run dev`
-3. `npx prisma generate`
-4. `npx prisma db push`
-5. `npx prisma studio` - optional to edit db
+## Payzone App - /payzone
 
-# Tools, Deps & Links
+For all payment and secure features accessible to the team & clients.
+Referral dahboard is also included in this repo.
 
-- PWA <https://ducanh-next-pwa.vercel.app/docs> Deprecated
-- Manifest Generator <https://www.simicart.com/manifest-generator.html/>
-- Push payload <https://github.com/mdn/serviceworker-cookbook/tree/master/push-payload>
-- Offline <https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Tutorials/js13kGames/Offline_Service_workers>
-- Next-PWA <https://github.com/shadowwalker/next-pwa>
-- PWA Notifications <https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Tutorials/js13kGames/Re-engageable_Notifications_Push>
+Deployed on
+
+- Vercel
+- [pay.themoondevs.com](http://portal.themoondevs.com)
+
+## TMD smart contracts - /contract
+
+For all smart contracts of TheMoonDevs, deployed on all chains
+
+### TMDCredit
+
+- Base chain
