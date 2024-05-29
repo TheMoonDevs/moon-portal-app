@@ -13,10 +13,15 @@ import { Link } from "@prisma/client";
 import useAsyncState from "@/utils/hooks/useAsyncState";
 import { LinkFiltersHeader } from "../../LinkList/LinkFiltersHeader";
 
-export const DepartmentLinks = () => {
-  const params = useSearchParams();
-  const departmentId = params?.get("departmentId");
+export const DepartmentLinks = ({
+  departmentSlug,
+}: {
+  departmentSlug: string;
+}) => {
   const dispatch = useAppDispatch();
+  const params = useSearchParams();
+  const departmentId = params?.get("id");
+
   const { allQuicklinks, topUsedList } = useAppSelector(
     (state) => state.quicklinks
   );

@@ -79,13 +79,7 @@ export const AddSectionPopup = ({
                  `}
         onClick={handleClick}
       >
-        <span
-          aria-describedby={_id}
-          data-popover-trigger="hover"
-          className={`material-symbols-outlined !text-xs`}
-        >
-          add
-        </span>
+        <span className={`material-symbols-outlined !text-xs`}>add</span>
       </button>
       <Popover
         id={id}

@@ -26,7 +26,7 @@ export default function QuicklinkHeader() {
           {path?.startsWith(Path.department) &&
             path.split("/")[3].toLocaleUpperCase()}
 
-          {path?.startsWith(Path.commonResources) && "Common Resources"}
+          {path?.startsWith(Path.commonResources) && "Team Resources"}
         </h1>
         {path?.startsWith(Path.dashboard) && (
           <span className="text-sm text-neutral-400">
