@@ -56,8 +56,8 @@ export const AddSectionPopup = ({
           type: newDirectory?.type || ROOTTYPE.DEPARTMENT,
         } as Omit<ParentDirectory, "id">
       );
-      dispatch(setNewParentDir(data.department));
-      console.log(data.department);
+      dispatch(setNewParentDir(data?.data?.department));
+      console.log(data?.data?.department);
       setLoading(false);
       handleClose();
     } catch (error) {
