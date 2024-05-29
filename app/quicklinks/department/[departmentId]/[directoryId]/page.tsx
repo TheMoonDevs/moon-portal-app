@@ -1,4 +1,4 @@
-import { DepartmentLinksByDirId } from "@/components/screens/Quicklinks/screens/DepartmentQuicklinks/DepartmentLinksByDirId";
+import { DepartmentLinksByDirId } from "@/components/screens/Quicklinks/screens/Department/DepartmentLinksByDirId";
 
 export default async function Home({
   params,

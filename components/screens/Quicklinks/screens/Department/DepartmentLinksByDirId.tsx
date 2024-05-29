@@ -8,6 +8,7 @@ import { setAllQuicklinks } from "@/utils/redux/quicklinks/quicklinks.slice";
 import useAsyncState from "@/utils/hooks/useAsyncState";
 import { LinkFiltersHeader } from "../../LinkList/LinkFiltersHeader";
 import { useSearchParams } from "next/navigation";
+import { useQuickLinkDirs } from "../../hooks/useQuickLinksDirs";
 
 export const DepartmentLinksByDirId = ({
   directorySlug,
@@ -19,7 +20,7 @@ export const DepartmentLinksByDirId = ({
   const dispatch = useAppDispatch();
   const params = useSearchParams();
   const directoryId = params?.get("id");
-
+  const { thisDirectory, parentDirecotry } = useQuickLinkDirs(directoryId);
   const { allQuicklinks } = useAppSelector((state) => state.quicklinks);
   const { loading, setLoading, error, setError } = useAsyncState();
   useEffect(() => {
@@ -27,9 +28,11 @@ export const DepartmentLinksByDirId = ({
       setLoading(true);
 
       try {
+        console.log("sent", directoryId);
         const allQuicklinks = await QuicklinksSdk.getData(
           `/api/quicklinks/link?directoryId=${directoryId}`
         );
+        console.log("received", allQuicklinks);
         dispatch(setAllQuicklinks(allQuicklinks.data.links));
 
         setLoading(false);
@@ -42,7 +45,7 @@ export const DepartmentLinksByDirId = ({
   }, [directoryId, dispatch, setLoading]);
   return (
     <div className="flex flex-col w-full">
-      <LinkFiltersHeader />
+      <LinkFiltersHeader title={thisDirectory?.title} />
       <LinkList allQuicklinks={allQuicklinks} isLoading={loading} />
     </div>
   );

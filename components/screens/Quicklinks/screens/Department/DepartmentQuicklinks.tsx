@@ -8,10 +8,11 @@ import {
   setAllQuicklinks,
   setTopUsedList,
 } from "@/utils/redux/quicklinks/quicklinks.slice";
-import TopUsedLink from "../QuicklinksDashboard/TopUsedLink";
+import TopUsedLink from "../Dashboard/TopUsedLink";
 import { Link } from "@prisma/client";
 import useAsyncState from "@/utils/hooks/useAsyncState";
 import { LinkFiltersHeader } from "../../LinkList/LinkFiltersHeader";
+import { useQuickLinkDirs } from "../../hooks/useQuickLinksDirs";
 
 export const DepartmentLinks = ({
   departmentSlug,
@@ -21,11 +22,13 @@ export const DepartmentLinks = ({
   const dispatch = useAppDispatch();
   const params = useSearchParams();
   const departmentId = params?.get("id");
+  const { thisDirectory, parentDirecotry } = useQuickLinkDirs(departmentId);
 
   const { allQuicklinks, topUsedList } = useAppSelector(
     (state) => state.quicklinks
   );
   const { loading, setLoading, error, setError } = useAsyncState();
+
   //Fetch link by department Id
   useEffect(() => {
     const getData = async () => {
@@ -53,7 +56,7 @@ export const DepartmentLinks = ({
 
   return (
     <div>
-      <TopUsedLink>
+      <TopUsedLink title={`Top Used in ${thisDirectory?.title}`}>
         <LinkList
           allQuicklinks={topUsedList}
           withView="thumbnail"
@@ -61,7 +64,7 @@ export const DepartmentLinks = ({
         />
       </TopUsedLink>
       <div className="flex flex-col w-full">
-        <LinkFiltersHeader />
+        <LinkFiltersHeader title={`View All in ${thisDirectory?.title}`} />
         <LinkList allQuicklinks={allQuicklinks} isLoading={loading} />
       </div>
     </div>

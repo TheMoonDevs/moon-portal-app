@@ -7,11 +7,11 @@ import {
 import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
 import { Button, CircularProgress } from "@mui/material";
-import { usePathname } from "next/navigation";
-import { ChangeEvent, FormEvent, useEffect, useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import { Dropdown } from "./elements/Dropdown";
 import { useUser } from "@/utils/hooks/useUser";
-import { ParentDirectory } from "@prisma/client";
+import { Directory, ParentDirectory, ROOTTYPE } from "@prisma/client";
 import useAsyncState from "@/utils/hooks/useAsyncState";
 import {
   MoonToast,
@@ -19,57 +19,41 @@ import {
   useMoonToast,
 } from "@/components/elements/Toast";
 
-function getParentDirID({
-  path,
-  selectedDepartment,
-  parentDirs,
-}: {
-  path: string | null;
-  selectedDepartment: { id: string; title: string };
-  parentDirs: ParentDirectory[];
-}) {
-  let parentDirId;
-  let departmentId = null;
-
-  const isDashboard = path === "/quicklinks/dashboard";
-  const isDepartmentPath = path?.startsWith("/quicklinks/department");
-  const isCommonResourcesPath = path?.startsWith(
-    "/quicklinks/common-resources"
-  );
-
-  if (!isDashboard) {
-    if (isDepartmentPath && path !== "/quicklinks/department") {
-      parentDirId = path?.split("/")[4];
-      departmentId = parentDirs.find(
-        (department) => department.slug === path?.split("/")[3]
-      )?.id;
-    } else if (isCommonResourcesPath) {
-      parentDirId = path?.split("/")[3];
-    } else {
-      parentDirId = selectedDepartment.id;
-    }
-  } else {
-    parentDirId = selectedDepartment.id;
-  }
-
-  return { parentDirId, departmentId };
-}
-
 export const CreateLinkModal = () => {
   const { showToast, toastMsg, toastSev } = useMoonToast();
   const { user } = useUser();
   const path = usePathname();
+  const searchParams = useSearchParams();
+  const directoryId = searchParams?.get("id");
   const [selectedDepartment, setSelectedDepartment] = useState({
     id: "",
     title: "",
   });
 
-  const { parentDirs } = useAppSelector((state) => state.quicklinks);
-  const { parentDirId, departmentId } = getParentDirID({
-    path,
-    selectedDepartment,
-    parentDirs,
-  });
+  const { parentDirs, directories } = useAppSelector(
+    (state) => state.quicklinks
+  );
+  const departmentId = useMemo(() => {
+    const getDepartmentId = (directoryId: string | null): string => {
+      let departmentId = "";
+      if (!directoryId) return departmentId;
+      const thisDirectory =
+        parentDirs?.find((_dir) => _dir.id === directoryId) ||
+        directories?.find((_dir) => _dir.id === directoryId);
+
+      if (thisDirectory && "parentDirId" in thisDirectory) {
+        return getDepartmentId(thisDirectory?.parentDirId);
+      } else {
+        departmentId =
+          thisDirectory?.type === ROOTTYPE.DEPARTMENT
+            ? thisDirectory?.id
+            : selectedDepartment.id;
+        return departmentId;
+      }
+    };
+    return directoryId ? getDepartmentId(directoryId) : selectedDepartment.id;
+  }, [directoryId, selectedDepartment, parentDirs, directories]);
+
   const dispatch = useAppDispatch();
   const { loading, setLoading } = useAsyncState();
 
@@ -119,7 +103,7 @@ export const CreateLinkModal = () => {
         logo: metadata.image,
         url: metadata.url,
         clickCount: 0,
-        directoryId: parentDirId,
+        directoryId: directoryId,
         departmentId:
           departmentId ||
           (selectedDepartment.id !== "" && selectedDepartment.id) ||
@@ -127,7 +111,8 @@ export const CreateLinkModal = () => {
         authorId: user?.id,
       };
 
-      console.log(newLinkData);
+      //console.log(newLinkData, "newLinkData", metadata);
+      //return;
       const response = await QuicklinksSdk.createData(
         "/api/quicklinks/link",
         newLinkData

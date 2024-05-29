@@ -53,11 +53,15 @@ export const DirectoryItem = ({
   let path: string;
 
   path = `/quicklinks${rootSlug}/${directory.slug}?id=${directory.id}`;
+  const onlyPath = path.split("?")[0];
+
+  const isDepartmental =
+    rootSlug === rootDirectories.find((dir) => dir.id === "DEPARTMENT")?.slug;
 
   const isExpanded = isDirectoryExpanded(directory.id);
-  const isCurrentPage = path.startsWith(pathName) || pathName === path;
+  const isCurrentPage = onlyPath === pathName;
 
-  //console.log("isCurrentPage:", isCurrentPage, pathName, path);
+  //console.log("isCurrentPage:", isCurrentPage, pathName, onlyPath);
 
   return (
     <div key={directory.id}>
@@ -108,9 +112,9 @@ export const DirectoryItem = ({
               )}
             </Link>
           </div>
-            <span className="invisible group-hover:visible material-icons-outlined cursor-pointer hover:opacity-50 opacity-20 ">
-              {isExpanded ? `expand_less` : `expand_more`}
-            </span>
+          <span className="invisible group-hover:visible material-icons-outlined cursor-pointer hover:opacity-50 opacity-20 ">
+            {isExpanded ? `expand_less` : `expand_more`}
+          </span>
         </div>
         <div className="flex gap-1 items-center cursor-pointer">
           <span
@@ -152,7 +156,9 @@ export const DirectoryItem = ({
                   toggleDirectory={toggleDirectory}
                   isDirectoryExpanded={isDirectoryExpanded}
                   pathName={pathName}
-                  rootSlug={rootSlug}
+                  rootSlug={
+                    isDepartmental ? `${rootSlug}/${directory.slug}` : rootSlug
+                  }
                   editable={editable}
                   newDirectoryName={newDirectoryName}
                   setNewDirectoryName={setNewDirectoryName}
