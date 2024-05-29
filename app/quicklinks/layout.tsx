@@ -1,7 +1,7 @@
 import { QuicklinksLayout } from "@/components/screens/Quicklinks/global/QuicklinksLayout";
 import { APP_BASE_URL } from "@/utils/constants/appInfo";
 import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
-import { Department, Directory } from "@prisma/client";
+import { ParentDirectory, Directory } from "@prisma/client";
 
 const getDirectoryAndDepartment = async () => {
   try {
@@ -11,7 +11,7 @@ const getDirectoryAndDepartment = async () => {
     ];
     const responses = await Promise.all(ArrayOfPromises);
     const [departmentRes, directoryRes] = responses;
-    const departments: Department[] = departmentRes.data.departments;
+    const departments: ParentDirectory[] = departmentRes.data.departments;
     const directories: Directory[] = directoryRes.data.directoryList;
 
     return { departments, directories };

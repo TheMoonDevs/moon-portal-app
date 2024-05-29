@@ -7,13 +7,19 @@ import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import { setAllQuicklinks } from "@/utils/redux/quicklinks/quicklinks.slice";
 import useAsyncState from "@/utils/hooks/useAsyncState";
 import { LinkFiltersHeader } from "../../LinkList/LinkFiltersHeader";
+import { useSearchParams } from "next/navigation";
 
 export const DepartmentLinksByDirId = ({
-  directoryId,
+  directorySlug,
+  departmentSlug,
 }: {
-  directoryId: string;
+  directorySlug: string;
+  departmentSlug: string;
 }) => {
   const dispatch = useAppDispatch();
+  const params = useSearchParams();
+  const directoryId = params?.get("id");
+
   const { allQuicklinks } = useAppSelector((state) => state.quicklinks);
   const { loading, setLoading, error, setError } = useAsyncState();
   useEffect(() => {

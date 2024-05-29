@@ -3,13 +3,15 @@
 import Image from "next/image";
 import Link from "next/link";
 import { DirectoryTree } from "./Directory/Directory";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
 import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import { setNewParentDir } from "@/utils/redux/quicklinks/quicklinks.slice";
 import { useQuickLinkDirectory } from "./useQuickLinkDirectory";
 import { Directory, ParentDirectory, ROOTTYPE } from "@prisma/client";
 import { AddSectionPopup } from "./AddSectionPopup";
+import { usePathname } from "next/navigation";
+import { Tooltip } from "@mui/material";
 
 export default function QuicklinkSidebar() {
   const dispatch = useAppDispatch();
@@ -19,32 +21,21 @@ export default function QuicklinkSidebar() {
     rootDirectories,
     selectedRootDir,
     setSelectedRoot,
+    currentDirectory,
+    setCurrentDirectory,
   } = useQuickLinkDirectory();
+  const [viewType, setViewType] = useState<"root" | "selected">("root");
   const [newDirectory, setNewDirectory] = useState<ParentDirectory | null>(
     null
   );
 
-  const handleCreateDepartment = async () => {
-    try {
-      const department = await QuicklinksSdk.createData(
-        "/api/quicklinks/department",
-        {
-          name: "New Department",
-          logo: "",
-          slug: "new-department",
-          parentDirId: null,
-        }
-      );
-      dispatch(setNewParentDir(department));
-      console.log(department);
-    } catch (error) {
-      console.log(error);
-    }
-  };
+  useEffect(() => {
+    setViewType(currentDirectory ? "selected" : "root");
+  }, [currentDirectory]);
 
   return (
     <div className="w-96 h-[100vh]  top-0">
-      <aside className="fixed w-inherit h-[100vh] top-0 overflow-auto border-r-2">
+      <aside className="fixed w-inherit h-[100vh] top-0 overflow-auto flex flex-col border-r-2">
         <div className="flex flex-row items-center gap-2 p-6">
           <Image
             src="/logo/logo.png"
@@ -54,58 +45,177 @@ export default function QuicklinkSidebar() {
           />
           <h1 className="font-bold text-xl">The Moon Devs</h1>
         </div>
-        <nav className="mt-6">
-          <ul className="flex flex-col  ">
-            {rootDirectories.map((item) => (
-              <div
-                key={item.id}
-                className={`rounded-lg flex flex-col relative 
-              ${selectedRootDir?.id === item.id ? "bg-neutral-100 my-2" : ""}
+        {/* ---- Sidebar Root View  --- */}
+        {viewType === "root" && (
+          <nav className="mt-6">
+            <ul className="flex flex-col  ">
+              {rootDirectories.map((item) => (
+                <div
+                  key={item.id}
+                  className={`rounded-lg flex flex-col relative mx-2 border border-white 
+              ${
+                selectedRootDir?.id === item.id
+                  ? " border-neutral-900 my-2"
+                  : ""
+              }
               `}
-              >
-                <Link
-                  href={
-                    item.slug === "/dashboard" ? `/quicklinks/dashboard` : ""
-                  }
-                  className=""
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setSelectedRoot(item);
-                  }}
                 >
-                  <li
-                    className={`px-2 mx-2 py-3 flex items-center gap-2 curspor-pointer
+                  <Link
+                    href={
+                      item.slug === "/dashboard" ? `/quicklinks/dashboard` : ""
+                    }
+                    className=""
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setSelectedRoot(item);
+                    }}
+                  >
+                    <li
+                      className={`px-2 py-3 flex items-center gap-2 curspor-pointer
               hover:bg-neutral-100 group rounded-lg ${
                 selectedRootDir?.id === item.id ? " font-bold" : ""
               }
               `}
-                  >
-                    <span className="material-symbols-outlined opacity-70 !text-xl">
-                      {item.logo}
-                    </span>
-                    {item.title}
-                    {item.slug != "/dashboard" && (
-                      <AddSectionPopup
-                        id={item.id}
-                        root={item}
-                        newDirectory={newDirectory}
-                        setNewDirectory={setNewDirectory}
-                      />
-                    )}
-                  </li>
-                </Link>
+                    >
+                      <span
+                        className={`material-symbols-outlined  !text-xl 
+                    ${
+                      selectedRootDir?.id === item.id
+                        ? " opacity-100"
+                        : " opacity-70"
+                    }
+                    `}
+                      >
+                        {item.logo}
+                      </span>
+                      {item.title}
+                      {item.slug != "/dashboard" && (
+                        <AddSectionPopup
+                          id={item.id}
+                          root={item}
+                          newDirectory={newDirectory}
+                          setNewDirectory={setNewDirectory}
+                        />
+                      )}
+                    </li>
+                  </Link>
 
-                <ul>
-                  <DirectoryTree
-                    mainDirectory={parentDirs.filter(
-                      (_dir) => _dir?.type === item.id
-                    )}
-                  />
-                </ul>
+                  {selectedRootDir?.id === item.id && (
+                    <ul className="p-2 flex flex-col border-t-2">
+                      {parentDirs
+                        .filter((_dir) => _dir?.type === item.id)
+                        .map((dir) => (
+                          <Link
+                            key={dir.id}
+                            href={`/quicklinks${
+                              rootDirectories.find(
+                                (_dir) => _dir.id === dir.type
+                              )?.slug
+                            }/${dir.slug}?id=${dir.id}`}
+                            className=""
+                            onClick={(e) => {
+                              setCurrentDirectory(dir);
+                              //e.preventDefault();
+                            }}
+                          >
+                            <li className="group flex w-full justify-between items-center gap-2 p-2 px-3 rounded-lg transition border border-neutral-100 hover:border-neutral-400">
+                              {dir.title}
+                              <button
+                                className={`p-[4px] w-6 h-6 flex items-center justify-center ml-auto text-xs  
+                 cursor-pointer invisible group-hover:visible rounded-full
+                 `}
+                              >
+                                <span
+                                  className={`material-symbols-outlined !text-sm `}
+                                >
+                                  chevron_right
+                                </span>
+                              </button>
+                            </li>
+                          </Link>
+                        ))}
+                      {/* <DirectoryTree
+                      mainDirectory={parentDirs.filter(
+                        (_dir) => _dir?.type === item.id
+                      )}
+                    /> */}
+                    </ul>
+                  )}
+                </div>
+              ))}
+            </ul>
+          </nav>
+        )}
+        {/* ---- Sidebar Selected View  --- */}
+        {viewType === "selected" && (
+          <div className="flex flex-col grow">
+            <ul className="flex flex-row items-stretch px-2 py-3 mb-3 gap-2">
+              {rootDirectories.map((item) => (
+                <Tooltip
+                  key={item.id}
+                  className="flex flex-col "
+                  title={item.title}
+                >
+                  <div className={`rounded-lg flex flex-col relative`}>
+                    <Link
+                      href={
+                        item.slug === "/dashboard"
+                          ? `/quicklinks/dashboard`
+                          : ""
+                      }
+                      className={`p-2 flex flex-col items-center border border-neutral-100 curspor-pointer
+                      hover:border-neutral-500 group rounded-lg ${
+                        selectedRootDir?.id === item.id
+                          ? " font-bold border-neutral-900 drop-shadow-2xl"
+                          : ""
+                      }`}
+                      onClick={(e) => {
+                        if (item.slug != "/dashboard") e.preventDefault();
+                        setSelectedRoot(item);
+                      }}
+                    >
+                      <span
+                        className={`material-symbols-outlined  !text-md 
+                    ${
+                      selectedRootDir?.id === item.id
+                        ? " opacity-100"
+                        : " opacity-50"
+                    }
+                    `}
+                      >
+                        {item.logo}
+                      </span>
+                    </Link>
+                  </div>
+                </Tooltip>
+              ))}
+            </ul>
+            <nav className="bg-neutral-100 grow rounded-3xl rounded-bl-none rounded-br-none drop-shadow-lg overflow-hidden">
+              <div className="static overflow-y-scroll">
+                <div className="flex items-center justify-between px-2 py-3 sticky backdrop-blur-md">
+                  <div className="ml-3">
+                    <h4 className="text-lg font-bold">
+                      {selectedRootDir?.title}
+                    </h4>
+                    <p className="text-sm opacity-70">
+                      {currentDirectory?.title}
+                    </p>
+                  </div>
+                  <button
+                    className={`p-[4px] w-8 h-8 flex items-center justify-center border-2 ml-auto text-xs  
+                 cursor-pointer hover:bg-neutral-300 rounded-full
+                 `}
+                    onClick={() => setCurrentDirectory(null)}
+                  >
+                    <span className={`material-symbols-outlined !text-sm`}>
+                      chevron_left
+                    </span>
+                  </button>
+                </div>
               </div>
-            ))}
-          </ul>
-        </nav>
+            </nav>
+          </div>
+        )}
       </aside>
 
       {/* {newDirectory && (

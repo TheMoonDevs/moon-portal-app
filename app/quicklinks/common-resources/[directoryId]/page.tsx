@@ -5,7 +5,7 @@ export default async function Home({
 }: {
   params: { directoryId: string };
 }) {
-  const directoryId = params.directoryId;
+  const directorySlug = params.directoryId;
 
-  return <CommonQuicklinks directoryId={directoryId} />;
+  return <CommonQuicklinks directorySlug={directorySlug} />;
 }

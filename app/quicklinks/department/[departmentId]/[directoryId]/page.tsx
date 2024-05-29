@@ -3,9 +3,15 @@ import { DepartmentLinksByDirId } from "@/components/screens/Quicklinks/screens/
 export default async function Home({
   params,
 }: {
-  params: { directoryId: string };
+  params: { directoryId: string; departmentId: string };
 }) {
-  const directoryId = params.directoryId;
+  const directorySlug = params.directoryId;
+  const departmentSlug = params.departmentId;
 
-  return <DepartmentLinksByDirId directoryId={directoryId} />;
+  return (
+    <DepartmentLinksByDirId
+      directorySlug={directorySlug}
+      departmentSlug={departmentSlug}
+    />
+  );
 }
