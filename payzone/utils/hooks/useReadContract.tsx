@@ -1,0 +1,53 @@
+import { useEffect, useState } from "react";
+
+import { Address, formatUnits } from "viem";
+import { readContractData } from "../helpers/ContractReader";
+import { useWallet } from "./useWallet";
+import { useAppSelector } from "../redux/store";
+import { useAuthSession } from "./useAuthSession";
+
+interface Contract {
+  address: Address;
+  abi: any[];
+}
+
+interface TokenData {
+  totalSupply?: number;
+  circulatingSupply?: number;
+  balance: number;
+}
+
+const useReadContract = (contract: Contract): TokenData => {
+  const [tokenData, setTokenData] = useState<TokenData>({
+    totalSupply: 0,
+    circulatingSupply: 0,
+    balance: 0,
+  });
+  const { user } = useAuthSession();
+
+  const walletAddress = (user?.payData as any)?.walletAddress;
+
+  useEffect(() => {
+    const getData = async () => {
+      // const totalSupply = await readContractData(contract, "totalSupply");
+      // const totalBurnedAmount = await readContractData(contract, "totalBurnedAmount");
+
+      if (!walletAddress) return;
+      const balance = await readContractData(
+        contract,
+        "balanceOf",
+        walletAddress
+      );
+      // console.log("balance", balance);
+
+      setTokenData((prev) => ({ ...prev, balance: balance }));
+    };
+
+    getData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [walletAddress]);
+
+  return tokenData;
+};
+
+export default useReadContract;
