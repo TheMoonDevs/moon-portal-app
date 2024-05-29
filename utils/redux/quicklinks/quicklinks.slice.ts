@@ -1,5 +1,11 @@
 import { ToastSeverity } from "@/components/elements/Toast";
-import { Department, Directory, Link, User, UserLink } from "@prisma/client";
+import {
+  ParentDirectory,
+  Directory,
+  Link,
+  User,
+  UserLink,
+} from "@prisma/client";
 import { PayloadAction, createSlice } from "@reduxjs/toolkit";
 const toggleFavoriteList = (prevFavList: Link[], currentFavoriteLink: Link) => {
   if (prevFavList.find((link) => link.id === currentFavoriteLink.id)) {
@@ -13,7 +19,8 @@ type listView = "list" | "widget" | "thumbnail" | "line";
 export const shortUrlSlice = createSlice({
   name: "quicklinks",
   initialState: {
-    departments: [],
+    rootDirectories: [],
+    parentDirs: [],
     allQuicklinks: [],
     directories: [],
     favoriteList: [],
@@ -31,7 +38,8 @@ export const shortUrlSlice = createSlice({
     },
   } as {
     directories: Directory[];
-    departments: Department[];
+    parentDirs: ParentDirectory[];
+    rootDirectories: Directory[];
     allQuicklinks: Link[];
     favoriteList: Link[];
     topUsedList: Link[];
@@ -48,8 +56,8 @@ export const shortUrlSlice = createSlice({
     setActiveDirectoryId: (state, action) => {
       state.activeDirectoryId = action.payload;
     },
-    setNewDepartment: (state, action) => {
-      state.departments = [...state.departments, action.payload];
+    setNewParentDir: (state, action) => {
+      state.parentDirs = [...state.parentDirs, action.payload];
     },
     deleteDirectory: (state, action) => {
       state.directories = state.directories.filter(
@@ -101,8 +109,11 @@ export const shortUrlSlice = createSlice({
     setAllQuicklinks: (state, action) => {
       state.allQuicklinks = action.payload;
     },
-    setDepartmentList: (state, action) => {
-      state.departments = action.payload;
+    setParentDirsList: (state, action) => {
+      state.parentDirs = action.payload;
+    },
+    setRootDirList: (state, action) => {
+      state.rootDirectories = action.payload;
     },
     addNewQuicklink: (state, action) => {
       state.allQuicklinks = [...state.allQuicklinks, action.payload];
@@ -145,8 +156,9 @@ export const {
   deleteDirectory,
   addNewDirectory,
   setDirectoryList,
-  setDepartmentList,
-  setNewDepartment,
+  setParentDirsList,
+  setRootDirList,
+  setNewParentDir,
   setActiveDirectoryId,
   setAllQuicklinks,
   setIsCreateLinkModalOpen,

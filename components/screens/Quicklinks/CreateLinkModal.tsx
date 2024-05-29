@@ -11,7 +11,7 @@ import { usePathname } from "next/navigation";
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import { Dropdown } from "./elements/Dropdown";
 import { useUser } from "@/utils/hooks/useUser";
-import { Department } from "@prisma/client";
+import { ParentDirectory } from "@prisma/client";
 import useAsyncState from "@/utils/hooks/useAsyncState";
 import {
   MoonToast,
@@ -22,11 +22,11 @@ import {
 function getParentDirID({
   path,
   selectedDepartment,
-  departments,
+  parentDirs,
 }: {
   path: string | null;
   selectedDepartment: { id: string; title: string };
-  departments: Department[];
+  parentDirs: ParentDirectory[];
 }) {
   let parentDirId;
   let departmentId = null;
@@ -40,7 +40,7 @@ function getParentDirID({
   if (!isDashboard) {
     if (isDepartmentPath && path !== "/quicklinks/department") {
       parentDirId = path?.split("/")[4];
-      departmentId = departments.find(
+      departmentId = parentDirs.find(
         (department) => department.slug === path?.split("/")[3]
       )?.id;
     } else if (isCommonResourcesPath) {
@@ -64,11 +64,11 @@ export const CreateLinkModal = () => {
     title: "",
   });
 
-  const { departments } = useAppSelector((state) => state.quicklinks);
+  const { parentDirs } = useAppSelector((state) => state.quicklinks);
   const { parentDirId, departmentId } = getParentDirID({
     path,
     selectedDepartment,
-    departments,
+    parentDirs,
   });
   const dispatch = useAppDispatch();
   const { loading, setLoading } = useAsyncState();
@@ -96,7 +96,7 @@ export const CreateLinkModal = () => {
   const handleOptionChange = (event: ChangeEvent<HTMLSelectElement>) => {
     const value = event.target.value;
     setSelectedDepartment({
-      id: departments.find((option) => option.title === value)?.id || "",
+      id: parentDirs.find((option) => option.title === value)?.id || "",
       title: value,
     });
   };
@@ -199,7 +199,7 @@ export const CreateLinkModal = () => {
         return (
           <>
             <Dropdown
-              options={departments}
+              options={parentDirs}
               placeholder="Select Department"
               handleOptionChange={handleOptionChange}
               selectedDepartment={selectedDepartment}
