@@ -5,9 +5,16 @@ const withPWA = require("next-pwa")({
   dest: "public",
   register: true,
   disable: process.env.NODE_ENV === "development",
-  skipWaiting: true,
+  skipWaiting: false,
+  clientsClaim: false,
   runtimeCaching,
-  buildExcludes: [/middleware-manifest.json$/],
+  buildExcludes: [
+    /middleware-manifest.json$/,
+    /app-build-manifest.json$/,
+    /build-manifest.json$/,
+  ],
+  runtimeCaching,
+
   // cacheOnFrontEndNav: true,
   // aggressiveFrontEndNavCaching: true,
   // reloadOnOnline: true,
@@ -20,20 +27,27 @@ const withPWA = require("next-pwa")({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "**",
+      },
+    ],
+  },
   experimental: {
     //looseMode: true,
     esmExternals: "loose", // <-- add this
     serverComponentsExternalPackages: ["mongoose"], // <-- and this
   },
-  webpack: (config) => {
+  webpack: (config, { isServer }) => {
+    // Experiments configuration
     config.experiments = {
       topLevelAwait: true,
       layers: true,
     };
+
     return config;
-  },
-  images: {
-    domains: ["lh3.googleusercontent.com"],
   },
 };
 

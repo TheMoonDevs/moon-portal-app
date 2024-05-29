@@ -41,5 +41,6 @@ export enum APP_SOCIAL {
 export enum LOCAL_STORAGE {
   user = "moon_portal_user",
 }
-
+export const APP_BASE_URL =
+  process.env.NEXT_PUBLIC_APP_BASE_URL || "http://localhost:3000";
 export const IS_TESTNET = process.env.NEXT_PUBLIC_IS_TESTNET === "true";
