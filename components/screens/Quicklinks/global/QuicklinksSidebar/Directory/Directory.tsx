@@ -1,6 +1,6 @@
 "use client";
 
-import { FocusEvent, useState } from "react";
+import { FocusEvent, useEffect, useState } from "react";
 
 import { useAppDispatch } from "@/utils/redux/store";
 import {
@@ -10,12 +10,19 @@ import {
 } from "@/utils/redux/quicklinks/quicklinks.slice";
 import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
 import { usePathname } from "next/navigation";
-import { Directory } from "@prisma/client";
+import { Directory, ParentDirectory } from "@prisma/client";
 import { revalidateRoot } from "@/utils/actions";
 import { ToastSeverity } from "@/components/elements/Toast";
 import { DirectoryItem } from "./DirectoryItem";
+import { useQuickLinkDirectory } from "../useQuickLinkDirectory";
 
-export const DirectoryTree = ({ mainDirectory }: { mainDirectory: any[] }) => {
+export const DirectoryTree = ({
+  mainDirectory,
+  selectedDir,
+}: {
+  mainDirectory: any[];
+  selectedDir?: string;
+}) => {
   const dispatch = useAppDispatch();
   const [expandedDirs, setExpandedDirs] = useState<string[]>([]);
   const [editable, setEditable] = useState({
@@ -24,6 +31,38 @@ export const DirectoryTree = ({ mainDirectory }: { mainDirectory: any[] }) => {
   });
   const [newDirectoryName, setNewDirectoryName] = useState<string>("");
   const pathName = usePathname();
+  const { rootDirectories, parentDirs, directories } = useQuickLinkDirectory();
+
+  useEffect(() => {
+    if (!selectedDir) return;
+
+    // recursive parents expander
+    const addParentsToExpaned = (
+      array: string[],
+      dirId?: string | null
+    ): string[] => {
+      if (!dirId) return array;
+      const _thisDir =
+        directories.find((dir) => dir.id === dirId) ||
+        parentDirs.find((dir) => dir.id === dirId);
+      let _array = array;
+      if (_thisDir) {
+        _array = _array.includes(_thisDir.id)
+          ? _array
+          : [..._array, _thisDir.id];
+      }
+      if (_thisDir && "parentDirId" in _thisDir) {
+        return addParentsToExpaned(_array, _thisDir.parentDirId);
+      } else return _array;
+    };
+
+    const array = addParentsToExpaned([selectedDir], selectedDir);
+    //console.log("expanded", array);
+
+    //QL-TODO - if a different parent tree is open, we do not wish to close it,
+    // bu following the current logic it is closing.
+    setExpandedDirs(array);
+  }, [selectedDir, parentDirs, directories]);
 
   const handleDirectoryNameChange = async (
     e: FocusEvent<HTMLInputElement | Element>,
@@ -122,6 +161,8 @@ export const DirectoryTree = ({ mainDirectory }: { mainDirectory: any[] }) => {
     }
   };
 
+  const isDirectoryPage = () => {};
+
   // Filter root directories (those with null parentDirId)
   // const rootDirectories = mainDirectory.filter(
   //   (directory) => !directory.parentDirId
@@ -129,14 +170,19 @@ export const DirectoryTree = ({ mainDirectory }: { mainDirectory: any[] }) => {
   // console.log("rootDirectories:", rootDirectories);
   return (
     <>
-      {mainDirectory.map((directory: Directory) => (
+      {mainDirectory.map((directory: Directory | ParentDirectory) => (
         <div key={directory.id} className="!py-2 !border-gray-200">
           <DirectoryItem
             directory={directory}
             toggleDirectory={toggleDirectory}
             isDirectoryExpanded={isDirectoryExpanded}
             pathName={pathName as string}
-            slug={directory.slug}
+            rootSlug={
+              "type" in directory
+                ? rootDirectories.find((_dir) => _dir.id === directory.type)
+                    ?.slug || directory.slug
+                : directory.slug
+            }
             editable={editable}
             newDirectoryName={newDirectoryName}
             setNewDirectoryName={setNewDirectoryName}

@@ -3,12 +3,13 @@ import Link from "next/link";
 import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import { setActiveDirectoryId } from "@/utils/redux/quicklinks/quicklinks.slice";
 import { Directory } from "@prisma/client";
+import { usePathname } from "next/navigation";
 
 interface IDirectoryItemProps {
   directory: Directory | any;
   toggleDirectory: (id: string) => void;
   isDirectoryExpanded: (id: string) => boolean;
-  slug: string;
+  rootSlug: string;
   pathName: string;
   editable: {
     id: string;
@@ -34,7 +35,7 @@ export const DirectoryItem = ({
   toggleDirectory,
   isDirectoryExpanded,
   pathName,
-  slug,
+  rootSlug,
   editable,
   newDirectoryName,
   setNewDirectoryName,
@@ -45,31 +46,26 @@ export const DirectoryItem = ({
   handleDeleteDirectory,
 }: IDirectoryItemProps) => {
   const dispatch = useAppDispatch();
-  const { directories } = useAppSelector((state) => state.quicklinks);
+  const { directories, parentDirs, rootDirectories } = useAppSelector(
+    (state) => state.quicklinks
+  );
 
   let path: string;
 
-  if (slug === "common-resources") {
-    path = `/quicklinks/${slug}/${directory.id}`;
-  } else if (!directory.parentDirId) {
-    path = `/quicklinks/department/${slug}?departmentId=${directory.id}`;
-  } else {
-    path = `/quicklinks/department/${slug}/${directory.id}`;
-  }
+  path = `/quicklinks${rootSlug}/${directory.slug}?id=${directory.id}`;
 
   const isExpanded = isDirectoryExpanded(directory.id);
+  const isCurrentPage = path.startsWith(pathName) || pathName === path;
+
+  //console.log("isCurrentPage:", isCurrentPage, pathName, path);
 
   return (
     <div key={directory.id}>
-      <div className="flex justify-between items-center group gap-4">
+      <div className="flex justify-between items-center group gap-4 ml-3">
         <div
           className="flex items-center cursor-pointer gap-1"
           onClick={() => toggleDirectory(directory.id)}
         >
-          <span className="material-icons-outlined cursor-pointer hover:opacity-50 opacity-20 ">
-            {isExpanded ? `expand_less` : `expand_more`}
-          </span>
-
           <div onClick={() => dispatch(setActiveDirectoryId(path))}>
             <Link
               href={path}
@@ -93,6 +89,7 @@ export const DirectoryItem = ({
                 />
               ) : (
                 <h3
+                  className={`${isCurrentPage ? "font-extrabold" : ""} `}
                   onDoubleClick={(e) => {
                     if (directory.slug !== "common-resources") {
                       setEditable((prev) => {
@@ -111,6 +108,9 @@ export const DirectoryItem = ({
               )}
             </Link>
           </div>
+            <span className="invisible group-hover:visible material-icons-outlined cursor-pointer hover:opacity-50 opacity-20 ">
+              {isExpanded ? `expand_less` : `expand_more`}
+            </span>
         </div>
         <div className="flex gap-1 items-center cursor-pointer">
           <span
@@ -136,8 +136,10 @@ export const DirectoryItem = ({
       </div>
 
       <ul
-        className={`ml-4 mt-2 transition-all duration-300 overflow-hidden border-l-2 border-gray-200 ${
-          isExpanded ? "max-h-[1000px]" : "max-h-0 overflow-hidden"
+        className={`ml-4 mt-2 transition-all duration-300 overflow-hidden border-l-2  ${
+          isExpanded
+            ? "max-h-[1000px]  border-gray-200"
+            : "max-h-0 overflow-hidden  border-neutral-100"
         }`}
       >
         {directories
@@ -150,7 +152,7 @@ export const DirectoryItem = ({
                   toggleDirectory={toggleDirectory}
                   isDirectoryExpanded={isDirectoryExpanded}
                   pathName={pathName}
-                  slug={slug}
+                  rootSlug={rootSlug}
                   editable={editable}
                   newDirectoryName={newDirectoryName}
                   setNewDirectoryName={setNewDirectoryName}

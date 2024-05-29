@@ -23,7 +23,7 @@ export default function QuicklinkSidebar() {
     setSelectedRoot,
     currentDirectory,
     setCurrentDirectory,
-  } = useQuickLinkDirectory();
+  } = useQuickLinkDirectory(true);
   const [viewType, setViewType] = useState<"root" | "selected">("root");
   const [newDirectory, setNewDirectory] = useState<ParentDirectory | null>(
     null
@@ -211,6 +211,14 @@ export default function QuicklinkSidebar() {
                       chevron_left
                     </span>
                   </button>
+                </div>
+                <div className="flex flex-col">
+                  <DirectoryTree
+                    mainDirectory={parentDirs.filter(
+                      (_dir) => _dir?.type === selectedRootDir?.id
+                    )}
+                    selectedDir={currentDirectory?.id}
+                  />
                 </div>
               </div>
             </nav>
