@@ -27,20 +27,27 @@ const withPWA = require("next-pwa")({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "**",
+      },
+    ],
+  },
   experimental: {
     //looseMode: true,
     esmExternals: "loose", // <-- add this
     serverComponentsExternalPackages: ["mongoose"], // <-- and this
   },
-  webpack: (config) => {
+  webpack: (config, { isServer }) => {
+    // Experiments configuration
     config.experiments = {
       topLevelAwait: true,
       layers: true,
     };
+
     return config;
-  },
-  images: {
-    domains: ["lh3.googleusercontent.com"],
   },
 };
 
