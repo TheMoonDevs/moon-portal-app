@@ -3,8 +3,9 @@ import { useUser } from "@/utils/hooks/useUser";
 import { setIsCreateLinkModalOpen } from "@/utils/redux/quicklinks/quicklinks.slice";
 import { useAppDispatch } from "@/utils/redux/store";
 import { Button } from "@mui/material";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import QuicklinkSearchBar from "./QuicklinkSearchBar";
+import { useQuickLinkDirs } from "../hooks/useQuickLinksDirs";
 
 enum Path {
   dashboard = "/quicklinks/dashboard",
@@ -15,6 +16,9 @@ export default function QuicklinkHeader() {
   const dispatch = useAppDispatch();
   const path = usePathname();
   const { user } = useUser();
+  const params = useSearchParams();
+  const id = params?.get("id");
+  const { thisDirectory, parentDirecotry, rootParent } = useQuickLinkDirs(id);
 
   return (
     <header className="flex justify-between items-center">
@@ -23,10 +27,9 @@ export default function QuicklinkHeader() {
           {path?.startsWith(Path.dashboard) &&
             `${user?.name?.split(" ")[0] || user?.username}'s Dashboard`}
 
-          {path?.startsWith(Path.department) &&
-            path.split("/")[3].toLocaleUpperCase()}
+          {path?.startsWith(Path.department) && rootParent?.title}
 
-          {path?.startsWith(Path.commonResources) && "Team Resources"}
+          {path?.startsWith(Path.commonResources) && rootParent?.title}
         </h1>
         {path?.startsWith(Path.dashboard) && (
           <span className="text-sm text-neutral-400">

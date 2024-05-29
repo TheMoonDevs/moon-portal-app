@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
 import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import { setNewParentDir } from "@/utils/redux/quicklinks/quicklinks.slice";
-import { useQuickLinkDirectory } from "./useQuickLinkDirectory";
+import { useQuickLinkDirectory } from "../../hooks/useQuickLinkDirectory";
 import { Directory, ParentDirectory, ROOTTYPE } from "@prisma/client";
 import { AddSectionPopup } from "./AddSectionPopup";
 import { usePathname } from "next/navigation";

@@ -9,7 +9,8 @@ import { setAllQuicklinks } from "@/utils/redux/quicklinks/quicklinks.slice";
 import { APP_BASE_URL } from "@/utils/constants/appInfo";
 import { LinkFiltersHeader } from "../LinkList/LinkFiltersHeader";
 import { useSearchParams } from "next/navigation";
-import { useQuickLinkDirectory } from "../global/QuicklinksSidebar/useQuickLinkDirectory";
+import { useQuickLinkDirectory } from "../hooks/useQuickLinkDirectory";
+import { useQuickLinkDirs } from "../hooks/useQuickLinksDirs";
 
 export const CommonQuicklinks = ({
   directorySlug,
@@ -20,14 +21,7 @@ export const CommonQuicklinks = ({
   const params = useSearchParams();
   const directoryId = params?.get("id");
   const { parentDirs, directories } = useQuickLinkDirectory();
-  const thisDirectory =
-    parentDirs.find((dir) => dir.id === directoryId) ||
-    directories.find((dir) => dir.id === directoryId) ||
-    null;
-  const parentDirecotry =
-    thisDirectory && "parentDirId" in thisDirectory
-      ? parentDirs.find((dir) => dir.id === thisDirectory?.parentDirId)
-      : null;
+  const { thisDirectory, parentDirecotry } = useQuickLinkDirs(directoryId);
 
   const { allQuicklinks } = useAppSelector((state) => state.quicklinks);
   const { loading, setLoading, error, setError } = useAsyncState();
@@ -38,6 +32,7 @@ export const CommonQuicklinks = ({
         const allQuicklinks = await QuicklinksSdk.getData(
           `/api/quicklinks/link?directoryId=${directoryId}`
         );
+        console.log("received", allQuicklinks);
         dispatch(setAllQuicklinks(allQuicklinks.data.links));
 
         setLoading(false);

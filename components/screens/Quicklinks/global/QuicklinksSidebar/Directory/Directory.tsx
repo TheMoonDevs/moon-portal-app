@@ -14,7 +14,7 @@ import { Directory, ParentDirectory } from "@prisma/client";
 import { revalidateRoot } from "@/utils/actions";
 import { ToastSeverity } from "@/components/elements/Toast";
 import { DirectoryItem } from "./DirectoryItem";
-import { useQuickLinkDirectory } from "../useQuickLinkDirectory";
+import { useQuickLinkDirectory } from "../../../hooks/useQuickLinkDirectory";
 
 export const DirectoryTree = ({
   mainDirectory,

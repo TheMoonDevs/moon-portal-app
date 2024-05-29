@@ -1,4 +1,4 @@
-import { DepartmentLinks } from "@/components/screens/Quicklinks/screens/DepartmentQuicklinks/DepartmentQuicklinks";
+import { DepartmentLinks } from "@/components/screens/Quicklinks/screens/Department/DepartmentQuicklinks";
 
 const Departments = ({ params }: { params: { departmentId: string } }) => {
   const departmentSlug = params.departmentId;

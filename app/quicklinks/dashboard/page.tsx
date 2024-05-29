@@ -1,4 +1,4 @@
-import { QuicklinksDashboard } from "@/components/screens/Quicklinks/screens/QuicklinksDashboard/QuicklinksDashboard";
+import { QuicklinksDashboard } from "@/components/screens/Quicklinks/screens/Dashboard/QuicklinksDashboard";
 
 // const getTopUsedLinks = cache(async () => {
 //   try {
