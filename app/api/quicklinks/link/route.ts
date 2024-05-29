@@ -1,0 +1,107 @@
+import { prisma } from "@/prisma/prisma";
+import { NextRequest, NextResponse } from "next/server";
+
+export async function GET(request: NextRequest) {
+  const directoryId = request.nextUrl.searchParams.get("directoryId");
+  const linkId = request.nextUrl.searchParams.get("linkId");
+  const departmentId = request.nextUrl.searchParams.get("departmentId");
+  const searchQuery = request.nextUrl.searchParams.get("searchQuery");
+
+  try {
+    const links = await prisma.link.findMany({
+      where: {
+        ...(searchQuery && {
+          title: { contains: searchQuery, mode: "insensitive" },
+        }),
+        ...(directoryId && { directoryId: directoryId }),
+        ...(linkId && { id: linkId }),
+        ...(departmentId && { departmentId: departmentId }),
+      },
+      include: { author: true },
+    });
+    let json_response = {
+      status: "success",
+      data: {
+        links,
+      },
+    };
+    return NextResponse.json(json_response);
+  } catch (e) {
+    console.log(e);
+    return new NextResponse(JSON.stringify(e), {
+      status: 404,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+}
+export async function POST(request: Request) {
+  const newLink = await request.json();
+
+  try {
+    const link = await prisma.link.create({
+      data: newLink,
+    });
+    let json_response = {
+      status: "success",
+      data: {
+        link,
+      },
+    };
+    return NextResponse.json(json_response);
+  } catch (e) {
+    console.log(e);
+    return new NextResponse(JSON.stringify(e), {
+      status: 404,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+}
+
+export async function PUT(request: Request) {
+  const { linkId, updateQuery } = await request.json();
+  try {
+    const link = await prisma.link.update({
+      where: {
+        id: linkId,
+      },
+      data: updateQuery,
+    });
+    let json_response = {
+      status: "success",
+      data: {
+        link,
+      },
+    };
+    return NextResponse.json(json_response);
+  } catch (e) {
+    console.log(e);
+    return new NextResponse(JSON.stringify(e), {
+      status: 404,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  const linkId = request.nextUrl.searchParams.get("linkId") as string;
+  try {
+    const link = await prisma.link.delete({
+      where: {
+        id: linkId,
+      },
+    });
+    let json_response = {
+      status: "success",
+      data: {
+        link,
+      },
+    };
+    return NextResponse.json(json_response);
+  } catch (e) {
+    console.log(e);
+    return new NextResponse(JSON.stringify(e), {
+      status: 404,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+}
