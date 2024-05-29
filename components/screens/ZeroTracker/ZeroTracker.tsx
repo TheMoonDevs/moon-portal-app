@@ -183,7 +183,7 @@ export const ZeroTrackerPage = () => {
   const handleMeetingButtonClick = () => {
     setTrackerMode("meeting");
     setSelectedDates(
-      loggedInUserMeetingRecord?.allMeetings.map(
+      loggedInUserMeetingRecord?.allMeetings?.map(
         (a_zero: any) => a_zero.date
       ) || []
     );

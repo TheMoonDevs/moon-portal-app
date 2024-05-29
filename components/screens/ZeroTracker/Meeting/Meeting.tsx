@@ -66,7 +66,7 @@ export const Meeting = ({
           meeting.
         </p>
 
-        {(loggedInUserMeetingRecord?.allMeetings as IMeetingData[]).map(
+        {(loggedInUserMeetingRecord?.allMeetings as IMeetingData[])?.map(
           (meeting: IMeetingData, index: number) => {
             return (
               <MeetingCard

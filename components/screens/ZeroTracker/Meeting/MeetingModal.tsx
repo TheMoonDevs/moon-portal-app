@@ -57,7 +57,7 @@ export const MeetingModal = ({
 
       updateMeetings.forEach((record: ZeroRecords) => {
         if (record?.userId && setOfSelectedMembers.has(record?.userId)) {
-          record.allMeetings = record.allMeetings.filter(
+          record.allMeetings = record.allMeetings?.filter(
             (m: any) => m.id !== meeting.id
           );
         }
@@ -116,14 +116,14 @@ export const MeetingModal = ({
       if (meetingToUpdate) {
         // Update existing meeting
         if (targetMember) {
-          const isMemberMeetingRecordEmpty = record.allMeetings.length === 0;
+          const isMemberMeetingRecordEmpty = record.allMeetings?.length === 0;
 
           if (isMemberMeetingRecordEmpty) {
             return { ...record, allMeetings: [meetingData] };
           }
 
           let isMeetingFound = false;
-          let updatedMeetings = record.allMeetings.map((meeting: any) => {
+          let updatedMeetings = record.allMeetings?.map((meeting: any) => {
             if (meeting?.id === meetingToUpdate.id && !isMeetingFound) {
               isMeetingFound = true;
               return meetingData;
@@ -203,7 +203,7 @@ export const MeetingModal = ({
     );
 
     const updatedRecordsToRemove = meetingToRemoveFromRecords.map((record) => {
-      record.allMeetings = record.allMeetings.filter(
+      record.allMeetings = record.allMeetings?.filter(
         (meeting) => (meeting as any)?.id !== meetingToUpdate?.id
       );
       return record;
