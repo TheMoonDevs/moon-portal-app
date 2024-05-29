@@ -69,11 +69,11 @@ export const LinkActions = ({
               link.isFavorite
                 ? "material-symbols-filled"
                 : "material-symbols-outlined"
-            } material-icons cursor-pointer transition-all text-red-500`}
+            } material-icons cursor-pointer transition-all`}
           >
-            favorite
+            tab_new_right
           </span>
-          Add to Favs
+          Dashboard
         </p>
         <p
           className="flex items-center gap-2 cursor-pointer hover:bg-neutral-100 p-2 rounded-md"

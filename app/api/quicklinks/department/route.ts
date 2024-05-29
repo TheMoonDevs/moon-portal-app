@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    const departments = await prisma.department.findMany({});
+    const departments = await prisma.parentDirectory.findMany({});
     let json_response = {
       status: "success",
       data: {
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
   //   return;
 
   try {
-    const department = await prisma.department.create({
+    const department = await prisma.parentDirectory.create({
       data: newDepartment,
     });
 
@@ -53,7 +53,7 @@ export async function DELETE(request: NextRequest) {
     });
   }
   try {
-    const department = await prisma.department.delete({
+    const department = await prisma.parentDirectory.delete({
       where: {
         id: id,
       },
@@ -82,7 +82,7 @@ export async function PUT(request: NextRequest) {
     });
   }
   try {
-    const department = await prisma.department.update({
+    const department = await prisma.parentDirectory.update({
       where: {
         id: directoryId,
       },

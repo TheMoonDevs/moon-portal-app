@@ -6,12 +6,37 @@ import { CreateLinkModal } from "../CreateLinkModal";
 import { useAppSelector } from "@/utils/redux/store";
 import { QuicklinksToast } from "../elements/QuicklinksToast";
 import {
-  setDepartmentList,
+  setParentDirsList,
   setDirectoryList,
+  setRootDirList,
 } from "@/utils/redux/quicklinks/quicklinks.slice";
 import { useStore } from "react-redux";
 import { useRef } from "react";
-import { Department, Directory } from "@prisma/client";
+import { ParentDirectory, Directory } from "@prisma/client";
+
+const ROOT_DIRECTORIES: Directory[] = [
+  {
+    id: "root-my-dashboard",
+    title: "My Dashboard",
+    parentDirId: null,
+    slug: "/dashboard",
+    logo: "dashboard",
+  },
+  {
+    id: "COMMON_RESOURCES",
+    title: "Team Resources",
+    parentDirId: null,
+    slug: "/common-resources",
+    logo: "stack",
+  },
+  {
+    id: "DEPARTMENT",
+    title: "Departments",
+    parentDirId: null,
+    slug: "/department",
+    logo: "groups",
+  },
+];
 
 export const QuicklinksLayout = ({
   children,
@@ -19,7 +44,7 @@ export const QuicklinksLayout = ({
 }: {
   children: React.ReactNode;
   response: {
-    departments: Department[];
+    departments: ParentDirectory[];
     directories: Directory[];
   };
 }) => {
@@ -27,8 +52,9 @@ export const QuicklinksLayout = ({
   const initialize = useRef(false);
 
   if (!initialize.current) {
-    store.dispatch(setDepartmentList(response.departments));
+    store.dispatch(setParentDirsList(response.departments));
     store.dispatch(setDirectoryList(response.directories));
+    store.dispatch(setRootDirList(ROOT_DIRECTORIES));
     initialize.current = true;
   }
   const { toast } = useAppSelector((state) => state.quicklinks);

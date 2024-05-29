@@ -6,12 +6,23 @@ import { DirectoryTree } from "./Directory/Directory";
 import { useState } from "react";
 import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
 import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import { setNewDepartment } from "@/utils/redux/quicklinks/quicklinks.slice";
+import { setNewParentDir } from "@/utils/redux/quicklinks/quicklinks.slice";
+import { useQuickLinkDirectory } from "./useQuickLinkDirectory";
+import { Directory, ParentDirectory, ROOTTYPE } from "@prisma/client";
+import { AddSectionPopup } from "./AddSectionPopup";
 
 export default function QuicklinkSidebar() {
-  const [isExpanded, setIsExpanded] = useState(false);
   const dispatch = useAppDispatch();
-  const { departments } = useAppSelector((state) => state.quicklinks);
+  const {
+    parentDirs,
+    directories,
+    rootDirectories,
+    selectedRootDir,
+    setSelectedRoot,
+  } = useQuickLinkDirectory();
+  const [newDirectory, setNewDirectory] = useState<ParentDirectory | null>(
+    null
+  );
 
   const handleCreateDepartment = async () => {
     try {
@@ -24,16 +35,17 @@ export default function QuicklinkSidebar() {
           parentDirId: null,
         }
       );
-      dispatch(setNewDepartment(department));
+      dispatch(setNewParentDir(department));
       console.log(department);
     } catch (error) {
       console.log(error);
     }
   };
+
   return (
     <div className="w-96 h-[100vh]  top-0">
-      <aside className="p-6 fixed w-inherit h-[100vh] top-0 overflow-auto border-r-2">
-        <div className="flex flex-row items-center gap-2">
+      <aside className="fixed w-inherit h-[100vh] top-0 overflow-auto border-r-2">
+        <div className="flex flex-row items-center gap-2 p-6">
           <Image
             src="/logo/logo.png"
             alt="The Moon Devs"
@@ -42,59 +54,113 @@ export default function QuicklinkSidebar() {
           />
           <h1 className="font-bold text-xl">The Moon Devs</h1>
         </div>
-        <nav className="mt-12">
-          <ul className="flex flex-col gap-2">
-            <Link href="/quicklinks/dashboard" className="mb-4">
-              <li className="flex items-center gap-2">
-                <span className="material-icons-outlined opacity-70 !text-xl">
-                  dashboard
-                </span>
-                My Dashboard
-              </li>
-            </Link>
-
-            <ul>
-              <DirectoryTree
-                mainDirectory={departments.filter(
-                  (item) => item.type === "COMMON_RESOURCES"
-                )}
-              />
-            </ul>
-            <ul className="">
-              <li className="flex items-center justify-between cursor-pointer py-4 group">
-                <div
-                  className="flex items-center gap-1"
-                  onClick={() => setIsExpanded(!isExpanded)}
-                >
-                  <span className="material-icons-outlined opacity-20 hover:opacity-50">
-                    {isExpanded ? `expand_less` : `expand_more`}
-                  </span>
-                  {/* <Link href="/quicklinks/department"> */}
-                  Department
-                  {/* </Link> */}
-                </div>
-                <span
-                  className="material-icons-outlined opacity-0 group-hover:opacity-50 !text-base"
-                  onClick={handleCreateDepartment}
-                >
-                  add
-                </span>
-              </li>
-              <li
-                className={`ml-4 border-l-2 border-gray-200 ${
-                  isExpanded ? "max-h-[1000px]" : "max-h-0 overflow-hidden"
-                } transition-all duration-300`}
+        <nav className="mt-6">
+          <ul className="flex flex-col  ">
+            {rootDirectories.map((item) => (
+              <div
+                key={item.id}
+                className={`rounded-lg flex flex-col relative 
+              ${selectedRootDir?.id === item.id ? "bg-neutral-100 my-2" : ""}
+              `}
               >
-                <DirectoryTree
-                  mainDirectory={departments.filter(
-                    (item) => item.type === "DEPARTMENT"
-                  )}
-                />
-              </li>
-            </ul>
+                <Link
+                  href={
+                    item.slug === "/dashboard" ? `/quicklinks/dashboard` : ""
+                  }
+                  className=""
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setSelectedRoot(item);
+                  }}
+                >
+                  <li
+                    className={`px-2 mx-2 py-3 flex items-center gap-2 curspor-pointer
+              hover:bg-neutral-100 group rounded-lg ${
+                selectedRootDir?.id === item.id ? " font-bold" : ""
+              }
+              `}
+                  >
+                    <span className="material-symbols-outlined opacity-70 !text-xl">
+                      {item.logo}
+                    </span>
+                    {item.title}
+                    {item.slug != "/dashboard" && (
+                      <AddSectionPopup
+                        id={item.id}
+                        root={item}
+                        newDirectory={newDirectory}
+                        setNewDirectory={setNewDirectory}
+                      />
+                    )}
+                  </li>
+                </Link>
+
+                <ul>
+                  <DirectoryTree
+                    mainDirectory={parentDirs.filter(
+                      (_dir) => _dir?.type === item.id
+                    )}
+                  />
+                </ul>
+              </div>
+            ))}
           </ul>
         </nav>
       </aside>
+
+      {/* {newDirectory && (
+        <div className="z-[2000] fixed top-0 left-0 w-full h-full flex items-center justify-center bg-white/20 backdrop-blur-sm">
+          <div className="w-3/5 h-4/5 bg-white rounded-xl border">
+            <div className="flex flex-row items-center justify-between p-6  border-b-2 ">
+              <h1 className="font-bold text-2xl">
+                {rootDirectories.find((r) => r.id === newDirectory?.id)?.title}{" "}
+                {">"} {newDirectory?.title || "New Section"}
+              </h1>
+              <button
+                className="material-icons-outlined opacity-70 hover:opacity-50 !text-xl"
+                onClick={() => setNewDirectory(null)}
+              >
+                close
+              </button>
+            </div>
+            <div className="flex flex-col justify-center items-center gap-4 p-6">
+              <input
+                className="border-b focus:outline-none focus:border-b-gray-600 transition-colors duration-500"
+                type="text"
+                placeholder="Enter Section Name"
+                onChange={(e) => {
+                  setNewDirectory({
+                    ...newDirectory,
+                    title: e.target.value,
+                  });
+                }}
+                value={newDirectory?.title || ""}
+                required
+              />
+              <input
+                className="border-b focus:outline-none focus:border-b-gray-600 transition-colors duration-500"
+                type="text"
+                placeholder="Enter Section Slug"
+                onChange={(e) => {
+                  setNewDirectory({
+                    ...newDirectory,
+                    slug: e.target.value,
+                  });
+                }}
+                value={newDirectory?.slug || ""}
+                required
+              />
+              <button
+                className="!self-end !mt-8 w-full"
+                type="submit"
+                onClick={() => handleCreateDepartment()}
+              >
+                Add Section
+              </button>
+            </div>
+          </div>
+        </div>
+      )} */}
     </div>
   );
 }
