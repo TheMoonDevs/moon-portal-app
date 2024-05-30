@@ -156,7 +156,7 @@ export const WorklogEditor = ({
       saveWorkLog(workLog as any);
     },
     [serverLog, workLog],
-    2000
+    3000
   );
 
   const addNewProject = () => {
@@ -256,7 +256,7 @@ export const WorklogEditor = ({
           </div>
         </div>
       )}
-      <div className="p-4  mb-4">
+      <div className="p-4  mb-4 ">
         <input
           disabled={compactView}
           type="text"
@@ -292,7 +292,10 @@ export const WorklogEditor = ({
         <div className={`h-[${compactView ? "1em" : "3em"}]`}></div>
       </div>
       {markdownDatas.map((_markdownDat, bd_index) => (
-        <div key={_markdownDat.link_id} className="flex flex-col items-stretch">
+        <div
+          key={_markdownDat.link_id}
+          className="flex flex-col flex-grow-1 items-stretch"
+        >
           <p className="text-[0.8em] mb-2 tracking-widest uppercase text-neutral-500 px-4">
             {_markdownDat.title} - {getStatsOfContent(_markdownDat.content)}
           </p>

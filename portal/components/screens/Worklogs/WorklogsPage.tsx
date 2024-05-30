@@ -226,7 +226,14 @@ export const WorklogsPage = () => {
   return (
     <div className="flex flex-col">
       <div className="fixed left-0 right-0 top-0 z-10 bg-white flex flex-row gap-3 py-2 px-3 items-center justify-between border-b border-neutral-400 md:pl-[6rem]">
-        <h1 className="tracking-widest text-sm font-bold">My Worklogs</h1>
+        <div className="flex items-center">
+          <Link href={APP_ROUTES.home}>
+            <h1 className="text-lg cursor-pointer font-bold border-r-2 pr-3 mr-3">
+              The Moon Devs
+            </h1>
+          </Link>
+          <h1 className="tracking-widest text-sm font-regular">My Worklogs</h1>
+        </div>
         <div className="flex flex-row gap-1">
           <Link href={APP_ROUTES.userWorklogs}>
             <div className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700">
@@ -279,11 +286,10 @@ export const WorklogsPage = () => {
             <p className="text-lg font-bold my-4">Worklog tips</p>
             <ul className=" font-mono text-sm tracking-widest">
               <li className="">1. Use Short Bulletin points</li>
-              <li className="">
-                2. Note Todo&apos;s for tomorrow - Be prepared
-              </li>
+              <li className="">2. Log every minor update</li>
               <li className="">3. Add ✅ as you complete each task.</li>
-              <li className="">4. Use summarise to generate logs.</li>
+              <li className="">4. At the end, Note Todo&apos;s for tomorrow</li>
+              <li className="">5. Use summarise to generate logs.</li>
             </ul>
             <p className="text-lg font-bold  my-4">Shortcuts</p>
             <ul className=" font-mono text-sm tracking-widest">
