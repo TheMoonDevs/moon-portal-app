@@ -64,6 +64,16 @@ body {
   margin: 0.3em 0;
 }
 
+.mdx_ce p {
+  display: none;
+}
+
+.mdx_ce li:before {
+  content: "•";
+  margin-right: 0.5em;
+  color: rgb(var(--foreground-rgb));
+}
+
 .mdx_ce_min li {
   margin: 0.1em 0;
 }

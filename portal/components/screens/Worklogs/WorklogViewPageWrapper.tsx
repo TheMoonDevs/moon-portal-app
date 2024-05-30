@@ -46,7 +46,7 @@ export const WorklogViewPageWrapper = ({ id }: { id: string }) => {
     const rightdate = centerdate.add(1, "day");
 
     return (
-      <div className="bg-black flex flex-row flex-wrap items-center justify-start gap-4 h-screen ">
+      <div className="bg-white flex flex-row flex-wrap items-center justify-start gap-4 h-screen ">
         <div className="my-4 h-[90vh] bg-white overflow-y-scroll">
           <div className="flex flex-col max-w-[400px] ">
             {logsList.map((log, _i) => (
@@ -65,13 +65,13 @@ export const WorklogViewPageWrapper = ({ id }: { id: string }) => {
             ))}
           </div>
         </div>
-        <div className="my-4 h-[90vh] bg-white">
+        {/* <div className="my-4 h-[90vh] bg-white">
           <WorklogView
             id={id}
             date={leftdate.format("YYYY-MM-DD")}
             logType={_logType}
           />
-        </div>
+        </div> */}
         <div className="my-4 h-[90vh] bg-white">
           <WorklogView
             id={id}
@@ -79,13 +79,13 @@ export const WorklogViewPageWrapper = ({ id }: { id: string }) => {
             logType={_logType}
           />
         </div>
-        <div className="my-4 h-[90vh] bg-white">
+        {/* <div className="my-4 h-[90vh] bg-white">
           <WorklogView
             id={id}
             date={rightdate.format("YYYY-MM-DD")}
             logType={_logType}
           />
-        </div>
+        </div> */}
       </div>
     );
   }

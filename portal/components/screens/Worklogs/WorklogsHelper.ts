@@ -1,17 +1,14 @@
+import { LOGLINKTYPE, WorkLogPoints } from "@/utils/@types/interfaces";
 import dayjs from "dayjs";
 
 const MARKDOWN_PLACHELODER = `* `;
-export const DEFAULT_MARKDOWN_DATA = [
+export const DEFAULT_MARKDOWN_DATA: WorkLogPoints[] = [
   {
-    project: "general",
-    project_icon: "work",
+    link_type: LOGLINKTYPE.GENERAL,
+    link_id: "general",
+    title: "General",
+    icon: "work",
     content: MARKDOWN_PLACHELODER,
-    pointInfos: [
-      {
-        text: "",
-        status: "none",
-      },
-    ],
   },
 ];
 export const WorkLogsHelper = {
