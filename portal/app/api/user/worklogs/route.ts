@@ -3,6 +3,7 @@ import { USERROLE, USERTYPE } from "@prisma/client";
 import { NextResponse, NextRequest } from "next/server";
 
 export async function GET(request: NextRequest) {
+  const id = request.nextUrl.searchParams.get("id") as string;
   const userId = request.nextUrl.searchParams.get("userId") as string;
   const logType = request.nextUrl.searchParams.get("logType") as string;
   const date = request.nextUrl.searchParams.get("date") as string;
@@ -13,6 +14,7 @@ export async function GET(request: NextRequest) {
     //console.log("fetching user on server", id, userType, role);
     const _workLogs = await prisma.workLogs.findMany({
       where: {
+        ...(id && { id }),
         ...(userId && { userId }),
         ...(logType && { logType }),
         ...(date && { date }),
