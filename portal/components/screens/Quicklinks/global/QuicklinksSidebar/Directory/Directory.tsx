@@ -7,6 +7,7 @@ import {
   addNewDirectory,
   deleteDirectory,
   setToast,
+  updateDirectory,
 } from "@/utils/redux/quicklinks/quicklinks.slice";
 import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
 import { usePathname } from "next/navigation";
@@ -29,7 +30,6 @@ export const DirectoryTree = ({
     id: "",
     isEditable: false,
   });
-  const [newDirectoryName, setNewDirectoryName] = useState<string>("");
   const pathName = usePathname();
   const { rootDirectories, parentDirs, directories } = useQuickLinkDirectory();
 
@@ -64,10 +64,11 @@ export const DirectoryTree = ({
     setExpandedDirs(array);
   }, [selectedDir, parentDirs, directories]);
 
-  const handleDirectoryNameChange = async (
+  const handleDirectoryUpdate = async (
     e: FocusEvent<HTMLInputElement | Element>,
-    id: string,
-    parentId: string | null
+    directory: Directory,
+    parentId: string | null,
+    updateInfo: Partial<Directory>
   ) => {
     e.preventDefault();
     setEditable((prev) => {
@@ -80,12 +81,16 @@ export const DirectoryTree = ({
     if (!parentId) {
       apiPath = `/api/quicklinks/department`;
     }
+    const updatedDirectory = {
+      ...directory,
+      ...updateInfo,
+    };
     try {
-      const response = await QuicklinksSdk.updateData(apiPath, {
-        directoryId: id,
-        newTitle: newDirectoryName,
-        newSlug: newDirectoryName.toLowerCase().replace(/ /g, "-"),
-      });
+      dispatch(updateDirectory(updatedDirectory));
+      const response = await QuicklinksSdk.updateData(
+        apiPath,
+        updatedDirectory
+      );
       dispatch(
         setToast({ toastMsg: "Done!", toastSev: ToastSeverity.success })
       );
@@ -97,6 +102,7 @@ export const DirectoryTree = ({
           toastSev: ToastSeverity.error,
         })
       );
+      dispatch(updateDirectory(directory));
       console.log(error);
     }
   };
@@ -184,10 +190,10 @@ export const DirectoryTree = ({
                 : directory.slug
             }
             editable={editable}
-            newDirectoryName={newDirectoryName}
-            setNewDirectoryName={setNewDirectoryName}
+            // newDirectoryName={newDirectoryName}
+            // setNewDirectoryName={setNewDirectoryName}
             setEditable={setEditable}
-            handleDirectoryNameChange={handleDirectoryNameChange}
+            handleDirectoryUpdate={handleDirectoryUpdate}
             setExpandedDirs={setExpandedDirs}
             handleAddChildDirectory={handleAddChildDirectory}
             handleDeleteDirectory={handleDeleteDirectory}

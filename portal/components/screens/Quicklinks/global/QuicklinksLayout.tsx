@@ -14,6 +14,7 @@ import { useStore } from "react-redux";
 import { useRef } from "react";
 import { ParentDirectory, Directory } from "@prisma/client";
 
+// BAD PATTERN OF SLUG IS USED, WE CANT CHANGE IT BECAUSE IT IS USED IN THE MULTIPLE COMPONENTS
 const ROOT_DIRECTORIES: Directory[] = [
   {
     id: "root-my-dashboard",
