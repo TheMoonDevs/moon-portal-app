@@ -17,7 +17,19 @@ export async function GET(request: NextRequest) {
         ...(linkId && { id: linkId }),
         ...(departmentId && { departmentId: departmentId }),
       },
-      include: { author: true },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatar: true,
+            vertical: true,
+            role: true,
+            userType: true,
+          },
+        },
+      },
     });
     let json_response = {
       status: "success",
@@ -40,6 +52,19 @@ export async function POST(request: Request) {
   try {
     const link = await prisma.link.create({
       data: newLink,
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatar: true,
+            vertical: true,
+            role: true,
+            userType: true,
+          },
+        },
+      },
     });
     let json_response = {
       status: "success",
