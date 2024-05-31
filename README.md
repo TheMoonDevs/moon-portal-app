@@ -2,6 +2,9 @@
 
 Most repos us shared databases, hence when you make a change in prisma, please update it in all places accordingly.
 
+if you have a git pull issue, try this
+```git config --global core.compression 9```
+
 ## Portal App - /portal
 
 For all internal functionalities accessible to the team & clients.

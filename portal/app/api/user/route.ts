@@ -1,5 +1,5 @@
 import { prisma } from "@/prisma/prisma";
-import { USERROLE, USERTYPE } from "@prisma/client";
+import { USERROLE, USERSTATUS, USERTYPE } from "@prisma/client";
 import { NextResponse, NextRequest } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -16,6 +16,7 @@ export async function GET(request: NextRequest) {
         ...(id && { id }),
         ...(userType && { userType }),
         ...(role && { role }),
+        status: USERSTATUS.ACTIVE,
       },
     });
 

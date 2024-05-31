@@ -1,13 +1,16 @@
 "use client";
 
 import { PortalSdk } from "@/utils/services/PortalSdk";
-import { User } from "@prisma/client";
+import { USERROLE, USERTYPE, User } from "@prisma/client";
 import { useEffect, useState } from "react";
 
 export const TeamUsersList = () => {
   const [coreTeam, setCoreTeam] = useState<User[]>([]);
   useEffect(() => {
-    PortalSdk.getData("/api/user?role=" + "CORETEAM", null)
+    PortalSdk.getData(
+      "/api/user?role=" + USERROLE.CORETEAM + "&userType=" + USERTYPE.MEMBER,
+      null
+    )
       .then((data) => {
         setCoreTeam(data?.data?.user || []);
       })

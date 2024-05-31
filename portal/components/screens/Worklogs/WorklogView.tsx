@@ -1,7 +1,6 @@
 "use client";
 
 import { WorkLogPoints } from "@/utils/@types/interfaces";
-import { MdxAppEditor } from "@/utils/configure/MdxAppEditor";
 import { useUser } from "@/utils/hooks/useUser";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { WorkLogs } from "@prisma/client";
@@ -33,9 +32,11 @@ export const WorklogView = ({
     let _id = id && id?.length > 5 ? id : null;
     if (!_id && date) query = `?date=${date}&userId=${user?.id}`;
     if (!_id && logType) query = `?logType=${logType}&userId=${user?.id}`;
+    setLoading(true);
     PortalSdk.getData(`/api/user/worklogs${query}`, null)
       .then((data) => {
         console.log(data);
+        setLoading(false);
         setWorkLog(
           data?.data?.workLogs?.[0] ||
             (logType === "privateLog"
@@ -48,21 +49,32 @@ export const WorklogView = ({
       })
       .catch((err) => {
         console.log(err);
+        setLoading(false);
       });
   };
 
+  const [loading, setLoading] = useState(false);
   useEffect(() => {
     const _user = store.getState().auth.user;
-    if (workLog || !_user) return;
+    if (
+      (workLog &&
+        (id ? workLog?.id == id : `${workLog?.date}` === `${date}`)) ||
+      !_user
+    )
+      return;
+    console.log(`${workLog?.id}-${workLog?.date}`, `${id}${date}`);
     //setMarkdownData(`testing`)
     let _id = id && id?.length > 5 ? id : null;
     if (_id) {
+      setLoading(true);
       PortalSdk.getData(`/api/user/worklogs?id=${_id}`, null)
         .then((data) => {
           console.log(data);
           setWorkLog(data?.data?.workLogs?.[0] || null);
+          setLoading(false);
         })
         .catch((err) => {
+          setLoading(false);
           console.log(err);
         });
     } else {
@@ -77,6 +89,7 @@ export const WorklogView = ({
           _user?.id
         }`;
       console.log(query);
+      setLoading(true);
       PortalSdk.getData(`/api/user/worklogs${query}`, null)
         .then((data) => {
           console.log(data);
@@ -92,9 +105,11 @@ export const WorklogView = ({
                     _user
                   ))
           );
+          setLoading(false);
         })
         .catch((err) => {
           console.log(err);
+          setLoading(false);
         });
     }
   }, [id, date, workLog, logType]);
@@ -103,6 +118,7 @@ export const WorklogView = ({
 
   return (
     <WorklogEditor
+      loading={loading}
       editWorkLogs={workLog}
       refreshWorklogs={refreshWorklogs}
       compactView={compactView}
