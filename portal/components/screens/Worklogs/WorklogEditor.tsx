@@ -1,6 +1,6 @@
 "use client";
 
-import { WorkLogPoints } from "@/utils/@types/interfaces";
+import { LOGLINKTYPE, WorkLogPoints } from "@/utils/@types/interfaces";
 import { MdxAppEditor } from "@/utils/configure/MdxAppEditor";
 import { useUser } from "@/utils/hooks/useUser";
 import { PortalSdk } from "@/utils/services/PortalSdk";
@@ -9,7 +9,9 @@ import dayjs from "dayjs";
 import { useSearchParams } from "next/navigation";
 import {
   Dispatch,
+  RefObject,
   SetStateAction,
+  createRef,
   useCallback,
   useEffect,
   useMemo,
@@ -22,14 +24,17 @@ import { debounce } from "lodash";
 import store from "@/utils/redux/store";
 import Link from "next/link";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
+import { MDXEditorMethods } from "@mdxeditor/editor";
 
 const MARKDOWN_PLACHELODER = `* `;
 
 export const WorklogEditor = ({
+  loading,
   editWorkLogs,
   refreshWorklogs,
   compactView = false,
 }: {
+  loading: boolean;
   editWorkLogs: WorkLogs | null;
   refreshWorklogs: () => void;
   compactView?: boolean;
@@ -119,27 +124,18 @@ export const WorklogEditor = ({
     _markdownDat: WorkLogPoints,
     _fullpoints: WorkLogPoints[]
   ) => {
-    const new_content = content.split(/\n\n|\n/g);
+    const new_content = content.replaceAll(":check:", "✅");
     const new_md = _fullpoints.map((_md) => {
-      if (_md.project === _markdownDat.project) {
+      if (_md.link_id === _markdownDat.link_id) {
         return {
-          project: _md.project,
-          project_icon: _md.project_icon,
-          content: content.includes(MARKDOWN_PLACHELODER) ? content : content,
-          pointInfos: new_content.map((text: string, index: number) => {
-            return {
-              text,
-              status:
-                _md.pointInfos.length > index
-                  ? _md.pointInfos[index].status
-                  : "none",
-            };
-          }),
+          ..._md,
+          content:
+            new_content.trim().length <= 0 ? MARKDOWN_PLACHELODER : new_content,
         };
       }
       return _md;
     });
-    console.log(content);
+    console.log(new_content);
     setMarkdownDatas(new_md);
     setWorkLog((wl: any) => ({
       ...wl,
@@ -160,23 +156,27 @@ export const WorklogEditor = ({
       saveWorkLog(workLog as any);
     },
     [serverLog, workLog],
-    2000
+    3000
   );
 
   const addNewProject = () => {
+    if (
+      !newProjectText ||
+      markdownDatas.find(
+        (md) => md.title?.toLowerCase() === newProjectText?.toLowerCase()
+      ) ||
+      newProjectText.trim().length <= 0
+    )
+      return;
     setMarkdownDatas((md) => {
       const new_md = [
         ...md,
         {
-          project: newProjectText,
-          project_icon: "work",
+          link_id: newProjectText.toLowerCase().replace(/\s/g, "-"),
+          link_type: LOGLINKTYPE.ABSTRACT,
+          icon: "work",
+          title: newProjectText,
           content: MARKDOWN_PLACHELODER,
-          pointInfos: [
-            {
-              text: "",
-              status: "none",
-            },
-          ],
         },
       ];
       setWorkLog((wl: any) => ({ ...wl, works: new_md }));
@@ -185,8 +185,38 @@ export const WorklogEditor = ({
     setNewProjectText("");
   };
 
+  const markdownRefs = useRef<RefObject<MDXEditorMethods>[]>([]);
+
+  useEffect(() => {
+    if (markdownDatas.length != markdownRefs.current.length) {
+      markdownRefs.current = markdownDatas.map((_, i) => {
+        return createRef<MDXEditorMethods>();
+      });
+    }
+  }, [markdownRefs, markdownDatas]);
+
+  const insertToContent = (text: string, index?: number) => {
+    //console.log("inserting ", text, index);
+    if (index != undefined)
+      console.log(
+        "inserting ",
+        text,
+        index,
+        markdownRefs.current[index]?.current
+      );
+    markdownRefs.current[index || 0]?.current?.insertMarkdown(text);
+  };
+
+  const getStatsOfContent = (content: string) => {
+    const _content = content.replaceAll(":check:", "✅");
+    // how many times ✅ is there in content
+    const checks = (_content.match(/✅/g) || []).length;
+    const points = (_content.match(/\*/g) || []).length;
+    return `${checks} / ${points}`;
+  };
+
   return (
-    <div className="flex flex-col max-w-[400px]">
+    <div className="flex flex-col md:max-w-[800px]">
       {!compactView && (
         <div id="header" className="flex flex-row justify-between">
           <Link
@@ -196,16 +226,29 @@ export const WorklogEditor = ({
             <span className="icon_size material-icons">arrow_back</span>
           </Link>
           <div className="flex flex-row gap-1">
-            <div
-              onClick={refreshWorklogs}
+            {/* <div
+              onClick={() => insertToContent("✅")}
               className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700"
             >
-              <span className="icon_size material-icons">refresh</span>
+              <span className="icon_size material-icons">✅</span>
+            </div> */}
+            {loading ? (
+              <div className="animate-spin rounded-full h-5 w-5 p-2 mt-2 border-t-2 border-b-2 border-neutral-700"></div>
+            ) : (
+              <div
+                onClick={refreshWorklogs}
+                className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700"
+              >
+                <span className="icon_size material-icons">refresh</span>
+              </div>
+            )}
+            <div className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700">
+              <span className="icon_size material-icons">more_vert</span>
             </div>
-            {!isAutoSaved && (
+            {!isAutoSaved && !loading && (
               <button
                 onClick={() => saveWorkLog(workLog as any)}
-                className="cursor-pointer rounded-lg p-2 text-red-500"
+                className="cursor-pointer rounded-lg p-2 text-green-500"
               >
                 <span className="icon_size material-icons">done_all</span>
               </button>
@@ -213,7 +256,7 @@ export const WorklogEditor = ({
           </div>
         </div>
       )}
-      <div className="p-4">
+      <div className="p-4  mb-4 ">
         <input
           disabled={compactView}
           type="text"
@@ -248,21 +291,40 @@ export const WorklogEditor = ({
         )}
         <div className={`h-[${compactView ? "1em" : "3em"}]`}></div>
       </div>
-      {markdownDatas.map((_markdownDat) => (
-        <div key={_markdownDat.project} className="flex flex-col items-stretch">
-          <p className="text-[0.5em] tracking-widest uppercase text-neutral-500 px-4">
-            {_markdownDat.project} - {_markdownDat.pointInfos.length}
+      {markdownDatas.map((_markdownDat, bd_index) => (
+        <div
+          key={_markdownDat.link_id}
+          className="flex flex-col flex-grow-1 items-stretch"
+        >
+          <p className="text-[0.8em] mb-2 tracking-widest uppercase text-neutral-500 px-4">
+            {_markdownDat.title} - {getStatsOfContent(_markdownDat.content)}
           </p>
-          <div className=" flex flex-row items-stretch px-4 mb-3">
+          <div
+            className=" flex flex-row items-stretch px-4 mb-3"
+            onKeyUp={(e) => {
+              //console.log("keyup", e.key);
+              // detect ctrl + space
+              if (e.ctrlKey && e.key === " ") {
+                console.log("✅ pressed");
+                insertToContent("✅", bd_index);
+              }
+            }}
+          >
             {_markdownDat.content && (
               <MdxAppEditor
+                // autoFocus={bd_index === 0 ? true : false}
+                ref={
+                  bd_index < markdownRefs.current.length
+                    ? markdownRefs.current[bd_index]
+                    : null
+                }
                 key={
-                  _markdownDat.pointInfos.length <= 1
+                  _markdownDat.content.trim().length <= 1 || loading
                     ? "uninit"
-                    : _markdownDat.project + "-" + workLog?.title
+                    : _markdownDat.link_id + "-" + workLog?.title
                 }
                 markdown={
-                  _markdownDat.content
+                  _markdownDat.content.length > 1
                     ? _markdownDat.content
                     : MARKDOWN_PLACHELODER
                 }
@@ -272,35 +334,13 @@ export const WorklogEditor = ({
                   changeMarkData(content, _markdownDat, markdownDatas);
                   //   debounceSaveWorkLogsMarkdownData(
                   //     content,
-                  //     _markdownDat,
+                  //     _markdownDat,s
                   //     markdownDatas
                   //   );
                 }}
               />
             )}
             {/* <p>{_markdownDat.content}</p> */}
-            <div className="flex flex-col w-5 items-center mt-[0.35em] pr-[0.2em]">
-              {_markdownDat.pointInfos.map((logPoint: any, _index: number) => (
-                <div
-                  key={`${logPoint?.text}${_index}`}
-                  className=" h-[1.75em] flex items-center justify-center "
-                >
-                  <span
-                    className={`icon_size material-symbols-outlined
-              ${
-                logPoint.status === "none"
-                  ? "text-neutral-300"
-                  : "text-green-500"
-              }
-              `}
-                  >
-                    {logPoint.status === "none"
-                      ? "radio_button_unchecked"
-                      : "task_alt"}
-                  </span>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
       ))}
@@ -334,7 +374,7 @@ export const WorklogEditor = ({
               onClick={() => addNewProject()}
               className="flex flex-row items-center cursor-pointer rounded-lg p-2 text-neutral-900  bg-white shadow-md"
             >
-              <span className="icon_size material-icons">arrow_forward</span>
+              <span className="icon_size material-icons">add</span>
             </div>
           </div>
         </div>

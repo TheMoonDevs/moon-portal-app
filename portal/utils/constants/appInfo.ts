@@ -12,6 +12,8 @@ export enum APP_ROUTES {
   logout = "/logout",
   signup = "/signup",
   admin = "/admin",
+  fileUploads = "/file-uploads",
+  quicklinksDashboard = "/quicklinks/dashboard",
   userEditor = "/admin/user/editor",
   userZeroTracker = "/user/zero-tracker",
   userWorklogs = "/user/worklogs",
@@ -36,6 +38,8 @@ export enum APP_SOCIAL {
   instagram = "",
   linkedin = "",
   youtube = "",
+  clickup = "https://app.clickup.com/",
+  slack = "https://app.slack.com/client/T01J1LR0YDN",
 }
 
 export enum LOCAL_STORAGE {

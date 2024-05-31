@@ -6,7 +6,7 @@ import { useUser } from "@/utils/hooks/useUser";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { WorkLogs } from "@prisma/client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import store from "@/utils/redux/store";
 import dayjs from "dayjs";
 import { WorkLogsHelper } from "./WorklogsHelper";
@@ -50,29 +50,57 @@ const linkForWorkLog = (data: WorkLogs) => {
   );
 };
 
-export const WorkLogItem = ({ data }: { data: WorkLogs }) => {
+export const WorkLogItem = ({
+  data,
+  onClick,
+  selected,
+  isTabletOrMore,
+}: {
+  data: WorkLogs;
+  onClick: any;
+  selected?: boolean;
+  isTabletOrMore: boolean;
+}) => {
   return (
     <Link
-      href={linkForWorkLog(data)}
+      href={isTabletOrMore ? "" : linkForWorkLog(data)}
       className={`flex flex-col gap-3 rounded-lg border border-neutral-200 p-3 ${
-        data.logType === "privateLog" ? "h-full" : ""
-      }`}
+        data.logType === "privateLog" ? " h-full " : ""
+      } ${selected ? " bg-white border-neutral-900 border-2 " : ""}`}
+      onClick={onClick}
     >
       <div
-        className={`flex flex-row justify-between ${
-          data.logType === "privateLog"
-            ? "text-neutral-800"
-            : dayjs(data.date).isSame(dayjs(), "date")
-            ? "text-blue-400"
-            : data.id === ""
-            ? "text-neutral-500"
-            : "text-green-500"
+        className={`flex flex-row justify-between  ${
+          selected ? "font-bold text-black" : "font-regular text-neutral-800"
         }`}
       >
-        <h1 className={`text-xs font-bold `}>{data.title}</h1>
+        <h1 className={`text-xs `}>{data.title}</h1>
         {data.logType === "dayLog" && (
-          <span className={`icon_size material-symbols-outlined `}>
-            {data.id === "" ? "add_box" : "checklist"}
+          <span
+            className={`icon_size material-symbols-outlined 
+          ${
+            dayjs(data.date).isBefore(dayjs(), "date") && data.id === ""
+              ? "text-red-500"
+              : !selected
+              ? "text-neutral-500"
+              : dayjs(data.date).isSame(dayjs(), "date")
+              ? "text-green-500"
+              : data.id === "" || dayjs(data.date).isAfter(dayjs(), "date")
+              ? "text-neutral-500"
+              : "text-blue-500"
+          }
+          
+          `}
+          >
+            {dayjs(data.date).isSame(dayjs(), "date")
+              ? "radio_button_checked"
+              : dayjs(data.date).isAfter(dayjs(), "date")
+              ? data.id === ""
+                ? "add_box"
+                : "checklist"
+              : data.id === ""
+              ? "pending"
+              : "checklist"}
           </span>
         )}
       </div>
@@ -84,9 +112,10 @@ export const WorkLogItem = ({ data }: { data: WorkLogs }) => {
               <div key={point.project} className="flex flex-row items-center">
                 <div className="text-sm font-light">
                   <MdxAppEditor
+                    key={point?.id}
                     markdown={point?.content}
                     readOnly={true}
-                    contentEditableClassName="mdx_ce_min font-mono leading-0 imp-p-0 grow w-full h-full line-clamp-3"
+                    contentEditableClassName="mdx_ce_min leading-0 imp-p-0 grow w-full h-full line-clamp-3"
                     // plugins={[
                     //   diffSourcePlugin({
                     //     diffMarkdown: "An older version",
@@ -99,7 +128,7 @@ export const WorkLogItem = ({ data }: { data: WorkLogs }) => {
             ))}
         {data.id === "" && (
           <div className="">
-            <p className="text-sm font-mono text-neutral-300">
+            <p className="text-sm text-neutral-300">
               Tap to jot down your logs...
             </p>
           </div>
@@ -170,12 +199,41 @@ export const WorklogsPage = () => {
     setLogsList(_logList);
   }, [monthTab, yearLogData]);
 
+  const [selectedID, setSelectedID] = useState<string>();
+  const [selectedDate, setSelectedDate] = useState<string | undefined>(
+    dayjs().format("YYYY-MM-DD")
+  );
+  const centerdate = useMemo(() => dayjs(selectedDate), [selectedDate]);
+
+  // load default date id
+  useEffect(() => {
+    if (
+      logsList.length > 0 &&
+      !selectedID &&
+      centerdate.isSame(dayjs(), "date")
+    ) {
+      const _worklog = logsList.find(
+        (wl) => wl.date === centerdate.format("YYYY-MM-DD")
+      );
+      if (_worklog) {
+        setSelectedID(_worklog.id);
+      }
+    }
+  }, [logsList, centerdate, selectedID]);
+
   //if (!user?.workData) return null;
 
   return (
     <div className="flex flex-col">
       <div className="fixed left-0 right-0 top-0 z-10 bg-white flex flex-row gap-3 py-2 px-3 items-center justify-between border-b border-neutral-400 md:pl-[6rem]">
-        <h1 className="tracking-widest text-sm font-bold">My Worklogs</h1>
+        <div className="flex items-center">
+          <Link href={APP_ROUTES.home}>
+            <h1 className="text-lg cursor-pointer font-bold border-r-2 pr-3 mr-3">
+              The Moon Devs
+            </h1>
+          </Link>
+          <h1 className="tracking-widest text-sm font-regular">My Worklogs</h1>
+        </div>
         <div className="flex flex-row gap-1">
           <Link href={APP_ROUTES.userWorklogs}>
             <div className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700">
@@ -219,9 +277,27 @@ export const WorklogsPage = () => {
             </div>
           ))}
         </div>
-        <div className="flex flex-row gap-1 max-lg:flex-col w-full">
-          <div className="p-2 w-[25%] max-lg:w-full">
-            {privateBoard && (
+        <div className="flex flex-row flex-row-reverse max-lg:flex-col w-full">
+          <div className="p-8 invisible md:visible w-[40%] max-lg:w-full">
+            <p className="text-lg font-bold my-4">Tasks from clickup</p>
+            <ul className=" font-mono text-sm tracking-widest">
+              <li className="">Something...</li>
+            </ul>
+            <p className="text-lg font-bold my-4">Worklog tips</p>
+            <ul className=" font-mono text-sm tracking-widest">
+              <li className="">1. Use Short Bulletin points</li>
+              <li className="">2. Log every minor update</li>
+              <li className="">3. Add ✅ as you complete each task.</li>
+              <li className="">4. At the end, Note Todo&apos;s for tomorrow</li>
+              <li className="">5. Use summarise to generate logs.</li>
+            </ul>
+            <p className="text-lg font-bold  my-4">Shortcuts</p>
+            <ul className=" font-mono text-sm tracking-widest">
+              <li className="">Ctrl+Spacebar === ✅</li>
+            </ul>
+          </div>
+          <div className="p-2 invisible md:visible w-[50%] max-lg:w-full rounded-lg border border-neutral-200 m-3  max-h-[80vh] overflow-y-scroll">
+            {/* {privateBoard && (
               <WorkLogItem
                 key={
                   privateBoard.id +
@@ -232,45 +308,38 @@ export const WorklogsPage = () => {
                 }
                 data={privateBoard}
               />
-            )}
+            )} */}
+            <WorklogView
+              id={selectedID}
+              date={centerdate.format("YYYY-MM-DD")}
+              logType={"dayLog"}
+            />
           </div>
-          <div className="grid grid-cols-4 gap-3 p-2 max-lg:grid-cols-3 max-md:grid-cols-2">
+          <div className="grid grid-cols-2 gap-3 p-2 max-lg:grid-cols-4 max-md:grid-cols-2 max-h-[80vh] overflow-y-scroll m-3">
             {logsList.map(
               (data) => (
-                // isTabletOrMore ? (
-                //   <div
-                //     key={data.id + "-" + data.date + "-" + data.userId}
-                //     className="relative flex flex-col m-2 pb-8 px-0 border border-2 border-neutral-800 rounded-xl shadow-md"
-                //   >
-                //     <Link
-                //       href={linkForWorkLog(data)}
-                //       className=" flex justify-center p-1 bg-black rounded-t-xl "
-                //     >
-                //       <p className="text-white text-xs text-center">
-                //         Click here to open editor
-                //       </p>
-                //       <span className="icon_size text-white material-icons-outlined">
-                //         chevron_right
-                //       </span>
-                //     </Link>
-                //     <WorklogView
-                //       //id={data.id}
-                //       date={data.date}
-                //       logType={data.logType}
-                //       compactView={true}
-                //     />
-                //   </div>
-                // ) : (
                 <WorkLogItem
+                  isTabletOrMore={isTabletOrMore}
                   key={data.id + "-" + data.date + "-" + data.userId}
                   data={data}
+                  selected={selectedDate === data.date}
+                  onClick={() => {
+                    if (data.id?.trim().length > 0) {
+                      setSelectedID(data.id);
+                      if (data.date) setSelectedDate(data.date);
+                    } else if (data.date) {
+                      console.log(data);
+                      setSelectedID(undefined);
+                      if (data.date) setSelectedDate(data.date);
+                    }
+                  }}
                 />
               )
               //)
             )}
           </div>
         </div>
-        <div className="flex flex-col gap-3 h-[5rem]"></div>
+        {/* <div className="flex flex-col gap-3 h-[5rem]"></div> */}
       </div>
     </div>
   );
