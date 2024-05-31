@@ -74,27 +74,26 @@ export async function DELETE(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
-  const { directoryId, newTitle, newSlug } = await request.json();
-  if (!directoryId || !newTitle || !newSlug) {
+  const { id, ...rest } = await request.json();
+  if (!id) {
     return new NextResponse(JSON.stringify({ error: "Missing id" }), {
       status: 404,
       headers: { "Content-Type": "application/json" },
     });
   }
   try {
-    const department = await prisma.parentDirectory.update({
+    const directory = await prisma.parentDirectory.update({
       where: {
-        id: directoryId,
+        id: id,
       },
       data: {
-        title: newTitle,
-        slug: newSlug,
+        ...rest,
       },
     });
     let json_response = {
       status: "success",
       data: {
-        department,
+        directory,
       },
     };
     return NextResponse.json(json_response);
