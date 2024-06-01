@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import React from "react";
 import { TrackerMode } from "../ZeroTracker";
-import CircularLoader from "@/components/elements/CircularLoader";
+import { CircularProgress } from "@mui/material";
 interface IZerosProps {
   selectedDates: string[];
   isSavingZeroes: boolean;
@@ -55,31 +55,34 @@ export const Zeros = ({
         <button
           onClick={() => setTrackerMode("normal")}
           disabled={isSavingZeroes}
-          className={` ${isSavingZeroes ? 'bg-neutral-300	 text-white' : 'bg-neutral-100 text-neutral-900'} flex-1 flex-grow flex flex-row items-center justify-start gap-1 p-4 rounded-[0.75em] `}
+          className={` ${
+            isSavingZeroes
+              ? "bg-neutral-300	 text-white"
+              : "bg-neutral-100 text-neutral-900"
+          } flex-1 flex-grow flex flex-row items-center justify-start gap-1 p-4 rounded-[0.75em] `}
         >
           <span className="icon_size material-symbols-outlined">
             arrow_back
           </span>
           <p className="text-[0.7em] whitespace-nowrap font-bold tracking-[0.2em] ">
-            {" "}
             BACK
           </p>
         </button>
         <button
           onClick={updateDates}
-          disabled = {isSavingZeroes}
-          className={`${isSavingZeroes ? 'bg-neutral-300	' : 'bg-blue-500'} flex flex-row items-center justify-between gap-1 p-4 rounded-[0.75em] overflow-hidden text-neutral-100`}
+          disabled={isSavingZeroes}
+          className={`${
+            isSavingZeroes ? "bg-neutral-300	" : "bg-blue-500"
+          } flex flex-row items-center justify-between gap-1 p-4 rounded-[0.75em] overflow-hidden text-neutral-100`}
         >
           <p className="text-[0.7em] font-bold tracking-[0.2em] ">
             {" "}
             SAVE CHANGES
           </p>
-          {!isSavingZeroes && 
+          {!isSavingZeroes && (
             <span className="icon_size material-icons">task_alt</span>
-          }
-          {isSavingZeroes && 
-            <CircularLoader/>
-          }
+          )}
+          {isSavingZeroes && <CircularProgress size={20} color="inherit" />}
         </button>
       </div>
     </div>
