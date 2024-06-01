@@ -1,3 +1,4 @@
+import CircularLoader from "@/components/elements/CircularLoader";
 import { useAppDispatch } from "@/utils/redux/store";
 import {
   IMeetingData,
@@ -38,6 +39,8 @@ export const MeetingModal = ({
   ]);
   const [removedUsers, setRemovedUsers] = useState<any[]>([]);
   const [meetingTitle, setMeetingTitle] = useState<string>("");
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const dispatch = useAppDispatch();
 
   useEffect(() => {
@@ -48,6 +51,7 @@ export const MeetingModal = ({
   }, [meetingToUpdate, setMeetingDate]);
 
   const handleDeleteMeeting = async (meeting: IMeetingData) => {
+    setIsDeleting(true)
     try {
       const setOfSelectedMembers = new Set(
         selectedMeetingMembers.map((member: User) => member.id)
@@ -73,6 +77,7 @@ export const MeetingModal = ({
       dispatch(deleteLoggedInUserMeetingRecord(meeting));
       setAllMeetingRecords(updateMeetings);
       setIsMeetingModalOpen(false);
+      setIsDeleting(false)
     } catch (error) {
       console.log(error);
     }
@@ -82,6 +87,7 @@ export const MeetingModal = ({
     e: React.FormEvent<HTMLFormElement>
   ) => {
     e.preventDefault();
+    setIsSaving(true)
 
     const meetingData = {
       id: meetingToUpdate ? meetingToUpdate.id : meetingTitle + meetingDate,
@@ -105,6 +111,7 @@ export const MeetingModal = ({
     } catch (error) {
       console.error(error);
     }
+    setIsSaving(false)
   };
 
   const updateMeetingRecords = (meetingData: any) => {
@@ -346,35 +353,53 @@ export const MeetingModal = ({
         <div className="flex flex-col gap-4">
           <button
             type="submit"
-            className="bg-blue-500 font-bold text-white px-6 py-3 rounded-md flex flex-row items-center justify-center gap-1 text-[0.7em]"
+            disabled={isSaving || isDeleting}
+            className={`${isSaving|| isDeleting ? 'bg-neutral-300' : 'bg-blue-500'} font-bold text-white px-6 py-3 rounded-md flex flex-row items-center justify-center gap-1 text-[0.7em]`}
           >
-            <span className="icon_size material-symbols-outlined">
-              task_alt
-            </span>
+            {
+              !isSaving &&
+                <span className="icon_size material-symbols-outlined">
+                  task_alt
+                </span>
+            }
+            {
+              isSaving &&
+               <CircularLoader/>
+            }
             <span className="uppercase tracking-[0.2em]">Save</span>
           </button>
           {meetingToUpdate && (
             <button
               type="button"
+              disabled={isSaving || isDeleting}
               onClick={(e) => {
                 e.preventDefault();
                 handleDeleteMeeting(meetingToUpdate);
               }}
-              className="bg-red-400 font-bold text-white px-6 py-3 rounded-md flex flex-row items-center justify-center gap-1 text-[0.7em]"
+              className={`${isSaving|| isDeleting ? 'bg-neutral-300' : 'bg-red-400'} font-bold text-white px-6 py-3 rounded-md flex flex-row items-center justify-center gap-1 text-[0.7em]`}
             >
-              <span className="icon_size material-symbols-outlined">
-                delete
-              </span>
+            {
+              isDeleting &&
+               <CircularLoader/>
+            }
+            {
+              !isDeleting &&
+                <span className="icon_size material-symbols-outlined">
+                  delete
+                </span>
+            }
+
               <span className="uppercase tracking-[0.2em]">Delete</span>
             </button>
           )}
           <button
             type="button"
+            disabled={isSaving || isDeleting}
             onClick={(e) => {
               e.preventDefault();
               setIsMeetingModalOpen(false);
             }}
-            className="bg-neutral-100 font-bold text-neutral-900 px-6 py-3 rounded-md flex flex-row items-center justify-center gap-1 text-[0.7em]"
+            className={`${isSaving|| isDeleting ? 'bg-neutral-300 text-white' : 'bg-neutral-100 text-neutral-900'} font-bold  px-6 py-3 rounded-md flex flex-row items-center justify-center gap-1 text-[0.7em]`}
           >
             <span className="icon_size material-symbols-outlined  ">
               cancel
