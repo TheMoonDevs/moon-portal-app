@@ -55,6 +55,8 @@ export const AdminUserEditor = () => {
       joining: dayjs().format("YYYY-MM-DD"),
       overlap: [],
     },
+    personalData: null, // Add the missing property
+    payData: null, // Add the missing property
   });
 
   useEffect(() => {
