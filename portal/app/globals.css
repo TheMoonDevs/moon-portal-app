@@ -74,6 +74,10 @@ body {
   color: rgb(var(--foreground-rgb));
 }
 
+.mdx_ce li>ul {
+  margin-left: 0.5em;
+}
+
 .mdx_ce_min li {
   margin: 0.1em 0;
 }
