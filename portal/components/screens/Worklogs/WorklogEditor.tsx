@@ -124,6 +124,7 @@ export const WorklogEditor = ({
     _markdownDat: WorkLogPoints,
     _fullpoints: WorkLogPoints[]
   ) => {
+    console.log(content);
     const new_content = content.replaceAll(":check:", "✅");
     const new_md = _fullpoints.map((_md) => {
       if (_md.link_id === _markdownDat.link_id) {
@@ -208,10 +209,11 @@ export const WorklogEditor = ({
   };
 
   const getStatsOfContent = (content: string) => {
-    const _content = content.replaceAll(":check:", "✅");
+    //const _content = content.replaceAll(":check:", "✅");
     // how many times ✅ is there in content
-    const checks = (_content.match(/✅/g) || []).length;
-    const points = (_content.match(/\*/g) || []).length;
+    console.log(content);
+    const checks = (content.match(/✅/g) || []).length;
+    const points = (content.match(/\n/g) || []).length + 1;
     return `${checks} / ${points}`;
   };
 
