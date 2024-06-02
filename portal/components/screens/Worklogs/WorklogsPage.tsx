@@ -277,8 +277,8 @@ export const WorklogsPage = () => {
             </div>
           ))}
         </div>
-        <div className="flex flex-row flex-row-reverse max-lg:flex-col w-full">
-          <div className="p-8 invisible md:visible w-[40%] max-lg:w-full">
+        <div className="flex flex-row-reverse max-lg:flex-col w-full">
+          <div className="hidden md:block p-8 invisible md:visible w-[40%] max-lg:w-full">
             <p className="text-lg font-bold my-4">Tasks from clickup</p>
             <ul className=" font-mono text-sm tracking-widest">
               <li className="">Something...</li>
@@ -296,7 +296,7 @@ export const WorklogsPage = () => {
               <li className="">Ctrl+Spacebar === ✅</li>
             </ul>
           </div>
-          <div className="p-2 invisible md:visible w-[50%] max-lg:w-full rounded-lg border border-neutral-200 m-3  max-h-[80vh] overflow-y-scroll">
+          <div className="hidden md:block p-2 invisible md:visible w-[50%] max-lg:w-full rounded-lg border border-neutral-200 m-3  max-h-[80vh] overflow-y-scroll">
             {/* {privateBoard && (
               <WorkLogItem
                 key={
