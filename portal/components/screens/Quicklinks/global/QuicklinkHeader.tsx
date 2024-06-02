@@ -42,10 +42,10 @@ export default function QuicklinkHeader() {
         <Button
           startIcon={<span className="material-icons">add</span>}
           variant="contained"
-          color="inherit"
+          className="!bg-zinc-900 !text-white"
           onClick={() => dispatch(setIsCreateLinkModalOpen(true))}
         >
-          Add New Link
+          Quicklink
         </Button>
       </div>
     </header>
