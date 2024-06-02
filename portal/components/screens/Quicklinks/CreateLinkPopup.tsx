@@ -6,10 +6,10 @@ import {
 } from "@/utils/redux/quicklinks/quicklinks.slice";
 import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
-import { Button, Popover, Slide, Tooltip } from "@mui/material";
+import { Popover, Slide, Tooltip } from "@mui/material";
 import { ROOTTYPE } from "@prisma/client";
 import { usePathname, useSearchParams } from "next/navigation";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import { toast, Toaster } from "sonner";
 
 export const CreateLinkPopup = () => {
@@ -18,7 +18,6 @@ export const CreateLinkPopup = () => {
   );
   const dispatch = useAppDispatch();
   const [anchorEl, setAnchorEl] = useState<HTMLSpanElement | null>(null);
-  const [isLinkPopupOpen, setIsLinkPopupOpen] = useState(false);
   const path = usePathname();
   const searchParams = useSearchParams();
   const { user } = useUser();
@@ -29,9 +28,16 @@ export const CreateLinkPopup = () => {
     title: "",
   });
 
+  const [fetchingMetadata, setFetchingMetadata] = useState(false);
+
   const open = Boolean(anchorEl);
 
   const { copiedURL, setCopiedURL } = useClipboardURLDetection();
+  const getDirectoryPath = () => {
+    if (selectedDepartment.title) return selectedDepartment.title;
+    const pathArray = path?.split("/");
+    return pathArray?.filter((item) => item !== "quicklinks")?.join("/");
+  };
 
   const departmentId = useMemo(() => {
     const getDepartmentId = (directoryId: string | null): string => {
@@ -61,10 +67,17 @@ export const CreateLinkPopup = () => {
       if (!user?.id) {
         throw new Error("User not found");
       }
+
+      if (path === "/quicklinks/dashboard" && selectedDepartment.id === "") {
+        throw new Error("Please select a directory to save the link!");
+      }
+
       const formData = new FormData(e.currentTarget);
       const link = formData.get("link") as string;
       console.log(link);
+      setFetchingMetadata(true);
       const metadata = await QuicklinksSdk.getLinkMetaData(link);
+      setFetchingMetadata(false);
       // store the metadata in db
       const newLinkData = {
         title: metadata.title,
@@ -139,14 +152,19 @@ export const CreateLinkPopup = () => {
           <label htmlFor="link" className="text-xl mb-3">
             <span className="block">Create New Quicklink</span>
             <span className="text-gray-500 text-sm">
-              We have detected a copied link. Save it to <br />
-              <code className="bg-neutral-100 text-gray-500 p-1 rounded-md">
-                {selectedDepartment.title !== ""
-                  ? selectedDepartment.title
-                  : `${path?.split("/")[3]}
-                /${path?.split("/")[4]}`}
-              </code>
-              ?
+              We have detected a copied link.{" "}
+              {path !== "/quicklinks/dashboard" ||
+              selectedDepartment.id !== "" ? (
+                <>
+                  Wanna save it to <br />
+                  <code className="bg-neutral-100 text-gray-500 p-1 rounded-md">
+                    {getDirectoryPath()}
+                  </code>
+                  ?
+                </>
+              ) : (
+                <>Please select a directory to save the link.</>
+              )}
             </span>
           </label>
           <div className="flex items-center gap-4">
@@ -181,21 +199,33 @@ export const CreateLinkPopup = () => {
                   paper: "bg-white mb-4 py-2 rounded-md",
                 }}
               >
-                <ul className=" flex flex-col gap-2 min-w-fit w-[calc(100%+100px)]  mb-2">
+                <ul className=" flex flex-col gap-2  mb-2">
                   {parentDirs.map((parentDir) => (
-                    <li
-                      key={parentDir.id}
-                      className=" text-gray-500 text-sm hover:bg-neutral-100 p-2 cursor-pointer"
+                    <div
                       onClick={() => {
+                        setAnchorEl(null);
+                        if (parentDir.id === selectedDepartment.id) {
+                          setSelectedDepartment({ id: "", title: "" });
+                          return;
+                        }
                         setSelectedDepartment({
                           id: parentDir.id,
                           title: parentDir.title,
                         });
-                        setAnchorEl(null);
                       }}
+                      key={parentDir.id}
+                      className="flex items-center gap-4 hover:bg-neutral-100 p-2 cursor-pointer"
                     >
-                      {parentDir.title}
-                    </li>
+                      <li className=" text-gray-500 text-sm">
+                        {parentDir.title}
+                      </li>
+                      {selectedDepartment.id === parentDir.id && (
+                        <span className="material-icons-outlined text-green-500 !text-sm">
+                          {" "}
+                          check
+                        </span>
+                      )}
+                    </div>
                   ))}
                 </ul>
               </Popover>
@@ -222,9 +252,14 @@ export const CreateLinkPopup = () => {
             </button> */}
           <button
             type="submit"
-            className="text-sm  bg-black text-white border border-neutral-800 px-6 py-2 rounded-md w-full"
+            className="text-sm  bg-black text-white border border-neutral-800 px-6 py-2 rounded-md w-full disabled:cursor-not-allowed"
+            disabled={fetchingMetadata}
           >
-            Save
+            {fetchingMetadata ? (
+              <span className="ml-2">Processing...</span>
+            ) : (
+              <>Save</>
+            )}
           </button>
           {/* </div> */}
         </form>
