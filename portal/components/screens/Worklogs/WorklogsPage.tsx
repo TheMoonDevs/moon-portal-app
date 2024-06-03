@@ -64,7 +64,7 @@ export const WorkLogItem = ({
   return (
     <Link
       href={isTabletOrMore ? "" : linkForWorkLog(data)}
-      className={`flex flex-col gap-3 rounded-lg border border-neutral-200 p-3 ${
+      className={`flex flex-col  gap-3 rounded-lg border border-neutral-200 p-3 ${
         data.logType === "privateLog" ? " h-full " : ""
       } ${selected ? " bg-white border-neutral-900 border-2 " : ""}`}
       onClick={onClick}
@@ -115,7 +115,7 @@ export const WorkLogItem = ({
                     key={point?.id}
                     markdown={point?.content}
                     readOnly={true}
-                    contentEditableClassName="mdx_ce_min leading-0 imp-p-0 grow w-full h-full line-clamp-3"
+                    contentEditableClassName="mdx_ce_min leading-0 imp-p-0 grow w-full h-full line-clamp-4"
                     // plugins={[
                     //   diffSourcePlugin({
                     //     diffMarkdown: "An older version",
@@ -175,6 +175,7 @@ export const WorklogsPage = () => {
   }, []);
 
   useEffect(() => {
+    if(!yearLogData) return;
     const _user = store.getState().auth.user;
     const _total_days_in_month = dayjs().month(monthTab).daysInMonth();
     const _logList = Array.from({
@@ -277,8 +278,8 @@ export const WorklogsPage = () => {
             </div>
           ))}
         </div>
-        <div className="flex flex-row flex-row-reverse max-lg:flex-col w-full">
-          <div className="p-8 invisible md:visible w-[40%] max-lg:w-full">
+        <div className="flex flex-row-reverse max-lg:flex-col w-full">
+          <div className="hidden md:block p-8 invisible md:visible w-[40%] max-lg:w-full">
             <p className="text-lg font-bold my-4">Tasks from clickup</p>
             <ul className=" font-mono text-sm tracking-widest">
               <li className="">Something...</li>
@@ -294,9 +295,11 @@ export const WorklogsPage = () => {
             <p className="text-lg font-bold  my-4">Shortcuts</p>
             <ul className=" font-mono text-sm tracking-widest">
               <li className="">Ctrl+Spacebar === ✅</li>
+              <li className="">Type `-` to add bulletin</li>
+              <li className="">Click Tab to add space to bulletin</li>
             </ul>
           </div>
-          <div className="p-2 invisible md:visible w-[50%] max-lg:w-full rounded-lg border border-neutral-200 m-3  max-h-[80vh] overflow-y-scroll">
+          <div className="hidden md:block p-2 invisible md:visible w-[50%] max-lg:w-full rounded-lg border border-neutral-200 m-3  max-h-[80vh] overflow-y-scroll">
             {/* {privateBoard && (
               <WorkLogItem
                 key={
@@ -315,7 +318,7 @@ export const WorklogsPage = () => {
               logType={"dayLog"}
             />
           </div>
-          <div className="grid grid-cols-2 gap-3 p-2 max-lg:grid-cols-4 max-md:grid-cols-2 max-h-[80vh] overflow-y-scroll m-3">
+          <div className="grid grid-cols-2 lg:w-[30%] gap-3 p-2 max-lg:grid-cols-4 max-md:grid-cols-2 max-h-[80vh] overflow-y-scroll m-3">
             {logsList.map(
               (data) => (
                 <WorkLogItem
