@@ -13,6 +13,7 @@ import { WorkLogsHelper } from "./WorklogsHelper";
 import { useMediaQuery } from "@mui/material";
 import media from "@/styles/media";
 import { WorklogView } from "./WorklogView";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const tempData = [
   {
@@ -175,7 +176,7 @@ export const WorklogsPage = () => {
   }, []);
 
   useEffect(() => {
-    if(!yearLogData) return;
+    if (!yearLogData) return;
     const _user = store.getState().auth.user;
     const _total_days_in_month = dayjs().month(monthTab).daysInMonth();
     const _logList = Array.from({
@@ -280,24 +281,37 @@ export const WorklogsPage = () => {
         </div>
         <div className="flex flex-row-reverse max-lg:flex-col w-full">
           <div className="hidden md:block p-8 invisible md:visible w-[40%] max-lg:w-full">
-            <p className="text-lg font-bold my-4">Tasks from clickup</p>
-            <ul className=" font-mono text-sm tracking-widest">
-              <li className="">Something...</li>
-            </ul>
-            <p className="text-lg font-bold my-4">Worklog tips</p>
-            <ul className=" font-mono text-sm tracking-widest">
-              <li className="">1. Use Short Bulletin points</li>
-              <li className="">2. Log every minor update</li>
-              <li className="">3. Add ✅ as you complete each task.</li>
-              <li className="">4. At the end, Note Todo&apos;s for tomorrow</li>
-              <li className="">5. Use summarise to generate logs.</li>
-            </ul>
-            <p className="text-lg font-bold  my-4">Shortcuts</p>
-            <ul className=" font-mono text-sm tracking-widest">
-              <li className="">Ctrl+Spacebar === ✅</li>
-              <li className="">Type `-` to add bulletin</li>
-              <li className="">Click Tab to add space to bulletin</li>
-            </ul>
+            <Tabs defaultValue="task" className="w-[400px]">
+              <TabsList>
+                <TabsTrigger value="task">Task & Tips</TabsTrigger>
+                <TabsTrigger value="later">Todo&apos;s for laters</TabsTrigger>
+              </TabsList>
+              <TabsContent value="task">
+                <p className="text-lg font-bold my-4">Tasks from clickup</p>
+                <ul className=" font-mono text-sm tracking-widest">
+                  <li className="">Something...</li>
+                </ul>
+                <p className="text-lg font-bold my-4">Worklog tips</p>
+                <ul className=" font-mono text-sm tracking-widest">
+                  <li className="">1. Use Short Bulletin points</li>
+                  <li className="">2. Log every minor update</li>
+                  <li className="">3. Add ✅ as you complete each task.</li>
+                  <li className="">
+                    4. At the end, Note Todo&apos;s for tomorrow
+                  </li>
+                  <li className="">5. Use summarise to generate logs.</li>
+                </ul>
+                <p className="text-lg font-bold  my-4">Shortcuts</p>
+                <ul className=" font-mono text-sm tracking-widest">
+                  <li className="">Ctrl+Spacebar === ✅</li>
+                  <li className="">Type `-` to add bulletin</li>
+                  <li className="">Click Tab to add space to bulletin</li>
+                </ul>
+              </TabsContent>
+              <TabsContent value="later">
+                Later Tasks
+              </TabsContent>
+            </Tabs>
           </div>
           <div className="hidden md:block p-2 invisible md:visible w-[50%] max-lg:w-full rounded-lg border border-neutral-200 m-3  max-h-[80vh] overflow-y-scroll">
             {/* {privateBoard && (

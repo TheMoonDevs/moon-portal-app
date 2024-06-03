@@ -1,177 +1,76 @@
 @tailwind base;
-@tailwind components;
-@tailwind utilities;
+  @tailwind components;
+  @tailwind utilities;
 
-:root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
-}
+  @layer base {
+    :root {
+      --background: 0 0% 100%;
+      --foreground: 222.2 84% 4.9%;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 0, 0, 0;
-    --background-start-rgb: 214, 219, 220;
-    --background-end-rgb: 255, 255, 255;
-  }
-}
+      --card: 0 0% 100%;
+      --card-foreground: 222.2 84% 4.9%;
 
-input,
-textarea,
-button,
-select,
-a {
-  -webkit-tap-highlight-color: rgba(0, 0, 0, 0.15);
-}
+      --popover: 0 0% 100%;
+      --popover-foreground: 222.2 84% 4.9%;
 
-body {
-  /* color: rgb(var(--foreground-rgb)); */
-  /* background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
-      */
-}
+      --primary: 222.2 47.4% 11.2%;
+      --primary-foreground: 210 40% 98%;
 
-.material-symbols-outlined {
-  font-family: "Material Symbols Outlined";
-  font-weight: normal;
-  font-style: normal;
-  font-size: inherit;
-  line-height: 1;
-  letter-spacing: normal;
-  text-transform: none;
-  display: inline-block;
-  white-space: nowrap;
-  word-wrap: normal;
-  direction: ltr;
-  -webkit-font-feature-settings: "liga";
-  -webkit-font-smoothing: antialiased;
-}
+      --secondary: 210 40% 96.1%;
+      --secondary-foreground: 222.2 47.4% 11.2%;
 
-.mdx_placeholder {
-  font-size: small;
-  content: "Jotdown your thougts...";
-  opacity: 0.5;
-  position: absolute;
-  top: 0.5em;
-  left: 3em;
-  pointer-events: none;
-  display: block; /* For Firefox */
-}
+      --muted: 210 40% 96.1%;
+      --muted-foreground: 215.4 16.3% 46.9%;
 
-.mdx_ce li {
-  margin: 0.3em 0;
-}
+      --accent: 210 40% 96.1%;
+      --accent-foreground: 222.2 47.4% 11.2%;
 
-.mdx_ce.mdx_uninit p:has(br) {
-  display: none;
-}
+      --destructive: 0 84.2% 60.2%;
+      --destructive-foreground: 210 40% 98%;
 
-/* .mdx_ce.mdx_uninit p:only-child {
-  display: inline;
-} */
+      --border: 214.3 31.8% 91.4%;
+      --input: 214.3 31.8% 91.4%;
+      --ring: 222.2 84% 4.9%;
 
-.mdx_ce li:before {
-  content: "•";
-  margin-right: 0.5em;
-  color: rgb(var(--foreground-rgb));
-}
+      --radius: 0.5rem;
+    }
 
-.mdx_ce li>ul {
-  margin-left: 0.5em;
-}
+    .dark {
+      --background: 222.2 84% 4.9%;
+      --foreground: 210 40% 98%;
 
-.mdx_ce_min li {
-  margin: 0.1em 0;
-}
+      --card: 222.2 84% 4.9%;
+      --card-foreground: 210 40% 98%;
 
-.mdx_ce_min p {
-  display: none;
-}
+      --popover: 222.2 84% 4.9%;
+      --popover-foreground: 210 40% 98%;
 
-.imp-p-0 {
-  padding: 0 !important;
-}
+      --primary: 210 40% 98%;
+      --primary-foreground: 222.2 47.4% 11.2%;
 
-.home_bg {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
-}
+      --secondary: 217.2 32.6% 17.5%;
+      --secondary-foreground: 210 40% 98%;
 
-.icon_size {
-  font-size: unset !important;
-}
+      --muted: 217.2 32.6% 17.5%;
+      --muted-foreground: 215 20.2% 65.1%;
 
-.cursor-pointer {
-  user-select: none;
-}
+      --accent: 217.2 32.6% 17.5%;
+      --accent-foreground: 210 40% 98%;
 
-@layer utilities {
-  .animated-border-box-glow {
-    max-height: 200px;
-    max-width: 250px;
-    height: 100%;
-    width: 100%;
-    position: absolute;
-    overflow: hidden;
-    z-index: 0;
-    border-radius: 10px;
-  }
+      --destructive: 0 62.8% 30.6%;
+      --destructive-foreground: 210 40% 98%;
 
-  .animated-border-box {
-    overflow: hidden;
-    border-radius: 7px;
-  }
-
-  .animated-border-box-glow {
-    overflow: hidden;
-    filter: blur(20px);
-  }
-
-  .animated-border-box:before,
-  .animated-border-box-glow:before {
-    content: "";
-    z-index: -2;
-    text-align: center;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) rotate(0deg);
-    position: absolute;
-    width: 99999px;
-    height: 99999px;
-    background-repeat: no-repeat;
-    background-position: 0 0;
-    background-image: conic-gradient(
-      rgba(0, 0, 0, 0),
-      rgba(255, 255, 255, 0.5),
-      rgba(0, 0, 0, 0) 50%
-    );
-    animation: rotate 4s linear infinite;
-  }
-
-  .animated-border-box:after {
-    content: "";
-    position: absolute;
-    z-index: -1;
-    left: 2px;
-    top: 2px;
-    width: calc(100% - 4px);
-    height: calc(100% - 4px);
-    background: black;
-    border-radius: 7px;
-  }
-
-  @keyframes rotate {
-    100% {
-      transform: translate(-50%, -50%) rotate(1turn);
+      --border: 217.2 32.6% 17.5%;
+      --input: 217.2 32.6% 17.5%;
+      --ring: 212.7 26.8% 83.9%;
     }
   }
-}
+
+  @layer base {
+    * {
+      @apply border-border;
+    }
+    body {
+      @apply bg-background text-foreground;
+    }
+  }
