@@ -355,7 +355,7 @@ export const WorklogEditor = ({
             onKeyDown={(e) => {
               //console.log("keyup", e.key);
               // detect ctrl + space
-              if (e.ctrlKey && e.key === " ") {
+              if ((e.ctrlKey && e.key === " ") || e.key === "c") {
                 console.log("✅ pressed");
                 insertToContent("✅", bd_index);
               }
