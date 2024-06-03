@@ -297,7 +297,7 @@ export const WorklogsPage = () => {
             </ul>
             <p className="text-lg font-bold  my-4">Shortcuts</p>
             <ul className="list-disc font-mono text-sm tracking-widest">
-              <li className="">Ctrl+Spacebar === ✅</li>
+              <li className="">Ctrl+ (Spacebar or Ctrl+C ) === ✅</li>
               <li className="">Ctrl+S to save the logs manually</li>
               <li className="">Ctrl+R to Refresh the logs</li>
               <li className="">Type `-` to add bulletin</li>
