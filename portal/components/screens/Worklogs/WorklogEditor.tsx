@@ -121,6 +121,7 @@ export const WorklogEditor = ({
 
   const changeMarkData = (
     content: string,
+    bd_index: number,
     _markdownDat: WorkLogPoints,
     _fullpoints: WorkLogPoints[]
   ) => {
@@ -142,6 +143,7 @@ export const WorklogEditor = ({
       ...wl,
       works: new_md as any[],
     }));
+    markdownRefs.current[bd_index]?.current?.setMarkdown(new_content);
   };
   useDebouncedEffect(
     () => {
@@ -269,9 +271,9 @@ export const WorklogEditor = ({
             setWorkLog((wl) =>
               wl
                 ? {
-                    ...wl,
-                    title: e.target.value,
-                  }
+                  ...wl,
+                  title: e.target.value,
+                }
                 : null
             );
           }}
@@ -324,10 +326,10 @@ export const WorklogEditor = ({
                   loading
                     ? "uninit"
                     : workLog?.id +
-                      "-" +
-                      _markdownDat.link_id +
-                      "-" +
-                      workLog?.title
+                    "-" +
+                    _markdownDat.link_id +
+                    "-" +
+                    workLog?.title
                 }
                 markdown={
                   _markdownDat.content.trim().length != 0
@@ -335,13 +337,12 @@ export const WorklogEditor = ({
                     : MARKDOWN_PLACHELODER
                 }
                 className="flex-grow h-full"
-                contentEditableClassName={`mdx_ce ${
-                  _markdownDat.content.trim() == MARKDOWN_PLACHELODER.trim()
-                    ? " mdx_uninit "
-                    : ""
-                } leading-1 imp-p-0 grow w-full h-full`}
+                contentEditableClassName={`mdx_ce ${_markdownDat.content.trim() == MARKDOWN_PLACHELODER.trim()
+                  ? " mdx_uninit "
+                  : ""
+                  } leading-1 imp-p-0 grow w-full h-full`}
                 onChange={(content: any) => {
-                  changeMarkData(content, _markdownDat, markdownDatas);
+                  changeMarkData(content, bd_index, _markdownDat, markdownDatas);
                   //   debounceSaveWorkLogsMarkdownData(
                   //     content,
                   //     _markdownDat,s
