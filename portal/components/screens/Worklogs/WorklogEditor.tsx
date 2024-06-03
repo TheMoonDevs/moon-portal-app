@@ -218,7 +218,7 @@ export const WorklogEditor = ({
   };
 
   return (
-    <div className="flex flex-col md:max-w-[800px]">
+    <div className="flex flex-col md:max-w-[800px] min-h-screen">
       {!compactView && (
         <div id="header" className="flex flex-row justify-between">
           <Link
@@ -302,7 +302,7 @@ export const WorklogEditor = ({
             {_markdownDat.title} - {getStatsOfContent(_markdownDat.content)}
           </p>
           <div
-            className=" flex flex-row items-stretch px-4 mb-3"
+            className="relative flex flex-row items-stretch px-4 mb-3"
             onKeyUp={(e) => {
               //console.log("keyup", e.key);
               // detect ctrl + space
@@ -321,17 +321,25 @@ export const WorklogEditor = ({
                     : null
                 }
                 key={
-                  _markdownDat.content.trim().length <= 1 || loading
+                  loading
                     ? "uninit"
-                    : _markdownDat.link_id + "-" + workLog?.title
+                    : workLog?.id +
+                      "-" +
+                      _markdownDat.link_id +
+                      "-" +
+                      workLog?.title
                 }
                 markdown={
-                  _markdownDat.content.length > 1
+                  _markdownDat.content.trim().length != 0
                     ? _markdownDat.content
                     : MARKDOWN_PLACHELODER
                 }
                 className="flex-grow h-full"
-                contentEditableClassName="mdx_ce leading-1 imp-p-0 grow w-full h-full"
+                contentEditableClassName={`mdx_ce ${
+                  _markdownDat.content.trim() == MARKDOWN_PLACHELODER.trim()
+                    ? " mdx_uninit "
+                    : ""
+                } leading-1 imp-p-0 grow w-full h-full`}
                 onChange={(content: any) => {
                   changeMarkData(content, _markdownDat, markdownDatas);
                   //   debounceSaveWorkLogsMarkdownData(
@@ -342,6 +350,11 @@ export const WorklogEditor = ({
                 }}
               />
             )}
+            {(_markdownDat.content.trim().length <= 0 ||
+              _markdownDat.content.trim() === MARKDOWN_PLACHELODER.trim()) &&
+              !loading && (
+                <span className="mdx_placeholder">Jotdown your thougts...</span>
+              )}
             {/* <p>{_markdownDat.content}</p> */}
           </div>
         </div>
