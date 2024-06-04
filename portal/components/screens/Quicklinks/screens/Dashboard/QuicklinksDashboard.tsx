@@ -11,8 +11,8 @@ import { useUser } from "@/utils/hooks/useUser";
 import useAsyncState from "@/utils/hooks/useAsyncState";
 import LinkList from "../../LinkList/LinkList";
 import { useAppSelector } from "@/utils/redux/store";
-import QuicklinkHeader from "../../global/QuicklinkHeader";
 import { Skeleton } from "@mui/material";
+import QuicklinkHeaderWrapper from "../../global/QuicklinkHeaderWrapper";
 
 export const QuicklinksDashboard = () => {
   const dispatch = useDispatch();
@@ -47,7 +47,7 @@ export const QuicklinksDashboard = () => {
 
   return (
     <>
-      <QuicklinkHeader>
+      <QuicklinkHeaderWrapper>
         <div>
           {user ? (
             <h1 className="text-3xl pb-2">
@@ -60,7 +60,7 @@ export const QuicklinksDashboard = () => {
             Quicklinks is the fastest way to work collaboratively
           </span>
         </div>
-      </QuicklinkHeader>
+      </QuicklinkHeaderWrapper>
       <div className="mt-10 w-full">
         <TopUsedLink>
           <LinkList
