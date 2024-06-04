@@ -12,6 +12,7 @@ import {
   setTotalEarned,
 } from "@/utils/redux/balances/balances.slice";
 import { useAuthSession } from "@/utils/hooks/useAuthSession";
+import { Address } from "viem";
 
 interface HeaderProps {
   children?: React.ReactNode;
@@ -23,7 +24,7 @@ export const Header = ({ children, className }: HeaderProps) => {
   const dispatch = useAppDispatch();
 
   const tokenData = useReadContract({
-    address: TOKEN_INFO.contractAddress,
+    address: TOKEN_INFO.contractAddress as Address,
     abi: TMDToken.abi,
   });
 
