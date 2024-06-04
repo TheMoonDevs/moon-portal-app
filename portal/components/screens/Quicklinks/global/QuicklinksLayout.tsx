@@ -1,8 +1,6 @@
 "use client";
 
-import QuicklinksHeader from "@/components/screens/Quicklinks/global/QuicklinkHeader";
 import QuicklinksSidebar from "@/components/screens/Quicklinks/global/QuicklinksSidebar/QuicklinkSidebar";
-import { CreateLinkModal } from "../CreateLinkModal";
 import { useAppSelector } from "@/utils/redux/store";
 import { QuicklinksToast } from "../elements/QuicklinksToast";
 import {
@@ -16,7 +14,7 @@ import { ParentDirectory, Directory } from "@prisma/client";
 import { CreateLinkPopup } from "../CreateLinkPopup";
 
 // BAD PATTERN OF SLUG IS USED, WE CANT CHANGE IT BECAUSE IT IS USED IN THE MULTIPLE COMPONENTS
-const ROOT_DIRECTORIES: Directory[] = [
+const ROOT_DIRECTORIES: Omit<Directory, "timestamp">[] = [
   {
     id: "root-my-dashboard",
     title: "My Dashboard",
@@ -46,7 +44,7 @@ export const QuicklinksLayout = ({
 }: {
   children: React.ReactNode;
   response: {
-    departments: ParentDirectory[];
+    parentDirs: ParentDirectory[];
     directories: Directory[];
   };
 }) => {
@@ -54,7 +52,7 @@ export const QuicklinksLayout = ({
   const initialize = useRef(false);
 
   if (!initialize.current) {
-    store.dispatch(setParentDirsList(response.departments));
+    store.dispatch(setParentDirsList(response.parentDirs));
     store.dispatch(setDirectoryList(response.directories));
     store.dispatch(setRootDirList(ROOT_DIRECTORIES));
     initialize.current = true;
@@ -64,8 +62,6 @@ export const QuicklinksLayout = ({
     <main className="flex min-h-screen ">
       <QuicklinksSidebar />
       <div className="relative my-8 pr-8 pl-4 w-full">
-        <QuicklinksHeader />
-
         <div className="w-full relative h-screen mb-20">{children}</div>
         <CreateLinkPopup />
         <QuicklinksToast

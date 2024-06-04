@@ -11,6 +11,8 @@ import { useUser } from "@/utils/hooks/useUser";
 import useAsyncState from "@/utils/hooks/useAsyncState";
 import LinkList from "../../LinkList/LinkList";
 import { useAppSelector } from "@/utils/redux/store";
+import QuicklinkHeader from "../../global/QuicklinkHeader";
+import { Skeleton } from "@mui/material";
 
 export const QuicklinksDashboard = () => {
   const dispatch = useDispatch();
@@ -42,16 +44,33 @@ export const QuicklinksDashboard = () => {
 
     getTopUsedLinks();
   }, [dispatch, user?.id, setLoading]);
+
   return (
-    <div className="mt-10 w-full">
-      <TopUsedLink>
-        <LinkList
-          allQuicklinks={topUsedList}
-          withView="thumbnail"
-          isLoading={loading}
-        />
-      </TopUsedLink>
-      <FavoriteLink />
-    </div>
+    <>
+      <QuicklinkHeader>
+        <div>
+          {user ? (
+            <h1 className="text-3xl pb-2">
+              {user?.name?.split(" ")[0] || user?.username}&apos;s Dashboard
+            </h1>
+          ) : (
+            <Skeleton width="100%" height="3rem" animation="wave" />
+          )}
+          <span className="text-sm text-neutral-400 block">
+            Quicklinks is the fastest way to work collaboratively
+          </span>
+        </div>
+      </QuicklinkHeader>
+      <div className="mt-10 w-full">
+        <TopUsedLink>
+          <LinkList
+            allQuicklinks={topUsedList}
+            withView="thumbnail"
+            isLoading={loading}
+          />
+        </TopUsedLink>
+        <FavoriteLink />
+      </div>
+    </>
   );
 };

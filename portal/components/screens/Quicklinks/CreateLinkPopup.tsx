@@ -1,3 +1,4 @@
+import { isValidURL } from "@/utils/helpers/functions";
 import useClipboardURLDetection from "@/utils/hooks/useClipboardUrlDetection";
 import { useUser } from "@/utils/hooks/useUser";
 import {
@@ -7,23 +8,20 @@ import {
 import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
 import { Popover, Slide, Tooltip } from "@mui/material";
-import { ROOTTYPE } from "@prisma/client";
+import { ParentDirectory, ROOTTYPE } from "@prisma/client";
 import { usePathname, useSearchParams } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
 import { toast, Toaster } from "sonner";
 
 export const CreateLinkPopup = () => {
-  const { parentDirs, directories, isCreateLinkModalOpen } = useAppSelector(
-    (state) => state.quicklinks
-  );
+  const { parentDirs, directories, isCreateLinkModalOpen, activeDirectoryId } =
+    useAppSelector((state) => state.quicklinks);
   const dispatch = useAppDispatch();
   const [anchorEl, setAnchorEl] = useState<HTMLSpanElement | null>(null);
   const path = usePathname();
-  const searchParams = useSearchParams();
   const { user } = useUser();
 
-  const directoryId = searchParams?.get("id");
-  const [selectedDepartment, setSelectedDepartment] = useState({
+  const [selectedParentDir, setSelectedParentDir] = useState({
     id: "",
     title: "",
   });
@@ -34,15 +32,15 @@ export const CreateLinkPopup = () => {
 
   const { copiedURL, setCopiedURL } = useClipboardURLDetection();
   const getDirectoryPath = () => {
-    if (selectedDepartment.title) return selectedDepartment.title;
+    if (selectedParentDir.title) return selectedParentDir.title;
     const pathArray = path?.split("/");
     return pathArray?.filter((item) => item !== "quicklinks")?.join("/");
   };
 
-  const departmentId = useMemo(() => {
+  const rootParentDirId = useMemo(() => {
     const getDepartmentId = (directoryId: string | null): string => {
-      let departmentId = "";
-      if (!directoryId) return departmentId;
+      let rootParentDirId = "";
+      if (!directoryId) return rootParentDirId;
       const thisDirectory =
         parentDirs?.find((_dir) => _dir.id === directoryId) ||
         directories?.find((_dir) => _dir.id === directoryId);
@@ -50,15 +48,18 @@ export const CreateLinkPopup = () => {
       if (thisDirectory && "parentDirId" in thisDirectory) {
         return getDepartmentId(thisDirectory?.parentDirId);
       } else {
-        departmentId =
-          thisDirectory?.type === ROOTTYPE.DEPARTMENT
+        rootParentDirId =
+          thisDirectory?.type === ROOTTYPE.DEPARTMENT ||
+          thisDirectory?.type === ROOTTYPE.COMMON_RESOURCES
             ? thisDirectory?.id
-            : selectedDepartment.id;
-        return departmentId;
+            : selectedParentDir.id;
+        return rootParentDirId;
       }
     };
-    return directoryId ? getDepartmentId(directoryId) : selectedDepartment.id;
-  }, [directoryId, selectedDepartment, parentDirs, directories]);
+    return activeDirectoryId
+      ? getDepartmentId(activeDirectoryId)
+      : selectedParentDir.id;
+  }, [activeDirectoryId, selectedParentDir, parentDirs, directories]);
 
   const handleSave = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -68,7 +69,7 @@ export const CreateLinkPopup = () => {
         throw new Error("User not found");
       }
 
-      if (path === "/quicklinks/dashboard" && selectedDepartment.id === "") {
+      if (path === "/quicklinks/dashboard" && selectedParentDir.id === "") {
         throw new Error("Please select a directory to save the link!");
       }
 
@@ -85,10 +86,10 @@ export const CreateLinkPopup = () => {
         logo: metadata.image,
         url: metadata.url,
         clickCount: 0,
-        directoryId: directoryId,
-        departmentId:
-          departmentId ||
-          (selectedDepartment.id !== "" && selectedDepartment.id) ||
+        directoryId: activeDirectoryId,
+        rootParentDirId:
+          rootParentDirId ||
+          (selectedParentDir.id !== "" && selectedParentDir.id) ||
           null,
         authorId: user?.id,
       };
@@ -118,8 +119,21 @@ export const CreateLinkPopup = () => {
       });
     } catch (error) {
       console.log(error);
+      setFetchingMetadata(false);
       toast.error(`${(error as Error).message}`);
     }
+  };
+
+  const handleParentDirSelection = (parentDir: ParentDirectory) => {
+    setAnchorEl(null);
+    if (parentDir.id === selectedParentDir.id) {
+      setSelectedParentDir({ id: "", title: "" });
+      return;
+    }
+    setSelectedParentDir({
+      id: parentDir.id,
+      title: parentDir.title,
+    });
   };
 
   return (
@@ -129,7 +143,7 @@ export const CreateLinkPopup = () => {
       mountOnEnter
       unmountOnExit
     >
-      <div className={`fixed bottom-10 right-10 w-fit shadow-md bg-white p-6`}>
+      <div className={`fixed bottom-8 right-8 w-fit shadow-md bg-white p-6`}>
         <span
           onClick={() => {
             dispatch(setIsCreateLinkModalOpen(false));
@@ -154,7 +168,7 @@ export const CreateLinkPopup = () => {
             <span className="text-gray-500 text-sm">
               We have detected a copied link.{" "}
               {path !== "/quicklinks/dashboard" ||
-              selectedDepartment.id !== "" ? (
+              selectedParentDir.id !== "" ? (
                 <>
                   Wanna save it to <br />
                   <code className="bg-neutral-100 text-gray-500 p-1 rounded-md">
@@ -196,33 +210,23 @@ export const CreateLinkPopup = () => {
                 }}
                 closeAfterTransition
                 classes={{
-                  paper: "bg-white mb-4 py-2 rounded-md",
+                  paper: "bg-white mb-4 py-2 rounded-md w-[200px] !shadow-md",
                 }}
               >
                 <ul className=" flex flex-col gap-2  mb-2">
                   {parentDirs.map((parentDir) => (
                     <div
-                      onClick={() => {
-                        setAnchorEl(null);
-                        if (parentDir.id === selectedDepartment.id) {
-                          setSelectedDepartment({ id: "", title: "" });
-                          return;
-                        }
-                        setSelectedDepartment({
-                          id: parentDir.id,
-                          title: parentDir.title,
-                        });
-                      }}
+                      onClick={(e) => handleParentDirSelection(parentDir)}
                       key={parentDir.id}
-                      className="flex items-center gap-4 hover:bg-neutral-100 p-2 cursor-pointer"
+                      className="flex items-center justify-between hover:bg-neutral-100 p-2 cursor-pointer"
                     >
                       <li className=" text-gray-500 text-sm">
                         {parentDir.title}
                       </li>
-                      {selectedDepartment.id === parentDir.id && (
+                      {selectedParentDir.id === parentDir.id && (
                         <span className="material-icons-outlined text-green-500 !text-sm">
                           {" "}
-                          check
+                          adjust
                         </span>
                       )}
                     </div>
