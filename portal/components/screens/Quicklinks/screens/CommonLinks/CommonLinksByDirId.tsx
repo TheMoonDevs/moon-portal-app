@@ -2,10 +2,10 @@
 
 import store, { useAppSelector } from "@/utils/redux/store";
 import QuicklinkHeader from "../../global/QuicklinkHeader";
-import { useQuickLinkDirs } from "../../hooks/useQuickLinksDirs";
 import { SubDirectoryLinks } from "../ParentDirectory/SubDirectoryLinks";
-import { useRef } from "react";
+import { useQuickLinkDirs } from "../../hooks/useQuickLinksDirs";
 import { setActiveDirectoryId } from "@/utils/redux/quicklinks/quicklinks.slice";
+import { useRef } from "react";
 
 // import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
 // import { useEffect } from "react";
@@ -17,7 +17,7 @@ import { setActiveDirectoryId } from "@/utils/redux/quicklinks/quicklinks.slice"
 // import { useSearchParams } from "next/navigation";
 // import { useQuickLinkDirs } from "../../hooks/useQuickLinksDirs";
 
-// export const DepartmentLinksByDirId = ({
+// export const CommonLinksByDirId = ({
 //   directorySlug,
 //   departmentSlug,
 // }: {
@@ -58,19 +58,19 @@ import { setActiveDirectoryId } from "@/utils/redux/quicklinks/quicklinks.slice"
 //   );
 // };
 
-export const DepartmentLinksByDirId = ({
+export const CommonLinksByDirId = ({
   directoryId,
 }: {
-  directoryId: string;
+  directoryId?: string;
 }) => {
+  const { activeDirectoryId } = useAppSelector((state) => state.quicklinks);
+  const { parentDirecotry } = useQuickLinkDirs(activeDirectoryId);
   const initialize = useRef(false);
 
   if (!initialize.current) {
     store.dispatch(setActiveDirectoryId(directoryId));
     initialize.current = true;
   }
-  const { activeDirectoryId } = useAppSelector((state) => state.quicklinks);
-  const { parentDirecotry } = useQuickLinkDirs(activeDirectoryId);
   return (
     <div>
       <QuicklinkHeader>
