@@ -51,7 +51,7 @@ export const ParentDirectoryLinks = () => {
   }, [activeDirectoryId, dispatch, setLoading]);
 
   return (
-    <div>
+    <div className="mt-8">
       <TopUsedLink title={`Top Used in ${thisDirectory?.title}`}>
         <LinkList
           allQuicklinks={topUsedList}

@@ -7,7 +7,6 @@ import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import { setAllQuicklinks } from "@/utils/redux/quicklinks/quicklinks.slice";
 import useAsyncState from "@/utils/hooks/useAsyncState";
 import { LinkFiltersHeader } from "../../LinkList/LinkFiltersHeader";
-import { useSearchParams } from "next/navigation";
 import { useQuickLinkDirs } from "../../hooks/useQuickLinksDirs";
 
 export const SubDirectoryLinks = () => {
@@ -39,7 +38,7 @@ export const SubDirectoryLinks = () => {
     getData();
   }, [activeDirectoryId, dispatch, setLoading]);
   return (
-    <div className="flex flex-col w-full">
+    <div className="flex flex-col w-full mt-8">
       <LinkFiltersHeader title={thisDirectory?.title} />
       <LinkList allQuicklinks={allQuicklinks} isLoading={loading} />
     </div>

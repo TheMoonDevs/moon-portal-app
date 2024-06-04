@@ -94,7 +94,12 @@ export const CommonQuicklinks = ({
   return (
     <div>
       <QuicklinkHeaderWrapper>
-        <h1 className="text-3xl pb-2">{thisDirectory?.title}</h1>
+        <h1 className="text-3xl font-bold flex items-center gap-4">
+          <span className="material-symbols-outlined border border-neutral-200 rounded-full p-2">
+            stack
+          </span>{" "}
+          <span>{thisDirectory?.title}</span>
+        </h1>
       </QuicklinkHeaderWrapper>
       <ParentDirectoryLinks />
     </div>
