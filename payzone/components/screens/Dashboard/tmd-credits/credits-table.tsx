@@ -7,6 +7,8 @@ import {
 } from "@/utils/helpers/prettyprints";
 import { useAuthSession } from "@/utils/hooks/useAuthSession";
 import { useAppSelector } from "@/utils/redux/store";
+import Link from "next/link";
+import { zeroAddress } from "viem";
 
 const CreditsTable = ({ transactions }: { transactions: any[] }) => {
   const { user } = useAuthSession();
@@ -29,9 +31,14 @@ const CreditsTable = ({ transactions }: { transactions: any[] }) => {
     <section className="w-2/3 mx-4 bg-whiteSmoke">
       <div className="flex flex-col h-fit p-4 pb-6 border-b border-midGrey">
         <span className="font-semibold text-xl">
-          {userWalletAddress || "Wallet Address"}
+          TMD CREDITS - Inbound/Outbound
         </span>
-        <span className="text-midGrey">{transactions.length} transactions</span>
+        <div className="flex items-center gap-2">
+          <span className="text-sm">{prettyEthAddress(userWalletAddress)}</span>
+          <span className="text-midGrey">
+            {transactions.length} transactions
+          </span>
+        </div>
       </div>
       <div className="w-full h-[70vh] overflow-y-scroll">
         <table className="w-full">
@@ -66,12 +73,21 @@ const CreditsTable = ({ transactions }: { transactions: any[] }) => {
                 <td className="text-sm p-2">
                   {transaction.to !== userWalletAddress?.toLowerCase()
                     ? prettyEthAddress(transaction.to)
+                    : transaction.from === zeroAddress
+                    ? "TheMoonDevs 0x"
                     : prettyEthAddress(transaction.from)}
                 </td>
                 <td className="text-sm p-2">
                   {prettyPrintDateAndTime(transaction.timeStamp)}
                 </td>
-                <td className="text-sm p-2">{prettyHash(transaction.hash)}</td>
+                <td className="text-sm p-2 hover:underline">
+                  <Link
+                    href={`${TOKEN_INFO.chain?.blockExplorers?.default?.url}/tx/${transaction.hash}`}
+                    target={"_blank"}
+                  >
+                    {prettyHash(transaction.hash)}
+                  </Link>
+                </td>
               </tr>
             ))}
           </tbody>

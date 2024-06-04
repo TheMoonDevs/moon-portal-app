@@ -31,8 +31,9 @@ export const PaymentMethod = () => {
     setUpdating(true);
     const payData = {
       ...(user?.payData as object),
+      payMethod: paymentMethod,
       upiId: paymentMethod === "UPI-ID" ? upiId : (user?.payData as any)?.upiId,
-      walletAddress:
+      stipendWalletAddress:
         paymentMethod === "Crypto"
           ? walletAddress
           : (user?.payData as any)?.walletAddress,
