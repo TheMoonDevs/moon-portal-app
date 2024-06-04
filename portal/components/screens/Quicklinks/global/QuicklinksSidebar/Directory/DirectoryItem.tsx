@@ -3,7 +3,6 @@ import Link from "next/link";
 import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import { setActiveDirectoryId } from "@/utils/redux/quicklinks/quicklinks.slice";
 import { Directory } from "@prisma/client";
-import { usePathname } from "next/navigation";
 
 interface IDirectoryItemProps {
   directory: Directory | any;
@@ -47,21 +46,28 @@ export const DirectoryItem = ({
   handleDeleteDirectory,
 }: IDirectoryItemProps) => {
   const dispatch = useAppDispatch();
-  const { directories, parentDirs, rootDirectories } = useAppSelector(
-    (state) => state.quicklinks
-  );
+  const { directories, parentDirs, rootDirectories, activeDirectoryId } =
+    useAppSelector((state) => state.quicklinks);
   const [newDirectoryName, setNewDirectoryName] = useState<string>("");
 
   let path: string;
 
-  path = `/quicklinks${rootSlug}/${directory.slug}?id=${directory.id}`;
-  const onlyPath = path.split("?")[0];
+  const isDepartment =
+    rootSlug ===
+    rootDirectories.find((rootDir) => rootDir.id === "DEPARTMENT")?.slug;
+  const isCommonResources =
+    rootSlug ===
+    rootDirectories.find((rootDir) => rootDir.id === "COMMON_RESOURCES")?.slug;
 
-  const isDepartmental =
-    rootSlug === rootDirectories.find((dir) => dir.id === "DEPARTMENT")?.slug;
+  path = `/quicklinks${rootSlug}/${directory.slug}${
+    directory.parentDirId
+      ? `-${new Date(directory.timestamp).getTime().toString().slice(-5)}`
+      : ""
+  }`;
+  // const onlyPath = path.split("?")[0];
 
   const isExpanded = isDirectoryExpanded(directory.id);
-  const isCurrentPage = onlyPath === pathName;
+  const isCurrentPage = activeDirectoryId === directory.id;
 
   //console.log("isCurrentPage:", isCurrentPage, pathName, onlyPath);
 
@@ -74,14 +80,14 @@ export const DirectoryItem = ({
         >
           <div
             onClick={() => {
-              dispatch(setActiveDirectoryId(path));
+              // dispatch(setActiveDirectoryId(directory.id));
               if (editable.id !== directory.id)
                 setEditable({ id: "", isEditable: false });
             }}
           >
             <Link
               href={path}
-              className={`${pathName === path ? "font-extrabold" : ""} `}
+              className={`${isCurrentPage ? "font-extrabold" : ""} `}
             >
               {editable.isEditable === true &&
               editable.id === directory.id &&
@@ -164,7 +170,9 @@ export const DirectoryItem = ({
                   isDirectoryExpanded={isDirectoryExpanded}
                   pathName={pathName}
                   rootSlug={
-                    isDepartmental ? `${rootSlug}/${directory.slug}` : rootSlug
+                    isCommonResources || isDepartment
+                      ? `${rootSlug}/${directory.slug}`
+                      : rootSlug
                   }
                   editable={editable}
                   // newDirectoryName={newDirectoryName}

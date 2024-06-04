@@ -79,7 +79,7 @@ export const DirectoryTree = ({
     });
     let apiPath = "/api/quicklinks/directory";
     if (!parentId) {
-      apiPath = `/api/quicklinks/department`;
+      apiPath = `/api/quicklinks/parent-directory`;
     }
     const updatedDirectory = {
       ...directory,
@@ -156,7 +156,7 @@ export const DirectoryTree = ({
   const handleDeleteDirectory = async (id: string, parentId: string | null) => {
     let apiPath = "/api/quicklinks/directory";
     if (!parentId) {
-      apiPath = `/api/quicklinks/department`;
+      apiPath = `/api/quicklinks/parent-directory`;
     }
     try {
       const response = await QuicklinksSdk.deleteData(`${apiPath}?id=${id}`);
