@@ -1,5 +1,4 @@
 "use client";
-
 import store, { useAppSelector } from "@/utils/redux/store";
 import QuicklinkHeader from "../../global/QuicklinkHeader";
 import { ParentDirectoryLinks } from "../ParentDirectory/ParentDirectoryLinks";
@@ -21,7 +20,7 @@ import { setActiveDirectoryId } from "@/utils/redux/quicklinks/quicklinks.slice"
 // import { LinkFiltersHeader } from "../../LinkList/LinkFiltersHeader";
 // import { useQuickLinkDirs } from "../../hooks/useQuickLinksDirs";
 
-// export const DepartmentLinks = ({
+// export const CommonQuicklinks = ({
 //   departmentSlug,
 // }: {
 //   departmentSlug: string;
@@ -46,6 +45,7 @@ import { setActiveDirectoryId } from "@/utils/redux/quicklinks/quicklinks.slice"
 //       );
 
 //       let quicklinks: Link[] = reponse.data.links;
+//       console.log(quicklinks);
 //       dispatch(setAllQuicklinks(quicklinks));
 
 //       const sortedQuicklinks = [...quicklinks]
@@ -78,7 +78,7 @@ import { setActiveDirectoryId } from "@/utils/redux/quicklinks/quicklinks.slice"
 //   );
 // };
 
-export const DepartmentLinks = ({
+export const CommonQuicklinks = ({
   rootParentDirId,
 }: {
   rootParentDirId: string;
@@ -90,7 +90,6 @@ export const DepartmentLinks = ({
     initialize.current = true;
   }
   const { activeDirectoryId } = useAppSelector((state) => state.quicklinks);
-  console.log(activeDirectoryId);
   const { thisDirectory } = useQuickLinkDirs(activeDirectoryId);
   return (
     <div>
