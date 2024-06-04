@@ -235,7 +235,7 @@ export const CreateLinkPopup = () => {
               </Popover>
             </div>
             <input
-              className="border-b placeholder:text-sm  focus:outline-none focus:border-b-gray-600 transition-colors duration-500 w-full"
+              className="border-b bg-white placeholder:text-sm  focus:outline-none focus:border-b-gray-600 transition-colors duration-500 w-full"
               type="url"
               name="link"
               id="link"
