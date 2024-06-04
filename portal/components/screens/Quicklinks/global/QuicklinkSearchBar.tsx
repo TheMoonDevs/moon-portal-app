@@ -71,8 +71,9 @@ const QuicklinkSearchBar: React.FC = () => {
           type="text"
           id="search"
           value={query}
-          onFocus={() => setShowResults(true)}
           onChange={(e) => {
+            if (!showResults) setShowResults(true);
+            if (e.target.value.length === 0) setShowResults(false);
             setQuery(e.target.value);
             debouncedHandleChange(e);
           }}
