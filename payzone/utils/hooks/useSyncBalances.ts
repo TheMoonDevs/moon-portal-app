@@ -1,0 +1,42 @@
+import useReadContract from "@/utils/hooks/useReadContract";
+import { useAppDispatch } from "../redux/store";
+import { useAuthSession } from "./useAuthSession";
+import { TOKEN_INFO } from "../constants/appInfo";
+import { useEffect } from "react";
+import { Address } from "viem";
+import TMDTokenABI from "@/utils/constants/erc20.json";
+import { setBalance, setTotalEarned } from "../redux/balances/balances.slice";
+import { formatNumberToText } from "../helpers/prettyprints";
+
+export const useSyncBalances = (init?: boolean) => {
+  const { user } = useAuthSession();
+  const dispatch = useAppDispatch();
+
+  const tokenData = useReadContract({
+    address: TOKEN_INFO.contractAddress as Address,
+    abi: TMDTokenABI,
+    chain: TOKEN_INFO.chainId,
+  });
+
+  useEffect(() => {
+    if (!init) return;
+    const formattedBalance = Number(tokenData?.balance) / 10 ** 18;
+    dispatch(setBalance(formattedBalance));
+  }, [tokenData, dispatch, init]);
+
+  useEffect(() => {
+    const formattedTotalEarned =
+      formatNumberToText(
+        "0"
+        // payTransactions?.filter((payTransaction: any)=> payTransaction.txStatus !== "PENDING").reduce(
+        //   (total: number, transaction: any) => total + transaction.amount,
+        //   0
+        // )
+      ) || "0";
+    dispatch(setTotalEarned(formattedTotalEarned));
+  }, [dispatch]);
+
+  return {
+    tokenData,
+  };
+};
