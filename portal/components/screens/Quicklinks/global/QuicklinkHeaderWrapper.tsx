@@ -9,7 +9,7 @@ import QuicklinkSearchBar from "./QuicklinkSearchBar";
 //   department = "/quicklinks/department",
 //   commonResources = "/quicklinks/common-resources",
 // }
-export default function QuicklinkHeader({
+export default function QuicklinkHeaderWrapper({
   children,
 }: {
   children?: React.ReactNode;

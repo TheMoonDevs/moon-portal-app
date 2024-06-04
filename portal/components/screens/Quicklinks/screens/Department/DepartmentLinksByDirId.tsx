@@ -1,11 +1,11 @@
 "use client";
 
 import store, { useAppSelector } from "@/utils/redux/store";
-import QuicklinkHeader from "../../global/QuicklinkHeader";
 import { useQuickLinkDirs } from "../../hooks/useQuickLinksDirs";
 import { SubDirectoryLinks } from "../ParentDirectory/SubDirectoryLinks";
 import { useRef } from "react";
 import { setActiveDirectoryId } from "@/utils/redux/quicklinks/quicklinks.slice";
+import QuicklinkHeaderWrapper from "../../global/QuicklinkHeaderWrapper";
 
 // import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
 // import { useEffect } from "react";
@@ -73,9 +73,9 @@ export const DepartmentLinksByDirId = ({
   const { parentDirecotry } = useQuickLinkDirs(activeDirectoryId);
   return (
     <div>
-      <QuicklinkHeader>
+      <QuicklinkHeaderWrapper>
         <h1 className="text-3xl pb-2">{parentDirecotry?.title}</h1>
-      </QuicklinkHeader>
+      </QuicklinkHeaderWrapper>
       <SubDirectoryLinks />
     </div>
   );
