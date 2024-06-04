@@ -1,9 +1,16 @@
 import { prisma } from "@/prisma/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const id = request.nextUrl.searchParams.get("id");
+  const slug = request.nextUrl.searchParams.get("slug");
   try {
-    const directoryList = await prisma.directory.findMany({});
+    const directoryList = await prisma.directory.findMany({
+      where: {
+        ...(id && { id: id }),
+        ...(slug && { slug: slug }),
+      },
+    });
     let json_response = {
       status: "success",
       data: {

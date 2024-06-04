@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 export async function GET(request: NextRequest) {
   const directoryId = request.nextUrl.searchParams.get("directoryId");
   const linkId = request.nextUrl.searchParams.get("linkId");
-  const departmentId = request.nextUrl.searchParams.get("departmentId");
+  const rootParentDirId = request.nextUrl.searchParams.get("rootParentDirId");
   const searchQuery = request.nextUrl.searchParams.get("searchQuery");
 
   try {
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
         }),
         ...(directoryId && { directoryId: directoryId }),
         ...(linkId && { id: linkId }),
-        ...(departmentId && { departmentId: departmentId }),
+        ...(rootParentDirId && { rootParentDirId: rootParentDirId }),
       },
       include: {
         author: {
