@@ -19,12 +19,16 @@ export default function QuicklinkHeaderWrapper({
   return (
     <header className="flex justify-between items-center">
       {children}
-      <div className="flex gap-4">
+      <div className="flex items-end gap-6">
         <QuicklinkSearchBar />
         <Button
-          startIcon={<span className="material-icons">add</span>}
+          startIcon={
+            <span className="material-icons !font-thin text-neutral-100">
+              add
+            </span>
+          }
           variant="contained"
-          className="!bg-zinc-900 !text-white"
+          className="!bg-zinc-900 !rounded-lg !text-base !capitalize !shadow-none hover:!bg-neutral-700 !font-normal !text-neutral-100 !tracking-wider !py-[0.6rem]"
           onClick={() => dispatch(setIsCreateLinkModalOpen(true))}
         >
           Quicklink

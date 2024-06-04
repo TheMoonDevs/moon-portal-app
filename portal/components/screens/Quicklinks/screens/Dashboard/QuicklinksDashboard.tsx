@@ -48,17 +48,27 @@ export const QuicklinksDashboard = () => {
   return (
     <>
       <QuicklinkHeaderWrapper>
-        <div>
+        <div className="w-fit">
           {user ? (
-            <h1 className="text-3xl pb-2">
-              {user?.name?.split(" ")[0] || user?.username}&apos;s Dashboard
-            </h1>
+            <div className="flex items-center gap-4">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={user?.avatar || ""}
+                alt={user?.name || ""}
+                className="w-14 h-14 rounded-full border-2 border-neutral-200"
+              />
+              <div>
+                <h1 className="text-xl font-bold ">
+                  Hello, {user?.name?.split(" ")[0] || user?.username}
+                </h1>
+                <span className="text-sm text-neutral-400 block">
+                  Quicklinks is the fastest way to work collaboratively
+                </span>
+              </div>
+            </div>
           ) : (
-            <Skeleton width="100%" height="3rem" animation="wave" />
+            <Skeleton width="30rem" height="3rem" animation="wave" />
           )}
-          <span className="text-sm text-neutral-400 block">
-            Quicklinks is the fastest way to work collaboratively
-          </span>
         </div>
       </QuicklinkHeaderWrapper>
       <div className="mt-10 w-full">

@@ -34,7 +34,7 @@ export default function QuicklinkSidebar() {
   }, [currentDirectory]);
 
   return (
-    <div className="w-96 h-[100vh]  top-0">
+    <div className="w-[350px] h-[100vh]  top-0">
       <aside className="fixed w-inherit h-[100vh] top-0 overflow-auto flex flex-col border-r-2">
         <div className="flex flex-row items-center gap-2 p-6">
           <Image

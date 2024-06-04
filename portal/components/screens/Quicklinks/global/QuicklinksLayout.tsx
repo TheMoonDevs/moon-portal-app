@@ -61,7 +61,7 @@ export const QuicklinksLayout = ({
   return (
     <main className="flex min-h-screen ">
       <QuicklinksSidebar />
-      <div className="relative my-8 pr-8 pl-4 w-full">
+      <div className="relative my-8 pr-8 pl-2 w-full">
         <div className="w-full relative h-screen mb-20">{children}</div>
         <CreateLinkPopup />
         <QuicklinksToast
