@@ -1,10 +1,11 @@
-import { DepartmentLinksByDirId } from "@/components/screens/Quicklinks/screens/Department/DepartmentLinksByDirId";
-import { SubDirectoryLinks } from "@/components/screens/Quicklinks/screens/ParentDirectory/SubDirectoryLinks";
+import { CommonLinksByDirId } from "@/components/screens/Quicklinks/screens/CommonLinks/CommonLinksByDirId";
 import { APP_BASE_URL } from "@/utils/constants/appInfo";
 import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
 import { Directory } from "@prisma/client";
+
 export async function slugToIdConversion({ slug }: { slug: string }) {
   const slugString = slug.split("-")[0];
+  console.log(slugString);
   const response = await QuicklinksSdk.getData(
     `${APP_BASE_URL}/api/quicklinks/directory?slug=${slugString}`
   );
@@ -24,12 +25,7 @@ export default async function Home({
   params: { directoryId: string };
 }) {
   const directoryId = await slugToIdConversion({ slug: params.directoryId });
-
-  return (
-    <DepartmentLinksByDirId
-      directoryId={directoryId}
-      // directorySlug={directorySlug}
-      // departmentSlug={departmentSlug}
-    />
-  );
+  const directorySlug = params.directoryId;
+  // untitled-78976
+  return <CommonLinksByDirId directoryId={directoryId} />;
 }
