@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "deploy-testnet": "npx hardhat run --network testnet scripts/deploy.ts",
-    "deploy_base_sepolia": "npx hardhat run --network base_sepolia scripts/deploy.ts"
+    "deploy_base_sepolia": "npx hardhat run --network base_sepolia scripts/deploy.ts",
+    "verify_base_seploia": "npx hardhat verify --network base_sepolia"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^5.0.2",

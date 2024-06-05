@@ -12,7 +12,9 @@ export const useUserTransactions = () => {
 
   useEffect(() => {
     MyServerApi.getAll(SERVER_API_ENDPOINTS.getPayments)
-      .then((data) => {})
+      .then((data) => {
+        console.log("data:", data);
+      })
       .catch((error) => {
         console.error("Error:", error);
       });
