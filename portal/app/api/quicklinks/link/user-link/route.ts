@@ -16,7 +16,17 @@ export async function GET(request: NextRequest) {
         linkType: true,
         linkData: {
           include: {
-            author: true,
+            author: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                avatar: true,
+                vertical: true,
+                role: true,
+                userType: true,
+              },
+            },
           },
         },
         // topUsed: linkType === USERLINKTYPE.TOPUSED,

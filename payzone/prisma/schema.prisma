@@ -58,6 +58,15 @@ model UserReferrals {
   // referredBy              String        @db.ObjectId
 }
 
+model ConfigData {
+  id  String        @id @default(auto()) @map("_id") @db.ObjectId
+  configId  String  @unique
+  configType String  @default("")
+  configApp  String? @default("portal")
+  configData Json?
+  timestamp DateTime @updatedAt
+}
+
 enum REFERRALSTATUS {
   COLD
   DISCOVERY

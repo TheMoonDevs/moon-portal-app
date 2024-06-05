@@ -22,6 +22,7 @@ export const metadata: Metadata = {
   description: APP_INFO.description,
 };
 
+
 export default function RootLayout({
   children,
 }: Readonly<{
