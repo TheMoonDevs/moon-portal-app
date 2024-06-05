@@ -62,7 +62,7 @@ export const WorklogView = ({
       !_user
     )
       return;
-    console.log(`${workLog?.id}-${workLog?.date}`, `${id}${date}`);
+    // console.log(`${workLog?.id}-${workLog?.date}`, `${id}${date}`);
     //setMarkdownData(`testing`)
     let _id = id && id?.length > 5 ? id : null;
     if (_id) {
@@ -88,11 +88,11 @@ export const WorklogView = ({
         query = `?date=${date || dayjs().format("YYYY-MM-DD")}&userId=${
           _user?.id
         }`;
-      console.log(query);
+      // console.log(query);
       setLoading(true);
       PortalSdk.getData(`/api/user/worklogs${query}`, null)
         .then((data) => {
-          console.log(data);
+          // console.log(data);
           setWorkLog(
             data?.data?.workLogs?.[0] ||
               (logType === "privateLog"
