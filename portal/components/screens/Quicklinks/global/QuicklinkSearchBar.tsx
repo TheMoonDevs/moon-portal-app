@@ -67,7 +67,7 @@ const QuicklinkSearchBar: React.FC = () => {
         </div>
 
         <input
-          className="peer h-full w-full outline-none text-sm text-gray-700 pr-2 p-3 bg-white"
+          className="peer h-full w-full outline-none text-sm text-gray-700 pr-2 p-[0.65rem] bg-white"
           type="text"
           id="search"
           value={query}
@@ -87,12 +87,13 @@ const QuicklinkSearchBar: React.FC = () => {
         <input className="border-b border-b-gray-300 focus:border-b-gray-500  w-full outline-none transition-all bg-white"></input>
       </div> */}
       {showResults && (
-        <div className="absolute h-96 z-10 w-64 bg-white overflow-y-scroll overflow-x-hidden shadow-md px-4 mt-4">
+        <div className="absolute h-72 z-10 w-64 bg-white overflow-y-scroll shadow-lg px-4 pl-2 mt-4 rounded-b-lg  py-4 pt-2 overflow-x-hidden">
           {loading ? (
             <p>Loading...</p>
           ) : (
             query && (
               <LinkList
+                inSearchBar
                 allQuicklinks={results}
                 isLoading={loading}
                 withView="line"
