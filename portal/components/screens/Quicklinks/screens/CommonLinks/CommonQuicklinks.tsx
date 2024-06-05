@@ -1,5 +1,4 @@
 "use client";
-
 import store, { useAppSelector } from "@/utils/redux/store";
 import { ParentDirectoryLinks } from "../ParentDirectory/ParentDirectoryLinks";
 import { useQuickLinkDirs } from "../../hooks/useQuickLinksDirs";
@@ -21,7 +20,7 @@ import QuicklinkHeaderWrapper from "../../global/QuicklinkHeaderWrapper";
 // import { LinkFiltersHeader } from "../../LinkList/LinkFiltersHeader";
 // import { useQuickLinkDirs } from "../../hooks/useQuickLinksDirs";
 
-// export const DepartmentLinks = ({
+// export const CommonQuicklinks = ({
 //   departmentSlug,
 // }: {
 //   departmentSlug: string;
@@ -46,6 +45,7 @@ import QuicklinkHeaderWrapper from "../../global/QuicklinkHeaderWrapper";
 //       );
 
 //       let quicklinks: Link[] = reponse.data.links;
+//       console.log(quicklinks);
 //       dispatch(setAllQuicklinks(quicklinks));
 
 //       const sortedQuicklinks = [...quicklinks]
@@ -78,7 +78,7 @@ import QuicklinkHeaderWrapper from "../../global/QuicklinkHeaderWrapper";
 //   );
 // };
 
-export const DepartmentLinks = ({
+export const CommonQuicklinks = ({
   rootParentDirId,
 }: {
   rootParentDirId: string;
@@ -90,14 +90,13 @@ export const DepartmentLinks = ({
     initialize.current = true;
   }
   const { activeDirectoryId } = useAppSelector((state) => state.quicklinks);
-  // console.log(activeDirectoryId);
   const { thisDirectory } = useQuickLinkDirs(activeDirectoryId);
   return (
     <div>
       <QuicklinkHeaderWrapper>
         <h1 className="text-3xl font-bold flex items-center gap-4">
           <span className="material-symbols-outlined border border-neutral-200 rounded-full p-2">
-            groups
+            stack
           </span>{" "}
           <span>{thisDirectory?.title}</span>
         </h1>

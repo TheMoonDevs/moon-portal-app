@@ -1,4 +1,4 @@
-import { DepartmentLinks } from "@/components/screens/Quicklinks/screens/Department/DepartmentQuicklinks";
+import { CommonQuicklinks } from "@/components/screens/Quicklinks/screens/CommonLinks/CommonQuicklinks";
 import { APP_BASE_URL } from "@/utils/constants/appInfo";
 import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
 
@@ -13,19 +13,14 @@ async function slugToIdConversion(slug: string) {
   }
 }
 
-const Departments = async ({
+const CommonLinks = async ({
   params,
 }: {
   params: { departmentId: string };
 }) => {
   const departmentSlug = params.departmentId;
   const rootParentDirId = await slugToIdConversion(departmentSlug);
-  return (
-    <DepartmentLinks
-      rootParentDirId={rootParentDirId}
-      // departmentSlug={departmentSlug}
-    />
-  );
+  return <CommonQuicklinks rootParentDirId={rootParentDirId} />;
 };
 
-export default Departments;
+export default CommonLinks;
