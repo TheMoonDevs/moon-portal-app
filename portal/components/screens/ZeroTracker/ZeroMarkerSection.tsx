@@ -28,7 +28,7 @@ export const ZeroMarkerSection = ({
             {/* / 30 */}
           </p>
         </div>
-        <div
+        <button
           onClick={handleZeroMarkerButtonClick}
           className="flex flex-row items-center justify-between gap-1 p-4 rounded-[0.75em] overflow-hidden bg-blue-500 text-neutral-100"
         >
@@ -37,7 +37,7 @@ export const ZeroMarkerSection = ({
             ZERO MARKER
           </p>
           <span className="icon_size material-icons">add_circle_outline</span>
-        </div>
+        </button>
       </div>
     </>
   );

@@ -27,6 +27,7 @@ export const ZeroTrackerPage = () => {
   const [trackerMode, setTrackerMode] = useState<TrackerMode>("normal");
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isSavingZeroes, setIsSavingZeros] = useState<boolean>(false);
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [meetingDate, setMeetingDate] = useState<string>(
     dayjsLib.format("YYYY-MM-DD")
@@ -126,6 +127,7 @@ export const ZeroTrackerPage = () => {
   }, [user]);
 
   const updateDates = () => {
+    setIsSavingZeros(true);
     let _newTypeZeros = [...selectedDates];
     const _zeros = zeroRecord?.allZeros
       ? zeroRecord.allZeros?.filter((a_zero: any) => {
@@ -153,16 +155,18 @@ export const ZeroTrackerPage = () => {
       allZeros: _zeros,
     };
     //console.log("final zeros record", _zeroRecord);
-    setTrackerMode("normal");
     setSelectedDates([]);
     PortalSdk.putData(`/api/user/zeros`, { data: _zeroRecord })
-      .then(({ data }) => {
-        //console.log(data);
-        if (!data?.zeroRecords) return;
-        setZeroRecord(data.zeroRecords);
-      })
-      .catch((error) => {
-        console.error(error);
+    .then(({ data }) => {
+      //console.log(data);
+      if (!data?.zeroRecords) return;
+      setZeroRecord(data.zeroRecords);
+      setIsSavingZeros(false);
+      setTrackerMode("normal");
+    })
+    .catch((error) => {
+      console.error(error);
+      setIsSavingZeros(false);
       });
   };
 
@@ -379,6 +383,7 @@ export const ZeroTrackerPage = () => {
             selectedDates={selectedDates}
             setTrackerMode={setTrackerMode}
             updateDates={updateDates}
+            isSavingZeroes = {isSavingZeroes}
           />
         )}
 
