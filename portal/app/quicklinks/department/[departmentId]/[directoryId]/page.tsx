@@ -1,29 +1,32 @@
 import { DepartmentLinksByDirId } from "@/components/screens/Quicklinks/screens/Department/DepartmentLinksByDirId";
-import { SubDirectoryLinks } from "@/components/screens/Quicklinks/screens/ParentDirectory/SubDirectoryLinks";
 import { APP_BASE_URL } from "@/utils/constants/appInfo";
 import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
 import { Directory } from "@prisma/client";
-export async function slugToIdConversion({ slug }: { slug: string }) {
-  const slugString = slug.split("-")[0];
-  const response = await QuicklinksSdk.getData(
-    `${APP_BASE_URL}/api/quicklinks/directory?slug=${slugString}`
-  );
-
-  return response.data.directoryList.find((directory: Directory) => {
-    return (
-      directory.slug +
-        "-" +
-        new Date(directory.timestamp).getTime().toString().slice(-5) ===
-      slug
+async function slugToIdConversion(slug: string) {
+  try {
+    const slugString = slug.split("-")[0];
+    const response = await QuicklinksSdk.getData(
+      `${APP_BASE_URL}/api/quicklinks/directory?slug=${slugString}`
     );
-  })?.id;
+
+    return response.data.directoryList.find((directory: Directory) => {
+      return (
+        directory.slug +
+          "-" +
+          new Date(directory.timestamp).getTime().toString().slice(-5) ===
+        slug
+      );
+    })?.id;
+  } catch (error) {
+    console.log(error);
+  }
 }
 export default async function Home({
   params,
 }: {
   params: { directoryId: string };
 }) {
-  const directoryId = await slugToIdConversion({ slug: params.directoryId });
+  const directoryId = await slugToIdConversion(params.directoryId);
 
   return (
     <DepartmentLinksByDirId
