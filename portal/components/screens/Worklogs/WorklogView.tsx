@@ -69,7 +69,7 @@ export const WorklogView = ({
       setLoading(true);
       PortalSdk.getData(`/api/user/worklogs?id=${_id}`, null)
         .then((data) => {
-          console.log(data);
+          // console.log(data);
           setWorkLog(data?.data?.workLogs?.[0] || null);
           setLoading(false);
         })
