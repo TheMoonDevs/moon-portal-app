@@ -33,6 +33,7 @@ export const useSyncBalances = (init?: boolean) => {
         // payTransactions?.filter((payTransaction: any)=> payTransaction.txStatus !== "PENDING").reduce(
         //   (total: number, transaction: any) => total + transaction.amount,
         //   0
+        //
         // )
       ) || "0";
     dispatch(setTotalEarned(formattedTotalEarned));
