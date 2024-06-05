@@ -15,6 +15,7 @@ interface ChainApiInfo {
 
 export const API_KEYS = {
   BSCTestnet: process.env.NEXT_PUBLIC_BSCTESTNET_KEY || "",
+  BaseSepolia: process.env.NEXT_PUBLIC_BASESCAN_API_KEY || "",
 };
 
 export const chainAPIData = new Map<chainEnum, ChainApiInfo>();
@@ -26,6 +27,11 @@ chainAPIData.set(chainEnum.bscTestnet, {
   accountTxEndpoint: "?module=account&action=tokentx&page=1&sort=asc",
   apiKey: API_KEYS.BSCTestnet,
   baseURL: "https://api-testnet.bscscan.com/api",
+});
+chainAPIData.set(chainEnum.baseSepolia, {
+  accountTxEndpoint: "?module=account&action=tokentx&page=1&sort=asc",
+  apiKey: API_KEYS.BaseSepolia,
+  baseURL: "https://base-sepolia.blockscout.com/api",
 });
 
 export const ChainScanner = {

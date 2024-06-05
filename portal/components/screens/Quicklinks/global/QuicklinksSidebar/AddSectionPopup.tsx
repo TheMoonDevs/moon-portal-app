@@ -48,7 +48,7 @@ export const AddSectionPopup = ({
     try {
       setLoading(true);
       const data = await QuicklinksSdk.createData(
-        "/api/quicklinks/department",
+        "/api/quicklinks/parent-directory",
         {
           title: newDirectory?.title || "New Department",
           logo: "",
@@ -56,8 +56,8 @@ export const AddSectionPopup = ({
           type: newDirectory?.type || ROOTTYPE.DEPARTMENT,
         } as Omit<ParentDirectory, "id">
       );
-      dispatch(setNewParentDir(data?.data?.department));
-      console.log(data?.data?.department);
+      dispatch(setNewParentDir(data?.data?.parentDirs));
+      // console.log(data?.data?.parentDirs);
       setLoading(false);
       handleClose();
     } catch (error) {

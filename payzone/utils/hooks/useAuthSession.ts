@@ -139,6 +139,8 @@ export const useAuthSession = (initialize?: boolean) => {
               name: user.displayName,
             };
 
+            if (ref_user) return;
+
             //sign up new ref User
             const userData: UserData = (await MyServerApi.postData(
               data
@@ -151,11 +153,13 @@ export const useAuthSession = (initialize?: boolean) => {
             return;
           }
 
-          console.log("isPayzone APP");
+          console.log("isPayzone APP", _user);
           if (path === APP_ROUTES.home && _user) {
             router.push(APP_ROUTES.dashboard);
             return;
           }
+
+          if (_user) return;
           // path starts with home or dashboard
           const userData = (await MyServerApi.getUserData(
             user.email
@@ -163,13 +167,28 @@ export const useAuthSession = (initialize?: boolean) => {
           //console.log("userData", userData);
           if (userData.data.user) {
             dispatch(setUser(userData.data.user));
-            router.push(APP_ROUTES.dashboard);
-          } else router.push(APP_ROUTES.home);
+            if (!path.startsWith(APP_ROUTES.dashboardHome))
+              router.push(APP_ROUTES.dashboard);
+          } else {
+            // not signed in.
+            if (path.startsWith(APP_ROUTES.dashboardHome)) {
+              dispatch(setUser(null));
+              router.push(APP_ROUTES.home);
+              return;
+            }
+          }
         } catch (error) {
           console.error(error);
         }
       }
     };
+
+    localStorage.setItem(
+      "token",
+      process.env.NEXT_PUBLIC_PAYZONE_API_KEY
+        ? process.env.NEXT_PUBLIC_PAYZONE_API_KEY
+        : ""
+    );
 
     const unsubscribe = getFirebaseAuth().onAuthStateChanged(handleUser);
 

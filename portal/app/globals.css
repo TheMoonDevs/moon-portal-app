@@ -51,11 +51,13 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-.mdx_ce li:first-child:has(br)::before {
+.mdx_placeholder {
   font-size: small;
   content: "Jotdown your thougts...";
   opacity: 0.5;
   position: absolute;
+  top: 0.5em;
+  left: 3em;
   pointer-events: none;
   display: block; /* For Firefox */
 }
@@ -64,9 +66,13 @@ body {
   margin: 0.3em 0;
 }
 
-.mdx_ce p {
+.mdx_ce.mdx_uninit p:has(br) {
   display: none;
 }
+
+/* .mdx_ce.mdx_uninit p:only-child {
+  display: inline;
+} */
 
 .mdx_ce li:before {
   content: "•";
