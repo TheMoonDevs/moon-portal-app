@@ -183,6 +183,13 @@ export const useAuthSession = (initialize?: boolean) => {
       }
     };
 
+    localStorage.setItem(
+      "token",
+      process.env.NEXT_PUBLIC_PAYZONE_API_KEY
+        ? process.env.NEXT_PUBLIC_PAYZONE_API_KEY
+        : ""
+    );
+
     const unsubscribe = getFirebaseAuth().onAuthStateChanged(handleUser);
 
     return () => unsubscribe();
