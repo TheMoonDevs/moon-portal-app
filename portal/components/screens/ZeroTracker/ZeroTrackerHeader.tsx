@@ -21,7 +21,7 @@ export const ZeroTrackerHeader = ({
       </Link>
       <h1 className="uppercase tracking-[0.2em] font-mono text-xl">TRACKER</h1>
       <div className="ml-auto flex flex-row items-center justify-end gap-3 ">
-        <div
+        <button
           onClick={() =>
             setCurrentMonthDayJs((_monthjs) =>
               dayjs(_monthjs).subtract(1, "month")
@@ -32,7 +32,7 @@ export const ZeroTrackerHeader = ({
           <span className="icon_size material-symbols-outlined">
             chevron_left
           </span>
-        </div>
+        </button>
         <div className="text-xs flex flex-row gap-1 rounded-lg text-neutral-900 hover:text-neutral-700">
           <span className="text-md uppercase tracking-wide font-bold leading-none">
             {currentMonthDayjs.format("MMM")}
@@ -41,7 +41,7 @@ export const ZeroTrackerHeader = ({
             {currentMonthDayjs.format("YYYY")}
           </span>
         </div>
-        <div
+        <button
           onClick={() =>
             setCurrentMonthDayJs((_monthjs) => dayjs(_monthjs).add(1, "month"))
           }
@@ -50,7 +50,7 @@ export const ZeroTrackerHeader = ({
           <span className="icon_size material-symbols-outlined">
             chevron_right
           </span>
-        </div>
+        </button>
       </div>
     </div>
   );
