@@ -1,5 +1,5 @@
 import useReadContract from "@/utils/hooks/useReadContract";
-import { useAppDispatch } from "../redux/store";
+import { useAppDispatch, useAppSelector } from "../redux/store";
 import { useAuthSession } from "./useAuthSession";
 import { TOKEN_INFO } from "../constants/appInfo";
 import { useEffect } from "react";
@@ -8,9 +8,11 @@ import TMDTokenABI from "@/utils/constants/erc20.json";
 import { setBalance, setTotalEarned } from "../redux/balances/balances.slice";
 import { formatNumberToText } from "../helpers/prettyprints";
 
+// DO NOT PASS INIT true more than once in the entire repo.
 export const useSyncBalances = (init?: boolean) => {
   const { user } = useAuthSession();
   const dispatch = useAppDispatch();
+  const { exchange } = useAppSelector((state) => state.balances);
 
   const tokenData = useReadContract({
     address: TOKEN_INFO.contractAddress as Address,
@@ -38,5 +40,6 @@ export const useSyncBalances = (init?: boolean) => {
 
   return {
     tokenData,
+    exchange,
   };
 };
