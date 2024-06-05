@@ -23,12 +23,12 @@ export default function QuicklinkHeaderWrapper({
         <QuicklinkSearchBar />
         <Button
           startIcon={
-            <span className="material-icons !font-thin text-neutral-100">
+            <span className="material-icons !text-sm !font-thin text-neutral-100">
               add
             </span>
           }
           variant="contained"
-          className="!bg-zinc-900 !rounded-lg !text-base !capitalize !shadow-none hover:!bg-neutral-700 !font-normal !text-neutral-100 !tracking-wider !py-[0.6rem]"
+          className="!bg-zinc-900 !text-sm !rounded-lg  !capitalize !shadow-none hover:!bg-neutral-700  !text-neutral-100 !tracking-wider !py-[0.6rem]"
           onClick={() => dispatch(setIsCreateLinkModalOpen(true))}
         >
           Quicklink
