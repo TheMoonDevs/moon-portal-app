@@ -1,10 +1,10 @@
 "use client";
 
 import store, { useAppSelector } from "@/utils/redux/store";
-import { useQuickLinkDirs } from "../../hooks/useQuickLinksDirs";
 import { SubDirectoryLinks } from "../ParentDirectory/SubDirectoryLinks";
-import { useRef } from "react";
+import { useQuickLinkDirs } from "../../hooks/useQuickLinksDirs";
 import { setActiveDirectoryId } from "@/utils/redux/quicklinks/quicklinks.slice";
+import { useRef } from "react";
 import QuicklinkHeaderWrapper from "../../global/QuicklinkHeaderWrapper";
 
 // import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
@@ -17,7 +17,7 @@ import QuicklinkHeaderWrapper from "../../global/QuicklinkHeaderWrapper";
 // import { useSearchParams } from "next/navigation";
 // import { useQuickLinkDirs } from "../../hooks/useQuickLinksDirs";
 
-// export const DepartmentLinksByDirId = ({
+// export const CommonLinksByDirId = ({
 //   directorySlug,
 //   departmentSlug,
 // }: {
@@ -58,25 +58,25 @@ import QuicklinkHeaderWrapper from "../../global/QuicklinkHeaderWrapper";
 //   );
 // };
 
-export const DepartmentLinksByDirId = ({
+export const CommonLinksByDirId = ({
   directoryId,
 }: {
-  directoryId: string;
+  directoryId?: string;
 }) => {
+  const { activeDirectoryId } = useAppSelector((state) => state.quicklinks);
+  const { rootParentDirectory } = useQuickLinkDirs(activeDirectoryId);
   const initialize = useRef(false);
 
   if (!initialize.current) {
     store.dispatch(setActiveDirectoryId(directoryId));
     initialize.current = true;
   }
-  const { activeDirectoryId } = useAppSelector((state) => state.quicklinks);
-  const { rootParentDirectory } = useQuickLinkDirs(activeDirectoryId);
   return (
     <div>
       <QuicklinkHeaderWrapper>
         <h1 className="text-3xl font-bold flex items-center gap-4">
           <span className="material-symbols-outlined border border-neutral-200 rounded-full p-2">
-            groups
+            stack
           </span>{" "}
           <span>{rootParentDirectory?.title}</span>
         </h1>

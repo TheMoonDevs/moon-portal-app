@@ -4,20 +4,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { DirectoryTree } from "./Directory/Directory";
 import { useEffect, useState } from "react";
-import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
 import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import { setNewParentDir } from "@/utils/redux/quicklinks/quicklinks.slice";
 import { useQuickLinkDirectory } from "../../hooks/useQuickLinkDirectory";
 import { Directory, ParentDirectory, ROOTTYPE } from "@prisma/client";
 import { AddSectionPopup } from "./AddSectionPopup";
-import { usePathname } from "next/navigation";
 import { Tooltip } from "@mui/material";
 
 export default function QuicklinkSidebar() {
-  const dispatch = useAppDispatch();
   const {
     parentDirs,
-    directories,
     rootDirectories,
     selectedRootDir,
     setSelectedRoot,
@@ -34,7 +29,7 @@ export default function QuicklinkSidebar() {
   }, [currentDirectory]);
 
   return (
-    <div className="w-96 h-[100vh]  top-0">
+    <div className="w-[350px] h-[100vh]  top-0">
       <aside className="fixed w-inherit h-[100vh] top-0 overflow-auto flex flex-col border-r-2">
         <div className="flex flex-row items-center gap-2 p-6">
           <Image
@@ -51,6 +46,10 @@ export default function QuicklinkSidebar() {
             <ul className="flex flex-col  ">
               {rootDirectories.map((item) => (
                 <div
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setSelectedRoot(item);
+                  }}
                   key={item.id}
                   className={`rounded-lg flex flex-col relative mx-2 border border-white 
               ${
@@ -62,13 +61,14 @@ export default function QuicklinkSidebar() {
                 >
                   <Link
                     href={
-                      item.slug === "/dashboard" ? `/quicklinks/dashboard` : ""
+                      item.slug === "/dashboard"
+                        ? `/quicklinks/dashboard`
+                        : `/quicklinks${item.slug}/${
+                            parentDirs.find((dir) => dir.type === `${item.id}`)
+                              ?.slug
+                          }`
                     }
                     className=""
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setSelectedRoot(item);
-                    }}
                   >
                     <li
                       className={`px-2 py-3 flex items-center gap-2 curspor-pointer
@@ -111,7 +111,7 @@ export default function QuicklinkSidebar() {
                               rootDirectories.find(
                                 (_dir) => _dir.id === dir.type
                               )?.slug
-                            }/${dir.slug}?id=${dir.id}`}
+                            }/${dir.slug}`}
                             className=""
                             onClick={(e) => {
                               setCurrentDirectory(dir);
@@ -156,12 +156,22 @@ export default function QuicklinkSidebar() {
                   className="flex flex-col "
                   title={item.title}
                 >
-                  <div className={`rounded-lg flex flex-col relative`}>
+                  <div
+                    onClick={(e) => {
+                      if (item.slug != "/dashboard") e.preventDefault();
+                      setSelectedRoot(item);
+                    }}
+                    className={`rounded-lg flex flex-col relative`}
+                  >
                     <Link
                       href={
                         item.slug === "/dashboard"
                           ? `/quicklinks/dashboard`
-                          : ""
+                          : `/quicklinks${item.slug}/${
+                              parentDirs.find(
+                                (dir) => dir.type === `${item.id}`
+                              )?.slug
+                            }`
                       }
                       className={`p-2 flex flex-col items-center border border-neutral-100 curspor-pointer
                       hover:border-neutral-500 group rounded-lg ${
@@ -169,10 +179,6 @@ export default function QuicklinkSidebar() {
                           ? " font-bold border-neutral-900 drop-shadow-2xl"
                           : ""
                       }`}
-                      onClick={(e) => {
-                        if (item.slug != "/dashboard") e.preventDefault();
-                        setSelectedRoot(item);
-                      }}
                     >
                       <span
                         className={`material-symbols-outlined  !text-md 

@@ -3,7 +3,6 @@ import { Link as Quicklink } from "@prisma/client";
 import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
 import { debounce } from "@/utils/helpers/functions";
 import LinkList from "../LinkList/LinkList";
-import { APP_BASE_URL } from "@/utils/constants/appInfo";
 
 const QuicklinkSearchBar: React.FC = () => {
   const [query, setQuery] = useState<string>("");
@@ -48,25 +47,53 @@ const QuicklinkSearchBar: React.FC = () => {
   const debouncedHandleChange = useCallback(debounce(handleChange, 500), []);
 
   return (
-    <div ref={ref} className="relative mr-8 ">
-      <input
-        type="text"
-        placeholder="Search..."
-        value={query}
-        onFocus={() => setShowResults(true)}
-        onChange={(e) => {
-          setQuery(e.target.value);
-          debouncedHandleChange(e);
-        }}
-        className="border-b border-b-gray-300 focus:border-b-gray-500 p-2 w-full outline-none transition-all"
-      />
+    <div ref={ref} className="relative">
+      <div className="relative flex items-center w-full rounded-lg focus-within:shadow-lg bg-white overflow-hidden shadow-md transition-all border border-neutral-100">
+        <div className="grid place-items-center h-full w-12 text-gray-300">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+        </div>
+
+        <input
+          className="peer h-full w-full outline-none text-sm text-gray-700 pr-2 p-[0.65rem] bg-white"
+          type="text"
+          id="search"
+          value={query}
+          onChange={(e) => {
+            if (!showResults) setShowResults(true);
+            if (e.target.value.length === 0) setShowResults(false);
+            setQuery(e.target.value);
+            debouncedHandleChange(e);
+          }}
+          placeholder="⚡ Search quicklinks.."
+        />
+      </div>
+      {/* <div className="relative">
+        <span className="material-symbols-outlined absolute -left-4 text-neutral-300">
+          search
+        </span>
+        <input className="border-b border-b-gray-300 focus:border-b-gray-500  w-full outline-none transition-all bg-white"></input>
+      </div> */}
       {showResults && (
-        <div className="absolute h-96 z-10 w-64 bg-white overflow-y-scroll overflow-x-hidden shadow-md px-4 ">
+        <div className="absolute h-72 z-10 w-64 bg-white overflow-y-scroll shadow-lg px-4 pl-2 mt-4 rounded-b-lg  py-4 pt-2 overflow-x-hidden">
           {loading ? (
             <p>Loading...</p>
           ) : (
             query && (
               <LinkList
+                inSearchBar
                 allQuicklinks={results}
                 isLoading={loading}
                 withView="line"
