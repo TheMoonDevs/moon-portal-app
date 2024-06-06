@@ -39,7 +39,7 @@ export const Moon = () => {
     <group
       scale={2}
       position={[0, -1, 0]}
-      ref={moonGsapRef}
+      // ref={moonGsapRef}
       rotation={[Math.PI / 2, -Math.PI / 2, Math.PI / 2]}
       receiveShadow
     >

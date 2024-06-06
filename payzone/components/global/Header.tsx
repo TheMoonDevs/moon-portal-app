@@ -28,7 +28,7 @@ export const Header = ({ title } : { title : string }) => {
   });
 
   return (
-    <div className="flex justify-between items-center w-full pt-6">
+    <div className="flex justify-between items-center w-full pt-6 text-white">
       <div className="flex items-center w-auto gap-4">
         <Image src="/logo/logo_white.png" alt="" width={56} height={56} />
         <p className="text-sm tracking-[.2em]">
