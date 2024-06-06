@@ -40,17 +40,15 @@ const MonthTable: React.FC<MonthTableProps> = ({
   const renderCell = (monthIndex: number, isActive: boolean) => (
     <td
       key={monthIndex}
-      className={` ${
+      className={`h-8 ${
         isActive ? "cursor-pointer hover:bg-neutral-100" : "text-neutral-400"
       }`}
     >
       {isActive ? (
-        <div
-          className="px-4 py-1"
-          onClick={() => handleMonthSelect(monthIndex)}
-        >
+        <div onClick={() => handleMonthSelect(monthIndex)}>
           <Link
             key={monthIndex}
+            className="px-4 py-4"
             href={`${pathName}?year=${selectedYear}&month=${dayjs()
               .month(monthIndex)
               .format("MM")}`}
@@ -59,9 +57,7 @@ const MonthTable: React.FC<MonthTableProps> = ({
           </Link>
         </div>
       ) : (
-        <div className="px-4 py-1">
-          {dayjs().month(monthIndex).format("MMM")}
-        </div>
+        <div className="px-4">{dayjs().month(monthIndex).format("MMM")}</div>
       )}
     </td>
   );
