@@ -15,6 +15,9 @@ import {
   TRANSACTIONTYPE,
 } from "@prisma/client";
 import { useAuthSession } from "@/utils/hooks/useAuthSession";
+import { IconButton } from "@mui/material";
+import { close } from "../../../../public/icons/index";
+import Image from "next/image";
 
 const TMDConverter = ({
   refetchTransactions,
@@ -111,7 +114,7 @@ const TMDConverter = ({
 
       MyServerApi.updateData(SERVER_API_ENDPOINTS.updatePayment, updatedData)
         .then((updatedTransaction) => {
-          // console.log('Updated transaction:', updatedTransaction);
+          // console.log("Updated transaction:", updatedTransaction);
           alert("Claim Request Sent");
         })
         .catch((error) => {
@@ -199,7 +202,7 @@ const TMDConverter = ({
 
       <div className="flex gap-2">
         <button
-          className="text-sm font-black border border-midGrey p-2"
+          className="text-sm font-black border border-midGrey p-2 hover:bg-midGrey hover:text-white transition-colors duration-200"
           onClick={handleSendOpen}
         >
           Send TMD
@@ -209,7 +212,7 @@ const TMDConverter = ({
             </button> */}
         {Admin && (
           <button
-            className="text-sm text-white bg-black font-black p-2"
+            className="text-sm text-white bg-black font-black p-2 hover:bg-white hover:text-black transition-colors duration-200"
             onClick={handleMintOpen}
           >
             Mint TMD
@@ -223,14 +226,20 @@ const TMDConverter = ({
         aria-labelledby="modal-modal-title"
         aria-describedby="modal-modal-description"
       >
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-1/3 bg-white border-2 border-midGrey shadow-lg p-4">
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-1/3 bg-white border-2 border-midGrey shadow-lg p-4 rounded-lg">
+          <div className="flex justify-between items-center">
+            <h2 className="text-lg font-bold">Mint TMD</h2>
+            <IconButton onClick={handleMintClose}>
+              <Image src={close} alt="close" width={20} height={20} />
+            </IconButton>
+          </div>
           <form
             onSubmit={(e) => {
               e.preventDefault();
               handleMint();
             }}
           >
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 mt-2">
               <input
                 type="text"
                 placeholder="Address"
@@ -253,13 +262,13 @@ const TMDConverter = ({
             {!txProgress ? (
               <div className="flex gap-2 mt-3">
                 <button
-                  className="text-sm w-fit font-black text-whiteSmoke bg-black p-2"
+                  className="text-sm w-fit font-black text-whiteSmoke bg-black p-2 rounded-sm"
                   type="submit"
                 >
                   Mint TMD
                 </button>
                 <button
-                  className="text-sm font-black w-fit text-whiteSmoke bg-black p-2"
+                  className="text-sm font-black w-fit text-whiteSmoke bg-black p-2 rounded-sm"
                   onClick={handleMintClose}
                 >
                   Cancel
@@ -267,7 +276,7 @@ const TMDConverter = ({
               </div>
             ) : (
               <button
-                className="text-sm font-black w-fit text-whiteSmoke bg-black p-2 mt-3"
+                className="text-sm font-black w-fit text-whiteSmoke bg-black p-2 mt-3 rounded-sm"
                 disabled
               >
                 Minting...
@@ -283,14 +292,20 @@ const TMDConverter = ({
         aria-labelledby="modal-modal-title"
         aria-describedby="modal-modal-description"
       >
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-1/3 bg-white border-2 border-midGrey shadow-lg p-4">
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-1/3 bg-white border-2 border-midGrey shadow-lg p-4 rounded-lg">
+          <div className="flex justify-between items-center">
+            <h2 className="text-lg font-bold">Send Tokens</h2>
+            <IconButton onClick={handleSendClose}>
+              <Image src={close} alt="close" width={20} height={20} />
+            </IconButton>
+          </div>
           <form
             onSubmit={(e) => {
               e.preventDefault();
               sendTokens();
             }}
           >
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 mt-2">
               <input
                 type="text"
                 placeholder="Address"
@@ -316,7 +331,7 @@ const TMDConverter = ({
 
             <div className="flex gap-2 mt-3">
               <button
-                className="text-sm w-fit font-black text-whiteSmoke bg-black p-2"
+                className="text-sm w-fit font-black text-whiteSmoke bg-black p-2 rounded-sm"
                 onClick={(e) => {
                   e.preventDefault();
                   approveTokens();
@@ -325,7 +340,7 @@ const TMDConverter = ({
                 {!approveProgress ? "Approve" : "Approving..."}
               </button>
               <button
-                className="text-sm font-black w-fit text-whiteSmoke bg-black p-2"
+                className="text-sm font-black w-fit text-whiteSmoke bg-black p-2 rounded-sm"
                 type="submit"
               >
                 {!txProgress ? "Send" : "Sending..."}
