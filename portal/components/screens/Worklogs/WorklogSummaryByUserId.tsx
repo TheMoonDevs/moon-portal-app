@@ -7,9 +7,17 @@ import { Fade } from "@mui/material";
 import { User, WorkLogs } from "@prisma/client";
 import dayjs from "dayjs";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  SetStateAction,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import generatePDF from "react-to-pdf";
 import { usePathname, useSearchParams } from "next/navigation";
+import useOutsideClick from "@/utils/hooks/useOutsideClick";
 
 interface MonthTableProps {
   selectedYear: number;
@@ -136,6 +144,13 @@ export const WorklogSummaryByUserId: React.FC<WorklogSummaryByUserIdProps> = ({
   const pdfTargetRef = useRef(null);
   const pathName = usePathname();
 
+  const monthDropdownRef = useRef(null);
+  const yearDropdownRef = useRef(null);
+  useOutsideClick([monthDropdownRef, yearDropdownRef], () => {
+    setIsMonthDropdownOpen(false);
+    setIsYearDropdownOpen(false);
+  });
+
   const joiningDate = (userData?.workData as any)?.joining;
   const joiningYear = Number(dayjs(joiningDate).format("YYYY"));
   const joiningMonth = Number(dayjs(joiningDate).format("M")) - 1;
@@ -226,13 +241,15 @@ export const WorklogSummaryByUserId: React.FC<WorklogSummaryByUserIdProps> = ({
               >
                 {selectedYear || dayjs().format("YYYY")}
               </Link>
-              <YearDropdown
-                yearArray={yearArray}
-                handleYearSelectFromDropdown={handleYearSelectFromDropdown}
-                isYearDropdownOpen={isYearDropdownOpen}
-                onlyYearSummary={onlyYearSummary}
-                selectedMonth={selectedMonth}
-              />
+              <div ref={yearDropdownRef}>
+                <YearDropdown
+                  yearArray={yearArray}
+                  handleYearSelectFromDropdown={handleYearSelectFromDropdown}
+                  isYearDropdownOpen={isYearDropdownOpen}
+                  onlyYearSummary={onlyYearSummary}
+                  selectedMonth={selectedMonth}
+                />
+              </div>
               <span
                 className="material-symbols-outlined !text-base rounded-full border border-neutral-400 px-1 cursor-pointer hover:bg-neutral-100 scale-75"
                 onClick={() => setIsYearDropdownOpen(!isYearDropdownOpen)}
@@ -265,14 +282,16 @@ export const WorklogSummaryByUserId: React.FC<WorklogSummaryByUserIdProps> = ({
                   ? dayjs().month(selectedMonth).format("MMM")
                   : dayjs().format("MMM")}
               </Link>
-              <MonthTable
-                selectedYear={selectedYear}
-                joiningYear={joiningYear}
-                joiningMonth={joiningMonth}
-                currentMonth={currentMonth}
-                handleMonthSelect={handleMonthSelect}
-                isMonthDropdownOpen={isMonthDropdownOpen}
-              />
+              <div ref={monthDropdownRef}>
+                <MonthTable
+                  selectedYear={selectedYear}
+                  joiningYear={joiningYear}
+                  joiningMonth={joiningMonth}
+                  currentMonth={currentMonth}
+                  handleMonthSelect={handleMonthSelect}
+                  isMonthDropdownOpen={isMonthDropdownOpen}
+                />
+              </div>
               <span
                 className="material-symbols-outlined !text-base rounded-full border border-neutral-400 px-1 cursor-pointer hover:bg-neutral-100 scale-75"
                 onClick={() => setIsMonthDropdownOpen(!isMonthDropdownOpen)}
