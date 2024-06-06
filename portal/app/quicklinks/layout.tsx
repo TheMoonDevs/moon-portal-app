@@ -3,18 +3,18 @@ import { APP_BASE_URL } from "@/utils/constants/appInfo";
 import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
 import { ParentDirectory, Directory } from "@prisma/client";
 
-const getDirectoryAndDepartment = async () => {
+const getParentDirsAndSubDirs = async () => {
   try {
     const ArrayOfPromises = [
-      QuicklinksSdk.getData(`${APP_BASE_URL}/api/quicklinks/department`),
+      QuicklinksSdk.getData(`${APP_BASE_URL}/api/quicklinks/parent-directory`),
       QuicklinksSdk.getData(`${APP_BASE_URL}/api/quicklinks/directory`),
     ];
     const responses = await Promise.all(ArrayOfPromises);
     const [departmentRes, directoryRes] = responses;
-    const departments: ParentDirectory[] = departmentRes.data.departments;
+    const parentDirs: ParentDirectory[] = departmentRes.data.parentDirs;
     const directories: Directory[] = directoryRes.data.directoryList;
 
-    return { departments, directories };
+    return { parentDirs, directories };
   } catch (error) {
     console.log(error);
   }
@@ -27,11 +27,11 @@ export default async function Layout({
 }: {
   children: React.ReactNode;
 }) {
-  let response = await getDirectoryAndDepartment();
+  let response = await getParentDirsAndSubDirs();
 
   if (!response) {
     response = {
-      departments: [],
+      parentDirs: [],
       directories: [],
     };
   }

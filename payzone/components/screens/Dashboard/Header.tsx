@@ -2,9 +2,7 @@
 "use client";
 
 import { TOKEN_INFO } from "@/utils/constants/appInfo";
-import useReadContract from "@/utils/hooks/useReadContract";
 import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import TMDToken from "../../../../contract/artifacts/contracts/TMDToken.sol/TMDToken.json";
 import { formatNumberToText } from "@/utils/helpers/prettyprints";
 import { useEffect } from "react";
 import {
@@ -12,6 +10,8 @@ import {
   setTotalEarned,
 } from "@/utils/redux/balances/balances.slice";
 import { useAuthSession } from "@/utils/hooks/useAuthSession";
+import { Address } from "viem";
+import { useSyncBalances } from "@/utils/hooks/useSyncBalances";
 
 interface HeaderProps {
   children?: React.ReactNode;
@@ -20,29 +20,7 @@ interface HeaderProps {
 
 export const Header = ({ children, className }: HeaderProps) => {
   const { user } = useAuthSession();
-  const dispatch = useAppDispatch();
-
-  const tokenData = useReadContract({
-    address: TOKEN_INFO.contractAddress,
-    abi: TMDToken.abi,
-  });
-
-  useEffect(() => {
-    const formattedBalance = Number(tokenData?.balance) / 10 ** 18;
-    dispatch(setBalance(formattedBalance));
-  }, [tokenData, dispatch]);
-
-  useEffect(() => {
-    const formattedTotalEarned =
-      formatNumberToText(
-        "0"
-        // payTransactions?.filter((payTransaction: any)=> payTransaction.txStatus !== "PENDING").reduce(
-        //   (total: number, transaction: any) => total + transaction.amount,
-        //   0
-        // )
-      ) || "0";
-    dispatch(setTotalEarned(formattedTotalEarned));
-  }, [dispatch]);
+  useSyncBalances(true);
 
   return (
     <section className="hidden lg:flex justify-between items-center w-full h-[15%] p-4 pb-0">
