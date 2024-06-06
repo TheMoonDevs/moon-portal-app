@@ -11,6 +11,8 @@ import CreditsTable from "./credits-table";
 import ClaimRequests from "./claim-requests";
 import TMDConverter from "./tmd-converter";
 import { useAuthSession } from "@/utils/hooks/useAuthSession";
+import Image from "next/image";
+import { Skeleton } from "@mui/material";
 
 export const Credits = () => {
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -63,15 +65,44 @@ export const Credits = () => {
   return (
     <>
       <Header className="flex flex-col gap-2 ml-7 mt-2">
-        <div className="flex items-center">
-          <span className="text-4xl font-semibold">{`${balance} TMD Credits`}</span>
+        <div className="flex items-center gap-2">
+          <Image
+            src="/icons/CRYPTOCURRENCY.svg"
+            width={60}
+            height={60}
+            alt=""
+          />
+          <div className="flex flex-col gap-1">
+            {balance ? (
+              <>
+                <Skeleton
+                  variant="text"
+                  width={210}
+                  height={40}
+                  animation="wave"
+                  sx={{ backgroundColor: "lightgray" }}
+                />
+                <Skeleton
+                  variant="text"
+                  width={210}
+                  height={20}
+                  animation="wave"
+                  sx={{ backgroundColor: "lightgray" }}
+                />
+              </>
+            ) : (
+              <>
+                <span className="text-4xl font-semibold">{`${balance} TMD Credits`}</span>
+                <span className="text-sm font-thin text-midGrey">
+                  {`Current Value: ${formatNumberToText(balance)} INR`}
+                </span>
+              </>
+            )}
+          </div>
         </div>
-        <span className="text-sm font-thin text-midGrey">
-          {`Current Value: ${formatNumberToText(balance)} INR`}
-        </span>
       </Header>
       <section className="p-5 h-full flex">
-        <CreditsTable transactions={transactions} />
+        <CreditsTable transactions={transactions} loading={loading} />
         <section className="flex flex-col gap-4 w-1/3">
           <TMDConverter refetchTransactions={refetchTransactions} />
           <ClaimRequests />
