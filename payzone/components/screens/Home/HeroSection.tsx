@@ -6,7 +6,7 @@ import { CircularProgress } from "@mui/material";
 import useAsyncState from "@/utils/hooks/useAsyncState";
 import { MyServerApi } from "@/utils/service/MyServerApi";
 import { useRouter } from "next/navigation";
-import { useAppDispatch } from "@/utils/redux/store";
+import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import { setUser } from "@/utils/redux/auth/auth.slice";
 import { User } from "@prisma/client";
 import { Backdrop } from "./Backdrop/Backdrop";
@@ -25,7 +25,10 @@ export const HeroSection = () => {
   const router = useRouter();
   const dispatch = useAppDispatch();
 
-  const { loading, signInWithSocial, authStatus } = useAuthSession();
+  const {  signInWithSocial, authStatus, user } = useAuthSession();
+  const { loading } = useAppSelector(
+    (state) => state.auth
+  );
 
   return (
     <section className="overflow-hidden mt-28 text-white">
@@ -36,7 +39,7 @@ export const HeroSection = () => {
           onClick={signInWithSocial}
           disabled={loading}
         >
-          {authStatus === "authenticating" ? (
+          {loading ? (
             <CircularProgress size={30} color="inherit" />
           ) : (
             <Image src="/logo/google.png" alt="" width={30} height={30} />

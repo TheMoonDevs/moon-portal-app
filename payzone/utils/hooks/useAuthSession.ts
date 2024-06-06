@@ -30,8 +30,8 @@ export const useAuthSession = (initialize?: boolean) => {
       path.startsWith(APP_ROUTES.referrals)
         ? "referrals"
         : path.startsWith(APP_ROUTES.dashboard)
-        ? "dashboard"
-        : "home",
+          ? "dashboard"
+          : "home",
     [path]
   );
 
@@ -177,6 +177,7 @@ export const useAuthSession = (initialize?: boolean) => {
               return;
             }
           }
+        dispatch(setAuthLoading(false));
         } catch (error) {
           console.error(error);
         }
@@ -195,22 +196,30 @@ export const useAuthSession = (initialize?: boolean) => {
     return () => unsubscribe();
   }, [initialize, dispatch, path, router]);
 
+  useEffect(() => {
+    if (user) {
+      if (!path.startsWith(APP_ROUTES.dashboardHome))
+        router.push(APP_ROUTES.dashboard);
+    }
+  }, [user, path, router])
+
   return {
     app,
     authStatus: loading
       ? "authenticating"
       : app == "referrals"
-      ? refUser
-        ? "authenticated"
-        : "unauthenticated"
-      : app == "dashboard"
-      ? user
-        ? "authenticated"
-        : "unauthenticated"
-      : "unauthenticated",
+        ? refUser
+          ? "authenticated"
+          : "unauthenticated"
+        : app == "dashboard"
+          ? user
+            ? "authenticated"
+            : "unauthenticated"
+          : "unauthenticated",
     user: app == "referrals" ? refUser : user,
     signInWithSocial,
     signOut,
+    loading,
     signInReferralWithSocial,
   };
 };
