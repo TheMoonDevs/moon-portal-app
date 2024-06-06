@@ -37,7 +37,7 @@ export const HeroSection = () => {
           disabled={loading}
         >
           {authStatus === "authenticating" ? (
-            <CircularProgress size={20} color="inherit" />
+            <CircularProgress size={30} color="inherit" />
           ) : (
             <Image src="/logo/google.png" alt="" width={30} height={30} />
           )}
