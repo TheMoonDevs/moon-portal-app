@@ -25,7 +25,7 @@ export const Header = ({ children, className }: HeaderProps) => {
   return (
     <section className="hidden lg:flex justify-between items-center w-full h-[15%] p-4 pb-0">
       <div className={className}>{children}</div>
-      <div className=" border-black border flex items-center justify-end gap-5 py-1 px-3">
+      {/* <div className=" border-black border flex items-center justify-end gap-5 py-1 px-3 ">
         <span className="text-md max-w-20 font-semibold tracking-widest">
           {user?.name}
         </span>
@@ -34,7 +34,7 @@ export const Header = ({ children, className }: HeaderProps) => {
           alt=""
           className="w-10 h-10 rounded-full object-cover"
         />
-      </div>
+      </div> */}
     </section>
   );
 };
