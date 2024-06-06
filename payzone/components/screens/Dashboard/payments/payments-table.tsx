@@ -1,3 +1,4 @@
+import { SkeletonRow } from "@/components/elements/SkeletonRow";
 import {
   formatNumberToText,
   prettyPrintISOStringInMMMDDYYYYHHMM,
@@ -13,8 +14,10 @@ const tableHeadings = [
 
 export const PaymentsTable = ({
   payTransactions,
+  loading,
 }: {
   payTransactions: any[];
+  loading: boolean;
 }) => {
   return (
     <section className="w-2/3 mx-4 bg-whiteSmoke">
@@ -36,26 +39,36 @@ export const PaymentsTable = ({
           </tr>
         </thead>
         <tbody className="overflow-auto">
-          {payTransactions
-            ?.filter(
-              (payTransaction: any) => payTransaction.txStatus !== "PENDING"
-            )
-            .map((transaction: any) => (
-              <tr
-                key={transaction.id}
-                className="border-b-2 border-neutral-200 w-full divide-x-2"
-              >
-                <td className="text-sm p-2 pl-4">
-                  {formatNumberToText(transaction.amount)} INR
-                </td>
-                <td className="text-sm p-2">{transaction.txType}</td>
-                <td className="text-sm p-2">{transaction.txCategory}</td>
-                <td className="text-sm p-2">{transaction.txStatus}</td>
-                <td className="text-sm p-2">
-                  {prettyPrintISOStringInMMMDDYYYYHHMM(transaction.updatedAt)}
-                </td>
-              </tr>
-            ))}
+          {loading ? (
+            <SkeletonRow />
+          ) : payTransactions.length === 0 ? (
+            <tr>
+              <td colSpan={5} className="text-center py-4">
+                No payments found.
+              </td>
+            </tr>
+          ) : (
+            payTransactions
+              ?.filter(
+                (payTransaction: any) => payTransaction.txStatus !== "PENDING"
+              )
+              .map((transaction: any) => (
+                <tr
+                  key={transaction.id}
+                  className="border-b-2 border-neutral-200 w-full divide-x-2"
+                >
+                  <td className="text-sm p-2 pl-4">
+                    {formatNumberToText(transaction.amount)} INR
+                  </td>
+                  <td className="text-sm p-2">{transaction.txType}</td>
+                  <td className="text-sm p-2">{transaction.txCategory}</td>
+                  <td className="text-sm p-2">{transaction.txStatus}</td>
+                  <td className="text-sm p-2">
+                    {prettyPrintISOStringInMMMDDYYYYHHMM(transaction.updatedAt)}
+                  </td>
+                </tr>
+              ))
+          )}
         </tbody>
       </table>
     </section>
