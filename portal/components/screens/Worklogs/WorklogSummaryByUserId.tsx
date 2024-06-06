@@ -286,7 +286,7 @@ export const WorklogSummaryByUserId: React.FC<WorklogSummaryByUserIdProps> = ({
       {/* LEFT SECTION */}
       <div className="h-screen divide-x-2 flex">
         <div
-          className="w-[60%] p-10 pt-28 h-[calc(100vh-3.5rem)]"
+          className="w-[60%] p-10 pt-28 h-screen overflow-y-scroll"
           ref={pdfTargetRef}
         >
           <h1 className="text-2xl font-bold pb-8">
