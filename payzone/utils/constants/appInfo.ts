@@ -1,4 +1,5 @@
 import { baseSepolia } from "viem/chains";
+import { bill, license, payments, request, send_money, toll, admin, refer } from '../../public/icons/index'
 
 const NEXT_PUBLIC_TMD_CONTRACT = process.env.NEXT_PUBLIC_TMD_CONTRACT
   ? process.env.NEXT_PUBLIC_TMD_CONTRACT
@@ -25,40 +26,40 @@ export const MEMBER_SIDEBAR_LINKS = [
   {
     title: "TMD-CREDITS",
     href: APP_ROUTES.credits,
-    adminOnly: false,
+    icon: toll, adminOnly: false,
   },
   {
     title: "PAYMENTS",
     href: APP_ROUTES.payments,
-    adminOnly: false,
+    icon: payments, adminOnly: false,
   },
   {
     title: "CERTIFICATES",
     href: APP_ROUTES.certificates,
-    adminOnly: false,
+    icon: license, adminOnly: false,
   },
   {
     title: "INVOICES",
     href: APP_ROUTES.invoices,
-    adminOnly: false,
+    icon: bill, adminOnly: false,
   },
-  { title: "PAY-UPI ID", href: APP_ROUTES.payUPI, adminOnly: true },
-  { title: "CLAIM REQ", href: APP_ROUTES.claimRequests, adminOnly: true },
+  { title: "PAY-UPI ID", href: APP_ROUTES.payUPI, icon: send_money, adminOnly: true },
+  { title: "CLAIM REQ", href: APP_ROUTES.claimRequests, icon: request, adminOnly: true },
 ];
 
 export const REFERRAL_DASHBOARD_SIDEBAR_LINKS = [
   {
     title: "REFERRALS",
     href: APP_ROUTES.referralsDashboard,
-    adminOnly: false,
+    icon: refer, adminOnly: false,
   },
   {
     title: "TRANSACTIONS",
     href: APP_ROUTES.referralsTransactions,
-    adminOnly: false,
+    icon: send_money, adminOnly: false,
   },
-  { title: "INVOICES", href: APP_ROUTES.referralsInvoices, adminOnly: false },
-  { title: "ADMIN", href: APP_ROUTES.referralsAdmin, adminOnly: true },
+  { title: "INVOICES", href: APP_ROUTES.referralsInvoices, icon: bill, adminOnly: false },
+  { title: "ADMIN", href: APP_ROUTES.referralsAdmin, icon: admin, adminOnly: true },
 ];
 
 export const APP_INFO = {
