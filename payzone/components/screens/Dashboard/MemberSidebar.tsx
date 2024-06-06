@@ -25,7 +25,6 @@ export const MemberSidebar = () => {
   const nonAdminLinks = links.filter((link) => !link.adminOnly);
   const printedLinks = [...nonAdminLinks, ...adminLinks];
 
-
   const toggleDrawer = (newOpen: boolean) => () => {
     setOpen(newOpen);
   };
@@ -67,7 +66,14 @@ export const MemberSidebar = () => {
         open={open}
         onClose={toggleDrawer(false)}
         anchor="right"
-        className="lg:hidden "
+        className="lg:hidden"
+        sx={{
+          "&.MuiDrawer-paper": {
+            width: "100%",
+            boxSizing: "border-box",
+            border: "none",
+          },
+        }}
       >
         <SidebarLinks
           links={printedLinks}
@@ -79,10 +85,10 @@ export const MemberSidebar = () => {
       </Drawer>
 
       <div
-        className="text-white hidden lg:block mb-4 text-lg tracking-widest cursor-pointer"
+        className="text-white mb-4 text-lg tracking-widest cursor-pointer flex items-center gap-2 max-lg:hidden"
         onClick={signOut}
       >
-        Logout
+        Logout <Image src="/icons/logout.svg" alt="" width={30} height={30} />
       </div>
     </section>
   );
