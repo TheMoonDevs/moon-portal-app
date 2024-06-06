@@ -6,7 +6,7 @@ import { useUser } from "@/utils/hooks/useUser";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { WorkLogs } from "@prisma/client";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import store from "@/utils/redux/store";
 import dayjs from "dayjs";
 import { WorkLogsHelper } from "./WorklogsHelper";
@@ -14,6 +14,7 @@ import { useMediaQuery } from "@mui/material";
 import media from "@/styles/media";
 import { WorklogView } from "./WorklogView";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { MDXEditorMethods } from "@mdxeditor/editor";
 
 const tempData = [
   {
@@ -149,6 +150,71 @@ export const WorklogsPage = () => {
   const [yearLogData, setYearLogData] = useState<any>();
   const [privateBoard, setPrivateBoard] = useState<WorkLogs | null>(null);
   const isTabletOrMore = useMediaQuery(media.moreTablet);
+  // Initialize state for content, loading, and editor reference
+  const [content, setContent] = useState<string>("");
+  const [docId, setDocId] = useState<string>("");
+  const [userId, setUserId] = useState<string>("");
+  const [docType, setDocType] = useState<string>("");
+  const [title, setTitle] = useState<string>("");
+  const [selectedIDKey, setSelectedIDKey] = useState<string>(
+    Math.random().toString()
+  );
+  const [loading, setLoading] = useState<boolean>(false);
+  const editorRef = useRef<MDXEditorMethods>(null);
+
+  // Function to handle content change
+  const handleContentChange = (newContent: string) => {
+    setContent(newContent);
+  };
+
+  // Function to save content via API
+  // Function to save content via API
+  const saveContent = async () => {
+    setLoading(true);
+    try {
+      // Construct the payload to be sent to the API endpoint
+      const payload = {
+        id: docId,
+        userId: userId,
+        docType: docType,
+        title: title,
+        markdown: content,
+      };
+
+      // Send a PUT request to the API endpoint
+      const response = await fetch("/api/user/docmarkdown", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      // Check if the request was successful
+      if (!response.ok) {
+        throw new Error("Failed to save content");
+      }
+
+      // If successful, parse the response JSON
+      const data = await response.json();
+      console.log("Content saved:", data);
+
+      // Optionally, you can update your local state or trigger any other actions upon successful save
+    } catch (error) {
+      console.error("Error saving content:", error);
+      // Handle error - for example, show an error message to the user
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Inside useEffect to retrieve user information
+  useEffect(() => {
+    const _user = store.getState().auth.user;
+    if (_user) {
+      setUserId(_user.id); // Set userId from store
+    }
+  }, []);
 
   useEffect(() => {
     const _user = store.getState().auth.user;
@@ -309,7 +375,38 @@ export const WorklogsPage = () => {
                 </ul>
               </TabsContent>
               <TabsContent value="later">
-                Later Tasks
+                <div
+                  className="relative flex flex-col items-stretch px-4 mb-3"
+                  onKeyUp={(e) => {
+                    if (e.ctrlKey && e.key === " ") {
+                      console.log("✅ pressed");
+                      // if (editorRef.current) {
+                      //   editorRef.current.insertText("✅");
+                      // }
+                    }
+                  }}
+                >
+                  <div className="w-full flex justify-end">
+                    <button onClick={saveContent} disabled={loading}>
+                      {loading ? "Saving..." : "Save"}
+                    </button>
+                  </div>
+                  {content.length === 0 && (
+                    <div className="text-neutral-300">
+                      <p>Tap to jot down your logs...</p>
+                    </div>
+                  )}
+
+                  {/* MdxAppEditor HERE ✏️ */}
+                  <MdxAppEditor
+                    ref={editorRef}
+                    key={selectedIDKey}
+                    markdown={content}
+                    onChange={handleContentChange}
+                    className="editor-class"
+                    contentEditableClassName="editable-content-class"
+                  />
+                </div>
               </TabsContent>
             </Tabs>
           </div>
