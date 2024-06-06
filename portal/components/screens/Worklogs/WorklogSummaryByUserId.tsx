@@ -207,6 +207,7 @@ export const WorklogSummaryByUserId: React.FC<WorklogSummaryByUserIdProps> = ({
 
   const handleYearSelectFromDropdown = (year: number) => {
     setSelectedYear(year);
+    setSelectedMonth((prev) => prev);
     // fetchWorklogData({
     //   year: year,
     //   month:
