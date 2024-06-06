@@ -1,7 +1,9 @@
 import { APP_ROUTES } from "@/utils/constants/appInfo";
+import useOutsideClick from "@/utils/hooks/useOutsideClick";
 import { Fade } from "@mui/material";
 import dayjs from "dayjs";
 import Link from "next/link";
+import { useRef, useState } from "react";
 
 const thisYear = dayjs().year();
 const thisMonth = dayjs().format("MM"); //June = "06"
@@ -41,9 +43,14 @@ export const SummarizeButton = ({
   userId: string | null | undefined;
 }) => {
   const summaryOptions = options(userId);
+  const [isBtnDropdownOpen, setIsBtnDropdownOpen] = useState(false);
+  const summaryBtnRef = useRef(null);
+  useOutsideClick([summaryBtnRef], () => setIsBtnDropdownOpen(false));
   return (
     <div
+      ref={summaryBtnRef}
       className="relative z-50"
+      onClick={() => setIsBtnDropdownOpen(!isBtnDropdownOpen)}
       // href={`${APP_ROUTES.userWorklogSummary}/${
       //   user?.id
       // }?year=${dayjs().format("YYYY")}&month=${dayjs().format("MM")}`}
@@ -53,13 +60,14 @@ export const SummarizeButton = ({
         <span>Summarize</span>
         <span className="icon_size material-symbols-outlined">expand_more</span>
       </button>
-      <Fade in={true} mountOnEnter unmountOnExit>
+      <Fade in={isBtnDropdownOpen} mountOnEnter unmountOnExit>
         <div className="flex flex-col gap-2 shadow-lg absolute z-[9999] bg-white rounded-md w-full py-2">
           {summaryOptions.map(({ text, url }, index) => (
             <Link
               href={url}
               key={index}
               className="text-xs z-50 flex justify-between items-center hover:bg-neutral-200 p-2"
+              onClick={() => setIsBtnDropdownOpen(false)}
             >
               <span>{text}</span>
               <span className="icon_size material-symbols-outlined !font-bold">
