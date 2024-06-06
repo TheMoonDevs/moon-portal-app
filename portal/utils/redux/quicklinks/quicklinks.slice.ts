@@ -96,6 +96,25 @@ export const shortUrlSlice = createSlice({
       };
     },
 
+    updateDirectory: (state, action) => {
+      console.log(action.payload);
+      if (!action.payload.parentDirId) {
+        state.parentDirs = state.parentDirs.map((directory) => {
+          if (directory.id === action.payload.id) {
+            return action.payload;
+          }
+          return directory;
+        });
+      } else {
+        state.directories = state.directories.map((directory) => {
+          if (directory.id === action.payload.id) {
+            return action.payload;
+          }
+          return directory;
+        });
+      }
+    },
+
     // setCurrDirectoryId: (state, action) => {
     //   state.currDirectoryId = action.payload;
     // },
@@ -160,6 +179,7 @@ export const {
   setRootDirList,
   setNewParentDir,
   setActiveDirectoryId,
+  updateDirectory,
   setAllQuicklinks,
   setIsCreateLinkModalOpen,
   addNewQuicklink,

@@ -12,8 +12,10 @@ async function main() {
   const Token = await ethers.getContractFactory("TMDToken"); //Replace with name of your smart contract
   const token = await Token.deploy();
 
-  console.log("Token address:", token.address);
+  console.log("Token address:", token.target);
 }
+
+// 0x718feaac496184980F7ccf0b07360C70b63c1705
 
 main()
   .then(() => process.exit(0))
