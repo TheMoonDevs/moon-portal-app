@@ -10,9 +10,10 @@ import { useEffect, useMemo, useState } from "react";
 import store from "@/utils/redux/store";
 import dayjs from "dayjs";
 import { WorkLogsHelper } from "./WorklogsHelper";
-import { useMediaQuery } from "@mui/material";
+import { Fade, useMediaQuery } from "@mui/material";
 import media from "@/styles/media";
 import { WorklogView } from "./WorklogView";
+import { SummarizeButton } from "./SummarizeButton";
 
 const tempData = [
   {
@@ -175,7 +176,7 @@ export const WorklogsPage = () => {
   }, []);
 
   useEffect(() => {
-    if(!yearLogData) return;
+    if (!yearLogData) return;
     const _user = store.getState().auth.user;
     const _total_days_in_month = dayjs().month(monthTab).daysInMonth();
     const _logList = Array.from({
@@ -243,19 +244,13 @@ export const WorklogsPage = () => {
               </span>
             </div>
           </Link>
-          <Link href={APP_ROUTES.userWorklogs}>
-            <div className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700">
-              <span className="icon_size material-symbols-outlined">
-                description
-              </span>
-            </div>
-          </Link>
+          <SummarizeButton userId={user?.id} />
         </div>
       </div>
       <div className="scrollable_list">
         <div className="h-[3.5rem]"></div>
         <div
-          className="flex flex-row justify-between sticky top-[3.5rem] bg-neutral-100 z-10
+          className="flex flex-row justify-between sticky top-[3.5rem] bg-neutral-100 z-[5]
          overflow-x-auto p-2 "
         >
           {Array.from({ length: 12 }).map((_, month_tab: number) => (
