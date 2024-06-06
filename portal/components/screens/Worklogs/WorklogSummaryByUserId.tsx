@@ -40,19 +40,29 @@ const MonthTable: React.FC<MonthTableProps> = ({
   const renderCell = (monthIndex: number, isActive: boolean) => (
     <td
       key={monthIndex}
-      className={`px-4 py-1 ${
+      className={` ${
         isActive ? "cursor-pointer hover:bg-neutral-100" : "text-neutral-400"
       }`}
-      onClick={() => handleMonthSelect(monthIndex)}
     >
-      <Link
-        key={monthIndex}
-        href={`${pathName}?year=${selectedYear}&month=${dayjs()
-          .month(monthIndex)
-          .format("MM")}`}
-      >
-        {dayjs().month(monthIndex).format("MMM")}
-      </Link>
+      {isActive ? (
+        <div
+          className="px-4 py-1"
+          onClick={() => handleMonthSelect(monthIndex)}
+        >
+          <Link
+            key={monthIndex}
+            href={`${pathName}?year=${selectedYear}&month=${dayjs()
+              .month(monthIndex)
+              .format("MM")}`}
+          >
+            {dayjs().month(monthIndex).format("MMM")}
+          </Link>
+        </div>
+      ) : (
+        <div className="px-4 py-1">
+          {dayjs().month(monthIndex).format("MMM")}
+        </div>
+      )}
     </td>
   );
 
@@ -134,7 +144,7 @@ export const WorklogSummaryByUserId: React.FC<WorklogSummaryByUserIdProps> = ({
 
   const [selectedYear, setSelectedYear] = useState<number>(Number(year));
   const [selectedMonth, setSelectedMonth] = useState<number | null>(
-    month ? Number(month) - 1 : null
+    month ? Number(month) - 1 : dayjs().month()
   );
   const [isYearDropdownOpen, setIsYearDropdownOpen] = useState<boolean>(false);
   const [isMonthDropdownOpen, setIsMonthDropdownOpen] =
