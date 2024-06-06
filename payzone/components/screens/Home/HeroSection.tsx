@@ -14,6 +14,7 @@ import useMousePosition from "@/utils/hooks/useMousePosition";
 import gsap from "gsap";
 import { useEffect } from "react";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
+import { useState } from "react";
 
 interface UserData {
   data: {
@@ -21,14 +22,13 @@ interface UserData {
   };
 }
 export const HeroSection = () => {
-  const { loading, setLoading } = useAsyncState();
   const router = useRouter();
   const dispatch = useAppDispatch();
 
-  const { signInWithSocial } = useAuthSession();
+  const { loading, signInWithSocial, authStatus } = useAuthSession();
 
   return (
-    <section className="overflow-hidden mt-28">
+    <section className="overflow-hidden mt-28 text-white">
       <div className=" flex flex-col items-center justify-center">
         <HeroText />
         <button
@@ -36,7 +36,7 @@ export const HeroSection = () => {
           onClick={signInWithSocial}
           disabled={loading}
         >
-          {loading ? (
+          {authStatus === "authenticating" ? (
             <CircularProgress size={20} color="inherit" />
           ) : (
             <Image src="/logo/google.png" alt="" width={30} height={30} />
