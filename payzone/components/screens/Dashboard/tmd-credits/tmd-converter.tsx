@@ -294,7 +294,7 @@ const TMDConverter = ({
       >
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-1/3 bg-white border-2 border-midGrey shadow-lg p-4 rounded-lg">
           <div className="flex justify-between items-center">
-            <h2 className="text-lg font-bold">Send Tokens</h2>
+            <h2 className="text-lg font-bold text-black">Send Tokens</h2>
             <IconButton onClick={handleSendClose}>
               <Image src={close} alt="close" width={20} height={20} />
             </IconButton>
