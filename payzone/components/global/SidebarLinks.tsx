@@ -15,6 +15,7 @@ export interface SidebarLinksProps {
   path: string;
   signOut: () => void;
   textColorHexcode: string;
+  toggleDrawer: (open: boolean) => () => void; 
 }
 
 export const SidebarLinks = ({
@@ -23,6 +24,7 @@ export const SidebarLinks = ({
   path,
   signOut,
   textColorHexcode,
+  toggleDrawer,
 }: SidebarLinksProps) => {
   const uppercasedTextColorHexcode = `#${
     textColorHexcode &&
@@ -54,6 +56,7 @@ export const SidebarLinks = ({
                       ? uppercasedTextColorHexcode
                       : "white",
                   }}
+                  onClick={toggleDrawer(false)} 
                 >
                   {link.title}
                 </Link>

@@ -43,7 +43,7 @@ export const MemberSidebar = () => {
           </div>
           <div className="lg:hidden flex items-center w-fit gap-3 mt-4">
             <Image src="/logo/payzone.svg" alt="" width={27} height={27} />
-            <p className="text-xs tracking-[.2em] text-white mt-4">
+            <p className="text-xs tracking-[.2em] text-white mt-0 flex items-center gap-2 wra">
               <span className="text-lg">PAYZONE</span>
               <br />
               <span className="text-[10px]">THE MOON DEVS</span>
@@ -81,6 +81,7 @@ export const MemberSidebar = () => {
           path={path}
           signOut={signOut}
           textColorHexcode="#ffffff"
+          toggleDrawer={toggleDrawer} 
         />
       </Drawer>
 
