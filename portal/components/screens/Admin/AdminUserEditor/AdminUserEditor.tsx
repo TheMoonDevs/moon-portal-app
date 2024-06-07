@@ -1,16 +1,9 @@
 "use client";
 
-import { LandscapeCard } from "@/components/elements/Cards";
-import { ChangeEvent, useEffect, useMemo, useState } from "react";
-
-import TimezoneSelect from "react-timezone-select";
-import { getCountryDataList } from "countries-list";
+import { ChangeEvent, useEffect, useState } from "react";
 import dayjs from "dayjs";
-import { DatePicker, TimePicker } from "@mui/x-date-pickers";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import { LoaderScreen, Spinner } from "@/components/elements/Loaders";
-import { useRouter, useSearchParams } from "next/navigation";
+import { LoaderScreen } from "@/components/elements/Loaders";
+import { useSearchParams } from "next/navigation";
 import { AdminHeader } from "../AdminHeader";
 import { useToast } from "@/components/elements/Toast";
 import { PortalSdk } from "@/utils/services/PortalSdk";
@@ -23,12 +16,12 @@ import {
   User,
 } from "@prisma/client";
 import { JsonArray, JsonObject } from "@prisma/client/runtime/library";
-import { OVERLAPTYPE } from "@/prisma/dbExtras";
 import { AdminUserWorkData } from "./AdminUserWorkData";
 import { AdminUserBasicData } from "./AdimUserBasicData";
+import { AdminUserPayData } from "./AdminUserPayData";
+import { AdminUserPersonalData } from "./AdminUserPersonalData";
 
 export const AdminUserEditor = () => {
-  const router = useRouter();
   const query = useSearchParams();
   const [loading, setLoading] = useState(false);
 
@@ -107,10 +100,13 @@ export const AdminUserEditor = () => {
       e.target instanceof HTMLInputElement
         ? e.target.type == "checkbox"
           ? e.target.checked
+          : e.target.type == "date"
+          ? new Date(e.target.value).toISOString()
           : e.target.value
         : e.target instanceof HTMLSelectElement
         ? e.target.value
         : "";
+
     if (id instanceof Array) {
       setUser((u) => ({
         ...u,
@@ -173,6 +169,18 @@ export const AdminUserEditor = () => {
         updateOverlap={updateOverlap}
       />
       <AdminUserWorkData
+        user={user}
+        setUser={setUser}
+        updateOverlap={updateOverlap}
+        updateField={updateField}
+      />
+      <AdminUserPayData
+        user={user}
+        setUser={setUser}
+        updateOverlap={updateOverlap}
+        updateField={updateField}
+      />
+      <AdminUserPersonalData
         user={user}
         setUser={setUser}
         updateOverlap={updateOverlap}
