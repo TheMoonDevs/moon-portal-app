@@ -35,9 +35,9 @@ const CreditsTable = ({
     burn = "burn",
     claim = "claim",
   }
-  console.log(loading);
+  // console.log(loading);
   return (
-    <section className="w-2/3 mx-4 bg-whiteSmoke">
+    <section className="w-2/3 mx-4 bg-whiteSmoke max-sm:w-full max-sm:mx-0">
       <div className="flex flex-col h-fit p-4 pb-6 border-b border-midGrey">
         <span className="font-semibold text-xl">
           TMD CREDITS - Inbound/Outbound

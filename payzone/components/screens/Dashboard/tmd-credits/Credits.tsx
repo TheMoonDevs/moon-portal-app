@@ -101,9 +101,9 @@ export const Credits = () => {
           </div>
         </div>
       </Header>
-      <section className="p-5 h-full flex">
+      <section className="p-5 h-full flex max-sm:flex-col max-sm:gap-4">
         <CreditsTable transactions={transactions} loading={loading} />
-        <section className="flex flex-col gap-4 w-1/3">
+        <section className="flex flex-col gap-4 w-1/3 max-sm:w-full">
           <TMDConverter refetchTransactions={refetchTransactions} />
           <ClaimRequests />
         </section>
