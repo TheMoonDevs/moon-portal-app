@@ -1,6 +1,6 @@
 import { Bottombar } from "@/components/global/Bottombar";
 import { PageAccess } from "@/components/global/PageAccess";
-import { WorklogSummaryByUserId } from "@/components/screens/Worklogs/WorklogSummaryByUserId";
+import { WorklogSummaryByUserId } from "@/components/screens/Worklogs/WorklogSummary/WorklogSummaryByUserId";
 import media from "@/styles/media";
 import { APP_BASE_URL } from "@/utils/constants/appInfo";
 import { PortalSdk } from "@/utils/services/PortalSdk";
