@@ -64,7 +64,7 @@ export const WorkLogItem = ({
   return (
     <Link
       href={isTabletOrMore ? "" : linkForWorkLog(data)}
-      className={`flex flex-col  gap-3 rounded-lg border border-neutral-200 p-3 ${
+      className={`flex flex-col  gap-3 rounded-lg border border-neutral-200 p-3 overflow-y-hidden min-h-[150px] ${
         data.logType === "privateLog" ? " h-full " : ""
       } ${selected ? " bg-white border-neutral-900 border-2 " : ""}`}
       onClick={onClick}
@@ -108,8 +108,8 @@ export const WorkLogItem = ({
         {data.id != "" &&
           data.works //.flatMap((wk) => (wk as any)?.pointInfos)
             //.slice(0, 3)
-            .map((point: any) => (
-              <div key={point.project} className="flex flex-row items-center">
+            .map((point: any, index: number) => (
+              <div key={`${point.link_id}-${index}`} className="flex flex-row items-center">
                 <div className="text-sm font-light">
                   <MdxAppEditor
                     key={point?.id}
@@ -155,7 +155,7 @@ export const WorklogsPage = () => {
     if (!_user) return;
     PortalSdk.getData(`/api/user/worklogs?userId=${_user.id}`, null)
       .then((data) => {
-        console.log(data);
+        // console.log(data);
         setYearLogData(data);
 
         const _privateboard = data?.data?.workLogs.find(
@@ -331,7 +331,7 @@ export const WorklogsPage = () => {
                       setSelectedID(data.id);
                       if (data.date) setSelectedDate(data.date);
                     } else if (data.date) {
-                      console.log(data);
+                      // console.log(data);
                       setSelectedID(undefined);
                       if (data.date) setSelectedDate(data.date);
                     }

@@ -77,7 +77,7 @@ export const WorklogEditor = ({
     setWorkLog(editWorkLogs);
     setServerLog(editWorkLogs);
     setMarkdownDatas(editWorkLogs.works as any[]);
-    console.log("placed ", editWorkLogs);
+    // console.log("placed ", editWorkLogs);
     isAuotSaving.current = true;
   }, [editWorkLogs]);
 
@@ -109,7 +109,7 @@ export const WorklogEditor = ({
           if (!data?.data?.workLogs) return;
           setWorkLog(data?.data?.workLogs);
           setServerLog(data?.data?.workLogs);
-          console.log("saved", data?.data?.workLogs);
+          // console.log("saved", data?.data?.workLogs);
         })
         .catch((err) => {
           setSaving(false);
@@ -125,7 +125,7 @@ export const WorklogEditor = ({
     _markdownDat: WorkLogPoints,
     _fullpoints: WorkLogPoints[]
   ) => {
-    console.log(content);
+    // console.log(content);
     const new_content = content.replaceAll(":check:", "✅");
     const new_md = _fullpoints.map((_md) => {
       if (_md.link_id === _markdownDat.link_id) {
@@ -137,7 +137,7 @@ export const WorklogEditor = ({
       }
       return _md;
     });
-    console.log(new_content);
+    // console.log(new_content);
     setMarkdownDatas(new_md);
     setWorkLog((wl: any) => ({
       ...wl,
@@ -155,7 +155,7 @@ export const WorklogEditor = ({
       ) {
         return;
       }
-      console.log("saving... ", workLog);
+      // console.log("saving... ", workLog);
       saveWorkLog(workLog as any);
     },
     [serverLog, workLog],
@@ -213,7 +213,7 @@ export const WorklogEditor = ({
   const getStatsOfContent = (content: string) => {
     //const _content = content.replaceAll(":check:", "✅");
     // how many times ✅ is there in content
-    console.log(content);
+    // console.log(content);
     const checks = (content.match(/✅/g) || []).length;
     const points = (content.match(/\n/g) || []).length + 1;
     return `${checks} / ${points}`;
