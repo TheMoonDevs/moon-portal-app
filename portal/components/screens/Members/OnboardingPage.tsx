@@ -32,6 +32,7 @@ import {
   TooltipTrigger,
 } from "@/components/elements/Tooltip";
 import DatePicker from "./DatePicker";
+import { LoadingSpinner } from "@/components/elements/loading";
 
 interface OnboardingPageProps {
   onClose?: () => void;
@@ -45,6 +46,7 @@ export default function OnboardingPage({ onClose }: OnboardingPageProps) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | any>
@@ -96,6 +98,7 @@ export default function OnboardingPage({ onClose }: OnboardingPageProps) {
   const handleUsernameInput = async (username: any) => {
     console.log("handleUsernameInput called with username:", username);
     try {
+      setLoading(true);
       setMessageColor("");
 
       const response = await fetch(`/api/onboarding?username=${username}`, {
@@ -118,6 +121,8 @@ export default function OnboardingPage({ onClose }: OnboardingPageProps) {
       console.error("Error fetching data:", error);
       setMessage("An error occurred");
       setMessageColor("red");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -297,34 +302,40 @@ export default function OnboardingPage({ onClose }: OnboardingPageProps) {
               <InputOTPSlot index={2} />
             </InputOTPGroup>
           </InputOTP>
-          {message && (
+          {loading ? (
             <div className="ml-4">
-              {messageColor === "red" ? (
-                <TooltipProvider>
-                  <Tooltip delayDuration={100}>
-                    <TooltipTrigger>
-                      {" "}
-                      <CircleX color="red" />
-                    </TooltipTrigger>
-                    <TooltipContent className="bg-white">
-                      <p>Username Already Taken</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              ) : (
-                <TooltipProvider>
-                  <Tooltip delayDuration={100}>
-                    <TooltipTrigger>
-                      {" "}
-                      <CircleCheck color="green" />
-                    </TooltipTrigger>
-                    <TooltipContent className="bg-white">
-                      <p>Username Available</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
+              <LoadingSpinner />
             </div>
+          ) : (
+            message && (
+              <div className="ml-4">
+                {messageColor === "red" ? (
+                  <TooltipProvider>
+                    <Tooltip delayDuration={100}>
+                      <TooltipTrigger>
+                        {" "}
+                        <CircleX color="red" />
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-white">
+                        <p>Username Already Taken</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                ) : (
+                  <TooltipProvider>
+                    <Tooltip delayDuration={100}>
+                      <TooltipTrigger>
+                        {" "}
+                        <CircleCheck color="green" />
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-white">
+                        <p>Username Available</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+              </div>
+            )
           )}
         </div>
         <div className="flex gap-4 items-center">
