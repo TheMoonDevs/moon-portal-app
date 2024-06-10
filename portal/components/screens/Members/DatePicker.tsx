@@ -57,7 +57,10 @@ const DatePicker = ({ onDateChange }: { onDateChange?: (e: any) => void }) => {
   const getDateValue = (date: number) => {
     const selectedDate = new Date(Date.UTC(year, month, date)); // Create a UTC date
     const formattedDate = selectedDate.toISOString(); // Convert to ISO string (UTC)
-    setDatepickerValue(formattedDate);
+    const newFormattedDate = new Date(formattedDate)
+      .toISOString()
+      .split("T")[0];
+    setDatepickerValue(newFormattedDate);
     if (dateRef.current) {
       dateRef.current.value = formattedDate; // Set input value to ISO string
     }
@@ -98,7 +101,7 @@ const DatePicker = ({ onDateChange }: { onDateChange?: (e: any) => void }) => {
         value={datepickerValue}
         onClick={() => setShowDatepicker(true)}
         onKeyDown={(e) => e.key === "Escape" && setShowDatepicker(false)}
-        className="w-full cursor-pointer border pl-4 pr-10 leading-none rounded-lg shadow-sm focus:outline-none focus:shadow-outline text-gray-600 font-medium"
+        className="w-full cursor-pointer border pl-4 pr-10 leading-none rounded-lg shadow-sm focus:outline-none focus:shadow-outline text-gray-600"
         placeholder="Enter Date of Birth"
         required
         onChange={onDateChange}
@@ -112,10 +115,14 @@ const DatePicker = ({ onDateChange }: { onDateChange?: (e: any) => void }) => {
                 <select
                   value={month}
                   onChange={(e) => setMonth(parseInt(e.target.value))}
-                  className="text-lg font-bold text-gray-800"
+                  className="text-lg font-bold text-gray-800 cursor-pointer"
                 >
                   {MONTH_NAMES.map((monthName, index) => (
-                    <option key={index} value={index}>
+                    <option
+                      key={index}
+                      value={index}
+                      className="cursor-pointer"
+                    >
                       {monthName}
                     </option>
                   ))}
@@ -123,7 +130,7 @@ const DatePicker = ({ onDateChange }: { onDateChange?: (e: any) => void }) => {
                 <select
                   value={year}
                   onChange={(e) => setYear(parseInt(e.target.value))}
-                  className="ml-1 text-lg text-gray-600 font-normal"
+                  className="ml-1 text-lg text-gray-600 font-normal cursor-pointer"
                 >
                   {Array.from({ length: MAX_YEAR - MIN_YEAR + 1 }, (_, i) => (
                     <option key={i} value={MIN_YEAR + i}>
