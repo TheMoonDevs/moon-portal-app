@@ -17,7 +17,7 @@ export default function URLShortnerPage() {
         <h1 className="uppercase tracking-[0.2em] font-mono text-xl">Back</h1>
       </Link>
       <div className="flex items-center justify-center min-h-screen bg-gray-50 gap-6">
-        <div className="flex gap-10 justify-center w-4/5 max-sm:flex-col max-sm:w-[90%]">
+        <div className="flex gap-10 justify-center w-4/5 max-sm:flex-col-reverse max-sm:w-[90%]">
           <ShortUrlList />
           <ShortUrlCard />
         </div>

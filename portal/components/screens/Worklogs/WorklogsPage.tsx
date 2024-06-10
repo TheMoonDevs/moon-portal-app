@@ -64,7 +64,7 @@ export const WorkLogItem = ({
   return (
     <Link
       href={isTabletOrMore ? "" : linkForWorkLog(data)}
-      className={`flex flex-col  gap-3 rounded-lg border border-neutral-200 p-3 overflow-hidden ${
+      className={`flex flex-col  gap-3 rounded-lg border border-neutral-200 p-3 overflow-y-hidden min-h-[150px] ${
         data.logType === "privateLog" ? " h-full " : ""
       } ${selected ? " bg-white border-neutral-900 border-2 " : ""}`}
       onClick={onClick}
