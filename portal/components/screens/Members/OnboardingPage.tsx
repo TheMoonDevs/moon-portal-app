@@ -32,7 +32,7 @@ import {
   TooltipTrigger,
 } from "@/components/elements/Tooltip";
 import DatePicker from "./DatePicker";
-import { LoadingSpinner } from "@/components/elements/loading";
+import { Spinner } from "@/components/elements/Loaders";
 
 interface OnboardingPageProps {
   onClose?: () => void;
@@ -304,7 +304,7 @@ export default function OnboardingPage({ onClose }: OnboardingPageProps) {
           </InputOTP>
           {loading ? (
             <div className="ml-4">
-              <LoadingSpinner />
+              <Spinner />
             </div>
           ) : (
             message && (
