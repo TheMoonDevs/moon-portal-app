@@ -46,8 +46,8 @@ export async function POST(request: NextRequest) {
           gradeTag: "",
         },
         personalData: {
-          dateOfBirth: new Date(dateOfBirth),
-          phone: `+${countryCode} ${phone}`,
+          dateOfBirth: dateOfBirth,
+          phone: `${countryCode} ${phone}`,
           address: address,
           city: city,
           workHourOverlap: `${workHourOverlap} ${timezone}`,

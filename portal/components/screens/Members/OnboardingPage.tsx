@@ -1,5 +1,5 @@
 "use client";
-
+import { Toaster, toast } from "sonner";
 import { Textarea } from "@/components/elements/Textarea";
 import { Button } from "@/components/elements/Button";
 import { Input } from "@/components/elements/Input";
@@ -10,7 +10,6 @@ import {
   SelectItem,
   SelectValue,
 } from "@/components/elements/Select";
-
 import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import {
   resetForm,
@@ -25,8 +24,6 @@ import { UploadAvatar } from "./UploadAvatar";
 import { REGEXP_ONLY_DIGITS_AND_CHARS } from "input-otp";
 import React, { useEffect, useState } from "react";
 import { USERVERTICAL, USERROLE } from "@prisma/client";
-import { useCountryInfo } from "@/utils/hooks/useCountryInfo";
-import Image from "next/image";
 import { CircleCheck, CircleX, Info } from "lucide-react";
 import {
   TooltipProvider,
@@ -64,13 +61,12 @@ export default function OnboardingPage({ onClose }: OnboardingPageProps) {
     e.preventDefault();
     // Concatenate first name and last name
     const fullName = `${formData.firstName} ${formData.lastName}`;
-
     const updatedFormData = {
       ...formData,
       name: fullName,
       username: username,
       passcode: password,
-      dateOfBirth: selectedDate.split("T")[0],
+      dateOfBirth: selectedDate,
     };
     try {
       const response = await fetch("/api/onboarding", {
@@ -82,6 +78,9 @@ export default function OnboardingPage({ onClose }: OnboardingPageProps) {
       });
 
       if (response.ok) {
+        toast(
+          `Welcome aboard, ${fullName}! We're delighted to have you join our team!`
+        );
         dispatch(resetForm());
         setUsername("");
         setPassword("");
@@ -151,8 +150,9 @@ export default function OnboardingPage({ onClose }: OnboardingPageProps) {
 
   const handleDateChange = (selectedDate: string) => {
     if (selectedDate) {
-      console.log("Selected date:", selectedDate);
-      setSelectedDate(selectedDate);
+      const formattedDate = new Date(selectedDate).toISOString().split("T")[0];
+      console.log("Selected date:", formattedDate);
+      setSelectedDate(formattedDate);
     } else {
       // Clear the selected date
       setSelectedDate("");
@@ -195,18 +195,18 @@ export default function OnboardingPage({ onClose }: OnboardingPageProps) {
         onChange={handleChange}
         className="mb-4"
       />
-      <div className="">
-        {formData.avatar !== "" ? (
-          <div className="flex gap-4 my-3 w-full items-center">
-            <label className="w-1/4">Profile Picture URL :</label>
-            <a href={formData.avatar} target="_blank">
-              {formData.avatar}
-            </a>
+
+      {formData.avatar !== "" ? (
+        <div className="flex gap-2 my-3 items-center">
+          <h1 className="w-1/3">Uploaded Image ✅✅ </h1>
+          <div className="w-full">
+            <UploadAvatar />
           </div>
-        ) : (
-          <UploadAvatar />
-        )}
-      </div>
+        </div>
+      ) : (
+        <UploadAvatar />
+      )}
+
       <div className="grid grid-cols-2 gap-4 mb-4">
         <Input
           type="text"
@@ -253,7 +253,10 @@ export default function OnboardingPage({ onClose }: OnboardingPageProps) {
                 <Info className="opacity-60 h-5 w-5" />
               </TooltipTrigger>
               <TooltipContent className="bg-white">
-                <p>Example: 2pm - 5pm</p>
+                <p>
+                  Time period where colleagues can interact with you. Example:
+                  2pm - 5pm
+                </p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -386,7 +389,7 @@ export default function OnboardingPage({ onClose }: OnboardingPageProps) {
                 <Info className="opacity-60 h-5 w-5" />
               </TooltipTrigger>
               <TooltipContent className="bg-white">
-                <p>Example: IST</p>
+                <p></p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -425,9 +428,10 @@ export default function OnboardingPage({ onClose }: OnboardingPageProps) {
       </div>
       <div className="flex gap-4 items-center mt-6">
         <div className="ml-auto">
-          <Button type="submit">Save changes</Button>
+          <Button type="submit">Submit</Button>
         </div>
       </div>
+      <Toaster />
     </form>
   );
 }
