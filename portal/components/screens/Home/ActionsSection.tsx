@@ -27,6 +27,12 @@ const Links = [
     color: "blue",
   },
   {
+    icon: "/icons/google-calendar.svg",
+    title: "Google Calendar",
+    route: APP_ROUTES.userZeroTracker,
+    active: true,
+  },
+  {
     icon: "/images/thirdparty/bolt.avif",
     title: "URL Shortener",
     route: APP_ROUTES.urlShortener,
