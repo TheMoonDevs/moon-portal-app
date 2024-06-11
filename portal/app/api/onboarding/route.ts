@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
           workHours: "",
           positionPublic: position,
           positionInternal: "",
-          grade: null,
+          grade: 0,
           gradeTag: "",
         },
         personalData: {
