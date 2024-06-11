@@ -41,7 +41,7 @@ export const AdminUserBasicData = ({
   return (
     <LandscapeCard className="items-start justify-start">
       <LocalizationProvider dateAdapter={AdapterDayjs}>
-        <div className="flex  mb-8 w-full gap-4 items-center justify-between">
+        <div className="flex mb-8 w-full gap-4 items-center justify-between">
           <p className="text-neutral-400 tracking-[0.5em] uppercase text-xs text-center">
             USER BASIC DATA
           </p>
@@ -49,9 +49,7 @@ export const AdminUserBasicData = ({
             onClick={saveUser}
             className="flex flex-row items-center py-1 gap-3 bg-green-100 text-green-800 rounded-lg px-2"
           >
-            {loading && (
-              <Spinner className="w-3 h-3 fill-green-400 text-green-600" />
-            )}
+            {loading && <Spinner className="w-6 h-6  text-green-600" />}
             {!loading && <span className="material-icons">done_all</span>}
             Save User
           </button>

@@ -5,24 +5,37 @@ import { ChangeEvent, Dispatch, SetStateAction } from "react";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { User } from "@prisma/client";
+import { Spinner } from "@/components/elements/Loaders";
 
 export const AdminUserPayData = ({
   user,
   setUser,
   updateField,
   updateOverlap,
+  saveUser,
+  loading,
 }: {
   user: User;
   setUser: Dispatch<SetStateAction<User>>;
   updateField: (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
   updateOverlap: (index: number, field: string, value: any) => void;
+  saveUser: () => void;
+  loading: boolean;
 }) => {
   return (
     <LandscapeCard className="items-start justify-start">
-      <div className="flex flex-col mb-8 gap-4 items-center justify-start">
+      <div className="flex mb-8 w-full gap-4 items-center justify-between">
         <p className="text-neutral-400 tracking-[0.5em] uppercase text-xs text-center">
           PAY DATA
         </p>
+        <button
+          onClick={saveUser}
+          className="flex flex-row items-center py-1 gap-3 bg-green-100 text-green-800 rounded-lg px-2"
+        >
+          {loading && <Spinner className="w-6 h-6  text-green-600" />}
+          {!loading && <span className="material-icons">done_all</span>}
+          Save User
+        </button>
       </div>
       <LocalizationProvider dateAdapter={AdapterDayjs}>
         <div className="flex flex-row items-start justify-start gap-8">
