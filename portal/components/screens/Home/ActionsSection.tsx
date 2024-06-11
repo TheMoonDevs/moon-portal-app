@@ -29,7 +29,7 @@ const Links = [
   {
     icon: "/icons/google-calendar.svg",
     title: "Google Calendar",
-    route: APP_ROUTES.userZeroTracker,
+    route: APP_ROUTES.googleCalendar,
     active: true,
   },
   {
