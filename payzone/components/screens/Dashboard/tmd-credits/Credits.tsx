@@ -5,7 +5,7 @@ import { formatNumberToText } from "@/utils/helpers/prettyprints";
 import { useAppSelector } from "@/utils/redux/store";
 import { ChainScanner } from "@/utils/service/chainScanner";
 import { useCallback, useEffect, useState } from "react";
-
+import { useSyncBalances } from "@/utils/hooks/useSyncBalances";
 import { Header } from "../Header";
 import CreditsTable from "./credits-table";
 import ClaimRequests from "./claim-requests";
@@ -18,6 +18,7 @@ export const Credits = () => {
   const { user } = useAuthSession();
   const userWalletAddress = (user?.payData as any)?.walletAddress;
   const { balance } = useAppSelector((state) => state.balances);
+  const { exchange } = useSyncBalances();
   const refetchTransactions = useCallback(() => {
     if (userWalletAddress === undefined) return;
     setTransactions([]);
@@ -67,7 +68,7 @@ export const Credits = () => {
           <span className="text-4xl font-semibold">{`${balance} TMD Credits`}</span>
         </div>
         <span className="text-sm font-thin text-midGrey">
-          {`Current Value: ${formatNumberToText(balance)} INR`}
+        {`Current Value: ${formatNumberToText((exchange?.exchangeData?.creditsRateINR || 0) * balance)} INR`}
         </span>
       </Header>
       <section className="p-5 h-full flex">
