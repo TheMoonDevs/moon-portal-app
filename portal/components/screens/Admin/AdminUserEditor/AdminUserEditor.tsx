@@ -171,11 +171,15 @@ export const AdminUserEditor = () => {
       <AdminUserWorkData
         user={user}
         setUser={setUser}
+        saveUser={saveUser}
+        loading={loading}
         updateOverlap={updateOverlap}
         updateField={updateField}
       />
       <AdminUserPayData
         user={user}
+        saveUser={saveUser}
+        loading={loading}
         setUser={setUser}
         updateOverlap={updateOverlap}
         updateField={updateField}
@@ -183,6 +187,8 @@ export const AdminUserEditor = () => {
       <AdminUserPersonalData
         user={user}
         setUser={setUser}
+        saveUser={saveUser}
+        loading={loading}
         updateOverlap={updateOverlap}
         updateField={updateField}
       />
