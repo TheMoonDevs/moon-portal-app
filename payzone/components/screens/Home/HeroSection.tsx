@@ -14,6 +14,7 @@ import useMousePosition from "@/utils/hooks/useMousePosition";
 import gsap from "gsap";
 import { useEffect } from "react";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
+import { useSyncBalances } from "@/utils/hooks/useSyncBalances";
 
 interface UserData {
   data: {
@@ -26,6 +27,7 @@ export const HeroSection = () => {
   const dispatch = useAppDispatch();
 
   const { signInWithSocial } = useAuthSession();
+  const { exchange } = useSyncBalances();
 
   return (
     <section className="overflow-hidden mt-28">
@@ -45,7 +47,7 @@ export const HeroSection = () => {
         </button>
         <div className="w-full flex items-center justify-end mt-14">
           <div className="bg-black border border-1 border-amber-300 text-amber-300 w-fit font-black text-sm p-2">
-            1 TMD === 1 INR
+            1 TMD === {exchange?.exchangeData?.creditsRateINR || 1} INR
           </div>
         </div>
       </div>
