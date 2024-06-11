@@ -18,19 +18,15 @@ import {
 import {
   InputOTP,
   InputOTPGroup,
+  InputOTPSeparator,
   InputOTPSlot,
 } from "@/components/elements/InputOtp";
 import { UploadAvatar } from "./UploadAvatar";
-import { REGEXP_ONLY_DIGITS_AND_CHARS } from "input-otp";
+import { REGEXP_ONLY_CHARS } from "input-otp";
 import React, { useEffect, useState } from "react";
-import { USERVERTICAL, USERROLE } from "@prisma/client";
+import { USERVERTICAL } from "@prisma/client";
 import { CircleCheck, CircleX, Info } from "lucide-react";
-import {
-  TooltipProvider,
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/elements/Tooltip";
+import { Tooltip } from "@mui/material";
 import DatePicker from "./DatePicker";
 import { Spinner } from "@/components/elements/Loaders";
 
@@ -80,9 +76,10 @@ export default function OnboardingPage({ onClose }: OnboardingPageProps) {
       });
 
       if (response.ok) {
-        toast(
-          `Welcome aboard, ${fullName}! We're delighted to have you join our team!`
-        );
+        toast("Thank you for filling the form!!", {
+          description: `Welcome aboard, ${fullName}! We're delighted to have you join our team!`,
+          duration: 2500,
+        });
         dispatch(resetForm());
         setUsername("");
         setPassword("");
@@ -126,11 +123,6 @@ export default function OnboardingPage({ onClose }: OnboardingPageProps) {
     }
   };
 
-  const handleComplete = (value: any) => {
-    if (value.length === 3) {
-      handleUsernameInput(value);
-    }
-  };
   const showMessage = (newMessage: string, newMessageColor: string) => {
     if (newMessage !== "" && newMessageColor !== "") {
       setMessage(newMessage);
@@ -141,12 +133,6 @@ export default function OnboardingPage({ onClose }: OnboardingPageProps) {
   const handleUsernameChange = (newValue: any) => {
     const upperCaseValue = newValue.toUpperCase();
     setUsername(upperCaseValue);
-    if (upperCaseValue.length === 3) {
-      handleComplete(upperCaseValue);
-    } else {
-      setMessage("");
-      setMessageColor("");
-    }
   };
 
   const handlePasswordChange = (newValue: any) => {
@@ -156,7 +142,6 @@ export default function OnboardingPage({ onClose }: OnboardingPageProps) {
   const handleDateChange = (selectedDate: string) => {
     if (selectedDate) {
       const formattedDate = new Date(selectedDate).toISOString().split("T")[0];
-      console.log("Selected date:", formattedDate);
       setSelectedDate(formattedDate);
     } else {
       // Clear the selected date
@@ -165,14 +150,17 @@ export default function OnboardingPage({ onClose }: OnboardingPageProps) {
   };
 
   useEffect(() => {
+    if (username.length === 3 && password.length === 3) {
+      handleUsernameInput(username);
+    }
     setMessage("");
     setMessageColor("");
-  }, [username]);
+  }, [username, password]);
 
   return (
     <form
       onSubmit={handleSubmit}
-      className="max-w-[60rem] mx-auto p-6 my-4 border border-gray-400 rounded-lg shadow-xl"
+      className="max-w-[60rem] mx-auto p-6 my-8 border border-gray-400 rounded-lg shadow-xl"
     >
       <div className="grid grid-cols-2 gap-4 mb-4">
         <Input
@@ -201,16 +189,7 @@ export default function OnboardingPage({ onClose }: OnboardingPageProps) {
         className="mb-4"
       />
 
-      {formData.avatar !== "" ? (
-        <div className="flex gap-2 my-3 items-center">
-          <h1 className="w-1/3">Uploaded Image ✅✅ </h1>
-          <div className="w-full">
-            <UploadAvatar />
-          </div>
-        </div>
-      ) : (
-        <UploadAvatar />
-      )}
+      <UploadAvatar />
 
       <div className="grid grid-cols-2 gap-4 mb-4">
         <Input
@@ -225,22 +204,6 @@ export default function OnboardingPage({ onClose }: OnboardingPageProps) {
         <DatePicker onDateChange={handleDateChange} />
       </div>
       <div className="grid grid-cols-2 gap-4 mb-4">
-        <Input
-          type="text"
-          placeholder="City"
-          name="city"
-          value={formData.city}
-          onChange={handleChange}
-        />
-        <Input
-          type="text"
-          placeholder="Position"
-          name="position"
-          value={formData.position}
-          onChange={handleChange}
-        />
-      </div>
-      <div className="grid grid-cols-2 gap-4 mb-4">
         <div className="flex justify-between items-center gap-1">
           <Input
             type="text"
@@ -250,27 +213,35 @@ export default function OnboardingPage({ onClose }: OnboardingPageProps) {
             onChange={handleChange}
             className=""
           />
-
-          <TooltipProvider>
-            <Tooltip delayDuration={100}>
-              <TooltipTrigger>
-                {" "}
-                <Info className="opacity-60 h-5 w-5" />
-              </TooltipTrigger>
-              <TooltipContent className="bg-white">
-                <p>
-                  Time period where colleagues can interact with you. Example:
-                  2pm - 5pm
-                </p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <Tooltip
+            placement="top"
+            title="Time period where colleagues can interact with you. Example: 2pm - 5pm"
+          >
+            <Info className="opacity-60 h-5 w-5 cursor-pointer" />
+          </Tooltip>
         </div>
+
+        <Input
+          type="text"
+          placeholder="Position"
+          name="position"
+          value={formData.position}
+          onChange={handleChange}
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-4 mb-4">
         <Input
           type="text"
           placeholder="Phone"
           name="phone"
           value={formData.phone}
+          onChange={handleChange}
+        />
+        <Input
+          type="text"
+          placeholder="City"
+          name="city"
+          value={formData.city}
           onChange={handleChange}
         />
       </div>
@@ -282,15 +253,13 @@ export default function OnboardingPage({ onClose }: OnboardingPageProps) {
         className="mb-4"
       />
 
-      <div className="grid grid-cols-2 gap-4 mb-4">
+      <div className="flex gap-2 items-center mb-4">
         <div className="flex gap-4 items-center">
-          <label htmlFor="username" className="block mb-2">
-            Username:
-          </label>
+          <label htmlFor="username">Passcode :</label>
           <InputOTP
             id="username"
             maxLength={3}
-            pattern={REGEXP_ONLY_DIGITS_AND_CHARS}
+            pattern={REGEXP_ONLY_CHARS}
             alt="Username input"
             value={username}
             onFocus={() => showMessage("", " ")}
@@ -302,60 +271,40 @@ export default function OnboardingPage({ onClose }: OnboardingPageProps) {
               <InputOTPSlot index={2} />
             </InputOTPGroup>
           </InputOTP>
-          {loading ? (
+        </div>
+        <InputOTPSeparator />
+        <InputOTP
+          id="password"
+          maxLength={3}
+          alt="Password input"
+          value={password}
+          onChange={handlePasswordChange}
+        >
+          <InputOTPGroup>
+            <InputOTPSlot index={0} />
+            <InputOTPSlot index={1} />
+            <InputOTPSlot index={2} />
+          </InputOTPGroup>
+        </InputOTP>
+        {loading ? (
+          <div className="ml-4">
+            <Spinner />
+          </div>
+        ) : (
+          message && (
             <div className="ml-4">
-              <Spinner />
+              {messageColor === "red" ? (
+                <Tooltip placement="top" title="Username Already Taken">
+                  <CircleX color="red" className="cursor-pointer" />
+                </Tooltip>
+              ) : (
+                <Tooltip placement="top" title="Username Available">
+                  <CircleCheck color="green" className="cursor-pointer" />
+                </Tooltip>
+              )}
             </div>
-          ) : (
-            message && (
-              <div className="ml-4">
-                {messageColor === "red" ? (
-                  <TooltipProvider>
-                    <Tooltip delayDuration={100}>
-                      <TooltipTrigger>
-                        {" "}
-                        <CircleX color="red" />
-                      </TooltipTrigger>
-                      <TooltipContent className="bg-white">
-                        <p>Username Already Taken</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                ) : (
-                  <TooltipProvider>
-                    <Tooltip delayDuration={100}>
-                      <TooltipTrigger>
-                        {" "}
-                        <CircleCheck color="green" />
-                      </TooltipTrigger>
-                      <TooltipContent className="bg-white">
-                        <p>Username Available</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                )}
-              </div>
-            )
-          )}
-        </div>
-        <div className="flex gap-4 items-center">
-          <label htmlFor="password" className="block mb-2">
-            Password:
-          </label>
-          <InputOTP
-            id="password"
-            maxLength={3}
-            alt="Password input"
-            value={password}
-            onChange={handlePasswordChange}
-          >
-            <InputOTPGroup>
-              <InputOTPSlot index={0} />
-              <InputOTPSlot index={1} />
-              <InputOTPSlot index={2} />
-            </InputOTPGroup>
-          </InputOTP>
-        </div>
+          )
+        )}
       </div>
       <div className="grid grid-cols-2 gap-4 mb-4">
         <Select>
@@ -382,59 +331,30 @@ export default function OnboardingPage({ onClose }: OnboardingPageProps) {
             type="text"
             placeholder="Timezone"
             name="timezone"
-            value={
-              // countryInfo
-              //   ? (dispatch(
-              //       updateForm({ name: "timezone", value: countryInfo.timezone })
-              //     ),
-              //     countryInfo.timezone)
-              //   :
-              formData.timezone
-            }
+            value={formData.timezone}
             onChange={handleChange}
           />
-          <TooltipProvider>
-            <Tooltip delayDuration={100}>
-              <TooltipTrigger>
-                {" "}
-                <Info className="opacity-60 h-5 w-5" />
-              </TooltipTrigger>
-              <TooltipContent className="bg-white">
-                <p></p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <Tooltip
+            placement="top"
+            title="Enter your local timezone. Example: GMT+5:30"
+          >
+            <Info className="opacity-60 h-5 w-5 cursor-pointer" />
+          </Tooltip>
         </div>
         <div className="flex justify-between items-center gap-1">
           <Input
             type="text"
             placeholder="Country Code"
             name="countryCode"
-            value={
-              // countryInfo
-              //   ? (dispatch(
-              //       updateForm({
-              //         name: "countryCode",
-              //         value: countryInfo.countryCode,
-              //       })
-              //     ),
-              //     countryInfo.countryCode)
-              //   :
-              formData.countryCode
-            }
+            value={formData.countryCode}
             onChange={handleChange}
           />
-          <TooltipProvider>
-            <Tooltip delayDuration={100}>
-              <TooltipTrigger>
-                {" "}
-                <Info className="opacity-60 h-5 w-5" />
-              </TooltipTrigger>
-              <TooltipContent className="bg-white">
-                <p>Example: +91</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <Tooltip
+            placement="top"
+            title="Enter your country code. Example: +91"
+          >
+            <Info className="opacity-60 h-5 w-5 cursor-pointer" />
+          </Tooltip>
         </div>
       </div>
       <div className="flex gap-4 items-center mt-6">
