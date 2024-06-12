@@ -18,7 +18,8 @@ export const Credits = () => {
   const { user } = useAuthSession();
   const userWalletAddress = (user?.payData as any)?.walletAddress;
   const { balance } = useAppSelector((state) => state.balances);
-  const { exchange } = useSyncBalances();
+  const { multiplicationFactor } = useSyncBalances();
+  const currency = useAppSelector((state) => state.balances.selectedCurrency);
   const refetchTransactions = useCallback(() => {
     if (userWalletAddress === undefined) return;
     setTransactions([]);
@@ -68,7 +69,7 @@ export const Credits = () => {
           <span className="text-4xl font-semibold">{`${balance} TMD Credits`}</span>
         </div>
         <span className="text-sm font-thin text-midGrey">
-        {`Current Value: ${formatNumberToText((exchange?.exchangeData?.creditsRateINR || 0) * balance)} INR`}
+        {`Current Value: ${formatNumberToText(multiplicationFactor * balance)} ${currency}`}
         </span>
       </Header>
       <section className="p-5 h-full flex">
