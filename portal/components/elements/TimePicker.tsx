@@ -10,17 +10,10 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { TimePicker as MuiTimePicker } from "@mui/x-date-pickers/TimePicker";
-import TextField from "@mui/material/TextField";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 
-export function TimePicker({
-  value,
-  onChange,
-}: {
-  value: Date | null;
-  onChange: (newTime: Date | null) => void;
-}) {
+export function TimePicker({ value, onChange }: { value: Date | null } & any) {
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
       <Popover>
@@ -45,22 +38,7 @@ export function TimePicker({
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0">
           <div className="p-4 bg-white">
-            <MuiTimePicker
-              value={value}
-              onChange={onChange}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  fullWidth
-                  InputProps={{
-                    style: {
-                      backgroundColor: "white",
-                      color: "black",
-                    },
-                  }}
-                />
-              )}
-            />
+            <MuiTimePicker value={value} onChange={onChange} />
           </div>
         </PopoverContent>
       </Popover>
