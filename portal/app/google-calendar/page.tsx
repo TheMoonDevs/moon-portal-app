@@ -105,7 +105,7 @@ const GoogleCalendar: React.FC = () => {
       console.log("All Day Event: ", formattedStartDate);
     } else {
       const startDate = new Date(formData.startDate);
-      startDate.setDate(startDate.getDate() + 1); // Add one day to correct the date issue
+      startDate.setDate(startDate.getDate() );
       if (formData.startTime) {
         if (typeof formData.startTime === "string") {
           const [hours, minutes] = formData.startTime.split(":").map(Number);
@@ -126,7 +126,7 @@ const GoogleCalendar: React.FC = () => {
         ? new Date(formData.endDate)
         : new Date(startDate);
       if (formData.endDate) {
-        endDate.setDate(endDate.getDate() + 1); // Add one day to correct the date issue
+        endDate.setDate(endDate.getDate()); 
       }
       if (formData.endTime) {
         if (typeof formData.endTime === "string") {
