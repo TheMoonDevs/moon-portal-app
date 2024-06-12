@@ -65,7 +65,6 @@ const GoogleCalendar: React.FC = () => {
 
   const today = new Date();
 
-
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -226,12 +225,12 @@ const GoogleCalendar: React.FC = () => {
     }));
   };
 
- const handleSelectChange = (value: any) => {
-   setFormData((prevData) => ({
-     ...prevData,
-     repeat: value,
-   }));
- };
+  const handleSelectChange = (value: any) => {
+    setFormData((prevData) => ({
+      ...prevData,
+      repeat: value,
+    }));
+  };
 
   const toggleAllDay = () => {
     setFormData((prevFormData) => ({
