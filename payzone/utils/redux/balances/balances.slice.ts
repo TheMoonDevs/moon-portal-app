@@ -16,8 +16,8 @@ const initialState: BalancesState = {
   balance: 0,
   totalEarned: "0",
   exchange: null,
-  selectedCurrency: '',
-  selectedCurrencyValue: 0,
+  selectedCurrency: 'INR',
+  selectedCurrencyValue: 1,
 };
 
 const balancesSlice = createSlice({
