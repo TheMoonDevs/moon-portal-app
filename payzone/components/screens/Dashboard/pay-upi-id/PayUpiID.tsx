@@ -16,6 +16,9 @@ import { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import { ExchangeConfigData } from "@/prisma/extraDbTypes";
 import Toast, { toastSeverity } from "../../Referrals/Dashboard/Toast";
+import { useSyncBalances } from "@/utils/hooks/useSyncBalances";
+import { useAppSelector } from "@/utils/redux/store";
+import CurrencyModal from "@/components/global/CurrencyModal";
 
 export const PayUpiID = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -41,6 +44,10 @@ export const PayUpiID = () => {
     message: "",
     severity: "success",
   });
+  const { multiplicationFactor } = useSyncBalances();
+  const currency = useAppSelector((state) => state.balances.selectedCurrency);
+  const [isCurrencyModalOpen, setIsCurrencyModalOpen] =
+    useState<boolean>(false);
 
   const handleAddPayment = (amount: string) => {
     setLoading(true);
@@ -175,7 +182,12 @@ export const PayUpiID = () => {
         <div className="bg-whiteSmoke h-fit flex flex-col p-4 justify-between gap-4 w-1/3 max-sm:w-full">
           <span className="flex justify-between">
             <p className="text-sm font-thin">Current Price</p>
-            <p className="text-sm font-black">1 TMD === 1 INR</p>
+            <p
+              className="text-sm font-black px-2 py-1 border border-black cursor-pointer"
+              onClick={() => setIsCurrencyModalOpen(true)}
+            >
+              1 TMD === {multiplicationFactor} {currency}
+            </p>
           </span>
 
           <form
@@ -233,6 +245,10 @@ export const PayUpiID = () => {
         handleClose={handleClose}
         message={toast.message}
         severity={toast.severity}
+      />
+      <CurrencyModal
+        isOpen={isCurrencyModalOpen}
+        onClose={() => setIsCurrencyModalOpen(false)}
       />
       <Modal
         open={modalOpen}

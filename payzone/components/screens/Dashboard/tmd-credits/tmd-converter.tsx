@@ -16,10 +16,7 @@ import {
 } from "@prisma/client";
 import { useAuthSession } from "@/utils/hooks/useAuthSession";
 import { useSyncBalances } from "@/utils/hooks/useSyncBalances";
-import {
-  setReduxSelectedCurrency,
-  setReduxSelectedCurrencyValue,
-} from "@/utils/redux/balances/balances.slice";
+import CurrencyModal from "@/components/global/CurrencyModal";
 
 const TMDConverter = ({
   refetchTransactions,
@@ -54,26 +51,12 @@ const TMDConverter = ({
   const [sendAddress, setSendAddress] = useState("");
 
   const [claimAmount, setClaimAmount] = useState("");
-  const [selectedCurrency, setSelectedCurrency] = useState<string>("");
-  const [selectedCurrencyValue, setSelectedCurrencyValue] = useState<number>(0);
   const [isCurrencyModalOpen, setIsCurrencyModalOpen] =
     useState<boolean>(false);
 
-  const { exchange } = useSyncBalances();
+  const { exchange, multiplicationFactor } = useSyncBalances();
 
   const currency = useAppSelector((state) => state.balances.selectedCurrency);
-  const currencyValue = useAppSelector(
-    (state) => state.balances.selectedCurrencyValue
-  );
-
-  const dispatch = useAppDispatch();
-
-  const handleCurrencyChange = (
-    event: React.ChangeEvent<HTMLSelectElement>
-  ) => {
-    setSelectedCurrency(event.target.value);
-    setSelectedCurrencyValue(exchange?.exchangeCurrency[event.target.value]);
-  };
 
   const handleMint = async () => {
     if (!ethersSigner) return;
@@ -366,7 +349,7 @@ const TMDConverter = ({
             className="text-sm font-black text-black border border-neutral-500 px-2 py-1 rounded"
             onClick={() => setIsCurrencyModalOpen(true)}
           >
-            1 TMD === {exchange?.exchangeData?.creditsRateINR} INR
+            1 TMD === {multiplicationFactor} {currency}
           </button>
         ) : (
           <p className="text-sm text-black">loading...</p>
@@ -377,49 +360,10 @@ const TMDConverter = ({
         <p className="text-sm font-black">1,234 TMD</p>
       </span>
 
-      <Modal
-        open={isCurrencyModalOpen}
+      <CurrencyModal
+        isOpen={isCurrencyModalOpen}
         onClose={() => setIsCurrencyModalOpen(false)}
-        aria-labelledby="modal-modal-title"
-        aria-describedby="modal-modal-description"
-      >
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-1/3 bg-white border-2 border-midGrey shadow-lg p-4 rounded-lg">
-          <div className="flex justify-between items-center">
-            <h1 className="text-lg font-bold">Select Currency</h1>
-            <button
-              onClick={() => setIsCurrencyModalOpen(false)}
-              className="text-lg font-bold"
-            >
-              X
-            </button>
-          </div>
-          <select
-            value={selectedCurrency}
-            onChange={handleCurrencyChange}
-            className="w-full p-2 mt-4 border-2 border-black"
-          >
-            <option value="">Select one</option>
-            {isCurrencyModalOpen &&
-              exchange?.exchangeCurrency &&
-              Object.keys(exchange?.exchangeCurrency).map((currency) => (
-                <option key={currency} value={currency}>
-                  {currency}
-                </option>
-              ))}
-          </select>
-          <button
-            onClick={() => {
-              dispatch(setReduxSelectedCurrency(selectedCurrency));
-              dispatch(setReduxSelectedCurrencyValue(selectedCurrencyValue));
-              setIsCurrencyModalOpen(false);
-            }}
-            className="w-full p-2 mt-4 text-sm font-black  text-whiteSmoke bg-black "
-            disabled={!selectedCurrency || !selectedCurrencyValue}
-          >
-            Set Currency
-          </button>
-        </div>
-      </Modal>
+      />
 
       <form
         onSubmit={(e) => {
