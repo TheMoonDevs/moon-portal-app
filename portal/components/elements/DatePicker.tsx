@@ -6,7 +6,7 @@ import { Calendar as CalendarIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar"; // Adjusted import
+import { Calendar } from "@/components/ui/calendar";
 
 import {
   Popover,
@@ -20,16 +20,38 @@ interface DatePickerProps {
 }
 
 export function DatePicker({ selectedDate, onDateChange }: DatePickerProps) {
-  const [date, setDate] = React.useState<Date | null>(selectedDate || null);
+  const [date, setDate] = React.useState<Date | null>(null);
+
+  React.useEffect(() => {
+    // Fetch the date from local storage on component mount
+    const storedDate = localStorage.getItem("selectedDate");
+    if (storedDate) {
+      setDate(new Date(storedDate));
+    }
+  }, []);
+
+  React.useEffect(() => {
+    // If no date is selected, remove the stored date
+    if (!date) {
+      localStorage.removeItem("selectedDate");
+    }
+  }, [date]);
 
   const handleDateChange = (newDate: Date | undefined) => {
-    // Adjusted handler type
     const updatedDate = newDate || null;
     setDate(updatedDate);
+    if (updatedDate) {
+      localStorage.setItem("selectedDate", updatedDate.toISOString());
+    }
     if (onDateChange && typeof onDateChange === "function") {
       onDateChange(updatedDate);
     }
   };
+
+  React.useEffect(() => {
+    // When selectedDate changes, update the local state
+    setDate(selectedDate);
+  }, [selectedDate]);
 
   return (
     <Popover>
