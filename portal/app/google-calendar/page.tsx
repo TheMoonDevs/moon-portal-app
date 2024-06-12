@@ -14,6 +14,7 @@ import { useEffect, useState } from "react";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { Switch } from "@/components/ui/switch";
 import { format } from "date-fns";
+import Tooltip from "@mui/material/Tooltip";
 
 import {
   Select,
@@ -54,6 +55,7 @@ const GoogleCalendar: React.FC = () => {
     title: undefined as boolean | undefined,
     startDate: undefined as boolean | undefined,
   });
+  console.log("formValidations" + formValidations);
 
   const getWeekdayFromDate = (date: any) => {
     const days = [
@@ -211,6 +213,11 @@ const GoogleCalendar: React.FC = () => {
       formData.location
     )}&recur=${encodeURIComponent(recurrence)}`;
 
+    setFormValidations({
+      title: false,
+      startDate: false,
+    });
+
     setFormData({
       title: "",
       details: "",
@@ -222,11 +229,6 @@ const GoogleCalendar: React.FC = () => {
       allDay: true,
       endRepeat: null,
       endDate: null,
-    });
-
-    setFormValidations({
-      title: false,
-      startDate: false,
     });
 
     window.open(googleCalendarLink, "_blank");
@@ -310,14 +312,15 @@ const GoogleCalendar: React.FC = () => {
           <form className="my-3" onSubmit={handleSubmit}>
             <LabelInputContainer>
               <div className="flex justify-end gap-3">
-                <Switch
-                  checked={formData.allDay}
-                  onCheckedChange={toggleAllDay}
-                />
+                <Tooltip title={"Set Task All Day"} arrow>
+                  <Switch
+                    checked={formData.allDay}
+                    onCheckedChange={toggleAllDay}
+                  />
+                </Tooltip>
                 <Label htmlFor="allDay">All Day</Label>
               </div>
             </LabelInputContainer>
-
             <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 mb-4">
               <LabelInputContainer>
                 <Label htmlFor="title">
@@ -360,7 +363,6 @@ const GoogleCalendar: React.FC = () => {
                 onChange={handleInputChange}
               />
             </LabelInputContainer>
-
             <LabelInputContainer className="mb-4">
               <Label htmlFor="startDate">
                 {formValidations.startDate ? (
@@ -376,7 +378,6 @@ const GoogleCalendar: React.FC = () => {
                 onDateChange={handleDateChange("startDate")}
               />
             </LabelInputContainer>
-
             <LabelInputContainer>
               <div className="flex justify-between w-full  items-center gap-3">
                 <div
@@ -436,7 +437,6 @@ const GoogleCalendar: React.FC = () => {
                 )}
               </div>
             </LabelInputContainer>
-
             {!formData.allDay && (
               <div className="flex justify-between item-center gap-3">
                 <LocalizationProvider dateAdapter={AdapterDateFns}>
@@ -457,15 +457,15 @@ const GoogleCalendar: React.FC = () => {
                 </LocalizationProvider>
               </div>
             )}
-
-            <button
-              className="bg-gradient-to-br mt-3 relative group/btn from-black dark:from-zinc-900 dark:to-zinc-900 to-neutral-600 block dark:bg-zinc-800 w-full text-white rounded-md h-10 font-medium shadow-[0px_1px_0px_0px_#ffffff40_inset,0px_-1px_0px_0px_#ffffff40_inset] dark:shadow-[0px_1px_0px_0px_var(--zinc-800)_inset,0px_-1px_0px_0px_var(--zinc-800)_inset] transition duration-300 ease-in-out hover:from-black hover:to-neutral-700"
-              type="submit"
-            >
-              Generate Link &rarr;
-              <BottomGradient />
-            </button>
-
+            <Tooltip title={"Generate Google Calendar link"} arrow>
+              <button
+                className="bg-gradient-to-br mt-3 relative group/btn from-black dark:from-zinc-900 dark:to-zinc-900 to-neutral-600 block dark:bg-zinc-800 w-full text-white rounded-md h-10 font-medium shadow-[0px_1px_0px_0px_#ffffff40_inset,0px_-1px_0px_0px_#ffffff40_inset] dark:shadow-[0px_1px_0px_0px_var(--zinc-800)_inset,0px_-1px_0px_0px_var(--zinc-800)_inset] transition duration-300 ease-in-out hover:from-black hover:to-neutral-700"
+                type="submit"
+              >
+                Generate Link &rarr;
+                <BottomGradient />
+              </button>
+            </Tooltip>
             <div className="bg-gradient-to-r from-transparent via-neutral-300 dark:via-neutral-700 to-transparent h-[1px] w-full" />
           </form>
         </div>
