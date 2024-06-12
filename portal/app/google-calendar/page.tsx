@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { DatePicker } from "@/components/elements/DatePicker";
 import { TimePicker } from "@/components/elements/TimePicker";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { Switch } from "@/components/ui/switch";
 import { format } from "date-fns";
@@ -50,6 +50,11 @@ const GoogleCalendar: React.FC = () => {
     endDate: null,
   });
 
+  const [formValidations, setFormValidations] = useState({
+    title: undefined as boolean | undefined,
+    startDate: undefined as boolean | undefined,
+  });
+
   const getWeekdayFromDate = (date: any) => {
     const days = [
       "Sunday",
@@ -63,13 +68,24 @@ const GoogleCalendar: React.FC = () => {
     return days[date.getDay()];
   };
 
+  useEffect(() => {
+    setFormValidations({
+      title: false,
+      startDate: false,
+    });
+  }, [formData.title, formData.startDate]);
+
   const today = new Date();
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (!formData.startDate) {
-      alert("Please fill in all required fields.");
+    // Check if either title or startDate is empty
+    if (!formData.title || !formData.startDate) {
+      setFormValidations({
+        title: !formData.title,
+        startDate: !formData.startDate,
+      });
       return;
     }
 
@@ -195,6 +211,24 @@ const GoogleCalendar: React.FC = () => {
       formData.location
     )}&recur=${encodeURIComponent(recurrence)}`;
 
+    setFormData({
+      title: "",
+      details: "",
+      location: "",
+      startDate: null,
+      repeat: "no-repeat",
+      startTime: null,
+      endTime: null,
+      allDay: true,
+      endRepeat: null,
+      endDate: null,
+    });
+
+    setFormValidations({
+      title: false,
+      startDate: false,
+    });
+
     window.open(googleCalendarLink, "_blank");
   };
 
@@ -286,7 +320,15 @@ const GoogleCalendar: React.FC = () => {
 
             <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 mb-4">
               <LabelInputContainer>
-                <Label htmlFor="title">Title</Label>
+                <Label htmlFor="title">
+                  {formValidations.title ? (
+                    <span className="text-red-500 font-semibold">
+                      *Title is Required
+                    </span>
+                  ) : (
+                    "Title"
+                  )}
+                </Label>
                 <Input
                   id="title"
                   name="title"
@@ -320,7 +362,15 @@ const GoogleCalendar: React.FC = () => {
             </LabelInputContainer>
 
             <LabelInputContainer className="mb-4">
-              <Label htmlFor="startDate">Start Date</Label>
+              <Label htmlFor="startDate">
+                {formValidations.startDate ? (
+                  <span className="text-red-500 font-semibold ">
+                    *Start Date is Required
+                  </span>
+                ) : (
+                  "Start Date"
+                )}
+              </Label>
               <DatePicker
                 selectedDate={formData.startDate}
                 onDateChange={handleDateChange("startDate")}
@@ -328,10 +378,10 @@ const GoogleCalendar: React.FC = () => {
             </LabelInputContainer>
 
             <LabelInputContainer>
-              <div className="flex justify-between items-center gap-3">
+              <div className="flex justify-between w-full  items-center gap-3">
                 <div
                   className={`w-${
-                    formData.repeat === "no-repeat" ? "[100%]" : "[50%]"
+                    formData.repeat === "no-repeat" ? "full" : "1/2"
                   }`}
                 >
                   <Label htmlFor="repeat">Repeat</Label>
