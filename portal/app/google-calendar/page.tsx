@@ -28,10 +28,11 @@ interface FormData {
   location: string;
   startDate: Date | null;
   repeat: string;
-  startTime: Date | null;
-  endTime: Date | null;
+  startTime: string | Date | null; // Modified
+  endTime: string | Date | null; // Modified
   allDay: boolean;
   endRepeat: Date | null;
+  endDate: Date | null; // Added
 }
 
 const GoogleCalendar: React.FC = () => {
@@ -45,9 +46,9 @@ const GoogleCalendar: React.FC = () => {
     endTime: null,
     allDay: true,
     endRepeat: null,
+    endDate: null, // Added
   });
 
-  
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -56,11 +57,18 @@ const GoogleCalendar: React.FC = () => {
       return;
     }
 
-    let formattedStartDate, formattedEndDate;
+    type FormData = {
+      startDate: string;
+      startTime?: string | Date;
+      endDate?: string | Date; // Modified
+      endTime?: string | Date;
+      allDay?: boolean;
+    };
+
+    let formattedStartDate: string, formattedEndDate: string;
 
     if (formData.allDay) {
       const startDate = new Date(formData.startDate);
-      startDate.setDate(startDate.getDate() + 1); // Correcting the date by adding 1 day
       const startDateStr = startDate
         .toISOString()
         .split("T")[0]
@@ -71,25 +79,48 @@ const GoogleCalendar: React.FC = () => {
     } else {
       const startDate = new Date(formData.startDate);
       if (formData.startTime) {
-        startDate.setHours(
-          formData.startTime.getHours(),
-          formData.startTime.getMinutes()
-        );
+        if (typeof formData.startTime === "string") {
+          const [hours, minutes] = formData.startTime.split(":").map(Number);
+          startDate.setHours(hours, minutes);
+        } else if (formData.startTime instanceof Date) {
+          startDate.setHours(
+            formData.startTime.getHours(),
+            formData.startTime.getMinutes()
+          );
+        }
       }
 
-      // Adjust the start date to account for timezone differences
-      const offset = startDate.getTimezoneOffset();
-      startDate.setMinutes(startDate.getMinutes() - offset);
-
       formattedStartDate =
-        startDate.toISOString().replace(/[-:]/g, "").slice(0, -4) + "Z"; // Remove milliseconds and add Z for UTC
+        startDate.toISOString().replace(/[-:.]/g, "").split(".")[0] + "Z"; // Remove milliseconds and add Z for UTC
 
-      formattedEndDate = formattedStartDate; // Since endDate is removed, use startDate for both
+      // Calculate the end date based on the end date and time if provided, otherwise default to 2 hours from the start time
+      const endDate = formData.endDate
+        ? new Date(formData.endDate)
+        : new Date(startDate);
+      if (formData.endTime) {
+        if (typeof formData.endTime === "string") {
+          const [hours, minutes] = formData.endTime.split(":").map(Number);
+          endDate.setHours(hours, minutes);
+        } else if (formData.endTime instanceof Date) {
+          endDate.setHours(
+            formData.endTime.getHours(),
+            formData.endTime.getMinutes()
+          );
+        }
+      } else {
+        // Default duration is 2 hours if end time is not provided
+        endDate.setTime(startDate.getTime() + 2 * 60 * 60 * 1000); // Add 2 hours
+      }
+
+      formattedEndDate =
+        endDate.toISOString().replace(/[-:.]/g, "").split(".")[0] + "Z"; // Remove milliseconds and add Z for UTC
+
       console.log("Timed Event: ", formattedStartDate);
     }
 
     console.log("Start Date: ", formData.startDate);
     console.log("Formatted Start Date: ", formattedStartDate);
+    console.log("Formatted End Date: ", formattedEndDate);
 
     let recurrence = "";
     if (formData.repeat !== "no-repeat") {
@@ -151,8 +182,6 @@ const GoogleCalendar: React.FC = () => {
     window.open(googleCalendarLink, "_blank");
   };
 
-
-
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -163,16 +192,15 @@ const GoogleCalendar: React.FC = () => {
     }));
   };
 
- const handleDateChange = (name: keyof FormData) => (date: Date | null) => {
-   if (date) {
-     date.setHours(0, 0, 0, 0); // Ensure the date is set to the start of the day
-   }
-   setFormData((prevFormData) => ({
-     ...prevFormData,
-     [name]: date,
-   }));
- };
-
+  const handleDateChange = (name: keyof FormData) => (date: Date | null) => {
+    if (date) {
+      date.setHours(0, 0, 0, 0); // Ensure the date is set to the start of the day
+    }
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      [name]: date,
+    }));
+  };
 
   const handleTimeChange = (name: keyof FormData) => (time: Date | null) => {
     setFormData((prevFormData) => ({
@@ -283,27 +311,6 @@ const GoogleCalendar: React.FC = () => {
               />
             </LabelInputContainer>
 
-            {!formData.allDay && (
-              <div className="flex justify-between item-center gap-3">
-                <LocalizationProvider dateAdapter={AdapterDateFns}>
-                  <div className="w-[50%]">
-                    <Label>Start Time</Label>
-                    <TimePicker
-                      value={formData.startTime}
-                      onChange={handleTimeChange("startTime")}
-                    />
-                  </div>
-                  <div className="w-[50%]">
-                    <Label>End Time</Label>
-                    <TimePicker
-                      value={formData.endTime}
-                      onChange={handleTimeChange("endTime")}
-                    />
-                  </div>
-                </LocalizationProvider>
-              </div>
-            )}
-
             <LabelInputContainer>
               <div className="flex justify-between item-center gap-3">
                 <div className="w-[50%]">
@@ -345,6 +352,27 @@ const GoogleCalendar: React.FC = () => {
                 </div>
               </div>
             </LabelInputContainer>
+
+            {!formData.allDay && (
+              <div className="flex justify-between item-center gap-3">
+                <LocalizationProvider dateAdapter={AdapterDateFns}>
+                  <div className="w-[50%]">
+                    <Label>Start Time</Label>
+                    <TimePicker
+                      value={formData.startTime as Date | null}
+                      onChange={handleTimeChange("startTime")}
+                    />
+                  </div>
+                  <div className="w-[50%]">
+                    <Label>End Time</Label>
+                    <TimePicker
+                      value={formData.endTime as Date | null}
+                      onChange={handleTimeChange("endTime")}
+                    />
+                  </div>
+                </LocalizationProvider>
+              </div>
+            )}
 
             <button
               className="bg-gradient-to-br mt-3 relative group/btn from-black dark:from-zinc-900 dark:to-zinc-900 to-neutral-600 block dark:bg-zinc-800 w-full text-white rounded-md h-10 font-medium shadow-[0px_1px_0px_0px_#ffffff40_inset,0px_-1px_0px_0px_#ffffff40_inset] dark:shadow-[0px_1px_0px_0px_var(--zinc-800)_inset,0px_-1px_0px_0px_var(--zinc-800)_inset] transition duration-300 ease-in-out hover:from-black hover:to-neutral-700"
