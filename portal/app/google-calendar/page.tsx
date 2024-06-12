@@ -41,12 +41,12 @@ const GoogleCalendar: React.FC = () => {
     details: "",
     location: "",
     startDate: null,
-    repeat: "",
+    repeat: "no-repeat",
     startTime: null,
     endTime: null,
     allDay: true,
     endRepeat: null,
-    endDate: null, // Added
+    endDate: null,
   });
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -57,70 +57,68 @@ const GoogleCalendar: React.FC = () => {
       return;
     }
 
-    type FormData = {
-      startDate: string;
-      startTime?: string | Date;
-      endDate?: string | Date; // Modified
-      endTime?: string | Date;
-      allDay?: boolean;
-    };
+   let formattedStartDate: string, formattedEndDate: string;
 
-    let formattedStartDate: string, formattedEndDate: string;
+   if (formData.allDay) {
+     const startDate = new Date(formData.startDate);
+     startDate.setDate(startDate.getDate() + 1); // Add one day to correct the date issue
+     const startDateStr = startDate
+       .toISOString()
+       .split("T")[0]
+       .replace(/-/g, "");
+     formattedStartDate = startDateStr;
+     formattedEndDate = startDateStr; // For all-day events, start and end date are the same
+     console.log("All Day Event: ", formattedStartDate);
+   } else {
+     const startDate = new Date(formData.startDate);
+     startDate.setDate(startDate.getDate() + 1); // Add one day to correct the date issue
+     if (formData.startTime) {
+       if (typeof formData.startTime === "string") {
+         const [hours, minutes] = formData.startTime.split(":").map(Number);
+         startDate.setHours(hours, minutes);
+       } else if (formData.startTime instanceof Date) {
+         startDate.setHours(
+           formData.startTime.getHours(),
+           formData.startTime.getMinutes()
+         );
+       }
+     }
 
-    if (formData.allDay) {
-      const startDate = new Date(formData.startDate);
-      const startDateStr = startDate
-        .toISOString()
-        .split("T")[0]
-        .replace(/-/g, "");
-      formattedStartDate = startDateStr;
-      formattedEndDate = startDateStr; // For all-day events, start and end date are the same
-      console.log("All Day Event: ", formattedStartDate);
-    } else {
-      const startDate = new Date(formData.startDate);
-      if (formData.startTime) {
-        if (typeof formData.startTime === "string") {
-          const [hours, minutes] = formData.startTime.split(":").map(Number);
-          startDate.setHours(hours, minutes);
-        } else if (formData.startTime instanceof Date) {
-          startDate.setHours(
-            formData.startTime.getHours(),
-            formData.startTime.getMinutes()
-          );
-        }
-      }
+     formattedStartDate =
+       startDate.toISOString().replace(/[-:.]/g, "").split(".")[0] + "Z"; // Remove milliseconds and add Z for UTC
 
-      formattedStartDate =
-        startDate.toISOString().replace(/[-:.]/g, "").split(".")[0] + "Z"; // Remove milliseconds and add Z for UTC
+     // Calculate the end date based on the end date and time if provided, otherwise default to 2 hours from the start time
+     const endDate = formData.endDate
+       ? new Date(formData.endDate)
+       : new Date(startDate);
+     if (formData.endDate) {
+       endDate.setDate(endDate.getDate() + 1); // Add one day to correct the date issue
+     }
+     if (formData.endTime) {
+       if (typeof formData.endTime === "string") {
+         const [hours, minutes] = formData.endTime.split(":").map(Number);
+         endDate.setHours(hours, minutes);
+       } else if (formData.endTime instanceof Date) {
+         endDate.setHours(
+           formData.endTime.getHours(),
+           formData.endTime.getMinutes()
+         );
+       }
+     } else {
+       // Default duration is 2 hours if end time is not provided
+       endDate.setTime(startDate.getTime() + 2 * 60 * 60 * 1000); // Add 2 hours
+     }
 
-      // Calculate the end date based on the end date and time if provided, otherwise default to 2 hours from the start time
-      const endDate = formData.endDate
-        ? new Date(formData.endDate)
-        : new Date(startDate);
-      if (formData.endTime) {
-        if (typeof formData.endTime === "string") {
-          const [hours, minutes] = formData.endTime.split(":").map(Number);
-          endDate.setHours(hours, minutes);
-        } else if (formData.endTime instanceof Date) {
-          endDate.setHours(
-            formData.endTime.getHours(),
-            formData.endTime.getMinutes()
-          );
-        }
-      } else {
-        // Default duration is 2 hours if end time is not provided
-        endDate.setTime(startDate.getTime() + 2 * 60 * 60 * 1000); // Add 2 hours
-      }
+     formattedEndDate =
+       endDate.toISOString().replace(/[-:.]/g, "").split(".")[0] + "Z"; // Remove milliseconds and add Z for UTC
 
-      formattedEndDate =
-        endDate.toISOString().replace(/[-:.]/g, "").split(".")[0] + "Z"; // Remove milliseconds and add Z for UTC
+     console.log("Timed Event: ", formattedStartDate);
+   }
 
-      console.log("Timed Event: ", formattedStartDate);
-    }
+   console.log("Start Date: ", formData.startDate);
+   console.log("Formatted Start Date: ", formattedStartDate);
+   console.log("Formatted End Date: ", formattedEndDate);
 
-    console.log("Start Date: ", formData.startDate);
-    console.log("Formatted Start Date: ", formattedStartDate);
-    console.log("Formatted End Date: ", formattedEndDate);
 
     let recurrence = "";
     if (formData.repeat !== "no-repeat") {
@@ -313,7 +311,11 @@ const GoogleCalendar: React.FC = () => {
 
             <LabelInputContainer>
               <div className="flex justify-between item-center gap-3">
-                <div className="w-[50%]">
+                <div
+                  className={`${
+                    formData.repeat === "no-repeat" ? "w-[100%]" : "w-[50%]"
+                  }`}
+                >
                   <Label htmlFor="repeat">Repeat</Label>
                   <Select
                     value={formData.repeat}
@@ -321,7 +323,7 @@ const GoogleCalendar: React.FC = () => {
                   >
                     <SelectTrigger>
                       <SelectValue
-                        placeholder="Repeat"
+                        placeholder="Doesn't repeat"
                         className="text-gray-500 font-semibold"
                       />
                     </SelectTrigger>
@@ -343,13 +345,15 @@ const GoogleCalendar: React.FC = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="w-[50%]">
-                  <Label htmlFor="endRepeat">End Repeat</Label>
-                  <DatePicker
-                    selectedDate={formData.endRepeat}
-                    onDateChange={handleDateChange("endRepeat")}
-                  />
-                </div>
+                {formData.repeat !== "no-repeat" && (
+                  <div className="w-[50%]">
+                    <Label htmlFor="endRepeat">End Repeat</Label>
+                    <DatePicker
+                      selectedDate={formData.endRepeat}
+                      onDateChange={handleDateChange("endRepeat")}
+                    />
+                  </div>
+                )}
               </div>
             </LabelInputContainer>
 
