@@ -14,13 +14,13 @@ import TextField from "@mui/material/TextField";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 
-export function TimePicker() {
-  const [time, setTime] = React.useState<Date | null>(null);
-
-  const handleTimeChange = (newTime: Date | null) => {
-    setTime(newTime);
-  };
-
+export function TimePicker({
+  value,
+  onChange,
+}: {
+  value: Date | null;
+  onChange: (newTime: Date | null) => void;
+}) {
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
       <Popover>
@@ -29,12 +29,12 @@ export function TimePicker() {
             variant={"outline"}
             className={cn(
               "justify-start text-left font-normal w-full bg-white text-black",
-              !time && "text-muted-foreground"
+              !value && "text-muted-foreground"
             )}
           >
             <ClockIcon className="mr-2 h-4 w-4 text-gray-500" />
-            {time ? (
-              time.toLocaleTimeString([], {
+            {value ? (
+              value.toLocaleTimeString([], {
                 hour: "2-digit",
                 minute: "2-digit",
               })
@@ -46,8 +46,8 @@ export function TimePicker() {
         <PopoverContent className="w-auto p-0">
           <div className="p-4 bg-white">
             <MuiTimePicker
-              value={time}
-              onChange={handleTimeChange}
+              value={value}
+              onChange={onChange}
               renderInput={(params) => (
                 <TextField
                   {...params}
