@@ -141,6 +141,7 @@ export const WorkLogItem = ({
 export const WorklogsPage = () => {
   const { user } = useUser();
 
+  const thisYear = dayjs().year();
   const thisMonth = dayjs().month();
   const thisDate = dayjs().date();
   const dispatch = useAppDispatch();
@@ -188,8 +189,8 @@ export const WorklogsPage = () => {
         monthTab != dayjs().month()
           ? _total_days_in_month
           : _total_days_in_month <= dayjs().date() + 2
-            ? _total_days_in_month
-            : dayjs().date() + 2,
+          ? _total_days_in_month
+          : dayjs().date() + 2,
     })
       .map((_, i) => {
         const _date = dayjs()
@@ -231,7 +232,7 @@ export const WorklogsPage = () => {
 
   return (
     <div className="flex flex-col">
-      <div className="fixed left-0 right-0 top-0 z-10 bg-white flex flex-row gap-3 py-2 px-3 items-center justify-between border-b border-neutral-400 md:pl-[6rem]">
+      <div className="fixed left-0 right-0 top-0 z-10 bg-white flex flex-row gap-3 py-2 px-3 items-center justify-between border-neutral-400 md:pl-[6rem]">
         <div className="flex items-center">
           <Link href={APP_ROUTES.home}>
             <h1 className="text-lg cursor-pointer font-bold border-r-2 pr-3 mr-3">
@@ -240,35 +241,40 @@ export const WorklogsPage = () => {
           </Link>
           <h1 className="tracking-widest text-sm font-regular">My Worklogs</h1>
         </div>
-        <div className="flex flex-row gap-1">
-          <Link href={APP_ROUTES.userWorklogs}>
-            <div className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700">
+        <div className="flex flex-row  items-center gap-3">
+          <SummarizeButton userId={user?.id} />
+          <Link
+            href={`${APP_ROUTES.userWorklogSummary}/${user?.id}?year=${thisYear}&month=${thisMonth}`}
+          >
+            <div className="cursor-pointer rounded-md py-1 px-3 flex items-center gap-2 text-sm text-neutral-100 bg-neutral-800 hover:bg-neutral-700">
               <span className="icon_size material-symbols-outlined">
-                timeline
+                description
               </span>
+              <span>{dayjs().format("MMMM")} Summary</span>
             </div>
           </Link>
-          <SummarizeButton userId={user?.id} />
         </div>
       </div>
       <div className="scrollable_list">
         <div className="h-[3.5rem]"></div>
         <div
-          className="flex flex-row justify-between sticky top-[3.5rem] bg-neutral-100 z-[5]
+          className="flex flex-row justify-between bg-neutral-100 z-[5]
          overflow-x-auto p-2 "
         >
           {Array.from({ length: 12 }).map((_, month_tab: number) => (
             <div
               key={month_tab}
               onClick={() => setMonthTab(month_tab)}
-              className={` rounded-3xl cursor-pointer ${monthTab === month_tab ? "border border-neutral-600" : ""
-                }`}
+              className={` rounded-3xl cursor-pointer ${
+                monthTab === month_tab ? "border border-neutral-600" : ""
+              }`}
             >
               <h4
-                className={`text-sm ${monthTab === month_tab
-                  ? "font-bold text-neutral-800"
-                  : "text-neutral-400"
-                  } p-2 px-4`}
+                className={`text-sm ${
+                  monthTab === month_tab
+                    ? "font-bold text-neutral-800"
+                    : "text-neutral-400"
+                } p-2 px-4`}
               >
                 {dayjs().month(month_tab).format("MMMM")}
               </h4>
@@ -291,7 +297,7 @@ export const WorklogsPage = () => {
             </ul>
             <p className="text-lg font-bold  my-4">Shortcuts</p>
             <ul className="list-disc font-mono text-sm tracking-widest">
-              <li className="">Ctrl+Spacebar  === ✅</li>
+              <li className="">Ctrl+Spacebar === ✅</li>
               <li className="">Ctrl+S to save the logs manually</li>
               <li className="">Ctrl+R to Refresh the logs</li>
               <li className="">Type `-` to add bulletin</li>
@@ -299,15 +305,38 @@ export const WorklogsPage = () => {
             </ul>
             <p className="text-lg font-bold my-4">Emoji Legend:</p>
             <ul className="list-disc font-mono text-sm tracking-widest">
-              <li><span className="font-bold">:check:</span> === ✅ - Task Completed</li>
-              <li><span className="font-bold">:cross:</span> === ❌ - Task Failed</li>
-              <li><span className="font-bold">:yellow:</span> === 🟡 - Task In Progress</li>
-              <li><span className="font-bold">:red:</span> === 🔴 - Task Blocked</li>
-              <li><span className="font-bold">:calendar:</span> === 📅 - Scheduled Task</li>
-              <li><span className="font-bold">:pencil:</span> === ✏️ - Task Being Written</li>
-              <li><span className="font-bold">:bulb:</span> === 💡 - New Idea</li>
-              <li><span className="font-bold">:question:</span> === ❓ - Need Clarification</li>
-              <li><span className="font-bold">:star:</span> === ⭐ - High Priority</li>
+              <li>
+                <span className="font-bold">:check:</span> === ✅ - Task
+                Completed
+              </li>
+              <li>
+                <span className="font-bold">:cross:</span> === ❌ - Task Failed
+              </li>
+              <li>
+                <span className="font-bold">:yellow:</span> === 🟡 - Task In
+                Progress
+              </li>
+              <li>
+                <span className="font-bold">:red:</span> === 🔴 - Task Blocked
+              </li>
+              <li>
+                <span className="font-bold">:calendar:</span> === 📅 - Scheduled
+                Task
+              </li>
+              <li>
+                <span className="font-bold">:pencil:</span> === ✏️ - Task Being
+                Written
+              </li>
+              <li>
+                <span className="font-bold">:bulb:</span> === 💡 - New Idea
+              </li>
+              <li>
+                <span className="font-bold">:question:</span> === ❓ - Need
+                Clarification
+              </li>
+              <li>
+                <span className="font-bold">:star:</span> === ⭐ - High Priority
+              </li>
             </ul>
           </div>
           <div className="hidden md:block p-2 invisible md:visible w-[50%] max-lg:w-full rounded-lg border border-neutral-200 m-3  max-h-[80vh] overflow-y-scroll">

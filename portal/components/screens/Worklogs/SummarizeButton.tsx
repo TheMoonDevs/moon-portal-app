@@ -55,13 +55,13 @@ export const SummarizeButton = ({
       //   user?.id
       // }?year=${dayjs().format("YYYY")}&month=${dayjs().format("MM")}`}
     >
-      <button className="cursor-pointer text-sm bg-neutral-800 hover:bg-neutral-700 rounded-lg py-2 px-3 text-neutral-100 flex flex-row gap-2 items-center">
-        <span className="icon_size material-symbols-outlined">summarize</span>
-        <span>Summarize</span>
+      <button className="cursor-pointer text-sm border border-neutral-800 rounded-md py-1 px-3 text-neutral-900 flex flex-row gap-2 items-center">
+        <span className="icon_size material-symbols-outlined">timeline</span>
+        <span>Archive</span>
         <span className="icon_size material-symbols-outlined">expand_more</span>
       </button>
       <Fade in={isBtnDropdownOpen} mountOnEnter unmountOnExit>
-        <div className="flex flex-col gap-2 shadow-lg absolute z-[9999] bg-white rounded-md w-full py-2">
+        <div className="flex flex-col shadow-3xl border border-1 absolute z-[9999] bg-white rounded-md w-full mt-2">
           {summaryOptions.map(({ text, url }, index) => (
             <Link
               href={url}
