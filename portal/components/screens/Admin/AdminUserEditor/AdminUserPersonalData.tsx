@@ -8,9 +8,10 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { User } from "@prisma/client";
 import { JsonObject } from "@prisma/client/runtime/library";
+import { personalData } from "@/prisma/UserScehmaInterfaces";
 import { Spinner } from "@/components/elements/Loaders";
 
-export const AdminUserWorkData = ({
+export const AdminUserPersonalData = ({
   user,
   loading,
   setUser,
@@ -29,7 +30,7 @@ export const AdminUserWorkData = ({
     <LandscapeCard className="items-start justify-start">
       <div className="flex mb-8 w-full gap-4 items-center justify-between">
         <p className="text-neutral-400 tracking-[0.5em] uppercase text-xs text-center">
-          WORK DATA
+          Personal DATA
         </p>
         <button
           onClick={saveUser}
@@ -41,40 +42,40 @@ export const AdminUserWorkData = ({
         </button>
       </div>
       <LocalizationProvider dateAdapter={AdapterDayjs}>
-        <div className="flex flex-row items-start justify-start gap-8">
+        <div className="flex flex-row items-start justify-start gap-4">
           {/* Left Column */}
           <div className="flex flex-col grow gap-4 items-start justify-start">
             <div className="flex flex-row gap-4 items-center justify-start">
-              <p className="w-40">Joining Date</p>
+              <p className="w-40">Date of Birth</p>
               <DatePicker
-                value={dayjs((user?.workData as any)?.joining)}
+                value={dayjs((user?.personalData as any)?.dateOfBirth)}
                 onChange={(newValue) =>
                   setUser((u) => ({
                     ...u,
-                    workData: {
-                      ...(u.workData as JsonObject),
-                      joining: newValue?.format("YYYY-MM-DD"),
+                    personalData: {
+                      ...(u.personalData as JsonObject),
+                      dateOfBirth: newValue?.format("YYYY-MM-DD"),
                     },
                   }))
                 }
               />
             </div>
             <div className="flex flex-row gap-4 items-center justify-start">
-              <p className="w-40">Work Hours Per Week</p>
+              <p className="w-40">Phone</p>
               <input
-                id="workData.workHours"
+                id="personalData.phone"
                 type="text"
-                value={(user?.workData as any)?.workHours}
+                value={(user?.personalData as personalData)?.phone}
                 onChange={updateField}
                 className="border border-neutral-400 rounded-lg p-2"
               />
             </div>
             <div className="flex flex-row gap-4 items-center justify-start">
-              <p className="w-40">Position Public</p>
+              <p className="w-40">Address</p>
               <input
-                id="workData.positionPublic"
+                id="personalData.address"
                 type="text"
-                value={(user?.workData as any)?.positionPublic}
+                value={(user?.personalData as personalData)?.address}
                 onChange={updateField}
                 className="border border-neutral-400 rounded-lg p-2"
               />
@@ -83,31 +84,21 @@ export const AdminUserWorkData = ({
           {/* Right Column */}
           <div className="flex flex-col grow gap-4 items-start justify-start ml-12">
             <div className="flex flex-row gap-4 items-center justify-start">
-              <p className="w-40">Position Internal</p>
+              <p className="w-40">City</p>
               <input
-                id="workData.positionInternal"
+                id="personalData.city"
                 type="text"
-                value={(user?.workData as any)?.positionInternal}
+                value={(user?.personalData as personalData)?.city}
                 onChange={updateField}
                 className="border border-neutral-400 rounded-lg p-2"
               />
             </div>
             <div className="flex flex-row gap-4 items-center justify-start">
-              <p className="w-40">Grade</p>
+              <p className="w-40">Work Hour Overlap</p>
               <input
-                id="workData.grade"
-                type="number"
-                value={(user?.workData as any)?.grade}
-                onChange={updateField}
-                className="border border-neutral-400 rounded-lg p-2"
-              />
-            </div>
-            <div className="flex flex-row gap-4 items-center justify-start">
-              <p className="w-40">Grade Tag</p>
-              <input
-                id="workData.gradeTag"
+                id="personalData.workHourOverlap"
                 type="text"
-                value={(user?.workData as any)?.gradeTag}
+                value={(user?.personalData as personalData)?.workHourOverlap}
                 onChange={updateField}
                 className="border border-neutral-400 rounded-lg p-2"
               />
