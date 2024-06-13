@@ -89,7 +89,7 @@ export const WorklogEditor = ({
     setWorkLog(editWorkLogs);
     setServerLog(editWorkLogs);
     setMarkdownDatas(editWorkLogs.works as any[]);
-    console.log("placed ", editWorkLogs);
+    // console.log("placed ", editWorkLogs);
     isAuotSaving.current = true;
   }, [editWorkLogs]);
 
@@ -138,8 +138,24 @@ export const WorklogEditor = ({
     _markdownDat: WorkLogPoints,
     _fullpoints: WorkLogPoints[]
   ) => {
-    console.log(content);
-    const new_content = content.replaceAll(":check:", "✅");
+    // console.log(content);
+    const emojiMap: { [key: string]: string } = {
+      ":check:": "✅",
+      ":cross:": "❌",
+      ":yellow:": "🟡",
+      ":red:": "🔴",
+      ":calendar:": "📅",
+      ":pencil:": "✏️",
+      ":bulb:": "💡",
+      ":question:": "❓",
+      ":star:": "⭐",
+    };
+
+    let new_content = content;
+
+    for (const text in emojiMap) {
+      new_content = new_content.replaceAll(text, emojiMap[text]);
+    }
     const new_md = _fullpoints.map((_md) => {
       if (_md.link_id === _markdownDat.link_id) {
         return {
@@ -150,7 +166,7 @@ export const WorklogEditor = ({
       }
       return _md;
     });
-    console.log(new_content);
+    // console.log(new_content);
     setMarkdownDatas(new_md);
     setWorkLog((wl: any) => ({
       ...wl,
@@ -168,7 +184,7 @@ export const WorklogEditor = ({
       ) {
         return;
       }
-      console.log("saving... ", workLog);
+      // console.log("saving... ", workLog);
       saveWorkLog(workLog as any);
     },
     [serverLog, workLog],
@@ -226,14 +242,28 @@ export const WorklogEditor = ({
   const getStatsOfContent = (content: string) => {
     //const _content = content.replaceAll(":check:", "✅");
     // how many times ✅ is there in content
-    console.log(content);
+    // console.log(content);
     const checks = (content.match(/✅/g) || []).length;
     const points = (content.match(/\n/g) || []).length + 1;
     return `${checks} / ${points}`;
   };
 
   return (
-    <div className="flex flex-col md:max-w-[800px] min-h-screen">
+    <div
+      onKeyDown={(e) => {
+        if (e.ctrlKey && e.key === "s") {
+          e.preventDefault();
+          console.log("Saving Worklogs");
+          saveWorkLog(workLog as any);
+        }
+        if (e.ctrlKey && e.key === "r") {
+          e.preventDefault();
+          console.log("Refreshing Worklogs");
+          refreshWorklogs();
+        }
+      }}
+      className="flex flex-col md:max-w-[800px] min-h-screen"
+    >
       {!compactView && (
         <div id="header" className="flex flex-row justify-between">
           <Link
@@ -273,7 +303,7 @@ export const WorklogEditor = ({
           </div>
         </div>
       )}
-      <div className="p-4  mb-4 ">
+      <div className="p-4 mb-4 ">
         <input
           disabled={compactView}
           type="text"
@@ -322,7 +352,7 @@ export const WorklogEditor = ({
           </p>
           <div
             className="relative flex flex-row items-stretch px-4 mb-3"
-            onKeyUp={(e) => {
+            onKeyDown={(e) => {
               //console.log("keyup", e.key);
               // detect ctrl + space
               if (e.ctrlKey && e.key === " ") {
