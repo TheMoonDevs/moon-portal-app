@@ -19,7 +19,11 @@ export const LineView = ({
       className="group cursor-pointer relative rounded-md py-2 px-2 w-full hover:bg-neutral-100 mt-2"
       onClick={() => handleLinkClick(link.id)}
     >
-      <div className="flex flex-row items-center justify-between">
+      <Link
+        target="_blank"
+        href={link.url}
+        className="flex flex-row items-center justify-between"
+      >
         <div className="flex flex-row items-center justify-start">
           <div className="bg-white rounded-full shadow-md min-w-[30px]">
             <img
@@ -39,7 +43,7 @@ export const LineView = ({
             </p>
           </div>
         </div>
-      </div>
+      </Link>
     </div>
   );
 };

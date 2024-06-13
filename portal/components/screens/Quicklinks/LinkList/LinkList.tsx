@@ -20,16 +20,18 @@ export default function LinkList({
   allQuicklinks,
   withView = "all",
   isLoading,
+  inSearchBar,
 }: {
   allQuicklinks?: Quicklink[];
   withView?: withView;
   isLoading?: boolean;
+  inSearchBar?: boolean;
 }) {
   const { currentView } = useAppSelector((state) => state.quicklinks);
 
   return (
     <>
-      <div className="w-full">
+      <div className={`w-full ${inSearchBar ? "overflow-hidden" : ""}`}>
         {allQuicklinks?.length === 0 && isLoading && (
           <div className="w-full flex justify-center h-52 items-center ">
             <CircularProgress color="inherit" />

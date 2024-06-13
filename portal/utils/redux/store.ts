@@ -10,6 +10,7 @@ import zerotrackerReducer from "./zerotracker/zerotracker.slice";
 import quicklinksReducer from "./quicklinks/quicklinks.slice";
 import searchTermReducer from "./searchTerm/search.slice";
 import filesUploadReducer from "./filesUpload/fileUpload.slice";
+import worklogsReducer from "./worklogs/worklogs.slice";
 //import suggestionsReducer from './suggestions/suggestions.slice';
 
 const store = configureStore({
@@ -20,6 +21,7 @@ const store = configureStore({
     shortUrl: shortUrlReducer,
     zerotracker: zerotrackerReducer,
     filesUpload: filesUploadReducer,
+    worklogs: worklogsReducer,
     searchTerm: searchTermReducer,
     //suggestions: suggestionsReducer,
   },

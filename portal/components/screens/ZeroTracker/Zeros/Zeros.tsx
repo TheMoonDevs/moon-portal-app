@@ -1,8 +1,10 @@
 import dayjs from "dayjs";
 import React from "react";
 import { TrackerMode } from "../ZeroTracker";
+import { CircularProgress } from "@mui/material";
 interface IZerosProps {
   selectedDates: string[];
+  isSavingZeroes: boolean;
   currentMonthDayjs: dayjs.Dayjs;
   setTrackerMode: React.Dispatch<React.SetStateAction<TrackerMode>>;
   handleZeroDateClick: React.Dispatch<React.SetStateAction<any>>;
@@ -14,6 +16,7 @@ export const Zeros = ({
   setTrackerMode,
   handleZeroDateClick,
   updateDates,
+  isSavingZeroes,
 }: IZerosProps) => {
   return (
     <div className="flex flex-col justify-between w-full p-4 gap-2">
@@ -49,28 +52,38 @@ export const Zeros = ({
           ))}
       </div>
       <div className="flex flex-row gap-2">
-        <div
+        <button
           onClick={() => setTrackerMode("normal")}
-          className="cursor-pointer flex-1 flex-grow flex flex-row items-center justify-start gap-1 p-4 rounded-[0.75em] bg-neutral-100 text-neutral-900"
+          disabled={isSavingZeroes}
+          className={` ${
+            isSavingZeroes
+              ? "bg-neutral-300	 text-white"
+              : "bg-neutral-100 text-neutral-900"
+          } flex-1 flex-grow flex flex-row items-center justify-start gap-1 p-4 rounded-[0.75em] `}
         >
           <span className="icon_size material-symbols-outlined">
             arrow_back
           </span>
           <p className="text-[0.7em] whitespace-nowrap font-bold tracking-[0.2em] ">
-            {" "}
             BACK
           </p>
-        </div>
-        <div
+        </button>
+        <button
           onClick={updateDates}
-          className="cursor-pointer flex flex-row items-center justify-between gap-1 p-4 rounded-[0.75em] overflow-hidden bg-blue-500 text-neutral-100"
+          disabled={isSavingZeroes}
+          className={`${
+            isSavingZeroes ? "bg-neutral-300	" : "bg-blue-500"
+          } flex flex-row items-center justify-between gap-1 p-4 rounded-[0.75em] overflow-hidden text-neutral-100`}
         >
           <p className="text-[0.7em] font-bold tracking-[0.2em] ">
             {" "}
             SAVE CHANGES
           </p>
-          <span className="icon_size material-icons">task_alt</span>
-        </div>
+          {!isSavingZeroes && (
+            <span className="icon_size material-icons">task_alt</span>
+          )}
+          {isSavingZeroes && <CircularProgress size={20} color="inherit" />}
+        </button>
       </div>
     </div>
   );

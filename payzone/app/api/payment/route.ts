@@ -1,7 +1,10 @@
-import { PrismaClient, TRANSACTIONCATEGORY, TRANSACTIONSTATUS } from "@prisma/client";
+import { prisma } from "@/prisma/prisma";
+import {
+  PrismaClient,
+  TRANSACTIONCATEGORY,
+  TRANSACTIONSTATUS,
+} from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
-
-const prisma = new PrismaClient();
 
 export async function PUT(req: NextRequest, res: NextResponse) {
   if (!req.body) {
@@ -91,8 +94,12 @@ export async function GET(request: NextRequest) {
     // console.log("HERE IAM");
 
     const userId = request.nextUrl.searchParams.get("userId") as string;
-    const txStatus = request.nextUrl.searchParams.get("txStatus") as TRANSACTIONSTATUS;
-    const txCategory = request.nextUrl.searchParams.get("txCategory") as TRANSACTIONCATEGORY;
+    const txStatus = request.nextUrl.searchParams.get(
+      "txStatus"
+    ) as TRANSACTIONSTATUS;
+    const txCategory = request.nextUrl.searchParams.get(
+      "txCategory"
+    ) as TRANSACTIONCATEGORY;
 
     const transactions = await prisma.payTransactions.findMany({
       where: {

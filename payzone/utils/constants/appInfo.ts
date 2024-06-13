@@ -1,5 +1,12 @@
+import { baseSepolia } from "viem/chains";
+
+const NEXT_PUBLIC_TMD_CONTRACT = process.env.NEXT_PUBLIC_TMD_CONTRACT
+  ? process.env.NEXT_PUBLIC_TMD_CONTRACT
+  : "0x718feaac496184980F7ccf0b07360C70b63c1705";
+
 export enum APP_ROUTES {
   home = "/",
+  dashboardHome = "/dashboard",
   dashboard = "/dashboard/tmd-credits",
   credits = "/dashboard/tmd-credits",
   payments = "/dashboard/payments",
@@ -60,20 +67,28 @@ export const APP_INFO = {
   description: "THE MOON DEVS PAYMENT APP",
 };
 
-
 export enum chainEnum {
   bscTestnet = 97,
   base = 8453,
   baseSepolia = 84532,
 }
 
-export enum TOKEN_INFO {
-  decimals = 6,
-  name = "TMDToken",
-  contractAddress = "0x490f0C989BfC844c5501242292A8b2A97148E952",
-  chainId = chainEnum.baseSepolia,
-  burnAddress = "0x000000000000000000000000000000000000dEaD",
-}
+export const TOKEN_INFO = {
+  decimals: 6,
+  name: "TMDToken",
+  contractAddress: NEXT_PUBLIC_TMD_CONTRACT,
+  chainId: chainEnum.baseSepolia,
+  burnAddress: "0x000000000000000000000000000000000000dEaD",
+  chain: {
+    ...baseSepolia,
+    blockExplorers: {
+      default: {
+        name: "BlockScout-BaseSeploia",
+        url: "https://base-sepolia.blockscout.com",
+      },
+    },
+  },
+};
 
 export const copyUPI = (upiId: string) => {
   navigator.clipboard

@@ -24,7 +24,7 @@ export const Credits = () => {
     setLoading(true);
     new Promise((resolve, reject) => {
       ChainScanner.fetchAllTransactions(
-        chainEnum.bscTestnet,
+        TOKEN_INFO.chainId,
         userWalletAddress,
         TOKEN_INFO.contractAddress
       )
@@ -63,7 +63,9 @@ export const Credits = () => {
   return (
     <>
       <Header className="flex flex-col gap-2 ml-7 mt-2">
-        <span className="text-4xl font-semibold">{`${balance} TMD`}</span>
+        <div className="flex items-center">
+          <span className="text-4xl font-semibold">{`${balance} TMD Credits`}</span>
+        </div>
         <span className="text-sm font-thin text-midGrey">
           {`Current Value: ${formatNumberToText(balance)} INR`}
         </span>

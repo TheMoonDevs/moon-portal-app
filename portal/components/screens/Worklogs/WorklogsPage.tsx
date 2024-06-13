@@ -7,14 +7,17 @@ import { PortalSdk } from "@/utils/services/PortalSdk";
 import { WorkLogs } from "@prisma/client";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import store from "@/utils/redux/store";
+import store, { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import dayjs from "dayjs";
 import { WorkLogsHelper } from "./WorklogsHelper";
-import { useMediaQuery } from "@mui/material";
+import { Fade, useMediaQuery } from "@mui/material";
 import media from "@/styles/media";
 import { WorklogView } from "./WorklogView";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MDXEditorMethods } from "@mdxeditor/editor";
+import { SummarizeButton } from "./SummarizeButton";
+import { Toaster, toast } from "sonner";
+import { setLogsList } from "@/utils/redux/worklogs/worklogs.slice";
 
 const tempData = [
   {
@@ -66,7 +69,7 @@ export const WorkLogItem = ({
   return (
     <Link
       href={isTabletOrMore ? "" : linkForWorkLog(data)}
-      className={`flex flex-col  gap-3 rounded-lg border border-neutral-200 p-3 ${
+      className={`flex flex-col  gap-3 rounded-lg border border-neutral-200 p-3 overflow-y-hidden min-h-[150px] ${
         data.logType === "privateLog" ? " h-full " : ""
       } ${selected ? " bg-white border-neutral-900 border-2 " : ""}`}
       onClick={onClick}
@@ -110,8 +113,11 @@ export const WorkLogItem = ({
         {data.id != "" &&
           data.works //.flatMap((wk) => (wk as any)?.pointInfos)
             //.slice(0, 3)
-            .map((point: any) => (
-              <div key={point.project} className="flex flex-row items-center">
+            .map((point: any, index: number) => (
+              <div
+                key={`${point.link_id}-${index}`}
+                className="flex flex-row items-center"
+              >
                 <div className="text-sm font-light">
                   <MdxAppEditor
                     key={point?.id}
@@ -145,11 +151,17 @@ export const WorklogsPage = () => {
 
   const thisMonth = dayjs().month();
   const thisDate = dayjs().date();
+  const dispatch = useAppDispatch();
+
   const [monthTab, setMonthTab] = useState<number>(thisMonth);
-  const [logsList, setLogsList] = useState<WorkLogs[]>([]);
+  const logsList = useAppSelector((state) => state.worklogs.logsList);
   const [yearLogData, setYearLogData] = useState<any>();
   const [privateBoard, setPrivateBoard] = useState<WorkLogs | null>(null);
   const isTabletOrMore = useMediaQuery(media.moreTablet);
+  const isEditorSaving = useAppSelector(
+    (state) => state.worklogs.isEditorSaving
+  );
+
   // Initialize state for content, loading, and editor reference
   const [content, setContent] = useState<string>("");
   const [docId, setDocId] = useState<string>("");
@@ -222,19 +234,19 @@ export const WorklogsPage = () => {
     if (!_user) return;
     PortalSdk.getData(`/api/user/worklogs?userId=${_user.id}`, null)
       .then((data) => {
-        console.log(data);
+        // console.log(data);
         setYearLogData(data);
 
-        const _privateboard = data?.data?.workLogs.find(
-          (wl: WorkLogs) => wl.logType === "privateLog"
-        );
-        setPrivateBoard(
-          _privateboard ||
-            WorkLogsHelper.defaultPrivateBoard(
-              dayjs().month(monthTab).format("MM-YYYY"),
-              _user
-            )
-        );
+        // const _privateboard = data?.data?.workLogs.find(
+        //   (wl: WorkLogs) => wl.logType === "privateLog"
+        // );
+        // setPrivateBoard(
+        //   _privateboard ||
+        //     WorkLogsHelper.defaultPrivateBoard(
+        //       dayjs().month(monthTab).format("MM-YYYY"),
+        //       _user
+        //     )
+        // );
       })
       .catch((err) => {
         console.log(err);
@@ -264,8 +276,8 @@ export const WorklogsPage = () => {
         return _worklog || WorkLogsHelper.defaultWorklogs(_date, _user);
       })
       .reverse();
-    setLogsList(_logList);
-  }, [monthTab, yearLogData]);
+    dispatch(setLogsList(_logList));
+  }, [monthTab, yearLogData, dispatch]);
 
   const [selectedID, setSelectedID] = useState<string>();
   const [selectedDate, setSelectedDate] = useState<string | undefined>(
@@ -310,19 +322,13 @@ export const WorklogsPage = () => {
               </span>
             </div>
           </Link>
-          <Link href={APP_ROUTES.userWorklogs}>
-            <div className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700">
-              <span className="icon_size material-symbols-outlined">
-                description
-              </span>
-            </div>
-          </Link>
+          <SummarizeButton userId={user?.id} />
         </div>
       </div>
       <div className="scrollable_list">
         <div className="h-[3.5rem]"></div>
         <div
-          className="flex flex-row justify-between sticky top-[3.5rem] bg-neutral-100 z-10
+          className="flex flex-row justify-between sticky top-[3.5rem] bg-neutral-100 z-[5]
          overflow-x-auto p-2 "
         >
           {Array.from({ length: 12 }).map((_, month_tab: number) => (
@@ -346,7 +352,7 @@ export const WorklogsPage = () => {
           ))}
         </div>
         <div className="flex flex-row-reverse max-lg:flex-col w-full">
-          <div className="hidden md:block p-8 invisible md:visible w-[40%] max-lg:w-full">
+          <div className="hidden md:block p-8 invisible md:visible w-[40%] max-lg:w-full max-h-[80vh] overflow-y-scroll">
             <Tabs defaultValue="task" className="w-[400px]">
               <TabsList>
                 <TabsTrigger value="task">Task & Tips</TabsTrigger>
@@ -358,18 +364,20 @@ export const WorklogsPage = () => {
                   <li className="">Something...</li>
                 </ul>
                 <p className="text-lg font-bold my-4">Worklog tips</p>
-                <ul className=" font-mono text-sm tracking-widest">
-                  <li className="">1. Use Short Bulletin points</li>
-                  <li className="">2. Log every minor update</li>
-                  <li className="">3. Add ✅ as you complete each task.</li>
+                <ul className="list-decimal font-mono text-sm tracking-widest ml-3">
+                  <li className="">Use Short Bulletin points</li>
+                  <li className="">Log every minor update</li>
+                  <li className="">Add ✅ as you complete each task.</li>
                   <li className="">
-                    4. At the end, Note Todo&apos;s for tomorrow
+                    At the end, Note Todo&apos;s for tomorrow
                   </li>
-                  <li className="">5. Use summarise to generate logs.</li>
+                  <li className="">Use summarise to generate logs.</li>
                 </ul>
                 <p className="text-lg font-bold  my-4">Shortcuts</p>
-                <ul className=" font-mono text-sm tracking-widest">
+                <ul className="list-disc font-mono text-sm tracking-widest">
                   <li className="">Ctrl+Spacebar === ✅</li>
+                  <li className="">Ctrl+S to save the logs manually</li>
+                  <li className="">Ctrl+R to Refresh the logs</li>
                   <li className="">Type `-` to add bulletin</li>
                   <li className="">Click Tab to add space to bulletin</li>
                 </ul>
@@ -409,6 +417,41 @@ export const WorklogsPage = () => {
                 </div>
               </TabsContent>
             </Tabs>
+            <p className="text-lg font-bold my-4">Emoji Legend:</p>
+            <ul className="list-disc font-mono text-sm tracking-widest">
+              <li>
+                <span className="font-bold">:check:</span> === ✅ - Task
+                Completed
+              </li>
+              <li>
+                <span className="font-bold">:cross:</span> === ❌ - Task Failed
+              </li>
+              <li>
+                <span className="font-bold">:yellow:</span> === 🟡 - Task In
+                Progress
+              </li>
+              <li>
+                <span className="font-bold">:red:</span> === 🔴 - Task Blocked
+              </li>
+              <li>
+                <span className="font-bold">:calendar:</span> === 📅 - Scheduled
+                Task
+              </li>
+              <li>
+                <span className="font-bold">:pencil:</span> === ✏️ - Task Being
+                Written
+              </li>
+              <li>
+                <span className="font-bold">:bulb:</span> === 💡 - New Idea
+              </li>
+              <li>
+                <span className="font-bold">:question:</span> === ❓ - Need
+                Clarification
+              </li>
+              <li>
+                <span className="font-bold">:star:</span> === ⭐ - High Priority
+              </li>
+            </ul>
           </div>
           <div className="hidden md:block p-2 invisible md:visible w-[50%] max-lg:w-full rounded-lg border border-neutral-200 m-3  max-h-[80vh] overflow-y-scroll">
             {/* {privateBoard && (
@@ -438,11 +481,15 @@ export const WorklogsPage = () => {
                   data={data}
                   selected={selectedDate === data.date}
                   onClick={() => {
+                    if (isEditorSaving) {
+                      toast.error("Save your Logs! (Ctrl+S)");
+                      return;
+                    }
                     if (data.id?.trim().length > 0) {
                       setSelectedID(data.id);
                       if (data.date) setSelectedDate(data.date);
                     } else if (data.date) {
-                      console.log(data);
+                      // console.log(data);
                       setSelectedID(undefined);
                       if (data.date) setSelectedDate(data.date);
                     }
@@ -455,6 +502,7 @@ export const WorklogsPage = () => {
         </div>
         {/* <div className="flex flex-col gap-3 h-[5rem]"></div> */}
       </div>
+      <Toaster />
     </div>
   );
 };
