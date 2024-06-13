@@ -88,7 +88,7 @@ export const ZeroTrackerPage = () => {
       PortalSdk.getData(`/api/user?userType=${user.userType}`, null),
     ])
       .then((responses) => {
-        console.log(responses);
+        // console.log(responses);
         const all_zeros: ZeroRecords[] = responses[0].data.zeroRecords;
         // setAllZeroRecords(all_zeros);
         const all_users: User[] = responses[1].data.user;
