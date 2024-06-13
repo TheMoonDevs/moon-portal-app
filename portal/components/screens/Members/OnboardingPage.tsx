@@ -107,7 +107,7 @@ export default function OnboardingPage({ onClose }: OnboardingPageProps) {
       const data = await response.json();
       console.log("API response data:", data);
 
-      if (data.message === "Username is already taken") {
+      if (data.status === 409) {
         setMessage("Username is taken");
         setMessageColor("red");
       } else {
