@@ -7,12 +7,15 @@ import { PortalSdk } from "@/utils/services/PortalSdk";
 import { WorkLogs } from "@prisma/client";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import store from "@/utils/redux/store";
+import store, { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import dayjs from "dayjs";
 import { WorkLogsHelper } from "./WorklogsHelper";
-import { useMediaQuery } from "@mui/material";
+import { Fade, useMediaQuery } from "@mui/material";
 import media from "@/styles/media";
 import { WorklogView } from "./WorklogView";
+import { SummarizeButton } from "./SummarizeButton";
+import { Toaster, toast } from "sonner";
+import { setLogsList } from "@/utils/redux/worklogs/worklogs.slice";
 
 const tempData = [
   {
@@ -140,11 +143,16 @@ export const WorklogsPage = () => {
 
   const thisMonth = dayjs().month();
   const thisDate = dayjs().date();
+  const dispatch = useAppDispatch();
+
   const [monthTab, setMonthTab] = useState<number>(thisMonth);
-  const [logsList, setLogsList] = useState<WorkLogs[]>([]);
+  const logsList = useAppSelector((state) => state.worklogs.logsList);
   const [yearLogData, setYearLogData] = useState<any>();
   const [privateBoard, setPrivateBoard] = useState<WorkLogs | null>(null);
   const isTabletOrMore = useMediaQuery(media.moreTablet);
+  const isEditorSaving = useAppSelector(
+    (state) => state.worklogs.isEditorSaving
+  );
 
   useEffect(() => {
     const _user = store.getState().auth.user;
@@ -155,16 +163,16 @@ export const WorklogsPage = () => {
         // console.log(data);
         setYearLogData(data);
 
-        const _privateboard = data?.data?.workLogs.find(
-          (wl: WorkLogs) => wl.logType === "privateLog"
-        );
-        setPrivateBoard(
-          _privateboard ||
-          WorkLogsHelper.defaultPrivateBoard(
-            dayjs().month(monthTab).format("MM-YYYY"),
-            _user
-          )
-        );
+        // const _privateboard = data?.data?.workLogs.find(
+        //   (wl: WorkLogs) => wl.logType === "privateLog"
+        // );
+        // setPrivateBoard(
+        //   _privateboard ||
+        //     WorkLogsHelper.defaultPrivateBoard(
+        //       dayjs().month(monthTab).format("MM-YYYY"),
+        //       _user
+        //     )
+        // );
       })
       .catch((err) => {
         console.log(err);
@@ -194,8 +202,8 @@ export const WorklogsPage = () => {
         return _worklog || WorkLogsHelper.defaultWorklogs(_date, _user);
       })
       .reverse();
-    setLogsList(_logList);
-  }, [monthTab, yearLogData]);
+    dispatch(setLogsList(_logList));
+  }, [monthTab, yearLogData, dispatch]);
 
   const [selectedID, setSelectedID] = useState<string>();
   const [selectedDate, setSelectedDate] = useState<string | undefined>(
@@ -240,19 +248,13 @@ export const WorklogsPage = () => {
               </span>
             </div>
           </Link>
-          <Link href={APP_ROUTES.userWorklogs}>
-            <div className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700">
-              <span className="icon_size material-symbols-outlined">
-                description
-              </span>
-            </div>
-          </Link>
+          <SummarizeButton userId={user?.id} />
         </div>
       </div>
       <div className="scrollable_list">
         <div className="h-[3.5rem]"></div>
         <div
-          className="flex flex-row justify-between sticky top-[3.5rem] bg-neutral-100 z-10
+          className="flex flex-row justify-between sticky top-[3.5rem] bg-neutral-100 z-[5]
          overflow-x-auto p-2 "
         >
           {Array.from({ length: 12 }).map((_, month_tab: number) => (
@@ -336,6 +338,10 @@ export const WorklogsPage = () => {
                   data={data}
                   selected={selectedDate === data.date}
                   onClick={() => {
+                    if (isEditorSaving) {
+                      toast.error("Save your Logs! (Ctrl+S)");
+                      return;
+                    }
                     if (data.id?.trim().length > 0) {
                       setSelectedID(data.id);
                       if (data.date) setSelectedDate(data.date);
@@ -353,6 +359,7 @@ export const WorklogsPage = () => {
         </div>
         {/* <div className="flex flex-col gap-3 h-[5rem]"></div> */}
       </div>
+      <Toaster />
     </div>
   );
 };

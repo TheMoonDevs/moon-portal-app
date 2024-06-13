@@ -16,6 +16,7 @@
     "@emotion/cache": "^11.11.0",
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
+    "@google/generative-ai": "^0.12.0",
     "@mantine/core": "^7.9.0",
     "@mantine/dropzone": "^7.9.0",
     "@mantine/hooks": "^7.9.0",
@@ -44,6 +45,7 @@
     "react-slick": "^0.30.2",
     "react-table": "^7.8.0",
     "react-timezone-select": "^2.1.2",
+    "react-to-pdf": "^1.0.1",
     "slick-carousel": "^1.8.1",
     "sonner": "^1.4.41"
   },
