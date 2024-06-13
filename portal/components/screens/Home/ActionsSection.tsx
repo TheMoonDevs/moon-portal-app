@@ -10,7 +10,7 @@ const Links = [
     route: APP_ROUTES.quicklinksDashboard,
     active: true,
     color: "rose",
-    openNew: true,
+    openNew: false,
   },
   {
     icon: "task_alt",

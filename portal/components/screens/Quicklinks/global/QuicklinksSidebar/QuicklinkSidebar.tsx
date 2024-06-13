@@ -19,13 +19,13 @@ export default function QuicklinkSidebar() {
     currentDirectory,
     setCurrentDirectory,
   } = useQuickLinkDirectory(true);
-  const [viewType, setViewType] = useState<"root" | "selected">("root");
+  const [viewType, setViewType] = useState<"root" | "selected">("selected");
   const [newDirectory, setNewDirectory] = useState<ParentDirectory | null>(
     null
   );
 
   useEffect(() => {
-    setViewType(currentDirectory ? "selected" : "root");
+    setViewType(currentDirectory ? "selected" : "selected");
   }, [currentDirectory]);
 
   return (
@@ -196,38 +196,50 @@ export default function QuicklinkSidebar() {
                 </Tooltip>
               ))}
             </ul>
-            <nav className="bg-neutral-100 grow rounded-3xl rounded-bl-none rounded-br-none drop-shadow-lg overflow-hidden">
-              <div className="static overflow-y-scroll">
-                <div className="flex items-center justify-between px-2 py-3 sticky backdrop-blur-md">
-                  <div className="ml-3">
-                    <h4 className="text-lg font-bold">
-                      {selectedRootDir?.title}
-                    </h4>
-                    <p className="text-sm opacity-70">
-                      {currentDirectory?.title}
-                    </p>
-                  </div>
-                  <button
-                    className={`p-[4px] w-8 h-8 flex items-center justify-center border-2 ml-auto text-xs  
+            {selectedRootDir && (
+              <nav className="bg-neutral-100 grow rounded-3xl rounded-bl-none rounded-br-none drop-shadow-lg overflow-hidden">
+                <div className="static overflow-y-scroll">
+                  <div className="flex items-center justify-between px-2 py-3 sticky backdrop-blur-md">
+                    <div className="ml-3">
+                      <h4 className="text-lg font-bold">
+                        {selectedRootDir?.title}
+                      </h4>
+                      <p className="text-sm opacity-70">
+                        {currentDirectory?.title}
+                      </p>
+                    </div>
+                    {/* <button
+                      className={`p-[4px] w-8 h-8 flex items-center justify-center border-2 ml-auto text-xs  
                  cursor-pointer hover:bg-neutral-300 rounded-full
                  `}
-                    onClick={() => setCurrentDirectory(null)}
-                  >
-                    <span className={`material-symbols-outlined !text-sm`}>
-                      chevron_left
-                    </span>
-                  </button>
-                </div>
-                <div className="flex flex-col">
-                  <DirectoryTree
-                    mainDirectory={parentDirs.filter(
-                      (_dir) => _dir?.type === selectedRootDir?.id
+                      onClick={() => setCurrentDirectory(null)}
+                    >
+                      <span className={`material-symbols-outlined !text-sm`}>
+                        chevron_left
+                      </span>
+                    </button> */}
+                    {selectedRootDir && (
+                      <AddSectionPopup
+                        id={selectedRootDir?.id}
+                        root={selectedRootDir}
+                        newDirectory={newDirectory}
+                        setNewDirectory={setNewDirectory}
+                      />
                     )}
-                    selectedDir={currentDirectory?.id}
-                  />
+                  </div>
+                  {currentDirectory && (
+                    <div className="flex flex-col">
+                      <DirectoryTree
+                        mainDirectory={parentDirs.filter(
+                          (_dir) => _dir?.type === selectedRootDir?.id
+                        )}
+                        selectedDir={currentDirectory?.id}
+                      />
+                    </div>
+                  )}
                 </div>
-              </div>
-            </nav>
+              </nav>
+            )}
           </div>
         )}
       </aside>
