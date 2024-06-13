@@ -32,11 +32,7 @@ export async function POST(request: NextRequest) {
         avatar,
         timezone,
         password: passcode,
-        userType: "MEMBER",
         vertical: "DEV",
-        role: "TRIAL_CANDIDATE",
-        status: "INACTIVE",
-        isAdmin: false,
         workData: {
           joining: new Date(),
           workHours: "",
@@ -113,7 +109,7 @@ export async function GET(request: NextRequest) {
     if (user) {
       return NextResponse.json(
         { message: "Username is already taken" },
-        { status: 200 }
+        { status: 409 }
       );
     } else {
       return NextResponse.json(
