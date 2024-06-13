@@ -34,7 +34,7 @@ export const DirectoryTree = ({
   const { rootDirectories, parentDirs, directories } = useQuickLinkDirectory();
 
   useEffect(() => {
-    console.log("expanded init", selectedDir);
+    //console.log("expanded init", selectedDir);
     if (!selectedDir) return;
 
     // recursive parents expander
@@ -60,13 +60,13 @@ export const DirectoryTree = ({
 
     // initially level pass only yhe array
     // expand the current slected, its parent, the parent of its parent etc..
-    const array = addParentsToExpaned([...expandedDirs], selectedDir);
-    console.log("expanded", array);
+    const array = addParentsToExpaned([selectedDir], selectedDir);
+    //console.log("expanded", array, parentDirs, directories);
 
     //QL-TODO - if a different parent tree is open, we do not wish to close it,
     // bu following the current logic it is closing.
     setExpandedDirs(array);
-  }, [selectedDir, expandedDirs, parentDirs, directories]);
+  }, [selectedDir, parentDirs, directories]);
 
   const handleDirectoryUpdate = async (
     e: FocusEvent<HTMLInputElement | Element>,

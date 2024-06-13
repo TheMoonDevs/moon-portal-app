@@ -13,7 +13,6 @@ export const useQuickLinkDirectory = (init?: boolean) => {
   const pathname = usePathname();
   const rootSlug = "/quicklinks";
 
-  console.log("expanded", activeDirectoryId);
   useEffect(() => {
     if (!init) return;
     rootDirectories?.map((root) => {
