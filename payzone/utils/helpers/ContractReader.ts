@@ -5,9 +5,11 @@ import {
   createWalletClient,
   parseEther,
 } from "viem";
-import { bscTestnet } from "viem/chains";
+import { base, baseSepolia, bscTestnet } from "viem/chains";
+import { chainEnum } from "../constants/appInfo";
 
 interface Contract {
+  chain: chainEnum;
   address: Address;
   abi: any[];
 }
@@ -16,7 +18,12 @@ export const readContractData = async (
   functionName: string,
   walletAddress: Address
 ): Promise<any> => {
-  const chain = bscTestnet;
+  const chain =
+    contract.chain === chainEnum.baseSepolia
+      ? baseSepolia
+      : contract.chain === chainEnum.base
+      ? base
+      : base;
   const client = createPublicClient({
     chain: chain,
     transport: http(),

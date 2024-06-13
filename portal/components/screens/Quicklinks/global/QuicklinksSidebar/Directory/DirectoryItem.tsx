@@ -1,9 +1,8 @@
-import { FocusEvent, SetStateAction } from "react";
+import { FocusEvent, SetStateAction, useState } from "react";
 import Link from "next/link";
 import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import { setActiveDirectoryId } from "@/utils/redux/quicklinks/quicklinks.slice";
 import { Directory } from "@prisma/client";
-import { usePathname } from "next/navigation";
 
 interface IDirectoryItemProps {
   directory: Directory | any;
@@ -15,15 +14,16 @@ interface IDirectoryItemProps {
     id: string;
     isEditable: boolean;
   };
-  newDirectoryName: string;
-  setNewDirectoryName: (value: string) => void;
+  // newDirectoryName: string;
+  // setNewDirectoryName: (value: string) => void;
   setEditable: (
     value: SetStateAction<{ id: string; isEditable: boolean }>
   ) => void;
-  handleDirectoryNameChange: (
+  handleDirectoryUpdate: (
     event: FocusEvent<HTMLInputElement | Element>,
-    id: string,
-    parentId: string | null
+    directory: Directory,
+    parentId: string | null,
+    updateInfo: Partial<Directory>
   ) => void;
   setExpandedDirs: (value: SetStateAction<string[]>) => void;
   handleAddChildDirectory: (parentId: string) => void;
@@ -37,29 +37,37 @@ export const DirectoryItem = ({
   pathName,
   rootSlug,
   editable,
-  newDirectoryName,
-  setNewDirectoryName,
+  // newDirectoryName,
+  // setNewDirectoryName,
   setEditable,
-  handleDirectoryNameChange,
+  handleDirectoryUpdate,
   setExpandedDirs,
   handleAddChildDirectory,
   handleDeleteDirectory,
 }: IDirectoryItemProps) => {
   const dispatch = useAppDispatch();
-  const { directories, parentDirs, rootDirectories } = useAppSelector(
-    (state) => state.quicklinks
-  );
+  const { directories, parentDirs, rootDirectories, activeDirectoryId } =
+    useAppSelector((state) => state.quicklinks);
+  const [newDirectoryName, setNewDirectoryName] = useState<string>("");
 
   let path: string;
 
-  path = `/quicklinks${rootSlug}/${directory.slug}?id=${directory.id}`;
-  const onlyPath = path.split("?")[0];
+  const isDepartment =
+    rootSlug ===
+    rootDirectories.find((rootDir) => rootDir.id === "DEPARTMENT")?.slug;
+  const isCommonResources =
+    rootSlug ===
+    rootDirectories.find((rootDir) => rootDir.id === "COMMON_RESOURCES")?.slug;
 
-  const isDepartmental =
-    rootSlug === rootDirectories.find((dir) => dir.id === "DEPARTMENT")?.slug;
+  path = `/quicklinks${rootSlug}/${directory.slug}${
+    directory.parentDirId
+      ? `-${new Date(directory.timestamp).getTime().toString().slice(-5)}`
+      : ""
+  }`;
+  // const onlyPath = path.split("?")[0];
 
   const isExpanded = isDirectoryExpanded(directory.id);
-  const isCurrentPage = onlyPath === pathName;
+  const isCurrentPage = activeDirectoryId === directory.id;
 
   //console.log("isCurrentPage:", isCurrentPage, pathName, onlyPath);
 
@@ -70,10 +78,16 @@ export const DirectoryItem = ({
           className="flex items-center cursor-pointer gap-1"
           onClick={() => toggleDirectory(directory.id)}
         >
-          <div onClick={() => dispatch(setActiveDirectoryId(path))}>
+          <div
+            onClick={() => {
+              // dispatch(setActiveDirectoryId(directory.id));
+              if (editable.id !== directory.id)
+                setEditable({ id: "", isEditable: false });
+            }}
+          >
             <Link
               href={path}
-              className={`${pathName === path ? "font-extrabold" : ""} `}
+              className={`${isCurrentPage ? "font-extrabold" : ""} `}
             >
               {editable.isEditable === true &&
               editable.id === directory.id &&
@@ -83,13 +97,14 @@ export const DirectoryItem = ({
                   value={newDirectoryName}
                   className="focus:outline-none w-24"
                   onChange={(e) => setNewDirectoryName(e.target.value)}
-                  onBlur={(e) =>
-                    handleDirectoryNameChange(
-                      e,
-                      directory.id,
-                      directory.parentDirId
-                    )
-                  }
+                  onBlur={(e) => {
+                    if (!newDirectoryName)
+                      return setEditable({ id: "", isEditable: false });
+                    handleDirectoryUpdate(e, directory, directory.parentDirId, {
+                      title: newDirectoryName,
+                      slug: newDirectoryName.toLowerCase().replace(/ /g, "-"),
+                    });
+                  }}
                 />
               ) : (
                 <h3
@@ -105,9 +120,7 @@ export const DirectoryItem = ({
                     }
                   }}
                 >
-                  {editable.id === directory.id
-                    ? newDirectoryName
-                    : directory.title}
+                  {directory.title}
                 </h3>
               )}
             </Link>
@@ -157,13 +170,15 @@ export const DirectoryItem = ({
                   isDirectoryExpanded={isDirectoryExpanded}
                   pathName={pathName}
                   rootSlug={
-                    isDepartmental ? `${rootSlug}/${directory.slug}` : rootSlug
+                    isCommonResources || isDepartment
+                      ? `${rootSlug}/${directory.slug}`
+                      : rootSlug
                   }
                   editable={editable}
-                  newDirectoryName={newDirectoryName}
-                  setNewDirectoryName={setNewDirectoryName}
+                  // newDirectoryName={newDirectoryName}
+                  // setNewDirectoryName={setNewDirectoryName}
                   setEditable={setEditable}
-                  handleDirectoryNameChange={handleDirectoryNameChange}
+                  handleDirectoryUpdate={handleDirectoryUpdate}
                   setExpandedDirs={setExpandedDirs}
                   handleAddChildDirectory={handleAddChildDirectory}
                   handleDeleteDirectory={handleDeleteDirectory}

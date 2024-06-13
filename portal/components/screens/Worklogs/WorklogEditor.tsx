@@ -21,10 +21,14 @@ import {
 import { DEFAULT_MARKDOWN_DATA } from "./WorklogsHelper";
 import { useDebouncedEffect } from "@/utils/hooks/useDebouncedHook";
 import { debounce } from "lodash";
-import store from "@/utils/redux/store";
+import store, { useAppDispatch } from "@/utils/redux/store";
 import Link from "next/link";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
 import { MDXEditorMethods } from "@mdxeditor/editor";
+import {
+  setEdiotrSaving,
+  updateLogs,
+} from "@/utils/redux/worklogs/worklogs.slice";
 
 const MARKDOWN_PLACHELODER = `* `;
 
@@ -39,6 +43,7 @@ export const WorklogEditor = ({
   refreshWorklogs: () => void;
   compactView?: boolean;
 }) => {
+  const dispatch = useAppDispatch();
   const { user } = useUser();
   const [markdownDatas, setMarkdownDatas] = useState<WorkLogPoints[]>(
     DEFAULT_MARKDOWN_DATA
@@ -57,6 +62,13 @@ export const WorklogEditor = ({
       workLog
     );
   }, [serverLog, workLog]);
+  useEffect(() => {
+    if (!isAutoSaved && !loading) {
+      dispatch(setEdiotrSaving(true));
+    } else {
+      dispatch(setEdiotrSaving(false));
+    }
+  }, [isAutoSaved, loading, dispatch]);
 
   useEffect(() => {
     if (!user) return;
@@ -77,7 +89,7 @@ export const WorklogEditor = ({
     setWorkLog(editWorkLogs);
     setServerLog(editWorkLogs);
     setMarkdownDatas(editWorkLogs.works as any[]);
-    console.log("placed ", editWorkLogs);
+    // console.log("placed ", editWorkLogs);
     isAuotSaving.current = true;
   }, [editWorkLogs]);
 
@@ -109,6 +121,7 @@ export const WorklogEditor = ({
           if (!data?.data?.workLogs) return;
           setWorkLog(data?.data?.workLogs);
           setServerLog(data?.data?.workLogs);
+          dispatch(updateLogs(data?.data?.workLogs));
           console.log("saved", data?.data?.workLogs);
         })
         .catch((err) => {
@@ -121,11 +134,28 @@ export const WorklogEditor = ({
 
   const changeMarkData = (
     content: string,
+    bd_index: number,
     _markdownDat: WorkLogPoints,
     _fullpoints: WorkLogPoints[]
   ) => {
-    console.log(content);
-    const new_content = content.replaceAll(":check:", "✅");
+    // console.log(content);
+    const emojiMap: { [key: string]: string } = {
+      ":check:": "✅",
+      ":cross:": "❌",
+      ":yellow:": "🟡",
+      ":red:": "🔴",
+      ":calendar:": "📅",
+      ":pencil:": "✏️",
+      ":bulb:": "💡",
+      ":question:": "❓",
+      ":star:": "⭐",
+    };
+
+    let new_content = content;
+
+    for (const text in emojiMap) {
+      new_content = new_content.replaceAll(text, emojiMap[text]);
+    }
     const new_md = _fullpoints.map((_md) => {
       if (_md.link_id === _markdownDat.link_id) {
         return {
@@ -136,12 +166,13 @@ export const WorklogEditor = ({
       }
       return _md;
     });
-    console.log(new_content);
+    // console.log(new_content);
     setMarkdownDatas(new_md);
     setWorkLog((wl: any) => ({
       ...wl,
       works: new_md as any[],
     }));
+    markdownRefs.current[bd_index]?.current?.setMarkdown(new_content);
   };
   useDebouncedEffect(
     () => {
@@ -153,7 +184,7 @@ export const WorklogEditor = ({
       ) {
         return;
       }
-      console.log("saving... ", workLog);
+      // console.log("saving... ", workLog);
       saveWorkLog(workLog as any);
     },
     [serverLog, workLog],
@@ -211,14 +242,28 @@ export const WorklogEditor = ({
   const getStatsOfContent = (content: string) => {
     //const _content = content.replaceAll(":check:", "✅");
     // how many times ✅ is there in content
-    console.log(content);
+    // console.log(content);
     const checks = (content.match(/✅/g) || []).length;
     const points = (content.match(/\n/g) || []).length + 1;
     return `${checks} / ${points}`;
   };
 
   return (
-    <div className="flex flex-col md:max-w-[800px]">
+    <div
+      onKeyDown={(e) => {
+        if (e.ctrlKey && e.key === "s") {
+          e.preventDefault();
+          console.log("Saving Worklogs");
+          saveWorkLog(workLog as any);
+        }
+        if (e.ctrlKey && e.key === "r") {
+          e.preventDefault();
+          console.log("Refreshing Worklogs");
+          refreshWorklogs();
+        }
+      }}
+      className="flex flex-col md:max-w-[800px] min-h-screen"
+    >
       {!compactView && (
         <div id="header" className="flex flex-row justify-between">
           <Link
@@ -258,7 +303,7 @@ export const WorklogEditor = ({
           </div>
         </div>
       )}
-      <div className="p-4  mb-4 ">
+      <div className="p-4 mb-4 ">
         <input
           disabled={compactView}
           type="text"
@@ -276,21 +321,25 @@ export const WorklogEditor = ({
             );
           }}
         />
-        {saving ? (
-          <p className="text-xs flex item-center gap-2 leading-3 mt-3 text-neutral-500">
-            saving...
-          </p>
-        ) : (
-          <p className="text-xs flex item-center gap-2 leading-3 mt-3 text-neutral-500">
-            {workLog?.logType === "dayLog"
-              ? dayjs(workLog?.date).format("DD-MM-YYYY")
-              : "My logs"}{" "}
-            | {workLog?.logType} | saved
-            <span className="icon_size material-symbols-outlined text-neutral-500">
-              {saving ? "" : "done"}
-            </span>
-          </p>
-        )}
+        <div className="text-xs flex item-center gap-2 leading-3 mt-3 text-neutral-500">
+          {saving && (
+            <div className="animate-spin rounded-full h-3 w-3 border-t-2 border-b-2 mr-2 border-neutral-800"></div>
+          )}
+          {workLog?.logType === "dayLog"
+            ? dayjs(workLog?.date).format("DD-MM-YYYY")
+            : "My logs"}{" "}
+          {/* | {workLog?.logType}  */}|{" "}
+          {saving
+            ? "saving..."
+            : loading
+            ? "fetching.."
+            : !isAutoSaved
+            ? "In-Edit"
+            : "Saved"}
+          <span className="icon_size material-symbols-outlined text-neutral-500">
+            {!isAutoSaved ? "edit" : "done"}
+          </span>
+        </div>
         <div className={`h-[${compactView ? "1em" : "3em"}]`}></div>
       </div>
       {markdownDatas.map((_markdownDat, bd_index) => (
@@ -302,8 +351,8 @@ export const WorklogEditor = ({
             {_markdownDat.title} - {getStatsOfContent(_markdownDat.content)}
           </p>
           <div
-            className=" flex flex-row items-stretch px-4 mb-3"
-            onKeyUp={(e) => {
+            className="relative flex flex-row items-stretch px-4 mb-3"
+            onKeyDown={(e) => {
               //console.log("keyup", e.key);
               // detect ctrl + space
               if (e.ctrlKey && e.key === " ") {
@@ -321,19 +370,32 @@ export const WorklogEditor = ({
                     : null
                 }
                 key={
-                  _markdownDat.content.trim().length <= 1 || loading
+                  loading
                     ? "uninit"
-                    : _markdownDat.link_id + "-" + workLog?.title
+                    : workLog?.id +
+                      "-" +
+                      _markdownDat.link_id +
+                      "-" +
+                      workLog?.title
                 }
                 markdown={
-                  _markdownDat.content.length > 1
+                  _markdownDat.content.trim().length != 0
                     ? _markdownDat.content
                     : MARKDOWN_PLACHELODER
                 }
                 className="flex-grow h-full"
-                contentEditableClassName="mdx_ce leading-1 imp-p-0 grow w-full h-full"
+                contentEditableClassName={`mdx_ce ${
+                  _markdownDat.content.trim() == MARKDOWN_PLACHELODER.trim()
+                    ? " mdx_uninit "
+                    : ""
+                } leading-1 imp-p-0 grow w-full h-full`}
                 onChange={(content: any) => {
-                  changeMarkData(content, _markdownDat, markdownDatas);
+                  changeMarkData(
+                    content,
+                    bd_index,
+                    _markdownDat,
+                    markdownDatas
+                  );
                   //   debounceSaveWorkLogsMarkdownData(
                   //     content,
                   //     _markdownDat,s
@@ -342,6 +404,11 @@ export const WorklogEditor = ({
                 }}
               />
             )}
+            {(_markdownDat.content.trim().length <= 0 ||
+              _markdownDat.content.trim() === MARKDOWN_PLACHELODER.trim()) &&
+              !loading && (
+                <span className="mdx_placeholder">Jotdown your thougts...</span>
+              )}
             {/* <p>{_markdownDat.content}</p> */}
           </div>
         </div>
@@ -351,7 +418,7 @@ export const WorklogEditor = ({
           id="bottom-bar"
           className="fixed bottom-[0.5rem] left-0 md:hidden right-0 mx-3 my-1 flex flex-row gap-3"
         >
-          <div
+          {/* <div
             id="input-bar"
             className="flex flex-row items-center flex-grow justify-between bg-white p-2 rounded-lg shadow-md"
           >
@@ -378,7 +445,7 @@ export const WorklogEditor = ({
             >
               <span className="icon_size material-icons">add</span>
             </div>
-          </div>
+          </div> */}
         </div>
       )}
     </div>

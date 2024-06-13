@@ -121,11 +121,13 @@ model Link {
   title         String
   description   String
   logo          String
+  image         String
+  linkType      String
   url           String
   clickCount    Int
   isFavorite    Boolean     @default(false)
-  department    ParentDirectory? @relation(fields: [departmentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  departmentId  String?     @db.ObjectId
+  rootParentDir    ParentDirectory? @relation(fields: [rootParentDirId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  rootParentDirId  String?     @db.ObjectId
   author        User?       @relation(name: "CreatedLinks", fields: [authorId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   userLink      UserLink[]
   authorId      String?     @db.ObjectId
@@ -134,7 +136,7 @@ model Link {
   updatedAt DateTime @default(now())  
 
 
-  @@index([departmentId])
+  @@index([rootParentDirId])
   @@index([authorId])
   @@map("Links")
 }
@@ -145,6 +147,7 @@ model Directory {
   logo        String
   slug        String
   parentDirId String?
+  timestamp   DateTime @default(now()) 
 }
 
 enum ROOTTYPE {

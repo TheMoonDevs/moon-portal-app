@@ -35,14 +35,20 @@ export const MemberSidebar = () => {
       <div>
         <Link href={APP_ROUTES.home}>
           <div className="hidden lg:flex items-center w-auto gap-3 mt-6">
-            <Image src="/logo/logo_white.png" alt="" width={47} height={47} />
-            <p className="text-xs tracking-[.2em] text-white">
-              THE <br /> MOON <br /> DEVS
+            <Image src="/logo/payzone.svg" alt="" width={47} height={47} />
+            <p className="text-xs tracking-[.2em] text-white mt-4">
+              <span className="text-lg font-bold">PAYZONE</span>
+              <br />
+              <span className="text-[10px]">THE MOON DEVS</span>
             </p>
           </div>
           <div className="lg:hidden flex items-center w-fit gap-3 mt-4">
-            <Image src="/logo/logo_white.png" alt="" width={27} height={27} />
-            <p className="text-xs tracking-[.2em] text-white">THE MOON DEVS</p>
+            <Image src="/logo/payzone.svg" alt="" width={27} height={27} />
+            <p className="text-xs tracking-[.2em] text-white mt-4">
+              <span className="text-lg">PAYZONE</span>
+              <br />
+              <span className="text-[10px]">THE MOON DEVS</span>
+            </p>
           </div>
         </Link>
         <div className="hidden mt-14 lg:flex flex-col gap-7">

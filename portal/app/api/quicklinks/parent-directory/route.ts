@@ -1,13 +1,20 @@
 import { prisma } from "@/prisma/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const id = request.nextUrl.searchParams.get("id");
+  const slug = request.nextUrl.searchParams.get("slug");
   try {
-    const departments = await prisma.parentDirectory.findMany({});
+    const parentDirs = await prisma.parentDirectory.findMany({
+      where: {
+        ...(id && { id: id }),
+        ...(slug && { slug: slug }),
+      },
+    });
     let json_response = {
       status: "success",
       data: {
-        departments,
+        parentDirs,
       },
     };
     return NextResponse.json(json_response);
@@ -20,18 +27,18 @@ export async function GET() {
   }
 }
 export async function POST(request: Request) {
-  const newDepartment = await request.json();
+  const newParentDirs = await request.json();
   //   return;
 
   try {
-    const department = await prisma.parentDirectory.create({
-      data: newDepartment,
+    const parentDirs = await prisma.parentDirectory.create({
+      data: newParentDirs,
     });
 
     let json_response = {
       status: "success",
       data: {
-        department,
+        parentDirs,
       },
     };
     return NextResponse.json(json_response);
@@ -53,7 +60,7 @@ export async function DELETE(request: NextRequest) {
     });
   }
   try {
-    const department = await prisma.parentDirectory.delete({
+    const newParentDirs = await prisma.parentDirectory.delete({
       where: {
         id: id,
       },
@@ -61,7 +68,7 @@ export async function DELETE(request: NextRequest) {
     let json_response = {
       status: "success",
       data: {
-        department,
+        newParentDirs,
       },
     };
     return NextResponse.json(json_response);
@@ -74,27 +81,26 @@ export async function DELETE(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
-  const { directoryId, newTitle, newSlug } = await request.json();
-  if (!directoryId || !newTitle || !newSlug) {
+  const { id, ...rest } = await request.json();
+  if (!id) {
     return new NextResponse(JSON.stringify({ error: "Missing id" }), {
       status: 404,
       headers: { "Content-Type": "application/json" },
     });
   }
   try {
-    const department = await prisma.parentDirectory.update({
+    const directory = await prisma.parentDirectory.update({
       where: {
-        id: directoryId,
+        id: id,
       },
       data: {
-        title: newTitle,
-        slug: newSlug,
+        ...rest,
       },
     });
     let json_response = {
       status: "success",
       data: {
-        department,
+        directory,
       },
     };
     return NextResponse.json(json_response);

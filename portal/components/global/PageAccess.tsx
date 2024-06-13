@@ -5,7 +5,7 @@ import { useUser } from "@/utils/hooks/useUser";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-export const usePageAccess = () => {};
+export const usePageAccess = () => { };
 
 export const PageAccess = ({
   isAuthRequired,
@@ -62,7 +62,28 @@ export const PageAccess = ({
       );
     else return children;
   }
-  return (
-    <div className={`${bottomBarShown ? "md:pl-20" : ""}`}>{children}</div>
-  );
+
+  if (isAuthRequired && verifiedUserEmail !== user?.email) {
+    return (
+      <div className="flex flex-col items-center justify-center py-2 bg-neutral-700 md:bg-neutral-900 h-screen">
+        <div className="flex flex-row items-center justify-center gap-2">
+          <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-neutral-100"></div>
+          <p className="text-neutral-100">Redirecting...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isAdminRequired && !user?.isAdmin) {
+    return (
+      <div className="flex flex-col items-center justify-center py-2 bg-neutral-700 md:bg-neutral-900 h-screen">
+        <div className="flex flex-row items-center justify-center gap-2">
+          <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-neutral-100"></div>
+          <p className="text-neutral-100">Redirecting...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return <div className={`${bottomBarShown ? "md:pl-20" : ""}`}>{children}</div>;
 };

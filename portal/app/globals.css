@@ -51,11 +51,13 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-.mdx_ce li:first-child:has(br)::before {
+.mdx_placeholder {
   font-size: small;
   content: "Jotdown your thougts...";
   opacity: 0.5;
   position: absolute;
+  top: 0.5em;
+  left: 3em;
   pointer-events: none;
   display: block; /* For Firefox */
 }
@@ -64,8 +66,12 @@ body {
   margin: 0.3em 0;
 }
 
-.mdx_ce p {
+.mdx_ce.mdx_uninit p:has(br) {
   display: none;
+}
+
+.mdx_ce.mdx_uninit p:only-child {
+  display: inline;
 }
 
 .mdx_ce li:before {
@@ -88,6 +94,27 @@ body {
 
 .imp-p-0 {
   padding: 0 !important;
+}
+
+.summary_mdx > h1,
+h2 {
+  font-weight: bold !important;
+  font-size: x-large;
+}
+
+.summary_mdx > h3 {
+  font-weight: bold !important;
+  font-size: large;
+}
+
+.summary_mdx ul {
+  list-style: disc !important;
+}
+
+.summary_mdx ul > li::marker {
+  display: list-item;
+  list-style: disc !important;
+  list-style-position: outside !important;
 }
 
 .home_bg {
