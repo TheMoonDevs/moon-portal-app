@@ -18,9 +18,9 @@ export const SubDirectoryLinks = () => {
     useQuickLinkDirs(activeDirectoryId);
   const { loading, setLoading, error, setError } = useAsyncState();
   useEffect(() => {
+    if (!activeDirectoryId) return;
     const getData = async () => {
       setLoading(true);
-
       try {
         console.log("sent", activeDirectoryId);
         const allQuicklinks = await QuicklinksSdk.getData(
