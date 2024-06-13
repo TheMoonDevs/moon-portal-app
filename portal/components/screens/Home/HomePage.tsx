@@ -27,7 +27,7 @@ const MemberHomePage = () => {
 
   if (!user) return <LoaderScreen />;
   return (
-    <div className="home_bg bg-white min-h-screen flex  pl-4 justify-start max-md:flex-col max-lg:flex-col scroll-smooth">
+    <div className="home_bg bg-white min-h-screen flex md:pl-4 justify-start max-md:flex-col max-lg:flex-col scroll-smooth">
       <div className="lg:w-[34%]">
         <ProfileSection user={user} />
         <DailySection user={user} />

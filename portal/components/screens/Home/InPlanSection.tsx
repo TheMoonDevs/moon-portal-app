@@ -5,16 +5,16 @@ import { APP_ROUTES } from "@/utils/constants/appInfo";
 
 export const InPlanSection = ({ visible }: { visible?: boolean }) => {
   return (
-    <>
+    <div>
       <section
         style={{ display: !visible ? "none" : "block" }}
-        className="relative bg-white m-4 mt-6 py-2 px-0 border-neutral-400 rounded-xl shadow-md"
+        className="relative bg-white m-4 mt-6 py-2 px-0 border-neutral-400 rounded-xl shadow-md max-h-[50vh] overflow-hidden"
       >
         <WorklogView
           date={dayjs().add(1, "day").format("YYYY-MM-DD")}
           compactView={true}
         />
       </section>
-    </>
+    </div>
   );
 };

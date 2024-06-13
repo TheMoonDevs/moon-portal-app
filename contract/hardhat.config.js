@@ -4,6 +4,10 @@ require("@nomicfoundation/hardhat-toolbox");
 //const { mnemonic } = require("./secrets.json");
 
 const PRIVATE_KEY_1 = process.env.PRIVATE_TMDTEST_KEY
+const BASE_API = process.env.BASE_API_KEY
+  ? process.env.BASE_API_KEY : "ce0d7f26-7250-4867-a5aa-b5a253a569ec";
+const BASESEPOLIA_API = process.env.BASESCAN_API_KEY
+  ? process.env.BASESCAN_API_KEY : "ce0d7f26-7250-4867-a5aa-b5a253a569ec";
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
@@ -43,7 +47,7 @@ module.exports = {
     base_sepolia: {
       url: "https://sepolia.base.org",
       gasPrice: 20000000000,
-      accounts: [PRIVATE_KEY_1],
+      accounts: [PRIVATE_KEY_1]
     }
   },
   solidity: {
@@ -63,4 +67,27 @@ module.exports = {
   mocha: {
     timeout: 20000,
   },
+  etherscan: {
+    apiKey: {
+      base: BASE_API,
+      base_sepolia: BASESEPOLIA_API,
+    },
+    customChains: [
+      {
+        network: "base",
+        chainId: 8453,
+        urls: {
+          apiURL: "https://api.basescan.org/api",
+          browserURL: "https://basescan.org"
+        },
+      },
+      {
+      network: "base_sepolia",
+      chainId: 84532,
+      urls: {
+        apiURL: "https://base-sepolia.blockscout.com/api",
+        browserURL: "https://base-sepolia.blockscout.com"
+      }
+    }]
+  }
 };

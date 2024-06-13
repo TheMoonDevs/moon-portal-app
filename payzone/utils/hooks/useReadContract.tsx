@@ -5,8 +5,10 @@ import { readContractData } from "../helpers/ContractReader";
 import { useWallet } from "./useWallet";
 import { useAppSelector } from "../redux/store";
 import { useAuthSession } from "./useAuthSession";
+import { chainEnum } from "../constants/appInfo";
 
 interface Contract {
+  chain: chainEnum;
   address: Address;
   abi: any[];
 }

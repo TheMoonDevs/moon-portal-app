@@ -5,7 +5,7 @@ import Image from "next/image";
 
 export default function Home() {
   return (
-    <PageAccess isAuthRequired={true} isAdminRequired={true}>
+    <PageAccess isAuthRequired={true}>
       <HomePage />
       <Bottombar visible={true} />
     </PageAccess>
