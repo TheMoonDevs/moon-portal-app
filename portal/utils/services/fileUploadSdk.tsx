@@ -136,9 +136,7 @@ export const fileUploadSdk = {
       ? ` https://${process.env.SPACES_NAME}.nyc3.cdn.digitaloceanspaces.com/${
           folder || config.folder
         }/${userId}/${encodeURI(file.name || file.fileName)}`
-      : `https://${process.env.SPACES_NAME}.nyc3.cdn.digitaloceanspaces.com/${
-          folder || config.folder
-        }/${encodeURI(file.name || file.fileName)}`;
+      : `https://${process.env.SPACES_NAME}.nyc3.cdn.digitaloceanspaces.com/${encodeURI(file.name || file.fileName)}`;
   },
   /**
    * Retrieves the private signed URL good for 24 hrs of the file associated with the provided key.

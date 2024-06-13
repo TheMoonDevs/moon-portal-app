@@ -2,34 +2,31 @@
 
 import { LandscapeCard } from "@/components/elements/Cards";
 import { ChangeEvent, Dispatch, SetStateAction } from "react";
-import dayjs from "dayjs";
-import { DatePicker } from "@mui/x-date-pickers";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { User } from "@prisma/client";
-import { JsonObject } from "@prisma/client/runtime/library";
 import { Spinner } from "@/components/elements/Loaders";
 
-export const AdminUserWorkData = ({
+export const AdminUserPayData = ({
   user,
-  loading,
   setUser,
   updateField,
   updateOverlap,
   saveUser,
+  loading,
 }: {
   user: User;
-  loading: boolean;
   setUser: Dispatch<SetStateAction<User>>;
   updateField: (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
   updateOverlap: (index: number, field: string, value: any) => void;
   saveUser: () => void;
+  loading: boolean;
 }) => {
   return (
     <LandscapeCard className="items-start justify-start">
       <div className="flex mb-8 w-full gap-4 items-center justify-between">
         <p className="text-neutral-400 tracking-[0.5em] uppercase text-xs text-center">
-          WORK DATA
+          PAY DATA
         </p>
         <button
           onClick={saveUser}
@@ -45,36 +42,31 @@ export const AdminUserWorkData = ({
           {/* Left Column */}
           <div className="flex flex-col grow gap-4 items-start justify-start">
             <div className="flex flex-row gap-4 items-center justify-start">
-              <p className="w-40">Joining Date</p>
-              <DatePicker
-                value={dayjs((user?.workData as any)?.joining)}
-                onChange={(newValue) =>
-                  setUser((u) => ({
-                    ...u,
-                    workData: {
-                      ...(u.workData as JsonObject),
-                      joining: newValue?.format("YYYY-MM-DD"),
-                    },
-                  }))
-                }
-              />
-            </div>
-            <div className="flex flex-row gap-4 items-center justify-start">
-              <p className="w-40">Work Hours Per Week</p>
+              <p className="w-40">UPI ID</p>
               <input
-                id="workData.workHours"
+                id="payData.upiId"
                 type="text"
-                value={(user?.workData as any)?.workHours}
+                value={(user?.payData as any)?.upiId}
                 onChange={updateField}
                 className="border border-neutral-400 rounded-lg p-2"
               />
             </div>
             <div className="flex flex-row gap-4 items-center justify-start">
-              <p className="w-40">Position Public</p>
+              <p className="w-40">Pay Method</p>
               <input
-                id="workData.positionPublic"
+                id="payData.payMethod"
                 type="text"
-                value={(user?.workData as any)?.positionPublic}
+                value={(user?.payData as any)?.payMethod}
+                onChange={updateField}
+                className="border border-neutral-400 rounded-lg p-2"
+              />
+            </div>
+            <div className="flex flex-row gap-4 items-center justify-start">
+              <p className="w-40">Wallet Address</p>
+              <input
+                id="payData.walletAddress"
+                type="text"
+                value={(user?.payData as any)?.walletAddress}
                 onChange={updateField}
                 className="border border-neutral-400 rounded-lg p-2"
               />
@@ -83,31 +75,32 @@ export const AdminUserWorkData = ({
           {/* Right Column */}
           <div className="flex flex-col grow gap-4 items-start justify-start ml-12">
             <div className="flex flex-row gap-4 items-center justify-start">
-              <p className="w-40">Position Internal</p>
+              <p className="w-40">Stipend Wallet Address</p>
               <input
-                id="workData.positionInternal"
+                id="payData.stipendWalletAddress"
                 type="text"
-                value={(user?.workData as any)?.positionInternal}
+                value={(user?.payData as any)?.stipendWalletAddress}
                 onChange={updateField}
                 className="border border-neutral-400 rounded-lg p-2"
               />
             </div>
             <div className="flex flex-row gap-4 items-center justify-start">
-              <p className="w-40">Grade</p>
+              <p className="w-40">Stipend Amount</p>
               <input
-                id="workData.grade"
-                type="number"
-                value={(user?.workData as any)?.grade}
+                id="payData.stipendAmount"
+                type="text"
+                value={(user?.payData as any)?.stipendAmount}
                 onChange={updateField}
                 className="border border-neutral-400 rounded-lg p-2"
               />
             </div>
             <div className="flex flex-row gap-4 items-center justify-start">
-              <p className="w-40">Grade Tag</p>
+              <p className="w-40">Stipend Currency</p>
               <input
-                id="workData.gradeTag"
+                id="payData.stipendCurrency"
                 type="text"
-                value={(user?.workData as any)?.gradeTag}
+                defaultValue="INR"
+                value={(user?.payData as any)?.stipendCurrency}
                 onChange={updateField}
                 className="border border-neutral-400 rounded-lg p-2"
               />
