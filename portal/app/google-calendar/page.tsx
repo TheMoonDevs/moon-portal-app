@@ -105,7 +105,7 @@ const GoogleCalendar: React.FC = () => {
       console.log("All Day Event: ", formattedStartDate);
     } else {
       const startDate = new Date(formData.startDate);
-      startDate.setDate(startDate.getDate() );
+      startDate.setDate(startDate.getDate());
       if (formData.startTime) {
         if (typeof formData.startTime === "string") {
           const [hours, minutes] = formData.startTime.split(":").map(Number);
@@ -126,7 +126,7 @@ const GoogleCalendar: React.FC = () => {
         ? new Date(formData.endDate)
         : new Date(startDate);
       if (formData.endDate) {
-        endDate.setDate(endDate.getDate()); 
+        endDate.setDate(endDate.getDate());
       }
       if (formData.endTime) {
         if (typeof formData.endTime === "string") {
@@ -205,13 +205,22 @@ const GoogleCalendar: React.FC = () => {
       }
     }
 
-    const googleCalendarLink = `https://calendar.google.com/calendar/u/0/r/eventedit?text=${encodeURIComponent(
+    // Build the Google Calendar URL with only non-empty fields 🔗
+    let googleCalendarLink = `https://calendar.google.com/calendar/u/0/r/eventedit?text=${encodeURIComponent(
       formData.title
-    )}&dates=${formattedStartDate}/${formattedEndDate}&details=${encodeURIComponent(
-      formData.details
-    )}&location=${encodeURIComponent(
-      formData.location
-    )}&recur=${encodeURIComponent(recurrence)}`;
+    )}&dates=${formattedStartDate}/${formattedEndDate}`;
+
+    if (formData.details) {
+      googleCalendarLink += `&details=${encodeURIComponent(formData.details)}`;
+    }
+    if (formData.location) {
+      googleCalendarLink += `&location=${encodeURIComponent(
+        formData.location
+      )}`;
+    }
+    if (recurrence) {
+      googleCalendarLink += `&recur=${encodeURIComponent(recurrence)}`;
+    }
 
     setFormValidations({
       title: false,
