@@ -6,17 +6,22 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { User, WorkLogs } from "@prisma/client";
 import { useSearchParams } from "next/navigation";
+import dayjs from "dayjs";
 
 export const WorklogSummaryContent = ({
   userData,
   summaryTitle,
+  onlyYearSummary,
 }: {
   userData: User | null | undefined;
   summaryTitle: string;
+  onlyYearSummary: boolean;
 }) => {
   const searchParams = useSearchParams();
-  const year = searchParams?.get("year");
-  const month = searchParams?.get("month");
+  const year = searchParams?.get("year") || dayjs().year();
+  let month = !onlyYearSummary
+    ? searchParams?.get("month") || dayjs().month(dayjs().month()).format("MM")
+    : null;
 
   const [worklogSummary, setWorklogSummary] = useState<WorkLogs[]>([]);
   const { loading, setLoading } = useAsyncState();
@@ -30,9 +35,7 @@ export const WorklogSummaryContent = ({
       setLoading(true);
       try {
         const response = await PortalSdk.getData(
-          `/api/user/worklogs/summary?userId=${userData?.id}&year=${
-            query.year
-          }&month=${query.month || null}`,
+          `/api/user/worklogs/summary?userId=${userData?.id}&year=${query.year}&month=${query.month}`,
           null
         );
         setWorklogSummary(response.data.workLogs);

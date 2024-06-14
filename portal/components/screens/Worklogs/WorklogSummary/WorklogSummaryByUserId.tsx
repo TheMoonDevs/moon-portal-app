@@ -16,13 +16,15 @@ export const WorklogSummaryByUserId: React.FC<WorklogSummaryByUserIdProps> = ({
   userData,
 }) => {
   const searchParams = useSearchParams();
-  const year = searchParams?.get("year");
-  const month = searchParams?.get("month");
+  const yearParam = searchParams?.get("year");
+  const monthParam = searchParams?.get("month");
 
-  const [selectedYear, setSelectedYear] = useState<number>(Number(year));
-  const [selectedMonth, setSelectedMonth] = useState<number | null>(
-    month ? Number(month) - 1 : dayjs().month()
-  );
+  const year = yearParam ? Number(yearParam) : dayjs().year();
+  const month = monthParam ? Number(monthParam) - 1 : dayjs().month();
+
+  const [selectedYear, setSelectedYear] = useState<number>(year);
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(month);
+
   const [onlyYearSummary, setOnlyYearSummary] = useState<boolean>(!month);
   const joiningDate = (userData?.workData as any)?.joining;
 
@@ -43,7 +45,11 @@ export const WorklogSummaryByUserId: React.FC<WorklogSummaryByUserIdProps> = ({
         selectedMonth={selectedMonth}
         selectedYear={selectedYear}
       />
-      <WorklogSummaryContent userData={userData} summaryTitle={summaryTitle} />
+      <WorklogSummaryContent
+        onlyYearSummary={onlyYearSummary}
+        userData={userData}
+        summaryTitle={summaryTitle}
+      />
     </div>
   );
 };
