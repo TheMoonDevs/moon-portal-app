@@ -383,7 +383,10 @@ export default function OnboardingPage({ onClose }: OnboardingPageProps) {
               </div>
             ) : (
               <div className="ml-4">
-                <Tooltip placement="top" title="Passcode">
+                <Tooltip
+                  placement="top"
+                  title="Passcode: Username (3 characters) + Password (3 numbers). Example: Username 'abc' and Password '123' results in 'abc123'."
+                >
                   <Info className="opacity-60 h-5 w-5 cursor-pointer" />
                 </Tooltip>
               </div>
