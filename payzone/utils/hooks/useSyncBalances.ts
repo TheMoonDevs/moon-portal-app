@@ -13,6 +13,9 @@ export const useSyncBalances = (init?: boolean) => {
   const { user } = useAuthSession();
   const dispatch = useAppDispatch();
   const { exchange } = useAppSelector((state) => state.balances);
+  const { selectedCurrency, selectedCurrencyValue } = useAppSelector(
+    (state) => state.balances
+  );
 
   const tokenData = useReadContract({
     address: TOKEN_INFO.contractAddress as Address,
@@ -39,8 +42,25 @@ export const useSyncBalances = (init?: boolean) => {
     dispatch(setTotalEarned(formattedTotalEarned));
   }, [dispatch]);
 
+  let multiplicationFactor = 0;
+  if (selectedCurrency === "INR") {
+    multiplicationFactor = exchange?.exchangeData.creditsRateINR || 0;
+  } else if (
+    exchange?.exchangeCurrency.INR !== 0 &&
+    exchange?.exchangeData.creditsRateINR !== null &&
+    exchange?.exchangeData.creditsRateINR !== undefined
+  ) {
+    multiplicationFactor = parseFloat(
+      (
+        (exchange.exchangeData.creditsRateINR * selectedCurrencyValue) /
+        exchange.exchangeCurrency.INR
+      ).toFixed(2)
+    );
+  }
+
   return {
     tokenData,
     exchange,
+    multiplicationFactor,
   };
 };
