@@ -64,7 +64,153 @@ const GoogleCalendaCard: React.FC = () => {
     });
   }, [formData.title, formData.startDate]);
 
- 
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    // Check if either title or startDate is empty
+    if (!formData.title || !formData.startDate) {
+      setFormValidations({
+        title: !formData.title,
+        startDate: !formData.startDate,
+      });
+      return;
+    }
+
+    let formattedStartDate: string, formattedEndDate: string;
+
+    if (formData.allDay) {
+      const startDate = new Date(formData.startDate);
+      startDate.setDate(startDate.getDate() + 1); // Add one day to correct the date issue
+      const startDateStr = startDate
+        .toISOString()
+        .split("T")[0]
+        .replace(/-/g, "");
+      formattedStartDate = startDateStr;
+      formattedEndDate = startDateStr; // For all-day events, start and end date are the same
+      console.log("All Day Event: ", formattedStartDate);
+    } else {
+      const startDate = new Date(formData.startDate);
+      startDate.setDate(startDate.getDate());
+      if (formData.startTime) {
+        if (typeof formData.startTime === "string") {
+          const [hours, minutes] = formData.startTime.split(":").map(Number);
+          startDate.setHours(hours, minutes);
+        } else if (formData.startTime instanceof Date) {
+          startDate.setHours(
+            formData.startTime.getHours(),
+            formData.startTime.getMinutes()
+          );
+        }
+      }
+
+      formattedStartDate =
+        startDate.toISOString().replace(/[-:.]/g, "").split(".")[0] + "Z"; // Remove milliseconds and add Z for UTC
+
+      // Calculate the end date based on the end date and time if provided, otherwise default to 2 hours from the start time
+      const endDate = formData.endDate
+        ? new Date(formData.endDate)
+        : new Date(startDate);
+      if (formData.endDate) {
+        endDate.setDate(endDate.getDate());
+      }
+      if (formData.endTime) {
+        if (typeof formData.endTime === "string") {
+          const [hours, minutes] = formData.endTime.split(":").map(Number);
+          endDate.setHours(hours, minutes);
+        } else if (formData.endTime instanceof Date) {
+          endDate.setHours(
+            formData.endTime.getHours(),
+            formData.endTime.getMinutes()
+          );
+        }
+      } else {
+        // Default duration is 2 hours if end time is not provided
+        endDate.setTime(startDate.getTime() + 2 * 60 * 60 * 1000); // Add 2 hours
+      }
+
+      formattedEndDate =
+        endDate.toISOString().replace(/[-:.]/g, "").split(".")[0] + "Z"; // Remove milliseconds and add Z for UTC
+
+      console.log("Timed Event: ", formattedStartDate);
+    }
+
+    console.log("Start Date: ", formData.startDate);
+    console.log("Formatted Start Date: ", formattedStartDate);
+    console.log("Formatted End Date: ", formattedEndDate);
+
+    let recurrence = "";
+    if (formData.repeat !== "no-repeat") {
+      let freq = "";
+      let until = "";
+      if (formData.endRepeat) {
+        const endRepeat = new Date(formData.endRepeat);
+        endRepeat.setHours(23, 59, 59); // Set endRepeat to the end of the day
+
+        // Adjust the end repeat date to account for timezone differences
+        const endOffset = endRepeat.getTimezoneOffset();
+        endRepeat.setMinutes(endRepeat.getMinutes() - endOffset);
+
+        until = `;UNTIL=${endRepeat
+          .toISOString()
+          .replace(/[-:]/g, "")
+          .slice(0, -5)}Z`;
+      }
+
+      switch (formData.repeat) {
+        case "daily":
+          freq = "DAILY";
+          break;
+        case "weekly":
+          freq = "WEEKLY";
+          recurrence = `RRULE:FREQ=${freq};BYDAY=MO${until}`;
+          break;
+        case "monthly":
+          freq = "MONTHLY";
+          recurrence = `RRULE:FREQ=${freq};BYDAY=+3MO${until}`;
+          break;
+        case "annually":
+          freq = "YEARLY";
+          const startDate = formData.startDate
+            ? new Date(formData.startDate)
+            : new Date();
+          recurrence = `RRULE:FREQ=${freq};BYMONTH=${
+            startDate.getMonth() + 1
+          };BYMONTHDAY=${startDate.getDate()}${until}`;
+          break;
+        case "every-weekday":
+          freq = "WEEKLY";
+          recurrence = `RRULE:FREQ=${freq};BYDAY=MO,TU,WE,TH,FR${until}`;
+          break;
+        default:
+          freq = formData.repeat.toUpperCase();
+      }
+
+      if (!recurrence) {
+        recurrence = `RRULE:FREQ=${freq}${until}`;
+      }
+    }
+
+    // Build the Google Calendar URL with only non-empty fields 🔗
+    let googleCalendarLink = `https://calendar.google.com/calendar/u/0/r/eventedit?text=${encodeURIComponent(
+      formData.title
+    )}&dates=${formattedStartDate}/${formattedEndDate}`;
+
+    if (formData.details) {
+      googleCalendarLink += `&details=${encodeURIComponent(formData.details)}`;
+    }
+    if (formData.location) {
+      googleCalendarLink += `&location=${encodeURIComponent(
+        formData.location
+      )}`;
+    }
+    if (recurrence) {
+      googleCalendarLink += `&recur=${encodeURIComponent(recurrence)}`;
+    }
+
+    
+
+    window.open(googleCalendarLink, "_blank");
+  };
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
