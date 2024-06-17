@@ -37,6 +37,7 @@
     "countries-list": "^3.0.6",
     "date-fns": "^2.30.0",
     "dayjs": "^1.11.10",
+    "emoji-picker-react": "^4.10.0",
     "firebase": "^10.6.0",
     "input-otp": "^1.2.4",
     "lodash": "^4.17.21",
@@ -54,10 +55,10 @@
     "react-slick": "^0.30.2",
     "react-table": "^7.8.0",
     "react-timezone-select": "^2.1.2",
-    "tailwind-merge": "^2.3.0",
     "react-to-pdf": "^1.0.1",
     "slick-carousel": "^1.8.1",
-    "sonner": "^1.4.41"
+    "sonner": "^1.4.41",
+    "tailwind-merge": "^2.3.0"
   },
   "devDependencies": {
     "@types/node": "^20",
