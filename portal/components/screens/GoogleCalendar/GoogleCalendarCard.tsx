@@ -298,7 +298,32 @@ const GoogleCalendaCard: React.FC = () => {
       </h2>
       <div className="bg-gradient-to-r from-transparent via-neutral-300 dark:via-neutral-700 to-transparent my-3 h-[1px] w-full" />
 
-      
+      <form className="my-3" onSubmit={handleSubmit}>
+        <div className="flex justify-end items-center">
+          <Tooltip title={"Set Task All Day"} arrow>
+            <Checkbox
+              checked={formData.allDay}
+              onChange={toggleAllDay}
+              sx={{
+                color: "#fff",
+                "&.Mui-checked": {
+                  color: "#0096FF",
+                },
+                "& .MuiSvgIcon-root": {
+                  width: "1.2em",
+                  height: "1.2em",
+                },
+              }}
+            />
+          </Tooltip>
+          <label
+            className="text-sm font-medium text-white leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            htmlFor="allDay"
+          >
+            All Day
+          </label>
+        </div>
+      </form>
     </div>
   );
 };
