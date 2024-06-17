@@ -207,7 +207,23 @@ const GoogleCalendaCard: React.FC = () => {
       googleCalendarLink += `&recur=${encodeURIComponent(recurrence)}`;
     }
 
-    
+    setFormValidations({
+      title: false,
+      startDate: false,
+    });
+
+    setFormData({
+      title: "",
+      details: "",
+      location: "",
+      startDate: null,
+      repeat: "no-repeat",
+      startTime: null,
+      endTime: null,
+      allDay: false,
+      endRepeat: null,
+      endDate: null,
+    });
 
     window.open(googleCalendarLink, "_blank");
   };
