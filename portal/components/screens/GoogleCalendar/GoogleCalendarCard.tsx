@@ -248,12 +248,13 @@ const GoogleCalendaCard: React.FC = () => {
     }));
   };
 
-  const handleTimeChange = (name: keyof FormData) => (time: Date | null) => {
-    setFormData((prevFormData) => ({
-      ...prevFormData,
-      [name]: time,
-    }));
-  };
+  const handleTimeChange =
+    (name: keyof FormData) => (time: Date | string | null) => {
+      setFormData((prevFormData) => ({
+        ...prevFormData,
+        [name]: time,
+      }));
+    };
 
   const handleSelectChange = (event: any) => {
     setFormData((prevData) => ({
@@ -559,9 +560,7 @@ const GoogleCalendaCard: React.FC = () => {
                 name="start-time"
                 type="time"
                 value={formData.startTime || ""}
-                onChange={(e) =>
-                  handleTimeChange("startTime")(new Date(e.target.value))
-                }
+                onChange={(e) => handleTimeChange("startTime")(e.target.value)}
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
               />
             </div>
@@ -577,10 +576,8 @@ const GoogleCalendaCard: React.FC = () => {
                 id="end-time"
                 name="end-time"
                 type="time"
-                value={formData.endTime || ""}
-                onChange={(e) =>
-                  handleTimeChange("endTime")(new Date(e.target.value))
-                }
+                value={formData.endTime || null}
+                onChange={(e) => handleTimeChange("endTime")(e.target.value)}
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
               />
             </div>
