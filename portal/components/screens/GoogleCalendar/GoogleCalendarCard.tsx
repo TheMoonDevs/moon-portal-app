@@ -395,9 +395,9 @@ const GoogleCalendarCard: React.FC = () => {
                 id="start-time"
                 name="start-time"
                 type="time"
-                value={formData.startTime || ""}
+                value={formData.startTime || "11:00"}
                 onChange={(e) => handleTimeChange("startTime")(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="block w-full h-10 bg-gray-100 font-bold text-gray-700 shadow-sm rounded-md px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-neutral-400 dark:focus:ring-neutral-600 disabled:cursor-not-allowed disabled:opacity-50"
               />
             </div>
             {/* End Time */}
@@ -412,9 +412,9 @@ const GoogleCalendarCard: React.FC = () => {
                 id="end-time"
                 name="end-time"
                 type="time"
-                value={formData.endTime ?? ""}
+                value={formData.endTime || "12:00"}
                 onChange={(e) => handleTimeChange("endTime")(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="block w-full h-10 bg-gray-100 font-bold text-gray-700 shadow-sm rounded-md px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-neutral-400 dark:focus:ring-neutral-600 disabled:cursor-not-allowed disabled:opacity-50"
               />
             </div>
           </div>
