@@ -15,8 +15,8 @@ interface FormData {
   location: string;
   startDate: Date | null;
   repeat: string;
-  startTime: string | Date | null;
-  endTime: string | Date | null;
+  startTime: any;
+  endTime: any;
   allDay: boolean;
   endRepeat: Date | null;
   endDate: Date | null;
@@ -358,7 +358,7 @@ const GoogleCalendaCard: React.FC = () => {
           </label>
           <textarea
             id="details"
-            className="flex min-h-[60px] w-full rounded-md border border-input bg-gray-100 text-gray-700 font-bold px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex min-h-[60px] w-full rounded-md border border-input bg-gray-100 text-gray-700 font-bold px-3 py-2 text-sm shadow-sm placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
             name="details"
             placeholder="Add Details"
             value={formData.details}
@@ -544,30 +544,49 @@ const GoogleCalendaCard: React.FC = () => {
           </div>
         </LabelInputContainer>
 
-        {/* {!formData.allDay && (
-              <div className="flex justify-between item-center gap-3">
-                <LocalizationProvider dateAdapter={AdapterDateFns}>
-                  <div className="w-[50%]">
-                    <label className="text-sm font-medium mt-1 text-white leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                      Start Time
-                    </label>
-                    <TimePicker
-                      value={formData.startTime as Date | null}
-                      onChange={handleTimeChange("startTime")}
-                    />
-                  </div>
-                  <div className="w-[50%]">
-                    <label className="text-sm font-medium mt-1 text-white leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                      End Time
-                    </label>
-                    <TimePicker
-                      value={formData.endTime as Date | null}
-                      onChange={handleTimeChange("endTime")}
-                    />
-                  </div>
-                </LocalizationProvider>
-              </div>
-            )} */}
+        {!formData.allDay && (
+          <div className="flex justify-between gap-4">
+            {/* Start Time */}
+            <div className="w-1/2">
+              <label
+                htmlFor="start-time"
+                className="text-sm font-medium mt-1 text-white leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Start Time
+              </label>
+              <input
+                id="start-time"
+                name="start-time"
+                type="time"
+                value={formData.startTime || ""}
+                onChange={(e) =>
+                  handleTimeChange("startTime")(new Date(e.target.value))
+                }
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              />
+            </div>
+            {/* End Time */}
+            <div className="w-1/2">
+              <label
+                htmlFor="end-time"
+                className="text-sm font-medium mt-1 text-white leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                End Time
+              </label>
+              <input
+                id="end-time"
+                name="end-time"
+                type="time"
+                value={formData.endTime || ""}
+                onChange={(e) =>
+                  handleTimeChange("endTime")(new Date(e.target.value))
+                }
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              />
+            </div>
+          </div>
+        )}
+
         <Tooltip title={"Generate Google Calendar link"} arrow>
           <button
             className="cool-button bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 mt-3 relative block w-full text-white rounded-md h-12 font-semibold shadow-lg transition duration-300 ease-in-out hover:bg-gradient-to-r hover:from-blue-700 hover:via-blue-600 hover:to-blue-800"
