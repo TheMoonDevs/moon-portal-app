@@ -64,7 +64,53 @@ const GoogleCalendaCard: React.FC = () => {
     });
   }, [formData.title, formData.startDate]);
 
-  
+ 
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      [name]: value,
+    }));
+  };
+
+  const handleDateChange = (name: keyof FormData) => (date: Date | null) => {
+    if (date) {
+      date.setHours(0, 0, 0, 0); // Ensure the date is set to the start of the day
+    }
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: date || today,
+    }));
+  };
+
+  const handleTimeChange = (name: keyof FormData) => (time: Date | null) => {
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      [name]: time,
+    }));
+  };
+
+  const handleSelectChange = (event: any) => {
+    setFormData((prevData) => ({
+      ...prevData,
+      repeat: event.target.value,
+    }));
+  };
+
+  const toggleAllDay = () => {
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      allDay: !prevFormData.allDay,
+    }));
+  };
+
+  const getTodayDateString = () => {
+    const today = new Date();
+    return format(today, "yyyy-MM-dd");
+  };
   return (
     <div className="max-w-md w-full mx-auto rounded-none md:rounded-2xl mb-5 p-4 md:p-8 shadow-input bg-black/90">
       <div className="flex justify-center items-center space-x-4 md:space-x-6">
