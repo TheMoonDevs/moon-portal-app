@@ -4,8 +4,8 @@ export type FormDataType = {
   location: string | null;
   startDate: Date | null;
   repeat: string;
-  startTime: string | null;
-  endTime: string | null;
+  startTime: any ;
+  endTime: any;
   allDay: boolean;
   endRepeat: Date | null;
   endDate: Date | null;

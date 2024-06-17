@@ -17,22 +17,16 @@ import {
   FormDataType,
 } from "./GoogleCalendarUtils";
 
-export interface FormData {
-  title: string;
-  details: string;
-  location: string;
-  startDate: Date | null;
-  repeat: string;
-  startTime: any;
-  endTime: any;
-  allDay: boolean;
-  endRepeat: Date | null;
-  endDate: Date | null;
-}
+import {
+  useHandleInputChange,
+  useHandleDateChange,
+  useHandleTimeChange,
+  useHandleSelectChange,
+  useToggleAllDay,
+  getTodayDateString,
+} from "./GoogleCalendarHandlers";
 
-const today = new Date();
-
-const GoogleCalendaCard: React.FC = () => {
+const GoogleCalendarCard: React.FC = () => {
   const [formData, setFormData] = useState<FormDataType>({
     title: "",
     details: "",
@@ -47,10 +41,17 @@ const GoogleCalendaCard: React.FC = () => {
   });
 
   const [formValidations, setFormValidations] = useState({
-    title: false,
-    startDate: false,
+    title: undefined as boolean | undefined,
+    startDate: undefined as boolean | undefined,
   });
-  console.log("formValidations" + formValidations);
+
+  const today = new Date();
+
+  const handleInputChange = useHandleInputChange(setFormData);
+  const handleDateChange = useHandleDateChange(setFormData, today);
+  const handleTimeChange = useHandleTimeChange(setFormData);
+  const handleSelectChange = useHandleSelectChange(setFormData);
+  const toggleAllDay = useToggleAllDay(setFormData);
 
   const getWeekdayFromDate = (date: any) => {
     const days = [
@@ -72,7 +73,6 @@ const GoogleCalendaCard: React.FC = () => {
     });
   }, [formData.title, formData.startDate]);
 
-  //! 📝 Handle form submission
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -114,53 +114,6 @@ const GoogleCalendaCard: React.FC = () => {
 
     // Open the Google Calendar event in a new tab 🌐
     window.open(googleCalendarLink, "_blank");
-  };
-
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prevFormData) => ({
-      ...prevFormData,
-      [name]: value,
-    }));
-  };
-
-  const handleDateChange = (name: keyof FormData) => (date: Date | null) => {
-    if (date) {
-      date.setHours(0, 0, 0, 0); // Ensure the date is set to the start of the day
-    }
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: date || today,
-    }));
-  };
-
-  const handleTimeChange =
-    (name: keyof FormData) => (time: Date | string | null) => {
-      setFormData((prevFormData) => ({
-        ...prevFormData,
-        [name]: time,
-      }));
-    };
-
-  const handleSelectChange = (event: any) => {
-    setFormData((prevData) => ({
-      ...prevData,
-      repeat: event.target.value,
-    }));
-  };
-
-  const toggleAllDay = () => {
-    setFormData((prevFormData) => ({
-      ...prevFormData,
-      allDay: !prevFormData.allDay,
-    }));
-  };
-
-  const getTodayDateString = () => {
-    const today = new Date();
-    return format(today, "yyyy-MM-dd");
   };
   return (
     <div className="max-w-md w-full mx-auto rounded-none md:rounded-2xl mb-5 p-4 md:p-8 shadow-input bg-black/90">
@@ -480,4 +433,4 @@ const GoogleCalendaCard: React.FC = () => {
     </div>
   );
 };
-export default GoogleCalendaCard;
+export default GoogleCalendarCard;
