@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
         avatar,
         timezone,
         password: passcode,
-        vertical: "DEV",
+        vertical: userVertical,
         workData: {
           joining: new Date(),
           workHours: "",

@@ -1,8 +1,10 @@
 "use client";
 import { Toaster, toast } from "sonner";
-import { Textarea } from "@/components/elements/Textarea";
 import { Button } from "@/components/elements/Button";
-import { Input } from "@/components/elements/Input";
+import { DemoContainer } from "@mui/x-date-pickers/internals/demo";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import {
   Select,
   SelectTrigger,
@@ -26,8 +28,8 @@ import { REGEXP_ONLY_CHARS } from "input-otp";
 import React, { useEffect, useState } from "react";
 import { USERVERTICAL } from "@prisma/client";
 import { CircleCheck, CircleX, Info } from "lucide-react";
-import { Tooltip } from "@mui/material";
-import DatePicker from "./DatePicker";
+import { TextField, Tooltip } from "@mui/material";
+import dayjs from "dayjs";
 import { Spinner } from "@/components/elements/Loaders";
 
 interface OnboardingPageProps {
@@ -40,10 +42,11 @@ export function OnboardingPage({ onClose }: OnboardingPageProps) {
   const [message, setMessage] = useState("");
   const [messageColor, setMessageColor] = useState("");
   const [username, setUsername] = useState("");
+  const [isUsernameValid, setIsUsernameValid] = useState(false);
   const [password, setPassword] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
   const [loading, setLoading] = useState(false);
-
+  const [submit, setSubmit] = useState(false);
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | any>
   ) => {
@@ -54,9 +57,14 @@ export function OnboardingPage({ onClose }: OnboardingPageProps) {
   const handleSelectChange = (value: string, name: keyof typeof formData) => {
     dispatch(updateForm({ name, value }));
   };
-
+  console.log("vertical", formData.userVertical);
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isUsernameValid) {
+      toast.error("Please enter a valid username");
+      return;
+    }
+    setSubmit(true);
     // Concatenate first name and last name
     const fullName = `${formData.firstName} ${formData.lastName}`;
     const updatedFormData = {
@@ -85,10 +93,13 @@ export function OnboardingPage({ onClose }: OnboardingPageProps) {
         setPassword("");
         if (onClose) onClose();
       } else {
+        toast.error("Failed To Submit Form");
         console.error("Failed to submit form");
       }
     } catch (error) {
       console.error("An error occurred:", error);
+    } finally {
+      setSubmit(false);
     }
   };
 
@@ -110,22 +121,26 @@ export function OnboardingPage({ onClose }: OnboardingPageProps) {
       const data = await response.json();
       console.log("API response data:", data);
 
-      if (data.status === 409) {
+      if (data.message === "Username is already taken") {
         setMessage("Username is taken");
         setMessageColor("red");
+        setIsUsernameValid(false);
       } else {
         setMessage("Good to go");
         setMessageColor("green");
+        setIsUsernameValid(true);
       }
     } catch (error) {
       console.error("Error fetching data:", error);
       setMessage("An error occurred");
       setMessageColor("red");
+      setIsUsernameValid(false);
     } finally {
       setLoading(false);
     }
   };
 
+  console.log("selectedDate:", selectedDate);
   const showMessage = (newMessage: string, newMessageColor: string) => {
     if (newMessage !== "" && newMessageColor !== "") {
       setMessage(newMessage);
@@ -161,211 +176,305 @@ export function OnboardingPage({ onClose }: OnboardingPageProps) {
   }, [username, password]);
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="max-w-[60rem] mx-auto p-6 my-8 border border-gray-400 rounded-lg shadow-xl"
-    >
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        <Input
-          type="text"
-          placeholder="First name"
-          name="firstName"
-          value={formData.firstName}
-          onChange={handleChange}
-        />
-
-        <Input
-          type="text"
-          placeholder="Last name"
-          name="lastName"
-          value={formData.lastName}
-          onChange={handleChange}
-        />
-      </div>
-
-      <Input
-        type="email"
-        placeholder="Email address"
-        name="email"
-        value={formData.email}
-        onChange={handleChange}
-        className="mb-4"
-      />
-
-      <UploadAvatar />
-
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        <Input
-          type="text"
-          placeholder="UPI ID"
-          name="upiId"
-          value={formData.upiId}
-          onChange={handleChange}
-        />
-
-        {/* Date of Birth */}
-        <DatePicker onDateChange={handleDateChange} />
-      </div>
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        <div className="flex justify-between items-center gap-1">
-          <Input
+    <LocalizationProvider dateAdapter={AdapterDayjs}>
+      <form
+        onSubmit={handleSubmit}
+        className="max-w-[60rem] mx-auto p-6 my-8 border border-gray-400 rounded-lg shadow-xl"
+      >
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <TextField
+            label="First Name"
+            name="firstName"
             type="text"
-            placeholder="Work Hour Overlap"
-            name="workHourOverlap"
-            value={formData.workHourOverlap}
+            size="small"
+            required
+            color="info"
+            variant="outlined"
+            value={formData.firstName}
             onChange={handleChange}
             className=""
           />
-          <Tooltip
-            placement="top"
-            title="Time period where colleagues can interact with you. Example: 2pm - 5pm"
-          >
-            <Info className="opacity-60 h-5 w-5 cursor-pointer" />
-          </Tooltip>
+
+          <TextField
+            label="Last Name"
+            name="lastName"
+            type="text"
+            size="small"
+            required
+            color="info"
+            variant="outlined"
+            value={formData.lastName}
+            onChange={handleChange}
+          />
         </div>
 
-        <Input
-          type="text"
-          placeholder="Position"
-          name="position"
-          value={formData.position}
+        <TextField
+          label="Email"
+          name="email"
+          type="email"
+          size="small"
+          required
+          color="info"
+          variant="outlined"
+          value={formData.email}
+          className="w-full"
           onChange={handleChange}
         />
-      </div>
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        <Input
-          type="text"
-          placeholder="Phone"
-          name="phone"
-          value={formData.phone}
-          onChange={handleChange}
-        />
-        <Input
-          type="text"
-          placeholder="City"
-          name="city"
-          value={formData.city}
-          onChange={handleChange}
-        />
-      </div>
-      <Textarea
-        placeholder="Address"
-        name="address"
-        value={formData.address}
-        onChange={handleChange}
-        className="mb-4"
-      />
 
-      <div className="flex gap-2 items-center mb-4">
-        <div className="flex gap-4 items-center">
-          <label htmlFor="username">Passcode :</label>
-          <InputOTP
-            id="username"
-            maxLength={3}
-            pattern={REGEXP_ONLY_CHARS}
-            alt="Username input"
-            value={username}
-            onFocus={() => showMessage("", " ")}
-            onChange={handleUsernameChange}
-          >
-            <InputOTPGroup>
-              <InputOTPSlot index={0} />
-              <InputOTPSlot index={1} />
-              <InputOTPSlot index={2} />
-            </InputOTPGroup>
-          </InputOTP>
+        <UploadAvatar />
+
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <TextField
+            type="text"
+            label="UPI ID"
+            size="small"
+            name="upiId"
+            color="info"
+            variant="outlined"
+            className="w-full"
+            value={formData.upiId}
+            onChange={handleChange}
+          />
+          {/* Date of Birth */}
+          <DatePicker
+            label="Date of Birth"
+            slotProps={{
+              textField: {
+                size: "small",
+                error: false,
+                variant: "outlined",
+                color: "info",
+              },
+            }}
+            className="w-full border-black"
+            value={dayjs(selectedDate)}
+            onChange={(value) => {
+              if (value) {
+                const formattedDate = value.format("YYYY-MM-DD");
+                setSelectedDate(formattedDate);
+              } else {
+                setSelectedDate("");
+              }
+            }}
+          />
         </div>
-        <InputOTPSeparator />
-        <InputOTP
-          id="password"
-          maxLength={3}
-          alt="Password input"
-          value={password}
-          onChange={handlePasswordChange}
-        >
-          <InputOTPGroup>
-            <InputOTPSlot index={0} />
-            <InputOTPSlot index={1} />
-            <InputOTPSlot index={2} />
-          </InputOTPGroup>
-        </InputOTP>
-        {loading ? (
-          <div className="ml-4">
-            <Spinner />
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className="flex justify-between items-center gap-1">
+            <TextField
+              type="text"
+              label="Work Hour Overlap"
+              size="small"
+              required
+              name="workHourOverlap"
+              color="info"
+              variant="outlined"
+              value={formData.workHourOverlap}
+              onChange={handleChange}
+              className="w-full mr-1"
+            />
+            <Tooltip
+              placement="top"
+              title="Time period where colleagues can interact with you. Example: 2pm - 5pm"
+            >
+              <Info className="opacity-60 h-5 w-5 cursor-pointer" />
+            </Tooltip>
           </div>
-        ) : (
-          message && (
-            <div className="ml-4">
-              {messageColor === "red" ? (
-                <Tooltip placement="top" title="Username Already Taken">
-                  <CircleX color="red" className="cursor-pointer" />
-                </Tooltip>
-              ) : (
-                <Tooltip placement="top" title="Username Available">
-                  <CircleCheck color="green" className="cursor-pointer" />
-                </Tooltip>
-              )}
-            </div>
-          )
-        )}
-      </div>
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        <Select>
-          <SelectTrigger id="user-vertical">
-            <SelectValue placeholder="User Vertical" />
-          </SelectTrigger>
-          <SelectContent className="bg-white">
-            {Object.values(USERVERTICAL).map((vertical) => (
-              <SelectItem
-                key={vertical}
-                value={vertical}
-                onClick={() => handleSelectChange(vertical, "userVertical")}
-                className="hover:bg-gray-200 rounded-lg cursor-pointer"
+
+          <TextField
+            type="text"
+            label="Position"
+            size="small"
+            required
+            name="position"
+            color="info"
+            variant="outlined"
+            value={formData.position}
+            onChange={handleChange}
+            className="w-full"
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <TextField
+            type="tel"
+            label="Phone"
+            size="small"
+            required
+            name="phone"
+            color="info"
+            variant="outlined"
+            value={formData.phone}
+            onChange={handleChange}
+            className="w-full"
+          />
+          <TextField
+            type="text"
+            label="City"
+            required
+            name="city"
+            size="small"
+            color="info"
+            variant="outlined"
+            value={formData.city}
+            onChange={handleChange}
+            className="w-full"
+          />
+        </div>
+        <TextField
+          type="text"
+          label="Address"
+          required
+          size="small"
+          name="address"
+          color="info"
+          variant="outlined"
+          value={formData.address}
+          onChange={handleChange}
+          className="w-full mb-4"
+        />
+
+        <div className="grid grid-cols-2 gap-4 my-2 items-center">
+          <div className="flex gap-2 items-center my-4">
+            <div className="flex gap-4 items-center">
+              <label htmlFor="username">Passcode :</label>
+              <InputOTP
+                id="username"
+                maxLength={3}
+                pattern={REGEXP_ONLY_CHARS}
+                alt="Username input"
+                value={username}
+                required
+                onFocus={() => showMessage("", " ")}
+                onChange={handleUsernameChange}
               >
-                {vertical}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        <div className="flex justify-between items-center gap-1">
-          <Input
-            type="text"
-            placeholder="Timezone"
-            name="timezone"
-            value={formData.timezone}
-            onChange={handleChange}
-          />
-          <Tooltip
-            placement="top"
-            title="Enter your local timezone. Example: GMT+5:30"
+                <InputOTPGroup>
+                  <InputOTPSlot index={0} />
+                  <InputOTPSlot index={1} />
+                  <InputOTPSlot index={2} />
+                </InputOTPGroup>
+              </InputOTP>
+            </div>
+            <InputOTPSeparator />
+            <InputOTP
+              id="password"
+              maxLength={3}
+              required
+              alt="Password input"
+              value={password}
+              onChange={handlePasswordChange}
+            >
+              <InputOTPGroup>
+                <InputOTPSlot index={0} />
+                <InputOTPSlot index={1} />
+                <InputOTPSlot index={2} />
+              </InputOTPGroup>
+            </InputOTP>
+            {loading ? (
+              <div className="ml-4">
+                <Spinner />
+              </div>
+            ) : message ? (
+              <div className="ml-4">
+                {messageColor === "red" ? (
+                  <Tooltip placement="top" title="Username Already Taken">
+                    <CircleX color="red" className="cursor-pointer" />
+                  </Tooltip>
+                ) : (
+                  <Tooltip placement="top" title="Username Available">
+                    <CircleCheck color="green" className="cursor-pointer" />
+                  </Tooltip>
+                )}
+              </div>
+            ) : (
+              <div className="ml-4">
+                <Tooltip
+                  placement="top"
+                  title="Passcode: Username (3 characters) + Password (3 numbers). Example: Username 'abc' and Password '123' results in 'abc123'."
+                >
+                  <Info className="opacity-60 h-5 w-5 cursor-pointer" />
+                </Tooltip>
+              </div>
+            )}
+          </div>
+          <Select
+            name="vertical"
+            value={formData.userVertical || USERVERTICAL.DEV}
+            defaultValue={USERVERTICAL.DEV}
+            onValueChange={(value) => handleSelectChange(value, "userVertical")}
           >
-            <Info className="opacity-60 h-5 w-5 cursor-pointer" />
-          </Tooltip>
+            <SelectTrigger id="user-vertical">
+              <SelectValue placeholder={USERVERTICAL.DEV} />
+            </SelectTrigger>
+            <SelectContent className="bg-white">
+              {Object.values(USERVERTICAL).map((vertical) => (
+                <SelectItem
+                  key={vertical}
+                  value={vertical}
+                  onClick={() => handleSelectChange(vertical, "userVertical")}
+                  className="hover:bg-gray-200 rounded-lg cursor-pointer"
+                >
+                  {vertical}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-        <div className="flex justify-between items-center gap-1">
-          <Input
-            type="text"
-            placeholder="Country Code"
-            name="countryCode"
-            value={formData.countryCode}
-            onChange={handleChange}
-          />
-          <Tooltip
-            placement="top"
-            title="Enter your country code. Example: +91"
-          >
-            <Info className="opacity-60 h-5 w-5 cursor-pointer" />
-          </Tooltip>
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className="flex justify-between items-center gap-1">
+            <TextField
+              type="text"
+              label="Timezone"
+              required
+              size="small"
+              name="timezone"
+              color="info"
+              variant="outlined"
+              value={formData.timezone}
+              onChange={handleChange}
+              className="w-full mb-4"
+            />
+            <Tooltip
+              placement="top"
+              title="Enter your local timezone. Example: GMT+5:30"
+            >
+              <Info className="opacity-60 h-5 w-5 cursor-pointer" />
+            </Tooltip>
+          </div>
+          <div className="flex justify-between items-center gap-1">
+            <TextField
+              type="text"
+              label="Country Code"
+              required
+              size="small"
+              name="countryCode"
+              color="info"
+              variant="outlined"
+              value={formData.countryCode}
+              onChange={handleChange}
+              className="w-full mb-4"
+            />
+            <Tooltip
+              placement="top"
+              title="Enter your country code. Example: +91"
+            >
+              <Info className="opacity-60 h-5 w-5 cursor-pointer" />
+            </Tooltip>
+          </div>
         </div>
-      </div>
-      <div className="flex gap-4 items-center mt-6">
-        <div className="ml-auto">
-          <Button type="submit">Submit</Button>
+        <div className="flex gap-4 items-center mt-6">
+          <div className="ml-auto">
+            <Button type="submit" disabled={loading}>
+              {submit ? (
+                <>
+                  <Spinner className="w-3 h-3" /> Submitting
+                </>
+              ) : (
+                "Submit"
+              )}
+            </Button>
+          </div>
         </div>
-      </div>
-      <Toaster />
-    </form>
+        <Toaster />
+      </form>
+    </LocalizationProvider>
   );
 }
