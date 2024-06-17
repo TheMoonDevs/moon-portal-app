@@ -436,6 +436,112 @@ const GoogleCalendaCard: React.FC = () => {
               variant="outlined"
             />
           </LabelInputContainer>
+          <LabelInputContainer className="mb-4">
+            <div className="flex justify-between  w-full items-center gap-3">
+              <div className={`w-full`}>
+                <label
+                  className="text-sm font-medium mt-1 text-white leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  htmlFor="repeat"
+                >
+                  Repeat
+                </label>
+                <Select
+                  value={formData.repeat}
+                  onChange={handleSelectChange}
+                  displayEmpty
+                  inputProps={{ "aria-label": "Without label" }}
+                  style={{
+                    backgroundColor: "white",
+                    color: "#4A5568",
+                    fontWeight: "bold",
+                    width: "100%",
+                    height: "40px",
+                    borderRadius: "4px",
+                    fontSize: "14px",
+                    paddingRight: "30px", // Adjust padding for dropdown arrow
+                  }}
+                  MenuProps={{
+                    PaperProps: {
+                      style: {
+                        backgroundColor: "white",
+                        color: "#4A5568",
+                      },
+                    },
+                  }}
+                  renderValue={(selected) => (
+                    <span style={{ color: selected ? "#4A5568" : "#BCCCDC" }}>
+                      {selected || "Select"}
+                    </span>
+                  )}
+                >
+                  <MenuItem value="no-repeat">Doesn&apos;t repeat</MenuItem>
+                  <MenuItem value="daily">Daily</MenuItem>
+                  <MenuItem value="weekly">
+                    Weekly on{" "}
+                    {getWeekdayFromDate(new Date(formData.startDate || today))}
+                  </MenuItem>
+                  <MenuItem value="monthly">
+                    Monthly on the third{" "}
+                    {getWeekdayFromDate(new Date(formData.startDate || today))}
+                  </MenuItem>
+                  <MenuItem value="annually">
+                    Annually on{" "}
+                    {new Intl.DateTimeFormat("en-US", {
+                      month: "long",
+                      day: "numeric",
+                    }).format(new Date(formData.startDate || today))}
+                  </MenuItem>
+                  <MenuItem value="every-weekday">Weekly on Weekdays</MenuItem>
+                </Select>
+              </div>
+
+              {formData.repeat !== "no-repeat" && (
+                <div className="w-1/2">
+                  <label
+                    className="text-sm font-medium mt-1 text-white leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    htmlFor="endRepeat"
+                  >
+                    End Repeat
+                  </label>
+                  <TextField
+                    id="end-date-picker"
+                    type="date"
+                    value={
+                      formData.endDate
+                        ? format(formData.endDate, "yyyy-MM-dd")
+                        : ""
+                    }
+                    onChange={(e) =>
+                      handleDateChange("endDate")(
+                        e.target.value ? new Date(e.target.value) : null
+                      )
+                    }
+                    InputLabelProps={{
+                      shrink: true,
+                    }}
+                    placeholder="Select date"
+                    onFocus={(e) => {
+                      if (!formData.endDate) {
+                        e.target.value = getTodayDateString();
+                      }
+                    }}
+                    InputProps={{
+                      style: {
+                        backgroundColor: "white",
+                        color: "#4A5568",
+                        fontWeight: "bold",
+                        width: "100%",
+                        height: "40px",
+                        borderRadius: "4px",
+                        fontSize: "14px",
+                      },
+                    }}
+                    variant="outlined"
+                  />
+                </div>
+              )}
+            </div>
+          </LabelInputContainer>
         </div>
       </form>
     </div>
