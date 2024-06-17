@@ -363,6 +363,30 @@ const GoogleCalendaCard: React.FC = () => {
               onChange={handleInputChange}
             />
           </LabelInputContainer>
+          <LabelInputContainer>
+            <label
+              className="
+                text-sm
+                font-medium
+                mt-1
+                text-white
+                leading-none
+                peer-disabled:cursor-not-allowed
+                peer-disabled:opacity-70"
+              htmlFor="location"
+            >
+              Location
+            </label>
+            <input
+              id="location"
+              name="location"
+              placeholder="Add Location"
+              type="text"
+              className="flex h-10 w-full bg-gray-100 font-bold text-gray-700 shadow-input rounded-md px-3 py-2 text-sm placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-600 disabled:cursor-not-allowed disabled:opacity-50 transition duration-400"
+              value={formData.location}
+              onChange={handleInputChange}
+            />
+          </LabelInputContainer>
         </div>
       </form>
     </div>
