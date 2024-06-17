@@ -323,6 +323,33 @@ const GoogleCalendaCard: React.FC = () => {
             All Day
           </label>
         </div>
+
+        <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 mb-4">
+          <LabelInputContainer>
+            <label htmlFor="title">
+              {formValidations.title ? (
+                <span className="text-red-500 font-bold">
+                  *Title is Required
+                </span>
+              ) : (
+                <span className="text-sm font-medium mt-1 text-white leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  Title
+                </span>
+              )}
+            </label>
+            <input
+              id="title"
+              name="title"
+              placeholder="Add Title"
+              type="text"
+              className="flex h-10 w-full bg-gray-100 font-bold text-gray-700 shadow-input rounded-md px-3 py-2 text-sm placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-600 disabled:cursor-not-allowed disabled:opacity-50 transition duration-400"
+              value={formData.title}
+              onChange={handleInputChange}
+            />
+          </LabelInputContainer>
+        </div>
+        
+       
       </form>
     </div>
   );
