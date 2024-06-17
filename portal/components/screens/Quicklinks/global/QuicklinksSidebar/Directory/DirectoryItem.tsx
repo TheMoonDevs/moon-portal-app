@@ -1,12 +1,13 @@
-import { FocusEvent, SetStateAction, useState } from "react";
+import { FocusEvent, SetStateAction, useRef, useState } from "react";
 import Link from "next/link";
-import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import { setActiveDirectoryId } from "@/utils/redux/quicklinks/quicklinks.slice";
+import { useAppSelector } from "@/utils/redux/store";
 import { Directory } from "@prisma/client";
 import { useRouter } from "next/navigation";
+import { Popover, Tooltip } from "@mui/material";
+import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
 
 interface IDirectoryItemProps {
-  directory: Directory | any;
+  directory: Directory;
   toggleDirectory: (id: string) => void;
   isDirectoryExpanded: (id: string) => boolean;
   rootSlug: string;
@@ -46,11 +47,33 @@ export const DirectoryItem = ({
   handleAddChildDirectory,
   handleDeleteDirectory,
 }: IDirectoryItemProps) => {
-  const dispatch = useAppDispatch();
   const router = useRouter();
-  const { directories, parentDirs, rootDirectories, activeDirectoryId } =
-    useAppSelector((state) => state.quicklinks);
+  const { directories, rootDirectories, activeDirectoryId } = useAppSelector(
+    (state) => state.quicklinks
+  );
   const [newDirectoryName, setNewDirectoryName] = useState<string>("");
+  const [anchorEl, setAnchorEl] = useState<null | {
+    element: HTMLSpanElement | null;
+    anchorId: string;
+  }>({
+    element: null,
+    anchorId: "",
+  });
+  const handleElementHasPopoverClicked = (
+    event: React.MouseEvent<HTMLSpanElement>
+  ) => {
+    setAnchorEl({
+      element: event.currentTarget,
+      anchorId: event.currentTarget.id,
+    });
+  };
+
+  const handlePopoverClose = () => {
+    setAnchorEl(null);
+  };
+
+  const openEmojiSet = anchorEl?.anchorId === "emoji-set";
+  const openFolderEditor = anchorEl?.anchorId === "edit-folder";
 
   let path: string;
 
@@ -87,19 +110,60 @@ export const DirectoryItem = ({
     );
   };
 
+  const handleFolderIconChange = async (e: any, emoji: EmojiClickData) => {
+    await handleDirectoryUpdate(e, directory, directory.parentDirId, {
+      logo: emoji.emoji,
+    });
+  };
+
   return (
     <div key={directory.id}>
       <div className="flex justify-between items-center group gap-4 ml-3">
         <div
           className="flex items-center cursor-pointer gap-1"
-          onClick={() => toggleDirectory(directory.id)}
+          // onClick={() =>}
         >
+          <Popover
+            open={openEmojiSet}
+            anchorEl={anchorEl?.element}
+            onClose={handlePopoverClose}
+            anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+            transformOrigin={{
+              vertical: "top",
+              horizontal: "right",
+            }}
+          >
+            <EmojiPicker
+              open={openEmojiSet}
+              autoFocusSearch
+              lazyLoadEmojis
+              previewConfig={{ showPreview: false }}
+              height={300}
+              onEmojiClick={(emojiData: EmojiClickData, event: MouseEvent) =>
+                handleFolderIconChange(event, emojiData)
+              }
+            />
+          </Popover>
+          <span
+            id="emoji-set"
+            className="material-symbols-outlined !text-base hover:bg-neutral-200  rounded pb-1"
+            // onClick={handleToggleEmojiPicker}
+            onClick={handleElementHasPopoverClicked}
+          >
+            {!directory.logo
+              ? isExpanded
+                ? "folder_open"
+                : "folder"
+              : directory.logo}
+          </span>
           <div
             onClick={() => {
               // dispatch(setActiveDirectoryId(directory.id));
+              toggleDirectory(directory.id);
               if (editable.id !== directory.id)
                 setEditable({ id: "", isEditable: false });
             }}
+            className="flex items-center cursor-pointer gap-1"
           >
             <Link
               href={path}
@@ -140,30 +204,95 @@ export const DirectoryItem = ({
                 </h3>
               )}
             </Link>
+            <span className="invisible group-hover:visible material-icons-outlined cursor-pointer hover:opacity-50 opacity-20">
+              {isExpanded ? `expand_less` : `expand_more`}
+            </span>
           </div>
-          <span className="invisible group-hover:visible material-icons-outlined cursor-pointer hover:opacity-50 opacity-20 ">
-            {isExpanded ? `expand_less` : `expand_more`}
-          </span>
         </div>
         <div className="flex gap-1 items-center cursor-pointer">
-          <span
-            className="material-icons-outlined !text-base opacity-0 group-hover:opacity-50 hover:scale-110 transition-all"
-            onClick={() => {
-              setExpandedDirs((prev) => [...prev, directory.id]);
-              handleAddChildDirectory(directory.id);
-            }}
-          >
-            add
-          </span>
-          {directory.parentDirId && (
+          <Tooltip title="New Directory">
             <span
-              className="material-icons-outlined !text-base opacity-0 group-hover:opacity-50 text-red-600 hover:scale-110 transition-all"
-              onClick={() =>
-                handleDeleteDirectory(directory.id, directory.parentDirId)
-              }
+              className="material-icons-outlined !text-base opacity-0 group-hover:opacity-50 hover:scale-110 transition-all"
+              onClick={() => {
+                setExpandedDirs((prev) => [...prev, directory.id]);
+                handleAddChildDirectory(directory.id);
+              }}
             >
-              delete
+              add
             </span>
+          </Tooltip>
+
+          {directory.parentDirId && (
+            <div className="group">
+              <Popover
+                anchorOrigin={{
+                  vertical: "bottom",
+                  horizontal: "right",
+                }}
+                open={openFolderEditor}
+                onClose={handlePopoverClose}
+                anchorEl={anchorEl?.element}
+                transformOrigin={{
+                  vertical: "top",
+                  horizontal: "right",
+                }}
+                className="w-[500px] "
+              >
+                <ul className=" flex flex-col gap-2 peer">
+                  <li
+                    className="flex items-center gap-2 group hover:bg-neutral-200 p-1 px-3 cursor-pointer"
+                    onClick={() => {
+                      setEditable((prev) => {
+                        return { ...prev, id: directory.id, isEditable: true };
+                      });
+                    }}
+                  >
+                    <span className="material-icons-outlined !text-base group-hover:scale-110 transition-all">
+                      edit
+                    </span>
+                    <span className="text-sm">Rename</span>
+                  </li>
+                  <li className="flex items-center gap-2 group hover:bg-neutral-200 p-1 px-3 cursor-pointer">
+                    <span className="material-icons-outlined !text-base group-hover:scale-110 transition-all">
+                      mood
+                    </span>
+                    <span className="text-sm">Change Icon</span>
+                  </li>
+                  <li className="flex items-center gap-2 group hover:bg-neutral-200 p-1 px-3 cursor-pointer">
+                    <span className="material-icons-outlined !text-base group-hover:scale-110 transition-all">
+                      move_up
+                    </span>
+                    <span className="text-sm">Move up</span>
+                  </li>
+                  <li className="flex items-center gap-2 group hover:bg-neutral-200 p-1 px-3 cursor-pointer">
+                    <span className="material-icons-outlined !text-base group-hover:scale-110 transition-all">
+                      move_down
+                    </span>
+                    <span className="text-sm">Move down</span>
+                  </li>
+                  <li
+                    className="flex items-center gap-2 group hover:bg-neutral-200 p-1 px-3 cursor-pointer"
+                    onClick={() =>
+                      handleDeleteDirectory(directory.id, directory.parentDirId)
+                    }
+                  >
+                    <span className="material-icons-outlined !text-base  !text-red-600 group-hover:scale-110 transition-all">
+                      delete
+                    </span>
+                    <span className="text-sm">Delete</span>
+                  </li>
+                </ul>
+              </Popover>
+              <Tooltip title="More">
+                <span
+                  id="edit-folder"
+                  onClick={handleElementHasPopoverClicked}
+                  className="material-icons-outlined !text-base opacity-0 group-hover:opacity-50 peer-hover:opacity-50 hover:scale-110 transition-all"
+                >
+                  more_vert
+                </span>
+              </Tooltip>
+            </div>
           )}
         </div>
       </div>
