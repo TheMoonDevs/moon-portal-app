@@ -387,6 +387,55 @@ const GoogleCalendaCard: React.FC = () => {
               onChange={handleInputChange}
             />
           </LabelInputContainer>
+          <LabelInputContainer className="mb-4">
+            <label htmlFor="startDate">
+              {formValidations.startDate ? (
+                <span className="text-red-500 font-bold ">
+                  *Start Date is Required
+                </span>
+              ) : (
+                <span className="text-sm font-medium mt-1 text-white leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  {" "}
+                  Start Date
+                </span>
+              )}
+            </label>
+            <TextField
+              id="mui-date-picker"
+              type="date"
+              value={
+                formData.startDate
+                  ? format(formData.startDate, "yyyy-MM-dd")
+                  : ""
+              }
+              onChange={(e) =>
+                handleDateChange("startDate")(
+                  e.target.value ? new Date(e.target.value) : null
+                )
+              }
+              InputLabelProps={{
+                shrink: true,
+              }}
+              placeholder="Select date"
+              onFocus={(e) => {
+                if (!formData.startDate) {
+                  e.target.value = getTodayDateString();
+                }
+              }}
+              InputProps={{
+                style: {
+                  backgroundColor: "white",
+                  color: "#4A5568",
+                  fontWeight: "bold",
+                  width: "100%",
+                  height: "40px",
+                  borderRadius: "4px",
+                  fontSize: "14px",
+                },
+              }}
+              variant="outlined"
+            />
+          </LabelInputContainer>
         </div>
       </form>
     </div>
