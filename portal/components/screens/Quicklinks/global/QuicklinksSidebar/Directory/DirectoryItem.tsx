@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import { setActiveDirectoryId } from "@/utils/redux/quicklinks/quicklinks.slice";
 import { Directory } from "@prisma/client";
+import { useRouter } from "next/navigation";
 
 interface IDirectoryItemProps {
   directory: Directory | any;
@@ -24,7 +25,7 @@ interface IDirectoryItemProps {
     directory: Directory,
     parentId: string | null,
     updateInfo: Partial<Directory>
-  ) => void;
+  ) => Promise<void>;
   setExpandedDirs: (value: SetStateAction<string[]>) => void;
   handleAddChildDirectory: (parentId: string) => void;
   handleDeleteDirectory: (id: string, parentId: string | null) => void;
@@ -46,6 +47,7 @@ export const DirectoryItem = ({
   handleDeleteDirectory,
 }: IDirectoryItemProps) => {
   const dispatch = useAppDispatch();
+  const router = useRouter();
   const { directories, parentDirs, rootDirectories, activeDirectoryId } =
     useAppSelector((state) => state.quicklinks);
   const [newDirectoryName, setNewDirectoryName] = useState<string>("");
@@ -59,17 +61,31 @@ export const DirectoryItem = ({
     rootSlug ===
     rootDirectories.find((rootDir) => rootDir.id === "COMMON_RESOURCES")?.slug;
 
-  path = `/quicklinks${rootSlug}/${directory.slug}${
-    directory.parentDirId
-      ? `-${new Date(directory.timestamp).getTime().toString().slice(-5)}`
-      : ""
-  }`;
+  const dirTimestampString = directory.parentDirId
+    ? `-${new Date(directory.timestamp).getTime().toString().slice(-5)}`
+    : "";
+
+  path = `/quicklinks${rootSlug}/${directory.slug}${dirTimestampString}`;
   // const onlyPath = path.split("?")[0];
 
   const isExpanded = isDirectoryExpanded(directory.id);
   const isCurrentPage = activeDirectoryId === directory.id;
 
   //console.log("isCurrentPage:", isCurrentPage, pathName, onlyPath);
+
+  const handleAfterDirNameChanged = async (
+    e: FocusEvent<HTMLInputElement> | any
+  ) => {
+    if (!newDirectoryName) return setEditable({ id: "", isEditable: false });
+    const newDirectorySlug = newDirectoryName.toLowerCase().replace(/ /g, "-");
+    await handleDirectoryUpdate(e, directory, directory.parentDirId, {
+      title: newDirectoryName,
+      slug: newDirectorySlug,
+    });
+    router.replace(
+      `/quicklinks${rootSlug}/${newDirectorySlug}${dirTimestampString}`
+    );
+  };
 
   return (
     <div key={directory.id}>
@@ -98,13 +114,12 @@ export const DirectoryItem = ({
                   value={newDirectoryName}
                   className="focus:outline-none w-24"
                   onChange={(e) => setNewDirectoryName(e.target.value)}
-                  onBlur={(e) => {
-                    if (!newDirectoryName)
-                      return setEditable({ id: "", isEditable: false });
-                    handleDirectoryUpdate(e, directory, directory.parentDirId, {
-                      title: newDirectoryName,
-                      slug: newDirectoryName.toLowerCase().replace(/ /g, "-"),
-                    });
+                  onBlur={handleAfterDirNameChanged}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleAfterDirNameChanged(e);
+                    }
                   }}
                 />
               ) : (
