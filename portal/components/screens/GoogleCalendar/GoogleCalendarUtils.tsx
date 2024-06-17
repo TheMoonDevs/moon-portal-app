@@ -15,9 +15,13 @@ export type FormDataType = {
 export const validateForm = (
   formData: FormDataType
 ): { title: boolean; startDate: boolean } => {
+  // Check if either title or startDate is empty
+  const isTitleEmpty = !formData.title;
+  const isStartDateEmpty = !formData.startDate;
+
   return {
-    title: !formData.title,
-    startDate: !formData.startDate,
+    title: isTitleEmpty,
+    startDate: isStartDateEmpty,
   };
 };
 
