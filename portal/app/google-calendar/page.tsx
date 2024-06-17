@@ -14,7 +14,7 @@ const googleCalendarPage = () => {
           <span className="icon_size material-icons">arrow_back</span>
           <h1 className="uppercase tracking-[0.2em] font-mono text-xl">Back</h1>
         </Link>
-        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 rounded-lg gap-6 mx-auto max-w-screen-lg">
+        <div className="flex flex-col items-center justify-center  ">
           <GoogleCalendarCard />
         </div>
       </PageAccess>
