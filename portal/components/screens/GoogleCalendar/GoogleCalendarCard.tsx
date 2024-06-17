@@ -300,45 +300,41 @@ const GoogleCalendaCard: React.FC = () => {
       <div className="bg-gradient-to-r from-transparent via-neutral-300 dark:via-neutral-700 to-transparent my-3 h-[1px] w-full" />
 
       <form className="my-3" onSubmit={handleSubmit}>
-        <LabelInputContainer>
-          <div className="flex justify-end items-center">
-            <Tooltip title={"Set Task All Day"} arrow>
-              <Checkbox
-                checked={formData.allDay}
-                onChange={toggleAllDay}
-                sx={{
-                  color: "#fff",
-                  "&.Mui-checked": {
-                    color: "#0096FF",
-                  },
-                  "& .MuiSvgIcon-root": {
-                    width: "1.2em",
-                    height: "1.2em",
-                  },
-                }}
-              />
-            </Tooltip>
-            <label
-              className="text-sm font-medium text-white leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              htmlFor="allDay"
-            >
-              All Day
-            </label>
-          </div>
-        </LabelInputContainer>
+        <div className="flex justify-end items-center h-5 ">
+          <Tooltip title={"Set Task All Day"} arrow>
+            <Checkbox
+              checked={formData.allDay}
+              onChange={toggleAllDay}
+              sx={{
+                color: "#fff",
+                "&.Mui-checked": {
+                  color: "#0096FF",
+                },
+                "& .MuiSvgIcon-root": {
+                  width: "1.2em",
+                  height: "1.2em",
+                },
+              }}
+            />
+          </Tooltip>
+          <label
+            className="text-sm font-medium text-white leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            htmlFor="allDay"
+          >
+            All Day
+          </label>
+        </div>
+
         <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 mb-4">
           <LabelInputContainer>
-            <label htmlFor="title">
-              {formValidations.title ? (
-                <span className="text-red-500 font-bold">
-                  *Title is Required
-                </span>
-              ) : (
-                <span className="text-sm font-medium mt-1 text-white leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                  Title
-                </span>
-              )}
-            </label>
+            <span
+              className={`text-sm font-medium leading-none mt-2 peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${
+                formValidations.startDate ? "text-red-500" : "text-white"
+              }`}
+              style={{ padding: "0" }}
+            >
+              {formValidations.startDate ? "*Title is Required" : "Title"}
+            </span>
             <input
               id="title"
               name="title"
@@ -390,19 +386,18 @@ const GoogleCalendaCard: React.FC = () => {
             onChange={handleInputChange}
           />
         </LabelInputContainer>
-        <LabelInputContainer className="mb-4">
-          <label htmlFor="startDate">
-            {formValidations.startDate ? (
-              <span className="text-red-500 font-bold ">
-                *Start Date is Required
-              </span>
-            ) : (
-              <span className="text-sm font-medium mt-1 text-white leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                {" "}
-                Start Date
-              </span>
-            )}
-          </label>
+        <LabelInputContainer className="my-2">
+          <span
+            className={`text-sm font-medium leading-none mt-2 peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${
+              formValidations.startDate ? "text-red-500" : "text-white"
+            }`}
+            style={{ padding: "0" }}
+          >
+            {formValidations.startDate
+              ? "*Start Date is Required"
+              : "Start Date"}
+          </span>
+
           <TextField
             id="mui-date-picker"
             type="date"
@@ -442,7 +437,7 @@ const GoogleCalendaCard: React.FC = () => {
           <div className="flex justify-between  w-full items-center gap-3">
             <div className={`w-full`}>
               <label
-                className="text-sm font-medium mt-1 text-white leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                className="text-sm font-medium text-white  leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                 htmlFor="repeat"
               >
                 Repeat
@@ -607,7 +602,7 @@ const LabelInputContainer = ({
   className?: string;
 }) => {
   return (
-    <div className={cn("flex flex-col space-y-2 w-full", className)}>
+    <div className={cn("flex flex-col space-y-2  w-full", className)}>
       {children}
     </div>
   );
