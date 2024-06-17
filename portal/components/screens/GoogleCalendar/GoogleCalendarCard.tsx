@@ -542,6 +542,16 @@ const GoogleCalendaCard: React.FC = () => {
               )}
             </div>
           </LabelInputContainer>
+
+          <Tooltip title={"Generate Google Calendar link"} arrow>
+            <button
+              className="cool-button bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 mt-3 relative block w-full text-white rounded-md h-12 font-semibold shadow-lg transition duration-300 ease-in-out hover:bg-gradient-to-r hover:from-blue-700 hover:via-blue-600 hover:to-blue-800"
+              type="submit"
+            >
+              Generate Link &rarr;
+            </button>
+          </Tooltip>
+          <div className="bg-gradient-to-r from-transparent via-neutral-300 dark:via-neutral-700 to-transparent h-[1px] w-full" />
         </div>
       </form>
     </div>
