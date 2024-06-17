@@ -93,6 +93,7 @@ export const DirectoryItem = ({
               editable.id === directory.id &&
               directory.slug !== "common-resources" ? (
                 <input
+                  autoFocus
                   type="text"
                   value={newDirectoryName}
                   className="focus:outline-none w-24"
