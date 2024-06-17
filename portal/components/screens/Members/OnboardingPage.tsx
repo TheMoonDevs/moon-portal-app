@@ -34,7 +34,7 @@ interface OnboardingPageProps {
   onClose?: () => void;
 }
 
-export default function OnboardingPage({ onClose }: OnboardingPageProps) {
+export function OnboardingPage({ onClose }: OnboardingPageProps) {
   const dispatch = useAppDispatch();
   const formData = useAppSelector((state) => state.onboardingForm);
   const [message, setMessage] = useState("");
@@ -92,15 +92,18 @@ export default function OnboardingPage({ onClose }: OnboardingPageProps) {
     }
   };
 
-  const handleUsernameInput = async (username: any) => {
+  const handleUsernameInput = async (username: any, password: any) => {
     console.log("handleUsernameInput called with username:", username);
     try {
       setLoading(true);
       setMessageColor("");
 
-      const response = await fetch(`/api/onboarding?username=${username}`, {
-        method: "GET",
-      });
+      const response = await fetch(
+        `/api/onboarding?username=${username}&password=${password}`,
+        {
+          method: "GET",
+        }
+      );
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -151,7 +154,7 @@ export default function OnboardingPage({ onClose }: OnboardingPageProps) {
 
   useEffect(() => {
     if (username.length === 3 && password.length === 3) {
-      handleUsernameInput(username);
+      handleUsernameInput(username, password);
     }
     setMessage("");
     setMessageColor("");
