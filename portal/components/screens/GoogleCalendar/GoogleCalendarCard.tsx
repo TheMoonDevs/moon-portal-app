@@ -24,11 +24,47 @@ interface FormData {
 
 const today = new Date();
 
-
-
 const GoogleCalendaCard: React.FC = () => {
-  
+  const [formData, setFormData] = useState<FormData>({
+    title: "",
+    details: "",
+    location: "",
+    startDate: null,
+    repeat: "no-repeat",
+    startTime: null,
+    endTime: null,
+    allDay: false,
+    endRepeat: null,
+    endDate: null,
+  });
 
+  const [formValidations, setFormValidations] = useState({
+    title: undefined as boolean | undefined,
+    startDate: undefined as boolean | undefined,
+  });
+  console.log("formValidations" + formValidations);
+
+  const getWeekdayFromDate = (date: any) => {
+    const days = [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+    ];
+    return days[date.getDay()];
+  };
+
+  useEffect(() => {
+    setFormValidations({
+      title: false,
+      startDate: false,
+    });
+  }, [formData.title, formData.startDate]);
+
+  
   return (
     <div className="max-w-md w-full mx-auto rounded-none md:rounded-2xl mb-5 p-4 md:p-8 shadow-input bg-black/90">
       <div className="flex justify-center items-center space-x-4 md:space-x-6">
