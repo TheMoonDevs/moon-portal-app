@@ -183,7 +183,7 @@ export const DirectoryTree = ({
       {mainDirectory.map((directory: Directory | ParentDirectory) => (
         <div key={directory.id} className="!py-2 !border-gray-200">
           <DirectoryItem
-            directory={directory}
+            directory={directory as Directory}
             toggleDirectory={toggleDirectory}
             isDirectoryExpanded={isDirectoryExpanded}
             pathName={pathName as string}
