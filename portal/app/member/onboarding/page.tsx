@@ -1,6 +1,6 @@
 "use client";
 
-import OnboardingPage from "@/components/screens/Members/OnboardingPage";
+import {OnboardingPage} from "@/components/screens/Members/OnboardingPage";
 import { useUser } from "@/utils/hooks/useUser";
 import { redirect } from "next/navigation";
 import React from "react";
