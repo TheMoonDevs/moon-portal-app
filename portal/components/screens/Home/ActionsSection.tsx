@@ -27,6 +27,12 @@ const Links = [
     color: "blue",
   },
   {
+    icon: "/icons/google-calendar.svg",
+    title: "Google Calendar",
+    route: APP_ROUTES.googleCalendar,
+    active: true,
+  },
+  {
     icon: "open_in_new",
     title: "URL Shortener",
     route: APP_ROUTES.urlShortener,
