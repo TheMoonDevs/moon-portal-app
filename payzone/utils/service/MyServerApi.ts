@@ -121,7 +121,7 @@ export const MyServerApi = {
   },
 
   getAll: (url: string) => {
-    return new Promise((resolve, reject) => {
+    return new Promise<any>((resolve, reject) => {
       fetch(url, {
         method: "GET",
         headers: {

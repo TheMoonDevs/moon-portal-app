@@ -123,7 +123,7 @@ const TMDConverter = ({
       MyServerApi.updateData(SERVER_API_ENDPOINTS.updatePayment, updatedData)
         .then((updatedTransaction) => {
           // console.log("Updated transaction:", updatedTransaction);
-          alert("Claim Request Sent");
+          alert("Claim Request Sent", updatedTransaction);
         })
         .catch((error) => {
           console.error("Error updating PayTransaction:", error);

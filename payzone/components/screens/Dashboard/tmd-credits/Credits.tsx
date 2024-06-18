@@ -19,22 +19,16 @@ export const Credits = () => {
   const [loading, setLoading] = useState(true);
   const { user } = useAuthSession();
   const userWalletAddress = (user?.payData as any)?.walletAddress;
-  const { balance } = useAppSelector((state) => state.balances);
-  const { multiplicationFactor } = useSyncBalances();
-  const currency = useAppSelector((state) => state.balances.selectedCurrency);
+  const { multiplicationFactor, balance, selectedCurrency } = useSyncBalances();
   const refetchTransactions = useCallback(() => {
     if (userWalletAddress === undefined) return;
     setTransactions([]);
     setLoading(true);
-    new Promise((resolve, reject) => {
-      ChainScanner.fetchAllTransactions(
-        TOKEN_INFO.chainId,
-        userWalletAddress,
-        TOKEN_INFO.contractAddress
-      )
-        .then(resolve)
-        .catch(reject);
-    })
+    ChainScanner.fetchAllTransactions(
+      TOKEN_INFO.chainId,
+      userWalletAddress,
+      TOKEN_INFO.contractAddress
+    )
       .then((results: any) => {
         let new_chain_results: any[] = [];
         // console.log("results", results);
@@ -43,13 +37,6 @@ export const Credits = () => {
           new_chain_results.push(results_a);
         });
         let res = new_chain_results.flat();
-        //console.log("transactions", res, walletAddress);
-        // res = res.filter(
-        //   (tx: any) =>
-        //     tx.from.toUpperCase() === walletAddress.toUpperCase() ||
-        //     tx.to.toUpperCase() === walletAddress.toUpperCase()
-        // );
-        // console.log("my transactions", res);
         res = res.sort((a: any, b: any) => b.timeStamp - a.timeStamp);
         setTransactions(res);
         setLoading(false);
@@ -75,7 +62,7 @@ export const Credits = () => {
             alt=""
           />
           <div className="flex flex-col gap-1">
-            {balance ? (
+            {!balance ? (
               <>
                 <Skeleton
                   variant="text"
@@ -87,7 +74,7 @@ export const Credits = () => {
                 <Skeleton
                   variant="text"
                   width={210}
-                  height={20}
+                  height={10}
                   animation="wave"
                   sx={{ backgroundColor: "lightgray" }}
                 />
@@ -98,7 +85,7 @@ export const Credits = () => {
                 <span className="text-sm font-thin text-midGrey">
                   {`Current Value: ${formatNumberToText(
                     multiplicationFactor * balance
-                  )} ${currency}`}
+                  )} ${selectedCurrency}`}
                 </span>
               </>
             )}

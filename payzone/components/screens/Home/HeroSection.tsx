@@ -14,7 +14,6 @@ import useMousePosition from "@/utils/hooks/useMousePosition";
 import gsap from "gsap";
 import { useEffect, useState } from "react";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
-import { useState } from "react";
 import { useSyncBalances } from "@/utils/hooks/useSyncBalances";
 import CurrencyModal from "@/components/global/CurrencyModal";
 
