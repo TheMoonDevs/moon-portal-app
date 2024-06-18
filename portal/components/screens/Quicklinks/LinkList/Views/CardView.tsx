@@ -21,6 +21,15 @@ export const CardView = ({
           target="_blank"
           className="flex flex-col overflow-hidden  gap-4"
         >
+          <div className="w-full h-40 relative mb-4 overflow-hidden rounded-t-md shadow">
+            <Image
+              src={link.image || link.logo}
+              layout="fill"
+              objectFit="cover"
+              className="transition duration-500 ease-in-out transform group-hover:scale-105"
+              alt={link.title}
+            />
+          </div>
           <p className="text-lg w-4/5 font-semibold">
             {link.title.length > 50
               ? link.title.substring(0, 50) + " ..."
