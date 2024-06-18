@@ -24,7 +24,9 @@ export const CreateLinkModal = () => {
   const { user } = useUser();
   const path = usePathname();
   const searchParams = useSearchParams();
-  const directoryId = searchParams?.get("id");
+  const directoryId = useAppSelector(
+    (state) => state.quicklinks.activeDirectoryId
+  );
   const [selectedDepartment, setSelectedDepartment] = useState({
     id: "",
     title: "",
@@ -35,8 +37,8 @@ export const CreateLinkModal = () => {
   );
   const departmentId = useMemo(() => {
     const getDepartmentId = (directoryId: string | null): string => {
-      let departmentId = "";
-      if (!directoryId) return departmentId;
+      let _departmentId = "";
+      if (!directoryId) return _departmentId;
       const thisDirectory =
         parentDirs?.find((_dir) => _dir.id === directoryId) ||
         directories?.find((_dir) => _dir.id === directoryId);
@@ -44,11 +46,11 @@ export const CreateLinkModal = () => {
       if (thisDirectory && "parentDirId" in thisDirectory) {
         return getDepartmentId(thisDirectory?.parentDirId);
       } else {
-        departmentId =
+        _departmentId =
           thisDirectory?.type === ROOTTYPE.DEPARTMENT
             ? thisDirectory?.id
             : selectedDepartment.id;
-        return departmentId;
+        return _departmentId;
       }
     };
     return directoryId ? getDepartmentId(directoryId) : selectedDepartment.id;
