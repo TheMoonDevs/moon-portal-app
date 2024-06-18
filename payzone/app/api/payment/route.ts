@@ -15,8 +15,15 @@ export async function POST(req: NextRequest, res: NextResponse) {
   }
 
   const body = await req.text();
-  const { userId, txStatus, txType, txCategory, amount, burnTxHash } =
-    JSON.parse(body);
+  const {
+    userId,
+    txStatus,
+    txType,
+    txCategory,
+    amount,
+    burnTxHash,
+    createdAt,
+  } = JSON.parse(body);
   // console.log("req.body",req.body);
 
   try {
@@ -41,6 +48,7 @@ export async function POST(req: NextRequest, res: NextResponse) {
         txCategory,
         amount,
         burnTxHash,
+        ...(createdAt && { createdAt }),
       },
     });
 

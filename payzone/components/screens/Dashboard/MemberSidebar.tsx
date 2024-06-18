@@ -30,8 +30,8 @@ export const MemberSidebar = () => {
   };
 
   return (
-    <section className="w-full h-14 lg:h-full flex lg:flex-col justify-between lg:fixed top-0 lg:w-[15%]">
-      <div>
+    <section className="h-14 lg:h-full flex lg:flex-col justify-between lg:fixed top-0 lg:w-[15%]">
+      <div className="px-4">
         <Link href={APP_ROUTES.home}>
           <div className="hidden lg:flex items-center w-auto gap-3 mt-6">
             <Image src="/logo/payzone.svg" alt="" width={47} height={47} />
