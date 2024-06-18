@@ -55,13 +55,11 @@ export const PayUpiID = () => {
     const updatedData = {
       userId: payingToUser.id,
       user: _userData,
-      txStatus: TRANSACTIONSTATUS.DONE,
-      txType: TRANSACTIONTYPE.FIAT,
-      txCategory: TRANSACTIONCATEGORY.STIPEND,
-      amount: amount,
+      ...txInfos,
+      amount: parseFloat(amount),
     };
     // console.log(updatedData);
-    MyServerApi.updateData(SERVER_API_ENDPOINTS.updatePayment, updatedData)
+    MyServerApi.postData(SERVER_API_ENDPOINTS.payment, updatedData)
       .then((updatedTransaction) => {
         handleModalClose();
         setLoading(false);
