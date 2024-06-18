@@ -1,6 +1,16 @@
 import { Popover } from "@mui/material";
 import { Link as Quicklink } from "@prisma/client";
 import { useState } from "react";
+import { EditLinkPopup } from "./EditLinkPopup";
+
+export type FormFields = {
+  title: string;
+  description: string;
+  url: string;
+  id: string;
+  // logo: string;
+  // image: string;
+};
 
 export const LinkActions = ({
   link,
@@ -13,6 +23,15 @@ export const LinkActions = ({
 }) => {
   const [deleteButtonId, setDeleteButtonId] = useState<string | null>();
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [fields, setFields] = useState<FormFields>({
+    title: link.title,
+    description: link.description,
+    url: link.url,
+    id: link.id,
+    // logo: link.logo,
+    // image: link.image,
+  });
 
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
@@ -24,6 +43,10 @@ export const LinkActions = ({
 
   const open = Boolean(anchorEl);
   const id = link ? link.id + "simple-popover" : undefined;
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+  };
 
   const deletePopup = () => {
     return (
@@ -78,6 +101,20 @@ export const LinkActions = ({
         <p
           className="flex items-center gap-2 cursor-pointer hover:bg-neutral-100 p-2 rounded-md"
           onClick={() => {
+            setIsModalOpen(true);
+            setAnchorEl(null);
+          }}
+        >
+          <span
+            className={`material-symbols-outlined cursor-pointer transition-all`}
+          >
+            edit
+          </span>
+          Edit Link
+        </p>
+        <p
+          className="flex items-center gap-2 cursor-pointer hover:bg-neutral-100 p-2 rounded-md"
+          onClick={() => {
             setDeleteButtonId(link.id);
           }}
         >
@@ -121,6 +158,12 @@ export const LinkActions = ({
       >
         <div>{deleteButtonId === link.id ? deletePopup() : generalPopup()}</div>
       </Popover>
+      <EditLinkPopup
+        isModalOpen={isModalOpen}
+        handleCloseModal={handleCloseModal}
+        fields={fields}
+        setFields={setFields}
+      />
     </div>
   );
 };
