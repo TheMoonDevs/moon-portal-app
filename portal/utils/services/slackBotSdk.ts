@@ -247,28 +247,28 @@ export class SlackBotSdk {
     await this.sendSlackMessageviaAPI(msg);
   };
 
-  setSlackReminder = async (reminderTime: string, reminderMessage: string, reminderChannel: string) => {
+  setSlackReminder = async (reminderTime: string, reminderMessage: string, channelID: string) => {
     const year = parseInt(reminderTime.substring(0, 4), 10);
     const month = parseInt(reminderTime.substring(4, 6), 10) - 1;
     const day = parseInt(reminderTime.substring(6, 8), 10);
     const hours = parseInt(reminderTime.substring(9, 11), 10);
     const minutes = parseInt(reminderTime.substring(11, 13), 10);
     const seconds = parseInt(reminderTime.substring(13, 15), 10);
-    const date = new Date(Date.UTC(year, month, day, hours, minutes, seconds));
+    let date = new Date(Date.UTC(year, month, day, hours, minutes, seconds));
+
+    date.setHours(date.getHours() - 5);
+    date.setMinutes(date.getMinutes() - 30);
 
     const unixTimestamp = Math.floor(date.getTime() / 1000);
-
-    console.log(unixTimestamp);
 
     const data = new URLSearchParams();
     data.append('token', SLACK_BOT_OAUTH_TOKEN);
     data.append('text', reminderMessage);
-    data.append('time', unixTimestamp.toString());
-    data.append('channel', reminderChannel);
-
+    data.append('post_at', unixTimestamp.toString());
+    data.append('channel', channelID)
 
     try {
-      const response = await fetch('https://slack.com/api/reminders.add', {
+      const response = await fetch('https://slack.com/api/chat.scheduleMessage', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
