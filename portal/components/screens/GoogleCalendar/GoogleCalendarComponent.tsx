@@ -1,6 +1,6 @@
 import React, { ChangeEvent } from "react";
 import Image from "next/image";
-import { Checkbox, MenuItem, Select, TextField, Tooltip } from "@mui/material";
+import { Checkbox, MenuItem, Select, SelectChangeEvent, TextField, Tooltip } from "@mui/material";
 
 export const Header: React.FC = () => (
   <div className="flex justify-center items-center space-x-4 md:space-x-6">
@@ -96,7 +96,6 @@ export const TitleInput: React.FC<TitleInputProps> = ({
 );
 
 //! DetailsInput ✍️
-
 interface DetailsInputProps {
   value: string;
   onChange: (e: ChangeEvent<HTMLTextAreaElement>) => void;
@@ -213,104 +212,127 @@ export const DateInput: React.FC<DateInputProps> = ({
 
 interface RepeatOptionsProps {
   repeatValue: string;
-  onRepeatChange: any;
+  onRepeatChange: (event: SelectChangeEvent<string>) => void;
   endDateValue: string;
-  onEndDateChange: (e: ChangeEvent<HTMLInputElement>) => void;
+  onEndDateChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  startDate: string | null; // Assume startDate is passed as a prop
 }
+
+const getWeekdayFromDate = (date: Date) => {
+  return new Intl.DateTimeFormat("en-US", { weekday: "long" }).format(date);
+};
+
+const today = new Date();
 
 export const RepeatOptions: React.FC<RepeatOptionsProps> = ({
   repeatValue,
   onRepeatChange,
   endDateValue,
   onEndDateChange,
-}) => (
-  <div className="mb-4">
-    <div className="flex justify-between w-full items-center gap-3">
-      <div className="w-full">
-        <label
-          className="text-sm font-medium text-white leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-          htmlFor="repeat"
-        >
-          Repeat
-        </label>
-        <Select
-          value={repeatValue}
-          onChange={onRepeatChange}
-          displayEmpty
-          inputProps={{ "aria-label": "Without label" }}
-          style={{
-            backgroundColor: "white",
-            color: "#4A5568",
-            fontWeight: "bold",
-            width: "100%",
-            height: "40px",
-            borderRadius: "4px",
-            fontSize: "14px",
-            paddingRight: "30px",
-          }}
-          MenuProps={{
-            PaperProps: {
-              style: {
-                backgroundColor: "white",
-                color: "#4A5568",
-              },
-            },
-          }}
-          renderValue={(selected) => (
-            <span style={{ color: selected ? "#4A5568" : "#BCCCDC" }}>
-              {selected || "Select"}
-            </span>
-          )}
-        >
-          <MenuItem value="no-repeat">Doesn&apos;t repeat</MenuItem>
-          <MenuItem value="daily">Daily</MenuItem>
-          <MenuItem value="weekly">Weekly</MenuItem>
-          <MenuItem value="monthly">Monthly</MenuItem>
-          <MenuItem value="annually">Annually</MenuItem>
-          <MenuItem value="every-weekday">Weekly on Weekdays</MenuItem>
-        </Select>
-      </div>
+  startDate,
+}) => {
+  const startDateValue = startDate ? new Date(startDate) : today;
 
-      {repeatValue !== "no-repeat" && (
-        <div className="w-1/2">
+
+  return (
+    <div className="mb-4">
+      <div className="flex justify-between w-full items-center gap-3">
+        <div className="w-full">
           <label
-            className="text-sm font-medium mt-1 text-white leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            htmlFor="endRepeat"
+            className="text-sm font-medium text-white leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            htmlFor="repeat"
           >
-            End Repeat
+            Repeat
           </label>
-          <TextField
-            id="end-date-picker"
-            type="date"
-            value={endDateValue}
-            onChange={onEndDateChange}
-            InputLabelProps={{
-              shrink: true,
+          <Select
+            value={repeatValue}
+            onChange={onRepeatChange}
+            displayEmpty
+            inputProps={{ "aria-label": "Without label" }}
+            style={{
+              backgroundColor: "white",
+              color: "#4A5568",
+              fontWeight: "bold",
+              width: "100%",
+              height: "40px",
+              borderRadius: "4px",
+              fontSize: "14px",
+              paddingRight: "30px",
             }}
-            placeholder="Select date"
-            onFocus={(e) => {
-              if (!endDateValue) {
-                e.target.value = new Date().toISOString().split("T")[0];
-              }
-            }}
-            InputProps={{
-              style: {
-                backgroundColor: "white",
-                color: "#4A5568",
-                fontWeight: "bold",
-                width: "100%",
-                height: "40px",
-                borderRadius: "4px",
-                fontSize: "14px",
+            MenuProps={{
+              PaperProps: {
+                style: {
+                  backgroundColor: "white",
+                  color: "#4A5568",
+                },
               },
             }}
-            variant="outlined"
-          />
+            renderValue={(selected) => (
+              <span style={{ color: selected ? "#4A5568" : "#BCCCDC" }}>
+                {selected || "Select"}
+              </span>
+            )}
+          >
+            <MenuItem value="no-repeat">Doesn&apos;t repeat</MenuItem>
+            <MenuItem value="daily">Daily</MenuItem>
+            <MenuItem value="weekly">
+              Weekly on {getWeekdayFromDate(startDateValue)}
+            </MenuItem>
+            <MenuItem value="monthly">
+              Monthly on the third {getWeekdayFromDate(startDateValue)}
+            </MenuItem>
+            <MenuItem value="annually">
+              Annually on{" "}
+              {new Intl.DateTimeFormat("en-US", {
+                month: "long",
+                day: "numeric",
+              }).format(startDateValue)}
+            </MenuItem>
+            <MenuItem value="every-weekday">Weekly on Weekdays</MenuItem>
+          </Select>
         </div>
-      )}
+
+        {repeatValue !== "no-repeat" && (
+          <div className="w-1/2">
+            <label
+              className="text-sm font-medium mt-1 text-white leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              htmlFor="endRepeat"
+            >
+              End Repeat
+            </label>
+            <TextField
+              id="end-date-picker"
+              type="date"
+              value={endDateValue}
+              onChange={onEndDateChange}
+              InputLabelProps={{
+                shrink: true,
+              }}
+              placeholder="Select date"
+              onFocus={(e) => {
+                if (!endDateValue) {
+                  e.target.value = new Date().toISOString().split("T")[0];
+                }
+              }}
+              InputProps={{
+                style: {
+                  backgroundColor: "white",
+                  color: "#4A5568",
+                  fontWeight: "bold",
+                  width: "100%",
+                  height: "40px",
+                  borderRadius: "4px",
+                  fontSize: "14px",
+                },
+              }}
+              variant="outlined"
+            />
+          </div>
+        )}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 //! TimeInput ⏰
 

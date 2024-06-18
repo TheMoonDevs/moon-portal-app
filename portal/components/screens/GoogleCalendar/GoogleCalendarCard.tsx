@@ -58,19 +58,6 @@ const GoogleCalendarCard: React.FC = () => {
   const handleSelectChange = useHandleSelectChange(setFormData);
   const toggleAllDay = useToggleAllDay(setFormData);
 
-  const getWeekdayFromDate = (date: any) => {
-    const days = [
-      "Sunday",
-      "Monday",
-      "Tuesday",
-      "Wednesday",
-      "Thursday",
-      "Friday",
-      "Saturday",
-    ];
-    return days[date.getDay()];
-  };
-
   useEffect(() => {
     setFormValidations({
       title: false,
@@ -162,6 +149,9 @@ const GoogleCalendarCard: React.FC = () => {
               e.target.value ? new Date(e.target.value) : null
             )
           }
+          startDate={
+            formData.startDate ? format(formData.startDate, "yyyy-MM-dd") : null
+          }
         />
         {!formData.allDay && (
           <TimeInputs
@@ -171,7 +161,7 @@ const GoogleCalendarCard: React.FC = () => {
             onEndTimeChange={handleTimeChange("endTime")}
           />
         )}
-        <SubmitButton  />
+        <SubmitButton />
         <div className="bg-gradient-to-r from-transparent via-neutral-300 dark:via-neutral-700 to-transparent h-[1px] w-full" />
       </form>
     </div>
