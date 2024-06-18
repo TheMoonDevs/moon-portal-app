@@ -29,7 +29,7 @@ interface IDirectoryItemProps {
   ) => Promise<void>;
   setExpandedDirs: (value: SetStateAction<string[]>) => void;
   handleAddChildDirectory: (parentId: string) => void;
-  handleDeleteDirectory: (id: string, parentId: string | null) => void;
+  handleDeleteDirectory: (id: string, parentId: string | null) => Promise<void>;
 }
 
 export const DirectoryItem = ({
@@ -71,6 +71,8 @@ export const DirectoryItem = ({
   const handlePopoverClose = () => {
     setAnchorEl(null);
   };
+
+  console.log(editable);
 
   const openEmojiSet = anchorEl?.anchorId === "emoji-set";
   const openFolderEditor = anchorEl?.anchorId === "edit-folder";
@@ -210,15 +212,13 @@ export const DirectoryItem = ({
           </div>
         </div>
         <div className="flex gap-1 items-center cursor-pointer">
-          <Tooltip title="New Directory">
+          <Tooltip title="Folder settings" enterDelay={500}>
             <span
-              className="material-icons-outlined !text-base opacity-0 group-hover:opacity-50 hover:scale-110 transition-all"
-              onClick={() => {
-                setExpandedDirs((prev) => [...prev, directory.id]);
-                handleAddChildDirectory(directory.id);
-              }}
+              id="edit-folder"
+              onClick={handleElementHasPopoverClicked}
+              className="material-icons-outlined !text-base opacity-0 group-hover:opacity-50 peer-hover:opacity-50 hover:scale-110 transition-all"
             >
-              add
+              more_vert
             </span>
           </Tooltip>
 
@@ -233,63 +233,92 @@ export const DirectoryItem = ({
                 onClose={handlePopoverClose}
                 anchorEl={anchorEl?.element}
                 transformOrigin={{
-                  vertical: "top",
-                  horizontal: "right",
+                  vertical: "center",
+                  horizontal: "left",
                 }}
-                className="w-[500px] "
+                className="!rounded-md"
               >
-                <ul className=" flex flex-col gap-2 peer">
+                <ul className=" flex flex-col gap-2 peer w-[200px] p-2 rounded-md">
                   <li
-                    className="flex items-center gap-2 group hover:bg-neutral-200 p-1 px-3 cursor-pointer"
-                    onClick={() => {
+                    className="flex items-center gap-2 group hover:bg-neutral-200 rounded-md p-1 px-3 cursor-pointer"
+                    onClick={(e) => {
+                      // handlePopoverClose();
                       setEditable((prev) => {
-                        return { ...prev, id: directory.id, isEditable: true };
+                        return { id: directory.id, isEditable: true };
                       });
                     }}
                   >
-                    <span className="material-icons-outlined !text-base group-hover:scale-110 transition-all">
+                    <span className="material-icons-outlined !text-neutral-500 !text-base group-hover:scale-110 transition-all">
                       edit
                     </span>
                     <span className="text-sm">Rename</span>
                   </li>
-                  <li className="flex items-center gap-2 group hover:bg-neutral-200 p-1 px-3 cursor-pointer">
-                    <span className="material-icons-outlined !text-base group-hover:scale-110 transition-all">
+                  {/* <li
+                    className="flex items-center gap-2 group hover:bg-neutral-200 rounded-md p-1 px-3 cursor-pointer"
+                    onClick={handleElementHasPopoverClicked}
+                  >
+                    <span className="material-icons-outlined !text-neutral-500 !text-base group-hover:scale-110 transition-all">
                       mood
                     </span>
                     <span className="text-sm">Change Icon</span>
-                  </li>
-                  <li className="flex items-center gap-2 group hover:bg-neutral-200 p-1 px-3 cursor-pointer">
-                    <span className="material-icons-outlined !text-base group-hover:scale-110 transition-all">
+                  </li> */}
+                  <li className="flex items-center gap-2 group hover:bg-neutral-200 rounded-md p-1 px-3 cursor-pointer">
+                    <span className="material-icons-outlined !text-neutral-500 !text-base group-hover:scale-110 transition-all">
                       move_up
                     </span>
                     <span className="text-sm">Move up</span>
                   </li>
-                  <li className="flex items-center gap-2 group hover:bg-neutral-200 p-1 px-3 cursor-pointer">
-                    <span className="material-icons-outlined !text-base group-hover:scale-110 transition-all">
+                  <li className="flex items-center gap-2 group hover:bg-neutral-200 rounded-md p-1 px-3 cursor-pointer">
+                    <span className="material-icons-outlined !text-neutral-500 !text-base group-hover:scale-110 transition-all">
                       move_down
                     </span>
                     <span className="text-sm">Move down</span>
                   </li>
+                  <li className="flex items-center gap-2 group hover:bg-neutral-200 rounded-md p-1 px-3 cursor-pointer">
+                    <span className="material-icons-outlined !text-neutral-500 !text-base group-hover:scale-110 transition-all">
+                      drive_file_move
+                    </span>
+                    <span className="text-sm">Move To</span>
+                  </li>
                   <li
-                    className="flex items-center gap-2 group hover:bg-neutral-200 p-1 px-3 cursor-pointer"
-                    onClick={() =>
-                      handleDeleteDirectory(directory.id, directory.parentDirId)
-                    }
+                    className="flex items-center gap-2 group hover:bg-neutral-200 text-red-600 rounded-md p-1 px-3 cursor-pointer"
+                    onClick={async () => {
+                      await handleDeleteDirectory(
+                        directory.id,
+                        directory.parentDirId
+                      );
+                      if (directory.id === activeDirectoryId) {
+                        const parentDir = directories.find(
+                          (dir) => dir.id === directory.parentDirId
+                        );
+                        const timeString =
+                          parentDir &&
+                          new Date(parentDir.timestamp)
+                            .getTime()
+                            .toString()
+                            .slice(-5);
+                        router.replace(
+                          `/quicklinks${rootSlug}/${parentDir?.slug}-${timeString}`
+                        );
+                      }
+                    }}
                   >
-                    <span className="material-icons-outlined !text-base  !text-red-600 group-hover:scale-110 transition-all">
+                    <span className="material-icons-outlined  !text-red-500 !text-base   group-hover:scale-110 transition-all">
                       delete
                     </span>
                     <span className="text-sm">Delete</span>
                   </li>
                 </ul>
               </Popover>
-              <Tooltip title="More">
+              <Tooltip title="Create Folder" enterDelay={500}>
                 <span
-                  id="edit-folder"
-                  onClick={handleElementHasPopoverClicked}
-                  className="material-icons-outlined !text-base opacity-0 group-hover:opacity-50 peer-hover:opacity-50 hover:scale-110 transition-all"
+                  className="material-icons-outlined !text-base opacity-0 group-hover:opacity-50 hover:scale-110 transition-all"
+                  onClick={() => {
+                    setExpandedDirs((prev) => [...prev, directory.id]);
+                    handleAddChildDirectory(directory.id);
+                  }}
                 >
-                  more_vert
+                  add
                 </span>
               </Tooltip>
             </div>
