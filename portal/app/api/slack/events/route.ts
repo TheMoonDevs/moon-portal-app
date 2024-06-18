@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
   const payload = await request.text();
   const params = new URLSearchParams(payload);
   const jsonPayload = Object.fromEntries(params);
-  console.log(jsonPayload);
+  // console.log(jsonPayload);
 
   const text = jsonPayload.text;
 
@@ -101,10 +101,8 @@ export async function POST(request: NextRequest) {
   await slackBotSdk.setSlackReminder(
     `${chosenDate}${reminderTime}`,
     `Reminder: ${meetingTitle} is starting soon.`,
-    // SlackChannelWebhooks.b_general
-    'https://hooks.slack.com/commands/T01J1LR0YDN/7310114626864/hIbcXxJPCLcoRJKCCpcHGFfG'
+    jsonPayload.channel_id
   );
-
 
   return Response.json(`Great! I have scheduled a reminder on slack, You can create a google event via this link - ${googleCalendarLink}. ${reminderMessage}`);
 }
