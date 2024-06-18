@@ -16,10 +16,31 @@ interface Metrics {
   contributionPercentage: number;
   topProductiveDays: { date: string; completedTasks: number }[];
   totalTasks: number;
+  failedTasks: number;
+  inProgressTasks: number;
+  blockedTasks: number;
+  scheduledTasks: number;
+  beingWrittenTasks: number;
+  newIdeaTasks: number;
+  needClarificationTasks: number;
+  highPriorityTasks: number;
+  completedTasksByWeekday: { [key: string]: number };
+}
+
+enum TaskType {
+  Completed = "✅",
+  Failed = "❌",
+  InProgress = "🟡",
+  Blocked = "🔴",
+  Scheduled = "📅",
+  BeingWritten = "✏️",
+  NewIdea = "💡",
+  NeedClarification = "❓",
+  HighPriority = "⭐",
 }
 
 export function calculateMetrics(worklogSummary: WorkLogs[]): Metrics {
-  const completedTasks = getCompletedTasks(worklogSummary);
+  const completedTasks = getTaskCountByType(worklogSummary, TaskType.Completed);
   const taskCompletionRate = getTaskCompletionRate(worklogSummary);
   const averageTasksPerDay = getAverageTasksPerDay(worklogSummary);
   const longestProductiveStreak = getLongestProductiveStreak(worklogSummary);
@@ -27,6 +48,28 @@ export function calculateMetrics(worklogSummary: WorkLogs[]): Metrics {
   const contributionPercentage = getContributionPercentage(worklogSummary);
   const topProductiveDays = getTopProductiveDays(worklogSummary);
   const totalTasks = getTotalTasks(worklogSummary);
+  const failedTasks = getTaskCountByType(worklogSummary, TaskType.Failed);
+  const inProgressTasks = getTaskCountByType(
+    worklogSummary,
+    TaskType.InProgress
+  );
+  const blockedTasks = getTaskCountByType(worklogSummary, TaskType.Blocked);
+  const scheduledTasks = getTaskCountByType(worklogSummary, TaskType.Scheduled);
+  const beingWrittenTasks = getTaskCountByType(
+    worklogSummary,
+    TaskType.BeingWritten
+  );
+  const newIdeaTasks = getTaskCountByType(worklogSummary, TaskType.NewIdea);
+  const needClarificationTasks = getTaskCountByType(
+    worklogSummary,
+    TaskType.NeedClarification
+  );
+  const highPriorityTasks = getTaskCountByType(
+    worklogSummary,
+    TaskType.HighPriority
+  );
+  const completedTasksByWeekday = getCompletedTasksByWeekday(worklogSummary);
+
   return {
     completedTasks,
     taskCompletionRate,
@@ -36,11 +79,23 @@ export function calculateMetrics(worklogSummary: WorkLogs[]): Metrics {
     contributionPercentage,
     topProductiveDays,
     totalTasks,
+    failedTasks,
+    inProgressTasks,
+    blockedTasks,
+    scheduledTasks,
+    beingWrittenTasks,
+    newIdeaTasks,
+    needClarificationTasks,
+    highPriorityTasks,
+    completedTasksByWeekday,
   };
 }
 
-function getCompletedTasks(worklogSummary: WorkLogs[]): number {
-  let completedTasks = 0;
+function getTaskCountByType(
+  worklogSummary: WorkLogs[],
+  type: TaskType
+): number {
+  let count = 0;
   const allTasks = worklogSummary.flatMap((worklog) =>
     worklog.works.flatMap((work: any) =>
       work.content.split("\n").map((task: any) => task.trim())
@@ -48,17 +103,17 @@ function getCompletedTasks(worklogSummary: WorkLogs[]): number {
   );
 
   allTasks.forEach((task) => {
-    if (task.endsWith("✅")) {
-      completedTasks++;
+    if (task.endsWith(type)) {
+      count++;
     }
   });
 
-  return completedTasks;
+  return count;
 }
 
 function getTaskCompletionRate(worklogSummary: WorkLogs[]): number {
   const totalTasks = getTotalTasks(worklogSummary);
-  const completedTasks = getCompletedTasks(worklogSummary);
+  const completedTasks = getTaskCountByType(worklogSummary, TaskType.Completed);
   return (completedTasks / totalTasks) * 100;
 }
 
@@ -157,7 +212,7 @@ function getTopProductiveDays(worklogSummary: WorkLogs[]): {
       const tasks = work.content.split("\n").map((task: string) => task.trim());
 
       tasks.forEach((task: string) => {
-        if (task.endsWith("✅")) {
+        if (task.endsWith(TaskType.Completed)) {
           if (!taskCounts[date]) {
             taskCounts[date] = 0;
           }
@@ -175,4 +230,33 @@ function getTopProductiveDays(worklogSummary: WorkLogs[]): {
   productiveDays.sort((a, b) => b.completedTasks - a.completedTasks);
 
   return productiveDays.slice(0, 3);
+}
+
+function getCompletedTasksByWeekday(worklogSummary: WorkLogs[]): {
+  [key: string]: number;
+} {
+  const weekdayCounts: { [key: string]: number } = {
+    Monday: 0,
+    Tuesday: 0,
+    Wednesday: 0,
+    Thursday: 0,
+    Friday: 0,
+    Saturday: 0,
+  };
+
+  worklogSummary.forEach((worklog) => {
+    const date = parseISO(worklog.date || "");
+    const weekday = format(date, "EEEE");
+
+    worklog.works.forEach((work: any) => {
+      const tasks = work.content.split("\n").map((task: string) => task.trim());
+      tasks.forEach((task: string) => {
+        if (task.endsWith(TaskType.Completed)) {
+          weekdayCounts[weekday]++;
+        }
+      });
+    });
+  });
+
+  return weekdayCounts;
 }
