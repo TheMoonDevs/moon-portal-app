@@ -130,18 +130,25 @@ export const QuicklinksSdk = {
       twitterDescription,
       twitterUrl,
       ogTitle,
+      ogType,
       ogDescription,
       ogUrl,
       requestUrl,
       ogImage,
       twitterImage,
+      favicon,
     } = metadata;
+    const rootBase = requestUrl.split("/");
 
     const data = {
       title: twitterTitle || ogTitle,
       description: twitterDescription || ogDescription,
       url: twitterUrl || ogUrl || requestUrl,
       image: ogImage.url || twitterImage.url,
+      linkType: ogType || "website",
+      logo: favicon?.startsWith("https://")
+        ? favicon
+        : (rootBase.lenght > 2 ? rootBase[2] : "") + favicon,
     };
     return data;
   },

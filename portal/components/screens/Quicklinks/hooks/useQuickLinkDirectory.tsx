@@ -1,6 +1,6 @@
 import { useAppSelector } from "@/utils/redux/store";
 import { Directory, ParentDirectory } from "@prisma/client";
-import { usePathname, useSearchParams } from "next/navigation";
+import { useParams, usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export const useQuickLinkDirectory = (init?: boolean) => {
@@ -8,12 +8,9 @@ export const useQuickLinkDirectory = (init?: boolean) => {
     Directory | ParentDirectory | null
   >();
   const [selectedRootDir, setSelectedRoot] = useState<Directory>();
-  const { parentDirs, directories, rootDirectories } = useAppSelector(
-    (state) => state.quicklinks
-  );
+  const { parentDirs, directories, rootDirectories, activeDirectoryId } =
+    useAppSelector((state) => state.quicklinks);
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const directoryId = searchParams?.get("id");
   const rootSlug = "/quicklinks";
 
   useEffect(() => {
@@ -27,18 +24,18 @@ export const useQuickLinkDirectory = (init?: boolean) => {
   }, [pathname, rootDirectories, init]);
 
   useEffect(() => {
-    if (!init || !directoryId) return;
+    if (!init || !activeDirectoryId) return;
     parentDirs?.map((dir) => {
-      if (directoryId == dir.id) {
+      if (activeDirectoryId == dir.id) {
         setCurrentDirectory(dir);
       }
     });
     directories?.map((dir) => {
-      if (directoryId == dir.id) {
+      if (activeDirectoryId == dir.id) {
         setCurrentDirectory(dir);
       }
     });
-  }, [directoryId, parentDirs, directories, init]);
+  }, [activeDirectoryId, parentDirs, directories, init]);
 
   return {
     selectedRootDir,

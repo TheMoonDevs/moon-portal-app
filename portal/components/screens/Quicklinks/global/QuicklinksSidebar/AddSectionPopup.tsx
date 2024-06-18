@@ -74,8 +74,8 @@ export const AddSectionPopup = ({
   return (
     <>
       <button
-        className={`p-[4px] w-6 h-6 flex items-center justify-center border-2 ml-auto text-xs  
-                 cursor-pointer invisible group-hover:visible  hover:bg-neutral-200 rounded-full
+        className={`p-[4px] w-8 h-8 flex items-center justify-center border-2 ml-auto text-xs  
+        cursor-pointer hover:bg-neutral-300 rounded-full
                  `}
         onClick={handleClick}
       >

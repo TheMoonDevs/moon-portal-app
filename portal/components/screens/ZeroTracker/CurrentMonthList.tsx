@@ -32,13 +32,13 @@ export const CurrentMonthList = ({
         </div>
       </div>
       <div className="flex flex-row items-center justify-between">
-        {itemMembers?.map((z_user: User) => (
+        {itemMembers?.map((z_user: User, index: number) => (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            key={z_user.id}
-            src={z_user.avatar || ""}
+            key={`${z_user?.id}-${index}`}
+            src={z_user?.avatar || ""}
             className="w-6 h-6 rounded-full border border-neutral-200"
-            alt={z_user.name || ""}
+            alt={z_user?.name || ""}
           />
         ))}
       </div>

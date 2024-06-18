@@ -121,6 +121,8 @@ model Link {
   title         String
   description   String
   logo          String
+  image         String
+  linkType      String
   url           String
   clickCount    Int
   isFavorite    Boolean     @default(false)
@@ -232,6 +234,7 @@ enum USERROLE {
   ASSOCIATE
   FREELANCER
   INTERN
+  TRIAL_CANDIDATE
 }
 
 enum USERVERTICAL {

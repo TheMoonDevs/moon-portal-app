@@ -83,7 +83,9 @@ export const CreateLinkPopup = () => {
       const newLinkData = {
         title: metadata.title,
         description: metadata.description,
-        logo: metadata.image,
+        logo: metadata.logo,
+        image: metadata.image,
+        linkType: metadata.linkType,
         url: metadata.url,
         clickCount: 0,
         directoryId: activeDirectoryId,
