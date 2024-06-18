@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
   const slackBotSdk = new SlackBotSdk();
   await slackBotSdk.setSlackReminder(
     `${chosenDate}${reminderTime}`,
-    `Reminder: ${meetingTitle} is starting soon.`,
+    `Reminder: ${meetingTitle} is starting in 30 minutes.`,
     jsonPayload.channel_id
   );
 
