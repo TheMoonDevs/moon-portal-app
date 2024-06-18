@@ -63,6 +63,7 @@ export const useSyncBalances = (init?: boolean) => {
     balance,
     tokenData,
     exchange,
+    liquidityTMDCredits: exchange?.exchangeData.liquidityTMDCredits,
     multiplicationFactor,
     selectedCurrency,
   };

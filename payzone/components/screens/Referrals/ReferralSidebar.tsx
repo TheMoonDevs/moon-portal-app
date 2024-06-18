@@ -52,6 +52,7 @@ export const ReferralSidebar = () => {
             path={path}
             signOut={signOut}
             textColorHexcode="#0AFF7C"
+            toggleDrawer={toggleDrawer}
           />
         </div>
       </div>
@@ -70,7 +71,7 @@ export const ReferralSidebar = () => {
           path={path}
           signOut={signOut}
           textColorHexcode="#0AFF7C"
-          toggleDrawer={toggleDrawer} 
+          toggleDrawer={toggleDrawer}
         />
       </Drawer>
 
@@ -78,7 +79,7 @@ export const ReferralSidebar = () => {
         className="text-white mb-4 text-lg tracking-widest cursor-pointer flex items-center gap-2 max-lg:hidden"
         onClick={signOut}
       >
-        Logout 
+        Logout
         <Image src="/icons/logout.svg" alt="" width={30} height={30} />
       </div>
     </section>

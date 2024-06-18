@@ -14,6 +14,7 @@ export enum APP_ROUTES {
   certificates = "/dashboard/certificates",
   invoices = "/dashboard/invoices",
   payUPI = "/dashboard/pay-upi-id",
+  payzoneAdmin = "/dashboard/payzone-admin",
   claimRequests = "/dashboard/claim-requests",
   referralsDashboard = "/referrals/dashboard/user-referrals",
   referralsTransactions = "/referrals/dashboard/transactions",
@@ -26,25 +27,39 @@ export const MEMBER_SIDEBAR_LINKS = [
   {
     title: "TMD-CREDITS",
     href: APP_ROUTES.credits,
-    icon: toll, adminOnly: false,
+    icon: toll,
+    adminOnly: false,
   },
   {
     title: "PAYMENTS",
     href: APP_ROUTES.payments,
-    icon: payments, adminOnly: false,
+    icon: payments,
+    adminOnly: false,
   },
   {
     title: "CERTIFICATES",
     href: APP_ROUTES.certificates,
-    icon: license, adminOnly: false,
+    icon: license,
+    adminOnly: false,
   },
   {
     title: "INVOICES",
     href: APP_ROUTES.invoices,
-    icon: bill, adminOnly: false,
+    icon: bill,
+    adminOnly: false,
   },
-  { title: "PAY-UPI ID", href: APP_ROUTES.payUPI, icon: send_money, adminOnly: true },
-  { title: "CLAIM REQ", href: APP_ROUTES.claimRequests, icon: request, adminOnly: true },
+  // {
+  //   title: "PAY-UPI ID",
+  //   href: APP_ROUTES.payUPI,
+  //   icon: send_money,
+  //   adminOnly: true,
+  // },
+  {
+    title: "ADMIN",
+    href: APP_ROUTES.payzoneAdmin,
+    icon: request,
+    adminOnly: true,
+  },
 ];
 
 export const REFERRAL_DASHBOARD_SIDEBAR_LINKS = [

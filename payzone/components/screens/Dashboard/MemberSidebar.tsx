@@ -56,6 +56,7 @@ export const MemberSidebar = () => {
             path={path}
             signOut={signOut}
             textColorHexcode="#ffffff"
+            toggleDrawer={toggleDrawer}
           />
         </div>
       </div>
@@ -81,7 +82,7 @@ export const MemberSidebar = () => {
           path={path}
           signOut={signOut}
           textColorHexcode="#ffffff"
-          toggleDrawer={toggleDrawer} 
+          toggleDrawer={toggleDrawer}
         />
       </Drawer>
 
