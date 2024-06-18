@@ -27,6 +27,15 @@ export const PayUpiID = () => {
   const handleModalClose = () => setModalOpen(false);
   const [payingToUser, setPayingToUser] = useState<any>();
   const [payAmount, setPayAmount] = useState("");
+  const [txInfos, setTxInfos] = useState<{
+    txStatus: TRANSACTIONSTATUS;
+    txType: TRANSACTIONTYPE;
+    txCategory: TRANSACTIONCATEGORY;
+  }>({
+    txStatus: TRANSACTIONSTATUS.DONE,
+    txType: TRANSACTIONTYPE.FIAT,
+    txCategory: TRANSACTIONCATEGORY.STIPEND,
+  });
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<{
     open: boolean;
@@ -145,10 +154,11 @@ export const PayUpiID = () => {
         aria-labelledby="modal-modal-title"
         aria-describedby="modal-modal-description"
       >
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 lg:w-fit w-2/3 bg-white border-2 border-midGrey shadow-lg p-2 lg:p-4 flex flex-col items-center justify-center">
-          <p className="font-semibold text-bgBlack lg:text-lg text-center ">
-            The payment will be marked as complete.
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 lg:w-fit w-2/3 bg-white border-2 border-midGrey shadow-lg p-2 lg:p-4 flex flex-col items-start justify-center">
+          <p className="font-semibold text-bgBlack lg:text-3xl w-[20ch] mb-6 text-left ">
+            The payment will be added to the user records.
           </p>
+          <span> Enter Amount in INR</span>
           <input
             type="text"
             value={payAmount}
@@ -157,9 +167,70 @@ export const PayUpiID = () => {
               setPayAmount(e.target.value);
             }}
             placeholder="Enter Payment Amount"
-            className="my-2 p-2 text-md border-b border-midGrey active:border-b text-neutral-800 px-2 py-1 w-full lg:w-80 mb-4"
+            className="text-md border-b border-midGrey active:border-b text-neutral-800 py-1 w-full lg:w-80 mb-4"
           />
-          <div className="text-sm lg:text-base text-midGrey">Are you sure?</div>
+          <div className="flex gap-4 mb-4">
+            <span> Tx Type</span>
+            <select
+              value={txInfos.txType}
+              onChange={(e) =>
+                setTxInfos((prevTxInfos) => ({
+                  ...prevTxInfos,
+                  txType: e.target.value as TRANSACTIONTYPE,
+                }))
+              }
+              className="border border-midGrey p-1"
+              id="txType"
+            >
+              {Object.values(TRANSACTIONTYPE).map((_txType) => (
+                <option value={_txType} key={_txType}>
+                  {_txType}
+                </option>
+              ))}
+            </select>
+            <span> Tx Category</span>
+            <select
+              value={txInfos.txCategory}
+              onChange={(e) =>
+                setTxInfos((prevTxInfos) => ({
+                  ...prevTxInfos,
+                  txCategory: e.target.value as TRANSACTIONCATEGORY,
+                }))
+              }
+              className="border border-midGrey p-1"
+              id="txCategory"
+            >
+              {Object.values(TRANSACTIONCATEGORY).map((_txType) => (
+                <option value={_txType} key={_txType}>
+                  {_txType}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex gap-4">
+            <span> Tx Status</span>
+            <select
+              value={txInfos.txStatus}
+              onChange={(e) =>
+                setTxInfos((prevTxInfos) => ({
+                  ...prevTxInfos,
+                  txStatus: e.target.value as TRANSACTIONSTATUS,
+                }))
+              }
+              className="border border-midGrey p-1"
+              id="txStatus"
+            >
+              {Object.values(TRANSACTIONSTATUS).map((_txType) => (
+                <option value={_txType} key={_txType}>
+                  {_txType}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="text-sm lg:text-base text-midGrey mt-6">
+            Are you sure?
+          </div>
           <div className="flex gap-4 mt-4">
             <button
               className="bg-black text-white px-2 py-1 w-16"
