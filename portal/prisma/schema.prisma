@@ -205,6 +205,15 @@ model FileUpload {
   updatedAt   DateTime      @default(now())
 }
 
+model ConfigData {
+  id  String        @id @default(auto()) @map("_id") @db.ObjectId
+  configId  String  @unique
+  configType String  @default("")
+  configApp  String? @default("portal")
+  configData Json?
+  timestamp DateTime @updatedAt
+}
+
 enum JOBPOST {
   FULLTIME
   PARTTIME
