@@ -12,9 +12,11 @@ import { User } from "@prisma/client";
 import { Backdrop } from "./Backdrop/Backdrop";
 import useMousePosition from "@/utils/hooks/useMousePosition";
 import gsap from "gsap";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
 import { useState } from "react";
+import { useSyncBalances } from "@/utils/hooks/useSyncBalances";
+import CurrencyModal from "@/components/global/CurrencyModal";
 
 interface UserData {
   data: {
@@ -24,12 +26,14 @@ interface UserData {
 export const HeroSection = () => {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const [isCurrencyModalOpen, setIsCurrencyModalOpen] =
+    useState<boolean>(false);
 
-  const {  signInWithSocial, authStatus, user } = useAuthSession();
-  const { loading } = useAppSelector(
-    (state) => state.auth
-  );
+  const { signInWithSocial, authStatus, user, loading } = useAuthSession();
 
+  const { exchange, multiplicationFactor } = useSyncBalances();
+
+  const currency = useAppSelector((state) => state.balances.selectedCurrency);
   return (
     <section className="overflow-hidden mt-28 text-white">
       <div className=" flex flex-col items-center justify-center">
@@ -47,11 +51,18 @@ export const HeroSection = () => {
           <span>Login with Google</span>
         </button>
         <div className="w-full flex items-center justify-end mt-14">
-          <div className="bg-black border border-1 border-amber-300 text-amber-300 w-fit font-black text-sm p-2">
-            1 TMD === 1 INR
+          <div
+            className="bg-black border border-1 border-amber-300 text-amber-300 w-fit font-black text-sm p-2 cursor-pointer hover:bg-amber-300 hover:text-black"
+            onClick={() => setIsCurrencyModalOpen(true)}
+          >
+            1 TMD === {multiplicationFactor} {currency}
           </div>
         </div>
       </div>
+      <CurrencyModal
+        isOpen={isCurrencyModalOpen}
+        onClose={() => setIsCurrencyModalOpen(false)}
+      />
       <Backdrop />
     </section>
   );

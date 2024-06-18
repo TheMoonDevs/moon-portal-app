@@ -5,12 +5,12 @@ import React from "react";
 
 const Links = [
   {
-    icon: "open_in_new",
+    icon: "/images/thirdparty/bolt.avif",
     title: "QuickLinks Directory",
     route: APP_ROUTES.quicklinksDashboard,
     active: true,
     color: "rose",
-    openNew: true,
+    openNew: false,
   },
   {
     icon: "task_alt",
@@ -27,7 +27,7 @@ const Links = [
     color: "blue",
   },
   {
-    icon: "/images/thirdparty/bolt.avif",
+    icon: "open_in_new",
     title: "URL Shortener",
     route: APP_ROUTES.urlShortener,
     active: true,

@@ -6,6 +6,7 @@ export enum SERVER_API_ENDPOINTS {
   getUsers = `/api/users`,
   getPayments = `/api/payment`,
   referralsSignup = `/api/referrals/signup`,
+  updateExchangeConfigData = `/api/exchange`,
 }
 export const PORTAL_SERVER_API_URL = process.env.NEXT_PUBLIC_PORTAL_API_URL;
 
@@ -256,6 +257,32 @@ export const MyServerApi = {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify(data),
+      })
+        .then((res) => {
+          if (!res.ok) {
+            reject(new Error(`Request failed with status ${res.status}`));
+          }
+          return res.json();
+        })
+        .then((data) => {
+          resolve(data);
+        })
+        .catch((err) => {
+          console.log(err);
+          reject(err);
+        });
+    });
+  },
+
+  updateExchangeConfigData: (data: any) => {
+    return new Promise((resolve, reject) => {
+      fetch(SERVER_API_ENDPOINTS.updateExchangeConfigData, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("token")}`,
         },
         body: JSON.stringify(data),
       })

@@ -3,7 +3,7 @@ import { chainEnum, TOKEN_INFO } from "@/utils/constants/appInfo";
 import { useWallet } from "@/utils/hooks/useWallet";
 import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Modal from "@mui/material/Modal";
 import { useEthersSigner } from "@/utils/hooks/useEthers";
 import { Contract, formatEther, parseEther } from "ethers";
@@ -18,6 +18,8 @@ import { useAuthSession } from "@/utils/hooks/useAuthSession";
 import { IconButton } from "@mui/material";
 import { close } from "../../../../public/icons/index";
 import Image from "next/image";
+import { useSyncBalances } from "@/utils/hooks/useSyncBalances";
+import CurrencyModal from "@/components/global/CurrencyModal";
 
 const TMDConverter = ({
   refetchTransactions,
@@ -52,6 +54,12 @@ const TMDConverter = ({
   const [sendAddress, setSendAddress] = useState("");
 
   const [claimAmount, setClaimAmount] = useState("");
+  const [isCurrencyModalOpen, setIsCurrencyModalOpen] =
+    useState<boolean>(false);
+
+  const { exchange, multiplicationFactor } = useSyncBalances();
+
+  const currency = useAppSelector((state) => state.balances.selectedCurrency);
 
   const handleMint = async () => {
     if (!ethersSigner) return;
@@ -350,14 +358,28 @@ const TMDConverter = ({
         </div>
       </Modal>
 
-      <span className="flex justify-between">
+      <span className="flex justify-between items-center">
         <p className="text-sm font-thin">Current Price</p>
-        <p className="text-sm font-black">1 TMD === 1 INR</p>
+        {exchange ? (
+          <button
+            className="text-sm font-black text-black border border-neutral-500 px-2 py-1 rounded"
+            onClick={() => setIsCurrencyModalOpen(true)}
+          >
+            1 TMD === {multiplicationFactor} {currency}
+          </button>
+        ) : (
+          <p className="text-sm text-black">loading...</p>
+        )}
       </span>
       <span className="flex justify-between">
         <p className="text-sm font-thin">Previously Claimed Credits</p>
         <p className="text-sm font-black">1,234 TMD</p>
       </span>
+
+      <CurrencyModal
+        isOpen={isCurrencyModalOpen}
+        onClose={() => setIsCurrencyModalOpen(false)}
+      />
 
       <form
         onSubmit={(e) => {
