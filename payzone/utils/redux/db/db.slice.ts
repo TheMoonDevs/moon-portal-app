@@ -4,12 +4,14 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 interface DbState {
   fetchedReferralData: UserReferrals[];
   payTransaction: PayTransactions[];
+  claimTransactions: PayTransactions[];
   refreshPayTransactions: boolean;
 }
 
 const initialState: DbState = {
   fetchedReferralData: [],
   payTransaction: [],
+  claimTransactions: [],
   refreshPayTransactions: false,
 };
 
@@ -17,6 +19,12 @@ const dbSlice = createSlice({
   name: "db",
   initialState,
   reducers: {
+    addClaimTransaction: (state, action) => {
+      state.claimTransactions.push(action.payload);
+    },
+    setClaimTransactions: (state, action) => {
+      state.claimTransactions = action.payload;
+    },
     setPayTransactions: (state, action) => {
       state.payTransaction = action.payload;
     },
@@ -51,6 +59,8 @@ export const {
   setFetchedReferralData,
   updateReferralData,
   addReferralData,
+  addClaimTransaction,
+  setClaimTransactions,
 } = dbSlice.actions;
 
 export default dbSlice.reducer;

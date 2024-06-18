@@ -7,10 +7,18 @@ import {
 } from "@/utils/helpers/prettyprints";
 import { useAuthSession } from "@/utils/hooks/useAuthSession";
 import { useAppSelector } from "@/utils/redux/store";
+import Image from "next/image";
 import Link from "next/link";
 import { zeroAddress } from "viem";
+import { SkeletonRow } from "@/components/elements/SkeletonRow";
 
-const CreditsTable = ({ transactions }: { transactions: any[] }) => {
+const CreditsTable = ({
+  transactions,
+  loading,
+}: {
+  transactions: any[];
+  loading: boolean;
+}) => {
   const { user } = useAuthSession();
   const userWalletAddress = (user?.payData as any)?.walletAddress;
 
@@ -27,8 +35,9 @@ const CreditsTable = ({ transactions }: { transactions: any[] }) => {
     burn = "burn",
     claim = "claim",
   }
+  // console.log(loading);
   return (
-    <section className="w-2/3 mx-4 bg-whiteSmoke">
+    <section className="w-2/3 mx-4 bg-whiteSmoke max-sm:w-full max-sm:mx-0">
       <div className="flex flex-col h-fit p-4 pb-6 border-b border-midGrey">
         <span className="font-semibold text-xl">
           TMD CREDITS - Inbound/Outbound
@@ -55,41 +64,57 @@ const CreditsTable = ({ transactions }: { transactions: any[] }) => {
             </tr>
           </thead>
           <tbody>
-            {transactions.map((transaction) => (
-              <tr
-                key={transaction.hash}
-                className="border-b-2 border-neutral-200 w-full divide-x-2"
-              >
-                <td className="text-sm p-2 pl-4">
-                  {transaction.value / 10 ** 18} TMD
-                </td>
-                <td className="text-sm p-2">
-                  {transaction.to === userWalletAddress?.toLowerCase()
-                    ? TxType.receive
-                    : transaction.to === TOKEN_INFO.burnAddress
-                    ? TxType.claim
-                    : TxType.send}
-                </td>
-                <td className="text-sm p-2">
-                  {transaction.to !== userWalletAddress?.toLowerCase()
-                    ? prettyEthAddress(transaction.to)
-                    : transaction.from === zeroAddress
-                    ? "TheMoonDevs 0x"
-                    : prettyEthAddress(transaction.from)}
-                </td>
-                <td className="text-sm p-2">
-                  {prettyPrintDateAndTime(transaction.timeStamp)}
-                </td>
-                <td className="text-sm p-2 hover:underline">
-                  <Link
-                    href={`${TOKEN_INFO.chain?.blockExplorers?.default?.url}/tx/${transaction.hash}`}
-                    target={"_blank"}
-                  >
-                    {prettyHash(transaction.hash)}
-                  </Link>
+            {loading ? (
+              <SkeletonRow />
+            ) : transactions.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="text-center py-4">
+                  No payments found.
                 </td>
               </tr>
-            ))}
+            ) : (
+              transactions.map((transaction) => (
+                <tr
+                  key={transaction.hash}
+                  className="border-b-2 border-neutral-200 w-full divide-x-2"
+                >
+                  <td className="text-sm p-2 pl-4">
+                    <Image
+                      src="/icons/CRYPTOCURRENCY.svg"
+                      width={20}
+                      height={20}
+                      alt=""
+                    />{" "}
+                    {transaction.value / 10 ** 18} TMD
+                  </td>
+                  <td className="text-sm p-2">
+                    {transaction.to === userWalletAddress?.toLowerCase()
+                      ? TxType.receive
+                      : transaction.to === TOKEN_INFO.burnAddress
+                      ? TxType.claim
+                      : TxType.send}
+                  </td>
+                  <td className="text-sm p-2">
+                    {transaction.to !== userWalletAddress?.toLowerCase()
+                      ? prettyEthAddress(transaction.to)
+                      : transaction.from === zeroAddress
+                      ? "TheMoonDevs 0x"
+                      : prettyEthAddress(transaction.from)}
+                  </td>
+                  <td className="text-sm p-2">
+                    {prettyPrintDateAndTime(transaction.timeStamp)}
+                  </td>
+                  <td className="text-sm p-2 hover:underline">
+                    <Link
+                      href={`${TOKEN_INFO.chain?.blockExplorers?.default?.url}/tx/${transaction.hash}`}
+                      target={"_blank"}
+                    >
+                      {prettyHash(transaction.hash)}
+                    </Link>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

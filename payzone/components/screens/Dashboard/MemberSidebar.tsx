@@ -25,14 +25,13 @@ export const MemberSidebar = () => {
   const nonAdminLinks = links.filter((link) => !link.adminOnly);
   const printedLinks = [...nonAdminLinks, ...adminLinks];
 
-
   const toggleDrawer = (newOpen: boolean) => () => {
     setOpen(newOpen);
   };
 
   return (
-    <section className="w-full h-14 lg:h-full flex lg:flex-col justify-between lg:fixed top-0 lg:w-[15%]">
-      <div>
+    <section className="h-14 lg:h-full flex lg:flex-col justify-between lg:fixed top-0 lg:w-[15%]">
+      <div className="px-4">
         <Link href={APP_ROUTES.home}>
           <div className="hidden lg:flex items-center w-auto gap-3 mt-6">
             <Image src="/logo/payzone.svg" alt="" width={47} height={47} />
@@ -44,21 +43,20 @@ export const MemberSidebar = () => {
           </div>
           <div className="lg:hidden flex items-center w-fit gap-3 mt-4">
             <Image src="/logo/payzone.svg" alt="" width={27} height={27} />
-            <p className="text-xs tracking-[.2em] text-white mt-4">
+            <p className="text-xs tracking-[.2em] text-white mt-0 flex items-center gap-2 wra">
               <span className="text-lg">PAYZONE</span>
               <br />
               <span className="text-[10px]">THE MOON DEVS</span>
             </p>
           </div>
         </Link>
-        <div className="hidden mt-14 lg:flex flex-col gap-7">
-          <SidebarLinks
-            links={printedLinks}
-            path={path}
-            signOut={signOut}
-            textColorHexcode="#ffffff"
-          />
-        </div>
+        <SidebarLinks
+          links={printedLinks}
+          path={path}
+          signOut={signOut}
+          textColorHexcode="#ffffff"
+          toggleDrawer={toggleDrawer}
+        />
       </div>
       <div className="lg:hidden flex items-center" onClick={toggleDrawer(true)}>
         <Image src="/logo/menu.svg" alt="" width={30} height={30} />
@@ -67,7 +65,14 @@ export const MemberSidebar = () => {
         open={open}
         onClose={toggleDrawer(false)}
         anchor="right"
-        className="lg:hidden "
+        className="lg:hidden"
+        sx={{
+          "&.MuiDrawer-paper": {
+            width: "100%",
+            boxSizing: "border-box",
+            border: "none",
+          },
+        }}
       >
         <SidebarLinks
           links={printedLinks}
@@ -75,14 +80,15 @@ export const MemberSidebar = () => {
           path={path}
           signOut={signOut}
           textColorHexcode="#ffffff"
+          toggleDrawer={toggleDrawer}
         />
       </Drawer>
 
       <div
-        className="text-white hidden lg:block mb-4 text-lg tracking-widest cursor-pointer"
+        className="text-white mb-4 text-lg tracking-widest cursor-pointer flex items-center gap-2 max-lg:hidden"
         onClick={signOut}
       >
-        Logout
+        Logout <Image src="/icons/logout.svg" alt="" width={30} height={30} />
       </div>
     </section>
   );
