@@ -2,6 +2,7 @@ import { CircularProgress, IconButton } from '@mui/material';
 import { useState } from 'react';
 import { Modal } from '@mui/material';
 import Link from 'next/link';
+import Image from 'next/image';
 import { QuicklinksSdk } from '@/utils/services/QuicklinksSdk';
 import { FormFields } from './LinkActions';
 
@@ -50,15 +51,42 @@ export const EditLinkPopup = ({
       aria-labelledby='edit-link-modal'
       aria-describedby='modal-modal-description'
     >
-      <div className='relative p-6 bg-white rounded-lg shadow-xl max-w-md mx-auto my-12 border border-gray-200 outline-none'>
-        <IconButton
-          aria-label='close'
+      <div className='relative bg-white rounded-lg shadow-xl max-w-md mx-auto my-12 border border-gray-200 outline-none'>
+        <button
+          className='absolute top-2 right-2 z-10 bg-gray-600 p-1 flex items-center justify-center rounded-full text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2'
           onClick={handleCloseModal}
-          sx={{ position: 'absolute', top: 10, right: 10 }}
         >
           <span className='material-symbols-outlined'>close</span>
-        </IconButton>
-        <form onSubmit={handleSubmit} className='space-y-4 mt-4'>
+        </button>
+
+        {/* Cover Image */}
+        {fields.logo && (
+          <div className='w-full h-48 relative rounded-t-lg overflow-hidden'>
+            <Image
+              src={fields.logo}
+              alt='cover image'
+              layout='fill'
+              objectFit='cover'
+              className='w-full h-48 border-b-2 border-gray-200'
+            />
+          </div>
+        )}
+
+        {/* Logo */}
+        {fields.image && (
+          <div className='relative -mt-12 mb-4 flex justify-center'>
+            <div className='w-28 h-28 relative rounded-full border-4 border-gray-400 overflow-hidden bg-white'>
+              <Image
+                src={fields.image}
+                alt='logo'
+                layout='fill'
+                objectFit='cover'
+              />
+            </div>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className='space-y-4 p-6'>
           <div>
             <label
               htmlFor='title'
@@ -110,7 +138,7 @@ export const EditLinkPopup = ({
                   style={{ fontSize: '12px' }}
                 >
                   open_in_new
-                </span>{' '}
+                </span>
               </Link>
             </div>
             <input

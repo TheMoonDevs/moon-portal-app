@@ -8,8 +8,8 @@ export type FormFields = {
   description: string;
   url: string;
   id: string;
-  // logo: string;
-  // image: string;
+  logo: string;
+  image: string;
 };
 
 export const LinkActions = ({
@@ -29,8 +29,8 @@ export const LinkActions = ({
     description: link.description,
     url: link.url,
     id: link.id,
-    // logo: link.logo,
-    // image: link.image,
+    logo: link.logo,
+    image: link.image,
   });
 
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
