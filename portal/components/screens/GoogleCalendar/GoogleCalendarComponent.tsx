@@ -322,9 +322,9 @@ interface TimeInputsProps {
 }
 
 export const TimeInputs: React.FC<TimeInputsProps> = ({
-  startTime,
+  startTime = "11:00", 
   onStartTimeChange,
-  endTime,
+  endTime = "12:00", 
   onEndTimeChange,
 }) => (
   <div className="flex justify-between gap-4">
@@ -339,7 +339,7 @@ export const TimeInputs: React.FC<TimeInputsProps> = ({
         id="start-time"
         name="start-time"
         type="time"
-        value={startTime || "11:00"}
+        value={startTime}
         onChange={(e) => onStartTimeChange(e.target.value)}
         className="block w-full h-10 bg-gray-100 font-bold text-gray-700 shadow-sm rounded-md px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-neutral-400 dark:focus:ring-neutral-600 disabled:cursor-not-allowed disabled:opacity-50"
       />
@@ -355,13 +355,14 @@ export const TimeInputs: React.FC<TimeInputsProps> = ({
         id="end-time"
         name="end-time"
         type="time"
-        value={endTime || "12:00"}
+        value={endTime}
         onChange={(e) => onEndTimeChange(e.target.value)}
         className="block w-full h-10 bg-gray-100 font-bold text-gray-700 shadow-sm rounded-md px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-neutral-400 dark:focus:ring-neutral-600 disabled:cursor-not-allowed disabled:opacity-50"
       />
     </div>
   </div>
 );
+
 
 //! SubmitButton 🚀
 

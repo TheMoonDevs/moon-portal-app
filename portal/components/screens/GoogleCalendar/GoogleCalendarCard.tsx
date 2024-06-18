@@ -18,7 +18,6 @@ import {
   useHandleTimeChange,
   useHandleSelectChange,
   useToggleAllDay,
-  getTodayDateString,
 } from "./GoogleCalendarHandlers";
 import {
   AllDayCheckbox,
@@ -39,8 +38,8 @@ const GoogleCalendarCard: React.FC = () => {
     location: "",
     startDate: null,
     repeat: "no-repeat",
-    startTime: null,
-    endTime: null,
+    startTime: "11:00",
+    endTime: "12:00",
     allDay: false,
     endRepeat: null,
     endDate: null,
