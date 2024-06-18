@@ -50,15 +50,13 @@ export const MemberSidebar = () => {
             </p>
           </div>
         </Link>
-        <div className="hidden mt-14 lg:flex flex-col gap-7">
-          <SidebarLinks
-            links={printedLinks}
-            path={path}
-            signOut={signOut}
-            textColorHexcode="#ffffff"
-            toggleDrawer={toggleDrawer}
-          />
-        </div>
+        <SidebarLinks
+          links={printedLinks}
+          path={path}
+          signOut={signOut}
+          textColorHexcode="#ffffff"
+          toggleDrawer={toggleDrawer}
+        />
       </div>
       <div className="lg:hidden flex items-center" onClick={toggleDrawer(true)}>
         <Image src="/logo/menu.svg" alt="" width={30} height={30} />
