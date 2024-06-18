@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
     let exchangeInfo;
     if (exchangeInfoResponse) exchangeInfo = await exchangeInfoResponse.json();
 
-    console.log("exchangeData", configDatas, exchangeInfo);
+    //console.log("exchangeData", configDatas, exchangeInfo);
 
     const jsonResponse = {
       status: "success",

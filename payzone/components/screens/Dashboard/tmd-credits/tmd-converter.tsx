@@ -20,12 +20,14 @@ import { close } from "../../../../public/icons/index";
 import Image from "next/image";
 import { useSyncBalances } from "@/utils/hooks/useSyncBalances";
 import CurrencyModal from "@/components/global/CurrencyModal";
+import { addClaimTransaction } from "@/utils/redux/db/db.slice";
 
 const TMDConverter = ({
   refetchTransactions,
 }: {
   refetchTransactions: () => void;
 }) => {
+  const dispatch = useAppDispatch();
   const { walletAddress, walletChain } = useWallet();
   const ethersSigner = useEthersSigner({
     chainId: walletChain?.id,
@@ -57,9 +59,13 @@ const TMDConverter = ({
   const [isCurrencyModalOpen, setIsCurrencyModalOpen] =
     useState<boolean>(false);
 
-  const { exchange, multiplicationFactor } = useSyncBalances();
-
-  const currency = useAppSelector((state) => state.balances.selectedCurrency);
+  const {
+    balance,
+    exchange,
+    multiplicationFactor,
+    liquidityTMDCredits,
+    selectedCurrency: currency,
+  } = useSyncBalances();
 
   const handleMint = async () => {
     if (!ethersSigner) return;
@@ -90,7 +96,18 @@ const TMDConverter = ({
   };
 
   const handleClaim = async () => {
-    if (!ethersSigner) return;
+    if (!ethersSigner || !liquidityTMDCredits) return;
+    if (liquidityTMDCredits < parseInt(claimAmount)) {
+      alert(
+        "We don't have enough liquidity, please contact admin, and chack back in a day."
+      );
+      return;
+    }
+
+    if (balance < parseInt(claimAmount)) {
+      alert("You don't have enough balance, please contact admin for support.");
+      return;
+    }
 
     setTxProgress(true);
 
@@ -123,7 +140,9 @@ const TMDConverter = ({
       MyServerApi.updateData(SERVER_API_ENDPOINTS.updatePayment, updatedData)
         .then((updatedTransaction) => {
           // console.log("Updated transaction:", updatedTransaction);
-          alert("Claim Request Sent", updatedTransaction);
+          alert("Claim Request Sent");
+          // console.log("Claim Request Sent", updatedTransaction);
+          dispatch(addClaimTransaction(updatedTransaction));
         })
         .catch((error) => {
           console.error("Error updating PayTransaction:", error);
@@ -358,6 +377,11 @@ const TMDConverter = ({
         </div>
       </Modal>
 
+      <div className="w-full border-b-2 border-neutral-500 rounded-sm py-2">
+        <span className="text-sm font-black tracking-widest text-center">
+          CRYPTO to FIAT
+        </span>
+      </div>
       <span className="flex justify-between items-center">
         <p className="text-sm font-thin">Current Price</p>
         {exchange ? (
@@ -371,9 +395,13 @@ const TMDConverter = ({
           <p className="text-sm text-black">loading...</p>
         )}
       </span>
+      <div className="flex justify-between items-center">
+        <p className="text-sm font-thin">Available Fiat for conversion</p>
+        <p className="text-sm font-black">{liquidityTMDCredits} TMD</p>
+      </div>
       <span className="flex justify-between">
-        <p className="text-sm font-thin">Previously Claimed Credits</p>
-        <p className="text-sm font-black">1,234 TMD</p>
+        <p className="text-sm font-thin">Your current TMD balance</p>
+        <p className="text-sm font-black">{balance} TMD</p>
       </span>
 
       <CurrencyModal
@@ -403,7 +431,7 @@ const TMDConverter = ({
             type="submit"
             disabled={txProgress}
           >
-            Claim Now
+            {txProgress ? "Claiming...." : "Claim Now"}
           </button>
         </div>
       </form>

@@ -27,13 +27,6 @@ export const PayUpiID = () => {
   const handleModalClose = () => setModalOpen(false);
   const [payingToUser, setPayingToUser] = useState<any>();
   const [payAmount, setPayAmount] = useState("");
-  const [exchangeRateUpdating, setExchangeRateUpdating] =
-    useState<boolean>(false);
-  const [liquidityINR, setLiquidityINR] = useState<number | null>();
-  const [liquidityTMDCredits, setLiquidityTMDCredits] = useState<
-    number | null
-  >();
-  const [creditsRateINR, setCreditsRateINR] = useState<number | null>();
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<{
     open: boolean;
@@ -44,10 +37,6 @@ export const PayUpiID = () => {
     message: "",
     severity: "success",
   });
-  const { multiplicationFactor } = useSyncBalances();
-  const currency = useAppSelector((state) => state.balances.selectedCurrency);
-  const [isCurrencyModalOpen, setIsCurrencyModalOpen] =
-    useState<boolean>(false);
 
   const handleAddPayment = (amount: string) => {
     setLoading(true);
@@ -73,42 +62,6 @@ export const PayUpiID = () => {
       });
   };
 
-  const handleUpdateExchangeRate = () => {
-    setExchangeRateUpdating(true);
-
-    const exchangeConfigData: ExchangeConfigData = {
-      liquidityINR,
-      liquidityTMDCredits,
-      creditsRateINR,
-    };
-
-    MyServerApi.updateExchangeConfigData(exchangeConfigData)
-      .then((data) => {
-        console.log("Update successful:", data);
-        setToast({
-          message: "Exchange rate updated successfully",
-          severity: "success",
-          open: true,
-        });
-        setExchangeRateUpdating(false);
-        setLiquidityINR(null);
-        setLiquidityTMDCredits(null);
-        setCreditsRateINR(null);
-      })
-      .catch((error) => {
-        console.error("Error updating data:", error);
-        setToast({
-          message: "Error updating exchange rate",
-          severity: "error",
-          open: true,
-        });
-        setExchangeRateUpdating(false);
-        setLiquidityINR(null);
-        setLiquidityTMDCredits(null);
-        setCreditsRateINR(null);
-      });
-  };
-
   useEffect(() => {
     MyServerApi.getAll(
       `${SERVER_API_ENDPOINTS.getUsers}?role=${USERROLE.CORETEAM}&userType=${USERTYPE.MEMBER}&status=${USERSTATUS.ACTIVE}`
@@ -129,15 +82,12 @@ export const PayUpiID = () => {
   };
 
   return (
-    <section className="h-screen w-full p-4 flex flex-col gap-3">
-      <div className="w-fit h-fit bg-black text-white text-sm font-bold p-2 items-center">
-        <span>Employees -- UPI Ids</span>
-      </div>
+    <section className="h-screen w-full flex flex-col gap-3">
       <p className="text-thin text-sm text-midGrey">
         copy upi-id and pay in G-Pay/PhonePe/Paytm
       </p>
       <div className="flex flex-row justify-start items-start gap-4 pb-4 max-sm:flex-col">
-        <div className="flex flex-col gap-3 w-2/3 max-sm:w-full">
+        <div className="flex flex-col gap-3 w-full">
           {users.map((_user) => (
             <div key={_user.id}>
               <div className="flex h-fit items-center justify-between border border-midGrey p-3">
@@ -150,94 +100,37 @@ export const PayUpiID = () => {
                     {dayjs((_user.workData as any)?.joining).format("DD")} of
                     Month
                   </span>
-                </div>
-                {(_user.payData as any)?.upiId ? (
-                  <span
-                    className="font-bold cursor-pointer"
-                    onClick={() => copyUPI((_user?.payData as any)?.upiId)}
-                  >
-                    copy upi-id
+                  <span className="text-xs">
+                    {(_user?.payData as any)?.upiId}
                   </span>
-                ) : (
-                  <span className="font-bold text-red-600">N/A</span>
-                )}
-              </div>
-              <div className="flex justify-end">
-                <div
-                  className={`bg-black text-white text-xs font-semibold px-2 py-1 cursor-pointer ${
-                    loading ? "opacity-50" : ""
-                  }`}
-                  onClick={() => {
-                    handleModalOpen();
-                    setPayingToUser(_user);
-                    setPayAmount((_user.payData as any).stipend);
-                  }}
-                >
-                  Mark Payment Sent
+                </div>
+                <div className="flex flex-col">
+                  {(_user.payData as any)?.upiId ? (
+                    <span
+                      className="font-bold cursor-pointer"
+                      onClick={() => copyUPI((_user?.payData as any)?.upiId)}
+                    >
+                      copy upi-id
+                    </span>
+                  ) : (
+                    <span className="font-bold text-red-600">N/A</span>
+                  )}
+                  <div
+                    className={`bg-black text-white text-xs font-semibold px-2 py-1 cursor-pointer ${
+                      loading ? "opacity-50" : ""
+                    }`}
+                    onClick={() => {
+                      handleModalOpen();
+                      setPayingToUser(_user);
+                      setPayAmount((_user.payData as any).stipend);
+                    }}
+                  >
+                    Add Payment
+                  </div>
                 </div>
               </div>
             </div>
           ))}
-        </div>
-        <div className="bg-whiteSmoke h-fit flex flex-col p-4 justify-between gap-4 w-1/3 max-sm:w-full">
-          <span className="flex justify-between">
-            <p className="text-sm font-thin">Current Price</p>
-            <p
-              className="text-sm font-black px-2 py-1 border border-black cursor-pointer"
-              onClick={() => setIsCurrencyModalOpen(true)}
-            >
-              1 TMD === {multiplicationFactor} {currency}
-            </p>
-          </span>
-
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleUpdateExchangeRate();
-            }}
-          >
-            <div className="flex flex-col gap-2">
-              <input
-                type="number"
-                className="w-full h-10 p-2 border border-midGrey"
-                placeholder="Enter Liquidity in INR"
-                value={liquidityINR || ""}
-                onChange={(e) => setLiquidityINR(Number(e.target.value))}
-                disabled={exchangeRateUpdating}
-              />
-              <input
-                type="number"
-                className="w-full h-10 p-2 border border-midGrey"
-                placeholder="Enter Liquidity TMD Credits"
-                value={liquidityTMDCredits || ""}
-                onChange={(e) => setLiquidityTMDCredits(Number(e.target.value))}
-                disabled={exchangeRateUpdating}
-              />
-              <input
-                type="number"
-                className="w-full h-10 p-2 border border-midGrey"
-                placeholder="Enter Exchange Rate in INR"
-                value={creditsRateINR || ""}
-                onChange={(e) => setCreditsRateINR(Number(e.target.value))}
-                disabled={exchangeRateUpdating}
-              />
-
-              <button
-                className={`text-sm font-black w-full h-10 text-whiteSmoke bg-black ${
-                  exchangeRateUpdating && "opacity-50"
-                }`}
-                type="submit"
-                disabled={
-                  exchangeRateUpdating ||
-                  !liquidityINR ||
-                  !liquidityTMDCredits ||
-                  !creditsRateINR
-                }
-              >
-                Set Exchange Rate
-              </button>
-            </div>
-          </form>
         </div>
       </div>{" "}
       <Toast
@@ -245,10 +138,6 @@ export const PayUpiID = () => {
         handleClose={handleClose}
         message={toast.message}
         severity={toast.severity}
-      />
-      <CurrencyModal
-        isOpen={isCurrencyModalOpen}
-        onClose={() => setIsCurrencyModalOpen(false)}
       />
       <Modal
         open={modalOpen}
