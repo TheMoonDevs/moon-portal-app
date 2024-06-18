@@ -6,7 +6,7 @@ import {
 } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function PUT(req: NextRequest, res: NextResponse) {
+export async function POST(req: NextRequest, res: NextResponse) {
   if (!req.body) {
     return new NextResponse(JSON.stringify({ error: "body not found" }), {
       status: 400,
@@ -57,6 +57,61 @@ export async function PUT(req: NextRequest, res: NextResponse) {
   }
 }
 
+export async function PUT(req: NextRequest, res: NextResponse) {
+  if (!req.body) {
+    return new NextResponse(JSON.stringify({ error: "body not found" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const body = await req.text();
+  const { id, userId, txStatus, txType, txCategory, amount, burnTxHash } =
+    JSON.parse(body);
+  // console.log("req.body",req.body);
+
+  try {
+    const user = await prisma.user.findFirst({
+      where: {
+        id: userId,
+      },
+    });
+    const user_data = {
+      email: user?.email,
+      name: user?.name,
+      userType: user?.userType,
+      avatar: user?.avatar,
+      role: user?.role,
+    };
+    const newTransaction = await prisma.payTransactions.update({
+      where: {
+        id,
+      },
+      data: {
+        userId,
+        user: user_data,
+        txStatus,
+        txType,
+        txCategory,
+        amount,
+        burnTxHash,
+      },
+    });
+
+    return new NextResponse(JSON.stringify(newTransaction), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (error: any) {
+    console.error("Error creating PayTransaction:", error);
+    return new NextResponse(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+}
+
+// to update txStatus of a particular transaction
 export async function PATCH(req: NextRequest, res: NextResponse) {
   if (!req.body) {
     return new NextResponse(JSON.stringify({ error: "body not found" }), {

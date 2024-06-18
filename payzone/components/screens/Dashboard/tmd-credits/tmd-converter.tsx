@@ -137,7 +137,7 @@ const TMDConverter = ({
         burnTxHash: claimTx.hash,
       };
 
-      MyServerApi.updateData(SERVER_API_ENDPOINTS.updatePayment, updatedData)
+      MyServerApi.postData(SERVER_API_ENDPOINTS.payment, updatedData)
         .then((updatedTransaction) => {
           // console.log("Updated transaction:", updatedTransaction);
           alert("Claim Request Sent");

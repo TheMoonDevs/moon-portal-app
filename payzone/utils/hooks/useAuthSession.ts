@@ -3,7 +3,7 @@ import { FirebaseSDK, getFirebaseAuth } from "../service/firebase";
 import { useEffect, useMemo, useState } from "react";
 import store, { useAppDispatch, useAppSelector } from "../redux/store";
 import { usePathname, useRouter } from "next/navigation";
-import { MyServerApi } from "../service/MyServerApi";
+import { MyServerApi, SERVER_API_ENDPOINTS } from "../service/MyServerApi";
 import { User as IUser } from "@prisma/client";
 import {
   setAuthLoading,
@@ -30,8 +30,8 @@ export const useAuthSession = (initialize?: boolean) => {
       path.startsWith(APP_ROUTES.referrals)
         ? "referrals"
         : path.startsWith(APP_ROUTES.dashboard)
-          ? "dashboard"
-          : "home",
+        ? "dashboard"
+        : "home",
     [path]
   );
 
@@ -143,6 +143,7 @@ export const useAuthSession = (initialize?: boolean) => {
 
             //sign up new ref User
             const userData: UserData = (await MyServerApi.postData(
+              SERVER_API_ENDPOINTS.referralsSignup,
               data
             )) as UserData;
             console.log("userData", userData);
@@ -177,7 +178,7 @@ export const useAuthSession = (initialize?: boolean) => {
               return;
             }
           }
-        dispatch(setAuthLoading(false));
+          dispatch(setAuthLoading(false));
         } catch (error) {
           console.error(error);
         }
@@ -201,21 +202,21 @@ export const useAuthSession = (initialize?: boolean) => {
       if (!path.startsWith(APP_ROUTES.dashboardHome))
         router.push(APP_ROUTES.dashboard);
     }
-  }, [user, path, router])
+  }, [user, path, router]);
 
   return {
     app,
     authStatus: loading
       ? "authenticating"
       : app == "referrals"
-        ? refUser
-          ? "authenticated"
-          : "unauthenticated"
-        : app == "dashboard"
-          ? user
-            ? "authenticated"
-            : "unauthenticated"
-          : "unauthenticated",
+      ? refUser
+        ? "authenticated"
+        : "unauthenticated"
+      : app == "dashboard"
+      ? user
+        ? "authenticated"
+        : "unauthenticated"
+      : "unauthenticated",
     user: app == "referrals" ? refUser : user,
     signInWithSocial,
     signOut,
