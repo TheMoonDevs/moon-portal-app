@@ -16,7 +16,7 @@ import { useEffect, useState } from "react";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
 import { useSyncBalances } from "@/utils/hooks/useSyncBalances";
 import CurrencySelectPopover from "@/components/global/CurrencySelectPopover";
-import { setReduxSelectedCurrency, setReduxSelectedCurrencyValue } from "@/utils/redux/balances/balances.slice";
+import { updateSelectedCurrency, updateSelectedCurrencyValue } from "@/utils/redux/balances/balances.slice";
 
 interface UserData {
   data: {
@@ -40,8 +40,8 @@ export const HeroSection = () => {
   const id = open ? "simple-popover" : undefined;
 
   const handleCurrencySelect = (currency: string, value: number) => {
-    dispatch(setReduxSelectedCurrency(currency));
-    dispatch(setReduxSelectedCurrencyValue(value));
+    dispatch(updateSelectedCurrency(currency));
+    dispatch(updateSelectedCurrencyValue(value));
     handlePopoverClose();
   };
 
