@@ -266,30 +266,28 @@ export const WorklogsPage = () => {
 
       <div className="scrollable_list">
         <div className="h-[3.5rem]"></div>
-        <div
-          className="flex flex-row justify-between bg-neutral-100 z-[5]
-         overflow-x-auto p-2 "
-        >
+        <div className="flex flex-row justify-between bg-neutral-100 z-[5] overflow-x-auto p-2 space-x-2 custom-scrollbar">
           {Array.from({ length: 12 }).map((_, month_tab: number) => (
             <div
               key={month_tab}
               onClick={() => setMonthTab(month_tab)}
-              className={` rounded-3xl cursor-pointer ${
+              className={`rounded-3xl cursor-pointer flex-shrink-0 ${
                 monthTab === month_tab ? "border border-neutral-600" : ""
               }`}
             >
               <h4
-                className={`text-sm ${
+                className={`text-xs md:text-sm lg:text-base ${
                   monthTab === month_tab
                     ? "font-bold text-neutral-800"
                     : "text-neutral-400"
-                } p-2 px-4`}
+                } p-1 md:p-2 lg:px-4`}
               >
                 {dayjs().month(month_tab).format("MMMM")}
               </h4>
             </div>
           ))}
         </div>
+
         <div className="flex flex-row-reverse max-lg:flex-col w-full">
           <div className="hidden md:block p-8 invisible md:visible w-[40%] max-lg:w-full max-h-[80vh] overflow-y-scroll">
             <p className="text-lg font-bold my-4">Tasks from clickup</p>
