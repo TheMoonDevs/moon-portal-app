@@ -14,16 +14,20 @@ export const Payments = () => {
   const { user } = useAuthSession();
   const [payTransactions, setPayTransactions] = useState<any[]>([]);
   const { totalEarned } = useTotalEarned(payTransactions);
+  const [loading, setLoading] = useState(true);
   useEffect(() => {
     if (user) {
+      setLoading(true);
       MyServerApi.getAll(
         `${SERVER_API_ENDPOINTS.getPayments}?userId=${user.id}&txCategory=${TRANSACTIONCATEGORY.STIPEND}`
       )
         .then((data: any) => {
           setPayTransactions(data.data.transactions);
+          setLoading(false);
         })
         .catch((error) => {
           console.error("Error fetching payment transactions:", error);
+          setLoading(false);
         });
     }
   }, [user]);
@@ -33,9 +37,9 @@ export const Payments = () => {
         <span className="text-4xl font-semibold">{`${totalEarned} INR`}</span>
         <span className="text-sm font-thin text-midGrey">{`Total Earned`}</span>
       </Header>
-      <section className="p-5 h-full flex">
-        <PaymentsTable payTransactions={payTransactions} />
-        <section className="flex flex-col gap-4 w-1/3">
+      <section className="p-5 h-full flex max-sm:flex-col max-sm:gap-4 max-sm:p-4">
+        <PaymentsTable payTransactions={payTransactions} loading={loading} />
+        <section className="flex flex-col gap-4 w-1/3 max-sm:w-full">
           <PaymentMethod />
           {/* <PaymentsProfile /> */}
         </section>
