@@ -5,8 +5,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { QuicklinksSdk } from '@/utils/services/QuicklinksSdk';
 import { FormFields } from './LinkActions';
-import { useAppDispatch } from '@/utils/redux/store';
-import { setToast } from '@/utils/redux/quicklinks/quicklinks.slice';
+import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
+import { setAllQuicklinks, setToast } from '@/utils/redux/quicklinks/quicklinks.slice';
 
 export const EditLinkPopup = ({
   isModalOpen,
@@ -21,6 +21,7 @@ export const EditLinkPopup = ({
 }) => {
   const [loading, setLoading] = useState<boolean>(false);
   const dispatch = useAppDispatch();
+  const { allQuicklinks } = useAppSelector((state) => state.quicklinks);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -37,8 +38,6 @@ export const EditLinkPopup = ({
         },
       });
       console.log(response);
-      setLoading(false);
-      handleCloseModal();
       dispatch(
         setToast({
           showToast: true,
@@ -46,6 +45,15 @@ export const EditLinkPopup = ({
           toastSev: "success",
         })
       );
+      const updatedLink = response.data.link;
+      const updatedQuicklinks = allQuicklinks.map(link =>
+        link.id === updatedLink.id ? updatedLink : link
+      );
+      dispatch(
+        setAllQuicklinks(updatedQuicklinks)
+      );
+      setLoading(false);
+      handleCloseModal();
     } catch (error) {
       console.log(error);
       setLoading(false);
