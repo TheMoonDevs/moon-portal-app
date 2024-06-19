@@ -2,6 +2,7 @@ import { APP_ROUTES } from "@/utils/constants/appInfo";
 import useOutsideClick from "@/utils/hooks/useOutsideClick";
 import { Fade } from "@mui/material";
 import dayjs from "dayjs";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
@@ -183,13 +184,20 @@ export const WorklogSummaryHeader = ({
   return (
     <div className="fixed left-0 right-0 top-0 z-10 bg-white flex flex-row gap-3 py-2 px-3 items-center justify-between border-b border-neutral-400 md:pl-[6rem]">
       <div className="flex items-center">
-        <Link href={APP_ROUTES.home}>
-          <h1 className="md:text-lg text-sm whitespace-nowrap cursor-pointer font-extrabold border-r-2 pr-3 mr-3">
+        <Link href={APP_ROUTES.home} className="flex items-center">
+          <h1 className="md:text-lg text-sm hidden md:block whitespace-nowrap cursor-pointer font-extrabold border-r-2 pr-3 mr-3">
             The Moon Devs
           </h1>
+          <Image
+            src="/icon-192x192.png"
+            width={40}
+            height={40}
+            alt="logo"
+            className="md:hidden mr-5"
+          />
         </Link>
         <div className="flex items-center gap-4">
-          <h1 className="tracking-widest hidden md:block text-sm font-regular">
+          <h1 className="md:tracking-widest text-sm md:text-base ml-1 font-regular whitespace-nowrap">
             Worklog Summary
           </h1>
           <span className="material-symbols-outlined !text-neutral-400">
