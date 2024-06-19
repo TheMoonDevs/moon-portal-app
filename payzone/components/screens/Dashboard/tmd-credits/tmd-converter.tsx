@@ -28,8 +28,8 @@ import Image from "next/image";
 import { useSyncBalances } from "@/utils/hooks/useSyncBalances";
 import { addClaimTransaction } from "@/utils/redux/db/db.slice";
 import {
-  setReduxSelectedCurrency,
-  setReduxSelectedCurrencyValue,
+  updateSelectedCurrency,
+  updateSelectedCurrencyValue,
 } from "@/utils/redux/balances/balances.slice";
 import CurrencySelectPopover from "@/components/global/CurrencySelectPopover";
 
@@ -81,8 +81,8 @@ const TMDConverter = ({
   const id = open ? "simple-popover" : undefined;
 
   const handleCurrencySelect = (currency: string, value: number) => {
-    dispatch(setReduxSelectedCurrency(currency));
-    dispatch(setReduxSelectedCurrencyValue(value));
+    dispatch(updateSelectedCurrency(currency));
+    dispatch(updateSelectedCurrencyValue(value));
     handleClose();
   };
 

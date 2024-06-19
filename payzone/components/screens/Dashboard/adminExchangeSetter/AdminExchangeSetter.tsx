@@ -19,7 +19,7 @@ import Toast, { toastSeverity } from "../../Referrals/Dashboard/Toast";
 import { useSyncBalances } from "@/utils/hooks/useSyncBalances";
 import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import CurrencySelectPopover from "@/components/global/CurrencySelectPopover";
-import { setReduxSelectedCurrency, setReduxSelectedCurrencyValue } from "@/utils/redux/balances/balances.slice";
+import { updateSelectedCurrency, updateSelectedCurrencyValue } from "@/utils/redux/balances/balances.slice";
 
 export const AdminExchangeSetter = () => {
   const {
@@ -60,8 +60,8 @@ export const AdminExchangeSetter = () => {
   const id = open ? "simple-popover" : undefined;
 
   const handleCurrencySelect = (currency: string, value: number) => {
-    dispatch(setReduxSelectedCurrency(currency));
-    dispatch(setReduxSelectedCurrencyValue(value));
+    dispatch(updateSelectedCurrency(currency));
+    dispatch(updateSelectedCurrencyValue(value));
     handlePopoverClose();
   };
 
@@ -124,14 +124,19 @@ export const AdminExchangeSetter = () => {
       <div className="bg-whiteSmoke flex flex-col p-4 justify-between gap-4">
         <span className="flex justify-between">
           <p className="text-sm font-thin">Current Price</p>
-          <Button
-            className="text-sm font-black text-black border border-neutral-500 px-2 py-1 rounded flex justify-center items-center"
-            variant="outlined"
-            aria-describedby={id}
-            onClick={handleClick}
-          >
-            1 TMD === {multiplicationFactor} {currency}
-          </Button>
+          {exchange ? (
+            <Button
+              className="text-sm font-black text-black border border-neutral-500 px-2 py-1 rounded flex justify-center items-center"
+              variant="outlined"
+              aria-describedby={id}
+              onClick={handleClick}
+            >
+              1 TMD === {multiplicationFactor} {currency}
+              <span className="material-symbols-outlined">arrow_drop_down</span>
+            </Button>
+          ) : (
+            <p className="text-sm text-black">loading...</p>
+          )}
         </span>
 
         <form
