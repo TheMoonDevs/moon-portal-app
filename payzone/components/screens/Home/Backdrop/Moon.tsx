@@ -27,6 +27,16 @@ export const Moon = () => {
     }
   }, [mousePosition]);
 
+  useEffect(() => {
+    if (moonRef.current) {
+      gsap.fromTo(
+        moonRef.current.material,
+        { opacity: 0 },
+        { opacity: 1, duration: 2, ease: "power2.out" }
+      );
+    }
+  }, []);
+
   useFrame(({ clock }) => {
     const elapsedTime = clock.getElapsedTime();
 
@@ -39,7 +49,7 @@ export const Moon = () => {
     <group
       scale={2}
       position={[0, -1, 0]}
-      ref={moonGsapRef}
+      // ref={moonGsapRef}
       rotation={[Math.PI / 2, -Math.PI / 2, Math.PI / 2]}
       receiveShadow
     >
@@ -53,6 +63,7 @@ export const Moon = () => {
           displacementScale={0.08}
           side={FrontSide}
           displacementMap={displacement}
+          transparent={true} 
         />
       </mesh>
     </group>

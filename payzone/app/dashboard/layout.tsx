@@ -10,7 +10,7 @@ export default function DashboardLayout({
 }>) {
   return (
     <div className="lg:flex lg:flex-row flex-col lg:h-screen">
-      <div className="lg:w-[15%] px-4  w-full bg-bgBlack lg:fixed left-0 top-0 bottom-0">
+      <div className="lg:w-[15%]  w-full bg-bgBlack lg:fixed left-0 top-0 bottom-0">
         <MemberSidebar />
       </div>
       <div className="w-full min-h-[100vh] flex flex-col bg-white text-black lg:ml-[15%]">
