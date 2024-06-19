@@ -55,7 +55,7 @@ export const SummarizeButton = ({
       //   user?.id
       // }?year=${dayjs().format("YYYY")}&month=${dayjs().format("MM")}`}
     >
-      <button className="cursor-pointer text-sm border border-neutral-800 rounded-md py-1 px-3 text-neutral-900 flex flex-row gap-2 items-center">
+      <button className="cursor-pointer text-sm border border-neutral-800 rounded-md  text-neutral-900 flex flex-row gap-2 items-center py-1 px-2 text-xs sm:text-sm">
         <span className="icon_size material-symbols-outlined">timeline</span>
         <span>Archive</span>
         <span className="icon_size material-symbols-outlined">expand_more</span>

@@ -67,40 +67,43 @@ export const WorkLogItem = ({
   return (
     <Link
       href={isTabletOrMore ? "" : linkForWorkLog(data)}
-      className={`flex flex-col  gap-3 rounded-lg border border-neutral-200 p-3 overflow-y-hidden min-h-[150px] ${data.logType === "privateLog" ? " h-full " : ""
-        } ${selected ? " bg-white border-neutral-900 border-2 " : ""}`}
+      className={`flex flex-col  gap-3 rounded-lg border border-neutral-200 p-3 overflow-y-hidden min-h-[150px] ${
+        data.logType === "privateLog" ? " h-full " : ""
+      } ${selected ? " bg-white border-neutral-900 border-2 " : ""}`}
       onClick={onClick}
     >
       <div
-        className={`flex flex-row justify-between  ${selected ? "font-bold text-black" : "font-regular text-neutral-800"
-          }`}
+        className={`flex flex-row justify-between  ${
+          selected ? "font-bold text-black" : "font-regular text-neutral-800"
+        }`}
       >
         <h1 className={`text-xs `}>{data.title}</h1>
         {data.logType === "dayLog" && (
           <span
             className={`icon_size material-symbols-outlined 
-          ${dayjs(data.date).isBefore(dayjs(), "date") && data.id === ""
-                ? "text-red-500"
-                : !selected
-                  ? "text-neutral-500"
-                  : dayjs(data.date).isSame(dayjs(), "date")
-                    ? "text-green-500"
-                    : data.id === "" || dayjs(data.date).isAfter(dayjs(), "date")
-                      ? "text-neutral-500"
-                      : "text-blue-500"
-              }
+          ${
+            dayjs(data.date).isBefore(dayjs(), "date") && data.id === ""
+              ? "text-red-500"
+              : !selected
+              ? "text-neutral-500"
+              : dayjs(data.date).isSame(dayjs(), "date")
+              ? "text-green-500"
+              : data.id === "" || dayjs(data.date).isAfter(dayjs(), "date")
+              ? "text-neutral-500"
+              : "text-blue-500"
+          }
           
           `}
           >
             {dayjs(data.date).isSame(dayjs(), "date")
               ? "radio_button_checked"
               : dayjs(data.date).isAfter(dayjs(), "date")
-                ? data.id === ""
-                  ? "add_box"
-                  : "checklist"
-                : data.id === ""
-                  ? "pending"
-                  : "checklist"}
+              ? data.id === ""
+                ? "add_box"
+                : "checklist"
+              : data.id === ""
+              ? "pending"
+              : "checklist"}
           </span>
         )}
       </div>
@@ -109,19 +112,22 @@ export const WorkLogItem = ({
           data.works //.flatMap((wk) => (wk as any)?.pointInfos)
             //.slice(0, 3)
             .map((point: any, index: number) => (
-              <div key={`${point.link_id}-${index}`} className="flex flex-row items-center">
+              <div
+                key={`${point.link_id}-${index}`}
+                className="flex flex-row items-center"
+              >
                 <div className="text-sm font-light">
                   <MdxAppEditor
                     key={point?.id}
                     markdown={point?.content}
                     readOnly={true}
                     contentEditableClassName="mdx_ce_min leading-0 imp-p-0 grow w-full h-full line-clamp-4"
-                  // plugins={[
-                  //   diffSourcePlugin({
-                  //     diffMarkdown: "An older version",
-                  //     viewMode: "diff",
-                  //   }),
-                  // ]}
+                    // plugins={[
+                    //   diffSourcePlugin({
+                    //     diffMarkdown: "An older version",
+                    //     viewMode: "diff",
+                    //   }),
+                    // ]}
                   />
                 </div>
               </div>
@@ -232,21 +238,23 @@ export const WorklogsPage = () => {
 
   return (
     <div className="flex flex-col">
-      <div className="fixed left-0 right-0 top-0 z-10 bg-white flex flex-row gap-3 py-2 px-3 items-center justify-between border-neutral-400 md:pl-[6rem]">
+      <div className="fixed left-0 right-0 top-0 z-10 bg-white flex flex-row gap-3 py-2 px-3 items-center justify-between border-b border-neutral-400 md:pl-[6rem]">
         <div className="flex items-center">
           <Link href={APP_ROUTES.home}>
-            <h1 className="text-lg cursor-pointer font-bold border-r-2 pr-3 mr-3">
+            <h1 className="md:text-lg text-sm whitespace-nowrap cursor-pointer font-extrabold border-r-2 pr-3 mr-3">
               The Moon Devs
             </h1>
           </Link>
-          <h1 className="tracking-widest text-sm font-regular">My Worklogs</h1>
+          <h1 className="tracking-widest text-xs sm:text-sm font-regular hidden sm:block">
+            My Worklogs
+          </h1>
         </div>
-        <div className="flex flex-row  items-center gap-3">
+        <div className="flex flex-row items-center gap-2 sm:gap-3">
           <SummarizeButton userId={user?.id} />
           <Link
             href={`${APP_ROUTES.userWorklogSummary}/${user?.id}?year=${thisYear}&month=${thisMonth}`}
           >
-            <div className="cursor-pointer rounded-md py-1 px-3 flex items-center gap-2 text-sm text-neutral-100 bg-neutral-800 hover:bg-neutral-700">
+            <div className="cursor-pointer rounded-md py-1 px-2 sm:py-1 sm:px-3 flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-neutral-100 bg-neutral-800 hover:bg-neutral-700">
               <span className="icon_size material-symbols-outlined">
                 description
               </span>
@@ -255,6 +263,7 @@ export const WorklogsPage = () => {
           </Link>
         </div>
       </div>
+
       <div className="scrollable_list">
         <div className="h-[3.5rem]"></div>
         <div
