@@ -57,7 +57,7 @@ export const ClaimReqs = () => {
   }, []);
 
   return (
-    <section className="h-screen w-full p-4 flex flex-col gap-3">
+    <section className="h-screen w-full p-4 flex flex-col gap-3 max-lg:h-full">
       <div className="w-fit h-fit bg-black text-white text-sm font-bold p-2 items-center">
         <span>TMD - Claim Requests</span>
       </div>
