@@ -5,6 +5,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { QuicklinksSdk } from '@/utils/services/QuicklinksSdk';
 import { FormFields } from './LinkActions';
+import { useAppDispatch } from '@/utils/redux/store';
+import { setToast } from '@/utils/redux/quicklinks/quicklinks.slice';
 
 export const EditLinkPopup = ({
   isModalOpen,
@@ -18,6 +20,7 @@ export const EditLinkPopup = ({
   setFields: React.Dispatch<React.SetStateAction<FormFields>>;
 }) => {
   const [loading, setLoading] = useState<boolean>(false);
+  const dispatch = useAppDispatch();
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -36,9 +39,23 @@ export const EditLinkPopup = ({
       console.log(response);
       setLoading(false);
       handleCloseModal();
+      dispatch(
+        setToast({
+          showToast: true,
+          toastMsg: "Link updated successfully",
+          toastSev: "success",
+        })
+      );
     } catch (error) {
       console.log(error);
       setLoading(false);
+      dispatch(
+        setToast({
+          showToast: true,
+          toastMsg: "Error updating link, please try again",
+          toastSev: "error",
+        })
+      );
     }
   };
 
@@ -74,7 +91,7 @@ export const EditLinkPopup = ({
 
         {/* Logo */}
         {fields.image && (
-          <div className='relative -mt-12 mb-4 flex justify-center'>
+          <div className='relative -mt-12 mb-2 flex justify-center'>
             <div className='w-28 h-28 relative rounded-full border-4 border-gray-400 overflow-hidden bg-white'>
               <Image
                 src={fields.image}

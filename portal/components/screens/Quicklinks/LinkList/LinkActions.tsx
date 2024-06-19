@@ -2,6 +2,8 @@ import { Popover } from "@mui/material";
 import { Link as Quicklink } from "@prisma/client";
 import { useState } from "react";
 import { EditLinkPopup } from "./EditLinkPopup";
+import { QuicklinksToast } from "../elements/QuicklinksToast";
+import { useAppSelector } from "@/utils/redux/store";
 
 export type FormFields = {
   title: string;
@@ -32,6 +34,7 @@ export const LinkActions = ({
     logo: link.logo,
     image: link.image,
   });
+  const { toast } = useAppSelector((state) => state.quicklinks);
 
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
@@ -163,6 +166,14 @@ export const LinkActions = ({
         handleCloseModal={handleCloseModal}
         fields={fields}
         setFields={setFields}
+      />
+      <QuicklinksToast
+        severity={toast.toastSev}
+        message={toast.toastMsg}
+        position={{
+          vertical: "bottom",
+          horizontal: "left",
+        }}
       />
     </div>
   );
