@@ -54,9 +54,9 @@ export const WorklogSummaryContent = ({
   }, [fetchWorklogData, month, year]);
 
   return (
-    <div className="divide-x-2 flex overflow-hidden h-screen w-full">
-      <div className="w-[50%]  h-screen overflow-y-scroll ">
-        <div ref={pdfTargetRef} className="pt-28 p-10 ">
+    <div className="divide-x-2 flex flex-col md:flex-row overflow-hidden h-screen w-full">
+      <div className=" w-[100%] md:w-[50%]  h-screen overflow-y-scroll  ">
+        <div ref={pdfTargetRef} className="pt-28 p-10  ">
           <h1 className="text-2xl font-bold pb-8">
             {userData?.name?.split(" ")[0]}&apos;s Worklog Summary for{" "}
             {summaryTitle}

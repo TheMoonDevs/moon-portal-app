@@ -184,12 +184,12 @@ export const WorklogSummaryHeader = ({
     <div className="fixed left-0 right-0 top-0 z-10 bg-white flex flex-row gap-3 py-2 px-3 items-center justify-between border-b border-neutral-400 md:pl-[6rem]">
       <div className="flex items-center">
         <Link href={APP_ROUTES.home}>
-          <h1 className="text-lg cursor-pointer font-bold border-r-2 pr-3 mr-3">
+          <h1 className="md:text-lg text-sm whitespace-nowrap cursor-pointer font-extrabold border-r-2 pr-3 mr-3">
             The Moon Devs
           </h1>
         </Link>
         <div className="flex items-center gap-4">
-          <h1 className="tracking-widest text-sm font-regular">
+          <h1 className="tracking-widest hidden md:block text-sm font-regular">
             Worklog Summary
           </h1>
           <span className="material-symbols-outlined !text-neutral-400">
