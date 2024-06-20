@@ -36,6 +36,7 @@ const CurrencySelectPopover: React.FC<CustomPopoverProps> = ({
           bgcolor: 'background.paper',
           maxHeight: '200px',
           overflow: 'auto',
+          boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
         }}
       >
         {exchange &&
@@ -44,7 +45,13 @@ const CurrencySelectPopover: React.FC<CustomPopoverProps> = ({
               key={currency}
               disablePadding
               onClick={() => handleCurrencySelect(currency, value as number)}
-              sx={{ padding: '0.5rem', cursor: 'pointer' }}
+              sx={{
+                padding: '0.5rem',
+                cursor: 'pointer',
+                '&:hover': {
+                  background: '#f0f0f0',
+                },
+              }}
             >
               <ListItemText
                 primary={`1 TMD === ${(

@@ -417,6 +417,11 @@ const TMDConverter = ({
             variant="outlined"
             aria-describedby={id}
             onClick={handleClick}
+            sx={{
+              '&:hover': {
+                borderColor: '#f5f5f5'
+              }
+            }}
           >
             1 TMD === {multiplicationFactor} {currency}
             <span className="material-symbols-outlined">arrow_drop_down</span>
