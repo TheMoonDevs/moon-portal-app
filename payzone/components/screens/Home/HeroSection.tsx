@@ -74,7 +74,10 @@ export const HeroSection = () => {
             aria-describedby={id}
             onClick={handleClick}
           >
-            1 TMD === {multiplicationFactor} {currency}
+            {
+              exchange ? 
+              `1 TMD === ${multiplicationFactor} ${currency}` : <span>loading...</span>
+            }
           </Button>
         </div>
       </div>
