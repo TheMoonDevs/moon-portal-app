@@ -120,6 +120,12 @@ const EmailTrackerCard: React.FC = () => {
 
   const handleAddNewMail = async () => {
     try {
+      // Validate fields
+      if (!newMailId || !newMailMaxCount) {
+        setError("* Please fill out all required fields. 😥");
+        return;
+      }
+
       const payload = {
         mailId: newMailId,
         mailMaxCount: newMailMaxCount,
@@ -150,6 +156,16 @@ const EmailTrackerCard: React.FC = () => {
     }
   };
 
+  const handleDialogClose = () => {
+    setOpen(false);
+    // Reset fields and errors on dialog close
+    setNewMailId("");
+    setNewMailMaxCount(0);
+    setNewFallbackMailId("");
+    setError(null);
+  };
+
+
   const formatLastMailSentAt = (dateString: string | undefined) => {
     if (!dateString) return "Never";
     const date = parseISO(dateString);
@@ -158,7 +174,7 @@ const EmailTrackerCard: React.FC = () => {
 
   return (
     <div className="min-h-screen  p-8">
-      <div className="max-w-5xl mx-auto bg-white p-6 rounded shadow-lg">
+      <div className="max-w-5xl mx-auto bg-white p-6 rounded shadow-lg shadow-gray-300">
         <Typography variant="h4" className="mb-4">
           Email Tracker
         </Typography>
@@ -295,7 +311,7 @@ const EmailTrackerCard: React.FC = () => {
         </div>
       </div>
 
-      <Dialog open={open} onClose={() => setOpen(false)}>
+      <Dialog open={open} onClose={handleDialogClose}>
         <DialogTitle>Add New Mail</DialogTitle>
         <DialogContent>
           <TextField
@@ -323,9 +339,14 @@ const EmailTrackerCard: React.FC = () => {
             value={newFallbackMailId}
             onChange={(e) => setNewFallbackMailId(e.target.value)}
           />
+          {error && (
+            <Typography variant="body2" color="error" gutterBottom>
+              {error}
+            </Typography>
+          )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpen(false)} color="primary">
+          <Button onClick={handleDialogClose} color="primary">
             Cancel
           </Button>
           <Button onClick={handleAddNewMail} color="primary">

@@ -5,7 +5,7 @@ import Link from "next/link";
 
 const EmailTracker = () => {
   return (
-    <PageAccess isAuthRequired={true} isAdminRequired={false}>
+    <PageAccess isAuthRequired={true} isAdminRequired={true}>
       <div className="container mx-auto px-4">
         <Link
           href={APP_ROUTES.home}
