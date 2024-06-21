@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
     
               return prisma.user.update({
                 where: { id: userData.id },
-                data: { thirdPartyData: newThirdPartyData },
+                data: { thirdPartyData: newThirdPartyData, slackId: slackUser.id},
               });
             }
           }

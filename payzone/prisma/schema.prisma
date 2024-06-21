@@ -29,6 +29,7 @@ model User {
   workData  Json?
   payData   Json?
   thirdPartyData Json?
+  slackId   String?
 }
 
 model PayTransactions {

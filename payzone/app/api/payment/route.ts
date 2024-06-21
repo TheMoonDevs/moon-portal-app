@@ -96,13 +96,11 @@ export async function PUT(req: NextRequest, res: NextResponse) {
         },
       });
     } else {
-      const users = await prisma.user.findMany();
-      user = users.find(
-        (user: any) =>
-          user.thirdPartyData &&
-          user.thirdPartyData.slackData &&
-          user.thirdPartyData.slackData.id === slackId
-      );
+      user = await prisma.user.findFirst({
+        where: {
+          slackId: slackId,
+        },
+      });
     }
 
     const user_data = {
