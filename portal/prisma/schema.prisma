@@ -32,6 +32,7 @@ model User {
   personalData   Json?
   payData   Json?
   thirdPartyData Json?
+  slackId        String?
 }
 
 model Candidate {
