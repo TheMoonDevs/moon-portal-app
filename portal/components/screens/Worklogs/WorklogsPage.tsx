@@ -254,7 +254,7 @@ export const WorklogsPage = () => {
           <Link
             href={`${APP_ROUTES.userWorklogSummary}/${user?.id}?year=${thisYear}&month=${thisMonth}`}
           >
-            <div className="cursor-pointer rounded-md py-1 px-2 sm:py-1 sm:px-3 flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-neutral-100 bg-neutral-800 hover:bg-neutral-700">
+            <div className="cursor-pointer rounded-md py-1 px-2 sm:py-1 sm:px-3 flex items-center gap-1 sm:gap-2 whitespace-nowrap text-[0.7rem] sm:text-sm text-neutral-100 bg-neutral-800 hover:bg-neutral-700">
               <span className="icon_size material-symbols-outlined">
                 description
               </span>
@@ -304,7 +304,7 @@ export const WorklogsPage = () => {
             </ul>
             <p className="text-lg font-bold  my-4">Shortcuts</p>
             <ul className="list-disc font-mono text-sm tracking-widest">
-              <li className="">Ctrl+ (Spacebar or Ctrl+C ) === ✅</li>
+              <li className="">Ctrl+Spacebar === ✅</li>
               <li className="">Ctrl+S to save the logs manually</li>
               <li className="">Ctrl+R to Refresh the logs</li>
               <li className="">Type `-` to add bulletin</li>
