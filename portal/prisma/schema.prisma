@@ -92,19 +92,6 @@ model ClientLeadForm {
   contact         Json
   createdAt       DateTime @default(now())
 }
-// ---------------------------------------QUICKDOCS---------------------------
-model DocMarkDown {
-  id          String  @id @default(auto()) @map("_id") @db.ObjectId
-  docId       String?  @db.ObjectId
-  docType     String?
-  userId      String?  @db.ObjectId
-  title       String?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @default(now())
-  markDown       Json[]
-}
-
-
 
 // ---------------------------------------QUICKLINKS---------------------------
 model ParentDirectory {
