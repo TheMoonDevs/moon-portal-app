@@ -12,8 +12,8 @@ const previousMonth =
   Number(thisMonth) === 1
     ? "12"
     : dayjs()
-        .month(Number(thisMonth) - 2)
-        .format("MM");
+      .month(Number(thisMonth) - 2)
+      .format("MM");
 
 const calculateYearForPreviousMonth =
   Number(thisMonth) === 1 ? thisYear - 1 : thisYear;
@@ -51,11 +51,11 @@ export const SummarizeButton = ({
       ref={summaryBtnRef}
       className="relative z-50"
       onClick={() => setIsBtnDropdownOpen(!isBtnDropdownOpen)}
-      // href={`${APP_ROUTES.userWorklogSummary}/${
-      //   user?.id
-      // }?year=${dayjs().format("YYYY")}&month=${dayjs().format("MM")}`}
+    // href={`${APP_ROUTES.userWorklogSummary}/${
+    //   user?.id
+    // }?year=${dayjs().format("YYYY")}&month=${dayjs().format("MM")}`}
     >
-      <button className="cursor-pointer text-sm border border-neutral-800 rounded-md  text-neutral-900 flex flex-row gap-2 items-center py-1 px-2 text-xs sm:text-sm">
+      <button className="cursor-pointer border border-neutral-800 rounded-md  text-neutral-900 flex flex-row gap-2 items-center py-1 px-2 text-[0.7rem] sm:text-sm">
         <span className="icon_size material-symbols-outlined">timeline</span>
         <span>Archive</span>
         <span className="icon_size material-symbols-outlined">expand_more</span>

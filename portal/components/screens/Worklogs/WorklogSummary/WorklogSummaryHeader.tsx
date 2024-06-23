@@ -28,9 +28,8 @@ const MonthTable: React.FC<MonthTableProps> = ({
   const renderCell = (monthIndex: number, isActive: boolean) => (
     <td
       key={monthIndex}
-      className={`h-8 ${
-        isActive ? "cursor-pointer hover:bg-neutral-100" : "text-neutral-400"
-      }`}
+      className={`h-8 ${isActive ? "cursor-pointer hover:bg-neutral-100" : "text-neutral-400"
+        }`}
     >
       {isActive ? (
         <div onClick={() => handleMonthSelect(monthIndex)}>
@@ -52,7 +51,7 @@ const MonthTable: React.FC<MonthTableProps> = ({
 
   return (
     <Fade in={isMonthDropdownOpen} mountOnEnter unmountOnExit>
-      <table className="flex flex-col gap-1 absolute top-10 shadow-lg rounded-md bg-white">
+      <table className="flex flex-col gap-1 absolute top-10 right-0 sm:right-[unset] shadow-lg rounded-md bg-white">
         <tbody>
           {Array.from({ length: 4 }, (_, rowIndex) => (
             <tr key={rowIndex} className="items-center !text-sm py-1">
@@ -98,8 +97,8 @@ const YearDropdown: React.FC<YearDropdownProps> = ({
               onlyYearSummary
                 ? `${pathName}?year=${year}`
                 : `${pathName}?year=${year}&month=${dayjs()
-                    .month(selectedMonth as number)
-                    .format("MM")}`
+                  .month(selectedMonth as number)
+                  .format("MM")}`
             }
             key={year}
             className="flex gap-2 items-center !text-sm cursor-pointer hover:bg-neutral-100 px-4 py-1"
@@ -183,27 +182,27 @@ export const WorklogSummaryHeader = ({
   };
   return (
     <div className="fixed left-0 right-0 top-0 z-10 bg-white flex flex-row gap-3 py-2 px-3 items-center justify-between border-b border-neutral-400 md:pl-[6rem]">
-      <div className="flex items-center">
+      <div className="flex items-center justify-between w-full sm:w-[unset] sm:justify-start">
         <Link href={APP_ROUTES.home} className="flex items-center">
-          <h1 className="md:text-lg text-sm hidden md:block whitespace-nowrap cursor-pointer font-extrabold border-r-2 pr-3 mr-3">
+          <h1 className="hidden sm:block md:text-lg text-sm whitespace-nowrap cursor-pointer font-extrabold border-r-2 pr-3 mr-3">
             The Moon Devs
           </h1>
           <Image
             src="/icon-192x192.png"
-            width={40}
-            height={40}
+            width={30}
+            height={30}
             alt="logo"
-            className="md:hidden mr-5"
+            className="w-8 aspect-square sm:hidden mr-5"
           />
         </Link>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-1 sm:gap-4">
           <h1 className="md:tracking-widest text-sm md:text-base ml-1 font-regular whitespace-nowrap">
             Worklog Summary
           </h1>
           <span className="material-symbols-outlined !text-neutral-400">
             chevron_right
           </span>
-          <div className="flex gap-2 items-center !text-sm relative">
+          <div className="flex gap-1 sm:gap-2 items-center !text-sm relative">
             <Link
               href={`${pathName}?year=${selectedYear}`}
               className={`${onlyYearSummary ? "font-bold" : ""} cursor-pointer`}
@@ -230,18 +229,17 @@ export const WorklogSummaryHeader = ({
           <span className="material-symbols-outlined !text-neutral-400">
             chevron_right
           </span>
-          <div className="flex gap-2 items-center !text-sm relative z-50">
+          <div className="flex gap-1 sm:gap-2 items-center !text-sm sm:relative z-50">
             <Link
               href={
                 onlyYearSummary && selectedMonth !== null
                   ? `${pathName}?year=${selectedYear}&month=${dayjs()
-                      .month(selectedMonth)
-                      .format("MM")}`
+                    .month(selectedMonth)
+                    .format("MM")}`
                   : ""
               }
-              className={`cursor-pointer ${
-                !onlyYearSummary ? "font-bold" : ""
-              }`}
+              className={`cursor-pointer ${!onlyYearSummary ? "font-bold" : ""
+                }`}
               onClick={() =>
                 onlyYearSummary &&
                 selectedMonth !== null &&

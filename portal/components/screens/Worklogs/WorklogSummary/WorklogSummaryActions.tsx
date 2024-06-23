@@ -42,7 +42,7 @@ export const WorklogSummaryActions = ({
   const aiSummaryPdfTargetRef = useRef(null);
 
   return (
-    <div className="flex flex-col mt-10 justify-between items-center  w-full md:w-[50%]  relative">
+    <div className="flex flex-col mt-10 justify-between items-center  w-full md:w-[50%] border-t-2 relative">
       <div className="h-full">
         {!loading ? (
           aiSummary && (
@@ -71,7 +71,7 @@ export const WorklogSummaryActions = ({
                   </span>
                 </Tooltip>
               </div>
-              <div className="overflow-y-auto w-full h-full">
+              <div className="overflow-y-auto max-h-[40dvh] sm:max-h-[unset] w-full h-full">
                 <div
                   ref={aiSummaryPdfTargetRef}
                   className="p-4 md:p-10 pt-6 md:pt-14"
@@ -90,15 +90,15 @@ export const WorklogSummaryActions = ({
             </>
           )
         ) : (
-          <div className="pt-6 md:pt-14 pl-4 md:pl-14 w-full justify-self-start self-start">
+          <div className="pt-6 md:pt-14 min-w-[300px] md:min-w-[400px]">
             <LoadingSkeleton />
           </div>
         )}
       </div>
-      <div className="flex flex-row gap-2 md:gap-4 items-center justify-center sticky bottom-0 py-4 md:py-6 bg-white w-full justify-self-end">
+      <div className=" text-[0.7rem] sm:text-[0.9rem] md:text-[0.7rem] lg:text-base flex flex-row gap-2 md:gap-4 items-center justify-center sticky bottom-0 py-4 md:py-6 bg-white w-full justify-self-end">
         <Tooltip title="Download Worklog">
           <button
-            className="flex gap-1 md:gap-2 items-center border border-neutral-800 hover:bg-neutral-100 rounded-md px-2 md:px-4 py-1 md:py-2 text-sm md:text-base"
+            className="flex gap-1 md:gap-2 items-center border border-neutral-800 hover:bg-neutral-100 rounded-md px-2 md:px-4 py-1 md:py-2"
             onClick={() =>
               generatePDF(pdfTargetRef, {
                 method: "open",
@@ -111,15 +111,15 @@ export const WorklogSummaryActions = ({
             <span>Download as PDF</span>
           </button>
         </Tooltip>
-        <button className="flex gap-1 md:gap-2 items-center border border-neutral-800 hover:bg-neutral-100 rounded-md px-2 md:px-4 py-1 md:py-2 text-sm md:text-base">
+        <button className="flex gap-1 md:gap-2 items-center border border-neutral-800 hover:bg-neutral-100 rounded-md px-2 md:px-4 py-1 md:py-2">
           <span className="material-symbols-outlined">analytics</span>
           <span>Breakdown</span>
         </button>
         <button
           onClick={handleAiSummaryBtnClick}
-          className="flex gap-1 md:gap-2 items-center border bg-neutral-900 text-white hover:bg-neutral-700 rounded-md px-2 md:px-4 py-2 md:py-2 text-sm md:text-base"
+          className="flex gap-1 md:gap-2 items-center border bg-neutral-900 text-white hover:bg-neutral-700 rounded-md px-2 md:px-4 py-2 md:py-2"
         >
-          <span>✨</span>
+          <span className="text-[0.8rem] md:text-[1rem]">✨</span>
           <span>AI Summary</span>
         </button>
       </div>
