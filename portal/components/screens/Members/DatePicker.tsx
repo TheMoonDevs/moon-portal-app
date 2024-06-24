@@ -23,7 +23,13 @@ const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MIN_YEAR = 1900;
 const MAX_YEAR = new Date().getFullYear();
 
-const DatePicker = ({ onDateChange }: { onDateChange?: (e: any) => void }) => {
+const DatePicker = ({
+  onDateChange,
+  placeholder,
+}: {
+  onDateChange?: (e: any) => void;
+  placeholder?: string;
+}) => {
   const [showDatepicker, setShowDatepicker] = useState(false);
   const [datepickerValue, setDatepickerValue] = useState("");
   const [month, setMonth] = useState(new Date().getMonth());
@@ -102,7 +108,7 @@ const DatePicker = ({ onDateChange }: { onDateChange?: (e: any) => void }) => {
         onClick={() => setShowDatepicker(true)}
         onKeyDown={(e) => e.key === "Escape" && setShowDatepicker(false)}
         className="w-full cursor-pointer border pl-4 pr-10 leading-none rounded-lg shadow-sm focus:outline-none focus:shadow-outline text-gray-600"
-        placeholder="Enter Date of Birth"
+        placeholder={placeholder || "Enter Date of Birth"}
         required
         onChange={onDateChange}
       />
