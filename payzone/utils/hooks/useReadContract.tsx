@@ -33,13 +33,14 @@ const useReadContract = (contract: Contract): TokenData => {
     const getData = async () => {
       // const totalSupply = await readContractData(contract, "totalSupply");
       // const totalBurnedAmount = await readContractData(contract, "totalBurnedAmount");
-      //console.log("walletAddress", walletAddress);
+
       if (!walletAddress) return;
       const balance = await readContractData(
         contract,
         "balanceOf",
         walletAddress
       );
+      // console.log("balance", balance);
 
       setTokenData((prev) => ({ ...prev, balance: balance }));
     };

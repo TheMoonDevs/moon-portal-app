@@ -1,5 +1,5 @@
 import { prisma } from "@/prisma/prisma";
-import { s3FileUploadSdk } from "@/utils/services/s3FileUploadSdk";
+import { fileUploadSdk } from "@/utils/services/fileUploadSdk";
 import { File } from "buffer";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     }
 
     const filePromises = files.map(async (file) => {
-      const s3Response = await s3FileUploadSdk.uploadFile({
+      const s3Response = await fileUploadSdk.uploadFile({
         file,
       });
 
@@ -22,7 +22,7 @@ export async function POST(req: Request) {
       }
 
       const fileInfo = {
-        fileUrl: s3FileUploadSdk.getPublicFileUrl({
+        fileUrl: fileUploadSdk.getPublicFileUrl({
           file,
         }),
         fileName: file.name,

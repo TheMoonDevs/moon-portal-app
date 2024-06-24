@@ -37,11 +37,11 @@ export const ReferralSidebar = () => {
         <Link href={APP_ROUTES.home}>
           <div className="hidden lg:flex items-center w-auto gap-3 mt-6">
             <Image src="/logo/logo_white.png" alt="" width={47} height={47} />
-            <p className="text-xs tracking-[.2em] text-white">
+            <p className="text-xs tracking-[.2em]">
               THE <br /> MOON <br /> DEVS
             </p>
           </div>
-          <div className="lg:hidden flex items-center w-fit gap-3 mt-4 text-white">
+          <div className="lg:hidden flex items-center w-fit gap-3 mt-4">
             <Image src="/logo/logo_white.png" alt="" width={27} height={27} />
             <p className="text-xs tracking-[.2em]">THE MOON DEVS</p>
           </div>
@@ -52,7 +52,6 @@ export const ReferralSidebar = () => {
             path={path}
             signOut={signOut}
             textColorHexcode="#0AFF7C"
-            toggleDrawer={toggleDrawer}
           />
         </div>
       </div>
@@ -71,16 +70,18 @@ export const ReferralSidebar = () => {
           path={path}
           signOut={signOut}
           textColorHexcode="#0AFF7C"
-          toggleDrawer={toggleDrawer}
         />
       </Drawer>
 
       <div
+<<<<<<< HEAD
+        className="text-white lg:block mb-4 text-lg tracking-widest cursor-pointer"
+=======
         className="text-white mb-4 text-lg tracking-widest cursor-pointer flex items-center gap-2 max-lg:hidden px-2"
+>>>>>>> main
         onClick={signOut}
       >
         Logout
-        <Image src="/icons/logout.svg" alt="" width={30} height={30} />
       </div>
     </section>
   );

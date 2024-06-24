@@ -27,7 +27,7 @@ export function Backdrop() {
           }}
           camera={{ position: [0, 0, 20], fov: 45 }}
         >
-          {/* <Stats /> */}
+          <Stats />
 
           <directionalLight
             position={[1200, 2000, 300]}

@@ -24,8 +24,13 @@ interface UserData {
   };
 }
 export const HeroSection = () => {
+  const { loading, setLoading } = useAsyncState();
   const router = useRouter();
   const dispatch = useAppDispatch();
+<<<<<<< HEAD
+  const [isCurrencyModalOpen, setIsCurrencyModalOpen] =
+  useState<boolean>(false);
+=======
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
 
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -47,12 +52,14 @@ export const HeroSection = () => {
 
 
   const { signInWithSocial, authStatus, user, loading } = useAuthSession();
+>>>>>>> main
 
+  const { signInWithSocial } = useAuthSession();
   const { exchange, multiplicationFactor } = useSyncBalances();
 
   const currency = useAppSelector((state) => state.balances.selectedCurrency);
   return (
-    <section className="overflow-hidden mt-28 text-white">
+    <section className="overflow-hidden mt-28">
       <div className=" flex flex-col items-center justify-center">
         <HeroText />
         <button
@@ -61,13 +68,21 @@ export const HeroSection = () => {
           disabled={loading}
         >
           {loading ? (
-            <CircularProgress size={30} color="inherit" />
+            <CircularProgress size={20} color="inherit" />
           ) : (
             <Image src="/logo/google.png" alt="" width={30} height={30} />
           )}
           <span>Login with Google</span>
         </button>
         <div className="w-full flex items-center justify-end mt-14">
+<<<<<<< HEAD
+          <div className="bg-black border border-1 border-amber-300 text-amber-300 w-fit font-black text-sm p-2 cursor-pointer hover:bg-amber-300 hover:text-black" onClick={() => setIsCurrencyModalOpen(true)}>
+            1 TMD === {multiplicationFactor} {currency}
+          </div>
+        </div>
+      </div>
+      <CurrencyModal isOpen={isCurrencyModalOpen} onClose={() => setIsCurrencyModalOpen(false)}/>
+=======
           <Button
             className="bg-black border border-1 border-amber-300 text-amber-300 w-fit font-black text-sm p-2 cursor-pointer hover:bg-amber-300 hover:text-black"
             variant="outlined"
@@ -85,6 +100,7 @@ export const HeroSection = () => {
         popoverProps={{ id, open, anchorEl, onClose: handlePopoverClose }}
         handleCurrencySelect={handleCurrencySelect}
       />
+>>>>>>> main
       <Backdrop />
     </section>
   );

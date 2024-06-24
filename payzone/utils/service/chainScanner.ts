@@ -60,13 +60,7 @@ export const ChainScanner = {
         const url = `${_chainApiInfo?.baseURL}${_chainApiInfo?.accountTxEndpoint}&apikey=${_chainApiInfo?.apiKey}&contractaddress=${contract}&address=${address}`;
 
         // console.log("fetcingTransactions", url);
-        const response = await fetch(url, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          mode: "no-cors",
-        });
+        const response = await fetch(url);
         if (response.ok) {
           const data = await response.json();
           // console.log("fetchedTransactions", data);

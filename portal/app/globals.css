@@ -218,6 +218,7 @@ h2 {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 .custom-scrollbar {
   overflow-x: auto; /* Ensure horizontal scrolling */
   scrollbar-width: thin; /* "auto" or "thin" depending on browser support */
@@ -252,14 +253,20 @@ h2 {
 
 =======
 >>>>>>> b95638319d169465d259f803b998d7ccd61020f6
+=======
+>>>>>>> db23a10021e0be11f26ca0fa810bb810cfd8509d
 
   /* This CSS removes the default clock icon from the time input */
   input[type="time"]::-webkit-calendar-picker-indicator {
     display: none;
     -webkit-appearance: none;
 <<<<<<< HEAD
+<<<<<<< HEAD
   }
 
 =======
   }
 >>>>>>> b95638319d169465d259f803b998d7ccd61020f6
+=======
+  }
+>>>>>>> db23a10021e0be11f26ca0fa810bb810cfd8509d

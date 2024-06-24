@@ -15,6 +15,10 @@ import {
   TRANSACTIONTYPE,
 } from "@prisma/client";
 import { useAuthSession } from "@/utils/hooks/useAuthSession";
+<<<<<<< HEAD
+import { useSyncBalances } from "@/utils/hooks/useSyncBalances";
+import CurrencyModal from "@/components/global/CurrencyModal";
+=======
 import {
   Button,
   IconButton,
@@ -32,13 +36,13 @@ import {
   updateSelectedCurrencyValue,
 } from "@/utils/redux/balances/balances.slice";
 import CurrencySelectPopover from "@/components/global/CurrencySelectPopover";
+>>>>>>> main
 
 const TMDConverter = ({
   refetchTransactions,
 }: {
   refetchTransactions: () => void;
 }) => {
-  const dispatch = useAppDispatch();
   const { walletAddress, walletChain } = useWallet();
   const ethersSigner = useEthersSigner({
     chainId: walletChain?.id,
@@ -86,13 +90,9 @@ const TMDConverter = ({
     handleClose();
   };
 
-  const {
-    balance,
-    exchange,
-    multiplicationFactor,
-    liquidityTMDCredits,
-    selectedCurrency: currency,
-  } = useSyncBalances();
+  const { exchange, multiplicationFactor } = useSyncBalances();
+
+  const currency = useAppSelector((state) => state.balances.selectedCurrency);
 
   const handleMint = async () => {
     if (!ethersSigner) return;
@@ -123,18 +123,7 @@ const TMDConverter = ({
   };
 
   const handleClaim = async () => {
-    if (!ethersSigner || !liquidityTMDCredits) return;
-    if (liquidityTMDCredits < parseInt(claimAmount)) {
-      alert(
-        "We don't have enough liquidity, please contact admin, and chack back in a day."
-      );
-      return;
-    }
-
-    if (balance < parseInt(claimAmount)) {
-      alert("You don't have enough balance, please contact admin for support.");
-      return;
-    }
+    if (!ethersSigner) return;
 
     setTxProgress(true);
 
@@ -164,12 +153,9 @@ const TMDConverter = ({
         burnTxHash: claimTx.hash,
       };
 
-      MyServerApi.postData(SERVER_API_ENDPOINTS.payment, updatedData)
+      MyServerApi.updateData(SERVER_API_ENDPOINTS.updatePayment, updatedData)
         .then((updatedTransaction) => {
-          // console.log("Updated transaction:", updatedTransaction);
           alert("Claim Request Sent");
-          // console.log("Claim Request Sent", updatedTransaction);
-          dispatch(addClaimTransaction(updatedTransaction));
         })
         .catch((error) => {
           console.error("Error updating PayTransaction:", error);
@@ -256,7 +242,7 @@ const TMDConverter = ({
 
       <div className="flex gap-2">
         <button
-          className="text-sm font-black border border-midGrey p-2 hover:bg-midGrey hover:text-white transition-colors duration-200"
+          className="text-sm font-black border border-midGrey p-2"
           onClick={handleSendOpen}
         >
           Send TMD
@@ -266,7 +252,7 @@ const TMDConverter = ({
             </button> */}
         {Admin && (
           <button
-            className="text-sm text-white bg-black font-black p-2 hover:bg-white hover:text-black transition-colors duration-200"
+            className="text-sm text-white bg-black font-black p-2"
             onClick={handleMintOpen}
           >
             Mint TMD
@@ -280,20 +266,14 @@ const TMDConverter = ({
         aria-labelledby="modal-modal-title"
         aria-describedby="modal-modal-description"
       >
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-1/3 bg-white border-2 border-midGrey shadow-lg p-4 rounded-lg">
-          <div className="flex justify-between items-center">
-            <h2 className="text-lg font-bold">Mint TMD</h2>
-            <IconButton onClick={handleMintClose}>
-              <Image src={close} alt="close" width={20} height={20} />
-            </IconButton>
-          </div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-1/3 bg-white border-2 border-midGrey shadow-lg p-4">
           <form
             onSubmit={(e) => {
               e.preventDefault();
               handleMint();
             }}
           >
-            <div className="flex flex-col gap-2 mt-2">
+            <div className="flex flex-col gap-2">
               <input
                 type="text"
                 placeholder="Address"
@@ -316,13 +296,13 @@ const TMDConverter = ({
             {!txProgress ? (
               <div className="flex gap-2 mt-3">
                 <button
-                  className="text-sm w-fit font-black text-whiteSmoke bg-black p-2 rounded-sm"
+                  className="text-sm w-fit font-black text-whiteSmoke bg-black p-2"
                   type="submit"
                 >
                   Mint TMD
                 </button>
                 <button
-                  className="text-sm font-black w-fit text-whiteSmoke bg-black p-2 rounded-sm"
+                  className="text-sm font-black w-fit text-whiteSmoke bg-black p-2"
                   onClick={handleMintClose}
                 >
                   Cancel
@@ -330,7 +310,7 @@ const TMDConverter = ({
               </div>
             ) : (
               <button
-                className="text-sm font-black w-fit text-whiteSmoke bg-black p-2 mt-3 rounded-sm"
+                className="text-sm font-black w-fit text-whiteSmoke bg-black p-2 mt-3"
                 disabled
               >
                 Minting...
@@ -346,20 +326,14 @@ const TMDConverter = ({
         aria-labelledby="modal-modal-title"
         aria-describedby="modal-modal-description"
       >
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-1/3 bg-white border-2 border-midGrey shadow-lg p-4 rounded-lg">
-          <div className="flex justify-between items-center">
-            <h2 className="text-lg font-bold text-black">Send Tokens</h2>
-            <IconButton onClick={handleSendClose}>
-              <Image src={close} alt="close" width={20} height={20} />
-            </IconButton>
-          </div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-1/3 bg-white border-2 border-midGrey shadow-lg p-4">
           <form
             onSubmit={(e) => {
               e.preventDefault();
               sendTokens();
             }}
           >
-            <div className="flex flex-col gap-2 mt-2">
+            <div className="flex flex-col gap-2">
               <input
                 type="text"
                 placeholder="Address"
@@ -385,7 +359,7 @@ const TMDConverter = ({
 
             <div className="flex gap-2 mt-3">
               <button
-                className="text-sm w-fit font-black text-whiteSmoke bg-black p-2 rounded-sm"
+                className="text-sm w-fit font-black text-whiteSmoke bg-black p-2"
                 onClick={(e) => {
                   e.preventDefault();
                   approveTokens();
@@ -394,7 +368,7 @@ const TMDConverter = ({
                 {!approveProgress ? "Approve" : "Approving..."}
               </button>
               <button
-                className="text-sm font-black w-fit text-whiteSmoke bg-black p-2 rounded-sm"
+                className="text-sm font-black w-fit text-whiteSmoke bg-black p-2"
                 type="submit"
               >
                 {!txProgress ? "Send" : "Sending..."}
@@ -404,11 +378,6 @@ const TMDConverter = ({
         </div>
       </Modal>
 
-      <div className="w-full border-b-2 border-neutral-500 rounded-sm py-2">
-        <span className="text-sm font-black tracking-widest text-center">
-          CRYPTO to FIAT
-        </span>
-      </div>
       <span className="flex justify-between items-center">
         <p className="text-sm font-thin">Current Price</p>
         {exchange ? (
@@ -430,6 +399,8 @@ const TMDConverter = ({
           <p className="text-sm text-black">loading...</p>
         )}
       </span>
+<<<<<<< HEAD
+=======
 
       <CurrencySelectPopover
         popoverProps={{ id, open, anchorEl, onClose: handleClose }}
@@ -440,9 +411,10 @@ const TMDConverter = ({
         <p className="text-sm font-thin">Available Fiat for conversion</p>
         <p className="text-sm font-black">{liquidityTMDCredits} TMD</p>
       </div>
+>>>>>>> main
       <span className="flex justify-between">
-        <p className="text-sm font-thin">Your current TMD balance</p>
-        <p className="text-sm font-black">{balance} TMD</p>
+        <p className="text-sm font-thin">Previously Claimed Credits</p>
+        <p className="text-sm font-black">1,234 TMD</p>
       </span>
 
       <form
@@ -467,7 +439,7 @@ const TMDConverter = ({
             type="submit"
             disabled={txProgress}
           >
-            {txProgress ? "Claiming...." : "Claim Now"}
+            Claim Now
           </button>
         </div>
       </form>

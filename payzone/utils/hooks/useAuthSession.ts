@@ -3,7 +3,7 @@ import { FirebaseSDK, getFirebaseAuth } from "../service/firebase";
 import { useEffect, useMemo, useState } from "react";
 import store, { useAppDispatch, useAppSelector } from "../redux/store";
 import { usePathname, useRouter } from "next/navigation";
-import { MyServerApi, SERVER_API_ENDPOINTS } from "../service/MyServerApi";
+import { MyServerApi } from "../service/MyServerApi";
 import { User as IUser } from "@prisma/client";
 import {
   setAuthLoading,
@@ -143,7 +143,6 @@ export const useAuthSession = (initialize?: boolean) => {
 
             //sign up new ref User
             const userData: UserData = (await MyServerApi.postData(
-              SERVER_API_ENDPOINTS.referralsSignup,
               data
             )) as UserData;
             console.log("userData", userData);
@@ -178,7 +177,6 @@ export const useAuthSession = (initialize?: boolean) => {
               return;
             }
           }
-          dispatch(setAuthLoading(false));
         } catch (error) {
           console.error(error);
         }
@@ -197,13 +195,6 @@ export const useAuthSession = (initialize?: boolean) => {
     return () => unsubscribe();
   }, [initialize, dispatch, path, router]);
 
-  useEffect(() => {
-    if (user) {
-      if (!path.startsWith(APP_ROUTES.dashboardHome))
-        router.push(APP_ROUTES.dashboard);
-    }
-  }, [user, path, router]);
-
   return {
     app,
     authStatus: loading
@@ -220,7 +211,6 @@ export const useAuthSession = (initialize?: boolean) => {
     user: app == "referrals" ? refUser : user,
     signInWithSocial,
     signOut,
-    loading,
     signInReferralWithSocial,
   };
 };

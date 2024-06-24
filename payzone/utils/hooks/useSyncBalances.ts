@@ -14,7 +14,7 @@ export const useSyncBalances = (init?: boolean) => {
   const { user } = useAuthSession();
   const dispatch = useAppDispatch();
   const { exchange } = useAppSelector((state) => state.balances);
-  const { selectedCurrency, selectedCurrencyValue, balance } = useAppSelector(
+  const { selectedCurrency, selectedCurrencyValue } = useAppSelector(
     (state) => state.balances
   );
   const [loading, setLoading] = useState<boolean>(true);
@@ -28,7 +28,6 @@ export const useSyncBalances = (init?: boolean) => {
   useEffect(() => {
     if (!init) return;
     const formattedBalance = Number(tokenData?.balance) / 10 ** 18;
-    console.log("balance", formattedBalance);
     dispatch(setBalance(formattedBalance));
   }, [tokenData, dispatch, init]);
 
@@ -104,11 +103,8 @@ export const useSyncBalances = (init?: boolean) => {
   }
 
   return {
-    balance,
     tokenData,
     exchange,
-    liquidityTMDCredits: exchange?.exchangeData.liquidityTMDCredits,
     multiplicationFactor,
-    selectedCurrency,
   };
 };

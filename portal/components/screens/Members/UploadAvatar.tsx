@@ -33,7 +33,6 @@ export function UploadAvatar() {
     setIsFileUploading(true);
     const formData = new FormData();
     formData.append("file", file, file.path);
-    formData.append("folderName", "userAvatars");
     try {
       const response = await fetch("/api/upload/avatar-upload", {
         method: "POST",

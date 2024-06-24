@@ -28,8 +28,6 @@ model User {
   updatedAt DateTime      @default(now())
   workData  Json?
   payData   Json?
-  thirdPartyData Json?
-  slackId   String?
 }
 
 model PayTransactions {

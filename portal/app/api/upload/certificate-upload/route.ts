@@ -1,5 +1,5 @@
 import { prisma } from "@/prisma/prisma";
-import { s3FileUploadSdk } from "@/utils/services/s3FileUploadSdk";
+import { fileUploadSdk } from "@/utils/services/fileUploadSdk";
 import { File } from "buffer";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -57,7 +57,7 @@ export async function POST(req: Request) {
     }
 
     const filePromises = files.map(async (file) => {
-      const s3Response = await s3FileUploadSdk.uploadFile({
+      const s3Response = await fileUploadSdk.uploadFile({
         file,
         userId,
         folder: "certificates",
@@ -68,7 +68,7 @@ export async function POST(req: Request) {
       }
 
       const fileInfo = {
-        fileUrl: s3FileUploadSdk.getPublicFileUrl({
+        fileUrl: fileUploadSdk.getPublicFileUrl({
           userId,
           file,
           folder: "certificates",
@@ -130,7 +130,7 @@ export async function DELETE(req: Request) {
   try {
     const { id, userId, fileName } = await req.json();
 
-    const response = await s3FileUploadSdk.deleteFile({
+    const response = await fileUploadSdk.deleteFile({
       userId: userId,
       fileName: fileName,
       folder: "certificates",
@@ -188,7 +188,7 @@ export async function PUT(req: Request) {
       await req.json();
 
     if (deleteCertificateFromPrevId) {
-      const downloadedFile = await s3FileUploadSdk.downloadFile({
+      const downloadedFile = await fileUploadSdk.downloadFile({
         userId: deleteCertificateFromPrevId,
         fileName: certificateData.file.fileName,
         folder: "certificates",
@@ -202,11 +202,11 @@ export async function PUT(req: Request) {
         throw new Error("Error updating the document!");
       }
 
-      const fileData = (await s3FileUploadSdk.streamToBuffer(
+      const fileData = (await fileUploadSdk.streamToBuffer(
         downloadedFile?.Body!
       )) as Buffer;
 
-      const addCertificateToNewIdInSpaces = await s3FileUploadSdk.uploadFile({
+      const addCertificateToNewIdInSpaces = await fileUploadSdk.uploadFile({
         fileInfoWithFileBuffer: {
           fileName: certificateData.file.fileName,
           fileType: certificateData.file.mimeType,
@@ -224,7 +224,7 @@ export async function PUT(req: Request) {
         throw new Error("Error updating the document!");
       }
 
-      const response = await s3FileUploadSdk.deleteFile({
+      const response = await fileUploadSdk.deleteFile({
         userId: deleteCertificateFromPrevId,
         fileName: certificateData.file.fileName,
         folder: "certificates",
@@ -257,7 +257,7 @@ export async function PUT(req: Request) {
         ...certificateDataWithoutId,
         file: {
           ...certificateDataWithoutId.file,
-          fileUrl: s3FileUploadSdk.getPublicFileUrl({
+          fileUrl: fileUploadSdk.getPublicFileUrl({
             userId: certificateDataWithoutId.userId,
             file: certificateDataWithoutId.file,
             folder: "certificates",

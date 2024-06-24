@@ -12,10 +12,12 @@ import { setUser } from "@/utils/redux/auth/auth.slice";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
 
 const ReferralHeroSection = () => {
-  const { loading, signInReferralWithSocial, authStatus } = useAuthSession();
+  const { loading, setLoading } = useAsyncState();
+
+  const { signInReferralWithSocial } = useAuthSession();
 
   return (
-    <section className=" mt-28 text-white">
+    <section className=" mt-28">
       <div className=" flex flex-col items-center justify-center">
         <HeroText />
         <button
@@ -23,8 +25,8 @@ const ReferralHeroSection = () => {
           onClick={signInReferralWithSocial}
           disabled={loading}
         >
-          {authStatus === "authenticating" ? (
-            <CircularProgress size={30} color="inherit" />
+          {loading ? (
+            <CircularProgress size={20} color="inherit" />
           ) : (
             <Image src="/logo/google.png" alt="" width={30} height={30} />
           )}

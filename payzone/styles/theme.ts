@@ -1,6 +1,6 @@
 import { PaletteMode } from "@mui/material";
 
-const IS_DARK_MODE = false;
+const IS_DARK_MODE = true;
 
 const commonTheme = {
   customTransitions: {

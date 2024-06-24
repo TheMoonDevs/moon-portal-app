@@ -1,7 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, CircularProgress, TextField } from "@mui/material";
-import Tooltip from "@mui/material/Tooltip";
 
 import useAsyncState from "@/utils/hooks/useAsyncState";
 import useCopyToClipboard from "@/utils/hooks/useCopyToClipboard";
@@ -175,19 +174,17 @@ export const ShortUrlCard = () => {
             }}
             required
           />
-          <Tooltip title="Generate a random slug for you link">
-            <Button
-              variant="contained"
-              className="!bg-stone-800 !text-white"
-              type="button"
-              onClick={() => {
-                const randomSlug: string = generateSlug(5);
-                setFormData({ ...formData, slug: randomSlug });
-              }}
-            >
-              Generate
-            </Button>
-          </Tooltip>
+          <Button
+            variant="contained"
+            className="!bg-stone-800 !text-white"
+            type="button"
+            onClick={() => {
+              const randomSlug: string = generateSlug(5);
+              setFormData({ ...formData, slug: randomSlug });
+            }}
+          >
+            Generate
+          </Button>
         </div>
         <div className="space-y-2">
           <TextField

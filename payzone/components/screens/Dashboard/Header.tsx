@@ -12,7 +12,6 @@ import {
 import { useAuthSession } from "@/utils/hooks/useAuthSession";
 import { Address } from "viem";
 import { useSyncBalances } from "@/utils/hooks/useSyncBalances";
-import { Skeleton } from "@mui/material";
 
 interface HeaderProps {
   children?: React.ReactNode;
@@ -20,31 +19,26 @@ interface HeaderProps {
 }
 
 export const Header = ({ children, className }: HeaderProps) => {
+<<<<<<< HEAD
+  const { user } = useAuthSession();
+  useSyncBalances(true);
+=======
   const { user, loading } = useAuthSession();
   // useSyncBalances(true);
+>>>>>>> main
 
   return (
     <section className="hidden lg:flex justify-between items-center w-full h-[15%] p-4 pb-0">
       <div className={className}>{children}</div>
-      <div className="rounded-sm border-black border flex items-center justify-end gap-5 py-1 px-3 ">
-        <span className="text-sm max-w-20 font-semibold tracking-widest">
+      <div className=" border-black border flex items-center justify-end gap-5 py-1 px-3">
+        <span className="text-md max-w-20 font-semibold tracking-widest">
           {user?.name}
         </span>
-        {!user ? (
-          <Skeleton
-            variant="circular"
-            width={20}
-            height={20}
-            animation="wave"
-            sx={{ backgroundColor: "lightgray" }}
-          />
-        ) : (
-          <img
-            src={user?.avatar as string}
-            alt=""
-            className="w-10 h-10 rounded-full object-cover"
-          />
-        )}
+        <img
+          src={user?.avatar as string}
+          alt=""
+          className="w-10 h-10 rounded-full object-cover"
+        />
       </div>
     </section>
   );
