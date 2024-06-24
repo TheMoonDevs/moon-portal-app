@@ -31,6 +31,8 @@ model User {
   workData       Json?
   personalData   Json?
   payData   Json?
+  thirdPartyData Json?
+  slackId        String?
 }
 
 model Candidate {
@@ -201,6 +203,7 @@ model FileUpload {
   fileName    String?
   mimeType    String?
   fileUrl     String?
+  folderName  String?
   fileSize    Int?
   userInfo    Json?
   createdAt   DateTime      @default(now())

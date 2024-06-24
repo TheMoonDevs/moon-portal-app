@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
         avatar,
         timezone,
         password: passcode,
-        vertical: "DEV",
+        vertical: userVertical,
         workData: {
           joining: new Date(),
           workHours: "",
@@ -91,8 +91,9 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const username = searchParams.get("username");
+  const password = searchParams.get("password");
 
-  if (!username) {
+  if (!username || !password) {
     return NextResponse.json(
       { message: "Username is required" },
       { status: 400 }
@@ -103,6 +104,7 @@ export async function GET(request: NextRequest) {
     const user = await prisma.user.findFirst({
       where: {
         username: username,
+        password,
       },
     });
 
