@@ -10,7 +10,8 @@ import {
 } from "@mui/material";
 import DatePicker from "../Members/DatePicker";
 import { Button } from "@/components/elements/Button";
-import { Textarea } from "@mantine/core";
+import { Input } from "@/components/elements/Input";
+
 
 export const Header: React.FC = () => (
   <div className="flex justify-center items-center space-x-4 md:space-x-6">
@@ -87,7 +88,7 @@ export const TitleInput: React.FC<TitleInputProps> = ({ value, onChange, error }
     >
       {error ? "*Title is Required" : "Title"}
     </span>
-    <TextField
+    <Input
       id="title"
       name="title"
       placeholder="Add Title"
@@ -116,7 +117,7 @@ export const DetailsInput: React.FC<DetailsInputProps> = ({
     >
       Details
     </label>
-    <Textarea
+    <Input
       id="details"
       name="details"
       placeholder="Add Details"
@@ -143,7 +144,7 @@ export const LocationInput: React.FC<LocationInputProps> = ({ value, onChange })
       Location
     </label>
 
-    <TextField
+    <Input
       id="location"
       name="location"
       placeholder="Add Location"
