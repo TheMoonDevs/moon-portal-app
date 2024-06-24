@@ -216,3 +216,10 @@ h2 {
 .overflow-y-auto::-webkit-scrollbar {
   width: 8px;
 }
+
+
+  /* This CSS removes the default clock icon from the time input */
+  input[type="time"]::-webkit-calendar-picker-indicator {
+    display: none;
+    -webkit-appearance: none;
+  }
