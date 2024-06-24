@@ -23,18 +23,18 @@ interface UserData {
   };
 }
 export const HeroSection = () => {
-  const { loading, setLoading } = useAsyncState();
   const router = useRouter();
   const dispatch = useAppDispatch();
   const [isCurrencyModalOpen, setIsCurrencyModalOpen] =
-  useState<boolean>(false);
+    useState<boolean>(false);
 
-  const { signInWithSocial } = useAuthSession();
+  const { signInWithSocial, authStatus, user, loading } = useAuthSession();
+
   const { exchange, multiplicationFactor } = useSyncBalances();
 
   const currency = useAppSelector((state) => state.balances.selectedCurrency);
   return (
-    <section className="overflow-hidden mt-28">
+    <section className="overflow-hidden mt-28 text-white">
       <div className=" flex flex-col items-center justify-center">
         <HeroText />
         <button
@@ -43,19 +43,25 @@ export const HeroSection = () => {
           disabled={loading}
         >
           {loading ? (
-            <CircularProgress size={20} color="inherit" />
+            <CircularProgress size={30} color="inherit" />
           ) : (
             <Image src="/logo/google.png" alt="" width={30} height={30} />
           )}
           <span>Login with Google</span>
         </button>
         <div className="w-full flex items-center justify-end mt-14">
-          <div className="bg-black border border-1 border-amber-300 text-amber-300 w-fit font-black text-sm p-2 cursor-pointer hover:bg-amber-300 hover:text-black" onClick={() => setIsCurrencyModalOpen(true)}>
+          <div
+            className="bg-black border border-1 border-amber-300 text-amber-300 w-fit font-black text-sm p-2 cursor-pointer hover:bg-amber-300 hover:text-black"
+            onClick={() => setIsCurrencyModalOpen(true)}
+          >
             1 TMD === {multiplicationFactor} {currency}
           </div>
         </div>
       </div>
-      <CurrencyModal isOpen={isCurrencyModalOpen} onClose={() => setIsCurrencyModalOpen(false)}/>
+      <CurrencyModal
+        isOpen={isCurrencyModalOpen}
+        onClose={() => setIsCurrencyModalOpen(false)}
+      />
       <Backdrop />
     </section>
   );

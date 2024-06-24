@@ -1,3 +1,4 @@
+import { USERVERTICAL } from "@prisma/client";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface FormState {
@@ -33,7 +34,7 @@ const initialState: FormState = {
   address: "",
   passcode: "",
   avatar: "",
-  userVertical: "",
+  userVertical: USERVERTICAL.DEV,
   userRole: "",
   timezone: "",
   countryCode: "",

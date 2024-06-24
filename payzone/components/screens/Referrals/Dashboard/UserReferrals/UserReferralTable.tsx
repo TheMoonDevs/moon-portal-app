@@ -39,6 +39,7 @@ export const UserReferralTable = ({
           {copied ? "Copied!" : "Copy Link & Share"}
         </button>
       </div>
+      <div className='max-md:overflow-x-scroll'>
       <table className="w-full mt-5">
         <thead className="border-b border-midGrey w-full">
           <tr className=" w-full bg-neutral-100 rounded-lg divide-x-2">
@@ -77,6 +78,7 @@ export const UserReferralTable = ({
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 };
