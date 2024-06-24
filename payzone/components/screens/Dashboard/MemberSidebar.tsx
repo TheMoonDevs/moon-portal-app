@@ -79,7 +79,11 @@ export const MemberSidebar = () => {
       </Drawer>
 
       <div
+<<<<<<< HEAD
         className="text-white hidden lg:block mb-4 text-lg tracking-widest cursor-pointer"
+=======
+        className="text-white mb-4 text-lg tracking-widest cursor-pointer flex items-center gap-2 max-lg:hidden px-2"
+>>>>>>> main
         onClick={signOut}
       >
         Logout

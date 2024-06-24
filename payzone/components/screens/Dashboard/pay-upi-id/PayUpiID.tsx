@@ -18,7 +18,6 @@ import { ExchangeConfigData } from "@/prisma/extraDbTypes";
 import Toast, { toastSeverity } from "../../Referrals/Dashboard/Toast";
 import { useSyncBalances } from "@/utils/hooks/useSyncBalances";
 import { useAppSelector } from "@/utils/redux/store";
-import CurrencyModal from "@/components/global/CurrencyModal";
 
 export const PayUpiID = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -129,10 +128,14 @@ export const PayUpiID = () => {
   };
 
   return (
+<<<<<<< HEAD
     <section className="h-screen w-full p-4 flex flex-col gap-3">
       <div className="w-fit h-fit bg-black text-white text-sm font-bold p-2 items-center">
         <span>Employees -- UPI Ids</span>
       </div>
+=======
+    <section className="h-screen w-full flex flex-col gap-3 max-lg:h-full">
+>>>>>>> main
       <p className="text-thin text-sm text-midGrey">
         copy upi-id and pay in G-Pay/PhonePe/Paytm
       </p>

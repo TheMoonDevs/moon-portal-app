@@ -74,7 +74,11 @@ export const ReferralSidebar = () => {
       </Drawer>
 
       <div
+<<<<<<< HEAD
         className="text-white lg:block mb-4 text-lg tracking-widest cursor-pointer"
+=======
+        className="text-white mb-4 text-lg tracking-widest cursor-pointer flex items-center gap-2 max-lg:hidden px-2"
+>>>>>>> main
         onClick={signOut}
       >
         Logout

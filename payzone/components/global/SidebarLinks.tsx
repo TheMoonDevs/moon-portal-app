@@ -67,7 +67,11 @@ export const SidebarLinks = ({
           </span>
         </List>
       ) : (
+<<<<<<< HEAD
         <div className="hidden mt-14 lg:flex flex-col gap-7">
+=======
+        <div className="w-full mt-14 lg:flex flex-col gap-4 max-lg:hidden">
+>>>>>>> main
           {links.map((link: any) => (
             <Link
               href={link.href}
