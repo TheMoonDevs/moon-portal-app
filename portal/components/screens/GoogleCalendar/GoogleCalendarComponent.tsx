@@ -1,23 +1,33 @@
-import React, { ChangeEvent } from "react";
+import React, { ChangeEvent, useRef } from "react";
 import Image from "next/image";
-import { Checkbox, MenuItem, Select, SelectChangeEvent, TextField, Tooltip } from "@mui/material";
+import {
+  Checkbox,
+  MenuItem,
+  Select,
+  SelectChangeEvent,
+  Tooltip,
+} from "@mui/material";
+import { Input } from "@/components/elements/Input";
+import { Textarea } from "@/components/elements/Textarea";
+import DatePicker from "../Members/DatePicker";
+import { Button } from "@/components/elements/Button";
 
 export const Header: React.FC = () => (
   <div className="flex justify-center items-center space-x-4 md:space-x-6">
     <Image
-      src="/logo/logo_white.png"
+      src="/logo/logo.png"
       alt="Moon Portal Logo"
-      width={40}
-      height={40}
-      className="w-12 h-12 rounded pointer-events-none"
+      width={80}
+      height={80}
+      className="w-14 h-14  rounded pointer-events-none"
     />
-    <div className="text-white text-2xl font-normal">X</div>
+    <div className="text-black text-2xl font-normal">X</div>
     <Image
       src="/icons/google-calendar.svg"
       alt="Google Calendar Icon"
-      width={40}
-      height={40}
-      className="w-12 h-12 rounded pointer-events-none"
+      width={80}
+      height={80}
+      className="w-14 h-14 rounded pointer-events-none"
     />
   </div>
 );
@@ -39,7 +49,7 @@ export const AllDayCheckbox: React.FC<AllDayCheckboxProps> = ({
         checked={checked}
         onChange={onChange}
         sx={{
-          color: "#fff",
+          color: "#ddd",
           "&.Mui-checked": {
             color: "#0096FF",
           },
@@ -51,7 +61,7 @@ export const AllDayCheckbox: React.FC<AllDayCheckboxProps> = ({
       />
     </Tooltip>
     <label
-      className="text-sm font-medium text-white leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+      className="text-sm font-medium text-black leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
       htmlFor="allDay"
     >
       All Day
@@ -72,26 +82,24 @@ export const TitleInput: React.FC<TitleInputProps> = ({
   onChange,
   error,
 }) => (
-  <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 mb-4">
-    <div className="w-full">
-      <span
-        className={`text-sm font-medium leading-none mt-2 peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${
-          error ? "text-red-500" : "text-white"
-        }`}
-        style={{ padding: "0" }}
-      >
-        {error ? "*Title is Required" : "Title"}
-      </span>
-      <input
-        id="title"
-        name="title"
-        placeholder="Add Title"
-        type="text"
-        className="flex h-10 w-full bg-gray-100 font-bold text-gray-700 shadow-input rounded-md px-3 py-2 text-sm placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-600 disabled:cursor-not-allowed disabled:opacity-50 transition duration-400"
-        value={value}
-        onChange={onChange}
-      />
-    </div>
+  <div className="mb-4">
+    <span
+      className={`text-sm font-medium leading-none mt-2 peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${
+        error ? "text-red-500" : "text-black"
+      }`}
+      style={{ padding: "0" }}
+    >
+      {error ? "*Title is Required" : "Title"}
+    </span>
+    <Input
+      id="title"
+      name="title"
+      placeholder="Add Title"
+      type="text"
+      value={value}
+      onChange={onChange}
+      className="w-full"
+    />
   </div>
 );
 
@@ -105,20 +113,20 @@ export const DetailsInput: React.FC<DetailsInputProps> = ({
   value,
   onChange,
 }) => (
-  <div className="mb-4">
+  <div className="mb-4 w-full">
     <label
       htmlFor="details"
-      className="text-sm font-medium mt-1 text-white leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+      className="text-sm font-medium mt-1 text-black leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
     >
       Details
     </label>
-    <textarea
+    <Textarea
       id="details"
-      className="flex min-h-[60px] w-full rounded-md border border-input bg-gray-100 text-gray-700 font-bold px-3 py-2 text-sm shadow-sm placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
       name="details"
       placeholder="Add Details"
       value={value}
       onChange={onChange}
+      className="w-full"
     />
   </div>
 );
@@ -137,84 +145,28 @@ export const LocationInput: React.FC<LocationInputProps> = ({
   <div className="mb-4">
     <label
       htmlFor="location"
-      className="text-sm font-medium mt-1 text-white leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+      className="text-sm font-medium mt-1  leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
     >
       Location
     </label>
-    <input
+
+    <Input
       id="location"
       name="location"
       placeholder="Add Location"
       type="text"
-      className="flex h-10 w-full bg-gray-100 font-bold text-gray-700 shadow-input rounded-md px-3 py-2 text-sm placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-600 disabled:cursor-not-allowed disabled:opacity-50 transition duration-400"
       value={value}
       onChange={onChange}
-    />
-  </div>
-);
-
-//! DateInput 📅
-
-interface DateInputProps {
-  label: string;
-  value: string;
-  onChange: (e: ChangeEvent<HTMLInputElement>) => void;
-  error?: boolean;
-}
-
-export const DateInput: React.FC<DateInputProps> = ({
-  label,
-  value,
-  onChange,
-  error = false,
-}) => (
-  <div className="flex flex-col mb-4">
-    <label
-      className={`text-sm font-medium mt-1 leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${
-        error ? "text-red-500" : "text-white"
-      }`}
-      htmlFor="date-input"
-    >
-      {error ? `*${label} is Required` : label}
-    </label>
-    <TextField
-      id="date-input"
-      type="date"
-      value={value}
-      onChange={onChange}
-      InputLabelProps={{
-        shrink: true,
-      }}
-      placeholder="Select date"
-      onFocus={(e) => {
-        if (!value) {
-          e.target.value = new Date().toISOString().split("T")[0];
-        }
-      }}
-      InputProps={{
-        style: {
-          backgroundColor: "white",
-          color: "#4A5568",
-          fontWeight: "bold",
-          width: "100%",
-          height: "40px",
-          borderRadius: "4px",
-          fontSize: "14px",
-        },
-      }}
-      variant="outlined"
-      className="mt-2"
     />
   </div>
 );
 
 //! RepeatOptions 🔄
-
 interface RepeatOptionsProps {
   repeatValue: string;
   onRepeatChange: (event: SelectChangeEvent<string>) => void;
   endDateValue: string;
-  onEndDateChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onEndDateChange: (selectedDate: string) => void;
   startDate: string | null; // Assume startDate is passed as a prop
 }
 
@@ -233,13 +185,12 @@ export const RepeatOptions: React.FC<RepeatOptionsProps> = ({
 }) => {
   const startDateValue = startDate ? new Date(startDate) : today;
 
-
   return (
-    <div className="mb-4">
-      <div className="flex justify-between w-full items-center gap-3">
+    <div className="mb-4 w-full">
+      <div className="flex flex-col md:flex-row justify-between w-full items-center gap-3">
         <div className="w-full">
           <label
-            className="text-sm font-medium text-white leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            className="text-sm font-medium text-black leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
             htmlFor="repeat"
           >
             Repeat
@@ -249,11 +200,11 @@ export const RepeatOptions: React.FC<RepeatOptionsProps> = ({
             onChange={onRepeatChange}
             displayEmpty
             inputProps={{ "aria-label": "Without label" }}
+            className="w-full"
             style={{
               backgroundColor: "white",
               color: "#4A5568",
-              fontWeight: "bold",
-              width: "100%",
+              fontWeight: "500",
               height: "40px",
               borderRadius: "4px",
               fontSize: "14px",
@@ -293,39 +244,16 @@ export const RepeatOptions: React.FC<RepeatOptionsProps> = ({
         </div>
 
         {repeatValue !== "no-repeat" && (
-          <div className="w-1/2">
+          <div className="w-full">
             <label
-              className="text-sm font-medium mt-1 text-white leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              className="text-sm font-medium mt-1 text-black leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
               htmlFor="endRepeat"
             >
               End Repeat
             </label>
-            <TextField
-              id="end-date-picker"
-              type="date"
-              value={endDateValue}
-              onChange={onEndDateChange}
-              InputLabelProps={{
-                shrink: true,
-              }}
-              placeholder="Select date"
-              onFocus={(e) => {
-                if (!endDateValue) {
-                  e.target.value = new Date().toISOString().split("T")[0];
-                }
-              }}
-              InputProps={{
-                style: {
-                  backgroundColor: "white",
-                  color: "#4A5568",
-                  fontWeight: "bold",
-                  width: "100%",
-                  height: "40px",
-                  borderRadius: "4px",
-                  fontSize: "14px",
-                },
-              }}
-              variant="outlined"
+            <DatePicker
+              onDateChange={onEndDateChange}
+              placeholder="Select end date"
             />
           </div>
         )}
@@ -334,67 +262,73 @@ export const RepeatOptions: React.FC<RepeatOptionsProps> = ({
   );
 };
 
-//! TimeInput ⏰
-
+//! TimeInputs ⏰
 interface TimeInputsProps {
-  startTime: string;
+  startTime?: string;
   onStartTimeChange: (value: string) => void;
-  endTime: string;
+  endTime?: string;
   onEndTimeChange: (value: string) => void;
 }
 
 export const TimeInputs: React.FC<TimeInputsProps> = ({
-  startTime = "11:00", 
+  startTime = "11:00",
   onStartTimeChange,
-  endTime = "12:00", 
+  endTime = "12:00",
   onEndTimeChange,
-}) => (
-  <div className="flex justify-between gap-4">
-    <div className="w-1/2">
-      <label
-        htmlFor="start-time"
-        className="text-sm font-medium mt-1 text-white leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-      >
-        Start Time
-      </label>
-      <input
-        id="start-time"
-        name="start-time"
-        type="time"
-        value={startTime}
-        onChange={(e) => onStartTimeChange(e.target.value)}
-        className="block w-full h-10 bg-gray-100 font-bold text-gray-700 shadow-sm rounded-md px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-neutral-400 dark:focus:ring-neutral-600 disabled:cursor-not-allowed disabled:opacity-50"
-      />
-    </div>
-    <div className="w-1/2">
-      <label
-        htmlFor="end-time"
-        className="text-sm font-medium mt-1 text-white leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-      >
-        End Time
-      </label>
-      <input
-        id="end-time"
-        name="end-time"
-        type="time"
-        value={endTime}
-        onChange={(e) => onEndTimeChange(e.target.value)}
-        className="block w-full h-10 bg-gray-100 font-bold text-gray-700 shadow-sm rounded-md px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-neutral-400 dark:focus:ring-neutral-600 disabled:cursor-not-allowed disabled:opacity-50"
-      />
-    </div>
-  </div>
-);
+}) => {
+  const startTimeRef = useRef<HTMLInputElement>(null);
+  const endTimeRef = useRef<HTMLInputElement>(null);
 
+  return (
+    <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 w-full">
+      <div className="w-full md:w-1/2">
+        <label
+          htmlFor="start-time"
+          className="text-sm font-medium  text-black leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+        >
+          Start Time
+        </label>
+        <input
+          id="start-time"
+          name="start-time"
+          type="time"
+          value={startTime}
+          ref={startTimeRef}
+          onClick={() =>
+            startTimeRef.current && startTimeRef.current.showPicker()
+          }
+          onChange={(e) => onStartTimeChange(e.target.value)}
+          className="flex h-10 w-full cursor-pointer rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 no-clock-icon"
+        />
+      </div>
+      <div className="w-full md:w-1/2">
+        <label
+          htmlFor="end-time"
+          className="text-sm font-medium mt-1 text-black leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+        >
+          End Time
+        </label>
+        <input
+          id="end-time"
+          name="end-time"
+          type="time"
+          value={endTime}
+          ref={endTimeRef}
+          onClick={() => endTimeRef.current && endTimeRef.current.showPicker()}
+          onChange={(e) => onEndTimeChange(e.target.value)}
+          className="flex h-10 w-full cursor-pointer  rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 no-clock-icon"
+        />
+      </div>
+    </div>
+  );
+};
 
 //! SubmitButton 🚀
 
 export const SubmitButton = () => (
   <Tooltip title={"Generate Google Calendar link"} arrow>
-    <button
-      className="cool-button bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 mt-3 relative block w-full text-white rounded-md h-12 font-semibold shadow-lg transition duration-300 ease-in-out hover:bg-gradient-to-r hover:from-blue-700 hover:via-blue-600 hover:to-blue-800"
-      type="submit"
-    >
-      Generate Link &rarr;
-    </button>
+    <span>
+      <Button type="submit">Generate Link</Button>
+    </span>
   </Tooltip>
 );
