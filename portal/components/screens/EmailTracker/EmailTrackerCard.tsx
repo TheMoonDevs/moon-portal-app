@@ -281,7 +281,7 @@ const EmailTrackerCard: React.FC = () => {
                     <TableCell>
                       {loading ? (
                         <div className="flex justify-center">
-                          <CircularProgress />
+                          <CircularProgress size={"1rem"} />
                         </div>
                       ) : <div className="flex">
 
@@ -341,7 +341,7 @@ const EmailTrackerCard: React.FC = () => {
         <div className="flex justify-end mt-5 space-x-3">
           <Button
             variant="contained"
-            color="primary"
+            color="inherit"
             startIcon={<span className="material-icons text-black">
               refresh
             </span>}
