@@ -1,5 +1,5 @@
 import { prisma } from "@/prisma/prisma";
-import { s3FileUploadSdk } from "@/utils/services/fileUploadSdk";
+import { s3FileUploadSdk } from "@/utils/services/s3FileUploadSdk";
 import { File } from "buffer";
 import { NextRequest, NextResponse } from "next/server";
 

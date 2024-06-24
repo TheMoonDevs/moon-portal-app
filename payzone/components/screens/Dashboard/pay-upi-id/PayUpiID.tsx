@@ -69,41 +69,6 @@ export const PayUpiID = () => {
       });
   };
 
-  const handleUpdateExchangeRate = () => {
-    setExchangeRateUpdating(true);
-
-    const exchangeConfigData: ExchangeConfigData = {
-      liquidityINR,
-      liquidityTMDCredits,
-      creditsRateINR,
-    };
-
-    MyServerApi.updateExchangeConfigData(exchangeConfigData)
-      .then((data) => {
-        console.log("Update successful:", data);
-        setToast({
-          message: "Exchange rate updated successfully",
-          severity: "success",
-          open: true,
-        });
-        setExchangeRateUpdating(false);
-        setLiquidityINR(null);
-        setLiquidityTMDCredits(null);
-        setCreditsRateINR(null);
-      })
-      .catch((error) => {
-        console.error("Error updating data:", error);
-        setToast({
-          message: "Error updating exchange rate",
-          severity: "error",
-          open: true,
-        });
-        setExchangeRateUpdating(false);
-        setLiquidityINR(null);
-        setLiquidityTMDCredits(null);
-        setCreditsRateINR(null);
-      });
-  };
 
   useEffect(() => {
     MyServerApi.getAll(
