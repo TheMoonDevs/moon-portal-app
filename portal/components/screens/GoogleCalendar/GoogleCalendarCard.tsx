@@ -1,9 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
 import { format } from "date-fns";
-
 import {
   validateForm,
   buildGoogleCalendarURL,
@@ -14,14 +12,12 @@ import {
 
 import {
   useHandleInputChange,
-  useHandleDateChange,
   useHandleTimeChange,
   useHandleSelectChange,
   useToggleAllDay,
 } from "./GoogleCalendarHandlers";
 import {
   AllDayCheckbox,
-  DateInput,
   DetailsInput,
   Header,
   LocationInput,
@@ -30,6 +26,7 @@ import {
   TimeInputs,
   TitleInput,
 } from "./GoogleCalendarComponent";
+import DatePicker from "../Members/DatePicker";
 
 const GoogleCalendarCard: React.FC = () => {
   const [formData, setFormData] = useState<FormDataType>({
@@ -50,10 +47,7 @@ const GoogleCalendarCard: React.FC = () => {
     startDate: undefined as boolean | undefined,
   });
 
-  const today = new Date();
-
   const handleInputChange = useHandleInputChange(setFormData);
-  const handleDateChange = useHandleDateChange(setFormData, today);
   const handleTimeChange = useHandleTimeChange(setFormData);
   const handleSelectChange = useHandleSelectChange(setFormData);
   const toggleAllDay = useToggleAllDay(setFormData);
@@ -107,64 +101,98 @@ const GoogleCalendarCard: React.FC = () => {
     // Open the Google Calendar event in a new tab 🌐
     window.open(googleCalendarLink, "_blank");
   };
+
+  const handleDateChange = (selectedDate: string) => {
+    setFormData({
+      ...formData,
+      startDate: selectedDate ? new Date(selectedDate) : null,
+    });
+  };
+
   return (
-    <div className="max-w-md w-full mx-auto rounded-none md:rounded-2xl mb-5 p-4 md:p-8 shadow-input bg-black/90">
+    <div className="max-w-[60rem] mt-10 w-full mx-auto rounded-none md:rounded-2xl mb-5 p-4 md:p-8 shadow-input border border-gray-400">
       <Header />
-      <h2 className="font-bold mt-3 text-center text-xl text-white">
+      <h2 className="font-normal mt-3 text-center text-3xl text-gray-900">
         Invite Link Generator
       </h2>
       <div className="bg-gradient-to-r from-transparent via-neutral-300 dark:via-neutral-700 to-transparent my-3 h-[1px] w-full" />
-      <form className="my-3" onSubmit={handleSubmit}>
-        <AllDayCheckbox checked={formData.allDay} onChange={toggleAllDay} />
-        <TitleInput
-          value={formData.title}
-          onChange={handleInputChange}
-          error={formValidations.title ?? false}
-        />
-        <DetailsInput value={formData.details} onChange={handleInputChange} />
-        <LocationInput
-          value={formData.location || ""}
-          onChange={handleInputChange}
-        />
-        <DateInput
-          label="Start Date"
-          value={
-            formData.startDate ? format(formData.startDate, "yyyy-MM-dd") : ""
-          }
-          onChange={(e) =>
-            handleDateChange("startDate")(
-              e.target.value ? new Date(e.target.value) : null
-            )
-          }
-          error={formValidations.startDate}
-        />
-        <RepeatOptions
-          repeatValue={formData.repeat}
-          onRepeatChange={handleSelectChange}
-          endDateValue={
-            formData.endDate ? format(formData.endDate, "yyyy-MM-dd") : ""
-          }
-          onEndDateChange={(e) =>
-            handleDateChange("endDate")(
-              e.target.value ? new Date(e.target.value) : null
-            )
-          }
-          startDate={
-            formData.startDate ? format(formData.startDate, "yyyy-MM-dd") : null
-          }
-        />
-        {!formData.allDay && (
-          <TimeInputs
-            startTime={formData.startTime}
-            onStartTimeChange={handleTimeChange("startTime")}
-            endTime={formData.endTime}
-            onEndTimeChange={handleTimeChange("endTime")}
-          />
-        )}
-        <SubmitButton />
-        <div className="bg-gradient-to-r from-transparent via-neutral-300 dark:via-neutral-700 to-transparent h-[1px] w-full" />
+      <form className="my-3 " onSubmit={handleSubmit}>
+        <div className="flex justify-end items-center mt-4">
+          <AllDayCheckbox checked={formData.allDay} onChange={toggleAllDay} />
+        </div>
+        <div className="flex flex-col md:flex-row md:space-x-4">
+          <div className="w-full md:w-1/2 space-y-4">
+            <TitleInput
+              value={formData.title}
+              onChange={handleInputChange}
+              error={formValidations.title ?? false}
+            />
+            <LocationInput
+              value={formData.location || ""}
+              onChange={handleInputChange}
+            />
+            <DetailsInput
+              value={formData.details}
+              onChange={handleInputChange}
+            />
+          </div>
+          <div className="w-full md:w-1/2 space-y-4">
+            {!formData.allDay && (
+              <div className="flex space-x-4">
+                <TimeInputs
+                  startTime={formData.startTime}
+                  onStartTimeChange={handleTimeChange("startTime")}
+                  endTime={formData.endTime}
+                  onEndTimeChange={handleTimeChange("endTime")}
+                />
+              </div>
+            )}
+
+            <div className="mb-1">
+              <span
+                className={`text-sm font-medium leading-none mt-2 peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${
+                  formValidations.startDate ? "text-red-500" : "text-black"
+                }`}
+                style={{ padding: "0" }}
+              >
+                {formValidations.startDate
+                  ? "*Start Date is Required"
+                  : "Start Date"}
+              </span>
+              <DatePicker
+                placeholder="Select start date"
+                onDateChange={handleDateChange}
+              />
+            </div>
+
+            <RepeatOptions
+              repeatValue={formData.repeat}
+              onRepeatChange={handleSelectChange}
+              endDateValue={
+                formData.endDate
+                  ? format(new Date(formData.endDate), "yyyy-MM-dd")
+                  : ""
+              }
+              onEndDateChange={(selectedDate) => {
+                setFormData({
+                  ...formData,
+                  endDate: selectedDate ? new Date(selectedDate) : null,
+                });
+              }}
+              startDate={
+                formData.startDate
+                  ? format(new Date(formData.startDate), "yyyy-MM-dd")
+                  : null
+              }
+            />
+          </div>
+        </div>
+        <div className="flex justify-end mt-6">
+          <SubmitButton />
+        </div>
       </form>
     </div>
   );
 };
+
 export default GoogleCalendarCard;
