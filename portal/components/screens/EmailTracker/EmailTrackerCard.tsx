@@ -21,11 +21,6 @@ import {
   DialogTitle,
   Zoom,
 } from "@mui/material";
-import EditIcon from "@mui/icons-material/Edit";
-import CheckIcon from "@mui/icons-material/Check";
-import CloseIcon from "@mui/icons-material/Close";
-import AddIcon from "@mui/icons-material/Add";
-import RefreshIcon from "@mui/icons-material/Refresh";
 
 import formatDistanceToNow from "date-fns/formatDistanceToNow";
 import parseISO from "date-fns/parseISO";
@@ -121,6 +116,7 @@ const EmailTrackerCard: React.FC = () => {
   const handleAddNewMail = async () => {
     try {
       // Validate fields
+      setLoading(true)
       if (!newMailId || !newMailMaxCount) {
         setError("* Please fill out all required fields. 😥");
         return;
@@ -133,8 +129,8 @@ const EmailTrackerCard: React.FC = () => {
       };
       console.log("Sending payload for add new mail:", payload);
 
-      const response = await fetch("/api/email-tracker/update-settings", {
-        method: "PATCH",
+      const response = await fetch("/api/email-tracker/manage-mails", {
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
@@ -153,6 +149,41 @@ const EmailTrackerCard: React.FC = () => {
     } catch (error: any) {
       console.error("Error adding new mail:", error);
       setError(error.message || "Failed to add new mail");
+    } finally {
+      setLoading(false)
+    }
+  };
+
+  const handleDeleteMail = async (mailID: string) => {
+    try {
+      setLoading(true)
+      if (!mailID) {
+        setError("Couldn't find the mail ID.");
+        return;
+      }
+
+      const payload = {
+        mailId: mailID,
+      };
+
+      const response = await fetch("/api/email-tracker/manage-mails", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete mail");
+      }
+
+      await fetchData();
+    } catch (error: any) {
+      console.error("Error deleting mail:", error);
+      setError(error.message || "Failed to delete mail");
+    } finally {
+      setLoading(false)
     }
   };
 
@@ -165,7 +196,6 @@ const EmailTrackerCard: React.FC = () => {
     setError(null);
   };
 
-
   const formatLastMailSentAt = (dateString: string | undefined) => {
     if (!dateString) return "Never";
     const date = parseISO(dateString);
@@ -173,55 +203,50 @@ const EmailTrackerCard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen  p-8">
+    <div className="lg:px-8">
       <div className="max-w-5xl mx-auto bg-white p-6 rounded shadow-lg shadow-gray-300">
         <Typography variant="h4" className="mb-4">
           Email Tracker
         </Typography>
-
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
             <strong>Error:</strong> {error}
           </div>
         )}
 
-        {loading ? (
-          <div className="flex justify-center">
-            <CircularProgress />
-          </div>
-        ) : (
+        {(
           <TableContainer component={Paper} className="shadow-md mt-4">
             <Table>
-              <TableHead className="bg-gray-200">
+              <TableHead className="bg-gray-200 whitespace-nowrap">
                 <TableRow>
-                  <TableCell>ID</TableCell>
                   <TableCell>Status</TableCell>
-                  <TableCell>Fallback Mail ID</TableCell>
                   <TableCell>Mail ID</TableCell>
-                  <TableCell>Mail Current Count</TableCell>
-                  <TableCell>Mail Max Count</TableCell>
-                  <TableCell>Last Mail Sent At</TableCell>
+                  <TableCell>Fallback Mail ID</TableCell>
+                  <TableCell>Sent Today</TableCell>
+                  <TableCell>Max Count</TableCell>
+                  <TableCell>Last Sent At</TableCell>
                   <TableCell>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {data.map((log, index) => (
+                {(!data || data.length === 0) ? loading ? (
+                  <TableRow className="animate-pulse"><TableCell colSpan={7}>Loading...</TableCell></TableRow>
+                ) : (<TableRow className="animate-pulse"><TableCell colSpan={7}>No Mail Found</TableCell></TableRow>) : data.map((log, index) => (
                   <TableRow
                     key={index}
                     className="hover:bg-gray-50 transition duration-200"
                   >
-                    <TableCell>{log.mailId}</TableCell>
                     <TableCell>
                       <span
-                        className={`rounded px-2 py-1 text-white ${
-                          log.status === "Sendable"
-                            ? "bg-green-500"
-                            : "bg-red-500"
-                        }`}
+                        className={`rounded px-2 py-1 text-white ${log.status === "Sendable"
+                          ? "bg-green-500"
+                          : "bg-red-500"
+                          }`}
                       >
                         {log.status}
                       </span>
                     </TableCell>
+                    <TableCell>{log.mailId}</TableCell>
                     <TableCell>
                       {editIndex === index ? (
                         <TextField
@@ -235,7 +260,6 @@ const EmailTrackerCard: React.FC = () => {
                         log.fallbackMailId || "-"
                       )}
                     </TableCell>
-                    <TableCell>{log.mailId}</TableCell>
                     <TableCell>{log.mailCurrentCount}</TableCell>
                     <TableCell>
                       {editIndex === index ? (
@@ -255,35 +279,58 @@ const EmailTrackerCard: React.FC = () => {
                       {formatLastMailSentAt(log.lastMailSentAt)}
                     </TableCell>
                     <TableCell>
-                      {editIndex === index ? (
-                        <div className="flex space-x-2">
-                          <Tooltip title="Save" TransitionComponent={Zoom}>
-                            <IconButton
-                              color="primary"
-                              onClick={() => handleEdit(index, log)}
-                            >
-                              <CheckIcon />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Cancel" TransitionComponent={Zoom}>
-                            <IconButton
-                              color="error"
-                              onClick={handleCancelEdit}
-                            >
-                              <CloseIcon />
-                            </IconButton>
-                          </Tooltip>
+                      {loading ? (
+                        <div className="flex justify-center">
+                          <CircularProgress />
                         </div>
-                      ) : (
-                        <Tooltip title="Edit" TransitionComponent={Zoom}>
+                      ) : <div className="flex">
+
+                        {editIndex === index ? (
+                          <div className="flex">
+                            <Tooltip title="Save" TransitionComponent={Zoom}>
+                              <IconButton
+                                color="primary"
+                                onClick={() => handleEdit(index, log)}
+                              >
+                                <span className="material-icons text-green-600">
+                                  check
+                                </span>
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Cancel" TransitionComponent={Zoom}>
+                              <IconButton
+                                color="error"
+                                onClick={handleCancelEdit}
+                              >
+                                <span className="material-icons">
+                                  close
+                                </span>
+                              </IconButton>
+                            </Tooltip>
+                          </div>
+                        ) : (
+                          <Tooltip title="Edit" TransitionComponent={Zoom}>
+                            <IconButton
+                              color="default"
+                              onClick={() => handleSetEdit(index, log)}
+                            >
+                              <span className="material-icons text-yellow-500">
+                                edit
+                              </span>
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                        <Tooltip title="Delete" TransitionComponent={Zoom}>
                           <IconButton
                             color="default"
-                            onClick={() => handleSetEdit(index, log)}
+                            onClick={() => handleDeleteMail(log.mailId)}
                           >
-                            <EditIcon />
+                            <span className="material-icons text-red-500">
+                              delete
+                            </span>
                           </IconButton>
                         </Tooltip>
-                      )}
+                      </div>}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -295,7 +342,9 @@ const EmailTrackerCard: React.FC = () => {
           <Button
             variant="contained"
             color="primary"
-            startIcon={<RefreshIcon />}
+            startIcon={<span className="material-icons text-black">
+              refresh
+            </span>}
             onClick={fetchData}
           >
             Refresh Data
@@ -303,7 +352,9 @@ const EmailTrackerCard: React.FC = () => {
           <Button
             variant="contained"
             color="secondary"
-            startIcon={<AddIcon />}
+            startIcon={<span className="material-icons text-white">
+              add
+            </span>}
             onClick={() => setOpen(true)}
           >
             Add New Mail
@@ -346,10 +397,10 @@ const EmailTrackerCard: React.FC = () => {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleDialogClose} color="primary">
+          <Button onClick={handleDialogClose} color="warning">
             Cancel
           </Button>
-          <Button onClick={handleAddNewMail} color="primary">
+          <Button onClick={handleAddNewMail} color="success">
             Add
           </Button>
         </DialogActions>
