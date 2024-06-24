@@ -34,68 +34,46 @@ export async function PATCH(req: NextRequest) {
       where: { configId: "email-tracker" },
     });
 
-    let updatedEmailTracker: JsonObject[] = [];
-
-    // If existing configuration data is found
-    if (existingConfig && existingConfig.configData) {
-      const existingData = existingConfig.configData as JsonObject;
-      const emailTracker = (existingData.emailTracker as JsonObject[]) || [];
-
-      // Update or add the entry for the specific mailId
-      updatedEmailTracker = emailTracker.map((log: JsonObject) => {
-        if (log.mailId === mailId) {
-          // Reset count and status if it's a new day
-          if (log.id !== currentDate) {
-            log.mailCurrentCount = 0;
-            log.id = currentDate;
-            log.status = "Sendable"; // Reset status for a new day
-          }
-
-          // Update mailMaxCount and fallbackMailId if provided in the request
-          log.mailMaxCount = mailMaxCount ?? log.mailMaxCount;
-          log.fallbackMailId = fallbackMailId ?? log.fallbackMailId;
-
-          // Update status based on new mailMaxCount
-          const status =
-            (log.mailCurrentCount || 0) >= (log.mailMaxCount || 0)
-              ? "Exhausted"
-              : "Sendable";
-          log.status = status;
-
-          log.lastMailSentAt = new Date().toISOString();
-
-          return log;
-        }
-        return log;
+    if (!existingConfig || !existingConfig.configData) {
+      return new NextResponse(JSON.stringify({ error: "email-tracker config not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
       });
+    }
 
-      // If mailId does not exist in the configuration, add a new entry
-      if (!updatedEmailTracker.find((log) => log.mailId === mailId)) {
-        const status = mailMaxCount <= 0 ? "Exhausted" : "Sendable";
-        updatedEmailTracker.push({
-          id: currentDate,
-          status: status,
-          fallbackMailId: fallbackMailId,
-          mailId: mailId,
-          mailCurrentCount: 0,
-          mailMaxCount: mailMaxCount || 0,
-          lastMailSentAt: new Date().toISOString(),
-        });
+    const existingData = existingConfig.configData as JsonObject;
+    const emailTracker = (existingData.emailTracker as JsonObject[]) || [];
+
+    let updatedEmailTracker = emailTracker.map((log: JsonObject) => {
+      if (log.mailId === mailId) {
+        // Reset count and status if it's a new day
+        if (log.id !== currentDate) {
+          log.mailCurrentCount = 0;
+          log.id = currentDate;
+          log.status = "Sendable"; // Reset status for a new day
+        }
+
+        // Update mailMaxCount and fallbackMailId if provided in the request
+        log.mailMaxCount = mailMaxCount ?? log.mailMaxCount;
+        log.fallbackMailId = fallbackMailId ?? log.fallbackMailId;
+
+        // Update status based on new mailMaxCount
+        const status = (log.mailCurrentCount || 0) >= (log.mailMaxCount || 0) ? "Exhausted" : "Sendable";
+        log.status = status;
+
+        log.lastMailSentAt = new Date().toISOString();
+
+        return log;
       }
-    } else {
-      // If no existing configuration data, create a new entry
-      const status = mailMaxCount <= 0 ? "Exhausted" : "Sendable";
-      updatedEmailTracker = [
-        {
-          id: currentDate,
-          status: status,
-          fallbackMailId: fallbackMailId,
-          mailId: mailId,
-          mailCurrentCount: 0,
-          mailMaxCount: mailMaxCount || 0,
-          lastMailSentAt: new Date().toISOString(),
-        },
-      ];
+      return log;
+    });
+
+    // Ensure the mailId exists in the configuration
+    if (!updatedEmailTracker.find((log) => log.mailId === mailId)) {
+      return new NextResponse(JSON.stringify({ error: "Mail ID not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Upsert the updated email tracker data into the database
@@ -136,7 +114,6 @@ export async function PATCH(req: NextRequest) {
     });
   }
 }
-
 /*
   PATCH Endpoint Explanation:
 
@@ -164,10 +141,9 @@ export async function PATCH(req: NextRequest) {
 
     - If mailId does not exist in the configuration:
       Response:
-        Status: 200 OK
+        Status: 404 Not Found
         Body: {
-          status: "success",
-          data: { ... } // New email tracker entry
+          error: "Mail ID not found"
         }
 
   - If the email-tracker configuration data is not found:
