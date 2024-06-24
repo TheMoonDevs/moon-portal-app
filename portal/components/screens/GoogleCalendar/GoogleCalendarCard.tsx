@@ -110,18 +110,18 @@ const GoogleCalendarCard: React.FC = () => {
   };
 
   return (
-    <div className="max-w-[60rem] mt-10 w-full mx-auto rounded-none md:rounded-2xl mb-5 p-4 md:p-8 shadow-input border border-gray-400">
+    <div className="max-w-[90vw] md:max-w-[60vw] md:w-full mx-auto rounded-lg mb-5 p-4 md:p-8 shadow-input border border-gray-400">
       <Header />
-      <h2 className="font-normal mt-3 text-center text-3xl text-gray-900">
+      <h2 className="font-normal mt-3 text-center text-3xl md:text-4xl text-gray-900">
         Invite Link Generator
       </h2>
-      <div className="bg-gradient-to-r from-transparent via-neutral-300 dark:via-neutral-700 to-transparent my-3 h-[1px] w-full" />
+      <div className="bg-gradient-to-r from-transparent via-neutral-300 dark:via-neutral-700 to-transparent my-3 h-[1px] w-full"></div>
       <form className="my-3 " onSubmit={handleSubmit}>
         <div className="flex justify-end items-center mt-4">
           <AllDayCheckbox checked={formData.allDay} onChange={toggleAllDay} />
         </div>
-        <div className="flex flex-col md:flex-row md:space-x-4">
-          <div className="w-full md:w-1/2 space-y-4">
+        <div className="flex flex-col md:flex-row md:justify-between md:space-x-4">
+          <div className="flex-1 space-y-4">
             <TitleInput
               value={formData.title}
               onChange={handleInputChange}
@@ -136,21 +136,10 @@ const GoogleCalendarCard: React.FC = () => {
               onChange={handleInputChange}
             />
           </div>
-          <div className="w-full md:w-1/2 space-y-4">
-            {!formData.allDay && (
-              <div className="flex space-x-4">
-                <TimeInputs
-                  startTime={formData.startTime}
-                  onStartTimeChange={handleTimeChange("startTime")}
-                  endTime={formData.endTime}
-                  onEndTimeChange={handleTimeChange("endTime")}
-                />
-              </div>
-            )}
-
-            <div className="mb-1">
+          <div className="flex-1 ">
+            <div className="mb-1 ">
               <span
-                className={`text-sm font-medium leading-none mt-2 peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${
+                className={`text-sm font-medium leading-none mt-2 ${
                   formValidations.startDate ? "text-red-500" : "text-black"
                 }`}
                 style={{ padding: "0" }}
@@ -165,26 +154,38 @@ const GoogleCalendarCard: React.FC = () => {
               />
             </div>
 
-            <RepeatOptions
-              repeatValue={formData.repeat}
-              onRepeatChange={handleSelectChange}
-              endDateValue={
-                formData.endDate
-                  ? format(new Date(formData.endDate), "yyyy-MM-dd")
-                  : ""
-              }
-              onEndDateChange={(selectedDate) => {
-                setFormData({
-                  ...formData,
-                  endDate: selectedDate ? new Date(selectedDate) : null,
-                });
-              }}
-              startDate={
-                formData.startDate
-                  ? format(new Date(formData.startDate), "yyyy-MM-dd")
-                  : null
-              }
-            />
+            <div className="md:mt-4">
+              <RepeatOptions
+                repeatValue={formData.repeat}
+                onRepeatChange={handleSelectChange}
+                endDateValue={
+                  formData.endDate
+                    ? format(new Date(formData.endDate), "yyyy-MM-dd")
+                    : ""
+                }
+                onEndDateChange={(selectedDate) => {
+                  setFormData({
+                    ...formData,
+                    endDate: selectedDate ? new Date(selectedDate) : null,
+                  });
+                }}
+                startDate={
+                  formData.startDate
+                    ? format(new Date(formData.startDate), "yyyy-MM-dd")
+                    : null
+                }
+              />
+              {!formData.allDay && (
+                <div className="flex space-x-4">
+                  <TimeInputs
+                    startTime={formData.startTime}
+                    onStartTimeChange={handleTimeChange("startTime")}
+                    endTime={formData.endTime}
+                    onEndTimeChange={handleTimeChange("endTime")}
+                  />
+                </div>
+              )}
+            </div>
           </div>
         </div>
         <div className="flex justify-end mt-6">
