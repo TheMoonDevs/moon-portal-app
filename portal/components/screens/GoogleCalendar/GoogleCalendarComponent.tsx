@@ -5,12 +5,12 @@ import {
   MenuItem,
   Select,
   SelectChangeEvent,
+  TextField,
   Tooltip,
 } from "@mui/material";
-import { Input } from "@/components/elements/Input";
-import { Textarea } from "@/components/elements/Textarea";
 import DatePicker from "../Members/DatePicker";
 import { Button } from "@/components/elements/Button";
+import { Textarea } from "@mantine/core";
 
 export const Header: React.FC = () => (
   <div className="flex justify-center items-center space-x-4 md:space-x-6">
@@ -77,11 +77,7 @@ interface TitleInputProps {
   error: boolean;
 }
 
-export const TitleInput: React.FC<TitleInputProps> = ({
-  value,
-  onChange,
-  error,
-}) => (
+export const TitleInput: React.FC<TitleInputProps> = ({ value, onChange, error }) => (
   <div className="mb-4">
     <span
       className={`text-sm font-medium leading-none mt-2 peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${
@@ -91,7 +87,7 @@ export const TitleInput: React.FC<TitleInputProps> = ({
     >
       {error ? "*Title is Required" : "Title"}
     </span>
-    <Input
+    <TextField
       id="title"
       name="title"
       placeholder="Add Title"
@@ -138,10 +134,7 @@ interface LocationInputProps {
   onChange: (e: ChangeEvent<HTMLInputElement>) => void;
 }
 
-export const LocationInput: React.FC<LocationInputProps> = ({
-  value,
-  onChange,
-}) => (
+export const LocationInput: React.FC<LocationInputProps> = ({ value, onChange }) => (
   <div className="mb-4">
     <label
       htmlFor="location"
@@ -150,7 +143,7 @@ export const LocationInput: React.FC<LocationInputProps> = ({
       Location
     </label>
 
-    <Input
+    <TextField
       id="location"
       name="location"
       placeholder="Add Location"
