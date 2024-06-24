@@ -281,7 +281,7 @@ export const TimeInputs: React.FC<TimeInputsProps> = ({
 
   return (
     <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 w-full">
-      <div className="w-full md:w-1/2">
+      <div className="w-full  md:w-1/2">
         <label
           htmlFor="start-time"
           className="text-sm font-medium  text-black leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
