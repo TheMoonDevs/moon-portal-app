@@ -203,6 +203,7 @@ model FileUpload {
   fileName    String?
   mimeType    String?
   fileUrl     String?
+  folderName  String?
   fileSize    Int?
   userInfo    Json?
   createdAt   DateTime      @default(now())
