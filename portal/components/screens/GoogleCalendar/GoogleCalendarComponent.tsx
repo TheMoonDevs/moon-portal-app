@@ -178,7 +178,7 @@ export const StartDatePicker: React.FC<DatePickerProps> = ({
   return (
     <div className="mb-4 flex flex-col w-full">
       <span
-        className={`text-sm font-semibold mb-2 leading-none ${
+        className={`text-sm font-semibold mb-2 mt-4 md:mt-0 leading-none ${
           error ? "text-red-500" : "text-gray-700"
         }`}
       >
@@ -228,7 +228,7 @@ export const RepeatOptions: React.FC<RepeatOptionsProps> = ({
     <div className="mb-4 w-full">
       <div className="flex flex-col md:flex-row justify-between w-full items-center gap-3">
         <div className="w-full">
-          <span className={`text-sm font-semibold leading-none text-gray-700 `}>
+          <span className="text-sm font-semibold leading-none text-gray-700 mb-2">
             Repeat
           </span>
           <Select
@@ -280,8 +280,8 @@ export const RepeatOptions: React.FC<RepeatOptionsProps> = ({
         </div>
 
         {repeatValue !== "no-repeat" && (
-          <div className="w-full">
-            <span className="text-sm font-semibold leading-none text-gray-700">
+          <div className="mb-4 md:mb-0 flex flex-col w-full">
+            <span className="text-sm font-semibold leading-none text-gray-700 mb-2">
               End Repeat
             </span>
             <DatePicker
