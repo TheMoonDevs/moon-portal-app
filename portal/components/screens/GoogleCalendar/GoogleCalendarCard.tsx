@@ -149,7 +149,7 @@ const GoogleCalendarCard: React.FC = () => {
                 />
               </div>
 
-              <div>
+              <div >
                 <RepeatOptions
                   repeatValue={formData.repeat}
                   onRepeatChange={handleSelectChange}

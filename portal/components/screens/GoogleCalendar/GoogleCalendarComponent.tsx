@@ -10,7 +10,7 @@ import {
 } from "@mui/material";
 import { Button } from "@/components/elements/Button";
 import { Textarea } from "@mantine/core";
-import { DatePicker } from "@mui/x-date-pickers";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 
 export const Header: React.FC = () => (
   <div className="flex justify-center items-center space-x-4 md:space-x-6">
@@ -228,12 +228,9 @@ export const RepeatOptions: React.FC<RepeatOptionsProps> = ({
     <div className="mb-4 w-full">
       <div className="flex flex-col md:flex-row justify-between w-full items-center gap-3">
         <div className="w-full">
-          <label
-            className="text-sm font-medium text-black leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            htmlFor="repeat"
-          >
+          <span className={`text-sm font-semibold leading-none text-gray-700 `}>
             Repeat
-          </label>
+          </span>
           <Select
             value={repeatValue}
             onChange={onRepeatChange}
@@ -284,21 +281,27 @@ export const RepeatOptions: React.FC<RepeatOptionsProps> = ({
 
         {repeatValue !== "no-repeat" && (
           <div className="w-full">
-            <label
-              className="text-sm font-medium mt-1 text-black leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              htmlFor="endRepeat"
-            >
+            <span className="text-sm font-semibold leading-none text-gray-700">
               End Repeat
-            </label>
+            </span>
             <DatePicker
               slotProps={{
                 textField: {
                   size: "small",
                   variant: "outlined",
-                  color: "info",
+                  color: "primary",
+                  InputProps: {
+                    style: {
+                      borderColor: "black", // Ensure black border
+                      backgroundColor: "transparent", // Ensure no conflicting background color
+                    },
+                    classes: {
+                      root: "customDatePickerRoot", // Apply a custom class to ensure specificity
+                      error: "customDatePickerError", // Apply a class to override error state if needed
+                    },
+                  },
                 },
               }}
-              className="w-full border-green-500"
               value={endDateValue}
               onChange={onEndDateChange}
             />
