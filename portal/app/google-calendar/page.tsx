@@ -1,3 +1,4 @@
+import { Bottombar } from "@/components/global/Bottombar";
 import { PageAccess } from "@/components/global/PageAccess";
 import GoogleCalendarCard from "@/components/screens/GoogleCalendar/GoogleCalendarCard";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
@@ -16,6 +17,7 @@ const googleCalendarPage = () => {
         </Link>
         <div className="flex flex-col items-center justify-center  ">
           <GoogleCalendarCard />
+          <Bottombar visible={true} />
         </div>
       </PageAccess>
     </>
