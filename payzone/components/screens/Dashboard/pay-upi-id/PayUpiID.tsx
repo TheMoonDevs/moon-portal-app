@@ -46,27 +46,29 @@ export const PayUpiID = () => {
     severity: "success",
   });
 
-  const handleAddPayment = (amount: string) => {
-    setLoading(true);
-    const _userData = { ...payingToUser };
-    _userData.payData = undefined;
-    _userData.workData = undefined;
-    const updatedData = {
-      userId: payingToUser.id,
-      user: _userData,
-      ...txInfos,
-      amount: parseFloat(amount),
-    };
-    // console.log(updatedData);
-    MyServerApi.postData(SERVER_API_ENDPOINTS.payment, updatedData)
-      .then((updatedTransaction) => {
-        handleModalClose();
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.error("Error updating PayTransaction:", error);
-      });
-  };
+ const handleAddPayment = (amount: string) => {
+   setLoading(true);
+   const _userData = { ...payingToUser };
+   _userData.payData = undefined;
+   _userData.workData = undefined;
+
+   const updatedData = {
+     userId: payingToUser.id,
+     user: _userData,
+     ...txInfos,
+     amount: parseFloat(amount),
+     createdAt: new Date(), // Adding the createdAt timestamp here
+   };
+
+   MyServerApi.postData(SERVER_API_ENDPOINTS.payment, updatedData)
+     .then((updatedTransaction) => {
+       handleModalClose();
+       setLoading(false);
+     })
+     .catch((error) => {
+       console.error("Error updating PayTransaction:", error);
+     });
+ };
 
 
   useEffect(() => {
