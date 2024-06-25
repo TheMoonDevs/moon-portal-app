@@ -227,7 +227,7 @@ export const RepeatOptions: React.FC<RepeatOptionsProps> = ({
   return (
     <div className="mb-4 w-full">
       <div className="flex flex-col md:flex-row justify-between w-full items-center gap-3">
-        <div className="w-full">
+        <div className="mb-4 md:mb-0 flex flex-col w-full">
           <span className="text-sm font-semibold leading-none text-gray-700 mb-2">
             Repeat
           </span>
