@@ -248,3 +248,9 @@ h2 {
     width: 12px; /* Adjust width for mobile */
   }
 }
+
+/* This CSS removes the default clock icon from the time input */
+input[type="time"]::-webkit-calendar-picker-indicator {
+  display: none;
+  -webkit-appearance: none;
+}
