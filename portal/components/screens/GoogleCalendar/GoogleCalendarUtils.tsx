@@ -8,7 +8,7 @@ export type FormDataType = {
   endTime: any;
   allDay: boolean;
   endRepeat: Date | null;
-  endDate: Date | null;
+  endDate: any;
 };
 
 // 📝 Validates the form data, ensuring title and startDate are provided.
