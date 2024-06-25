@@ -10,7 +10,7 @@ import {
 } from "@mui/material";
 import { Button } from "@/components/elements/Button";
 import { Textarea } from "@mantine/core";
-
+import { DatePicker } from "@mui/x-date-pickers";
 
 export const Header: React.FC = () => (
   <div className="flex justify-center items-center space-x-4 md:space-x-6">
@@ -163,12 +163,49 @@ export const LocationInput: React.FC<LocationInputProps> = ({
   </div>
 );
 
+//! Start Date 📅
+interface DatePickerProps {
+  onDateChange: (selectedDate: Date | null) => void; // Adjust the type of onDateChange
+  value: Date | null; // Adjust the type of value
+  error: boolean;
+}
+
+export const StartDatePicker: React.FC<DatePickerProps> = ({
+  onDateChange,
+  value,
+  error,
+}) => {
+  return (
+    <div className="mb-4 flex flex-col w-full">
+      <span
+        className={`text-sm font-semibold mb-2 leading-none ${
+          error ? "text-red-500" : "text-gray-700"
+        }`}
+      >
+        {error ? "*Start Date is Required" : "*Start Date"}
+      </span>
+      <DatePicker
+        slotProps={{
+          textField: {
+            size: "small",
+            variant: "outlined",
+            color: "info",
+          },
+        }}
+        className="w-full border-black"
+        value={value}
+        onChange={onDateChange}
+      />
+    </div>
+  );
+};
+
 //! RepeatOptions 🔄
 interface RepeatOptionsProps {
   repeatValue: string;
   onRepeatChange: (event: SelectChangeEvent<string>) => void;
   endDateValue: string;
-  onEndDateChange: (selectedDate: string) => void;
+  onEndDateChange: any;
   startDate: string | null; // Assume startDate is passed as a prop
 }
 
@@ -253,10 +290,18 @@ export const RepeatOptions: React.FC<RepeatOptionsProps> = ({
             >
               End Repeat
             </label>
-            {/* <DatePicker
-              onDateChange={onEndDateChange}
-              placeholder="Select end date"
-            /> */}
+            <DatePicker
+              slotProps={{
+                textField: {
+                  size: "small",
+                  variant: "outlined",
+                  color: "info",
+                },
+              }}
+              className="w-full border-green-500"
+              value={endDateValue}
+              onChange={onEndDateChange}
+            />
           </div>
         )}
       </div>
