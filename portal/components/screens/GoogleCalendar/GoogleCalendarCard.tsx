@@ -141,7 +141,7 @@ const GoogleCalendarCard: React.FC = () => {
               />
             </div>
             <div className="flex-1 ">
-              <div className="mb-1 ">
+              <div>
                 <StartDatePicker
                   onDateChange={handleDateChange}
                   value={formData.startDate}
@@ -149,7 +149,7 @@ const GoogleCalendarCard: React.FC = () => {
                 />
               </div>
 
-              <div >
+              <div>
                 <RepeatOptions
                   repeatValue={formData.repeat}
                   onRepeatChange={handleSelectChange}
