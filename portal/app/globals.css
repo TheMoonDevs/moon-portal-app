@@ -216,3 +216,46 @@ h2 {
 .overflow-y-auto::-webkit-scrollbar {
   width: 8px;
 }
+
+.custom-scrollbar {
+  overflow-x: auto; /* Ensure horizontal scrolling */
+  scrollbar-width: thin; /* "auto" or "thin" depending on browser support */
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track); /* optional: customize scrollbar colors */
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px; /* width of the scrollbar */
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb); /* color of the scrollbar thumb */
+  border-radius: 10px; /* roundness of the thumb */
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background-color: var(--scrollbar-track); /* color of the scrollbar track */
+}
+
+/* Media queries for tablet and mobile devices */
+@media (max-width: 768px) {
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 10px; /* Adjust width for tablets */
+  }
+}
+
+@media (max-width: 480px) {
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 12px; /* Adjust width for mobile */
+  }
+}
+
+/* This CSS removes the default clock icon from the time input */
+input[type="time"]::-webkit-calendar-picker-indicator {
+  display: none;
+  -webkit-appearance: none;
+}
+
+/* Google Calendar End Date Border to Black */
+.customDatePickerRoot .MuiOutlinedInput-notchedOutline {
+  border-color: black !important; /* Important to ensure it overrides */
+}
