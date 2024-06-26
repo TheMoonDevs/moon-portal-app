@@ -5,6 +5,9 @@ import {
   parseISO,
   startOfMonth,
   endOfMonth,
+  startOfYear,
+  endOfYear,
+  isToday,
 } from "date-fns";
 
 interface Metrics {
@@ -24,7 +27,14 @@ interface Metrics {
   newIdeaTasks: number;
   needClarificationTasks: number;
   highPriorityTasks: number;
-  completedTasksByWeekday: { [key: string]: number };
+  tasksByWeekday: {
+    [key: string]: {
+      completed: number;
+      inProgress: number;
+    };
+  };
+  missedLogs: number;
+  updatedLogsLater: number;
 }
 
 enum TaskType {
@@ -39,7 +49,14 @@ enum TaskType {
   HighPriority = "⭐",
 }
 
-export function calculateMetrics(worklogSummary: WorkLogs[]): Metrics {
+export function calculateMetrics(
+  worklogSummary: WorkLogs[],
+  isMonthly: boolean,
+  isYearly: boolean
+): Metrics {
+  console.log("calculateMetrics called with worklogSummary:", worklogSummary);
+  console.log("calculateMetrics called with isMonthly:", isMonthly);
+  console.log("calculateMetrics called with isYearly:", isYearly);
   const completedTasks = getTaskCountByType(worklogSummary, TaskType.Completed);
   const taskCompletionRate = getTaskCompletionRate(worklogSummary);
   const averageTasksPerDay = getAverageTasksPerDay(worklogSummary);
@@ -68,7 +85,11 @@ export function calculateMetrics(worklogSummary: WorkLogs[]): Metrics {
     worklogSummary,
     TaskType.HighPriority
   );
-  const completedTasksByWeekday = getCompletedTasksByWeekday(worklogSummary);
+  const tasksByWeekday =
+    getCompletedAndInProgressTasksByWeekday(worklogSummary);
+
+  const missedLogs = getMissedLogs(worklogSummary, isMonthly, isYearly);
+  const updatedLogsLater = getUpdatedLogsLater(worklogSummary);
 
   return {
     completedTasks,
@@ -87,7 +108,9 @@ export function calculateMetrics(worklogSummary: WorkLogs[]): Metrics {
     newIdeaTasks,
     needClarificationTasks,
     highPriorityTasks,
-    completedTasksByWeekday,
+    tasksByWeekday,
+    missedLogs,
+    updatedLogsLater,
   };
 }
 
@@ -232,16 +255,18 @@ function getTopProductiveDays(worklogSummary: WorkLogs[]): {
   return productiveDays.slice(0, 3);
 }
 
-function getCompletedTasksByWeekday(worklogSummary: WorkLogs[]): {
-  [key: string]: number;
+function getCompletedAndInProgressTasksByWeekday(worklogSummary: WorkLogs[]): {
+  [key: string]: { completed: number; inProgress: number };
 } {
-  const weekdayCounts: { [key: string]: number } = {
-    Monday: 0,
-    Tuesday: 0,
-    Wednesday: 0,
-    Thursday: 0,
-    Friday: 0,
-    Saturday: 0,
+  const weekdayCounts: {
+    [key: string]: { completed: number; inProgress: number };
+  } = {
+    Monday: { completed: 0, inProgress: 0 },
+    Tuesday: { completed: 0, inProgress: 0 },
+    Wednesday: { completed: 0, inProgress: 0 },
+    Thursday: { completed: 0, inProgress: 0 },
+    Friday: { completed: 0, inProgress: 0 },
+    Saturday: { completed: 0, inProgress: 0 },
   };
 
   worklogSummary.forEach((worklog) => {
@@ -252,11 +277,88 @@ function getCompletedTasksByWeekday(worklogSummary: WorkLogs[]): {
       const tasks = work.content.split("\n").map((task: string) => task.trim());
       tasks.forEach((task: string) => {
         if (task.endsWith(TaskType.Completed)) {
-          weekdayCounts[weekday]++;
+          weekdayCounts[weekday].completed++;
+        } else if (task.endsWith(TaskType.InProgress)) {
+          weekdayCounts[weekday].inProgress++;
         }
       });
     });
   });
 
   return weekdayCounts;
+}
+
+function getMissedLogs(
+  worklogSummary: WorkLogs[],
+  isMonthly: boolean,
+  isYearly: boolean
+): number {
+  const today = new Date();
+  let startDate, endDate;
+
+  if (isMonthly) {
+    startDate = startOfMonth(today);
+    endDate = isToday(today) ? today : endOfMonth(today);
+  } else if (isYearly) {
+    // Find the first worklog date in the current year
+    const firstWorklogDate = worklogSummary
+      .map((worklog) => parseISO(worklog.date || ""))
+      .filter((date) => date.getUTCFullYear() === today.getUTCFullYear())
+      .sort((a, b) => a.getTime() - b.getTime())[0];
+
+    startDate = firstWorklogDate || startOfYear(today);
+    endDate = isToday(today) ? today : endOfYear(today);
+  } else {
+    return 0;
+  }
+
+  const allDates = getAllDatesInRange(startDate, endDate);
+  const logDates = worklogSummary.map((worklog) =>
+    parseISO(worklog.date || "")
+  );
+
+  console.log("logDates:", logDates);
+
+  const missedDates = allDates.filter(
+    (date) => !logDates.some((logDate) => isSameDay(date, logDate))
+  );
+
+  console.log("missedDates:", missedDates);
+
+  return missedDates.length;
+}
+
+function getUpdatedLogsLater(worklogSummary: WorkLogs[]): number {
+  let updatedLogsLater = 0;
+
+  worklogSummary.forEach((worklog) => {
+    const logDate = parseISO(worklog.date || "");
+    const updatedAt = parseISO(worklog.updatedAt.toString());
+
+    if (differenceInDays(updatedAt, logDate) > 0) {
+      updatedLogsLater++;
+    }
+  });
+
+  return updatedLogsLater;
+}
+
+function getAllDatesInRange(startDate: Date, endDate: Date): Date[] {
+  const dates = [];
+  let currentDate = startDate;
+
+  while (currentDate <= endDate) {
+    dates.push(new Date(currentDate));
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+
+  return dates;
+}
+
+function isSameDay(date1: Date, date2: Date): boolean {
+  return (
+    date1.getUTCFullYear() === date2.getUTCFullYear() &&
+    date1.getUTCMonth() === date2.getUTCMonth() &&
+    date1.getUTCDate() === date2.getUTCDate()
+  );
 }
