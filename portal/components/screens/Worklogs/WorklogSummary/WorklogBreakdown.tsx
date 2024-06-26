@@ -1,7 +1,6 @@
 import React from "react";
-import { WorkLogs } from "@prisma/client";
+import { User, WorkLogs } from "@prisma/client";
 import { PieChart, BarChart } from "@mui/x-charts";
-import { Stack, Typography } from "@mui/material";
 import { format, parseISO } from "date-fns";
 import { calculateMetrics } from "../WorklogBreakdown/BreakdownMetrics";
 import MetricCard from "../WorklogBreakdown/MetricCard";
@@ -12,16 +11,23 @@ import {
   SquareGanttChart,
   CalendarCheck,
   CircleArrowUp,
+  CircleX,
+  History,
 } from "lucide-react";
+import { Stack } from "@mui/material";
 
 interface WorklogBreakdownProps {
   worklogSummary: WorkLogs[];
+  isMonthly: boolean;
+  isYearly: boolean;
 }
 
 const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
   worklogSummary,
+  isMonthly,
+  isYearly,
 }) => {
-  const metrics = calculateMetrics(worklogSummary);
+  const metrics = calculateMetrics(worklogSummary, isMonthly, isYearly);
 
   const weekdays = [
     "Monday",
@@ -32,7 +38,11 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
     "Saturday",
   ];
   const completedTasksData = weekdays.map(
-    (day) => metrics.completedTasksByWeekday[day] || 0
+    (day) => metrics.tasksByWeekday[day]?.completed || 0
+  );
+
+  const inProgressTasksData = weekdays.map(
+    (day) => metrics.tasksByWeekday[day]?.inProgress || 0
   );
 
   return (
@@ -40,7 +50,7 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
       <h1 className="font-semibold text-xl font-sans justify-start">
         Worklog Breakdown
       </h1>
-      <Stack spacing={2} alignItems="center">
+      <Stack spacing={3} alignItems="center">
         <PieChart
           colors={["blue", "#22c55e", "red", "orange", "purple"]}
           series={[
@@ -80,87 +90,121 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
           height={300}
         />
         {/* Display total tasks */}
-        <Typography variant="body1">
+        <div>
           <strong>Total Tasks:</strong> {metrics.totalTasks}
-        </Typography>
+        </div>
         <BarChart
           xAxis={[
             {
               scaleType: "band",
               data: weekdays,
-              label: "Days", // Adding title for x-axis
+              label: "Days",
             },
           ]}
           yAxis={[
             {
-              label: "Tasks", // Adding title for y-axis
+              label: "Tasks",
             },
           ]}
-          series={[{ data: completedTasksData, color: "#374151" }]}
+          series={[
+            {
+              data: completedTasksData,
+              color: "#22c55e",
+              label: "Completed tasks",
+            },
+            {
+              data: inProgressTasksData,
+              color: "blue",
+              label: "In Progress tasks",
+            },
+          ]}
           width={550}
           height={300}
         />
 
-        <Typography variant="body1" className="pb-5">
+        <div className="pb-5">
           <strong>Tasks by Weekday</strong>
-        </Typography>
+        </div>
 
         {/* Additional metrics */}
         <div className="flex flex-wrap gap-5 justify-center items-stretch">
           <MetricCard
-            title="Update Frequency"
-            content={
-              <Typography variant="body1">
-                Updated Days: {metrics.updateMetrics.updatedDays}
-              </Typography>
-            }
-            logo={<AudioLines color="#31c449" size={20} />}
-          />
-          <MetricCard
-            title="Task Completion Rate"
-            content={
-              <Typography variant="body1">
-                Completion Rate: {metrics.taskCompletionRate.toFixed(2)}%
-              </Typography>
-            }
-            logo={<CircleCheckBig color="#31c449" size={20} />}
-          />
-          <MetricCard
-            title="Average Tasks Per Day"
-            content={
-              <Typography variant="body1">
-                Avg. Tasks/Day: {metrics.averageTasksPerDay.toFixed(2)}
-              </Typography>
-            }
-            logo={<ListTodo color="#31c449" size={20} />}
-          />
-          <MetricCard
             title="Longest Productive Streak"
             content={
-              <Typography variant="body1">
-                Longest Streak: {metrics.longestProductiveStreak} days
-              </Typography>
+              <div>
+                You had a streak of {metrics.longestProductiveStreak}{" "}
+                consecutive productive days.
+              </div>
             }
             logo={<SquareGanttChart color="#31c449" size={20} />}
           />
           <MetricCard
+            title="Task Completion Rate"
+            content={
+              <div>
+                Your task completion rate is{" "}
+                {metrics.taskCompletionRate.toFixed(2)}%.
+              </div>
+            }
+            logo={<CircleCheckBig color="#31c449" size={20} />}
+          />
+          <MetricCard
+            title="Missed Logs"
+            content={
+              <div>
+                There were {metrics.missedLogs} days without log entries.
+              </div>
+            }
+            logo={<CircleX color="#808080" size={20} />}
+          />
+          <MetricCard
+            title="Updated Logs Later"
+            content={
+              <div>
+                You updated your logs on a different day{" "}
+                {metrics.updatedLogsLater} times.
+              </div>
+            }
+            logo={<History color="#808080" size={20} />}
+          />
+          <MetricCard
+            title="Update Frequency"
+            content={
+              <div>
+                You updated your worklog on {metrics.updateMetrics.updatedDays}{" "}
+                different days.
+              </div>
+            }
+            logo={<AudioLines color="#4169e1" size={20} />}
+          />
+          <MetricCard
+            title="Average Tasks Per Day"
+            content={
+              <div>
+                On average, you complete {metrics.averageTasksPerDay.toFixed(2)}{" "}
+                tasks per day.
+              </div>
+            }
+            logo={<ListTodo color="#4169e1" size={20} />}
+          />
+          <MetricCard
             title="Top Productive Days"
             content={metrics.topProductiveDays.map((day, index) => (
-              <Typography key={index} variant="body1">
-                {format(parseISO(day.date), "MMMM dd, yyyy")}:{" "}
-                {day.completedTasks} tasks completed
-              </Typography>
+              <div key={index}>
+                On {format(parseISO(day.date), "MMMM dd, yyyy")}, you completed{" "}
+                {day.completedTasks} tasks.
+              </div>
             ))}
-            logo={<CalendarCheck color="#31c449" size={20} />}
+            logo={<CalendarCheck color="#ff6f00" size={20} />}
           />
           <MetricCard
             title="High Priority Tasks"
             content={
-              <Typography variant="body1">
-                High Priority Tasks: {metrics.highPriorityTasks}
-              </Typography>
+              <div>
+                You have {metrics.highPriorityTasks} high-priority tasks.
+              </div>
             }
-            logo={<CircleArrowUp color="#31c449" size={20} />}
+            logo={<CircleArrowUp color="#ff6f00" size={20} />}
           />
         </div>
       </Stack>
