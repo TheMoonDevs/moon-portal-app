@@ -9,6 +9,7 @@ import { uniqueId } from "lodash";
 import { useRef, useState } from "react";
 import generatePDF, { Margin } from "react-to-pdf";
 import WorklogBreakdown from "./WorklogBreakdown";
+import { useSearchParams } from "next/navigation";
 
 interface WorklogSummaryActionsProps {
   userData: User | null | undefined;
@@ -28,7 +29,12 @@ export const WorklogSummaryActions = ({
   const [view, setView] = useState<string | null>(null);
   const { copyToClipboard } = useCopyToClipboard();
   const aiSummaryPdfTargetRef = useRef(null);
+  const searchParams = useSearchParams();
+  const month = searchParams?.get("month");
+  const year = searchParams?.get("year");
 
+  const isMonthly = !!month;
+  const isYearly = !!year && !month;
   const handleAiSummaryBtnClick = async () => {
     setLoading(true);
     try {
@@ -62,7 +68,11 @@ export const WorklogSummaryActions = ({
       <div></div>
       {view === "Breakdown" && !loading && (
         <div className="overflow-y-auto w-full ">
-          <WorklogBreakdown worklogSummary={worklogSummary} />
+          <WorklogBreakdown
+            worklogSummary={worklogSummary}
+            isMonthly={isMonthly}
+            isYearly={isYearly}
+          />
         </div>
       )}
       {view === "AI Summary" && !loading && aiSummary && (
