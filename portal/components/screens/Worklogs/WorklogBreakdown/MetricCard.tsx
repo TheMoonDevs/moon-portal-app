@@ -13,7 +13,7 @@ const MetricCard = ({ title, content, logo }: MetricCardProps) => (
         <h1 className="font-semibold mb-3 text-xl">{title}</h1>
         {logo}
       </div>
-      <div className="text-base">{content}</div>
+      <div className="text-base font-normal">{content}</div>
     </div>
   </div>
 );
