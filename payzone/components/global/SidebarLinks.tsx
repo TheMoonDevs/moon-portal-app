@@ -15,7 +15,7 @@ export interface SidebarLinksProps {
   path: string;
   signOut: () => void;
   textColorHexcode: string;
-  toggleDrawer: (open: boolean) => () => void; 
+  toggleDrawer: (open: boolean) => () => void;
 }
 
 export const SidebarLinks = ({

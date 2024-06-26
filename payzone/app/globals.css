@@ -1,4 +1,5 @@
 @import url("https://fonts.googleapis.com/css2?family=Unica+One&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400&display=swap");
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -9,6 +10,7 @@ root {
   --font-mono: ui-monospace, Menlo, Monaco, "Cascadia Mono", "Segoe UI Mono",
     "Roboto Mono", "Oxygen Mono", "Ubuntu Monospace", "Source Code Pro",
     "Fira Mono", "Droid Sans Mono", "Courier New", monospace;
+  --font-roboto: "Roboto", sans-serif;
 
   --foreground-rgb: 255, 255, 255;
   --background-start-rgb: 214, 219, 220;
@@ -79,4 +81,23 @@ input[type="number"] {
 a {
   color: inherit;
   text-decoration: none;
+}
+@layer utilities {
+  @keyframes rotate {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  .rotating-icon {
+    animation: rotate 10s linear infinite;
+    transition: transform 0.3s ease-in-out;
+  }
+
+  .rotating-icon:hover {
+    transform: scale(50);
+  }
 }

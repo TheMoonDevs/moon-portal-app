@@ -8,6 +8,8 @@ import { MUIThemeProvider } from "@/styles/provider";
 import { MantineProvider } from "@mantine/core";
 import "@mantine/core/styles.css";
 import { AppLayout } from "@/components/global/AppLayout";
+import { Toaster } from "sonner";
+
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -22,7 +24,6 @@ export const metadata: Metadata = {
   description: APP_INFO.description,
 };
 
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -36,7 +37,10 @@ export default function RootLayout({
             <MUIThemeProvider>
               <MantineProvider>
                 <WalletWagmiProvider>
-                  <AppLayout>{children}</AppLayout>
+                  <AppLayout>
+                    {children}
+                    <Toaster />
+                  </AppLayout>
                 </WalletWagmiProvider>
               </MantineProvider>
             </MUIThemeProvider>

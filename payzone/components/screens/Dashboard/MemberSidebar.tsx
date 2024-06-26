@@ -85,7 +85,7 @@ export const MemberSidebar = () => {
       </Drawer>
 
       <div
-        className="text-white mb-4 text-lg tracking-widest cursor-pointer flex items-center gap-2 max-lg:hidden"
+        className="text-white mb-4 text-lg tracking-widest cursor-pointer flex items-center justify-center gap-2 max-lg:hidden "
         onClick={signOut}
       >
         Logout <Image src="/icons/logout.svg" alt="" width={30} height={30} />
