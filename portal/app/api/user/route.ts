@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
             const slackUser = allSlackUsers.find(
               (slackUser:any) => slackUser?.profile?.email === userData?.email
             );
-            console.log(slackUser?.profile?.email, userData?.email);
+            // console.log(slackUser?.profile?.email, userData?.email);
     
             if (slackUser) {
               const newThirdPartyData = {

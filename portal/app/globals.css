@@ -248,3 +248,14 @@ h2 {
     width: 12px; /* Adjust width for mobile */
   }
 }
+
+/* This CSS removes the default clock icon from the time input */
+input[type="time"]::-webkit-calendar-picker-indicator {
+  display: none;
+  -webkit-appearance: none;
+}
+
+/* Google Calendar End Date Border to Black */
+.customDatePickerRoot .MuiOutlinedInput-notchedOutline {
+  border-color: black !important; /* Important to ensure it overrides */
+}
