@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { List } from "@mui/material";
 import { User } from "@prisma/client";
+import Image from "next/image";
 
 // ASSIGN-TODO : This sidebar is structured in the worst way, with both Drawer and the main componenet having the same stuff,
 // but not abstract, the naming patterns are als not good.
@@ -14,6 +15,7 @@ export interface SidebarLinksProps {
   path: string;
   signOut: () => void;
   textColorHexcode: string;
+  toggleDrawer: (open: boolean) => () => void; 
 }
 
 export const SidebarLinks = ({
@@ -22,6 +24,7 @@ export const SidebarLinks = ({
   path,
   signOut,
   textColorHexcode,
+  toggleDrawer,
 }: SidebarLinksProps) => {
   const uppercasedTextColorHexcode = `#${
     textColorHexcode &&
@@ -32,9 +35,9 @@ export const SidebarLinks = ({
       .padStart(6, "0")
   }`;
   return (
-    <main>
+    <>
       {user ? (
-        <List className="h-screen bg-charcoal p-3 flex flex-col justify-between items-end">
+        <List className="h-screen bg-charcoal flex flex-col justify-between items-end w-full">
           <div className="flex flex-col gap-7">
             <div className="w-fit h-fit border-white border flex items-center justify-end gap-2 p-2">
               <span className="text-sm font-medium text-white tracking-widest">
@@ -53,6 +56,7 @@ export const SidebarLinks = ({
                       ? uppercasedTextColorHexcode
                       : "white",
                   }}
+                  onClick={toggleDrawer(false)}
                 >
                   {link.title}
                 </Link>
@@ -60,19 +64,22 @@ export const SidebarLinks = ({
             </div>
           </div>
           <span
-            className="mr-auto text-lg tracking-widest ml-2 text-white cursor-pointer"
+            className="mr-auto text-lg tracking-widest ml-2 text-white cursor-pointer flex items-center gap-2"
             onClick={signOut}
           >
-            Logout
+            Logout{" "}
+            <Image src="/icons/logout.svg" alt="" width={30} height={30} />
           </span>
         </List>
       ) : (
-        <div className="hidden mt-14 lg:flex flex-col gap-7">
+        <div className="w-full mt-14 lg:flex flex-col gap-4 max-lg:hidden">
           {links.map((link: any) => (
             <Link
               href={link.href}
               key={link.title}
-              className={`tracking-[.2em] text-sm font-semibold`}
+              className={`tracking-[.2em] rounded-xl py-3 px-2 text-sm font-regular hover:bg-neutral-800 flex items-center gap-2 ${
+                path === link.href ? "  bg-neutral-800" : ""
+              }`}
               style={{
                 color:
                   uppercasedTextColorHexcode && path === link.href
@@ -80,11 +87,20 @@ export const SidebarLinks = ({
                     : "#959595",
               }}
             >
+              <Image
+                src={link.icon}
+                style={{
+                  opacity: path === link.href ? 1 : 0.5,
+                }}
+                alt=""
+                width={20}
+                height={20}
+              />
               {link.title}
             </Link>
           ))}
         </div>
       )}
-    </main>
+    </>
   );
 };

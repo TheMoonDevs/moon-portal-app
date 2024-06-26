@@ -47,10 +47,10 @@ export const Certificates = () => {
   return (
     <main className="flex mx-4">
       <section className="w-full">
-        <div className="flex w-full justify-between items-center mt-10">
+        <div className="flex w-full justify-between items-center mt-10 max-sm:flex-col max-sm:w-full max-sm:gap-2">
           <Searchbar />
           {user?.isAdmin && (
-            <div className="flex items-center gap-2 p-4 py-2 bg-neutral-200 rounded-md">
+            <div className="flex items-center gap-2 p-4 py-2 bg-neutral-200 rounded-md max-sm:w-full max-sm:justify-between">
               <span>
                 {isAdminView ? <span> Disable</span> : <span>Enable</span>}{" "}
                 Admin View

@@ -34,6 +34,12 @@ const Links = [
     color: "rose",
   },
   {
+    icon: "/icons/google-calendar.svg",
+    title: "Google Calendar",
+    route: APP_ROUTES.googleCalendar,
+    active: true,
+  },
+  {
     icon: "/images/thirdparty/up.jpg",
     title: "Upload & Share Files",
     route: APP_ROUTES.fileUploads,
