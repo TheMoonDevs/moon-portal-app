@@ -62,9 +62,10 @@ export async function POST(request: NextRequest) {
     // Get current date in IST
     const now = new Date();
     const istOffset = 5.5 * 60 * 60 * 1000; // IST is UTC+5:30
+    const nowIST = new Date(now.getTime() + istOffset)
 
     // Calculate chosen date based on current date in IST
-    let chosenDate = new Date(now);
+    let chosenDate = new Date(nowIST);
     chosenDate.setHours(hours, minutes, 0, 0);
 
     // Remove time-related text from cleanText before extracting date
@@ -95,7 +96,7 @@ export async function POST(request: NextRequest) {
     const chosenDateIST = new Date(chosenDate.getTime());
 
     // Check if the chosen date and time are in the past
-    if (isBefore(chosenDate, now)) {
+    if (isBefore(chosenDate, nowIST)) {
       throw new Error("The date and time cannot be in the past");
     }
 
