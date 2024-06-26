@@ -30,8 +30,10 @@ import {
 
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { Alert } from "@mui/material";
 
 const GoogleCalendarCard: React.FC = () => {
+  const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [formData, setFormData] = useState<FormDataType>({
     title: "",
     details: "",
@@ -62,48 +64,52 @@ const GoogleCalendarCard: React.FC = () => {
     });
   }, [formData.title, formData.startDate]);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+     e.preventDefault();
 
-    // Validate the form data 📝
-    const validations = validateForm(formData);
-    if (validations.title || validations.startDate) {
-      setFormValidations(validations);
-      return;
-    }
+     // Validate the form data 📝
+     const validations = validateForm(formData);
+     if (validations.title || validations.startDate) {
+       setFormValidations(validations);
+       setAlertMessage("Please fill in all required fields.");
+       return;
+     }
 
-    // Format the start and end dates 📅
-    const { startDate, endDate } = formatDates(formData);
+     // Format the start and end dates 📅
+     const dates = formatDates(formData, setAlertMessage);
+     if (!dates) return;
 
-    // Generate the recurrence rule 🔄
-    const recurrence = generateRecurrenceRule(formData);
+     const { startDate, endDate } = dates;
 
-    // Build the Google Calendar URL 🔗
-    const googleCalendarLink = buildGoogleCalendarURL(
-      formData,
-      startDate,
-      endDate,
-      recurrence
-    );
+     // Generate the recurrence rule 🔄
+     const recurrence = generateRecurrenceRule(formData);
 
-    // Reset the form after submission 🔄
-    setFormValidations({ title: false, startDate: false });
-    setFormData({
-      title: "",
-      details: "",
-      location: "",
-      startDate: null,
-      repeat: "no-repeat",
-      startTime: null,
-      endTime: null,
-      allDay: false,
-      endRepeat: null,
-      endDate: null,
-    });
+     // Build the Google Calendar URL 🔗
+     const googleCalendarLink = buildGoogleCalendarURL(
+       formData,
+       startDate,
+       endDate,
+       recurrence
+     );
 
-    // Open the Google Calendar event in a new tab 🌐
-    window.open(googleCalendarLink, "_blank");
-  };
+     // Reset the form after submission 🔄
+     setFormValidations({ title: false, startDate: false });
+     setFormData({
+       title: "",
+       details: "",
+       location: "",
+       startDate: null,
+       repeat: "no-repeat",
+       startTime: null,
+       endTime: null,
+       allDay: false,
+       endRepeat: null,
+       endDate: null,
+     });
+
+     // Open the Google Calendar event in a new tab 🌐
+     window.open(googleCalendarLink, "_blank");
+   };
 
   const handleDateChange = (newValue: any) => {
     setFormData({
@@ -120,6 +126,11 @@ const GoogleCalendarCard: React.FC = () => {
           Invite Link Generator
         </h2>
         <div className="bg-gradient-to-r from-transparent via-neutral-300 dark:via-neutral-700 to-transparent my-3 h-[1px] w-full"></div>
+        {alertMessage && (
+          <Alert severity="error" onClose={() => setAlertMessage(null)}>
+            {alertMessage}
+          </Alert>
+        )}
         <form className="my-3 " onSubmit={handleSubmit}>
           <div className="flex justify-end items-center mt-4">
             <AllDayCheckbox checked={formData.allDay} onChange={toggleAllDay} />
