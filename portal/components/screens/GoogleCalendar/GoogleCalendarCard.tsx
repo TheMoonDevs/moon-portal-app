@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { format } from "date-fns";
+import { format, isValid } from "date-fns";
 import {
   validateForm,
   buildGoogleCalendarURL,
@@ -154,7 +154,7 @@ const GoogleCalendarCard: React.FC = () => {
                   repeatValue={formData.repeat}
                   onRepeatChange={handleSelectChange}
                   endDateValue={
-                    formData.endDate
+                    formData.endDate && isValid(new Date(formData.endDate))
                       ? format(new Date(formData.endDate), "yyyy-MM-dd")
                       : ""
                   }
@@ -165,7 +165,7 @@ const GoogleCalendarCard: React.FC = () => {
                     });
                   }}
                   startDate={
-                    formData.startDate
+                    formData.startDate && isValid(new Date(formData.startDate))
                       ? format(new Date(formData.startDate), "yyyy-MM-dd")
                       : null
                   }
