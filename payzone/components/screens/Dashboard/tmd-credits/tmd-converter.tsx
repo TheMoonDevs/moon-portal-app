@@ -21,6 +21,7 @@ import Image from "next/image";
 import { useSyncBalances } from "@/utils/hooks/useSyncBalances";
 import CurrencyModal from "@/components/global/CurrencyModal";
 import { addClaimTransaction } from "@/utils/redux/db/db.slice";
+import { toast } from "sonner";
 
 const TMDConverter = ({
   refetchTransactions,
@@ -98,14 +99,26 @@ const TMDConverter = ({
   const handleClaim = async () => {
     if (!ethersSigner || !liquidityTMDCredits) return;
     if (liquidityTMDCredits < parseInt(claimAmount)) {
-      alert(
-        "We don't have enough liquidity, please contact admin, and chack back in a day."
+      // alert(
+      //   "We don't have enough liquidity, please contact admin, and chack back in a day."
+      // );
+      toast.error(
+        "We don't have enough liquidity, please contact admin, and chack back in a day.",
+        {
+          position: "top-center",
+        }
       );
       return;
     }
 
     if (balance < parseInt(claimAmount)) {
-      alert("You don't have enough balance, please contact admin for support.");
+      // alert("You don't have enough balance, please contact admin for support.");
+      toast.error(
+        "You don't have enough balance, please contact admin for support.",
+        {
+          position: "top-center",
+        }
+      );
       return;
     }
 
@@ -140,7 +153,10 @@ const TMDConverter = ({
       MyServerApi.postData(SERVER_API_ENDPOINTS.payment, updatedData)
         .then((updatedTransaction) => {
           // console.log("Updated transaction:", updatedTransaction);
-          alert("Claim Request Sent");
+          // alert("Claim Request Sent");
+          toast.error("Claim Request Sent", {
+            position: "top-center",
+          });
           // console.log("Claim Request Sent", updatedTransaction);
           dispatch(addClaimTransaction(updatedTransaction));
         })
@@ -216,6 +232,11 @@ const TMDConverter = ({
 
   return (
     <div className="bg-whiteSmoke h-fit flex flex-col p-4 justify-between gap-4">
+      <div className="w-full border-b-2 border-neutral-500 rounded-sm py-2">
+        <span className="text-sm font-black tracking-widest text-center">
+          CONNECT WALLET
+        </span>
+      </div>
       {/* <button className="text-sm font-black p-2 w-2/5 text-whiteSmoke bg-black">
             Connect Wallet
           </button> */}
@@ -255,7 +276,7 @@ const TMDConverter = ({
       >
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-1/3 bg-white border-2 border-midGrey shadow-lg p-4 rounded-lg">
           <div className="flex justify-between items-center">
-            <h2 className="text-lg font-bold">Mint TMD</h2>
+            <span className="text-lg font-bold">Mint TMD</span>
             <IconButton onClick={handleMintClose}>
               <Image src={close} alt="close" width={20} height={20} />
             </IconButton>

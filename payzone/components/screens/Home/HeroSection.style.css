@@ -1,0 +1,86 @@
+.typewritter {
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  animation: typing 2s steps(19), cursor 0.4s step-end infinite alternate;
+}
+
+/* typing effect */
+@keyframes typing {
+  from {
+    width: 0;
+  }
+}
+
+.bottom_to_top {
+  opacity: 0;
+  transform: translateY(100%);
+  animation: slideUp 2s forwards;
+}
+
+.bottom_to_top.delay-1s {
+  animation-delay: 1s;
+}
+
+.bottom_to_top.delay-2s {
+  animation-delay: 1.8s; /* 2s for the first animation and 1s delay before the second */
+}
+/* sliding up animation */
+@keyframes slideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(25px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0px);
+  }
+}
+
+.button_Animation {
+  opacity: 0;
+  transform: scale(100%);
+  animation: scaleUp 1.2s forwards;
+  animation-delay: 2s;
+  animation-timing-function: ease-out;
+}
+@keyframes scaleUp {
+  0% {
+    opacity: 0;
+    scale: 65%;
+  }
+  100% {
+    opacity: 1;
+    scale: 100%;
+  }
+}
+
+/* sliding up animation */
+@keyframes slideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(25px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0px);
+  }
+}
+
+.button_Animation {
+  opacity: 0;
+  transform: scale(100%);
+  animation: scaleUp 1.2s forwards;
+  animation-delay: 2s;
+  animation-timing-function: ease-out;
+}
+@keyframes scaleUp {
+  0% {
+    opacity: 0;
+    scale: 65%;
+  }
+  100% {
+    opacity: 1;
+    scale: 100%;
+  }
+}

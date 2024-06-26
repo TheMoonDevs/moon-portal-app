@@ -1,9 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
-export const Header = ({ title } : { title : string }) => {
+export const Header = ({ title }: { title: string }) => {
   const [time, setTime] = useState(new Date());
 
   useEffect(() => {
@@ -29,14 +29,16 @@ export const Header = ({ title } : { title : string }) => {
 
   return (
     <div className="flex justify-between items-center w-full pt-6 text-white">
-      <div className="flex items-center w-auto gap-4">
+      <div className="flex items-center w-auto gap-1 sm:gap-4">
         <Image src="/logo/logo_white.png" alt="" width={56} height={56} />
         <p className="text-sm tracking-[.2em]">
           THE <br /> MOON <br /> DEVS
         </p>
       </div>
 
-      <p className="text-2xl tracking-[.2em]">{title}</p>
+      <p className="text-2xl tracking-wide sm:tracking-[.85em] uppercase ">
+        {title}
+      </p>
 
       <div className="flex flex-col items-end">
         <p className="text-2xl tracking-wider">{`${formattedDate}`}</p>

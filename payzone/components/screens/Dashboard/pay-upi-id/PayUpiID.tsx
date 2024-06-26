@@ -19,6 +19,7 @@ import Toast, { toastSeverity } from "../../Referrals/Dashboard/Toast";
 import { useSyncBalances } from "@/utils/hooks/useSyncBalances";
 import { useAppSelector } from "@/utils/redux/store";
 import CurrencyModal from "@/components/global/CurrencyModal";
+import { toast } from "sonner";
 
 export const PayUpiID = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -37,15 +38,15 @@ export const PayUpiID = () => {
     txCategory: TRANSACTIONCATEGORY.STIPEND,
   });
   const [loading, setLoading] = useState(false);
-  const [toast, setToast] = useState<{
-    open: boolean;
-    message: string;
-    severity: toastSeverity;
-  }>({
-    open: false,
-    message: "",
-    severity: "success",
-  });
+  // const [toast, setToast] = useState<{
+  //   open: boolean;
+  //   message: string;
+  //   severity: toastSeverity;
+  // }>({
+  //   open: false,
+  //   message: "",
+  //   severity: "success",
+  // });
 
   const handleAddPayment = (amount: string) => {
     setLoading(true);
@@ -85,7 +86,8 @@ export const PayUpiID = () => {
     if (reason === "clickaway") {
       return;
     }
-    setToast((prevToast) => ({ ...prevToast, open: false }));
+    // setToast((prevToast) => ({ ...prevToast, open: false }));
+    toast.dismiss();
   };
 
   return (
@@ -140,12 +142,12 @@ export const PayUpiID = () => {
           ))}
         </div>
       </div>{" "}
-      <Toast
+      {/* <Toast
         open={toast.open}
         handleClose={handleClose}
         message={toast.message}
         severity={toast.severity}
-      />
+      /> */}
       <Modal
         open={modalOpen}
         onClose={handleModalClose}

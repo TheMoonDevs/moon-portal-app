@@ -19,6 +19,7 @@ import Toast, { toastSeverity } from "../../Referrals/Dashboard/Toast";
 import { useSyncBalances } from "@/utils/hooks/useSyncBalances";
 import { useAppSelector } from "@/utils/redux/store";
 import CurrencyModal from "@/components/global/CurrencyModal";
+import { Toaster, toast } from "sonner";
 
 export const AdminExchangeSetter = () => {
   const {
@@ -34,15 +35,15 @@ export const AdminExchangeSetter = () => {
     number | null
   >();
   const [creditsRateINR, setCreditsRateINR] = useState<number | null>();
-  const [toast, setToast] = useState<{
-    open: boolean;
-    message: string;
-    severity: toastSeverity;
-  }>({
-    open: false,
-    message: "",
-    severity: "success",
-  });
+  // const [toast, setToast] = useState<{
+  //   open: boolean;
+  //   message: string;
+  //   severity: toastSeverity;
+  // }>({
+  //   open: false,
+  //   message: "",
+  //   severity: "success",
+  // });
   const [isCurrencyModalOpen, setIsCurrencyModalOpen] =
     useState<boolean>(false);
 
@@ -68,11 +69,13 @@ export const AdminExchangeSetter = () => {
     MyServerApi.updateExchangeConfigData(exchangeConfigData)
       .then((data) => {
         console.log("Update successful:", data);
-        setToast({
-          message: "Exchange rate updated successfully",
-          severity: "success",
-          open: true,
-        });
+        // setToast({
+        //   message: "Exchange rate updated successfully",
+        //   severity: "success",
+        //   open: true,
+        // });
+        toast.success("Exchange rate updated successfully");
+
         setExchangeRateUpdating(false);
         setLiquidityINR(null);
         setLiquidityTMDCredits(null);
@@ -80,11 +83,12 @@ export const AdminExchangeSetter = () => {
       })
       .catch((error) => {
         console.error("Error updating data:", error);
-        setToast({
-          message: "Error updating exchange rate",
-          severity: "error",
-          open: true,
-        });
+        // setToast({
+        //   message: "Error updating exchange rate",
+        //   severity: "error",
+        //   open: true,
+        // });
+        toast.error("Error updating exchange rate");
         setExchangeRateUpdating(false);
         setLiquidityINR(null);
         setLiquidityTMDCredits(null);
@@ -96,7 +100,8 @@ export const AdminExchangeSetter = () => {
     if (reason === "clickaway") {
       return;
     }
-    setToast((prevToast) => ({ ...prevToast, open: false }));
+    // setToast((prevToast) => ({ ...prevToast, open: false }));
+    toast.dismiss();
   };
 
   return (
@@ -187,12 +192,12 @@ export const AdminExchangeSetter = () => {
         isOpen={isCurrencyModalOpen}
         onClose={() => setIsCurrencyModalOpen(false)}
       />
-      <Toast
+      {/* <Toast
         open={toast.open}
         handleClose={handleClose}
         message={toast.message}
         severity={toast.severity}
-      />
+      /> */}
     </div>
   );
 };
