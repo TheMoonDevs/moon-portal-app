@@ -110,7 +110,7 @@ export class SlackBotSdk {
       const members = resp_data.members.filter(
         (m: any) => m.is_bot == false && !m.deleted
       );
-      console.log("Slack received users list", members);
+      // console.log("Slack received users list", members);
       return members;
     } catch (err) {
       console.log(err);
