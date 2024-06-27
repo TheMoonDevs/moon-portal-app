@@ -15,7 +15,9 @@ const Invoice = () => {
               className="aspect-square mr-2"
             />
           </div>
-          <h1 className="text-4xl font-bold">INVOICE</h1>
+          <h1 className="text-4xl  md:text-5xl font-normal font-serif">
+            INVOICE
+          </h1>
         </div>
 
         {/* Billed To Section */}
@@ -59,16 +61,24 @@ const Invoice = () => {
                 <td className="p-2">$200</td>
               </tr>
               <tr>
-                <td className="p-2 font-bold text-right" colSpan={3}>
+                <td className="p-2 font-semibold text-right" colSpan={3}>
                   Subtotal
                 </td>
                 <td className="p-2">$600</td>
               </tr>
+
               <tr>
-                <td className="p-2 font-bold text-right" colSpan={3}>
+                <td
+                  colSpan={3}
+                  className="p-2 font-bold text-xl md:text-2xl text-right relative"
+                >
+                  <div className="absolute top-0 right-0 w-20 sm:w-24 md:w-32 lg:w-36 border-t-2 border-gray-700"></div>
                   Total
                 </td>
-                <td className="p-2 font-bold">$600</td>
+                <td className="p-2 font-bold text-xl md:text-2xl relative">
+                  <div className="absolute top-0 right-0 w-20 sm:w-24 md:w-32 lg:w-36 border-t-2 border-gray-700"></div>
+                  $600
+                </td>
               </tr>
             </tbody>
           </table>
@@ -78,30 +88,31 @@ const Invoice = () => {
         <p className="text-sm mb-8">
           Please finish the payment by the due date: 31st March 2024
         </p>
-        <p className="text-lg font-bold mb-8">Thank you!</p>
+        <p className="text-3xl  mb-8">Thank you!</p>
 
         {/* Payment Information */}
-        <div>
-          <h2 className="text-sm font-bold mb-2">PAYMENT INFORMATION</h2>
-          <p className="text-sm">
-            Crypto Wallet Address: <br />
-            0x94751a6ecfd0f849286fe6c399eb0ac3bf05b141f
-            <br />
-            <br />
-            Bank Transfer:
-            <br />
-            Name: SUBHAKAR TIKKIREDDY
-            <br />
-            A/c No: 145410010035399
-            <br />
-            IFSC - UBIN0836531
-          </p>
-        </div>
-
-        {/* Footer Section */}
-        <div className="mt-8 flex justify-between items-center">
-          <p className="font-bold">Subhakar Tikkireddy</p>
-          <p className="font-bold">TheMoonDevs</p>
+        <div className="flex flex-col sm:flex-row">
+          <div className="md:w-1/2 md:pr-8">
+            <h2 className="text-sm font-bold mb-2">PAYMENT INFORMATION</h2>
+            <p className="text-sm">
+              Crypto Wallet Address: <br />
+              <span className="whitespace-normal flex-wrap">
+                0x94751a6ecfd0f849286fe6c399eb0ac3bf05b141f
+              </span>
+              <br />
+              <br />
+              Bank Transfer: <br />
+              Name: SUBHAKAR TIKKIREDDY <br />
+              A/c No: 145410010035399 <br />
+              IFSC - UBIN0836531
+            </p>
+          </div>
+          <div className="md:w-1/2 mt-8 md:mt-0 sm:text-right flex justify-end  flex-col">
+            <p className="text-xl font-normal sm:text-[22px] md:text-[25px] font-serif">
+              Subhakar Tikkireddy
+            </p>
+            <p className="sm:text-lg">TheMoonDevs</p>
+          </div>
         </div>
       </div>
     </section>
