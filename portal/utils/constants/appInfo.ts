@@ -20,6 +20,7 @@ export enum APP_ROUTES {
   hrScreening = "/hr/screening",
   urlShortener = "/url-shortener",
   userWorklogSummary = "/user/worklogs/summary",
+  googleCalendar = "/google-calendar",
 }
 
 export enum GLOBAL_ROUTES {
