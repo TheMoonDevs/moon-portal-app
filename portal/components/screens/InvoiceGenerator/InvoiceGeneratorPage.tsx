@@ -1,7 +1,6 @@
 
+
 const InvoiceGeneratorPage = () => {
-  return (
-    <div>InvoiceGeneratorPage</div>
-  )
-}
-export default InvoiceGeneratorPage
+  return <>InvoiceGeneratorPage</>;
+};
+export default InvoiceGeneratorPage;
