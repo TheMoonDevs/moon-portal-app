@@ -1,12 +1,15 @@
-import { CircularProgress, IconButton } from '@mui/material';
-import { useState } from 'react';
-import { Modal } from '@mui/material';
+import { CircularProgress } from '@mui/material';
+import { useRef, useState } from 'react';
+import { Modal, Tooltip } from '@mui/material';
 import Link from 'next/link';
 import Image from 'next/image';
 import { QuicklinksSdk } from '@/utils/services/QuicklinksSdk';
 import { FormFields } from './LinkActions';
 import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
-import { setAllQuicklinks, setToast } from '@/utils/redux/quicklinks/quicklinks.slice';
+import {
+  setAllQuicklinks,
+  setToast,
+} from '@/utils/redux/quicklinks/quicklinks.slice';
 
 export const EditLinkPopup = ({
   isModalOpen,
@@ -23,6 +26,47 @@ export const EditLinkPopup = ({
   const dispatch = useAppDispatch();
   const { allQuicklinks } = useAppSelector((state) => state.quicklinks);
 
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    type: string
+  ) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      await handleFileUpload(file, type);
+    }
+  };
+
+  const handleFileUpload = async (file: File, type: string) => {
+    try {
+      setLoading(true);
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/quicklinks/link/upload-img', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await response.json();
+
+      if (response.ok) {
+        if (type === 'image') {
+          setFields({ ...fields, image: data.fileInfo.fileUrl });
+        } else if (type === 'logo') {
+          setFields({ ...fields, logo: data.fileInfo.fileUrl });
+        }
+      } else {
+        console.error('Failed to upload file:', data.message);
+      }
+    } catch (error) {
+      console.error('Error uploading file:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     try {
@@ -33,25 +77,23 @@ export const EditLinkPopup = ({
           title: fields.title,
           description: fields.description,
           url: fields.url,
-          // logo: fields.logo,
-          // image: fields.image,
+          logo: fields.logo,
+          image: fields.image,
         },
       });
       console.log(response);
       dispatch(
         setToast({
           showToast: true,
-          toastMsg: "Link updated successfully",
-          toastSev: "success",
+          toastMsg: 'Link updated successfully',
+          toastSev: 'success',
         })
       );
       const updatedLink = response.data.link;
-      const updatedQuicklinks = allQuicklinks.map(link =>
+      const updatedQuicklinks = allQuicklinks.map((link) =>
         link.id === updatedLink.id ? updatedLink : link
       );
-      dispatch(
-        setAllQuicklinks(updatedQuicklinks)
-      );
+      dispatch(setAllQuicklinks(updatedQuicklinks));
       setLoading(false);
       handleCloseModal();
     } catch (error) {
@@ -60,8 +102,8 @@ export const EditLinkPopup = ({
       dispatch(
         setToast({
           showToast: true,
-          toastMsg: "Error updating link, please try again",
-          toastSev: "error",
+          toastMsg: 'Error updating link, please try again',
+          toastSev: 'error',
         })
       );
     }
@@ -84,29 +126,69 @@ export const EditLinkPopup = ({
           <span className='material-symbols-outlined'>close</span>
         </button>
 
+        <input
+          type='file'
+          ref={imageInputRef}
+          className='hidden'
+          onChange={(e) => handleFileChange(e, 'image')}
+        />
+        <input
+          type='file'
+          ref={logoInputRef}
+          className='hidden'
+          onChange={(e) => handleFileChange(e, 'logo')}
+        />
+
         {/* Cover Image */}
-        {fields.logo && (
-          <div className='w-full h-48 relative rounded-t-lg overflow-hidden'>
+        {fields.image && (
+          <div
+            className='w-full h-48 relative rounded-t-lg overflow-hidden cursor-pointer'
+            onClick={() => imageInputRef.current?.click()}
+          >
             <Image
-              src={fields.logo}
+              src={fields.image}
               alt='cover image'
               layout='fill'
               objectFit='cover'
               className='w-full h-48 border-b-2 border-gray-200'
             />
+            <Tooltip title='Edit Profile Image'>
+              <div className='absolute top-2 left-2 w-5 h-auto cursor-pointer flex justify-center items-center gap-1 py-2 px-4 border border-transparent shadow-sm text-sm font-medium text-white bg-black hover:bg-opacity-80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black rounded-full'>
+                <span
+                  className='material-symbols-outlined'
+                  style={{ fontSize: '16px' }}
+                >
+                  edit
+                </span>
+              </div>
+            </Tooltip>
           </div>
         )}
 
         {/* Logo */}
-        {fields.image && (
+        {fields.logo && (
           <div className='relative -mt-12 mb-2 flex justify-center'>
-            <div className='w-28 h-28 relative rounded-full border-4 border-gray-400 overflow-hidden bg-white'>
+            <div
+              className='w-28 h-28 relative rounded-full border-4 border-gray-400 bg-white cursor-pointer '
+              onClick={() => logoInputRef.current?.click()}
+            >
               <Image
-                src={fields.image}
+                src={fields.logo}
                 alt='logo'
                 layout='fill'
                 objectFit='cover'
+                className='rounded-full'
               />
+              <Tooltip title='Edit Logo'>
+                <div className='w-7 h-7 absolute bottom-2 right-0 z-10 bg-gray-600 p-1 flex items-center justify-center rounded-full text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 cursor-pointer'>
+                  <span
+                    className='material-symbols-outlined'
+                    style={{ fontSize: '15px' }}
+                  >
+                    edit
+                  </span>
+                </div>
+              </Tooltip>
             </div>
           </div>
         )}
@@ -176,13 +258,15 @@ export const EditLinkPopup = ({
           </div>
           <button
             type='submit'
-            className='w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-black hover:bg-opacity-80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black'
+            className='w-full flex justify-center items-center gap-1 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-black hover:bg-opacity-80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black'
             disabled={loading}
           >
             {loading ? (
               <CircularProgress size={20} color='inherit' />
             ) : (
-              'Make it So'
+              <>
+                <span className='material-symbols-outlined'>task_alt</span> Save
+              </>
             )}
           </button>
         </form>
