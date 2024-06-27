@@ -1,8 +1,8 @@
 import { prisma } from "@/prisma/prisma";
 import {
-  PrismaClient,
   TRANSACTIONCATEGORY,
   TRANSACTIONSTATUS,
+  TRANSACTIONTYPE,
 } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -74,16 +74,35 @@ export async function PUT(req: NextRequest, res: NextResponse) {
   }
 
   const body = await req.text();
-  const { id, userId, txStatus, txType, txCategory, amount, burnTxHash } =
-    JSON.parse(body);
+  const {
+    id,
+    userId,
+    txStatus,
+    txType,
+    txCategory,
+    amount,
+    burnTxHash,
+    slackId,
+  } = JSON.parse(body);
   // console.log("req.body",req.body);
 
   try {
-    const user = await prisma.user.findFirst({
-      where: {
-        id: userId,
-      },
-    });
+    let user;
+
+    if (userId) {
+      user = await prisma.user.findFirst({
+        where: {
+          id: userId,
+        },
+      });
+    } else {
+      user = await prisma.user.findFirst({
+        where: {
+          slackId: slackId,
+        },
+      });
+    }
+
     const user_data = {
       email: user?.email,
       name: user?.name,
@@ -91,20 +110,37 @@ export async function PUT(req: NextRequest, res: NextResponse) {
       avatar: user?.avatar,
       role: user?.role,
     };
-    const newTransaction = await prisma.payTransactions.update({
-      where: {
-        id,
-      },
-      data: {
-        userId,
-        user: user_data,
-        txStatus,
-        txType,
-        txCategory,
-        amount,
-        burnTxHash,
-      },
-    });
+
+    let newTransaction;
+
+    if (id) {
+      newTransaction = await prisma.payTransactions.update({
+        where: {
+          id,
+        },
+        data: {
+          userId,
+          user: user_data,
+          txStatus,
+          txType,
+          txCategory,
+          amount,
+          burnTxHash,
+        },
+      });
+    } else {
+      newTransaction = await prisma.payTransactions.create({
+        data: {
+          userId: userId || (user?.id as string),
+          user: user_data,
+          txStatus: txStatus || TRANSACTIONSTATUS.DONE,
+          txType: txType || TRANSACTIONTYPE.FIAT,
+          txCategory: txCategory || TRANSACTIONCATEGORY.STIPEND,
+          amount: amount || (user?.payData as any).stipendAmount,
+          burnTxHash: burnTxHash || null,
+        },
+      });
+    }
 
     return new NextResponse(JSON.stringify(newTransaction), {
       status: 200,

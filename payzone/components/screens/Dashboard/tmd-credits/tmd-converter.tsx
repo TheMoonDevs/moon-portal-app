@@ -15,12 +15,23 @@ import {
   TRANSACTIONTYPE,
 } from "@prisma/client";
 import { useAuthSession } from "@/utils/hooks/useAuthSession";
-import { IconButton } from "@mui/material";
+import {
+  Button,
+  IconButton,
+  List,
+  ListItem,
+  ListItemText,
+  Popover,
+} from "@mui/material";
 import { close } from "../../../../public/icons/index";
 import Image from "next/image";
 import { useSyncBalances } from "@/utils/hooks/useSyncBalances";
-import CurrencyModal from "@/components/global/CurrencyModal";
 import { addClaimTransaction } from "@/utils/redux/db/db.slice";
+import {
+  updateSelectedCurrency,
+  updateSelectedCurrencyValue,
+} from "@/utils/redux/balances/balances.slice";
+import CurrencySelectPopover from "@/components/global/CurrencySelectPopover";
 
 const TMDConverter = ({
   refetchTransactions,
@@ -56,8 +67,24 @@ const TMDConverter = ({
   const [sendAddress, setSendAddress] = useState("");
 
   const [claimAmount, setClaimAmount] = useState("");
-  const [isCurrencyModalOpen, setIsCurrencyModalOpen] =
-    useState<boolean>(false);
+  const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
+
+  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const open = Boolean(anchorEl);
+  const id = open ? "simple-popover" : undefined;
+
+  const handleCurrencySelect = (currency: string, value: number) => {
+    dispatch(updateSelectedCurrency(currency));
+    dispatch(updateSelectedCurrencyValue(value));
+    handleClose();
+  };
 
   const {
     balance,
@@ -385,16 +412,30 @@ const TMDConverter = ({
       <span className="flex justify-between items-center">
         <p className="text-sm font-thin">Current Price</p>
         {exchange ? (
-          <button
-            className="text-sm font-black text-black border border-neutral-500 px-2 py-1 rounded"
-            onClick={() => setIsCurrencyModalOpen(true)}
+          <Button
+            className="text-sm font-black text-black border border-neutral-500 px-2 py-1 rounded flex justify-center items-center"
+            variant="outlined"
+            aria-describedby={id}
+            onClick={handleClick}
+            sx={{
+              '&:hover': {
+                borderColor: '#f5f5f5'
+              }
+            }}
           >
             1 TMD === {multiplicationFactor} {currency}
-          </button>
+            <span className="material-symbols-outlined">arrow_drop_down</span>
+          </Button>
         ) : (
           <p className="text-sm text-black">loading...</p>
         )}
       </span>
+
+      <CurrencySelectPopover
+        popoverProps={{ id, open, anchorEl, onClose: handleClose }}
+        handleCurrencySelect={handleCurrencySelect}
+      />
+
       <div className="flex justify-between items-center">
         <p className="text-sm font-thin">Available Fiat for conversion</p>
         <p className="text-sm font-black">{liquidityTMDCredits} TMD</p>
@@ -403,11 +444,6 @@ const TMDConverter = ({
         <p className="text-sm font-thin">Your current TMD balance</p>
         <p className="text-sm font-black">{balance} TMD</p>
       </span>
-
-      <CurrencyModal
-        isOpen={isCurrencyModalOpen}
-        onClose={() => setIsCurrencyModalOpen(false)}
-      />
 
       <form
         onSubmit={(e) => {
