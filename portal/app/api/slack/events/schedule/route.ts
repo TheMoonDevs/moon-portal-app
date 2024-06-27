@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
 
     const usersPromise = mentions.map(async (mention) => {
       const username = mention.substring(1); // remove @ from username
-      const user = usersList?.find((u: any) => u.name === username); // Find user by username
+      const user = usersList?.find((u: any) => u.name.startsWith(username)); // Find user by username starting with mention
       if (!user) {
         throw new Error(`User @${username} not found in Slack`);
       }

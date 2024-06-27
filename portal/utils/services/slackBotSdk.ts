@@ -35,7 +35,7 @@ export const SlackChannelWebhooks = {
 };
 
 export const SlackChannels = {
-  y_moon_reminders: "C07A8AU5UKB",
+  y_moon_reminders: "C07A2HJUEPN",
 };
 
 export type channelType =
