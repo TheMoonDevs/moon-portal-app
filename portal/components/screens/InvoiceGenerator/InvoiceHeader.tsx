@@ -5,7 +5,7 @@ import Link from "next/link";
 const InvoiceHeader = () => {
   return (
     <header>
-      <div className="fixed left-0 right-0 top-0 z-10 bg-white flex flex-row gap-3 py-2 px-3 items-center justify-between border-b border-neutral-300 shadow-md md:pl-[6rem]">
+      <div className="fixed left-0 right-0 top-0 z-10 bg-white flex flex-row gap-3 py-2 px-3 items-center justify-between border-b border-neutral-300 shadow-md md:pl-[6rem] h-14">
         <div className="flex items-center justify-between w-full sm:w-auto">
           <Link href={APP_ROUTES.home} className="flex items-center">
             <Image
