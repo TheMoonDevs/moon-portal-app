@@ -18,7 +18,6 @@ import { ExchangeConfigData } from "@/prisma/extraDbTypes";
 import Toast, { toastSeverity } from "../../Referrals/Dashboard/Toast";
 import { useSyncBalances } from "@/utils/hooks/useSyncBalances";
 import { useAppSelector } from "@/utils/redux/store";
-import CurrencyModal from "@/components/global/CurrencyModal";
 
 export const PayUpiID = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -27,13 +26,15 @@ export const PayUpiID = () => {
   const handleModalClose = () => setModalOpen(false);
   const [payingToUser, setPayingToUser] = useState<any>();
   const [payAmount, setPayAmount] = useState("");
-  const [exchangeRateUpdating, setExchangeRateUpdating] =
-    useState<boolean>(false);
-  const [liquidityINR, setLiquidityINR] = useState<number | null>();
-  const [liquidityTMDCredits, setLiquidityTMDCredits] = useState<
-    number | null
-  >();
-  const [creditsRateINR, setCreditsRateINR] = useState<number | null>();
+  const [txInfos, setTxInfos] = useState<{
+    txStatus: TRANSACTIONSTATUS;
+    txType: TRANSACTIONTYPE;
+    txCategory: TRANSACTIONCATEGORY;
+  }>({
+    txStatus: TRANSACTIONSTATUS.DONE,
+    txType: TRANSACTIONTYPE.FIAT,
+    txCategory: TRANSACTIONCATEGORY.STIPEND,
+  });
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<{
     open: boolean;
@@ -44,10 +45,6 @@ export const PayUpiID = () => {
     message: "",
     severity: "success",
   });
-  const { multiplicationFactor } = useSyncBalances();
-  const currency = useAppSelector((state) => state.balances.selectedCurrency);
-  const [isCurrencyModalOpen, setIsCurrencyModalOpen] =
-    useState<boolean>(false);
 
   const handleAddPayment = (amount: string) => {
     setLoading(true);
@@ -57,13 +54,11 @@ export const PayUpiID = () => {
     const updatedData = {
       userId: payingToUser.id,
       user: _userData,
-      txStatus: TRANSACTIONSTATUS.DONE,
-      txType: TRANSACTIONTYPE.FIAT,
-      txCategory: TRANSACTIONCATEGORY.STIPEND,
-      amount: amount,
+      ...txInfos,
+      amount: parseFloat(amount),
     };
     // console.log(updatedData);
-    MyServerApi.updateData(SERVER_API_ENDPOINTS.updatePayment, updatedData)
+    MyServerApi.postData(SERVER_API_ENDPOINTS.payment, updatedData)
       .then((updatedTransaction) => {
         handleModalClose();
         setLoading(false);
@@ -73,41 +68,6 @@ export const PayUpiID = () => {
       });
   };
 
-  const handleUpdateExchangeRate = () => {
-    setExchangeRateUpdating(true);
-
-    const exchangeConfigData: ExchangeConfigData = {
-      liquidityINR,
-      liquidityTMDCredits,
-      creditsRateINR,
-    };
-
-    MyServerApi.updateExchangeConfigData(exchangeConfigData)
-      .then((data) => {
-        console.log("Update successful:", data);
-        setToast({
-          message: "Exchange rate updated successfully",
-          severity: "success",
-          open: true,
-        });
-        setExchangeRateUpdating(false);
-        setLiquidityINR(null);
-        setLiquidityTMDCredits(null);
-        setCreditsRateINR(null);
-      })
-      .catch((error) => {
-        console.error("Error updating data:", error);
-        setToast({
-          message: "Error updating exchange rate",
-          severity: "error",
-          open: true,
-        });
-        setExchangeRateUpdating(false);
-        setLiquidityINR(null);
-        setLiquidityTMDCredits(null);
-        setCreditsRateINR(null);
-      });
-  };
 
   useEffect(() => {
     MyServerApi.getAll(
@@ -129,15 +89,12 @@ export const PayUpiID = () => {
   };
 
   return (
-    <section className="h-screen w-full p-4 flex flex-col gap-3">
-      <div className="w-fit h-fit bg-black text-white text-sm font-bold p-2 items-center">
-        <span>Employees -- UPI Ids</span>
-      </div>
+    <section className="h-screen w-full flex flex-col gap-3 max-lg:h-full">
       <p className="text-thin text-sm text-midGrey">
         copy upi-id and pay in G-Pay/PhonePe/Paytm
       </p>
       <div className="flex flex-row justify-start items-start gap-4 pb-4 max-sm:flex-col">
-        <div className="flex flex-col gap-3 w-2/3 max-sm:w-full">
+        <div className="flex flex-col gap-3 w-full">
           {users.map((_user) => (
             <div key={_user.id}>
               <div className="flex h-fit items-center justify-between border border-midGrey p-3">
@@ -150,94 +107,37 @@ export const PayUpiID = () => {
                     {dayjs((_user.workData as any)?.joining).format("DD")} of
                     Month
                   </span>
-                </div>
-                {(_user.payData as any)?.upiId ? (
-                  <span
-                    className="font-bold cursor-pointer"
-                    onClick={() => copyUPI((_user?.payData as any)?.upiId)}
-                  >
-                    copy upi-id
+                  <span className="text-xs">
+                    {(_user?.payData as any)?.upiId}
                   </span>
-                ) : (
-                  <span className="font-bold text-red-600">N/A</span>
-                )}
-              </div>
-              <div className="flex justify-end">
-                <div
-                  className={`bg-black text-white text-xs font-semibold px-2 py-1 cursor-pointer ${
-                    loading ? "opacity-50" : ""
-                  }`}
-                  onClick={() => {
-                    handleModalOpen();
-                    setPayingToUser(_user);
-                    setPayAmount((_user.payData as any).stipend);
-                  }}
-                >
-                  Mark Payment Sent
+                </div>
+                <div className="flex flex-col">
+                  {(_user.payData as any)?.upiId ? (
+                    <span
+                      className="font-bold cursor-pointer"
+                      onClick={() => copyUPI((_user?.payData as any)?.upiId)}
+                    >
+                      copy upi-id
+                    </span>
+                  ) : (
+                    <span className="font-bold text-red-600">N/A</span>
+                  )}
+                  <div
+                    className={`bg-black text-white text-xs font-semibold px-2 py-1 cursor-pointer ${
+                      loading ? "opacity-50" : ""
+                    }`}
+                    onClick={() => {
+                      handleModalOpen();
+                      setPayingToUser(_user);
+                      setPayAmount((_user.payData as any).stipend);
+                    }}
+                  >
+                    Add Payment
+                  </div>
                 </div>
               </div>
             </div>
           ))}
-        </div>
-        <div className="bg-whiteSmoke h-fit flex flex-col p-4 justify-between gap-4 w-1/3 max-sm:w-full">
-          <span className="flex justify-between">
-            <p className="text-sm font-thin">Current Price</p>
-            <p
-              className="text-sm font-black px-2 py-1 border border-black cursor-pointer"
-              onClick={() => setIsCurrencyModalOpen(true)}
-            >
-              1 TMD === {multiplicationFactor} {currency}
-            </p>
-          </span>
-
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleUpdateExchangeRate();
-            }}
-          >
-            <div className="flex flex-col gap-2">
-              <input
-                type="number"
-                className="w-full h-10 p-2 border border-midGrey"
-                placeholder="Enter Liquidity in INR"
-                value={liquidityINR || ""}
-                onChange={(e) => setLiquidityINR(Number(e.target.value))}
-                disabled={exchangeRateUpdating}
-              />
-              <input
-                type="number"
-                className="w-full h-10 p-2 border border-midGrey"
-                placeholder="Enter Liquidity TMD Credits"
-                value={liquidityTMDCredits || ""}
-                onChange={(e) => setLiquidityTMDCredits(Number(e.target.value))}
-                disabled={exchangeRateUpdating}
-              />
-              <input
-                type="number"
-                className="w-full h-10 p-2 border border-midGrey"
-                placeholder="Enter Exchange Rate in INR"
-                value={creditsRateINR || ""}
-                onChange={(e) => setCreditsRateINR(Number(e.target.value))}
-                disabled={exchangeRateUpdating}
-              />
-
-              <button
-                className={`text-sm font-black w-full h-10 text-whiteSmoke bg-black ${
-                  exchangeRateUpdating && "opacity-50"
-                }`}
-                type="submit"
-                disabled={
-                  exchangeRateUpdating ||
-                  !liquidityINR ||
-                  !liquidityTMDCredits ||
-                  !creditsRateINR
-                }
-              >
-                Set Exchange Rate
-              </button>
-            </div>
-          </form>
         </div>
       </div>{" "}
       <Toast
@@ -246,20 +146,17 @@ export const PayUpiID = () => {
         message={toast.message}
         severity={toast.severity}
       />
-      <CurrencyModal
-        isOpen={isCurrencyModalOpen}
-        onClose={() => setIsCurrencyModalOpen(false)}
-      />
       <Modal
         open={modalOpen}
         onClose={handleModalClose}
         aria-labelledby="modal-modal-title"
         aria-describedby="modal-modal-description"
       >
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 lg:w-fit w-2/3 bg-white border-2 border-midGrey shadow-lg p-2 lg:p-4 flex flex-col items-center justify-center">
-          <p className="font-semibold text-bgBlack lg:text-lg text-center ">
-            The payment will be marked as complete.
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 lg:w-fit w-2/3 bg-white border-2 border-midGrey shadow-lg p-2 lg:p-4 flex flex-col items-start justify-center">
+          <p className="font-semibold text-bgBlack lg:text-3xl w-[20ch] mb-6 text-left ">
+            The payment will be added to the user records.
           </p>
+          <span> Enter Amount in INR</span>
           <input
             type="text"
             value={payAmount}
@@ -268,9 +165,70 @@ export const PayUpiID = () => {
               setPayAmount(e.target.value);
             }}
             placeholder="Enter Payment Amount"
-            className="my-2 p-2 text-md border-b border-midGrey active:border-b text-neutral-800 px-2 py-1 w-full lg:w-80 mb-4"
+            className="text-md border-b border-midGrey active:border-b text-neutral-800 py-1 w-full lg:w-80 mb-4"
           />
-          <div className="text-sm lg:text-base text-midGrey">Are you sure?</div>
+          <div className="flex gap-4 mb-4">
+            <span> Tx Type</span>
+            <select
+              value={txInfos.txType}
+              onChange={(e) =>
+                setTxInfos((prevTxInfos) => ({
+                  ...prevTxInfos,
+                  txType: e.target.value as TRANSACTIONTYPE,
+                }))
+              }
+              className="border border-midGrey p-1"
+              id="txType"
+            >
+              {Object.values(TRANSACTIONTYPE).map((_txType) => (
+                <option value={_txType} key={_txType}>
+                  {_txType}
+                </option>
+              ))}
+            </select>
+            <span> Tx Category</span>
+            <select
+              value={txInfos.txCategory}
+              onChange={(e) =>
+                setTxInfos((prevTxInfos) => ({
+                  ...prevTxInfos,
+                  txCategory: e.target.value as TRANSACTIONCATEGORY,
+                }))
+              }
+              className="border border-midGrey p-1"
+              id="txCategory"
+            >
+              {Object.values(TRANSACTIONCATEGORY).map((_txType) => (
+                <option value={_txType} key={_txType}>
+                  {_txType}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex gap-4">
+            <span> Tx Status</span>
+            <select
+              value={txInfos.txStatus}
+              onChange={(e) =>
+                setTxInfos((prevTxInfos) => ({
+                  ...prevTxInfos,
+                  txStatus: e.target.value as TRANSACTIONSTATUS,
+                }))
+              }
+              className="border border-midGrey p-1"
+              id="txStatus"
+            >
+              {Object.values(TRANSACTIONSTATUS).map((_txType) => (
+                <option value={_txType} key={_txType}>
+                  {_txType}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="text-sm lg:text-base text-midGrey mt-6">
+            Are you sure?
+          </div>
           <div className="flex gap-4 mt-4">
             <button
               className="bg-black text-white px-2 py-1 w-16"

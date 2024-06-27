@@ -11,7 +11,7 @@ const Searchbar = () => {
     dispatch(setSearchTerm(e.target.value));
   };
   return (
-    <form className="flex w-2/5 mr-3">
+    <form className="flex w-2/5 mr-3 max-sm:w-full max-sm:py-1 max-sm:mr-0">
       <label htmlFor="simple-search" className="sr-only">
         Search
       </label>
