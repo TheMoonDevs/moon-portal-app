@@ -156,12 +156,39 @@ export const ShortUrlCard = () => {
         </div>
       ) : null}
       <form className="grid gap-6 mt-5" onSubmit={handleFormSubmit}>
-        <div className="flex items-stretch space-x-2">
+        <div className="flex items-stretch space-x-2  ">
+          {/* <TextField
+            inputProps={{
+              pattern: "^[-a-zA-Z0-9]+$",
+              sx: { padding: "10px " }, // Adjust the padding as needed
+            }}
+            className="flex-1 h-full "
+            name="slug placeholder:pb-2 "
+            value={formData.slug}
+            id="slug"
+            placeholder="5g3th9"
+            type="text"
+            label="Slug"
+            onChange={(e) => {
+              if (error.isError) setError({ isError: false, description: "" });
+              setFormData({ ...formData, slug: e.target.value });
+            }}
+            required
+          /> */}
           <TextField
             inputProps={{
               pattern: "^[-a-zA-Z0-9]+$",
+              sx: { padding: "10px" }, // Adjust the padding as needed
             }}
-            className="flex-1"
+            InputLabelProps={{
+              sx: {
+                transform: "translate(10px, 12px) scale(1)", // Adjust this as needed
+                "&.MuiInputLabel-shrink": {
+                  transform: "translate(13.5px, -5.5px) scale(0.75)", // Adjust this as needed
+                },
+              },
+            }}
+            className="flex-1 h-full"
             name="slug"
             value={formData.slug}
             id="slug"
@@ -188,6 +215,17 @@ export const ShortUrlCard = () => {
         </div>
         <div className="space-y-2">
           <TextField
+            inputProps={{
+              sx: { padding: "10px" }, // Adjust the padding as needed
+            }}
+            InputLabelProps={{
+              sx: {
+                transform: "translate(10px, 12px) scale(1)", // Adjust this as needed
+                "&.MuiInputLabel-shrink": {
+                  transform: "translate(13.5px, -5.5px) scale(0.75)", // Adjust this as needed
+                },
+              },
+            }}
             id="url"
             name="url"
             placeholder="https://themoondevs.com?strategy=lin-gtm&campaign_id=lin-gtm-1&linkedin-referrer=subhakar"

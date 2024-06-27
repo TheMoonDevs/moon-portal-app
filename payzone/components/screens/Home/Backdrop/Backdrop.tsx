@@ -35,8 +35,8 @@ export function Backdrop() {
             castShadow
             intensity={1.5}
           />
-          <Moon />
-          <Stars />
+          {/* <Moon />
+          <Stars /> */}
           {/* <SkyBox /> */}
           {/* <UnrealBloomPass strength={0.18} radius={0.5} threshold={1} /> */}
         </Canvas>

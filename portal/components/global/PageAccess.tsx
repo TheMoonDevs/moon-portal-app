@@ -5,7 +5,7 @@ import { useUser } from "@/utils/hooks/useUser";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-export const usePageAccess = () => { };
+export const usePageAccess = () => {};
 
 export const PageAccess = ({
   isAuthRequired,
@@ -85,5 +85,7 @@ export const PageAccess = ({
     );
   }
 
-  return <div className={`${bottomBarShown ? "md:pl-20" : ""}`}>{children}</div>;
+  return (
+    <div className={`${bottomBarShown ? "md:pl-20" : ""}`}>{children}</div>
+  );
 };
