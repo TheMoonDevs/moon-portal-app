@@ -1,6 +1,6 @@
 "use client";
 
-import { copyUPI } from "@/utils/constants/appInfo";
+import { TOKEN_INFO, copyUPI } from "@/utils/constants/appInfo";
 import { useAuthSession } from "@/utils/hooks/useAuthSession";
 import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import { MyServerApi, SERVER_API_ENDPOINTS } from "@/utils/service/MyServerApi";
@@ -10,6 +10,7 @@ import {
   TRANSACTIONCATEGORY,
   TRANSACTIONSTATUS,
 } from "@prisma/client";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 export const ClaimReqs = () => {
@@ -22,10 +23,6 @@ export const ClaimReqs = () => {
   const handleModalOpen = () => setModalOpen(true);
   const handleModalClose = () => setModalOpen(false);
   const [claimId, setClaimId] = useState("");
-
-  const verifyTx = (hash: string) => {
-    window.open(bscScanUrl + hash, "_blank");
-  };
 
   const handleAddPayment = (id: string) => {
     setLoading(true);
@@ -60,7 +57,7 @@ export const ClaimReqs = () => {
   }, []);
 
   return (
-    <section className="h-screen w-full p-4 flex flex-col gap-3">
+    <section className="h-screen w-full p-4 flex flex-col gap-3 max-lg:h-full">
       <div className="w-fit h-fit bg-black text-white text-sm font-bold p-2 items-center">
         <span>TMD - Claim Requests</span>
       </div>
@@ -87,12 +84,13 @@ export const ClaimReqs = () => {
               </span>
             </div>
             <div className="w-full h-fit flex justify-between">
-              <button
+              <Link
                 className="bg-black text-white text-xs font-semibold px-2 py-1"
-                onClick={() => verifyTx(claim.burnTxHash as string)}
+                href={`${TOKEN_INFO.chain.blockExplorers.default.url}/tx/${claim.burnTxHash}`}
+                target="_blank"
               >
                 Verify Tx
-              </button>
+              </Link>
               <div
                 className={`bg-black text-white text-xs font-semibold px-2 py-1 cursor-pointer ${
                   loading ? "opacity-50" : ""

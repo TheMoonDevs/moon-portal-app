@@ -50,6 +50,8 @@ export const AdminUserEditor = () => {
     },
     personalData: null, // Add the missing property
     payData: null, // Add the missing property
+    slackId: "",
+    thirdPartyData: null,
   });
 
   useEffect(() => {
