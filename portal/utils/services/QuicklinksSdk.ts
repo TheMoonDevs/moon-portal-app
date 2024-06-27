@@ -144,7 +144,7 @@ export const QuicklinksSdk = {
       title: twitterTitle || ogTitle,
       description: twitterDescription || ogDescription,
       url: twitterUrl || ogUrl || requestUrl,
-      image: ogImage.url || twitterImage.url,
+      image: ogImage?.url || twitterImage?.url || ogImage[0]?.url || "",
       linkType: ogType || "website",
       logo: favicon?.startsWith("https://")
         ? favicon
