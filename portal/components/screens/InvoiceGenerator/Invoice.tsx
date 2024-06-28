@@ -72,7 +72,7 @@ const Invoice = () => {
                   colSpan={3}
                   className="p-2 font-bold text-xl md:text-2xl text-right relative"
                 >
-                  <div className="absolute top-0 right-0 w-20 sm:w-24 md:w-32 lg:w-36 border-t-2 border-gray-700"></div>
+                  <div className="absolute top-0 right-0 w-20 sm:w-24 md:w-32  border-t-2 border-gray-700"></div>
                   Total
                 </td>
                 <td className="p-2 font-bold text-xl md:text-2xl relative">
