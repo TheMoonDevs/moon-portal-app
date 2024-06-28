@@ -16,6 +16,7 @@ import { WorklogView } from "./WorklogView";
 import { SummarizeButton } from "./SummarizeButton";
 import { Toaster, toast } from "sonner";
 import { setLogsList } from "@/utils/redux/worklogs/worklogs.slice";
+import SimpleTabs from "./WorklogTabs";
 
 const tempData = [
   {
@@ -289,62 +290,8 @@ export const WorklogsPage = () => {
         </div>
 
         <div className="flex flex-row-reverse max-lg:flex-col w-full">
-          <div className="hidden md:block p-8 invisible md:visible w-[40%] max-lg:w-full max-h-[80vh] overflow-y-scroll">
-            <p className="text-lg font-bold my-4">Tasks from clickup</p>
-            <ul className=" font-mono text-sm tracking-widest">
-              <li className="">Something...</li>
-            </ul>
-            <p className="text-lg font-bold my-4">Worklog tips</p>
-            <ul className="list-decimal font-mono text-sm tracking-widest ml-3">
-              <li className="">Use Short Bulletin points</li>
-              <li className="">Log every minor update</li>
-              <li className="">Add ✅ as you complete each task.</li>
-              <li className="">At the end, Note Todo&apos;s for tomorrow</li>
-              <li className="">Use summarise to generate logs.</li>
-            </ul>
-            <p className="text-lg font-bold  my-4">Shortcuts</p>
-            <ul className="list-disc font-mono text-sm tracking-widest">
-              <li className="">Ctrl+Spacebar === ✅</li>
-              <li className="">Ctrl+S to save the logs manually</li>
-              <li className="">Ctrl+R to Refresh the logs</li>
-              <li className="">Type `-` to add bulletin</li>
-              <li className="">Click Tab to add space to bulletin</li>
-            </ul>
-            <p className="text-lg font-bold my-4">Emoji Legend:</p>
-            <ul className="list-disc font-mono text-sm tracking-widest">
-              <li>
-                <span className="font-bold">:check:</span> === ✅ - Task
-                Completed
-              </li>
-              <li>
-                <span className="font-bold">:cross:</span> === ❌ - Task Failed
-              </li>
-              <li>
-                <span className="font-bold">:yellow:</span> === 🟡 - Task In
-                Progress
-              </li>
-              <li>
-                <span className="font-bold">:red:</span> === 🔴 - Task Blocked
-              </li>
-              <li>
-                <span className="font-bold">:calendar:</span> === 📅 - Scheduled
-                Task
-              </li>
-              <li>
-                <span className="font-bold">:pencil:</span> === ✏️ - Task Being
-                Written
-              </li>
-              <li>
-                <span className="font-bold">:bulb:</span> === 💡 - New Idea
-              </li>
-              <li>
-                <span className="font-bold">:question:</span> === ❓ - Need
-                Clarification
-              </li>
-              <li>
-                <span className="font-bold">:star:</span> === ⭐ - High Priority
-              </li>
-            </ul>
+          <div className="hidden md:block p-3 invisible md:visible w-[40%] max-lg:w-full max-h-[80vh] overflow-y-hidden">
+          <SimpleTabs userId={user?.id}/>
           </div>
           <div className="hidden md:block p-2 invisible md:visible w-[50%] max-lg:w-full rounded-lg border border-neutral-200 m-3  max-h-[80vh] overflow-y-scroll">
             {/* {privateBoard && (
