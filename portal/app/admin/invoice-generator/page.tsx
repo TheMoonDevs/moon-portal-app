@@ -9,11 +9,12 @@ const InvoiceGenerator = () => {
         <header className="fixed top-0 left-0 w-full z-10">
           <InvoiceHeader />
         </header>
-        <main className="flex flex-col md:flex-row h-full mt-14  overflow-hidden">
+        <main className="flex flex-col md:flex-row h-full mt-14 overflow-hidden">
           <InvoicePage />
         </main>
       </div>
     </PageAccess>
   );
 };
+
 export default InvoiceGenerator;
