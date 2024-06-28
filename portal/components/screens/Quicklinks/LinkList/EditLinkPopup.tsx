@@ -23,6 +23,8 @@ export const EditLinkPopup = ({
   setFields: React.Dispatch<React.SetStateAction<FormFields>>;
 }) => {
   const [loading, setLoading] = useState<boolean>(false);
+  const [imageLoading, setImageLoading] = useState<boolean>(false);
+  const [logoLoading, setLogoLoading] = useState<boolean>(false);
   const dispatch = useAppDispatch();
   const { allQuicklinks } = useAppSelector((state) => state.quicklinks);
 
@@ -41,7 +43,8 @@ export const EditLinkPopup = ({
 
   const handleFileUpload = async (file: File, type: string) => {
     try {
-      setLoading(true);
+      if (type === 'image') setImageLoading(true);
+      if (type === 'logo') setLogoLoading(true);
       const formData = new FormData();
       formData.append('file', file);
 
@@ -63,7 +66,8 @@ export const EditLinkPopup = ({
     } catch (error) {
       console.error('Error uploading file:', error);
     } finally {
-      setLoading(false);
+      if (type === 'image') setImageLoading(false);
+      if (type === 'logo') setLogoLoading(false);
     }
   };
 
@@ -150,8 +154,15 @@ export const EditLinkPopup = ({
               alt='cover image'
               layout='fill'
               objectFit='cover'
-              className='w-full h-48 border-b-2 border-gray-200'
+              className={`w-full h-48 border-b-2 border-gray-200 ${
+                imageLoading ? 'blur-[2px]' : ''
+              }`}
             />
+            {imageLoading && (
+              <div className='absolute inset-0 flex justify-center items-center bg-black bg-opacity-50'>
+                <CircularProgress sx={{ color: 'whitesmoke' }} />
+              </div>
+            )}
             <Tooltip title='Edit Profile Image'>
               <div
                 className='absolute top-2 left-2 w-5 h-auto cursor-pointer flex justify-center items-center gap-1 py-2 px-4 shadow-sm text-sm font-medium text-gray-600 border-2 border-gray-400
@@ -180,8 +191,13 @@ export const EditLinkPopup = ({
                 alt='logo'
                 layout='fill'
                 objectFit='cover'
-                className='rounded-full p-1'
+                className={`rounded-full p-1 ${logoLoading ? 'blur-[2px]' : ''}`}
               />
+              {logoLoading && (
+                <div className='absolute inset-0 flex justify-center items-center bg-black bg-opacity-50 rounded-full'>
+                  <CircularProgress sx={{ color: 'whitesmoke' }} />
+                </div>
+              )}
               <Tooltip title='Edit Logo'>
                 <div className='w-7 h-7 absolute bottom-2 right-0 z-10 p-1 flex items-center justify-center rounded-full text-gray-600  focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 cursor-pointer border-[2px] border-gray-600 bg-gray-200  '>
                   <span
