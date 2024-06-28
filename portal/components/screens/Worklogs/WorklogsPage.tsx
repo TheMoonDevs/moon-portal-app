@@ -291,7 +291,7 @@ export const WorklogsPage = () => {
 
         <div className="flex flex-row-reverse max-lg:flex-col w-full">
           <div className="hidden md:block p-3 invisible md:visible w-[40%] max-lg:w-full max-h-[80vh] overflow-y-hidden">
-          <SimpleTabs userId={user?.id}/>
+          {user?.id && <SimpleTabs userId={user.id} />}
           </div>
           <div className="hidden md:block p-2 invisible md:visible w-[50%] max-lg:w-full rounded-lg border border-neutral-200 m-3  max-h-[80vh] overflow-y-scroll">
             {/* {privateBoard && (
