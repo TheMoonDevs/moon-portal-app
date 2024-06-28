@@ -41,9 +41,39 @@ export async function GET(request: NextRequest) {
     }
 
     // Extract the emailTracker array from the configuration data
-    const emailTracker =
-      ((existingConfig.configData as JsonObject)
-        .emailTracker as JsonObject[]) || [];
+    const currentDate = new Date().toISOString().split("T")[0];
+    console.log(currentDate);
+    const existingData = existingConfig.configData as JsonObject;
+    const emailTracker = (existingData.emailTracker as JsonObject[]) || [];
+
+    // Check if any log's date is different
+    const isDateDifferent = emailTracker.some((log) => log.id !== currentDate);
+
+    if (isDateDifferent) {
+      // If any log's date is different, then map through all to update
+      const updatedEmailTracker = emailTracker.map((log) => {
+        if (log.id !== currentDate) {
+          return {
+            ...log,
+            mailCurrentCount: 0,
+            id: currentDate,
+            status: "Sendable",
+          };
+        }
+        return log;
+      });
+
+      // Proceed with database update
+      await prisma.configData.update({
+        where: { configId: "email-tracker" },
+        data: {
+          configData: {
+            ...existingData,
+            emailTracker: updatedEmailTracker,
+          },
+        },
+      });
+    }
 
     // If a mailId query parameter is provided, find the corresponding email log
     if (mailId) {
