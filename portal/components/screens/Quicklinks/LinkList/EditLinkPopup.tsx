@@ -120,7 +120,7 @@ export const EditLinkPopup = ({
     >
       <div className='relative bg-white rounded-lg shadow-xl max-w-md mx-auto my-12 border border-gray-200 outline-none'>
         <button
-          className='absolute top-2 right-2 z-10 bg-gray-600 p-1 flex items-center justify-center rounded-full text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2'
+          className='absolute -top-4 -right-4 z-10 border-2 border-gray-300 p-1 flex items-center justify-center rounded-full text-gray-500 focus:outline-none  bg-gray-200 hover:bg-gray-100'
           onClick={handleCloseModal}
         >
           <span className='material-symbols-outlined'>close</span>
@@ -153,7 +153,10 @@ export const EditLinkPopup = ({
               className='w-full h-48 border-b-2 border-gray-200'
             />
             <Tooltip title='Edit Profile Image'>
-              <div className='absolute top-2 left-2 w-5 h-auto cursor-pointer flex justify-center items-center gap-1 py-2 px-4 border border-transparent shadow-sm text-sm font-medium text-white bg-black hover:bg-opacity-80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black rounded-full'>
+              <div
+                className='absolute top-2 left-2 w-5 h-auto cursor-pointer flex justify-center items-center gap-1 py-2 px-4 shadow-sm text-sm font-medium text-gray-600 border-2 border-gray-400
+              hover:bg-opacity-80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black hover:bg-gray-200 bg-gray-200 rounded-full'
+              >
                 <span
                   className='material-symbols-outlined'
                   style={{ fontSize: '16px' }}
@@ -169,7 +172,7 @@ export const EditLinkPopup = ({
         {fields.logo && (
           <div className='relative -mt-12 mb-2 flex justify-center'>
             <div
-              className='w-28 h-28 relative rounded-full border-4 border-gray-400 bg-white cursor-pointer '
+              className='w-28 h-28 relative rounded-full border-4 border-black bg-white cursor-pointer '
               onClick={() => logoInputRef.current?.click()}
             >
               <Image
@@ -177,10 +180,10 @@ export const EditLinkPopup = ({
                 alt='logo'
                 layout='fill'
                 objectFit='cover'
-                className='rounded-full'
+                className='rounded-full p-1'
               />
               <Tooltip title='Edit Logo'>
-                <div className='w-7 h-7 absolute bottom-2 right-0 z-10 bg-gray-600 p-1 flex items-center justify-center rounded-full text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 cursor-pointer'>
+                <div className='w-7 h-7 absolute bottom-2 right-0 z-10 p-1 flex items-center justify-center rounded-full text-gray-600  focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 cursor-pointer border-[2px] border-gray-600 bg-gray-200  '>
                   <span
                     className='material-symbols-outlined'
                     style={{ fontSize: '15px' }}
