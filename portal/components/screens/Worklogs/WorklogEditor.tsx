@@ -356,7 +356,8 @@ export const WorklogEditor = ({
               //console.log("keyup", e.key);
               // detect ctrl + space
               if (e.ctrlKey && e.key === " ") {
-                console.log("✅ pressed");
+                e.preventDefault();
+                // console.log("✅ pressed");
                 insertToContent("✅", bd_index);
               }
             }}
