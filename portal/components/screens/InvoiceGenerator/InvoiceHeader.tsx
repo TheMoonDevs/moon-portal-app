@@ -29,8 +29,6 @@ const InvoiceHeader: React.FC<InvoiceHeaderProps> = ({
     document.body.style.overflow = originalOverflow; // Restore original overflow style
   };
 
-
-
   return (
     <header className="bg-white border-b border-neutral-300 shadow-md md:pl-[1rem] h-14 flex items-center justify-between px-3 md:px-6">
       <Link href={APP_ROUTES.home} className="flex items-center">
@@ -56,7 +54,20 @@ const InvoiceHeader: React.FC<InvoiceHeaderProps> = ({
               <span className="material-symbols-outlined text-xs">
                 download
               </span>
-              <span className="hidden md:inline font-serif font-medium">Download as PDF</span>
+              <span className="hidden md:inline font-serif font-medium">
+                Download as PDF
+              </span>
+            </button>
+          </Tooltip>
+        </div>
+
+        <div>
+          <Tooltip arrow title="Send as Email PDF">
+            <button className="flex items-center gap-1 md:gap-2 md:border border-neutral-800 hover:bg-neutral-100 rounded-md px-2  py-1  text-xs">
+              <span className="material-symbols-outlined text-xs">mail</span>
+              <span className="hidden md:inline font-serif font-medium">
+                Send as PDF
+              </span>
             </button>
           </Tooltip>
         </div>
