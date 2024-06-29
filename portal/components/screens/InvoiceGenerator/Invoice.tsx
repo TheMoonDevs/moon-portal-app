@@ -1,8 +1,10 @@
 import Image from "next/image";
+import { InvoiceData } from "./InvoicePage";
+import InvoiceTable from "./InvoiceTable";
 
 interface InvoiceProps {
   pdfTargetRef: React.MutableRefObject<HTMLElement | any>;
-  invoiceData: any;
+  invoiceData: InvoiceData;
 }
 
 const Invoice: React.FC<InvoiceProps> = ({ pdfTargetRef, invoiceData }) => {
@@ -35,57 +37,14 @@ const Invoice: React.FC<InvoiceProps> = ({ pdfTargetRef, invoiceData }) => {
           </div>
           <div className="text-right">
             <p className="text-sm">
-              Invoice issued on {invoiceData.invoiceDate.toLocaleDateString()}
+              Invoice issued on {invoiceData.invoiceDate?.toLocaleDateString()}
             </p>
             <p className="text-sm">Invoice Id - {invoiceData.invoiceId}</p>
           </div>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full mb-8">
-            <thead>
-              <tr className="border-b">
-                <th className="text-left p-2">Service</th>
-                <th className="text-left p-2">Weeks</th>
-                <th className="text-left p-2">Unit Price</th>
-                <th className="text-left p-2">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="border-b">
-                <td className="p-2">Refactoring of WAGMI</td>
-                <td className="p-2">2</td>
-                <td className="p-2">$200</td>
-                <td className="p-2">$400</td>
-              </tr>
-              <tr className="border-b">
-                <td className="p-2">Migration + BugFixes + SocialLogin</td>
-                <td className="p-2">1</td>
-                <td className="p-2">$200</td>
-                <td className="p-2">$200</td>
-              </tr>
-              <tr>
-                <td className="p-2 font-semibold text-right" colSpan={3}>
-                  Subtotal
-                </td>
-                <td className="p-2">$600</td>
-              </tr>
-
-              <tr>
-                <td
-                  colSpan={3}
-                  className="p-2 font-bold text-xl md:text-2xl text-right relative"
-                >
-                  <div className="absolute top-0 right-0 w-20 sm:w-24 md:w-32 border-t-2 border-gray-700"></div>
-                  Total
-                </td>
-                <td className="p-2 font-bold text-xl md:text-2xl relative">
-                  <div className="absolute top-0 right-0 w-20 sm:w-24 md:w-32 lg:w-36 border-t-2 border-gray-700"></div>
-                  $600
-                </td>
-              </tr>
-            </tbody>
-          </table>
+         <InvoiceTable />
         </div>
 
         <p className="text-sm mb-8">
