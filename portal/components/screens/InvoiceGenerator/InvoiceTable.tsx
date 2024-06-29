@@ -1,5 +1,5 @@
-import { Paper, TextField } from "@mui/material";
-import { CircleMinus, CirclePlus } from "lucide-react";
+import { TextField, Tooltip } from "@mui/material";
+import { Minus, Plus } from "lucide-react";
 import React, { useState } from "react";
 
 interface InvoiceRow {
@@ -17,6 +17,11 @@ const initialData: InvoiceRow[] = [
 const InvoiceTable: React.FC = () => {
   const [data, setData] = useState<InvoiceRow[]>(initialData);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const [headers, setHeaders] = useState({
+    service: "Service",
+    weeks: "Weeks",
+    unitPrice: "Unit Price",
+  });
 
   const handleInlineEdit = (
     index: number,
@@ -29,6 +34,13 @@ const InvoiceTable: React.FC = () => {
         ? parseFloat(value as string) || 0
         : (value as string);
     setData(newData);
+  };
+
+  const handleHeaderEdit = (field: keyof typeof headers, value: string) => {
+    setHeaders({
+      ...headers,
+      [field]: value,
+    });
   };
 
   const addRow = () => {
@@ -71,15 +83,44 @@ const InvoiceTable: React.FC = () => {
     />
   );
 
+  const renderEditableHeader = (field: keyof typeof headers, value: string) => (
+    <TextField
+      variant="standard"
+      value={value}
+      onChange={(e) => handleHeaderEdit(field, e.target.value)}
+      InputProps={{
+        disableUnderline: true,
+        style: {
+          minWidth: Math.max(50, value.length * 8),
+          overflow: "visible",
+        },
+      }}
+      inputProps={{
+        style: {
+          padding: "2px 4px",
+          fontSize: "14px",
+          fontWeight: "bold",
+        },
+      }}
+      className="bg-transparent"
+    />
+  );
+
   return (
-    <Paper className="mt-4 p-4 w-full overflow-visible">
-      <table className="w-full mb-8 table-auto">
+    <div className="mt-4 p-4 w-full bg-[#F5F5EF] overflow-visible">
+      <table className="w-full mb-8   table-auto ">
         <thead>
-          <tr className="border-b">
+          <tr className="border-y border-black">
             <th className="text-left p-2"></th>
-            <th className="text-left p-2">Service</th>
-            <th className="text-left p-2">Weeks</th>
-            <th className="text-left p-2">Unit Price</th>
+            <th className="text-left p-2">
+              {renderEditableHeader("service", headers.service)}
+            </th>
+            <th className="text-left p-2">
+              {renderEditableHeader("weeks", headers.weeks)}
+            </th>
+            <th className="text-left p-2">
+              {renderEditableHeader("unitPrice", headers.unitPrice)}
+            </th>
             <th className="text-left p-2">Total</th>
           </tr>
         </thead>
@@ -87,7 +128,7 @@ const InvoiceTable: React.FC = () => {
           {data.map((row, index) => (
             <tr
               key={index}
-              className="group border-b hover:bg-gray-100"
+              className="group border-b border-black hover:bg-gray-100"
               onMouseEnter={() => setHoverIndex(index)}
               onMouseLeave={() => setHoverIndex(null)}
             >
@@ -95,18 +136,22 @@ const InvoiceTable: React.FC = () => {
                 <div className="flex items-center">
                   {hoverIndex === index && (
                     <div className="absolute left-0 right-10 flex flex-col space-y-1">
-                      <CircleMinus
-                        onClick={() => removeRow(index)}
-                        size={18}
-                        color="gray"
-                        className="cursor-pointer "
-                      />
-                      <CirclePlus
-                        onClick={addRow}
-                        size={18}
-                        color="gray"
-                        className="cursor-pointer"
-                      />
+                      <Tooltip title="Remove row" arrow placement="left">
+                        <Minus
+                          onClick={() => removeRow(index)}
+                          size={18}
+                          color="gray"
+                          className="cursor-pointer hover:bg-red-200 rounded-lg "
+                        />
+                      </Tooltip>
+                      <Tooltip title="Add row" arrow placement="left">
+                        <Plus
+                          onClick={addRow}
+                          size={18}
+                          color="gray"
+                          className="cursor-pointer hover:bg-blue-200 rounded-lg"
+                        />
+                      </Tooltip>
                     </div>
                   )}
                 </div>
@@ -119,7 +164,9 @@ const InvoiceTable: React.FC = () => {
                 {renderEditableCell(index, "weeks", row.weeks)}
               </td>
               <td className="p-2">
-                {renderEditableCell(index, "unitPrice", row.unitPrice)}
+                <span className="flex ">
+                  ${renderEditableCell(index, "unitPrice", row.unitPrice)}
+                </span>
               </td>
               <td className="p-2">{row.weeks * row.unitPrice}</td>
             </tr>
@@ -145,7 +192,7 @@ const InvoiceTable: React.FC = () => {
           </tr>
         </tbody>
       </table>
-    </Paper>
+    </div>
   );
 };
 
