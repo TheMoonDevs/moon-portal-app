@@ -2,9 +2,10 @@ import Image from "next/image";
 
 interface InvoiceProps {
   pdfTargetRef: React.MutableRefObject<HTMLElement | any>;
+  invoiceData: any;
 }
 
-const Invoice: React.FC<InvoiceProps> = ({ pdfTargetRef }) => {
+const Invoice: React.FC<InvoiceProps> = ({ pdfTargetRef, invoiceData }) => {
   return (
     <section>
       <div className="p-8 bg-white shadow-md" ref={pdfTargetRef}>
@@ -15,7 +16,7 @@ const Invoice: React.FC<InvoiceProps> = ({ pdfTargetRef }) => {
               width={100}
               height={100}
               alt="logo"
-              className="aspect-square mr-2"
+              className="aspect-square mr-2 pointer-events-none"
             />
           </div>
           <h1 className="text-4xl md:text-5xl font-normal font-serif">
@@ -33,8 +34,10 @@ const Invoice: React.FC<InvoiceProps> = ({ pdfTargetRef }) => {
             </p>
           </div>
           <div className="text-right">
-            <p className="text-sm">Invoice issued on 19th March 2024</p>
-            <p className="text-sm">Invoice Id - C0101</p>
+            <p className="text-sm">
+              Invoice issued on {invoiceData.invoiceDate.toLocaleDateString()}
+            </p>
+            <p className="text-sm">Invoice Id - {invoiceData.invoiceId}</p>
           </div>
         </div>
 
@@ -86,7 +89,8 @@ const Invoice: React.FC<InvoiceProps> = ({ pdfTargetRef }) => {
         </div>
 
         <p className="text-sm mb-8">
-          Please finish the payment by the due date: 31st March 2024
+          Please finish the payment by the due date:
+          {invoiceData.dueDate ? invoiceData.dueDate.toLocaleDateString() : ""}
         </p>
         <p className="text-3xl mb-8">Thank you!</p>
 
@@ -96,21 +100,21 @@ const Invoice: React.FC<InvoiceProps> = ({ pdfTargetRef }) => {
             <p className="text-sm">
               Crypto Wallet Address: <br />
               <span className="whitespace-normal flex-wrap">
-                0x94751a6ecfd0f849286fe6c399eb0ac3bf05b141f
+                {invoiceData.cryptoAddress}
               </span>
               <br />
               <br />
               Bank Transfer: <br />
-              Name: SUBHAKAR TIKKIREDDY <br />
-              A/c No: 145410010035399 <br />
-              IFSC - UBIN0836531
+              Name: {invoiceData.bankDetails.name} <br />
+              A/c No:{invoiceData.bankDetails.account} <br />
+              IFSC - {invoiceData.bankDetails.ifsc}
             </p>
           </div>
           <div className="md:w-1/2 mt-8 md:mt-0 w-full sm:text-right flex justify-end  flex-col">
             <p className="text-xl font-normal sm:text-[22px] md:text-[25px] font-serif">
-              Subhakar Tikkireddy
+              {invoiceData.payingTo}
             </p>
-            <p className="sm:text-lg">TheMoonDevs</p>
+            <p className="sm:text-lg">{invoiceData.companyName}</p>
           </div>
         </div>
       </div>
