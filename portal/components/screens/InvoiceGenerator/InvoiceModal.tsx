@@ -1,5 +1,4 @@
-"use client";
-import React, { useState, ChangeEvent } from "react";
+import React from "react";
 import {
   TextField,
   MenuItem,
@@ -8,50 +7,46 @@ import {
   IconButton,
   Tooltip,
   Grid,
-  SelectChangeEvent,
   InputAdornment,
 } from "@mui/material";
-import { Button } from "@/components/elements/Button";
 import {
   AccountBalanceWallet as WalletIcon,
   AccountBalance as BankIcon,
 } from "@mui/icons-material";
+import BusinessIcon from "@mui/icons-material/Business";
+import PersonIcon from "@mui/icons-material/Person";
+import BadgeIcon from "@mui/icons-material/Badge";
+import NumbersIcon from "@mui/icons-material/Numbers";
+import CurrencyBitcoinIcon from "@mui/icons-material/CurrencyBitcoin";
+import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers";
+import { Button } from "@/components/elements/Button";
+import { InvoiceData } from "./InvoicePage";
 
-interface BankDetails {
-  name: string;
-  account: string;
-  ifsc: string;
+interface InvoiceModalProps {
+  invoiceData: InvoiceData;
+  handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleDateChange: (
+    fieldName: "invoiceDate" | "dueDate",
+    newValue: Date | null
+  ) => void;
+  handlePaymentMethodChange: (
+    event: React.ChangeEvent<{ value: unknown }>
+  ) => void;
+  handleOwnerInfoChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-const InvoiceModal: React.FC = () => {
-  const [invoiceDate, setInvoiceDate] = useState<Date | null>(new Date());
-  const [dueDate, setDueDate] = useState<Date | null>(new Date());
-  const [paymentMethod, setPaymentMethod] = useState<string>("bank");
-  const [cryptoAddress, setCryptoAddress] = useState<string>(
-    "0x94751a6ecfd0f849286fe6c399eb0ac3bf05b141f"
-  );
-  const [bankDetails, setBankDetails] = useState<BankDetails>({
-    name: "SUBHAKAR TIKKIREDDY",
-    account: "145410010035399",
-    ifsc: "UBIN0836531",
-  });
-
-  const handlePaymentMethodChange = (event: SelectChangeEvent<string>) => {
-    setPaymentMethod(event.target.value);
-  };
-
-  const handleInputChange = (
-    event: ChangeEvent<HTMLInputElement>,
-    field: keyof BankDetails
-  ) => {
-    setBankDetails({ ...bankDetails, [field]: event.target.value });
-  };
-
+const InvoiceModal: React.FC<InvoiceModalProps> = ({
+  invoiceData,
+  handleInputChange,
+  handleDateChange,
+  handlePaymentMethodChange,
+  handleOwnerInfoChange,
+}) => {
   return (
-    <div className="p-6 rounded-lg shadow-lg border-2  w-full mt-4 max-w-lg mx-auto">
+    <div className="p-6 rounded-lg shadow-lg border-2 w-full mt-4 max-w-lg mx-auto">
       <h2 className="text-2xl font-medium font-serif mb-6 text-center">
         Invoice Details
       </h2>
@@ -64,11 +59,13 @@ const InvoiceModal: React.FC = () => {
             type="text"
             id="invoice-id"
             size="small"
-            name="invoice-id"
+            name="invoiceId"
             color="info"
             placeholder="Add Invoice Id"
             variant="outlined"
             className="w-full"
+            value={invoiceData.invoiceId}
+            onChange={handleInputChange}
           />
         </div>
 
@@ -87,8 +84,8 @@ const InvoiceModal: React.FC = () => {
                   },
                 }}
                 className="w-full border-black"
-                value={invoiceDate}
-                onChange={setInvoiceDate}
+                value={invoiceData.invoiceDate}
+                onChange={(date) => handleDateChange("invoiceDate", date)}
               />
             </div>
           </Grid>
@@ -106,8 +103,8 @@ const InvoiceModal: React.FC = () => {
                   },
                 }}
                 className="w-full border-black"
-                value={dueDate}
-                onChange={setDueDate}
+                value={invoiceData.dueDate}
+                onChange={(date) => handleDateChange("dueDate", date)}
               />
             </div>
           </Grid>
@@ -118,8 +115,8 @@ const InvoiceModal: React.FC = () => {
             *Payment Id
           </span>
           <Select
-            value={paymentMethod}
-            onChange={handlePaymentMethodChange}
+            value={invoiceData.paymentMethod}
+            onChange={handlePaymentMethodChange as any}
             className="mb-4"
             style={{
               backgroundColor: "white",
@@ -132,7 +129,7 @@ const InvoiceModal: React.FC = () => {
             }}
           >
             <MenuItem value="crypto">
-              <WalletIcon className="mr-2" color="primary" />
+              <CurrencyBitcoinIcon className="mr-2" color="primary" />
               Crypto
             </MenuItem>
             <MenuItem value="bank">
@@ -142,7 +139,7 @@ const InvoiceModal: React.FC = () => {
           </Select>
         </FormControl>
 
-        {paymentMethod === "crypto" ? (
+        {invoiceData.paymentMethod === "crypto" ? (
           <div className="mb-4 flex flex-col w-full">
             <span className="text-sm font-semibold mb-2 leading-none text-gray-700">
               *Wallet Address
@@ -151,12 +148,12 @@ const InvoiceModal: React.FC = () => {
               type="text"
               id="wallet-address"
               size="small"
-              name="wallet-address"
+              name="cryptoAddress"
               color="info"
               placeholder="Add Wallet Address"
               variant="outlined"
-              value={cryptoAddress}
-              onChange={(e) => setCryptoAddress(e.target.value)}
+              value={invoiceData.cryptoAddress}
+              onChange={handleInputChange}
               multiline
               rows={1}
               className="w-full"
@@ -183,20 +180,20 @@ const InvoiceModal: React.FC = () => {
                 color="info"
                 placeholder="Add Name"
                 variant="outlined"
-                value={bankDetails.name}
-                onChange={(e: any) => handleInputChange(e, "name")}
+                value={invoiceData.bankDetails.name}
+                onChange={handleInputChange}
                 className="w-full"
                 InputProps={{
                   startAdornment: (
                     <IconButton edge="start">
-                      <BankIcon color="primary" />
+                      <BadgeIcon color="primary" />
                     </IconButton>
                   ),
                 }}
               />
             </div>
 
-            <div className="flex md:flex-col gap-2 ">
+            <div className="flex  gap-2">
               <div className="mb-4 flex flex-col w-1/2 md:w-full">
                 <span className="text-sm font-semibold mb-2 leading-none text-gray-700">
                   *A/c No
@@ -209,13 +206,13 @@ const InvoiceModal: React.FC = () => {
                   color="info"
                   placeholder="Add Account Number"
                   variant="outlined"
-                  value={bankDetails.account}
-                  onChange={(e: any) => handleInputChange(e, "account")}
+                  value={invoiceData.bankDetails.account}
+                  onChange={handleInputChange}
                   className="w-full"
                   InputProps={{
                     startAdornment: (
                       <IconButton edge="start">
-                        <BankIcon color="primary" />
+                        <AccountBalanceWalletIcon color="primary" />
                       </IconButton>
                     ),
                   }}
@@ -234,13 +231,13 @@ const InvoiceModal: React.FC = () => {
                   color="info"
                   placeholder="Add IFSC Code"
                   variant="outlined"
-                  value={bankDetails.ifsc}
-                  onChange={(e: any) => handleInputChange(e, "ifsc")}
+                  value={invoiceData.bankDetails.ifsc}
+                  onChange={handleInputChange}
                   className="w-full"
                   InputProps={{
                     startAdornment: (
                       <IconButton edge="start">
-                        <BankIcon color="primary" />
+                        <NumbersIcon color="primary" />
                       </IconButton>
                     ),
                   }}
@@ -249,6 +246,57 @@ const InvoiceModal: React.FC = () => {
             </div>
           </>
         )}
+        <div className="flex  gap-2">
+          <div className="mb-4 flex flex-col w-1/2 md:w-full">
+            <span className="text-sm font-semibold mb-2 leading-none text-gray-700">
+              *Paying To
+            </span>
+            <TextField
+              type="text"
+              id="paying-to"
+              size="small"
+              name="payingTo"
+              color="info"
+              placeholder="Add Account Number"
+              variant="outlined"
+              value={invoiceData.payingTo}
+              onChange={handleOwnerInfoChange}
+              className="w-full"
+              InputProps={{
+                startAdornment: (
+                  <IconButton edge="start">
+                    <PersonIcon color="primary" />
+                  </IconButton>
+                ),
+              }}
+            />
+          </div>
+
+          <div className="mb-4 flex flex-col w-1/2 md:w-full">
+            <span className="text-sm font-semibold mb-2 leading-none text-gray-700">
+              *Company Name
+            </span>
+            <TextField
+              type="text"
+              id="company-name"
+              size="small"
+              name="companyName"
+              color="info"
+              placeholder="Add Company Name"
+              variant="outlined"
+              value={invoiceData.companyName}
+              onChange={handleOwnerInfoChange}
+              className="w-full"
+              InputProps={{
+                startAdornment: (
+                  <IconButton edge="start">
+                    <BusinessIcon color="primary" />
+                  </IconButton>
+                ),
+              }}
+            />
+          </div>
+        </div>
       </LocalizationProvider>
       <div className="flex justify-end mt-2">
         <Tooltip title={"Save"} arrow>
