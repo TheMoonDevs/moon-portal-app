@@ -16,7 +16,9 @@ import { WorklogView } from "./WorklogView";
 import { SummarizeButton } from "./SummarizeButton";
 import { Toaster, toast } from "sonner";
 import { setLogsList } from "@/utils/redux/worklogs/worklogs.slice";
-import SimpleTabs from "./WorklogTabs";
+import SimpleTabs from "@/components/elements/Tabs";
+import WorklogTips from "./WorklogTabs/WorklogTips";
+import TodoTab from "./WorklogTabs/TodoTab";
 
 const tempData = [
   {
@@ -236,6 +238,10 @@ export const WorklogsPage = () => {
   }, [logsList, centerdate, selectedID]);
 
   //if (!user?.workData) return null;
+  const tabs = [
+    { label: 'Tasks/Tips', content: <WorklogTips /> },
+    { label: 'Todos for later', content: <TodoTab userId={user?.id as string} /> },
+  ];
 
   return (
     <div className="flex flex-col">
@@ -291,7 +297,7 @@ export const WorklogsPage = () => {
 
         <div className="flex flex-row-reverse max-lg:flex-col w-full">
           <div className="hidden md:block p-3 invisible md:visible w-[40%] max-lg:w-full max-h-[80vh] overflow-y-hidden">
-          {user?.id && <SimpleTabs userId={user.id} />}
+          <SimpleTabs tabs={tabs} />
           </div>
           <div className="hidden md:block p-2 invisible md:visible w-[50%] max-lg:w-full rounded-lg border border-neutral-200 m-3  max-h-[80vh] overflow-y-scroll">
             {/* {privateBoard && (
