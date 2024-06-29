@@ -4,6 +4,7 @@ import { prisma } from "@/prisma/prisma";
 export async function GET(request: NextRequest) {
   try {
     const userId = request.nextUrl.searchParams.get("userId") as string;
+    const logType = request.nextUrl.searchParams.get("logType") as string;
 
     if (!userId) {
       return NextResponse.json(
@@ -12,11 +13,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const docId = `${userId}-todolater`;
+    const docId = `${userId}-todoLater`;
 
     const docMarkdown = await prisma.docMarkdown.findUnique({
       where: {
-        userId: userId
+        docId: docId,
+        ...(logType && { logType }),
       },
     });
 
@@ -54,7 +56,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const docId = `${userId}-laterTodos`;
+    const docId = `${userId}-todoLater`;
 
     const newDocMarkdown = await prisma.docMarkdown.upsert({
       where: {
