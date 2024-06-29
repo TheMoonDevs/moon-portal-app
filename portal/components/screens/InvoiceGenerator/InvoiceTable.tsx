@@ -64,8 +64,9 @@ const InvoiceTable: React.FC = () => {
     <TextField
       variant="standard"
       value={value}
+      placeholder={`Enter ${headers.service} Name`}
       onChange={(e) => handleInlineEdit(index, field, e.target.value)}
-      onBlur={(e) => handleInlineEdit(index, field, e.target.value || 0)}
+      onBlur={(e) => handleInlineEdit(index, field, e.target.value || "")}
       InputProps={{
         disableUnderline: true,
         style: {
@@ -135,7 +136,7 @@ const InvoiceTable: React.FC = () => {
               <td className="p-1 relative">
                 <div className="flex items-center">
                   {hoverIndex === index && (
-                    <div className="absolute left-0 right-0 flex flex-col space-y-1">
+                    <div className="absolute left-0 right-0 flex flex-col">
                       <Tooltip title="Remove row" arrow placement="top-end">
                         <Minus
                           onClick={() => removeRow(index)}
