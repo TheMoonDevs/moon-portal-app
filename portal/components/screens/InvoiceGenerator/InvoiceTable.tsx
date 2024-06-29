@@ -56,15 +56,24 @@ const InvoiceTable: React.FC = () => {
       onBlur={(e) => handleInlineEdit(index, field, e.target.value || 0)}
       InputProps={{
         disableUnderline: true,
-        style: { minWidth: Math.max(50, value.toString().length * 8) },
+        style: {
+          minWidth: Math.max(50, value.toString().length * 8),
+          overflow: "visible", // Ensure overflow is visible
+        },
+      }}
+      inputProps={{
+        style: {
+          padding: "2px 4px",
+          fontSize: "14px",
+        },
       }}
       className="bg-transparent"
     />
   );
 
   return (
-    <Paper className="mt-4 p-4">
-      <table className="w-full mb-8">
+    <Paper className="mt-4 p-4 w-full overflow-visible">
+      <table className="w-full mb-8 table-auto">
         <thead>
           <tr className="border-b">
             <th className="text-left p-2"></th>
@@ -126,7 +135,7 @@ const InvoiceTable: React.FC = () => {
               colSpan={4}
               className="p-2 font-bold text-xl md:text-2xl text-right relative"
             >
-              <div className="absolute top-0 right-0  border-t-2 w-32 border-gray-700"></div>
+              <div className="absolute top-0 right-0 border-t-2 w-32 border-gray-700"></div>
               Total
             </td>
             <td className="p-2 font-bold text-xl md:text-2xl relative">
