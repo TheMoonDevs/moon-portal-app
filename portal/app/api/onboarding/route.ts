@@ -1,4 +1,5 @@
 import { prisma } from "@/prisma/prisma";
+import GoogleSheetsAPI from "@/utils/services/googleSheetSdk";
 import { NextResponse, NextRequest } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -58,6 +59,44 @@ export async function POST(request: NextRequest) {
           stipendCurrency: "",
         },
       },
+    });
+
+    const sheetConfig = {
+      clientEmail: process.env.GIAM_CLIENT_EMAIL || "",
+      privateKey: process.env.GIAM_PRIVATE_KEY || "",
+    };
+
+    const sheetSDK = new GoogleSheetsAPI(sheetConfig);
+    const currentDate = new Date()
+      .toLocaleDateString("en-GB")
+      .split("/")
+      .reverse()
+      .join("-");
+
+    const sheetData = [
+      `${username}${passcode}`,
+      name,
+      email,
+      phone,
+      upiId,
+      "=(YEAR(NOW())-YEAR(G14))",
+      dateOfBirth,
+      userVertical,
+      city,
+      position,
+      workHourOverlap,
+      "---", //workhours
+      currentDate,
+      "---", //office email
+      address,
+    ];
+
+    await sheetSDK.appendSheetData({
+      spreadsheetId: "1w2kCO6IIYHi7YJBqfeg9ytmiIDRGhOgGzUPb_0u-UZ0",
+      targetId: "0",
+      values: [sheetData],
+      range: "A:A",
+      majorDimension: "ROWS",
     });
 
     if (error_response) {
