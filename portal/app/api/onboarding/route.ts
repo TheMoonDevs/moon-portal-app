@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
       spreadsheetId: "1w2kCO6IIYHi7YJBqfeg9ytmiIDRGhOgGzUPb_0u-UZ0",
       targetId: "0",
       values: [sheetData],
-      range: "A:Z",
+      range: "A:A",
       majorDimension: "ROWS",
     });
 
