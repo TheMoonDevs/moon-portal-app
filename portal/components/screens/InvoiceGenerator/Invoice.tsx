@@ -10,7 +10,7 @@ interface InvoiceProps {
 const Invoice: React.FC<InvoiceProps> = ({ pdfTargetRef, invoiceData }) => {
   return (
     <section>
-      <div className="p-8 bg-white shadow-md" ref={pdfTargetRef}>
+      <div className="p-8  shadow-md bg-[#F5F5EF]" ref={pdfTargetRef}>
         <div className="flex justify-between items-center mb-8">
           <div className="flex items-center">
             <Image
@@ -44,7 +44,7 @@ const Invoice: React.FC<InvoiceProps> = ({ pdfTargetRef, invoiceData }) => {
         </div>
 
         <div className="overflow-x-auto">
-         <InvoiceTable />
+          <InvoiceTable />
         </div>
 
         <p className="text-sm mb-8">
