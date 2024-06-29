@@ -102,6 +102,9 @@ const InvoicePage = () => {
               />
             )}
           </div>
+          <section className="w-full md:w-1/2 p-4 border-dashed border mb-14 overflow-y-auto shadow-lg rounded-lg">
+            <Invoice pdfTargetRef={pdfTargetRef} invoiceData={invoiceData} />
+          </section>
           <section className="w-full md:w-1/2 p-4">
             <div className="hidden md:block overflow-y-auto mb-10 rounded-lg">
               <InvoiceModal
@@ -112,9 +115,6 @@ const InvoicePage = () => {
                 handleOwnerInfoChange={handleOwnerInfoChange}
               />
             </div>
-          </section>
-          <section className="w-full md:w-1/2 p-4 border-dashed border mb-14 overflow-y-auto shadow-lg rounded-lg">
-            <Invoice pdfTargetRef={pdfTargetRef} invoiceData={invoiceData} />
           </section>
         </div>
       </main>

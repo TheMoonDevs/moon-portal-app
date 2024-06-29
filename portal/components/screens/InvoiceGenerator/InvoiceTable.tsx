@@ -135,16 +135,16 @@ const InvoiceTable: React.FC = () => {
               <td className="p-1 relative">
                 <div className="flex items-center">
                   {hoverIndex === index && (
-                    <div className="absolute left-0 right-10 flex flex-col space-y-1">
-                      <Tooltip title="Remove row" arrow placement="left">
+                    <div className="absolute left-0 right-0 flex flex-col space-y-1">
+                      <Tooltip title="Remove row" arrow placement="top-end">
                         <Minus
                           onClick={() => removeRow(index)}
                           size={18}
                           color="gray"
-                          className="cursor-pointer hover:bg-red-200 rounded-lg "
+                          className="cursor-pointer hover:bg-red-200 rounded-lg"
                         />
                       </Tooltip>
-                      <Tooltip title="Add row" arrow placement="left">
+                      <Tooltip title="Add row" placement="bottom-end" arrow>
                         <Plus
                           onClick={addRow}
                           size={18}
