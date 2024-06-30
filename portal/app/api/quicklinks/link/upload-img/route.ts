@@ -1,5 +1,5 @@
 import { s3FileUploadSdk } from "@/utils/services/s3FileUploadSdk";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
@@ -10,14 +10,17 @@ export async function POST(req: Request) {
       return NextResponse.json("File not found", { status: 404 });
     }
 
-    const s3Response = await s3FileUploadSdk.uploadFile({ file });
+    const s3Response = await s3FileUploadSdk.uploadFile({
+      file,
+      folder: "quicklinks",
+    });
 
     if (!s3Response || s3Response.$metadata.httpStatusCode !== 200) {
       throw new Error("Failed to upload file");
     }
 
     const fileInfo = {
-      fileUrl: s3FileUploadSdk.getPublicFileUrl({ file }),
+      fileUrl: s3FileUploadSdk.getPublicFileUrl({ file, folder: "quicklinks" }),
       fileName: file.name,
       mimeType: file.type,
       fileSize: file.size,
