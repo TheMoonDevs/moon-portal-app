@@ -37,16 +37,14 @@ export const DirectoryTree = ({
   const { rootDirectories, parentDirs, directories } = useQuickLinkDirectory();
 
   useEffect(() => {
-    //console.log("expanded init", selectedDir);
     if (!selectedDir) return;
 
-    // recursive parents expander
-    const addParentsToExpaned = (
+    const addParentsToExpanded = (
       array: string[],
       dirId?: string | null
     ): string[] => {
       if (!dirId) return array;
-      // fetch the current selected directory Info
+
       const _thisDir =
         directories.find((dir) => dir.id === dirId) ||
         parentDirs.find((dir) => dir.id === dirId);
@@ -57,18 +55,19 @@ export const DirectoryTree = ({
           : [..._array, _thisDir.id];
       }
       if (_thisDir && "parentDirId" in _thisDir) {
-        return addParentsToExpaned(_array, _thisDir.parentDirId);
+        return addParentsToExpanded(_array, _thisDir.parentDirId);
       } else return _array;
     };
 
-    // initially level pass only yhe array
-    // expand the current slected, its parent, the parent of its parent etc..
-    const array = addParentsToExpaned([selectedDir], selectedDir);
-    //console.log("expanded", array, parentDirs, directories);
+    const newExpandedDirs = addParentsToExpanded([selectedDir], selectedDir);
 
-    //QL-TODO - if a different parent tree is open, we do not wish to close it,
-    // bu following the current logic it is closing.
-    setExpandedDirs(array);
+    setExpandedDirs((prevExpandedDirs) => {
+      const mergedExpandedDirs = new Set([
+        ...prevExpandedDirs,
+        ...newExpandedDirs,
+      ]);
+      return Array.from(mergedExpandedDirs);
+    });
   }, [selectedDir, parentDirs, directories]);
 
   const handleDirectoryUpdate = async (
@@ -128,7 +127,7 @@ export const DirectoryTree = ({
         newDirectory
       );
 
-      revalidateRoot();
+      // revalidateRoot();
       dispatch(addNewDirectory(response.data.directory));
       dispatch(
         setToast({
