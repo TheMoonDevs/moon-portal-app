@@ -2,6 +2,7 @@ import { DepartmentLinksByDirId } from "@/components/screens/Quicklinks/screens/
 import { APP_BASE_URL } from "@/utils/constants/appInfo";
 import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
 import { Directory } from "@prisma/client";
+import { notFound } from "next/navigation";
 async function slugToIdConversion(slug: string) {
   try {
     const slugString = slug.substring(0, slug.lastIndexOf("-"));
@@ -19,6 +20,7 @@ async function slugToIdConversion(slug: string) {
     })?.id;
   } catch (error) {
     console.log(error);
+    notFound();
   }
 }
 export default async function Home({
