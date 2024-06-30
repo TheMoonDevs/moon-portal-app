@@ -18,6 +18,7 @@ import { ToastSeverity } from "@/components/elements/Toast";
 import { DirectoryItem } from "./DirectoryItem";
 import { useQuickLinkDirectory } from "../../../hooks/useQuickLinkDirectory";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
+import { PopoverEmojis, PopoverFolderEdit } from "../../../elements/Popovers";
 
 export const DirectoryTree = ({
   mainDirectory,
@@ -71,7 +72,7 @@ export const DirectoryTree = ({
   }, [selectedDir, parentDirs, directories]);
 
   const handleDirectoryUpdate = async (
-    e: FocusEvent<HTMLInputElement | Element>,
+    e: FocusEvent<HTMLInputElement | Element> | MouseEvent,
     directory: Directory,
     parentId: string | null,
     updateInfo: Partial<Directory>
@@ -254,6 +255,8 @@ export const DirectoryTree = ({
           />
         </div>
       ))}
+      <PopoverEmojis handleDirectoryUpdate={handleDirectoryUpdate} />
+      <PopoverFolderEdit handleDeleteDirectory={handleDeleteDirectory} />
     </>
   );
 };

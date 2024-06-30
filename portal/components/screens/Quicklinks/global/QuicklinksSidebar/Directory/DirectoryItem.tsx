@@ -6,6 +6,8 @@ import { Popover, Tooltip } from "@mui/material";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
 import { useQuickLinkDirectory } from "../../../hooks/useQuickLinkDirectory";
 import { useUser } from "@/utils/hooks/useUser";
+import { setPopoverElementWithData } from "@/utils/redux/quicklinks/quicklinks.slice";
+import { useAppDispatch } from "@/utils/redux/store";
 
 interface IDirectoryItemProps {
   directory: Directory;
@@ -63,11 +65,11 @@ export const DirectoryItem = ({
   });
   const { directories, rootDirectories, activeDirectoryId } =
     useQuickLinkDirectory(true);
+  const dispatch = useAppDispatch();
   const { user } = useUser();
 
   const openEmojiSet = anchorEl?.anchorId === "emoji-set";
   const openFolderEditor = anchorEl?.anchorId === "edit-folder";
-
   let path: string;
 
   const isDepartment =
@@ -115,42 +117,27 @@ export const DirectoryItem = ({
     );
   };
 
-  const handleFolderIconChange = async (e: any, emoji: EmojiClickData) => {
-    await handleDirectoryUpdate(e, directory, directory.parentDirId, {
-      logo: emoji.emoji,
-    });
+  const handleFolderIconChange = (event: any) => {
+    dispatch(
+      setPopoverElementWithData({
+        element: event.currentTarget,
+        anchorId: "emoji-set",
+        data: {
+          selectedDirectory: directory,
+          parentDirectoryId: directory.parentDirId,
+        },
+      })
+    );
   };
 
   return (
     <div key={directory.id}>
       <div className="flex justify-between items-center group gap-4 ml-3">
         <div className="flex items-center cursor-pointer gap-1">
-          <Popover
-            open={openEmojiSet}
-            anchorEl={anchorEl?.element}
-            onClose={handlePopoverClose}
-            anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
-            transformOrigin={{
-              vertical: "top",
-              horizontal: "right",
-            }}
-          >
-            <EmojiPicker
-              open={openEmojiSet}
-              autoFocusSearch
-              lazyLoadEmojis
-              previewConfig={{ showPreview: false }}
-              height={300}
-              onEmojiClick={(emojiData: EmojiClickData, event: MouseEvent) =>
-                handleFolderIconChange(event, emojiData)
-              }
-            />
-          </Popover>
           <span
             id="emoji-set"
             className="material-symbols-outlined !text-base hover:bg-neutral-200  rounded pb-1"
-            // onClick={handleToggleEmojiPicker}
-            onClick={handleElementHasPopoverClicked}
+            onClick={handleFolderIconChange}
           >
             {!directory.logo
               ? isExpanded
@@ -212,20 +199,31 @@ export const DirectoryItem = ({
           </div>
         </div>
         <div className="flex gap-1 items-center cursor-pointer">
-          <Tooltip title="Folder settings" enterDelay={500}>
-            <span
-              id="edit-folder"
-              onClick={handleElementHasPopoverClicked}
-              className="material-icons-outlined !text-base opacity-0 group-hover:opacity-50 peer-hover:opacity-50 hover:scale-110 transition-all"
-            >
-              more_vert
-            </span>
-          </Tooltip>
-
-          {(directory.parentDirId ||
-            (!directory.parentDirId && user?.isAdmin)) && (
+          {(directory.parentDirId || user?.isAdmin) && (
             <div className="group">
-              <Popover
+              <Tooltip title="Folder settings" enterDelay={500}>
+                <span
+                  id="edit-folder"
+                  // onClick={handleElementHasPopoverClicked}
+                  onClick={(e) => {
+                    dispatch(
+                      setPopoverElementWithData({
+                        element: e.currentTarget,
+                        anchorId: "edit-folder",
+                        data: {
+                          selectedDirectory: directory,
+                          parentDirectoryId: directory.parentDirId,
+                          rootSlug: rootSlug,
+                        },
+                      })
+                    );
+                  }}
+                  className="material-icons-outlined !text-base opacity-0 group-hover:opacity-50 peer-hover:opacity-50 hover:scale-110 transition-all"
+                >
+                  more_vert
+                </span>
+              </Tooltip>
+              {/* <Popover
                 anchorOrigin={{
                   vertical: "bottom",
                   horizontal: "right",
@@ -273,7 +271,7 @@ export const DirectoryItem = ({
                     </span>
                     <span className="text-sm">Move To</span>
                   </li> */}
-                  <li
+              {/* <li
                     className="flex items-center gap-2 group hover:bg-neutral-200 text-red-600 rounded-md p-1 px-3 cursor-pointer"
                     onClick={() =>
                       handleDeleteDirectory(
@@ -289,7 +287,7 @@ export const DirectoryItem = ({
                     <span className="text-sm">Delete</span>
                   </li>
                 </ul>
-              </Popover>
+              </Popover>  */}
               <Tooltip title="Create Folder" enterDelay={500}>
                 <span
                   className="material-icons-outlined !text-base opacity-0 group-hover:opacity-50 hover:scale-110 transition-all"
