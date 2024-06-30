@@ -167,14 +167,6 @@ export const LinkActions = ({
         fields={fields}
         setFields={setFields}
       />
-      <QuicklinksToast
-        severity={toast.toastSev}
-        message={toast.toastMsg}
-        position={{
-          vertical: "bottom",
-          horizontal: "left",
-        }}
-      />
     </div>
   );
 };
