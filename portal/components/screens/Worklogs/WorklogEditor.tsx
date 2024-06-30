@@ -30,7 +30,7 @@ import {
   updateLogs,
 } from "@/utils/redux/worklogs/worklogs.slice";
 
-const MARKDOWN_PLACHELODER = `* `;
+export const MARKDOWN_PLACHELODER = `* `;
 
 export const WorklogEditor = ({
   loading,
