@@ -21,7 +21,7 @@ export const CardView = ({
           target="_blank"
           className="flex flex-col overflow-hidden  gap-4"
         >
-          <div className="w-full h-40 relative mb-4 overflow-hidden rounded-t-md shadow">
+          <div className="w-full h-40 relative mb-2 overflow-hidden rounded-t-md shadow">
             <Image
               src={link.image || link.logo}
               layout="fill"
@@ -30,17 +30,17 @@ export const CardView = ({
               alt={link.title}
             />
           </div>
-          <p className="text-lg w-4/5 font-semibold">
+          <p className="text-lg w-11/12 font-semibold">
             {link.title.length > 50
               ? link.title.substring(0, 50) + " ..."
               : link.title}
           </p>
-          <p className="text-[14px] opacity-[0.5] text-center max-w-[100px] truncate font-regular ">
+          <p className="text-[14px] opacity-[0.5] text-center max-w-[250px] truncate font-regular ">
             {link.url?.replace("https://", "")}
           </p>
-          <p className="text-sm w-4/5 ">
-            {link.description.length > 200
-              ? link.description.substring(0, 200) + " ..."
+          <p className="text-sm">
+            {link.description.length > 100
+              ? link.description.substring(0, 100) + " ..."
               : link.description}
           </p>
         </Link>
