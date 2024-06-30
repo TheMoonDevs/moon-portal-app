@@ -55,21 +55,12 @@ export const DirectoryItem = ({
   handleDeleteDirectory,
 }: IDirectoryItemProps) => {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const [newDirectoryName, setNewDirectoryName] = useState<string>("");
-  const [anchorEl, setAnchorEl] = useState<null | {
-    element: HTMLSpanElement | null;
-    anchorId: string;
-  }>({
-    element: null,
-    anchorId: "",
-  });
   const { directories, rootDirectories, activeDirectoryId } =
     useQuickLinkDirectory(true);
-  const dispatch = useAppDispatch();
   const { user } = useUser();
 
-  const openEmojiSet = anchorEl?.anchorId === "emoji-set";
-  const openFolderEditor = anchorEl?.anchorId === "edit-folder";
   let path: string;
 
   const isDepartment =
@@ -89,20 +80,6 @@ export const DirectoryItem = ({
   const isExpanded = isDirectoryExpanded(directory.id);
   const isCurrentPage = activeDirectoryId === directory.id;
 
-  //console.log("isCurrentPage:", isCurrentPage, pathName, onlyPath);
-
-  const handleElementHasPopoverClicked = (
-    event: React.MouseEvent<HTMLSpanElement>
-  ) => {
-    setAnchorEl({
-      element: event.currentTarget,
-      anchorId: event.currentTarget.id,
-    });
-  };
-
-  const handlePopoverClose = () => {
-    setAnchorEl(null);
-  };
   const handleAfterDirNameChanged = async (
     e: FocusEvent<HTMLInputElement> | any
   ) => {
@@ -223,71 +200,6 @@ export const DirectoryItem = ({
                   more_vert
                 </span>
               </Tooltip>
-              {/* <Popover
-                anchorOrigin={{
-                  vertical: "bottom",
-                  horizontal: "right",
-                }}
-                open={openFolderEditor}
-                onClose={handlePopoverClose}
-                anchorEl={anchorEl?.element}
-                transformOrigin={{
-                  vertical: "center",
-                  horizontal: "left",
-                }}
-                className="!rounded-md"
-              >
-                <ul className=" flex flex-col gap-2 peer w-[200px] p-2 rounded-md">
-                  {/* <li
-                    className="flex items-center gap-2 group hover:bg-neutral-200 rounded-md p-1 px-3 cursor-pointer"
-                    onClick={(e) => {
-                      // handlePopoverClose();
-                      setEditable((prev) => {
-                        return { id: directory.id, isEditable: true };
-                      });
-                      inputRef.current?.focus();
-                    }}
-                  >
-                    <span className="material-icons-outlined !text-neutral-500 !text-base group-hover:scale-110 transition-all">
-                      edit
-                    </span>
-                    <span className="text-sm">Rename</span>
-                  </li>
-                  <li className="flex items-center gap-2 group hover:bg-neutral-200 rounded-md p-1 px-3 cursor-pointer">
-                    <span className="material-icons-outlined !text-neutral-500 !text-base group-hover:scale-110 transition-all">
-                      move_up
-                    </span>
-                    <span className="text-sm">Move up</span>
-                  </li>
-                  <li className="flex items-center gap-2 group hover:bg-neutral-200 rounded-md p-1 px-3 cursor-pointer">
-                    <span className="material-icons-outlined !text-neutral-500 !text-base group-hover:scale-110 transition-all">
-                      move_down
-                    </span>
-                    <span className="text-sm">Move down</span>
-                  </li>
-                  <li className="flex items-center gap-2 group hover:bg-neutral-200 rounded-md p-1 px-3 cursor-pointer">
-                    <span className="material-icons-outlined !text-neutral-500 !text-base group-hover:scale-110 transition-all">
-                      drive_file_move
-                    </span>
-                    <span className="text-sm">Move To</span>
-                  </li> */}
-              {/* <li
-                    className="flex items-center gap-2 group hover:bg-neutral-200 text-red-600 rounded-md p-1 px-3 cursor-pointer"
-                    onClick={() =>
-                      handleDeleteDirectory(
-                        directory,
-                        directory.parentDirId,
-                        rootSlug
-                      )
-                    }
-                  >
-                    <span className="material-icons-outlined  !text-red-500 !text-base   group-hover:scale-110 transition-all">
-                      delete
-                    </span>
-                    <span className="text-sm">Delete</span>
-                  </li>
-                </ul>
-              </Popover>  */}
               <Tooltip title="Create Folder" enterDelay={500}>
                 <span
                   className="material-icons-outlined !text-base opacity-0 group-hover:opacity-50 hover:scale-110 transition-all"
