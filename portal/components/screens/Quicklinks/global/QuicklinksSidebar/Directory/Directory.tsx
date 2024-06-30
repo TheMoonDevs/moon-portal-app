@@ -2,20 +2,22 @@
 
 import { FocusEvent, useEffect, useState } from "react";
 
-import { useAppDispatch } from "@/utils/redux/store";
+import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import {
   addNewDirectory,
   deleteDirectory,
+  deleteParentDir,
   setToast,
   updateDirectory,
 } from "@/utils/redux/quicklinks/quicklinks.slice";
 import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Directory, ParentDirectory } from "@prisma/client";
 import { revalidateRoot } from "@/utils/actions";
 import { ToastSeverity } from "@/components/elements/Toast";
 import { DirectoryItem } from "./DirectoryItem";
 import { useQuickLinkDirectory } from "../../../hooks/useQuickLinkDirectory";
+import { APP_ROUTES } from "@/utils/constants/appInfo";
 
 export const DirectoryTree = ({
   mainDirectory,
@@ -157,21 +159,71 @@ export const DirectoryTree = ({
   const isDirectoryExpanded = (id: string) => {
     return expandedDirs.includes(id);
   };
-  const handleDeleteDirectory = async (id: string, parentId: string | null) => {
+
+  const router = useRouter();
+  const { activeDirectoryId } = useAppSelector((state) => state.quicklinks);
+
+  const handleDeleteDirectory = async (
+    directory: Directory,
+    parentId: string | null,
+    rootSlug?: string
+  ) => {
     let apiPath = "/api/quicklinks/directory";
     if (!parentId) {
       apiPath = `/api/quicklinks/parent-directory`;
     }
     try {
-      const response = await QuicklinksSdk.deleteData(`${apiPath}?id=${id}`);
-      dispatch(deleteDirectory(response.data.directory.id));
+      const response = await QuicklinksSdk.deleteData(
+        `${apiPath}?id=${directory.id}`
+      );
+      if (!parentId) dispatch(deleteParentDir(response.data.newParentDirs.id));
+      else dispatch(deleteDirectory(response.data.directory.id));
+
+      if (directory.id === activeDirectoryId) {
+        //if any sub-dir is deleted redirect to its parent.
+        const parentDir = directories.find(
+          (dir) => dir.id === directory.parentDirId
+        );
+        if (parentDir) {
+          const timeString =
+            parentDir &&
+            new Date(parentDir.timestamp).getTime().toString().slice(-5);
+          router.replace(
+            `/quicklinks${rootSlug}/${parentDir?.slug}-${timeString}`
+          );
+          return;
+        }
+
+        const rootParentDir = parentDirs.find(
+          (dir) => dir.id === directory?.parentDirId
+        );
+
+        // If last sub-dir is deleted - e.g. IT in Management Department, then redirect to Management
+        if (rootParentDir) {
+          router.replace(`/quicklinks${rootSlug}`);
+          return;
+        }
+
+        //If the department or common resources itself is deleted - e.g. Management
+        // const currentRootDirId = rootDirectories.find(
+        //   (dir) => dir.slug === rootSlug
+        // )?.id;
+        // console.log(currentRootDirId, rootSlug);
+        // const url =
+        //   parentDirs.length > 0
+        //     ? `/quicklinks${rootSlug}/${
+        //         parentDirs.find((dir) => dir.type === currentRootDirId)?.slug
+        //       }`
+        //     : `/quicklinks/dashboard`;
+        // console.log(url);
+        // router.replace(url);
+        router.replace(APP_ROUTES.quicklinksDashboard);
+      }
     } catch (error) {
       console.log(error);
       revalidateRoot();
     }
   };
-
-  const isDirectoryPage = () => {};
 
   // Filter root directories (those with null parentDirId)
   // const rootDirectories = mainDirectory.filter(
