@@ -1,10 +1,11 @@
 import { FocusEvent, SetStateAction, useRef, useState } from "react";
 import Link from "next/link";
-import { useAppSelector } from "@/utils/redux/store";
 import { Directory } from "@prisma/client";
 import { useRouter } from "next/navigation";
 import { Popover, Tooltip } from "@mui/material";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
+import { useQuickLinkDirectory } from "../../../hooks/useQuickLinkDirectory";
+import { useUser } from "@/utils/hooks/useUser";
 
 interface IDirectoryItemProps {
   directory: Directory;
@@ -29,7 +30,11 @@ interface IDirectoryItemProps {
   ) => Promise<void>;
   setExpandedDirs: (value: SetStateAction<string[]>) => void;
   handleAddChildDirectory: (parentId: string) => void;
-  handleDeleteDirectory: (id: string, parentId: string | null) => Promise<void>;
+  handleDeleteDirectory: (
+    directory: Directory,
+    parentId: string | null,
+    rootSlug?: string
+  ) => Promise<void>;
 }
 
 export const DirectoryItem = ({
@@ -48,9 +53,6 @@ export const DirectoryItem = ({
   handleDeleteDirectory,
 }: IDirectoryItemProps) => {
   const router = useRouter();
-  const { directories, rootDirectories, activeDirectoryId } = useAppSelector(
-    (state) => state.quicklinks
-  );
   const [newDirectoryName, setNewDirectoryName] = useState<string>("");
   const [anchorEl, setAnchorEl] = useState<null | {
     element: HTMLSpanElement | null;
@@ -59,20 +61,9 @@ export const DirectoryItem = ({
     element: null,
     anchorId: "",
   });
-  const handleElementHasPopoverClicked = (
-    event: React.MouseEvent<HTMLSpanElement>
-  ) => {
-    setAnchorEl({
-      element: event.currentTarget,
-      anchorId: event.currentTarget.id,
-    });
-  };
-
-  const handlePopoverClose = () => {
-    setAnchorEl(null);
-  };
-
-  console.log(editable);
+  const { directories, rootDirectories, activeDirectoryId } =
+    useQuickLinkDirectory(true);
+  const { user } = useUser();
 
   const openEmojiSet = anchorEl?.anchorId === "emoji-set";
   const openFolderEditor = anchorEl?.anchorId === "edit-folder";
@@ -98,6 +89,18 @@ export const DirectoryItem = ({
 
   //console.log("isCurrentPage:", isCurrentPage, pathName, onlyPath);
 
+  const handleElementHasPopoverClicked = (
+    event: React.MouseEvent<HTMLSpanElement>
+  ) => {
+    setAnchorEl({
+      element: event.currentTarget,
+      anchorId: event.currentTarget.id,
+    });
+  };
+
+  const handlePopoverClose = () => {
+    setAnchorEl(null);
+  };
   const handleAfterDirNameChanged = async (
     e: FocusEvent<HTMLInputElement> | any
   ) => {
@@ -121,10 +124,7 @@ export const DirectoryItem = ({
   return (
     <div key={directory.id}>
       <div className="flex justify-between items-center group gap-4 ml-3">
-        <div
-          className="flex items-center cursor-pointer gap-1"
-          // onClick={() =>}
-        >
+        <div className="flex items-center cursor-pointer gap-1">
           <Popover
             open={openEmojiSet}
             anchorEl={anchorEl?.element}
@@ -222,7 +222,8 @@ export const DirectoryItem = ({
             </span>
           </Tooltip>
 
-          {directory.parentDirId && (
+          {(directory.parentDirId ||
+            (!directory.parentDirId && user?.isAdmin)) && (
             <div className="group">
               <Popover
                 anchorOrigin={{
@@ -239,13 +240,14 @@ export const DirectoryItem = ({
                 className="!rounded-md"
               >
                 <ul className=" flex flex-col gap-2 peer w-[200px] p-2 rounded-md">
-                  <li
+                  {/* <li
                     className="flex items-center gap-2 group hover:bg-neutral-200 rounded-md p-1 px-3 cursor-pointer"
                     onClick={(e) => {
                       // handlePopoverClose();
                       setEditable((prev) => {
                         return { id: directory.id, isEditable: true };
                       });
+                      inputRef.current?.focus();
                     }}
                   >
                     <span className="material-icons-outlined !text-neutral-500 !text-base group-hover:scale-110 transition-all">
@@ -253,15 +255,6 @@ export const DirectoryItem = ({
                     </span>
                     <span className="text-sm">Rename</span>
                   </li>
-                  {/* <li
-                    className="flex items-center gap-2 group hover:bg-neutral-200 rounded-md p-1 px-3 cursor-pointer"
-                    onClick={handleElementHasPopoverClicked}
-                  >
-                    <span className="material-icons-outlined !text-neutral-500 !text-base group-hover:scale-110 transition-all">
-                      mood
-                    </span>
-                    <span className="text-sm">Change Icon</span>
-                  </li> */}
                   <li className="flex items-center gap-2 group hover:bg-neutral-200 rounded-md p-1 px-3 cursor-pointer">
                     <span className="material-icons-outlined !text-neutral-500 !text-base group-hover:scale-110 transition-all">
                       move_up
@@ -279,29 +272,16 @@ export const DirectoryItem = ({
                       drive_file_move
                     </span>
                     <span className="text-sm">Move To</span>
-                  </li>
+                  </li> */}
                   <li
                     className="flex items-center gap-2 group hover:bg-neutral-200 text-red-600 rounded-md p-1 px-3 cursor-pointer"
-                    onClick={async () => {
-                      await handleDeleteDirectory(
-                        directory.id,
-                        directory.parentDirId
-                      );
-                      if (directory.id === activeDirectoryId) {
-                        const parentDir = directories.find(
-                          (dir) => dir.id === directory.parentDirId
-                        );
-                        const timeString =
-                          parentDir &&
-                          new Date(parentDir.timestamp)
-                            .getTime()
-                            .toString()
-                            .slice(-5);
-                        router.replace(
-                          `/quicklinks${rootSlug}/${parentDir?.slug}-${timeString}`
-                        );
-                      }
-                    }}
+                    onClick={() =>
+                      handleDeleteDirectory(
+                        directory,
+                        directory.parentDirId,
+                        rootSlug
+                      )
+                    }
                   >
                     <span className="material-icons-outlined  !text-red-500 !text-base   group-hover:scale-110 transition-all">
                       delete
