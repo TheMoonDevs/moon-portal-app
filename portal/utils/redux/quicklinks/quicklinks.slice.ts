@@ -65,6 +65,12 @@ export const shortUrlSlice = createSlice({
       );
     },
 
+    deleteParentDir: (state, action) => {
+      state.parentDirs = state.parentDirs.filter(
+        (directory) => directory.id !== action.payload
+      );
+    },
+
     setFavoriteList: (state, action: PayloadAction<UserLink[]>) => {
       state.favoriteList = action.payload.map((item) => {
         return {
@@ -128,6 +134,15 @@ export const shortUrlSlice = createSlice({
     setAllQuicklinks: (state, action) => {
       state.allQuicklinks = action.payload;
     },
+
+    updateQuicklink: (state, action) => {
+      state.allQuicklinks = state.allQuicklinks.map((link) => {
+        if (link.id === action.payload.id) {
+          return action.payload;
+        }
+        return link;
+      });
+    },
     setParentDirsList: (state, action) => {
       state.parentDirs = action.payload;
     },
@@ -169,6 +184,8 @@ export const shortUrlSlice = createSlice({
 export const {
   setToast,
   deleteQuicklink,
+  deleteParentDir,
+  updateQuicklink,
   toggleFavorite,
   setFavoriteList,
   setTopUsedList,
