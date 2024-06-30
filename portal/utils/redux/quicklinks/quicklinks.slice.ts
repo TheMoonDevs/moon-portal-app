@@ -31,6 +31,11 @@ export const shortUrlSlice = createSlice({
         : "widget",
     activeDirectoryId: null,
     isCreateLinkModalOpen: false,
+    popoverElementWithData: {
+      element: null,
+      anchorId: null,
+      data: null,
+    },
     toast: {
       showToast: false,
       toastMsg: "",
@@ -40,6 +45,11 @@ export const shortUrlSlice = createSlice({
     directories: Directory[];
     parentDirs: ParentDirectory[];
     rootDirectories: Directory[];
+    popoverElementWithData: {
+      element: HTMLSpanElement | null;
+      anchorId: string | null;
+      data: any | null;
+    };
     allQuicklinks: Link[];
     favoriteList: Link[];
     topUsedList: Link[];
@@ -53,6 +63,12 @@ export const shortUrlSlice = createSlice({
     isCreateLinkModalOpen: boolean;
   },
   reducers: {
+    setPopoverElementWithData: (state, action) => {
+      state.popoverElementWithData = {
+        ...state.popoverElementWithData,
+        ...action.payload,
+      };
+    },
     setActiveDirectoryId: (state, action) => {
       state.activeDirectoryId = action.payload;
     },
@@ -103,8 +119,8 @@ export const shortUrlSlice = createSlice({
     },
 
     updateDirectory: (state, action) => {
-      console.log(action.payload);
-      if (!action.payload.parentDirId) {
+      if (!action.payload) return;
+      if (!action.payload?.parentDirId) {
         state.parentDirs = state.parentDirs.map((directory) => {
           if (directory.id === action.payload.id) {
             return action.payload;
@@ -200,6 +216,7 @@ export const {
   setAllQuicklinks,
   setIsCreateLinkModalOpen,
   addNewQuicklink,
+  setPopoverElementWithData,
   setCurrentView,
 } = shortUrlSlice.actions;
 
