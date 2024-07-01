@@ -46,7 +46,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
   handleOwnerInfoChange,
 }) => {
   return (
-    <div className="p-6 rounded-lg shadow-lg border-2 w-full md:mt-4 overflow-y-scroll max-w-lg mx-auto">
+    <div className="p-6 rounded-lg shadow-lg border-2 w-full mb-8 md:mb-0 md:mt-4 overflow-y-scroll max-w-lg mx-auto">
       <h2 className="text-2xl font-medium font-serif mb-6 text-center">
         Invoice Details
       </h2>
@@ -297,7 +297,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
           </div>
         </div>
       </LocalizationProvider>
-      <div className="flex justify-end mt-2">
+      <div className="flex justify-end md:mt-2">
         <Tooltip title={"Save"} arrow>
           <span>
             <Button>Save</Button>
