@@ -12,8 +12,10 @@ import {
 import { CircularProgress } from "@mui/material";
 import { updateAvatarUrl } from "@/utils/redux/onboarding/onboarding.slice";
 import { FileWithPath } from "@mantine/dropzone";
+import { useUser } from "@/utils/hooks/useUser";
 
 export function UploadAvatar() {
+  const { user } = useUser();
   const [isFileUploading, setIsFileUploading] = useState<boolean>(false);
   const dispatch = useAppDispatch();
   const avatarUrl = useSelector(
@@ -32,10 +34,15 @@ export function UploadAvatar() {
   const handleUpload = async (file: FileWithPath) => {
     setIsFileUploading(true);
     const formData = new FormData();
+
     formData.append("file", file, file.path);
+    if (user) {
+      const userId = user.id;
+      ormData.append("userId", userId);  f
+    }
     formData.append("folderName", "userAvatars");
     try {
-      const response = await fetch("/api/upload/avatar-upload", {
+      const response = await fetch("/api/upload/file-upload", {
         method: "POST",
         body: formData,
       });
