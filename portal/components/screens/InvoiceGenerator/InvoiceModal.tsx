@@ -46,7 +46,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
   handleOwnerInfoChange,
 }) => {
   return (
-    <div className="p-6 rounded-lg shadow-lg border-2 w-full mt-4 max-w-lg mx-auto">
+    <div className="p-6 rounded-lg shadow-lg border-2 w-full md:mt-4 overflow-y-scroll max-w-lg mx-auto">
       <h2 className="text-2xl font-medium font-serif mb-6 text-center">
         Invoice Details
       </h2>
@@ -70,7 +70,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
         </div>
 
         <Grid container spacing={2}>
-          <Grid item xs={6}>
+          <Grid item xs={12} sm={6}>
             <div className="mb-4 flex flex-col w-full">
               <span className="text-sm font-semibold mb-2 leading-none text-gray-700">
                 *Invoice Issued
@@ -89,7 +89,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
               />
             </div>
           </Grid>
-          <Grid item xs={6}>
+          <Grid item xs={12} sm={6}>
             <div className="mb-4 flex flex-col w-full">
               <span className="text-sm font-semibold mb-2 leading-none text-gray-700">
                 *Invoice Due Date
@@ -119,7 +119,6 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
             onChange={handlePaymentMethodChange as any}
             className="mb-4"
             style={{
-              backgroundColor: "white",
               color: "#4A5568",
               fontWeight: "500",
               height: "40px",
@@ -193,8 +192,8 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
               />
             </div>
 
-            <div className="flex  gap-2">
-              <div className="mb-4 flex flex-col w-1/2 md:w-full">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="mb-4 flex flex-col w-full">
                 <span className="text-sm font-semibold mb-2 leading-none text-gray-700">
                   *A/c No
                 </span>
@@ -219,7 +218,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                 />
               </div>
 
-              <div className="mb-4 flex flex-col w-1/2 md:w-full">
+              <div className="mb-4 flex flex-col w-full">
                 <span className="text-sm font-semibold mb-2 leading-none text-gray-700">
                   *IFSC
                 </span>
@@ -246,8 +245,8 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
             </div>
           </>
         )}
-        <div className="flex  gap-2">
-          <div className="mb-4 flex flex-col w-1/2 md:w-full">
+        <div className="flex flex-col sm:flex-row gap-2">
+          <div className="mb-4 flex flex-col w-full">
             <span className="text-sm font-semibold mb-2 leading-none text-gray-700">
               *Paying To
             </span>
@@ -272,7 +271,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
             />
           </div>
 
-          <div className="mb-4 flex flex-col w-1/2 md:w-full">
+          <div className="mb-4 flex flex-col w-full">
             <span className="text-sm font-semibold mb-2 leading-none text-gray-700">
               *Company Name
             </span>

@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { InvoiceData } from "./InvoicePage";
 import InvoiceTable from "./InvoiceTable";
+import EditableText from "./EditableText";
 
 interface InvoiceProps {
   pdfTargetRef: React.MutableRefObject<HTMLElement | any>;
@@ -30,9 +31,8 @@ const Invoice: React.FC<InvoiceProps> = ({ pdfTargetRef, invoiceData }) => {
           <div>
             <h2 className="text-sm font-bold">BILLED TO:</h2>
             <p className="text-sm">
-              NEIL SKALLI,
-              <br />
-              WAGMI COMPETITION
+              <EditableText initialValue="NEIL SKALLI" />
+              <EditableText initialValue="WAGMI COMPETITION" />
             </p>
           </div>
           <div className="text-right">
