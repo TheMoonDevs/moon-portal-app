@@ -89,14 +89,14 @@ export async function POST(req: Request) {
     });
 
     const fileInfo = await Promise.all(filePromises);
-
+    
     // Save to db
 
     const DBresponse = await prisma.fileUpload.createMany({
       data: fileInfo,
     });
     // console.log(DBresponse);
-    return NextResponse.json({ DBresponse, fileInfo });
+    return NextResponse.json({ DBresponse, fileInfo, folderName });
   } catch (reason) {
     console.log(reason);
     return NextResponse.json({ message: "failure" });
