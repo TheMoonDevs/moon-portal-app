@@ -55,7 +55,7 @@ const InvoiceTable: React.FC = () => {
   };
 
   return (
-    <div className="mt-4 p-4 w-full bg-[#F5F5EF] overflow-visible">
+    <div className="mt-4 p-4 w-full bg-white overflow-visible">
       <table className="w-full mb-8 table-auto">
         <thead>
           <tr className="border-y border-black">

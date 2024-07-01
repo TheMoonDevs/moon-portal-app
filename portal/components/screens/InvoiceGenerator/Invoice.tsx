@@ -10,7 +10,7 @@ interface InvoiceProps {
 
 const Invoice: React.FC<InvoiceProps> = ({ pdfTargetRef, invoiceData }) => {
   return (
-    <section ref={pdfTargetRef} className="bg-[#F5F5EF]">
+    <section ref={pdfTargetRef} className="bg-white">
       <div className="p-8  shadow-md ">
         <div className="flex justify-between items-center mb-8">
           <div className="flex items-center">
