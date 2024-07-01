@@ -127,7 +127,7 @@ const InvoiceTable: React.FC = () => {
                 <EditableText
                   initialValue={row.service}
                   onSave={(value) => handleInlineEdit(index, "service", value)}
-                  placeholder={`"Enter ${headers.service} Name"`}
+                  placeholder={`Enter ${headers.service} Name`}
                 />
               </td>
               <td className="p-2">

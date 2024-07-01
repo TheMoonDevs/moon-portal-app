@@ -68,6 +68,7 @@ const InvoicePage = () => {
       [fieldName]: newValue,
     });
   };
+
   const handlePaymentMethodChange = (event: any) => {
     setInvoiceData({ ...invoiceData, paymentMethod: event.target.value });
   };
@@ -91,22 +92,24 @@ const InvoicePage = () => {
       </header>
       <main className="flex flex-col md:flex-row h-full overflow-hidden">
         <div className="flex flex-col md:flex-row w-full h-full">
-          <div className="block md:hidden">
+          <div className="block md:hidden bg-[#F5F5EF] h-full">
             {showInput && (
-              <InvoiceModal
-                invoiceData={invoiceData}
-                handleInputChange={handleInputChange}
-                handleDateChange={handleDateChange}
-                handlePaymentMethodChange={handlePaymentMethodChange}
-                handleOwnerInfoChange={handleOwnerInfoChange}
-              />
+              <div className="overflow-y-auto h-full">
+                <InvoiceModal
+                  invoiceData={invoiceData}
+                  handleInputChange={handleInputChange}
+                  handleDateChange={handleDateChange}
+                  handlePaymentMethodChange={handlePaymentMethodChange}
+                  handleOwnerInfoChange={handleOwnerInfoChange}
+                />
+              </div>
             )}
           </div>
           <section className="w-full md:w-1/2 p-4 border-dashed border mb-14 overflow-y-auto shadow-lg rounded-lg">
             <Invoice pdfTargetRef={pdfTargetRef} invoiceData={invoiceData} />
           </section>
           <section className="w-full md:w-1/2 p-4">
-            <div className="hidden md:block overflow-y-auto mb-10 rounded-lg">
+            <div className="hidden md:block overflow-y-auto mb-10 rounded-lg h-full">
               <InvoiceModal
                 invoiceData={invoiceData}
                 handleInputChange={handleInputChange}
