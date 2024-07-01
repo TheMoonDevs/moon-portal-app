@@ -10,8 +10,7 @@ interface InvoiceRow {
 }
 
 const initialData: InvoiceRow[] = [
-  { service: "Refactoring of WAGMI", weeks: 2, unitPrice: 200 },
-  { service: "Migration + BugFixes + SocialLogin", weeks: 1, unitPrice: 200 },
+  { service: "", weeks: 0, unitPrice: 0 },
 ];
 
 const InvoiceTable: React.FC = () => {
