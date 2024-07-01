@@ -30,7 +30,7 @@ const InvoiceHeader: React.FC<InvoiceHeaderProps> = ({
   };
 
   return (
-    <header className="bg-white border-b border-neutral-300 shadow-md md:pl-[1rem] h-14 flex items-center justify-between px-3 md:px-6">
+    <header className="border-b border-neutral-300 shadow-md md:pl-[1rem] h-14 flex items-center justify-between px-3 md:px-6">
       <Link href={APP_ROUTES.home} className="flex items-center">
         <Image
           src="/icon-192x192.png"
