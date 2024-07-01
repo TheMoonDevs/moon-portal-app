@@ -66,7 +66,7 @@ const InvoiceHeader: React.FC<InvoiceHeaderProps> = ({
             <button className="flex items-center gap-1 md:gap-2 md:border border-neutral-800 hover:bg-neutral-100 rounded-md px-2  py-1  text-xs">
               <span className="material-symbols-outlined text-xs">mail</span>
               <span className="hidden md:inline font-serif font-medium">
-                Send as PDF
+                Email PDF
               </span>
             </button>
           </Tooltip>
