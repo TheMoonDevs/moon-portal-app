@@ -9,6 +9,28 @@ interface InvoiceProps {
 }
 
 const Invoice: React.FC<InvoiceProps> = ({ pdfTargetRef, invoiceData }) => {
+ function formatDate(dateString: any) {
+   const date = new Date(dateString);
+   const day = date.getDate(); // Get day of the month (1-31)
+   const month = date.toLocaleString("en-US", { month: "long" }); // Get full month name
+   const year = date.getFullYear(); // Get full year
+
+   // Determine the day suffix (st, nd, rd, th)
+   let daySuffix;
+   if (day === 1 || day === 21 || day === 31) {
+     daySuffix = "st";
+   } else if (day === 2 || day === 22) {
+     daySuffix = "nd";
+   } else if (day === 3 || day === 23) {
+     daySuffix = "rd";
+   } else {
+     daySuffix = "th";
+   }
+
+   return `${day}${daySuffix} ${month} ${year}`;
+ }
+
+
   return (
     <section ref={pdfTargetRef} className="bg-white">
       <div className="p-8  shadow-md ">
@@ -31,14 +53,12 @@ const Invoice: React.FC<InvoiceProps> = ({ pdfTargetRef, invoiceData }) => {
           <div>
             <h2 className="text-sm font-bold">BILLED TO:</h2>
             <p className="text-sm">
-              <EditableText initialValue="NEIL SKALLI" />
-              <EditableText initialValue="WAGMI COMPETITION" />
+              <EditableText initialValue="" placeholder="Client Name" />
+              <EditableText initialValue="" placeholder="Client Company Name" />
             </p>
           </div>
           <div className="text-right">
-            <p className="text-sm">
-              Invoice issued on {invoiceData.invoiceDate?.toLocaleDateString()}
-            </p>
+            Invoice issued on {formatDate(invoiceData.invoiceDate)}
             <p className="text-sm">Invoice Id - {invoiceData.invoiceId}</p>
           </div>
         </div>
@@ -48,8 +68,8 @@ const Invoice: React.FC<InvoiceProps> = ({ pdfTargetRef, invoiceData }) => {
         </div>
 
         <p className="text-sm mb-8">
-          Please finish the payment by the due date:
-          {invoiceData.dueDate ? invoiceData.dueDate.toLocaleDateString() : ""}
+          Please finish the payment by the due date:{" "}
+          {invoiceData.dueDate ? formatDate(invoiceData.dueDate) : ""}
         </p>
         <p className="text-3xl mb-8">Thank you!</p>
 
