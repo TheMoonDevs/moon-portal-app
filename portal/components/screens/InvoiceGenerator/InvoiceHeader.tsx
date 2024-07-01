@@ -23,7 +23,7 @@ const InvoiceHeader: React.FC<InvoiceHeaderProps> = ({
     generatePDF(pdfTargetRef, {
       method: "open",
       filename: `invoice.pdf`,
-      page: { margin: { top: 10, bottom: 10, left: 10, right: 10 } }, // Custom margins
+      page: { margin: { top: 10, bottom:-800, left: 10, right: 10 } }, // Custom margins
     });
 
     document.body.style.overflow = originalOverflow; // Restore original overflow style
