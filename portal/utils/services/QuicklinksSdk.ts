@@ -139,12 +139,40 @@ export const QuicklinksSdk = {
       favicon,
     } = metadata;
     const rootBase = requestUrl.split("/");
+    const extractUrl = (
+      image: string | any[] | { url: string | null } | null
+    ) => {
+      if (!image) return "";
+
+      // Handle the case where image itself is a URL string (unlikely but covered)
+      if (typeof image === "string") return image;
+
+      if (Array.isArray(image)) {
+        for (const item of image) {
+          if (typeof item === "object" && item?.url) return item.url;
+        }
+        return "";
+      }
+
+      if (typeof image === "object" && image !== null) return image.url || "";
+
+      return "";
+    };
+
+    const ogImageUrl = extractUrl(ogImage);
+    const twitterImageUrl = extractUrl(twitterImage);
+
+    let imageUrl;
+
+    if (ogImageUrl && twitterImageUrl && ogImageUrl === twitterImageUrl)
+      imageUrl = ogImageUrl;
+    else imageUrl = ogImageUrl || twitterImageUrl;
 
     const data = {
-      title: twitterTitle || ogTitle,
-      description: twitterDescription || ogDescription,
-      url: twitterUrl || ogUrl || requestUrl,
-      image: ogImage?.url || twitterImage?.url || ogImage[0]?.url || "",
+      title: twitterTitle || ogTitle || "",
+      description: twitterDescription || ogDescription || "",
+      url: twitterUrl || ogUrl || requestUrl || "",
+      image: imageUrl,
       linkType: ogType || "website",
       logo: favicon?.startsWith("https://")
         ? favicon
