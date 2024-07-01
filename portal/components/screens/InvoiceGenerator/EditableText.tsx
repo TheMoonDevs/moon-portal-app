@@ -78,6 +78,8 @@ const EditableText: React.FC<EditableTextProps> = ({
               fontSize: "inherit",
               color: "inherit",
               lineHeight: "inherit",
+              width: type === "number" ? "3rem" : "6rem",
+              overflow: "show",
             },
           },
         }}
