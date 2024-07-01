@@ -77,8 +77,6 @@ const FilesTable = ({ users }: { users?: User[] }) => {
           },
           body: JSON.stringify({
             id: fileToDelete.id,
-            userId: fileToDelete.userId,
-            fileName: fileToDelete.fileName,
           }),
         });
         console.log(response);

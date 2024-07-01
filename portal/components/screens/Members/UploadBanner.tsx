@@ -55,7 +55,7 @@ const UploadBanner = () => {
         // Update the Banner URL with the file's URL
         const bannerUrl = data.fileInfo[0].fileUrl;
         console.log(bannerUrl);
-        // again here new 
+        // again here new state logic will be required 
         // dispatch(updateAvatarUrl(bannerUrl));
         setUploadedFiles([data.fileInfo]);
         // dispatch(resetPreview());

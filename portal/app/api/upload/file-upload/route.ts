@@ -105,13 +105,25 @@ export async function POST(req: Request) {
 
 export async function DELETE(req: Request) {
   try {
-    const { id, userId, fileName, folderName } = await req.json();
+    const { id} = await req.json();
 
-    const response = await s3FileUploadSdk.deleteFile({
-      userId: userId,
-      fileName: fileName,
-      ...(folderName && { folder: folderName }),
+    const DBresponse = await prisma.fileUpload.delete({
+      where: {
+        id: id,
+      },
     });
+    console.log(DBresponse);
+    let response;
+
+    if(DBresponse){
+      response = await s3FileUploadSdk.deleteFile({
+        fileName: DBresponse.fileName || '',
+        ...(DBresponse.userId && { userId: DBresponse.userId }),
+        ...(DBresponse.folderName && { folder: DBresponse.folderName }),
+      });
+    }
+
+   
 
     console.log(response);
     if (
@@ -123,12 +135,7 @@ export async function DELETE(req: Request) {
       throw new Error("Failed to delete file");
     }
 
-    const DBresponse = await prisma.fileUpload.delete({
-      where: {
-        id: id,
-      },
-    });
-    console.log(DBresponse);
+    
 
     return NextResponse.json(DBresponse.fileName);
   } catch (e) {
