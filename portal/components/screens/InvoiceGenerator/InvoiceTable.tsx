@@ -1,12 +1,12 @@
-import { TextField, Tooltip } from "@mui/material";
-import { Minus, Plus } from "lucide-react";
 import React, { useState } from "react";
+import { Tooltip } from "@mui/material";
+import { Minus, Plus } from "lucide-react";
+import EditableText from "./EditableText";
 
 interface InvoiceRow {
   service: string;
   weeks: number;
   unitPrice: number;
-  [key: string]: string | number;
 }
 
 const initialData: InvoiceRow[] = [
@@ -28,11 +28,9 @@ const InvoiceTable: React.FC = () => {
     field: keyof InvoiceRow,
     value: string | number
   ) => {
-    const newData = [...data];
+    const newData: any = [...data];
     newData[index][field] =
-      field === "weeks" || field === "unitPrice"
-        ? parseFloat(value as string) || 0
-        : (value as string);
+      typeof value === "number" ? value : value.toString();
     setData(newData);
   };
 
@@ -56,73 +54,41 @@ const InvoiceTable: React.FC = () => {
     return data.reduce((total, row) => total + row.weeks * row.unitPrice, 0);
   };
 
-  const renderEditableCell = (
-    index: number,
-    field: keyof InvoiceRow,
-    value: string | number
-  ) => (
-    <TextField
-      variant="standard"
-      value={value}
-      placeholder={`Enter ${headers.service} Name`}
-      onChange={(e) => handleInlineEdit(index, field, e.target.value)}
-      onBlur={(e) => handleInlineEdit(index, field, e.target.value || "")}
-      InputProps={{
-        disableUnderline: true,
-        style: {
-          minWidth: Math.max(50, value.toString().length * 8),
-          overflow: "visible", // Ensure overflow is visible
-        },
-      }}
-      inputProps={{
-        style: {
-          padding: "2px 4px",
-          fontSize: "14px",
-        },
-      }}
-      className="bg-transparent"
-    />
-  );
-
-  const renderEditableHeader = (field: keyof typeof headers, value: string) => (
-    <TextField
-      variant="standard"
-      value={value}
-      onChange={(e) => handleHeaderEdit(field, e.target.value)}
-      InputProps={{
-        disableUnderline: true,
-        style: {
-          minWidth: Math.max(50, value.length * 8),
-          overflow: "visible",
-        },
-      }}
-      inputProps={{
-        style: {
-          padding: "2px 4px",
-          fontSize: "14px",
-          fontWeight: "bold",
-        },
-      }}
-      className="bg-transparent"
-    />
-  );
-
   return (
     <div className="mt-4 p-4 w-full bg-[#F5F5EF] overflow-visible">
-      <table className="w-full mb-8   table-auto ">
+      <table className="w-full mb-8 table-auto">
         <thead>
           <tr className="border-y border-black">
             <th className="text-left p-2"></th>
-            <th className="text-left p-2">
-              {renderEditableHeader("service", headers.service)}
+            <th className="text-left p-2 font-bold">
+              <EditableText
+                initialValue={headers.service}
+                onSave={(value) =>
+                  handleHeaderEdit("service", value.toString())
+                }
+                placeholder={`Enter ${headers.service} Name`}
+                className="text-gray-700"
+              />
             </th>
-            <th className="text-left p-2">
-              {renderEditableHeader("weeks", headers.weeks)}
+            <th className="text-left p-2 font-bold">
+              <EditableText
+                initialValue={headers.weeks.toString()}
+                onSave={(value) => handleHeaderEdit("weeks", value.toString())}
+                placeholder="0"
+                className="text-gray-700"
+              />
             </th>
-            <th className="text-left p-2">
-              {renderEditableHeader("unitPrice", headers.unitPrice)}
+            <th className="text-left p-2 font-bold">
+              <EditableText
+                initialValue={headers.unitPrice.toString()}
+                onSave={(value) =>
+                  handleHeaderEdit("unitPrice", value.toString())
+                }
+                placeholder="0"
+                className="text-gray-700"
+              />
             </th>
-            <th className="text-left p-2">Total</th>
+            <th className="text-left p-2 font-bold">Total</th>
           </tr>
         </thead>
         <tbody>
@@ -157,16 +123,38 @@ const InvoiceTable: React.FC = () => {
                   )}
                 </div>
               </td>
-
               <td className="p-2">
-                {renderEditableCell(index, "service", row.service)}
+                <EditableText
+                  initialValue={row.service}
+                  onSave={(value) => handleInlineEdit(index, "service", value)}
+                  placeholder={`"Enter ${headers.service} Name"`}
+                />
               </td>
               <td className="p-2">
-                {renderEditableCell(index, "weeks", row.weeks)}
+                <EditableText
+                  initialValue={row.weeks.toString()}
+                  onSave={(value) =>
+                    handleInlineEdit(index, "weeks", parseInt(value as string))
+                  }
+                  type="number"
+                  placeholder="0"
+                />
               </td>
               <td className="p-2">
-                <span className="flex ">
-                  ${renderEditableCell(index, "unitPrice", row.unitPrice)}
+                <span className="flex">
+                  $
+                  <EditableText
+                    initialValue={row.unitPrice.toString()}
+                    onSave={(value) =>
+                      handleInlineEdit(
+                        index,
+                        "unitPrice",
+                        parseInt(value as string)
+                      )
+                    }
+                    type="number"
+                    placeholder="0"
+                  />
                 </span>
               </td>
               <td className="p-2">{row.weeks * row.unitPrice}</td>
