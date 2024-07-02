@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
         status: "ACTIVE",
       },
     });
-
+    
     const today = new Date();
     const fourDaysLater = new Date();
     fourDaysLater.setDate(today.getDate() + 4);
