@@ -34,8 +34,9 @@ export function DropzoneButton() {
       });
       if (user) {
         const userId = user.id;
-        formData.append("userId", userId);
+        formData.append("userId", userId);  
       }
+      formData.append("folderName", "userUploads")
       try {
         const response = await fetch("/api/upload/file-upload", {
           method: "POST",
