@@ -67,7 +67,7 @@ export const WorklogSummaryActions = ({
     <div className="flex flex-col mt-10 justify-between items-center  w-full md:w-[50%] border-t-2 relative">
       <div></div>
       {view === "Breakdown" && !loading && (
-        <div className="overflow-y-auto w-full ">
+        <div className="overflow-y-scroll w-full h-screen pb-32 md:pb-8">
           <WorklogBreakdown
             worklogSummary={worklogSummary}
             isMonthly={isMonthly}

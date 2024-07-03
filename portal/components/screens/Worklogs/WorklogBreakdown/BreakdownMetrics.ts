@@ -276,9 +276,12 @@ function getCompletedAndInProgressTasksByWeekday(worklogSummary: WorkLogs[]): {
     worklog.works.forEach((work: any) => {
       const tasks = work.content.split("\n").map((task: string) => task.trim());
       tasks.forEach((task: string) => {
-        if (task.endsWith(TaskType.Completed)) {
+        if (task.endsWith(TaskType.Completed) && weekdayCounts[weekday]) {
           weekdayCounts[weekday].completed++;
-        } else if (task.endsWith(TaskType.InProgress)) {
+        } else if (
+          task.endsWith(TaskType.InProgress) &&
+          weekdayCounts[weekday]
+        ) {
           weekdayCounts[weekday].inProgress++;
         }
       });
