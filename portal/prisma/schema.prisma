@@ -289,3 +289,30 @@ model DocMarkdown {
   updatedAt DateTime @updatedAt
   markdown  Json
 }
+
+//-------------------------------------Notifications-----------------------------------------
+
+model Notification {
+  id                String            @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String            @db.ObjectId
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  title             String
+  description       String
+  matchId           String?           @db.ObjectId
+  matchType         MatchType?
+  notificationType  NotificationType
+  notificationData  Json?
+}
+
+enum MatchType {
+  USER
+  DOC
+  DIR
+}
+
+enum NotificationType {
+  ADMIN
+  SELF_GENERATED
+  USER_TO_USER
+}
