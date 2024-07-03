@@ -375,7 +375,7 @@ export function OnboardingPage({ onClose }: OnboardingPageProps) {
                       placement="top"
                       title="Time period where colleagues can interact with you. Example: 2pm - 5pm"
                     >
-                      <Info className="opacity-60 h-4 w-4 cursor-pointer" />
+                      <Info className="opacity-60 h-5 w-5 cursor-pointer" />
                     </Tooltip>
                   </div>
                 </div>
