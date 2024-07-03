@@ -6,7 +6,7 @@ import { USERTYPE } from "@prisma/client";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { useMediaQuery } from "@mui/material";
+import { useMediaQuery, Badge } from "@mui/material";
 import media from "@/styles/media";
 
 const NAVIGATION_OPTIONS = [
@@ -78,6 +78,7 @@ export const Bottombar = ({
   const visibleOnlyOnResponsiveSizes = useMediaQuery(
     visibleOnlyOn ? visibleOnlyOn : media.default
   );
+  const isMobile = useMediaQuery(media.largeMobile);
 
   const options =
     user?.userType === USERTYPE.CLIENT
@@ -86,6 +87,14 @@ export const Bottombar = ({
   if (!visible && !visibleOnlyOn) return null;
   if (visibleOnlyOn && !visibleOnlyOnResponsiveSizes) return null;
   if (!AppRoutesHelper.bottomBarShown(path)) return null;
+
+  const handleNotificationClick = () => {
+    if (isMobile) {
+      router.push(APP_ROUTES.notifications);
+    } else {
+      // open popup on desktop - remaning will do at later point
+    }
+  };
 
   return (
     <div
@@ -103,20 +112,31 @@ export const Bottombar = ({
       {options.map((option) => (
         <div
           onClick={() => {
-            router.push(option.path);
+            if (option.name === "Notifications") {
+              handleNotificationClick();
+            } else {
+              router.push(option.path);
+            }
           }}
           key={option.path}
           className={` ${
             option.path === path ? "bg-white text-black" : "bg-black text-white"
           } flex flex-col items-center justify-center py-1 w-1/3 cursor-pointer rounded-2xl md:w-full`}
         >
-          <span
-            className={` ${
-              option.path === path ? "text-black" : "text-white"
-            } font-thin material-icons-outlined text-md `}
+          <Badge
+            badgeContent={
+              option.name === "Notifications" ? 1 : 0
+            }
+            color="error"
           >
-            {option.icon}
-          </span>
+            <span
+              className={` ${
+                option.path === path ? "text-black" : "text-white"
+              } font-thin material-icons-outlined text-md `}
+            >
+              {option.icon}
+            </span>
+          </Badge>
           <p className="text-[0.5em] opacity-75">{option.name}</p>
         </div>
       ))}{" "}
