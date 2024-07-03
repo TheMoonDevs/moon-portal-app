@@ -38,7 +38,7 @@
     "countries-list": "^3.0.6",
     "date-fns": "^2.30.0",
     "dayjs": "^1.11.10",
-    "emoji-picker-react": "^4.10.0",
+    "emoji-picker-react": "^4.11.0",
     "firebase": "^10.6.0",
     "input-otp": "^1.2.4",
     "lodash": "^4.17.21",

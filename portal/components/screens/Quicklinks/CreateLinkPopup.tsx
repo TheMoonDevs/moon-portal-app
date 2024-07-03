@@ -21,6 +21,8 @@ export const CreateLinkPopup = () => {
   const path = usePathname();
   const { user } = useUser();
 
+  const dashboardPath = "/quicklinks/dashboard";
+
   const [selectedParentDir, setSelectedParentDir] = useState({
     id: "",
     title: "",
@@ -183,19 +185,22 @@ export const CreateLinkPopup = () => {
           </label>
           <div className="flex items-center gap-4">
             <div className="relative flex items-center bg-neutral-100 rounded-md">
-              <Tooltip title="Select Department">
-                <div
-                  className="flex items-center cursor-pointer"
-                  onClick={(e) => setAnchorEl(e.currentTarget)}
-                >
-                  <span className="material-icons-outlined text-gray-500 p-2">
-                    groups
-                  </span>
-                  <span className="material-icons-outlined text-gray-500 p-2">
-                    {open ? "arrow_drop_up" : "arrow_drop_down"}
-                  </span>
-                </div>
-              </Tooltip>
+              {path === dashboardPath ? (
+                <Tooltip title="Select Department">
+                  <div
+                    className="flex items-center cursor-pointer"
+                    onClick={(e) => setAnchorEl(e.currentTarget)}
+                  >
+                    <span className="material-icons-outlined text-gray-500 p-2">
+                      groups
+                    </span>
+                    <span className="material-icons-outlined text-gray-500 p-2">
+                      {open ? "arrow_drop_up" : "arrow_drop_down"}
+                    </span>
+                  </div>
+                </Tooltip>
+              ) : null}
+
               <Popover
                 open={open}
                 anchorEl={anchorEl}
