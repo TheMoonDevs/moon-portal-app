@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { isValidURL } from "@/utils/helpers/functions";
 import useClipboardURLDetection from "@/utils/hooks/useClipboardUrlDetection";
 import { useUser } from "@/utils/hooks/useUser";
@@ -10,7 +11,7 @@ import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
 import { Popover, Slide, Tooltip } from "@mui/material";
 import { ParentDirectory, ROOTTYPE } from "@prisma/client";
 import { usePathname, useSearchParams } from "next/navigation";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { toast, Toaster } from "sonner";
 
 export const CreateLinkPopup = () => {
@@ -37,6 +38,17 @@ export const CreateLinkPopup = () => {
     const pathArray = path?.split("/");
     return pathArray?.filter((item) => item !== "quicklinks")?.join("/");
   };
+
+  const handleClose = () => {
+    dispatch(setIsCreateLinkModalOpen(false));
+    setCopiedURL(null);
+  };
+
+  useEffect(() => {
+    if (copiedURL) {
+      handleClose(); // Close modal if URL is copied
+    }
+  }, [copiedURL]);
 
   const rootParentDirId = useMemo(() => {
     const getDepartmentId = (directoryId: string | null): string => {
@@ -141,7 +153,8 @@ export const CreateLinkPopup = () => {
   return (
     <Slide
       direction="up"
-      in={isCreateLinkModalOpen || Boolean(copiedURL)}
+      // in={isCreateLinkModalOpen || Boolean(copiedURL)}
+      in={isCreateLinkModalOpen && !copiedURL}
       mountOnEnter
       unmountOnExit
     >

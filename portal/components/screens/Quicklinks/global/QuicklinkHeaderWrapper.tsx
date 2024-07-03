@@ -16,6 +16,10 @@ export default function QuicklinkHeaderWrapper({
 }) {
   const dispatch = useAppDispatch();
 
+  const handleOpenModal = () => {
+    dispatch(setIsCreateLinkModalOpen(true));
+  };
+
   return (
     <header className="flex justify-between items-center">
       {children}
@@ -28,8 +32,8 @@ export default function QuicklinkHeaderWrapper({
             </span>
           }
           variant="contained"
-          className="!bg-zinc-900 !text-sm !rounded-lg  !capitalize !shadow-none hover:!bg-neutral-700  !text-neutral-100 !tracking-wider !py-[0.6rem]"
-          onClick={() => dispatch(setIsCreateLinkModalOpen(true))}
+          className="!bg-zinc-900 !text-sm !rounded-lg !capitalize !shadow-none hover:!bg-neutral-700 !text-neutral-100 !tracking-wider !py-[0.6rem]"
+          onClick={handleOpenModal} // Trigger modal opening here
         >
           Quicklink
         </Button>
