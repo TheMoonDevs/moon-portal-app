@@ -8,12 +8,16 @@ interface BalancesState {
     exchangeData: ExchangeConfigData;
     exchangeCurrency: any;
   } | null;
+  selectedCurrency: string;
+  selectedCurrencyValue: number;
 }
 
 const initialState: BalancesState = {
   balance: 0,
   totalEarned: "0",
   exchange: null,
+  selectedCurrency: 'INR',
+  selectedCurrencyValue: 1,
 };
 
 const balancesSlice = createSlice({
@@ -35,9 +39,15 @@ const balancesSlice = createSlice({
     ) => {
       state.exchange = action.payload;
     },
+    updateSelectedCurrency: (state, action: PayloadAction<string>) => {
+      state.selectedCurrency = action.payload;
+    },
+    updateSelectedCurrencyValue: (state, action: PayloadAction<number>) => {
+      state.selectedCurrencyValue = action.payload;
+    },
   },
 });
 
-export const { setBalance, setTotalEarned, setExchange } =
+export const { setBalance, setTotalEarned, setExchange, updateSelectedCurrency, updateSelectedCurrencyValue } =
   balancesSlice.actions;
 export default balancesSlice.reducer;

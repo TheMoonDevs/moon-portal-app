@@ -23,7 +23,7 @@ const config = {
   folder: "files",
 };
 
-export const fileUploadSdk = {
+export const s3FileUploadSdk = {
   /**
    * Uploads a file to the specified bucket on digital ocean.
    *
@@ -51,7 +51,10 @@ export const fileUploadSdk = {
     let key;
     console.log(file);
 
-    if (!userId) key = file ? file.name : fileInfoWithFileBuffer?.fileName;
+    if (!userId)
+      key = `${folder || config.folder}/${
+        file ? file.name : fileInfoWithFileBuffer?.fileName
+      }`;
     else
       key = `${folder || config.folder}/${userId}/${
         file ? file.name : fileInfoWithFileBuffer?.fileName
@@ -100,7 +103,7 @@ export const fileUploadSdk = {
     folder?: string;
   }): Promise<GetObjectCommandOutput | undefined> => {
     let key;
-    if (!userId) key = fileName;
+    if (!userId) key = `${folder || config.folder}/${fileName}`;
     else key = `${folder || config.folder}/${userId}/${fileName}`;
     try {
       const res = await config.s3Client.send(
@@ -136,7 +139,9 @@ export const fileUploadSdk = {
       ? ` https://${process.env.SPACES_NAME}.nyc3.cdn.digitaloceanspaces.com/${
           folder || config.folder
         }/${userId}/${encodeURI(file.name || file.fileName)}`
-      : `https://${process.env.SPACES_NAME}.nyc3.cdn.digitaloceanspaces.com/${encodeURI(file.name || file.fileName)}`;
+      : `https://${process.env.SPACES_NAME}.nyc3.cdn.digitaloceanspaces.com/${
+          folder || config.folder
+        }/${encodeURI(file.name || file.fileName)}`;
   },
   /**
    * Retrieves the private signed URL good for 24 hrs of the file associated with the provided key.
@@ -155,7 +160,7 @@ export const fileUploadSdk = {
     folder?: string;
   }): Promise<string | undefined> => {
     let key;
-    if (!userId) key = file.name;
+    if (!userId) key = `${folder || config.folder}/${file.name}`;
     else key = `${folder || config.folder}/${userId}/${file.name}`;
     try {
       const url = await getSignedUrl(
@@ -188,7 +193,7 @@ export const fileUploadSdk = {
     folder?: string;
   }): Promise<DeleteObjectCommandOutput | undefined> => {
     let key;
-    if (!userId) key = fileName;
+    if (!userId) key = `${folder || config.folder}/${fileName}`;
     else key = `${folder || config.folder}/${userId}/${fileName}`;
     try {
       const res = await config.s3Client.send(

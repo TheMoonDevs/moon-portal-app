@@ -1,4 +1,5 @@
 import { prisma } from "@/prisma/prisma";
+import GoogleSheetsAPI from "@/utils/services/googleSheetSdk";
 import { NextResponse, NextRequest } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
         avatar,
         timezone,
         password: passcode,
-        vertical: "DEV",
+        vertical: userVertical,
         workData: {
           joining: new Date(),
           workHours: "",
@@ -58,6 +59,44 @@ export async function POST(request: NextRequest) {
           stipendCurrency: "",
         },
       },
+    });
+
+    const sheetConfig = {
+      clientEmail: process.env.GIAM_CLIENT_EMAIL || "",
+      privateKey: process.env.GIAM_PRIVATE_KEY || "",
+    };
+
+    const sheetSDK = new GoogleSheetsAPI(sheetConfig);
+    const currentDate = new Date()
+      .toLocaleDateString("en-GB")
+      .split("/")
+      .reverse()
+      .join("-");
+
+    const sheetData = [
+      `${username}${passcode}`,
+      name,
+      email,
+      phone,
+      upiId,
+      "=(YEAR(NOW())-YEAR(G14))",
+      dateOfBirth,
+      userVertical,
+      city,
+      position,
+      workHourOverlap,
+      "---", //workhours
+      currentDate,
+      "---", //office email
+      address,
+    ];
+
+    await sheetSDK.appendSheetData({
+      spreadsheetId: "1w2kCO6IIYHi7YJBqfeg9ytmiIDRGhOgGzUPb_0u-UZ0",
+      targetId: "0",
+      values: [sheetData],
+      range: "A:A",
+      majorDimension: "ROWS",
     });
 
     if (error_response) {
@@ -91,8 +130,9 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const username = searchParams.get("username");
+  const password = searchParams.get("password");
 
-  if (!username) {
+  if (!username || !password) {
     return NextResponse.json(
       { message: "Username is required" },
       { status: 400 }
@@ -103,6 +143,7 @@ export async function GET(request: NextRequest) {
     const user = await prisma.user.findFirst({
       where: {
         username: username,
+        password,
       },
     });
 

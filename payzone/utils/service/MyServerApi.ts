@@ -2,21 +2,23 @@ import { User } from "@prisma/client";
 
 export enum SERVER_API_ENDPOINTS {
   updateUser = `/api/user?id=`,
+  payment = `/api/payment`,
   updatePayment = `/api/payment`,
   getUsers = `/api/users`,
   getPayments = `/api/payment`,
   referralsSignup = `/api/referrals/signup`,
+  updateExchangeConfigData = `/api/exchange`,
 }
 export const PORTAL_SERVER_API_URL = process.env.NEXT_PUBLIC_PORTAL_API_URL;
 
 export const MyServerApi = {
-  postData: (data: any) => {
+  postData: (url: string, data: any) => {
     return new Promise((resolve, reject) => {
-      fetch(SERVER_API_ENDPOINTS.referralsSignup, {
+      fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
         body: JSON.stringify(data),
       })
@@ -42,7 +44,7 @@ export const MyServerApi = {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       })
         .then((res) => {
@@ -63,13 +65,14 @@ export const MyServerApi = {
         });
     });
   },
+
   updateData: (url: string, updatedData: any) => {
     return new Promise((resolve, reject) => {
       fetch(url, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
         body: JSON.stringify(updatedData),
       })
@@ -97,7 +100,7 @@ export const MyServerApi = {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
         body: JSON.stringify(body),
       })
@@ -120,7 +123,7 @@ export const MyServerApi = {
   },
 
   getAll: (url: string) => {
-    return new Promise((resolve, reject) => {
+    return new Promise<any>((resolve, reject) => {
       fetch(url, {
         method: "GET",
         headers: {
@@ -151,7 +154,7 @@ export const MyServerApi = {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
         body: JSON.stringify(updatedData),
       })
@@ -179,7 +182,7 @@ export const MyServerApi = {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       })
         .then((res) => {
@@ -205,7 +208,7 @@ export const MyServerApi = {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       })
         .then((res) => {
@@ -229,7 +232,7 @@ export const MyServerApi = {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
         body: JSON.stringify(updatedData),
       })
@@ -253,6 +256,32 @@ export const MyServerApi = {
     return new Promise((resolve, reject) => {
       fetch(`/api/referrals`, {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify(data),
+      })
+        .then((res) => {
+          if (!res.ok) {
+            reject(new Error(`Request failed with status ${res.status}`));
+          }
+          return res.json();
+        })
+        .then((data) => {
+          resolve(data);
+        })
+        .catch((err) => {
+          console.log(err);
+          reject(err);
+        });
+    });
+  },
+
+  updateExchangeConfigData: (data: any) => {
+    return new Promise((resolve, reject) => {
+      fetch(SERVER_API_ENDPOINTS.updateExchangeConfigData, {
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,

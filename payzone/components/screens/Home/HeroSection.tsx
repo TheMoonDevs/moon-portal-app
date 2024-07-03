@@ -2,18 +2,21 @@
 
 import Image from "next/image";
 import { useAuthSession } from "@/utils/hooks/useAuthSession";
-import { CircularProgress } from "@mui/material";
+import { Button, CircularProgress } from "@mui/material";
 import useAsyncState from "@/utils/hooks/useAsyncState";
 import { MyServerApi } from "@/utils/service/MyServerApi";
 import { useRouter } from "next/navigation";
-import { useAppDispatch } from "@/utils/redux/store";
+import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import { setUser } from "@/utils/redux/auth/auth.slice";
 import { User } from "@prisma/client";
 import { Backdrop } from "./Backdrop/Backdrop";
 import useMousePosition from "@/utils/hooks/useMousePosition";
 import gsap from "gsap";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
+import { useSyncBalances } from "@/utils/hooks/useSyncBalances";
+import CurrencySelectPopover from "@/components/global/CurrencySelectPopover";
+import { updateSelectedCurrency, updateSelectedCurrencyValue } from "@/utils/redux/balances/balances.slice";
 
 interface UserData {
   data: {
@@ -21,14 +24,35 @@ interface UserData {
   };
 }
 export const HeroSection = () => {
-  const { loading, setLoading } = useAsyncState();
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
 
-  const { signInWithSocial } = useAuthSession();
+  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
 
+  const handlePopoverClose = () => {
+    setAnchorEl(null);
+  };
+
+  const open = Boolean(anchorEl);
+  const id = open ? "simple-popover" : undefined;
+
+  const handleCurrencySelect = (currency: string, value: number) => {
+    dispatch(updateSelectedCurrency(currency));
+    dispatch(updateSelectedCurrencyValue(value));
+    handlePopoverClose();
+  };
+
+
+  const { signInWithSocial, authStatus, user, loading } = useAuthSession();
+
+  const { exchange, multiplicationFactor } = useSyncBalances();
+
+  const currency = useAppSelector((state) => state.balances.selectedCurrency);
   return (
-    <section className="overflow-hidden mt-28">
+    <section className="overflow-hidden mt-28 text-white">
       <div className=" flex flex-col items-center justify-center">
         <HeroText />
         <button
@@ -37,18 +61,30 @@ export const HeroSection = () => {
           disabled={loading}
         >
           {loading ? (
-            <CircularProgress size={20} color="inherit" />
+            <CircularProgress size={30} color="inherit" />
           ) : (
             <Image src="/logo/google.png" alt="" width={30} height={30} />
           )}
           <span>Login with Google</span>
         </button>
         <div className="w-full flex items-center justify-end mt-14">
-          <div className="bg-black border border-1 border-amber-300 text-amber-300 w-fit font-black text-sm p-2">
-            1 TMD === 1 INR
-          </div>
+          <Button
+            className="bg-black border border-1 border-amber-300 text-amber-300 w-fit font-black text-sm p-2 cursor-pointer hover:bg-amber-300 hover:text-black"
+            variant="outlined"
+            aria-describedby={id}
+            onClick={handleClick}
+          >
+            {
+              exchange ? 
+              `1 TMD === ${multiplicationFactor} ${currency}` : <span>loading...</span>
+            }
+          </Button>
         </div>
       </div>
+      <CurrencySelectPopover
+        popoverProps={{ id, open, anchorEl, onClose: handlePopoverClose }}
+        handleCurrencySelect={handleCurrencySelect}
+      />
       <Backdrop />
     </section>
   );
