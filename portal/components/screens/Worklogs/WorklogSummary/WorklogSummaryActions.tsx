@@ -64,7 +64,7 @@ export const WorklogSummaryActions = ({
   };
 
   return (
-    <div className="flex flex-col mt-10 justify-between items-center w-[50%] relative">
+    <div className="flex flex-col mt-10 justify-between items-center  w-full md:w-[50%] border-t-2 relative">
       <div></div>
       {view === "Breakdown" && !loading && (
         <div className="overflow-y-auto w-full ">
@@ -115,16 +115,16 @@ export const WorklogSummaryActions = ({
             </div>
           </div>
         </>
-      )}
+      )}{" "}
       {loading && (
-        <div className="pt-14 pl-14 w-4/5 justify-self-start self-start h-screen">
+        <div className="pt-6 md:pt-14 min-w-[300px] md:min-w-[400px]">
           <LoadingSkeleton />
         </div>
       )}
-      <div className="flex flex-row gap-4 items-center justify-center sticky bottom-0 py-6 bg-white w-full justify-self-end">
+      <div className=" text-[0.7rem] sm:text-[0.9rem] md:text-[0.7rem] lg:text-base flex flex-row gap-2 md:gap-4 items-center justify-center sticky bottom-0 py-4 md:py-6 bg-white w-full justify-self-end">
         <Tooltip title="Download Worklog">
           <button
-            className="flex gap-2 items-center border border-neutral-800 hover:bg-neutral-100 rounded-md px-4 py-2"
+            className="flex gap-1 md:gap-2 items-center border border-neutral-800 hover:bg-neutral-100 rounded-md px-2 md:px-4 py-1 md:py-2"
             onClick={() =>
               generatePDF(pdfTargetRef, {
                 method: "open",
@@ -134,22 +134,22 @@ export const WorklogSummaryActions = ({
             }
           >
             <span className="material-symbols-outlined">download</span>
-            <span className="text-sm">Download as PDF</span>
+            <span>Download as PDF</span>
           </button>
         </Tooltip>
         <button
-          className="flex gap-2 items-center border border-neutral-800 hover:bg-neutral-100 rounded-md px-4 py-2"
+          className="flex gap-1 md:gap-2 items-center border border-neutral-800 hover:bg-neutral-100 rounded-md px-2 md:px-4 py-1 md:py-2"
           onClick={handleBreakdownBtnClick}
         >
           <span className="material-symbols-outlined">analytics</span>
-          <span className="text-sm">Breakdown</span>
+          <span>Breakdown</span>
         </button>
         <button
           onClick={handleAiSummaryBtnClick}
-          className="flex gap-2 items-center border bg-neutral-900 text-white hover:bg-neutral-700 rounded-md px-4 py-2 "
+          className="flex gap-1 md:gap-2 items-center border bg-neutral-900 text-white hover:bg-neutral-700 rounded-md px-2 md:px-4 py-2 md:py-2"
         >
-          <span className="">✨</span>
-          <span className="text-sm">AI Summary</span>
+          <span className="text-[0.8rem] md:text-[1rem]">✨</span>
+          <span>AI Summary</span>
         </button>
       </div>
     </div>

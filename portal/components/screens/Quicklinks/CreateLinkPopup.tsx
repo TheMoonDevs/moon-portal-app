@@ -32,7 +32,6 @@ export const CreateLinkPopup = () => {
 
   const { copiedURL, setCopiedURL } = useClipboardURLDetection();
   const getDirectoryPath = () => {
-    if (selectedParentDir.title) return selectedParentDir.title;
     const pathArray = path?.split("/");
     return pathArray?.filter((item) => item !== "quicklinks")?.join("/");
   };
@@ -119,8 +118,7 @@ export const CreateLinkPopup = () => {
           return `${(error as Error).message}`;
         },
       });
-    } catch (error) {
-      console.log(error);
+    } catch (error: any) {
       setFetchingMetadata(false);
       toast.error(`${(error as Error).message}`);
     }

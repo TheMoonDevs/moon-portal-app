@@ -20,7 +20,7 @@ const ReferralHeader = () => {
           Total People Referred
         </span>
       </div>
-      <div className=" border-black border flex items-center justify-end gap-5 py-1 px-3">
+      {/* <div className=" border-black border flex items-center justify-end gap-5 py-1 px-3">
         <span className="text-md max-w-25 truncate font-semibold tracking-widest">
           {user?.name}
         </span>
@@ -31,7 +31,7 @@ const ReferralHeader = () => {
           width={40}
           height={40}
         />
-      </div>
+      </div> */}
     </section>
   );
 };
