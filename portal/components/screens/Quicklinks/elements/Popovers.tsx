@@ -52,12 +52,14 @@ export const PopoverEmojis = ({
 
 export const PopoverFolderEdit = ({
   handleDeleteDirectory,
+  handleAddChildDirectory,
 }: {
   handleDeleteDirectory: (
     directory: Directory,
     parentId: string | null,
     rootSlug?: string
   ) => Promise<void>;
+  handleAddChildDirectory: (parentId: string) => void;
 }) => {
   const { handleClose, anchorElement, data, openFolderEditor } =
     useQuicklinksPopover();
@@ -78,6 +80,18 @@ export const PopoverFolderEdit = ({
       className="!rounded-md"
     >
       <ul className=" flex flex-col gap-2 peer w-[200px] p-2 rounded-md">
+        <li
+          className="flex items-center gap-2 group hover:bg-neutral-200 rounded-md p-1 px-3 cursor-pointer"
+          onClick={() => {
+            handleAddChildDirectory(data.selectedDirectory.id);
+            handleClose();
+          }}
+        >
+          <span className="material-icons-outlined !text-neutral-500 !text-base group-hover:scale-110 transition-all">
+            add
+          </span>
+          <span className="text-sm">Add folder</span>
+        </li>
         {/* <li
                     className="flex items-center gap-2 group hover:bg-neutral-200 rounded-md p-1 px-3 cursor-pointer"
                     onClick={(e) => {

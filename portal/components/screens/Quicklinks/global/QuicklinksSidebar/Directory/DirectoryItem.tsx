@@ -2,8 +2,7 @@ import { FocusEvent, SetStateAction, useRef, useState } from "react";
 import Link from "next/link";
 import { Directory } from "@prisma/client";
 import { useRouter } from "next/navigation";
-import { Popover, Tooltip } from "@mui/material";
-import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
+import { Tooltip } from "@mui/material";
 import { useQuickLinkDirectory } from "../../../hooks/useQuickLinkDirectory";
 import { useUser } from "@/utils/hooks/useUser";
 import { setPopoverElementWithData } from "@/utils/redux/quicklinks/quicklinks.slice";
@@ -19,8 +18,6 @@ interface IDirectoryItemProps {
     id: string;
     isEditable: boolean;
   };
-  // newDirectoryName: string;
-  // setNewDirectoryName: (value: string) => void;
   setEditable: (
     value: SetStateAction<{ id: string; isEditable: boolean }>
   ) => void;
@@ -31,7 +28,6 @@ interface IDirectoryItemProps {
     updateInfo: Partial<Directory>
   ) => Promise<void>;
   setExpandedDirs: (value: SetStateAction<string[]>) => void;
-  handleAddChildDirectory: (parentId: string) => void;
   handleDeleteDirectory: (
     directory: Directory,
     parentId: string | null,
@@ -46,12 +42,9 @@ export const DirectoryItem = ({
   pathName,
   rootSlug,
   editable,
-  // newDirectoryName,
-  // setNewDirectoryName,
   setEditable,
   handleDirectoryUpdate,
   setExpandedDirs,
-  handleAddChildDirectory,
   handleDeleteDirectory,
 }: IDirectoryItemProps) => {
   const router = useRouter();
@@ -109,11 +102,15 @@ export const DirectoryItem = ({
 
   return (
     <div key={directory.id}>
-      <div className="flex justify-between items-center group gap-4 ml-3">
+      <div
+        className={`flex justify-between items-center group gap-4 mx-2 group hover:bg-neutral-200 rounded-md py-1 px-2 ${
+          activeDirectoryId === directory.id ? "bg-neutral-200" : ""
+        }`}
+      >
         <div className="flex items-center cursor-pointer gap-1">
           <span
             id="emoji-set"
-            className="material-symbols-outlined !text-base hover:bg-neutral-200  rounded pb-1"
+            className="material-symbols-outlined !text-base  hover:bg-neutral-400 hover:!bg-opacity-30 rounded px-1 pb-1"
             onClick={handleFolderIconChange}
           >
             {!directory.logo
@@ -124,7 +121,6 @@ export const DirectoryItem = ({
           </span>
           <div
             onClick={() => {
-              // dispatch(setActiveDirectoryId(directory.id));
               toggleDirectory(directory.id);
               if (editable.id !== directory.id)
                 setEditable({ id: "", isEditable: false });
@@ -178,10 +174,13 @@ export const DirectoryItem = ({
         <div className="flex gap-1 items-center cursor-pointer">
           {(directory.parentDirId || user?.isAdmin) && (
             <div className="group">
-              <Tooltip title="Folder settings" enterDelay={500}>
+              <Tooltip
+                title="Folder settings"
+                enterDelay={500}
+                className="hover:bg-neutral-400 hover:bg-opacity-50 rounded-md"
+              >
                 <span
                   id="edit-folder"
-                  // onClick={handleElementHasPopoverClicked}
                   onClick={(e) => {
                     dispatch(
                       setPopoverElementWithData({
@@ -195,20 +194,9 @@ export const DirectoryItem = ({
                       })
                     );
                   }}
-                  className="material-icons-outlined !text-base opacity-0 group-hover:opacity-50 peer-hover:opacity-50 hover:scale-110 transition-all"
+                  className="material-icons-outlined !text-base opacity-0 group-hover:opacity-50 peer-hover:opacity-50 hover:scale-110 transition-all px-1"
                 >
-                  more_vert
-                </span>
-              </Tooltip>
-              <Tooltip title="Create Folder" enterDelay={500}>
-                <span
-                  className="material-icons-outlined !text-base opacity-0 group-hover:opacity-50 hover:scale-110 transition-all"
-                  onClick={() => {
-                    setExpandedDirs((prev) => [...prev, directory.id]);
-                    handleAddChildDirectory(directory.id);
-                  }}
-                >
-                  add
+                  more_horiz
                 </span>
               </Tooltip>
             </div>
@@ -239,12 +227,9 @@ export const DirectoryItem = ({
                       : rootSlug
                   }
                   editable={editable}
-                  // newDirectoryName={newDirectoryName}
-                  // setNewDirectoryName={setNewDirectoryName}
                   setEditable={setEditable}
                   handleDirectoryUpdate={handleDirectoryUpdate}
                   setExpandedDirs={setExpandedDirs}
-                  handleAddChildDirectory={handleAddChildDirectory}
                   handleDeleteDirectory={handleDeleteDirectory}
                 />
               </li>

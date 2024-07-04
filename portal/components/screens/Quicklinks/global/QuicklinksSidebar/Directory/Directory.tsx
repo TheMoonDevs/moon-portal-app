@@ -19,6 +19,7 @@ import { DirectoryItem } from "./DirectoryItem";
 import { useQuickLinkDirectory } from "../../../hooks/useQuickLinkDirectory";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
 import { PopoverEmojis, PopoverFolderEdit } from "../../../elements/Popovers";
+import { toast } from "sonner";
 
 export const DirectoryTree = ({
   mainDirectory,
@@ -122,19 +123,34 @@ export const DirectoryTree = ({
     };
 
     try {
-      const response = await QuicklinksSdk.createData(
+      const response = QuicklinksSdk.createData(
         "/api/quicklinks/directory",
         newDirectory
       );
 
+      toast.promise(response, {
+        loading: "Creating new folder...",
+        success: (response: any) => {
+          dispatch(addNewDirectory(response.data.directory));
+          return (
+            <div className="flex flex-col gap-2">
+              <span className="font-bold">📁 New folder has been added!</span>
+            </div>
+          );
+        },
+        error: `Something went wrong. Please try again.`,
+      });
+
       // revalidateRoot();
-      dispatch(addNewDirectory(response.data.directory));
-      dispatch(
-        setToast({
-          toastMsg: "New directory has been created!",
-          toastSev: ToastSeverity.success,
-        })
-      );
+      // dispatch(addNewDirectory(response.data.directory));
+      // dispatch(
+      //   setToast({
+      //     toastMsg: "New directory has been created!",
+      //     toastSev: ToastSeverity.success,
+      //   })
+      // );
+      setExpandedDirs((prev) => [...prev, parentDirId]);
+
       // console.log("New directory added:", response);
     } catch (error) {
       dispatch(
@@ -225,15 +241,10 @@ export const DirectoryTree = ({
     }
   };
 
-  // Filter root directories (those with null parentDirId)
-  // const rootDirectories = mainDirectory.filter(
-  //   (directory) => !directory.parentDirId
-  // );
-  // console.log("rootDirectories:", rootDirectories);
   return (
     <>
       {mainDirectory.map((directory: Directory | ParentDirectory) => (
-        <div key={directory.id} className="!py-2 !border-gray-200">
+        <div key={directory.id} className=" !border-gray-200">
           <DirectoryItem
             directory={directory as Directory}
             toggleDirectory={toggleDirectory}
@@ -249,13 +260,15 @@ export const DirectoryTree = ({
             setEditable={setEditable}
             handleDirectoryUpdate={handleDirectoryUpdate}
             setExpandedDirs={setExpandedDirs}
-            handleAddChildDirectory={handleAddChildDirectory}
             handleDeleteDirectory={handleDeleteDirectory}
           />
         </div>
       ))}
       <PopoverEmojis handleDirectoryUpdate={handleDirectoryUpdate} />
-      <PopoverFolderEdit handleDeleteDirectory={handleDeleteDirectory} />
+      <PopoverFolderEdit
+        handleDeleteDirectory={handleDeleteDirectory}
+        handleAddChildDirectory={handleAddChildDirectory}
+      />
     </>
   );
 };
