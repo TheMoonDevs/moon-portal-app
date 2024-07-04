@@ -8,6 +8,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useMediaQuery, Badge } from "@mui/material";
 import media from "@/styles/media";
+import { useNotifications } from "@/utils/hooks/useNotifications";
+import { useRef, useState } from "react";
+import NotificationModal from "./NotificationModal";
 
 const NAVIGATION_OPTIONS = [
   {
@@ -79,6 +82,8 @@ export const Bottombar = ({
     visibleOnlyOn ? visibleOnlyOn : media.default
   );
   const isMobile = useMediaQuery(media.largeMobile);
+  const { notificationsCount, notifications } = useNotifications();
+  const [isOpen, setIsOpen] = useState<boolean>(false)
 
   const options =
     user?.userType === USERTYPE.CLIENT
@@ -92,13 +97,13 @@ export const Bottombar = ({
     if (isMobile) {
       router.push(APP_ROUTES.notifications);
     } else {
-      // open popup on desktop - remaning will do at later point
+      setIsOpen(!isOpen);
     }
   };
 
   return (
     <div
-      className={`flex flex-row fixed bottom-0 left-0 right-0 py-1 px-1 max-md:mx-1 max-md:my-1 gap-6 z-10 bg-neutral-900 max-md:rounded-2xl md:bottom-auto md:left-0 md:top-0 md:flex-col md:w-20 md:h-full md:fixed-none`}
+      className={`flex flex-row fixed bottom-0 left-0 right-0 py-1 px-1 max-md:mx-1 max-md:my-1 gap-6 z-10 bg-neutral-900 max-md:rounded-2xl md:bottom-auto md:left-0 md:top-0 md:flex-col md:w-20 md:h-full md:fixed-none bottombar`}
     >
       <Link href={APP_ROUTES.home}>
         <Image
@@ -125,9 +130,10 @@ export const Bottombar = ({
         >
           <Badge
             badgeContent={
-              option.name === "Notifications" ? 1 : 0
+              option.name === "Notifications" ? notificationsCount : 0
             }
             color="error"
+            max={20}
           >
             <span
               className={` ${
@@ -150,6 +156,11 @@ export const Bottombar = ({
           </span>
         </button>
       </Link>
+      <NotificationModal
+        open={isOpen}
+        onClose={() => setIsOpen(false)}
+        notifications={notifications}
+      />
     </div>
   );
 };
