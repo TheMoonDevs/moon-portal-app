@@ -25,11 +25,11 @@ export const CoreTeamSection = () => {
     <section className="bg-white m-4 mt-6 px-0 border-neutral-400 rounded-xl shadow-md overflow-hidden">
       <div className="flex flex-col items-stretch justify-center">
         {coreTeam.map((user) => (
-          <div
+          <Link
             key={user.id}
+            href={`${APP_ROUTES.userWorklogSummary}/${user.id}`}
             className="flex flex-row gap-1 items-center justify-between px-2 py-3  cursor-pointer hover:bg-black/5 border-b border-neutral-200"
           >
-            <Link href={`${APP_ROUTES.userWorklogSummary}/${user.id}`}>
             <div className="flex items-center gap-4">
               <div className="rounded-full bg-neutral-400">
                 <img
@@ -65,8 +65,7 @@ export const CoreTeamSection = () => {
                 </span>
               </div> */}
             </div>
-            </Link>
-          </div>
+          </Link>
         ))}
       </div>
     </section>
