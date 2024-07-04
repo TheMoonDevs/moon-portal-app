@@ -38,7 +38,7 @@ export function UploadAvatar() {
     formData.append("file", file, file.path);
     if (user) {
       const userId = user.id;
-      ormData.append("userId", userId);  f
+      formData.append("userId", userId);
     }
     formData.append("folderName", "userAvatars");
     try {
