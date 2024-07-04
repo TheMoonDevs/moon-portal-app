@@ -300,15 +300,9 @@ model Notification {
   title             String
   description       String
   matchId           String?           @db.ObjectId
-  matchType         MatchType?
+  matchType         String?
   notificationType  NotificationType
   notificationData  Json?
-}
-
-enum MatchType {
-  USER
-  DOC
-  DIR
 }
 
 enum NotificationType {
