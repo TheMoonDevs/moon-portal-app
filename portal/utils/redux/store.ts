@@ -13,6 +13,7 @@ import filesUploadReducer from "./filesUpload/fileUpload.slice";
 import onboardingFormReducer from "./onboarding/onboarding.slice";
 import worklogsReducer from "./worklogs/worklogs.slice";
 //import suggestionsReducer from './suggestions/suggestions.slice';
+import notificationsReducer from './notification/notification.slice'
 
 const store = configureStore({
   reducer: {
@@ -26,6 +27,7 @@ const store = configureStore({
     searchTerm: searchTermReducer,
     onboardingForm: onboardingFormReducer,
     //suggestions: suggestionsReducer,
+    notifications: notificationsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
