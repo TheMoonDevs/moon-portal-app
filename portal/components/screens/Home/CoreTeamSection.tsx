@@ -1,6 +1,8 @@
 /* eslint-disable @next/next/no-img-element */
+import { APP_ROUTES } from "@/utils/constants/appInfo";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { USERROLE, USERTYPE, User } from "@prisma/client";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 export const CoreTeamSection = () => {
@@ -27,6 +29,7 @@ export const CoreTeamSection = () => {
             key={user.id}
             className="flex flex-row gap-1 items-center justify-between px-2 py-3  cursor-pointer hover:bg-black/5 border-b border-neutral-200"
           >
+            <Link href={`${APP_ROUTES.userWorklogSummary}/${user.id}`}>
             <div className="flex items-center gap-4">
               <div className="rounded-full bg-neutral-400">
                 <img
@@ -62,6 +65,7 @@ export const CoreTeamSection = () => {
                 </span>
               </div> */}
             </div>
+            </Link>
           </div>
         ))}
       </div>
