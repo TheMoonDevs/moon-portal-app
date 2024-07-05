@@ -176,7 +176,7 @@ export const UserProfileDrawer: React.FC = () => {
       >
         <div className="h-[100px]  relative">
           <img
-            src={"/images/GradientBg.jpg"}
+            src={selectedUser?.banner|| "/images/GradientBg.jpg"}
             className="abolsute w-full h-full object-cover"
             alt="Profile Banner"
           />
@@ -235,9 +235,11 @@ export const UserProfileDrawer: React.FC = () => {
               </button>
             )}
           </div>
-          <Typography className="">
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Recusandae
-            quos ipsum provident voluptatibus nemo, natus
+          <Typography>
+            {
+              selectedUser.description ||
+                "This is the Seleted user's description or bio that will be displayed here and every user will have a unique bio or description that will show off their personality and their work."
+            }
           </Typography>
           {!loading ? (
            <div className="flex gap-3 flex-col">
