@@ -38,7 +38,7 @@ export function UploadAvatar() {
     formData.append("file", file, file.path);
     if (user) {
       const userId = user.id;
-      formData.append("userId", userId);
+      formData.append("userId", userId); 
     }
     formData.append("folderName", "userAvatars");
     try {
@@ -99,7 +99,13 @@ export function UploadAvatar() {
           </label>
         </div>
       ) : (
-        <label className="flex items-center cursor-pointer">
+        <div className="flex gap-2 justify-center items-center">
+          <img
+            src={avatarUrl?avatarUrl:"/icons/placeholderAvatar.svg"}
+            alt="Profile photo"
+            className="rounded-full w-10 h-10"
+          />
+          <label className="flex items-center cursor-pointer">
           <span className="flex items-center border p-2 rounded-lg text-sm text-gray-500">
             {isFileUploading ? (
               <div className="flex items-center justify-center gap-2">
@@ -119,7 +125,10 @@ export function UploadAvatar() {
             className="hidden"
           />
         </label>
+        </div>
       )}
     </div>
   );
 }
+
+ 
