@@ -15,7 +15,7 @@ const style = (left: number) => ({
   borderRadius: '8px',
   marginLeft: '16px',
   minHeight: '400px',
-  maxHeight: '600px',
+  maxHeight: '500px',
   overflowY: 'scroll',
 });
 

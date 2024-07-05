@@ -5,29 +5,19 @@ import { Spinner } from '@/components/elements/Loaders';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 import { User } from '@prisma/client';
 
-const SendNotifications = () => {
+const SendNotifications = ({
+  users,
+  loading,
+}: {
+  users: User[];
+  loading: boolean;
+}) => {
   const [user, setUser] = useState<User | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [suggestions, setSuggestions] = useState<User[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [users, setUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [sending, setSending] = useState(false);
-
-  useEffect(() => {
-    setLoading(true);
-    PortalSdk.getData('/api/user', null)
-      .then((data) => {
-        console.log(data);
-        setUsers(data?.data?.user || []);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.log(err);
-        setLoading(false);
-      });
-  }, []);
 
   const handleUserChange = (e: ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toLowerCase();
