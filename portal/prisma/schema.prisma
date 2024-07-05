@@ -260,6 +260,13 @@ enum USERVERTICAL {
   OPERATIONS
 }
 
+enum HOUSEID {
+  MANGEMENT
+  GROWTH
+  PRODUCT_TECH
+  EXECUTIVE
+}
+
 enum USERINDUSTRY {
   CRYPTO
   FINANCE
@@ -288,4 +295,24 @@ model DocMarkdown {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   markdown  Json
+}
+
+//-------------------------------------Missions-------------------------------------------
+
+model Mission {
+  id  String   @id @default(auto()) @map("_id") @db.ObjectId
+  house  HOUSEID
+  vertical USERVERTICAL
+  month        Int
+  completed    Boolean
+  housePoints  Int
+  indiePoints  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  completedAt DateTime
+  expirable    Boolean
+  expiresAt DateTime
+  title       String
+  description String
+  tasks Json
 }
