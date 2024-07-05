@@ -1,7 +1,7 @@
-// components/NotificationModal.tsx
 import React, { useEffect, useState } from 'react';
 import { Modal, Box } from '@mui/material';
 import { Notification } from '@prisma/client';
+import { timeAgo } from '../screens/notifications/NotificationsScreen';
 
 const style = (left: number) => ({
   position: 'absolute' as 'absolute',
@@ -14,7 +14,8 @@ const style = (left: number) => ({
   outline: 'none',
   borderRadius: '8px',
   marginLeft: '16px',
-  height: '400px',
+  minHeight: '400px',
+  maxHeight: '600px',
   overflowY: 'scroll',
 });
 
@@ -30,6 +31,15 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
   notifications,
 }) => {
   const [leftPosition, setLeftPosition] = useState<number>(0);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const toggleDescription = (id: string) => {
+    if (expandedId === id) {
+      setExpandedId(null);
+    } else {
+      setExpandedId(id);
+    }
+  };
 
   useEffect(() => {
     const bottombar = document.querySelector('.bottombar');
@@ -46,7 +56,7 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
       aria-labelledby='notification-modal-title'
       aria-describedby='notification-modal-description'
     >
-      <Box sx={style(leftPosition)}>
+      <Box sx={style(leftPosition)} className='no-scrollbar'>
         <div className='sticky top-0 bg-white z-10 p-4'>
           <div className='flex justify-between items-center'>
             <h4 className='text-lg font-bold'>Notifications</h4>
@@ -75,17 +85,29 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
                 <div
                   key={notification.id}
                   className='flex items-start p-3 bg-gray-100 rounded-lg shadow transition duration-300 ease-in-out hover:bg-gray-200 cursor-pointer'
+                  onClick={() => toggleDescription(notification.id)}
                 >
                   <span className='material-symbols-outlined text-blue-500 mr-2'>
                     circle_notifications
                   </span>
                   <div className='flex flex-col'>
-                    <p className='text-sm font-semibold first-letter:capitalize'>
+                    <p className='text-sm font-semibold first-letter:capitalize text-blue-700'>
                       {notification.title}
                     </p>
-                    <p className='text-xs text-gray-600 overflow-hidden overflow-ellipsis max-w-xs'>
-                      {notification.description}
+                    <p className='text-xs text-gray-500 mt-1 first-letter:capitalize'>
+                      {timeAgo(notification.createdAt.toString())}
                     </p>
+                    <div
+                      className={`transition-all overflow-hidden ${
+                        expandedId === notification.id
+                          ? 'max-h-[100px]'
+                          : 'max-h-0'
+                      }`}
+                    >
+                      <p className='text-xs text-gray-500 mt-1'>
+                        {notification.description}
+                      </p>
+                    </div>
                   </div>
                 </div>
               ))}
