@@ -1,13 +1,14 @@
-import { Bottombar } from "@/components/global/Bottombar";
-import { PageAccess } from "@/components/global/PageAccess";
-import { HomePage } from "@/components/screens/Home/HomePage";
-import Image from "next/image";
+import { Bottombar } from '@/components/global/Bottombar';
+import { PageAccess } from '@/components/global/PageAccess';
+import { useNotifications } from '@/utils/hooks/useNotifications';
+import NotificationsScreen from '@/components/screens/notifications/NotificationsScreen';
+import { Notification } from '@prisma/client';
 
-export default function Home() {
+export default function NotificationsPage() {
+
   return (
     <PageAccess isAuthRequired={true}>
-      {/* <HomePage /> */}
-      <h1 className="text-3xl font-semibold text-center mt-10">Notifications Page</h1>
+      <NotificationsScreen />
       <Bottombar visible={true} />
     </PageAccess>
   );
