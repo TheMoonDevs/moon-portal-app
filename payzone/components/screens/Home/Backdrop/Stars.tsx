@@ -66,7 +66,7 @@ export const Stars = () => {
             star.position[1] >= 25 ? -25 : star.position[1] + star.speed,
             star.position[2],
           ],
-          scale: 0.1 * Math.abs(Math.sin(Date.now() * 0.001 + index)) + 0.2,
+          scale: 0.3 * Math.abs(Math.sin(Date.now() * 0.001 + index)) + 0.2,
         }))
       );
     };
