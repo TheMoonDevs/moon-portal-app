@@ -9,6 +9,9 @@ export async function GET(request: NextRequest) {
       where: {
         userId,
       },
+      orderBy: {
+        updatedAt: "desc",
+      },
     });
 
     const json_response = {
