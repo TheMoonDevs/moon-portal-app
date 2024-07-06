@@ -33,7 +33,7 @@ export const CoreTeamSection = () => {
     <section className="bg-white m-4 mt-6 px-0 border-neutral-400 rounded-xl shadow-md overflow-hidden">
       <div className="flex flex-col items-stretch justify-center">
         {coreTeam.map((user) => (
-          <Link
+          <div
             key={user.id}
             onClick={() => handleOpenSlideIn(user)}
             className="flex flex-row gap-1 items-center justify-between px-2 py-3 cursor-pointer hover:bg-black/5 border-b border-neutral-200"
@@ -63,7 +63,7 @@ export const CoreTeamSection = () => {
                   : user.vertical}
               </span>
             </div>
-          </Link>
+          </div>
         ))}
       </div>
       <UserProfileDrawer />
