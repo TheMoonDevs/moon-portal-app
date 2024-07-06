@@ -28,9 +28,7 @@ export enum GLOBAL_ROUTES {
 }
 
 export const AppRoutesHelper = {
-  bottomBarShown: (path?: string | null) => {
-    return !path?.startsWith("/admin") && !path?.startsWith("/hr");
-  },
+  
 };
 
 export enum APP_SOCIAL {

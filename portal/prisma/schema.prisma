@@ -302,17 +302,17 @@ model DocMarkdown {
 model Mission {
   id  String   @id @default(auto()) @map("_id") @db.ObjectId
   house  HOUSEID
-  vertical USERVERTICAL
-  month        Int
-  completed    Boolean
+  vertical USERVERTICAL?
+  month        String
+  completed    Boolean?
   housePoints  Int
   indiePoints  Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  completedAt DateTime
-  expirable    Boolean
-  expiresAt DateTime
+  completedAt DateTime?
+  expirable    Boolean?
+  expiresAt DateTime?
   title       String
-  description String
-  tasks Json
+  description String?
+  tasks Json?
 }
