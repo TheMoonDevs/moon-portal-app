@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
 
     await slackBot.sendSlackMessageviaAPI({
       blocks: msgBlock,
-      channel: "C07AQ8F3LH2",
+      channel: "C07AQ8F3LH2", // change this with subhakar id
     });
 
     const jsonResponse = {
