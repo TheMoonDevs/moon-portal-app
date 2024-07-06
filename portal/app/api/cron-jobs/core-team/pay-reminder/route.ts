@@ -18,6 +18,12 @@ function calculateCompletedMonths(joiningDate: string) {
   return totalMonths;
 }
 
+function isLastDayOfMonth(date: Date): boolean {
+  const nextDay = new Date(date);
+  nextDay.setDate(date.getDate() + 1);
+  return nextDay.getDate() === 1;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const users = await prisma.user.findMany({
@@ -36,7 +42,15 @@ export async function GET(request: NextRequest) {
       if (!joiningDate) return false;
 
       const joinDate = new Date(joiningDate as string);
-      return joinDate.getDate() === todayDate;
+      if (joinDate.getDate() === todayDate) {
+        return true;
+      }
+
+      if (isLastDayOfMonth(today) && joinDate.getDate() > todayDate) {
+        return true;
+      }
+
+      return false;
     });
 
     const usersWithMonths = filteredUsers.map(user => {
@@ -69,7 +83,7 @@ export async function GET(request: NextRequest) {
 
     await slackBot.sendSlackMessageviaAPI({
       blocks: msgBlock,
-      channel: 'C07A8AU5UKB',
+      channel: "C07AQ8F3LH2",
     });
 
     const jsonResponse = {
