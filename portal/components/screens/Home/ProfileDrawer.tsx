@@ -258,7 +258,7 @@ export const UserProfileDrawer: React.FC = () => {
             <LoadingSkeleton />
           )}
           
-          <div>
+          <div className="pt-3">
             <Typography variant="h6">Engagements</Typography>
             <ul className="flex flex-col gap-3 pt-2">
               <li className="flex items-center gap-3">
@@ -281,9 +281,9 @@ export const UserProfileDrawer: React.FC = () => {
               </li>
             </ul>
           </div>
-          <div>
+          <div className="pt-3">
             <Typography variant="h6">Mission/Tasks</Typography>
-            <ul className="flex flex-col gap-2 mt-3 p-3 border-2 border-gray-300 rounded-xl list-none">
+            <ul className="flex flex-col gap-2 p-3 border-2 mt-2 border-gray-300 rounded-xl list-none">
               <li className="flex items-center pl-5 relative before:content-['•'] before:absolute before:left-0 before:text-gray-500">
                 Task 1 or mission 1
               </li>
