@@ -60,7 +60,7 @@ const NotificationsScreen = () => {
                     {notification.title}
                   </p>
                   <p className='text-xs text-gray-500 mt-1'>
-                    {timeAgo(notification.createdAt.toString())}
+                    {timeAgo(notification.updatedAt.toString())}
                   </p>
                   <div
                     className={`transition-all overflow-hidden ${

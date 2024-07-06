@@ -95,7 +95,7 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
                       {notification.title}
                     </p>
                     <p className='text-xs text-gray-500 mt-1 first-letter:capitalize'>
-                      {timeAgo(notification.createdAt.toString())}
+                      {timeAgo(notification.updatedAt.toString())}
                     </p>
                     <div
                       className={`transition-all overflow-hidden ${
