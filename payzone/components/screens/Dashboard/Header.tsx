@@ -21,7 +21,7 @@ interface HeaderProps {
 
 export const Header = ({ children, className }: HeaderProps) => {
   const { user, loading } = useAuthSession();
-  useSyncBalances(true);
+  // useSyncBalances(true);
 
   return (
     <section className="hidden lg:flex justify-between items-center w-full h-[15%] p-4 pb-0">

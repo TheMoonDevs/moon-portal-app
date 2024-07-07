@@ -11,7 +11,7 @@ const OnboardingSignup = () => {
   // if (user?.status !== "INACTIVE") redirect("/");
   // else {
   return (
-    <main className="flex-col items-center gap-4 mt-10">
+    <main className="flex-col items-center gap-4 mt-10 justify-center">
       <h1 className="text-3xl font-semibold text-center">
         Member Onboarding Page
       </h1>

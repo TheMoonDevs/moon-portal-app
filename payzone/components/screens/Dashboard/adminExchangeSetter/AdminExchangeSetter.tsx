@@ -2,7 +2,7 @@
 
 import { copyUPI } from "@/utils/constants/appInfo";
 import { MyServerApi, SERVER_API_ENDPOINTS } from "@/utils/service/MyServerApi";
-import { Input, Modal, TextField } from "@mui/material";
+import { Button, Input, Modal, TextField } from "@mui/material";
 import {
   TRANSACTIONCATEGORY,
   TRANSACTIONSTATUS,
@@ -17,8 +17,12 @@ import dayjs from "dayjs";
 import { ExchangeConfigData } from "@/prisma/extraDbTypes";
 import Toast, { toastSeverity } from "../../Referrals/Dashboard/Toast";
 import { useSyncBalances } from "@/utils/hooks/useSyncBalances";
-import { useAppSelector } from "@/utils/redux/store";
-import CurrencyModal from "@/components/global/CurrencyModal";
+import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
+import CurrencySelectPopover from "@/components/global/CurrencySelectPopover";
+import {
+  updateSelectedCurrency,
+  updateSelectedCurrencyValue,
+} from "@/utils/redux/balances/balances.slice";
 import { Toaster, toast } from "sonner";
 
 export const AdminExchangeSetter = () => {
@@ -44,8 +48,26 @@ export const AdminExchangeSetter = () => {
   //   message: "",
   //   severity: "success",
   // });
-  const [isCurrencyModalOpen, setIsCurrencyModalOpen] =
-    useState<boolean>(false);
+  const dispatch = useAppDispatch();
+
+  const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
+
+  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handlePopoverClose = () => {
+    setAnchorEl(null);
+  };
+
+  const open = Boolean(anchorEl);
+  const id = open ? "simple-popover" : undefined;
+
+  const handleCurrencySelect = (currency: string, value: number) => {
+    dispatch(updateSelectedCurrency(currency));
+    dispatch(updateSelectedCurrencyValue(value));
+    handlePopoverClose();
+  };
 
   useEffect(() => {
     if (exchange?.exchangeData) {
@@ -110,12 +132,19 @@ export const AdminExchangeSetter = () => {
       <div className="bg-whiteSmoke flex flex-col p-4 justify-between gap-4">
         <span className="flex justify-between">
           <p className="text-sm font-thin">Current Price</p>
-          <p
-            className="text-sm font-black px-2 py-1 border border-black cursor-pointer"
-            onClick={() => setIsCurrencyModalOpen(true)}
-          >
-            1 TMD === {multiplicationFactor} {currency}
-          </p>
+          {exchange ? (
+            <Button
+              className="text-sm font-black text-black border border-neutral-500 px-2 py-1 rounded flex justify-center items-center"
+              variant="outlined"
+              aria-describedby={id}
+              onClick={handleClick}
+            >
+              1 TMD === {multiplicationFactor} {currency}
+              <span className="material-symbols-outlined">arrow_drop_down</span>
+            </Button>
+          ) : (
+            <p className="text-sm text-black">loading...</p>
+          )}
         </span>
 
         <form
@@ -188,9 +217,9 @@ export const AdminExchangeSetter = () => {
           </div>
         </form>
       </div>
-      <CurrencyModal
-        isOpen={isCurrencyModalOpen}
-        onClose={() => setIsCurrencyModalOpen(false)}
+      <CurrencySelectPopover
+        popoverProps={{ id, open, anchorEl, onClose: handlePopoverClose }}
+        handleCurrencySelect={handleCurrencySelect}
       />
       {/* <Toast
         open={toast.open}

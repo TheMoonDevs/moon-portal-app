@@ -59,7 +59,7 @@ export const ParentDirectoryLinks = () => {
           isLoading={loading}
         />
       </TopUsedLink>
-      <div className="flex flex-col w-full">
+      <div className="flex flex-col w-full pb-8">
         <LinkFiltersHeader title={`View All in ${thisDirectory?.title}`} />
         <LinkList allQuicklinks={allQuicklinks} isLoading={loading} />
       </div>

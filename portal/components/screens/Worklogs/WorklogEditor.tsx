@@ -30,7 +30,7 @@ import {
   updateLogs,
 } from "@/utils/redux/worklogs/worklogs.slice";
 
-const MARKDOWN_PLACHELODER = `* `;
+export const MARKDOWN_PLACHELODER = `* `;
 
 export const WorklogEditor = ({
   loading,
@@ -356,7 +356,8 @@ export const WorklogEditor = ({
               //console.log("keyup", e.key);
               // detect ctrl + space
               if (e.ctrlKey && e.key === " ") {
-                console.log("✅ pressed");
+                e.preventDefault();
+                // console.log("✅ pressed");
                 insertToContent("✅", bd_index);
               }
             }}

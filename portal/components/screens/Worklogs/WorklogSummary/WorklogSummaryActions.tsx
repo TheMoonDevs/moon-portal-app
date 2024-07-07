@@ -42,59 +42,63 @@ export const WorklogSummaryActions = ({
   const aiSummaryPdfTargetRef = useRef(null);
 
   return (
-    <div className="flex flex-col mt-10 justify-between items-center w-[50%] relative">
-      <div></div>
-      {!loading ? (
-        aiSummary && (
-          <>
-            <div className="flex gap-4 items-center absolute top-10 right-10 !text-neutral-500 z-50">
-              <Tooltip title="Download AI Summary">
-                <span
-                  className="material-symbols-outlined hover:cursor-pointer hover:!text-neutral-600"
-                  onClick={() =>
-                    generatePDF(aiSummaryPdfTargetRef, {
-                      method: "open",
-                      filename: `ai_worklog_summary_${userData?.name}.pdf`,
-                      page: { margin: Margin.LARGE },
-                    })
-                  }
+    <div className="flex flex-col mt-10 justify-between items-center  w-full md:w-[50%] border-t-2 relative">
+      <div className="h-full">
+        {!loading ? (
+          aiSummary && (
+            <>
+              <div className="flex gap-4 items-center absolute top-2 md:top-10 right-2 md:right-10 !text-neutral-500 z-50">
+                <Tooltip title="Download AI Summary">
+                  <span
+                    className="material-symbols-outlined hover:cursor-pointer hover:!text-neutral-600"
+                    onClick={() =>
+                      generatePDF(aiSummaryPdfTargetRef, {
+                        method: "open",
+                        filename: `ai_worklog_summary_${userData?.name}.pdf`,
+                        page: { margin: Margin.LARGE },
+                      })
+                    }
+                  >
+                    download
+                  </span>
+                </Tooltip>
+                <Tooltip title="Copy AI Summary">
+                  <span
+                    className="material-symbols-outlined hover:cursor-pointer hover:!text-neutral-600"
+                    onClick={() => copyToClipboard(aiSummary)}
+                  >
+                    stack
+                  </span>
+                </Tooltip>
+              </div>
+              <div className="overflow-y-auto max-h-[40dvh] sm:max-h-[unset] w-full h-full">
+                <div
+                  ref={aiSummaryPdfTargetRef}
+                  className="p-4 md:p-10 pt-6 md:pt-14"
                 >
-                  download
-                </span>
-              </Tooltip>
-              <Tooltip title="Copy AI Summary">
-                <span
-                  className="material-symbols-outlined hover:cursor-pointer hover:!text-neutral-600"
-                  onClick={() => copyToClipboard(aiSummary)}
-                >
-                  stack
-                </span>
-              </Tooltip>
-            </div>
-            <div className=" overflow-y-auto w-full">
-              <div ref={aiSummaryPdfTargetRef} className="p-10 pt-14">
-                <div className="w-full">
-                  <MdxAppEditor
-                    className=""
-                    key={`ai_summary-${uniqueId()}`}
-                    readOnly
-                    contentEditableClassName="summary_mdx flex flex-col gap-4"
-                    markdown={aiSummary}
-                  />
+                  <div className="w-full">
+                    <MdxAppEditor
+                      className=""
+                      key={`ai_summary-${uniqueId()}`}
+                      readOnly
+                      contentEditableClassName="summary_mdx flex flex-col gap-4"
+                      markdown={aiSummary}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-          </>
-        )
-      ) : (
-        <div className="pt-14 pl-14 w-4/5 justify-self-start self-start h-screen">
-          <LoadingSkeleton />
-        </div>
-      )}
-      <div className="flex flex-row gap-4 items-center justify-center sticky bottom-0 py-6 bg-white  w-full justify-self-end">
+            </>
+          )
+        ) : (
+          <div className="pt-6 md:pt-14 min-w-[300px] md:min-w-[400px]">
+            <LoadingSkeleton />
+          </div>
+        )}
+      </div>
+      <div className=" text-[0.7rem] sm:text-[0.9rem] md:text-[0.7rem] lg:text-base flex flex-row gap-2 md:gap-4 items-center justify-center sticky bottom-0 py-4 md:py-6 bg-white w-full justify-self-end">
         <Tooltip title="Download Worklog">
           <button
-            className="flex gap-2 items-center border border-neutral-800 hover:bg-neutral-100 rounded-md px-4 py-2"
+            className="flex gap-1 md:gap-2 items-center border border-neutral-800 hover:bg-neutral-100 rounded-md px-2 md:px-4 py-1 md:py-2"
             onClick={() =>
               generatePDF(pdfTargetRef, {
                 method: "open",
@@ -104,19 +108,19 @@ export const WorklogSummaryActions = ({
             }
           >
             <span className="material-symbols-outlined">download</span>
-            <span className="text-sm">Download as PDF</span>
+            <span>Download as PDF</span>
           </button>
         </Tooltip>
-        <button className="flex gap-2 items-center border border-neutral-800 hover:bg-neutral-100 rounded-md px-4 py-2">
+        <button className="flex gap-1 md:gap-2 items-center border border-neutral-800 hover:bg-neutral-100 rounded-md px-2 md:px-4 py-1 md:py-2">
           <span className="material-symbols-outlined">analytics</span>
-          <span className="text-sm">Breakdown</span>
+          <span>Breakdown</span>
         </button>
         <button
           onClick={handleAiSummaryBtnClick}
-          className="flex gap-2 items-center border bg-neutral-900 text-white hover:bg-neutral-700 rounded-md px-4 py-2 "
+          className="flex gap-1 md:gap-2 items-center border bg-neutral-900 text-white hover:bg-neutral-700 rounded-md px-2 md:px-4 py-2 md:py-2"
         >
-          <span className="">✨</span>
-          <span className="text-sm">AI Summary</span>
+          <span className="text-[0.8rem] md:text-[1rem]">✨</span>
+          <span>AI Summary</span>
         </button>
       </div>
     </div>

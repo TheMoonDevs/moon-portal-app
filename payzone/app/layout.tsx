@@ -31,6 +31,20 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link
+          href="https://fonts.googleapis.com/icon?family=Material+Icons"
+          rel="stylesheet"
+        ></link>
+        <link
+          href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined"
+          rel="stylesheet"
+        ></link>
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,100..700,0,0"
+        ></link>
+      </head>
       <body>
         <main className=" ">
           <ReduxProvider>

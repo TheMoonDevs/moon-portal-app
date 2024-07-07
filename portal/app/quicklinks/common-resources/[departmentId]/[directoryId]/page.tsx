@@ -6,8 +6,7 @@ import { notFound } from "next/navigation";
 
 async function slugToIdConversion(slug: string) {
   try {
-    const slugString = slug.split("-")[0];
-    console.log(slugString);
+    const slugString = slug.substring(0, slug.lastIndexOf("-"));
     const response = await QuicklinksSdk.getData(
       `${APP_BASE_URL}/api/quicklinks/directory?slug=${slugString}`
     );

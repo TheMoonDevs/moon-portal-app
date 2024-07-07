@@ -2,7 +2,7 @@
 import "./HeroSection.style.css";
 import Image from "next/image";
 import { useAuthSession } from "@/utils/hooks/useAuthSession";
-import { CircularProgress } from "@mui/material";
+import { Button, CircularProgress } from "@mui/material";
 import useAsyncState from "@/utils/hooks/useAsyncState";
 import { MyServerApi } from "@/utils/service/MyServerApi";
 import { useRouter } from "next/navigation";
@@ -15,7 +15,11 @@ import gsap from "gsap";
 import { useEffect, useState } from "react";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
 import { useSyncBalances } from "@/utils/hooks/useSyncBalances";
-import CurrencyModal from "@/components/global/CurrencyModal";
+import CurrencySelectPopover from "@/components/global/CurrencySelectPopover";
+import {
+  updateSelectedCurrency,
+  updateSelectedCurrencyValue,
+} from "@/utils/redux/balances/balances.slice";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 interface UserData {
   data: {
@@ -25,8 +29,28 @@ interface UserData {
 export const HeroSection = () => {
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const [isCurrencyModalOpen, setIsCurrencyModalOpen] =
-    useState<boolean>(false);
+  const [anchorEl, setAnchorEl] = useState<
+    HTMLButtonElement | HTMLDivElement | null
+  >(null);
+
+  const handleClick = (
+    event: React.MouseEvent<HTMLButtonElement | HTMLDivElement>
+  ) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handlePopoverClose = () => {
+    setAnchorEl(null);
+  };
+
+  const open = Boolean(anchorEl);
+  const id = open ? "simple-popover" : undefined;
+
+  const handleCurrencySelect = (currency: string, value: number) => {
+    dispatch(updateSelectedCurrency(currency));
+    dispatch(updateSelectedCurrencyValue(value));
+    handlePopoverClose();
+  };
 
   const { signInWithSocial, authStatus, user, loading } = useAuthSession();
 
@@ -73,7 +97,7 @@ export const HeroSection = () => {
               <div className="w-full flex items-center justify-end mt-14">
                 <div
                   className="bg-black border border-1 border-amber-300 text-amber-300 w-fit font-black text-sm p-2 cursor-pointer hover:bg-amber-300 hover:text-black"
-                  onClick={() => setIsCurrencyModalOpen(true)}
+                  onClick={handleClick}
                 >
                   1 TMD === {multiplicationFactor} {currency}
                 </div>
@@ -102,7 +126,7 @@ export const HeroSection = () => {
               <div className="w-full flex items-center justify-end mt-14">
                 <div
                   className="bg-black border border-1 border-amber-300 text-amber-300 w-fit font-black text-sm p-2 cursor-pointer hover:bg-amber-300 hover:text-black"
-                  onClick={() => setIsCurrencyModalOpen(true)}
+                  onClick={handleClick}
                 >
                   1 TMD === {multiplicationFactor} {currency}
                 </div>
@@ -158,9 +182,9 @@ export const HeroSection = () => {
         </div>
       )}
 
-      <CurrencyModal
-        isOpen={isCurrencyModalOpen}
-        onClose={() => setIsCurrencyModalOpen(false)}
+      <CurrencySelectPopover
+        popoverProps={{ id, open, anchorEl, onClose: handlePopoverClose }}
+        handleCurrencySelect={handleCurrencySelect}
       />
       <Backdrop />
     </section>
