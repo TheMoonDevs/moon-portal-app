@@ -18,6 +18,8 @@ import { ExchangeConfigData } from "@/prisma/extraDbTypes";
 import Toast, { toastSeverity } from "../../Referrals/Dashboard/Toast";
 import { useSyncBalances } from "@/utils/hooks/useSyncBalances";
 import { useAppSelector } from "@/utils/redux/store";
+import CurrencyModal from "@/components/global/CurrencyModal";
+import { toast } from "sonner";
 
 export const PayUpiID = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -37,15 +39,15 @@ export const PayUpiID = () => {
   });
   const [loading, setLoading] = useState(false);
   const [paymentDate, setPaymentDate] = useState(dayjs().format("YYYY-MM-DD"));
-  const [toast, setToast] = useState<{
-    open: boolean;
-    message: string;
-    severity: toastSeverity;
-  }>({
-    open: false,
-    message: "",
-    severity: "success",
-  });
+  // const [toast, setToast] = useState<{
+  //   open: boolean;
+  //   message: string;
+  //   severity: toastSeverity;
+  // }>({
+  //   open: false,
+  //   message: "",
+  //   severity: "success",
+  // });
 
   const handleAddPayment = (amount: string) => {
     setLoading(true);
@@ -64,7 +66,6 @@ export const PayUpiID = () => {
       createdAt: paymentDate ? new Date(paymentDate) : new Date(), // Using the date from input or current date
     };
     console.log("updatedData", updatedData);
-    
 
     MyServerApi.postData(SERVER_API_ENDPOINTS.payment, updatedData)
       .then((updatedTransaction) => {
@@ -87,8 +88,6 @@ export const PayUpiID = () => {
       });
   };
 
-
-
   useEffect(() => {
     MyServerApi.getAll(
       `${SERVER_API_ENDPOINTS.getUsers}?role=${USERROLE.CORETEAM}&userType=${USERTYPE.MEMBER}&status=${USERSTATUS.ACTIVE}`
@@ -105,7 +104,8 @@ export const PayUpiID = () => {
     if (reason === "clickaway") {
       return;
     }
-    setToast((prevToast) => ({ ...prevToast, open: false }));
+    // setToast((prevToast) => ({ ...prevToast, open: false }));
+    toast.dismiss();
   };
 
   return (
@@ -160,12 +160,12 @@ export const PayUpiID = () => {
           ))}
         </div>
       </div>{" "}
-      <Toast
+      {/* <Toast
         open={toast.open}
         handleClose={handleClose}
         message={toast.message}
         severity={toast.severity}
-      />
+      /> */}
       <Modal
         open={modalOpen}
         onClose={handleModalClose}
