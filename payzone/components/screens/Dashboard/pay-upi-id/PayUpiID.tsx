@@ -18,7 +18,7 @@ import { ExchangeConfigData } from "@/prisma/extraDbTypes";
 import Toast, { toastSeverity } from "../../Referrals/Dashboard/Toast";
 import { useSyncBalances } from "@/utils/hooks/useSyncBalances";
 import { useAppSelector } from "@/utils/redux/store";
-import CurrencyModal from "@/components/global/CurrencyModal";
+// import CurrencyModal from "@/components/global/CurrencyModal";
 import { toast } from "sonner";
 
 export const PayUpiID = () => {
@@ -67,25 +67,36 @@ export const PayUpiID = () => {
     };
     console.log("updatedData", updatedData);
 
-    MyServerApi.postData(SERVER_API_ENDPOINTS.payment, updatedData)
-      .then((updatedTransaction) => {
-        handleModalClose();
-        setLoading(false);
-        setToast({
-          open: true,
-          message: "Payment added successfully!",
-          severity: "success",
-        });
-      })
-      .catch((error) => {
-        console.error("Error updating PayTransaction:", error);
-        setToast({
-          open: true,
-          message: "Failed to add payment.",
-          severity: "error",
-        });
-        setLoading(false);
-      });
+    toast.promise(
+      MyServerApi.postData(SERVER_API_ENDPOINTS.payment, updatedData),
+      {
+        loading: "Adding payment...",
+        success: (data) => {
+          handleModalClose();
+          setLoading(false);
+          return "Payment added successfully!";
+        },
+        error: () => {
+          setLoading(false);
+          return "Error adding payment";
+        },
+      }
+    );
+    // MyServerApi.postData(SERVER_API_ENDPOINTS.payment, updatedData)
+    //   .then((updatedTransaction) => {
+    //     handleModalClose();
+    //     setLoading(false);
+    //     setToast({
+    //       open: true,
+    //       message: "Payment added successfully!",
+    //       severity: "success",
+    //     });
+    //   })
+    //   .catch((error) => {
+    //     console.error("Error updating PayTransaction:", error);
+
+    //     setLoading(false);
+    //   });
   };
 
   useEffect(() => {
