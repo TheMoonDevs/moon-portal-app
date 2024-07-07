@@ -12,6 +12,7 @@ import Toast, { toastSeverity } from "../Toast";
 import { ReferralAdminTable } from "./ReferralAdminTable";
 import { setFetchedReferralData } from "@/utils/redux/db/db.slice";
 import { useAuthSession } from "@/utils/hooks/useAuthSession";
+import { toast } from "sonner";
 
 export interface IReferralData {
   data: { referrals: UserReferrals[] };
@@ -22,15 +23,15 @@ const TotalReferrals = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const { loading, setLoading } = useAsyncState();
-  const [toast, setToast] = useState<{
-    open: boolean;
-    message: string;
-    severity: toastSeverity;
-  }>({
-    open: false,
-    message: "",
-    severity: "success",
-  });
+  // const [toast, setToast] = useState<{
+  //   open: boolean;
+  //   message: string;
+  //   severity: toastSeverity;
+  // }>({
+  //   open: false,
+  //   message: "",
+  //   severity: "success",
+  // });
   const dispatch = useAppDispatch();
 
   const fetchedReferralData = useAppSelector(
@@ -41,7 +42,8 @@ const TotalReferrals = () => {
     if (reason === "clickaway") {
       return;
     }
-    setToast((prevToast) => ({ ...prevToast, open: false }));
+    // setToast((prevToast) => ({ ...prevToast, open: false }));
+    toast.dismiss();
   };
 
   useEffect(() => {
@@ -65,6 +67,7 @@ const TotalReferrals = () => {
         setLoading(false);
       } catch (error) {
         console.log(error);
+
         setLoading(false);
       }
     };
@@ -84,7 +87,7 @@ const TotalReferrals = () => {
             fetchedReferralData={fetchedReferralData}
             setIsModalOpen={setIsModalOpen}
             user={user}
-            setToast={setToast}
+            // setToast={setToast}
             allUsers={allUsers}
           />
           <AddRecordModal
@@ -92,12 +95,12 @@ const TotalReferrals = () => {
             setIsModalOpen={setIsModalOpen}
             users={allUsers}
           />
-          <Toast
+          {/* <Toast
             open={toast.open}
             handleClose={handleClose}
             message={toast.message}
             severity={toast.severity}
-          />
+          /> */}
         </div>
       )}
     </>
