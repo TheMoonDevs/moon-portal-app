@@ -1,3 +1,4 @@
+import TableLoader from "@/components/elements/TableLoader";
 import useCopyToClipboard from "@/utils/hooks/useCopyToClipboard";
 import { setAllLinks } from "@/utils/redux/shortUrl/shortUrl.slice";
 import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
@@ -60,7 +61,7 @@ export const ShortUrlList = () => {
   }, [dispatch]);
 
   return (
-    <div className="w-max flex items-center justify-center rounded-lg min-h-full h-full overflow-y-auto bg-white ">
+    <div className="w-11/12 flex items-center justify-center rounded-lg min-h-full h-full overflow-y-auto bg-white ">
       {success ? (
         <table className="w-full space-y-2 overflow-y-auto ">
           <thead className="border-b border-gray-400 rounded-l-2xl ">
@@ -128,47 +129,7 @@ export const ShortUrlList = () => {
           </tbody>
         </table>
       ) : isLoading ? (
-        <div className="animate-pulse w-screen px-56 ">
-          <div className="  flex items-center justify-around space-x-4 bg-gray-300 py-4 rounded-md ">
-            <div className="w-24 h-5 bg-gray-500 rounded"></div>
-            <div className="w-24 h-5 bg-gray-500 rounded"></div>
-            <div className="w-24 h-5 bg-gray-500 rounded"></div>
-            <div className="w-24 h-5 bg-gray-500 rounded"></div>
-          </div>
-
-          <ul className="mt-2 space-y-2">
-            <li className="h-10 rounded bg-neutral-500/70 w-full flex items-center justify-around ">
-              <div className="w-36 h-4 bg-gray-300 rounded"></div>
-              <div className="w-36 h-4 bg-gray-300 rounded"></div>
-              <div className="w-36 h-4 bg-gray-300 rounded"></div>
-              <div className="w-36 h-4 bg-gray-300 rounded"></div>
-            </li>
-            <li className="h-10 rounded bg-neutral-500/70 w-full flex items-center justify-around ">
-              <div className="w-36 h-4 bg-gray-300 rounded"></div>
-              <div className="w-36 h-4 bg-gray-300 rounded"></div>
-              <div className="w-36 h-4 bg-gray-300 rounded"></div>
-              <div className="w-36 h-4 bg-gray-300 rounded"></div>
-            </li>
-            <li className="h-10 rounded bg-neutral-500/70 w-full flex items-center justify-around ">
-              <div className="w-36 h-4 bg-gray-300 rounded"></div>
-              <div className="w-36 h-4 bg-gray-300 rounded"></div>
-              <div className="w-36 h-4 bg-gray-300 rounded"></div>
-              <div className="w-36 h-4 bg-gray-300 rounded"></div>
-            </li>
-            <li className="h-10 rounded bg-neutral-500/70 w-full flex items-center justify-around ">
-              <div className="w-36 h-4 bg-gray-300 rounded"></div>
-              <div className="w-36 h-4 bg-gray-300 rounded"></div>
-              <div className="w-36 h-4 bg-gray-300 rounded"></div>
-              <div className="w-36 h-4 bg-gray-300 rounded"></div>
-            </li>
-            <li className="h-10 rounded bg-neutral-500/70 w-full flex items-center justify-around ">
-              <div className="w-36 h-4 bg-gray-300 rounded"></div>
-              <div className="w-36 h-4 bg-gray-300 rounded"></div>
-              <div className="w-36 h-4 bg-gray-300 rounded"></div>
-              <div className="w-36 h-4 bg-gray-300 rounded"></div>
-            </li>
-          </ul>
-        </div>
+        <TableLoader />
       ) : error.isError ? (
         <div>Error: {error.description}</div>
       ) : null}
