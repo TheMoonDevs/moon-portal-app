@@ -1,6 +1,8 @@
 /* eslint-disable @next/next/no-img-element */
+import { APP_ROUTES } from "@/utils/constants/appInfo";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { USERROLE, USERTYPE, User } from "@prisma/client";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 export const CoreTeamSection = () => {
@@ -23,8 +25,9 @@ export const CoreTeamSection = () => {
     <section className="bg-white m-4 mt-6 px-0 border-neutral-400 rounded-xl shadow-md overflow-hidden">
       <div className="flex flex-col items-stretch justify-center">
         {coreTeam.map((user) => (
-          <div
+          <Link
             key={user.id}
+            href={`${APP_ROUTES.userWorklogSummary}/${user.id}`}
             className="flex flex-row gap-1 items-center justify-between px-2 py-3  cursor-pointer hover:bg-black/5 border-b border-neutral-200"
           >
             <div className="flex items-center gap-4">
@@ -62,7 +65,7 @@ export const CoreTeamSection = () => {
                 </span>
               </div> */}
             </div>
-          </div>
+          </Link>
         ))}
       </div>
     </section>
