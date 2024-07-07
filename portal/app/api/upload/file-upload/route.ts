@@ -1,5 +1,5 @@
 import { prisma } from "@/prisma/prisma";
-import { fileUploadSdk } from "@/utils/services/fileUploadSdk";
+import { s3FileUploadSdk } from "@/utils/services/s3FileUploadSdk";
 import { File } from "buffer";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
 
     console.log(files);
     if (!files || files.length === 0) {
-      return NextResponse.json("Certificate not found", { status: 404 });
+      return NextResponse.json("No Files found", { status: 404 });
     }
 
     return NextResponse.json(files);
@@ -52,15 +52,17 @@ export async function POST(req: Request) {
 
     const userId = formData.get("userId") as string;
     const uploadedByUserId = formData.get("uploadedByUserId") as string;
+    const folderName = formData.get("folderName") as string;
 
     if (!userId) {
       return NextResponse.json("User not found", { status: 404 });
     }
 
     const filePromises = files.map(async (file) => {
-      const s3Response = await fileUploadSdk.uploadFile({
+      const s3Response = await s3FileUploadSdk.uploadFile({
         file,
         userId,
+        ...(folderName && { folder: folderName }),
       });
 
       if (!s3Response || s3Response.$metadata.httpStatusCode !== 200) {
@@ -68,13 +70,15 @@ export async function POST(req: Request) {
       }
 
       const fileInfo = {
-        fileUrl: fileUploadSdk.getPublicFileUrl({
+        fileUrl: s3FileUploadSdk.getPublicFileUrl({
           userId,
           file,
+          folder: folderName,
         }),
         fileName: file.name,
         mimeType: file.type,
         fileSize: file.size,
+        ...(folderName && { folderName }),
       };
 
       return {
@@ -92,23 +96,39 @@ export async function POST(req: Request) {
       data: fileInfo,
     });
     // console.log(DBresponse);
-    return NextResponse.json({ DBresponse, fileInfo });
+    return NextResponse.json({ DBresponse });
   } catch (reason) {
     console.log(reason);
-    return NextResponse.json({ message: "failure" });
+    return NextResponse.json({ message: "failure" }, { status: 500 });
   }
 }
 
 export async function DELETE(req: Request) {
   try {
-    const { id, userId, fileName } = await req.json();
+    const { id } = await req.json();
 
-    const response = await fileUploadSdk.deleteFile({
-      userId: userId,
-      fileName: fileName,
+    const DBresponse = await prisma.fileUpload.delete({
+      where: {
+        id: id,
+      },
     });
 
-    console.log(response);
+    let response;
+
+    const { userId, fileName, folderName } = DBresponse;
+
+    if (!DBresponse || !fileName || !userId || !folderName) {
+      throw new Error(
+        "Failed to delete file! Any of the fields are missing: userId, fileName, folderName"
+      );
+    }
+
+    response = await s3FileUploadSdk.deleteFile({
+      userId: userId,
+      fileName: fileName,
+      folder: folderName,
+    });
+
     if (
       !response ||
       (response.$metadata.httpStatusCode !== 204 &&
@@ -118,14 +138,7 @@ export async function DELETE(req: Request) {
       throw new Error("Failed to delete file");
     }
 
-    const DBresponse = await prisma.fileUpload.delete({
-      where: {
-        id: id,
-      },
-    });
-    console.log(DBresponse);
-
-    return NextResponse.json(DBresponse.fileName);
+    return NextResponse.json({ DBresponse });
   } catch (e) {
     console.log(e);
     return new NextResponse(JSON.stringify(e), {

@@ -45,5 +45,6 @@ export const useQuickLinkDirectory = (init?: boolean) => {
     setCurrentDirectory,
     parentDirs,
     directories,
+    activeDirectoryId,
   };
 };

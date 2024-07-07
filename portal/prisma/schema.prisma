@@ -30,7 +30,7 @@ model User {
   updatedAt      DateTime      @default(now())
   workData       Json?
   personalData   Json?
-  payData   Json?
+  payData        Json?
   thirdPartyData Json?
   slackId        String?
 }
@@ -97,7 +97,7 @@ model ClientLeadForm {
 
 // ---------------------------------------QUICKLINKS---------------------------
 model ParentDirectory {
-  id    String @id @default(auto()) @map("_id") @db.ObjectId
+  id    String    @id @default(auto()) @map("_id") @db.ObjectId
   title String
   logo  String
   slug  String
@@ -106,37 +106,36 @@ model ParentDirectory {
 }
 
 model UserLink {
-  id      String @id @default(auto()) @map("_id") @db.ObjectId
-  linkType USERLINKTYPE //  Favorited Links or top used or custom_link_list
-  linkData Link @relation( fields: [linkId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  linkId   String @db.ObjectId
-  userId   String
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  linkType    USERLINKTYPE //  Favorited Links or top used or custom_link_list
+  linkData    Link         @relation(fields: [linkId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  linkId      String       @db.ObjectId
+  userId      String
   directoryId String?
-  topUsed Int @default(0)
-  isFavorite Boolean?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now())
+  topUsed     Int          @default(0)
+  isFavorite  Boolean?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @default(now())
 }
 
 model Link {
-  id            String      @id @default(auto()) @map("_id") @db.ObjectId
-  title         String
-  description   String
-  logo          String
-  image         String
-  linkType      String
-  url           String
-  clickCount    Int
-  isFavorite    Boolean     @default(false)
-  rootParentDir    ParentDirectory? @relation(fields: [rootParentDirId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  rootParentDirId  String?     @db.ObjectId
-  author        User?       @relation(name: "CreatedLinks", fields: [authorId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  userLink      UserLink[]
-  authorId      String?     @db.ObjectId
-  directoryId   String?     @db.ObjectId
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now())  
-
+  id              String           @id @default(auto()) @map("_id") @db.ObjectId
+  title           String
+  description     String
+  logo            String
+  image           String
+  linkType        String
+  url             String
+  clickCount      Int
+  isFavorite      Boolean          @default(false)
+  rootParentDir   ParentDirectory? @relation(fields: [rootParentDirId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  rootParentDirId String?          @db.ObjectId
+  author          User?            @relation(name: "CreatedLinks", fields: [authorId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userLink        UserLink[]
+  authorId        String?          @db.ObjectId
+  directoryId     String?          @db.ObjectId
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @default(now())
 
   @@index([rootParentDirId])
   @@index([authorId])
@@ -144,12 +143,12 @@ model Link {
 }
 
 model Directory {
-  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
   title       String
   logo        String
   slug        String
   parentDirId String?
-  timestamp   DateTime @default(now()) 
+  timestamp   DateTime @default(now())
 }
 
 enum ROOTTYPE {
@@ -167,7 +166,7 @@ enum USERLINKTYPE {
 
 model ZeroRecords {
   id          String  @id @default(auto()) @map("_id") @db.ObjectId
-  userId      String?  @db.ObjectId
+  userId      String? @db.ObjectId
   config      String?
   year        String?
   allZeros    Json[]
@@ -175,38 +174,49 @@ model ZeroRecords {
 }
 
 model WorkLogs {
-  id          String  @id @default(auto()) @map("_id") @db.ObjectId
-  logType     String?
-  userId      String?  @db.ObjectId
-  title       String?
-  date        String?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @default(now())
-  works       Json[]
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  logType   String?
+  userId    String?  @db.ObjectId
+  title     String?
+  date      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+  works     Json[]
 }
 
 model Certificate {
-  id          String  @id @default(auto()) @map("_id") @db.ObjectId
-  title       String?
-  userId      String?  @db.ObjectId
-  fileId      String?  @db.ObjectId
-  file        Json? 
-  files       Json[]
-  userInfo    Json?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @default(now())
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  title     String?
+  userId    String?  @db.ObjectId
+  fileId    String?  @db.ObjectId
+  file      Json?
+  files     Json[]
+  userInfo  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
 }
+
 model FileUpload {
-  id          String  @id @default(auto()) @map("_id") @db.ObjectId
-  userId      String?  @db.ObjectId 
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId           String?  @db.ObjectId
   uploadedByUserId String?  @db.ObjectId
-  fileName    String?
-  mimeType    String?
-  fileUrl     String?
-  fileSize    Int?
-  userInfo    Json?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @default(now())
+  fileName         String?
+  mimeType         String?
+  fileUrl          String?
+  folderName       String?
+  fileSize         Int?
+  userInfo         Json?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @default(now())
+}
+
+model ConfigData {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  configId   String   @unique
+  configType String   @default("")
+  configApp  String?  @default("portal")
+  configData Json?
+  timestamp  DateTime @updatedAt
 }
 
 enum JOBPOST {
@@ -266,4 +276,16 @@ enum CANDIDATERESULT {
   APPROVED
   REJECTED
   PENDING
+}
+
+//-------------------------------------QuickDocs-----------------------------------------
+
+model DocMarkdown {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  docId     String   @unique
+  logType   String
+  userId    String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  markdown  Json
 }

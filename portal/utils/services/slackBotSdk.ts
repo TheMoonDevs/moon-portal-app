@@ -34,6 +34,10 @@ export const SlackChannelWebhooks = {
     "https://hooks.slack.com/services/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",
 };
 
+export const SlackChannels = {
+  y_moon_reminders: "C07A2HJUEPN",
+};
+
 export type channelType =
   (typeof SlackChannelWebhooks)[keyof typeof SlackChannelWebhooks];
 
@@ -160,6 +164,7 @@ export class SlackBotSdk {
       throw error;
     }
   };
+
   // post a message using API. passin channel or user_id
   sendSlackMessageviaAPI = async (message: SlackMessageType) => {
     try {
@@ -241,31 +246,35 @@ export class SlackBotSdk {
     await this.sendSlackMessageviaAPI(msg);
   };
 
-  setSlackReminder = async (
-    reminderTime: string,
-    reminderMessage: string,
-    channelID: string
-  ) => {
-    const year = parseInt(reminderTime.substring(0, 4), 10);
-    const month = parseInt(reminderTime.substring(4, 6), 10) - 1;
-    const day = parseInt(reminderTime.substring(6, 8), 10);
-    const hours = parseInt(reminderTime.substring(9, 11), 10);
-    const minutes = parseInt(reminderTime.substring(11, 13), 10);
-    const seconds = parseInt(reminderTime.substring(13, 15), 10);
-    let date = new Date(Date.UTC(year, month, day, hours, minutes, seconds));
-
-    date.setHours(date.getHours() - 5);
-    date.setMinutes(date.getMinutes() - 30);
-
-    const unixTimestamp = Math.floor(date.getTime() / 1000);
-
-    const data = new URLSearchParams();
-    data.append("token", SLACK_BOT_OAUTH_TOKEN);
-    data.append("text", reminderMessage);
-    data.append("post_at", unixTimestamp.toString());
-    data.append("channel", channelID);
-
+  setSlackReminder = async ({
+    time,
+    message,
+    channel,
+  }: {
+    time: string;
+    message: string;
+    channel: string;
+  }) => {
     try {
+      const year = parseInt(time.substring(0, 4), 10);
+      const month = parseInt(time.substring(4, 6), 10) - 1;
+      const day = parseInt(time.substring(6, 8), 10);
+      const hours = parseInt(time.substring(9, 11), 10);
+      const minutes = parseInt(time.substring(11, 13), 10);
+      const seconds = parseInt(time.substring(13, 15), 10);
+      let date = new Date(Date.UTC(year, month, day, hours, minutes, seconds));
+
+      date.setHours(date.getHours() - 5);
+      date.setMinutes(date.getMinutes() - 30);
+
+      const unixTimestamp = Math.floor(date.getTime() / 1000);
+
+      const data = new URLSearchParams();
+      data.append("token", SLACK_BOT_OAUTH_TOKEN);
+      data.append("text", message);
+      data.append("post_at", unixTimestamp.toString());
+      data.append("channel", channel);
+
       const response = await fetch(
         "https://slack.com/api/chat.scheduleMessage",
         {
@@ -285,6 +294,7 @@ export class SlackBotSdk {
       console.log("Reminder set successfully:", jsonResponse);
     } catch (error) {
       console.error("Error setting Slack reminder:", error);
+      throw error;
     }
   };
 }
