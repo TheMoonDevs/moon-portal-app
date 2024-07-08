@@ -9,39 +9,38 @@ interface InvoiceProps {
 }
 
 const Invoice: React.FC<InvoiceProps> = ({ pdfTargetRef, invoiceData }) => {
- function formatDate(dateString: any) {
-   const date = new Date(dateString);
-   const day = date.getDate(); // Get day of the month (1-31)
-   const month = date.toLocaleString("en-US", { month: "long" }); // Get full month name
-   const year = date.getFullYear(); // Get full year
+  function formatDate(dateString: any) {
+    const date = new Date(dateString);
+    const day = date.getDate(); // Get day of the month (1-31)
+    const month = date.toLocaleString("en-US", { month: "long" }); // Get full month name
+    const year = date.getFullYear(); // Get full year
 
-   // Determine the day suffix (st, nd, rd, th)
-   let daySuffix;
-   if (day === 1 || day === 21 || day === 31) {
-     daySuffix = "st";
-   } else if (day === 2 || day === 22) {
-     daySuffix = "nd";
-   } else if (day === 3 || day === 23) {
-     daySuffix = "rd";
-   } else {
-     daySuffix = "th";
-   }
+    // Determine the day suffix (st, nd, rd, th)
+    let daySuffix;
+    if (day === 1 || day === 21 || day === 31) {
+      daySuffix = "st";
+    } else if (day === 2 || day === 22) {
+      daySuffix = "nd";
+    } else if (day === 3 || day === 23) {
+      daySuffix = "rd";
+    } else {
+      daySuffix = "th";
+    }
 
-   return `${day}${daySuffix} ${month} ${year}`;
- }
-
+    return `${day}${daySuffix} ${month} ${year}`;
+  }
 
   return (
-    <section ref={pdfTargetRef} className="bg-white">
-      <div className="p-8  shadow-md ">
+    <section ref={pdfTargetRef} className="bg-[#F5F5Ef]">
+      <div className="p-8 shadow-md ">
         <div className="flex justify-between items-center mb-8">
-          <div className="flex items-center">
+          <div className="flex">
             <Image
               src="/icon-512x512.png"
               width={100}
               height={100}
               alt="logo"
-              className="aspect-square mr-2 pointer-events-none"
+              className="aspect-square -ml-2 pointer-events-none"
             />
           </div>
           <h1 className="text-4xl md:text-5xl font-normal font-serif">
@@ -67,13 +66,13 @@ const Invoice: React.FC<InvoiceProps> = ({ pdfTargetRef, invoiceData }) => {
           <InvoiceTable />
         </div>
 
-        <p className="text-sm mb-8">
+        <p className="text-sm mb-4 text-neutral-500">
           Please finish the payment by the due date:{" "}
           {invoiceData.dueDate ? formatDate(invoiceData.dueDate) : ""}
         </p>
         <p className="text-3xl mb-8">Thank you!</p>
 
-        <div className="flex flex-col sm:flex-row">
+        <div className="flex flex-col sm:flex-row mt-24">
           <div className="md:w-1/2 md:pr-8">
             <h2 className="text-sm font-bold mb-2">PAYMENT INFORMATION</h2>
             <p className="text-sm">
@@ -89,11 +88,11 @@ const Invoice: React.FC<InvoiceProps> = ({ pdfTargetRef, invoiceData }) => {
               IFSC - {invoiceData.bankDetails.ifsc}
             </p>
           </div>
-          <div className="md:w-1/2 mt-8 md:mt-0 w-full sm:text-right flex justify-end  flex-col">
+          <div className="md:w-1/2 mt-8 md:mt-0 w-full sm:text-right flex justify-end gap-2  flex-col">
             <p className="text-xl font-normal sm:text-[22px] md:text-[25px] font-serif">
               {invoiceData.payingTo}
             </p>
-            <p className="sm:text-lg">{invoiceData.companyName}</p>
+            <p className="sm:text-base">{invoiceData.companyName}</p>
           </div>
         </div>
       </div>

@@ -23,7 +23,7 @@ const InvoiceHeader: React.FC<InvoiceHeaderProps> = ({
     generatePDF(pdfTargetRef, {
       method: "open",
       filename: `invoice.pdf`,
-      page: { margin: { top: 0, bottom:0, left: 10, right: 0 } }, // Custom margins
+      page: { margin: { top: 0, bottom: 0, left: 10, right: 0 } }, // Custom margins
     });
 
     document.body.style.overflow = originalOverflow; // Restore original overflow style
@@ -54,7 +54,7 @@ const InvoiceHeader: React.FC<InvoiceHeaderProps> = ({
               <span className="material-symbols-outlined text-xs">
                 download
               </span>
-              <span className="hidden md:inline font-serif font-medium">
+              <span className="hidden md:inline font-medium">
                 Download as PDF
               </span>
             </button>
@@ -65,9 +65,7 @@ const InvoiceHeader: React.FC<InvoiceHeaderProps> = ({
           <Tooltip arrow title="Send as Email PDF">
             <button className="flex items-center gap-1 md:gap-2 md:border border-neutral-800 hover:bg-neutral-100 rounded-md px-2  py-1  text-xs">
               <span className="material-symbols-outlined text-xs">mail</span>
-              <span className="hidden md:inline font-serif font-medium">
-                Email PDF
-              </span>
+              <span className="hidden md:inline font-medium">Email PDF</span>
             </button>
           </Tooltip>
         </div>
