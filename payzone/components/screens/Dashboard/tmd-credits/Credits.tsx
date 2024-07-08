@@ -53,13 +53,14 @@ export const Credits = () => {
 
   return (
     <>
-      <Header className="flex flex-col gap-2 ml-7 mt-2">
-        <div className="flex items-center gap-2">
+      <Header className="flex flex-col gap-2 ml-7 mt-2 ">
+        <div className="flex items-center gap-2  ">
           <Image
             src="/icons/CRYPTOCURRENCY.svg"
             width={60}
             height={60}
             alt=""
+            className=" rotating-icon duration-300 ease-in !hover:scale-110  "
           />
           <div className="flex flex-col gap-1">
             {!balance ? (

@@ -5,21 +5,26 @@ import { ShortUrlCard } from "@/components/screens/ShortUrl/ShortUrlCard";
 import { PageAccess } from "@/components/global/PageAccess";
 import Link from "next/link";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
+import { Bottombar } from "@/components/global/Bottombar";
 
 export default function URLShortnerPage() {
   return (
     <PageAccess isAuthRequired={true}>
-      <Link
-        href={APP_ROUTES.home}
-        className="cursor-pointer rounded-lg p-2 pt-3 flex items-center gap-2 text-neutral-900 hover:text-neutral-700"
-      >
-        <span className="icon_size material-icons">arrow_back</span>
-        <h1 className="uppercase tracking-[0.2em] font-mono text-xl">Back</h1>
-      </Link>
-      <div className="flex items-center justify-center min-h-screen bg-gray-50 gap-6">
-        <div className="flex gap-10 justify-center w-4/5 max-sm:flex-col-reverse max-sm:w-[90%]">
-          <ShortUrlList />
-          <ShortUrlCard />
+      <Bottombar visible={true} />
+      <div className=" h overflow-hidden ">
+        <div className="rounded-lg pt-6 pl-6 flex items-center gap-2 text-neutral-900   ">
+          <h1 className=" tracking-[0.01em] text-3xl font-bold flex gap-4 items-center">
+            <span className="material-icons-outlined bg-neutral-100 p-2 rounded-full text-blue-500 -rotate-45 border border-neutral-200">
+              link
+            </span>{" "}
+            <span>URL Shortener</span>
+          </h1>
+        </div>
+        <div className="flex items-start justify-center gap-6 pt-16">
+          <div className="flex flex-col gap-8 items-center justify-center w-full max-sm:w-full">
+            <ShortUrlCard />
+            <ShortUrlList />
+          </div>
         </div>
       </div>
     </PageAccess>
