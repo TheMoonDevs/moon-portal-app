@@ -17,6 +17,8 @@ model User {
   email          String?
   name           String?
   avatar         String?
+  banner         String?
+  description     String?
   userType       USERTYPE?     @default(MEMBER)
   role           USERROLE?     @default(CORETEAM)
   vertical       USERVERTICAL? @default(DEV)

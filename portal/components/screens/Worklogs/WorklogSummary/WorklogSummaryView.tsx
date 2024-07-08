@@ -28,7 +28,7 @@ export const WorklogSummaryView = ({
       ))}
     </>
   ) : (
-    <div className="flex w-full flex-col items-center justify-center h-[400px]">
+    <div className="flex w-full flex-col items-center justify-center max-h-[400px]">
       {/* eslint-disable-next-line @next/next/no-img-element  */}
       <img
         src="/images/empty_item.svg"
