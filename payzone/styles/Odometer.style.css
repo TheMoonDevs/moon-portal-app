@@ -1,0 +1,22 @@
+@keyframes odometer {
+  0% {
+    content: "0";
+  }
+  100% {
+    content: attr(data-value);
+  }
+}
+
+.odometer {
+  display: inline-block;
+  font-size: 36px;
+  font-weight: 600;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.odometer::after {
+  display: inline-block;
+  animation: odometer 3s steps(30) forwards;
+  content: attr(data-value);
+}

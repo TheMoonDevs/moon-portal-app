@@ -52,6 +52,8 @@ export const AdminUserEditor = () => {
     payData: null, // Add the missing property
     slackId: "",
     thirdPartyData: null,
+    banner: "",
+    description: "",
   });
 
   useEffect(() => {

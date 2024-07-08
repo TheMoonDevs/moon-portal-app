@@ -73,7 +73,7 @@ export async function POST(req: Request) {
         fileUrl: s3FileUploadSdk.getPublicFileUrl({
           userId,
           file,
-          ...(folderName && { folderName }),
+          folder: folderName,
         }),
         fileName: file.name,
         mimeType: file.type,
@@ -96,24 +96,39 @@ export async function POST(req: Request) {
       data: fileInfo,
     });
     // console.log(DBresponse);
-    return NextResponse.json({ DBresponse, fileInfo });
+    return NextResponse.json({ DBresponse });
   } catch (reason) {
     console.log(reason);
-    return NextResponse.json({ message: "failure" });
+    return NextResponse.json({ message: "failure" }, { status: 500 });
   }
 }
 
 export async function DELETE(req: Request) {
   try {
-    const { id, userId, fileName, folderName } = await req.json();
+    const { id } = await req.json();
 
-    const response = await s3FileUploadSdk.deleteFile({
-      userId: userId,
-      fileName: fileName,
-      ...(folderName && { folder: folderName }),
+    const DBresponse = await prisma.fileUpload.delete({
+      where: {
+        id: id,
+      },
     });
 
-    console.log(response);
+    let response;
+
+    const { userId, fileName, folderName } = DBresponse;
+
+    if (!DBresponse || !fileName || !userId || !folderName) {
+      throw new Error(
+        "Failed to delete file! Any of the fields are missing: userId, fileName, folderName"
+      );
+    }
+
+    response = await s3FileUploadSdk.deleteFile({
+      userId: userId,
+      fileName: fileName,
+      folder: folderName,
+    });
+
     if (
       !response ||
       (response.$metadata.httpStatusCode !== 204 &&
@@ -123,14 +138,7 @@ export async function DELETE(req: Request) {
       throw new Error("Failed to delete file");
     }
 
-    const DBresponse = await prisma.fileUpload.delete({
-      where: {
-        id: id,
-      },
-    });
-    console.log(DBresponse);
-
-    return NextResponse.json(DBresponse.fileName);
+    return NextResponse.json({ DBresponse });
   } catch (e) {
     console.log(e);
     return new NextResponse(JSON.stringify(e), {
