@@ -9,9 +9,7 @@ interface InvoiceRow {
   unitPrice: number;
 }
 
-const initialData: InvoiceRow[] = [
-  { service: "", weeks: 0, unitPrice: 0 },
-];
+const initialData: InvoiceRow[] = [{ service: "", weeks: 0, unitPrice: 0 }];
 
 const InvoiceTable: React.FC = () => {
   const [data, setData] = useState<InvoiceRow[]>(initialData);
@@ -54,7 +52,7 @@ const InvoiceTable: React.FC = () => {
   };
 
   return (
-    <div className="mt-4 p-4 w-full bg-white overflow-visible">
+    <div className="mt-4 w-full overflow-visible">
       <table className="w-full mb-8 table-auto">
         <thead>
           <tr className="border-y border-black">
@@ -156,14 +154,16 @@ const InvoiceTable: React.FC = () => {
                   />
                 </span>
               </td>
-              <td className="p-2">{row.weeks * row.unitPrice}</td>
+              <td className="p-2">
+                <span className="flex">$ {row.weeks * row.unitPrice}</span>
+              </td>
             </tr>
           ))}
           <tr>
             <td colSpan={4} className="p-2 text-right font-semibold">
               Subtotal
             </td>
-            <td className="p-2">{calculateTotal()}</td>
+            <td className="p-2">$ {calculateTotal()}</td>
           </tr>
           <tr>
             <td
@@ -175,7 +175,7 @@ const InvoiceTable: React.FC = () => {
             </td>
             <td className="p-2 font-bold text-xl md:text-2xl relative">
               <div className="absolute top-0 right-0 w-full border-t-2 border-gray-700"></div>
-              {calculateTotal()}
+              $ {calculateTotal()}
             </td>
           </tr>
         </tbody>
