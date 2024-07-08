@@ -21,7 +21,7 @@ export const PortalSdk = {
       }
     });
   },
-  postData: (url: string, params: any) => {
+  postData: (url: string, data: any) => {
     return new Promise<any>(async (resolve, reject) => {
       try {
         const res = await fetch(url, {
@@ -29,7 +29,7 @@ export const PortalSdk = {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(params.data),
+          body: JSON.stringify(data),
         });
         if (res.ok) {
           const result = await res.json();
@@ -43,7 +43,7 @@ export const PortalSdk = {
       }
     });
   },
-  putData: (url: string, params: any) => {
+  putData: (url: string, data: any) => {
     return new Promise<any>(async (resolve, reject) => {
       try {
         const res = await fetch(url, {
@@ -51,7 +51,7 @@ export const PortalSdk = {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(params.data),
+          body: JSON.stringify(data),
         });
         // console.log(await res.json());
         if (res.ok) {
