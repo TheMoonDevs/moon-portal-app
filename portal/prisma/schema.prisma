@@ -300,6 +300,27 @@ model DocMarkdown {
   markdown  Json
 }
 
+//-------------------------------------Notifications-----------------------------------------
+
+model Notification {
+  id                String            @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String            @db.ObjectId
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  title             String
+  description       String
+  matchId           String?           
+  matchType         String?
+  notificationType  NotificationType
+  notificationData  Json?
+}
+
+enum NotificationType {
+  ADMIN
+  SELF_GENERATED
+  USER_TO_USER
+}
+
 //-------------------------------------Missions-------------------------------------------
 
 model Mission {
