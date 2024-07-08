@@ -8,6 +8,7 @@ import Toast, { toastSeverity } from "./Toast";
 import { User, UserReferrals } from "@prisma/client";
 import { addReferralData } from "@/utils/redux/db/db.slice";
 import { useAppDispatch } from "@/utils/redux/store";
+import { Toaster, toast } from "sonner";
 
 export interface ICreatedReferralData {
   data: { referral: UserReferrals };
@@ -63,15 +64,13 @@ const AddRecordModal = ({
   const [showDropdown, setShowDropdown] = useState(false);
   const dispatch = useAppDispatch();
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [toast, setToast] = useState<{
-    open: boolean;
-    message: string;
-    severity: toastSeverity;
-  }>({
-    open: false,
-    message: "",
-    severity: "success",
-  }); //state for toast message
+  // const [toast, setToast] = useState<{
+  //   message: string;
+  //   severity: toastSeverity;
+  // }>({
+  //   message: "",
+  //   severity: "success",
+  // }); //state for toast message
   const [referredBy, setReferredBy] = useState<string | null>(null);
   const filteredUsers = users.filter((user: any) =>
     user?.name?.toLowerCase().includes(referredBy?.toLowerCase())
@@ -111,20 +110,23 @@ const AddRecordModal = ({
         userId: selectedUser?.id,
       })) as ICreatedReferralData;
 
-      setToast({
-        open: true,
-        message: "Referral updated successfully",
-        severity: "success",
-      });
+      // setToast({
+      //   message: "Referral updated successfully",
+      //   severity: "success",
+      // });
+
+      toast.success("Referral updated successfully");
+
       setLoading(false);
       setIsModalOpen(false);
       dispatch(addReferralData(response.data.referral));
     } catch (error) {
-      setToast({
-        open: true,
-        message: "Failed to update referral",
-        severity: "error",
-      });
+      // setToast({
+      //   message: "Failed to update referral",
+      //   severity: "error",
+      // });
+      toast.error("Failed to update referral");
+
       setLoading(false);
       setIsModalOpen(false);
     }
@@ -134,7 +136,8 @@ const AddRecordModal = ({
     if (reason === "clickaway") {
       return;
     }
-    setToast((prevToast) => ({ ...prevToast, open: false }));
+    // setToast((prevToast) => ({ ...prevToast, open: false }));
+    toast.dismiss();
   };
 
   return (
@@ -256,12 +259,7 @@ const AddRecordModal = ({
           </button>
         </form>
       </Modal>
-      <Toast
-        open={toast.open}
-        handleClose={handleClose}
-        message={toast.message}
-        severity={toast.severity}
-      />
+      {/* <Toaster message={toast.message} severity={toast.severity} /> */}
     </div>
   );
 };
