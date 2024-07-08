@@ -16,6 +16,8 @@ export async function GET(request: NextRequest) {
   const id = request.nextUrl.searchParams.get("id") as string;
   const userType = request.nextUrl.searchParams.get("userType") as USERTYPE;
   const role = request.nextUrl.searchParams.get("role") as USERROLE;
+  const house = request.nextUrl.searchParams.get("house") as string;
+  const status = request.nextUrl.searchParams.get("status");
 
   let error_response: any;
 
@@ -26,7 +28,8 @@ export async function GET(request: NextRequest) {
         ...(id && { id }),
         ...(userType && { userType }),
         ...(role && { role }),
-        status: USERSTATUS.ACTIVE,
+        ...(house && { house }),
+        status: status ? status as USERSTATUS : USERSTATUS.ACTIVE,
       },
     });
     const slackBotSdk = new SlackBotSdk();
