@@ -23,6 +23,7 @@
     "@mdxeditor/editor": "^2.16.0",
     "@mui/icons-material": "^5.16.0",
     "@mui/material": "^5.14.18",
+    "@mui/x-charts": "^7.7.0",
     "@mui/x-date-pickers": "^6.18.2",
     "@prisma/client": "^5.15.1",
     "@radix-ui/react-popover": "^1.0.7",
