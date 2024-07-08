@@ -24,6 +24,11 @@ const NAVIGATION_OPTIONS = [
     icon: "task_alt",
   },
   {
+    name: "Houses",
+    path: APP_ROUTES.houses,
+    icon: "category",
+  },
+  {
     name: "Teams",
     path: APP_ROUTES.teams,
     icon: "workspaces",
@@ -91,7 +96,7 @@ export const Bottombar = ({
       : NAVIGATION_OPTIONS;
   if (!visible && !visibleOnlyOn) return null;
   if (visibleOnlyOn && !visibleOnlyOnResponsiveSizes) return null;
-  if (!AppRoutesHelper.bottomBarShown(path)) return null;
+  //if (!AppRoutesHelper.bottomBarShown(path)) return null;
 
   const handleNotificationClick = () => {
     if (isMobile) {
@@ -104,6 +109,7 @@ export const Bottombar = ({
   return (
     <div
       className={`flex flex-row fixed bottom-0 left-0 right-0 py-1 px-1 max-md:mx-1 max-md:my-1 gap-6 z-10 bg-neutral-900 max-md:rounded-2xl md:bottom-auto md:left-0 md:top-0 md:flex-col md:w-20 md:h-full md:fixed-none bottombar`}
+      id="home-bottombar"
     >
       <Link href={APP_ROUTES.home}>
         <Image

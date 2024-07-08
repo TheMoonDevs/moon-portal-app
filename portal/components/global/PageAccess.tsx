@@ -3,7 +3,7 @@
 import { APP_ROUTES, AppRoutesHelper } from "@/utils/constants/appInfo";
 import { useUser } from "@/utils/hooks/useUser";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export const usePageAccess = () => {};
 export const PageAccess = ({
@@ -18,7 +18,7 @@ export const PageAccess = ({
   const { user, status, verifiedUserEmail } = useUser();
   const router = useRouter();
   const path = usePathname();
-  const bottomBarShown = AppRoutesHelper.bottomBarShown(path);
+  const [bottomBarShown, setBottomBarShown] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated" && isAuthRequired) {
@@ -34,6 +34,8 @@ export const PageAccess = ({
       router.push(APP_ROUTES.login);
       return;
     }
+
+    setBottomBarShown(document.getElementById("home-bottombar") != null);
   }, [
     user,
     status,
