@@ -48,6 +48,7 @@ export default function DropzoneAdminButton({ users }: { users: User[] }) {
 
       formData.append("userId", userId);
       uploadedByUserId && formData.append("uploadedByUserId", uploadedByUserId);
+      formData.append("folderName", "userUploads")
       try {
         const response = await fetch(`api/upload/file-upload`, {
           method: "POST",

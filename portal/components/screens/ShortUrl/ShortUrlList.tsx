@@ -1,10 +1,11 @@
+import TableLoader from "@/components/elements/TableLoader";
 import useCopyToClipboard from "@/utils/hooks/useCopyToClipboard";
 import { setAllLinks } from "@/utils/redux/shortUrl/shortUrl.slice";
 import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import { setError, setLoading, setSuccess } from "@/utils/redux/ui/ui.slice";
 import { ShortUrlSdk } from "@/utils/services/ShortUrlSdk";
 import { CircularProgress, Tooltip } from "@mui/material";
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 export const ShortUrlList = () => {
   const { isLoading, error, success } = useAppSelector((state) => state.ui);
@@ -14,18 +15,15 @@ export const ShortUrlList = () => {
   const [activeDeleteId, setActiveDeleteId] = useState<null | string>(null);
   const textRef = useRef<HTMLSpanElement | null>(null);
   const dispatch = useAppDispatch();
-
   const handleCopy = (index: number) => {
     copyToClipboard(
       `${process.env.NEXT_PUBLIC_SHORT_LINK_BASE_URL}/l/${allLinks[index].slug}`
     );
     setActiveCopyIndex(index);
   };
-
   const handleDelete = async (id: string) => {
     dispatch(setLoading(true));
     setActiveDeleteId(id);
-
     try {
       const response = await ShortUrlSdk.deleteShortUrl(
         "/api/short-url/delete-link",
@@ -42,7 +40,6 @@ export const ShortUrlList = () => {
       console.error(error);
     }
   };
-
   useEffect(() => {
     dispatch(setLoading(true));
     const getAllLinks = async () => {
@@ -60,74 +57,79 @@ export const ShortUrlList = () => {
         console.error(error);
       }
     };
-
     getAllLinks();
   }, [dispatch]);
 
   return (
-    <div className="w-full flex bg-white rounded-lg shadow-md p-4 h-80 overflow-auto">
+    <div className="w-11/12 flex items-center justify-center rounded-lg min-h-full h-full overflow-y-auto bg-white ">
       {success ? (
-        <table>
-          <thead className="border-b border-gray-200 bg-gray-200 ">
-            <tr className="text-left ">
-              <th className="px-4 py-2">Short Link</th>
-              <th className="px-4 py-2">Redirects to</th>
-              <th className="px-4 py-2">Created At</th>
+        <table className="w-full space-y-2 overflow-y-auto ">
+          <thead className="border-b border-gray-400 rounded-l-2xl ">
+            <tr className="text-left bg-gray-200 ">
+              <th className="p-4">Short Link</th>
+              <th className="p-4">Redirects to</th>
+              <th className="p-4">Created At</th>
+              <th className="p-4">Actions</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className=" ">
             {allLinks.map((link, index) => {
               const isCopied = copied && activeCopyIndex === index;
 
               return (
-                <tr key={link.id} className="border-b border-gray-200">
-                  <td className="px-2 py-2 flex flex-col gap-4">
-                    <span ref={textRef}>
-                      {process.env.NEXT_PUBLIC_SHORT_LINK_BASE_URL}/l/
-                      {link.slug}
-                    </span>
-                    <div className="flex gap-2">
-                      <Tooltip title={isCopied ? "Copied!" : "Copy"}>
-                        {isCopied ? (
-                          <span className="material-icons-outlined !text-xl cursor-pointer">
-                            check
-                          </span>
-                        ) : (
-                          <span
-                            className="material-icons-outlined !text-xl cursor-pointer"
-                            onClick={() => handleCopy(index)}
-                          >
-                            content_copy
-                          </span>
-                        )}
-                      </Tooltip>
-                      <Tooltip title={"Delete"}>
-                        {isLoading && activeDeleteId === link.id ? (
-                          <span>Deleting...</span>
-                        ) : (
-                          <span
-                            className="material-icons-outlined !text-xl cursor-pointer"
-                            onClick={() => handleDelete(link.id)}
-                          >
-                            delete
-                          </span>
-                        )}
-                      </Tooltip>
-                    </div>
-                  </td>
-                  <td className="px-4 py-2">{link.redirectTo}</td>
-                  <td className="px-4 py-2">
-                    {new Date(link?.createdAt).toDateString()}
-                  </td>
-                </tr>
+                <React.Fragment key={link.id}>
+                  <tr className="bg-slate-100 hover:bg-slate-200 rounded-l-lg rounded-r-lg py-4">
+                    <td className="px-2 py-3 flex flex-col gap-4 cursor-default">
+                      <span ref={textRef} className="font-medium">
+                        {process.env.NEXT_PUBLIC_SHORT_LINK_BASE_URL}/l/
+                        {link.slug}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 w-[875px] cursor-default font-medium">
+                      <span className="line-clamp-2">{link.redirectTo}</span>
+                    </td>
+                    <td className="px-4 py-3 cursor-default font-medium">
+                      {new Date(link?.createdAt).toDateString()}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-center gap-2">
+                        <Tooltip title={isCopied ? "Copied!" : "Copy"}>
+                          {isCopied ? (
+                            <span className="material-icons-outlined !text-xl cursor-pointer">
+                              check
+                            </span>
+                          ) : (
+                            <span
+                              className="material-icons-outlined !text-xl cursor-pointer"
+                              onClick={() => handleCopy(index)}
+                            >
+                              content_copy
+                            </span>
+                          )}
+                        </Tooltip>
+                        <Tooltip title={"Delete"}>
+                          {isLoading && activeDeleteId === link.id ? (
+                            <span>Deleting...</span>
+                          ) : (
+                            <span
+                              className="material-icons-outlined !text-2xl hover:text-red-500 cursor-pointer"
+                              onClick={() => handleDelete(link.id)}
+                            >
+                              delete
+                            </span>
+                          )}
+                        </Tooltip>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr className="h-2 bg-transparent"></tr>
+                </React.Fragment>
               );
             })}
           </tbody>
         </table>
       ) : isLoading ? (
-        <div className="flex justify-center items-center w-full">
-          <CircularProgress color="inherit" />
-        </div>
+        <TableLoader />
       ) : error.isError ? (
         <div>Error: {error.description}</div>
       ) : null}
