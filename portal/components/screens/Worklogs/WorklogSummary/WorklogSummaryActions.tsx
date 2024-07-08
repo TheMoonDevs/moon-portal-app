@@ -35,7 +35,9 @@ export const WorklogSummaryActions = ({
 
   const isMonthly = !!month;
   const isYearly = !!year && !month;
+
   const handleAiSummaryBtnClick = async () => {
+    if (worklogSummary.length === 0) return;
     setLoading(true);
     try {
       const response = await GenAiSdk.generateWorklogSummary(
@@ -45,37 +47,51 @@ export const WorklogSummaryActions = ({
       );
       setAiSummary(response);
       setView("AI Summary");
-      setLoading(false);
     } catch (error) {
-      console.log(error);
+      console.error(error);
+    } finally {
       setLoading(false);
     }
   };
 
   const handleBreakdownBtnClick = async () => {
+    if (worklogSummary.length === 0) return;
     setLoading(true);
     try {
       setView("Breakdown");
-      setLoading(false);
     } catch (error) {
-      console.log(error);
+      console.error(error);
+    } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div className="flex flex-col mt-10 justify-between items-center  w-full md:w-[50%] border-t-2 relative">
-      <div></div>
-      {view === "Breakdown" && !loading && (
-        <div className="overflow-y-scroll w-full h-screen pb-32 md:pb-8">
-          <WorklogBreakdown
-            worklogSummary={worklogSummary}
-            isMonthly={isMonthly}
-            isYearly={isYearly}
-          />
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <div className="pt-6 md:pt-14 min-w-[300px] md:min-w-[400px]">
+          <LoadingSkeleton />
         </div>
-      )}
-      {view === "AI Summary" && !loading && aiSummary && (
+      );
+    }
+
+    if (worklogSummary.length === 0) {
+      return (
+        <div className="flex w-full flex-col items-center justify-center max-h-[400px]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/images/empty_item.svg"
+            alt="not-found"
+            width={200}
+            height={200}
+          />
+          <p className="text-2xl">No Record Found!</p>
+        </div>
+      );
+    }
+
+    if (view === "AI Summary" && aiSummary) {
+      return (
         <>
           <div className="flex gap-4 items-center absolute top-10 right-10 !text-neutral-500 z-50">
             <Tooltip title="Download AI Summary">
@@ -101,7 +117,7 @@ export const WorklogSummaryActions = ({
               </span>
             </Tooltip>
           </div>
-          <div className=" overflow-y-auto w-full">
+          <div className="overflow-y-auto w-full">
             <div ref={aiSummaryPdfTargetRef} className="p-10 pt-14">
               <div className="w-full">
                 <MdxAppEditor
@@ -115,16 +131,29 @@ export const WorklogSummaryActions = ({
             </div>
           </div>
         </>
-      )}{" "}
-      {loading && (
-        <div className="pt-6 md:pt-14 min-w-[300px] md:min-w-[400px]">
-          <LoadingSkeleton />
-        </div>
-      )}
-      <div className=" text-[0.7rem] sm:text-[0.9rem] md:text-[0.7rem] lg:text-base flex flex-row gap-2 md:gap-4 items-center justify-center sticky bottom-0 py-4 md:py-6 bg-white w-full justify-self-end">
+      );
+    }
+
+    return (
+      <div className="overflow-y-scroll w-full h-screen pb-32 md:pb-8">
+        <WorklogBreakdown
+          worklogSummary={worklogSummary}
+          isMonthly={isMonthly}
+          isYearly={isYearly}
+        />
+      </div>
+    );
+  };
+
+  return (
+    <div className="flex flex-col mt-10 justify-between items-center w-full md:w-[50%] border-t-2 relative">
+      <div></div>
+      {renderContent()}
+      <div className="text-[0.7rem] sm:text-[0.9rem] md:text-[0.7rem] lg:text-base flex flex-row gap-2 md:gap-4 items-center justify-center sticky bottom-0 py-4 md:py-6 bg-white w-full justify-self-end">
         <Tooltip title="Download Worklog">
           <button
-            className="flex gap-1 md:gap-2 items-center border border-neutral-800 hover:bg-neutral-100 rounded-md px-2 md:px-4 py-1 md:py-2"
+            disabled={!worklogSummary.length}
+            className="disabled:cursor-not-allowed flex gap-1 md:gap-2 items-center border border-neutral-800 hover:bg-neutral-100 rounded-md px-2 md:px-4 py-1 md:py-2"
             onClick={() =>
               generatePDF(pdfTargetRef, {
                 method: "open",
@@ -138,15 +167,17 @@ export const WorklogSummaryActions = ({
           </button>
         </Tooltip>
         <button
-          className="flex gap-1 md:gap-2 items-center border border-neutral-800 hover:bg-neutral-100 rounded-md px-2 md:px-4 py-1 md:py-2"
+          disabled={!worklogSummary.length}
+          className="disabled:cursor-not-allowed flex gap-1 md:gap-2 items-center border border-neutral-800 hover:bg-neutral-100 rounded-md px-2 md:px-4 py-1 md:py-2"
           onClick={handleBreakdownBtnClick}
         >
           <span className="material-symbols-outlined">analytics</span>
           <span>Breakdown</span>
         </button>
         <button
+          disabled={!worklogSummary.length}
           onClick={handleAiSummaryBtnClick}
-          className="flex gap-1 md:gap-2 items-center border bg-neutral-900 text-white hover:bg-neutral-700 rounded-md px-2 md:px-4 py-2 md:py-2"
+          className="disabled:cursor-not-allowed flex gap-1 md:gap-2 items-center border bg-neutral-900 text-white hover:bg-neutral-700 rounded-md px-2 md:px-4 py-2 md:py-2"
         >
           <span className="text-[0.8rem] md:text-[1rem]">✨</span>
           <span>AI Summary</span>
