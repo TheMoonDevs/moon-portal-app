@@ -9,16 +9,16 @@ export async function GET(request: NextRequest) {
     const id = request.nextUrl.searchParams.get("id") as string;
     const house = request.nextUrl.searchParams.get("house") as string;
     const month = request.nextUrl.searchParams.get("month") as string;// YYYY-MM
-    const quarter = request.nextUrl.searchParams.get("quarter") as string;
-    const quarter_no = quarter ? parseInt(quarter) : 1;
+    // const quarter = request.nextUrl.searchParams.get("quarter") as string;
+    // const quarter_no = quarter ? parseInt(quarter) : 1;
 
-    let month_filter:any = month ? {month} : {}; 
-    if(quarter.length> 0 && month.length === 0) {
-      month_filter = {
-        lte: `${new Date().getFullYear()}-03`,
-        gte: `${new Date().getFullYear()}-01`
-      }
-    }
+    // let month_filter:any = month ? {month} : {}; 
+    // if(quarter.length> 0 && month.length === 0) {
+    //   month_filter = {
+    //     lte: `${new Date().getFullYear()}-03`,
+    //     gte: `${new Date().getFullYear()}-01`
+    //   }
+    // }
   
   try {
     //console.log("fetching user on server", id, userType, role);
