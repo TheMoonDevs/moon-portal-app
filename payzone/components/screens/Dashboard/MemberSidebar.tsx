@@ -85,10 +85,13 @@ export const MemberSidebar = () => {
       </Drawer>
 
       <div
-        className="text-white mb-4 text-lg tracking-widest cursor-pointer flex items-center gap-2 max-lg:hidden px-2"
+        className="border-t font-semibold text-[#959595] border-neutral-600 hover:text-neutral-300 py-4 text-md tracking-widest cursor-pointer flex items-center gap-2 max-lg:hidden px-4 pl-6"
         onClick={signOut}
       >
-        Logout <Image src="/icons/logout.svg" alt="" width={30} height={30} />
+        <span className="material-symbols-outlined rotate-180 !text-[18px] ">
+          logout
+        </span>
+        <span className="text-lg">Logout</span>
       </div>
     </section>
   );
