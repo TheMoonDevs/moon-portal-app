@@ -239,8 +239,11 @@ export const WorklogsPage = () => {
 
   //if (!user?.workData) return null;
   const tabs = [
-    { label: 'Tasks/Tips', content: <WorklogTips /> },
-    { label: 'Todos for later', content: <TodoTab userId={user?.id as string} /> },
+    { label: "Tasks/Tips", content: <WorklogTips /> },
+    {
+      label: "Todos for later",
+      content: <TodoTab userId={user?.id as string} />,
+    },
   ];
 
   return (
@@ -259,7 +262,9 @@ export const WorklogsPage = () => {
         <div className="flex flex-row items-center gap-2 sm:gap-3">
           <SummarizeButton userId={user?.id} />
           <Link
-            href={`${APP_ROUTES.userWorklogSummary}/${user?.id}?year=${thisYear}&month=${thisMonth}`}
+            href={`${APP_ROUTES.userWorklogSummary}/${
+              user?.id
+            }?year=${thisYear}&month=${dayjs().month(thisMonth).format("MM")}`}
           >
             <div className="cursor-pointer rounded-md py-1 px-2 sm:py-1 sm:px-3 flex items-center gap-1 sm:gap-2 whitespace-nowrap text-[0.7rem] sm:text-sm text-neutral-100 bg-neutral-800 hover:bg-neutral-700">
               <span className="icon_size material-symbols-outlined">
@@ -297,7 +302,7 @@ export const WorklogsPage = () => {
 
         <div className="flex flex-row-reverse max-lg:flex-col w-full">
           <div className="hidden md:block p-3 invisible md:visible w-[40%] max-lg:w-full max-h-[80vh] overflow-y-scroll">
-          <SimpleTabs tabs={tabs} />
+            <SimpleTabs tabs={tabs} />
           </div>
           <div className="hidden md:block p-2 invisible md:visible w-[50%] max-lg:w-full rounded-lg border border-neutral-200 m-3  max-h-[80vh] overflow-y-scroll">
             {/* {privateBoard && (

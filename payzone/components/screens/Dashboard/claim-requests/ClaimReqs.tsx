@@ -12,6 +12,7 @@ import {
 } from "@prisma/client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 export const ClaimReqs = () => {
   const [claims, setClaims] = useState<PayTransactions[]>([]);
@@ -36,7 +37,11 @@ export const ClaimReqs = () => {
       .then(() => {
         handleModalClose();
         setLoading(false);
-        alert("Payment marked as DONE");
+        // alert("Payment marked as DONE");
+        toast.error("Payment marked as DONE", {
+          position: "top-center",
+        });
+
         setClaims((prev) => prev.filter((claim) => claim.id !== id));
       })
       .catch((error) => {

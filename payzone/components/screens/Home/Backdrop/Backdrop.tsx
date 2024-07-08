@@ -4,7 +4,7 @@ import { Canvas, extend } from "@react-three/fiber";
 
 import { Effects, Stats } from "@react-three/drei";
 import { Stars } from "./Stars";
-import { Moon } from "./Moon";
+// import { Moon } from "./Moon";
 import { Color } from "three";
 import { UnrealBloomPass } from "three-stdlib";
 
@@ -35,7 +35,7 @@ export function Backdrop() {
             castShadow
             intensity={1.5}
           />
-          <Moon />
+          {/* <Moon /> */}
           <Stars />
           {/* <SkyBox /> */}
           {/* <UnrealBloomPass strength={0.18} radius={0.5} threshold={1} /> */}
