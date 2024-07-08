@@ -53,7 +53,7 @@ const InvoiceTable: React.FC = () => {
 
   return (
     <div className="mt-4 w-full overflow-visible">
-      <table className="w-full mb-8 table-auto">
+      <table className="w-full mb-8 table-auto group">
         <thead>
           <tr className="border-y border-black">
             <th className="text-left p-2"></th>
@@ -108,14 +108,6 @@ const InvoiceTable: React.FC = () => {
                           className="cursor-pointer hover:bg-red-200 rounded-lg"
                         />
                       </Tooltip>
-                      <Tooltip title="Add row" placement="bottom-end" arrow>
-                        <Plus
-                          onClick={addRow}
-                          size={18}
-                          color="gray"
-                          className="cursor-pointer hover:bg-blue-200 rounded-lg"
-                        />
-                      </Tooltip>
                     </div>
                   )}
                 </div>
@@ -159,6 +151,24 @@ const InvoiceTable: React.FC = () => {
               </td>
             </tr>
           ))}
+          <tr className="group-hover:visible cursor-pointer invisible">
+            <td colSpan={5}>
+              <Tooltip title="Add row" placement="bottom-start" arrow>
+                <div
+                  className="flex items-center justify-between"
+                  onClick={addRow}
+                >
+                  <div className="h-[1px] w-full bg-neutral-400"></div>
+                  <Plus
+                    size={18}
+                    color="gray"
+                    className=" w-10 cursor-pointer hover:bg-blue-200 rounded-lg "
+                  />
+                  <div className="h-[1px] w-full bg-neutral-400"></div>
+                </div>
+              </Tooltip>
+            </td>
+          </tr>
           <tr>
             <td colSpan={4} className="p-2 text-right font-semibold">
               Subtotal

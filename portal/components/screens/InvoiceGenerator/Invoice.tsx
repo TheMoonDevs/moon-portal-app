@@ -66,7 +66,7 @@ const Invoice: React.FC<InvoiceProps> = ({ pdfTargetRef, invoiceData }) => {
           <InvoiceTable />
         </div>
 
-        <p className="text-sm mb-4 text-neutral-500">
+        <p className="text-sm mb-4 mt-4 md:mt-0 text-neutral-500">
           Please finish the payment by the due date:{" "}
           {invoiceData.dueDate ? formatDate(invoiceData.dueDate) : ""}
         </p>
@@ -75,7 +75,7 @@ const Invoice: React.FC<InvoiceProps> = ({ pdfTargetRef, invoiceData }) => {
         <div className="flex flex-col sm:flex-row mt-24">
           <div className="md:w-1/2 md:pr-8">
             <h2 className="text-sm font-bold mb-2">PAYMENT INFORMATION</h2>
-            <p className="text-sm">
+            <p className="text-sm break-words">
               Crypto Wallet Address: <br />
               <span className="whitespace-normal flex-wrap">
                 {invoiceData.cryptoAddress}

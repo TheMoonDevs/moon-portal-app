@@ -56,6 +56,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
             *Invoice Id
           </span>
           <TextField
+            required
             type="text"
             id="invoice-id"
             size="small"
