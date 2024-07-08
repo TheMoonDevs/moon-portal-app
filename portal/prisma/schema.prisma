@@ -309,7 +309,7 @@ model Notification {
   updatedAt         DateTime          @updatedAt
   title             String
   description       String
-  matchId           String?           @db.ObjectId
+  matchId           String?           
   matchType         String?
   notificationType  NotificationType
   notificationData  Json?
@@ -319,7 +319,8 @@ enum NotificationType {
   ADMIN
   SELF_GENERATED
   USER_TO_USER
- }
+}
+
 //-------------------------------------Missions-------------------------------------------
 
 model Mission {
