@@ -21,6 +21,11 @@ const NAVIGATION_OPTIONS = [
     icon: "task_alt",
   },
   {
+    name: "Houses",
+    path: APP_ROUTES.houses,
+    icon: "category",
+  },
+  {
     name: "Teams",
     path: APP_ROUTES.teams,
     icon: "workspaces",

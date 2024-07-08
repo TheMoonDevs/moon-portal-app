@@ -20,6 +20,7 @@ model User {
   userType       USERTYPE?     @default(MEMBER)
   role           USERROLE?     @default(CORETEAM)
   vertical       USERVERTICAL? @default(DEV)
+  house          HOUSEID?      @default(PRODUCT_TECH)
   status         USERSTATUS?   @default(ACTIVE)
   industry       USERINDUSTRY?
   isAdmin        Boolean       @default(false)
