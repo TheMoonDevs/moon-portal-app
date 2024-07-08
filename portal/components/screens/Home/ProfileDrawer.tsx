@@ -3,7 +3,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Drawer, Box, Typography } from "@mui/material";
-import { Pencil, CameraIcon, MessageCircle } from "lucide-react";
 import { closeSlideIn } from "@/utils/redux/userProfileDrawer/userProfileDrawer.slice";
 import { RootState } from "@/utils/redux/store";
 import { useUser } from "@/utils/hooks/useUser";
@@ -18,9 +17,10 @@ import {
 import { FileWithPath } from "@mantine/dropzone";
 import { WorklogSummaryView } from "../Worklogs/WorklogSummary/WorklogSummaryView";
 import { PortalSdk } from "@/utils/services/PortalSdk";
-import dayjs from "dayjs";
 import useAsyncState from "@/utils/hooks/useAsyncState";
 import { LoadingSkeleton } from "@/components/elements/LoadingSkeleton";
+import Image from "next/image";
+import { APP_ROUTES } from "@/utils/constants/appInfo";
 
 interface LoggedInUser {
   user: User;
@@ -47,40 +47,30 @@ export const UserProfileDrawer: React.FC = () => {
   const payData = JSON.stringify(loggedinUser.user.payData) as PayData;
 
   const [worklogSummary, setWorklogSummary] = useState<WorkLogs[]>([]);
-  const year = dayjs().year();
-  let month = dayjs().month(dayjs().month()).format("MM");
-
   const { loading, setLoading } = useAsyncState();
 
   const handleClose = () => {
     dispatch(closeSlideIn());
   };
 
-  const fetchWorklogData = useCallback(
-    async (query: {
-      year: string | number | undefined | null;
-      month?: string | number | undefined | null;
-    }) => {
-      setLoading(true);
-      try {
-        const response = await PortalSdk.getData(
-          `/api/user/worklogs/summary?userId=${selectedUser?.id}&year=${query.year}&month=${query.month}`,
-          null
-        );
-        setWorklogSummary(response.data.workLogs);
-        setLoading(false);
-      } catch (error) {
-        console.error(error);
-        setLoading(false);
-      }
-    },
-    [setLoading, selectedUser?.id]
-  );
+  const fetchWorklogData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await PortalSdk.getData(
+        `/api/user/worklogs/summary?userId=${selectedUser?.id}`,
+        null
+      );
+      setWorklogSummary(response.data.workLogs);
+      setLoading(false);
+    } catch (error) {
+      console.error(error);
+      setLoading(false);
+    }
+  }, [setLoading, selectedUser?.id]);
 
   useEffect(() => {
-    fetchWorklogData({ year, month });
-    // console.log(worklogSummary.map((wl) => wl.works));
-  }, [fetchWorklogData, month, year]);
+    fetchWorklogData();
+  }, [fetchWorklogData]);
 
   if (!selectedUser) return null;
 
@@ -176,12 +166,18 @@ export const UserProfileDrawer: React.FC = () => {
       >
         <div className="h-[100px]  relative">
           <img
-            src={selectedUser?.banner|| "/images/GradientBg.jpg"}
+            src={selectedUser?.banner || "/images/gradientBanner.jpg"}
             className="abolsute w-full h-full object-cover"
             alt="Profile Banner"
           />
           {loggedinUser.user.id === selectedUser.id && (
-            <CameraIcon className="absolute top-2 right-2 bg-white rounded-full p-[2px]" />
+            <Image
+              src="/icons/photoCamera.svg"
+              width={25}
+              height={25}
+              alt="Camera Icon"
+              className="absolute top-2 right-2 bg-white rounded-full p-[2px]"
+            />
           )}
           <div className="rounded-full absolute -bottom-[3.25rem] left-5 border-4 w-24 h-24 border-white ">
             <img
@@ -191,7 +187,13 @@ export const UserProfileDrawer: React.FC = () => {
             />
             {loggedinUser.user.id === selectedUser.id && (
               <label className="absolute top-2 -right-2 bg-white rounded-full p-[2px]">
-                <CameraIcon />
+                <Image
+                  src="/icons/photoCamera.svg"
+                  width={25}
+                  height={25}
+                  alt="Camera Icon"
+                  className=" bg-white rounded-full p-[2px]"
+                />
                 <input
                   type="file"
                   accept="image/jpeg,image/png"
@@ -202,16 +204,17 @@ export const UserProfileDrawer: React.FC = () => {
             )}
           </div>
         </div>
-        <div className="flex flex-col px-5 gap-2 pb-3">
+        <div className="flex flex-col px-5  pb-2">
           <div className="flex pt-16 justify-between items-center">
-            <Typography variant="h6">{selectedUser.name}</Typography>
+            <h3 className="font-bold text-2xl">{selectedUser.name}</h3>
             <Typography variant="body2">{selectedUser.timezone}</Typography>
+            
           </div>
-          <Typography variant="body2">
+          <p className="text-sm pt-1 pb-2">
             @{selectedUser.username + selectedUser.password}
-          </Typography>
-          <div className="flex gap-3 text-black font-bold text-xs">
-            <div className="rounded-lg border-2 border-gray-300  px-1 py-1  uppercase">
+          </p>
+          <div className="flex gap-3 text-black font-bold text-xs py-1">
+            <div className="rounded-lg border-2 border-gray-300  px-1 py-1 ">
               {translateUserVertical(selectedUser.vertical || "")}
             </div>
             <div className="rounded-lg border-2 border-gray-300 px-1 py-1 ">
@@ -224,42 +227,43 @@ export const UserProfileDrawer: React.FC = () => {
           <div className="flex gap-4 py-2">
             <button
               onClick={openSlackConversation}
-              className="bg-black text-white px-3 py-2 rounded-xl flex gap-2"
+              className="bg-black text-white px-2 py-2 rounded-xl flex gap-2 items-center"
             >
-              <MessageCircle />
+              <Image src="/icons/message.svg" width={20} height={20} alt="Slack" />
               Message
             </button>
             {loggedinUser.user.id === selectedUser.id && (
-              <button className="px-3 py-2  text-black border border-gray-300 rounded-xl flex gap-2">
-                <Pencil /> Edit Profile
+              <button className=" px-2 py-2  text-black border border-gray-300 rounded-xl flex gap-2">
+                <Image src={"/icons/edit.svg"} width={20} height={20} alt="Edit"/>
+                Edit Profile
               </button>
             )}
           </div>
-          <Typography>
-            {
-              selectedUser.description ||
-                "This is the Seleted user's description or bio that will be displayed here and every user will have a unique bio or description that will show off their personality and their work."
-            }
-          </Typography>
+          <p className="text-sm py-2">
+            {selectedUser.description ||
+              "This is the Seleted user's description or bio that will be displayed here and every user will have a unique bio or description that will show off their personality and their work."}
+          </p>
           {!loading ? (
-           <div className="flex gap-3 flex-col">
-           <Typography variant="h6">Worklogs</Typography>
-           <div className="border-2 border-gray-300 rounded-xl max-h-[300px] relative p-3">
-             <WorklogSummaryView worklogSummary={worklogSummary.slice(0, 5)} />
-             <Link
-               href={`http://localhost:3000/user/worklogs/summary/${selectedUser.id}?year=${year}&month=${month}`}
-               className="absolute bottom-2 right-2 bg-white rounded-xl border-gray-300 border-2 p-2"
-             >
-               View Full Summary
-             </Link>
-           </div>
-         </div>
+            <div className="flex gap-1 flex-col">
+             <h6 className="font-bold">Worklogs</h6>
+              <div className="border-2 border-gray-300 rounded-xl h-[310px] relative p-3 overflow-y-hidden">
+                <WorklogSummaryView
+                  worklogSummary={worklogSummary.slice(0, 5)}
+                />
+                <Link
+                  href={`${APP_ROUTES.userWorklogSummary}/${selectedUser.id}`}
+                  className="absolute bottom-2 right-2 bg-white rounded-xl border-gray-300 border-2 p-1 text-sm"
+                >
+                  View Full Summary
+                </Link>
+              </div>
+            </div>
           ) : (
             <LoadingSkeleton />
           )}
-          
+
           <div className="pt-3">
-            <Typography variant="h6">Engagements</Typography>
+          <h6 className="font-bold">Engagements</h6>
             <ul className="flex flex-col gap-3 pt-2">
               <li className="flex items-center gap-3">
                 <div className="w-12 h-12 border-gray-300 border-2 rounded-xl flex font-bold items-center justify-center">
@@ -282,8 +286,8 @@ export const UserProfileDrawer: React.FC = () => {
             </ul>
           </div>
           <div className="pt-3">
-            <Typography variant="h6">Mission/Tasks</Typography>
-            <ul className="flex flex-col gap-2 p-3 border-2 mt-2 border-gray-300 rounded-xl list-none">
+          <h6 className="font-bold">Missions/Task</h6>
+            <ul className="flex flex-col gap-1 p-3 border-2 mt-1 border-gray-300 rounded-xl list-none">
               <li className="flex items-center pl-5 relative before:content-['•'] before:absolute before:left-0 before:text-gray-500">
                 Task 1 or mission 1
               </li>
@@ -296,8 +300,8 @@ export const UserProfileDrawer: React.FC = () => {
             </ul>
           </div>
           {loggedinUser.user.id === selectedUser.id && (
-            <div className="flex flex-col gap-2 ">
-              <Typography variant="h6">Payment Details</Typography>
+            <div className="flex flex-col gap-1 pt-3">
+              <h6 className="font-bold">Payment Details</h6>
               <div className="flex flex-col gap-2 border-2 border-gray-300 rounded-xl p-3">
                 <Typography
                   variant="body2"
