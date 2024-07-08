@@ -3,7 +3,6 @@ import Image from "next/image";
 import Link from "next/link";
 import generatePDF from "react-to-pdf";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
-import { Edit, X } from "lucide-react";
 
 interface InvoiceHeaderProps {
   pdfTargetRef: React.MutableRefObject<HTMLElement>;
@@ -73,14 +72,18 @@ const InvoiceHeader: React.FC<InvoiceHeaderProps> = ({
         <div className="block md:hidden">
           <div
             className={
-              "p-1 rounded-full cursor-pointer transition-all duration-300 ease-in-out"
+              " flex items-center p-1 rounded-full cursor-pointer transition-all duration-300 ease-in-out"
             }
             onClick={toggleInput}
           >
             {showInput ? (
-              <X className="text-red-500 text-xs" />
+              <span className="material-symbols-outlined !text-[1.2rem]">
+                close
+              </span>
             ) : (
-              <Edit className="text-gray-800 text-xs" />
+              <span className="material-symbols-outlined !text-[1.2rem]">
+                edit
+              </span>
             )}
           </div>
         </div>

@@ -92,7 +92,7 @@ const InvoicePage = () => {
       </header>
       <main className="flex flex-col md:flex-row h-full overflow-hidden">
         <div className="flex flex-col md:flex-row w-full h-full">
-          <div className="block md:hidden bg-[#F5F5EF] h-full">
+          <div className="block md:hidden bg-[#F5F5EF] h-auto">
             {showInput && (
               <div className="overflow-y-auto h-full">
                 <InvoiceModal
