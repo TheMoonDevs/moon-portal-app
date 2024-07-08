@@ -1,8 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, CircularProgress, TextField } from "@mui/material";
-import Tooltip from "@mui/material/Tooltip";
-
 import useAsyncState from "@/utils/hooks/useAsyncState";
 import useCopyToClipboard from "@/utils/hooks/useCopyToClipboard";
 import { generateSlug } from "@/utils/helpers/functions";
@@ -13,19 +11,15 @@ export const ShortUrlCard = () => {
   const [newLinkButtonClicked, setNewLinkButtonClicked] = useState(false);
   const [formData, setFormData] = useState({ slug: "", url: "" });
   const textRef = useRef<HTMLSpanElement | null>(null);
-
   const dispatch = useAppDispatch();
-
   const { loading, error, success, setLoading, setSuccess, setError } =
     useAsyncState();
   const { copyToClipboard, copied } = useCopyToClipboard();
-
   const handleCopy = () => {
     if (textRef.current) {
       copyToClipboard(textRef.current.innerText);
     }
   };
-
   const processSearchParams = useCallback(
     (
       url: string
@@ -42,19 +36,16 @@ export const ShortUrlCard = () => {
         url_fieldname?: string;
         url_value?: string;
       }[] = [];
-
       if (searchParams.size !== 0) {
         let firstElement: { key: string; value: string } = {
           key: "",
           value: "",
         };
-
         searchParams.forEach((value, key) => {
           if (firstElement.key === "" && firstElement.value === "") {
             firstElement = { key, value };
           }
         });
-
         params.push({
           event_id: firstElement.key,
           url_fieldname: firstElement.key,
@@ -67,29 +58,23 @@ export const ShortUrlCard = () => {
     },
     []
   );
-
   const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     const { url, slug } = formData;
     const params = processSearchParams(url);
-
     try {
       if (!slug.match("^[-a-zA-Z0-9]+$")) {
         throw new Error(
           `Invalid slug! Only alphanumeric characters and hyphens are allowed. No spaces.`
         );
       }
-
       const response = await ShortUrlSdk.createShortUrl(
         "/api/short-url/create-link",
         { url, slug, params }
       );
-
       const link = JSON.parse(response);
-
       dispatch(addLink(link));
-
       setLoading(false);
       setSuccess(true);
     } catch (error: any) {
@@ -99,7 +84,6 @@ export const ShortUrlCard = () => {
       console.error(error);
     }
   };
-
   if (success && !newLinkButtonClicked) {
     return (
       <div className="flex flex-col gap-4 justify-center items-center">
@@ -145,7 +129,6 @@ export const ShortUrlCard = () => {
       </div>
     );
   }
-
   return (
     <div className="w-full max-w-md p-6 bg-white rounded-md shadow-md ">
       <h2 className="text-2xl font-bold text-center text-gray-800  mb-4">
@@ -157,12 +140,39 @@ export const ShortUrlCard = () => {
         </div>
       ) : null}
       <form className="grid gap-6 mt-5" onSubmit={handleFormSubmit}>
-        <div className="flex items-stretch space-x-2">
+        <div className="flex items-stretch space-x-2  ">
+          {/* <TextField
+            inputProps={{
+              pattern: "^[-a-zA-Z0-9]+$",
+              sx: { padding: "10px " }, // Adjust the padding as needed
+            }}
+            className="flex-1 h-full "
+            name="slug placeholder:pb-2 "
+            value={formData.slug}
+            id="slug"
+            placeholder="5g3th9"
+            type="text"
+            label="Slug"
+            onChange={(e) => {
+              if (error.isError) setError({ isError: false, description: "" });
+              setFormData({ ...formData, slug: e.target.value });
+            }}
+            required
+          /> */}
           <TextField
             inputProps={{
               pattern: "^[-a-zA-Z0-9]+$",
+              sx: { padding: "10px" }, // Adjust the padding as needed
             }}
-            className="flex-1"
+            InputLabelProps={{
+              sx: {
+                transform: "translate(10px, 12px) scale(1)", // Adjust this as needed
+                "&.MuiInputLabel-shrink": {
+                  transform: "translate(13.5px, -5.5px) scale(0.75)", // Adjust this as needed
+                },
+              },
+            }}
+            className="flex-1 h-full"
             name="slug"
             value={formData.slug}
             id="slug"
@@ -175,22 +185,31 @@ export const ShortUrlCard = () => {
             }}
             required
           />
-          <Tooltip title="Generate a random slug for you link">
-            <Button
-              variant="contained"
-              className="!bg-stone-800 !text-white"
-              type="button"
-              onClick={() => {
-                const randomSlug: string = generateSlug(5);
-                setFormData({ ...formData, slug: randomSlug });
-              }}
-            >
-              Generate
-            </Button>
-          </Tooltip>
+          <Button
+            variant="contained"
+            className="!bg-stone-800 !text-white"
+            type="button"
+            onClick={() => {
+              const randomSlug: string = generateSlug(5);
+              setFormData({ ...formData, slug: randomSlug });
+            }}
+          >
+            Generate
+          </Button>
         </div>
         <div className="space-y-2">
           <TextField
+            inputProps={{
+              sx: { padding: "10px" }, // Adjust the padding as needed
+            }}
+            InputLabelProps={{
+              sx: {
+                transform: "translate(10px, 12px) scale(1)", // Adjust this as needed
+                "&.MuiInputLabel-shrink": {
+                  transform: "translate(13.5px, -5.5px) scale(0.75)", // Adjust this as needed
+                },
+              },
+            }}
             id="url"
             name="url"
             placeholder="https://themoondevs.com?strategy=lin-gtm&campaign_id=lin-gtm-1&linkedin-referrer=subhakar"
