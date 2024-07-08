@@ -302,7 +302,7 @@ export const UserProfileDrawer: React.FC = () => {
                   <p className="text-sm font-bold text-gray-700">
                     UPI ID:{" "}
                     <span className="text-gray-900">
-                      {payData.upiId || "No UPI Available"}
+                      {payData?.upiId || "No UPI Available"}
                     </span>
                   </p>
                 </div>
@@ -325,8 +325,8 @@ export const UserProfileDrawer: React.FC = () => {
                   <p className="text-sm font-bold text-gray-700">
                     Pay Out:{" "}
                     <span className="text-gray-900">
-                      {payData.stipendAmount || "Not Available"}{" "}
-                      {payData.stipendCurrency || ""}
+                      {payData?.stipendAmount || "Not Available"}{" "}
+                      {payData?.stipendCurrency || ""}
                     </span>
                   </p>
                 </div>
