@@ -109,12 +109,10 @@ export const WorklogEditor = ({
       setSaving(true);
       //let _worklog: WorkLogs | null = workLog ? { ...workLog } : null;
       PortalSdk.putData(`/api/user/worklogs`, {
-        data: {
-          ...workLog,
-          userId: user?.id,
-          works: markdownDatas,
-          updatedAt: new Date(),
-        },
+        ...workLog,
+        userId: user?.id,
+        works: markdownDatas,
+        updatedAt: new Date(),
       })
         .then((data) => {
           setSaving(false);
