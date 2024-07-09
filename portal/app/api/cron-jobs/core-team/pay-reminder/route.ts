@@ -1,43 +1,54 @@
+export const dynamic = "force-dynamic"; // static by default, unless reading the request
 import { prisma } from "@/prisma/prisma";
-import { SlackBotSdk } from '@/utils/services/slackBotSdk';
-import { JsonObject } from '@prisma/client/runtime/library';
+import {
+  SlackBotSdk,
+  SlackChannels,
+  SlackUsers,
+} from "@/utils/services/slackBotSdk";
+import { JsonObject } from "@prisma/client/runtime/library";
 import { NextResponse, NextRequest } from "next/server";
 
-function calculateCompletedMonths(joiningDate: string) {
+function getUserDuration(joiningDate: string): string | null {
   const joinDate = new Date(joiningDate);
   const currentDate = new Date();
 
-  const yearsDifference = currentDate.getFullYear() - joinDate.getFullYear();
-  const monthsDifference = currentDate.getMonth() - joinDate.getMonth();
-  const totalMonths = yearsDifference * 12 + monthsDifference;
+  let yearsDifference = currentDate.getFullYear() - joinDate.getFullYear();
+  let monthsDifference = currentDate.getMonth() - joinDate.getMonth();
 
   if (currentDate.getDate() < joinDate.getDate()) {
-    return totalMonths - 1;
+    monthsDifference--;
+  }
+  if (monthsDifference < 0) {
+    yearsDifference--;
+    monthsDifference += 12;
   }
 
-  return totalMonths;
+  const yearText = yearsDifference === 1 ? "year" : "years";
+  const monthText = monthsDifference === 1 ? "month" : "months";
+
+  const durationText = `${
+    yearsDifference > 0 ? `${yearsDifference} ${yearText} ` : ""
+  }${monthsDifference > 0 ? `${monthsDifference} ${monthText}` : ""}`.trim();
+
+  return durationText || "[error in calculating duration]";
 }
 
-function isLastDayOfMonth(date: Date): boolean {
-  const nextDay = new Date(date);
-  nextDay.setDate(date.getDate() + 1);
-  return nextDay.getDate() === 1;
-}
+const slackBot = new SlackBotSdk();
 
 export async function GET(request: NextRequest) {
   try {
     const users = await prisma.user.findMany({
       where: {
+        userType: "MEMBER",
         role: "CORETEAM",
         status: "ACTIVE",
       },
     });
 
-    const subhakarSlackId = 'U01H8NTAZD3';
     const today = new Date();
     const todayDate = today.getDate();
 
-    const filteredUsers = users.filter(user => {
+    const filteredUsers = users.filter((user) => {
       const joiningDate = (user.workData as JsonObject)?.joining;
       if (!joiningDate) return false;
 
@@ -46,57 +57,93 @@ export async function GET(request: NextRequest) {
         return true;
       }
 
-      if (isLastDayOfMonth(today) && joinDate.getDate() > todayDate) {
+      if (todayDate === 1 && new Date(today.getFullYear(), today.getMonth(), 0).getDate() < joinDate.getDate()) {
         return true;
       }
 
       return false;
     });
 
-    const usersWithMonths = filteredUsers.map(user => {
-      const { workData, id, name, slackId, payData } = user;
+    for (const user of filteredUsers) {
+      const { workData, name, slackId, payData } = user;
       const joiningDate = (workData as JsonObject)?.joining;
-      const completedMonths = calculateCompletedMonths(joiningDate as string);
+      const userDuration = getUserDuration(joiningDate as string);
+      const upiId = ((payData as JsonObject)?.upiId as string) || "";
 
-      return {
-        id,
-        name,
-        completedMonths,
-        slackId,
-        upiId: (payData as JsonObject)?.upiId as string || ''
-      };
-    });
+      const upiText = upiId
+        ? ` It's time to pay them through UPI - ${upiId}`
+        : " It's time to pay them.";
 
-    const msgBlock = usersWithMonths.map(user => {
-      const upiText = user.upiId ? ` It's time to pay them through UPI - ${user.upiId}` : " It's time to pay them.";
-      return {
-        type: "section",
-        text: {
-          type: "mrkdwn",
-          text: `Hey <@${subhakarSlackId}>! ${user.slackId ? `<@${user.slackId}>` : user.name
-            } has just completed ${user.completedMonths} months with us.${upiText}`,
+      const msgBlock = [
+        {
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: `Hey <@${SlackUsers.subhakar}>! ${
+              slackId ? `<@${slackId}>` : name
+            } has just completed ${userDuration} with us.${upiText}`,
+          },
         },
-      };
-    });
+        {
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: "Please confirm if the payment is done.",
+          },
+        },
+        {
+          type: "actions",
+          block_id: "confirm-payment",
+          elements: [
+            {
+              type: "button",
+              action_id: "confirm",
+              text: {
+                type: "plain_text",
+                text: "Yes",
+                emoji: true,
+              },
+              style: "primary",
+              value: JSON.stringify({
+                slackId: slackId,
+                userDuration: userDuration,
+              }),
+            },
+            {
+              type: "button",
+              action_id: "deny",
+              style: "danger",
+              text: {
+                type: "plain_text",
+                text: "No",
+                emoji: true,
+              },
+              value: "no",
+            },
+          ],
+        },
+      ];
 
-    const slackBot = new SlackBotSdk();
-
-    await slackBot.sendSlackMessageviaAPI({
-      blocks: msgBlock,
-      channel: "C07AQ8F3LH2", // change this with subhakar id
-    });
+      await slackBot.sendSlackMessageviaAPI({
+        blocks: msgBlock,
+        channel: SlackChannels.y_pay_reminders,
+      });
+    }
 
     const jsonResponse = {
       status: "success",
-      message: 'Reminder sent to Subhakar!',
+      message: "Reminders Sent!",
     };
 
     return NextResponse.json(jsonResponse);
   } catch (error) {
     console.error("Error fetching CORETEAM users:", error);
-    return new NextResponse(JSON.stringify({ status: "error", message: 'Internal Server Error' }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return new NextResponse(
+      JSON.stringify({ status: "error", message: "Internal Server Error" }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   }
 }
