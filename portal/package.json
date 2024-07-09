@@ -43,6 +43,7 @@
     "emoji-picker-react": "^4.10.0",
     "firebase": "^10.6.0",
     "input-otp": "^1.2.4",
+    "jsdom": "^24.1.0",
     "lodash": "^4.17.21",
     "lucide-react": "^0.383.0",
     "mongoose": "^8.0.1",
@@ -60,12 +61,14 @@
     "react-table": "^7.8.0",
     "react-timezone-select": "^2.1.2",
     "react-to-pdf": "^1.0.1",
+    "rss-parser": "^3.13.0",
     "slick-carousel": "^1.8.1",
     "sonner": "^1.4.41",
     "swr": "^2.2.5",
     "tailwind-merge": "^2.3.0"
   },
   "devDependencies": {
+    "@types/jsdom": "^21.1.7",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
