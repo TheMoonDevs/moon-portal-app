@@ -22,7 +22,7 @@ const OnboardingStep: React.FC<IOnboardingStepProps> = ({
   step,
 }) => {
   return (
-    <div className='flex flex-col items-center justify-between h-[calc(100vh-10vh)] p-6 py-7 w-[95%] md:w-[350px] lg:w-1/4 bg-neutral-800 shadow-md rounded-lg text-center'>
+    <div className='flex flex-col items-center justify-between h-[calc(100vh-10vh)] p-6 py-7 w-[95%] md:w-[350px] lg:w-1/4 bg-neutral-800 shadow-md rounded-lg text-center max-sm:w-full max-sm:h-full max-sm:justify-center max-sm:gap-8'>
       {image && (
         <div className='relative w-44 h-44 rounded-full border-2 border-orange-500 flex items-center justify-center mb-6'>
           <Image

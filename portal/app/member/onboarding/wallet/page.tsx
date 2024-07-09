@@ -50,7 +50,7 @@ const CreateWalletPage = () => {
 
   return (
     <PageAccess isAuthRequired={true}>
-      <div className='py-2 bg-neutral-900 h-screen flex items-center justify-center'>
+      <div className=' bg-neutral-900 h-screen flex items-center justify-center'>
         {step === 1 && <Step1 onNext={() => handleNextStep()} step={step} />}
         {step === 2 && <Step2 onNext={() => handleNextStep()} step={step} />}
         {step === 3 && (
