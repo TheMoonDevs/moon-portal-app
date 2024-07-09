@@ -1,7 +1,7 @@
 import { prisma } from "@/prisma/prisma";
 import GoogleSheetsAPI from "@/utils/services/googleSheetSdk";
 import { SlackBotSdk } from "@/utils/services/slackBotSdk";
-import { USERROLE, USERSTATUS, USERTYPE } from "@prisma/client";
+import { HOUSEID, USERROLE, USERSTATUS, USERTYPE } from "@prisma/client";
 import { JsonObject } from "@prisma/client/runtime/library";
 import { NextResponse, NextRequest } from "next/server";
 
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
   const id = request.nextUrl.searchParams.get("id") as string;
   const userType = request.nextUrl.searchParams.get("userType") as USERTYPE;
   const role = request.nextUrl.searchParams.get("role") as USERROLE;
-  const house = request.nextUrl.searchParams.get("house") as string;
+  const house = request.nextUrl.searchParams.get("house") as HOUSEID;
   const status = request.nextUrl.searchParams.get("status");
 
   let error_response: any;
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
         ...(userType && { userType }),
         ...(role && { role }),
         ...(house && { house }),
-        status: status ? status as USERSTATUS : USERSTATUS.ACTIVE,
+        status: status ? (status as USERSTATUS) : USERSTATUS.ACTIVE,
       },
     });
     const slackBotSdk = new SlackBotSdk();
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
               (slackUser: any) => slackUser?.profile?.email === userData?.email
             );
             // console.log(slackUser?.profile?.email, userData?.email);
-    
+
             if (slackUser) {
               const newThirdPartyData = {
                 ...(userData.thirdPartyData as JsonObject),
