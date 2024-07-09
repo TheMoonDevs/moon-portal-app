@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron-jobs/core-team/birthday-reminder",
+      "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/cron-jobs/core-team/pay-reminder",
+      "schedule": "0 12 * * *"
+    }
+  ]
+}
