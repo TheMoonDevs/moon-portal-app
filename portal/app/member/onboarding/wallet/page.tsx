@@ -5,7 +5,7 @@ import Step1 from '@/components/screens/Members/wallet-onboarding/Step1';
 import Step2 from '@/components/screens/Members/wallet-onboarding/Step2';
 import Step3 from '@/components/screens/Members/wallet-onboarding/Step3';
 import { useRouter } from 'next/navigation';
-import { APP_ROUTES } from '@/utils/constants/appInfo';
+import { APP_ROUTES, LOCAL_STORAGE } from '@/utils/constants/appInfo';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 import { useAppSelector } from '@/utils/redux/store';
 import { Snackbar, Alert } from '@mui/material';
@@ -43,7 +43,11 @@ const CreateWalletPage = () => {
               walletAddress: walletAddress,
             },
           });
-          console.log('API response:', response);
+          console.log('API response:', response.data.user);
+          localStorage.setItem(
+            LOCAL_STORAGE.user,
+            JSON.stringify(response?.data?.user)
+          );
 
           if (
             walletNotification &&
