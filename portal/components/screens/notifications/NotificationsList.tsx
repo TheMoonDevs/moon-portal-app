@@ -102,7 +102,7 @@ const NotificationsList = ({
                                 key={`${index}-${notification.id}-action`}
                                 className='text-sm text-white bg-gray-400 py-1 px-3 rounded cursor-not-allowed'
                               >
-                                {action.title}
+                                Done
                               </span>
                             ) : (
                               <Link
