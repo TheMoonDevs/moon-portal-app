@@ -83,6 +83,11 @@ const NotificationsList = ({
                         {timeAgo(notification.updatedAt.toString())}
                       </p>
                     </div>
+                    {notification?.notificationData?.actionDone && (
+                      <span className='material-symbols-outlined text-green-500'>
+                        done
+                      </span>
+                    )}
                   </div>
                   {expandedId === notification.id && (
                     <div className='mt-2 flex flex-col space-y-2'>
@@ -92,7 +97,14 @@ const NotificationsList = ({
                       <div className='flex flex-wrap gap-2'>
                         {notification.notificationData?.actions?.map(
                           (action: IAction, index: number) => {
-                            return (
+                            return notification.notificationData.actionDone ? (
+                              <span
+                                key={`${index}-${notification.id}-action`}
+                                className='text-sm text-white bg-gray-400 py-1 px-3 rounded cursor-not-allowed'
+                              >
+                                {action.title}
+                              </span>
+                            ) : (
                               <Link
                                 key={`${index}-${notification.id}-action`}
                                 className='text-sm text-white bg-blue-600 py-1 px-3 rounded hover:bg-blue-700 transition'
