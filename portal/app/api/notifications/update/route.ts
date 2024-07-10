@@ -3,14 +3,14 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function PUT(request: NextRequest) {
   try {
-    const data = await request.json();
-    const notificationId = data.id;
+    const { id, ...data } = await request.json();
 
-    const updatedNotification = await prisma.notification.update({
+    const updatedNotification = await prisma.notification.upsert({
       where: {
-        id: notificationId,
+        id,
       },
-      data,
+      create: { id, ...data },
+      update: data,
     });
 
     const json_response = {
