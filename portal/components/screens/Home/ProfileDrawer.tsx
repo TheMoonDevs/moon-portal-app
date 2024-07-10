@@ -242,6 +242,9 @@ export const UserProfileDrawer: React.FC = () => {
                   <WorklogSummaryView
                     worklogSummary={worklogSummary.slice(0, 5)}
                   />
+                  <div className="absolute bottom-0 left-0 right-0 h-[30vh] bg-gradient-to-b from-transparent to-white flex flex-col justify-end">
+                    <p className="font-semibold text-xs text-neutral-500 text-center p-2"></p>
+                  </div>
                 </div>
                 <Link
                   href={`${APP_ROUTES.userWorklogSummary}/${selectedUser?.id}`}
