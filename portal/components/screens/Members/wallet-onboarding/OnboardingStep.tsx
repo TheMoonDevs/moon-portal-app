@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import CircularProgress from '@mui/material/CircularProgress';
 
 interface IOnboardingStepProps {
@@ -21,6 +21,12 @@ const OnboardingStep: React.FC<IOnboardingStepProps> = ({
   children,
   step,
 }) => {
+  const [value, setValue] = useState(0);
+
+  useEffect(() => {
+    setValue(step * 33.33);
+  }, [step]);
+
   return (
     <div className='flex flex-col items-center justify-between h-[calc(100vh-10vh)] p-6 py-7 w-[95%] md:w-[350px] lg:w-1/4 bg-neutral-800 shadow-md rounded-lg text-center max-sm:w-full max-sm:h-full max-sm:justify-center max-sm:gap-8'>
       {image && (
@@ -38,13 +44,16 @@ const OnboardingStep: React.FC<IOnboardingStepProps> = ({
         <p className='text-sm text-gray-300 mb-4 px-2'>{subtitle}</p>
         <div>{children}</div>
       </div>
-      <div className='rounded-full border-4 border-gray-200 flex items-center justify-center mt-4'>
+      <div
+        className='circular-progress-button'
+        style={{ '--value': value } as React.CSSProperties}
+      >
         <button
           onClick={onNext}
-          className=' bg-orange-500 rounded-full m-1 hover:bg-orange-600 transition flex items-center justify-center h-16 w-16 text-lg font-bold'
+          className={`bg-orange-500 rounded-full m-2 hover:bg-orange-600 transition flex items-center  justify-center h-16 w-16 text-lg font-bold`}
         >
           {loading ? (
-            <CircularProgress size={24} color='inherit' />
+            <CircularProgress size={24} sx={{ color: '#fff' }} />
           ) : (
             <span
               className='material-symbols-outlined text-gray-900 font-bold'
