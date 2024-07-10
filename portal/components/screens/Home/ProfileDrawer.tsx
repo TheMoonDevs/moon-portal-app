@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Drawer, Box } from "@mui/material";
-import { closeSlideIn } from "@/utils/redux/userProfileDrawer/userProfileDrawer.slice";
+import { closeSlideIn, updateSelectedUser } from "@/utils/redux/userProfileDrawer/userProfileDrawer.slice";
 import { RootState } from "@/utils/redux/store";
 import { useUser } from "@/utils/hooks/useUser";
 import { User, WorkLogs } from "@prisma/client";
@@ -97,6 +97,16 @@ export const UserProfileDrawer: React.FC = () => {
     }
   };
 
+  
+  const handleBannerChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const fileList = event.target.files;
+    if (fileList && fileList.length > 0) {
+      const file = fileList[0];
+      dispatch(addFilesToPreview([file as FileWithPath]));
+      UploadBanner(file as FileWithPath);
+    }
+  };
+
   const truncateAddress = (
     address: string | undefined,
     visibleChars: number = 4
@@ -123,9 +133,19 @@ export const UserProfileDrawer: React.FC = () => {
 
       if (response.ok) {
         const data = await response.json();
-        dispatch(updateAvatarUrl(data.fileUrl));
+        const userResponse = await PortalSdk.putData("/api/user", {
+          ...loggedinUser.user, 
+          avatar: data.fileInfo[0].fileUrl,
+        })
+        console.log(userResponse);
+        
+        dispatch(updateSelectedUser({
+          ...selectedUser,
+          avatar: data.fileInfo[0].fileUrl,
+        }));
         setUploadedFiles([data.fileInfo]);
-        dispatch(resetPreview());
+
+
       } else {
         console.error("Failed to upload file:", response.statusText);
       }
@@ -133,6 +153,39 @@ export const UserProfileDrawer: React.FC = () => {
       console.error("Error uploading file:", error);
     }
   };
+
+  const UploadBanner = async (file: FileWithPath) => {
+    const formData = new FormData();
+    formData.append("file", file, file.path);
+    if (loggedinUser) {
+      formData.append("userId", loggedinUser.user.id);
+    }
+    formData.append("folderName", "userBanners");
+    try {
+      const response = await fetch("/api/upload/file-upload", {
+        method: "POST",
+        body: formData,
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const userResponse = await PortalSdk.putData("/api/user", {
+          ...loggedinUser.user, 
+          banner: data.fileInfo[0].fileUrl,
+        })
+        dispatch(updateSelectedUser({
+          ...selectedUser,
+          banner: data.fileInfo[0].fileUrl,
+        }));
+        setUploadedFiles([data.fileInfo]);
+      } else {
+        console.error("Failed to upload file:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error uploading file:", error);
+    }
+  };
+
 
   return (
     <Drawer anchor="right" open={isOpen} onClose={handleClose}>
@@ -152,12 +205,20 @@ export const UserProfileDrawer: React.FC = () => {
             alt="Profile Banner"
           />
           {loggedinUser.user.id === selectedUser?.id && (
-            <span
+            <label className="absolute top-2 -right-2 bg-white rounded-full flex items-center justify-center cursor-pointer">
+              <span
               className="material-symbols-outlined absolute top-2 right-2 bg-white rounded-full p-[6px] cursor-pointer"
               style={{ fontSize: "16px" }}
             >
               add_a_photo 
             </span>
+            <input
+                  type="file"
+                  accept="image/jpeg,image/png"
+                  onChange={handleBannerChange}
+                  className="hidden"
+                />
+            </label>
           )}
           <div className="rounded-full absolute -bottom-[3.25rem] left-5 border-4 w-24 h-24 border-white">
             <img

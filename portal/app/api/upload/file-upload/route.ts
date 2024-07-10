@@ -95,8 +95,9 @@ export async function POST(req: Request) {
     const DBresponse = await prisma.fileUpload.createMany({
       data: fileInfo,
     });
-    // console.log(DBresponse);
-    return NextResponse.json({ DBresponse });
+
+   
+    return NextResponse.json({ DBresponse,fileInfo });
   } catch (reason) {
     console.log(reason);
     return NextResponse.json({ message: "failure" }, { status: 500 });
