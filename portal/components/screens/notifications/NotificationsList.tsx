@@ -4,16 +4,16 @@ import React, { useState } from 'react';
 import formatDistanceToNow from 'date-fns/formatDistanceToNow';
 import Link from 'next/link';
 
-interface INotification extends Omit<Notification, 'notificationData'> {
+export interface INotification extends Omit<Notification, 'notificationData'> {
   notificationData: INotificationData;
 }
 
-interface INotificationData {
+export interface INotificationData {
   actions: IAction[];
   actionDone: boolean;
 }
 
-interface IAction {
+export interface IAction {
   title: string;
   trigger_type: string;
   trigger: string;
