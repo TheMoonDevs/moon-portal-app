@@ -10,6 +10,8 @@ import { PortalSdk } from '@/utils/services/PortalSdk';
 import { useAppSelector } from '@/utils/redux/store';
 import { Snackbar, Alert } from '@mui/material';
 import { JsonObject } from '@prisma/client/runtime/library';
+import { useNotifications } from '@/utils/hooks/useNotifications';
+import { INotification } from '@/components/screens/notifications/NotificationsList';
 
 const CreateWalletPage = () => {
   const [step, setStep] = useState(1);
@@ -18,6 +20,13 @@ const CreateWalletPage = () => {
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const user = useAppSelector((state) => state.auth.user);
   const router = useRouter();
+  const { notifications } = useNotifications();
+
+  const walletNotification = notifications.find(
+    (notification) =>
+      (notification as INotification).matchId ===
+      `${user?.id}_onboard_walletAddress`
+  ) as INotification | undefined;
 
   const handleNextStep = async (walletAddress?: string) => {
     if (step < 3) {
@@ -35,6 +44,20 @@ const CreateWalletPage = () => {
             },
           });
           console.log('API response:', response);
+
+          if (
+            walletNotification &&
+            !walletNotification.notificationData.actionDone
+          ) {
+            await PortalSdk.putData('/api/notifications/update', {
+              ...walletNotification,
+              notificationData: {
+                ...walletNotification.notificationData,
+                actionDone: true,
+              },
+            });
+          }
+
           setSnackbarMessage(
             'Wallet address successfully updated. Redirecting to homepage...'
           );
@@ -53,7 +76,7 @@ const CreateWalletPage = () => {
 
   return (
     <PageAccess isAuthRequired={true}>
-      <div className=' bg-neutral-900 h-screen flex items-center justify-center'>
+      <div className='bg-neutral-900 h-screen flex items-center justify-center'>
         {step === 1 && <Step1 onNext={() => handleNextStep()} step={step} />}
         {step === 2 && <Step2 onNext={() => handleNextStep()} step={step} />}
         {step === 3 && (
