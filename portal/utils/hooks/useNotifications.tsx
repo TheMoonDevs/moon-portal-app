@@ -77,7 +77,7 @@ export const useNotifications = () => {
         Boolean(payData?.walletAddress)
       ),
     {
-      refreshInterval: 10000,
+      refreshInterval: 3 * 60 * 1000,
     }
   );
 
