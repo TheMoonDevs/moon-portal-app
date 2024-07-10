@@ -10,14 +10,15 @@ import { useAppDispatch, useAppSelector } from '../redux/store';
 import { Notification } from '@prisma/client';
 import { JsonObject } from '@prisma/client/runtime/library';
 import { APP_BASE_URL } from '../constants/appInfo';
+import { INotification } from '@/components/screens/notifications/NotificationsList';
 
 const fetchNotifications = async (
   url: string,
   userId: string,
   hasWallet: boolean
-): Promise<Notification[]> => {
+): Promise<INotification[]> => {
   const response = await PortalSdk.getData(url, null);
-  const notifications = response.data.notifications;
+  let notifications = response.data.notifications;
 
   if (!hasWallet) {
     const existingWalletNotification = notifications.find(
@@ -25,7 +26,18 @@ const fetchNotifications = async (
         notification.matchId === `${userId}_onboard_walletAddress`
     );
 
-    if (!existingWalletNotification) {
+    if (
+      existingWalletNotification &&
+      !existingWalletNotification?.notificationData?.actionDone
+    ) {
+      await PortalSdk.putData('/api/notifications/update', {
+        ...existingWalletNotification,
+        updatedAt: new Date().toISOString(),
+      });
+
+      const updatedResponse = await PortalSdk.getData(url, null);
+      notifications = updatedResponse.data.notifications;
+    } else if (!existingWalletNotification) {
       const walletNotification = {
         userId,
         title: 'Wallet Address Required',
@@ -47,7 +59,7 @@ const fetchNotifications = async (
       await PortalSdk.postData('/api/notifications/add', walletNotification);
 
       const updatedResponse = await PortalSdk.getData(url, null);
-      return updatedResponse.data.notifications;
+      notifications = updatedResponse.data.notifications;
     }
   }
 
@@ -68,7 +80,7 @@ export const useNotifications = () => {
   const {
     data: fetchedNotifications,
     error,
-  }: SWRResponse<Notification[], Error> = useSWR(
+  }: SWRResponse<INotification[], Error> = useSWR(
     user ? `/api/notifications/get?userId=${user.id}` : null,
     (url) =>
       fetchNotifications(

@@ -55,6 +55,7 @@ const CreateWalletPage = () => {
           ) {
             await PortalSdk.putData('/api/notifications/update', {
               ...walletNotification,
+              description: 'Wallet address successfully updated.',
               notificationData: {
                 ...walletNotification.notificationData,
                 actionDone: true,
