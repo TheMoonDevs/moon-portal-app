@@ -9,6 +9,7 @@ import { APP_ROUTES } from '@/utils/constants/appInfo';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 import { useAppSelector } from '@/utils/redux/store';
 import { Snackbar, Alert } from '@mui/material';
+import { JsonObject } from '@prisma/client/runtime/library';
 
 const CreateWalletPage = () => {
   const [step, setStep] = useState(1);
@@ -25,9 +26,11 @@ const CreateWalletPage = () => {
       if (walletAddress) {
         setLoading(true);
         try {
+          const userPayData = user?.payData as JsonObject;
           const response = await PortalSdk.putData('/api/user', {
             ...user,
             payData: {
+              ...userPayData,
               walletAddress: walletAddress,
             },
           });

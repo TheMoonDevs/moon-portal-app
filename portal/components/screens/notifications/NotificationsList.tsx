@@ -10,6 +10,7 @@ interface INotification extends Omit<Notification, 'notificationData'> {
 
 interface INotificationData {
   actions: IAction[];
+  actionDone: boolean;
 }
 
 interface IAction {

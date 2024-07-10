@@ -40,6 +40,7 @@ const fetchNotifications = async (
               trigger: `${APP_BASE_URL}/member/onboarding/wallet`,
             },
           ],
+          actionDone: false,
         },
       };
 
@@ -74,7 +75,10 @@ export const useNotifications = () => {
         url,
         user?.id as string,
         Boolean(payData?.walletAddress)
-      )
+      ),
+    {
+      refreshInterval: 10000,
+    }
   );
 
   useEffect(() => {
