@@ -66,7 +66,7 @@ export const CoreTeamSection = () => {
           </div>
         ))}
       </div>
-      <UserProfileDrawer />
+      <UserProfileDrawer  />
     </section>
   );
 };

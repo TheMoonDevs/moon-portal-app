@@ -22,10 +22,13 @@ export const userProfileDrawerSlice = createSlice({
     closeSlideIn: (state) => {
       state.isDrawerOpen = false;
       state.selectedUser = null;
+    },
+    updateSelectedUser: (state, action: PayloadAction<User>) => {
+      state.selectedUser = action.payload;
     }
   },
 });
 
-export const { openSlideIn, closeSlideIn } = userProfileDrawerSlice.actions;
+export const { openSlideIn, closeSlideIn, updateSelectedUser } = userProfileDrawerSlice.actions;
 
 export default userProfileDrawerSlice.reducer;
