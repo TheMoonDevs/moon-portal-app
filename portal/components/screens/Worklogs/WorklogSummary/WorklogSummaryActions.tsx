@@ -11,6 +11,7 @@ import generatePDF, { Margin } from "react-to-pdf";
 import WorklogBreakdown from "./WorklogBreakdown";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
+import { CircleX } from "lucide-react";
 
 interface WorklogSummaryActionsProps {
   userData: User | null | undefined;
@@ -33,6 +34,7 @@ export const WorklogSummaryActions = ({
   const searchParams = useSearchParams();
   const month = searchParams?.get("month");
   const year = searchParams?.get("year");
+  const [isContentVisible, setIsContentVisible] = useState(false); 
 
   const isMonthly = !!month;
   const isYearly = !!year && !month;
@@ -48,6 +50,7 @@ export const WorklogSummaryActions = ({
       );
       setAiSummary(response);
       setView("AI Summary");
+      setIsContentVisible(true); // Show content on button click
     } catch (error) {
       console.error(error);
     } finally {
@@ -60,11 +63,16 @@ export const WorklogSummaryActions = ({
     setLoading(true);
     try {
       setView("Breakdown");
+      setIsContentVisible(true); // Show content on button click
     } catch (error) {
       console.error(error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const toggleContentVisibility = () => {
+    setIsContentVisible(!isContentVisible); // Toggle content visibility
   };
 
   const renderContent = () => {
@@ -90,10 +98,10 @@ export const WorklogSummaryActions = ({
       );
     }
 
-    if (view === "AI Summary" && aiSummary) {
+    if ((view === "AI Summary" || view === "Breakdown") && aiSummary) {
       return (
         <>
-          <div className="flex gap-4 items-center absolute  top-10 right-10 !text-neutral-500 z-50">
+          <div className="flex gap-4 items-center absolute top-10 right-10 !text-neutral-500 z-50">
             <Tooltip title="Download AI Summary">
               <span
                 className="material-symbols-outlined hover:cursor-pointer hover:!text-neutral-600"
@@ -117,7 +125,11 @@ export const WorklogSummaryActions = ({
               </span>
             </Tooltip>
           </div>
-          <div className="overflow-y-auto w-full">
+          <div
+            className={`overflow-y-auto w-full ${
+              isContentVisible ? "block" : "hidden"
+            }`}
+          >
             <div ref={aiSummaryPdfTargetRef} className="p-10 pt-14">
               <div className="w-full">
                 <MdxAppEditor
@@ -135,21 +147,42 @@ export const WorklogSummaryActions = ({
     }
 
     return (
-      <div className="overflow-y-scroll w-full h-screen pb-32 md:pb-8">
-        <WorklogBreakdown
-          worklogSummary={worklogSummary}
-          isMonthly={isMonthly}
-          isYearly={isYearly}
-        />
-      </div>
+      <>
+        <div
+          className={`overflow-y-scroll w-full h-screen pb-32 md:pb-8 ${
+            isContentVisible ? "block md:hidden" : "hidden md:block"
+          }`}
+        >
+          <WorklogBreakdown
+            worklogSummary={worklogSummary}
+            isMonthly={isMonthly}
+            isYearly={isYearly}
+          />
+        </div>
+      </>
     );
   };
 
   return (
-    <div className="flex flex-col mt-10 justify-between items-center w-full  md:w-[50%] md:border-t-2 relative">
+    <div className="flex flex-col mt-10 justify-between items-center w-full md:w-[50%] md:border-t-2 relative">
+      {isContentVisible && (
+        <>
+          <button
+            className="absolute top-4 left-4 md:hidden text-neutral-500"
+            onClick={toggleContentVisibility}
+          >
+            <CircleX />
+          </button>
+
+          <div className="h-screen w-full md:hidden">{renderContent()}</div>
+        </>
+      )}
+
+      {/* Render content conditionally */}
       <div className="hidden md:flex">{renderContent()}</div>
 
-      <div className="text-[0.7rem]  sm:text-[0.9rem] md:text-[0.7rem] lg:text-base flex flex-row gap-2 md:gap-4 items-center justify-center fixed  md:sticky bottom-0  py-4 md:py-6 bg-white w-full justify-self-end">
+      {/* Bottom buttons */}
+      <div className="text-[0.7rem] sm:text-[0.9rem] md:text-[0.7rem] lg:text-base flex flex-row gap-2 md:gap-4 items-center justify-center fixed md:sticky bottom-0 py-4 md:py-6 bg-white w-full justify-self-end">
         <Tooltip title="Download Worklog">
           <button
             disabled={!worklogSummary.length}
