@@ -142,7 +142,7 @@ export const WorklogSummaryActions = ({
     // Show Breakdown content if view is "Breakdown"
     if (view === "Breakdown") {
       return (
-        <div className="overflow-y-scroll w-full">
+        <div className="overflow-y-scroll w-full max-h-screen  ">
           <WorklogBreakdown
             worklogSummary={worklogSummary}
             isMonthly={isMonthly}
