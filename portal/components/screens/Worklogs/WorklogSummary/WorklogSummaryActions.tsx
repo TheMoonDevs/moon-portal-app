@@ -10,6 +10,7 @@ import { useRef, useState } from "react";
 import generatePDF, { Margin } from "react-to-pdf";
 import WorklogBreakdown from "./WorklogBreakdown";
 import { useSearchParams } from "next/navigation";
+import Image from "next/image";
 
 interface WorklogSummaryActionsProps {
   userData: User | null | undefined;
@@ -77,9 +78,8 @@ export const WorklogSummaryActions = ({
 
     if (worklogSummary.length === 0) {
       return (
-        <div className="flex w-full flex-col items-center justify-center max-h-[400px]">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+        <div className="flex w-full flex-col items-center justify-center h-screen md:h-[70vh] ">
+          <Image
             src="/images/empty_item.svg"
             alt="not-found"
             width={200}
@@ -93,7 +93,7 @@ export const WorklogSummaryActions = ({
     if (view === "AI Summary" && aiSummary) {
       return (
         <>
-          <div className="flex gap-4 items-center absolute top-10 right-10 !text-neutral-500 z-50">
+          <div className="flex gap-4 items-center absolute  top-10 right-10 !text-neutral-500 z-50">
             <Tooltip title="Download AI Summary">
               <span
                 className="material-symbols-outlined hover:cursor-pointer hover:!text-neutral-600"
@@ -146,10 +146,10 @@ export const WorklogSummaryActions = ({
   };
 
   return (
-    <div className="flex flex-col mt-10 justify-between items-center w-full md:w-[50%] border-t-2 relative">
-      <div></div>
-      {renderContent()}
-      <div className="text-[0.7rem] sm:text-[0.9rem] md:text-[0.7rem] lg:text-base flex flex-row gap-2 md:gap-4 items-center justify-center sticky bottom-0 py-4 md:py-6 bg-white w-full justify-self-end">
+    <div className="flex flex-col mt-10 justify-between items-center w-full  md:w-[50%] md:border-t-2 relative">
+      <div className="hidden md:flex">{renderContent()}</div>
+
+      <div className="text-[0.7rem]  sm:text-[0.9rem] md:text-[0.7rem] lg:text-base flex flex-row gap-2 md:gap-4 items-center justify-center fixed  md:sticky bottom-0  py-4 md:py-6 bg-white w-full justify-self-end">
         <Tooltip title="Download Worklog">
           <button
             disabled={!worklogSummary.length}
