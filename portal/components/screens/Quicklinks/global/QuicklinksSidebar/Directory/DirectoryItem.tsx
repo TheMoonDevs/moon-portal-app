@@ -225,6 +225,7 @@ export const DirectoryItem = ({
       >
         {directories
           .filter((subdirectory) => subdirectory.parentDirId === directory.id)
+          .sort((a, b) => a.position - b.position)
           .map((subdirectory) => {
             return (
               <li key={subdirectory.id}>
