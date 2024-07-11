@@ -51,7 +51,7 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
   const chartHeight = isSmallScreen ? 200 : 300;
   const barChartWidth = isSmallScreen ? 350 : 550;
   return (
-    <main className="flex flex-col justify-center gap-5 m-6 pb-20 md:pb-32">
+    <main className="flex flex-col justify-center gap-5 m-6 pb-20 ">
       <h1 className="font-semibold text-lg text-center md:text-xl font-sans justify-start mt-4">
         Worklog Breakdown
       </h1>
