@@ -28,13 +28,13 @@ export const WorklogSummaryActions = ({
 }: WorklogSummaryActionsProps) => {
   const [aiSummary, setAiSummary] = useState<string | null>(null);
   const { loading, setLoading } = useAsyncState();
-  const [view, setView] = useState<string | null>(null);
+  const [view, setView] = useState<"AI Summary" | "Breakdown" | null>(null);
   const { copyToClipboard } = useCopyToClipboard();
   const aiSummaryPdfTargetRef = useRef(null);
   const searchParams = useSearchParams();
   const month = searchParams?.get("month");
   const year = searchParams?.get("year");
-  const [isContentVisible, setIsContentVisible] = useState(false); 
+  const [isContentVisible, setIsContentVisible] = useState(false);
 
   const isMonthly = !!month;
   const isYearly = !!year && !month;
@@ -50,7 +50,7 @@ export const WorklogSummaryActions = ({
       );
       setAiSummary(response);
       setView("AI Summary");
-      setIsContentVisible(true); // Show content on button click
+      setIsContentVisible(true);
     } catch (error) {
       console.error(error);
     } finally {
@@ -58,21 +58,14 @@ export const WorklogSummaryActions = ({
     }
   };
 
-  const handleBreakdownBtnClick = async () => {
+  const handleBreakdownBtnClick = () => {
     if (worklogSummary.length === 0) return;
-    setLoading(true);
-    try {
-      setView("Breakdown");
-      setIsContentVisible(true); // Show content on button click
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
+    setView("Breakdown");
+    setIsContentVisible(true); // Show content on button click
   };
 
   const toggleContentVisibility = () => {
-    setIsContentVisible(!isContentVisible); // Toggle content visibility
+    setIsContentVisible(!isContentVisible);
   };
 
   const renderContent = () => {
@@ -86,7 +79,7 @@ export const WorklogSummaryActions = ({
 
     if (worklogSummary.length === 0) {
       return (
-        <div className="flex w-full flex-col items-center justify-center h-screen md:h-[70vh] ">
+        <div className="flex w-full flex-col items-center justify-center h-screen md:h-[70vh]">
           <Image
             src="/images/empty_item.svg"
             alt="not-found"
@@ -98,7 +91,7 @@ export const WorklogSummaryActions = ({
       );
     }
 
-    if ((view === "AI Summary" || view === "Breakdown") && aiSummary) {
+    if (view === "AI Summary" && aiSummary) {
       return (
         <>
           <div className="flex gap-4 items-center absolute top-10 right-10 !text-neutral-500 z-50">
@@ -146,20 +139,28 @@ export const WorklogSummaryActions = ({
       );
     }
 
-    return (
-      <>
-        <div
-          className={`overflow-y-scroll w-full h-screen pb-32 md:pb-8 ${
-            isContentVisible ? "block md:hidden" : "hidden md:block"
-          }`}
-        >
+    // Show Breakdown content if view is "Breakdown"
+    if (view === "Breakdown") {
+      return (
+        <div className="overflow-y-scroll w-full">
           <WorklogBreakdown
             worklogSummary={worklogSummary}
             isMonthly={isMonthly}
             isYearly={isYearly}
           />
         </div>
-      </>
+      );
+    }
+
+    // Default case when neither "AI Summary" nor "Breakdown" view is active
+    return (
+      <div className="overflow-y-scroll w-full h-screen pb-32 md:pb-8">
+        <WorklogBreakdown
+          worklogSummary={worklogSummary}
+          isMonthly={isMonthly}
+          isYearly={isYearly}
+        />
+      </div>
     );
   };
 
@@ -168,10 +169,10 @@ export const WorklogSummaryActions = ({
       {isContentVisible && (
         <>
           <button
-            className="absolute top-4 left-4 md:hidden text-neutral-500"
+            className="absolute -top-[28px] z-20 right-3 md:hidden"
             onClick={toggleContentVisibility}
           >
-            <CircleX />
+            <CircleX color="red" />
           </button>
 
           <div className="h-screen w-full md:hidden">{renderContent()}</div>
