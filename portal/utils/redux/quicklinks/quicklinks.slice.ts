@@ -194,6 +194,33 @@ export const shortUrlSlice = createSlice({
         localStorage.setItem("currentView", action.payload);
       state.currentView = action.payload;
     },
+    updateMultipleDirectories: (
+      state,
+      action: PayloadAction<{
+        directories: Directory[] | ParentDirectory[];
+        isParent: boolean;
+      }>
+    ) => {
+      const { directories, isParent } = action.payload;
+
+      directories.forEach((updatedDir) => {
+        if (isParent) {
+          const parentIndex = state.parentDirs.findIndex(
+            (dir) => dir.id === updatedDir.id
+          );
+          if (parentIndex !== -1) {
+            state.parentDirs[parentIndex] = updatedDir as ParentDirectory;
+          }
+        } else {
+          const dirIndex = state.directories.findIndex(
+            (dir) => dir.id === updatedDir.id
+          );
+          if (dirIndex !== -1) {
+            state.directories[dirIndex] = updatedDir as Directory;
+          }
+        }
+      });
+    },
   },
 });
 
@@ -218,6 +245,7 @@ export const {
   addNewQuicklink,
   setPopoverElementWithData,
   setCurrentView,
+  updateMultipleDirectories,
 } = shortUrlSlice.actions;
 
 export default shortUrlSlice.reducer;
