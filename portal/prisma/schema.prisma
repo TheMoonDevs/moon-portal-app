@@ -103,6 +103,9 @@ model ParentDirectory {
   slug  String
   type  ROOTTYPE?
   links Link[]
+  position Float @default(1)
+  @@index([id, slug])
+  @@index([position])
 }
 
 model UserLink {
@@ -149,6 +152,10 @@ model Directory {
   slug        String
   parentDirId String?
   timestamp   DateTime @default(now())
+  position    Float      @default(1)
+  @@index([parentDirId, position])
+  @@index([id, slug])
+  @@index([position])
 }
 
 enum ROOTTYPE {
