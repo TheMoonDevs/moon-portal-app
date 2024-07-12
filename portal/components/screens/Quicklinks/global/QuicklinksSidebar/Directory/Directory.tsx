@@ -267,12 +267,14 @@ export const DirectoryTree = ({
     <>
       {mainDirectory
         .sort((a, b) => a.position - b.position)
-        .map((directory: Directory | ParentDirectory) => (
+        .map((directory: Directory | ParentDirectory, index) => (
           <div key={directory.id} className="!py-2 !border-gray-200">
             <DirectoryItem
               directory={directory as Directory}
               toggleDirectory={toggleDirectory}
               isDirectoryExpanded={isDirectoryExpanded}
+              isFirst={index == 0}
+              isLast={index == mainDirectory.length - 1}
               pathName={pathName as string}
               rootSlug={
                 "type" in directory
