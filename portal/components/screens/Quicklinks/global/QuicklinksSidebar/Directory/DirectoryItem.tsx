@@ -13,6 +13,8 @@ interface IDirectoryItemProps {
   directory: Directory;
   toggleDirectory: (id: string) => void;
   isDirectoryExpanded: (id: string) => boolean;
+  isFirst: boolean;
+  isLast: boolean;
   rootSlug: string;
   pathName: string;
   editable: {
@@ -43,6 +45,8 @@ export const DirectoryItem = ({
   directory,
   toggleDirectory,
   isDirectoryExpanded,
+  isFirst,
+  isLast,
   pathName,
   rootSlug,
   editable,
@@ -191,6 +195,8 @@ export const DirectoryItem = ({
                           selectedDirectory: directory,
                           parentDirectoryId: directory.parentDirId,
                           rootSlug: rootSlug,
+                          isLast: isLast,
+                          isFirst: isFirst,
                         },
                       })
                     );
@@ -215,7 +221,6 @@ export const DirectoryItem = ({
           )}
         </div>
       </div>
-
       <ul
         className={`ml-4 mt-2 transition-all duration-300 overflow-hidden border-l-2  ${
           isExpanded
@@ -226,13 +231,15 @@ export const DirectoryItem = ({
         {directories
           .filter((subdirectory) => subdirectory.parentDirId === directory.id)
           .sort((a, b) => a.position - b.position)
-          .map((subdirectory) => {
+          .map((subdirectory, index, filteredArray) => {
             return (
               <li key={subdirectory.id}>
                 <DirectoryItem
                   directory={subdirectory}
                   toggleDirectory={toggleDirectory}
                   isDirectoryExpanded={isDirectoryExpanded}
+                  isFirst={index == 0}
+                  isLast={index == filteredArray.length - 1}
                   pathName={pathName}
                   rootSlug={
                     isCommonResources || isDepartment
