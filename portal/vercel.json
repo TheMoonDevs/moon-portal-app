@@ -9,8 +9,8 @@
       "schedule": "0 12 * * *"
     },
     {
-      "path": "/api/cron-jobs/update-medium-articles",
-      "schedule": "* */12 * * *"
+      "path": "/api/cron-jobs/sync/medium-articles",
+      "schedule": "0 12 * * *"
     }
   ]
 }
