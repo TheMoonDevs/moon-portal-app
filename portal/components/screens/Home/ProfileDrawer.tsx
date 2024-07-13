@@ -45,6 +45,8 @@ export const UserProfileDrawer: React.FC = () => {
   const selectedUser = useSelector(
     (state: RootState) => state.userProfileDrawer.selectedUser
   );
+  const [avatarLoading, setAvatarLoading] = useState<boolean>(false);
+  const [bannerLoading, setBannerLoading] = useState<boolean>(false);
   const loggedinUser = useUser() as LoggedInUser;
   const payData = loggedinUser?.user?.payData as PayData;
   const [worklogSummary, setWorklogSummary] = useState<WorkLogs[]>([]);
@@ -118,6 +120,7 @@ export const UserProfileDrawer: React.FC = () => {
     file: FileWithPath,
     fileType: "avatar" | "banner"
   ) => {
+    fileType === "avatar" ? setAvatarLoading(true) : setBannerLoading(true);
     const formData = new FormData();
     formData.append("file", file, file.path);
     if (loggedinUser) {
@@ -150,16 +153,22 @@ export const UserProfileDrawer: React.FC = () => {
         );
         setUploadedFiles([data.fileInfo]);
       } else {
+        fileType === "avatar"
+          ? setAvatarLoading(false)
+          : setBannerLoading(false);
         console.error("Failed to upload file:", response.statusText);
       }
     } catch (error) {
       console.error("Error uploading file:", error);
+      fileType === "avatar" ? setAvatarLoading(false) : setBannerLoading(false);
+    } finally {
+      fileType === "avatar" ? setAvatarLoading(false) : setBannerLoading(false);
     }
   };
 
   const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) =>
     handleFileChange(event, "avatar");
-  
+
   const handleBannerChange = (event: React.ChangeEvent<HTMLInputElement>) =>
     handleFileChange(event, "banner");
 
@@ -175,11 +184,15 @@ export const UserProfileDrawer: React.FC = () => {
         role="presentation"
       >
         <div className="h-[120px] relative">
-          <img
-            src={selectedUser?.banner || "/images/gradientBanner.jpg"}
-            className="absolute w-full h-full object-cover"
-            alt="Profile Banner"
-          />
+          {bannerLoading ? (
+            <div className="w-full h-full bg-gray-300 animate-pulse" />
+          ) : (
+            <img
+              src={selectedUser?.banner || "/images/gradientBanner.jpg"}
+              className="absolute w-full h-full object-cover"
+              alt="Profile Banner"
+            />
+          )}
           {loggedinUser.user.id === selectedUser?.id && (
             <label className="absolute top-2 -right-2 bg-white rounded-full flex items-center justify-center cursor-pointer">
               <span
@@ -197,11 +210,18 @@ export const UserProfileDrawer: React.FC = () => {
             </label>
           )}
           <div className="rounded-full absolute -bottom-[3.25rem] left-5 border-4 w-24 h-24 border-white">
-            <img
-              src={selectedUser?.avatar || "/icons/placeholderAvatar.svg"}
-              alt={selectedUser?.name || ""}
-              className="object-center rounded-full w-full h-full bg-white"
-            />
+            {avatarLoading ? (
+              <div className="bg-white">
+                <div className="rounded-full w-24 h-24 bg-gray-300 animate-pulse" />
+              </div>
+            ) : (
+              <img
+                src={selectedUser?.avatar || "/icons/placeholderAvatar.svg"}
+                alt={selectedUser?.name || ""}
+                className="object-center rounded-full w-full h-full bg-white"
+              />
+            )}
+
             {loggedinUser.user.id === selectedUser?.id && (
               <label className="absolute top-2 -right-2 bg-white rounded-full p-[2px] flex items-center justify-center cursor-pointer">
                 <span
