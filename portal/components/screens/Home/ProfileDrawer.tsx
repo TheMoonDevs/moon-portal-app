@@ -88,24 +88,24 @@ export const UserProfileDrawer: React.FC = () => {
     return verticalMap[vertical] || "Unknown Vertical";
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const fileList = event.target.files;
-    if (fileList && fileList.length > 0) {
-      const file = fileList[0];
-      dispatch(addFilesToPreview([file as FileWithPath]));
-      UploadAvatar(file as FileWithPath);
-    }
-  };
+  // const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  //   const fileList = event.target.files;
+  //   if (fileList && fileList.length > 0) {
+  //     const file = fileList[0];
+  //     dispatch(addFilesToPreview([file as FileWithPath]));
+  //     UploadAvatar(file as FileWithPath);
+  //   }
+  // };
 
   
-  const handleBannerChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const fileList = event.target.files;
-    if (fileList && fileList.length > 0) {
-      const file = fileList[0];
-      dispatch(addFilesToPreview([file as FileWithPath]));
-      UploadBanner(file as FileWithPath);
-    }
-  };
+  // const handleBannerChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  //   const fileList = event.target.files;
+  //   if (fileList && fileList.length > 0) {
+  //     const file = fileList[0];
+  //     dispatch(addFilesToPreview([file as FileWithPath]));
+  //     UploadBanner(file as FileWithPath);
+  //   }
+  // };
 
   const truncateAddress = (
     address: string | undefined,
@@ -118,73 +118,123 @@ export const UserProfileDrawer: React.FC = () => {
     )}`;
   };
 
-  const UploadAvatar = async (file: FileWithPath) => {
+  const handleFileChange = (
+    event: React.ChangeEvent<HTMLInputElement>,
+    fileType: 'avatar' | 'banner'
+  ) => {
+    const fileList = event.target.files;
+    if (fileList && fileList.length > 0) {
+      const file = fileList[0];
+      dispatch(addFilesToPreview([file as FileWithPath]));
+      uploadFile(file as FileWithPath, fileType);
+    }
+  };
+  
+  const uploadFile = async (file: FileWithPath, fileType: 'avatar' | 'banner') => {
     const formData = new FormData();
     formData.append("file", file, file.path);
     if (loggedinUser) {
       formData.append("userId", loggedinUser.user.id);
     }
-    formData.append("folderName", "userAvatars");
+    formData.append("folderName", fileType === 'avatar' ? "userAvatars" : "userBanners");
+  
     try {
       const response = await fetch("/api/upload/file-upload", {
         method: "POST",
         body: formData,
       });
-
+  
       if (response.ok) {
         const data = await response.json();
         const userResponse = await PortalSdk.putData("/api/user", {
-          ...loggedinUser.user, 
-          avatar: data.fileInfo[0].fileUrl,
-        })
+          ...loggedinUser.user,
+          [fileType]: data.fileInfo[0].fileUrl,
+        });
         console.log(userResponse);
+  
+        dispatch(updateSelectedUser({
+          ...selectedUser,
+          [fileType]: data.fileInfo[0].fileUrl,
+        }));
+        setUploadedFiles([data.fileInfo]);
+      } else {
+        console.error("Failed to upload file:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error uploading file:", error);
+    }
+  };
+
+  const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => handleFileChange(event, 'avatar');
+const handleBannerChange = (event: React.ChangeEvent<HTMLInputElement>) => handleFileChange(event, 'banner');
+
+  // const UploadAvatar = async (file: FileWithPath) => {
+  //   const formData = new FormData();
+  //   formData.append("file", file, file.path);
+  //   if (loggedinUser) {
+  //     formData.append("userId", loggedinUser.user.id);
+  //   }
+  //   formData.append("folderName", "userAvatars");
+  //   try {
+  //     const response = await fetch("/api/upload/file-upload", {
+  //       method: "POST",
+  //       body: formData,
+  //     });
+
+  //     if (response.ok) {
+  //       const data = await response.json();
+  //       const userResponse = await PortalSdk.putData("/api/user", {
+  //         ...loggedinUser.user, 
+  //         avatar: data.fileInfo[0].fileUrl,
+  //       })
+  //       console.log(userResponse);
         
-        dispatch(updateSelectedUser({
-          ...selectedUser,
-          avatar: data.fileInfo[0].fileUrl,
-        }));
-        setUploadedFiles([data.fileInfo]);
+  //       dispatch(updateSelectedUser({
+  //         ...selectedUser,
+  //         avatar: data.fileInfo[0].fileUrl,
+  //       }));
+  //       setUploadedFiles([data.fileInfo]);
 
 
-      } else {
-        console.error("Failed to upload file:", response.statusText);
-      }
-    } catch (error) {
-      console.error("Error uploading file:", error);
-    }
-  };
+  //     } else {
+  //       console.error("Failed to upload file:", response.statusText);
+  //     }
+  //   } catch (error) {
+  //     console.error("Error uploading file:", error);
+  //   }
+  // };
 
-  const UploadBanner = async (file: FileWithPath) => {
-    const formData = new FormData();
-    formData.append("file", file, file.path);
-    if (loggedinUser) {
-      formData.append("userId", loggedinUser.user.id);
-    }
-    formData.append("folderName", "userBanners");
-    try {
-      const response = await fetch("/api/upload/file-upload", {
-        method: "POST",
-        body: formData,
-      });
+  // const UploadBanner = async (file: FileWithPath) => {
+  //   const formData = new FormData();
+  //   formData.append("file", file, file.path);
+  //   if (loggedinUser) {
+  //     formData.append("userId", loggedinUser.user.id);
+  //   }
+  //   formData.append("folderName", "userBanners");
+  //   try {
+  //     const response = await fetch("/api/upload/file-upload", {
+  //       method: "POST",
+  //       body: formData,
+  //     });
       
-      if (response.ok) {
-        const data = await response.json();
-        const userResponse = await PortalSdk.putData("/api/user", {
-          ...loggedinUser.user, 
-          banner: data.fileInfo[0].fileUrl,
-        })
-        dispatch(updateSelectedUser({
-          ...selectedUser,
-          banner: data.fileInfo[0].fileUrl,
-        }));
-        setUploadedFiles([data.fileInfo]);
-      } else {
-        console.error("Failed to upload file:", response.statusText);
-      }
-    } catch (error) {
-      console.error("Error uploading file:", error);
-    }
-  };
+  //     if (response.ok) {
+  //       const data = await response.json();
+  //       const userResponse = await PortalSdk.putData("/api/user", {
+  //         ...loggedinUser.user, 
+  //         banner: data.fileInfo[0].fileUrl,
+  //       })
+  //       dispatch(updateSelectedUser({
+  //         ...selectedUser,
+  //         banner: data.fileInfo[0].fileUrl,
+  //       }));
+  //       setUploadedFiles([data.fileInfo]);
+  //     } else {
+  //       console.error("Failed to upload file:", response.statusText);
+  //     }
+  //   } catch (error) {
+  //     console.error("Error uploading file:", error);
+  //   }
+  // };
 
 
   return (
@@ -237,7 +287,7 @@ export const UserProfileDrawer: React.FC = () => {
                 <input
                   type="file"
                   accept="image/jpeg,image/png"
-                  onChange={handleFileChange}
+                  onChange={handleAvatarChange}
                   className="hidden"
                 />
               </label>
