@@ -3,7 +3,10 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Drawer, Box } from "@mui/material";
-import { closeSlideIn, updateSelectedUser } from "@/utils/redux/userProfileDrawer/userProfileDrawer.slice";
+import {
+  closeSlideIn,
+  updateSelectedUser,
+} from "@/utils/redux/userProfileDrawer/userProfileDrawer.slice";
 import { RootState } from "@/utils/redux/store";
 import { useUser } from "@/utils/hooks/useUser";
 import { User, WorkLogs } from "@prisma/client";
@@ -88,25 +91,6 @@ export const UserProfileDrawer: React.FC = () => {
     return verticalMap[vertical] || "Unknown Vertical";
   };
 
-  // const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-  //   const fileList = event.target.files;
-  //   if (fileList && fileList.length > 0) {
-  //     const file = fileList[0];
-  //     dispatch(addFilesToPreview([file as FileWithPath]));
-  //     UploadAvatar(file as FileWithPath);
-  //   }
-  // };
-
-  
-  // const handleBannerChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-  //   const fileList = event.target.files;
-  //   if (fileList && fileList.length > 0) {
-  //     const file = fileList[0];
-  //     dispatch(addFilesToPreview([file as FileWithPath]));
-  //     UploadBanner(file as FileWithPath);
-  //   }
-  // };
-
   const truncateAddress = (
     address: string | undefined,
     visibleChars: number = 4
@@ -120,7 +104,7 @@ export const UserProfileDrawer: React.FC = () => {
 
   const handleFileChange = (
     event: React.ChangeEvent<HTMLInputElement>,
-    fileType: 'avatar' | 'banner'
+    fileType: "avatar" | "banner"
   ) => {
     const fileList = event.target.files;
     if (fileList && fileList.length > 0) {
@@ -129,21 +113,27 @@ export const UserProfileDrawer: React.FC = () => {
       uploadFile(file as FileWithPath, fileType);
     }
   };
-  
-  const uploadFile = async (file: FileWithPath, fileType: 'avatar' | 'banner') => {
+
+  const uploadFile = async (
+    file: FileWithPath,
+    fileType: "avatar" | "banner"
+  ) => {
     const formData = new FormData();
     formData.append("file", file, file.path);
     if (loggedinUser) {
       formData.append("userId", loggedinUser.user.id);
     }
-    formData.append("folderName", fileType === 'avatar' ? "userAvatars" : "userBanners");
-  
+    formData.append(
+      "folderName",
+      fileType === "avatar" ? "userAvatars" : "userBanners"
+    );
+
     try {
       const response = await fetch("/api/upload/file-upload", {
         method: "POST",
         body: formData,
       });
-  
+
       if (response.ok) {
         const data = await response.json();
         const userResponse = await PortalSdk.putData("/api/user", {
@@ -151,11 +141,13 @@ export const UserProfileDrawer: React.FC = () => {
           [fileType]: data.fileInfo[0].fileUrl,
         });
         console.log(userResponse);
-  
-        dispatch(updateSelectedUser({
-          ...selectedUser,
-          [fileType]: data.fileInfo[0].fileUrl,
-        }));
+
+        dispatch(
+          updateSelectedUser({
+            ...selectedUser,
+            [fileType]: data.fileInfo[0].fileUrl,
+          })
+        );
         setUploadedFiles([data.fileInfo]);
       } else {
         console.error("Failed to upload file:", response.statusText);
@@ -165,77 +157,11 @@ export const UserProfileDrawer: React.FC = () => {
     }
   };
 
-  const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => handleFileChange(event, 'avatar');
-const handleBannerChange = (event: React.ChangeEvent<HTMLInputElement>) => handleFileChange(event, 'banner');
-
-  // const UploadAvatar = async (file: FileWithPath) => {
-  //   const formData = new FormData();
-  //   formData.append("file", file, file.path);
-  //   if (loggedinUser) {
-  //     formData.append("userId", loggedinUser.user.id);
-  //   }
-  //   formData.append("folderName", "userAvatars");
-  //   try {
-  //     const response = await fetch("/api/upload/file-upload", {
-  //       method: "POST",
-  //       body: formData,
-  //     });
-
-  //     if (response.ok) {
-  //       const data = await response.json();
-  //       const userResponse = await PortalSdk.putData("/api/user", {
-  //         ...loggedinUser.user, 
-  //         avatar: data.fileInfo[0].fileUrl,
-  //       })
-  //       console.log(userResponse);
-        
-  //       dispatch(updateSelectedUser({
-  //         ...selectedUser,
-  //         avatar: data.fileInfo[0].fileUrl,
-  //       }));
-  //       setUploadedFiles([data.fileInfo]);
-
-
-  //     } else {
-  //       console.error("Failed to upload file:", response.statusText);
-  //     }
-  //   } catch (error) {
-  //     console.error("Error uploading file:", error);
-  //   }
-  // };
-
-  // const UploadBanner = async (file: FileWithPath) => {
-  //   const formData = new FormData();
-  //   formData.append("file", file, file.path);
-  //   if (loggedinUser) {
-  //     formData.append("userId", loggedinUser.user.id);
-  //   }
-  //   formData.append("folderName", "userBanners");
-  //   try {
-  //     const response = await fetch("/api/upload/file-upload", {
-  //       method: "POST",
-  //       body: formData,
-  //     });
-      
-  //     if (response.ok) {
-  //       const data = await response.json();
-  //       const userResponse = await PortalSdk.putData("/api/user", {
-  //         ...loggedinUser.user, 
-  //         banner: data.fileInfo[0].fileUrl,
-  //       })
-  //       dispatch(updateSelectedUser({
-  //         ...selectedUser,
-  //         banner: data.fileInfo[0].fileUrl,
-  //       }));
-  //       setUploadedFiles([data.fileInfo]);
-  //     } else {
-  //       console.error("Failed to upload file:", response.statusText);
-  //     }
-  //   } catch (error) {
-  //     console.error("Error uploading file:", error);
-  //   }
-  // };
-
+  const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) =>
+    handleFileChange(event, "avatar");
+  
+  const handleBannerChange = (event: React.ChangeEvent<HTMLInputElement>) =>
+    handleFileChange(event, "banner");
 
   return (
     <Drawer anchor="right" open={isOpen} onClose={handleClose}>
@@ -257,17 +183,17 @@ const handleBannerChange = (event: React.ChangeEvent<HTMLInputElement>) => handl
           {loggedinUser.user.id === selectedUser?.id && (
             <label className="absolute top-2 -right-2 bg-white rounded-full flex items-center justify-center cursor-pointer">
               <span
-              className="material-symbols-outlined absolute top-2 right-2 bg-white rounded-full p-[6px] cursor-pointer"
-              style={{ fontSize: "16px" }}
-            >
-              add_a_photo 
-            </span>
-            <input
-                  type="file"
-                  accept="image/jpeg,image/png"
-                  onChange={handleBannerChange}
-                  className="hidden"
-                />
+                className="material-symbols-outlined absolute top-2 right-2 bg-white rounded-full p-[6px] cursor-pointer"
+                style={{ fontSize: "16px" }}
+              >
+                add_a_photo
+              </span>
+              <input
+                type="file"
+                accept="image/jpeg,image/png"
+                onChange={handleBannerChange}
+                className="hidden"
+              />
             </label>
           )}
           <div className="rounded-full absolute -bottom-[3.25rem] left-5 border-4 w-24 h-24 border-white">
@@ -363,7 +289,7 @@ const handleBannerChange = (event: React.ChangeEvent<HTMLInputElement>) => handl
               </div>
             </div>
           ) : (
-            <LoadingSkeleton /> 
+            <LoadingSkeleton />
           )}
           <div className="py-4">
             <h6 className="font-bold pb-2">Engagements</h6>
