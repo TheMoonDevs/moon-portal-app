@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic"; // static by default, unless reading the request
 import { prisma } from "@/prisma/prisma";
 import { MediumBlogsSdk } from "@/utils/services/MediumBlogsSdk";
 import { NextResponse } from "next/server";
