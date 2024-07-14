@@ -318,7 +318,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
               <span>
                 {showUpdateButton && (
                   <Button
-                    className="bg-white text-neutral-800 hover:bg-neutral-200 border-[1px] border-neutral-800 py-2 px-5 rounded-lg shadow-md"
+                    // className="bg-white text-neutral-800 hover:bg-neutral-200 border-[1px] border-neutral-800 py-2 px-5 rounded-lg shadow-md"
                     onClick={handleUpdatePaymentInfo}
                   >
                     {!loading ? (
@@ -330,11 +330,11 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                 )}
               </span>
             </Tooltip>
-            <Tooltip title={"Save"} arrow>
+            {/* <Tooltip title={"Save"} arrow>
               <span>
                 <Button>Save</Button>
               </span>
-            </Tooltip>
+            </Tooltip> */}
           </div>
         </>
       )}
