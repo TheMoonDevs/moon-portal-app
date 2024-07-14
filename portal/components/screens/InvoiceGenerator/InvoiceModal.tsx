@@ -24,6 +24,7 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers";
 import { Button } from "@/components/elements/Button";
 import { InvoiceData } from "./InvoicePage";
+import { Spinner } from "@/components/elements/Loaders";
 
 interface InvoiceModalProps {
   invoiceData: InvoiceData;
@@ -36,6 +37,10 @@ interface InvoiceModalProps {
     event: React.ChangeEvent<{ value: unknown }>
   ) => void;
   handleOwnerInfoChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleUpdatePaymentInfo: () => Promise<void>;
+  loading: boolean;
+  showUpdateButton: boolean;
+  dataLoad: boolean;
 }
 
 const InvoiceModal: React.FC<InvoiceModalProps> = ({
@@ -44,175 +49,238 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
   handleDateChange,
   handlePaymentMethodChange,
   handleOwnerInfoChange,
+  handleUpdatePaymentInfo,
+  loading,
+  showUpdateButton,
+  dataLoad,
 }) => {
   return (
-    <div className="p-6 rounded-lg shadow-lg border-2 w-full mb-8 md:mb-0 md:mt-4 overflow-y-scroll max-w-lg mx-auto">
+    <div className="p-6 rounded-lg shadow-lg border-2 w-full mb-8 max-md:mb-0 md:mt-4 overflow-y-scroll max-w-lg mx-auto">
       <h2 className="text-2xl font-medium font-serif mb-6 text-center">
         Invoice Details
       </h2>
-      <LocalizationProvider dateAdapter={AdapterDateFns}>
-        <div className="mb-4 flex flex-col w-full">
-          <span className="text-sm font-semibold mb-2 leading-none text-gray-700">
-            *Invoice Id
-          </span>
-          <TextField
-            required
-            type="text"
-            id="invoice-id"
-            size="small"
-            name="invoiceId"
-            color="info"
-            placeholder="Add Invoice Id"
-            variant="outlined"
-            className="w-full"
-            value={invoiceData.invoiceId}
-            onChange={handleInputChange}
-          />
+      {dataLoad ? (
+        <div className="w-full h-[50vh] flex justify-center items-center ">
+          <Spinner className="text-green-600" />
         </div>
-
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6}>
+      ) : (
+        <>
+          <LocalizationProvider dateAdapter={AdapterDateFns}>
             <div className="mb-4 flex flex-col w-full">
               <span className="text-sm font-semibold mb-2 leading-none text-gray-700">
-                *Invoice Issued
-              </span>
-              <DatePicker
-                slotProps={{
-                  textField: {
-                    size: "small",
-                    variant: "outlined",
-                    color: "info",
-                  },
-                }}
-                className="w-full border-black"
-                value={invoiceData.invoiceDate}
-                onChange={(date) => handleDateChange("invoiceDate", date)}
-              />
-            </div>
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <div className="mb-4 flex flex-col w-full">
-              <span className="text-sm font-semibold mb-2 leading-none text-gray-700">
-                *Invoice Due Date
-              </span>
-              <DatePicker
-                slotProps={{
-                  textField: {
-                    size: "small",
-                    variant: "outlined",
-                    color: "info",
-                  },
-                }}
-                className="w-full border-black"
-                value={invoiceData.dueDate}
-                onChange={(date) => handleDateChange("dueDate", date)}
-              />
-            </div>
-          </Grid>
-        </Grid>
-
-        <FormControl fullWidth className="mb-4">
-          <span className="text-sm font-semibold mb-2 leading-none text-gray-700">
-            *Payment Id
-          </span>
-          <Select
-            value={invoiceData.paymentMethod}
-            onChange={handlePaymentMethodChange as any}
-            className="mb-4"
-            style={{
-              color: "#4A5568",
-              fontWeight: "500",
-              height: "40px",
-              borderRadius: "4px",
-              fontSize: "14px",
-              paddingRight: "30px",
-            }}
-          >
-            <MenuItem value="crypto">
-              <CurrencyBitcoinIcon className="mr-2" color="primary" />
-              Crypto
-            </MenuItem>
-            <MenuItem value="bank">
-              <BankIcon className="mr-2" color="primary" />
-              Bank
-            </MenuItem>
-          </Select>
-        </FormControl>
-
-        {invoiceData.paymentMethod === "crypto" ? (
-          <div className="mb-4 flex flex-col w-full">
-            <span className="text-sm font-semibold mb-2 leading-none text-gray-700">
-              *Wallet Address
-            </span>
-            <TextField
-              type="text"
-              id="wallet-address"
-              size="small"
-              name="cryptoAddress"
-              color="info"
-              placeholder="Add Wallet Address"
-              variant="outlined"
-              value={invoiceData.cryptoAddress}
-              onChange={handleInputChange}
-              multiline
-              rows={1}
-              className="w-full"
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <WalletIcon color="primary" />
-                  </InputAdornment>
-                ),
-              }}
-            />
-          </div>
-        ) : (
-          <>
-            <div className="mb-4 flex flex-col w-full">
-              <span className="text-sm font-semibold mb-2 leading-none text-gray-700">
-                *Name
+                *Invoice Id
               </span>
               <TextField
+                required
                 type="text"
-                id="bank-name"
+                id="invoice-id"
                 size="small"
-                name="bank-name"
+                name="invoiceId"
                 color="info"
-                placeholder="Add Name"
+                placeholder="Add Invoice Id"
                 variant="outlined"
-                value={invoiceData.bankDetails.name}
-                onChange={handleInputChange}
                 className="w-full"
-                InputProps={{
-                  startAdornment: (
-                    <IconButton edge="start">
-                      <BadgeIcon color="primary" />
-                    </IconButton>
-                  ),
-                }}
+                value={invoiceData.invoiceId}
+                onChange={handleInputChange}
               />
             </div>
 
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <div className="mb-4 flex flex-col w-full">
+                  <span className="text-sm font-semibold mb-2 leading-none text-gray-700">
+                    *Invoice Issued
+                  </span>
+                  <DatePicker
+                    slotProps={{
+                      textField: {
+                        size: "small",
+                        variant: "outlined",
+                        color: "info",
+                      },
+                    }}
+                    className="w-full border-black"
+                    value={invoiceData.invoiceDate}
+                    onChange={(date) => handleDateChange("invoiceDate", date)}
+                  />
+                </div>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <div className="mb-4 flex flex-col w-full">
+                  <span className="text-sm font-semibold mb-2 leading-none text-gray-700">
+                    *Invoice Due Date
+                  </span>
+                  <DatePicker
+                    slotProps={{
+                      textField: {
+                        size: "small",
+                        variant: "outlined",
+                        color: "info",
+                      },
+                    }}
+                    className="w-full border-black"
+                    value={invoiceData.dueDate}
+                    onChange={(date) => handleDateChange("dueDate", date)}
+                  />
+                </div>
+              </Grid>
+            </Grid>
+
+            <FormControl fullWidth className="mb-4">
+              <span className="text-sm font-semibold mb-2 leading-none text-gray-700">
+                *Payment Id
+              </span>
+              <Select
+                value={invoiceData.paymentMethod}
+                onChange={handlePaymentMethodChange as any}
+                className="mb-4"
+                style={{
+                  color: "#4A5568",
+                  fontWeight: "500",
+                  height: "40px",
+                  borderRadius: "4px",
+                  fontSize: "14px",
+                  paddingRight: "30px",
+                }}
+              >
+                <MenuItem value="crypto">
+                  <CurrencyBitcoinIcon className="mr-2" color="primary" />
+                  Crypto
+                </MenuItem>
+                <MenuItem value="bank">
+                  <BankIcon className="mr-2" color="primary" />
+                  Bank
+                </MenuItem>
+              </Select>
+            </FormControl>
+
+            {invoiceData.paymentMethod === "crypto" ? (
+              <div className="mb-4 flex flex-col w-full">
+                <span className="text-sm font-semibold mb-2 leading-none text-gray-700">
+                  *Wallet Address
+                </span>
+                <TextField
+                  type="text"
+                  id="wallet-address"
+                  size="small"
+                  name="cryptoAddress"
+                  color="info"
+                  placeholder="Add Wallet Address"
+                  variant="outlined"
+                  value={invoiceData.cryptoAddress}
+                  onChange={handleInputChange}
+                  multiline
+                  rows={1}
+                  className="w-full"
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <WalletIcon color="primary" />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </div>
+            ) : (
+              <>
+                <div className="mb-4 flex flex-col w-full">
+                  <span className="text-sm font-semibold mb-2 leading-none text-gray-700">
+                    *Name
+                  </span>
+                  <TextField
+                    type="text"
+                    id="bank-name"
+                    size="small"
+                    name="bank-name"
+                    color="info"
+                    placeholder="Add Name"
+                    variant="outlined"
+                    value={invoiceData.bankDetails.name}
+                    onChange={handleInputChange}
+                    className="w-full"
+                    InputProps={{
+                      startAdornment: (
+                        <IconButton edge="start">
+                          <BadgeIcon color="primary" />
+                        </IconButton>
+                      ),
+                    }}
+                  />
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="mb-4 flex flex-col w-full">
+                    <span className="text-sm font-semibold mb-2 leading-none text-gray-700">
+                      *A/c No
+                    </span>
+                    <TextField
+                      type="text"
+                      id="bank-account"
+                      size="small"
+                      name="bank-account"
+                      color="info"
+                      placeholder="Add Account Number"
+                      variant="outlined"
+                      value={invoiceData.bankDetails.account}
+                      onChange={handleInputChange}
+                      className="w-full"
+                      InputProps={{
+                        startAdornment: (
+                          <IconButton edge="start">
+                            <AccountBalanceWalletIcon color="primary" />
+                          </IconButton>
+                        ),
+                      }}
+                    />
+                  </div>
+
+                  <div className="mb-4 flex flex-col w-full">
+                    <span className="text-sm font-semibold mb-2 leading-none text-gray-700">
+                      *IFSC
+                    </span>
+                    <TextField
+                      type="text"
+                      id="bank-ifsc"
+                      size="small"
+                      name="bank-ifsc"
+                      color="info"
+                      placeholder="Add IFSC Code"
+                      variant="outlined"
+                      value={invoiceData.bankDetails.ifsc}
+                      onChange={handleInputChange}
+                      className="w-full"
+                      InputProps={{
+                        startAdornment: (
+                          <IconButton edge="start">
+                            <NumbersIcon color="primary" />
+                          </IconButton>
+                        ),
+                      }}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
             <div className="flex flex-col sm:flex-row gap-2">
               <div className="mb-4 flex flex-col w-full">
                 <span className="text-sm font-semibold mb-2 leading-none text-gray-700">
-                  *A/c No
+                  *Paying To
                 </span>
                 <TextField
                   type="text"
-                  id="bank-account"
+                  id="paying-to"
                   size="small"
-                  name="bank-account"
+                  name="payingTo"
                   color="info"
                   placeholder="Add Account Number"
                   variant="outlined"
-                  value={invoiceData.bankDetails.account}
-                  onChange={handleInputChange}
+                  value={invoiceData.payingTo}
+                  onChange={handleOwnerInfoChange}
                   className="w-full"
                   InputProps={{
                     startAdornment: (
                       <IconButton edge="start">
-                        <AccountBalanceWalletIcon color="primary" />
+                        <PersonIcon color="primary" />
                       </IconButton>
                     ),
                   }}
@@ -221,90 +289,55 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
 
               <div className="mb-4 flex flex-col w-full">
                 <span className="text-sm font-semibold mb-2 leading-none text-gray-700">
-                  *IFSC
+                  *Company Name
                 </span>
                 <TextField
                   type="text"
-                  id="bank-ifsc"
+                  id="company-name"
                   size="small"
-                  name="bank-ifsc"
+                  name="companyName"
                   color="info"
-                  placeholder="Add IFSC Code"
+                  placeholder="Add Company Name"
                   variant="outlined"
-                  value={invoiceData.bankDetails.ifsc}
-                  onChange={handleInputChange}
+                  value={invoiceData.companyName}
+                  onChange={handleOwnerInfoChange}
                   className="w-full"
                   InputProps={{
                     startAdornment: (
                       <IconButton edge="start">
-                        <NumbersIcon color="primary" />
+                        <BusinessIcon color="primary" />
                       </IconButton>
                     ),
                   }}
                 />
               </div>
             </div>
-          </>
-        )}
-        <div className="flex flex-col sm:flex-row gap-2">
-          <div className="mb-4 flex flex-col w-full">
-            <span className="text-sm font-semibold mb-2 leading-none text-gray-700">
-              *Paying To
-            </span>
-            <TextField
-              type="text"
-              id="paying-to"
-              size="small"
-              name="payingTo"
-              color="info"
-              placeholder="Add Account Number"
-              variant="outlined"
-              value={invoiceData.payingTo}
-              onChange={handleOwnerInfoChange}
-              className="w-full"
-              InputProps={{
-                startAdornment: (
-                  <IconButton edge="start">
-                    <PersonIcon color="primary" />
-                  </IconButton>
-                ),
-              }}
-            />
+          </LocalizationProvider>
+          <div className="flex justify-end md:mt-2 items-center gap-2">
+            <Tooltip title={"Update Payment Info"} arrow>
+              <span>
+                {showUpdateButton && (
+                  <Button
+                    // className="bg-white text-neutral-800 hover:bg-neutral-200 border-[1px] border-neutral-800 py-2 px-5 rounded-lg shadow-md"
+                    onClick={handleUpdatePaymentInfo}
+                  >
+                    {!loading ? (
+                      "Update Payment Info"
+                    ) : (
+                      <Spinner className="w-4 h-6 text-green-600" />
+                    )}
+                  </Button>
+                )}
+              </span>
+            </Tooltip>
+            {/* <Tooltip title={"Save"} arrow>
+              <span>
+                <Button>Save</Button>
+              </span>
+            </Tooltip> */}
           </div>
-
-          <div className="mb-4 flex flex-col w-full">
-            <span className="text-sm font-semibold mb-2 leading-none text-gray-700">
-              *Company Name
-            </span>
-            <TextField
-              type="text"
-              id="company-name"
-              size="small"
-              name="companyName"
-              color="info"
-              placeholder="Add Company Name"
-              variant="outlined"
-              value={invoiceData.companyName}
-              onChange={handleOwnerInfoChange}
-              className="w-full"
-              InputProps={{
-                startAdornment: (
-                  <IconButton edge="start">
-                    <BusinessIcon color="primary" />
-                  </IconButton>
-                ),
-              }}
-            />
-          </div>
-        </div>
-      </LocalizationProvider>
-      <div className="flex justify-end md:mt-2">
-        <Tooltip title={"Save"} arrow>
-          <span>
-            <Button>Save</Button>
-          </span>
-        </Tooltip>
-      </div>
+        </>
+      )}
     </div>
   );
 };
