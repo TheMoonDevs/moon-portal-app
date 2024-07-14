@@ -11,6 +11,7 @@ export async function POST(request: NextRequest) {
     const params = new URLSearchParams(payload);
     const jsonPayload = Object.fromEntries(params);
     const text = jsonPayload.text;
+    // console.log(jsonPayload)
 
     // Extract mentions
     const mentionPattern = /@\w+/g;
@@ -136,7 +137,7 @@ export async function POST(request: NextRequest) {
     await slackBotSdk.setSlackReminder({
       time: format(reminderTime, "yyyyMMdd'T'HHmmss'Z'"),
       message: reminderMessage,
-      channel: SlackChannels.y_moon_reminders
+      channel: jsonPayload.channel_id
     });
 
     // Construct response message based on resolved users
