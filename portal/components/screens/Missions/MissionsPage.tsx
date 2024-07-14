@@ -222,7 +222,7 @@ export const MissionsPage = () => {
     const createMission = () => {
         PortalSdk.postData("/api/missions", {
             title: "New Mission",
-            house: HOUSEID.MANGEMENT,
+            house: HOUSEID.MANAGEMENT,
             housePoints: 10,
             indiePoints: 1000,
             expirable: true,

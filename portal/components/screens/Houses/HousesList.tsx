@@ -5,10 +5,10 @@ import { useEffect, useState } from "react";
 
 export const HOUSES_LIST = [
     {
-        id: HOUSEID.MANGEMENT,
+        id: HOUSEID.MANAGEMENT,
         name: "Management",
         description: "Management House",
-        image: `images/houses/${HOUSEID.MANGEMENT}.png`,
+        image: `images/houses/${HOUSEID.MANAGEMENT}.png`,
         background: `linear-gradient(180deg, #D40000, #000000)`
     },
     {
