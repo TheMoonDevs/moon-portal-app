@@ -10,6 +10,8 @@ import { useRef, useState } from "react";
 import generatePDF, { Margin } from "react-to-pdf";
 import WorklogBreakdown from "./WorklogBreakdown";
 import { useSearchParams } from "next/navigation";
+import Image from "next/image";
+import { CircleX } from "lucide-react";
 
 interface WorklogSummaryActionsProps {
   userData: User | null | undefined;
@@ -26,12 +28,13 @@ export const WorklogSummaryActions = ({
 }: WorklogSummaryActionsProps) => {
   const [aiSummary, setAiSummary] = useState<string | null>(null);
   const { loading, setLoading } = useAsyncState();
-  const [view, setView] = useState<string | null>(null);
+  const [view, setView] = useState<"AI Summary" | "Breakdown" | null>(null);
   const { copyToClipboard } = useCopyToClipboard();
   const aiSummaryPdfTargetRef = useRef(null);
   const searchParams = useSearchParams();
   const month = searchParams?.get("month");
   const year = searchParams?.get("year");
+  const [isContentVisible, setIsContentVisible] = useState(false);
 
   const isMonthly = !!month;
   const isYearly = !!year && !month;
@@ -47,6 +50,7 @@ export const WorklogSummaryActions = ({
       );
       setAiSummary(response);
       setView("AI Summary");
+      setIsContentVisible(true);
     } catch (error) {
       console.error(error);
     } finally {
@@ -54,16 +58,14 @@ export const WorklogSummaryActions = ({
     }
   };
 
-  const handleBreakdownBtnClick = async () => {
+  const handleBreakdownBtnClick = () => {
     if (worklogSummary.length === 0) return;
-    setLoading(true);
-    try {
-      setView("Breakdown");
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
+    setView("Breakdown");
+    setIsContentVisible(true); // Show content on button click
+  };
+
+  const toggleContentVisibility = () => {
+    setIsContentVisible(!isContentVisible);
   };
 
   const renderContent = () => {
@@ -77,9 +79,8 @@ export const WorklogSummaryActions = ({
 
     if (worklogSummary.length === 0) {
       return (
-        <div className="flex w-full flex-col items-center justify-center max-h-[400px]">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+        <div className="flex w-full flex-col items-center justify-center h-screen md:h-[70vh]">
+          <Image
             src="/images/empty_item.svg"
             alt="not-found"
             width={200}
@@ -117,7 +118,11 @@ export const WorklogSummaryActions = ({
               </span>
             </Tooltip>
           </div>
-          <div className="overflow-y-auto w-full">
+          <div
+            className={`overflow-y-auto w-full ${
+              isContentVisible ? "block" : "hidden"
+            }`}
+          >
             <div ref={aiSummaryPdfTargetRef} className="p-10 pt-14">
               <div className="w-full">
                 <MdxAppEditor
@@ -134,6 +139,20 @@ export const WorklogSummaryActions = ({
       );
     }
 
+    // Show Breakdown content if view is "Breakdown"
+    if (view === "Breakdown") {
+      return (
+        <div className="overflow-y-scroll w-full max-h-screen  ">
+          <WorklogBreakdown
+            worklogSummary={worklogSummary}
+            isMonthly={isMonthly}
+            isYearly={isYearly}
+          />
+        </div>
+      );
+    }
+
+    // Default case when neither "AI Summary" nor "Breakdown" view is active
     return (
       <div className="overflow-y-scroll w-full h-screen pb-32 md:pb-8">
         <WorklogBreakdown
@@ -146,10 +165,25 @@ export const WorklogSummaryActions = ({
   };
 
   return (
-    <div className="flex flex-col mt-10 justify-between items-center w-full md:w-[50%] border-t-2 relative">
-      <div></div>
-      {renderContent()}
-      <div className="text-[0.7rem] sm:text-[0.9rem] md:text-[0.7rem] lg:text-base flex flex-row gap-2 md:gap-4 items-center justify-center sticky bottom-0 py-4 md:py-6 bg-white w-full justify-self-end">
+    <div className="flex flex-col mt-10 justify-between items-center w-full md:w-[50%] md:border-t-2 relative">
+      {isContentVisible && (
+        <>
+          <button
+            className="absolute -top-[30px] z-20 right-3 md:hidden"
+            onClick={toggleContentVisibility}
+          >
+            <CircleX color="red" />
+          </button>
+
+          <div className="h-screen w-full md:hidden">{renderContent()}</div>
+        </>
+      )}
+
+      {/* Render content conditionally */}
+      <div className="hidden md:flex">{renderContent()}</div>
+
+      {/* Bottom buttons */}
+      <div className="text-[0.7rem] sm:text-[0.9rem] md:text-[0.7rem] lg:text-base flex flex-row gap-2 md:gap-4 items-center justify-center fixed md:sticky bottom-0 py-4 md:py-6 bg-white w-full justify-self-end">
         <Tooltip title="Download Worklog">
           <button
             disabled={!worklogSummary.length}
