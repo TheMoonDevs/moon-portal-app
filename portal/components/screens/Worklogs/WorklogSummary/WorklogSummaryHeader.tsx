@@ -195,7 +195,7 @@ export const WorklogSummaryHeader = ({
             className="w-8 aspect-square sm:hidden mr-5"
           />
         </Link>
-        <div className="flex items-center gap-1 sm:gap-4 pr-10">
+        <div className="flex items-center sm:gap-4 pr-10">
           <h1 className="md:tracking-widest text-sm md:text-base  ml-1 font-regular whitespace-nowrap">
             Worklog Summary
           </h1>
