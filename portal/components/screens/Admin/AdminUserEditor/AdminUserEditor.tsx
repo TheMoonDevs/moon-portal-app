@@ -8,6 +8,7 @@ import { AdminHeader } from "../AdminHeader";
 import { useToast } from "@/components/elements/Toast";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import {
+  HOUSEID,
   USERINDUSTRY,
   USERROLE,
   USERSTATUS,
@@ -34,6 +35,7 @@ export const AdminUserEditor = () => {
     password: "",
     email: "",
     avatar: "",
+    house: HOUSEID.PRODUCT_TECH,
     userType: USERTYPE.MEMBER,
     role: USERROLE.CORETEAM,
     vertical: USERVERTICAL.DEV,

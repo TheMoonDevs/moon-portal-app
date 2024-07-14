@@ -11,6 +11,7 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { Spinner } from "@/components/elements/Loaders";
 import { useSearchParams } from "next/navigation";
 import {
+  HOUSEID,
   USERINDUSTRY,
   USERROLE,
   USERSTATUS,
@@ -173,6 +174,21 @@ export const AdminUserBasicData = ({
                       <option key={typevalue} value={typevalue}>
                         {typevalue.charAt(0).toUpperCase() +
                           typevalue.slice(1).toLowerCase()}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <p>House:</p>
+                  <select
+                    id="house"
+                    value={user.house || ""}
+                    onChange={updateField}
+                    className="border border-neutral-400 rounded-lg p-2"
+                  >
+                    {Object.values(HOUSEID).map((house) => (
+                      <option key={house} value={house}>
+                        {house}
                       </option>
                     ))}
                   </select>
