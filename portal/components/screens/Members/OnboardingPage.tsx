@@ -27,13 +27,14 @@ import {
 import { UploadAvatar } from "./UploadAvatar";
 import { REGEXP_ONLY_CHARS } from "input-otp";
 import React, { useEffect, useState } from "react";
-import { USERVERTICAL } from "@prisma/client";
+import { HOUSEID, USERVERTICAL } from "@prisma/client";
 import { CircleCheck, CircleX, Info } from "lucide-react";
 import { TextField, Tooltip } from "@mui/material";
 import dayjs from "dayjs";
 import { Spinner } from "@/components/elements/Loaders";
 import Box from "@mui/material/Box";
 import Modal from "@mui/material/Modal";
+import { HOUSES_LIST } from "../Houses/HousesList";
 
 interface OnboardingPageProps {
   onClose?: () => void;
@@ -187,7 +188,7 @@ export function OnboardingPage({ onClose }: OnboardingPageProps) {
     border: "2px solid #000",
     boxShadow: 24,
     py: 4,
-    px:0.5,
+    px: 0.5,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -218,7 +219,6 @@ export function OnboardingPage({ onClose }: OnboardingPageProps) {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
-      
       <Modal
         open={true}
         aria-labelledby="modal-modal-title"
@@ -538,6 +538,7 @@ export function OnboardingPage({ onClose }: OnboardingPageProps) {
                   </div>
                 </div>
                 <div className="w-full px-10 h-[1px] bg-gray-200"></div>
+
                 <div className="flex justify-between items-center flex-wrap">
                   <label>Role:</label>
                   <Select
@@ -570,6 +571,39 @@ export function OnboardingPage({ onClose }: OnboardingPageProps) {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="w-full px-10 h-[1px] bg-gray-200"></div>
+
+                <div className="flex justify-between items-center flex-wrap">
+                  <label>House:</label>
+                  <Select
+                    name="house"
+                    value={formData.house || HOUSEID.PRODUCT_TECH}
+                    defaultValue={HOUSEID.PRODUCT_TECH}
+                    onValueChange={(value) =>
+                      handleSelectChange(value, "house")
+                    }
+                  >
+                    <SelectTrigger
+                      id="house"
+                      className="w-full max-w-[23rem] border-[2px] border-gray-300 rounded-xl px-4 py-2 cursor-pointer"
+                    >
+                      <SelectValue placeholder={"Select House"} />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white">
+                      {Object.values(HOUSEID).map((house) => (
+                        <SelectItem
+                          key={house}
+                          value={house}
+                          onClick={() => handleSelectChange(house, "house")}
+                          className="hover:bg-gray-200 rounded-lg cursor-pointer"
+                        >
+                          {house}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <div className="w-full px-10 h-[1px] bg-gray-200"></div>
                 <div className="flex justify-between items-center flex-wrap">
                   <label>TimeZone:</label>
