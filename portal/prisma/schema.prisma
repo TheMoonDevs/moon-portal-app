@@ -222,6 +222,21 @@ model ConfigData {
   timestamp  DateTime @updatedAt
 }
 
+model Article {
+  id              String      @id @default(auto()) @map("_id") @db.ObjectId
+  title           String
+  image           String?  
+  content         String
+  articleUrl      String
+  articleType     String
+  author          String
+  publishDate     DateTime
+  categories      String[]
+
+  @@index([title], name: "title_idx")
+  @@index([author], name: "author_idx")
+}
+
 enum JOBPOST {
   FULLTIME
   PARTTIME
