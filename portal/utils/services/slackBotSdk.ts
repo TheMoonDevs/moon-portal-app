@@ -36,6 +36,14 @@ export const SlackChannelWebhooks = {
 
 export const SlackChannels = {
   y_moon_reminders: "C07A2HJUEPN",
+  y_pay_reminders: "C074572BB2T",
+  executive_channel: "C066K6FKU1X",
+  management_channel: "C06944N1NQ7",
+  test_slackbot: "C0747DURBHT",
+};
+
+export const SlackUsers = {
+  subhakar: "U01H8NTAZD3",
 };
 
 export type channelType =

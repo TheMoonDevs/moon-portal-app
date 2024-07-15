@@ -5,9 +5,16 @@ import { TOKEN_INFO } from "../constants/appInfo";
 import { useEffect, useState } from "react";
 import { Address } from "viem";
 import TMDTokenABI from "@/utils/constants/erc20.json";
-import { setBalance, setExchange, setTotalEarned } from "../redux/balances/balances.slice";
+import {
+  setBalance,
+  setExchange,
+  setTotalEarned,
+} from "../redux/balances/balances.slice";
 import { formatNumberToText } from "../helpers/prettyprints";
-import { updateSelectedCurrency, updateSelectedCurrencyValue } from "../redux/balances/balances.slice";
+import {
+  updateSelectedCurrency,
+  updateSelectedCurrencyValue,
+} from "../redux/balances/balances.slice";
 
 // DO NOT PASS INIT true more than once in the entire repo.
 export const useSyncBalances = (init?: boolean) => {
@@ -46,32 +53,32 @@ export const useSyncBalances = (init?: boolean) => {
 
   useEffect(() => {
     if (!init) return;
-      const fetchCountryInfo = async () => {
-        try {
-          const response = await fetch("https://ipapi.co/json");
-          if (!response.ok) {
-            throw new Error("Failed to fetch IP information");
-          }
-          const data = await response.json();
-          const { currency } = data;
+    const fetchCountryInfo = async () => {
+      try {
+        const response = await fetch("https://ipapi.co/json");
+        if (!response.ok) {
+          throw new Error("Failed to fetch IP information");
+        }
+        const data = await response.json();
+        const { currency } = data;
 
-          setLoading(false);
+        setLoading(false);
 
         const currencyValue = exchange?.exchangeCurrency[currency];
-          if (currencyValue) {
-            dispatch(updateSelectedCurrency(currency));
-            dispatch(updateSelectedCurrencyValue(currencyValue));
-          }
-        } catch (error) {
-          if (error instanceof Error) {
-            console.error("Error fetching IP information:", error);
-          } else {
-            console.error("Error fetching IP information:", String(error));
-          }
-          setLoading(false);
+        if (currencyValue) {
+          dispatch(updateSelectedCurrency(currency));
+          dispatch(updateSelectedCurrencyValue(currencyValue));
         }
-      };
-      fetchCountryInfo();
+      } catch (error) {
+        if (error instanceof Error) {
+          console.error("Error fetching IP information:", error);
+        } else {
+          console.error("Error fetching IP information:", String(error));
+        }
+        setLoading(false);
+      }
+    };
+    fetchCountryInfo();
   }, [exchange, dispatch, init, loading]);
 
   useEffect(() => {

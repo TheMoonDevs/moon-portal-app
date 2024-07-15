@@ -475,6 +475,7 @@ export function OnboardingPage({ onClose }: OnboardingPageProps) {
                         id="username"
                         maxLength={3}
                         pattern={REGEXP_ONLY_CHARS}
+                        inputMode="text"
                         alt="Username input"
                         value={username}
                         required
