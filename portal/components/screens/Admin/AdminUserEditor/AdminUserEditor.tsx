@@ -42,6 +42,7 @@ export const AdminUserEditor = () => {
     industry: USERINDUSTRY.OTHERS,
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     country: "",
+    house: null,
     createdAt: new Date(),
     updatedAt: new Date(),
     status: USERSTATUS.ACTIVE,
@@ -54,6 +55,8 @@ export const AdminUserEditor = () => {
     payData: null, // Add the missing property
     slackId: "",
     thirdPartyData: null,
+    banner: "",
+    description: "",
   });
 
   useEffect(() => {
