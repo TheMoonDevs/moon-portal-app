@@ -163,6 +163,7 @@ export const WorklogsPage = () => {
   const isEditorSaving = useAppSelector(
     (state) => state.worklogs.isEditorSaving
   );
+  const incompleteTodos = useAppSelector((state) => state.laterTodos.incompleteTodos);
 
   useEffect(() => {
     const _user = store.getState().auth.user;
@@ -241,7 +242,12 @@ export const WorklogsPage = () => {
   const tabs = [
     { label: "Tasks/Tips", content: <WorklogTips /> },
     {
-      label: "Todos for later",
+      label: (
+        <div className="flex items-center gap-2">
+          Todos for later
+          {incompleteTodos > 0 && <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse"></div>}
+        </div>
+      ),
       content: <TodoTab userId={user?.id as string} />,
     },
   ];

@@ -4,8 +4,11 @@ import { PortalSdk } from "@/utils/services/PortalSdk";
 import { MdxAppEditor } from "@/utils/configure/MdxAppEditor";
 import { debounce } from "lodash";
 import { MDXEditorMethods } from "@mdxeditor/editor";
+import { useAppDispatch } from "@/utils/redux/store";
+import { setIncompleteTodos } from "@/utils/redux/worklogs/laterTodos.slice";
 
 const TodoTabs = ({ userId }: { userId: string }) => {
+  const dispatch = useAppDispatch();
   const MARKDOWN_PLACEHOLDER = `*`;
   const [docMarkdown, setDocMarkdown] = useState<DocMarkdown | null>(null);
   const [markdownContent, setMarkdownContent] =
@@ -18,13 +21,14 @@ const TodoTabs = ({ userId }: { userId: string }) => {
     fetchLaterToDo(userId);
   }, [userId]);
 
-  const fetchLaterToDo = (userId: string) => {
+const fetchLaterToDo = (userId: string) => {
     setLoading(true);
     PortalSdk.getData(`/api/user/todolater?userId=${userId}`, null)
       .then((data) => {
         setDocMarkdown(data.data);
         setMarkdownContent(data.data?.markdown.content || "");
         mdRef?.current?.setMarkdown(data.data?.markdown.content || "");
+        updateIncompleteTodos(data.data?.markdown.content || "");
       })
       .catch((err) => {
         console.log(err);
@@ -32,6 +36,13 @@ const TodoTabs = ({ userId }: { userId: string }) => {
       .finally(() => {
         setLoading(false);
       });
+  };
+
+  const updateIncompleteTodos = (content: any) => {
+    const totalTodos = (content.match(/\n/g) || []).length + 1;
+    const completedTodos = (content.match(/✅/g) || []).length;
+    const incompleteTodos = totalTodos - completedTodos;
+    dispatch(setIncompleteTodos(incompleteTodos));
   };
 
   const saveMarkdownContent = useCallback(
@@ -86,6 +97,7 @@ const TodoTabs = ({ userId }: { userId: string }) => {
     mdRef?.current?.setMarkdown(new_content);
     setMarkdownContent(new_content);
     debouncedSave(new_content);
+    updateIncompleteTodos(new_content);
   };
 
   const getStatsOfContent = (content: string) => {
