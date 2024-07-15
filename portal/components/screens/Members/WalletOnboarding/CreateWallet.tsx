@@ -17,8 +17,6 @@ import { toast, Toaster } from "sonner";
 const CreateWallet = () => {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [showSnackbar, setShowSnackbar] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState("");
   const { user } = useUser();
   const router = useRouter();
   const { notifications } = useNotifications();
@@ -32,58 +30,63 @@ const CreateWallet = () => {
   const handleNextStep = async (walletAddress?: string) => {
     if (step < 3) {
       setStep(step + 1);
-    } else {
-      if (walletAddress) {
-        setLoading(true);
-        try {
-          const userPayData = user?.payData as JsonObject;
-          if (
-            userPayData.walletAddress === walletAddress &&
-            isValidEthAddress(walletAddress)
-          ) {
-            toast.info("This wallet address is already set.");
-            return;
-          }
-          const response = await PortalSdk.putData("/api/user", {
-            ...user,
-            payData: {
-              ...userPayData,
-              walletAddress: walletAddress,
-            },
-          });
-          console.log("API response:", response.data.user);
-          localStorage.setItem(
-            LOCAL_STORAGE.user,
-            JSON.stringify(response?.data?.user)
-          );
+      return;
+    }
+    if (!walletAddress) return;
 
-          if (
-            walletNotification &&
-            !walletNotification.notificationData.actionDone
-          ) {
-            await PortalSdk.putData("/api/notifications/update", {
-              ...walletNotification,
-              description: "Wallet address successfully updated.",
-              notificationData: {
-                ...walletNotification.notificationData,
-                actionDone: true,
-              },
-            });
-          }
-          toast.success(
-            "Wallet address updated successfully! Redirecting to home..."
-          );
-          setTimeout(() => {
-            router.push(APP_ROUTES.home);
-          }, 3000);
-        } catch (error) {
-          toast.error("Error updating wallet address.");
-        } finally {
-          setLoading(false);
-        }
+    setLoading(true);
+    try {
+      const userPayData = user?.payData as JsonObject;
+      if (
+        userPayData.walletAddress === walletAddress &&
+        isValidEthAddress(walletAddress)
+      ) {
+        toast.info("This wallet address is already set.");
+        return;
       }
+
+      const updatedUser = await updateUserWalletAddress(
+        walletAddress,
+        userPayData
+      );
+      localStorage.setItem(LOCAL_STORAGE.user, JSON.stringify(updatedUser));
+
+      await updateWalletNotification();
+      toast.success(
+        "Wallet address updated successfully! Redirecting to home..."
+      );
+      setTimeout(() => router.push(APP_ROUTES.home), 3000);
+    } catch (error) {
+      toast.error("Error updating wallet address.");
+    } finally {
+      setLoading(false);
     }
   };
+
+  async function updateUserWalletAddress(
+    walletAddress: string,
+    userPayData: JsonObject
+  ) {
+    const response = await PortalSdk.putData("/api/user", {
+      ...user,
+      payData: { ...userPayData, walletAddress },
+    });
+    console.log("API response:", response.data.user);
+    return response.data.user;
+  }
+
+  async function updateWalletNotification() {
+    if (walletNotification && !walletNotification.notificationData.actionDone) {
+      await PortalSdk.putData("/api/notifications/update", {
+        ...walletNotification,
+        description: "Wallet address successfully updated.",
+        notificationData: {
+          ...walletNotification.notificationData,
+          actionDone: true,
+        },
+      });
+    }
+  }
 
   return (
     <>
