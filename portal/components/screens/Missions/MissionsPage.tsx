@@ -247,9 +247,12 @@ export const MissionsPage = () => {
                     if (_mission.id === mission.id) {
                         return data.data.mission;
                     }
+                    console.log(mission);
+                    
                     return mission;
                 }));
                 setSavingMission(null);
+
             })
             .catch((error) => {
                 console.error(error);
