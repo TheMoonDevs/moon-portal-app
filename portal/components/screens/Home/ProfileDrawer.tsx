@@ -3,15 +3,13 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Drawer, Box } from "@mui/material";
-import {
-  closeSlideIn,
-  updateSelectedUser,
-} from "@/utils/redux/userProfileDrawer/userProfileDrawer.slice";
-import { RootState } from "@/utils/redux/store";
+
+import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import { useUser } from "@/utils/hooks/useUser";
 import { User, WorkLogs } from "@prisma/client";
 import Link from "next/link";
 import { updateAvatarUrl } from "@/utils/redux/onboarding/onboarding.slice";
+import { closeDrawer, openDrawer, selectMember, updateMember } from "@/utils/redux/coreTeam/coreTeam.slice";
 import {
   addFilesToPreview,
   resetPreview,
@@ -23,6 +21,7 @@ import { PortalSdk } from "@/utils/services/PortalSdk";
 import useAsyncState from "@/utils/hooks/useAsyncState";
 import { LoadingSkeleton } from "@/components/elements/LoadingSkeleton";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
+import { setReduxUser } from "@/utils/redux/auth/auth.slice";
 
 interface LoggedInUser {
   user: User;
@@ -38,13 +37,14 @@ export interface PayData {
 }
 
 export const UserProfileDrawer: React.FC = () => {
-  const dispatch = useDispatch();
-  const isOpen = useSelector(
-    (state: RootState) => state.userProfileDrawer.isDrawerOpen
+  const dispatch = useAppDispatch();
+  const isOpen = useAppSelector(
+    (state: RootState) => state.coreTeam.isDrawerOpen
   );
-  const selectedUser = useSelector(
-    (state: RootState) => state.userProfileDrawer.selectedUser
+  const selectedUser = useAppSelector(
+    (state: RootState) => state.coreTeam.selectedMember
   );
+
   const [avatarLoading, setAvatarLoading] = useState<boolean>(false);
   const [bannerLoading, setBannerLoading] = useState<boolean>(false);
   const loggedinUser = useUser() as LoggedInUser;
@@ -53,7 +53,7 @@ export const UserProfileDrawer: React.FC = () => {
   const { loading, setLoading } = useAsyncState();
 
   const handleClose = () => {
-    dispatch(closeSlideIn());
+    dispatch(closeDrawer());
   };
 
   const fetchWorklogData = useCallback(async () => {
@@ -143,10 +143,11 @@ export const UserProfileDrawer: React.FC = () => {
           ...loggedinUser.user,
           [fileType]: data.fileInfo[0].fileUrl,
         });
+        
         console.log(userResponse);
-
+        dispatch(setReduxUser(userResponse?.data?.user));
         dispatch(
-          updateSelectedUser({
+           updateMember({
             ...selectedUser,
             [fileType]: data.fileInfo[0].fileUrl,
           })
