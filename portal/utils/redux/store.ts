@@ -12,6 +12,7 @@ import searchTermReducer from "./searchTerm/search.slice";
 import filesUploadReducer from "./filesUpload/fileUpload.slice";
 import onboardingFormReducer from "./onboarding/onboarding.slice";
 import worklogsReducer from "./worklogs/worklogs.slice";
+import selectedMissionReducer from './missions/selectedMission.slice';
 //import suggestionsReducer from './suggestions/suggestions.slice';
 
 const store = configureStore({
@@ -25,6 +26,7 @@ const store = configureStore({
     worklogs: worklogsReducer,
     searchTerm: searchTermReducer,
     onboardingForm: onboardingFormReducer,
+    selectedMission: selectedMissionReducer,
     //suggestions: suggestionsReducer,
   },
   middleware: (getDefaultMiddleware) =>
