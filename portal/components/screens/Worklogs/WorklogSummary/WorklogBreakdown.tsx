@@ -14,7 +14,7 @@ import {
   CircleX,
   History,
 } from "lucide-react";
-import { Stack } from "@mui/material";
+import { Stack, useMediaQuery } from "@mui/material";
 
 interface WorklogBreakdownProps {
   worklogSummary: WorkLogs[];
@@ -45,11 +45,17 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
     (day) => metrics.tasksByWeekday[day]?.inProgress || 0
   );
 
+  const isSmallScreen = useMediaQuery("(max-width:600px)");
+
+  const chartWidth = isSmallScreen ? 380 : 450;
+  const chartHeight = isSmallScreen ? 200 : 300;
+  const barChartWidth = isSmallScreen ? 350 : 550;
   return (
-    <main className="flex flex-col justify-center gap-5 m-6">
-      <h1 className="font-semibold text-xl font-sans justify-start">
+    <main className="flex flex-col justify-center gap-5 m-6 pb-20 ">
+      <h1 className="font-semibold text-lg text-center md:text-xl font-sans justify-start mt-4">
         Worklog Breakdown
       </h1>
+
       <Stack spacing={3} alignItems="center">
         <PieChart
           colors={["blue", "#22c55e", "red", "orange", "purple"]}
@@ -58,38 +64,17 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
               arcLabel: (item) => `${item.label} (${item.value})`,
               arcLabelMinAngle: 45,
               data: [
-                {
-                  label: "In Progress",
-                  value: metrics.inProgressTasks,
-                  id: 0,
-                },
-                {
-                  label: "Completed",
-                  value: metrics.completedTasks,
-                  id: 1,
-                },
-                {
-                  label: "Failed",
-                  value: metrics.failedTasks,
-                  id: 2,
-                },
-                {
-                  label: "Blocked",
-                  value: metrics.blockedTasks,
-                  id: 3,
-                },
-                {
-                  label: "Scheduled",
-                  value: metrics.scheduledTasks,
-                  id: 4,
-                },
+                { label: "In Progress", value: metrics.inProgressTasks, id: 0 },
+                { label: "Completed", value: metrics.completedTasks, id: 1 },
+                { label: "Failed", value: metrics.failedTasks, id: 2 },
+                { label: "Blocked", value: metrics.blockedTasks, id: 3 },
+                { label: "Scheduled", value: metrics.scheduledTasks, id: 4 },
               ],
             },
           ]}
-          width={450}
-          height={300}
+          width={chartWidth}
+          height={chartHeight}
         />
-        {/* Display total tasks */}
         <div>
           <strong>Total Tasks:</strong> {metrics.totalTasks}
         </div>
@@ -118,16 +103,13 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
               label: "In Progress tasks",
             },
           ]}
-          width={550}
-          height={300}
+          width={barChartWidth}
+          height={chartHeight}
         />
-
         <div className="pb-5">
           <strong>Tasks by Weekday</strong>
         </div>
-
-        {/* Additional metrics */}
-        <div className="flex flex-wrap gap-5 justify-center items-stretch">
+        <div className="flex flex-wrap gap-5  justify-center items-stretch">
           <MetricCard
             title="Longest Productive Streak"
             content={

@@ -1,8 +1,9 @@
 "use client";
-import { ChangeEvent, useRef, useState } from "react";
+import { ChangeEvent, useEffect, useRef, useState } from "react";
 import Invoice from "./Invoice";
 import InvoiceModal from "./InvoiceModal";
 import InvoiceHeader from "./InvoiceHeader";
+import { PortalSdk } from "@/utils/services/PortalSdk";
 
 export interface InvoiceData {
   invoiceId: string;
@@ -19,9 +20,26 @@ export interface InvoiceData {
   };
 }
 
+export interface InvoicePaymentData {
+  cryptoPaymentInfo: {
+    wallet_address: string;
+  };
+  bankPaymentInfo: {
+    name: string;
+    account_no: string;
+    ifsc: string;
+  };
+}
+
 const InvoicePage = () => {
   const [showInput, setShowInput] = useState<boolean>(false);
-  const today = new Date(); // Get today's date
+  const [dbPaymentInfo, setDBPaymentInfo] = useState<InvoicePaymentData | null>(
+    null
+  );
+  const [showUpdateButton, setShowUpdateButton] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [dataLoad, setDataLoad] = useState<boolean>(false);
+  const today = new Date(); // Get today"s date
   const dueDate = new Date(today);
   dueDate.setDate(dueDate.getDate() + 7);
 
@@ -30,13 +48,13 @@ const InvoicePage = () => {
     invoiceDate: today,
     dueDate: dueDate,
     paymentMethod: "bank",
-    cryptoAddress: "0x94751a6ecfd0f849286fe6c399eb0ac3bf05b141f",
+    cryptoAddress: "",
     payingTo: "Subhakar Tikkireddy",
     companyName: "TheMoonDevs",
     bankDetails: {
-      name: "SUBHAKAR TIKKIREDDY",
-      account: "145410010035399",
-      ifsc: "UBIN0836531",
+      name: "",
+      account: "",
+      ifsc: "",
     },
   });
 
@@ -48,15 +66,50 @@ const InvoicePage = () => {
 
   const handleInputChange = (e: any) => {
     const { name, value } = e.target;
+    let updatedData: InvoiceData;
+
     if (name.includes("bank")) {
       const field = name.split("-")[1];
-      setInvoiceData((prevData) => ({
-        ...prevData,
-        bankDetails: { ...prevData.bankDetails, [field]: value },
-      }));
+      updatedData = {
+        ...invoiceData,
+        bankDetails: { ...invoiceData.bankDetails, [field]: value },
+      };
     } else {
-      setInvoiceData({ ...invoiceData, [name]: value });
+      updatedData = { ...invoiceData, [name]: value };
     }
+
+    setInvoiceData(updatedData);
+    checkIfPaymentInfoEdited(updatedData);
+  };
+
+  const checkIfPaymentInfoEdited = (currentData: InvoiceData) => {
+    if (!dbPaymentInfo) return;
+
+    const currentPaymentInfo = {
+      cryptoPaymentInfo: {
+        wallet_address: currentData.cryptoAddress,
+      },
+      bankPaymentInfo: {
+        name: currentData.bankDetails.name,
+        account_no: currentData.bankDetails.account,
+        ifsc: currentData.bankDetails.ifsc,
+      },
+    };
+
+    const isEdited = (
+      Object.keys(currentPaymentInfo) as (keyof InvoicePaymentData)[]
+    ).some((key) =>
+      (
+        Object.keys(
+          currentPaymentInfo[key]
+        ) as (keyof (typeof currentPaymentInfo)[typeof key])[]
+      ).some(
+        (subKey) =>
+          currentPaymentInfo[key][subKey] !== dbPaymentInfo[key][subKey]
+      )
+    );
+
+    setShowUpdateButton(isEdited);
   };
 
   const handleDateChange = (
@@ -81,6 +134,69 @@ const InvoicePage = () => {
     }));
   };
 
+  const fetchInvoicePaymentData = async () => {
+    setDataLoad(true);
+    try {
+      const response = await PortalSdk.getData("/api/invoice", null);
+      if (response && response) {
+        setDBPaymentInfo(response.configData);
+        setInvoiceData({
+          ...invoiceData,
+          cryptoAddress: response.configData.cryptoPaymentInfo.wallet_address,
+          bankDetails: {
+            name: response.configData.bankPaymentInfo.name,
+            account: response.configData.bankPaymentInfo.account_no,
+            ifsc: response.configData.bankPaymentInfo.ifsc,
+          },
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching invoice payment data:", error);
+    } finally {
+      setDataLoad(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchInvoicePaymentData();
+  }, []);
+
+  const handleUpdatePaymentInfo = async () => {
+    setLoading(true);
+    const data = {
+      cryptoPaymentInfo: {
+        wallet_address: invoiceData.cryptoAddress,
+      },
+      bankPaymentInfo: {
+        name: invoiceData.bankDetails.name,
+        account_no: invoiceData.bankDetails.account,
+        ifsc: invoiceData.bankDetails.ifsc,
+      },
+    };
+
+    try {
+      const response = await PortalSdk.putData("/api/invoice", data);
+      console.log("Update successful", response);
+      if (response && response.configData) {
+        setDBPaymentInfo(response.configData);
+        setInvoiceData({
+          ...invoiceData,
+          cryptoAddress: response.configData.cryptoPaymentInfo.wallet_address,
+          bankDetails: {
+            name: response.configData.bankPaymentInfo.name,
+            account: response.configData.bankPaymentInfo.account_no,
+            ifsc: response.configData.bankPaymentInfo.ifsc,
+          },
+        });
+      }
+      setShowUpdateButton(false);
+    } catch (error) {
+      console.error("Error updating payment info", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <>
       <header className="w-full">
@@ -101,6 +217,10 @@ const InvoicePage = () => {
                   handleDateChange={handleDateChange}
                   handlePaymentMethodChange={handlePaymentMethodChange}
                   handleOwnerInfoChange={handleOwnerInfoChange}
+                  handleUpdatePaymentInfo={handleUpdatePaymentInfo}
+                  loading={loading}
+                  showUpdateButton={showUpdateButton}
+                  dataLoad={dataLoad}
                 />
               </div>
             )}
@@ -116,6 +236,10 @@ const InvoicePage = () => {
                 handleDateChange={handleDateChange}
                 handlePaymentMethodChange={handlePaymentMethodChange}
                 handleOwnerInfoChange={handleOwnerInfoChange}
+                handleUpdatePaymentInfo={handleUpdatePaymentInfo}
+                loading={loading}
+                showUpdateButton={showUpdateButton}
+                dataLoad={dataLoad}
               />
             </div>
           </section>
