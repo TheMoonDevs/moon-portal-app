@@ -17,11 +17,10 @@ export const selectedMissionSlice = createSlice({
   reducers: {
     setSelectedMission: (state, action: PayloadAction<Mission | null>) => {
       state.mission = action.payload;
-      state.isOpen = action.payload !== null;
     },
     setMissionDetailsOpen: (state, action: PayloadAction<boolean>) => {
         state.isOpen = action.payload;
-      },
+    },
   },
 });
 
