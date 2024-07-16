@@ -19,6 +19,7 @@ import { DirectoryItem } from "./DirectoryItem";
 import { useQuickLinkDirectory } from "../../../hooks/useQuickLinkDirectory";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
 import { PopoverEmojis, PopoverFolderEdit } from "../../../elements/Popovers";
+import { MoveModal } from "../../../elements/Movemodal";
 
 export const DirectoryTree = ({
   mainDirectory,
@@ -35,6 +36,8 @@ export const DirectoryTree = ({
   });
   const pathName = usePathname();
   const { rootDirectories, parentDirs, directories } = useQuickLinkDirectory();
+  const [showModal, setShowModal] = useState(false);
+  const [currDirectory, setCurrDirectory] = useState({} as Directory);
 
   useEffect(() => {
     if (!selectedDir) return;
@@ -163,6 +166,12 @@ export const DirectoryTree = ({
   const router = useRouter();
   const { activeDirectoryId } = useAppSelector((state) => state.quicklinks);
 
+  const handleMoveToDialog = (directory: Directory) => {
+    setCurrDirectory(directory);
+    setShowModal(true);
+    console.log(rootDirectories);
+  };
+
   const handleDeleteDirectory = async (
     directory: Directory,
     parentId: string | null,
@@ -255,7 +264,17 @@ export const DirectoryTree = ({
         </div>
       ))}
       <PopoverEmojis handleDirectoryUpdate={handleDirectoryUpdate} />
-      <PopoverFolderEdit handleDeleteDirectory={handleDeleteDirectory} />
+      <PopoverFolderEdit
+        handleDeleteDirectory={handleDeleteDirectory}
+        handleMoveToDirectory={handleMoveToDialog}
+      />
+      {showModal && (
+        <MoveModal
+          currentDirectory={currDirectory}
+          onCancel={() => setShowModal(false)}
+          onMove={() => setShowModal(false)}
+        />
+      )}
     </>
   );
 };
