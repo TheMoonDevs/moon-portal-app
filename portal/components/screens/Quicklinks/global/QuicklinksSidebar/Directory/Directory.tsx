@@ -38,6 +38,7 @@ export const DirectoryTree = ({
   const { rootDirectories, parentDirs, directories } = useQuickLinkDirectory();
   const [showModal, setShowModal] = useState(false);
   const [currDirectory, setCurrDirectory] = useState({} as Directory);
+  const [isParent, setIsParent] = useState(false);
 
   useEffect(() => {
     if (!selectedDir) return;
@@ -94,6 +95,7 @@ export const DirectoryTree = ({
       ...directory,
       ...updateInfo,
     };
+
     try {
       dispatch(updateDirectory(updatedDirectory));
       const response = await QuicklinksSdk.updateData(
@@ -166,10 +168,18 @@ export const DirectoryTree = ({
   const router = useRouter();
   const { activeDirectoryId } = useAppSelector((state) => state.quicklinks);
 
-  const handleMoveToDialog = (directory: Directory) => {
+  const handleMoveToDialog = (
+    directory: Directory,
+    parentId: string | null,
+    rootSlug?: string
+  ) => {
+    if (!parentId) {
+      setIsParent(true);
+    } else {
+      setIsParent(false);
+    }
     setCurrDirectory(directory);
     setShowModal(true);
-    console.log(rootDirectories);
   };
 
   const handleDeleteDirectory = async (
@@ -271,6 +281,7 @@ export const DirectoryTree = ({
       {showModal && (
         <MoveModal
           currentDirectory={currDirectory}
+          isParent={isParent}
           onCancel={() => setShowModal(false)}
           onMove={() => setShowModal(false)}
         />
