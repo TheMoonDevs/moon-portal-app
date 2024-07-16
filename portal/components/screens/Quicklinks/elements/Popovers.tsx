@@ -59,7 +59,11 @@ export const PopoverFolderEdit = ({
     parentId: string | null,
     rootSlug?: string
   ) => Promise<void>;
-  handleMoveToDirectory: (directory: Directory) => void;
+  handleMoveToDirectory: (
+    directory: Directory,
+    parentId: string | null,
+    rootSlug?: string
+  ) => void;
 }) => {
   const { handleClose, anchorElement, data, openFolderEditor } =
     useQuicklinksPopover();
@@ -116,7 +120,11 @@ export const PopoverFolderEdit = ({
         <li
           className="flex items-center gap-2 group hover:bg-neutral-200 rounded-md p-1 px-3 cursor-pointer"
           onClick={() => {
-            handleMoveToDirectory(data.selectedDirectory);
+            handleMoveToDirectory(
+              data.selectedDirectory,
+              data.parentDirectoryId,
+              data.rootSlug
+            );
             handleClose();
           }}
         >
