@@ -5,6 +5,7 @@ import {
 } from "@/utils/redux/missions/selectedMission.slice";
 import { useAppDispatch } from "@/utils/redux/store";
 import { Mission } from "@prisma/client";
+import { HOUSES_LIST } from "./HousesList";
 
 export function calculateMissionStat(
   mission: Mission,
@@ -22,7 +23,8 @@ export function calculateMissionStat(
         return ""; // No tasks, so mission not completed
     }
   }
-  {/* @ts-expect-error Server Component */} // reduce causing type warning
+ 
+  /* @ts-expect-error */
   const allTaskPoints = mission.tasks.reduce(
     (sum: number, task: any) => sum + task.indiePoints,
     0
@@ -49,9 +51,11 @@ export function calculateMissionStat(
 export const MissionsList = ({
   missions,
   loading,
+  currentHouseIndex,
 }: {
   missions: Mission[];
   loading: boolean;
+  currentHouseIndex: number;
 }) => {
   const dispatch = useAppDispatch();
 
@@ -60,7 +64,7 @@ export const MissionsList = ({
   }
 
   return (
-    <div className="h-full flex flex-col gap-4 my-4 shadow-xl rounded-lg border">
+    <div className=" flex flex-col gap-4 my-4 shadow-xl h-[96vh] rounded-lg border overflow-y-scroll">
       <div
         id="mission-header"
         className="flex flex-row items-center justify-between px-4 py-4 border-b border-neutral-200 rounded-t-xl"
@@ -73,39 +77,47 @@ export const MissionsList = ({
           <span className="material-icons-outlined">search</span>
         </div>
       </div>
-      {missions.map((mission, i) => (
-        <div
-          key={i}
-          className="flex flex-col gap-2 border-b border-neutral-200"
-          onClick={() => {
-            dispatch(setSelectedMission(mission));
-            dispatch(setMissionDetailsOpen(true));
-          }}
-        >
-          <div className="flex flex-row items-center gap-2 w-full px-4">
-            <img
-              src={`images/houses/${mission.house}.png`}
-              alt={mission.house}
-              className="w-8 h-8 object-cover object-center rounded-full"
-            />
-            <h4 className="text-md font-semibold">{mission.title}</h4>
-            <p className="text-sm font-regular ml-auto">
-              {mission.housePoints} HP
-            </p>
-            <p className="text-sm font-regular">
-              {calculateMissionStat(mission, "balance")} / {mission.indiePoints}
-            </p>
-            <p className="text-sm font-regular">
-              {calculateMissionStat(mission, "status")}
-            </p>
-            {/* <p className="text-sm font-regular">{mission.createdAt ? prettyPrintDateInMMMDD(new Date(mission.createdAt)) : "uknown"}</p> */}
-          </div>
+      {missions
+        .filter(
+          (mission: Mission) =>
+            HOUSES_LIST[currentHouseIndex]?.id == mission.house
+        )
+        .map((mission, i) => (
           <div
-            className="h-[2px] bg-green-500"
-            style={{ width: `${calculateMissionStat(mission, "percentage")}%` }}
-          ></div>
-        </div>
-      ))}
+            key={i}
+            className="flex flex-col gap-2 border-b border-neutral-200"
+            onClick={() => {
+              dispatch(setSelectedMission(mission));
+              dispatch(setMissionDetailsOpen(true));
+            }}
+          >
+            <div className="flex flex-row items-center gap-2 w-full px-4">
+              <img
+                src={`images/houses/${mission.house}.png`}
+                alt={mission.house}
+                className="w-8 h-8 object-cover object-center rounded-full"
+              />
+              <h4 className="text-md font-semibold">{mission.title}</h4>
+              <p className="text-sm font-regular ml-auto">
+                {mission.housePoints} HP
+              </p>
+              <p className="text-sm font-regular">
+                {calculateMissionStat(mission, "balance")} /{" "}
+                {mission.indiePoints}
+              </p>
+              <p className="text-sm font-regular">
+                {calculateMissionStat(mission, "status")}
+              </p>
+              {/* <p className="text-sm font-regular">{mission.createdAt ? prettyPrintDateInMMMDD(new Date(mission.createdAt)) : "uknown"}</p> */}
+            </div>
+            <div
+              className="h-[2px] bg-green-500"
+              style={{
+                width: `${calculateMissionStat(mission, "percentage")}%`,
+              }}
+            ></div>
+          </div>
+        ))}
     </div>
   );
 };
