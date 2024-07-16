@@ -32,41 +32,6 @@ export async function GET(request: NextRequest) {
         status: status ? (status as USERSTATUS) : USERSTATUS.ACTIVE,
       },
     });
-    const slackBotSdk = new SlackBotSdk();
-    const allSlackUsers = await slackBotSdk.getSlackUsers();
-
-    await Promise.all(
-      user.map((userData) => {
-        try {
-          if (
-            !userData.thirdPartyData ||
-            !(userData.thirdPartyData as JsonObject).slackData
-          ) {
-            const slackUser = allSlackUsers.find(
-              (slackUser: any) => slackUser?.profile?.email === userData?.email
-            );
-            // console.log(slackUser?.profile?.email, userData?.email);
-
-            if (slackUser) {
-              const newThirdPartyData = {
-                ...(userData.thirdPartyData as JsonObject),
-                slackData: slackUser,
-              };
-
-              return prisma.user.update({
-                where: { id: userData.id },
-                data: {
-                  thirdPartyData: newThirdPartyData,
-                  slackId: slackUser.id,
-                },
-              });
-            }
-          }
-        } catch (error: any) {
-          console.error(`Error updating user ${userData.id}: ${error.message}`);
-        }
-      })
-    );
 
     if (error_response) {
       return new NextResponse(JSON.stringify(error_response), {
