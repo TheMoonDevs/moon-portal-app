@@ -73,7 +73,6 @@ export const MissionDetails = ({ missions }: { missions: Mission[] }) => {
                     {task.userInfo?.name || "Unknown"}
                   </span>
                 </div>
-
                 <p className="text-gray-700 mb-2 font-bold">{task.title}</p>
                 <p className="text-gray-700 mb-2 text-sm">{task.description}</p>
                 <p className="text-right font-medium text-blue-600 text-sm">
