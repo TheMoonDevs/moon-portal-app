@@ -1,6 +1,9 @@
 import Image from 'next/image';
 import React, { useEffect, useState } from 'react';
 import CircularProgress from '@mui/material/CircularProgress';
+import Dialog from '@mui/material/Dialog';
+import DialogContent from '@mui/material/DialogContent';
+import IconButton from '@mui/material/IconButton';
 
 interface IOnboardingStepProps {
   image: string;
@@ -22,15 +25,31 @@ const OnboardingStep: React.FC<IOnboardingStepProps> = ({
   step,
 }) => {
   const [value, setValue] = useState(0);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     setValue(step * 33.33);
   }, [step]);
 
+  const handleImageClick = () => {
+    if (step === 2) {
+      setOpen(true);
+    }
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+  };
+
   return (
     <div className='flex flex-col items-center justify-between h-[calc(100vh-10vh)] p-6 py-7 w-[95%] md:w-[350px] lg:w-1/4 bg-neutral-800 shadow-md rounded-lg text-center max-sm:w-full max-sm:h-full max-sm:justify-center max-sm:gap-8'>
       {image && (
-        <div className='relative w-44 h-44 rounded-full border-2 border-orange-500 flex items-center justify-center mb-6'>
+        <div
+          className={`relative w-44 h-44 rounded-full border-2 border-orange-500 flex items-center justify-center mb-6 ${
+            step === 2 ? 'cursor-pointer' : ''
+          }`}
+          onClick={handleImageClick}
+        >
           <Image
             src={image}
             alt='Step Image'
@@ -64,6 +83,31 @@ const OnboardingStep: React.FC<IOnboardingStepProps> = ({
           )}
         </button>
       </div>
+      <Dialog open={open} onClose={handleClose}>
+        <DialogContent>
+          <div className='relative'>
+            <IconButton
+              aria-label='close'
+              onClick={handleClose}
+              style={{
+                position: 'absolute',
+                right: 8,
+                top: 8,
+                background: '#ababab',
+              }}
+            >
+              <span className='material-symbols-outlined'>close</span>
+            </IconButton>
+            <Image
+              src={image}
+              alt=''
+              layout='responsive'
+              width={500}
+              height={500}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
