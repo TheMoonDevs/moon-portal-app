@@ -45,8 +45,7 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const body = await request.json();
-
+    const body = await request.json();  
     const { userId, logType, markdown } = body;
 
     if (!userId || !logType || !markdown) {
@@ -60,7 +59,7 @@ export async function PUT(request: NextRequest) {
 
     const newDocMarkdown = await prisma.docMarkdown.upsert({
       where: {
-        userId: userId,
+        docId: docId,
       },
       update: {
         markdown: markdown,
