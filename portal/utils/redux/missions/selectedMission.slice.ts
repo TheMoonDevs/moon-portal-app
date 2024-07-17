@@ -3,12 +3,14 @@ import { Mission } from '@prisma/client';
 
 interface SelectedMissionState {
   mission: Mission | null;
+  missions: Mission[] | null
   isOpen: boolean;
 }
 
 const initialState: SelectedMissionState = {
   mission: null,
   isOpen: false,
+  missions: null
 };
 
 export const selectedMissionSlice = createSlice({
@@ -17,13 +19,17 @@ export const selectedMissionSlice = createSlice({
   reducers: {
     setSelectedMission: (state, action: PayloadAction<Mission | null>) => {
       state.mission = action.payload;
+      // state.isOpen = action.payload !== null;
     },
     setMissionDetailsOpen: (state, action: PayloadAction<boolean>) => {
         state.isOpen = action.payload;
     },
+    setAllMissions:(state,action: PayloadAction<Mission[] | null>) =>{
+      state.missions = action.payload
+    }
   },
 });
 
-export const { setSelectedMission, setMissionDetailsOpen } = selectedMissionSlice.actions;
+export const { setSelectedMission, setMissionDetailsOpen,setAllMissions } = selectedMissionSlice.actions;
 
 export default selectedMissionSlice.reducer;
