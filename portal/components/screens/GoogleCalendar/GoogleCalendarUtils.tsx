@@ -1,3 +1,4 @@
+import { Dispatch, SetStateAction } from "react";
 export type FormDataType = {
   title: string;
   details: string;
@@ -8,14 +9,15 @@ export type FormDataType = {
   endTime: any;
   allDay: boolean;
   endRepeat: Date | null;
-  endDate: any;
+  endDate: Date | null;
 };
 
-// 📝 Validates the form data, ensuring title and startDate are provided.
-export const validateForm = (
-  formData: FormDataType
-): { title: boolean; startDate: boolean } => {
-  // Check if either title or startDate is empty
+export type FormValidationsType = {
+  title: boolean;
+  startDate: boolean;
+};
+
+export const validateForm = (formData: FormDataType): FormValidationsType => {
   const isTitleEmpty = !formData.title;
   const isStartDateEmpty = !formData.startDate;
 
@@ -25,11 +27,15 @@ export const validateForm = (
   };
 };
 
-// 📅 Formats the given date and time into a Google Calendar compatible string.
-export const formatDate = (date: Date, time?: string | Date): string => {
-  if (!(date instanceof Date) || isNaN(date.getTime()))
-    throw new Error("Invalid date provided");
-
+export const formatDate = (
+  date: Date,
+  time: string | Date | null,
+  setAlertMessage: Dispatch<SetStateAction<string | null>>
+): string | null => {
+  if (!(date instanceof Date) || isNaN(date.getTime())) {
+    setAlertMessage("Invalid Date Format");
+    return null;
+  }
   const formattedDate = new Date(date);
 
   if (time) {
@@ -44,49 +50,59 @@ export const formatDate = (date: Date, time?: string | Date): string => {
   return formattedDate.toISOString().replace(/[-:.]/g, "").split(".")[0] + "Z";
 };
 
-// 📅 Formats an all-day date into a Google Calendar compatible string.
-export const formatAllDayDate = (date: Date): string => {
-  if (!(date instanceof Date) || isNaN(date.getTime()))
-    throw new Error("Invalid date provided");
+export const formatAllDayDate = (
+  date: Date,
+  setAlertMessage: Dispatch<SetStateAction<string | null>>
+): string | null => {
+  if (!(date instanceof Date) || isNaN(date.getTime())) {
+    setAlertMessage("Invalid Date Format");
+    return null;
+  }
 
   const formattedDate = new Date(date);
   formattedDate.setDate(formattedDate.getDate() + 1); // Adjust for all-day event
   return formattedDate.toISOString().split("T")[0].replace(/-/g, "");
 };
 
-// 📅 Formats the start and end dates based on whether it's an all-day event or not.
 export const formatDates = (
-  formData: FormDataType
-): { startDate: string; endDate: string } => {
+  formData: FormDataType,
+  setAlertMessage: Dispatch<SetStateAction<string | null>>
+): { startDate: string; endDate: string } | null => {
   if (
     !formData.startDate ||
     !(formData.startDate instanceof Date) ||
     isNaN(formData.startDate.getTime())
   ) {
-    throw new Error("Invalid start date provided");
+    setAlertMessage("Invalid Date Format");
+    return null;
   }
 
-  let formattedStartDate: string;
-  let formattedEndDate: string;
+  let formattedStartDate: string | null;
+  let formattedEndDate: string | null;
 
   if (formData.allDay) {
-    formattedStartDate = formatAllDayDate(formData.startDate);
+    formattedStartDate = formatAllDayDate(formData.startDate, setAlertMessage);
     formattedEndDate = formattedStartDate; // All-day events have same start and end date
   } else {
-    formattedStartDate = formatDate(formData.startDate, formData.startTime);
+    formattedStartDate = formatDate(
+      formData.startDate,
+      formData.startTime,
+      setAlertMessage
+    );
     const endDate =
       formData.endDate &&
       formData.endDate instanceof Date &&
       !isNaN(formData.endDate.getTime())
         ? new Date(formData.endDate)
         : new Date(formData.startDate.getTime() + 2 * 60 * 60 * 1000); // Default 2 hours
-    formattedEndDate = formatDate(endDate, formData.endTime);
+    formattedEndDate = formatDate(endDate, formData.endTime, setAlertMessage);
   }
+
+  if (!formattedStartDate || !formattedEndDate) return null;
 
   return { startDate: formattedStartDate, endDate: formattedEndDate };
 };
 
-// 🔄 Generates the recurrence rule for the event based on formData.
 export const generateRecurrenceRule = (formData: FormDataType): string => {
   if (formData.repeat === "no-repeat") return "";
 
@@ -130,7 +146,6 @@ export const generateRecurrenceRule = (formData: FormDataType): string => {
   return `RRULE:FREQ=${freq}${until}`;
 };
 
-// 🔗 Constructs the Google Calendar URL with the formatted dates and recurrence rule.
 export const buildGoogleCalendarURL = (
   formData: FormDataType,
   startDate: string,
