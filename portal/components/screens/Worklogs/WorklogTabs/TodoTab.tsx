@@ -7,25 +7,38 @@ import { MDXEditorMethods } from "@mdxeditor/editor";
 import { useAppDispatch } from "@/utils/redux/store";
 import { setIncompleteTodos } from "@/utils/redux/worklogs/laterTodos.slice";
 
-const TodoTabs = ({ userId }: { userId: string }) => {
+export const MARKDOWN_PLACEHOLDER = `*`;
+
+
+
+const TodoTabs = ({
+  userId,
+  setLoading,
+  setMarkdownContent,
+  mdRef,
+  setSaving,
+  saving,
+  loading,
+  markdownContent,
+  updateIncompleteTodos
+}: {
+  userId: string;
+  setLoading: (loading: boolean) => void;
+  setMarkdownContent: (markdown: string) => void;
+  mdRef: React.MutableRefObject<MDXEditorMethods | null>;
+  setSaving: (save: boolean) => void;
+  saving: boolean;
+  loading: boolean;
+  markdownContent: string;
+  updateIncompleteTodos: (content: string) => void;
+}) => {
   const dispatch = useAppDispatch();
-  const MARKDOWN_PLACEHOLDER = `*`;
-  const [docMarkdown, setDocMarkdown] = useState<DocMarkdown | null>(null);
-  const [markdownContent, setMarkdownContent] =
-    useState<string>(MARKDOWN_PLACEHOLDER);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [saving, setSaving] = useState<boolean>(false);
-  const mdRef = useRef<MDXEditorMethods | null>(null);
 
-  useEffect(() => {
-    fetchLaterToDo(userId);
-  }, [userId]);
-
-const fetchLaterToDo = (userId: string) => {
+  const fetchLaterToDo = (userId: string) => {
     setLoading(true);
     PortalSdk.getData(`/api/user/todolater?userId=${userId}`, null)
       .then((data) => {
-        setDocMarkdown(data.data);
+        setLoading(data.data);
         setMarkdownContent(data.data?.markdown.content || "");
         mdRef?.current?.setMarkdown(data.data?.markdown.content || "");
         updateIncompleteTodos(data.data?.markdown.content || "");
@@ -36,13 +49,6 @@ const fetchLaterToDo = (userId: string) => {
       .finally(() => {
         setLoading(false);
       });
-  };
-
-  const updateIncompleteTodos = (content: any) => {
-    const totalTodos = (content.match(/\n/g) || []).length + 1;
-    const completedTodos = (content.match(/✅/g) || []).length;
-    const incompleteTodos = totalTodos - completedTodos;
-    dispatch(setIncompleteTodos(incompleteTodos));
   };
 
   const saveMarkdownContent = useCallback(

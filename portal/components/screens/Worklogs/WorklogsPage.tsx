@@ -4,9 +4,9 @@ import { MdxAppEditor } from "@/utils/configure/MdxAppEditor";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
 import { useUser } from "@/utils/hooks/useUser";
 import { PortalSdk } from "@/utils/services/PortalSdk";
-import { WorkLogs } from "@prisma/client";
+import { DocMarkdown, WorkLogs } from "@prisma/client";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import store, { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import dayjs from "dayjs";
 import { WorkLogsHelper } from "./WorklogsHelper";
@@ -18,7 +18,12 @@ import { Toaster, toast } from "sonner";
 import { setLogsList } from "@/utils/redux/worklogs/worklogs.slice";
 import SimpleTabs from "@/components/elements/Tabs";
 import WorklogTips from "./WorklogTabs/WorklogTips";
-import TodoTab from "./WorklogTabs/TodoTab";
+import TodoTab, {
+  MARKDOWN_PLACEHOLDER,
+  updateIncompleteTodos,
+} from "./WorklogTabs/TodoTab";
+import { setIncompleteTodos } from "@/utils/redux/worklogs/laterTodos.slice";
+import { MDXEditorMethods } from "@mdxeditor/editor";
 
 const tempData = [
   {
@@ -163,7 +168,45 @@ export const WorklogsPage = () => {
   const isEditorSaving = useAppSelector(
     (state) => state.worklogs.isEditorSaving
   );
-  const incompleteTodos = useAppSelector((state) => state.laterTodos.incompleteTodos);
+
+  // moved the later todos logic to the parent component to render pulsating dot
+  const incompleteTodos = useAppSelector(
+    (state) => state.laterTodos.incompleteTodos
+  );
+  const [docMarkdown, setDocMarkdown] = useState<DocMarkdown | null>(null);
+  const [markdownContent, setMarkdownContent] =
+    useState<string>(MARKDOWN_PLACEHOLDER);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [saving, setSaving] = useState<boolean>(false);
+  const mdRef = useRef<MDXEditorMethods | null>(null);
+
+  const fetchLaterToDo = (userId: string) => {
+    setLoading(true);
+    PortalSdk.getData(`/api/user/todolater?userId=${userId}`, null)
+      .then((data) => {
+        setDocMarkdown(data.data);
+        setMarkdownContent(data.data?.markdown.content || "");
+        mdRef?.current?.setMarkdown(data.data?.markdown.content || "");
+        updateIncompleteTodos(data.data?.markdown.content || "");
+      })
+      .catch((err) => {
+        console.log(err);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    fetchLaterToDo(user?.id || "");
+  }, [user?.id]);
+
+  const updateIncompleteTodos = (content: any) => {
+    const totalTodos = (content.match(/\n/g) || []).length + 1;
+    const completedTodos = (content.match(/✅/g) || []).length;
+    const incompleteTodos = totalTodos - completedTodos;
+    dispatch(setIncompleteTodos(incompleteTodos));
+  };
 
   useEffect(() => {
     const _user = store.getState().auth.user;
@@ -245,10 +288,24 @@ export const WorklogsPage = () => {
       label: (
         <div className="flex items-center gap-2">
           Todos for later
-          {incompleteTodos > 0 && <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse"></div>}
+          {incompleteTodos > 0 && (
+            <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse"></div>
+          )}
         </div>
       ),
-      content: <TodoTab userId={user?.id as string} />,
+      content: (
+        <TodoTab
+          userId={user?.id as string}
+          loading={loading}
+          setLoading={setLoading}
+          saving={saving}
+          setSaving={setSaving}
+          mdRef={mdRef}
+          markdownContent={markdownContent}
+          setMarkdownContent={setMarkdownContent}
+          updateIncompleteTodos={updateIncompleteTodos}
+        />
+      ),
     },
   ];
 
