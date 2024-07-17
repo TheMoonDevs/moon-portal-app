@@ -14,6 +14,7 @@ import onboardingFormReducer from "./onboarding/onboarding.slice";
 import worklogsReducer from "./worklogs/worklogs.slice";
 import laterTodosReducer from "./worklogs/laterTodos.slice";
 //import suggestionsReducer from './suggestions/suggestions.slice';
+import notificationsReducer from "./notification/notification.slice";
 import userProfileDrawerReducer from "./userProfileDrawer/userProfileDrawer.slice";
 
 const store = configureStore({
@@ -30,6 +31,7 @@ const store = configureStore({
     onboardingForm: onboardingFormReducer,
     userProfileDrawer: userProfileDrawerReducer,
     //suggestions: suggestionsReducer,
+    notifications: notificationsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

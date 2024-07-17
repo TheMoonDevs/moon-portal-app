@@ -262,3 +262,14 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .customDatePickerRoot .MuiOutlinedInput-notchedOutline {
   border-color: black !important; /* Important to ensure it overrides */
 }
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.no-scrollbar {
+  -ms-overflow-style: none;  
+  scrollbar-width: none; 
+}
