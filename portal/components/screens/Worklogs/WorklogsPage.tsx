@@ -21,7 +21,7 @@ import WorklogTips from "./WorklogTabs/WorklogTips";
 import TodoTab, {
   MARKDOWN_PLACEHOLDER,
 } from "./WorklogTabs/TodoTab";
-import { setIncompleteTodos } from "@/utils/redux/worklogs/laterTodos.slice";
+import {setIncompleteTodos, setMarkdownContent, updateIncompleteTodos } from "@/utils/redux/worklogs/laterTodos.slice";
 import { MDXEditorMethods } from "@mdxeditor/editor";
 
 const tempData = [
@@ -167,16 +167,14 @@ export const WorklogsPage = () => {
   const isEditorSaving = useAppSelector(
     (state) => state.worklogs.isEditorSaving
   );
-
-  // moved the later todos logic to the parent component to render pulsating dot
-  const incompleteTodos = useAppSelector(
-    (state) => state.laterTodos.incompleteTodos
-  );
   const [docMarkdown, setDocMarkdown] = useState<DocMarkdown | null>(null);
-  const [markdownContent, setMarkdownContent] =
-    useState<string>(MARKDOWN_PLACEHOLDER);
   const [loading, setLoading] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
+  // moved the later todos logic to the parent component to render pulsating dot
+  const {
+    incompleteTodos,
+    markdownContent,
+  } = useAppSelector((state) => state.laterTodos);
   const mdRef = useRef<MDXEditorMethods | null>(null);
 
   const fetchLaterToDo = (userId: string) => {
@@ -185,9 +183,9 @@ export const WorklogsPage = () => {
       .then((data) => {
         setDocMarkdown(data.data);
         const content = data.data?.markdown.content || "";
-        setMarkdownContent(content);
+        dispatch(setMarkdownContent(content));
         mdRef?.current?.setMarkdown(content);
-        updateIncompleteTodos(content);
+        dispatch(updateIncompleteTodos());
       })
       .catch((err) => {
         console.log(err);
@@ -197,19 +195,23 @@ export const WorklogsPage = () => {
       });
   };
 
-  useEffect(() => {
-    fetchLaterToDo(user?.id || "");
-  }, [user?.id]);
 
-  const updateIncompleteTodos = (content: string) => {
-    if (content.trim() === '*' || content.trim() === '') {
-      dispatch(setIncompleteTodos(0));
-      return;
+  useEffect(() => {
+    if (user?.id) {
+      fetchLaterToDo(user.id);
     }
-    const totalTodos = (content.match(/\n/g) || []).length + 1;
-    const completedTodos = (content.match(/✅/g) || []).length;
-    const incompleteTodos = totalTodos - completedTodos;
-    dispatch(setIncompleteTodos(incompleteTodos));
+  }, [dispatch, user?.id]);
+
+  useEffect(() => {
+    if (markdownContent) {
+      mdRef.current?.setMarkdown(markdownContent);
+      dispatch(updateIncompleteTodos());
+    }
+  }, [markdownContent, dispatch]);
+
+  const handleMarkdownChange = (content: string) => {
+    dispatch(setMarkdownContent(content));
+    dispatch(updateIncompleteTodos());
   };
 
   useEffect(() => {
@@ -293,7 +295,7 @@ export const WorklogsPage = () => {
         <div className="flex items-center gap-2">
           Todos for later
           {incompleteTodos > 0 && (
-            <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse"></div>
+            <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse"></div>
           )}
         </div>
       ),

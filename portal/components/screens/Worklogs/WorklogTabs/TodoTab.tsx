@@ -4,6 +4,7 @@ import { MdxAppEditor } from "@/utils/configure/MdxAppEditor";
 import { debounce } from "lodash";
 import { MDXEditorMethods } from "@mdxeditor/editor";
 import { useAppDispatch } from "@/utils/redux/store";
+import { ActionCreatorWithoutPayload } from "@reduxjs/toolkit";
 
 export const MARKDOWN_PLACEHOLDER = `*`;
 
@@ -16,7 +17,7 @@ interface TodoTabsProps {
   saving: boolean;
   loading: boolean;
   markdownContent: string;
-  updateIncompleteTodos: (content: string) => void;
+  updateIncompleteTodos: ActionCreatorWithoutPayload<"laterTodos/updateIncompleteTodos">
 }
 
 const TodoTabs: React.FC<TodoTabsProps> = ({
@@ -100,7 +101,7 @@ const TodoTabs: React.FC<TodoTabsProps> = ({
     mdRef?.current?.setMarkdown(new_content);
     setMarkdownContent(new_content);
     debouncedSave(new_content);
-    updateIncompleteTodos(new_content);
+    dispatch(updateIncompleteTodos());
   };
 
   const getStatsOfContent = (content: string) => {
