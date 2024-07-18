@@ -20,7 +20,6 @@ import SimpleTabs from "@/components/elements/Tabs";
 import WorklogTips from "./WorklogTabs/WorklogTips";
 import TodoTab, {
   MARKDOWN_PLACEHOLDER,
-  updateIncompleteTodos,
 } from "./WorklogTabs/TodoTab";
 import { setIncompleteTodos } from "@/utils/redux/worklogs/laterTodos.slice";
 import { MDXEditorMethods } from "@mdxeditor/editor";
@@ -185,9 +184,10 @@ export const WorklogsPage = () => {
     PortalSdk.getData(`/api/user/todolater?userId=${userId}`, null)
       .then((data) => {
         setDocMarkdown(data.data);
-        setMarkdownContent(data.data?.markdown.content || "");
-        mdRef?.current?.setMarkdown(data.data?.markdown.content || "");
-        updateIncompleteTodos(data.data?.markdown.content || "");
+        const content = data.data?.markdown.content || "";
+        setMarkdownContent(content);
+        mdRef?.current?.setMarkdown(content);
+        updateIncompleteTodos(content);
       })
       .catch((err) => {
         console.log(err);
@@ -201,7 +201,11 @@ export const WorklogsPage = () => {
     fetchLaterToDo(user?.id || "");
   }, [user?.id]);
 
-  const updateIncompleteTodos = (content: any) => {
+  const updateIncompleteTodos = (content: string) => {
+    if (content.trim() === '*' || content.trim() === '') {
+      dispatch(setIncompleteTodos(0));
+      return;
+    }
     const totalTodos = (content.match(/\n/g) || []).length + 1;
     const completedTodos = (content.match(/✅/g) || []).length;
     const incompleteTodos = totalTodos - completedTodos;
