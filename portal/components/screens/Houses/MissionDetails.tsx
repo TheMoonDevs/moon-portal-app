@@ -3,10 +3,15 @@ import { RootState, useAppSelector } from "@/utils/redux/store";
 import { calculateMissionStat } from "./MissionsList";
 import { Mission } from "@prisma/client";
 
-export const MissionDetails = ({ missions }: { missions: Mission[] }) => {
-  const { mission, isOpen } = useAppSelector(
+export const MissionDetails = ({
+  loading,
+}: {
+  loading: boolean;
+}) => {
+  const { mission, missions,isOpen } = useAppSelector(
     (state: RootState) => state.selectedMission
   );
+
 
   if (!mission) {
     return <MissionDetailsSkeleton />;
@@ -17,29 +22,29 @@ export const MissionDetails = ({ missions }: { missions: Mission[] }) => {
       className={`bg-white rounded-lg shadow-lg p-6 h-[96vh] overflow-y-scroll my-4 border-b border-neutral-200 
        `}
     >
-      {!isOpen ? (
+      {isOpen ? (
         <div className="flex flex-col gap-6">
           {missions?.map((mission: Mission) => MissionComponent(mission))}
         </div>
       ) : (
         <div>
-          <h2 className="text-2xl font-bold mb-4">{mission.title}</h2>
+          <h2 className="text-2xl font-bold mb-4">{mission?.title}</h2>
           <div className="flex items-center mb-4">
             <img
-              src={`/images/houses/${mission.house}.png`}
-              alt={mission.house}
+              src={`/images/houses/${mission?.house}.png`}
+              alt={mission?.house}
               className="w-10 h-10 object-cover rounded-full mr-3"
             />
-            <span className="text-lg font-semibold">{mission.house}</span>
+            <span className="text-lg font-semibold">{mission?.house}</span>
           </div>
           <div className="mb-4">
-            <p>House Points: {mission.housePoints}</p>
-            <p>Total Indie Points: {mission.indiePoints}</p>
+            <p>House Points: {mission?.housePoints}</p>
+            <p>Total Indie Points: {mission?.indiePoints}</p>
             <p>
               Status:{" "}
-              {calculateMissionStat(mission, "status") == 0
+              {mission && calculateMissionStat(mission, "status") == 0
                 ? "Not Started yet"
-                : calculateMissionStat(mission, "status")}
+                : mission && calculateMissionStat(mission, "status")}
             </p>
           </div>
           <div className="mb-6">
@@ -47,12 +52,12 @@ export const MissionDetails = ({ missions }: { missions: Mission[] }) => {
               <div
                 className="bg-blue-600 h-2.5 rounded-full"
                 style={{
-                  width: `${calculateMissionStat(mission, "percentage")}%`,
+                  width: `${mission && calculateMissionStat(mission, "percentage")}%`,
                 }}
               ></div>
             </div>
             <p className="text-sm text-gray-600 mt-1">
-              {calculateMissionStat(mission, "balance")} / {mission.indiePoints}{" "}
+              {mission && calculateMissionStat(mission, "balance")} / {mission && mission.indiePoints}{" "}
               Indie Points remaining
             </p>
           </div>
@@ -87,7 +92,7 @@ export const MissionDetails = ({ missions }: { missions: Mission[] }) => {
   );
 };
 
-export const MissionComponent = (mission: Mission) => {
+export const MissionComponent = (mission: Mission): any => {
   return (
     <div className="">
       <h2 className="text-2xl font-bold mb-4">{mission.title}</h2>
