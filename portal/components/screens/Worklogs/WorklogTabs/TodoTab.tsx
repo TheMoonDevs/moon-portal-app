@@ -1,27 +1,13 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
-import { DocMarkdown } from "@prisma/client";
+import React, { useCallback } from "react";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { MdxAppEditor } from "@/utils/configure/MdxAppEditor";
 import { debounce } from "lodash";
 import { MDXEditorMethods } from "@mdxeditor/editor";
 import { useAppDispatch } from "@/utils/redux/store";
-import { setIncompleteTodos } from "@/utils/redux/worklogs/laterTodos.slice";
 
 export const MARKDOWN_PLACEHOLDER = `*`;
 
-
-
-const TodoTabs = ({
-  userId,
-  setLoading,
-  setMarkdownContent,
-  mdRef,
-  setSaving,
-  saving,
-  loading,
-  markdownContent,
-  updateIncompleteTodos
-}: {
+interface TodoTabsProps {
   userId: string;
   setLoading: (loading: boolean) => void;
   setMarkdownContent: (markdown: string) => void;
@@ -31,6 +17,18 @@ const TodoTabs = ({
   loading: boolean;
   markdownContent: string;
   updateIncompleteTodos: (content: string) => void;
+}
+
+const TodoTabs: React.FC<TodoTabsProps> = ({
+  userId,
+  setLoading,
+  setMarkdownContent,
+  mdRef,
+  setSaving,
+  saving,
+  loading,
+  markdownContent,
+  updateIncompleteTodos
 }) => {
   const dispatch = useAppDispatch();
 
