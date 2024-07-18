@@ -54,12 +54,11 @@ const TodoTabs = ({
   const saveMarkdownContent = useCallback(
     (content: string) => {
       setSaving(true);
-      PortalSdk.putData(`/api/user/todolater`, {
-        data: {
+      PortalSdk.putData(`/api/user/todolater`,
+        {
           userId: userId,
           logType: "todoLater",
           markdown: { content: content },
-        },
       })
         .then((response) => {
           console.log("Markdown saved successfully", response);
