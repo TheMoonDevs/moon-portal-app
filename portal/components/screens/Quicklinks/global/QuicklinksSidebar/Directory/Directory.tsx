@@ -9,6 +9,7 @@ import {
   deleteParentDir,
   setToast,
   updateDirectory,
+  updateMultipleDirectories,
 } from "@/utils/redux/quicklinks/quicklinks.slice";
 import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
 import { usePathname, useRouter } from "next/navigation";
@@ -19,7 +20,6 @@ import { DirectoryItem } from "./DirectoryItem";
 import { useQuickLinkDirectory } from "../../../hooks/useQuickLinkDirectory";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
 import { PopoverEmojis, PopoverFolderEdit } from "../../../elements/Popovers";
-import { toast } from "sonner";
 
 export const DirectoryTree = ({
   mainDirectory,
@@ -123,34 +123,19 @@ export const DirectoryTree = ({
     };
 
     try {
-      const response = QuicklinksSdk.createData(
+      const response = await QuicklinksSdk.createData(
         "/api/quicklinks/directory",
         newDirectory
       );
 
-      toast.promise(response, {
-        loading: "Creating new folder...",
-        success: (response: any) => {
-          dispatch(addNewDirectory(response.data.directory));
-          return (
-            <div className="flex flex-col gap-2">
-              <span className="font-bold">📁 New folder has been added!</span>
-            </div>
-          );
-        },
-        error: `Something went wrong. Please try again.`,
-      });
-
       // revalidateRoot();
-      // dispatch(addNewDirectory(response.data.directory));
-      // dispatch(
-      //   setToast({
-      //     toastMsg: "New directory has been created!",
-      //     toastSev: ToastSeverity.success,
-      //   })
-      // );
-      setExpandedDirs((prev) => [...prev, parentDirId]);
-
+      dispatch(addNewDirectory(response.data.directory));
+      dispatch(
+        setToast({
+          toastMsg: "New directory has been created!",
+          toastSev: ToastSeverity.success,
+        })
+      );
       // console.log("New directory added:", response);
     } catch (error) {
       dispatch(
@@ -241,33 +226,70 @@ export const DirectoryTree = ({
     }
   };
 
+  const handleMoveDirectory = async (
+    directory: Directory,
+    direction: "UP" | "DOWN"
+  ) => {
+    let apiPath = "/api/quicklinks/directory/move";
+    let isParent = false;
+    if (!directory.parentDirId) {
+      apiPath = "/api/quicklinks/parent-directory/move";
+      isParent = true;
+    }
+    // console.log(directory);
+    // console.log(direction);
+    try {
+      const response = await QuicklinksSdk.moveData(apiPath, {
+        directory,
+        direction,
+      });
+
+      if (response.status === "success") {
+        dispatch(
+          updateMultipleDirectories({
+            directories: response.data.changed,
+            isParent,
+          })
+        );
+      }
+    } catch (error) {
+      console.log(error);
+      revalidateRoot();
+    }
+  };
+
   return (
     <>
-      {mainDirectory.map((directory: Directory | ParentDirectory) => (
-        <div key={directory.id} className=" !border-gray-200">
-          <DirectoryItem
-            directory={directory as Directory}
-            toggleDirectory={toggleDirectory}
-            isDirectoryExpanded={isDirectoryExpanded}
-            pathName={pathName as string}
-            rootSlug={
-              "type" in directory
-                ? rootDirectories.find((_dir) => _dir.id === directory.type)
-                    ?.slug || directory.slug
-                : directory.slug
-            }
-            editable={editable}
-            setEditable={setEditable}
-            handleDirectoryUpdate={handleDirectoryUpdate}
-            setExpandedDirs={setExpandedDirs}
-            handleDeleteDirectory={handleDeleteDirectory}
-          />
-        </div>
-      ))}
+      {mainDirectory
+        .sort((a, b) => a.position - b.position)
+        .map((directory: Directory | ParentDirectory, index) => (
+          <div key={directory.id} className=" !border-gray-200">
+            <DirectoryItem
+              directory={directory as Directory}
+              toggleDirectory={toggleDirectory}
+              isDirectoryExpanded={isDirectoryExpanded}
+              isFirst={index == 0}
+              isLast={index == mainDirectory.length - 1}
+              pathName={pathName as string}
+              rootSlug={
+                "type" in directory
+                  ? rootDirectories.find((_dir) => _dir.id === directory.type)
+                      ?.slug || directory.slug
+                  : directory.slug
+              }
+              editable={editable}
+              setEditable={setEditable}
+              handleDirectoryUpdate={handleDirectoryUpdate}
+              setExpandedDirs={setExpandedDirs}
+              handleDeleteDirectory={handleDeleteDirectory}
+            />
+          </div>
+        ))}
       <PopoverEmojis handleDirectoryUpdate={handleDirectoryUpdate} />
       <PopoverFolderEdit
         handleDeleteDirectory={handleDeleteDirectory}
         handleAddChildDirectory={handleAddChildDirectory}
+        handleMoveDirectory={handleMoveDirectory}
       />
     </>
   );
