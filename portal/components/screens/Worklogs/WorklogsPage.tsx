@@ -18,12 +18,12 @@ import { Toaster, toast } from "sonner";
 import { setLogsList } from "@/utils/redux/worklogs/worklogs.slice";
 import SimpleTabs from "@/components/elements/Tabs";
 import WorklogTips from "./WorklogTabs/WorklogTips";
-import TodoTab, {
-  MARKDOWN_PLACEHOLDER,
-} from "./WorklogTabs/TodoTab";
-import {setIncompleteTodos, setMarkdownContent, updateIncompleteTodos } from "@/utils/redux/worklogs/laterTodos.slice";
-import { MDXEditorMethods } from "@mdxeditor/editor";
-
+import TodoTab from "./WorklogTabs/TodoTab";
+import {
+  setCompletedTodos,
+  setIncompleteTodos,
+  setTodoMarkdown,
+} from "@/utils/redux/worklogs/laterTodos.slice";
 const tempData = [
   {
     id: "idsdjneslnfrnleskdnelrnv",
@@ -158,7 +158,9 @@ export const WorklogsPage = () => {
   const thisMonth = dayjs().month();
   const thisDate = dayjs().date();
   const dispatch = useAppDispatch();
-
+  const { todoMarkdown, incompleteTodos } = useAppSelector(
+    (state) => state.laterTodos
+  );
   const [monthTab, setMonthTab] = useState<number>(thisMonth);
   const logsList = useAppSelector((state) => state.worklogs.logsList);
   const [yearLogData, setYearLogData] = useState<any>();
@@ -167,52 +169,36 @@ export const WorklogsPage = () => {
   const isEditorSaving = useAppSelector(
     (state) => state.worklogs.isEditorSaving
   );
-  const [docMarkdown, setDocMarkdown] = useState<DocMarkdown | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [saving, setSaving] = useState<boolean>(false);
-  // moved the later todos logic to the parent component to render pulsating dot
-  const {
-    incompleteTodos,
-    markdownContent,
-  } = useAppSelector((state) => state.laterTodos);
-  const mdRef = useRef<MDXEditorMethods | null>(null);
 
   const fetchLaterToDo = (userId: string) => {
-    setLoading(true);
     PortalSdk.getData(`/api/user/todolater?userId=${userId}`, null)
       .then((data) => {
-        setDocMarkdown(data.data);
-        const content = data.data?.markdown.content || "";
-        dispatch(setMarkdownContent(content));
-        mdRef?.current?.setMarkdown(content);
-        dispatch(updateIncompleteTodos());
+        const content = data?.data?.markdown?.content || "";
+        dispatch(setTodoMarkdown(content));
       })
       .catch((err) => {
         console.log(err);
-      })
-      .finally(() => {
-        setLoading(false);
       });
   };
 
+  useEffect(() => {
+    if (todoMarkdown) {
+      if (todoMarkdown.trim() === "*" || todoMarkdown.trim() === "") {
+        dispatch(setIncompleteTodos(0));
+      } else {
+        const total = (todoMarkdown.match(/\n/g) || []).length + 1;
+        const completed = (todoMarkdown.match(/✅/g) || []).length;
+        dispatch(setIncompleteTodos(total - completed));
+        dispatch(setCompletedTodos(completed));
+      }
+    }
+  }, [todoMarkdown]);
 
   useEffect(() => {
     if (user?.id) {
-      fetchLaterToDo(user.id);
+      fetchLaterToDo(user?.id);
     }
-  }, [dispatch, user?.id]);
-
-  useEffect(() => {
-    if (markdownContent) {
-      mdRef.current?.setMarkdown(markdownContent);
-      dispatch(updateIncompleteTodos());
-    }
-  }, [markdownContent, dispatch]);
-
-  const handleMarkdownChange = (content: string) => {
-    dispatch(setMarkdownContent(content));
-    dispatch(updateIncompleteTodos());
-  };
+  }, [user?.id]);
 
   useEffect(() => {
     const _user = store.getState().auth.user;
@@ -299,19 +285,7 @@ export const WorklogsPage = () => {
           )}
         </div>
       ),
-      content: (
-        <TodoTab
-          userId={user?.id as string}
-          loading={loading}
-          setLoading={setLoading}
-          saving={saving}
-          setSaving={setSaving}
-          mdRef={mdRef}
-          markdownContent={markdownContent}
-          setMarkdownContent={setMarkdownContent}
-          updateIncompleteTodos={updateIncompleteTodos}
-        />
-      ),
+      content: <TodoTab userId={user?.id as string} />,
     },
   ];
 
