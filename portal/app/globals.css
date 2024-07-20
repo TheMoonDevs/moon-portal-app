@@ -273,3 +273,31 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   -ms-overflow-style: none;  
   scrollbar-width: none; 
 }
+
+@keyframes growProgressBar {
+  0% { --pgPercentage: calc(var(--value) - 33.33); }
+  100% { --pgPercentage: var(--value); }
+}
+
+@property --pgPercentage {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+
+.circular-progress-button {
+  --size: 4rem; 
+  --fg: #ff8c00;
+  --bg: #ddd; 
+  --pgPercentage: 0;
+  animation: growProgressBar 1s forwards;
+  border-radius: 50%;
+  background: 
+    radial-gradient(closest-side, white 80%, transparent 0 99.9%, white 0),
+    conic-gradient(var(--fg) calc(var(--pgPercentage) * 1%), var(--bg) 0);
+}
+
+.circular-progress-button button {
+  width: calc(var(--size) - 1rem);
+  height: calc(var(--size) - 1rem);
+}
