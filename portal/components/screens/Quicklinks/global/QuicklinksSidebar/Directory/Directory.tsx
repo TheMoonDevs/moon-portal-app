@@ -258,17 +258,12 @@ export const DirectoryTree = ({
     }
   };
 
-  // Filter root directories (those with null parentDirId)
-  // const rootDirectories = mainDirectory.filter(
-  //   (directory) => !directory.parentDirId
-  // );
-  // console.log("rootDirectories:", rootDirectories);
   return (
     <>
       {mainDirectory
         .sort((a, b) => a.position - b.position)
         .map((directory: Directory | ParentDirectory, index) => (
-          <div key={directory.id} className="!py-2 !border-gray-200">
+          <div key={directory.id} className=" !border-gray-200">
             <DirectoryItem
               directory={directory as Directory}
               toggleDirectory={toggleDirectory}
@@ -286,7 +281,6 @@ export const DirectoryTree = ({
               setEditable={setEditable}
               handleDirectoryUpdate={handleDirectoryUpdate}
               setExpandedDirs={setExpandedDirs}
-              handleAddChildDirectory={handleAddChildDirectory}
               handleDeleteDirectory={handleDeleteDirectory}
             />
           </div>
@@ -294,6 +288,7 @@ export const DirectoryTree = ({
       <PopoverEmojis handleDirectoryUpdate={handleDirectoryUpdate} />
       <PopoverFolderEdit
         handleDeleteDirectory={handleDeleteDirectory}
+        handleAddChildDirectory={handleAddChildDirectory}
         handleMoveDirectory={handleMoveDirectory}
       />
     </>
