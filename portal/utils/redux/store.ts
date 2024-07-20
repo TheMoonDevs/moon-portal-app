@@ -15,7 +15,7 @@ import worklogsReducer from "./worklogs/worklogs.slice";
 import laterTodosReducer from "./worklogs/laterTodos.slice";
 //import suggestionsReducer from './suggestions/suggestions.slice';
 import notificationsReducer from "./notification/notification.slice";
-import userProfileDrawerReducer from "./userProfileDrawer/userProfileDrawer.slice";
+import coreTeamSlice from "./coreTeam/coreTeam.slice";
 
 const store = configureStore({
   reducer: {
@@ -29,7 +29,7 @@ const store = configureStore({
     laterTodos: laterTodosReducer,
     searchTerm: searchTermReducer,
     onboardingForm: onboardingFormReducer,
-    userProfileDrawer: userProfileDrawerReducer,
+    coreTeam: coreTeamSlice,
     //suggestions: suggestionsReducer,
     notifications: notificationsReducer,
   },
