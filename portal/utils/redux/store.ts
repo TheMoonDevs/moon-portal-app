@@ -12,6 +12,7 @@ import searchTermReducer from "./searchTerm/search.slice";
 import filesUploadReducer from "./filesUpload/fileUpload.slice";
 import onboardingFormReducer from "./onboarding/onboarding.slice";
 import worklogsReducer from "./worklogs/worklogs.slice";
+import laterTodosReducer from "./worklogs/laterTodos.slice";
 //import suggestionsReducer from './suggestions/suggestions.slice';
 import notificationsReducer from "./notification/notification.slice";
 import userProfileDrawerReducer from "./userProfileDrawer/userProfileDrawer.slice";
@@ -25,6 +26,7 @@ const store = configureStore({
     zerotracker: zerotrackerReducer,
     filesUpload: filesUploadReducer,
     worklogs: worklogsReducer,
+    laterTodos: laterTodosReducer,
     searchTerm: searchTermReducer,
     onboardingForm: onboardingFormReducer,
     userProfileDrawer: userProfileDrawerReducer,
