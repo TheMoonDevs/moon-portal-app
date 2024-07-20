@@ -1,16 +1,16 @@
 /* eslint-disable @next/next/no-img-element */
-import { APP_ROUTES } from "@/utils/constants/appInfo";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { USERROLE, USERTYPE, User } from "@prisma/client";
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { UserProfileDrawer } from "@/components/screens/Home/ProfileDrawer";
-import { openSlideIn } from "@/utils/redux/userProfileDrawer/userProfileDrawer.slice";
-import { useDispatch, useSelector } from "react-redux";
+import { selectMember, setMembers } from "@/utils/redux/coreTeam/coreTeam.slice";
+import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
 
 export const CoreTeamSection = () => {
-  const [coreTeam, setCoreTeam] = useState<User[]>([]);
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
+  const coreTeam = useAppSelector(
+    (state: RootState) => state.coreTeam.members
+  );
 
   useEffect(() => {
     PortalSdk.getData(
@@ -18,15 +18,17 @@ export const CoreTeamSection = () => {
       null
     )
       .then((data) => {
-        setCoreTeam(data?.data?.user || []);
+        dispatch(setMembers(data?.data?.user));
+        console.log(coreTeam);
+        
       })
       .catch((err) => {
         console.log(err);
-      });
-  }, []);
+      }); 
+  }, [coreTeam,dispatch]);
 
   const handleOpenSlideIn = (user: User) => {
-    dispatch(openSlideIn(user));
+    dispatch(selectMember(user))
   };
 
   return (
@@ -66,7 +68,7 @@ export const CoreTeamSection = () => {
           </div>
         ))}
       </div>
-      <UserProfileDrawer />
+      <UserProfileDrawer  />
     </section>
   );
 };
