@@ -170,8 +170,7 @@ export const DirectoryTree = ({
 
   const handleMoveToDialog = (
     directory: Directory,
-    parentId: string | null,
-    rootSlug?: string
+    parentId: string | null
   ) => {
     if (!parentId) {
       setIsParent(true);
