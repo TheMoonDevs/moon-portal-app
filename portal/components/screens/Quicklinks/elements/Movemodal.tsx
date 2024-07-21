@@ -10,6 +10,8 @@ import {
 import { useAppDispatch } from "@/utils/redux/store";
 import { ToastSeverity } from "@/components/elements/Toast";
 import { revalidateRoot } from "@/utils/actions";
+import { Popover, Tooltip } from "@mui/material";
+import { toast } from "sonner";
 
 interface MoveToModalProps {
   currentDirectory: Directory | ParentDirectory;
@@ -24,57 +26,64 @@ export const MoveModal: React.FC<MoveToModalProps> = ({
   onCancel,
   currentDirectory,
 }) => {
+  const { parentDirs } = useQuickLinkDirectory();
+  const dispatch = useAppDispatch();
+  const rootTypes = Object.values(ROOTTYPE);
   const [selectedParentDirectory, setSelectedParentDirectory] =
     useState<ParentDirectory | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const { parentDirs } = useQuickLinkDirectory();
   const [selectedRootType, setSelectedRootType] = useState<ROOTTYPE>(
     ROOTTYPE.DEPARTMENT
   );
-
-  const dispatch = useAppDispatch();
-  const rootTypes = Object.values(ROOTTYPE);
-
+  const [anchorEl, setAnchorEl] = useState<HTMLSpanElement | null>(null);
+  const open = Boolean(anchorEl);
   const filteredDirectories = parentDirs.filter(
     (dir) =>
       dir.type === selectedRootType &&
       dir.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleMove = async () => {
-    if (selectedParentDirectory) {
-      let updatedDirectory = {};
-      let apiPath = "/api/quicklinks/directory";
-      if (isParent) {
-        apiPath = `/api/quicklinks/parent-directory`;
-        updatedDirectory = {
-          ...currentDirectory,
-          type: selectedRootType,
-        } as ParentDirectory;
-      } else {
-        updatedDirectory = {
-          ...currentDirectory,
-          parentDirId: selectedParentDirectory.id,
-        } as Directory;
-      }
+  const handleRootTypeSelection = (type: ROOTTYPE) => {
+    setSelectedRootType(type);
+    setAnchorEl(null);
+  };
 
-      try {
-        dispatch(updateDirectory(updatedDirectory));
-        const res = await QuicklinksSdk.updateData(apiPath, updatedDirectory);
-        dispatch(
-          setToast({ toastMsg: "Done!", toastSev: ToastSeverity.success })
-        );
-        revalidateRoot();
-      } catch (error) {
-        dispatch(
-          setToast({
-            toastMsg: "Something went wrong. Please try again.",
-            toastSev: ToastSeverity.error,
-          })
-        );
-        dispatch(updateDirectory(currentDirectory));
-        console.log(error);
+  const handleMove = async () => {
+    let updatedDirectory = {};
+    let apiPath = "/api/quicklinks/directory";
+    if (isParent) {
+      apiPath = `/api/quicklinks/parent-directory`;
+      updatedDirectory = {
+        ...currentDirectory,
+        type: selectedRootType,
+      } as ParentDirectory;
+    } else {
+      if (!selectedParentDirectory) {
+        toast.error("Please Select a ParentDirectory");
+        return;
       }
+      updatedDirectory = {
+        ...currentDirectory,
+        parentDirId: selectedParentDirectory.id,
+      } as Directory;
+    }
+
+    try {
+      dispatch(updateDirectory(updatedDirectory));
+      const res = await QuicklinksSdk.updateData(apiPath, updatedDirectory);
+      dispatch(
+        setToast({ toastMsg: "Done!", toastSev: ToastSeverity.success })
+      );
+      revalidateRoot();
+    } catch (error) {
+      dispatch(
+        setToast({
+          toastMsg: "Something went wrong. Please try again.",
+          toastSev: ToastSeverity.error,
+        })
+      );
+      dispatch(updateDirectory(currentDirectory));
+      console.log(error);
     }
 
     onMove();
@@ -82,33 +91,58 @@ export const MoveModal: React.FC<MoveToModalProps> = ({
 
   return (
     <ReactPortal>
-      <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gray-800 text-white p-5 rounded-lg w-96 shadow-lg z-50">
-        <h2 className="text-xl font-bold mb-2">Move List</h2>
+      <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 border-black border-[1px] text-black p-5 rounded-lg w-96 shadow-lg drop-shadow-sm bg-white">
+        <h2 className="text-xl font-bold mb-2">Move Directory</h2>
         <p className="mb-4">Move {currentDirectory.title} to:</p>
-        <select
-          className="w-full p-2 mb-3 bg-gray-700 border-none text-white rounded appearance-none bg-no-repeat bg-right pr-8"
-          style={{
-            backgroundImage:
-              'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")',
-            backgroundSize: ".65em auto",
-            backgroundPosition: "right .7em top 50%",
-          }}
-          value={selectedRootType}
-          onChange={(e) => {
-            setSelectedRootType(e.target.value as ROOTTYPE);
-            setSelectedParentDirectory(null);
-          }}
-        >
-          {rootTypes.map((type) => (
-            <option key={type} value={type}>
-              {type}
-            </option>
-          ))}
-        </select>
+        <div className="relative flex items-center bg-neutral-100 rounded-md">
+          <Tooltip title="Select Root Type">
+            <div
+              className="flex items-center w-full cursor-pointer"
+              onClick={(e) => setAnchorEl(e.currentTarget)}
+            >
+              <span className="material-icons-outlined text-gray-500 p-2">
+                groups
+              </span>
+              {selectedRootType}
+              <span className="material-icons-outlined text-gray-500 p-2">
+                {open ? "arrow_drop_up" : "arrow_drop_down"}
+              </span>
+            </div>
+          </Tooltip>
+          <Popover
+            open={open}
+            anchorEl={anchorEl}
+            onClose={() => setAnchorEl(null)}
+            anchorOrigin={{
+              vertical: "bottom",
+              horizontal: "left",
+            }}
+            transformOrigin={{
+              vertical: "top",
+              horizontal: "left",
+            }}
+            closeAfterTransition
+            classes={{
+              paper: "bg-white mb-4 py-2 rounded-md !shadow-md",
+            }}
+          >
+            <ul className=" flex flex-col gap-2  mb-2">
+              {rootTypes.map((type) => (
+                <div
+                  onClick={(e) => handleRootTypeSelection(type)}
+                  key={type}
+                  className="flex items-center justify-between hover:bg-neutral-100 p-2 cursor-pointer"
+                >
+                  <li className=" text-gray-500 text-sm">{type}</li>
+                </div>
+              ))}
+            </ul>
+          </Popover>
+        </div>
         {!isParent && (
           <>
             <input
-              className="w-full p-2 mb-3 bg-gray-700 border-none text-white rounded"
+              className="w-full p-2 mb-3 outline-none border-b-2 border-gray-600 "
               type="text"
               placeholder="Search"
               value={searchTerm}
@@ -120,7 +154,7 @@ export const MoveModal: React.FC<MoveToModalProps> = ({
                   key={dir.id}
                   onClick={() => setSelectedParentDirectory(dir)}
                   className={`p-2 cursor-pointer rounded ${
-                    selectedParentDirectory?.id === dir.id ? "bg-gray-600" : ""
+                    selectedParentDirectory?.id === dir.id ? "bg-[#ececec]" : ""
                   }`}
                 >
                   {dir.logo} {dir.title}
@@ -131,13 +165,13 @@ export const MoveModal: React.FC<MoveToModalProps> = ({
         )}
         <div className="flex justify-between mt-5">
           <button
-            className="px-5 py-2 border border-pink-500 text-pink-500 rounded cursor-pointer"
+            className="px-5 py-2 border border-gray-500 text-gray-800 rounded cursor-pointer"
             onClick={onCancel}
           >
             Cancel
           </button>
           <button
-            className="px-5 py-2 bg-pink-500 text-white rounded cursor-pointer disabled:opacity-50"
+            className="px-5 py-2 bg-gray-700 text-white rounded cursor-pointer disabled:opacity-50"
             onClick={handleMove}
             disabled={isParent ? !selectedRootType : !selectedParentDirectory}
           >

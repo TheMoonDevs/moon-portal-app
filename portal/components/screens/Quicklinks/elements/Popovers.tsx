@@ -61,8 +61,7 @@ export const PopoverFolderEdit = ({
   ) => Promise<void>;
   handleMoveToDirectory: (
     directory: Directory,
-    parentId: string | null,
-    rootSlug?: string
+    parentId: string | null
   ) => void;
 }) => {
   const { handleClose, anchorElement, data, openFolderEditor } =
@@ -122,8 +121,7 @@ export const PopoverFolderEdit = ({
           onClick={() => {
             handleMoveToDirectory(
               data.selectedDirectory,
-              data.parentDirectoryId,
-              data.rootSlug
+              data.parentDirectoryId
             );
             handleClose();
           }}
