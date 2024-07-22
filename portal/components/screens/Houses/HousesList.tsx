@@ -97,7 +97,7 @@ export const HousesList = ({
             toggleHouse(index)
            
           }}
-          className="flex flex-col border border-neutral-200 text-white rounded-xl overflow-hidden transition-all duration-300 ease-in-out"
+          className="flex flex-col border border-neutral-200 text-white rounded-xl overflow-hidden transition-all duration-1000 ease-in-out"
         >
           <div className="relative">
             <div className="absolute top-9 right-4 cursor-pointer z-10">
