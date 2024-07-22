@@ -50,28 +50,24 @@ const OnboardingStep: React.FC<IOnboardingStepProps> = ({
         <div
           className={`relative flex items-center justify-center mb-6 max-sm:mt-8 ${
             step === 2
-              ? 'w-full h-auto cursor-pointer'
+              ? 'w-full h-auto'
               : 'w-44 h-44 rounded-full border-2 border-[#1E90FF]'
           }`}
-          onClick={handleImageClick}
+          // onClick={handleImageClick}
         >
-          {step === 2 ? (
-            <Image
-              src={image}
-              alt='Step Image'
-              layout='responsive'
-              width={!isMobile ? 500 : 250}
-              height={!isMobile ? 500 : 250}
-              className='object-cover p-3 rounded-sm '
-            />
-          ) : (
-            <Image
-              src={image}
-              alt='Step Image'
-              fill
-              className='object-cover p-3 rounded-full'
-            />
-          )}
+          <Image
+            src={image}
+            alt='Step Image'
+            {...(step !== 2 && { fill: true })}
+            {...(step === 2 && {
+              layout: 'responsive',
+              width: isMobile ? 250 : 500,
+              height: isMobile ? 250 : 500,
+            })}
+            className={`object-cover p-3 ${
+              step === 2 ? 'rounded-sm' : 'rounded-full'
+            }`}
+          />
         </div>
       )}
       <div className=''>
