@@ -92,14 +92,15 @@ const CreateWallet = () => {
   return (
     <>
       <div className="bg-neutral-900 h-screen flex flex-col items-center justify-center relative">
-        <Link
-          href="/"
-          passHref
-          className="absolute top-10 left-10 bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 max-sm:top-5 max-sm:left-5 z-20"
-        >
-          <span className="material-symbols-outlined">arrow_back</span>
-          Back to Home
-        </Link>
+        <div className="absolute top-10 left-10 max-sm:top-5 max-sm:left-5 z-20 flex items-center gap-2">
+          <Link
+            href="/"
+            className=" bg-gray-700 text-white px-2 py-2 rounded-full  cursor-pointer flex justify-center items-center "
+          >
+            <span className="material-symbols-outlined">arrow_back</span>
+          </Link>
+          <span className="text-white">Step {step}/3</span>
+        </div>
         {step === 1 && (
           <DownloadCoinbase onNext={() => handleNextStep()} step={step} />
         )}
