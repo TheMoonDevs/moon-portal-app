@@ -17,7 +17,7 @@ const DownloadCoinbase: React.FC<{ onNext: () => void; step: number }> = ({
         href='https://www.coinbase.com/wallet'
         target='_blank'
         rel='noopener noreferrer'
-        className='text-orange-500 hover:text-orange-600 transition flex items-center justify-center gap-1 text-xs'
+        className='text-[#1E90FF] hover:text-blue-500 transition flex items-center justify-center gap-1 text-xs'
       >
         Download Coinbase Wallet
         <span
