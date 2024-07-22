@@ -3,7 +3,20 @@
 import { MissionTask } from "@/prisma/missionTasks";
 import { prettyPrintDateAndTime } from "@/utils/helpers/prettyprint";
 import { PortalSdk } from "@/utils/services/PortalSdk";
-import { Button } from "@mui/material";
+import {
+  Button,
+  TextField,
+  Select,
+  MenuItem,
+  Checkbox,
+  Typography,
+  Paper,
+  Grid,
+  Box,
+  IconButton,
+  Skeleton,
+  Avatar,
+} from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -17,7 +30,15 @@ import {
 } from "@prisma/client";
 import dayjs from "dayjs";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
-import { ChevronDownIcon } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronDownIcon,
+  ChevronUp,
+  Loader,
+  Plus,
+  Save,
+  X,
+} from "lucide-react";
 
 const MissionTasks = ({
   tasks,
@@ -35,107 +56,151 @@ const MissionTasks = ({
   ) => void;
   coreTeam: User[];
 }) => {
-  const setSelectedTask = (callback: (task: MissionTask) => MissionTask) => {
+  const setSelectedTask = (
+    index: number,
+    callback: (task: MissionTask) => MissionTask
+  ) => {
     setMission((m) => {
       if (!m) return m;
       return {
         ...m,
-        tasks: (m.tasks as any[])?.map((task) => callback(task)) as any[],
+        tasks: (m.tasks as any[])?.map((task, i) =>
+          i === index ? callback(task) : task
+        ) as any[],
+      } as Mission;
+    });
+  };
+
+  const addNewTask = () => {
+    setMission((m) => {
+      if (!m) return m;
+      return {
+        ...m,
+        tasks: [
+          ...((m.tasks as any[]) ?? []),
+          {
+            title: "New Task",
+            description: "New Task Description",
+            indiePoints: 100,
+            expirable: true,
+            expiresAt: dayjs().add(3, "day").toDate(),
+          },
+        ],
       } as Mission;
     });
   };
 
   return (
-    <div className="mission-tasks p-4 border border-neutral-400">
-      <div className="flex items-center gap-4 pb-4">
-        <h2 className="pb-2">Tasks of {mission.title}</h2>
-        <button
-          onClick={() =>
-            setMission((m) => {
-              if (!m) return m;
-              return {
-                ...m,
-                tasks: [
-                  ...((m.tasks as any[]) ?? []),
-                  {
-                    title: "New Task",
-                    description: "New Task Description",
-                    indiePoints: 100,
-                    expirable: true,
-                    expiresAt: dayjs().add(3, "day").toDate(),
-                  },
-                ],
-              } as Mission;
-            })
-          }
-          className="border border-black text-black px-4 py-2 text-xs"
-        >
-          Add
-        </button>
-        <button
-          onClick={() => setMission(null)}
-          className="bg-black text-white px-4 py-2 text-xs"
-        >
-          Close
-        </button>
-        <button
-          onClick={() => {
-            setMission(null);
-            setSelectedMission(mission, null);
-          }}
-          className="bg-green-500 text-white px-4 py-2 text-xs"
-        >
-          Save
-        </button>
-      </div>
-      <ul className="grid grid-cols-10 text-sm tracking-wide text-uppercase">
-        <li>Title</li>
-        <li>Description</li>
-        <li>Indie Points</li>
-        <li>User</li>
-        <li>Completed At</li>
-        <li>Completed</li>
-        <li>Expires At</li>
-        <li>Expirable</li>
-      </ul>
-      {tasks?.map((task) => (
-        <ul key={task.userId}>
-          <div
-            className="grid grid-cols-10 items-center gap-2"
-            key={task.userId}
+    <Paper elevation={2} className="mt-4 p-4">
+      <Box>
+        <Typography variant="h6">Tasks of {mission.title}</Typography>
+        <Box sx={{
+          padding: "8px 0",
+        }}>
+          <Button
+            variant="outlined"
+            startIcon={<Plus />}
+            onClick={addNewTask}
+            size="small"
+            sx={{ mr: 1 }}
           >
-            <input
-              className="border border-neutral-300  px-4"
+            Add Task
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<X />}
+            onClick={() => setMission(null)}
+            size="small"
+            sx={{ mr: 1 }}
+          >
+            Close
+          </Button>
+          <Button
+            variant="contained"
+            color="success"
+            startIcon={<Save />}
+            onClick={() => {
+              setMission(null);
+              setSelectedMission(mission, null);
+            }}
+            size="small"
+          >
+            Save
+          </Button>
+        </Box>
+      </Box>
+
+      <Grid container spacing={2} className="font-semibold mb-2">
+        <Grid item xs={2}>
+          Title
+        </Grid>
+        <Grid item xs={2}>
+          Description
+        </Grid>
+        <Grid item xs={1}>
+          Indie Points
+        </Grid>
+        <Grid item xs={2}>
+          User
+        </Grid>
+        <Grid item xs={1}>
+          Completed At
+        </Grid>
+        <Grid item xs={1}>
+          Completed
+        </Grid>
+        <Grid item xs={1}>
+          Expires At
+        </Grid>
+        <Grid item xs={1}>
+          Expirable
+        </Grid>
+      </Grid>
+
+      {tasks?.map((task, index) => (
+        <Grid
+          container
+          spacing={2}
+          key={task.userId}
+          alignItems="center"
+          className="mb-2"
+        >
+          <Grid item xs={2}>
+            <TextField
+              fullWidth
+              size="small"
               value={task.title}
               onChange={(e) =>
                 setSelectedTask(
-                  (sm) =>
-                    ({
-                      ...sm,
-                      title: e.target.value,
-                    } as MissionTask)
+                  index,
+                  (sm) => ({ ...sm, title: e.target.value } as MissionTask)
                 )
               }
             />
-            <input
-              className="border border-neutral-300  px-4"
+          </Grid>
+          <Grid item xs={2}>
+            <TextField
+              fullWidth
+              size="small"
               value={task.description}
               onChange={(e) =>
                 setSelectedTask(
+                  index,
                   (sm) =>
-                    ({
-                      ...sm,
-                      description: e.target.value,
-                    } as MissionTask)
+                    ({ ...sm, description: e.target.value } as MissionTask)
                 )
               }
             />
-            <input
+          </Grid>
+          <Grid item xs={1}>
+            <TextField
+              fullWidth
+              size="small"
               type="number"
-              className="border border-neutral-300  px-4"
               value={task.indiePoints}
               onChange={(e) =>
                 setSelectedTask(
+                  index,
                   (sm) =>
                     ({
                       ...sm,
@@ -144,11 +209,14 @@ const MissionTasks = ({
                 )
               }
             />
-            <select
-              className="border border-neutral-300  p-1"
-              value={task.userInfo?.id}
+          </Grid>
+          <Grid item xs={2}>
+            <Select
+              fullWidth
+              size="small"
+              value={task.userInfo?.id || ""}
               onChange={(e) =>
-                setSelectedTask((sm) => {
+                setSelectedTask(index, (sm) => {
                   let sel_user = coreTeam.find(
                     (user) => user.id === e.target.value
                   );
@@ -158,85 +226,76 @@ const MissionTasks = ({
                     email: sel_user?.email || "",
                     id: sel_user?.id || "",
                   };
-                  return {
-                    ...sm,
-                    userInfo,
-                  } as MissionTask;
+                  return { ...sm, userInfo } as MissionTask;
                 })
               }
             >
               {coreTeam.map((sel_user) => (
-                <option key={sel_user.id} value={sel_user.id}>
-                  <img
-                    src={sel_user.avatar ?? ""}
-                    alt={sel_user.name ?? ""}
-                    className="w-6 h-6 rounded-full"
-                  />
+                <MenuItem key={sel_user.id} value={sel_user.id}>
                   {sel_user.name}
-                </option>
+                </MenuItem>
               ))}
-            </select>
+            </Select>
+          </Grid>
+          <Grid item xs={1}>
             <DatePicker
-              className="border border-neutral-300  px-4"
               value={task.completedAt ? dayjs(task.completedAt) : null}
               onChange={(newValue) =>
                 setSelectedTask(
+                  index,
                   (sm) =>
                     ({
                       ...sm,
-                      completedAt: newValue
-                        ? (newValue?.toDate() as any)
-                        : null,
+                      completedAt: newValue ? (newValue.toDate() as any) : null,
                     } as MissionTask)
                 )
               }
+              slotProps={{ textField: { size: "small" } }}
             />
-            <input
-              type="checkbox"
-              className="border border-neutral-300 w-6 h-6  px-4"
+          </Grid>
+          <Grid item xs={1}>
+            <Checkbox
               checked={task.completed}
               onChange={(e) =>
                 setSelectedTask(
+                  index,
                   (sm) =>
-                    ({
-                      ...sm,
-                      completed: e.target.checked,
-                    } as MissionTask)
+                    ({ ...sm, completed: e.target.checked } as MissionTask)
                 )
               }
             />
-
+          </Grid>
+          <Grid item xs={1}>
             <DatePicker
-              className="border border-neutral-300  px-4"
               value={task.expiresAt ? dayjs(task.expiresAt) : null}
               onChange={(newValue) =>
                 setSelectedTask(
+                  index,
                   (sm) =>
                     ({
                       ...sm,
-                      expiresAt: newValue ? (newValue?.toDate() as any) : null,
+                      expiresAt: newValue ? (newValue.toDate() as any) : null,
                     } as MissionTask)
                 )
               }
+              slotProps={{ textField: { size: "small" } }}
             />
-            <input
-              type="checkbox"
-              className="border border-neutral-300 w-6 h-6  px-4"
+          </Grid>
+          <Grid item xs={1}>
+            <Checkbox
               checked={task.expirable}
               onChange={(e) =>
                 setSelectedTask(
+                  index,
                   (sm) =>
-                    ({
-                      ...sm,
-                      expirable: e.target.checked,
-                    } as MissionTask)
+                    ({ ...sm, expirable: e.target.checked } as MissionTask)
                 )
               }
             />
-          </div>
-        </ul>
+          </Grid>
+        </Grid>
       ))}
-    </div>
+    </Paper>
   );
 };
 
@@ -245,6 +304,7 @@ export const MissionsPage = () => {
   const [missionTasks, setMissionTasks] = useState<Mission | null>(null);
   const [coreTeam, setCoreTeam] = useState<User[]>([]);
   const [savingMission, setSavingMission] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     PortalSdk.getData(
@@ -261,9 +321,12 @@ export const MissionsPage = () => {
       })
       .catch((err) => {
         console.log(err);
+      })
+      .finally(() => {
+        setLoading(false);
       });
   }, []);
-  
+
   useEffect(() => {
     PortalSdk.getData("/api/missions?month=" + dayjs().format("YYYY-MM"), null)
       .then((data) => {
@@ -278,7 +341,7 @@ export const MissionsPage = () => {
   const createMission = () => {
     PortalSdk.postData("/api/missions", {
       title: "New Mission",
-      house: HOUSEID.MANGEMENT,
+      house: HOUSEID.MANAGEMENT,
       housePoints: 10,
       indiePoints: 1000,
       expirable: true,
@@ -331,228 +394,294 @@ export const MissionsPage = () => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <div className="missions-page">
-        <div className="flex flex-row w-full justify-between  p-4">
-          <h1 className="text-3xl">Missions</h1>
-          <button
+      <Paper elevation={3} className="p-6 m-4">
+        <Grid
+          container
+          justifyContent="space-between"
+          alignItems="center"
+          className="mb-6"
+        >
+          <Typography variant="h4" component="h1">
+            Missions
+          </Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<Plus />}
             onClick={createMission}
-            className="bg-black text-white px-4 text-md"
+            disabled={loading}
           >
             Create Mission
-          </button>
-        </div>
-        <ul className="p-4 w-full justify-between grid grid-cols-11 text-sm tracking-wide text-uppercase border borer-neutral-500">
-          <li>Tasks</li>
-          <li>Title</li>
-          <li>House</li>
-          <li>House Points</li>
-          <li>Indie Points</li>
-          <li>Indie Balance</li>
-          {/* <li>Created At</li>
-                <li>Updated At</li> */}
-          <li>Completed At</li>
-          <li>Completed</li>
-          <li>Expires At</li>
-          <li>Expirable</li>
-          <li>Status</li>
-        </ul>
-        {missions.map((mission) => (
-          <ul key={mission.id}>
-            <div
-              onClick={() => {
-                setSelectedMission(mission, null);
-              }}
-              className="grid grid-cols-11 items-center gap-2"
-              key={mission.id}
-            >
-              <button
-                className="flex items-center border border-neutral-300 px-4 text-md"
-                onClick={() => setMissionTasks(mission)}
-              >
-                <ChevronDownIcon className="w-6 h-6" />
-                {(mission.tasks as any[])?.length || 0} Tasks
-              </button>
-              <input
-                className="border border-neutral-300  px-4"
-                value={mission.title}
-                onChange={(e) =>
-                  setSelectedMission(
-                    mission,
-                    (sm) =>
-                      ({
-                        ...sm,
-                        title: e.target.value,
-                      } as Mission)
-                  )
-                }
-              />
-              <select
-                className="border border-neutral-300  p-1"
-                value={mission.house}
-                onChange={(e) =>
-                  setSelectedMission(
-                    mission,
-                    (sm) =>
-                      ({
-                        ...sm,
-                        house: e.target.value as HOUSEID,
-                      } as Mission)
-                  )
-                }
-              >
-                {Object.values(HOUSEID).map((house) => (
-                  <option key={house} value={house}>
-                    {house}
-                  </option>
-                ))}
-              </select>
-              <input
-                type="number"
-                className="border border-neutral-300  px-4"
-                value={mission.housePoints}
-                onChange={(e) =>
-                  setSelectedMission(
-                    mission,
-                    (sm) =>
-                      ({
-                        ...sm,
-                        housePoints: parseInt(e.target.value),
-                        indiePoints: parseInt(e.target.value) * 100,
-                      } as Mission)
-                  )
-                }
-              />
-              <input
-                type="number"
-                className="border border-neutral-300  px-4"
-                value={mission.indiePoints}
-                onChange={(e) =>
-                  setSelectedMission(
-                    mission,
-                    (sm) =>
-                      ({
-                        ...sm,
-                        indiePoints: parseInt(e.target.value),
-                      } as Mission)
-                  )
-                }
-              />
-              <p>
-                {mission.indiePoints -
-                  ((mission.tasks as any[]) || []).reduce(
-                    (acc, task) => acc + task.indiePoints,
-                    0
-                  )}
-              </p>
-              {/* <DatePicker
-                            className="border border-neutral-300  px-4"
-                            value={mission.createdAt ? dayjs(mission.createdAt) : null}
-                            onChange={(newValue) =>
-                                setSelectedMission(mission,(sm) => ({
-                                    ...sm,
-                                    createdAt: newValue ? newValue?.toDate() as any : null
-                                } as Mission))
-                            }
-                        />
-                        <DatePicker
-                            className="border border-neutral-300  px-4"
-                            value={mission.updatedAt ? dayjs(mission.updatedAt) : null}
-                            onChange={(newValue) =>
-                                setSelectedMission(mission,(sm) => ({
-                                    ...sm,
-                                    updatedAt: newValue ? newValue?.toDate() as any : null
-                                } as Mission))
-                            }
-                        /> */}
+          </Button>
+        </Grid>
 
-              <DatePicker
-                className="border border-neutral-300  px-4"
-                value={mission.completedAt ? dayjs(mission.completedAt) : null}
-                onChange={(newValue) =>
-                  setSelectedMission(
-                    mission,
-                    (sm) =>
-                      ({
-                        ...sm,
-                        completedAt: newValue
-                          ? (newValue?.toDate() as any)
-                          : null,
-                      } as Mission)
-                  )
-                }
-              />
-              <input
-                type="checkbox"
-                className="border border-neutral-300 w-6 h-6  px-4"
-                checked={mission.completed !== null ? mission.completed : false}
-                onChange={(e) =>
-                  setSelectedMission(
-                    mission,
-                    (sm) =>
-                      ({
-                        ...sm,
-                        completed: e.target.checked,
-                      } as Mission)
-                  )
-                }
-              />
+        <Grid container spacing={2} className="font-semibold mb-4 px-4 border-b-2 border-t-2">
+          <Grid item xs={1}>
+            Tasks
+          </Grid>
+          <Grid item xs={2}>
+            Title
+          </Grid>
+          <Grid item xs={1}>
+            House
+          </Grid>
+          <Grid item xs={1}>
+            House Points
+          </Grid>
+          <Grid item xs={1}>
+            Indie Points
+          </Grid>
+          <Grid item xs={1}>
+            Indie Balance
+          </Grid>
+          <Grid item xs={1}>
+            Completed At
+          </Grid>
+          <Grid item xs={1}>
+            Completed
+          </Grid>
+          <Grid item xs={1}>
+            Expires At
+          </Grid>
+          <Grid item xs={1}>
+            Expirable
+          </Grid>
+          <Grid item xs={1}>
+            Actions
+          </Grid>
+        </Grid>
 
-              <DatePicker
-                className="border border-neutral-300  px-4"
-                value={mission.expiresAt ? dayjs(mission.expiresAt) : null}
-                onChange={(newValue) =>
-                  setSelectedMission(
-                    mission,
-                    (sm) =>
-                      ({
-                        ...sm,
-                        expiresAt: newValue
-                          ? (newValue?.toDate() as any)
-                          : null,
-                      } as Mission)
-                  )
-                }
-              />
-              <input
-                type="checkbox"
-                className="border border-neutral-300 w-6 h-6  px-4"
-                checked={mission.expirable !== null ? mission.expirable : false}
-                onChange={(e) =>
-                  setSelectedMission(
-                    mission,
-                    (sm) =>
-                      ({
-                        ...sm,
-                        expirable: e.target.checked,
-                      } as Mission)
-                  )
-                }
-              />
-              <div className="flex">
-                <button
-                  style={{
-                    opacity: savingMission === mission.id ? 0.5 : 1,
-                  }}
-                  disabled={savingMission === mission.id}
-                  onClick={() => updateMission(mission)}
-                  className="text-white bg-green-500 px-4 py-2 text-xs"
-                >
-                  {savingMission === mission.id ? "Saving..." : "Save"}
-                </button>
-              </div>
-            </div>
-            {missionTasks && missionTasks.id === mission.id && (
-              <MissionTasks
-                mission={missionTasks}
-                setMission={setMissionTasks}
-                tasks={missionTasks?.tasks as any[]}
-                coreTeam={coreTeam}
-                setSelectedMission={setSelectedMission}
-              />
-            )}
-          </ul>
-        ))}
-      </div>
+        {loading ? (
+          <>
+            <MissionSkeleton />
+            <MissionSkeleton />
+            <MissionSkeleton />
+          </>
+        ) : (
+          missions.map((mission) => (
+            <Paper key={mission.id} elevation={1} className="mb-4 p-4">
+              <Grid container spacing={2} alignItems="center">
+                <Grid item xs={1}>
+                  <IconButton
+                    onClick={() =>
+                      setMissionTasks(
+                        missionTasks?.id === mission.id ? null : mission
+                      )
+                    }
+                  >
+                    {missionTasks?.id === mission.id ? (
+                      <ChevronUp />
+                    ) : (
+                      <ChevronDown />
+                    )}
+                  </IconButton>
+                  {(mission.tasks as any[])?.length || 0}
+                </Grid>
+                <Grid item xs={2}>
+                  <TextField
+                    fullWidth
+                    value={mission.title}
+                    onChange={(e) =>
+                      setSelectedMission(
+                        mission,
+                        (sm) => ({ ...sm, title: e.target.value } as Mission)
+                      )
+                    }
+                  />
+                </Grid>
+                <Grid item xs={1}>
+                  <Select
+                    fullWidth
+                    value={mission.house}
+                    onChange={(e) =>
+                      setSelectedMission(
+                        mission,
+                        (sm) =>
+                          ({
+                            ...sm,
+                            house: e.target.value as HOUSEID,
+                          } as Mission)
+                      )
+                    }
+                  >
+                    {Object.values(HOUSEID).map((house) => (
+                      <MenuItem key={house} value={house}>
+                        {house}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </Grid>
+                <Grid item xs={1}>
+                  <TextField
+                    fullWidth
+                    type="number"
+                    value={mission.housePoints}
+                    onChange={(e) =>
+                      setSelectedMission(
+                        mission,
+                        (sm) =>
+                          ({
+                            ...sm,
+                            housePoints: parseInt(e.target.value),
+                            indiePoints: parseInt(e.target.value) * 100,
+                          } as Mission)
+                      )
+                    }
+                  />
+                </Grid>
+                <Grid item xs={1}>
+                  <TextField
+                    fullWidth
+                    type="number"
+                    value={mission.indiePoints}
+                    onChange={(e) =>
+                      setSelectedMission(
+                        mission,
+                        (sm) =>
+                          ({
+                            ...sm,
+                            indiePoints: parseInt(e.target.value),
+                          } as Mission)
+                      )
+                    }
+                  />
+                </Grid>
+                <Grid item xs={1}>
+                  {mission.indiePoints -
+                    ((mission.tasks as any[]) || []).reduce(
+                      (acc, task) => acc + task.indiePoints,
+                      0
+                    )}
+                </Grid>
+                <Grid item xs={1}>
+                  <DatePicker
+                    value={
+                      mission.completedAt ? dayjs(mission.completedAt) : null
+                    }
+                    onChange={(newValue) =>
+                      setSelectedMission(
+                        mission,
+                        (sm) =>
+                          ({
+                            ...sm,
+                            completedAt: newValue
+                              ? (newValue.toDate() as any)
+                              : null,
+                          } as Mission)
+                      )
+                    }
+                  />
+                </Grid>
+                <Grid item xs={1}>
+                  <Checkbox
+                    checked={
+                      mission.completed !== null ? mission.completed : false
+                    }
+                    onChange={(e) =>
+                      setSelectedMission(
+                        mission,
+                        (sm) =>
+                          ({ ...sm, completed: e.target.checked } as Mission)
+                      )
+                    }
+                  />
+                </Grid>
+                <Grid item xs={1}>
+                  <DatePicker
+                    value={mission.expiresAt ? dayjs(mission.expiresAt) : null}
+                    onChange={(newValue) =>
+                      setSelectedMission(
+                        mission,
+                        (sm) =>
+                          ({
+                            ...sm,
+                            expiresAt: newValue
+                              ? (newValue.toDate() as any)
+                              : null,
+                          } as Mission)
+                      )
+                    }
+                  />
+                </Grid>
+                <Grid item xs={1}>
+                  <Checkbox
+                    checked={
+                      mission.expirable !== null ? mission.expirable : false
+                    }
+                    onChange={(e) =>
+                      setSelectedMission(
+                        mission,
+                        (sm) =>
+                          ({ ...sm, expirable: e.target.checked } as Mission)
+                      )
+                    }
+                  />
+                </Grid>
+                <Grid item xs={1}>
+                  <Button
+                    variant="contained"
+                    color="success"
+                    startIcon={<Save />}
+                    disabled={savingMission === mission.id}
+                    onClick={() => updateMission(mission)}
+                  >
+                    {savingMission === mission.id ? <Loader /> : "Save"}
+                  </Button>
+                </Grid>
+              </Grid>
+              {missionTasks && missionTasks.id === mission.id && (
+                <MissionTasks
+                  mission={missionTasks}
+                  setMission={setMissionTasks}
+                  tasks={missionTasks?.tasks as any[]}
+                  coreTeam={coreTeam}
+                  setSelectedMission={setSelectedMission}
+                />
+              )}
+            </Paper>
+          ))
+        )}
+      </Paper>
     </LocalizationProvider>
   );
 };
+
+const MissionSkeleton = () => (
+  <Paper elevation={1} className="mb-4 p-4">
+    <Grid container spacing={2} alignItems="center">
+      <Grid item xs={1}>
+        <Skeleton variant="circular" width={40} height={40} />
+      </Grid>
+      <Grid item xs={2}>
+        <Skeleton variant="rectangular" height={40} />
+      </Grid>
+      <Grid item xs={1}>
+        <Skeleton variant="rectangular" height={40} />
+      </Grid>
+      <Grid item xs={1}>
+        <Skeleton variant="rectangular" height={40} />
+      </Grid>
+      <Grid item xs={1}>
+        <Skeleton variant="rectangular" height={40} />
+      </Grid>
+      <Grid item xs={1}>
+        <Skeleton variant="text" />
+      </Grid>
+      <Grid item xs={1}>
+        <Skeleton variant="rectangular" height={40} />
+      </Grid>
+      <Grid item xs={1}>
+        <Skeleton variant="circular" width={40} height={40} />
+      </Grid>
+      <Grid item xs={1}>
+        <Skeleton variant="rectangular" height={40} />
+      </Grid>
+      <Grid item xs={1}>
+        <Skeleton variant="circular" width={40} height={40} />
+      </Grid>
+      <Grid item xs={1}>
+        <Skeleton variant="rectangular" width={80} height={40} />
+      </Grid>
+    </Grid>
+  </Paper>
+);
