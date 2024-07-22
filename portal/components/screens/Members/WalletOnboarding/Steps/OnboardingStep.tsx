@@ -48,7 +48,7 @@ const OnboardingStep: React.FC<IOnboardingStepProps> = ({
     <div className='flex flex-col items-center justify-between h-[calc(100vh-10vh)] p-6 py-7 w-[95%] md:w-[350px] lg:w-1/4 bg-neutral-800 shadow-md rounded-lg text-center max-sm:w-full max-sm:h-full max-sm:justify-center max-sm:gap-8 overflow-y-scroll no-scrollbar'>
       {image && (
         <div
-          className={`relative flex items-center justify-center mb-6 ${
+          className={`relative flex items-center justify-center mb-6 max-sm:mt-8 ${
             step === 2
               ? 'w-full h-auto cursor-pointer'
               : 'w-44 h-44 rounded-full border-2 border-[#1E90FF]'
@@ -60,9 +60,9 @@ const OnboardingStep: React.FC<IOnboardingStepProps> = ({
               src={image}
               alt='Step Image'
               layout='responsive'
-              width={!isMobile ? 500 : 300}
-              height={!isMobile ? 500 : 300}
-              className='object-cover p-3 rounded-none '
+              width={!isMobile ? 500 : 250}
+              height={!isMobile ? 500 : 250}
+              className='object-cover p-3 rounded-sm '
             />
           ) : (
             <Image
