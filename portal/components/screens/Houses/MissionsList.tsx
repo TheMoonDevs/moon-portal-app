@@ -49,7 +49,7 @@ export function calculateMissionStat(
         return 0;
       }
       const completedPoints = totalMissionPoints - remainingBalance;
-      const progress = (completedPoints / totalMissionPoints) * 100;
+      const progress = ((completedPoints / totalMissionPoints) * 100);
       return progress;
     case "status":
       return remainingBalance >= 0 ? "🟡" : remainingBalance === 0 ? "✅" : "";
@@ -66,9 +66,10 @@ export const MissionsList = ({
   currentHouseIndex: number;
 }) => {
   const dispatch = useAppDispatch();
-  const { missions} = useAppSelector(
-    (state: RootState) => state.selectedMission
+  const  missions = useAppSelector(
+    (state: RootState) => state.selectedMission.missions
   );
+  const selectedMission = useAppSelector((state: RootState) => state.selectedMission.mission);
   const [timeFrame, setTimeFrame] = useState("month");
   const [timeValue, setTimeValue] = useState(dayjs().format("YYYY-MM"));
 
@@ -140,8 +141,7 @@ export const MissionsList = ({
         setTimeValue(dayjs().format("YYYY-MM"));
         break;
       case "quarter":
-        const currentQuarter = Math.floor(dayjs().month() / 3) + 1;
-        setTimeValue(`${dayjs().year()}-Q${currentQuarter}`);
+        setTimeValue("1");
         break;
       case "year":
         setTimeValue(dayjs().year().toString());
@@ -159,7 +159,7 @@ export const MissionsList = ({
   }
 
   return (
-    <div className=" flex flex-col gap-4 my-4 shadow-xl h-[96vh] rounded-lg border overflow-y-scroll">
+    <div className=" flex flex-col  my-4 shadow-xl h-[96vh] rounded-lg border overflow-y-scroll">
       <div
         id="mission-header"
         className="flex flex-row items-center justify-between px-4 py-4 border-b border-neutral-200 rounded-t-xl"
@@ -204,7 +204,11 @@ export const MissionsList = ({
           .map((mission, i) => (
             <div
               key={i}
-              className="flex flex-col gap-2 border-b border-neutral-200"
+             className={`flex flex-col gap-2 border-b pt-3 border-neutral-200 cursor-pointer hover:bg-gray-200 
+                ${
+                selectedMission?.id === mission.id ? 'bg-gray-200' : ''
+              }
+              `}
               onClick={() => {
                 dispatch(setSelectedMission(mission));
                 dispatch(setMissionDetailsOpen(false));
