@@ -19,6 +19,7 @@ interface FormState {
   timezone: string;
   countryCode: string;
   phone: string;
+  govtId: string;
 }
 
 const initialState: FormState = {
@@ -39,6 +40,7 @@ const initialState: FormState = {
   timezone: "",
   countryCode: "",
   phone: "",
+  govtId: "",
 };
 
 const formSlice = createSlice({

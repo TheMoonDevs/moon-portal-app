@@ -8,6 +8,7 @@ export interface personalData {
   address?: string;
   avatar?: string;
   banner?: string;
+  govtId?: string;
 }
 
 export interface workData {
