@@ -47,7 +47,9 @@ export function OnboardingPage({ onClose }: OnboardingPageProps) {
   const [username, setUsername] = useState("");
   const [isUsernameValid, setIsUsernameValid] = useState(false);
   const [password, setPassword] = useState("");
-  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedDOB, setSelectedDOB] = useState("");
+  const [selectedStartDate, setSelectedStartDate] = useState("");
+  const [govtIdLink, setGovtIdLink] = useState("");
   const [loading, setLoading] = useState(false);
   const [submit, setSubmit] = useState(false);
   const handleChange = (
@@ -75,7 +77,8 @@ export function OnboardingPage({ onClose }: OnboardingPageProps) {
       name: fullName,
       username: username,
       passcode: password,
-      dateOfBirth: selectedDate,
+      dateOfBirth: selectedDOB,
+      startDate: selectedStartDate,
     };
     try {
       const response = await fetch("/api/onboarding", {
@@ -143,7 +146,7 @@ export function OnboardingPage({ onClose }: OnboardingPageProps) {
     }
   };
 
-  console.log("selectedDate:", selectedDate);
+  // console.log("selectedDateOfBirth:", selectedDOB);
   const showMessage = (newMessage: string, newMessageColor: string) => {
     if (newMessage !== "" && newMessageColor !== "") {
       setMessage(newMessage);
@@ -163,10 +166,10 @@ export function OnboardingPage({ onClose }: OnboardingPageProps) {
   const handleDateChange = (selectedDate: string) => {
     if (selectedDate) {
       const formattedDate = new Date(selectedDate).toISOString().split("T")[0];
-      setSelectedDate(formattedDate);
+      setSelectedDOB(formattedDate);
     } else {
       // Clear the selected date
-      setSelectedDate("");
+      setSelectedDOB("");
     }
   };
 
@@ -187,7 +190,7 @@ export function OnboardingPage({ onClose }: OnboardingPageProps) {
     border: "2px solid #000",
     boxShadow: 24,
     py: 4,
-    px:0.5,
+    px: 0.5,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -218,7 +221,6 @@ export function OnboardingPage({ onClose }: OnboardingPageProps) {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
-      
       <Modal
         open={true}
         aria-labelledby="modal-modal-title"
@@ -336,13 +338,36 @@ export function OnboardingPage({ onClose }: OnboardingPageProps) {
                         error: false,
                       },
                     }}
-                    value={dayjs(selectedDate)}
+                    value={dayjs(selectedDOB)}
                     onChange={(value) => {
                       if (value) {
                         const formattedDate = value.format("YYYY-MM-DD");
-                        setSelectedDate(formattedDate);
+                        setSelectedDOB(formattedDate);
                       } else {
-                        setSelectedDate("");
+                        setSelectedDOB("");
+                      }
+                    }}
+                    className="max-w-[23rem] w-full"
+                    sx={InputStyles}
+                  />
+                </div>
+                <div className="w-full px-10 h-[1px] bg-gray-200"></div>
+                <div className="flex justify-between items-center flex-wrap">
+                  <label>Date of Joining:</label>
+                  <DatePicker
+                    slotProps={{
+                      textField: {
+                        size: "small",
+                        error: false,
+                      },
+                    }}
+                    value={dayjs(selectedStartDate)}
+                    onChange={(value) => {
+                      if (value) {
+                        const formattedDate = value.format("YYYY-MM-DD");
+                        setSelectedStartDate(formattedDate);
+                      } else {
+                        setSelectedStartDate("");
                       }
                     }}
                     className="max-w-[23rem] w-full"
@@ -455,6 +480,28 @@ export function OnboardingPage({ onClose }: OnboardingPageProps) {
                     size="small"
                     name="address"
                     value={formData.address}
+                    onChange={handleChange}
+                    className="max-w-[23rem] w-full"
+                    InputLabelProps={{
+                      shrink: false,
+                    }}
+                    InputProps={{
+                      notched: false,
+                    }}
+                    sx={InputStyles}
+                  />
+                </div>
+                <div className="w-full px-10 h-[1px] bg-gray-200"></div>
+                <div className="flex justify-between items-center flex-wrap">
+                  <label>Government Id:</label>
+                  <TextField
+                    name="govtId"
+                    type="url"
+                    size="small"
+                    required
+                    color="info"
+                    variant="outlined"
+                    value={formData.govtId}
                     onChange={handleChange}
                     className="max-w-[23rem] w-full"
                     InputLabelProps={{
