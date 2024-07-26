@@ -71,7 +71,7 @@ export const WorklogSummaryActions = ({
   const renderContent = () => {
     if (loading) {
       return (
-        <div className="pt-6 md:pt-14 min-w-[300px] md:min-w-[400px]">
+        <div className="pt-6 px-14 md:px-0 md:pt-14 w-full md:min-w-[300px] lg:min-w-[400px]">
           <LoadingSkeleton />
         </div>
       );
