@@ -94,7 +94,7 @@ export const WorklogSummaryActions = ({
     if (view === "AI Summary" && aiSummary) {
       return (
         <>
-          <div className="flex gap-4 items-center absolute top-10 right-10 !text-neutral-500 z-50">
+          <div className="flex gap-4 items-center absolute top-9 left-10 md:left-auto md:right-10 !text-neutral-500 z-50">
             <Tooltip title="Download AI Summary">
               <span
                 className="material-symbols-outlined hover:cursor-pointer hover:!text-neutral-600"
@@ -117,10 +117,10 @@ export const WorklogSummaryActions = ({
             </Tooltip>
           </div>
           <div
-            className={`overflow-y-auto w-full ${
+            className={`overflow-y-auto h-[80vh] w-full ${
               isContentVisible ? "block" : "hidden"
             }`}>
-            <div ref={aiSummaryPdfTargetRef} className="p-10 pt-14">
+            <div ref={aiSummaryPdfTargetRef} className="p-10 pt-16">
               <div className="w-full">
                 <MdxAppEditor
                   className=""
@@ -166,7 +166,7 @@ export const WorklogSummaryActions = ({
       {isContentVisible && (
         <>
           <button
-            className="absolute top-5 z-20 right-3 md:hidden"
+            className="absolute top-6 z-20 right-5 md:hidden"
             onClick={toggleContentVisibility}>
             <CircleX color="black" />
           </button>
