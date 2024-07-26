@@ -104,16 +104,14 @@ export const WorklogSummaryActions = ({
                     filename: `ai_worklog_summary_${userData?.name}.pdf`,
                     page: { margin: Margin.LARGE },
                   })
-                }
-              >
+                }>
                 download
               </span>
             </Tooltip>
             <Tooltip title="Copy AI Summary">
               <span
                 className="material-symbols-outlined hover:cursor-pointer hover:!text-neutral-600"
-                onClick={() => copyToClipboard(aiSummary)}
-              >
+                onClick={() => copyToClipboard(aiSummary)}>
                 stack
               </span>
             </Tooltip>
@@ -121,8 +119,7 @@ export const WorklogSummaryActions = ({
           <div
             className={`overflow-y-auto w-full ${
               isContentVisible ? "block" : "hidden"
-            }`}
-          >
+            }`}>
             <div ref={aiSummaryPdfTargetRef} className="p-10 pt-14">
               <div className="w-full">
                 <MdxAppEditor
@@ -170,9 +167,8 @@ export const WorklogSummaryActions = ({
         <>
           <button
             className="absolute -top-[30px] z-20 right-3 md:hidden"
-            onClick={toggleContentVisibility}
-          >
-            <CircleX color="red" />
+            onClick={toggleContentVisibility}>
+            <CircleX color="black" />
           </button>
 
           <div className="h-screen w-full md:hidden">{renderContent()}</div>
@@ -194,8 +190,7 @@ export const WorklogSummaryActions = ({
                 filename: `worklog_summary_${userData?.name}.pdf`,
                 page: { margin: Margin.LARGE },
               })
-            }
-          >
+            }>
             <span className="material-symbols-outlined">download</span>
             <span>Download as PDF</span>
           </button>
@@ -203,16 +198,14 @@ export const WorklogSummaryActions = ({
         <button
           disabled={!worklogSummary.length}
           className="disabled:cursor-not-allowed flex gap-1 md:gap-2 items-center border border-neutral-800 hover:bg-neutral-100 rounded-md px-2 md:px-4 py-1 md:py-2"
-          onClick={handleBreakdownBtnClick}
-        >
+          onClick={handleBreakdownBtnClick}>
           <span className="material-symbols-outlined">analytics</span>
           <span>Breakdown</span>
         </button>
         <button
           disabled={!worklogSummary.length}
           onClick={handleAiSummaryBtnClick}
-          className="disabled:cursor-not-allowed flex gap-1 md:gap-2 items-center border bg-neutral-900 text-white hover:bg-neutral-700 rounded-md px-2 md:px-4 py-2 md:py-2"
-        >
+          className="disabled:cursor-not-allowed flex gap-1 md:gap-2 items-center border bg-neutral-900 text-white hover:bg-neutral-700 rounded-md px-2 md:px-4 py-2 md:py-2">
           <span className="text-[0.8rem] md:text-[1rem]">✨</span>
           <span>AI Summary</span>
         </button>
