@@ -156,7 +156,7 @@ model Directory {
 
 model RecentDirectory {
   id           String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId       String   @db.ObjectId
+  userId       String   @db.ObjectId @unique
   directoryIds String[] @db.ObjectId
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
