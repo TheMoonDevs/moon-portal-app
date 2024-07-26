@@ -154,6 +154,14 @@ model Directory {
   timestamp   DateTime @default(now())
 }
 
+model RecentDirectory {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String   @db.ObjectId
+  directoryIds String[] @db.ObjectId
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
 enum ROOTTYPE {
   DEPARTMENT
   COMMON_RESOURCES
