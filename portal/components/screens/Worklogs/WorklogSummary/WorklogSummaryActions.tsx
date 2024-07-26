@@ -166,7 +166,7 @@ export const WorklogSummaryActions = ({
       {isContentVisible && (
         <>
           <button
-            className="absolute -top-[30px] z-20 right-3 md:hidden"
+            className="absolute top-5 z-20 right-3 md:hidden"
             onClick={toggleContentVisibility}>
             <CircleX color="black" />
           </button>
