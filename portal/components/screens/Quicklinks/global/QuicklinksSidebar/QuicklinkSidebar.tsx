@@ -205,7 +205,7 @@ export default function QuicklinkSidebar() {
                         {selectedRootDir?.title}
                       </h4>
                       <p className="text-sm opacity-70">
-                        {currentDirectory?.title}
+                        {selectedRootDir?.title != "My Dashboard" && currentDirectory?.title}
                       </p>
                     </div>
                     {/* <button
