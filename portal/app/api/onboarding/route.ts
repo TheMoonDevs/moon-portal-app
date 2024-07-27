@@ -1,4 +1,5 @@
 import { prisma } from "@/prisma/prisma";
+import { sheetMap, spreadsheetId } from "@/utils/constants/spreadsheetData";
 import GoogleSheetsAPI from "@/utils/services/googleSheetSdk";
 import { USERROLE } from "@prisma/client";
 import { NextResponse, NextRequest } from "next/server";
@@ -113,10 +114,8 @@ export async function POST(request: NextRequest) {
     ];
 
     await sheetSDK.appendSheetData({
-      // original spreadsheet 1w2kCO6IIYHi7YJBqfeg9ytmiIDRGhOgGzUPb_0u-UZ0
-      spreadsheetId: "1GpGa1ucc_HWnYjBVckBc8h4pnA0S8J7SZxrdDbcuMYI",
-      // original target 531726613
-      targetId: "2036707832",
+      spreadsheetId,
+      targetId: sheetMap.Trial,
       values: [sheetData],
       range: "A:A",
       majorDimension: "ROWS",

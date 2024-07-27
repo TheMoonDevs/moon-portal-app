@@ -1,8 +1,7 @@
 import { prisma } from "@/prisma/prisma";
+import { sheetMap, spreadsheetId } from "@/utils/constants/spreadsheetData";
 import GoogleSheetsAPI from "@/utils/services/googleSheetSdk";
-import { SlackBotSdk } from "@/utils/services/slackBotSdk";
 import { HOUSEID, USERROLE, USERSTATUS, USERTYPE } from "@prisma/client";
-import { JsonObject } from "@prisma/client/runtime/library";
 import { NextResponse, NextRequest } from "next/server";
 
 const sheetConfig = {
@@ -11,12 +10,6 @@ const sheetConfig = {
 };
 
 const sheetSDK = new GoogleSheetsAPI(sheetConfig);
-
-const sheetMap = {
-  CoreTeam: "0",
-  Trial: "2036707832",
-  Archive: "1431140485",
-};
 
 export async function GET(request: NextRequest) {
   const id = request.nextUrl.searchParams.get("id") as string;
@@ -98,7 +91,6 @@ export async function POST(request: Request) {
             rest.email,
             rest.personalData.phone,
             rest.payData.upiId,
-            // "=(YEAR(NOW())-YEAR(G14))",
             `=(YEAR(NOW())-YEAR(INDIRECT("G" & ROW())))`,
             rest.personalData.dateOfBirth,
             rest.personalData.city,
@@ -112,8 +104,7 @@ export async function POST(request: Request) {
           ];
 
     await sheetSDK.appendSheetData({
-      // original spreadsheetid = 1w2kCO6IIYHi7YJBqfeg9ytmiIDRGhOgGzUPb_0u-UZ0
-      spreadsheetId: "1GpGa1ucc_HWnYjBVckBc8h4pnA0S8J7SZxrdDbcuMYI",
+      spreadsheetId,
       targetId:
         rest.role == USERROLE.TRIAL_CANDIDATE
           ? sheetMap.Trial
@@ -228,7 +219,7 @@ export async function PUT(request: Request) {
     //       ];
 
     const newSheet = await sheetSDK.getSheetData({
-      spreadsheetId: "1GpGa1ucc_HWnYjBVckBc8h4pnA0S8J7SZxrdDbcuMYI",
+      spreadsheetId,
       targetId:
         rest.status === "ACTIVE"
           ? rest.role == USERROLE.TRIAL_CANDIDATE
@@ -239,7 +230,7 @@ export async function PUT(request: Request) {
       majorDimension: "ROWS",
     });
     const oldSheet = await sheetSDK.getSheetData({
-      spreadsheetId: "1GpGa1ucc_HWnYjBVckBc8h4pnA0S8J7SZxrdDbcuMYI",
+      spreadsheetId,
       targetId:
         oldUser?.status === "ACTIVE"
           ? oldUser?.role == USERROLE.TRIAL_CANDIDATE
@@ -259,7 +250,7 @@ export async function PUT(request: Request) {
         ) {
           if (oldUser?.role == rest.role && oldUser?.status == rest.status) {
             await sheetSDK.updateSheetData({
-              spreadsheetId: "1GpGa1ucc_HWnYjBVckBc8h4pnA0S8J7SZxrdDbcuMYI",
+              spreadsheetId,
               targetId:
                 rest.role == USERROLE.TRIAL_CANDIDATE
                   ? sheetMap.Trial
@@ -277,7 +268,7 @@ export async function PUT(request: Request) {
             oldUser?.status == rest.status
           ) {
             await sheetSDK.updateSheetData({
-              spreadsheetId: "1GpGa1ucc_HWnYjBVckBc8h4pnA0S8J7SZxrdDbcuMYI",
+              spreadsheetId,
               targetId:
                 rest.role == USERROLE.TRIAL_CANDIDATE
                   ? sheetMap.Trial
@@ -299,7 +290,7 @@ export async function PUT(request: Request) {
 
     if (!isSheetDataUpdated) {
       await sheetSDK.appendSheetData({
-        spreadsheetId: "1GpGa1ucc_HWnYjBVckBc8h4pnA0S8J7SZxrdDbcuMYI",
+        spreadsheetId,
         targetId:
           rest.status === "ACTIVE"
             ? rest.role == USERROLE.TRIAL_CANDIDATE
@@ -328,7 +319,7 @@ export async function PUT(request: Request) {
             `${rest.username}${rest.password}`
           ) {
             await sheetSDK.deleteRowOrColumn({
-              spreadsheetId: "1GpGa1ucc_HWnYjBVckBc8h4pnA0S8J7SZxrdDbcuMYI",
+              spreadsheetId,
               targetId:
                 oldUser?.status === "ACTIVE"
                   ? oldUser?.role == USERROLE.TRIAL_CANDIDATE
