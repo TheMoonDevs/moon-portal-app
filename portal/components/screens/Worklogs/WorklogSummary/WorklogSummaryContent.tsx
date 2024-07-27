@@ -26,7 +26,7 @@ export const WorklogSummaryContent = ({
   const [worklogSummary, setWorklogSummary] = useState<WorkLogs[]>([]);
   const { loading, setLoading } = useAsyncState();
   const pdfTargetRef = useRef(null);
-  console.log(userData?.id);
+  // console.log(userData?.id);
   const fetchWorklogData = useCallback(
     async (query: {
       year: string | number | undefined | null;
