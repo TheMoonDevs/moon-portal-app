@@ -204,9 +204,9 @@ export const MissionsList = ({
           .map((mission, i) => (
             <div
               key={i}
-             className={`flex flex-col gap-2 border-b pt-3 border-neutral-200 cursor-pointer hover:bg-gray-200 
+             className={`flex flex-col gap-2 border-b pt-3 border-neutral-200 cursor-pointer hover:bg-gray-100 
                 ${
-                selectedMission?.id === mission.id ? 'bg-gray-200' : ''
+                selectedMission?.id === mission.id ? 'bg-gray-200' : 'text-gray-700'
               }
               `}
               onClick={() => {
