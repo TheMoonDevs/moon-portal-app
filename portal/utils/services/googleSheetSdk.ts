@@ -28,6 +28,14 @@ interface Config {
   privateKey: string;
 }
 
+interface DeleteRowOrColumnOptions {
+  spreadsheetId: string;
+  sheetName?: string;
+  targetId?: string;
+  majorDimension: MajorDimension;
+  indexes: (number | { startIndex: number; endIndex: number })[];
+}
+
 class GoogleSheetsAPI {
   private baseUrl: string;
   private clientEmail: string;
@@ -231,7 +239,7 @@ class GoogleSheetsAPI {
       finalSheetName = await this.getSheetName(spreadsheetId, targetId);
     }
 
-    console.log(finalSheetName)
+    console.log(finalSheetName);
 
     if (!finalSheetName) {
       throw new Error("Either sheetName or targetId must be provided");
@@ -258,12 +266,111 @@ class GoogleSheetsAPI {
     });
 
     const data = await response.json();
-    
+
     if (!response.ok) {
-      console.log(data)
+      console.log(data);
       throw new Error(`Error appending data: ${response.statusText}`);
     }
 
+    return data;
+  }
+  async deleteRowOrColumn(options: DeleteRowOrColumnOptions): Promise<any> {
+    const { spreadsheetId, sheetName, targetId, majorDimension, indexes } =
+      options;
+
+    let finalSheetName = sheetName;
+    let sheetId = targetId;
+    if (!sheetName && targetId) {
+      finalSheetName = await this.getSheetName(spreadsheetId, targetId);
+    } else if (!targetId && sheetName) {
+      const accessToken = await this.getAccessToken();
+      const url = `${this.baseUrl}/${spreadsheetId}?fields=sheets(properties(sheetId,title))`;
+
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error fetching sheet names: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const sheet = data.sheets.find(
+        (s: any) => s.properties.title == sheetName
+      );
+
+      if (!sheet) {
+        throw new Error(`Sheet with name ${sheetName} not found`);
+      }
+
+      sheetId = sheet.properties.sheetId;
+    }
+
+    if (!finalSheetName && !sheetId) {
+      throw new Error("Either sheetName or targetId must be provided");
+    }
+
+    const accessToken = await this.getAccessToken();
+    const url = `${this.baseUrl}/${spreadsheetId}:batchUpdate`;
+
+    // Sort and merge indexes
+    const sortedIndexes = indexes
+      .map((index) =>
+        typeof index === "number"
+          ? { startIndex: index, endIndex: index + 1 }
+          : index
+      )
+      .sort((a, b) => b.startIndex - a.startIndex);
+
+    const mergedIndexes: { startIndex: number; endIndex: number }[] =
+      sortedIndexes.reduce<{ startIndex: number; endIndex: number }[]>(
+        (acc, curr) => {
+          if (acc.length === 0) {
+            acc.push(curr);
+          } else {
+            const last = acc[acc.length - 1];
+            if (last.startIndex <= curr.endIndex) {
+              last.startIndex = Math.min(last.startIndex, curr.startIndex);
+            } else {
+              acc.push(curr);
+            }
+          }
+          return acc;
+        },
+        []
+      );
+
+    const requests = mergedIndexes.map((index) => ({
+      deleteDimension: {
+        range: {
+          sheetId: sheetId,
+          dimension: majorDimension,
+          startIndex: index.startIndex,
+          endIndex: index.endIndex,
+        },
+      },
+    }));
+
+    const requestBody = {
+      requests: requests,
+    };
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error deleting row/column: ${response.statusText}`);
+    }
+
+    const data = await response.json();
     return data;
   }
 }

@@ -103,6 +103,16 @@ export const AdminUserPersonalData = ({
                 className="border border-neutral-400 rounded-lg p-2"
               />
             </div>
+            <div className="flex flex-row gap-4 items-center justify-start">
+              <p className="w-40">Government Id</p>
+              <input
+                id="personalData.govtId"
+                type="url"
+                value={(user?.personalData as personalData)?.govtId}
+                onChange={updateField}
+                className="border border-neutral-400 rounded-lg p-2"
+              />
+            </div>
           </div>
         </div>
       </LocalizationProvider>
