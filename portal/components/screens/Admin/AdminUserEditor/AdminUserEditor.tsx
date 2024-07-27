@@ -42,7 +42,6 @@ export const AdminUserEditor = () => {
     industry: USERINDUSTRY.OTHERS,
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     country: "",
-    house: null,
     createdAt: new Date(),
     updatedAt: new Date(),
     status: USERSTATUS.ACTIVE,
