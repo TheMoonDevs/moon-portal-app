@@ -22,6 +22,36 @@ import { AdminUserBasicData } from "./AdimUserBasicData";
 import { AdminUserPayData } from "./AdminUserPayData";
 import { AdminUserPersonalData } from "./AdminUserPersonalData";
 
+const initialUserState: User = {
+  id: "",
+  name: "",
+  username: "",
+  password: "",
+  email: "",
+  avatar: "",
+  userType: USERTYPE.MEMBER,
+  role: USERROLE.CORETEAM,
+  vertical: USERVERTICAL.DEV,
+  industry: USERINDUSTRY.OTHERS,
+  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  country: "",
+  house: null,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  status: USERSTATUS.ACTIVE,
+  isAdmin: false,
+  workData: {
+    joining: dayjs().format("YYYY-MM-DD"),
+    overlap: [],
+  },
+  personalData: null, // Add the missing property
+  payData: null, // Add the missing property
+  slackId: "",
+  thirdPartyData: null,
+  banner: "",
+  description: "",
+};
+
 export const AdminUserEditor = () => {
   const query = useSearchParams();
   const router = useRouter();
@@ -29,35 +59,7 @@ export const AdminUserEditor = () => {
 
   const { showToast } = useToast();
 
-  const [user, setUser] = useState<User>({
-    id: "",
-    name: "",
-    username: "",
-    password: "",
-    email: "",
-    avatar: "",
-    userType: USERTYPE.MEMBER,
-    role: USERROLE.CORETEAM,
-    vertical: USERVERTICAL.DEV,
-    industry: USERINDUSTRY.OTHERS,
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    country: "",
-    house: null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    status: USERSTATUS.ACTIVE,
-    isAdmin: false,
-    workData: {
-      joining: dayjs().format("YYYY-MM-DD"),
-      overlap: [],
-    },
-    personalData: null, // Add the missing property
-    payData: null, // Add the missing property
-    slackId: "",
-    thirdPartyData: null,
-    banner: "",
-    description: "",
-  });
+  const [user, setUser] = useState<User>(initialUserState);
 
   useEffect(() => {
     const id = query?.get("id");
@@ -76,35 +78,7 @@ export const AdminUserEditor = () => {
         });
     } else {
       router.refresh();
-      setUser({
-        id: "",
-        name: "",
-        username: "",
-        password: "",
-        email: "",
-        avatar: "",
-        userType: USERTYPE.MEMBER,
-        role: USERROLE.CORETEAM,
-        vertical: USERVERTICAL.DEV,
-        industry: USERINDUSTRY.OTHERS,
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        country: "",
-        house: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        status: USERSTATUS.ACTIVE,
-        isAdmin: false,
-        workData: {
-          joining: dayjs().format("YYYY-MM-DD"),
-          overlap: [],
-        },
-        personalData: null, // Add the missing property
-        payData: null, // Add the missing property
-        slackId: "",
-        thirdPartyData: null,
-        banner: "",
-        description: "",
-      });
+      setUser(initialUserState);
     }
   }, [query]);
 
