@@ -10,6 +10,7 @@ interface FormState {
   city: string;
   position: string;
   workHourOverlap: string;
+  house: string;
   address: string;
   username: string;
   passcode: string;
@@ -30,6 +31,7 @@ const initialState: FormState = {
   username: "",
   city: "",
   position: "",
+  house: "",
   workHourOverlap: "",
   address: "",
   passcode: "",
