@@ -3,7 +3,7 @@
 import { ChangeEvent, useEffect, useState } from "react";
 import dayjs from "dayjs";
 import { LoaderScreen } from "@/components/elements/Loaders";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AdminHeader } from "../AdminHeader";
 import { useToast } from "@/components/elements/Toast";
 import { PortalSdk } from "@/utils/services/PortalSdk";
@@ -24,6 +24,7 @@ import { AdminUserPersonalData } from "./AdminUserPersonalData";
 
 export const AdminUserEditor = () => {
   const query = useSearchParams();
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
 
   const { showToast } = useToast();
@@ -73,6 +74,37 @@ export const AdminUserEditor = () => {
           console.log(err);
           setLoading(false);
         });
+    } else {
+      router.refresh();
+      setUser({
+        id: "",
+        name: "",
+        username: "",
+        password: "",
+        email: "",
+        avatar: "",
+        userType: USERTYPE.MEMBER,
+        role: USERROLE.CORETEAM,
+        vertical: USERVERTICAL.DEV,
+        industry: USERINDUSTRY.OTHERS,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        country: "",
+        house: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        status: USERSTATUS.ACTIVE,
+        isAdmin: false,
+        workData: {
+          joining: dayjs().format("YYYY-MM-DD"),
+          overlap: [],
+        },
+        personalData: null, // Add the missing property
+        payData: null, // Add the missing property
+        slackId: "",
+        thirdPartyData: null,
+        banner: "",
+        description: "",
+      });
     }
   }, [query]);
 
