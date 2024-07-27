@@ -26,12 +26,13 @@ export const WorklogSummaryContent = ({
   const [worklogSummary, setWorklogSummary] = useState<WorkLogs[]>([]);
   const { loading, setLoading } = useAsyncState();
   const pdfTargetRef = useRef(null);
-
+  console.log(userData?.id);
   const fetchWorklogData = useCallback(
     async (query: {
       year: string | number | undefined | null;
       month?: string | number | undefined | null;
     }) => {
+      console.log(userData?.id);
       setLoading(true);
       try {
         const response = await PortalSdk.getData(
