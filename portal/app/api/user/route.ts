@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
         status: status ? (status as USERSTATUS) : USERSTATUS.ACTIVE,
       },
     });
-    console.log(user);
+    // console.log(user);
 
     if (error_response) {
       return new NextResponse(JSON.stringify(error_response), {

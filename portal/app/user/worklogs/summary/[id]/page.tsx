@@ -14,7 +14,7 @@ async function getUserDetailsFromUserId(userId: string) {
       `${APP_BASE_URL}/api/user?id=${userId}&role=${USERROLE.CORETEAM}`,
       null
     );
-    console.log(user);
+    // console.log(user);
     return user.data.user[0];
   } catch (e) {
     console.log(e);
@@ -29,7 +29,7 @@ export default async function WorklogViewPage({
   };
 }) {
   const response = await getUserDetailsFromUserId(params.id);
-  console.log(response, "page");
+  // console.log(response, "page");
   return (
     <PageAccess isAuthRequired={true}>
       <WorklogSummaryByUserId userId={params.id} userData={response} />
