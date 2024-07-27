@@ -37,6 +37,7 @@ const SendNotifications = ({
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!user?.id) return;
     const data = {
       userId: user?.id,
       title,
@@ -45,9 +46,7 @@ const SendNotifications = ({
     };
     try {
       setSending(true);
-      const response = await PortalSdk.postData('/api/notifications/add', {
-        data,
-      });
+      const response = await PortalSdk.postData('/api/notifications/add', data);
       setUser(null);
       setTitle('');
       setDescription('');

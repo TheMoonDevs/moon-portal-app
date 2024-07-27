@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Tabs, Tab, Box, Typography } from "@mui/material";
 
 interface TabInfo {
-  label: string;
+  label: string | React.ReactNode;
   content: React.ReactNode;
 }
 

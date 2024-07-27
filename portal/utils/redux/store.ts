@@ -13,9 +13,10 @@ import filesUploadReducer from "./filesUpload/fileUpload.slice";
 import onboardingFormReducer from "./onboarding/onboarding.slice";
 import worklogsReducer from "./worklogs/worklogs.slice";
 import selectedMissionReducer from './missions/selectedMission.slice';
+import laterTodosReducer from "./worklogs/laterTodos.slice";
 //import suggestionsReducer from './suggestions/suggestions.slice';
 import notificationsReducer from "./notification/notification.slice";
-import userProfileDrawerReducer from "./userProfileDrawer/userProfileDrawer.slice";
+import coreTeamSlice from "./coreTeam/coreTeam.slice";
 
 const store = configureStore({
   reducer: {
@@ -26,10 +27,11 @@ const store = configureStore({
     zerotracker: zerotrackerReducer,
     filesUpload: filesUploadReducer,
     worklogs: worklogsReducer,
+    laterTodos: laterTodosReducer,
     searchTerm: searchTermReducer,
     onboardingForm: onboardingFormReducer,
     selectedMission: selectedMissionReducer,
-    userProfileDrawer: userProfileDrawerReducer,
+    coreTeam: coreTeamSlice,
     //suggestions: suggestionsReducer,
     notifications: notificationsReducer,
   },

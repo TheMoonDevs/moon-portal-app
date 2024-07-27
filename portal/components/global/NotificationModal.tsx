@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, Box } from '@mui/material';
 import { Notification } from '@prisma/client';
-import NotificationsList from '../screens/notifications/NotificationsList';
+import NotificationsList, { INotification } from '../screens/notifications/NotificationsList';
 
 const style = (left: number) => ({
   position: 'absolute' as 'absolute',
@@ -22,7 +22,7 @@ const style = (left: number) => ({
 interface NotificationModalProps {
   open: boolean;
   onClose: () => void;
-  notifications: Notification[];
+  notifications: INotification[];
 }
 
 const NotificationModal: React.FC<NotificationModalProps> = ({

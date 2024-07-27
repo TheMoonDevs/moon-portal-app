@@ -134,18 +134,18 @@ export async function PUT(request: Request) {
       `${rest.username}${rest.password}`,
       rest.name,
       rest.email,
-      rest.personalData.phone,
-      rest.payData.upiId,
+      rest.personalData?.phone,
+      rest.payData?.upiId,
       "=(YEAR(NOW())-YEAR(G14))",
-      rest.personalData.dateOfBirth,
+      rest.personalData?.dateOfBirth,
       rest.vertical,
-      rest.personalData.city,
-      rest.workData.positionInternal,
-      rest.personalData.workHourOverlap,
-      rest.workData.workHours,
+      rest.personalData?.city,
+      rest.workData?.positionInternal,
+      rest.personalData?.workHourOverlap,
+      rest.workData?.workHours,
       currentDate,
       "---", //office email
-      rest.personalData.address,
+      rest.personalData?.address,
     ];
 
     const sheet = await sheetSDK.getSheetData({
@@ -191,6 +191,8 @@ export async function PUT(request: Request) {
 
     return NextResponse.json(json_response);
   } catch (e) {
+    console.log(e);
+    
     return new NextResponse(JSON.stringify(e), {
       status: 404,
       headers: { "Content-Type": "application/json" },
