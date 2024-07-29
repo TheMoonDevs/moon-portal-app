@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useAppSelector } from "@/utils/redux/store";
-import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
+import useSWR, { mutate } from 'swr';
 import { Skeleton, Tooltip, Box } from "@mui/material";
 import NextLink from 'next/link';
 import { APP_BASE_URL } from '@/utils/constants/appInfo';
@@ -15,37 +15,28 @@ interface Directory {
   logos: string[];
 }
 
+const fetcher = (url: string) => fetch(url).then(res => res.json());
+
 function RecentlyUsedLink() {
+  const userId = useAppSelector((state) => state.auth.user?.id);
   const recentDirectories = useAppSelector((state) => state.quicklinks.recentDirectories);
-  const [directories, setDirectories] = useState<Directory[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+
+  const { data, error, isLoading } = useSWR(
+    userId ? `/api/quicklinks/recent-directory/fetch?userId=${userId}` : null,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+    }
+  );
 
   useEffect(() => {
-    const fetchDirectories = async () => {
-      setLoading(true);
-      try {
-        if (recentDirectories.length > 0) {
-          const data = { directoryIds: recentDirectories };
-          const response = await QuicklinksSdk.createData(
-            `/api/quicklinks/recent-directory/fetch`,
-            data
-          );
+    if (userId) {
+      mutate(`/api/quicklinks/recent-directory/fetch?userId=${userId}`);
+    }
+  }, [recentDirectories, userId]);
 
-          if (response.error) {
-            throw new Error(response.error);
-          }
-          console.log("response:", response.data);
-          setDirectories(response.data.directories);
-        }
-      } catch (error) {
-        console.error('Failed to fetch directories:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDirectories();
-  }, [recentDirectories]);
+  const directories: Directory[] = data?.data?.directories || [];
+  const loading = isLoading || !data;
 
   const removeEmojiFromPath = (path: string) => {
     return path.replace(/^[^/]+\s/, '');
@@ -60,11 +51,10 @@ function RecentlyUsedLink() {
         {loading ? (
           <>
             <Skeleton variant="rectangular" width="100%" height={100} />
-            <Skeleton variant="rectangular" width="100%" height={100} />
-            <Skeleton variant="rectangular" width="100%" height={100} />
+
           </>
         ) : directories.length > 0 ? (
-          directories.map((dir, index) => (
+          directories.map((dir: Directory, index: number) => (
             <div key={index}>
               <Tooltip title={dir.parentChildPath} placement="top">
                 <NextLink href={`${APP_BASE_URL}/quicklinks/${removeEmojiFromPath(dir.fullPath)}`} passHref>
