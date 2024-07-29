@@ -7,6 +7,7 @@ import {
   UserLink,
 } from "@prisma/client";
 import { PayloadAction, createSlice } from "@reduxjs/toolkit";
+
 const toggleFavoriteList = (prevFavList: Link[], currentFavoriteLink: Link) => {
   if (prevFavList.find((link) => link.id === currentFavoriteLink.id)) {
     return prevFavList.filter((link) => link.id !== currentFavoriteLink.id);
@@ -16,6 +17,7 @@ const toggleFavoriteList = (prevFavList: Link[], currentFavoriteLink: Link) => {
 };
 
 type listView = "list" | "widget" | "thumbnail" | "line";
+
 export const shortUrlSlice = createSlice({
   name: "quicklinks",
   initialState: {
@@ -25,6 +27,7 @@ export const shortUrlSlice = createSlice({
     directories: [],
     favoriteList: [],
     topUsedList: [],
+    recentDirectories: [] as string[], // Add recentDirectories state
     currentView:
       typeof window !== "undefined" && localStorage.getItem("currentView")
         ? (localStorage.getItem("currentView") as listView)
@@ -53,6 +56,7 @@ export const shortUrlSlice = createSlice({
     allQuicklinks: Link[];
     favoriteList: Link[];
     topUsedList: Link[];
+    recentDirectories: string[]; // Add recentDirectories state type
     currentView: listView;
     toast: {
       showToast: boolean;
@@ -137,9 +141,6 @@ export const shortUrlSlice = createSlice({
       }
     },
 
-    // setCurrDirectoryId: (state, action) => {
-    //   state.currDirectoryId = action.payload;
-    // },
     setDirectoryList: (state, action) => {
       state.directories = action.payload;
     },
@@ -194,6 +195,13 @@ export const shortUrlSlice = createSlice({
         localStorage.setItem("currentView", action.payload);
       state.currentView = action.payload;
     },
+
+    setRecentDirectories: (state, action) => {
+      state.recentDirectories = action.payload;
+    },
+    addRecentDirectories: (state, action) => {
+        state.recentDirectories = [action.payload, ...state.recentDirectories];
+    },
   },
 });
 
@@ -218,6 +226,8 @@ export const {
   addNewQuicklink,
   setPopoverElementWithData,
   setCurrentView,
+  setRecentDirectories,
+  addRecentDirectories,
 } = shortUrlSlice.actions;
 
 export default shortUrlSlice.reducer;
