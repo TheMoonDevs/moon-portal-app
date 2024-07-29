@@ -55,14 +55,14 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Handle GET requests to retrieve recent directories for a user
 export async function GET(request: NextRequest) {
-  const { userId } = await request.json();
+  const { searchParams } = new URL(request.url);
+  const userId = searchParams.get('userId');
 
   if (!userId) {
     return new NextResponse(
-      JSON.stringify({ error: "Missing userId" }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
+      JSON.stringify({ error: 'Missing userId' }),
+      { status: 400, headers: { 'Content-Type': 'application/json' } }
     );
   }
 
@@ -70,24 +70,48 @@ export async function GET(request: NextRequest) {
     // Retrieve the RecentDirectory record for the user
     const recentDirectory = await prisma.recentDirectory.findUnique({
       where: { userId },
+      select: {
+        directoryIds: true,
+        updatedAt: true,  // Access the updatedAt field
+      },
     });
 
     if (recentDirectory) {
+      // Assume you have a way to map directoryIds to their respective updatedAt timestamps
+      // Here, we'll assume the updatedAt field is a single timestamp for all entries
+      // If you need individual timestamps, you would require a different approach
+
+      const directoryIds = recentDirectory.directoryIds;
+
+      // Create an array of objects to simulate directory entries with their timestamps
+      const directoryEntries = directoryIds.map(id => ({
+        id,
+        updatedAt: recentDirectory.updatedAt, // Placeholder, adjust if needed
+      }));
+
+      // Remove duplicates by id and sort by updatedAt in descending order
+      const uniqueEntries = Array.from(
+        new Map(directoryEntries.map(entry => [entry.id, entry])).values()
+      ).sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+
+      // Get the last 9 unique entries
+      const last9Entries = uniqueEntries.slice(0, 9);
+
       return NextResponse.json({
-        status: "success",
-        data: { directoryIds: recentDirectory.directoryIds },
+        status: 'success',
+        data: { directoryIds: last9Entries.map(entry => entry.id) },
       });
     } else {
       return NextResponse.json({
-        status: "success",
+        status: 'success',
         data: { directoryIds: [] },
       });
     }
   } catch (e) {
     console.error(e);
     return new NextResponse(
-      JSON.stringify({ error: "Failed to retrieve recent directories" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      JSON.stringify({ error: 'Failed to retrieve recent directories' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
 }
