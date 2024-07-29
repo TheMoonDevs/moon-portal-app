@@ -1,22 +1,43 @@
 import { prisma } from "@/prisma/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function POST(request: NextRequest) {
-  try {
-    const { directoryIds } = await request.json();
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const userId = searchParams.get('userId');
 
-    if (!directoryIds || !Array.isArray(directoryIds)) {
-      return new NextResponse(
-        JSON.stringify({ error: "directoryIds must be a valid array" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
+  if (!userId) {
+    return new NextResponse(
+      JSON.stringify({ error: 'Missing userId' }),
+      { status: 400, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+
+  try {
+    // Retrieve the RecentDirectory record for the user
+    const recentDirectory = await prisma.recentDirectory.findUnique({
+      where: { userId },
+      select: {
+        directoryIds: true,
+      },
+    });
+
+    if (!recentDirectory) {
+      return NextResponse.json({
+        status: 'success',
+        data: { directories: [] },
+      });
     }
+
+    const directoryIds = recentDirectory.directoryIds;
+
+    // Get the last 9 unique directory IDs
+    const uniqueDirectoryIds = Array.from(new Set(directoryIds)).slice(-9);
 
     // Fetch child directories
     const directories = await prisma.directory.findMany({
       where: {
         id: {
-          in: directoryIds,
+          in: uniqueDirectoryIds,
         },
       },
       select: {
@@ -24,6 +45,25 @@ export async function POST(request: NextRequest) {
         title: true,
         parentDirId: true,
         timestamp: true,
+      },
+    });
+
+    // Check for IDs not found in the directory model
+    const foundDirectoryIds = directories.map(dir => dir.id);
+    const missingDirectoryIds = uniqueDirectoryIds.filter(id => !foundDirectoryIds.includes(id));
+
+    // Fetch directories from parentDirectory model for missing IDs
+    const parentDirectories = await prisma.parentDirectory.findMany({
+      where: {
+        id: {
+          in: missingDirectoryIds,
+        },
+      },
+      select: {
+        id: true,
+        title: true,
+        logo: true,
+        type: true,
       },
     });
 
@@ -43,7 +83,7 @@ export async function POST(request: NextRequest) {
         });
 
         if (parentDir) {
-          parentDirTitle = parentDir.title; // update the top-most parent directory
+          parentDirTitle = parentDir.title;
           currentId = parentDir.parentDirId;
         } else {
           // No further parents in the directory model, check ParentDirectory model
@@ -58,10 +98,9 @@ export async function POST(request: NextRequest) {
           });
 
           if (parentParentDir && parentParentDir.type) {
-            // Set the type
             type = parentParentDir.type.toLowerCase();
-            logos.unshift(parentParentDir.logo || "📁"); // Use default folder logo if logo is not available
-            parentDirTitle = parentParentDir.title; // update the top-most parent directory
+            logos.unshift(parentParentDir.logo || "📁");
+            parentDirTitle = parentParentDir.title;
             break;
           } else {
             return null;
@@ -69,7 +108,6 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Construct full path
       const fullPath = `${type}/${parentDirTitle}/${pathComponents[0]}`;
       const parentChildPath = `${parentDirTitle}/${childTitle}`;
 
@@ -95,15 +133,24 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Process parent directories separately
+    const parentDirResults = parentDirectories.map(dir => ({
+      id: dir.id,
+      fullPath: `${dir.type?.toLowerCase()}/${dir.title}`,
+      parentChildPath: dir.title,
+      directoryName: dir.title,
+      logos: [dir.logo],
+    }));
+
     return NextResponse.json({
       status: "success",
-      data: { directories: result },
+      data: { directories: [...result, ...parentDirResults] },
     });
   } catch (e) {
-    console.error("Failed to fetch directories:", e);
+    console.error(e);
     return new NextResponse(
-      JSON.stringify({ error: "Failed to fetch directories" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      JSON.stringify({ error: 'Failed to retrieve recent directories' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
 }
