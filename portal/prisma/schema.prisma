@@ -18,7 +18,7 @@ model User {
   name           String?
   avatar         String?
   banner         String?
-  description     String?
+  description    String?
   userType       USERTYPE?     @default(MEMBER)
   role           USERROLE?     @default(CORETEAM)
   vertical       USERVERTICAL? @default(DEV)
@@ -146,17 +146,17 @@ model Link {
 }
 
 model Directory {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  title       String
-  logo        String
-  slug        String
-  parentDirId String?
-  timestamp   DateTime @default(now())
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  title             String
+  logo              String
+  slug              String
+  parentDirId       String?
+  timestamp         DateTime @default(now())
 }
 
 model RecentDirectory {
   id           String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId       String   @db.ObjectId @unique
+  userId       String   @unique @db.ObjectId
   directoryIds String[] @db.ObjectId
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -231,15 +231,15 @@ model ConfigData {
 }
 
 model Article {
-  id              String      @id @default(auto()) @map("_id") @db.ObjectId
-  title           String
-  image           String?  
-  content         String
-  articleUrl      String
-  articleType     String
-  author          String
-  publishDate     DateTime
-  categories      String[]
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  image       String?
+  content     String
+  articleUrl  String
+  articleType String
+  author      String
+  publishDate DateTime
+  categories  String[]
 
   @@index([title], name: "title_idx")
   @@index([author], name: "author_idx")
@@ -326,16 +326,16 @@ model DocMarkdown {
 //-------------------------------------Notifications-----------------------------------------
 
 model Notification {
-  id                String            @id @default(auto()) @map("_id") @db.ObjectId
-  userId            String            @db.ObjectId
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  title             String
-  description       String
-  matchId           String?           
-  matchType         String?
-  notificationType  NotificationType
-  notificationData  Json?
+  id               String           @id @default(auto()) @map("_id") @db.ObjectId
+  userId           String           @db.ObjectId
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  title            String
+  description      String
+  matchId          String?
+  matchType        String?
+  notificationType NotificationType
+  notificationData Json?
 }
 
 enum NotificationType {
@@ -347,19 +347,19 @@ enum NotificationType {
 //-------------------------------------Missions-------------------------------------------
 
 model Mission {
-  id  String   @id @default(auto()) @map("_id") @db.ObjectId
-  house  HOUSEID
-  vertical USERVERTICAL?
-  month        String
-  completed    Boolean?
-  housePoints  Int
-  indiePoints  Int  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  house       HOUSEID
+  vertical    USERVERTICAL?
+  month       String
+  completed   Boolean?
+  housePoints Int
+  indiePoints Int
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
   completedAt DateTime?
-  expirable    Boolean?
-  expiresAt DateTime?
+  expirable   Boolean?
+  expiresAt   DateTime?
   title       String
   description String?
-  tasks Json?
+  tasks       Json?
 }
