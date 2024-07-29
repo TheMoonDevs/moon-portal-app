@@ -13,6 +13,7 @@ import LinkList from "../../LinkList/LinkList";
 import { useAppSelector } from "@/utils/redux/store";
 import { Skeleton } from "@mui/material";
 import QuicklinkHeaderWrapper from "../../global/QuicklinkHeaderWrapper";
+import RecentlyUsedLink from "./RecentlyUsedLink";
 
 export const QuicklinksDashboard = () => {
   const dispatch = useDispatch();
@@ -72,6 +73,7 @@ export const QuicklinksDashboard = () => {
         </div>
       </QuicklinkHeaderWrapper>
       <div className="mt-10 w-full">
+        <RecentlyUsedLink />
         <TopUsedLink>
           <LinkList
             allQuicklinks={topUsedList}

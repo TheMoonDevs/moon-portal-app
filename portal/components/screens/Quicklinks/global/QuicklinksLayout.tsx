@@ -1,15 +1,16 @@
 "use client";
 
 import QuicklinksSidebar from "@/components/screens/Quicklinks/global/QuicklinksSidebar/QuicklinkSidebar";
-import { useAppSelector } from "@/utils/redux/store";
+import { useAppSelector, useAppDispatch } from "@/utils/redux/store";
 import { QuicklinksToast } from "../elements/QuicklinksToast";
+import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
 import {
   setParentDirsList,
   setDirectoryList,
   setRootDirList,
+  setRecentDirectories,
 } from "@/utils/redux/quicklinks/quicklinks.slice";
-import { useStore } from "react-redux";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { ParentDirectory, Directory } from "@prisma/client";
 import { CreateLinkPopup } from "../CreateLinkPopup";
 
@@ -26,7 +27,7 @@ const ROOT_DIRECTORIES: Omit<Directory, "timestamp">[] = [
     id: "COMMON_RESOURCES",
     title: "Team Resources",
     parentDirId: null,
-    slug: "/common-resources",
+    slug: "/common_resources",
     logo: "stack",
   },
   {
@@ -38,6 +39,29 @@ const ROOT_DIRECTORIES: Omit<Directory, "timestamp">[] = [
   },
 ];
 
+const fetchRecentDirectories = async (userId: string | undefined): Promise<any> => {
+  if (!userId) {
+    console.error('User ID is required to fetch recent directories');
+    return { error: 'User ID is required' };
+  }
+
+  try {
+    // Use QuicklinksSdk.getData for the GET request
+    const response = await QuicklinksSdk.getData(
+      `/api/quicklinks/recent-directory?userId=${userId}`
+    );
+
+    if (response.error) {
+      throw new Error(response.error);
+    }
+
+    return response.data.directoryIds;
+  } catch (error: any) {
+    console.error('Failed to fetch recent directories:', error);
+    return { error: error.message };
+  }
+};
+
 export const QuicklinksLayout = ({
   children,
   response,
@@ -48,18 +72,29 @@ export const QuicklinksLayout = ({
     directories: Directory[];
   };
 }) => {
-  const store = useStore();
+  const dispatch = useAppDispatch();
   const initialize = useRef(false);
 
-  if (!initialize.current) {
-    store.dispatch(setParentDirsList(response.parentDirs));
-    store.dispatch(setDirectoryList(response.directories));
-    store.dispatch(setRootDirList(ROOT_DIRECTORIES));
-    initialize.current = true;
-  }
+  const userId = useAppSelector((state) => state.auth.user?.id);
+
+  useEffect(() => {
+    if (!initialize.current && userId) {
+      (async () => {
+        let recentDir = await fetchRecentDirectories(userId);
+        console.log("Layouts recentdir:", recentDir);
+        dispatch(setParentDirsList(response.parentDirs));
+        dispatch(setDirectoryList(response.directories));
+        dispatch(setRootDirList(ROOT_DIRECTORIES));
+        dispatch(setRecentDirectories(recentDir));
+        initialize.current = true;
+      })();
+    }
+  }, [userId, response, dispatch]);
+
   const { toast } = useAppSelector((state) => state.quicklinks);
+
   return (
-    <main className="flex min-h-screen ">
+    <main className="flex min-h-screen">
       <QuicklinksSidebar />
       <div className="relative my-8 pr-8 pl-2 w-full">
         <div className="w-full relative h-screen mb-20">{children}</div>
