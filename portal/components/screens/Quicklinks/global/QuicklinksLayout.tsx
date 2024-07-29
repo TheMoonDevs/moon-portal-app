@@ -81,7 +81,6 @@ export const QuicklinksLayout = ({
     if (!initialize.current && userId) {
       (async () => {
         let recentDir = await fetchRecentDirectories(userId);
-        console.log("Layouts recentdir:", recentDir);
         dispatch(setParentDirsList(response.parentDirs));
         dispatch(setDirectoryList(response.directories));
         dispatch(setRootDirList(ROOT_DIRECTORIES));
