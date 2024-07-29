@@ -6,8 +6,13 @@ import { Popover, Tooltip } from "@mui/material";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
 import { useQuickLinkDirectory } from "../../../hooks/useQuickLinkDirectory";
 import { useUser } from "@/utils/hooks/useUser";
-import { setPopoverElementWithData } from "@/utils/redux/quicklinks/quicklinks.slice";
-import { useAppDispatch } from "@/utils/redux/store";
+import {
+  addRecentDirectories,
+  setPopoverElementWithData,
+} from "@/utils/redux/quicklinks/quicklinks.slice";
+import { useAppSelector, useAppDispatch } from "@/utils/redux/store";
+import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
+
 
 interface IDirectoryItemProps {
   directory: Directory;
@@ -107,6 +112,31 @@ export const DirectoryItem = ({
     );
   };
 
+  const userId = useAppSelector((state) => state.auth.user?.id);
+  const recentDirs = useAppSelector((state) => state.quicklinks.recentDirectories)
+  //console.log("recentDirs:", recentDirs);
+  // Add recent directory
+  const addRecentDirectory = async (userId: string, directoryId: string) => {
+    try {
+      const data = {
+        userId: userId,
+        directoryId: directoryId,
+      };
+      const response = await QuicklinksSdk.createData(
+        `/api/quicklinks/recent-directory`,
+        data
+      );
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      dispatch(addRecentDirectories(directoryId));
+    } catch (error: any) {
+      console.error("Failed to add recent directory:", error);
+    }
+  };
+
   return (
     <div key={directory.id}>
       <div className="flex justify-between items-center group gap-4 ml-3">
@@ -114,8 +144,7 @@ export const DirectoryItem = ({
           <span
             id="emoji-set"
             className="material-symbols-outlined !text-base hover:bg-neutral-200  rounded pb-1"
-            onClick={handleFolderIconChange}
-          >
+            onClick={handleFolderIconChange}>
             {!directory.logo
               ? isExpanded
                 ? "folder_open"
@@ -128,13 +157,14 @@ export const DirectoryItem = ({
               toggleDirectory(directory.id);
               if (editable.id !== directory.id)
                 setEditable({ id: "", isEditable: false });
+              if (userId) {
+                addRecentDirectory(userId, directory.id); // Add recent directory on click
+              }
             }}
-            className="flex items-center cursor-pointer gap-1"
-          >
+            className="flex items-center cursor-pointer gap-1">
             <Link
               href={path}
-              className={`${isCurrentPage ? "font-extrabold" : ""} `}
-            >
+              className={`${isCurrentPage ? "font-extrabold" : ""} `}>
               {editable.isEditable === true &&
               editable.id === directory.id &&
               directory.slug !== "common-resources" ? (
@@ -164,8 +194,7 @@ export const DirectoryItem = ({
                         };
                       });
                     }
-                  }}
-                >
+                  }}>
                   {directory.title}
                 </h3>
               )}
@@ -195,8 +224,7 @@ export const DirectoryItem = ({
                       })
                     );
                   }}
-                  className="material-icons-outlined !text-base opacity-0 group-hover:opacity-50 peer-hover:opacity-50 hover:scale-110 transition-all"
-                >
+                  className="material-icons-outlined !text-base opacity-0 group-hover:opacity-50 peer-hover:opacity-50 hover:scale-110 transition-all">
                   more_vert
                 </span>
               </Tooltip>
@@ -206,8 +234,7 @@ export const DirectoryItem = ({
                   onClick={() => {
                     setExpandedDirs((prev) => [...prev, directory.id]);
                     handleAddChildDirectory(directory.id);
-                  }}
-                >
+                  }}>
                   add
                 </span>
               </Tooltip>
@@ -221,8 +248,7 @@ export const DirectoryItem = ({
           isExpanded
             ? "max-h-[1000px]  border-gray-200"
             : "max-h-0 overflow-hidden  border-neutral-100"
-        }`}
-      >
+        }`}>
         {directories
           .filter((subdirectory) => subdirectory.parentDirId === directory.id)
           .map((subdirectory) => {
