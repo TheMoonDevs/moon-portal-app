@@ -2,14 +2,19 @@
 "use client";
 import React, { useCallback, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Drawer, Box } from "@mui/material";
+import { Drawer, Box, Fab, IconButton, useMediaQuery } from "@mui/material";
 
 import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import { useUser } from "@/utils/hooks/useUser";
 import { User, WorkLogs } from "@prisma/client";
 import Link from "next/link";
 import { updateAvatarUrl } from "@/utils/redux/onboarding/onboarding.slice";
-import { closeDrawer, openDrawer, selectMember, updateMember } from "@/utils/redux/coreTeam/coreTeam.slice";
+import {
+  closeDrawer,
+  openDrawer,
+  selectMember,
+  updateMember,
+} from "@/utils/redux/coreTeam/coreTeam.slice";
 import {
   addFilesToPreview,
   resetPreview,
@@ -22,6 +27,7 @@ import useAsyncState from "@/utils/hooks/useAsyncState";
 import { LoadingSkeleton } from "@/components/elements/LoadingSkeleton";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
 import { setReduxUser } from "@/utils/redux/auth/auth.slice";
+import media from "@/styles/media";
 
 interface LoggedInUser {
   user: User;
@@ -44,7 +50,7 @@ export const UserProfileDrawer: React.FC = () => {
   const selectedUser = useAppSelector(
     (state: RootState) => state.coreTeam.selectedMember
   );
-
+  const isMobile = useMediaQuery(media.largeMobile);
   const [avatarLoading, setAvatarLoading] = useState<boolean>(false);
   const [bannerLoading, setBannerLoading] = useState<boolean>(false);
   const loggedinUser = useUser() as LoggedInUser;
@@ -177,13 +183,32 @@ export const UserProfileDrawer: React.FC = () => {
     <Drawer anchor="right" open={isOpen} onClose={handleClose}>
       <Box
         sx={{
-          width: 400,
+          width: {
+            xs: "100%",
+            sm: "400px",
+          },
           height: "100%",
           overflowX: "hidden",
           overflowY: "scroll",
         }}
         role="presentation"
       >
+        {isMobile && (
+          <Fab
+            color='primary'
+            aria-label='close'
+            size='small'
+            onClick={handleClose}
+            sx={{
+              position: 'absolute',
+              top: 16,
+              left: 16,
+              zIndex: 1300,
+            }}
+          >
+            <span className='material-symbols-outlined'>close</span>
+          </Fab>
+        )}
         <div className="h-[120px] relative">
           {bannerLoading ? (
             <div className="w-full h-full bg-gray-300 animate-pulse" />
@@ -219,7 +244,7 @@ export const UserProfileDrawer: React.FC = () => {
               <img
                 src={selectedUser?.avatar || "/icons/placeholderAvatar.svg"}
                 alt={selectedUser?.name || ""}
-                className="object-center rounded-full w-full h-full bg-white"
+                className="object-cover rounded-full w-full h-full bg-white"
               />
             )}
 
