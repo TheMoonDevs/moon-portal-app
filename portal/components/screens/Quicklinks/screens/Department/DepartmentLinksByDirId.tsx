@@ -70,7 +70,7 @@ export const DepartmentLinksByDirId = ({
     initialize.current = true;
   }
   const { activeDirectoryId } = useAppSelector((state) => state.quicklinks);
-  const { rootParentDirectory } = useQuickLinkDirs(activeDirectoryId);
+  const { thisDirectory } = useQuickLinkDirs(activeDirectoryId);
   return (
     <div>
       <QuicklinkHeaderWrapper>
@@ -78,7 +78,7 @@ export const DepartmentLinksByDirId = ({
           <span className="material-symbols-outlined border border-neutral-200 rounded-full p-2">
             groups
           </span>{" "}
-          <span>{rootParentDirectory?.title}</span>
+          <span>{thisDirectory?.title}</span>
         </h1>
       </QuicklinkHeaderWrapper>
       <SubDirectoryLinks />
