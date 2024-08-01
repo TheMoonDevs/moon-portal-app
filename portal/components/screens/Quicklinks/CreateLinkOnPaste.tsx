@@ -37,31 +37,22 @@ const modalStyle = {
 };
 
 const CreateLinkOnPaste = () => {
-  const { copiedURL, setCopiedURL, validURLPasteEvent, setValidURLPasteEvent } =
-    useClipboardURLDetection();
-  const [open, setOpen] = useState(false);
+  const { copiedURL, setCopiedURL } = useClipboardURLDetection();
   const [isEditing, setIsEditing] = useState(false);
   const dispatch = useAppDispatch();
   const [selectedParentDir, setSelectedParentDir] = useState<ParentDirectory>({
     id: "",
     title: "",
   } as ParentDirectory);
-  const { parentDirs, directories, activeDirectoryId } = useAppSelector(
-    (state) => state.quicklinks
-  );
+  const { parentDirs, directories, activeDirectoryId, isCreateLinkModalOpen } =
+    useAppSelector((state) => state.quicklinks);
   const [fetchingMetadata, setFetchingMetadata] = useState(false);
   const path = usePathname();
   const { user } = useUser();
   const [anchorEl, setAnchorEl] = useState<HTMLSpanElement | null>(null);
   const openDropdown = Boolean(anchorEl);
-  useEffect(() => {
-    if (validURLPasteEvent) {
-      setOpen(true);
-    }
-  }, [validURLPasteEvent]);
+
   const handleClose = () => {
-    setOpen(false);
-    setValidURLPasteEvent(false);
     setCopiedURL(null);
     setSelectedParentDir({
       id: "",
@@ -194,151 +185,148 @@ const CreateLinkOnPaste = () => {
         return `common-resources/${parentDir.slug}`;
     }
   };
+
   return (
     <>
       <Toaster duration={3000} position="bottom-left" richColors closeButton />
-      {open && (
-        <>
-          <Modal
-            open={open}
-            onClose={handleClose}
-            aria-labelledby="clipboard-url-modal-title"
-            aria-describedby="clipboard-url-modal-description"
-          >
-            <Box
-              sx={modalStyle}
-              className="relative max-w-lg sm:w-[36rem] mx-auto p-6 bg-white rounded-lg shadow-lg"
+      <Modal
+        open={copiedURL === null || copiedURL === "" ? false : true}
+        onClose={handleClose}
+        aria-labelledby="clipboard-url-modal-title"
+        aria-describedby="clipboard-url-modal-description"
+      >
+        <Box
+          sx={modalStyle}
+          className="relative max-w-lg sm:w-[36rem] mx-auto p-6 bg-white rounded-lg shadow-lg"
+        >
+          <span className="absolute top-1 right-1 ">
+            <IconButton
+              aria-label="close"
+              onClick={handleClose}
+              className="text-gray-500 hover:text-gray-800"
             >
-              <span className="absolute top-1 right-1 ">
-                <IconButton
-                  aria-label="close"
-                  onClick={handleClose}
-                  className="text-gray-500 hover:text-gray-800"
-                >
-                  <CloseIcon />
-                </IconButton>
-              </span>
-              <div className="mb-6">
-                <span className="block">Create New Quicklink</span>
-                <span className="text-gray-500 text-sm">
-                  We have detected a copied link.{" "}
-                  {path !== "/quicklinks/dashboard" ||
-                  selectedParentDir.id !== "" ? (
-                    <>
-                      Wanna save it to <br />
-                      <code className="bg-neutral-100 text-gray-500 p-1 rounded-md">
-                        {getParentDirPath(
-                          selectedParentDir.id ? selectedParentDir : null
-                        )}
-                      </code>
-                      ?
-                    </>
-                  ) : (
-                    <>Please select a directory to save the link.</>
-                  )}
-                </span>
-              </div>
-              <TextField
-                fullWidth
-                value={copiedURL || ""}
-                onChange={(e) => setCopiedURL(e.target.value)}
-                InputProps={{
-                  startAdornment: path === "/quicklinks/dashboard" && (
-                    <InputAdornment position="start">
-                      <Tooltip title="Select Department">
+              <CloseIcon />
+            </IconButton>
+          </span>
+          <div className="mb-6">
+            <span className="block">Create New Quicklink</span>
+            <span className="text-gray-500 text-sm">
+              We have detected a copied link.{" "}
+              {path !== "/quicklinks/dashboard" ||
+              selectedParentDir.id !== "" ? (
+                <>
+                  Wanna save it to <br />
+                  <code className="bg-neutral-100 text-gray-500 p-1 rounded-md">
+                    {getParentDirPath(
+                      selectedParentDir.id ? selectedParentDir : null
+                    )}
+                  </code>
+                  ?
+                </>
+              ) : (
+                <>Please select a directory to save the link.</>
+              )}
+            </span>
+          </div>
+          <TextField
+            fullWidth
+            value={copiedURL || ""}
+            onChange={(e) => setCopiedURL(e.target.value)}
+            InputProps={{
+              startAdornment: path === "/quicklinks/dashboard" && (
+                <InputAdornment position="start">
+                  <Tooltip title="Select Department">
+                    <div
+                      className="flex items-center cursor-pointer"
+                      onClick={(e) => setAnchorEl(e.currentTarget)}
+                    >
+                      <span className="material-icons-outlined text-gray-500 p-2">
+                        groups
+                      </span>
+                      <span className="material-icons-outlined text-gray-500 p-2">
+                        {openDropdown ? "arrow_drop_up" : "arrow_drop_down"}
+                      </span>
+                    </div>
+                  </Tooltip>
+                  <Popover
+                    open={openDropdown}
+                    anchorEl={anchorEl}
+                    onClose={() => setAnchorEl(null)}
+                    anchorOrigin={{
+                      vertical: "top",
+                      horizontal: "left",
+                    }}
+                    transformOrigin={{
+                      vertical: "bottom",
+                      horizontal: "right",
+                    }}
+                    closeAfterTransition
+                    classes={{
+                      paper:
+                        "bg-white mb-4 py-2 rounded-md w-[200px] !shadow-md",
+                    }}
+                  >
+                    <ul className=" flex flex-col gap-2  mb-2">
+                      {parentDirs.map((parentDir) => (
                         <div
-                          className="flex items-center cursor-pointer"
-                          onClick={(e) => setAnchorEl(e.currentTarget)}
+                          onClick={(e) => {
+                            handleParentDirSelection(parentDir);
+                          }}
+                          key={parentDir.id}
+                          className="flex items-center justify-between hover:bg-neutral-100 p-2 cursor-pointer"
                         >
-                          <span className="material-icons-outlined text-gray-500 p-2">
-                            groups
-                          </span>
-                          <span className="material-icons-outlined text-gray-500 p-2">
-                            {openDropdown ? "arrow_drop_up" : "arrow_drop_down"}
-                          </span>
+                          <li className=" text-gray-500 text-sm">
+                            {parentDir.title}
+                          </li>
+                          {selectedParentDir.id === parentDir.id && (
+                            <span className="material-icons-outlined text-green-500 !text-sm">
+                              {" "}
+                              adjust
+                            </span>
+                          )}
                         </div>
-                      </Tooltip>
-                      <Popover
-                        open={openDropdown}
-                        anchorEl={anchorEl}
-                        onClose={() => setAnchorEl(null)}
-                        anchorOrigin={{
-                          vertical: "top",
-                          horizontal: "left",
-                        }}
-                        transformOrigin={{
-                          vertical: "bottom",
-                          horizontal: "right",
-                        }}
-                        closeAfterTransition
-                        classes={{
-                          paper:
-                            "bg-white mb-4 py-2 rounded-md w-[200px] !shadow-md",
-                        }}
-                      >
-                        <ul className=" flex flex-col gap-2  mb-2">
-                          {parentDirs.map((parentDir) => (
-                            <div
-                              onClick={(e) => {
-                                handleParentDirSelection(parentDir);
-                              }}
-                              key={parentDir.id}
-                              className="flex items-center justify-between hover:bg-neutral-100 p-2 cursor-pointer"
-                            >
-                              <li className=" text-gray-500 text-sm">
-                                {parentDir.title}
-                              </li>
-                              {selectedParentDir.id === parentDir.id && (
-                                <span className="material-icons-outlined text-green-500 !text-sm">
-                                  {" "}
-                                  adjust
-                                </span>
-                              )}
-                            </div>
-                          ))}
-                        </ul>
-                      </Popover>
-                    </InputAdornment>
-                  ),
+                      ))}
+                    </ul>
+                  </Popover>
+                </InputAdornment>
+              ),
 
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      {isEditing ? (
-                        <IconButton aria-label="save" onClick={handleEdited}>
-                          <CheckIcon className="text-gray-500" />
-                        </IconButton>
-                      ) : (
-                        <IconButton aria-label="edit" onClick={handleEdit}>
-                          <EditIcon className="text-gray-500" />
-                        </IconButton>
-                      )}
-                    </InputAdornment>
-                  ),
-                  disabled: !isEditing, // Disable input when not in editing mode
-                }}
-                variant="outlined"
-                placeholder="URL will appear here"
-                className="mt-4"
-              />
-              <button
-                type="submit"
-                className="text-sm bg-black text-white border border-neutral-800 px-6 py-2 rounded-md w-full mt-4 transition hover:bg-gray-800 flex justify-center items-center disabled:cursor-not-allowed"
-                onClick={handleSave}
-                disabled={isEditing}
-              >
-                {fetchingMetadata ? (
-                  <div className="flex justify-center items-center">
-                    <CircularProgress size={20} className="text-white" />
-                    <span className="ml-2">Processing...</span>
-                  </div>
-                ) : (
-                  <>Save</>
-                )}
-              </button>
-            </Box>
-          </Modal>
-        </>
-      )}
+              endAdornment: (
+                <InputAdornment position="end">
+                  {isEditing ? (
+                    <IconButton aria-label="save" onClick={handleEdited}>
+                      <CheckIcon className="text-gray-500" />
+                    </IconButton>
+                  ) : (
+                    <IconButton aria-label="edit" onClick={handleEdit}>
+                      <EditIcon className="text-gray-500" />
+                    </IconButton>
+                  )}
+                </InputAdornment>
+              ),
+              disabled: !isEditing, // Disable input when not in editing mode
+            }}
+            variant="outlined"
+            placeholder="URL will appear here"
+            className="mt-4"
+          />
+          <button
+            type="submit"
+            className="text-sm bg-black text-white border border-neutral-800 px-6 py-2 rounded-md w-full mt-4 transition hover:bg-gray-800 flex justify-center items-center disabled:cursor-not-allowed"
+            onClick={handleSave}
+            disabled={isEditing}
+          >
+            {fetchingMetadata ? (
+              <div className="flex justify-center items-center">
+                <CircularProgress size={20} className="text-white" />
+                <span className="ml-2">Processing...</span>
+              </div>
+            ) : (
+              <>Save</>
+            )}
+          </button>
+        </Box>
+      </Modal>
     </>
   );
 };
