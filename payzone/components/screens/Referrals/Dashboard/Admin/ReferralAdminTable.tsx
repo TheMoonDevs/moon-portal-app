@@ -7,16 +7,17 @@ import { statuses } from "../AddRecordModal";
 // import { updateReferralData } from "@/utils/redux/db/db.slice";
 // import { useAppDispatch } from "@/utils/redux/store";
 import useAsyncState from "@/utils/hooks/useAsyncState";
+import { toast } from "sonner";
 
 interface IReferralAdminTableProps {
   fetchedReferralData: any[];
-  setToast: React.Dispatch<
-    React.SetStateAction<{
-      open: boolean;
-      message: string;
-      severity: toastSeverity;
-    }>
-  >;
+  // setToast: React.Dispatch<
+  //   React.SetStateAction<{
+  //     open: boolean;
+  //     message: string;
+  //     severity: toastSeverity;
+  //   }>
+  // >;
   allUsers: User[];
   setIsModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
   user: User | undefined | null;
@@ -40,7 +41,7 @@ const tableHeadings = [
 
 export const ReferralAdminTable = ({
   fetchedReferralData,
-  setToast,
+  // setToast,
   allUsers,
   setIsModalOpen,
   user,
@@ -103,22 +104,25 @@ export const ReferralAdminTable = ({
         [id]: response.data.updatedReferral,
       }));
       // dispatch(updateReferralData(response.data.updatedReferral));
-      setToast({
-        open: true,
-        message: "Referral updated successfully",
-        severity: "success",
-      });
+      // setToast({
+      //   open: true,
+      //   message: "Referral updated successfully",
+      //   severity: "success",
+      // });
+      toast.success("Referral updated successfully");
       setLoading(false);
     } catch (error) {
       console.error(error);
       setEditableFields((prevFields) => {
         return { ...prevFields };
       });
-      setToast({
-        open: true,
-        message: "Failed to update referral",
-        severity: "error",
-      });
+      // setToast({
+      //   open: true,
+      //   message: "Failed to update referral",
+      //   severity: "error",
+      // });
+      toast.error("Failed to update referral");
+
       setLoading(false);
     }
   };

@@ -1,7 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import { useEffect, useState } from "react";
 import { MobileBox } from "../Login/Login";
 import Link from "next/link";
 import { GreyButton } from "@/components/elements/Button";
@@ -11,23 +10,11 @@ import { PortalSdk } from "@/utils/services/PortalSdk";
 import { User } from "@prisma/client";
 import { Spinner } from "@/components/elements/Loaders";
 
-export const AdminUsers = () => {
+export const AdminUsers = ({users, loading} : {
+  users: User[];
+  loading: boolean;
+}) => {
   const router = useRouter();
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(false);
-  useEffect(() => {
-    setLoading(true);
-    PortalSdk.getData("/api/user", null)
-      .then((data) => {
-        console.log(data);
-        setUsers(data?.data?.user || []);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.log(err);
-        setLoading(false);
-      });
-  }, []);
   return (
     <MobileBox>
       <p className="text-neutral-400 tracking-[0.5em] uppercase text-xs text-center mb-4">

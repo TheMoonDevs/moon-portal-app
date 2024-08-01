@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 import { Toaster, toast } from "sonner";
 import { Button } from "@/components/elements/Button";
@@ -12,7 +13,7 @@ import {
   SelectItem,
   SelectValue,
 } from "@/components/elements/Select";
-import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
+import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import {
   resetForm,
   updateForm,
@@ -31,6 +32,8 @@ import { CircleCheck, CircleX, Info } from "lucide-react";
 import { TextField, Tooltip } from "@mui/material";
 import dayjs from "dayjs";
 import { Spinner } from "@/components/elements/Loaders";
+import Box from "@mui/material/Box";
+import Modal from "@mui/material/Modal";
 
 interface OnboardingPageProps {
   onClose?: () => void;
@@ -175,306 +178,479 @@ export function OnboardingPage({ onClose }: OnboardingPageProps) {
     setMessageColor("");
   }, [username, password]);
 
+  const avatarUrl = useAppSelector(
+    (state: RootState) => state.onboardingForm.avatar
+  );
+
+  const style = {
+    bgcolor: "background.paper",
+    border: "2px solid #000",
+    boxShadow: 24,
+    py: 4,
+    px:0.5,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
+  };
+
+  const InputStyles = {
+    "& .MuiOutlinedInput-root": {
+      borderRadius: "0.75rem",
+      width: "100%",
+      borderWidth: "2px",
+      "& fieldset": {
+        border: "none",
+        borderColor: "#cccccc",
+      },
+      "&:hover fieldset": {
+        borderColor: "#cccccc",
+      },
+      "&.Mui-focused fieldset": {
+        borderColor: "#cccccc",
+        borderWidth: "3px",
+      },
+      "&.Mui-focused": {
+        borderColor: "#9ca3af",
+      },
+    },
+  };
+
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <form
-        onSubmit={handleSubmit}
-        className="max-w-[60rem] mx-auto p-6 my-8 border border-gray-400 rounded-lg shadow-xl"
+      
+      <Modal
+        open={true}
+        aria-labelledby="modal-modal-title"
+        aria-describedby="modal-modal-description"
+        className="overflow-y-auto   h-full "
       >
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <TextField
-            label="First Name"
-            name="firstName"
-            type="text"
-            size="small"
-            required
-            color="info"
-            variant="outlined"
-            value={formData.firstName}
-            onChange={handleChange}
-            className=""
-          />
-
-          <TextField
-            label="Last Name"
-            name="lastName"
-            type="text"
-            size="small"
-            required
-            color="info"
-            variant="outlined"
-            value={formData.lastName}
-            onChange={handleChange}
-          />
-        </div>
-
-        <TextField
-          label="Email"
-          name="email"
-          type="email"
-          size="small"
-          required
-          color="info"
-          variant="outlined"
-          value={formData.email}
-          className="w-full"
-          onChange={handleChange}
-        />
-
-        <UploadAvatar />
-
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <TextField
-            type="text"
-            label="UPI ID"
-            size="small"
-            name="upiId"
-            color="info"
-            variant="outlined"
-            className="w-full"
-            value={formData.upiId}
-            onChange={handleChange}
-          />
-          {/* Date of Birth */}
-          <DatePicker
-            label="Date of Birth"
-            slotProps={{
-              textField: {
-                size: "small",
-                error: false,
-                variant: "outlined",
-                color: "info",
-              },
-            }}
-            className="w-full border-black"
-            value={dayjs(selectedDate)}
-            onChange={(value) => {
-              if (value) {
-                const formattedDate = value.format("YYYY-MM-DD");
-                setSelectedDate(formattedDate);
-              } else {
-                setSelectedDate("");
-              }
-            }}
-          />
-        </div>
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div className="flex justify-between items-center gap-1">
-            <TextField
-              type="text"
-              label="Work Hour Overlap"
-              size="small"
-              required
-              name="workHourOverlap"
-              color="info"
-              variant="outlined"
-              value={formData.workHourOverlap}
-              onChange={handleChange}
-              className="w-full mr-1"
-            />
-            <Tooltip
-              placement="top"
-              title="Time period where colleagues can interact with you. Example: 2pm - 5pm"
-            >
-              <Info className="opacity-60 h-5 w-5 cursor-pointer" />
-            </Tooltip>
-          </div>
-
-          <TextField
-            type="text"
-            label="Position"
-            size="small"
-            required
-            name="position"
-            color="info"
-            variant="outlined"
-            value={formData.position}
-            onChange={handleChange}
-            className="w-full"
-          />
-        </div>
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <TextField
-            type="tel"
-            label="Phone"
-            size="small"
-            required
-            name="phone"
-            color="info"
-            variant="outlined"
-            value={formData.phone}
-            onChange={handleChange}
-            className="w-full"
-          />
-          <TextField
-            type="text"
-            label="City"
-            required
-            name="city"
-            size="small"
-            color="info"
-            variant="outlined"
-            value={formData.city}
-            onChange={handleChange}
-            className="w-full"
-          />
-        </div>
-        <TextField
-          type="text"
-          label="Address"
-          required
-          size="small"
-          name="address"
-          color="info"
-          variant="outlined"
-          value={formData.address}
-          onChange={handleChange}
-          className="w-full mb-4"
-        />
-
-        <div className="grid grid-cols-2 gap-4 my-2 items-center">
-          <div className="flex gap-2 items-center my-4">
-            <div className="flex gap-4 items-center">
-              <label htmlFor="username">Passcode :</label>
-              <InputOTP
-                id="username"
-                maxLength={3}
-                pattern={REGEXP_ONLY_CHARS}
-                alt="Username input"
-                value={username}
-                required
-                onFocus={() => showMessage("", " ")}
-                onChange={handleUsernameChange}
-              >
-                <InputOTPGroup>
-                  <InputOTPSlot index={0} />
-                  <InputOTPSlot index={1} />
-                  <InputOTPSlot index={2} />
-                </InputOTPGroup>
-              </InputOTP>
-            </div>
-            <InputOTPSeparator />
-            <InputOTP
-              id="password"
-              maxLength={3}
-              required
-              alt="Password input"
-              value={password}
-              onChange={handlePasswordChange}
-            >
-              <InputOTPGroup>
-                <InputOTPSlot index={0} />
-                <InputOTPSlot index={1} />
-                <InputOTPSlot index={2} />
-              </InputOTPGroup>
-            </InputOTP>
-            {loading ? (
-              <div className="ml-4">
-                <Spinner />
-              </div>
-            ) : message ? (
-              <div className="ml-4">
-                {messageColor === "red" ? (
-                  <Tooltip placement="top" title="Username Already Taken">
-                    <CircleX color="red" className="cursor-pointer" />
-                  </Tooltip>
-                ) : (
-                  <Tooltip placement="top" title="Username Available">
-                    <CircleCheck color="green" className="cursor-pointer" />
-                  </Tooltip>
-                )}
-              </div>
-            ) : (
-              <div className="ml-4">
-                <Tooltip
-                  placement="top"
-                  title="Passcode: Username (3 characters) + Password (3 numbers). Example: Username 'abc' and Password '123' results in 'abc123'."
-                >
-                  <Info className="opacity-60 h-5 w-5 cursor-pointer" />
-                </Tooltip>
-              </div>
-            )}
-          </div>
-          <Select
-            name="vertical"
-            value={formData.userVertical || USERVERTICAL.DEV}
-            defaultValue={USERVERTICAL.DEV}
-            onValueChange={(value) => handleSelectChange(value, "userVertical")}
+        <Box sx={style} className="w-full flex justify-center items-center ">
+          <form
+            onSubmit={handleSubmit}
+            className="max-w-[40rem] border border-gray-300 rounded-3xl w-full m-[1px] relative"
           >
-            <SelectTrigger id="user-vertical">
-              <SelectValue placeholder={USERVERTICAL.DEV} />
-            </SelectTrigger>
-            <SelectContent className="bg-white">
-              {Object.values(USERVERTICAL).map((vertical) => (
-                <SelectItem
-                  key={vertical}
-                  value={vertical}
-                  onClick={() => handleSelectChange(vertical, "userVertical")}
-                  className="hover:bg-gray-200 rounded-lg cursor-pointer"
-                >
-                  {vertical}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div className="flex justify-between items-center gap-1">
-            <TextField
-              type="text"
-              label="Timezone"
-              required
-              size="small"
-              name="timezone"
-              color="info"
-              variant="outlined"
-              value={formData.timezone}
-              onChange={handleChange}
-              className="w-full mb-4"
+            <img
+              className="absolute h-20 w-20 rounded-full top-20 left-5 p-0 bg-white bg-cover"
+              src={avatarUrl ? avatarUrl : "/icons/placeholderAvatar.svg"}
+              alt="Profile Avatar"
             />
-            <Tooltip
-              placement="top"
-              title="Enter your local timezone. Example: GMT+5:30"
-            >
-              <Info className="opacity-60 h-5 w-5 cursor-pointer" />
-            </Tooltip>
-          </div>
-          <div className="flex justify-between items-center gap-1">
-            <TextField
-              type="text"
-              label="Country Code"
-              required
-              size="small"
-              name="countryCode"
-              color="info"
-              variant="outlined"
-              value={formData.countryCode}
-              onChange={handleChange}
-              className="w-full mb-4"
-            />
-            <Tooltip
-              placement="top"
-              title="Enter your country code. Example: +91"
-            >
-              <Info className="opacity-60 h-5 w-5 cursor-pointer" />
-            </Tooltip>
-          </div>
-        </div>
-        <div className="flex gap-4 items-center mt-6">
-          <div className="ml-auto">
-            <Button type="submit" disabled={loading}>
-              {submit ? (
-                <>
-                  <Spinner className="w-3 h-3" /> Submitting
-                </>
-              ) : (
-                "Submit"
-              )}
-            </Button>
-          </div>
-        </div>
-        <Toaster />
-      </form>
+            <div className="h-[120px] bg-gray-200 rounded-t-3xl  "></div>
+            <div className="p-6">
+              <div className="flex flex-col gap-4 ">
+                <div className="w-full px-10 h-[1px] bg-gray-200 mt-10"></div>
+                <div className="flex justify-between items-center flex-wrap">
+                  <label>Name:</label>
+                  <div className="flex gap-4 max-w-[23rem] w-full">
+                    <TextField
+                      name="firstName"
+                      type="text"
+                      size="small"
+                      required
+                      color="info"
+                      value={formData.firstName}
+                      onChange={handleChange}
+                      sx={InputStyles}
+                      InputLabelProps={{
+                        shrink: false,
+                      }}
+                      InputProps={{
+                        notched: false,
+                      }}
+                    />
+                    <TextField
+                      name="lastName"
+                      type="text"
+                      size="small"
+                      required
+                      color="info"
+                      variant="outlined"
+                      value={formData.lastName}
+                      onChange={handleChange}
+                      InputLabelProps={{
+                        shrink: false,
+                      }}
+                      InputProps={{
+                        notched: false,
+                      }}
+                      sx={InputStyles}
+                    />
+                  </div>
+                </div>
+                <div className="w-full px-10 h-[1px] bg-gray-200"></div>
+
+                <div className="flex justify-between items-center flex-wrap">
+                  <label>Email:</label>
+                  <TextField
+                    name="email"
+                    type="email"
+                    size="small"
+                    required
+                    color="info"
+                    variant="outlined"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="max-w-[23rem] w-full"
+                    InputLabelProps={{
+                      shrink: false,
+                    }}
+                    InputProps={{
+                      notched: false,
+                    }}
+                    sx={InputStyles}
+                  />
+                </div>
+                <div className="w-full px-10 h-[1px] bg-gray-200"></div>
+                <div className="flex justify-between items-center flex-wrap">
+                  <label>Upload Avatar:</label>
+                  <UploadAvatar />
+                </div>
+                <div className="w-full px-10 h-[1px] bg-gray-200"></div>
+                <div className="flex justify-between items-center flex-wrap">
+                  <label>UPI ID:</label>
+                  <TextField
+                    type="text"
+                    size="small"
+                    name="upiId"
+                    color="info"
+                    variant="outlined"
+                    value={formData.upiId}
+                    onChange={handleChange}
+                    className="max-w-[23rem] w-full"
+                    InputLabelProps={{
+                      shrink: false,
+                    }}
+                    InputProps={{
+                      notched: false,
+                    }}
+                    sx={InputStyles}
+                  />
+                </div>
+                <div className="w-full px-10 h-[1px] bg-gray-200"></div>
+                <div className="flex justify-between items-center flex-wrap">
+                  <label>Date of Birth:</label>
+                  <DatePicker
+                    slotProps={{
+                      textField: {
+                        size: "small",
+                        error: false,
+                      },
+                    }}
+                    value={dayjs(selectedDate)}
+                    onChange={(value) => {
+                      if (value) {
+                        const formattedDate = value.format("YYYY-MM-DD");
+                        setSelectedDate(formattedDate);
+                      } else {
+                        setSelectedDate("");
+                      }
+                    }}
+                    className="max-w-[23rem] w-full"
+                    sx={InputStyles}
+                  />
+                </div>
+                <div className="w-full px-10 h-[1px] bg-gray-200"></div>
+                <div className="flex justify-between items-center flex-wrap">
+                  <label>Work Hour OverLap:</label>
+                  <div className="flex justify-between items-center gap-1 max-w-[23rem] w-full">
+                    <TextField
+                      type="text"
+                      size="small"
+                      required
+                      name="workHourOverlap"
+                      color="info"
+                      variant="outlined"
+                      value={formData.workHourOverlap}
+                      onChange={handleChange}
+                      className="w-full"
+                      InputLabelProps={{
+                        shrink: false,
+                      }}
+                      InputProps={{
+                        notched: false,
+                      }}
+                      sx={InputStyles}
+                    />
+                    <Tooltip
+                      placement="top"
+                      title="Time period where colleagues can interact with you. Example: 2pm - 5pm"
+                    >
+                      <Info className="opacity-60 h-5 w-5 cursor-pointer" />
+                    </Tooltip>
+                  </div>
+                </div>
+                <div className="w-full px-10 h-[1px] bg-gray-200"></div>
+                <div className="flex justify-between items-center flex-wrap">
+                  <label>Position:</label>
+                  <TextField
+                    type="text"
+                    size="small"
+                    required
+                    name="position"
+                    color="info"
+                    variant="outlined"
+                    value={formData.position}
+                    onChange={handleChange}
+                    className="max-w-[23rem] w-full"
+                    InputLabelProps={{
+                      shrink: false,
+                    }}
+                    InputProps={{
+                      notched: false,
+                    }}
+                    sx={InputStyles}
+                  />
+                </div>
+                <div className="w-full px-10 h-[1px] bg-gray-200"></div>
+                <div className="flex justify-between items-center flex-wrap">
+                  <label>Phone:</label>
+                  <TextField
+                    type="tel"
+                    size="small"
+                    required
+                    name="phone"
+                    color="info"
+                    variant="outlined"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    className="max-w-[23rem] w-full"
+                    InputLabelProps={{
+                      shrink: false,
+                    }}
+                    InputProps={{
+                      notched: false,
+                    }}
+                    sx={InputStyles}
+                  />
+                </div>
+                <div className="w-full px-10 h-[1px] bg-gray-200"></div>
+                <div className="flex justify-between items-center flex-wrap">
+                  <label>City:</label>
+                  <TextField
+                    type="text"
+                    required
+                    name="city"
+                    size="small"
+                    color="info"
+                    variant="outlined"
+                    value={formData.city}
+                    onChange={handleChange}
+                    className="max-w-[23rem] w-full"
+                    InputLabelProps={{
+                      shrink: false,
+                    }}
+                    InputProps={{
+                      notched: false,
+                    }}
+                    sx={InputStyles}
+                  />
+                </div>
+                <div className="w-full px-10 h-[1px] bg-gray-200"></div>
+                <div className="flex justify-between items-center flex-wrap">
+                  <label>Address:</label>
+
+                  <TextField
+                    type="text"
+                    required
+                    size="small"
+                    name="address"
+                    value={formData.address}
+                    onChange={handleChange}
+                    className="max-w-[23rem] w-full"
+                    InputLabelProps={{
+                      shrink: false,
+                    }}
+                    InputProps={{
+                      notched: false,
+                    }}
+                    sx={InputStyles}
+                  />
+                </div>
+                <div className="w-full px-10 h-[1px] bg-gray-200"></div>
+                <div className="flex justify-between items-center flex-wrap">
+                  <label htmlFor="username">Passcode:</label>
+                  <div className="flex gap-2 items-center max-w-[23rem] w-full">
+                    <div className="flex gap-4 items-center">
+                      <InputOTP
+                        id="username"
+                        maxLength={3}
+                        pattern={REGEXP_ONLY_CHARS}
+                        inputMode="text"
+                        alt="Username input"
+                        value={username}
+                        required
+                        onFocus={() => showMessage("", " ")}
+                        onChange={handleUsernameChange}
+                      >
+                        <InputOTPGroup>
+                          <InputOTPSlot index={0} />
+                          <InputOTPSlot index={1} />
+                          <InputOTPSlot index={2} />
+                        </InputOTPGroup>
+                      </InputOTP>
+                    </div>
+                    <InputOTPSeparator />
+                    <InputOTP
+                      id="password"
+                      maxLength={3}
+                      required
+                      alt="Password input"
+                      value={password}
+                      onChange={handlePasswordChange}
+                    >
+                      <InputOTPGroup>
+                        <InputOTPSlot index={0} />
+                        <InputOTPSlot index={1} />
+                        <InputOTPSlot index={2} />
+                      </InputOTPGroup>
+                    </InputOTP>
+                    {loading ? (
+                      <div className="ml-4">
+                        <Spinner />
+                      </div>
+                    ) : message ? (
+                      <div className="ml-4">
+                        {messageColor === "red" ? (
+                          <Tooltip
+                            placement="top"
+                            title="Username Already Taken"
+                          >
+                            <CircleX color="red" className="cursor-pointer" />
+                          </Tooltip>
+                        ) : (
+                          <Tooltip placement="top" title="Username Available">
+                            <CircleCheck
+                              color="green"
+                              className="cursor-pointer"
+                            />
+                          </Tooltip>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="ml-4">
+                        <Tooltip
+                          placement="top"
+                          title="Passcode: Username (3 characters) + Password (3 numbers). Example: Username 'abc' and Password '123' results in 'abc123'."
+                        >
+                          <Info className="opacity-60 h-5 w-5 cursor-pointer" />
+                        </Tooltip>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="w-full px-10 h-[1px] bg-gray-200"></div>
+                <div className="flex justify-between items-center flex-wrap">
+                  <label>Role:</label>
+                  <Select
+                    name="vertical"
+                    value={formData.userVertical || USERVERTICAL.DEV}
+                    defaultValue={USERVERTICAL.DEV}
+                    onValueChange={(value) =>
+                      handleSelectChange(value, "userVertical")
+                    }
+                  >
+                    <SelectTrigger
+                      id="user-vertical"
+                      className="w-full max-w-[23rem] border-[2px] border-gray-300 rounded-xl px-4 py-2 cursor-pointer"
+                    >
+                      <SelectValue placeholder={USERVERTICAL.DEV} />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white">
+                      {Object.values(USERVERTICAL).map((vertical) => (
+                        <SelectItem
+                          key={vertical}
+                          value={vertical}
+                          onClick={() =>
+                            handleSelectChange(vertical, "userVertical")
+                          }
+                          className="hover:bg-gray-200 rounded-lg cursor-pointer"
+                        >
+                          {vertical}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="w-full px-10 h-[1px] bg-gray-200"></div>
+                <div className="flex justify-between items-center flex-wrap">
+                  <label>TimeZone:</label>
+                  <div className="flex justify-between items-center gap-1 max-w-[23rem] w-full">
+                    <TextField
+                      type="text"
+                      required
+                      size="small"
+                      name="timezone"
+                      color="info"
+                      variant="outlined"
+                      value={formData.timezone}
+                      onChange={handleChange}
+                      className="w-full"
+                      InputLabelProps={{
+                        shrink: false,
+                      }}
+                      InputProps={{
+                        notched: false,
+                      }}
+                      sx={InputStyles}
+                    />
+                    <Tooltip
+                      placement="top"
+                      title="Enter your local timezone. Example: GMT+5:30"
+                    >
+                      <Info className="opacity-60 h-5 w-5 cursor-pointer" />
+                    </Tooltip>
+                  </div>
+                </div>
+                <div className="w-full px-10 h-[1px] bg-gray-200"></div>
+                <div className="flex justify-between items-center flex-wrap">
+                  <label>Country Code:</label>
+                  <div className="flex justify-between items-center  gap-1 max-w-[23rem] w-full">
+                    <TextField
+                      type="text"
+                      required
+                      size="small"
+                      name="countryCode"
+                      color="info"
+                      variant="outlined"
+                      value={formData.countryCode}
+                      onChange={handleChange}
+                      className="w-full"
+                      InputLabelProps={{
+                        shrink: false,
+                      }}
+                      InputProps={{
+                        notched: false,
+                      }}
+                      sx={InputStyles}
+                    />
+                    <Tooltip
+                      placement="top"
+                      title="Enter your country code. Example: +91"
+                    >
+                      <Info className="opacity-60 h-5 w-5 cursor-pointer" />
+                    </Tooltip>
+                  </div>
+                </div>
+                <div className="w-full px-10 h-[1px] bg-gray-200"></div>
+                <div className="flex gap-4 items-center mt-3">
+                  <div className="ml-auto flex gap-5">
+                    <Button type="submit" disabled={loading}>
+                      {submit ? (
+                        <>
+                          <Spinner className="w-3 h-3" /> Submitting
+                        </>
+                      ) : (
+                        "Submit"
+                      )}
+                    </Button>
+                  </div>
+                </div>
+                <Toaster />
+              </div>
+            </div>
+          </form>
+        </Box>
+      </Modal>
     </LocalizationProvider>
   );
 }

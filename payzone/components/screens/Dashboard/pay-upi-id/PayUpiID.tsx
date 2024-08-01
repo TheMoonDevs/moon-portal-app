@@ -18,6 +18,8 @@ import { ExchangeConfigData } from "@/prisma/extraDbTypes";
 import Toast, { toastSeverity } from "../../Referrals/Dashboard/Toast";
 import { useSyncBalances } from "@/utils/hooks/useSyncBalances";
 import { useAppSelector } from "@/utils/redux/store";
+// import CurrencyModal from "@/components/global/CurrencyModal";
+import { toast } from "sonner";
 
 export const PayUpiID = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -36,38 +38,66 @@ export const PayUpiID = () => {
     txCategory: TRANSACTIONCATEGORY.STIPEND,
   });
   const [loading, setLoading] = useState(false);
-  const [toast, setToast] = useState<{
-    open: boolean;
-    message: string;
-    severity: toastSeverity;
-  }>({
-    open: false,
-    message: "",
-    severity: "success",
-  });
+  const [paymentDate, setPaymentDate] = useState(dayjs().format("YYYY-MM-DD"));
+  // const [toast, setToast] = useState<{
+  //   open: boolean;
+  //   message: string;
+  //   severity: toastSeverity;
+  // }>({
+  //   open: false,
+  //   message: "",
+  //   severity: "success",
+  // });
 
   const handleAddPayment = (amount: string) => {
     setLoading(true);
     const _userData = { ...payingToUser };
     _userData.payData = undefined;
     _userData.workData = undefined;
+
+    // Ensure the amount is a valid number, defaulting to 0 if not
+    const parsedAmount = parseFloat(amount) || 0;
+
     const updatedData = {
       userId: payingToUser.id,
       user: _userData,
       ...txInfos,
-      amount: parseFloat(amount),
+      amount: parsedAmount,
+      createdAt: paymentDate ? new Date(paymentDate) : new Date(), // Using the date from input or current date
     };
-    // console.log(updatedData);
-    MyServerApi.postData(SERVER_API_ENDPOINTS.payment, updatedData)
-      .then((updatedTransaction) => {
-        handleModalClose();
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.error("Error updating PayTransaction:", error);
-      });
-  };
+    console.log("updatedData", updatedData);
 
+    toast.promise(
+      MyServerApi.postData(SERVER_API_ENDPOINTS.payment, updatedData),
+      {
+        loading: "Adding payment...",
+        success: (data) => {
+          handleModalClose();
+          setLoading(false);
+          return "Payment added successfully!";
+        },
+        error: () => {
+          setLoading(false);
+          return "Error adding payment";
+        },
+      }
+    );
+    // MyServerApi.postData(SERVER_API_ENDPOINTS.payment, updatedData)
+    //   .then((updatedTransaction) => {
+    //     handleModalClose();
+    //     setLoading(false);
+    //     setToast({
+    //       open: true,
+    //       message: "Payment added successfully!",
+    //       severity: "success",
+    //     });
+    //   })
+    //   .catch((error) => {
+    //     console.error("Error updating PayTransaction:", error);
+
+    //     setLoading(false);
+    //   });
+  };
 
   useEffect(() => {
     MyServerApi.getAll(
@@ -85,7 +115,8 @@ export const PayUpiID = () => {
     if (reason === "clickaway") {
       return;
     }
-    setToast((prevToast) => ({ ...prevToast, open: false }));
+    // setToast((prevToast) => ({ ...prevToast, open: false }));
+    toast.dismiss();
   };
 
   return (
@@ -129,7 +160,7 @@ export const PayUpiID = () => {
                     onClick={() => {
                       handleModalOpen();
                       setPayingToUser(_user);
-                      setPayAmount((_user.payData as any).stipend);
+                      setPayAmount((_user.payData as any)?.stipend || ""); // Safely accessing stipend
                     }}
                   >
                     Add Payment
@@ -140,12 +171,12 @@ export const PayUpiID = () => {
           ))}
         </div>
       </div>{" "}
-      <Toast
+      {/* <Toast
         open={toast.open}
         handleClose={handleClose}
         message={toast.message}
         severity={toast.severity}
-      />
+      /> */}
       <Modal
         open={modalOpen}
         onClose={handleModalClose}
@@ -224,6 +255,22 @@ export const PayUpiID = () => {
                 </option>
               ))}
             </select>
+          </div>
+          <div className="mb-4 w-full">
+            <label
+              htmlFor="paymentDate"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Payment Date
+            </label>
+            <input
+              type="date"
+              name="paymentDate"
+              id="paymentDate"
+              value={paymentDate}
+              onChange={(e) => setPaymentDate(e.target.value)}
+              className="block w-full pl-3 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            />
           </div>
 
           <div className="text-sm lg:text-base text-midGrey mt-6">
