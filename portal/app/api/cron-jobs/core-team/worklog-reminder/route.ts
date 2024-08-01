@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
         userType: "MEMBER",
         role: "CORETEAM",
         status: "ACTIVE",
-        // id: "6617afcef8b582365497c198" //remove
+        id: "6617afcef8b582365497c198" //remove
       },
     });
 
@@ -67,8 +67,10 @@ export async function GET(request: NextRequest) {
           where: {
             userId: user.id,
             date: {
-              gte: startOfMonth.toISOString(),
-              lte: endOfMonth.toISOString(),
+              // gte: startOfMonth.toISOString(),
+              // lte: endOfMonth.toISOString(),
+              gte: "2024-07-01T00:00:00.000Z",  // remove
+              lte: "2024-07-31T23:59:59.999Z"   // remove
             },
           },
         });
@@ -76,11 +78,12 @@ export async function GET(request: NextRequest) {
         const nonEmptyWorkLogs = workLogs.filter(workLog => !isWorklogEmpty(workLog.works));
         const missedDays = getMissedLogs(nonEmptyWorkLogs, true);
         const missedDaysDayjs = missedDays.map(date => dayjs(date)).filter(date => !isWeekend(date));
+        console.log("Missed Days:", missedDaysDayjs.map(day => day.format('YYYY-MM-DD'))); //remove
 
         return {
           user,
           slackId: user.slackId,
-          workLogs,
+          // workLogs, //remove
           missedDays: missedDaysDayjs
         };
       })
@@ -91,13 +94,13 @@ export async function GET(request: NextRequest) {
 
       for (const sequence of missedSequences) {
         title = `Missed Worklog Reminder`;
-        description = `You missed logging work for ${sequence.length} consecutive working days: ${sequence.map(day => day.format('DD-MM-YYYY')).join(', ')}. Please update your logs.`;
+        description = `Hello @${user.user.name}!, You missed logging work for ${sequence.length} consecutive working days: ${sequence.map(day => day.format('DD-MM-YYYY')).join(', ')}. Please update your logs.`;
         console.log("Sending Slack message:", title, description);
 
         await prisma.notification.create({
           data: {
-            userId: user.user.id,
-            // userId: "6617afcef8b582365497c198", //remove
+            // userId: user.user.id,
+            userId: "6617afcef8b582365497c198", //remove
             title,
             description,
             notificationType: "SELF_GENERATED",
@@ -106,14 +109,20 @@ export async function GET(request: NextRequest) {
 
         await slackBot.sendSlackMessageviaAPI({
           text: description,
-          channel: user?.slackId ?? undefined,
-          // channel: "U06SUSLLBPS", remove
+          // channel: user?.slackId ?? undefined,
+          channel: "U06SUSLLBPS", //remove
         });
       }
     }
 
     const jsonResponse = {
       status: "success",
+      data: {
+        "usersWithWorkLogs": usersWithWorkLogs,
+        "desc": description,
+        "gte": startOfMonth.toISOString(),
+        "lte": endOfMonth.toISOString(),
+      }, //remove
       message: "Reminders Sent!",
     };
 
