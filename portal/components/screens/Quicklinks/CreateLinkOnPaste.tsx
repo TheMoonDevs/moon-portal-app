@@ -133,11 +133,12 @@ const CreateLinkOnPaste = () => {
         linkType: metadata.linkType,
         url: metadata.url,
         clickCount: 0,
-        directoryId: activeDirectoryId,
+        directoryId:
+          selectedParentDir.id !== ""
+            ? selectedParentDir.id
+            : activeDirectoryId,
         rootParentDirId:
-          rootParentDirId ||
-          (selectedParentDir.id !== "" && selectedParentDir.id) ||
-          null,
+          selectedParentDir.id !== "" ? selectedParentDir.id : rootParentDirId,
         authorId: user?.id,
       };
 
@@ -242,7 +243,7 @@ const CreateLinkOnPaste = () => {
                 value={copiedURL || ""}
                 onChange={(e) => setCopiedURL(e.target.value)}
                 InputProps={{
-                  startAdornment: (
+                  startAdornment: path === "/quicklinks/dashboard" && (
                     <InputAdornment position="start">
                       <Tooltip title="Select Department">
                         <div
@@ -299,6 +300,7 @@ const CreateLinkOnPaste = () => {
                       </Popover>
                     </InputAdornment>
                   ),
+
                   endAdornment: (
                     <InputAdornment position="end">
                       {isEditing ? (
