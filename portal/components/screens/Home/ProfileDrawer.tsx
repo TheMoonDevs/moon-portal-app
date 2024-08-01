@@ -194,20 +194,24 @@ export const UserProfileDrawer: React.FC = () => {
         role="presentation"
       >
         {isMobile && (
-          <Fab
-            color='primary'
-            aria-label='close'
-            size='small'
-            onClick={handleClose}
-            sx={{
-              position: 'absolute',
-              top: 16,
-              left: 16,
-              zIndex: 1300,
-            }}
-          >
-            <span className='material-symbols-outlined'>close</span>
-          </Fab>
+          <div className="fixed bottom-0 right-0 z-50 w-full flex justify-center pb-6">
+            <Fab
+              color="primary"
+              aria-label="close"
+              size="small"
+              onClick={handleClose}
+              sx={{
+                backgroundColor: "transparent !important",
+                border: "1px solid GrayText !important",
+                backdropFilter: "blur(10px) !important",
+                zIndex: 1300,
+              }}
+            >
+              <span className="material-symbols-outlined !text-[rgba(0,0,0,0.8)]">
+                close
+              </span>
+            </Fab>
+          </div>
         )}
         <div className="h-[120px] relative">
           {bannerLoading ? (
