@@ -243,6 +243,7 @@ export const CreateLinkPopup = () => {
               name="link"
               id="link"
               required
+              autoFocus
               placeholder="Paste Link Here"
             />
           </div>
