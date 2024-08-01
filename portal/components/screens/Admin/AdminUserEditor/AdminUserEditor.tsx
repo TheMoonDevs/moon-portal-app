@@ -56,7 +56,6 @@ export const AdminUserEditor = () => {
 
   const { showToast } = useToast();
   const router = useRouter();
-
   const [user, setUser] = useState<User>(initialUserState);
 
   useEffect(() => {
@@ -78,7 +77,7 @@ export const AdminUserEditor = () => {
       router.refresh();
       setUser(initialUserState);
     }
-  }, [query]);
+  }, [query, router]);
 
   const updateOverlap = (index: number, field: string, value: any) => {
     setUser((u) => ({
