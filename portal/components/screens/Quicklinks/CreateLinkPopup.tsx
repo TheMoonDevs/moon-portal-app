@@ -74,7 +74,6 @@ export const CreateLinkPopup = () => {
 
       const formData = new FormData(e.currentTarget);
       const link = formData.get("link") as string;
-      console.log(link);
       setFetchingMetadata(true);
       const metadata = await QuicklinksSdk.getLinkMetaData(link);
       setFetchingMetadata(false);
@@ -139,7 +138,11 @@ export const CreateLinkPopup = () => {
   return (
     <Slide
       direction="up"
-      in={isCreateLinkModalOpen || Boolean(copiedURL)}
+      in={
+        isCreateLinkModalOpen
+        // uncomment below line to revert back to old UI
+        // || Boolean(copiedURL)
+      }
       mountOnEnter
       unmountOnExit
     >
@@ -240,6 +243,7 @@ export const CreateLinkPopup = () => {
               name="link"
               id="link"
               required
+              autoFocus
               placeholder="Paste Link Here"
             />
           </div>

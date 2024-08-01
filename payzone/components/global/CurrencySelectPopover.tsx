@@ -1,12 +1,12 @@
-import React from 'react';
-import { List, ListItem, ListItemText, Popover } from '@mui/material';
-import { useSyncBalances } from '@/utils/hooks/useSyncBalances';
+import React from "react";
+import { List, ListItem, ListItemText, Popover } from "@mui/material";
+import { useSyncBalances } from "@/utils/hooks/useSyncBalances";
 
 interface CustomPopoverProps {
   popoverProps: {
     id: string | undefined;
     open: boolean;
-    anchorEl: HTMLButtonElement | null;
+    anchorEl: HTMLButtonElement | HTMLDivElement | null;
     onClose: () => void;
   };
   handleCurrencySelect: (currency: string, value: number) => void;
@@ -25,18 +25,18 @@ const CurrencySelectPopover: React.FC<CustomPopoverProps> = ({
       anchorEl={anchorEl}
       onClose={onClose}
       anchorOrigin={{
-        vertical: 'bottom',
-        horizontal: 'center',
+        vertical: "bottom",
+        horizontal: "center",
       }}
     >
       <List
         sx={{
-          width: '100%',
+          width: "100%",
           maxWidth: 360,
-          bgcolor: 'background.paper',
-          maxHeight: '200px',
-          overflow: 'auto',
-          boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
+          bgcolor: "background.paper",
+          maxHeight: "200px",
+          overflow: "auto",
+          boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.1)",
         }}
       >
         {exchange &&
@@ -46,10 +46,10 @@ const CurrencySelectPopover: React.FC<CustomPopoverProps> = ({
               disablePadding
               onClick={() => handleCurrencySelect(currency, value as number)}
               sx={{
-                padding: '0.5rem',
-                cursor: 'pointer',
-                '&:hover': {
-                  background: '#f0f0f0',
+                padding: "0.5rem",
+                cursor: "pointer",
+                "&:hover": {
+                  background: "#f0f0f0",
                 },
               }}
             >

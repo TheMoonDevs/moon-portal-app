@@ -1,5 +1,6 @@
 import { baseSepolia } from "viem/chains";
 import { bill, license, payments, request, send_money, toll, admin, refer } from '../../public/icons/index'
+import { toast } from "sonner";
 
 const NEXT_PUBLIC_TMD_CONTRACT = process.env.NEXT_PUBLIC_TMD_CONTRACT
   ? process.env.NEXT_PUBLIC_TMD_CONTRACT
@@ -111,7 +112,10 @@ export const copyUPI = (upiId: string) => {
     .writeText(upiId)
     .then(() => {
       // console.log("UPI ID copied to clipboard");
-      alert("UPI ID copied to clipboard");
+      // alert("UPI ID copied to clipboard");
+      toast.error("UPI ID copied to clipboard", {
+        position: "top-center",
+      });
     })
     .catch((err) => {
       console.error("Error copying UPI ID to clipboard:", err);

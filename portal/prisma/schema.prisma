@@ -17,9 +17,12 @@ model User {
   email          String?
   name           String?
   avatar         String?
+  banner         String?
+  description     String?
   userType       USERTYPE?     @default(MEMBER)
   role           USERROLE?     @default(CORETEAM)
   vertical       USERVERTICAL? @default(DEV)
+  house          HOUSEID?      @default(PRODUCT_TECH)
   status         USERSTATUS?   @default(ACTIVE)
   industry       USERINDUSTRY?
   isAdmin        Boolean       @default(false)
@@ -226,6 +229,21 @@ model ConfigData {
   timestamp  DateTime @updatedAt
 }
 
+model Article {
+  id              String      @id @default(auto()) @map("_id") @db.ObjectId
+  title           String
+  image           String?  
+  content         String
+  articleUrl      String
+  articleType     String
+  author          String
+  publishDate     DateTime
+  categories      String[]
+
+  @@index([title], name: "title_idx")
+  @@index([author], name: "author_idx")
+}
+
 enum JOBPOST {
   FULLTIME
   PARTTIME
@@ -267,6 +285,13 @@ enum USERVERTICAL {
   OPERATIONS
 }
 
+enum HOUSEID {
+  MANGEMENT
+  GROWTH
+  PRODUCT_TECH
+  EXECUTIVE
+}
+
 enum USERINDUSTRY {
   CRYPTO
   FINANCE
@@ -295,4 +320,45 @@ model DocMarkdown {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   markdown  Json
+}
+
+//-------------------------------------Notifications-----------------------------------------
+
+model Notification {
+  id                String            @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String            @db.ObjectId
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  title             String
+  description       String
+  matchId           String?           
+  matchType         String?
+  notificationType  NotificationType
+  notificationData  Json?
+}
+
+enum NotificationType {
+  ADMIN
+  SELF_GENERATED
+  USER_TO_USER
+}
+
+//-------------------------------------Missions-------------------------------------------
+
+model Mission {
+  id  String   @id @default(auto()) @map("_id") @db.ObjectId
+  house  HOUSEID
+  vertical USERVERTICAL?
+  month        String
+  completed    Boolean?
+  housePoints  Int
+  indiePoints  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  completedAt DateTime?
+  expirable    Boolean?
+  expiresAt DateTime?
+  title       String
+  description String?
+  tasks Json?
 }

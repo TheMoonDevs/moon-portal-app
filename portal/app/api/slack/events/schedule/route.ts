@@ -11,6 +11,7 @@ export async function POST(request: NextRequest) {
     const params = new URLSearchParams(payload);
     const jsonPayload = Object.fromEntries(params);
     const text = jsonPayload.text;
+    // console.log(jsonPayload)
 
     // Extract mentions
     const mentionPattern = /@\w+/g;
@@ -62,7 +63,7 @@ export async function POST(request: NextRequest) {
     // Get current date in IST
     const now = new Date();
     const istOffset = 5.5 * 60 * 60 * 1000; // IST is UTC+5:30
-    const nowIST = new Date(now.getTime() + istOffset)
+    const nowIST = new Date(now.getTime() + istOffset);
 
     // Calculate chosen date based on current date in IST
     let chosenDate = new Date(nowIST);
@@ -80,14 +81,23 @@ export async function POST(request: NextRequest) {
       if (dateStr === "tomorrow") {
         chosenDate.setDate(chosenDate.getDate() + 1);
       } else if (dateStr !== "today") {
-        chosenDate = parse(dateStr, "d MMMM yyyy", new Date(), {
+        const parsedDate = parse(dateStr, "d MMMM yyyy", new Date(), {
           locale: enIN,
         });
-        if (isNaN(chosenDate.getTime())) {
-          chosenDate = parse(dateStr, "d MMMM", new Date(), { locale: enIN });
-        }
-        if (isNaN(chosenDate.getTime())) {
-          throw new Error("Invalid date format");
+        if (!isNaN(parsedDate.getTime())) {
+          chosenDate = parsedDate;
+          chosenDate.setHours(hours, minutes, 0, 0);
+        } else {
+          const parsedDateWithoutYear = parse(dateStr, "d MMMM", new Date(), {
+            locale: enIN,
+          });
+          if (!isNaN(parsedDateWithoutYear.getTime())) {
+            chosenDate = parsedDateWithoutYear;
+            chosenDate.setFullYear(nowIST.getFullYear());
+            chosenDate.setHours(hours, minutes, 0, 0);
+          } else {
+            throw new Error("Invalid date format");
+          }
         }
       }
     }
@@ -104,9 +114,8 @@ export async function POST(request: NextRequest) {
     const reminderTime = addMinutes(chosenDateIST, -30);
 
     // Construct the reminder message
-    let reminderMessage = `Reminder: ${
-      titleMatch ? meetingTitle : "A"
-    } meeting is starting in 30 minutes.`;
+    let reminderMessage = `Reminder: ${titleMatch ? meetingTitle : "A"
+      } meeting is starting in 30 minutes.`;
     if (resolvedUsers.length > 0) {
       const formattedMentions = resolvedUsers
         .map((user) => `<@${user.id}>`)
@@ -128,15 +137,15 @@ export async function POST(request: NextRequest) {
     await slackBotSdk.setSlackReminder({
       time: format(reminderTime, "yyyyMMdd'T'HHmmss'Z'"),
       message: reminderMessage,
-      channel: SlackChannels.y_moon_reminders,
+      channel: jsonPayload.channel_id
     });
 
     // Construct response message based on resolved users
     let responseMessage =
       resolvedUsers.length > 0
         ? `Don't forget to add ${resolvedUsers
-            .map((user) => user.email)
-            .join(", ")}.`
+          .map((user) => user.email)
+          .join(", ")}.`
         : "Please make sure to add Guests.";
 
     // Response to user
@@ -154,12 +163,11 @@ export async function POST(request: NextRequest) {
           type: "section",
           text: {
             type: "mrkdwn",
-            text: `The meeting${
-              titleMatch ? ` "${meetingTitle}"` : ""
-            } is scheduled for ${format(
-              chosenDateIST,
-              "do MMMM yyyy"
-            )} at ${format(chosenDateIST, "HH:mm")} IST.`,
+            text: `The meeting${titleMatch ? ` "${meetingTitle}"` : ""
+              } is scheduled for ${format(
+                chosenDateIST,
+                "do MMMM yyyy"
+              )} at ${format(chosenDateIST, "HH:mm")} IST.`,
           },
         },
         {
