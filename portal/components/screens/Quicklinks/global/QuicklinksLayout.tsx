@@ -12,6 +12,7 @@ import { useStore } from "react-redux";
 import { useRef } from "react";
 import { ParentDirectory, Directory } from "@prisma/client";
 import { CreateLinkPopup } from "../CreateLinkPopup";
+import CreateLinkOnPaste from "../CreateLinkOnPaste";
 
 // BAD PATTERN OF SLUG IS USED, WE CANT CHANGE IT BECAUSE IT IS USED IN THE MULTIPLE COMPONENTS
 const ROOT_DIRECTORIES: Omit<Directory, "timestamp">[] = [
@@ -64,6 +65,7 @@ export const QuicklinksLayout = ({
       <div className="relative my-8 pr-8 pl-2 w-full">
         <div className="w-full relative h-screen mb-20">{children}</div>
         <CreateLinkPopup />
+        <CreateLinkOnPaste /> {/* Remove this to revert back to the old UI */}
         <QuicklinksToast
           severity={toast.toastSev}
           message={toast.toastMsg}

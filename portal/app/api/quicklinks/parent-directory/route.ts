@@ -31,8 +31,14 @@ export async function POST(request: Request) {
   //   return;
 
   try {
+    const lastDirectory = await prisma.parentDirectory.findFirst({
+      where: { type: newParentDirs.type },
+      orderBy: { position: "desc" },
+      select: { position: true },
+    });
+    const newPosition = lastDirectory ? lastDirectory.position + 10 : 10;
     const parentDirs = await prisma.parentDirectory.create({
-      data: newParentDirs,
+      data: { ...newParentDirs, position: newPosition },
     });
 
     let json_response = {

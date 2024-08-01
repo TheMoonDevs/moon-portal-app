@@ -9,6 +9,7 @@ import {
   deleteParentDir,
   setToast,
   updateDirectory,
+  updateMultipleDirectories,
 } from "@/utils/redux/quicklinks/quicklinks.slice";
 import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
 import { usePathname, useRouter } from "next/navigation";
@@ -243,37 +244,69 @@ export const DirectoryTree = ({
     }
   };
 
-  // Filter root directories (those with null parentDirId)
-  // const rootDirectories = mainDirectory.filter(
-  //   (directory) => !directory.parentDirId
-  // );
-  // console.log("rootDirectories:", rootDirectories);
+  const handleMoveDirectory = async (
+    directory: Directory,
+    direction: "UP" | "DOWN"
+  ) => {
+    let apiPath = "/api/quicklinks/directory/move";
+    let isParent = false;
+    if (!directory.parentDirId) {
+      apiPath = "/api/quicklinks/parent-directory/move";
+      isParent = true;
+    }
+    // console.log(directory);
+    // console.log(direction);
+    try {
+      const response = await QuicklinksSdk.moveData(apiPath, {
+        directory,
+        direction,
+      });
+
+      if (response.status === "success") {
+        dispatch(
+          updateMultipleDirectories({
+            directories: response.data.changed,
+            isParent,
+          })
+        );
+      }
+    } catch (error) {
+      console.log(error);
+      revalidateRoot();
+    }
+  };
+
   return (
     <>
-      {mainDirectory.map((directory: Directory | ParentDirectory) => (
-        <div key={directory.id} className="!py-2 !border-gray-200">
-          <DirectoryItem
-            directory={directory as Directory}
-            toggleDirectory={toggleDirectory}
-            isDirectoryExpanded={isDirectoryExpanded}
-            pathName={pathName as string}
-            rootSlug={
-              "type" in directory
-                ? rootDirectories.find((_dir) => _dir.id === directory.type)
-                    ?.slug || directory.slug
-                : directory.slug
-            }
-            editable={editable}
-            setEditable={setEditable}
-            handleDirectoryUpdate={handleDirectoryUpdate}
-            setExpandedDirs={setExpandedDirs}
-            handleAddChildDirectory={handleAddChildDirectory}
-            handleDeleteDirectory={handleDeleteDirectory}
-          />
-        </div>
-      ))}
+      {mainDirectory
+        .sort((a, b) => a.position - b.position)
+        .map((directory: Directory | ParentDirectory, index) => (
+          <div key={directory.id} className=" !border-gray-200">
+            <DirectoryItem
+              directory={directory as Directory}
+              toggleDirectory={toggleDirectory}
+              isDirectoryExpanded={isDirectoryExpanded}
+              isFirst={index == 0}
+              isLast={index == mainDirectory.length - 1}
+              pathName={pathName as string}
+              rootSlug={
+                "type" in directory
+                  ? rootDirectories.find((_dir) => _dir.id === directory.type)
+                      ?.slug || directory.slug
+                  : directory.slug
+              }
+              editable={editable}
+              setEditable={setEditable}
+              handleDirectoryUpdate={handleDirectoryUpdate}
+              setExpandedDirs={setExpandedDirs}
+              handleDeleteDirectory={handleDeleteDirectory}
+            />
+          </div>
+        ))}
       <PopoverEmojis handleDirectoryUpdate={handleDirectoryUpdate} />
       <PopoverFolderEdit
+        handleAddChildDirectory={handleAddChildDirectory}
+        handleMoveDirectory={handleMoveDirectory}
         handleDeleteDirectory={handleDeleteDirectory}
         handleMoveToDirectory={handleMoveToDialog}
       />

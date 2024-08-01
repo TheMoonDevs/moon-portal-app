@@ -7,6 +7,7 @@ import {
   UserLink,
 } from "@prisma/client";
 import { PayloadAction, createSlice } from "@reduxjs/toolkit";
+
 const toggleFavoriteList = (prevFavList: Link[], currentFavoriteLink: Link) => {
   if (prevFavList.find((link) => link.id === currentFavoriteLink.id)) {
     return prevFavList.filter((link) => link.id !== currentFavoriteLink.id);
@@ -15,7 +16,46 @@ const toggleFavoriteList = (prevFavList: Link[], currentFavoriteLink: Link) => {
   }
 };
 
+const updateDirectoryPositions = (
+  state: any,
+  updatedDir: Directory | ParentDirectory,
+  isParent: boolean
+) => {
+  const targetArray = isParent
+    ? (state.parentDirs as ParentDirectory[])
+    : (state.directories as Directory[]);
+  const index = targetArray.findIndex(
+    (dir: Directory | ParentDirectory) => dir.id === updatedDir.id
+  );
+  if (index !== -1) {
+    targetArray[index] = updatedDir;
+  }
+};
+
 type listView = "list" | "widget" | "thumbnail" | "line";
+
+interface QuicklinksState {
+  directories: Directory[];
+  parentDirs: ParentDirectory[];
+  rootDirectories: Directory[];
+  popoverElementWithData: {
+    element: HTMLSpanElement | null;
+    anchorId: string | null;
+    data: any | null;
+  };
+  allQuicklinks: Link[];
+  favoriteList: Link[];
+  topUsedList: Link[];
+  currentView: listView;
+  toast: {
+    showToast: boolean;
+    toastMsg: string;
+    toastSev: ToastSeverity | undefined;
+  };
+  activeDirectoryId: null | string;
+  isCreateLinkModalOpen: boolean;
+}
+
 export const shortUrlSlice = createSlice({
   name: "quicklinks",
   initialState: {
@@ -41,27 +81,7 @@ export const shortUrlSlice = createSlice({
       toastMsg: "",
       toastSev: undefined,
     },
-  } as {
-    directories: Directory[];
-    parentDirs: ParentDirectory[];
-    rootDirectories: Directory[];
-    popoverElementWithData: {
-      element: HTMLSpanElement | null;
-      anchorId: string | null;
-      data: any | null;
-    };
-    allQuicklinks: Link[];
-    favoriteList: Link[];
-    topUsedList: Link[];
-    currentView: listView;
-    toast: {
-      showToast: boolean;
-      toastMsg: string;
-      toastSev: ToastSeverity | undefined;
-    };
-    activeDirectoryId: null | string;
-    isCreateLinkModalOpen: boolean;
-  },
+  } as QuicklinksState,
   reducers: {
     setPopoverElementWithData: (state, action) => {
       state.popoverElementWithData = {
@@ -194,6 +214,19 @@ export const shortUrlSlice = createSlice({
         localStorage.setItem("currentView", action.payload);
       state.currentView = action.payload;
     },
+
+    updateMultipleDirectories: (
+      state,
+      action: PayloadAction<{
+        directories: Directory[] | ParentDirectory[];
+        isParent: boolean;
+      }>
+    ) => {
+      const { directories, isParent } = action.payload;
+      directories.forEach((updatedDir) => {
+        updateDirectoryPositions(state, updatedDir, isParent);
+      });
+    },
   },
 });
 
@@ -218,6 +251,7 @@ export const {
   addNewQuicklink,
   setPopoverElementWithData,
   setCurrentView,
+  updateMultipleDirectories,
 } = shortUrlSlice.actions;
 
 export default shortUrlSlice.reducer;
