@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
         status: status ? (status as USERSTATUS) : USERSTATUS.ACTIVE,
       },
     });
+    // console.log(user);
 
     if (error_response) {
       return new NextResponse(JSON.stringify(error_response), {
@@ -47,6 +48,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(json_response);
   } catch (e) {
+    console.log(e);
     return new NextResponse(JSON.stringify(e), {
       status: 404,
       headers: { "Content-Type": "application/json" },
