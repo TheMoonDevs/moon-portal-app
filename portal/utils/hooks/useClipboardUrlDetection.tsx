@@ -1,49 +1,54 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { isValidURL } from "../helpers/functions";
+import { toast } from "sonner";
+import { useAppSelector } from "../redux/store";
 
 const useClipboardURLDetection = () => {
-  const [isTabFocused, setIsTabFocused] = useState(
-    typeof window !== "undefined" && document.hasFocus()
-  );
-  const [isPasteEvent, setIsPasteEvent] = useState(false);
-  const [validURLPasteEvent, setValidURLPasteEvent] = useState(false);
+  // const [isTabFocused, setIsTabFocused] = useState(
+  //   typeof window !== "undefined" && document.hasFocus()
+  // );
   const [copiedURL, setCopiedURL] = useState<string | null>(null);
-
+  const { isCreateLinkModalOpen } = useAppSelector((state) => state.quicklinks);
   useEffect(() => {
-    const handleFocus = () => {
-      setIsTabFocused(true);
-      setIsPasteEvent(false);
-    };
-    const handleBlur = () => setIsTabFocused(false);
-    const handlePaste = () => setIsPasteEvent(true);
-    window.addEventListener("focus", handleFocus);
-    window.addEventListener("blur", handleBlur);
-    window.addEventListener("paste", handlePaste);
-
-    return () => {
-      window.removeEventListener("focus", handleFocus);
-      window.removeEventListener("blur", handleBlur);
-      window.removeEventListener("paste", handlePaste);
-    };
-  }, []);
-
-  useEffect(() => {
-    const handleCopy = async () => {
-      if (!isTabFocused) return;
+    // const handleFocus = () => {
+    //   setIsTabFocused(true);
+    // };
+    // const handleBlur = () => setIsTabFocused(false);
+    const handlePaste = async () => {
+      if (isCreateLinkModalOpen) return;
       const text = await navigator.clipboard.readText();
       if (isValidURL(text)) {
         setCopiedURL(text);
       } else {
-        setIsPasteEvent(false);
         setCopiedURL(null);
+        toast.error("Invalid URL");
       }
-      if (copiedURL && isPasteEvent) setValidURLPasteEvent(true);
-      setIsPasteEvent(false);
     };
-    handleCopy();
-  }, [isTabFocused, isPasteEvent, validURLPasteEvent]);
+    // window.addEventListener("focus", handleFocus);
+    // window.addEventListener("blur", handleBlur);
+    window.addEventListener("paste", handlePaste);
 
-  return { copiedURL, setCopiedURL, validURLPasteEvent, setValidURLPasteEvent };
+    return () => {
+      // window.removeEventListener("focus", handleFocus);
+      // window.removeEventListener("blur", handleBlur);
+      window.removeEventListener("paste", handlePaste);
+    };
+  }, [copiedURL, isCreateLinkModalOpen]);
+
+  // useEffect(() => {
+  //   const handleCopy = async () => {
+  //     if (!isTabFocused) return;
+  //     const text = await navigator.clipboard.readText();
+  //     if (isValidURL(text)) {
+  //       setCopiedURL(text);
+  //     } else {
+  //       setCopiedURL(null);
+  //     }
+  //   };
+  //   handleCopy();
+  // }, [copiedURL, isTabFocused]);
+
+  return { copiedURL, setCopiedURL };
 };
 
 export default useClipboardURLDetection;
