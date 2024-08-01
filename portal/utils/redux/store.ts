@@ -12,6 +12,7 @@ import searchTermReducer from "./searchTerm/search.slice";
 import filesUploadReducer from "./filesUpload/fileUpload.slice";
 import onboardingFormReducer from "./onboarding/onboarding.slice";
 import worklogsReducer from "./worklogs/worklogs.slice";
+import selectedMissionReducer from './missions/selectedMission.slice';
 import laterTodosReducer from "./worklogs/laterTodos.slice";
 //import suggestionsReducer from './suggestions/suggestions.slice';
 import notificationsReducer from "./notification/notification.slice";
@@ -29,6 +30,7 @@ const store = configureStore({
     laterTodos: laterTodosReducer,
     searchTerm: searchTermReducer,
     onboardingForm: onboardingFormReducer,
+    selectedMission: selectedMissionReducer,
     coreTeam: coreTeamSlice,
     //suggestions: suggestionsReducer,
     notifications: notificationsReducer,

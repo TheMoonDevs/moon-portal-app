@@ -13,6 +13,7 @@ import CopyWalletAddress from "@/components/screens/Members/WalletOnboarding/Ste
 import UploadWalletAddress from "@/components/screens/Members/WalletOnboarding/Steps/UploadWalletAddress";
 import { isValidEthAddress } from "@/utils/helpers/functions";
 import { toast, Toaster } from "sonner";
+import Link from "next/link";
 
 const CreateWallet = () => {
   const [step, setStep] = useState(1);
@@ -90,7 +91,20 @@ const CreateWallet = () => {
 
   return (
     <>
-      <div className="bg-neutral-900 h-screen flex items-center justify-center">
+      <div className="bg-neutral-900 h-screen flex flex-col items-center justify-center relative">
+        <div className="absolute top-10 left-10 max-sm:top-5 max-sm:left-5 z-20 flex items-center gap-2">
+          <div
+            onClick={() => {
+              if (step > 1) {
+                setStep(step - 1);
+              } else router.back();
+            }}
+            className=" bg-gray-700 text-white px-2 py-2 rounded-full  cursor-pointer flex justify-center items-center "
+          >
+            <span className="material-symbols-outlined">arrow_back</span>
+          </div>
+          <span className="text-white">Step {step}/3</span>
+        </div>
         {step === 1 && (
           <DownloadCoinbase onNext={() => handleNextStep()} step={step} />
         )}

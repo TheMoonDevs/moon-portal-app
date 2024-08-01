@@ -287,7 +287,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 
 .circular-progress-button {
   --size: 4rem; 
-  --fg: #ff8c00;
+  --fg: #1E90FF;
   --bg: #ddd; 
   --pgPercentage: 0;
   animation: growProgressBar 1s forwards;
