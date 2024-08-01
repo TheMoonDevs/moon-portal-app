@@ -21,7 +21,6 @@ import { AdminUserWorkData } from "./AdminUserWorkData";
 import { AdminUserBasicData } from "./AdimUserBasicData";
 import { AdminUserPayData } from "./AdminUserPayData";
 import { AdminUserPersonalData } from "./AdminUserPersonalData";
-
 const initialUserState: User = {
   id: "",
   name: "",
@@ -29,13 +28,13 @@ const initialUserState: User = {
   password: "",
   email: "",
   avatar: "",
+  house: HOUSEID.PRODUCT_TECH,
   userType: USERTYPE.MEMBER,
   role: USERROLE.CORETEAM,
   vertical: USERVERTICAL.DEV,
   industry: USERINDUSTRY.OTHERS,
   timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
   country: "",
-  house: null,
   createdAt: new Date(),
   updatedAt: new Date(),
   status: USERSTATUS.ACTIVE,
@@ -51,13 +50,12 @@ const initialUserState: User = {
   banner: "",
   description: "",
 };
-
 export const AdminUserEditor = () => {
   const query = useSearchParams();
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
 
   const { showToast } = useToast();
+  const router = useRouter();
 
   const [user, setUser] = useState<User>(initialUserState);
 
