@@ -74,8 +74,8 @@ export const AdminUserEditor = () => {
           setLoading(false);
         });
     } else {
-      router.refresh();
       setUser(initialUserState);
+      router.refresh();
     }
   }, [query, router]);
 
