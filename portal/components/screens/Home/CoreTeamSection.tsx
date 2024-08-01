@@ -15,12 +15,12 @@ export const CoreTeamSection = () => {
 
   useEffect(() => {
     PortalSdk.getData(
-      "/api/user?role=" + USERROLE.CORETEAM + "&userType=" + USERTYPE.MEMBER,
+      "/api/user?role=" + USERROLE.CORETEAM + "&userType=" + USERTYPE.MEMBER + "&status=ACTIVE",
       null
     )
       .then((data) => {
         dispatch(setMembers(data?.data?.user));
-        console.log(coreTeam);
+        // console.log(coreTeam);
       })
       .catch((err) => {
         console.log(err);
