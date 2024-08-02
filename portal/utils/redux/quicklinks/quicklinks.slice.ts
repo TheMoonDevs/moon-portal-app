@@ -27,7 +27,9 @@ export const shortUrlSlice = createSlice({
     directories: [],
     favoriteList: [],
     topUsedList: [],
-    recentDirectories: [] as string[], // Add recentDirectories state
+    recentDirectories: [] as string[], 
+    archive: [],
+    needsRefetch: false,
     currentView:
       typeof window !== "undefined" && localStorage.getItem("currentView")
         ? (localStorage.getItem("currentView") as listView)
@@ -56,7 +58,9 @@ export const shortUrlSlice = createSlice({
     allQuicklinks: Link[];
     favoriteList: Link[];
     topUsedList: Link[];
-    recentDirectories: string[]; // Add recentDirectories state type
+    recentDirectories: string[]; 
+    archive: Directory[]; 
+    needsRefetch: boolean;
     currentView: listView;
     toast: {
       showToast: boolean;
@@ -202,6 +206,20 @@ export const shortUrlSlice = createSlice({
     addRecentDirectories: (state, action) => {
         state.recentDirectories = [action.payload, ...state.recentDirectories];
     },
+    setArchive: (state, action) => {
+      state.archive = action.payload;
+    },
+    addToArchive: (state, action) => {
+      state.archive = [action.payload, ...state.archive];
+    },
+    removeFromArchive: (state, action) => {
+      state.archive = state.archive.filter(
+        (directory) => directory.id !== action.payload
+      );
+    },
+    setNeedsRefetch: (state, action: PayloadAction<boolean>) => {
+      state.needsRefetch = action.payload;
+    },
   },
 });
 
@@ -228,6 +246,10 @@ export const {
   setCurrentView,
   setRecentDirectories,
   addRecentDirectories,
+  setArchive,
+  addToArchive,
+  removeFromArchive,
+  setNeedsRefetch
 } = shortUrlSlice.actions;
 
 export default shortUrlSlice.reducer;
