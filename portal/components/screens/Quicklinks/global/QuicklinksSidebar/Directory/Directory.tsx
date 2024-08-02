@@ -9,6 +9,8 @@ import {
   deleteParentDir,
   setToast,
   updateDirectory,
+  addToArchive,
+  setNeedsRefetch
 } from "@/utils/redux/quicklinks/quicklinks.slice";
 import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
 import { usePathname, useRouter } from "next/navigation";
@@ -40,7 +42,7 @@ export const DirectoryTree = ({
     if (!selectedDir) return;
 
     const addParentsToExpanded = (
-      array: string[],
+      array: string[], 
       dirId?: string | null
     ): string[] => {
       if (!dirId) return array;
@@ -113,7 +115,7 @@ export const DirectoryTree = ({
     }
   };
 
-  const handleAddChildDirectory = async (parentDirId: string) => {
+ const handleAddChildDirectory = async (parentDirId: string) => {
     const newDirectory = {
       title: `Untitled`,
       logo: ``,
@@ -168,16 +170,26 @@ export const DirectoryTree = ({
     parentId: string | null,
     rootSlug?: string
   ) => {
-    let apiPath = "/api/quicklinks/directory";
+    let apiPath = "/api/quicklinks/directory/archive";
     if (!parentId) {
       apiPath = `/api/quicklinks/parent-directory`;
     }
     try {
-      const response = await QuicklinksSdk.deleteData(
-        `${apiPath}?id=${directory.id}`
+      const data = {
+        id: directory.id,
+        parentDirId: null,
+        archive: parentId
+      }
+      console.log("data:", data);
+      const response = await QuicklinksSdk.createData(
+        apiPath, data
       );
       if (!parentId) dispatch(deleteParentDir(response.data.newParentDirs.id));
-      else dispatch(deleteDirectory(response.data.directory.id));
+      else {
+        dispatch(addToArchive([response.data.id]));
+        dispatch(deleteDirectory(response.data.id));
+        dispatch(setNeedsRefetch(true));
+      }
 
       if (directory.id === activeDirectoryId) {
         //if any sub-dir is deleted redirect to its parent.
