@@ -9,6 +9,7 @@ import { useQuickLinkDirectory } from "../../hooks/useQuickLinkDirectory";
 import { Directory, ParentDirectory, ROOTTYPE } from "@prisma/client";
 import { AddSectionPopup } from "./AddSectionPopup";
 import { Tooltip } from "@mui/material";
+import ArchiveButton from "../../elements/ArchiveButton";
 
 export default function QuicklinkSidebar() {
   const {
@@ -228,6 +229,7 @@ export default function QuicklinkSidebar() {
                     )}
                   </div>
                   {currentDirectory && (
+                    <>
                     <div className="flex flex-col">
                       <DirectoryTree
                         mainDirectory={parentDirs.filter(
@@ -236,10 +238,15 @@ export default function QuicklinkSidebar() {
                         selectedDir={currentDirectory?.id}
                       />
                     </div>
+                     <div className=" w-full fixed bottom-0">
+                     <ArchiveButton />
+                     </div>
+                     </>
                   )}
                 </div>
               </nav>
             )}
+           
           </div>
         )}
       </aside>
@@ -297,6 +304,7 @@ export default function QuicklinkSidebar() {
           </div>
         </div>
       )} */}
+    
     </div>
   );
 }
