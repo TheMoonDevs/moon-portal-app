@@ -9,6 +9,7 @@ import {
   setDirectoryList,
   setRootDirList,
   setRecentDirectories,
+  addToArchive
 } from "@/utils/redux/quicklinks/quicklinks.slice";
 import { useEffect, useRef } from "react";
 import { ParentDirectory, Directory } from "@prisma/client";
@@ -81,8 +82,11 @@ export const QuicklinksLayout = ({
     if (!initialize.current && userId) {
       (async () => {
         let recentDir = await fetchRecentDirectories(userId);
+        // Filter directories whose archive field is null
+        const nonArchivedDirectories = response.directories.filter(directory => directory.archive === null);
+        
         dispatch(setParentDirsList(response.parentDirs));
-        dispatch(setDirectoryList(response.directories));
+        dispatch(setDirectoryList(nonArchivedDirectories));
         dispatch(setRootDirList(ROOT_DIRECTORIES));
         dispatch(setRecentDirectories(recentDir));
         initialize.current = true;
