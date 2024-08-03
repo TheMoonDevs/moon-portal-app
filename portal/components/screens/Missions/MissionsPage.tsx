@@ -49,6 +49,7 @@ const MissionTasks = ({
   mission: Mission;
   setShow: Dispatch<SetStateAction<Boolean>>;
   setMission: Dispatch<SetStateAction<Mission>>;
+  updateMission: () => void;
   deleteMission: () => void;
   tasks: MissionTask[];
   coreTeam: User[];
@@ -64,6 +65,15 @@ const MissionTasks = ({
         tasks: (m.tasks as any[])?.map((task, i) =>
           i === index ? callback(task) : task
         ) as any[],
+      } as Mission;
+    });
+  };
+  const deleteSelectedTask = (index: number) => {
+    setMission((m) => {
+      if (!m) return m;
+      return {
+        ...m,
+        tasks: (m.tasks as any[])?.filter((_, i) => i != index) as any[],
       } as Mission;
     });
   };
@@ -113,7 +123,7 @@ const MissionTasks = ({
           >
             Close
           </Button>
-          <Button
+          {/* <Button
             variant="contained"
             color="success"
             startIcon={<Save />}
@@ -124,7 +134,7 @@ const MissionTasks = ({
             sx={{ mr: 1 }}
           >
             Save
-          </Button>
+          </Button> */}
           <Button
             variant="contained"
             color="error"
@@ -163,6 +173,9 @@ const MissionTasks = ({
         </Grid>
         <Grid item xs={1}>
           Expirable
+        </Grid>
+        <Grid item xs={1}>
+          Actions
         </Grid>
       </Grid>
 
@@ -300,6 +313,16 @@ const MissionTasks = ({
                     ({ ...sm, expirable: e.target.checked } as MissionTask)
                 )
               }
+            />
+          </Grid>
+          <Grid item xs={1}>
+            <Button
+              color="error"
+              startIcon={<Delete />}
+              onClick={() => {
+                deleteSelectedTask(index);
+              }}
+              size="small"
             />
           </Grid>
         </Grid>
@@ -635,6 +658,7 @@ const MissionEntry = ({
           setShow={setShowMissionTasks}
           setMission={setMission}
           deleteMission={deleteMission}
+          updateMission={updateMission}
           tasks={mission.tasks as any[]}
           coreTeam={coreTeam}
         />
