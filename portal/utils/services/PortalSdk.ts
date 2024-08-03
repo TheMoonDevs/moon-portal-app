@@ -69,26 +69,6 @@ export const PortalSdk = {
   deleteData: (url: string, data: any) => {
     return new Promise<any>(async (resolve, reject) => {
       try {
-        // const options: RequestInit = {
-        //   method: "DELETE",
-        //   headers: {
-        //     "Content-Type": "application/json",
-        //   },
-        // };
-
-        // if (data) {
-        //   options.body = JSON.stringify(data);
-        // }
-
-        // const res = await fetch(url, options);
-
-        // if (res.ok) {
-        //   const result = await res.json();
-        //   return resolve(result);
-        // } else {
-        //   return reject((await res.json()) as any);
-        // }
-
         const res = await fetch(url, {
           method: "DELETE",
           headers: {
