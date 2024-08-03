@@ -42,12 +42,14 @@ const MissionTasks = ({
   mission,
   setShow,
   setMission,
+  deleteMission,
   tasks,
   coreTeam,
 }: {
   mission: Mission;
   setShow: Dispatch<SetStateAction<Boolean>>;
   setMission: Dispatch<SetStateAction<Mission>>;
+  deleteMission: () => void;
   tasks: MissionTask[];
   coreTeam: User[];
 }) => {
@@ -128,7 +130,7 @@ const MissionTasks = ({
             color="error"
             startIcon={<Delete />}
             onClick={() => {
-              // setMission(null);
+              deleteMission();
             }}
             size="small"
           >
@@ -309,7 +311,6 @@ const MissionTasks = ({
 export const MissionsPage = () => {
   const [missions, setMissions] = useState<Mission[]>([]);
   const [coreTeam, setCoreTeam] = useState<User[]>([]);
-
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -434,7 +435,12 @@ export const MissionsPage = () => {
           </>
         ) : (
           missions.map((mission) => (
-            <MissionEntry key={mission.id} coreTeam={coreTeam} m={mission} />
+            <MissionEntry
+              key={mission.id}
+              coreTeam={coreTeam}
+              _mission={mission}
+              setMissions={setMissions}
+            />
           ))
         )}
       </Paper>
@@ -442,11 +448,19 @@ export const MissionsPage = () => {
   );
 };
 
-const MissionEntry = ({ m, coreTeam }: { m: Mission; coreTeam: User[] }) => {
+const MissionEntry = ({
+  _mission,
+  setMissions,
+  coreTeam,
+}: {
+  _mission: Mission;
+  setMissions: Dispatch<SetStateAction<Mission[]>>;
+  coreTeam: User[];
+}) => {
   // const [missionTasks, setMissionTasks] = useState<Mission | null>(null);
   const [showMissionTasks, setShowMissionTasks] = useState<Boolean>(false);
   const [savingMission, setSavingMission] = useState<string | null>(null);
-  const [mission, setMission] = useState<Mission>(m);
+  const [mission, setMission] = useState<Mission>(_mission);
 
   const updateMission = () => {
     setSavingMission(mission.id);
@@ -461,7 +475,18 @@ const MissionEntry = ({ m, coreTeam }: { m: Mission; coreTeam: User[] }) => {
       });
   };
 
-  const deleteMission = (_mission: Mission) => {};
+  const deleteMission = () => {
+    PortalSdk.deleteData("/api/missions", mission)
+      .then((data) => {
+        console.log(data);
+        if (data.status == "success") {
+          setMissions((old) => old.filter((m) => m.id != data.data.mission.id));
+        }
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+  };
 
   return (
     <Paper key={mission.id} elevation={1} className="mb-4 p-4">
@@ -609,6 +634,7 @@ const MissionEntry = ({ m, coreTeam }: { m: Mission; coreTeam: User[] }) => {
           mission={mission}
           setShow={setShowMissionTasks}
           setMission={setMission}
+          deleteMission={deleteMission}
           tasks={mission.tasks as any[]}
           coreTeam={coreTeam}
         />
