@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
         userType: "MEMBER",
         role: "CORETEAM",
         status: "ACTIVE",
-        id: "6617afcef8b582365497c198" //remove
+        // id: "6617afcef8b582365497c198"  //remove and add your user id for testing
       },
     });
 
@@ -67,10 +67,8 @@ export async function GET(request: NextRequest) {
           where: {
             userId: user.id,
             date: {
-              // gte: startOfMonth.toISOString(),
-              // lte: endOfMonth.toISOString(),
-              gte: "2024-07-01T00:00:00.000Z",  // remove
-              lte: "2024-07-31T23:59:59.999Z"   // remove
+              gte: startOfMonth.toISOString(),
+              lte: endOfMonth.toISOString(),
             },
           },
         });
@@ -99,8 +97,8 @@ export async function GET(request: NextRequest) {
 
         await prisma.notification.create({
           data: {
-            // userId: user.user.id,
-            userId: "6617afcef8b582365497c198", //remove
+            // userId: user.user.id, uncomment this for prod
+            userId: "6617afcef8b582365497c198", //remove and add your user id for testing
             title,
             description,
             notificationType: "SELF_GENERATED",
@@ -109,20 +107,14 @@ export async function GET(request: NextRequest) {
 
         await slackBot.sendSlackMessageviaAPI({
           text: description,
-          // channel: user?.slackId ?? undefined,
-          channel: "U06SUSLLBPS", //remove
+          // channel: user?.slackId ?? undefined, // uncomment this for prod
+          channel: "U06SUSLLBPS", //remove and add your user id for testing
         });
       }
     }
 
     const jsonResponse = {
       status: "success",
-      data: {
-        "usersWithWorkLogs": usersWithWorkLogs,
-        "desc": description,
-        "gte": startOfMonth.toISOString(),
-        "lte": endOfMonth.toISOString(),
-      }, //remove
       message: "Reminders Sent!",
     };
 
