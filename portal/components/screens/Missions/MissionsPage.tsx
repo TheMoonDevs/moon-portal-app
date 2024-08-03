@@ -1,7 +1,6 @@
 "use client";
 
 import { MissionTask } from "@/prisma/missionTasks";
-import { prettyPrintDateAndTime } from "@/utils/helpers/prettyprint";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import {
   Button,
@@ -15,7 +14,6 @@ import {
   Box,
   IconButton,
   Skeleton,
-  Avatar,
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -32,8 +30,8 @@ import dayjs from "dayjs";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import {
   ChevronDown,
-  ChevronDownIcon,
   ChevronUp,
+  Delete,
   Loader,
   Plus,
   Save,
@@ -41,19 +39,16 @@ import {
 } from "lucide-react";
 
 const MissionTasks = ({
-  tasks,
   mission,
+  setShow,
   setMission,
+  tasks,
   coreTeam,
-  setSelectedMission,
 }: {
-  tasks: MissionTask[];
   mission: Mission;
-  setMission: Dispatch<SetStateAction<Mission | null>>;
-  setSelectedMission: (
-    mission: Mission,
-    callback: ((mission: Mission) => Mission) | null
-  ) => void;
+  setShow: Dispatch<SetStateAction<Boolean>>;
+  setMission: Dispatch<SetStateAction<Mission>>;
+  tasks: MissionTask[];
   coreTeam: User[];
 }) => {
   const setSelectedTask = (
@@ -70,7 +65,6 @@ const MissionTasks = ({
       } as Mission;
     });
   };
-
   const addNewTask = () => {
     setMission((m) => {
       if (!m) return m;
@@ -89,14 +83,16 @@ const MissionTasks = ({
       } as Mission;
     });
   };
-
+  console.log("me render");
   return (
     <Paper elevation={2} className="mt-4 p-4">
       <Box>
         <Typography variant="h6">Tasks of {mission.title}</Typography>
-        <Box sx={{
-          padding: "8px 0",
-        }}>
+        <Box
+          sx={{
+            padding: "8px 0",
+          }}
+        >
           <Button
             variant="outlined"
             startIcon={<Plus />}
@@ -109,7 +105,7 @@ const MissionTasks = ({
           <Button
             variant="outlined"
             startIcon={<X />}
-            onClick={() => setMission(null)}
+            onClick={() => setShow(false)}
             size="small"
             sx={{ mr: 1 }}
           >
@@ -120,12 +116,23 @@ const MissionTasks = ({
             color="success"
             startIcon={<Save />}
             onClick={() => {
-              setMission(null);
-              setSelectedMission(mission, null);
+              setMission(mission);
+            }}
+            size="small"
+            sx={{ mr: 1 }}
+          >
+            Save
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            startIcon={<Delete />}
+            onClick={() => {
+              // setMission(null);
             }}
             size="small"
           >
-            Save
+            Delete
           </Button>
         </Box>
       </Box>
@@ -161,7 +168,7 @@ const MissionTasks = ({
         <Grid
           container
           spacing={2}
-          key={task.userId}
+          key={task.userId + `${index}`}
           alignItems="center"
           className="mb-2"
         >
@@ -301,9 +308,8 @@ const MissionTasks = ({
 
 export const MissionsPage = () => {
   const [missions, setMissions] = useState<Mission[]>([]);
-  const [missionTasks, setMissionTasks] = useState<Mission | null>(null);
   const [coreTeam, setCoreTeam] = useState<User[]>([]);
-  const [savingMission, setSavingMission] = useState<string | null>(null);
+
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -357,41 +363,6 @@ export const MissionsPage = () => {
       });
   };
 
-  const updateMission = (_mission: Mission) => {
-    setSavingMission(_mission.id);
-    PortalSdk.putData("/api/missions", _mission)
-      .then((data) => {
-        console.log(data);
-        setMissions((m) =>
-          m.map((mission) => {
-            if (_mission.id === mission.id) {
-              return data.data.mission;
-            }
-            return mission;
-          })
-        );
-        setSavingMission(null);
-      })
-      .catch((error) => {
-        console.error(error);
-        setSavingMission(null);
-      });
-  };
-
-  const setSelectedMission = (
-    _mission: Mission,
-    callback: ((mission: Mission) => Mission) | null
-  ) => {
-    setMissions((m) =>
-      m.map((mission) => {
-        if (_mission.id === mission.id) {
-          return callback ? callback(mission) : _mission;
-        }
-        return mission;
-      })
-    );
-  };
-
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <Paper elevation={3} className="p-6 m-4">
@@ -415,7 +386,11 @@ export const MissionsPage = () => {
           </Button>
         </Grid>
 
-        <Grid container spacing={2} className="font-semibold mb-4 px-4 border-b-2 border-t-2">
+        <Grid
+          container
+          spacing={2}
+          className="font-semibold mb-4 px-4 border-b-2 border-t-2"
+        >
           <Grid item xs={1}>
             Tasks
           </Grid>
@@ -459,190 +434,186 @@ export const MissionsPage = () => {
           </>
         ) : (
           missions.map((mission) => (
-            <Paper key={mission.id} elevation={1} className="mb-4 p-4">
-              <Grid container spacing={2} alignItems="center">
-                <Grid item xs={1}>
-                  <IconButton
-                    onClick={() =>
-                      setMissionTasks(
-                        missionTasks?.id === mission.id ? null : mission
-                      )
-                    }
-                  >
-                    {missionTasks?.id === mission.id ? (
-                      <ChevronUp />
-                    ) : (
-                      <ChevronDown />
-                    )}
-                  </IconButton>
-                  {(mission.tasks as any[])?.length || 0}
-                </Grid>
-                <Grid item xs={2}>
-                  <TextField
-                    fullWidth
-                    value={mission.title}
-                    onChange={(e) =>
-                      setSelectedMission(
-                        mission,
-                        (sm) => ({ ...sm, title: e.target.value } as Mission)
-                      )
-                    }
-                  />
-                </Grid>
-                <Grid item xs={1}>
-                  <Select
-                    fullWidth
-                    value={mission.house}
-                    onChange={(e) =>
-                      setSelectedMission(
-                        mission,
-                        (sm) =>
-                          ({
-                            ...sm,
-                            house: e.target.value as HOUSEID,
-                          } as Mission)
-                      )
-                    }
-                  >
-                    {Object.values(HOUSEID).map((house) => (
-                      <MenuItem key={house} value={house}>
-                        {house}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </Grid>
-                <Grid item xs={1}>
-                  <TextField
-                    fullWidth
-                    type="number"
-                    value={mission.housePoints}
-                    onChange={(e) =>
-                      setSelectedMission(
-                        mission,
-                        (sm) =>
-                          ({
-                            ...sm,
-                            housePoints: parseInt(e.target.value),
-                            indiePoints: parseInt(e.target.value) * 100,
-                          } as Mission)
-                      )
-                    }
-                  />
-                </Grid>
-                <Grid item xs={1}>
-                  <TextField
-                    fullWidth
-                    type="number"
-                    value={mission.indiePoints}
-                    onChange={(e) =>
-                      setSelectedMission(
-                        mission,
-                        (sm) =>
-                          ({
-                            ...sm,
-                            indiePoints: parseInt(e.target.value),
-                          } as Mission)
-                      )
-                    }
-                  />
-                </Grid>
-                <Grid item xs={1}>
-                  {mission.indiePoints -
-                    ((mission.tasks as any[]) || []).reduce(
-                      (acc, task) => acc + task.indiePoints,
-                      0
-                    )}
-                </Grid>
-                <Grid item xs={1}>
-                  <DatePicker
-                    value={
-                      mission.completedAt ? dayjs(mission.completedAt) : null
-                    }
-                    onChange={(newValue) =>
-                      setSelectedMission(
-                        mission,
-                        (sm) =>
-                          ({
-                            ...sm,
-                            completedAt: newValue
-                              ? (newValue.toDate() as any)
-                              : null,
-                          } as Mission)
-                      )
-                    }
-                  />
-                </Grid>
-                <Grid item xs={1}>
-                  <Checkbox
-                    checked={
-                      mission.completed !== null ? mission.completed : false
-                    }
-                    onChange={(e) =>
-                      setSelectedMission(
-                        mission,
-                        (sm) =>
-                          ({ ...sm, completed: e.target.checked } as Mission)
-                      )
-                    }
-                  />
-                </Grid>
-                <Grid item xs={1}>
-                  <DatePicker
-                    value={mission.expiresAt ? dayjs(mission.expiresAt) : null}
-                    onChange={(newValue) =>
-                      setSelectedMission(
-                        mission,
-                        (sm) =>
-                          ({
-                            ...sm,
-                            expiresAt: newValue
-                              ? (newValue.toDate() as any)
-                              : null,
-                          } as Mission)
-                      )
-                    }
-                  />
-                </Grid>
-                <Grid item xs={1}>
-                  <Checkbox
-                    checked={
-                      mission.expirable !== null ? mission.expirable : false
-                    }
-                    onChange={(e) =>
-                      setSelectedMission(
-                        mission,
-                        (sm) =>
-                          ({ ...sm, expirable: e.target.checked } as Mission)
-                      )
-                    }
-                  />
-                </Grid>
-                <Grid item xs={1}>
-                  <Button
-                    variant="contained"
-                    color="success"
-                    startIcon={<Save />}
-                    disabled={savingMission === mission.id}
-                    onClick={() => updateMission(mission)}
-                  >
-                    {savingMission === mission.id ? <Loader /> : "Save"}
-                  </Button>
-                </Grid>
-              </Grid>
-              {missionTasks && missionTasks.id === mission.id && (
-                <MissionTasks
-                  mission={missionTasks}
-                  setMission={setMissionTasks}
-                  tasks={missionTasks?.tasks as any[]}
-                  coreTeam={coreTeam}
-                  setSelectedMission={setSelectedMission}
-                />
-              )}
-            </Paper>
+            <MissionEntry key={mission.id} coreTeam={coreTeam} m={mission} />
           ))
         )}
       </Paper>
     </LocalizationProvider>
+  );
+};
+
+const MissionEntry = ({ m, coreTeam }: { m: Mission; coreTeam: User[] }) => {
+  // const [missionTasks, setMissionTasks] = useState<Mission | null>(null);
+  const [showMissionTasks, setShowMissionTasks] = useState<Boolean>(false);
+  const [savingMission, setSavingMission] = useState<string | null>(null);
+  const [mission, setMission] = useState<Mission>(m);
+
+  const updateMission = () => {
+    setSavingMission(mission.id);
+    PortalSdk.putData("/api/missions", mission)
+      .then((data) => {
+        console.log(data);
+        setSavingMission(null);
+      })
+      .catch((error) => {
+        console.error(error);
+        setSavingMission(null);
+      });
+  };
+
+  const deleteMission = (_mission: Mission) => {};
+
+  return (
+    <Paper key={mission.id} elevation={1} className="mb-4 p-4">
+      <Grid container spacing={2} alignItems="center">
+        <Grid item xs={1}>
+          <IconButton onClick={() => setShowMissionTasks((old) => !old)}>
+            {showMissionTasks ? <ChevronUp /> : <ChevronDown />}
+          </IconButton>
+          {(mission.tasks as any[])?.length || 0}
+        </Grid>
+        <Grid item xs={2}>
+          <TextField
+            fullWidth
+            value={mission.title}
+            onChange={(e) => {
+              setMission((sm) => ({ ...sm, title: e.target.value } as Mission));
+            }}
+          />
+        </Grid>
+        <Grid item xs={1}>
+          <Select
+            fullWidth
+            value={mission.house}
+            onChange={(e) =>
+              setMission(
+                (sm) =>
+                  ({
+                    ...sm,
+                    house: e.target.value as HOUSEID,
+                  } as Mission)
+              )
+            }
+          >
+            {Object.values(HOUSEID).map((house) => (
+              <MenuItem key={house} value={house}>
+                {house}
+              </MenuItem>
+            ))}
+          </Select>
+        </Grid>
+        <Grid item xs={1}>
+          <TextField
+            fullWidth
+            type="number"
+            value={mission.housePoints}
+            onChange={(e) =>
+              setMission(
+                (sm) =>
+                  ({
+                    ...sm,
+                    housePoints: parseInt(e.target.value),
+                    indiePoints: parseInt(e.target.value) * 100,
+                  } as Mission)
+              )
+            }
+          />
+        </Grid>
+        <Grid item xs={1}>
+          <TextField
+            fullWidth
+            type="number"
+            value={mission.indiePoints}
+            onChange={(e) =>
+              setMission(
+                (sm) =>
+                  ({
+                    ...sm,
+                    indiePoints: parseInt(e.target.value),
+                  } as Mission)
+              )
+            }
+          />
+        </Grid>
+        <Grid item xs={1}>
+          {mission.indiePoints -
+            ((mission.tasks as any[]) || []).reduce(
+              (acc, task) => acc + task.indiePoints,
+              0
+            )}
+        </Grid>
+        <Grid item xs={1}>
+          <DatePicker
+            value={mission.completedAt ? dayjs(mission.completedAt) : null}
+            onChange={(newValue) =>
+              setMission(
+                (sm) =>
+                  ({
+                    ...sm,
+                    completedAt: newValue ? (newValue.toDate() as any) : null,
+                  } as Mission)
+              )
+            }
+          />
+        </Grid>
+        <Grid item xs={1}>
+          <Checkbox
+            checked={mission.completed !== null ? mission.completed : false}
+            onChange={(e) =>
+              setMission(
+                (sm) => ({ ...sm, completed: e.target.checked } as Mission)
+              )
+            }
+          />
+        </Grid>
+        <Grid item xs={1}>
+          <DatePicker
+            value={mission.expiresAt ? dayjs(mission.expiresAt) : null}
+            onChange={(newValue) =>
+              setMission(
+                (sm) =>
+                  ({
+                    ...sm,
+                    expiresAt: newValue ? (newValue.toDate() as any) : null,
+                  } as Mission)
+              )
+            }
+          />
+        </Grid>
+        <Grid item xs={1}>
+          <Checkbox
+            checked={mission.expirable !== null ? mission.expirable : false}
+            onChange={(e) =>
+              setMission(
+                (sm) => ({ ...sm, expirable: e.target.checked } as Mission)
+              )
+            }
+          />
+        </Grid>
+        <Grid item xs={1}>
+          <Button
+            variant="contained"
+            color="success"
+            startIcon={<Save />}
+            disabled={savingMission === mission.id}
+            onClick={() => {
+              updateMission();
+            }}
+          >
+            {savingMission === mission.id ? <Loader /> : "Save"}
+          </Button>
+        </Grid>
+      </Grid>
+      {showMissionTasks && (
+        <MissionTasks
+          mission={mission}
+          setShow={setShowMissionTasks}
+          setMission={setMission}
+          tasks={mission.tasks as any[]}
+          coreTeam={coreTeam}
+        />
+      )}
+    </Paper>
   );
 };
 
