@@ -176,7 +176,7 @@ export const WorklogSummaryActions = ({
       )}
 
       {/* Render content conditionally */}
-      <div className="hidden md:flex">{renderContent()}</div>
+      <div className="hidden md:flex w-full">{renderContent()}</div>
 
       {/* Bottom buttons */}
       <div className="text-[0.7rem] sm:text-[0.9rem] md:text-[0.7rem] lg:text-base flex flex-row gap-2 md:gap-4 items-center justify-center fixed md:sticky bottom-0 py-4 md:py-6 bg-white w-full justify-self-end">
