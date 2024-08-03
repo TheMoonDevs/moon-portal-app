@@ -3,32 +3,32 @@ import { PortalSdk } from "@/utils/services/PortalSdk";
 import { USERROLE, USERTYPE, User } from "@prisma/client";
 import { useEffect, useState } from "react";
 import { UserProfileDrawer } from "@/components/screens/Home/ProfileDrawer";
-import { selectMember, setMembers } from "@/utils/redux/coreTeam/coreTeam.slice";
+import {
+  selectMember,
+  setMembers,
+} from "@/utils/redux/coreTeam/coreTeam.slice";
 import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
 
 export const CoreTeamSection = () => {
   const dispatch = useAppDispatch();
-  const coreTeam = useAppSelector(
-    (state: RootState) => state.coreTeam.members
-  );
+  const coreTeam = useAppSelector((state: RootState) => state.coreTeam.members);
 
   useEffect(() => {
     PortalSdk.getData(
-      "/api/user?role=" + USERROLE.CORETEAM + "&userType=" + USERTYPE.MEMBER,
+      "/api/user?role=" + USERROLE.CORETEAM + "&userType=" + USERTYPE.MEMBER + "&status=ACTIVE",
       null
     )
       .then((data) => {
         dispatch(setMembers(data?.data?.user));
-        console.log(coreTeam);
-        
+        // console.log(coreTeam);
       })
       .catch((err) => {
         console.log(err);
-      }); 
-  }, [coreTeam,dispatch]);
+      });
+  }, [dispatch]);
 
   const handleOpenSlideIn = (user: User) => {
-    dispatch(selectMember(user))
+    dispatch(selectMember(user));
   };
 
   return (
@@ -38,8 +38,7 @@ export const CoreTeamSection = () => {
           <div
             key={user.id}
             onClick={() => handleOpenSlideIn(user)}
-            className="flex flex-row gap-1 items-center justify-between px-2 py-3 cursor-pointer hover:bg-black/5 border-b border-neutral-200"
-          >
+            className="flex flex-row gap-1 items-center justify-between px-2 py-3 cursor-pointer hover:bg-black/5 border-b border-neutral-200">
             <div className="flex items-center gap-4">
               <div className="rounded-full bg-neutral-400">
                 <img
@@ -68,7 +67,7 @@ export const CoreTeamSection = () => {
           </div>
         ))}
       </div>
-      <UserProfileDrawer  />
+      <UserProfileDrawer />
     </section>
   );
 };
