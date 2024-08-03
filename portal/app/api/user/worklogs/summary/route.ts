@@ -8,7 +8,8 @@ export async function GET(request: NextRequest) {
   const date = request.nextUrl.searchParams.get("date") as string;
   const month = request.nextUrl.searchParams.get("month") as string;
   const year = request.nextUrl.searchParams.get("year") as string;
-
+  // console.log(userId);
+  // console.log(id);
   //let error_response: any;
   //console.log("fetching zeros on server", userId, config);
   try {
