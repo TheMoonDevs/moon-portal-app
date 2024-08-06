@@ -9,6 +9,9 @@ import { useQuickLinkDirectory } from "../../hooks/useQuickLinkDirectory";
 import { Directory, ParentDirectory, ROOTTYPE } from "@prisma/client";
 import { AddSectionPopup } from "./AddSectionPopup";
 import { Tooltip } from "@mui/material";
+import { useDispatch } from "react-redux";
+import { setIsQLSidebarOpen } from "@/utils/redux/quicklinks/quicklinks.slice";
+import { KeyboardBackspaceOutlined } from "@mui/icons-material";
 
 export default function QuicklinkSidebar() {
   const {
@@ -23,14 +26,19 @@ export default function QuicklinkSidebar() {
   const [newDirectory, setNewDirectory] = useState<ParentDirectory | null>(
     null
   );
-
+  const { isQLSideBarOpen } = useAppSelector((state) => state.quicklinks);
+  const dispatch = useDispatch();
   useEffect(() => {
     setViewType(currentDirectory ? "selected" : "selected");
   }, [currentDirectory]);
 
   return (
-    <div className="w-[350px] h-[100vh]  top-0">
-      <aside className="fixed w-inherit h-[100vh] top-0 overflow-auto flex flex-col border-r-2">
+    <div className={`md:w-[350px] h-[100vh] top-0 z-50 bg-white`}>
+      <aside
+        className={`bg-white fixed w-inherit h-[100vh] top-0 overflow-auto flex flex-col border-r-2 ${
+          !isQLSideBarOpen && "hidden"
+        } md:flex`}
+      >
         <div className="flex flex-row items-center gap-2 p-6">
           <Image
             src="/logo/logo.png"
@@ -195,6 +203,15 @@ export default function QuicklinkSidebar() {
                   </div>
                 </Tooltip>
               ))}
+              <button
+                className="rounded-lg ml-2 md:hidden border-[1px] px-2"
+                onClick={() => {
+                  console.log("yoink");
+                  dispatch(setIsQLSidebarOpen(!isQLSideBarOpen));
+                }}
+              >
+                <KeyboardBackspaceOutlined />
+              </button>
             </ul>
             {selectedRootDir && (
               <nav className="bg-neutral-100 grow rounded-3xl rounded-bl-none rounded-br-none drop-shadow-lg overflow-hidden">
