@@ -14,7 +14,7 @@ export const CardView = ({
   handleDeleteLink: (linkId: string) => void;
 }) => {
   return (
-    <div className="group relative rounded-md max-w-[300px] border p-4 hover:bg-neutral-100 cursor-pointer">
+    <div className="group relative rounded-md w-full sm:max-w-[300px] border p-4 hover:bg-neutral-100 cursor-pointer">
       <div onClick={() => handleLinkClick(link.id)}>
         <Link
           href={link.url}
