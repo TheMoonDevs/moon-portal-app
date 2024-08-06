@@ -15,10 +15,10 @@ export const ListView = ({
   handleDeleteLink: (linkId: string) => void;
 }) => {
   return (
-    <div className="group relative rounded-md my-6 max-w-[700px]">
+    <div className="group relative rounded-md my-2 sm:my-6 max-w-[700px]">
       <div>
-        <div className="flex flex-row items-center justify-between mb-2">
-          <div className="flex flex-row items-center justify-start">
+        <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-0 justify-between mb-2">
+          <div className="flex flex-row items-center justify-start w-full sm:w-auto">
             <div className="bg-white rounded-full shadow-md">
               <img
                 className="h-[30px] w-[30px] object-cover object-center rounded-full"
@@ -33,7 +33,7 @@ export const ListView = ({
               </p>
             </div>
           </div>
-          <div className="flex flex-row justify-end mr-[40px]">
+          <div className="flex flex-row sm:justify-end sm:mr-[40px] w-full">
             <img
               className="!h-[20px] !w-[20px] !object-cover rounded-full"
               src={(link as any).author?.avatar}
@@ -50,7 +50,7 @@ export const ListView = ({
           className="flex flex-col hover:underline"
           onClick={() => handleLinkClick(link.id)}
         >
-          <p className="text-lg  font-semibold">
+          <p className="text-lg font-semibold">
             {link.title.length > 100
               ? link.title.substring(0, 100) + " ..."
               : link.title}
