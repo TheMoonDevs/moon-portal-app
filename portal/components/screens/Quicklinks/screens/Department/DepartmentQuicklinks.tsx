@@ -95,7 +95,7 @@ export const DepartmentLinks = ({
   return (
     <div>
       <QuicklinkHeaderWrapper>
-        <h1 className="text-3xl font-bold flex items-center gap-4">
+        <h1 className="text-3xl font-bold flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-start">
           <span className="material-symbols-outlined border border-neutral-200 rounded-full p-2">
             groups
           </span>{" "}

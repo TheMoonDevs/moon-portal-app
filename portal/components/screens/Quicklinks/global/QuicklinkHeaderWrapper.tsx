@@ -17,9 +17,9 @@ export default function QuicklinkHeaderWrapper({
   const dispatch = useAppDispatch();
 
   return (
-    <header className="flex justify-between items-center">
+    <header className="flex justify-between items-center flex-col gap-2 sm:gap-0 sm:flex-row">
       {children}
-      <div className="flex items-end gap-6">
+      <div className="flex items-end justify-between sm:justify-start sm:gap-6 w-full sm:w-auto">
         <QuicklinkSearchBar />
         <Button
           startIcon={

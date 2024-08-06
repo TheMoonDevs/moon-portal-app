@@ -74,12 +74,12 @@ export const DepartmentLinksByDirId = ({
   return (
     <div>
       <QuicklinkHeaderWrapper>
-        <h1 className="text-3xl font-bold flex items-center gap-4">
+        {/* <h1 className="text-3xl font-bold flex items-center gap-4">
           <span className="material-symbols-outlined border border-neutral-200 rounded-full p-2">
             groups
           </span>{" "}
           <span>{rootParentDirectory?.title}</span>
-        </h1>
+        </h1> */}
       </QuicklinkHeaderWrapper>
       <SubDirectoryLinks />
     </div>
