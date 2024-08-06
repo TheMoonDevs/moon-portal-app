@@ -39,8 +39,12 @@ export default function LinkList({
         )}
 
         {allQuicklinks?.length === 0 && !isLoading ? (
-          <div className="w-full flex justify-center h-52 items-center ">
-            Nothing to show
+          <div className=" flex justify-center h-52 items-center">
+            <img
+              className="w-full h-full object-contain bg-blend-color-burn"
+              src={"/images/missing.svg"}
+              alt="Nothing to show"
+            />
           </div>
         ) : (
           <div
@@ -51,7 +55,7 @@ export default function LinkList({
                 : withView === "widget"
                 ? "flex flex-row flex-wrap gap-2"
                 : "flex flex-row flex-wrap gap-2")
-            } gap-10  w-full`}
+            } gap-10 justify-center md:justify-start w-full`}
           >
             {allQuicklinks?.map((link) => (
               <LinkItem
