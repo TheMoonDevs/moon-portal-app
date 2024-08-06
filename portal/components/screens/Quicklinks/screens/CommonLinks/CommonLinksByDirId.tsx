@@ -3,9 +3,14 @@
 import store, { useAppSelector } from "@/utils/redux/store";
 import { SubDirectoryLinks } from "../ParentDirectory/SubDirectoryLinks";
 import { useQuickLinkDirs } from "../../hooks/useQuickLinksDirs";
-import { setActiveDirectoryId } from "@/utils/redux/quicklinks/quicklinks.slice";
+import {
+  setActiveDirectoryId,
+  setIsQLSidebarOpen,
+} from "@/utils/redux/quicklinks/quicklinks.slice";
 import { useRef } from "react";
 import QuicklinkHeaderWrapper from "../../global/QuicklinkHeaderWrapper";
+import { useDispatch } from "react-redux";
+import { Menu } from "lucide-react";
 
 // import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
 // import { useEffect } from "react";
@@ -71,15 +76,29 @@ export const CommonLinksByDirId = ({
     store.dispatch(setActiveDirectoryId(directoryId));
     initialize.current = true;
   }
+  const dispatch = useDispatch();
+  const { isQLSideBarOpen } = useAppSelector((state) => state.quicklinks);
   return (
     <div>
       <QuicklinkHeaderWrapper>
-        <h1 className="text-3xl font-bold flex items-center gap-4">
-          <span className="material-symbols-outlined border border-neutral-200 rounded-full p-2">
-            stack
-          </span>{" "}
+        <div className="text-3xl font-bold flex items-center gap-4">
+          <div className="flex gap-3 items-center">
+            <button
+              className="rounded-lg md:hidden border-[1px] flex p-2"
+              onClick={() => {
+                console.log("yoink");
+                dispatch(setIsQLSidebarOpen(!isQLSideBarOpen));
+              }}
+            >
+              <Menu />
+            </button>
+            <span className="material-symbols-outlined border border-neutral-200 rounded-full p-2">
+              stack
+            </span>
+          </div>
+
           <span>{rootParentDirectory?.title}</span>
-        </h1>
+        </div>
       </QuicklinkHeaderWrapper>
       <SubDirectoryLinks />
     </div>

@@ -5,7 +5,10 @@ import FavoriteLink from "./FavoriteLink";
 import TopUsedLink from "./TopUsedLink";
 import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
 import { useDispatch } from "react-redux";
-import { setTopUsedList } from "@/utils/redux/quicklinks/quicklinks.slice";
+import {
+  setIsQLSidebarOpen,
+  setTopUsedList,
+} from "@/utils/redux/quicklinks/quicklinks.slice";
 import { USERLINKTYPE, UserLink } from "@prisma/client";
 import { useUser } from "@/utils/hooks/useUser";
 import useAsyncState from "@/utils/hooks/useAsyncState";
@@ -13,12 +16,15 @@ import LinkList from "../../LinkList/LinkList";
 import { useAppSelector } from "@/utils/redux/store";
 import { Skeleton } from "@mui/material";
 import QuicklinkHeaderWrapper from "../../global/QuicklinkHeaderWrapper";
+import Image from "next/image";
+import { Menu } from "lucide-react";
 
 export const QuicklinksDashboard = () => {
   const dispatch = useDispatch();
   const { user } = useUser();
   const { loading, setLoading, error, setError } = useAsyncState();
   const { topUsedList } = useAppSelector((state) => state.quicklinks);
+  const { isQLSideBarOpen } = useAppSelector((state) => state.quicklinks);
 
   useEffect(() => {
     if (!user?.id) {
@@ -51,6 +57,15 @@ export const QuicklinksDashboard = () => {
         <div className="w-fit">
           {user ? (
             <div className="flex items-center gap-4">
+              <button
+                className="rounded-lg md:hidden border-[1px] flex p-2"
+                onClick={() => {
+                  console.log("yoink");
+                  dispatch(setIsQLSidebarOpen(!isQLSideBarOpen));
+                }}
+              >
+                <Menu />
+              </button>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={user?.avatar || ""}
