@@ -7,6 +7,7 @@ import {
   UserLink,
 } from "@prisma/client";
 import { PayloadAction, createSlice } from "@reduxjs/toolkit";
+import { setIsSidebarOpen } from "../ui/ui.slice";
 const toggleFavoriteList = (prevFavList: Link[], currentFavoriteLink: Link) => {
   if (prevFavList.find((link) => link.id === currentFavoriteLink.id)) {
     return prevFavList.filter((link) => link.id !== currentFavoriteLink.id);
@@ -41,6 +42,7 @@ export const shortUrlSlice = createSlice({
       toastMsg: "",
       toastSev: undefined,
     },
+    isQLSideBarOpen: false,
   } as {
     directories: Directory[];
     parentDirs: ParentDirectory[];
@@ -61,6 +63,7 @@ export const shortUrlSlice = createSlice({
     };
     activeDirectoryId: null | string;
     isCreateLinkModalOpen: boolean;
+    isQLSideBarOpen: boolean;
   },
   reducers: {
     setPopoverElementWithData: (state, action) => {
@@ -188,6 +191,9 @@ export const shortUrlSlice = createSlice({
     setIsCreateLinkModalOpen: (state, action) => {
       state.isCreateLinkModalOpen = action.payload;
     },
+    setIsQLSidebarOpen: (state, action) => {
+      state.isQLSideBarOpen = action.payload;
+    },
 
     setCurrentView: (state, action) => {
       if (typeof window !== "undefined")
@@ -218,6 +224,7 @@ export const {
   addNewQuicklink,
   setPopoverElementWithData,
   setCurrentView,
+  setIsQLSidebarOpen,
 } = shortUrlSlice.actions;
 
 export default shortUrlSlice.reducer;
