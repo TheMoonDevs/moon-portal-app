@@ -22,6 +22,7 @@ export enum APP_ROUTES {
   urlShortener = "/url-shortener",
   userWorklogSummary = "/user/worklogs/summary",
   googleCalendar = "/google-calendar",
+  badgeEditor = "/admin/badge/editor",
 }
 
 export enum GLOBAL_ROUTES {

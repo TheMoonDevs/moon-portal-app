@@ -355,3 +355,16 @@ model Mission {
   description String?
   tasks Json?
 }
+
+//-------------------------------------Badges-------------------------------------------
+
+model BadgeTemplate {
+  id  String   @id @default(auto()) @map("_id") @db.ObjectId
+  name String 
+  description String
+  badgeType String
+  imageurl String
+  criteria Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
