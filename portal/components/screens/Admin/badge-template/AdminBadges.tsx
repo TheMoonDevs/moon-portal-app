@@ -8,9 +8,7 @@ import { Spinner } from '@/components/elements/Loaders';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
 interface Criteria {
-  awardTitle?: string;
-  awardDescription?: string;
-  awardDuration?: string;
+  criteriaLogic?: string;
   streakType?: string;
   streakTitle?: string;
   streakCount?: number;

@@ -4,9 +4,7 @@ import { InputField, TextAreaField } from './TextFields';
 interface CriteriaFieldsProps {
   criteriaType: string;
   formData: {
-    awardTitle: string;
-    awardDescription: string;
-    awardDuration: string;
+    criteriaLogic: string;
     streakType: string;
     streakTitle: string;
     streakCount: string;
@@ -26,21 +24,21 @@ const CriteriaFields: React.FC<CriteriaFieldsProps> = ({
   handleChange,
 }) => {
   switch (criteriaType) {
-    case 'Time-based':
+    case 'TIME_BASED':
       return (
         <>
           <InputField
-            id='awardDuration'
+            id='criteriaLogic'
             type='text'
-            label='Award Duration'
-            placeholder='Award duration after which the badge is awarded, e.g., 2 weeks, 6 months'
-            value={formData.awardDuration}
+            label='Add Criteria Logic'
+            placeholder='Criteria logic after which the badge is awarded, e.g., 2 weeks, 6 months'
+            value={formData.criteriaLogic}
             onChange={handleChange}
           />
         </>
       );
 
-    case 'Streak-based':
+    case 'STREAK':
       return (
         <>
           <InputField
@@ -62,7 +60,7 @@ const CriteriaFields: React.FC<CriteriaFieldsProps> = ({
         </>
       );
 
-    case 'Custom':
+    case 'CUSTOM':
       return null;
 
     default:
