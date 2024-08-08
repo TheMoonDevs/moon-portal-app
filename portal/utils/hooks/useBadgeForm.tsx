@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-type CriteriaType = 'Time-based' | 'Streak-based' | 'Custom';
+type CriteriaType = 'TIME_BASED' | 'STREAK' | 'CUSTOM';
 
 const initialFormData = {
   criteriaType: '' as CriteriaType | '',
@@ -10,9 +10,7 @@ const initialFormData = {
   streakType: '',
   streakTitle: '',
   streakCount: '',
-  awardTitle: '',
-  awardDescription: '',
-  awardDuration: '',
+  criteriaLogic: '',
   customTitle: '',
   customDescription: '',
 };
@@ -39,14 +37,14 @@ const useBadgeForm = () => {
 
   const getCriteria = () => {
     const criteria = {
-      'Time-based': {
-        awardDuration: formData.awardDuration,
+      TIME_BASED: {
+        criteriaLogic: formData.criteriaLogic,
       },
-      'Streak-based': {
+      STREAK: {
         streakType: formData.streakType,
         streakCount: formData.streakCount,
       },
-      Custom: null,
+      CUSTOM: null,
     };
 
     return criteria[formData.criteriaType as CriteriaType] || {};

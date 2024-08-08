@@ -22,7 +22,10 @@ const BadgeEditor = () => {
   const id = query?.get('id');
 
   useEffect(() => {
-    setLoading(true);
+    if (!id) {
+      setLoading(false);
+      return;
+    }
     const fetchBadgeById = async (id: string) => {
       try {
         const response = await PortalSdk.getData(`/api/badges/${id}`, null);
@@ -43,9 +46,8 @@ const BadgeEditor = () => {
       }
     };
 
-    if (id) {
-      fetchBadgeById(id);
-    }
+    setLoading(true);
+    fetchBadgeById(id);
   }, [query, setFormData, id]);
 
   const uploadImage = async (file: File) => {
@@ -125,7 +127,7 @@ const BadgeEditor = () => {
             Back to Admin Page
           </Link>
         </div>
-        {loading ? (
+        {loading && id ? (
           <div className='flex items-center justify-center w-full h-[80vh]'>
             <Spinner />
           </div>
@@ -173,9 +175,9 @@ const BadgeEditor = () => {
                   className='p-3 rounded-lg bg-neutral-800 text-white border border-neutral-700 focus:ring-2 focus:ring-white transition'
                 >
                   <option value=''>Select Criteria Type</option>
-                  <option value='Time-based'>Time-based</option>
-                  <option value='Streak-based'>Streak-based</option>
-                  <option value='Custom'>Custom</option>
+                  <option value='TIME_BASED'>Time-based</option>
+                  <option value='STREAK'>Streak-based</option>
+                  <option value='CUSTOM'>Custom</option>
                 </select>
               </div>
               <CriteriaFields
