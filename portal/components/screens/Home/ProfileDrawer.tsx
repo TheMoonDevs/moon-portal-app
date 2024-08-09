@@ -28,6 +28,7 @@ import { LoadingSkeleton } from "@/components/elements/LoadingSkeleton";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
 import { setReduxUser } from "@/utils/redux/auth/auth.slice";
 import media from "@/styles/media";
+import DrawerComponent from "@/components/elements/DrawerComponent";
 
 interface LoggedInUser {
   user: User;
@@ -180,39 +181,7 @@ export const UserProfileDrawer: React.FC = () => {
     handleFileChange(event, "banner");
 
   return (
-    <Drawer anchor="right" open={isOpen} onClose={handleClose}>
-      <Box
-        sx={{
-          width: {
-            xs: "100%",
-            sm: "400px",
-          },
-          height: "100%",
-          overflowX: "hidden",
-          overflowY: "scroll",
-        }}
-        role="presentation"
-      >
-        {isMobile && (
-          <div className="fixed bottom-0 right-0 z-50 w-full flex justify-center pb-6">
-            <Fab
-              color="primary"
-              aria-label="close"
-              size="small"
-              onClick={handleClose}
-              sx={{
-                backgroundColor: "transparent !important",
-                border: "1px solid GrayText !important",
-                backdropFilter: "blur(10px) !important",
-                zIndex: 1300,
-              }}
-            >
-              <span className="material-symbols-outlined !text-[rgba(0,0,0,0.8)]">
-                close
-              </span>
-            </Fab>
-          </div>
-        )}
+    <DrawerComponent isOpen={isOpen} handleClose={handleClose}>
         <div className="h-[120px] relative">
           {bannerLoading ? (
             <div className="w-full h-full bg-gray-300 animate-pulse" />
@@ -419,7 +388,6 @@ export const UserProfileDrawer: React.FC = () => {
             </div>
           )}
         </div>
-      </Box>
-    </Drawer>
+    </DrawerComponent>
   );
 };

@@ -187,7 +187,9 @@ const BadgeEditor = () => {
               />
               <button
                 type='submit'
-                className={`bg-neutral-900 hover:bg-neutral-800 text-white font-bold py-3 px-6 rounded-lg transition`}
+                className={`bg-neutral-900 hover:bg-neutral-800 text-white font-bold py-3 px-6 rounded-lg transition flex justify-center items-center ${
+                  isSubmitting ? 'cursor-not-allowed opacity-50' : ''
+                } `}
                 onClick={handleSubmit}
               >
                 {!isSubmitting ? (
