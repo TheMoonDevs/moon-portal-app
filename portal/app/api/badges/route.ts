@@ -1,5 +1,6 @@
 import { prisma } from "@/prisma/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { BadgeType } from "@prisma/client";
 
 export async function POST(req: NextRequest) {
   if (!req.body) {
@@ -60,7 +61,11 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    const badges = await prisma.badgeTemplate.findMany();
+    const { searchParams } = new URL(req.url);
+    const badgeType = searchParams.get('badgeType') as BadgeType | null;
+    const badges = await prisma.badgeTemplate.findMany({
+      where: badgeType ? { badgeType } : {},
+    });
 
     return new NextResponse(
       JSON.stringify({
