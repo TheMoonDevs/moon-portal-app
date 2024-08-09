@@ -374,3 +374,29 @@ enum BadgeType {
   STREAK
   TIME_BASED
 }
+
+
+//-------------------------------------Badges-Rewarded-------------------------------------------
+
+model BadgeRewarded {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String  
+  badgeTemplateId String       @db.ObjectId
+  name           String   
+  sequence       String   
+  date           String?
+  status         BadgeStatus @default(INACTIVE) 
+  imageUrl       String?  
+  showsCounter   Boolean  @default(false) 
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([userId, badgeTemplateId, status]) 
+}
+
+enum BadgeStatus {
+  INACTIVE
+  ACTIVATED
+  REWARDED
+  SUSPENDED
+}
