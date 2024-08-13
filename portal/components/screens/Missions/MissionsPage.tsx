@@ -16,6 +16,20 @@ import { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import { MissionEntry } from "./Mission";
 
+const gridItems = [
+  "tasks",
+  "title",
+  "house",
+  "house points",
+  "indie points",
+  "indie balance",
+  "completed at",
+  "completed",
+  "expires at",
+  "expirable",
+  "actions",
+];
+
 export const MissionsPage = () => {
   const [missions, setMissions] = useState<Mission[]>([]);
   const [coreTeam, setCoreTeam] = useState<User[]>([]);
@@ -75,65 +89,39 @@ export const MissionsPage = () => {
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <Paper elevation={3} className="p-6 m-4">
-        <Grid
-          container
-          justifyContent="space-between"
-          alignItems="center"
-          className="mb-6"
-        >
-          <Typography variant="h4" component="h1">
-            Missions
-          </Typography>
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<Plus />}
-            onClick={createMission}
-            disabled={loading}
+        <div className="sticky top-0 z-50 bg-white pt-2">
+          <Grid
+            container
+            justifyContent="space-between"
+            alignItems="center"
+            className="mb-6"
           >
-            Create Mission
-          </Button>
-        </Grid>
+            <Typography variant="h4" component="h1">
+              Missions
+            </Typography>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<Plus />}
+              onClick={createMission}
+              disabled={loading}
+            >
+              Create Mission
+            </Button>
+          </Grid>
 
-        <Grid
-          container
-          spacing={2}
-          className="font-semibold mb-4 px-4 border-b-2 border-t-2"
-        >
-          <Grid item xs={1}>
-            Tasks
+          <Grid
+            container
+            spacing={2}
+            className="font-semibold mb-4 px-4 border-b-2 border-t-2"
+          >
+            {gridItems.map((item) => (
+              <Grid item xs={item === "title" ? 2 : 1} key={item}>
+                <span className="capitalize">{item}</span>
+              </Grid>
+            ))}
           </Grid>
-          <Grid item xs={2}>
-            Title
-          </Grid>
-          <Grid item xs={1}>
-            House
-          </Grid>
-          <Grid item xs={1}>
-            House Points
-          </Grid>
-          <Grid item xs={1}>
-            Indie Points
-          </Grid>
-          <Grid item xs={1}>
-            Indie Balance
-          </Grid>
-          <Grid item xs={1}>
-            Completed At
-          </Grid>
-          <Grid item xs={1}>
-            Completed
-          </Grid>
-          <Grid item xs={1}>
-            Expires At
-          </Grid>
-          <Grid item xs={1}>
-            Expirable
-          </Grid>
-          <Grid item xs={1}>
-            Actions
-          </Grid>
-        </Grid>
+        </div>
 
         {loading ? (
           <>
