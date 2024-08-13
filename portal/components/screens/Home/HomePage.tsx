@@ -73,6 +73,10 @@ const MemberHomePage = () => {
           {tab === HomeTabs.CHARGING && <ActionsSection />}
           <InWorkSection visible={tab === HomeTabs.INWORK} />
           <InPlanSection visible={tab === HomeTabs.PLANUP} />
+          <div className="pt-4">
+            <h4 className="text-lg font-bold px-4">Core Team Leaderboard</h4>
+            <CoreTeamSection />
+          </div>
         </div>
       )}
       <div className="h-[300px]"></div>

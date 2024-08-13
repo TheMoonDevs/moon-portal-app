@@ -2,14 +2,19 @@
 "use client";
 import React, { useCallback, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Drawer, Box } from "@mui/material";
+import { Drawer, Box, Fab, IconButton, useMediaQuery } from "@mui/material";
 
 import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import { useUser } from "@/utils/hooks/useUser";
 import { User, WorkLogs } from "@prisma/client";
 import Link from "next/link";
 import { updateAvatarUrl } from "@/utils/redux/onboarding/onboarding.slice";
-import { closeDrawer, openDrawer, selectMember, updateMember } from "@/utils/redux/coreTeam/coreTeam.slice";
+import {
+  closeDrawer,
+  openDrawer,
+  selectMember,
+  updateMember,
+} from "@/utils/redux/coreTeam/coreTeam.slice";
 import {
   addFilesToPreview,
   resetPreview,
@@ -22,6 +27,7 @@ import useAsyncState from "@/utils/hooks/useAsyncState";
 import { LoadingSkeleton } from "@/components/elements/LoadingSkeleton";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
 import { setReduxUser } from "@/utils/redux/auth/auth.slice";
+import media from "@/styles/media";
 
 interface LoggedInUser {
   user: User;
@@ -44,7 +50,7 @@ export const UserProfileDrawer: React.FC = () => {
   const selectedUser = useAppSelector(
     (state: RootState) => state.coreTeam.selectedMember
   );
-
+  const isMobile = useMediaQuery(media.largeMobile);
   const [avatarLoading, setAvatarLoading] = useState<boolean>(false);
   const [bannerLoading, setBannerLoading] = useState<boolean>(false);
   const loggedinUser = useUser() as LoggedInUser;
@@ -143,11 +149,11 @@ export const UserProfileDrawer: React.FC = () => {
           ...loggedinUser.user,
           [fileType]: data.fileInfo[0].fileUrl,
         });
-        
+
         console.log(userResponse);
         dispatch(setReduxUser(userResponse?.data?.user));
         dispatch(
-           updateMember({
+          updateMember({
             ...selectedUser,
             [fileType]: data.fileInfo[0].fileUrl,
           })
@@ -177,13 +183,36 @@ export const UserProfileDrawer: React.FC = () => {
     <Drawer anchor="right" open={isOpen} onClose={handleClose}>
       <Box
         sx={{
-          width: 400,
+          width: {
+            xs: "100%",
+            sm: "400px",
+          },
           height: "100%",
           overflowX: "hidden",
           overflowY: "scroll",
         }}
         role="presentation"
       >
+        {isMobile && (
+          <div className="fixed bottom-0 right-0 z-50 w-full flex justify-center pb-6">
+            <Fab
+              color="primary"
+              aria-label="close"
+              size="small"
+              onClick={handleClose}
+              sx={{
+                backgroundColor: "transparent !important",
+                border: "1px solid GrayText !important",
+                backdropFilter: "blur(10px) !important",
+                zIndex: 1300,
+              }}
+            >
+              <span className="material-symbols-outlined !text-[rgba(0,0,0,0.8)]">
+                close
+              </span>
+            </Fab>
+          </div>
+        )}
         <div className="h-[120px] relative">
           {bannerLoading ? (
             <div className="w-full h-full bg-gray-300 animate-pulse" />
@@ -198,8 +227,7 @@ export const UserProfileDrawer: React.FC = () => {
             <label className="absolute top-2 -right-2 bg-white rounded-full flex items-center justify-center cursor-pointer">
               <span
                 className="material-symbols-outlined absolute top-2 right-2 bg-white rounded-full p-[6px] cursor-pointer"
-                style={{ fontSize: "16px" }}
-              >
+                style={{ fontSize: "16px" }}>
                 add_a_photo
               </span>
               <input
@@ -219,16 +247,16 @@ export const UserProfileDrawer: React.FC = () => {
               <img
                 src={selectedUser?.avatar || "/icons/placeholderAvatar.svg"}
                 alt={selectedUser?.name || ""}
-                className="object-center rounded-full w-full h-full bg-white"
+                className="object-cover rounded-full w-full h-full bg-white"
               />
             )}
 
-            {loggedinUser.user.id === selectedUser?.id && (
+            {/* {loggedinUser.user.id === selectedUser?.id && ( */}
+            {true && (
               <label className="absolute top-2 -right-2 bg-white rounded-full p-[2px] flex items-center justify-center cursor-pointer">
                 <span
                   className="material-symbols-outlined bg-white rounded-full p-[4px]"
-                  style={{ fontSize: "16px" }}
-                >
+                  style={{ fontSize: "16px" }}>
                   add_a_photo
                 </span>
                 <input
@@ -266,12 +294,10 @@ export const UserProfileDrawer: React.FC = () => {
             <Link
               href={`https://slack.com/app_redirect?channel=${selectedUser?.slackId}`}
               target="_blank"
-              className="bg-black text-white px-3 py-2 rounded-lg text-sm flex gap-2 items-center hover:bg-gray-800 transition duration-300"
-            >
+              className="bg-black text-white px-3 py-2 rounded-lg text-sm flex gap-2 items-center hover:bg-gray-800 transition duration-300">
               <span
                 className="material-symbols-outlined"
-                style={{ fontSize: "20px" }}
-              >
+                style={{ fontSize: "20px" }}>
                 chat
               </span>
               Message
@@ -280,8 +306,7 @@ export const UserProfileDrawer: React.FC = () => {
               <button className="text-black border px-3 py-2 rounded-lg border-gray-300 flex items-center gap-2 hover:bg-gray-200 transition duration-300">
                 <span
                   className="material-symbols-outlined"
-                  style={{ fontSize: "20px" }}
-                >
+                  style={{ fontSize: "20px" }}>
                   edit_square
                 </span>
                 Edit Profile
@@ -306,8 +331,7 @@ export const UserProfileDrawer: React.FC = () => {
                 </div>
                 <Link
                   href={`${APP_ROUTES.userWorklogSummary}/${selectedUser?.id}`}
-                  className="absolute bottom-2 right-2 bg-white rounded-md border-gray-300 border-2 py-1 px-2 text-sm hover:bg-gray-200 transition duration-300"
-                >
+                  className="absolute bottom-2 right-2 bg-white rounded-md border-gray-300 border-2 py-1 px-2 text-sm hover:bg-gray-200 transition duration-300">
                   View Full Summary
                 </Link>
               </div>
