@@ -136,3 +136,30 @@ export async function PUT(request: Request) {
     });
   }
 }
+
+export async function DELETE(request: Request) {
+  try {
+    const { id, ...rest } = await request.json();
+
+    const mission = await prisma.mission.delete({
+      where: {
+        id,
+      },
+    });
+
+    let json_response = {
+      status: "success",
+      data: {
+        mission,
+      },
+    };
+
+    return NextResponse.json(json_response);
+  } catch (e) {
+    console.log(e);
+    return new NextResponse(JSON.stringify(e), {
+      status: 404,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+}
