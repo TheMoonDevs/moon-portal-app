@@ -310,14 +310,13 @@ export const DirectoryTree = ({
         handleDeleteDirectory={handleDeleteDirectory}
         handleMoveToDirectory={handleMoveToDialog}
       />
-      {showModal && (
-        <MoveModal
-          currentDirectory={currDirectory}
-          isParent={isParent}
-          onCancel={() => setShowModal(false)}
-          onMove={() => setShowModal(false)}
-        />
-      )}
+      <MoveModal
+        showModal={showModal}
+        currentDirectory={currDirectory}
+        isParent={isParent}
+        onCancel={() => setShowModal(false)}
+        onMove={() => setShowModal(false)}
+      />
     </>
   );
 };
