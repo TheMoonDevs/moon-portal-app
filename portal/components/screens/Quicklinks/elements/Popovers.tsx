@@ -178,21 +178,6 @@ export const PopoverFolderEdit = ({
           <span className="text-sm">Move To</span>
         </li>
         <li
-          className="flex items-center gap-2 group hover:bg-neutral-200 rounded-md p-1 px-3 cursor-pointer"
-          onClick={() => {
-            handleMoveToDirectory(
-              data.selectedDirectory,
-              data.parentDirectoryId
-            );
-            handleClose();
-          }}
-        >
-          <span className="material-icons-outlined !text-neutral-500 !text-base group-hover:scale-110 transition-all">
-            drive_file_move
-          </span>
-          <span className="text-sm">Move To</span>
-        </li>
-        <li
           className="flex items-center gap-2 group hover:bg-neutral-200 text-red-600 rounded-md p-1 px-3 cursor-pointer"
           onClick={() => {
             handleDeleteDirectory(
