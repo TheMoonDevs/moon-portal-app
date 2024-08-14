@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useQuickLinkDirectory } from "../hooks/useQuickLinkDirectory";
 import { Directory, ParentDirectory, ROOTTYPE } from "@prisma/client";
-import ReactPortal from "@/components/global/ReactPortal";
 import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
 import {
   setToast,
@@ -9,11 +8,11 @@ import {
 } from "@/utils/redux/quicklinks/quicklinks.slice";
 import { useAppDispatch } from "@/utils/redux/store";
 import { ToastSeverity } from "@/components/elements/Toast";
-import { revalidateRoot } from "@/utils/actions";
-import { Popover, Tooltip } from "@mui/material";
+import { Modal, Popover, Tooltip } from "@mui/material";
 import { toast } from "sonner";
 
 interface MoveToModalProps {
+  showModal: boolean;
   currentDirectory: Directory | ParentDirectory;
   isParent: boolean;
   onCancel: () => void;
@@ -21,6 +20,7 @@ interface MoveToModalProps {
 }
 
 export const MoveModal: React.FC<MoveToModalProps> = ({
+  showModal,
   onMove,
   isParent,
   onCancel,
@@ -74,7 +74,6 @@ export const MoveModal: React.FC<MoveToModalProps> = ({
       dispatch(
         setToast({ toastMsg: "Done!", toastSev: ToastSeverity.success })
       );
-      revalidateRoot();
     } catch (error) {
       dispatch(
         setToast({
@@ -90,20 +89,32 @@ export const MoveModal: React.FC<MoveToModalProps> = ({
   };
 
   return (
-    <ReactPortal>
-      <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 border-black border-[1px] text-black p-5 rounded-lg w-96 shadow-lg drop-shadow-sm bg-white">
-        <h2 className="text-xl font-bold mb-2">Move Directory</h2>
-        <p className="mb-4">Move {currentDirectory.title} to:</p>
-        <div className="relative flex items-center bg-neutral-100 rounded-md">
+    <Modal
+      onClose={onCancel}
+      open={showModal}
+      className=" text-black p-5 rounded-lg shadow-lg drop-shadow-sm flex items-center justify-center"
+    >
+      <div className="bg-white w-2/5 p-6 rounded-2xl outline-none">
+        <h2 className="text-xl font-bold mb-2">Move Folder</h2>
+        <p className="mb-4">
+          Move{" "}
+          <span className="font-bold text-blue-500 underline">
+            {currentDirectory.title}
+          </span>{" "}
+          to:
+        </p>
+        <div className="relative flex items-center bg-neutral-100 rounded-md px-2 w-full">
           <Tooltip title="Select Root Type">
             <div
-              className="flex items-center w-full cursor-pointer"
+              className="flex items-center w-full cursor-pointer justify-between"
               onClick={(e) => setAnchorEl(e.currentTarget)}
             >
-              <span className="material-icons-outlined text-gray-500 p-2">
-                groups
-              </span>
-              {selectedRootType}
+              <div className="flex items-center gap-2">
+                <span className="material-icons-outlined text-gray-500 p-2">
+                  groups
+                </span>
+                <span>{selectedRootType}</span>
+              </div>
               <span className="material-icons-outlined text-gray-500 p-2">
                 {open ? "arrow_drop_up" : "arrow_drop_down"}
               </span>
@@ -123,38 +134,48 @@ export const MoveModal: React.FC<MoveToModalProps> = ({
             }}
             closeAfterTransition
             classes={{
-              paper: "bg-white mb-4 py-2 rounded-md !shadow-md",
+              paper: "bg-white mb-4 py-2 rounded-md !shadow-md", // Adjust the width here
             }}
+            style={{ width: anchorEl?.clientWidth }} // Ensures the Popover takes the full width of the select
           >
-            <ul className=" flex flex-col gap-2  mb-2">
+            <ul className="flex flex-col gap-2 mb-2">
               {rootTypes.map((type) => (
                 <div
                   onClick={(e) => handleRootTypeSelection(type)}
                   key={type}
-                  className="flex items-center justify-between hover:bg-neutral-100 p-2 cursor-pointer"
+                  className="flex items-center justify-between hover:bg-neutral-200 p-2 cursor-pointer"
                 >
-                  <li className=" text-gray-500 text-sm">{type}</li>
+                  <li className="text-gray-500 text-sm">{type}</li>
                 </div>
               ))}
             </ul>
           </Popover>
         </div>
+
         {!isParent && (
           <>
-            <input
-              className="w-full p-2 mb-3 outline-none border-b-2 border-gray-600 "
-              type="text"
-              placeholder="Search"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+            <div className="relative w-full mb-3 mt-4">
+              <input
+                className="w-full p-2 outline-none border-b-2 border-neutral-300 pr-10" // Added padding-right to make space for the icon
+                type="text"
+                placeholder="Search"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <span className="material-icons-outlined absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400">
+                search
+              </span>
+            </div>
+
             <ul className="list-none p-0 h-60 overflow-y-auto">
               {filteredDirectories.map((dir) => (
                 <li
                   key={dir.id}
                   onClick={() => setSelectedParentDirectory(dir)}
-                  className={`p-2 cursor-pointer rounded ${
-                    selectedParentDirectory?.id === dir.id ? "bg-[#ececec]" : ""
+                  className={`p-2 mr-2 cursor-pointer rounded hover:bg-neutral-100 ${
+                    selectedParentDirectory?.id === dir.id
+                      ? "bg-neutral-200"
+                      : ""
                   }`}
                 >
                   {dir.logo} {dir.title}
@@ -163,15 +184,15 @@ export const MoveModal: React.FC<MoveToModalProps> = ({
             </ul>
           </>
         )}
-        <div className="flex justify-between mt-5">
+        <div className="flex mt-5 gap-10">
           <button
-            className="px-5 py-2 border border-gray-500 text-gray-800 rounded cursor-pointer"
+            className="w-full px-5 py-3 border border-gray-500 text-gray-800 rounded-xl cursor-pointer"
             onClick={onCancel}
           >
             Cancel
           </button>
           <button
-            className="px-5 py-2 bg-gray-700 text-white rounded cursor-pointer disabled:opacity-50"
+            className="w-full px-5 py-3 bg-gray-900 text-white rounded-xl cursor-pointer disabled:opacity-50"
             onClick={handleMove}
             disabled={isParent ? !selectedRootType : !selectedParentDirectory}
           >
@@ -179,6 +200,6 @@ export const MoveModal: React.FC<MoveToModalProps> = ({
           </button>
         </div>
       </div>
-    </ReactPortal>
+    </Modal>
   );
 };
