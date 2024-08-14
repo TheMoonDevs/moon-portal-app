@@ -20,6 +20,7 @@ import { DirectoryItem } from "./DirectoryItem";
 import { useQuickLinkDirectory } from "../../../hooks/useQuickLinkDirectory";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
 import { PopoverEmojis, PopoverFolderEdit } from "../../../elements/Popovers";
+import { MoveModal } from "../../../elements/Movemodal";
 
 export const DirectoryTree = ({
   mainDirectory,
@@ -36,6 +37,9 @@ export const DirectoryTree = ({
   });
   const pathName = usePathname();
   const { rootDirectories, parentDirs, directories } = useQuickLinkDirectory();
+  const [showModal, setShowModal] = useState(false);
+  const [currDirectory, setCurrDirectory] = useState({} as Directory);
+  const [isParent, setIsParent] = useState(false);
 
   useEffect(() => {
     if (!selectedDir) return;
@@ -92,6 +96,7 @@ export const DirectoryTree = ({
       ...directory,
       ...updateInfo,
     };
+
     try {
       dispatch(updateDirectory(updatedDirectory));
       const response = await QuicklinksSdk.updateData(
@@ -163,6 +168,19 @@ export const DirectoryTree = ({
 
   const router = useRouter();
   const { activeDirectoryId } = useAppSelector((state) => state.quicklinks);
+
+  const handleMoveToDialog = (
+    directory: Directory,
+    parentId: string | null
+  ) => {
+    if (!parentId) {
+      setIsParent(true);
+    } else {
+      setIsParent(false);
+    }
+    setCurrDirectory(directory);
+    setShowModal(true);
+  };
 
   const handleDeleteDirectory = async (
     directory: Directory,
@@ -287,9 +305,17 @@ export const DirectoryTree = ({
         ))}
       <PopoverEmojis handleDirectoryUpdate={handleDirectoryUpdate} />
       <PopoverFolderEdit
-        handleDeleteDirectory={handleDeleteDirectory}
         handleAddChildDirectory={handleAddChildDirectory}
         handleMoveDirectory={handleMoveDirectory}
+        handleDeleteDirectory={handleDeleteDirectory}
+        handleMoveToDirectory={handleMoveToDialog}
+      />
+      <MoveModal
+        showModal={showModal}
+        currentDirectory={currDirectory}
+        isParent={isParent}
+        onCancel={() => setShowModal(false)}
+        onMove={() => setShowModal(false)}
       />
     </>
   );
