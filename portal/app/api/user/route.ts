@@ -181,7 +181,7 @@ export async function PUT(request: Request) {
       rest.workData?.positionInternal,
       rest.personalData?.workHourOverlap,
       rest.workData?.workHours,
-      currentDate,
+      rest.workData.joining ? rest.workData.joining : currentDate,
       "---", //office email
       rest.personalData?.address,
     ];
