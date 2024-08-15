@@ -67,6 +67,7 @@ export type SlackMessageType = {
   unfurl_links?: boolean;
   unfurl_media?: boolean;
   username?: string;
+  ts?: string;
 };
 
 export type ClientInfo = {
@@ -87,6 +88,63 @@ export type MessageInfo = {
   channel?: string;
   altText?: string;
 };
+
+export interface SlackButtonAction {
+  action_id: string;
+  block_id: string;
+  text: {
+    type: string;
+    text: string;
+    emoji: boolean;
+  };
+  value: string;
+  style: string;
+  type: string;
+  action_ts: string;
+}
+
+export interface SlackInteractionPayload {
+  type: string;
+  user: {
+    id: string;
+    username: string;
+    name: string;
+    team_id: string;
+  };
+  api_app_id: string;
+  token: string;
+  container: {
+    type: string;
+    message_ts: string;
+    channel_id: string;
+    is_ephemeral: boolean;
+  };
+  trigger_id: string;
+  team: {
+    id: string;
+    domain: string;
+  };
+  enterprise: any;
+  is_enterprise_install: boolean;
+  channel: {
+    id: string;
+    name: string;
+  };
+  message: {
+    subtype: string;
+    text: string;
+    type: string;
+    ts: string;
+    bot_id: string;
+    blocks: any[];
+  };
+  state: {
+    values: any;
+  };
+  response_url: string;
+  actions: SlackButtonAction[];
+}
+
 
 /**
  * requires OAUTH_TOKEN to initialise.
