@@ -234,26 +234,34 @@ export class SlackBotSdk {
   // post a message using API. passin channel or user_id
   sendSlackMessageviaAPI = async (message: SlackMessageType) => {
     try {
-      let channel = message.user_id || message.channel;
-
-      if (!channel) {
-        throw new Error("Channel is required");
+      if (!message?.user_id && !message?.channel) {
+        throw new Error("Either channel or user_id must be provided"); // Throw error if neither is provided
       }
+
+      let channel = message?.user_id || message?.channel;
 
       const data = new URLSearchParams();
       data.append("token", SLACK_BOT_OAUTH_TOKEN);
-      data.append("channel", channel);
-      data.append("text", message.text || "");
+      data.append("channel", channel || "");
       if (message.attachments) {
         data.append("attachments", JSON.stringify(message.attachments));
+      }
+      if (message.text) {
+        data.append("text", message.text);
       }
       if (message.blocks) {
         data.append("blocks", JSON.stringify(message.blocks));
       }
-      // other attachments can be added if necessary
-      console.log("Sending Slack message via API", data);
 
-      const response = await fetch("https://slack.com/api/chat.postMessage", {
+      const url = message?.ts
+        ? "https://slack.com/api/chat.update"
+        : "https://slack.com/api/chat.postMessage";
+
+      if (message?.ts) {
+        data.append("ts", message?.ts);
+      }
+
+      const response = await fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
