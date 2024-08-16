@@ -52,16 +52,27 @@ export const PopoverEmojis = ({
 
 export const PopoverFolderEdit = ({
   handleDeleteDirectory,
+  handleMoveDirectory,
+  handleAddChildDirectory,
+  handleMoveToDirectory,
 }: {
   handleDeleteDirectory: (
     directory: Directory,
     parentId: string | null,
     rootSlug?: string
   ) => Promise<void>;
+  handleMoveDirectory: (
+    directory: Directory,
+    direction: "UP" | "DOWN"
+  ) => Promise<void>;
+  handleAddChildDirectory: (parentId: string) => void;
+  handleMoveToDirectory: (
+    directory: Directory,
+    parentId: string | null
+  ) => void;
 }) => {
   const { handleClose, anchorElement, data, openFolderEditor } =
     useQuicklinksPopover();
-
   return (
     <Popover
       anchorOrigin={{
@@ -78,6 +89,18 @@ export const PopoverFolderEdit = ({
       className="!rounded-md"
     >
       <ul className=" flex flex-col gap-2 peer w-[200px] p-2 rounded-md">
+        <li
+          className="flex items-center gap-2 group hover:bg-neutral-200 rounded-md p-1 px-3 cursor-pointer"
+          onClick={() => {
+            handleAddChildDirectory(data.selectedDirectory.id);
+            handleClose();
+          }}
+        >
+          <span className="material-icons-outlined !text-neutral-500 !text-base group-hover:scale-110 transition-all">
+            add
+          </span>
+          <span className="text-sm">Add folder</span>
+        </li>
         {/* <li
                     className="flex items-center gap-2 group hover:bg-neutral-200 rounded-md p-1 px-3 cursor-pointer"
                     onClick={(e) => {
@@ -111,6 +134,49 @@ export const PopoverFolderEdit = ({
                     </span>
                     <span className="text-sm">Move To</span>
                   </li> */}
+        {data && !data.isFirst && (
+          <li
+            className="flex items-center gap-2 group hover:bg-neutral-200 rounded-md p-1 px-3 cursor-pointer"
+            onClick={() => {
+              handleMoveDirectory(data.selectedDirectory, "UP");
+              handleClose();
+            }}
+          >
+            <span className="material-icons-outlined !text-neutral-500 !text-base group-hover:scale-110 transition-all">
+              move_up
+            </span>
+            <span className="text-sm">Move up</span>
+          </li>
+        )}
+        {data && !data.isLast && (
+          <li
+            className="flex items-center gap-2 group hover:bg-neutral-200 rounded-md p-1 px-3 cursor-pointer"
+            onClick={() => {
+              handleMoveDirectory(data.selectedDirectory, "DOWN");
+              handleClose();
+            }}
+          >
+            <span className="material-icons-outlined !text-neutral-500 !text-base group-hover:scale-110 transition-all">
+              move_down
+            </span>
+            <span className="text-sm">Move down</span>
+          </li>
+        )}
+        <li
+          className="flex items-center gap-2 group hover:bg-neutral-200 rounded-md p-1 px-3 cursor-pointer"
+          onClick={() => {
+            handleMoveToDirectory(
+              data.selectedDirectory,
+              data.parentDirectoryId
+            );
+            handleClose();
+          }}
+        >
+          <span className="material-icons-outlined !text-neutral-500 !text-base group-hover:scale-110 transition-all">
+            drive_file_move
+          </span>
+          <span className="text-sm">Move To</span>
+        </li>
         <li
           className="flex items-center gap-2 group hover:bg-neutral-200 text-red-600 rounded-md p-1 px-3 cursor-pointer"
           onClick={() => {
