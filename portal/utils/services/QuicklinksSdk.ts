@@ -180,4 +180,28 @@ export const QuicklinksSdk = {
     };
     return data;
   },
+  moveData: (endpoint: string, data: any) => {
+    return new Promise<any>(async (resolve, reject) => {
+      try {
+        const options: any = {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(data),
+        };
+
+        const res = await fetch(endpoint, options);
+        if (res.ok) {
+          const result = await res.json();
+          return resolve(result);
+        } else {
+          return reject((await res.json()) as any);
+        }
+      } catch (e) {
+        console.log(e);
+        return reject(e as any);
+      }
+    });
+  },
 };
