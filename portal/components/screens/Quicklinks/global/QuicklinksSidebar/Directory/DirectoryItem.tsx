@@ -217,7 +217,11 @@ export const DirectoryItem = ({
         }`}
       >
         {directories
-          .filter((subdirectory) => subdirectory.parentDirId === directory.id)
+          .filter(
+            (subdirectory) =>
+              subdirectory.parentDirId === directory.id &&
+              !subdirectory.isArchive
+          )
           .sort((a, b) => a.position - b.position)
           .map((subdirectory, index, filteredArray) => {
             return (
