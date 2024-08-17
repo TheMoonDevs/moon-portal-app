@@ -1,7 +1,7 @@
-import ArchivedDirectory from "@/components/screens/Quicklinks/screens/ArchivedDirectory/ArchivedDirectory";
+import ArchiveDirectory from "@/components/screens/Quicklinks/screens/ArchivedDirectory/ArchiveDirectory";
 
 const QuickLinkArchive = () => {
-  return <ArchivedDirectory />;
+  return <ArchiveDirectory />;
 };
 
 export default QuickLinkArchive;
