@@ -13,6 +13,7 @@ import LinkList from "../../LinkList/LinkList";
 import { useAppSelector } from "@/utils/redux/store";
 import { Skeleton } from "@mui/material";
 import QuicklinkHeaderWrapper from "../../global/QuicklinkHeaderWrapper";
+import RecentlyUsed from "./RecentlyUsed";
 
 export const QuicklinksDashboard = () => {
   const dispatch = useDispatch();
@@ -31,7 +32,7 @@ export const QuicklinksDashboard = () => {
           `/api/quicklinks/link/user-link?userId=${user.id}&linkType=${USERLINKTYPE.TOPUSED}`
         );
 
-        console.log("topused", topUsedLinksData);
+        // console.log("topused", topUsedLinksData);
         dispatch(
           setTopUsedList(topUsedLinksData.map((link) => (link as any).linkData))
         );
@@ -72,6 +73,9 @@ export const QuicklinksDashboard = () => {
         </div>
       </QuicklinkHeaderWrapper>
       <div className="mt-10 w-full">
+        <TopUsedLink title="Recently Used Folders">
+          <RecentlyUsed allQuicklinks={topUsedList}/>
+        </TopUsedLink>
         <TopUsedLink>
           <LinkList
             allQuicklinks={topUsedList}

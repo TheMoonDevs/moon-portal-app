@@ -156,6 +156,7 @@ model Directory {
   parentDirId String?
   timestamp   DateTime @default(now())
   position    Float      @default(1)
+  clickCount    Int      @default(0)
   @@index([parentDirId, position])
   @@index([id, slug])
   @@index([position])
