@@ -22,11 +22,11 @@ export const SubDirectoryLinks = () => {
     const getData = async () => {
       setLoading(true);
       try {
-        console.log("sent", activeDirectoryId);
+        // console.log("sent", activeDirectoryId);
         const allQuicklinks = await QuicklinksSdk.getData(
           `/api/quicklinks/link?directoryId=${activeDirectoryId}`
         );
-        console.log("received", allQuicklinks);
+        // console.log("received", allQuicklinks);
         dispatch(setAllQuicklinks(allQuicklinks.data.links));
 
         setLoading(false);
