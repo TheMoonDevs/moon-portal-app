@@ -90,9 +90,10 @@ export async function GET(request: NextRequest) {
       const missedSequences = getConsecutiveMissedDays(user.missedDays, 3);
 
       for (const sequence of missedSequences) {
+        const startDay = sequence[0].format('DD');
+        const endDay = sequence[sequence.length - 1].format('DD');
         title = `Missed Worklog Reminder`;
-        description = `Hello @${user.user.name}!, You missed logging work for ${sequence.length} consecutive working days: ${sequence.map(day => day.format('DD')).join(', ')}. Please update your logs.`;
-        console.log("Sending Slack message:", title, description);
+        description = `Hello @${user.user.name}!, You missed logging work for ${sequence.length} consecutive working days: ${startDay}${startDay !== endDay ? ` - ${endDay}` : ''}. Please update your logs.`;
 
         await prisma.notification.create({
           data: {
@@ -105,7 +106,7 @@ export async function GET(request: NextRequest) {
         });
 
         await slackBot.sendSlackMessageviaAPI({
-          text: `Hello <@${user?.slackId}>!, You missed logging work for ${sequence.length} consecutive working days: ${sequence.map(day => day.format('DD')).join(', ')}. Please update your logs.`,
+          text: `Hello <@${user?.slackId}>!, You missed logging work for ${sequence.length} consecutive working days: ${startDay}${startDay !== endDay ? ` - ${endDay}` : ''}. Please update your logs.`,
           // channel: user?.slackId ?? undefined, // uncomment this for prod
           channel: "U06SUSLLBPS", //remove and add your user id for testing
         });
