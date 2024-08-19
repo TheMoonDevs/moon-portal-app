@@ -20,7 +20,7 @@ function getConsecutiveMissedDays(missedDays: dayjs.Dayjs[], minSequence: number
   let lastDay: dayjs.Dayjs = missedDays[0];
   const sequences: dayjs.Dayjs[][] = [];
 
-  for (let i = 0; i < missedDays.length; i++) {
+  for (let i = 1; i < missedDays.length; i++) {
     const day = missedDays[i];
     const daysDiff = day.diff(lastDay, 'day');
 
@@ -28,9 +28,9 @@ function getConsecutiveMissedDays(missedDays: dayjs.Dayjs[], minSequence: number
       streak++;
     } else {
       if (streak + 1 >= minSequence) {
-        sequences.push(missedDays.slice(i - streak, i));
+        sequences.push(missedDays.slice(i - streak - 1, i));
       }
-      streak = (daysDiff > 1) ? 1 : 0;
+      streak = 0;
     }
     lastDay = day;
   }
@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
         userType: "MEMBER",
         role: "CORETEAM",
         status: "ACTIVE",
-        // id: "6617afcef8b582365497c198"  //remove and add your user id for testing
+        id: "6617afcef8b582365497c198"  //remove and add your user id for testing
       },
     });
 
@@ -76,7 +76,6 @@ export async function GET(request: NextRequest) {
         const nonEmptyWorkLogs = workLogs.filter(workLog => !isWorklogEmpty(workLog.works));
         const missedDays = getMissedLogs(nonEmptyWorkLogs, true);
         const missedDaysDayjs = missedDays.map(date => dayjs(date)).filter(date => !isWeekend(date));
-        console.log("Missed Days:", missedDaysDayjs.map(day => day.format('YYYY-MM-DD'))); //remove
 
         return {
           user,
@@ -88,11 +87,11 @@ export async function GET(request: NextRequest) {
     );
 
     for (const user of usersWithWorkLogs) {
-      const missedSequences = getConsecutiveMissedDays(user.missedDays, 2);
+      const missedSequences = getConsecutiveMissedDays(user.missedDays, 3);
 
       for (const sequence of missedSequences) {
         title = `Missed Worklog Reminder`;
-        description = `Hello @${user.user.name}!, You missed logging work for ${sequence.length} consecutive working days: ${sequence.map(day => day.format('DD-MM-YYYY')).join(', ')}. Please update your logs.`;
+        description = `Hello @${user.user.name}!, You missed logging work for ${sequence.length} consecutive working days: ${sequence.map(day => day.format('DD')).join(', ')}. Please update your logs.`;
         console.log("Sending Slack message:", title, description);
 
         await prisma.notification.create({
@@ -106,7 +105,7 @@ export async function GET(request: NextRequest) {
         });
 
         await slackBot.sendSlackMessageviaAPI({
-          text: description,
+          text: `Hello <@${user?.slackId}>!, You missed logging work for ${sequence.length} consecutive working days: ${sequence.map(day => day.format('DD')).join(', ')}. Please update your logs.`,
           // channel: user?.slackId ?? undefined, // uncomment this for prod
           channel: "U06SUSLLBPS", //remove and add your user id for testing
         });
