@@ -10,6 +10,9 @@ import { useUser } from "@/utils/hooks/useUser";
 import CriteriaFields from "./CriteriaFields";
 import useBadgeForm from "@/utils/hooks/useBadgeForm";
 import { useSearchParams } from "next/navigation";
+import { toast, Toaster } from "sonner";
+import { Tooltip } from "@mui/material";
+import ToolTip from "@/components/elements/ToolTip";
 
 const BadgeEditor = () => {
   const { formData, handleChange, resetForm, getCriteria, setFormData } =
@@ -93,15 +96,18 @@ const BadgeEditor = () => {
       if (id) {
         await updateBadge(badgeData);
         setIsSubmitting(false);
+        toast.success("Badge updated successfully");
       } else {
         const response = await PortalSdk.postData("/api/badges", badgeData);
         console.log("Badge saved successfully:", response.data);
         resetForm();
         setIsSubmitting(false);
+        toast.success("Badge created successfully");
       }
     } catch (error) {
       console.error("Error saving badge:", error);
       setIsSubmitting(false);
+      toast.error("Error saving badge");
     }
   };
 
@@ -163,9 +169,12 @@ const BadgeEditor = () => {
               <div className="flex flex-col">
                 <label
                   htmlFor="criteriaType"
-                  className="text-white font-semibold mb-2"
+                  className="text-white font-semibold mb-2 flex items-center gap-2"
                 >
                   Criteria Type
+                  <ToolTip title="Choose the type of badge, such as time-based, streak-based, or custom">
+                    <span className="material-symbols-outlined" style={{fontSize: '1rem'}}>info</span>
+                  </ToolTip>
                 </label>
                 <select
                   id="criteriaType"
@@ -201,6 +210,7 @@ const BadgeEditor = () => {
           </>
         )}
       </div>
+      <Toaster richColors duration={3000} closeButton position="bottom-left" />
     </div>
   );
 };
