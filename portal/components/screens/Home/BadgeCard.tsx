@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useUser } from '@/utils/hooks/useUser';
 import dayjs from 'dayjs';
 import Image from 'next/image';
@@ -22,38 +22,42 @@ const BadgeCard: React.FC<BadgeCardProps> = ({ badge }) => {
   const targetDate = dayjs(badge.date);
   const today = dayjs();
 
-  let progressMessage = '';
-  let progressPercentage = 0;
+  const { progressMessage, progressPercentage } = useMemo(() => {
+    let progressMessage = '';
+    let progressPercentage = 0;
 
-  if (isActivated && badge.date) {
-    const totalDuration = targetDate.diff(joiningDate, 'day');
-    const elapsedDuration = today.diff(joiningDate, 'day');
+    if (isActivated && badge.date) {
+      const totalDuration = targetDate.diff(joiningDate, 'day');
+      const elapsedDuration = today.diff(joiningDate, 'day');
 
-    if (totalDuration > 0) {
-      progressPercentage = Math.min(
-        (elapsedDuration / totalDuration) * 100,
-        100
-      );
+      if (totalDuration > 0) {
+        progressPercentage = Math.min(
+          (elapsedDuration / totalDuration) * 100,
+          100
+        );
 
-      const daysRemaining = targetDate.diff(today, 'day');
-      const monthsRemaining = targetDate.diff(today, 'month');
+        const daysRemaining = targetDate.diff(today, 'day');
+        const monthsRemaining = targetDate.diff(today, 'month');
 
-      if (daysRemaining > 0) {
-        if (monthsRemaining > 0) {
-          const remainingDays = daysRemaining % 30;
-          progressMessage = `${monthsRemaining} month${
-            monthsRemaining > 1 ? 's' : ''
-          } ${remainingDays} day${remainingDays !== 1 ? 's' : ''} left`;
+        if (daysRemaining > 0) {
+          if (monthsRemaining > 0) {
+            const remainingDays = daysRemaining % 30;
+            progressMessage = `${monthsRemaining} month${
+              monthsRemaining > 1 ? 's' : ''
+            } ${remainingDays} day${remainingDays !== 1 ? 's' : ''} left`;
+          } else {
+            progressMessage = `${daysRemaining} day${
+              daysRemaining !== 1 ? 's' : ''
+            } left`;
+          }
         } else {
-          progressMessage = `${daysRemaining} day${
-            daysRemaining !== 1 ? 's' : ''
-          } left`;
+          progressMessage = 'Badge expired';
         }
-      } else {
-        progressMessage = 'Badge expired';
       }
     }
-  }
+
+    return { progressMessage, progressPercentage };
+  }, [isActivated, badge.date, joiningDate, targetDate, today]);
 
   const updateBadgeStatusToRewarded = async (badge: BadgeRewarded) => {
     try {
