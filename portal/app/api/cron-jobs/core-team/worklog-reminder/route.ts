@@ -1,7 +1,5 @@
 import { prisma } from "@/prisma/prisma";
-import {
-  SlackBotSdk,
-} from "@/utils/services/slackBotSdk";
+import { SlackBotSdk } from "@/utils/services/slackBotSdk";
 import dayjs from "dayjs";
 import { NextResponse, NextRequest } from "next/server";
 import { getMissedLogs } from "@/components/screens/Worklogs/WorklogBreakdown/BreakdownMetrics";
@@ -13,51 +11,60 @@ function isWeekend(day: dayjs.Dayjs): boolean {
   return dayOfWeek === 0 || dayOfWeek === 6;
 }
 
-function getConsecutiveMissedDays(missedDays: dayjs.Dayjs[], minSequence: number) {
+function getConsecutiveMissedDays(
+  missedDays: dayjs.Dayjs[],
+  minSequence: number
+) {
   if (missedDays.length === 0) return [];
 
   let streak = 0;
   let lastDay: dayjs.Dayjs = missedDays[0];
   const sequences: dayjs.Dayjs[][] = [];
+  let currentSequence: dayjs.Dayjs[] = [lastDay];
 
   for (let i = 1; i < missedDays.length; i++) {
     const day = missedDays[i];
-    const daysDiff = day.diff(lastDay, 'day');
+    const daysDiff = day.diff(lastDay, "day");
 
-    if (daysDiff === 1 || (daysDiff === 3 && isWeekend(lastDay) && !isWeekend(day))) {
+    // Check if the current day is consecutive or a Monday following a Friday
+    if (
+      daysDiff === 1 ||
+      (daysDiff === 3 && isWeekend(lastDay) && !isWeekend(day))
+    ) {
+      currentSequence.push(day);
       streak++;
     } else {
       if (streak + 1 >= minSequence) {
-        sequences.push(missedDays.slice(i - streak - 1, i));
+        sequences.push([...currentSequence]);
       }
       streak = 0;
+      currentSequence = [day];
     }
     lastDay = day;
   }
 
   if (streak + 1 >= minSequence) {
-    sequences.push(missedDays.slice(missedDays.length - streak - 1));
+    sequences.push([...currentSequence]);
   }
 
   return sequences;
 }
 
 function isWorklogEmpty(workLogs: any[]): boolean {
-  return workLogs.every(workLog => workLog.content.trim() === '*');
+  return workLogs.every((workLog) => workLog.content.trim() === "*");
 }
 
 export async function GET(request: NextRequest) {
   try {
-    const startOfMonth = dayjs().startOf('month');
-    const endOfMonth = dayjs().endOf('month');
-    let title, description;
+    const startOfMonth = dayjs().startOf("month");
+    const endOfMonth = dayjs().endOf("month");
 
     const users = await prisma.user.findMany({
       where: {
         userType: "MEMBER",
         role: "CORETEAM",
         status: "ACTIVE",
-        id: "6617afcef8b582365497c198"  //remove and add your user id for testing
+        // id: "665bfefcc58926c7f6935c0c", //remove and add your user id for testing
       },
     });
 
@@ -73,43 +80,59 @@ export async function GET(request: NextRequest) {
           },
         });
 
-        const nonEmptyWorkLogs = workLogs.filter(workLog => !isWorklogEmpty(workLog.works));
+        const nonEmptyWorkLogs = workLogs.filter(
+          (workLog) => !isWorklogEmpty(workLog.works)
+        );
         const missedDays = getMissedLogs(nonEmptyWorkLogs, true);
-        const missedDaysDayjs = missedDays.map(date => dayjs(date)).filter(date => !isWeekend(date));
+        const missedDaysDayjs = missedDays.map((date) => dayjs(date));
 
         return {
           user,
           slackId: user.slackId,
-          // workLogs, //remove
-          missedDays: missedDaysDayjs
+          missedDays: missedDaysDayjs,
         };
       })
     );
 
     for (const user of usersWithWorkLogs) {
-      const missedSequences = getConsecutiveMissedDays(user.missedDays, 3);
-
-      for (const sequence of missedSequences) {
-        const startDay = sequence[0].format('DD');
-        const endDay = sequence[sequence.length - 1].format('DD');
-        title = `Missed Worklog Reminder`;
-        description = `Hello @${user.user.name}!, You missed logging work for ${sequence.length} consecutive working days: ${startDay}${startDay !== endDay ? ` - ${endDay}` : ''}. Please update your logs.`;
-
-        await prisma.notification.create({
-          data: {
-            // userId: user.user.id, uncomment this for prod
-            userId: "6617afcef8b582365497c198", //remove and add your user id for testing
-            title,
-            description,
-            notificationType: "SELF_GENERATED",
-          },
-        });
-
-        await slackBot.sendSlackMessageviaAPI({
-          text: `Hello <@${user?.slackId}>!, You missed logging work for ${sequence.length} consecutive working days: ${startDay}${startDay !== endDay ? ` - ${endDay}` : ''}. Please update your logs.`,
-          // channel: user?.slackId ?? undefined, // uncomment this for prod
-          channel: "U06SUSLLBPS", //remove and add your user id for testing
-        });
+      // Get missed sequences, excluding today
+      const missedSequences = getConsecutiveMissedDays(
+        user.missedDays.filter(day => !day.isSame(dayjs(), 'day')),
+        2
+      );
+    
+      if (missedSequences.length > 0) {
+        const lastSequence = missedSequences[missedSequences.length - 1].filter(day => !isWeekend(day));
+        const lastDayInSequence = lastSequence[lastSequence.length - 1];
+        const yesterday = dayjs().subtract(1, 'day');
+    
+        // Check if the last day of the sequence is yesterday (active sequence)
+        if (lastDayInSequence.isSame(yesterday, 'day')) {
+          const startDay = lastSequence[0].format('DD');
+          const endDay = lastDayInSequence.format('DD');
+          const title = `Missed Worklog Reminder`;
+          const description = `Hello @${user.user.name}, It appears that you have missed your worklogs for ${lastSequence.length} consecutive working days, from ${startDay}${
+            startDay !== endDay ? ` to ${endDay}` : ""
+          }. Please update your worklogs as soon as possible.`;
+    
+          await prisma.notification.create({
+            data: {
+              userId: user.user.id, // uncomment this for prod
+              // userId: "665bfefcc58926c7f6935c0c", // Remove and add your user id for testing
+              title,
+              description,
+              notificationType: "SELF_GENERATED",
+            },
+          });
+    
+          await slackBot.sendSlackMessageviaAPI({
+            text: `Hello <@${user?.slackId}>, It appears that you have missed your worklogs for ${lastSequence.length} consecutive working days, from ${startDay}${
+              startDay !== endDay ? ` to ${endDay}` : ""
+            }. Please update your worklogs as soon as possible.`,
+            channel: user?.slackId ?? undefined, // Uncomment this for prod
+            // channel: "U06NE7XFEJU", // Remove and add your user id for testing
+          });
+        }
       }
     }
 
