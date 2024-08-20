@@ -158,14 +158,14 @@ export async function PUT(request: Request) {
       `${rest.username}${rest.password}`,
       rest.name,
       rest.email,
-      rest.personalData.phone,
-      rest.personalData.dateOfBirth,
-      rest.personalData.city,
+      rest.personalData?.phone,
+      rest.personalData?.dateOfBirth,
+      rest.personalData?.city,
       rest.workData?.positionInternal,
       rest.workData.joining ? rest.workData.joining : currentDate,
       rest.personalData?.workHourOverlap,
       rest.personalData?.address,
-      rest.personalData.govtId ? rest.personalData.govtId : "---",
+      rest.personalData?.govtId ? rest.personalData.govtId : "---",
       rest.payData?.upiId,
     ];
     const sheetDataCore = [
@@ -181,7 +181,7 @@ export async function PUT(request: Request) {
       rest.workData?.positionInternal,
       rest.personalData?.workHourOverlap,
       rest.workData?.workHours,
-      currentDate,
+      rest.workData.joining ? rest.workData.joining : currentDate,
       "---", //office email
       rest.personalData?.address,
     ];
