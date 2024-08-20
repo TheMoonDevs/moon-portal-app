@@ -1,7 +1,6 @@
 import { Directory, ParentDirectory } from "@prisma/client";
 import { useQuickLinkDirectory } from "../../hooks/useQuickLinkDirectory";
 import { useState } from "react";
-import { MoveModal } from "../../elements/Movemodal";
 import { Modal } from "@mui/material";
 import {
   setToast,
@@ -14,29 +13,29 @@ import { revalidateRoot } from "@/utils/actions";
 
 const ArchiveDirectoryItem = ({
   directory,
-  showAll,
-  isParent,
+  // isParent,
   parent,
 }: {
   directory: Directory | ParentDirectory;
-  showAll?: boolean;
-  isParent?: boolean;
+  // isParent?: boolean;
   parent?: Directory | ParentDirectory;
 }) => {
-  const { directories } = useQuickLinkDirectory();
   const dispatch = useAppDispatch();
+
+  const { directories } = useQuickLinkDirectory();
+
   const [showRestoreModal, setShowRestoreModal] = useState<boolean>(false);
-  const [showRestoreChildModal, setShowRestoreChildModal] =
-    useState<boolean>(false);
-  const name = isParent
+
+  const name = !parent
     ? `${(directory as ParentDirectory).type?.toLocaleLowerCase()} / ${
         directory.title
       }`
     : `${parent?.title} / ${directory.title}`;
+
   const handleRestore = async () => {
     setShowRestoreModal(false);
     let apiPath = "/api/quicklinks/directory";
-    if (isParent) {
+    if (!parent) {
       apiPath = `/api/quicklinks/parent-directory`;
     }
     const updatedDirectory = {
@@ -66,15 +65,16 @@ const ArchiveDirectoryItem = ({
       console.log(error);
     }
   };
+
   const onCancel = () => setShowRestoreModal(false);
+
   return (
     <>
-      {(directory.isArchive || showAll) && (
+      {directory.isArchive && (
         <button
           className="flex flex-col items-center justify-center hover:bg-gray-200 transition-all rounded-md cursor-pointer"
           onClick={() => {
-            if (directory.isArchive) setShowRestoreModal(true);
-            else setShowRestoreChildModal(true);
+            setShowRestoreModal(true);
           }}
         >
           <span className="material-icons !text-9xl">folder</span>
@@ -90,7 +90,6 @@ const ArchiveDirectoryItem = ({
             key={subdirectory.id}
             directory={subdirectory}
             parent={directory}
-            showAll={directory.isArchive || showAll}
           />
         ))}
       <Modal
@@ -116,13 +115,6 @@ const ArchiveDirectoryItem = ({
           </div>
         </div>
       </Modal>
-      <MoveModal
-        showModal={showRestoreChildModal}
-        currentDirectory={directory}
-        isParent={isParent ? isParent : false}
-        onCancel={() => setShowRestoreChildModal(false)}
-        onMove={() => setShowRestoreChildModal(false)}
-      />
     </>
   );
 };
