@@ -1,3 +1,4 @@
+import { LOCAL_STORAGE } from "@/utils/constants/appInfo";
 import { User } from "@prisma/client";
 import { createSlice } from "@reduxjs/toolkit";
 
@@ -13,6 +14,7 @@ export const uiSlice = createSlice({
   reducers: {
     setReduxUser: (state, action) => {
       state.user = action.payload;
+      localStorage.setItem(LOCAL_STORAGE.user, JSON.stringify(action.payload));
     },
     setGoogleVerificationEmail: (state, action) => {
       if (typeof window !== "undefined")
