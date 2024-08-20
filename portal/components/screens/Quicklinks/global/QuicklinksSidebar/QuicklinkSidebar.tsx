@@ -244,7 +244,7 @@ export default function QuicklinkSidebar() {
         )}
         <Link
           href="/quicklinks/archive"
-          className="bg-black text-white text-lg py-3 rounded-t-lg flex justify-center items-center gap-3 hover:!bg-neutral-700 transition-all"
+          className="bg-black sticky bottom-0 w-full text-white text-lg py-3 rounded-t-lg flex justify-center items-center gap-3 hover:!bg-neutral-700 transition-all"
         >
           <span className="material-icons !text-md !font-thin text-neutral-100">
             archive
