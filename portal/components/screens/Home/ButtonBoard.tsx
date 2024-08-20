@@ -215,7 +215,9 @@ export const ButtonBoard = () => {
       </Link>
       <DrawerComponent isOpen={isOpen} handleClose={handleClose}>
         <div className="p-4">
-          <h2 className="text-xl font-bold text-center mb-6">Achievement Badges</h2>
+          <h2 className="text-xl font-bold text-center mb-6">
+            Your Earned Badges
+          </h2>
           {loading ? (
             <div className="h-[100vh] flex justify-center items-center">
               <Spinner className="h-10 w-10" />{" "}
