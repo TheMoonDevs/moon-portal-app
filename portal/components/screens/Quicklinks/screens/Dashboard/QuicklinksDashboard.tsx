@@ -74,7 +74,7 @@ export const QuicklinksDashboard = () => {
       </QuicklinkHeaderWrapper>
       <div className="mt-10 w-full">
         <TopUsedLink title="Recently Used Folders">
-          <RecentlyUsed allQuicklinks={topUsedList}/>
+          <RecentlyUsed loading={loading}/>
         </TopUsedLink>
         <TopUsedLink>
           <LinkList
