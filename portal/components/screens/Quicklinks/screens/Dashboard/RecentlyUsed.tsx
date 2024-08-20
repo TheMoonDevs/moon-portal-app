@@ -31,7 +31,9 @@ const getParentDirTitle = (
 };
 
 const RecentlyUsed = ({ loading }: { loading: boolean }) => {
-  const { directories, parentDirs } = useQuickLinkDirectory(true);
+  const { directories, parentDirs, selectedRootDir, rootDirectories } =
+    useQuickLinkDirectory(true);
+  const router = useRouter();
 
   if (loading) {
     return (
@@ -59,6 +61,67 @@ const RecentlyUsed = ({ loading }: { loading: boolean }) => {
   const minClicks = Math.min(...clickCounts);
   const maxClicks = Math.max(...clickCounts);
 
+  const handleDirectoryClick = (directory: Directory) => {
+    const findDirectoryById = (id: string) =>
+      [...parentDirs, ...sortedDirectories].find((dir) => dir.id === id);
+
+    const getRootSlug = (dir: Directory): string => {
+      let currentDir: Directory | ParentDirectory = dir;
+
+      while ('parentDirId' in currentDir && currentDir.parentDirId) {
+        const parentDir = findDirectoryById(currentDir.parentDirId);
+        if (!parentDir) break;
+
+        if ('type' in parentDir) {
+          return (
+            rootDirectories
+              .find((rootDir) => rootDir.id === parentDir.type)
+              ?.slug.slice(1) || ''
+          );
+        }
+
+        currentDir = parentDir;
+      }
+
+      return (
+        rootDirectories
+          .find((rootDir) => rootDir.id === 'COMMON_RESOURCES')
+          ?.slug.slice(1) || ''
+      );
+    };
+
+    const getFullPath = (dir: Directory): string[] => {
+      const pathSegments: string[] = [];
+      let currentDir: Directory | ParentDirectory = dir;
+      const rootSlug = getRootSlug(dir);
+
+      while ('parentDirId' in currentDir && currentDir.parentDirId) {
+        const parentDir = findDirectoryById(currentDir.parentDirId);
+        if (!parentDir) break;
+
+        if (
+          'type' in parentDir &&
+          (parentDir.type === 'DEPARTMENT' ||
+            parentDir.type === 'COMMON_RESOURCES')
+        ) {
+          pathSegments.unshift(parentDir.slug);
+        }
+
+        currentDir = parentDir;
+      }
+
+      return [rootSlug, ...pathSegments, dir.slug];
+    };
+
+    const pathSegments = getFullPath(directory);
+    const dirTimestampString = directory.parentDirId
+      ? `-${new Date(directory.timestamp).getTime().toString().slice(-5)}`
+      : '';
+
+    const path = `/quicklinks/${pathSegments.join('/')}${dirTimestampString}`;
+    router.push(path);
+  };
+
   return (
     <div className='py-4'>
       <div className='grid grid-cols-1 gap-x-2 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2'>
@@ -75,6 +138,7 @@ const RecentlyUsed = ({ loading }: { loading: boolean }) => {
 
           return (
             <div
+              onClick={() => handleDirectoryClick(directory)}
               key={directory.id}
               className='flex items-center cursor-pointer mb-4 p-2 border rounded hover:bg-gray-100 transition-colors duration-200'
             >
