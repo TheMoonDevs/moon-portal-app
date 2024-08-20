@@ -183,8 +183,8 @@ const BadgeEditor = () => {
                   className="p-3 rounded-lg bg-neutral-800 text-white border border-neutral-700 focus:ring-2 focus:ring-white transition"
                 >
                   <option value="">Select Criteria Type</option>
-                  <option value="TIME_BASED">Time-based</option>
-                  <option value="STREAK">Streak-based</option>
+                  <option value="TIME_BASED">Time based</option>
+                  <option value="STREAK">Streak based</option>
                   <option value="CUSTOM">Custom</option>
                 </select>
               </div>

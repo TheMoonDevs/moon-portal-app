@@ -375,6 +375,12 @@ enum BadgeType {
   TIME_BASED
 }
 
+enum StreakType {
+  WORKLOG_BASED
+  TASK_BASED
+  MISSION_BASED
+  ARTICLE_BASED
+}
 
 //-------------------------------------Badges-Rewarded-------------------------------------------
 
