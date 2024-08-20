@@ -78,72 +78,61 @@ const BadgeCard: React.FC<BadgeCardProps> = ({ badge }) => {
 
   return (
     <div
-      className={`relative flex flex-col items-center p-6 rounded-lg shadow-lg transition-transform duration-300 transform hover:scale-105 cursor-pointer ${
-        isAwarded
-          ? 'bg-gradient-to-r from-yellow-200 via-orange-200 to-red-200 '
-          : 'bg-gray-200 border border-gray-400'
+      className={`relative flex items-center px-4 py-6 rounded-lg shadow-md transition-transform duration-300 transform hover:scale-105 cursor-pointer ${
+        !isAwarded ? 'bg-[#F7F8FD]' : 'bg-[#E0E4F4]'
       }`}
     >
       <div
-        className={`w-24 h-24 rounded-full overflow-hidden shadow-lg ${
-          isAwarded
-            ? 'border-4 border-gradient-to-r from-yellow-400 via-orange-500 to-red-500'
-            : 'border-2 border-gray-300'
+        className={`w-14 h-14 relative overflow-hidden ${
+          isAwarded ? 'border-2 border-gray-200' : 'border-2 border-gray-300'
         }`}
+        style={{
+          clipPath:
+            'polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%)',
+        }}
       >
         <Image
           src={badge.imageUrl || '/default-badge.png'}
           alt={badge.name}
-          width={96}
-          height={96}
-          className='object-cover w-full h-full'
+          layout='fill'
+          objectFit='cover'
+          className='w-full h-full'
         />
       </div>
 
-      <div className='mt-4 flex-1 text-center'>
-        <h3
-          className={`text-xl font-semibold ${
-            isAwarded ? 'text-gray-900' : 'text-gray-800'
-          }`}
-        >
-          {badge.name}
-        </h3>
+      <div className=' ml-4 flex-1 flex items-start justify-between'>
+        <div className='w-full'>
+          <h3
+            className={`text-lg font-semibold ${
+              isAwarded ? 'text-gray-800' : 'text-gray-700'
+            }`}
+          >
+            {badge.name}
+          </h3>
+          {isAwarded && (
+            <p className='text-xs text-gray-600 mt-1'>
+              Awarded on: {dayjs(badge.date)?.format('DD-MM-YYYY')}
+            </p>
+          )}
+          {!isAwarded && isActivated && (
+            <>
+              <div className='flex-1 w-full bg-gray-300 rounded-full mt-2'>
+                <div
+                  className='bg-blue-500 h-2 rounded-full'
+                  style={{ width: `${progressPercentage}%` }}
+                />
+              </div>
+              <p className='text-xs text-gray-500 mt-2'>{progressMessage}</p>
+            </>
+          )}
+        </div>
         {isAwarded && (
-          <p className='text-sm text-gray-600 mt-1'>
-            Awarded on: {dayjs(badge.date)?.format('DD-MM-YYYY')}
-          </p>
-        )}
-        {isActivated && (
-          <>
-            <div className='w-full bg-gray-300 rounded-full mt-2'>
-              <div
-                className='bg-green-500 h-2 rounded-full'
-                style={{ width: `${progressPercentage}%` }}
-              />
-            </div>
-            <p className='text-sm text-gray-700 mt-2 font-medium'>
-              {progressMessage}
-            </p>
-            <p className='text-sm text-gray-600 mt-1'>
-              {progressPercentage >= 100
-                ? 'Great progress! Keep up the great work!'
-                : 'You’re on track to complete this badge. Keep going!'}
-            </p>
-          </>
+          <div className='flex items-center gap-1 p-1 bg-neutral-300 rounded-md text-xs font-semibold text-gray-600'>
+            <div className='w-3 h-3 rounded-full bg-[#18A77C]'></div>
+            Earned
+          </div>
         )}
       </div>
-
-      {isAwarded && (
-        <div className='absolute top-4 right-4'>
-          <Award className='text-yellow-500 w-8 h-8' />
-        </div>
-      )}
-
-      {isAwarded && (
-        <div className='absolute top-0 left-0 bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 text-white text-xs px-4 py-2 rounded-br-lg rounded-tl-lg shadow-lg'>
-          <span className='font-semibold'>Rewarded</span>
-        </div>
-      )}
     </div>
   );
 };
