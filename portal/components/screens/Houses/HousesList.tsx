@@ -1,7 +1,9 @@
+/* eslint-disable @next/next/no-img-element */
+
 import React, { useState, useEffect } from "react";
 import { Spinner } from "@/components/elements/Loaders";
 import { PortalSdk } from "@/utils/services/PortalSdk";
-import { Tooltip } from "@mui/material";
+import { Tooltip, Avatar, AvatarGroup } from "@mui/material";
 import { HOUSEID, Mission, User } from "@prisma/client";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { setMissionDetailsOpen } from "@/utils/redux/missions/selectedMission.slice";
@@ -93,9 +95,8 @@ export const HousesList = ({
           style={{
             background: house.background,
           }}
-          onClick={() =>{ 
-            toggleHouse(index)
-           
+          onClick={() => {
+            toggleHouse(index);
           }}
           className="flex flex-col border border-neutral-200 text-white rounded-xl overflow-hidden transition-all duration-1000 ease-in-out"
         >
@@ -119,8 +120,8 @@ export const HousesList = ({
                 alt={house.name}
                 className={`object-cover object-center  transition-all duration-300 ease-in-out  ${
                   currentHouseIndex === index
-                    ? "h-48 w-48 rounded-full"
-                    : "h-16 w-[35%] overflow-y-hidden "
+                    ? "h-44 w-44 rounded-full"
+                    : "h-16 w-16 rounded-full overflow-y-hidden "
                 }`}
               />
               <div
@@ -148,19 +149,22 @@ export const HousesList = ({
                         <div className="w-12 h-12 bg-gray-300 animate-pulse rounded-full mt-2 pt-2"></div>
                       ) : (
                         <div className="flex flex-wrap gap-2 mt-2 overflow-x-auto">
-                          {houseMembers
-                            .filter((member) => member.house === house.id)
-                            .map((member) => (
-                              <div key={member.id}>
-                                <Tooltip title={member.name || ""}>
-                                  <img
+                          <AvatarGroup max={4}>
+                            {houseMembers
+                              .filter((member) => member.house === house.id)
+                              .map((member) => (
+                                <Tooltip
+                                  key={member.id}
+                                  title={member.name || ""}
+                                >
+                                  <Avatar
                                     src={member.avatar || ""}
                                     alt={member.name || ""}
                                     className="w-12 h-12 rounded-full"
                                   />
                                 </Tooltip>
-                              </div>
-                            ))}
+                              ))}
+                          </AvatarGroup>
                         </div>
                       )}
                     </div>
