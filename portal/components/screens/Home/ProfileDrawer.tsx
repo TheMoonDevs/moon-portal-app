@@ -247,7 +247,7 @@ export const UserProfileDrawer: React.FC = () => {
             ) : (
               <img
                 src={selectedUser?.avatar || "/icons/placeholderAvatar.svg"}
-                alt={selectedUser?.name || ""}
+                alt={selectedUser?.name?.charAt(0) || ""}
                 className="object-cover rounded-full w-full h-full bg-white"
               />
             )}
