@@ -12,41 +12,35 @@ const randomQuote = QuotesData[Math.floor(Math.random() * QuotesData.length)];
 export const MoodTabs = ({
   user,
   setTab,
+  sliderRef,
+  onSwipe
 }: {
   user: User;
   setTab: React.Dispatch<React.SetStateAction<HomeTabs>>;
+  sliderRef: React.RefObject<Slider>;
+  onSwipe: (index: number) => void;
 }) => {
   const [activeSlide2, setActiveSlide2] = useState(0);
 
+  const handleAfterChange = (current: number) => {
+    const tabs = [HomeTabs.START, HomeTabs.CHARGING, HomeTabs.INWORK, HomeTabs.PLANUP];
+    setTab(tabs[current]);
+    onSwipe(current);
+  };
+
+  const sliderSettings = {
+    dots: true,
+    infinite: true,
+    speed: 300,
+    slidesToShow: 1,
+    slidesToScroll: 1,
+    arrows: false,
+    afterChange: handleAfterChange,
+  };
+
   return (
     <div className=" flex flex-col mx-2 mt-2 mb-3 gap-3 bg-white rounded-[1.15em]">
-      <Slider
-        dots={true}
-        infinite={true}
-        speed={300}
-        slidesToShow={1}
-        slidesToScroll={1}
-        arrows={false}
-        afterChange={(current: number) => {
-          switch (current) {
-            case 0:
-              setTab(HomeTabs.START);
-              break;
-            case 1:
-              setTab(HomeTabs.CHARGING);
-              break;
-            case 2:
-              setTab(HomeTabs.INWORK);
-              break;
-            case 3:
-              setTab(HomeTabs.PLANUP);
-              break;
-            default:
-              break;
-          }
-        }}
-        className="h-[150px]"
-      >
+       <Slider ref={sliderRef} {...sliderSettings} className="h-[150px]">
         <div className="w-full relative bg-black rounded-[1.15em]">
           <img
             src={"/images/lexica/man_walk_landscape_fields.jpg"}
