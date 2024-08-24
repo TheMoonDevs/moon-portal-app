@@ -7,7 +7,7 @@ import { ProfileSection } from "./ProfileSection";
 import { USERTYPE } from "@prisma/client";
 import { LoaderScreen } from "@/components/elements/Loaders";
 import { MoodTabs } from "./MoodTabs";
-import { useEffect, useState } from "react";
+import { useEffect, useState,  useRef, useCallback } from "react";
 import { StartSection } from "./StartSection";
 import { HomeTabs } from "@/utils/@types/enums";
 import { ButtonBoard } from "./ButtonBoard";
@@ -19,11 +19,41 @@ import media from "@/styles/media";
 import { useMediaQuery } from "@mui/material";
 import { CoreTeamSection } from "./CoreTeamSection";
 import Link from "next/link";
+import Slider from "react-slick";
 
 const MemberHomePage = () => {
   const { user } = useUser();
   const [tab, setTab] = useState(HomeTabs.START);
   const isTabletOrMore = useMediaQuery(media.moreTablet);
+  const moodSliderRef = useRef<Slider | null>(null);
+  const contentSliderRef = useRef<Slider | null>(null);
+
+  const handleSlideChange = useCallback((index: number) => {
+    console.log("MemberHomePage: handleSlideChange called with index", index);
+    setTab(Object.values(HomeTabs)[index]);
+    if (contentSliderRef.current) {
+      console.log("MemberHomePage: Changing content slider to index", index);
+      contentSliderRef.current.slickGoTo(index);
+    }
+  }, []);
+
+  const handleContentSlideChange = (index: number) => {
+    setTab(Object.values(HomeTabs)[index]);
+    if (moodSliderRef.current) {
+      moodSliderRef.current.slickGoTo(index);
+    }
+  };
+
+
+  const sliderSettings = {
+    dots: false,
+    infinite: true,
+    speed: 300,
+    slidesToShow: 1,
+    slidesToScroll: 1,
+    arrows: false,
+    afterChange: handleContentSlideChange,
+  };
 
   if (!user) return <LoaderScreen />;
   return (
@@ -32,7 +62,7 @@ const MemberHomePage = () => {
         <ProfileSection user={user} />
         <DailySection user={user} />
         <ButtonBoard />
-        {!isTabletOrMore && <MoodTabs user={user} setTab={setTab} />}
+        {!isTabletOrMore && <MoodTabs user={user} setTab={setTab} sliderRef={moodSliderRef} onSwipe={handleSlideChange}  />}
         {isTabletOrMore && (
           <>
             <StartSection />
@@ -69,10 +99,20 @@ const MemberHomePage = () => {
         </div>
       ) : (
         <div className="w-full my-3 max-md:my-0">
-          {tab === HomeTabs.START && <StartSection />}
-          {tab === HomeTabs.CHARGING && <ActionsSection />}
-          <InWorkSection visible={tab === HomeTabs.INWORK} />
-          <InPlanSection visible={tab === HomeTabs.PLANUP} />
+         <Slider ref={contentSliderRef} {...sliderSettings}>
+            <div>
+              <StartSection />
+            </div>
+            <div>
+              <ActionsSection />
+            </div>
+            <div>
+              <InWorkSection visible={true} />
+            </div>
+            <div>
+              <InPlanSection visible={true} />
+            </div>
+          </Slider>
           <div className="pt-4">
             <h4 className="text-lg font-bold px-4">Core Team Leaderboard</h4>
             <CoreTeamSection />
