@@ -35,10 +35,11 @@ export function useClaimable() {
       setIsSettingClaimable(true);
       const result = await postContract.setIsClaimable(!isClaimable);
       console.log(result);
-      // setIsClaimable(result);
+      setIsClaimable(!isClaimable);
       setIsSettingClaimable(false);
     } catch (error) {
       console.error("Error fetching isClaimable:", error);
+      setIsClaimable(!isClaimable);
     }
   };
 
