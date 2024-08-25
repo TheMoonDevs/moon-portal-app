@@ -28,6 +28,7 @@ import { LoadingSkeleton } from "@/components/elements/LoadingSkeleton";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
 import { setReduxUser } from "@/utils/redux/auth/auth.slice";
 import media from "@/styles/media";
+import dayjs from "dayjs";
 
 interface LoggedInUser {
   user: User;
@@ -57,16 +58,16 @@ export const UserProfileDrawer: React.FC = () => {
   const payData = loggedinUser?.user?.payData as PayData;
   const [worklogSummary, setWorklogSummary] = useState<WorkLogs[]>([]);
   const { loading, setLoading } = useAsyncState();
-
   const handleClose = () => {
     dispatch(closeDrawer());
   };
 
   const fetchWorklogData = useCallback(async () => {
     setLoading(true);
+    console.log()
     try {
       const response = await PortalSdk.getData(
-        `/api/user/worklogs/summary?userId=${selectedUser?.id}`,
+        `/api/user/worklogs/summary?userId=${selectedUser?.id}&year=${dayjs().year()}&month=${dayjs().month(dayjs().month()).format("MM")}`,
         null
       );
       setWorklogSummary(response.data.workLogs);
@@ -246,7 +247,7 @@ export const UserProfileDrawer: React.FC = () => {
             ) : (
               <img
                 src={selectedUser?.avatar || "/icons/placeholderAvatar.svg"}
-                alt={selectedUser?.name || ""}
+                alt={selectedUser?.name?.charAt(0) || ""}
                 className="object-cover rounded-full w-full h-full bg-white"
               />
             )}
