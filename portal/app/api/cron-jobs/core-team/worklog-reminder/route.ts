@@ -100,12 +100,16 @@ export async function GET(request: NextRequest) {
         user.missedDays.filter(day => !day.isSame(dayjs(), 'day')),
         2
       );
+
+      console.log(missedSequences.length);
+      
     
       if (missedSequences.length > 0) {
         const lastSequence = missedSequences[missedSequences.length - 1].filter(day => !isWeekend(day));
         const lastDayInSequence = lastSequence[lastSequence.length - 1];
         const yesterday = dayjs().subtract(1, 'day');
-    
+        console.log(lastSequence, lastDayInSequence, yesterday);
+        console.log(lastDayInSequence.isSame(yesterday, 'day'));
         // Check if the last day of the sequence is yesterday (active sequence)
         if (lastDayInSequence.isSame(yesterday, 'day')) {
           const startDay = lastSequence[0].format('DD');
@@ -114,8 +118,10 @@ export async function GET(request: NextRequest) {
           const description = `Hello @${user.user.name}, It appears that you have missed your worklogs for ${lastSequence.length} consecutive working days, from ${startDay}${
             startDay !== endDay ? ` to ${endDay}` : ""
           }. Please update your worklogs as soon as possible.`;
+          console.log(startDay, endDay);
+          
     
-          await prisma.notification.create({
+          const notification = await prisma.notification.create({
             data: {
               userId: user.user.id, // uncomment this for prod
               // userId: "665bfefcc58926c7f6935c0c", // Remove and add your user id for testing
@@ -124,14 +130,17 @@ export async function GET(request: NextRequest) {
               notificationType: "SELF_GENERATED",
             },
           });
+          console.log(notification);
     
-          await slackBot.sendSlackMessageviaAPI({
+          const slack = await slackBot.sendSlackMessageviaAPI({
             text: `Hello <@${user?.slackId}>, It appears that you have missed your worklogs for ${lastSequence.length} consecutive working days, from ${startDay}${
               startDay !== endDay ? ` to ${endDay}` : ""
             }. Please update your worklogs as soon as possible.`,
             channel: user?.slackId ?? undefined, // Uncomment this for prod
             // channel: "U06NE7XFEJU", // Remove and add your user id for testing
           });
+          console.log(slack);
+          
         }
       }
     }
