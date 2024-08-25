@@ -1,3 +1,5 @@
+/* eslint-disable @next/next/no-img-element */
+
 "use client";
 import {
   setAllMissions,
@@ -5,7 +7,7 @@ import {
   setSelectedMission,
 } from "@/utils/redux/missions/selectedMission.slice";
 import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import { Mission } from "@prisma/client";
+import { Mission, User } from "@prisma/client";
 import { HOUSES_LIST } from "./HousesList";
 import { useCallback, useEffect, useState } from "react";
 import { PortalSdk } from "@/utils/services/PortalSdk";
@@ -15,7 +17,9 @@ import {
   MenuItem,
   Select,
   SelectChangeEvent,
+  Tooltip,
 } from "@mui/material";
+import CreateMission from "./CreateMission";
 
 export function calculateMissionStat(
   mission: Mission,
@@ -49,7 +53,7 @@ export function calculateMissionStat(
         return 0;
       }
       const completedPoints = totalMissionPoints - remainingBalance;
-      const progress = ((completedPoints / totalMissionPoints) * 100);
+      const progress = (completedPoints / totalMissionPoints) * 100;
       return progress;
     case "status":
       return remainingBalance >= 0 ? "🟡" : remainingBalance === 0 ? "✅" : "";
@@ -61,17 +65,22 @@ export function calculateMissionStat(
 export const MissionsList = ({
   loading,
   currentHouseIndex,
+  houseMembers,
 }: {
   loading: boolean;
   currentHouseIndex: number;
+  houseMembers: User[];
 }) => {
   const dispatch = useAppDispatch();
-  const  missions = useAppSelector(
+  const missions = useAppSelector(
     (state: RootState) => state.selectedMission.missions
   );
-  const selectedMission = useAppSelector((state: RootState) => state.selectedMission.mission);
+  const selectedMission = useAppSelector(
+    (state: RootState) => state.selectedMission.mission
+  );
   const [timeFrame, setTimeFrame] = useState("month");
   const [timeValue, setTimeValue] = useState(dayjs().format("YYYY-MM"));
+  const [isOpen, setIsOpen] = useState<boolean>(false);
 
   const getQueryString = useCallback((frame: string, value: string): string => {
     switch (frame) {
@@ -95,7 +104,6 @@ export const MissionsList = ({
         dispatch(
           setSelectedMission(data?.data?.missions[currentHouseIndex] || [])
         );
-        
       })
       .catch((err) => {
         setMissionDetailsOpen(false);
@@ -167,6 +175,14 @@ export const MissionsList = ({
         <h3 className="text-sm font-semibold text-neutral-400 tracking-widest uppercase">
           Missions
         </h3>
+        <Tooltip title="Add New Mission">
+          <span
+            className="material-symbols-outlined cursor-pointer"
+            onClick={() => setIsOpen(true)}
+          >
+            add_box
+          </span>
+        </Tooltip>
         <div className="flex flex-row items-center gap-2">
           <FormControl variant="standard" size="small" className="w-[100px]">
             <Select
@@ -179,7 +195,7 @@ export const MissionsList = ({
               <MenuItem value="year">Year</MenuItem>
             </Select>
           </FormControl>
-          <FormControl variant="standard" size="small" className="w-[100px]">            
+          <FormControl variant="standard" size="small" className="w-[100px]">
             <Select
               value={timeValue}
               onChange={handleTimeValueChange}
@@ -204,10 +220,12 @@ export const MissionsList = ({
           .map((mission, i) => (
             <div
               key={i}
-             className={`flex flex-col gap-2 border-b pt-3 border-neutral-200 cursor-pointer hover:bg-gray-100 
+              className={`flex flex-col gap-2 border-b pt-3 border-neutral-200 cursor-pointer hover:bg-gray-100 
                 ${
-                selectedMission?.id === mission.id ? 'bg-gray-200' : 'text-gray-700'
-              }
+                  selectedMission?.id === mission.id
+                    ? 'bg-gray-200'
+                    : 'text-gray-700'
+                }
               `}
               onClick={() => {
                 dispatch(setSelectedMission(mission));
@@ -241,6 +259,11 @@ export const MissionsList = ({
               ></div>
             </div>
           ))}
+      <CreateMission
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+        houseMembers={houseMembers}
+      />
     </div>
   );
 };
