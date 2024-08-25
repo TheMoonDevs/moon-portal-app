@@ -131,8 +131,8 @@ export const MissionComponent = (mission: Mission): any => {
       <h3 className="text-xl font-semibold mb-4">Tasks</h3>
       <ul className="space-y-4">
         {/* @ts-expect-error Server Component */}{" "}
-        {mission.tasks?.map((task: any) => (
-          <li key={task.id} className="rounded-lg p-4 shadow ">
+        {mission.tasks?.map((task: any, index: number) => (
+          <li key={`${task.id}-${index}`} className="rounded-lg p-4 shadow ">
             <div className="flex items-center mb-2">
               <img
                 src={task.userInfo?.avatar || "/icons/placeholderAvatar.svg"}

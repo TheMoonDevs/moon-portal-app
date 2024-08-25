@@ -60,28 +60,19 @@ function sumHousePoints(missions: Mission[], targetHouse: HOUSEID): number {
 interface HousesListProps {
   currentHouseIndex: number;
   setCurrentHouseIndex: (index: number) => void;
+  houseMembers: User[];
+  houseMembersLoading: boolean;
 }
 
 export const HousesList = ({
   currentHouseIndex,
   setCurrentHouseIndex,
+  houseMembers,
+  houseMembersLoading,
 }: HousesListProps) => {
-  const [houseMembers, setHouseMembers] = useState<User[]>([]);
-  const [houseMembersLoading, setHouseMembersLoading] = useState<boolean>(true);
   const { missions } = useAppSelector(
     (state: RootState) => state.selectedMission
   );
-
-  useEffect(() => {
-    PortalSdk.getData("/api/users", null)
-      .then((data) => {
-        setHouseMembers(data.data.user);
-        setHouseMembersLoading(false)
-      })
-      .catch((err) => {
-        console.error(err);
-      });
-  }, [missions]);
 
   const toggleHouse = (index: number) => {
     setCurrentHouseIndex(currentHouseIndex === index ? -1 : index);
@@ -101,7 +92,7 @@ export const HousesList = ({
           className="flex flex-col border border-neutral-200 text-white rounded-xl overflow-hidden transition-all duration-1000 ease-in-out"
         >
           <div className="relative">
-            <div className="absolute top-9 right-4 cursor-pointer z-10">
+            <div className="absolute top-9 right-4 cursor-pointer">
               {currentHouseIndex === index ? (
                 <ChevronUp size={24} />
               ) : (
