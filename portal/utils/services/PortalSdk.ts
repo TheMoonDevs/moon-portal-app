@@ -66,4 +66,27 @@ export const PortalSdk = {
       }
     });
   },
+  deleteData: (url: string, data: any) => {
+    return new Promise<any>(async (resolve, reject) => {
+      try {
+        const res = await fetch(url, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(data),
+        });
+        // console.log(await res.json());
+        if (res.ok) {
+          const result = await res.json();
+          return resolve(result);
+        } else {
+          return reject(res.status as any);
+        }
+      } catch (e) {
+        console.log(e);
+        return reject(e as any);
+      }
+    });
+  },
 };

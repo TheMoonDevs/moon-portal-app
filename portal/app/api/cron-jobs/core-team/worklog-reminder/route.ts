@@ -135,7 +135,6 @@ export async function GET(request: NextRequest) {
             startDay !== endDay ? ` to ${endDay}` : ""
           }. Please update your worklogs as soon as possible.`;
           console.log(startDay, endDay);
-
           const notification = await prisma.notification.create({
             data: {
               userId: user.user.id,
