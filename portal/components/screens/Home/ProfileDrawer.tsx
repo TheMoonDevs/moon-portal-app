@@ -28,6 +28,7 @@ import { LoadingSkeleton } from "@/components/elements/LoadingSkeleton";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
 import { setReduxUser } from "@/utils/redux/auth/auth.slice";
 import media from "@/styles/media";
+import dayjs from "dayjs";
 
 interface LoggedInUser {
   user: User;
@@ -57,16 +58,16 @@ export const UserProfileDrawer: React.FC = () => {
   const payData = loggedinUser?.user?.payData as PayData;
   const [worklogSummary, setWorklogSummary] = useState<WorkLogs[]>([]);
   const { loading, setLoading } = useAsyncState();
-
   const handleClose = () => {
     dispatch(closeDrawer());
   };
 
   const fetchWorklogData = useCallback(async () => {
     setLoading(true);
+    console.log()
     try {
       const response = await PortalSdk.getData(
-        `/api/user/worklogs/summary?userId=${selectedUser?.id}`,
+        `/api/user/worklogs/summary?userId=${selectedUser?.id}&year=${dayjs().year()}&month=${dayjs().month(dayjs().month()).format("MM")}`,
         null
       );
       setWorklogSummary(response.data.workLogs);
@@ -226,7 +227,7 @@ export const UserProfileDrawer: React.FC = () => {
           {loggedinUser.user.id === selectedUser?.id && (
             <label className="absolute top-2 -right-2 bg-white rounded-full flex items-center justify-center cursor-pointer">
               <span
-                className="material-symbols-outlined absolute top-2 right-2 bg-white rounded-full p-[6px] cursor-pointer"
+                className="material-symbols-outlined absolute top-0 right-2 bg-white rounded-full p-[6px] cursor-pointer"
                 style={{ fontSize: "16px" }}>
                 add_a_photo
               </span>
@@ -240,19 +241,19 @@ export const UserProfileDrawer: React.FC = () => {
           )}
           <div className="rounded-full absolute -bottom-[3.25rem] left-5 border-4 w-24 h-24 border-white">
             {avatarLoading ? (
-              <div className="bg-white">
+              <div className="bg-white rounded-full">
                 <div className="rounded-full w-24 h-24 bg-gray-300 animate-pulse" />
               </div>
             ) : (
               <img
                 src={selectedUser?.avatar || "/icons/placeholderAvatar.svg"}
-                alt={selectedUser?.name || ""}
+                alt={selectedUser?.name?.charAt(0) || ""}
                 className="object-cover rounded-full w-full h-full bg-white"
               />
             )}
 
-            {/* {loggedinUser.user.id === selectedUser?.id && ( */}
-            {true && (
+            {loggedinUser.user.id === selectedUser?.id && 
+             (
               <label className="absolute top-2 -right-2 bg-white rounded-full p-[2px] flex items-center justify-center cursor-pointer">
                 <span
                   className="material-symbols-outlined bg-white rounded-full p-[4px]"
