@@ -21,6 +21,7 @@ import {
 } from "@mui/material";
 import CreateMission from "./CreateMission";
 import useSWR from "swr";
+import TasksList from "./TaskList";
 
 export function calculateMissionStat(
   mission: Mission,
@@ -82,6 +83,7 @@ export const MissionsList = ({
   const [timeFrame, setTimeFrame] = useState("month");
   const [timeValue, setTimeValue] = useState(dayjs().format("YYYY-MM"));
   const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState("missions");
 
   const getQueryString = useCallback((frame: string, value: string): string => {
     switch (frame) {
@@ -179,12 +181,29 @@ export const MissionsList = ({
         className="flex flex-row items-center justify-between px-4 py-4 border-b border-neutral-200 rounded-t-xl"
       >
         <div className="flex flex-row items-center gap-2">
-          <h3 className="text-sm font-semibold text-neutral-400 tracking-widest uppercase">
+          <h3
+            className={`text-sm font-semibold text-neutral-400 tracking-widest uppercase cursor-pointer border-b-4 w-20 flex justify-center transition-colors duration-300 ease-in-out ${
+              activeTab === "missions"
+                ? "border-neutral-400 bg-gray-100"
+                : "border-transparent bg-white"
+            }`}
+            onClick={() => setActiveTab("missions")}
+          >
             Missions
+          </h3>
+          <h3
+            className={`text-sm font-semibold text-neutral-400 tracking-widest uppercase cursor-pointer border-b-4 w-20 flex justify-center transition-colors duration-300 ease-in-out ${
+              activeTab === "tasks"
+                ? "border-neutral-400 bg-gray-100"
+                : "border-transparent bg-white"
+            }`}
+            onClick={() => setActiveTab("tasks")}
+          >
+            Tasks
           </h3>
           <Tooltip title="Add New Mission">
             <span
-              className="material-symbols-outlined cursor-pointer"
+              className="material-symbols-outlined cursor-pointer transition-transform duration-300 ease-in-out hover:scale-110"
               onClick={() => setIsOpen(true)}
             >
               add_box
@@ -197,6 +216,7 @@ export const MissionsList = ({
               value={timeFrame}
               onChange={handleTimeFrameChange}
               label="Time Frame"
+              disabled={activeTab === "tasks"}
             >
               <MenuItem value="month">Month</MenuItem>
               <MenuItem value="quarter">Quarter</MenuItem>
@@ -208,6 +228,7 @@ export const MissionsList = ({
               value={timeValue}
               onChange={handleTimeValueChange}
               label="Value"
+              disabled={activeTab === "tasks"}
             >
               {getTimeValueOptions().map((option) => (
                 <MenuItem key={option.value} value={option.value}>
@@ -219,58 +240,62 @@ export const MissionsList = ({
           <span className="material-icons-outlined">search</span>
         </div>
       </div>
-      {missions && missions.length > 0 ? (
-        missions
-          .filter(
-            (mission: Mission) =>
-              HOUSES_LIST[currentHouseIndex]?.id == mission.house
-          )
-          .map((mission, i) => (
-            <div
-              key={i}
-              className={`flex flex-col gap-2 border-b pt-3 border-neutral-200 cursor-pointer hover:bg-gray-100 
+      {activeTab === "missions" ? (
+        missions && missions.length > 0 ? (
+          missions
+            .filter(
+              (mission: Mission) =>
+                HOUSES_LIST[currentHouseIndex]?.id == mission.house
+            )
+            .map((mission, i) => (
+              <div
+                key={i}
+                className={`flex flex-col gap-2 border-b pt-3 border-neutral-200 cursor-pointer hover:bg-gray-100 
                 ${
                   selectedMission?.id === mission.id
-                    ? 'bg-gray-200'
-                    : 'text-gray-700'
+                    ? "bg-gray-200"
+                    : "text-gray-700"
                 }
               `}
-              onClick={() => {
-                dispatch(setSelectedMission(mission));
-                dispatch(setMissionDetailsOpen(false));
-              }}
-            >
-              <div className="flex flex-row items-center gap-2 w-full px-4">
-                <img
-                  src={`images/houses/${mission.house}.png`}
-                  alt={mission.house}
-                  className="w-8 h-8 object-cover object-center rounded-full"
-                />
-                <h4 className="text-md font-semibold">{mission.title}</h4>
-                <p className="text-sm font-regular ml-auto">
-                  {mission.housePoints} HP
-                </p>
-                <p className="text-sm font-regular">
-                  {calculateMissionStat(mission, "balance")} /{" "}
-                  {mission.indiePoints}
-                </p>
-                <p className="text-sm font-regular">
-                  {calculateMissionStat(mission, "status")}
-                </p>
-                {/* <p className="text-sm font-regular">{mission.createdAt ? prettyPrintDateInMMMDD(new Date(mission.createdAt)) : "uknown"}</p> */}
-              </div>
-              <div
-                className="h-[2px] bg-green-500"
-                style={{
-                  width: `${calculateMissionStat(mission, "percentage")}%`,
+                onClick={() => {
+                  dispatch(setSelectedMission(mission));
+                  dispatch(setMissionDetailsOpen(false));
                 }}
-              ></div>
-            </div>
-          ))
+              >
+                <div className="flex flex-row items-center gap-2 w-full px-4">
+                  <img
+                    src={`images/houses/${mission.house}.png`}
+                    alt={mission.house}
+                    className="w-8 h-8 object-cover object-center rounded-full"
+                  />
+                  <h4 className="text-md font-semibold">{mission.title}</h4>
+                  <p className="text-sm font-regular ml-auto">
+                    {mission.housePoints} HP
+                  </p>
+                  <p className="text-sm font-regular">
+                    {calculateMissionStat(mission, "balance")} /{" "}
+                    {mission.indiePoints}
+                  </p>
+                  <p className="text-sm font-regular">
+                    {calculateMissionStat(mission, "status")}
+                  </p>
+                  {/* <p className="text-sm font-regular">{mission.createdAt ? prettyPrintDateInMMMDD(new Date(mission.createdAt)) : "uknown"}</p> */}
+                </div>
+                <div
+                  className="h-[2px] bg-green-500"
+                  style={{
+                    width: `${calculateMissionStat(mission, "percentage")}%`,
+                  }}
+                ></div>
+              </div>
+            ))
+        ) : (
+          <div className="text-gray-500 py-4 flex justify-center items-center">
+            No Data Found
+          </div>
+        )
       ) : (
-        <div className="text-gray-500 py-4 flex justify-center items-center">
-          No Data Found
-        </div>
+        <TasksList />
       )}
       <CreateMission
         isOpen={isOpen}
