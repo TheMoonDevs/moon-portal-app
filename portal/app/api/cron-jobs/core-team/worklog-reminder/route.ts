@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic"; // static by default, unless reading the request
 import { prisma } from "@/prisma/prisma";
 import { SlackBotSdk } from "@/utils/services/slackBotSdk";
 import dayjs from "dayjs";
@@ -67,6 +68,7 @@ export async function GET(request: NextRequest) {
         // id: "665bfefcc58926c7f6935c0c", //remove and add your user id for testing
       },
     });
+    console.log(users);
 
     const usersWithWorkLogs = await Promise.all(
       users.map(async (user) => {
@@ -94,53 +96,70 @@ export async function GET(request: NextRequest) {
       })
     );
 
+    const notifiedUsers = [];
+
     for (const user of usersWithWorkLogs) {
       // Get missed sequences, excluding today
       const missedSequences = getConsecutiveMissedDays(
-        user.missedDays.filter(day => !day.isSame(dayjs(), 'day')),
+        user.missedDays.filter((day) => !day.isSame(dayjs(), "day")),
         2
       );
 
       console.log(missedSequences.length);
-      
-    
+
       if (missedSequences.length > 0) {
-        const lastSequence = missedSequences[missedSequences.length - 1].filter(day => !isWeekend(day));
+        const lastSequence = missedSequences[missedSequences.length - 1].filter(
+          (day) => !isWeekend(day)
+        );
         const lastDayInSequence = lastSequence[lastSequence.length - 1];
-        const yesterday = dayjs().subtract(1, 'day');
-        console.log(lastSequence, lastDayInSequence, yesterday);
-        console.log(lastDayInSequence.isSame(yesterday, 'day'));
+        let lastWorkingDay = dayjs().subtract(1, "day");
+        if (isWeekend(lastWorkingDay)) {
+          lastWorkingDay = lastWorkingDay.subtract(1, "day");
+        }
+        if (isWeekend(lastWorkingDay)) {
+          lastWorkingDay = lastWorkingDay.subtract(1, "day");
+        }
+
+        console.log(lastDayInSequence, lastWorkingDay);
+        console.log(lastDayInSequence.isSame(lastWorkingDay, "day"));
         // Check if the last day of the sequence is yesterday (active sequence)
-        if (lastDayInSequence.isSame(yesterday, 'day')) {
-          const startDay = lastSequence[0].format('DD');
-          const endDay = lastDayInSequence.format('DD');
+        if (lastDayInSequence.isSame(lastWorkingDay, "day")) {
+          const startDay = lastSequence[0].format("DD");
+          const endDay = lastDayInSequence.format("DD");
           const title = `Missed Worklog Reminder`;
-          const description = `Hello @${user.user.name}, It appears that you have missed your worklogs for ${lastSequence.length} consecutive working days, from ${startDay}${
+          const description = `Hello @${
+            user.user.name
+          }, It appears that you have missed your worklogs for ${
+            lastSequence.length
+          } consecutive working days, from ${startDay}${
             startDay !== endDay ? ` to ${endDay}` : ""
           }. Please update your worklogs as soon as possible.`;
           console.log(startDay, endDay);
-          
-    
           const notification = await prisma.notification.create({
             data: {
-              userId: user.user.id, // uncomment this for prod
-              // userId: "665bfefcc58926c7f6935c0c", // Remove and add your user id for testing
+              userId: user.user.id,
               title,
               description,
               notificationType: "SELF_GENERATED",
             },
           });
           console.log(notification);
-    
-          const slack = await slackBot.sendSlackMessageviaAPI({
-            text: `Hello <@${user?.slackId}>, It appears that you have missed your worklogs for ${lastSequence.length} consecutive working days, from ${startDay}${
-              startDay !== endDay ? ` to ${endDay}` : ""
-            }. Please update your worklogs as soon as possible.`,
-            channel: user?.slackId ?? undefined, // Uncomment this for prod
-            // channel: "U06NE7XFEJU", // Remove and add your user id for testing
-          });
-          console.log(slack);
-          
+          console.log(user?.slackId);
+          if (user?.slackId) {
+            const slack = await slackBot.sendSlackMessageviaAPI({
+              text: `Hello <@${
+                user?.slackId
+              }>, It appears that you have missed your worklogs for ${
+                lastSequence.length
+              } consecutive working days, from ${startDay}${
+                startDay !== endDay ? ` to ${endDay}` : ""
+              }. Please update your worklogs as soon as possible.`,
+              channel: user?.slackId,
+            });
+            console.log(slack);
+          }
+
+          notifiedUsers.push(user.user.name);
         }
       }
     }
@@ -148,6 +167,7 @@ export async function GET(request: NextRequest) {
     const jsonResponse = {
       status: "success",
       message: "Reminders Sent!",
+      notifiedUsers,
     };
 
     return NextResponse.json(jsonResponse);
