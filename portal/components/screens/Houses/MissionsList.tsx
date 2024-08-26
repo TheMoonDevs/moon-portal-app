@@ -20,6 +20,7 @@ import {
   Tooltip,
 } from "@mui/material";
 import CreateMission from "./CreateMission";
+import useSWR from "swr";
 
 export function calculateMissionStat(
   mission: Mission,
@@ -96,20 +97,25 @@ export const MissionsList = ({
     }
   }, []);
 
+  const fetchUrl = `/api/missions?${getQueryString(timeFrame, timeValue)}`;
+  const { data, error } = useSWR(fetchUrl, (url) =>
+    fetch(url).then((res) => res.json())
+  );
+
   useEffect(() => {
-    const fetchUrl = `/api/missions?${getQueryString(timeFrame, timeValue)}`;
-    PortalSdk.getData(fetchUrl, null)
-      .then((data) => {
-        dispatch(setAllMissions(data?.data?.missions || []));
-        dispatch(
-          setSelectedMission(data?.data?.missions[currentHouseIndex] || [])
-        );
-      })
-      .catch((err) => {
-        setMissionDetailsOpen(false);
-        console.error("Error fetching missions:", err);
-      });
-  }, [currentHouseIndex, timeValue]);
+    if (data) {
+      console.log(data);
+      dispatch(setAllMissions(data?.data?.missions || []));
+      dispatch(
+        setSelectedMission(data?.data?.missions[currentHouseIndex] || [])
+      );
+    }
+
+    if (error) {
+      setMissionDetailsOpen(false);
+      console.error("Error fetching missions:", error);
+    }
+  }, [data, error, currentHouseIndex]);
 
   const getTimeValueOptions = useCallback(() => {
     const currentYear = dayjs().year();
@@ -172,17 +178,19 @@ export const MissionsList = ({
         id="mission-header"
         className="flex flex-row items-center justify-between px-4 py-4 border-b border-neutral-200 rounded-t-xl"
       >
-        <h3 className="text-sm font-semibold text-neutral-400 tracking-widest uppercase">
-          Missions
-        </h3>
-        <Tooltip title="Add New Mission">
-          <span
-            className="material-symbols-outlined cursor-pointer"
-            onClick={() => setIsOpen(true)}
-          >
-            add_box
-          </span>
-        </Tooltip>
+        <div className="flex flex-row items-center gap-2">
+          <h3 className="text-sm font-semibold text-neutral-400 tracking-widest uppercase">
+            Missions
+          </h3>
+          <Tooltip title="Add New Mission">
+            <span
+              className="material-symbols-outlined cursor-pointer"
+              onClick={() => setIsOpen(true)}
+            >
+              add_box
+            </span>
+          </Tooltip>
+        </div>
         <div className="flex flex-row items-center gap-2">
           <FormControl variant="standard" size="small" className="w-[100px]">
             <Select
@@ -211,7 +219,7 @@ export const MissionsList = ({
           <span className="material-icons-outlined">search</span>
         </div>
       </div>
-      {missions &&
+      {missions && missions.length > 0 ? (
         missions
           .filter(
             (mission: Mission) =>
@@ -258,7 +266,12 @@ export const MissionsList = ({
                 }}
               ></div>
             </div>
-          ))}
+          ))
+      ) : (
+        <div className="text-gray-500 py-4 flex justify-center items-center">
+          No Data Found
+        </div>
+      )}
       <CreateMission
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
