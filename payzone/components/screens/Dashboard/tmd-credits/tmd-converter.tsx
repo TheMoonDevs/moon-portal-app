@@ -33,6 +33,7 @@ import {
   updateSelectedCurrencyValue,
 } from "@/utils/redux/balances/balances.slice";
 import CurrencySelectPopover from "@/components/global/CurrencySelectPopover";
+import { useClaimable } from "@/utils/hooks/useClaimable";
 
 const TMDConverter = ({
   refetchTransactions,
@@ -40,6 +41,7 @@ const TMDConverter = ({
   refetchTransactions: () => void;
 }) => {
   const dispatch = useAppDispatch();
+  const { isClaimable } = useClaimable();
   const { walletAddress, walletChain } = useWallet();
   const ethersSigner = useEthersSigner({
     chainId: walletChain?.id,
@@ -466,32 +468,34 @@ const TMDConverter = ({
         <p className="text-sm font-black">{balance} TMD</p>
       </span>
 
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          handleClaim();
-        }}
-      >
-        <div className="flex gap-2">
-          <input
-            type="number"
-            className="w-8/12 h-10 p-2 border border-midGrey"
-            placeholder="Request TMD Conversion"
-            value={claimAmount}
-            onChange={(e) => setClaimAmount(e.target.value)}
-            disabled={txProgress}
-          />
-          <button
-            className={`text-sm font-black w-1/3 text-whiteSmoke bg-black ${
-              txProgress && "opacity-50"
-            }`}
-            type="submit"
-            disabled={txProgress}
-          >
-            {txProgress ? "Claiming...." : "Claim Now"}
-          </button>
-        </div>
-      </form>
+      {isClaimable && (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleClaim();
+          }}
+        >
+          <div className="flex gap-2">
+            <input
+              type="number"
+              className="w-8/12 h-10 p-2 border border-midGrey"
+              placeholder="Request TMD Conversion"
+              value={claimAmount}
+              onChange={(e) => setClaimAmount(e.target.value)}
+              disabled={txProgress}
+            />
+            <button
+              className={`text-sm font-black w-1/3 text-whiteSmoke bg-black ${
+                txProgress && "opacity-50"
+              }`}
+              type="submit"
+              disabled={txProgress}
+            >
+              {txProgress ? "Claiming...." : "Claim Now"}
+            </button>
+          </div>
+        </form>
+      )}
     </div>
   );
 };
