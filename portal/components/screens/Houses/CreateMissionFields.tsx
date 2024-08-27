@@ -7,7 +7,7 @@ import { DatePicker } from '@mui/x-date-pickers';
 import dayjs, { Dayjs } from 'dayjs';
 import { MDXEditorMethods } from '@mdxeditor/editor';
 import { PillSelector } from './PillSelector';
-import { MissionTask } from '@/prisma/missionTasks';
+import { MissionTask } from '@prisma/client';
 
 export const pillOptions = [
   {

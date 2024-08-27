@@ -25,7 +25,7 @@ export const HousesPage = () => {
       .catch((err) => {
         console.error(err);
       });
-  }, [missions]);
+  }, []);
 
   return (
     <div className="grid grid-cols-5 gap-4 max-h-[96vh] ">

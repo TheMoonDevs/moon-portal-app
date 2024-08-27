@@ -1,5 +1,5 @@
-import { MissionTask } from '@/prisma/missionTasks';
 import { Box, Grid, IconButton } from '@mui/material';
+import { MissionTask } from '@prisma/client';
 import React, { useCallback } from 'react';
 
 const Tasks = ({

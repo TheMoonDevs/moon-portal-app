@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { Box, Modal, IconButton, Button, Grid } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import dayjs, { Dayjs } from 'dayjs';
-import { User } from '@prisma/client';
-import { MissionTask } from '@/prisma/missionTasks';
+import { User, MissionTask } from '@prisma/client';
 import CreateTask from './CreateTask';
 import CreateMissionFields from './CreateMissionFields';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -64,26 +63,42 @@ const CreateMission = ({
       completed: state.isCompleted ?? false,
       housePoints: Number(state.housePoints),
       indiePoints: Number(state.indiePoints),
-      completedAt: state.completedAt ? state.completedAt.toISOString() : null,
+      completedAt: state.completedAt
+        ? state.completedAt.toISOString()
+        : undefined,
       expirable: state.isExpirable ?? true,
-      expiresAt: state.expiresAt ? state.expiresAt.toISOString() : null,
-      tasks:
-        state.tasks.length > 0
-          ? state.tasks.map((task: MissionTask) => ({
-              ...task,
-              indiePoints: Number(task.indiePoints),
-              completedAt: task.completedAt
-                ? task.completedAt.toISOString()
-                : null,
-              expiresAt: task.expiresAt ? task.expiresAt.toISOString() : null,
-            }))
-          : undefined,
+      expiresAt: state.expiresAt ? state.expiresAt.toISOString() : undefined,
     };
 
     setLoading(true);
     try {
       const res = await PortalSdk.postData('/api/missions', missionData);
       console.log('Mission created:', res);
+
+      if (state.tasks.length > 0 && res.data.mission.id) {
+        const tasksData = state.tasks.map((task: MissionTask) => ({
+          title: task.title || '',
+          description: task.description || '',
+          indiePoints: Number(task.indiePoints),
+          completedAt: task.completedAt ? task.completedAt.toISOString() : null,
+          expiresAt: task.expiresAt ? task.expiresAt.toISOString() : null,
+          missionId: res.data.mission.id,
+          userId: task.userId || '',
+          expirable: task.expirable ?? false,
+          avatar: task.avatar || '',
+          name: task.name || null,
+          email: task.email || null,
+          userInfoId: task.userInfoId || null,
+        }));
+
+
+        await Promise.all(
+          tasksData.map(async (taskData) => {
+            await PortalSdk.postData('/api/mission-tasks', taskData);
+          })
+        );
+      }
+
       setLoading(false);
       onClose();
       setState({
@@ -98,11 +113,11 @@ const CreateMission = ({
         todoMarkdown: '*',
         tasks: [] as MissionTask[],
       });
-      toast.success('Mission created successfully!');
+      toast.success('Mission and tasks created successfully!');
     } catch (error) {
-      console.error('Error creating mission:', error);
+      console.error('Error creating mission or tasks:', error);
       setLoading(false);
-      toast.error('Failed to create mission');
+      toast.error('Failed to create mission or tasks');
     }
   };
 
@@ -121,19 +136,25 @@ const CreateMission = ({
 
     if (!title.trim() || !description.trim()) return;
 
-    const newTask: MissionTask = {
+    const newTask = {
       title,
       description,
       indiePoints: Number(indiePoints),
       userId,
-      completedAt: completedAt?.toDate(),
+      completedAt: completedAt?.toDate() || undefined,
       completed: isCompleted,
-      expiresAt: expiresAt?.toDate(),
+      expiresAt: expiresAt?.toDate() || undefined,
       expirable: isExpirable,
-      userInfo,
+      userInfoId: userInfo?.id || undefined,
+      avatar: userInfo?.avatar || undefined,
+      name: userInfo?.name || undefined,
+      email: userInfo?.email || undefined,
     };
 
-    setState((prev) => ({ ...prev, tasks: [...prev.tasks, newTask] }));
+    setState((prev) => ({
+      ...prev,
+      tasks: [...prev.tasks, newTask as MissionTask],
+    }));
     setShowTaskFields(false);
 
     setAddTaskState({
