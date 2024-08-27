@@ -353,5 +353,23 @@ model Mission {
   expiresAt DateTime?
   title       String
   description String?
-  tasks Json?
+}
+
+model MissionTask {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  missionId    String   
+  userId       String?  
+  title        String
+  description  String
+  indiePoints  Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  completedAt  DateTime?
+  completed    Boolean? @default(false)
+  expirable    Boolean? @default(false)
+  expiresAt    DateTime?
+  avatar       String
+  name         String
+  email        String
+  userInfoId   String
 }
