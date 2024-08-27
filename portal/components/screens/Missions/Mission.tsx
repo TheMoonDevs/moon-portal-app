@@ -8,12 +8,13 @@ import {
   Paper,
   Grid,
   IconButton,
+  Tooltip,
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers";
-import { HOUSEID, Mission, User } from "@prisma/client";
+import { HOUSEID, Mission, MissionTask, User } from "@prisma/client";
 import dayjs from "dayjs";
-import { Dispatch, SetStateAction, useState } from "react";
-import { ChevronDown, ChevronUp, Loader, Save } from "lucide-react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { ChevronDown, ChevronUp, Loader, Save, Trash2 } from "lucide-react";
 import { MissionTasks } from "./MissionTasks";
 
 export const MissionEntry = ({
@@ -27,11 +28,21 @@ export const MissionEntry = ({
 }) => {
   const [showMissionTasks, setShowMissionTasks] = useState<Boolean>(false);
   const [savingMission, setSavingMission] = useState<string | null>(null);
-  const [mission, setMission] = useState<Mission>(_mission);
+  const [deletingMission, setDeletingMission] = useState<string | null>(null);
+  const [mission, setMission] = useState<Mission & { tasks?: MissionTask[] }>(
+    _mission
+  );
+  const [tasksLoading, setTasksLoading] = useState(false);
 
   const updateMission = () => {
     setSavingMission(mission.id);
-    PortalSdk.putData("/api/missions", mission)
+
+    const missionData = {
+      ...mission,
+      tasks: undefined,
+    };
+
+    PortalSdk.putData("/api/missions", missionData)
       .then((data) => {
         // console.log(data);
         setSavingMission(null);
@@ -43,17 +54,41 @@ export const MissionEntry = ({
   };
 
   const deleteMission = () => {
+    setDeletingMission(mission.id);
     PortalSdk.deleteData("/api/missions", mission)
       .then((data) => {
         // console.log(data);
         if (data.status == "success") {
           setMissions((old) => old.filter((m) => m.id != data.data.mission.id));
         }
+        setDeletingMission(null);
       })
       .catch((error) => {
         console.error(error);
+        setDeletingMission(null);
       });
   };
+
+  const fetchTasks = async () => {
+    setTasksLoading(true);
+    try {
+      const response = await PortalSdk.getData(
+        `/api/mission-tasks?missionId=${mission.id}`,
+        null
+      );
+      setMission((sm) => ({ ...sm, tasks: response.data.tasks }));
+      setTasksLoading(false);
+    } catch (error) {
+      console.error("Error fetching tasks:", error);
+      setTasksLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (showMissionTasks) {
+      fetchTasks();
+    }
+  }, [showMissionTasks]);
 
   return (
     <Paper key={mission.id} elevation={1} className="mb-4 p-4">
@@ -62,7 +97,7 @@ export const MissionEntry = ({
           <IconButton onClick={() => setShowMissionTasks((old) => !old)}>
             {showMissionTasks ? <ChevronUp /> : <ChevronDown />}
           </IconButton>
-          {(mission.tasks as any[])?.length || 0}
+          {/* {mission.tasks?.length || 0} */}
         </Grid>
         <Grid item xs={2}>
           <TextField
@@ -182,18 +217,29 @@ export const MissionEntry = ({
             }
           />
         </Grid>
-        <Grid item xs={1}>
-          <Button
-            variant="contained"
-            color="success"
-            startIcon={<Save />}
-            disabled={savingMission === mission.id}
-            onClick={() => {
-              updateMission();
-            }}
-          >
-            {savingMission === mission.id ? <Loader /> : "Save"}
-          </Button>
+        <Grid item xs={1} className="flex items-center gap-2">
+          <Tooltip title="Save Mission">
+            <IconButton
+              color="success"
+              disabled={savingMission === mission.id}
+              onClick={() => {
+                updateMission();
+              }}
+            >
+              {savingMission === mission.id ? <Loader /> : <Save />}
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Delete Mission">
+            <IconButton
+              color="error"
+              disabled={deletingMission === mission.id}
+              onClick={() => {
+                deleteMission();
+              }}
+            >
+              {deletingMission === mission.id ? <Loader /> : <Trash2 />}
+            </IconButton>
+          </Tooltip>
         </Grid>
       </Grid>
       {showMissionTasks && (
@@ -201,10 +247,9 @@ export const MissionEntry = ({
           mission={mission}
           setShow={setShowMissionTasks}
           setMission={setMission}
-          deleteMission={deleteMission}
-          updateMission={updateMission}
           tasks={mission.tasks as any[]}
           coreTeam={coreTeam}
+          tasksLoading={tasksLoading}
         />
       )}
     </Paper>
