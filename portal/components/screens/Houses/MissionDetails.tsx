@@ -1,6 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 
-import React from "react";
+import React, { useMemo } from "react";
 import { RootState, useAppSelector } from "@/utils/redux/store";
 import { calculateMissionStat } from "./MissionsList";
 import { Mission, MissionTask } from "@prisma/client";
@@ -13,14 +13,27 @@ export const MissionDetails = ({ loading }: { loading: boolean }) => {
 
   const missionTasks = tasks?.filter((t) => t?.missionId === mission?.id);
 
+  const missionStatus = useMemo(() => {
+    return mission && calculateMissionStat(mission, missionTasks, "status");
+  }, [mission, missionTasks]);
+
+  const missionPercentage = useMemo(() => {
+    return mission && calculateMissionStat(mission, missionTasks, "percentage");
+  }, [mission, missionTasks]);
+
+  const missionBalance = useMemo(() => {
+    return mission && calculateMissionStat(mission, missionTasks, "balance");
+  }, [mission, missionTasks]);
+
   if (!mission) {
     return <MissionDetailsSkeleton />;
   }
+  ``;
 
   return (
     <div
       className={`bg-white rounded-lg shadow-lg p-6 h-[96vh] overflow-y-scroll my-4 border-b border-neutral-200 
-       `}
+      `}
     >
       {isOpen ? (
         <div className="flex flex-col gap-6">
@@ -43,12 +56,8 @@ export const MissionDetails = ({ loading }: { loading: boolean }) => {
             <p>House Points: {mission?.housePoints}</p>
             <p>Total Indie Points: {mission?.indiePoints}</p>
             <p>
-              Status:{" "}
-              {mission &&
-              calculateMissionStat(mission, missionTasks, "status") == 0
-                ? "Not Started yet"
-                : mission &&
-                  calculateMissionStat(mission, missionTasks, "status")}
+              Status: Status:{" "}
+              {missionStatus === 0 ? "Not Started yet" : missionStatus}
             </p>
           </div>
           <div className="mb-6">
@@ -56,17 +65,12 @@ export const MissionDetails = ({ loading }: { loading: boolean }) => {
               <div
                 className="bg-blue-600 h-2.5 rounded-full"
                 style={{
-                  width: `${
-                    mission &&
-                    calculateMissionStat(mission, missionTasks, "percentage")
-                  }%`,
+                  width: `${missionPercentage}%`,
                 }}
               ></div>
             </div>
             <p className="text-sm text-gray-600 mt-1">
-              {mission &&
-                calculateMissionStat(mission, missionTasks, "balance")}{" "}
-              / {mission && mission.indiePoints} Indie Points remaining
+              {missionBalance} / {mission.indiePoints} Indie Points remaining
             </p>
           </div>
           <h3 className="text-xl font-semibold mb-4">Tasks</h3>

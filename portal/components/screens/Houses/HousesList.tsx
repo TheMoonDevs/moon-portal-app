@@ -1,6 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Spinner } from "@/components/elements/Loaders";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { Tooltip, Avatar, AvatarGroup } from "@mui/material";
@@ -74,8 +74,23 @@ export const HousesList = ({
     (state: RootState) => state.selectedMission
   );
 
-  const toggleHouse = (index: number) => {
-    setCurrentHouseIndex(currentHouseIndex === index ? -1 : index);
+  const toggleHouse = useCallback(
+    (index: number) => {
+      setCurrentHouseIndex(currentHouseIndex === index ? -1 : index);
+    },
+    [currentHouseIndex, setCurrentHouseIndex]
+  );
+
+  const housePoints = useMemo(() => {
+    return HOUSES_LIST.map((house) => ({
+      id: house.id,
+      points: sumHousePoints(missions || [], house.id),
+    }));
+  }, [missions]);
+
+  const getHousePoints = (houseId: HOUSEID) => {
+    const housePoint = housePoints.find((h) => h.id === houseId);
+    return housePoint ? housePoint.points : 0;
   };
 
   return (
@@ -86,9 +101,7 @@ export const HousesList = ({
           style={{
             background: house.background,
           }}
-          onClick={() => {
-            toggleHouse(index);
-          }}
+          onClick={() => toggleHouse(index)}
           className="flex flex-col border border-neutral-200 text-white rounded-xl overflow-hidden transition-all duration-1000 ease-in-out"
         >
           <div className="relative">
@@ -131,7 +144,7 @@ export const HousesList = ({
                       {houseMembersLoading ? (
                         <Spinner />
                       ) : (
-                        sumHousePoints(missions || [], house.id)
+                        getHousePoints(house.id)
                       )}
                     </h1>
                     <div>

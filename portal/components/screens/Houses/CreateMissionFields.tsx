@@ -1,5 +1,5 @@
 import { Grid } from '@mui/material';
-import React, { useRef } from 'react';
+import React, { useCallback, useRef } from 'react';
 import { MdxAppEditor } from '@/utils/configure/MdxAppEditor';
 import { useUser } from '@/utils/hooks/useUser';
 import { MARKDOWN_PLACEHOLDER } from '../Worklogs/WorklogTabs/TodoTab';
@@ -36,11 +36,14 @@ const CreateMissionFields = ({ state, setState }: CreateMissionFieldsProps) => {
   const mdRef = useRef<MDXEditorMethods | null>(null);
 
   const { user } = useUser();
-  const handleMarkdownChange = (content: string) => {
-    const newContent = content.length === 0 ? MARKDOWN_PLACEHOLDER : content;
-    mdRef?.current?.setMarkdown(newContent);
-    setState((prev: any) => ({ ...prev, todoMarkdown: content }));
-  };
+  const handleMarkdownChange = useCallback(
+    (content: string) => {
+      const newContent = content.length === 0 ? MARKDOWN_PLACEHOLDER : content;
+      mdRef?.current?.setMarkdown(newContent);
+      setState((prev: any) => ({ ...prev, todoMarkdown: content }));
+    },
+    [setState]
+  );
 
   return (
     <Grid container spacing={3} className='pt-4'>

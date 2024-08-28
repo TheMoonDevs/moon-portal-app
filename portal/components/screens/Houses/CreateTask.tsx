@@ -1,5 +1,5 @@
 import { Grid } from '@mui/material';
-import React from 'react';
+import React, { useCallback } from 'react';
 import dayjs, { Dayjs } from 'dayjs';
 import { User } from '@prisma/client';
 import { DatePicker } from '@mui/x-date-pickers';
@@ -34,6 +34,45 @@ const CreateTask = ({
   setAddTaskState,
   houseMembers,
 }: CreateTaskProps) => {
+  const handleInputChange = useCallback(
+    (key: keyof AddTaskState) => (e: React.ChangeEvent<HTMLInputElement>) => {
+      setAddTaskState((prevState) => ({
+        ...prevState,
+        [key]:
+          key === 'indiePoints' ? parseInt(e.target.value, 10) : e.target.value,
+      }));
+    },
+    [setAddTaskState]
+  );
+
+  const handleUserChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const selectedUserId = e.target.value;
+      const selectedUser = houseMembers.find(
+        (user) => user.id === selectedUserId
+      );
+
+      setAddTaskState((prevState) => ({
+        ...prevState,
+        userId: selectedUserId,
+        userInfo: selectedUser
+          ? {
+              avatar: selectedUser.avatar ?? '',
+              name: selectedUser.name ?? '',
+              email: selectedUser.email ?? '',
+              id: selectedUser.id ?? '',
+            }
+          : {
+              avatar: '',
+              name: '',
+              email: '',
+              id: '',
+            },
+      }));
+    },
+    [setAddTaskState, houseMembers]
+  );
+
   return (
     <>
       <Grid container spacing={3} className='pt-4'>
@@ -45,12 +84,7 @@ const CreateTask = ({
             type='text'
             id='title'
             value={addTaskState.title}
-            onChange={(e) =>
-              setAddTaskState({
-                ...addTaskState,
-                title: e.target.value,
-              })
-            }
+            onChange={handleInputChange('title')}
             className='w-full px-4 py-2 border border-gray-300 rounded-md'
           />
         </Grid>
@@ -65,12 +99,7 @@ const CreateTask = ({
             type='text'
             id='description'
             value={addTaskState.description}
-            onChange={(e) =>
-              setAddTaskState({
-                ...addTaskState,
-                description: e.target.value,
-              })
-            }
+            onChange={handleInputChange('description')}
             className='w-full px-4 py-2 border border-gray-300 rounded-md'
           />
         </Grid>
@@ -85,12 +114,7 @@ const CreateTask = ({
             type='number'
             id='indie-points'
             value={addTaskState.indiePoints}
-            onChange={(e) =>
-              setAddTaskState({
-                ...addTaskState,
-                indiePoints: parseInt(e.target.value, 10),
-              })
-            }
+            onChange={handleInputChange('indiePoints')}
             className='w-full px-4 py-2 border border-gray-300 rounded-md'
           />
         </Grid>
@@ -104,30 +128,7 @@ const CreateTask = ({
           <select
             id='select-user'
             value={addTaskState.userId}
-            onChange={(e) => {
-              const selectedUserId = e.target.value;
-              const selectedUser = houseMembers.find(
-                (user) => user.id === selectedUserId
-              );
-
-              setAddTaskState((prevState) => ({
-                ...prevState,
-                userId: selectedUserId,
-                userInfo: selectedUser
-                  ? {
-                      avatar: selectedUser.avatar ?? '',
-                      name: selectedUser.name ?? '',
-                      email: selectedUser.email ?? '',
-                      id: selectedUser.id ?? '',
-                    }
-                  : {
-                      avatar: '',
-                      name: '',
-                      email: '',
-                      id: '',
-                    },
-              }));
-            }}
+            onChange={handleUserChange}
             className='w-full px-4 py-2 border border-gray-300 rounded-md'
           >
             <option value='' disabled>

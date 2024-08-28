@@ -11,6 +11,7 @@ import { PortalSdk } from '@/utils/services/PortalSdk';
 import { useUser } from '@/utils/hooks/useUser';
 import { toast, Toaster } from 'sonner';
 import { Spinner } from '@/components/elements/Loaders';
+import { initialAddTaskState, initialState } from './state';
 
 const CreateMission = ({
   isOpen,
@@ -21,35 +22,9 @@ const CreateMission = ({
   onClose: () => void;
   houseMembers: User[];
 }) => {
-  const [state, setState] = useState({
-    title: '',
-    house: '',
-    housePoints: 0,
-    indiePoints: 0,
-    completedAt: dayjs(new Date()),
-    expiresAt: dayjs(new Date()),
-    isCompleted: false,
-    isExpirable: true,
-    todoMarkdown: '*',
-    tasks: [] as MissionTask[],
-  });
+  const [state, setState] = useState(initialState);
   const [showTaskFields, setShowTaskFields] = useState(false);
-  const [addTaskState, setAddTaskState] = useState({
-    title: '',
-    description: '',
-    indiePoints: 0,
-    userId: '',
-    completedAt: dayjs(new Date()),
-    expiresAt: dayjs(new Date()),
-    isCompleted: false,
-    isExpirable: true,
-    userInfo: {
-      avatar: '',
-      name: '',
-      email: '',
-      id: '',
-    },
-  });
+  const [addTaskState, setAddTaskState] = useState(initialAddTaskState);
   const { user } = useUser();
   const [loading, setLoading] = useState<boolean>(false);
 
@@ -91,7 +66,6 @@ const CreateMission = ({
           userInfoId: task.userInfoId || null,
         }));
 
-
         await Promise.all(
           tasksData.map(async (taskData) => {
             await PortalSdk.postData('/api/mission-tasks', taskData);
@@ -101,18 +75,7 @@ const CreateMission = ({
 
       setLoading(false);
       onClose();
-      setState({
-        title: '',
-        house: '',
-        housePoints: 0,
-        indiePoints: 0,
-        completedAt: dayjs(new Date()),
-        expiresAt: dayjs(new Date()),
-        isCompleted: false,
-        isExpirable: true,
-        todoMarkdown: '*',
-        tasks: [] as MissionTask[],
-      });
+      setState(initialState);
       toast.success('Mission and tasks created successfully!');
     } catch (error) {
       console.error('Error creating mission or tasks:', error);
@@ -156,18 +119,7 @@ const CreateMission = ({
       tasks: [...prev.tasks, newTask as MissionTask],
     }));
     setShowTaskFields(false);
-
-    setAddTaskState({
-      title: '',
-      description: '',
-      indiePoints: 0,
-      userId: '',
-      completedAt: dayjs(),
-      expiresAt: dayjs(),
-      isCompleted: false,
-      isExpirable: true,
-      userInfo: { avatar: '', name: '', email: '', id: '' },
-    });
+    setAddTaskState(initialAddTaskState);
   };
 
   return (
