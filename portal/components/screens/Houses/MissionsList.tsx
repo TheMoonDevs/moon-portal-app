@@ -7,7 +7,7 @@ import {
   setSelectedMission,
 } from "@/utils/redux/missions/selectedMission.slice";
 import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import { Mission, User } from "@prisma/client";
+import { Mission, MissionTask, User } from "@prisma/client";
 import { HOUSES_LIST } from "./HousesList";
 import { useCallback, useEffect, useState } from "react";
 import { PortalSdk } from "@/utils/services/PortalSdk";
@@ -22,29 +22,22 @@ import {
 import CreateMission from "./CreateMission";
 import useSWR from "swr";
 import TasksList from "./TaskList";
+import { setAllTasks } from "@/utils/redux/missions/missionsTasks.slice";
 
 export function calculateMissionStat(
   mission: Mission,
+  tasks: MissionTask[] = [],
   statType: "balance" | "percentage" | "status"
 ): number | string {
   const totalMissionPoints = mission.indiePoints;
 
-  if (!mission.tasks) {
-    switch (statType) {
-      case "balance":
-        return totalMissionPoints;
-      case "percentage":
-        return 0;
-      case "status":
-        return ""; // No tasks, so mission not completed
-    }
-  }
+  const allTaskPoints =
+    tasks.length > 0
+      ? tasks
+          .filter((task) => task.missionId === mission.id)
+          .reduce((sum, task) => sum + task.indiePoints, 0)
+      : 0;
 
-  /* @ts-expect-error */
-  const allTaskPoints = mission.tasks.reduce(
-    (sum: number, task: any) => sum + task.indiePoints,
-    0
-  );
   const remainingBalance = totalMissionPoints - allTaskPoints;
 
   switch (statType) {
@@ -58,7 +51,7 @@ export function calculateMissionStat(
       const progress = (completedPoints / totalMissionPoints) * 100;
       return progress;
     case "status":
-      return remainingBalance >= 0 ? "🟡" : remainingBalance === 0 ? "✅" : "";
+      return remainingBalance > 0 ? "🟡" : remainingBalance === 0 ? "✅" : "❌";
     default:
       throw new Error("Invalid stat type");
   }
@@ -80,10 +73,12 @@ export const MissionsList = ({
   const selectedMission = useAppSelector(
     (state: RootState) => state.selectedMission.mission
   );
+  const tasks = useAppSelector((state: RootState) => state.missionsTasks.tasks);
   const [timeFrame, setTimeFrame] = useState("month");
   const [timeValue, setTimeValue] = useState(dayjs().format("YYYY-MM"));
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState("missions");
+  const [tasksFetched, setTasksFetched] = useState(false);
 
   const getQueryString = useCallback((frame: string, value: string): string => {
     switch (frame) {
@@ -106,18 +101,37 @@ export const MissionsList = ({
 
   useEffect(() => {
     if (data) {
-      console.log(data);
+      // console.log(data);
       dispatch(setAllMissions(data?.data?.missions || []));
-      dispatch(
-        setSelectedMission(data?.data?.missions[currentHouseIndex] || [])
-      );
+      const selectedMissionData =
+        data?.data?.missions[currentHouseIndex] || null;
+      dispatch(setSelectedMission(selectedMissionData));
+      if (!tasksFetched && missions) {
+        missions?.forEach(async (mission) => {
+          try {
+            const res: { data: { tasks: MissionTask[] } } =
+              await PortalSdk.getData(
+                `/api/mission-tasks?missionId=${mission.id}`,
+                null
+              );
+            const tasksFromResponse = res.data.tasks || [];
+            dispatch(setAllTasks(tasksFromResponse));
+          } catch (error) {
+            console.log(
+              `Error fetching tasks for mission ${mission?.id},${mission.title} :`,
+              error
+            );
+          }
+        });
+        setTasksFetched(true);
+      }
     }
 
     if (error) {
-      setMissionDetailsOpen(false);
+      dispatch(setMissionDetailsOpen(false));
       console.error("Error fetching missions:", error);
     }
-  }, [data, error, currentHouseIndex]);
+  }, [data, error, dispatch, tasksFetched, missions]);
 
   const getTimeValueOptions = useCallback(() => {
     const currentYear = dayjs().year();
@@ -247,55 +261,70 @@ export const MissionsList = ({
               (mission: Mission) =>
                 HOUSES_LIST[currentHouseIndex]?.id == mission.house
             )
-            .map((mission, i) => (
-              <div
-                key={i}
-                className={`flex flex-col gap-2 border-b pt-3 border-neutral-200 cursor-pointer hover:bg-gray-100 
+            .map((mission, i) => {
+              const missionTasks = tasks?.filter(
+                (t) => t?.missionId === mission?.id
+              );
+              return (
+                <div
+                  key={i}
+                  className={`flex flex-col gap-2 border-b pt-3 border-neutral-200 cursor-pointer hover:bg-gray-100 
                 ${
                   selectedMission?.id === mission.id
                     ? "bg-gray-200"
                     : "text-gray-700"
                 }
               `}
-                onClick={() => {
-                  dispatch(setSelectedMission(mission));
-                  dispatch(setMissionDetailsOpen(false));
-                }}
-              >
-                <div className="flex flex-row items-center gap-2 w-full px-4">
-                  <img
-                    src={`images/houses/${mission.house}.png`}
-                    alt={mission.house}
-                    className="w-8 h-8 object-cover object-center rounded-full"
-                  />
-                  <h4 className="text-md font-semibold">{mission.title}</h4>
-                  <p className="text-sm font-regular ml-auto">
-                    {mission.housePoints} HP
-                  </p>
-                  <p className="text-sm font-regular">
-                    {calculateMissionStat(mission, "balance")} /{" "}
-                    {mission.indiePoints}
-                  </p>
-                  <p className="text-sm font-regular">
-                    {calculateMissionStat(mission, "status")}
-                  </p>
-                  {/* <p className="text-sm font-regular">{mission.createdAt ? prettyPrintDateInMMMDD(new Date(mission.createdAt)) : "uknown"}</p> */}
-                </div>
-                <div
-                  className="h-[2px] bg-green-500"
-                  style={{
-                    width: `${calculateMissionStat(mission, "percentage")}%`,
+                  onClick={() => {
+                    dispatch(setSelectedMission(mission));
+                    dispatch(setMissionDetailsOpen(false));
                   }}
-                ></div>
-              </div>
-            ))
+                >
+                  <div className="flex flex-row items-center gap-2 w-full px-4">
+                    <img
+                      src={`images/houses/${mission.house}.png`}
+                      alt={mission.house}
+                      className="w-8 h-8 object-cover object-center rounded-full"
+                    />
+                    <h4 className="text-md font-semibold">{mission.title}</h4>
+                    <p className="text-sm font-regular ml-auto">
+                      {mission.housePoints} HP
+                    </p>
+                    <p className="text-sm font-regular">
+                      {missionTasks.length > 0 &&
+                        calculateMissionStat(
+                          mission,
+                          missionTasks,
+                          "balance"
+                        )}{" "}
+                      / {mission.indiePoints}
+                    </p>
+                    <p className="text-sm font-regular">
+                      {missionTasks.length > 0 &&
+                        calculateMissionStat(mission, missionTasks, "status")}
+                    </p>
+                    {/* <p className="text-sm font-regular">{mission.createdAt ? prettyPrintDateInMMMDD(new Date(mission.createdAt)) : "uknown"}</p> */}
+                  </div>
+                  <div
+                    className="h-[2px] bg-green-500"
+                    style={{
+                      width: `${calculateMissionStat(
+                        mission,
+                        missionTasks,
+                        "percentage"
+                      )}%`,
+                    }}
+                  ></div>
+                </div>
+              );
+            })
         ) : (
-          <div className="text-gray-500 py-4 flex justify-center items-center">
-            No Data Found
+          <div className="text-gray-500 px-4 py-10 flex justify-center items-center">
+            No Missions Found
           </div>
         )
       ) : (
-        <TasksList />
+        <TasksList currentHouseIndex={currentHouseIndex} />
       )}
       <CreateMission
         isOpen={isOpen}
