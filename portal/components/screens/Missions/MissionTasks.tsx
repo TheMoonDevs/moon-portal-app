@@ -93,16 +93,12 @@ export const MissionTasks = ({
     const task = mission.tasks[index];
 
     try {
-      let response;
-
-      if (task.id) {
-        response = await PortalSdk.putData("/api/mission-tasks", task);
-      } else {
-        response = await PortalSdk.postData("/api/mission-tasks", {
-          ...task,
-          missionId: mission.id,
-        });
-      }
+      let response = await (task.id
+        ? PortalSdk.putData("/api/mission-tasks", task)
+        : PortalSdk.postData("/api/mission-tasks", {
+            ...task,
+            missionId: mission.id,
+          }));
 
       if (response.status === "success") {
         console.log("Task saved successfully:", response.data.task);
