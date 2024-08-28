@@ -106,32 +106,38 @@ export const MissionsList = ({
       const selectedMissionData =
         data?.data?.missions[currentHouseIndex] || null;
       dispatch(setSelectedMission(selectedMissionData));
-      if (!tasksFetched && missions) {
-        missions?.forEach(async (mission) => {
-          try {
-            const res: { data: { tasks: MissionTask[] } } =
-              await PortalSdk.getData(
-                `/api/mission-tasks?missionId=${mission.id}`,
-                null
-              );
-            const tasksFromResponse = res.data.tasks || [];
-            dispatch(setAllTasks(tasksFromResponse));
-          } catch (error) {
-            console.log(
-              `Error fetching tasks for mission ${mission?.id},${mission.title} :`,
-              error
-            );
-          }
-        });
-        setTasksFetched(true);
-      }
     }
 
     if (error) {
       dispatch(setMissionDetailsOpen(false));
       console.error("Error fetching missions:", error);
     }
-  }, [data, error, dispatch, tasksFetched, missions]);
+  }, [data, error, dispatch, missions]);
+
+  useEffect(() => {
+    const fetchTasks = async () => {
+      if (missions && !tasksFetched) {
+        for (const mission of missions) {
+          try {
+            const res = await PortalSdk.getData(
+              `/api/mission-tasks?missionId=${mission.id}`,
+              null
+            );
+            const tasksFromResponse = res.data.tasks || [];
+            dispatch(setAllTasks(tasksFromResponse));
+          } catch (error) {
+            console.log(
+              `Error fetching tasks for mission ${mission.id}:`,
+              error
+            );
+          }
+        }
+        setTasksFetched(true);
+      }
+    };
+
+    fetchTasks();
+  }, [missions, tasksFetched, dispatch]);
 
   const getTimeValueOptions = useCallback(() => {
     const currentYear = dayjs().year();
