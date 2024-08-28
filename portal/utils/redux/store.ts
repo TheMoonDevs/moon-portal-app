@@ -13,6 +13,7 @@ import filesUploadReducer from "./filesUpload/fileUpload.slice";
 import onboardingFormReducer from "./onboarding/onboarding.slice";
 import worklogsReducer from "./worklogs/worklogs.slice";
 import selectedMissionReducer from './missions/selectedMission.slice';
+import missionTasksReducer from "./missions/missionsTasks.slice";
 import laterTodosReducer from "./worklogs/laterTodos.slice";
 //import suggestionsReducer from './suggestions/suggestions.slice';
 import notificationsReducer from "./notification/notification.slice";
@@ -34,6 +35,7 @@ const store = configureStore({
     coreTeam: coreTeamSlice,
     //suggestions: suggestionsReducer,
     notifications: notificationsReducer,
+    missionsTasks: missionTasksReducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
