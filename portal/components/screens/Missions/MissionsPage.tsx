@@ -129,7 +129,7 @@ export const MissionsPage = () => {
             <MissionSkeleton />
             <MissionSkeleton />
           </>
-        ) : (
+        ) : missions.length > 0 ? (
           missions.map((mission) => (
             <MissionEntry
               key={mission.id}
@@ -138,6 +138,10 @@ export const MissionsPage = () => {
               setMissions={setMissions}
             />
           ))
+        ) : (
+          <div className="text-center text-lg font-bold mt-8">
+            No missions found
+          </div>
         )}
       </Paper>
     </LocalizationProvider>

@@ -75,7 +75,7 @@ export const MissionTasks = ({
             description: "New Task Description",
             indiePoints: 100,
             expirable: true,
-            expiresAt: dayjs().add(3, "day").toDate(),
+            expiresAt: dayjs().add(1, "day").toDate(),
             completed: false,
           } as MissionTask,
         ],
