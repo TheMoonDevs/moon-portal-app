@@ -1,52 +1,45 @@
-import { MissionTask } from '@/prisma/missionTasks';
 import { RootState, useAppSelector } from '@/utils/redux/store';
 import React from 'react';
 import { Avatar } from '@mui/material';
 import dayjs from 'dayjs';
-
-const isMissionTaskArray = (value: any): value is MissionTask[] => {
-  return (
-    Array.isArray(value) &&
-    value.every(
-      (task) =>
-        typeof task.title === 'string' && typeof task.indiePoints === 'number'
-    )
-  );
-};
+import { Mission, MissionTask } from '@prisma/client';
+import { HOUSES_LIST } from './HousesList';
 
 const formatDate = (date?: Date | null) => {
   if (!date) return 'Unknown';
   return dayjs(date).format('DD/MM/YYYY');
 };
 
-const renderAvatar = (userInfo?: { avatar: string; name: string }) => {
-  if (userInfo?.avatar) {
-    return <Avatar src={userInfo.avatar} />;
+const renderAvatar = (avatar: string | null, name: string | null) => {
+  if (avatar) {
+    return <Avatar src={avatar} />;
   } else {
-    return <Avatar>{userInfo?.name.charAt(0) || 'U'}</Avatar>;
+    return <Avatar>{name?.charAt(0) || 'U'}</Avatar>;
   }
 };
 
-const TasksList = () => {
+const TasksList = ({ currentHouseIndex }: { currentHouseIndex: number }) => {
+  const tasks = useAppSelector((state: RootState) => state.missionsTasks.tasks);
   const missions = useAppSelector(
     (state: RootState) => state.selectedMission.missions
   );
+  const currentHouseMissions =
+    missions?.filter(
+      (mission: Mission) => mission.house === HOUSES_LIST[currentHouseIndex]?.id
+    ) || [];
 
-  const allTasks: MissionTask[] = [];
+  const currentMissionIds = currentHouseMissions.map(
+    (mission: Mission) => mission.id
+  );
 
-  if (missions) {
-    allTasks.length = 0; 
-    missions.forEach((mission) => {
-      if (isMissionTaskArray(mission.tasks)) {
-        allTasks.push(...mission.tasks);
-      }
-    });
-  }
+  const filteredTasks = tasks.filter((task) =>
+    currentMissionIds.includes(task.missionId)
+  );
 
   return (
     <div className='p-6'>
-      {allTasks.length > 0 ? (
-        allTasks.map((task, i) => (
+      {filteredTasks.length > 0 ? (
+        filteredTasks.map((task: MissionTask, i: number) => (
           <div
             key={i}
             className={`flex flex-col gap-2 p-4 border rounded-lg my-2 ${
@@ -56,15 +49,15 @@ const TasksList = () => {
             }`}
           >
             <div className='flex flex-row items-center gap-3'>
-              {renderAvatar(task.userInfo)}
+              {renderAvatar(task?.avatar, task.name)}
               <div className='flex flex-col flex-grow'>
                 <h4 className='text-lg font-semibold text-gray-800'>
                   {task.title}
                 </h4>
                 <p className='text-sm text-gray-600'>
-                  {task.userInfo ? (
+                  {task.name ? (
                     <>
-                      <strong>Assignee:</strong> {task.userInfo.name}
+                      <strong>Assignee:</strong> {task.name}
                     </>
                   ) : (
                     'Not assigned'
