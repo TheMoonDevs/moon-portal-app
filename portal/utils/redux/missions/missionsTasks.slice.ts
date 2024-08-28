@@ -14,7 +14,7 @@ export const missionsTasksSlice = createSlice({
   initialState,
   reducers: {
     setAllTasks: (state, action: PayloadAction<MissionTask[]>) => {
-      state.tasks = [...state.tasks, ...action.payload];
+      state.tasks.push(...action.payload);
     },
   },
 });

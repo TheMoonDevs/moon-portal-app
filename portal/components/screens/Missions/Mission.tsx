@@ -13,7 +13,13 @@ import {
 import { DatePicker } from "@mui/x-date-pickers";
 import { HOUSEID, Mission, MissionTask, User } from "@prisma/client";
 import dayjs from "dayjs";
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import {
+  Dispatch,
+  SetStateAction,
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
 import { ChevronDown, ChevronUp, Loader, Save, Trash2 } from "lucide-react";
 import { MissionTasks } from "./MissionTasks";
 
@@ -34,7 +40,7 @@ export const MissionEntry = ({
   );
   const [tasksLoading, setTasksLoading] = useState(false);
 
-  const updateMission = () => {
+  const updateMission = useCallback(() => {
     setSavingMission(mission.id);
 
     const missionData = {
@@ -51,9 +57,9 @@ export const MissionEntry = ({
         console.error(error);
         setSavingMission(null);
       });
-  };
+  }, [mission]);
 
-  const deleteMission = () => {
+  const deleteMission = useCallback(() => {
     setDeletingMission(mission.id);
     PortalSdk.deleteData("/api/missions", mission)
       .then((data) => {
@@ -67,9 +73,9 @@ export const MissionEntry = ({
         console.error(error);
         setDeletingMission(null);
       });
-  };
+  }, [mission, setMissions]);
 
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     setTasksLoading(true);
     try {
       const response = await PortalSdk.getData(
@@ -82,13 +88,13 @@ export const MissionEntry = ({
       console.error("Error fetching tasks:", error);
       setTasksLoading(false);
     }
-  };
+  }, [mission.id]);
 
   useEffect(() => {
     if (showMissionTasks) {
       fetchTasks();
     }
-  }, [showMissionTasks]);
+  }, [showMissionTasks, fetchTasks]);
 
   return (
     <Paper key={mission.id} elevation={1} className="mb-4 p-4">

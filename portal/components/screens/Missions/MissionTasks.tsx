@@ -16,7 +16,7 @@ import {
 import { DatePicker } from "@mui/x-date-pickers";
 import { Mission, User, MissionTask } from "@prisma/client";
 import dayjs from "dayjs";
-import { Dispatch, SetStateAction, useState } from "react";
+import { Dispatch, SetStateAction, useCallback, useState } from "react";
 import { Delete, Plus, X, Save, Trash2, Loader } from "lucide-react";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 
@@ -38,32 +38,35 @@ export const MissionTasks = ({
   const [savingTask, setSavingTask] = useState<boolean>(false);
   const [deletingTask, setDeletingTask] = useState<boolean>(false);
 
-  const setSelectedTask = (
-    index: number,
-    callback: (task: MissionTask) => MissionTask
-  ) => {
-    setMission((m) => {
-      if (!m) return m;
-      return {
-        ...m,
-        tasks: (m.tasks || []).map((task, i) =>
-          i === index ? callback(task) : task
-        ),
-      };
-    });
-  };
+  const setSelectedTask = useCallback(
+    (index: number, callback: (task: MissionTask) => MissionTask) => {
+      setMission((m) => {
+        if (!m) return m;
+        return {
+          ...m,
+          tasks: (m.tasks || [])?.map((task, i) =>
+            i === index ? callback(task) : task
+          ),
+        };
+      });
+    },
+    [setMission]
+  );
 
-  const deleteSelectedTask = (index: number) => {
-    setMission((m) => {
-      if (!m) return m;
-      return {
-        ...m,
-        tasks: (m.tasks || []).filter((_, i) => i !== index),
-      };
-    });
-  };
+  const deleteSelectedTask = useCallback(
+    (index: number) => {
+      setMission((m) => {
+        if (!m) return m;
+        return {
+          ...m,
+          tasks: (m.tasks || []).filter((_, i) => i !== index),
+        };
+      });
+    },
+    [setMission]
+  );
 
-  const addNewTask = () => {
+  const addNewTask = useCallback(() => {
     setMission((m) => {
       if (!m) return m;
       return {
@@ -81,7 +84,7 @@ export const MissionTasks = ({
         ],
       };
     });
-  };
+  }, [setMission]);
 
   const handleSave = async (index: number) => {
     if (!mission.tasks) {
