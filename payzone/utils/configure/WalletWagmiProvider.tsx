@@ -39,6 +39,7 @@ const connectors = connectorsForWallets(
 
 export const wagmiConfig = createConfig({
   connectors,
+  multiInjectedProviderDiscovery: false,
   chains: [baseSepolia, base],
   transports: {
     [baseSepolia.id]: http(),
