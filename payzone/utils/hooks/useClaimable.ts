@@ -3,11 +3,11 @@ import { Contract } from "ethers";
 import { useEthersProvider, useEthersSigner } from "./useEthers";
 import { TOKEN_INFO } from "../constants/appInfo";
 import TMDTokenABI from "@/utils/constants/erc20.json";
+import { useSmartWallet } from "./useSmartWallet";
 
 export function useClaimable() {
   const [isClaimable, setIsClaimable] = useState<boolean | null>(null);
   const [isSettingClaimable, setIsSettingClaimable] = useState(false);
-
   const provider = useEthersProvider();
   const signer = useEthersSigner();
   const getContract = new Contract(
@@ -20,6 +20,7 @@ export function useClaimable() {
     TMDTokenABI,
     signer
   );
+  const { setClaimable, isCoinbaseConnection } = useSmartWallet();
   const getIsClaimable = async () => {
     try {
       const result = await getContract.getIsClaimable();
@@ -33,13 +34,17 @@ export function useClaimable() {
   const flipIsClaimable = async () => {
     try {
       setIsSettingClaimable(true);
-      const result = await postContract.setIsClaimable(!isClaimable);
-      console.log(result);
+      if (isCoinbaseConnection) {
+        await setClaimable(!isClaimable);
+      } else {
+        await postContract.setIsClaimable(!isClaimable);
+      }
+
       setIsClaimable(!isClaimable);
       setIsSettingClaimable(false);
     } catch (error) {
       console.error("Error fetching isClaimable:", error);
-      setIsClaimable(!isClaimable);
+      setIsSettingClaimable(false);
     }
   };
 
@@ -51,5 +56,6 @@ export function useClaimable() {
     isClaimable,
     isSettingClaimable,
     flipIsClaimable,
+    setIsClaimable,
   };
 }
