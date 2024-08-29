@@ -1,9 +1,9 @@
 "use client";
-import { chainEnum, TOKEN_INFO } from "@/utils/constants/appInfo";
+import { TOKEN_INFO } from "@/utils/constants/appInfo";
 import { useWallet } from "@/utils/hooks/useWallet";
-import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
+import { useAppDispatch } from "@/utils/redux/store";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Modal from "@mui/material/Modal";
 import { useEthersSigner } from "@/utils/hooks/useEthers";
 import { Contract, formatEther, parseEther } from "ethers";
@@ -34,6 +34,8 @@ import {
 } from "@/utils/redux/balances/balances.slice";
 import CurrencySelectPopover from "@/components/global/CurrencySelectPopover";
 import { useClaimable } from "@/utils/hooks/useClaimable";
+import { useAccount } from "wagmi";
+import { useSmartWallet } from "@/utils/hooks/useSmartWallet";
 
 const TMDConverter = ({
   refetchTransactions,
@@ -51,7 +53,6 @@ const TMDConverter = ({
   const [approveProgress, setApproveProgress] = useState<boolean>(false);
   const { user } = useAuthSession();
   const Admin = user?.isAdmin;
-
   const [approvedAllowance, setApprovedAllowance] = useState("0.0");
 
   const [mintOpen, setMintOpen] = useState(false);
@@ -97,6 +98,8 @@ const TMDConverter = ({
     selectedCurrency: currency,
   } = useSyncBalances();
 
+  const { claim, transfer, mint, isCoinbaseConnection } = useSmartWallet();
+
   const handleMint = async () => {
     if (!ethersSigner) return;
 
@@ -111,9 +114,13 @@ const TMDConverter = ({
     );
 
     try {
-      const mintTx = await tokenContract.reward(mintAddress, amount);
-      // console.log(mintTx, mintTx.hash);
-      await mintTx.wait();
+      if (isCoinbaseConnection) {
+        const mintTx = await mint(mintAddress, amount);
+      } else {
+        const mintTx = await tokenContract.reward(mintAddress, amount);
+        // console.log(mintTx, mintTx.hash);
+        await mintTx.wait();
+      }
       setTxProgress(false);
       refetchTransactions();
       setMintAddress("");
@@ -159,26 +166,30 @@ const TMDConverter = ({
       TMDToken.abi,
       ethersSigner
     );
-
     try {
-      const claimTx = await tokenContract.claim(amount);
-      // console.log("hash", claimTx.hash);
-      await claimTx.wait();
-
-      setTxProgress(false);
       let userData = { ...user };
       userData.payData = null;
       userData.workData = null;
-      const updatedData = {
+      let claimTx = null;
+
+      if (isCoinbaseConnection) {
+        claimTx = await claim(amount);
+      } else {
+        claimTx = await tokenContract.claim(amount);
+        // console.log("hash", claimTx.hash);
+        await claimTx.wait();
+
+        setTxProgress(false);
+      }
+      let updatedData = {
         userId: user?.id,
         user: userData,
         txStatus: TRANSACTIONSTATUS.PROCESSING,
         txType: TRANSACTIONTYPE.FIAT,
         txCategory: TRANSACTIONCATEGORY.CLAIM,
         amount: parseFloat(claimAmount),
-        burnTxHash: claimTx.hash,
+        burnTxHash: isCoinbaseConnection ? claimTx : claimTx.hash,
       };
-
       MyServerApi.postData(SERVER_API_ENDPOINTS.payment, updatedData)
         .then((updatedTransaction) => {
           // console.log("Updated transaction:", updatedTransaction);
@@ -244,9 +255,14 @@ const TMDConverter = ({
     );
 
     try {
-      const approveTx = await tokenContract.transfer(sendAddress, amount);
+      if (isCoinbaseConnection) {
+        const approveTx = await transfer(sendAddress, amount);
+      } else {
+        const approveTx = await tokenContract.transfer(sendAddress, amount);
 
-      await approveTx.wait();
+        await approveTx.wait();
+      }
+
       setTxProgress(false);
       refetchTransactions();
       setSendAddress("");
@@ -489,7 +505,7 @@ const TMDConverter = ({
                 txProgress && "opacity-50"
               }`}
               type="submit"
-              disabled={txProgress}
+              disabled={txProgress || !claimAmount}
             >
               {txProgress ? "Claiming...." : "Claim Now"}
             </button>
