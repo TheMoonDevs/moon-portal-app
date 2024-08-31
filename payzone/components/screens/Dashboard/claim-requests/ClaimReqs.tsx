@@ -2,6 +2,7 @@
 
 import { TOKEN_INFO, copyUPI } from "@/utils/constants/appInfo";
 import { useAuthSession } from "@/utils/hooks/useAuthSession";
+import { useClaimable } from "@/utils/hooks/useClaimable";
 import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import { MyServerApi, SERVER_API_ENDPOINTS } from "@/utils/service/MyServerApi";
 import { Modal } from "@mui/material";
@@ -24,7 +25,7 @@ export const ClaimReqs = () => {
   const handleModalOpen = () => setModalOpen(true);
   const handleModalClose = () => setModalOpen(false);
   const [claimId, setClaimId] = useState("");
-
+  const { isClaimable, isSettingClaimable, flipIsClaimable } = useClaimable();
   const handleAddPayment = (id: string) => {
     setLoading(true);
     const updatedData = {
@@ -63,8 +64,30 @@ export const ClaimReqs = () => {
 
   return (
     <section className="h-screen w-full p-4 flex flex-col gap-3 max-lg:h-full">
-      <div className="w-fit h-fit bg-black text-white text-sm font-bold p-2 items-center">
-        <span>TMD - Claim Requests</span>
+      <div className="flex justify-between">
+        <div className="w-fit h-fit bg-black text-white text-sm font-bold p-2 items-center">
+          <span>TMD - Claim Requests</span>
+        </div>
+        <button
+          onClick={flipIsClaimable}
+          disabled={isSettingClaimable}
+          className={`flex items-center justify-center px-2 border-2 
+      ${
+        isClaimable
+          ? "bg-black text-white hover:bg-white hover:text-black"
+          : "bg-white text-black hover:bg-black hover:text-white"
+      } 
+      ${
+        isSettingClaimable ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+      } 
+      border-black`}
+        >
+          {isSettingClaimable ? (
+            <div className="border-4 border-t-black border-white animate-spin"></div>
+          ) : (
+            <span>{isClaimable ? "Claimable" : "Not Claimable"}</span>
+          )}
+        </button>
       </div>
       <p className="text-thin text-sm text-midGrey">
         copy upi-id and pay in G-Pay/PhonePe/Paytm

@@ -8,12 +8,27 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract TMDToken is ERC20, Ownable, ERC20Permit {
     uint256 public burnedAmount;
     uint256 public claimedAmount;
+    // Private variable to control if tokens can be claimed
+    bool private isClaimable;
 
     constructor()
         Ownable(msg.sender)
         ERC20("TMDToken", "TMD")
         ERC20Permit("TMDToken")
-    {}
+    {
+        // By default, the token claim is not allowed
+        isClaimable = false;
+    }
+
+    // Getter for isClaimable
+    function getIsClaimable() public view returns (bool) {
+        return isClaimable;
+    }
+
+    // Setter for isClaimable - only owner can set it
+    function setIsClaimable(bool _isClaimable) public onlyOwner {
+        isClaimable = _isClaimable;
+    }
 
     function transferContractOwnership(address newOwner) public onlyOwner {
         transferOwnership(newOwner);
@@ -25,6 +40,7 @@ contract TMDToken is ERC20, Ownable, ERC20Permit {
     }
 
     function claim(uint256 amount) public {
+        require(isClaimable, "Token claims are not allowed at this time");
         require(
             balanceOf(_msgSender()) >= amount,
             "Not enough tokens to claim"
