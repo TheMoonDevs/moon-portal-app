@@ -16,6 +16,36 @@ export const useUser = (newfetch?: boolean) => {
   const verifiedUserEmail = useAppSelector(
     (state) => state.auth.verifiedUserEmail
   );
+  const refetchUser = () => {
+    try {
+      PortalSdk.getData("/api/user?id=" + sessionUser.id, null)
+        .then((data) => {
+          if (data?.users?.length === 0) {
+            if (sessionUser.id) {
+              console.log("No user found");
+              localStorage.removeItem(LOCAL_STORAGE.user);
+              signOut({
+                callbackUrl: APP_ROUTES.login,
+              });
+            }
+            return;
+          }
+          if (data?.data?.user?.[0]) {
+            localStorage.setItem(
+              LOCAL_STORAGE.user,
+              JSON.stringify(data?.data?.user?.[0])
+            );
+          }
+          dispatch(setReduxUser(data?.data?.user?.[0]));
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+      console.log("User data updated successfully");
+    } catch (err) {
+      console.log("Error fetching or updating user", err);
+    }
+  };
 
   // fetch from local storage
   useEffect(() => {
@@ -43,31 +73,7 @@ export const useUser = (newfetch?: boolean) => {
       return;
     }
     console.log("fetching user", sessionUser, _local_user, newfetch);
-    PortalSdk.getData("/api/user?id=" + sessionUser.id, null)
-      .then((data) => {
-        if (data?.users?.length === 0) {
-          // TODO : HOT_FIXED for temporary reasons.
-          if (sessionUser.id) {
-            console.log("No user found");
-            localStorage.removeItem(LOCAL_STORAGE.user);
-            signOut({
-              callbackUrl: APP_ROUTES.login,
-            });
-          }
-          return;
-        }
-        //console.log("fetched user", data?.data?.user?.[0]);
-        if (data?.data?.user?.[0]) {
-          localStorage.setItem(
-            LOCAL_STORAGE.user,
-            JSON.stringify(data?.data?.user?.[0])
-          );
-        }
-        dispatch(setReduxUser(data?.data?.user?.[0]));
-      })
-      .catch((err) => {
-        console.log(err);
-      });
+    refetchUser();
   }, [newfetch, sessionUser, fetchedUser, dispatch]);
 
   return {
@@ -81,5 +87,6 @@ export const useUser = (newfetch?: boolean) => {
         callbackUrl: APP_ROUTES.login,
       });
     },
+    refetchUser,
   };
 };

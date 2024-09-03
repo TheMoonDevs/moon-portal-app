@@ -44,10 +44,9 @@ export const CoreTeamSection = () => {
                 <img
                   src={
                     user?.avatar ||
-                    "https://via.placeholder.com/150?background=000000&text=" +
-                      user?.name?.charAt(0)
+                    `https://via.placeholder.com/150?text=${user?.name?.charAt(0) || 'U'}`
                   }
-                  alt={user?.name || ""}
+                  alt={user?.name?.charAt(0) || ""}
                   className="w-8 h-8 object-cover object-center rounded-full"
                 />
               </div>

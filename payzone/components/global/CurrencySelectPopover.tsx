@@ -39,7 +39,7 @@ const CurrencySelectPopover: React.FC<CustomPopoverProps> = ({
           boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.1)",
         }}
       >
-        {exchange &&
+        {exchange?.exchangeCurrency &&
           Object.entries(exchange.exchangeCurrency).map(([currency, value]) => (
             <ListItem
               key={currency}
