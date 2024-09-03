@@ -29,7 +29,7 @@ import {
   setEdiotrSaving,
   updateLogs,
 } from "@/utils/redux/worklogs/worklogs.slice";
-import { Popover } from "@mui/material";
+import { Popover, IconButton } from "@mui/material";
 import EmojiLegend from "./WorklogTabs/EmojiLegend";
 
 export const MARKDOWN_PLACHELODER = `* `;
@@ -39,11 +39,15 @@ export const WorklogEditor = ({
   editWorkLogs,
   refreshWorklogs,
   compactView = false,
+  monthTab = 0,
+  setMonthTab,
 }: {
   loading: boolean;
   editWorkLogs: WorkLogs | null;
   refreshWorklogs: () => void;
   compactView?: boolean;
+  monthTab?: number;
+  setMonthTab?: (month: number) => void;
 }) => {
   const dispatch = useAppDispatch();
   const { user } = useUser();
@@ -258,6 +262,17 @@ export const WorklogEditor = ({
     return `${checks} / ${points}`;
   };
 
+  const lastDateOfSelectedMonth = dayjs()
+    .month(monthTab || 0)
+    .endOf("month");
+
+  const handleNextMonthClick = () => {
+    if (setMonthTab) {
+      const nextMonth = monthTab === 11 ? 0 : monthTab + 1;
+      setMonthTab(nextMonth);
+    }
+  };
+
   return (
     <div
       onKeyDown={(e) => {
@@ -275,13 +290,27 @@ export const WorklogEditor = ({
       className="flex flex-col md:max-w-[800px] min-h-screen"
     >
       {!compactView && (
-        <div id="header" className="flex flex-row justify-between">
-          <Link
-            href={APP_ROUTES.userWorklogs}
-            className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700"
-          >
-            <span className="icon_size material-icons">arrow_back</span>
-          </Link>
+        <div id="header" className="flex flex-row justify-between items-center">
+          <div className="flex items-center">
+            <Link href={APP_ROUTES.userWorklogs} className="">
+              <IconButton sx={{ fontSize: "16px" }}>
+                <span className="icon_size material-icons text-neutral-900 hover:text-neutral-700">
+                  arrow_back
+                </span>
+              </IconButton>
+            </Link>
+            {workLog?.date &&
+              dayjs(workLog.date).isSame(lastDateOfSelectedMonth, "day") && (
+                <IconButton
+                  sx={{ fontSize: "16px" }}
+                  onClick={handleNextMonthClick}
+                >
+                  <span className="icon_size material-icons text-neutral-900 hover:text-neutral-700">
+                    arrow_forward
+                  </span>
+                </IconButton>
+              )}
+          </div>
           <div className="flex flex-row gap-1">
             {/* <div
               onClick={() => insertToContent("✅")}

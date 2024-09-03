@@ -289,6 +289,21 @@ export const WorklogsPage = () => {
     },
   ];
 
+  const handleWorkLogItemClick = (data: WorkLogs, isEditorSaving: boolean) => {
+    if (isEditorSaving) {
+      toast.error("Save your Logs! (Ctrl+S)");
+      return;
+    }
+    if (data.id?.trim().length > 0) {
+      setSelectedID(data.id);
+      if (data.date) setSelectedDate(data.date);
+    } else if (data.date) {
+      // console.log(data);
+      setSelectedID(undefined);
+      if (data.date) setSelectedDate(data.date);
+    }
+  };
+
   return (
     <div className="flex flex-col">
       <div className="fixed left-0 right-0 top-0 z-10 bg-white flex flex-row gap-3 py-2 px-3 items-center justify-between border-b border-neutral-400 md:pl-[6rem]">
@@ -364,6 +379,8 @@ export const WorklogsPage = () => {
               id={selectedID}
               date={centerdate.format("YYYY-MM-DD")}
               logType={"dayLog"}
+              monthTab={monthTab}
+              setMonthTab={setMonthTab}
             />
           </div>
           <div className="grid grid-cols-2 lg:w-[30%] gap-3 p-2 max-lg:grid-cols-4 max-md:grid-cols-2 max-h-[80vh] overflow-y-scroll m-3">
@@ -374,20 +391,7 @@ export const WorklogsPage = () => {
                   key={data.id + "-" + data.date + "-" + data.userId}
                   data={data}
                   selected={selectedDate === data.date}
-                  onClick={() => {
-                    if (isEditorSaving) {
-                      toast.error("Save your Logs! (Ctrl+S)");
-                      return;
-                    }
-                    if (data.id?.trim().length > 0) {
-                      setSelectedID(data.id);
-                      if (data.date) setSelectedDate(data.date);
-                    } else if (data.date) {
-                      // console.log(data);
-                      setSelectedID(undefined);
-                      if (data.date) setSelectedDate(data.date);
-                    }
-                  }}
+                  onClick={() => handleWorkLogItemClick(data, isEditorSaving)}
                 />
               )
               //)
