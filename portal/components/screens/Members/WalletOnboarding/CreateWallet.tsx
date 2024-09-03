@@ -1,9 +1,8 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { APP_ROUTES, LOCAL_STORAGE } from "@/utils/constants/appInfo";
 import { PortalSdk } from "@/utils/services/PortalSdk";
-import { Snackbar, Alert } from "@mui/material";
 import { JsonObject } from "@prisma/client/runtime/library";
 import { useNotifications } from "@/utils/hooks/useNotifications";
 import { INotification } from "@/components/screens/notifications/NotificationsList";
@@ -13,15 +12,17 @@ import CopyWalletAddress from "@/components/screens/Members/WalletOnboarding/Ste
 import UploadWalletAddress from "@/components/screens/Members/WalletOnboarding/Steps/UploadWalletAddress";
 import { isValidEthAddress } from "@/utils/helpers/functions";
 import { toast, Toaster } from "sonner";
-import Link from "next/link";
 
 const CreateWallet = () => {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const { user } = useUser();
+  const { user, refetchUser } = useUser();
   const router = useRouter();
   const { notifications } = useNotifications();
 
+  useEffect(() => {
+    if (!user?.payData) refetchUser();
+  }, []);
   const walletNotification = notifications.find(
     (notification) =>
       (notification as INotification).matchId ===
@@ -34,10 +35,10 @@ const CreateWallet = () => {
       return;
     }
     if (!walletAddress) return;
-
     setLoading(true);
     try {
       const userPayData = user?.payData as JsonObject;
+      if (!userPayData) return;
       if (
         userPayData.walletAddress === walletAddress &&
         isValidEthAddress(walletAddress)
@@ -72,7 +73,7 @@ const CreateWallet = () => {
       ...user,
       payData: { ...userPayData, walletAddress },
     });
-    console.log("API response:", response.data.user);
+    // console.log("API response:", response.data.user);
     return response.data.user;
   }
 
