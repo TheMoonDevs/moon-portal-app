@@ -19,7 +19,6 @@ const CreateWallet = () => {
   const { user, refetchUser } = useUser();
   const router = useRouter();
   const { notifications } = useNotifications();
-
   useEffect(() => {
     if (!user?.payData) refetchUser();
   }, []);
@@ -29,6 +28,13 @@ const CreateWallet = () => {
       `${user?.id}_onboard_walletAddress`
   ) as INotification | undefined;
 
+  const payDataTemplate = {
+    upiId: "",
+    payMethod: "Crypto",
+    stipendWalletAddress: "",
+    walletAddress: "",
+  };
+
   const handleNextStep = async (walletAddress?: string) => {
     if (step < 3) {
       setStep(step + 1);
@@ -37,7 +43,9 @@ const CreateWallet = () => {
     if (!walletAddress) return;
     setLoading(true);
     try {
-      const userPayData = user?.payData as JsonObject;
+      const userPayData = user?.payData
+        ? (user?.payData as JsonObject)
+        : payDataTemplate;
       if (!userPayData) {
         toast.error("User PayData is not available !!");
         return;
