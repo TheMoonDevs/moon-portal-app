@@ -29,8 +29,6 @@ export const WorklogSummaryActions = ({
   const [aiSummary, setAiSummary] = useState<string | null>(null);
   const { loading, setLoading } = useAsyncState();
   const [view, setView] = useState<"AI Summary" | "Breakdown" | null>(null);
-  const { copyToClipboard } = useCopyToClipboard();
-  const aiSummaryPdfTargetRef = useRef(null);
   const searchParams = useSearchParams();
   const month = searchParams?.get("month");
   const year = searchParams?.get("year");
@@ -39,24 +37,6 @@ export const WorklogSummaryActions = ({
   const isMonthly = !!month;
   const isYearly = !!year && !month;
 
-  const handleAiSummaryBtnClick = async () => {
-    if (worklogSummary.length === 0) return;
-    setLoading(true);
-    try {
-      const response = await GenAiSdk.generateWorklogSummary(
-        `${userData?.name}'s ${summaryTitle} Summary`,
-        userData?.name,
-        worklogSummary.map((wl) => wl.works)
-      );
-      setAiSummary(response);
-      setView("AI Summary");
-      setIsContentVisible(true);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleBreakdownBtnClick = () => {
     if (worklogSummary.length === 0) return;
@@ -91,50 +71,6 @@ export const WorklogSummaryActions = ({
       );
     }
 
-    if (view === "AI Summary" && aiSummary) {
-      return (
-        <>
-          <div className="flex gap-4 items-center absolute top-9 left-10 md:left-auto md:right-10 !text-neutral-500 z-50">
-            <Tooltip title="Download AI Summary">
-              <span
-                className="material-symbols-outlined hover:cursor-pointer hover:!text-neutral-600"
-                onClick={() =>
-                  generatePDF(aiSummaryPdfTargetRef, {
-                    method: "open",
-                    filename: `ai_worklog_summary_${userData?.name}.pdf`,
-                    page: { margin: Margin.LARGE },
-                  })
-                }>
-                download
-              </span>
-            </Tooltip>
-            <Tooltip title="Copy AI Summary">
-              <span
-                className="material-symbols-outlined hover:cursor-pointer hover:!text-neutral-600"
-                onClick={() => copyToClipboard(aiSummary)}>
-                stack
-              </span>
-            </Tooltip>
-          </div>
-          <div
-            className={`overflow-y-auto h-[80vh] w-full ${isContentVisible ? "block" : "hidden"
-              }`}>
-            <div ref={aiSummaryPdfTargetRef} className="p-10 pt-16">
-              <div className="w-full">
-                <MdxAppEditor
-                  className=""
-                  key={`ai_summary-${uniqueId()}`}
-                  readOnly
-                  contentEditableClassName="summary_mdx flex flex-col gap-4"
-                  markdown={aiSummary}
-                />
-              </div>
-            </div>
-          </div>
-        </>
-      );
-    }
-
     // Show Breakdown content if view is "Breakdown"
     if (view === "Breakdown") {
       return (
@@ -161,7 +97,7 @@ export const WorklogSummaryActions = ({
   };
 
   return (
-    <div className="flex flex-col mt-10 justify-between items-center w-full md:w-[50%] relative">
+    <div className="flex flex-col justify-between items-center w-full md:w-[50%] relative">
       {isContentVisible && (
         <>
           <button
@@ -176,39 +112,6 @@ export const WorklogSummaryActions = ({
 
       {/* Render content conditionally */}
       <div className="hidden md:flex w-full">{renderContent()}</div>
-
-      {/* Bottom buttons */}
-      <div className="text-[0.7rem] sm:text-[0.9rem] md:text-[0.7rem] lg:text-base flex flex-row gap-2 md:gap-4 items-center justify-center fixed md:sticky bottom-0 py-4 md:py-6 bg-white w-full justify-self-end">
-        <Tooltip title="Download Worklog">
-          <button
-            disabled={!worklogSummary.length}
-            className="disabled:cursor-not-allowed flex gap-1 md:gap-2 items-center border border-neutral-800 hover:bg-neutral-100 rounded-md px-2 md:px-4 py-1 md:py-2"
-            onClick={() =>
-              generatePDF(pdfTargetRef, {
-                method: "open",
-                filename: `worklog_summary_${userData?.name}.pdf`,
-                page: { margin: Margin.LARGE },
-              })
-            }>
-            <span className="material-symbols-outlined">download</span>
-            <span>Download as PDF</span>
-          </button>
-        </Tooltip>
-        <button
-          disabled={!worklogSummary.length}
-          className="disabled:cursor-not-allowed flex gap-1 md:gap-2 items-center border border-neutral-800 hover:bg-neutral-100 rounded-md px-2 md:px-4 py-1 md:py-2"
-          onClick={handleBreakdownBtnClick}>
-          <span className="material-symbols-outlined">analytics</span>
-          <span>Breakdown</span>
-        </button>
-        <button
-          disabled={!worklogSummary.length}
-          onClick={handleAiSummaryBtnClick}
-          className="disabled:cursor-not-allowed flex gap-1 md:gap-2 items-center border bg-neutral-900 text-white hover:bg-neutral-700 rounded-md px-2 md:px-4 py-2 md:py-2">
-          <span className="text-[0.8rem] md:text-[1rem]">✨</span>
-          <span>AI Summary</span>
-        </button>
-      </div>
     </div>
   );
 };
