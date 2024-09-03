@@ -19,6 +19,7 @@ export const WorklogView = ({
   visible = true,
   monthTab,
   setMonthTab,
+  handleNextMonthClick,
 }: {
   id?: string;
   date?: string | null;
@@ -27,6 +28,7 @@ export const WorklogView = ({
   logType?: string | null;
   monthTab?: number;
   setMonthTab?: Dispatch<SetStateAction<number>>;
+  handleNextMonthClick?: () => void;
 }) => {
   const { user } = useUser();
   const [workLog, setWorkLog] = useState<WorkLogs | null>(null);
@@ -128,6 +130,7 @@ export const WorklogView = ({
       compactView={compactView}
       monthTab={monthTab}
       setMonthTab={setMonthTab}
+      handleNextMonthClick={handleNextMonthClick}
     />
   );
 };
