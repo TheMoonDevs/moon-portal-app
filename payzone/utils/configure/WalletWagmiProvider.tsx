@@ -1,27 +1,50 @@
 "use client";
 
 import "@rainbow-me/rainbowkit/styles.css";
-import { WagmiProvider, createConfig } from "wagmi";
+import { WagmiProvider, createConfig, http } from "wagmi";
 import { base, baseSepolia, bscTestnet, mainnet } from "wagmi/chains";
-import {
-  RainbowKitProvider,
-  darkTheme,
-  getDefaultConfig,
-} from "@rainbow-me/rainbowkit";
+import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
-import { APP_INFO } from "../constants/appInfo";
-
 const queryClient = new QueryClient();
-// import { publicProvider } from "wagmi/providers/public";
+import { connectorsForWallets } from "@rainbow-me/rainbowkit";
+import {
+  coinbaseWallet,
+  metaMaskWallet,
+  rainbowWallet,
+  walletConnectWallet,
+} from "@rainbow-me/rainbowkit/wallets";
 
-export const DEFAULT_CHAINS = [base, baseSepolia];
+coinbaseWallet.preference = "all";
 
-const wagmiConfig = getDefaultConfig({
-  appName: "Moon Payments App",
-  projectId: "YOUR_PROJECT_ID",
-  appIcon: APP_INFO.icon,
-  chains: [base, baseSepolia],
-  //storage: localStorage,
+const connectors = connectorsForWallets(
+  [
+    {
+      groupName: "Recommended",
+      wallets: [coinbaseWallet],
+    },
+    {
+      groupName: "Popular",
+      wallets: [metaMaskWallet, rainbowWallet],
+    },
+    {
+      groupName: "Wallet Connect",
+      wallets: [walletConnectWallet],
+    },
+  ],
+  {
+    appName: "Your App Name",
+    projectId: "<YOUR WALLETCONNECT PROJECT ID>",
+  }
+);
+
+export const wagmiConfig = createConfig({
+  connectors,
+  multiInjectedProviderDiscovery: false,
+  chains: [baseSepolia, base],
+  transports: {
+    [baseSepolia.id]: http(),
+    [base.id]: http(),
+  },
 });
 // const getSiweMessageOptions: GetSiweMessageOptions = () => ({
 //   statement: "Authorize Moon Payments App to use your metamask wallet?",

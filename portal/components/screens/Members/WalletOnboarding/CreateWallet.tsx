@@ -1,9 +1,8 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { APP_ROUTES, LOCAL_STORAGE } from "@/utils/constants/appInfo";
 import { PortalSdk } from "@/utils/services/PortalSdk";
-import { Snackbar, Alert } from "@mui/material";
 import { JsonObject } from "@prisma/client/runtime/library";
 import { useNotifications } from "@/utils/hooks/useNotifications";
 import { INotification } from "@/components/screens/notifications/NotificationsList";
@@ -13,20 +12,28 @@ import CopyWalletAddress from "@/components/screens/Members/WalletOnboarding/Ste
 import UploadWalletAddress from "@/components/screens/Members/WalletOnboarding/Steps/UploadWalletAddress";
 import { isValidEthAddress } from "@/utils/helpers/functions";
 import { toast, Toaster } from "sonner";
-import Link from "next/link";
 
 const CreateWallet = () => {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const { user } = useUser();
+  const { user, refetchUser } = useUser();
   const router = useRouter();
   const { notifications } = useNotifications();
-
+  useEffect(() => {
+    if (!user?.payData) refetchUser();
+  }, []);
   const walletNotification = notifications.find(
     (notification) =>
       (notification as INotification).matchId ===
       `${user?.id}_onboard_walletAddress`
   ) as INotification | undefined;
+
+  const payDataTemplate = {
+    upiId: "",
+    payMethod: "Crypto",
+    stipendWalletAddress: "",
+    walletAddress: "",
+  };
 
   const handleNextStep = async (walletAddress?: string) => {
     if (step < 3) {
@@ -34,10 +41,15 @@ const CreateWallet = () => {
       return;
     }
     if (!walletAddress) return;
-
     setLoading(true);
     try {
-      const userPayData = user?.payData as JsonObject;
+      const userPayData = user?.payData
+        ? (user?.payData as JsonObject)
+        : payDataTemplate;
+      if (!userPayData) {
+        toast.error("User PayData is not available !!");
+        return;
+      }
       if (
         userPayData.walletAddress === walletAddress &&
         isValidEthAddress(walletAddress)
@@ -72,7 +84,7 @@ const CreateWallet = () => {
       ...user,
       payData: { ...userPayData, walletAddress },
     });
-    console.log("API response:", response.data.user);
+    // console.log("API response:", response.data.user);
     return response.data.user;
   }
 
