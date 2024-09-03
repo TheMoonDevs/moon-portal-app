@@ -311,6 +311,18 @@ export const WorklogsPage = () => {
     ? logsList.filter((data) => dayjs(data.date).month() === monthTab).slice(-4)
     : logsList.filter((data) => dayjs(data.date).month() === monthTab);
 
+  const handleNextMonthClick = () => {
+    setMonthTab((prevMonth) => {
+      const nextMonth = (prevMonth + 1) % 12;
+      const newDate = dayjs()
+        .month(nextMonth)
+        .startOf("month")
+        .format("YYYY-MM-DD");
+      setSelectedDate(newDate);
+      return nextMonth;
+    });
+  };
+
   return (
     <div className="flex flex-col">
       <div className="fixed left-0 right-0 top-0 z-10 bg-white flex flex-row gap-3 py-2 px-3 items-center justify-between border-b border-neutral-400 md:pl-[6rem]">
@@ -388,6 +400,7 @@ export const WorklogsPage = () => {
               logType={"dayLog"}
               monthTab={monthTab}
               setMonthTab={setMonthTab}
+              handleNextMonthClick={handleNextMonthClick}
             />
           </div>
           <div className="grid grid-cols-2 lg:w-[30%] gap-3 p-2 max-lg:grid-cols-4 max-md:grid-cols-2 max-h-[80vh] overflow-y-scroll m-3">

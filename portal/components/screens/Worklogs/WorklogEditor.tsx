@@ -41,6 +41,7 @@ export const WorklogEditor = ({
   compactView = false,
   monthTab = 0,
   setMonthTab,
+  handleNextMonthClick,
 }: {
   loading: boolean;
   editWorkLogs: WorkLogs | null;
@@ -48,6 +49,7 @@ export const WorklogEditor = ({
   compactView?: boolean;
   monthTab?: number;
   setMonthTab?: (month: number) => void;
+  handleNextMonthClick?: () => void;
 }) => {
   const dispatch = useAppDispatch();
   const { user } = useUser();
@@ -266,10 +268,9 @@ export const WorklogEditor = ({
     .month(monthTab || 0)
     .endOf("month");
 
-  const handleNextMonthClick = () => {
-    if (setMonthTab) {
-      const nextMonth = monthTab === 11 ? 0 : monthTab + 1;
-      setMonthTab(nextMonth);
+  const handleMonthChange = () => {
+    if (handleNextMonthClick) {
+      handleNextMonthClick();
     }
   };
 
@@ -303,7 +304,7 @@ export const WorklogEditor = ({
               dayjs(workLog.date).isSame(lastDateOfSelectedMonth, "day") && (
                 <IconButton
                   sx={{ fontSize: "16px" }}
-                  onClick={handleNextMonthClick}
+                  onClick={handleMonthChange}
                 >
                   <span className="icon_size material-icons text-neutral-900 hover:text-neutral-700">
                     arrow_forward
