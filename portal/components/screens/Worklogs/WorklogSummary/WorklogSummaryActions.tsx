@@ -117,9 +117,8 @@ export const WorklogSummaryActions = ({
             </Tooltip>
           </div>
           <div
-            className={`overflow-y-auto h-[80vh] w-full ${
-              isContentVisible ? "block" : "hidden"
-            }`}>
+            className={`overflow-y-auto h-[80vh] w-full ${isContentVisible ? "block" : "hidden"
+              }`}>
             <div ref={aiSummaryPdfTargetRef} className="p-10 pt-16">
               <div className="w-full">
                 <MdxAppEditor
@@ -162,7 +161,7 @@ export const WorklogSummaryActions = ({
   };
 
   return (
-    <div className="flex flex-col mt-10 justify-between items-center w-full md:w-[50%] md:border-t-2 relative">
+    <div className="flex flex-col mt-10 justify-between items-center w-full md:w-[50%] relative">
       {isContentVisible && (
         <>
           <button
