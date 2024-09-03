@@ -5,7 +5,7 @@ import { useUser } from "@/utils/hooks/useUser";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { WorkLogs } from "@prisma/client";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { WorklogEditor } from "./WorklogEditor";
 import dayjs from "dayjs";
 import { WorkLogsHelper } from "./WorklogsHelper";
@@ -17,12 +17,18 @@ export const WorklogView = ({
   logType = "dayLog",
   compactView,
   visible = true,
+  monthTab,
+  setMonthTab,
+  handleNextMonthClick,
 }: {
   id?: string;
   date?: string | null;
   compactView?: boolean;
   visible?: boolean;
   logType?: string | null;
+  monthTab?: number;
+  setMonthTab?: Dispatch<SetStateAction<number>>;
+  handleNextMonthClick?: () => void;
 }) => {
   const { user } = useUser();
   const [workLog, setWorkLog] = useState<WorkLogs | null>(null);
@@ -122,6 +128,9 @@ export const WorklogView = ({
       editWorkLogs={workLog}
       refreshWorklogs={refreshWorklogs}
       compactView={compactView}
+      monthTab={monthTab}
+      setMonthTab={setMonthTab}
+      handleNextMonthClick={handleNextMonthClick}
     />
   );
 };
