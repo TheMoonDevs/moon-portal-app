@@ -38,7 +38,10 @@ const CreateWallet = () => {
     setLoading(true);
     try {
       const userPayData = user?.payData as JsonObject;
-      if (!userPayData) return;
+      if (!userPayData) {
+        toast.error("User PayData is not available !!");
+        return;
+      }
       if (
         userPayData.walletAddress === walletAddress &&
         isValidEthAddress(walletAddress)
