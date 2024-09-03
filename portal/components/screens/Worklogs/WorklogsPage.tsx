@@ -6,7 +6,14 @@ import { useUser } from "@/utils/hooks/useUser";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { DocMarkdown, WorkLogs } from "@prisma/client";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  RefObject,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  createRef,
+} from "react";
 import store, { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import dayjs from "dayjs";
 import { WorkLogsHelper } from "./WorklogsHelper";
@@ -77,6 +84,7 @@ export const WorkLogItem = ({
       className={`flex flex-col  gap-3 rounded-lg border border-neutral-200 p-3 overflow-y-hidden min-h-[150px] ${
         data.logType === "privateLog" ? " h-full " : ""
       } ${selected ? " bg-white border-neutral-900 border-2 " : ""}`}
+      key={JSON.stringify(data.works)}
       onClick={onClick}
     >
       <div
