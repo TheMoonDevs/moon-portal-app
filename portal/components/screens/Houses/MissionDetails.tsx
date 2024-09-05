@@ -40,7 +40,7 @@ export const MissionDetails = ({ loading }: { loading: boolean }) => {
       <div className="text-center text-3xl">Select mission to see details</div>
     );
   }
-  
+
   return (
     <div
       className={`bg-white rounded-lg shadow-lg p-6 h-[96vh] overflow-y-scroll my-4 border-b border-neutral-200 
@@ -55,7 +55,7 @@ export const MissionDetails = ({ loading }: { loading: boolean }) => {
       ) : (
         <div>
           <h2 className="text-2xl font-bold mb-4">{mission?.title}</h2>
-          <div className="flex items-center mb-4">
+          {/* <div className="flex items-center mb-4">
             <img
               src={`/images/houses/${mission?.house}.png`}
               alt={mission?.house}
@@ -67,7 +67,7 @@ export const MissionDetails = ({ loading }: { loading: boolean }) => {
             <p>House Points: {mission?.housePoints}</p>
             <p>Total Indie Points: {mission?.indiePoints}</p>
             <p>
-              Status: Status:{" "}
+              Status:{" "}
               {missionStatus === 0 ? "Not Started yet" : missionStatus}
             </p>
           </div>
@@ -83,7 +83,7 @@ export const MissionDetails = ({ loading }: { loading: boolean }) => {
             <p className="text-sm text-gray-600 mt-1">
               {missionBalance} / {mission?.indiePoints} Indie Points remaining
             </p>
-          </div>
+          </div> */}
           <h3 className="text-xl font-semibold mb-4">Tasks</h3>
           <ul className="space-y-4">
             {missionTasks.length > 0 ? (
@@ -127,7 +127,7 @@ export const MissionComponent = (
   return (
     <div className="">
       <h2 className="text-2xl font-bold mb-4">{mission.title}</h2>
-      <div className="flex items-center mb-4">
+      {/* <div className="flex items-center mb-4">
         <img
           src={`/images/houses/${mission.house}.png`}
           alt={mission.house}
@@ -162,8 +162,8 @@ export const MissionComponent = (
           {calculateMissionStat(mission, missionTasks, "balance")} /{" "}
           {mission.indiePoints} Indie Points remaining
         </p>
-      </div>
-      <h3 className="text-xl font-semibold mb-4">Tasks</h3>
+      </div> 
+      <h3 className="text-xl font-semibold mb-4">Tasks</h3>*/}
       <ul className="space-y-4">
         {missionTasks.length > 0 ? (
           missionTasks?.map((task: any, index: number) => (
