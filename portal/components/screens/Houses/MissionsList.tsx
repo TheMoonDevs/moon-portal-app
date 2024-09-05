@@ -4,6 +4,7 @@
 import {
   setAllMissions,
   setMissionDetailsOpen,
+  setMissionsLoading,
   setSelectedMission,
 } from "@/utils/redux/missions/selectedMission.slice";
 import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
@@ -22,7 +23,10 @@ import {
 import CreateMission from "./CreateMission";
 import useSWR from "swr";
 import TasksList from "./TaskList";
-import { setAllTasks } from "@/utils/redux/missions/missionsTasks.slice";
+import {
+  setAllTasks,
+  setTasksLoading,
+} from "@/utils/redux/missions/missionsTasks.slice";
 
 export function calculateMissionStat(
   mission: Mission,
@@ -100,23 +104,27 @@ export const MissionsList = ({
   );
 
   useEffect(() => {
+    dispatch(setMissionsLoading(true));
     if (data) {
       // console.log(data);
       dispatch(setAllMissions(data?.data?.missions || []));
       const selectedMissionData =
         data?.data?.missions[currentHouseIndex] || null;
       dispatch(setSelectedMission(selectedMissionData));
+      dispatch(setMissionsLoading(false));
     }
 
     if (error) {
       dispatch(setMissionDetailsOpen(false));
       console.error("Error fetching missions:", error);
+      dispatch(setMissionsLoading(false));
     }
   }, [data, error, dispatch, missions]);
 
   useEffect(() => {
     const fetchTasks = async () => {
       if (missions && !tasksFetched) {
+        dispatch(setTasksLoading(true));
         for (const mission of missions) {
           try {
             const res = await PortalSdk.getData(
@@ -133,6 +141,9 @@ export const MissionsList = ({
           }
         }
         setTasksFetched(true);
+        dispatch(setTasksLoading(false));
+      } else {
+        dispatch(setTasksLoading(false));
       }
     };
 
@@ -257,7 +268,7 @@ export const MissionsList = ({
               ))}
             </Select>
           </FormControl>
-          <span className="material-icons-outlined">search</span>
+          {/* <span className="material-icons-outlined">search</span> */}
         </div>
       </div>
       {activeTab === "missions" ? (
