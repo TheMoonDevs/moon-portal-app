@@ -1,3 +1,5 @@
+import { TMD_PORTAL_API_KEY } from "../constants/appInfo";
+
 export const ShortUrlSdk = {
   createShortUrl: async (
     endpoint: string,
@@ -9,6 +11,7 @@ export const ShortUrlSdk = {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            tmd_portal_api_key: TMD_PORTAL_API_KEY,
           },
           body: JSON.stringify(data),
         };
@@ -50,6 +53,9 @@ export const ShortUrlSdk = {
       try {
         const options = {
           method: "DELETE",
+          headers: {
+            tmd_portal_api_key: TMD_PORTAL_API_KEY,
+          },
         };
         const res = await fetch(`${endpoint}?id=${id}`, options);
         if (res.ok) {
