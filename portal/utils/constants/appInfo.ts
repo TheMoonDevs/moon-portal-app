@@ -28,9 +28,7 @@ export enum GLOBAL_ROUTES {
   applicationForm = "/application/position/",
 }
 
-export const AppRoutesHelper = {
-  
-};
+export const AppRoutesHelper = {};
 
 export enum APP_SOCIAL {
   discord = "",
@@ -49,3 +47,5 @@ export enum LOCAL_STORAGE {
 export const APP_BASE_URL =
   process.env.NEXT_PUBLIC_APP_BASE_URL || "http://localhost:3000";
 export const IS_TESTNET = process.env.NEXT_PUBLIC_IS_TESTNET === "true";
+export const TMD_PORTAL_API_KEY = process.env
+  .NEXT_PUBLIC_TMD_PORTAL_API_KEY as string;
