@@ -1,4 +1,5 @@
 import { User } from "@prisma/client";
+import { TMD_PAYZONE_API_KEY } from "../constants/appInfo";
 
 export enum SERVER_API_ENDPOINTS {
   updateUser = `/api/user?id=`,
@@ -19,6 +20,7 @@ export const MyServerApi = {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
+          tmd_payzone_api_key: TMD_PAYZONE_API_KEY,
         },
         body: JSON.stringify(data),
       })
@@ -73,6 +75,7 @@ export const MyServerApi = {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
+          tmd_payzone_api_key: TMD_PAYZONE_API_KEY,
         },
         body: JSON.stringify(updatedData),
       })
@@ -101,6 +104,7 @@ export const MyServerApi = {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
+          tmd_payzone_api_key: TMD_PAYZONE_API_KEY,
         },
         body: JSON.stringify(body),
       })
@@ -155,6 +159,7 @@ export const MyServerApi = {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
+          tmd_payzone_api_key: TMD_PAYZONE_API_KEY,
         },
         body: JSON.stringify(updatedData),
       })
@@ -233,6 +238,7 @@ export const MyServerApi = {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
+          tmd_payzone_api_key: TMD_PAYZONE_API_KEY,
         },
         body: JSON.stringify(updatedData),
       })
@@ -259,6 +265,7 @@ export const MyServerApi = {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
+          tmd_payzone_api_key: TMD_PAYZONE_API_KEY,
         },
         body: JSON.stringify(data),
       })
@@ -285,6 +292,7 @@ export const MyServerApi = {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
+          tmd_payzone_api_key: TMD_PAYZONE_API_KEY,
         },
         body: JSON.stringify(data),
       })

@@ -16,6 +16,7 @@ import { IconEdit } from "@tabler/icons-react";
 import EditCertificateModal from "./EditCertificateInfo";
 import { Tooltip } from "@mui/material";
 import { useAuthSession } from "@/utils/hooks/useAuthSession";
+import { TMD_PAYZONE_API_KEY } from "@/utils/constants/appInfo";
 
 interface TableProps extends React.HTMLProps<HTMLTableCellElement> {
   children: React.ReactNode;
@@ -81,6 +82,7 @@ const CertificatesTable = () => {
             method: "DELETE",
             headers: {
               "Content-Type": "application/json",
+              tmd_payzone_api_key: TMD_PAYZONE_API_KEY,
             },
             body: JSON.stringify({
               id: fileToDelete.id,
