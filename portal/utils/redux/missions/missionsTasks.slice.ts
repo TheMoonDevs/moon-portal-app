@@ -3,10 +3,12 @@ import { MissionTask } from '@prisma/client';
 
 interface MissionsTasksState {
   tasks: MissionTask[];
+  tasksLoading: boolean
 }
 
 const initialState: MissionsTasksState = {
   tasks: [],
+  tasksLoading: false
 };
 
 export const missionsTasksSlice = createSlice({
@@ -16,10 +18,13 @@ export const missionsTasksSlice = createSlice({
     setAllTasks: (state, action: PayloadAction<MissionTask[]>) => {
       state.tasks.push(...action.payload);
     },
+    setTasksLoading: (state, action: PayloadAction<boolean>) => {
+      state.tasksLoading = action.payload
+    }
   },
 });
 
 
-export const { setAllTasks } = missionsTasksSlice.actions;
+export const { setAllTasks, setTasksLoading } = missionsTasksSlice.actions;
 
 export default missionsTasksSlice.reducer;

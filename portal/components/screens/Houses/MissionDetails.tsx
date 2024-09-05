@@ -6,10 +6,12 @@ import { calculateMissionStat } from "./MissionsList";
 import { Mission, MissionTask } from "@prisma/client";
 
 export const MissionDetails = ({ loading }: { loading: boolean }) => {
-  const { mission, missions, isOpen } = useAppSelector(
+  const { mission, missions, isOpen, missionsLoading } = useAppSelector(
     (state: RootState) => state.selectedMission
   );
-  const tasks = useAppSelector((state: RootState) => state.missionsTasks.tasks);
+  const { tasks, tasksLoading } = useAppSelector(
+    (state: RootState) => state.missionsTasks
+  );
 
   const missionTasks = tasks?.filter((t) => t?.missionId === mission?.id);
 
@@ -25,11 +27,20 @@ export const MissionDetails = ({ loading }: { loading: boolean }) => {
     return mission && calculateMissionStat(mission, missionTasks, "balance");
   }, [mission, missionTasks]);
 
-  if (!mission) {
+  if (tasksLoading || missionsLoading) {
     return <MissionDetailsSkeleton />;
   }
-  ``;
 
+  if (missions?.length === 0) {
+    return <div className="text-center text-lg py-4">No missions found</div>;
+  }
+
+  if (missions && missions.length > 0 && !mission) {
+    return (
+      <div className="text-center text-3xl">Select mission to see details</div>
+    );
+  }
+  
   return (
     <div
       className={`bg-white rounded-lg shadow-lg p-6 h-[96vh] overflow-y-scroll my-4 border-b border-neutral-200 
@@ -70,7 +81,7 @@ export const MissionDetails = ({ loading }: { loading: boolean }) => {
               ></div>
             </div>
             <p className="text-sm text-gray-600 mt-1">
-              {missionBalance} / {mission.indiePoints} Indie Points remaining
+              {missionBalance} / {mission?.indiePoints} Indie Points remaining
             </p>
           </div>
           <h3 className="text-xl font-semibold mb-4">Tasks</h3>
