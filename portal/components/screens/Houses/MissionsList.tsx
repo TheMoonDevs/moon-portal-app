@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 "use client";
+import React from "react";
 import {
   setAllMissions,
   setMissionDetailsOpen,
@@ -10,7 +11,7 @@ import {
 import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import { Mission, MissionTask, User } from "@prisma/client";
 import { HOUSES_LIST } from "./HousesList";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import dayjs from "dayjs";
 import {
@@ -27,6 +28,7 @@ import {
   setAllTasks,
   setTasksLoading,
 } from "@/utils/redux/missions/missionsTasks.slice";
+import ExpandedMission from "./ExpandedMission";
 
 export function calculateMissionStat(
   mission: Mission,
@@ -77,12 +79,17 @@ export const MissionsList = ({
   const selectedMission = useAppSelector(
     (state: RootState) => state.selectedMission.mission
   );
-  const tasks = useAppSelector((state: RootState) => state.missionsTasks.tasks);
+  const tasks = useAppSelector((state: RootState) => state.missionsTasks);
   const [timeFrame, setTimeFrame] = useState("month");
   const [timeValue, setTimeValue] = useState(dayjs().format("YYYY-MM"));
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState("missions");
   const [tasksFetched, setTasksFetched] = useState(false);
+  const [expanded, setExpanded] = useState<string | false>(false);
+
+  const handleAccordionChange = (missionId: string) => {
+    setExpanded((prev) => (prev === missionId ? false : missionId));
+  };
 
   const getQueryString = useCallback((frame: string, value: string): string => {
     switch (frame) {
@@ -279,60 +286,65 @@ export const MissionsList = ({
                 HOUSES_LIST[currentHouseIndex]?.id == mission.house
             )
             .map((mission, i) => {
-              const missionTasks = tasks?.filter(
-                (t) => t?.missionId === mission?.id
-              );
+              const missionTasks =
+                tasks && Array.isArray(tasks)
+                  ? tasks.filter((t) => t?.missionId === mission?.id)
+                  : [];
               return (
-                <div
-                  key={i}
-                  className={`flex flex-col gap-2 border-b pt-3 border-neutral-200 cursor-pointer hover:bg-gray-100 
-                ${
-                  selectedMission?.id === mission.id
-                    ? "bg-gray-200"
-                    : "text-gray-700"
-                }
-              `}
-                  onClick={() => {
-                    dispatch(setSelectedMission(mission));
-                    dispatch(setMissionDetailsOpen(false));
-                  }}
-                >
-                  <div className="flex flex-row items-center gap-2 w-full px-4">
-                    <img
-                      src={`images/houses/${mission.house}.png`}
-                      alt={mission.house}
-                      className="w-8 h-8 object-cover object-center rounded-full"
-                    />
-                    <h4 className="text-md font-semibold">{mission.title}</h4>
-                    <p className="text-sm font-regular ml-auto">
-                      {mission.housePoints} HP
-                    </p>
-                    <p className="text-sm font-regular">
-                      {missionTasks.length > 0 &&
-                        calculateMissionStat(
+                <React.Fragment key={`${i}-${mission?.id}`}>
+                  <div
+                    className={`flex flex-col gap-2 border-b pt-3 border-neutral-200 cursor-pointer hover:bg-gray-100 w-full
+            ${
+              selectedMission?.id === mission.id
+                ? "bg-gray-200"
+                : "text-gray-700"
+            }
+            ${expanded === mission.id ? "bg-gray-200" : "text-gray-700"}
+          `}
+                    onClick={() => {
+                      dispatch(setSelectedMission(mission));
+                      dispatch(setMissionDetailsOpen(false));
+                      handleAccordionChange(mission.id);
+                    }}
+                  >
+                    <div className="flex flex-row items-center gap-2 w-full px-4">
+                      <img
+                        src={`images/houses/${mission.house}.png`}
+                        alt={mission.house}
+                        className="w-8 h-8 object-cover object-center rounded-full"
+                      />
+                      <h4 className="text-md font-semibold">{mission.title}</h4>
+                      <p className="text-sm font-regular ml-auto">
+                        {mission.housePoints} HP
+                      </p>
+                      <p className="text-sm font-regular">
+                        {missionTasks.length > 0 &&
+                          calculateMissionStat(
+                            mission,
+                            missionTasks,
+                            "balance"
+                          )}{" "}
+                        / {mission.indiePoints}
+                      </p>
+                      <p className="text-sm font-regular">
+                        {missionTasks.length > 0 &&
+                          calculateMissionStat(mission, missionTasks, "status")}
+                      </p>
+                      {/* <p className="text-sm font-regular">{mission.createdAt ? prettyPrintDateInMMMDD(new Date(mission.createdAt)) : "uknown"}</p> */}
+                    </div>
+                    <div
+                      className="h-[2px] bg-green-500"
+                      style={{
+                        width: `${calculateMissionStat(
                           mission,
                           missionTasks,
-                          "balance"
-                        )}{" "}
-                      / {mission.indiePoints}
-                    </p>
-                    <p className="text-sm font-regular">
-                      {missionTasks.length > 0 &&
-                        calculateMissionStat(mission, missionTasks, "status")}
-                    </p>
-                    {/* <p className="text-sm font-regular">{mission.createdAt ? prettyPrintDateInMMMDD(new Date(mission.createdAt)) : "uknown"}</p> */}
+                          "percentage"
+                        )}%`,
+                      }}
+                    ></div>
                   </div>
-                  <div
-                    className="h-[2px] bg-green-500"
-                    style={{
-                      width: `${calculateMissionStat(
-                        mission,
-                        missionTasks,
-                        "percentage"
-                      )}%`,
-                    }}
-                  ></div>
-                </div>
+                  <ExpandedMission expanded={expanded} mission={mission} />
+                </React.Fragment>
               );
             })
         ) : (
