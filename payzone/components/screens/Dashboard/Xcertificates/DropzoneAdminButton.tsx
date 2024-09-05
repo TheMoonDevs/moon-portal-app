@@ -20,6 +20,7 @@ import {
   setCertificates,
 } from "@/utils/redux/cerificatesUpload/certificate.slice";
 import { useAuthSession } from "@/utils/hooks/useAuthSession";
+import { TMD_PAYZONE_API_KEY } from "@/utils/constants/appInfo";
 
 export default function DropzoneAdminButton({ users }: { users: User[] }) {
   //console.log(users);
@@ -67,6 +68,9 @@ export default function DropzoneAdminButton({ users }: { users: User[] }) {
           {
             method: "POST",
             body: formData,
+            headers: {
+              tmd_payzone_api_key: TMD_PAYZONE_API_KEY,
+            },
           }
         );
         const newCertificate = await response.json();
