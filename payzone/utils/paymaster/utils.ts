@@ -18,7 +18,6 @@ import {
 } from "./constants";
 import TMDToken from "../constants/erc20.json";
 import { TOKEN_INFO } from "../constants/appInfo";
-import { useAccount } from "wagmi";
 export async function willSponsor({
   chainId,
   entrypoint,
@@ -28,8 +27,7 @@ export async function willSponsor({
   entrypoint: string;
   userOp: UserOperation<"v0.6">;
 }) {
-  const { chain } = useAccount();
-  const IS_TESTNET = chain?.testnet;
+  const IS_TESTNET = process.env.NEXT_PUBLIC_IS_TESTNET === "true";
   const chainx = IS_TESTNET ? baseSepolia : base;
   // const chain = baseSepolia;
   // check chain id
