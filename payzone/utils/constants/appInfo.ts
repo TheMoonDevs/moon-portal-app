@@ -1,4 +1,4 @@
-import { baseSepolia } from "viem/chains";
+import { baseSepolia, base } from "viem/chains";
 import {
   bill,
   license,
@@ -14,6 +14,8 @@ import { toast } from "sonner";
 const NEXT_PUBLIC_TMD_CONTRACT = process.env.NEXT_PUBLIC_TMD_CONTRACT
   ? process.env.NEXT_PUBLIC_TMD_CONTRACT
   : "0x718feaac496184980F7ccf0b07360C70b63c1705";
+
+const IS_TESTNET = process.env.NEXT_PUBLIC_IS_TESTNET === "true";
 
 export const TMD_PAYZONE_API_KEY = process.env
   .NEXT_PUBLIC_TMD_PAYZONE_API_KEY as string;
@@ -118,17 +120,21 @@ export const TOKEN_INFO = {
   decimals: 6,
   name: "TMDToken",
   contractAddress: NEXT_PUBLIC_TMD_CONTRACT,
-  chainId: chainEnum.baseSepolia,
+  chainId: IS_TESTNET ? chainEnum.baseSepolia : chainEnum.base,
   burnAddress: "0x000000000000000000000000000000000000dEaD",
-  chain: {
-    ...baseSepolia,
-    blockExplorers: {
-      default: {
-        name: "BlockScout-BaseSeploia",
-        url: "https://base-sepolia.blockscout.com",
+  chain: IS_TESTNET
+    ? {
+        ...baseSepolia,
+        blockExplorers: {
+          default: {
+            name: "BlockScout-BaseSeploia",
+            url: "https://base-sepolia.blockscout.com",
+          },
+        },
+      }
+    : {
+        ...base,
       },
-    },
-  },
 };
 
 export const copyUPI = (upiId: string) => {
