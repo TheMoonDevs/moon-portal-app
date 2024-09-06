@@ -24,6 +24,7 @@ import {
 
 import formatDistanceToNow from "date-fns/formatDistanceToNow";
 import parseISO from "date-fns/parseISO";
+import { TMD_PORTAL_API_KEY } from "@/utils/constants/appInfo";
 
 interface EmailLog {
   mailId: string;
@@ -97,6 +98,7 @@ const EmailTrackerCard: React.FC = () => {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
+          tmd_portal_api_key: TMD_PORTAL_API_KEY,
         },
         body: JSON.stringify(payload),
       });
@@ -116,7 +118,7 @@ const EmailTrackerCard: React.FC = () => {
   const handleAddNewMail = async () => {
     try {
       // Validate fields
-      setLoading(true)
+      setLoading(true);
       if (!newMailId || !newMailMaxCount) {
         setError("* Please fill out all required fields. 😥");
         return;
@@ -133,6 +135,7 @@ const EmailTrackerCard: React.FC = () => {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+          tmd_portal_api_key: TMD_PORTAL_API_KEY,
         },
         body: JSON.stringify(payload),
       });
@@ -150,13 +153,13 @@ const EmailTrackerCard: React.FC = () => {
       console.error("Error adding new mail:", error);
       setError(error.message || "Failed to add new mail");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   };
 
   const handleDeleteMail = async (mailID: string) => {
     try {
-      setLoading(true)
+      setLoading(true);
       if (!mailID) {
         setError("Couldn't find the mail ID.");
         return;
@@ -170,6 +173,7 @@ const EmailTrackerCard: React.FC = () => {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
+          tmd_portal_api_key: TMD_PORTAL_API_KEY,
         },
         body: JSON.stringify(payload),
       });
@@ -183,7 +187,7 @@ const EmailTrackerCard: React.FC = () => {
       console.error("Error deleting mail:", error);
       setError(error.message || "Failed to delete mail");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   };
 
@@ -214,7 +218,7 @@ const EmailTrackerCard: React.FC = () => {
           </div>
         )}
 
-        {(
+        {
           <TableContainer component={Paper} className="shadow-md mt-4">
             <Table>
               <TableHead className="bg-gray-200 whitespace-nowrap">
@@ -229,122 +233,140 @@ const EmailTrackerCard: React.FC = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {(!data || data.length === 0) ? loading ? (
-                  <TableRow className="animate-pulse"><TableCell colSpan={7}>Loading...</TableCell></TableRow>
-                ) : (<TableRow className="animate-pulse"><TableCell colSpan={7}>No Mail Found</TableCell></TableRow>) : data.map((log, index) => (
-                  <TableRow
-                    key={index}
-                    className="hover:bg-gray-50 transition duration-200"
-                  >
-                    <TableCell>
-                      <span
-                        className={`rounded px-2 py-1 text-white ${log.status === "Sendable"
-                          ? "bg-green-500"
-                          : "bg-red-500"
+                {!data || data.length === 0 ? (
+                  loading ? (
+                    <TableRow className="animate-pulse">
+                      <TableCell colSpan={7}>Loading...</TableCell>
+                    </TableRow>
+                  ) : (
+                    <TableRow className="animate-pulse">
+                      <TableCell colSpan={7}>No Mail Found</TableCell>
+                    </TableRow>
+                  )
+                ) : (
+                  data.map((log, index) => (
+                    <TableRow
+                      key={index}
+                      className="hover:bg-gray-50 transition duration-200"
+                    >
+                      <TableCell>
+                        <span
+                          className={`rounded px-2 py-1 text-white ${
+                            log.status === "Sendable"
+                              ? "bg-green-500"
+                              : "bg-red-500"
                           }`}
-                      >
-                        {log.status}
-                      </span>
-                    </TableCell>
-                    <TableCell>{log.mailId}</TableCell>
-                    <TableCell>
-                      {editIndex === index ? (
-                        <TextField
-                          value={editFallbackMailId}
-                          onChange={(e) =>
-                            setEditFallbackMailId(e.target.value)
-                          }
-                          fullWidth
-                        />
-                      ) : (
-                        log.fallbackMailId || "-"
-                      )}
-                    </TableCell>
-                    <TableCell>{log.mailCurrentCount}</TableCell>
-                    <TableCell>
-                      {editIndex === index ? (
-                        <TextField
-                          type="number"
-                          value={editMailMaxCount}
-                          onChange={(e) =>
-                            setEditMailMaxCount(parseInt(e.target.value, 10))
-                          }
-                          fullWidth
-                        />
-                      ) : (
-                        log.mailMaxCount
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {formatLastMailSentAt(log.lastMailSentAt)}
-                    </TableCell>
-                    <TableCell>
-                      {loading ? (
-                        <div className="flex justify-center">
-                          <CircularProgress size={"1rem"} />
-                        </div>
-                      ) : <div className="flex">
-
+                        >
+                          {log.status}
+                        </span>
+                      </TableCell>
+                      <TableCell>{log.mailId}</TableCell>
+                      <TableCell>
                         {editIndex === index ? (
+                          <TextField
+                            value={editFallbackMailId}
+                            onChange={(e) =>
+                              setEditFallbackMailId(e.target.value)
+                            }
+                            fullWidth
+                          />
+                        ) : (
+                          log.fallbackMailId || "-"
+                        )}
+                      </TableCell>
+                      <TableCell>{log.mailCurrentCount}</TableCell>
+                      <TableCell>
+                        {editIndex === index ? (
+                          <TextField
+                            type="number"
+                            value={editMailMaxCount}
+                            onChange={(e) =>
+                              setEditMailMaxCount(parseInt(e.target.value, 10))
+                            }
+                            fullWidth
+                          />
+                        ) : (
+                          log.mailMaxCount
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {formatLastMailSentAt(log.lastMailSentAt)}
+                      </TableCell>
+                      <TableCell>
+                        {loading ? (
+                          <div className="flex justify-center">
+                            <CircularProgress size={"1rem"} />
+                          </div>
+                        ) : (
                           <div className="flex">
-                            <Tooltip title="Save" TransitionComponent={Zoom}>
+                            {editIndex === index ? (
+                              <div className="flex">
+                                <Tooltip
+                                  title="Save"
+                                  TransitionComponent={Zoom}
+                                >
+                                  <IconButton
+                                    color="primary"
+                                    onClick={() => handleEdit(index, log)}
+                                  >
+                                    <span className="material-icons text-green-600">
+                                      check
+                                    </span>
+                                  </IconButton>
+                                </Tooltip>
+                                <Tooltip
+                                  title="Cancel"
+                                  TransitionComponent={Zoom}
+                                >
+                                  <IconButton
+                                    color="error"
+                                    onClick={handleCancelEdit}
+                                  >
+                                    <span className="material-icons">
+                                      close
+                                    </span>
+                                  </IconButton>
+                                </Tooltip>
+                              </div>
+                            ) : (
+                              <Tooltip title="Edit" TransitionComponent={Zoom}>
+                                <IconButton
+                                  color="default"
+                                  onClick={() => handleSetEdit(index, log)}
+                                >
+                                  <span className="material-icons text-yellow-500">
+                                    edit
+                                  </span>
+                                </IconButton>
+                              </Tooltip>
+                            )}
+                            <Tooltip title="Delete" TransitionComponent={Zoom}>
                               <IconButton
-                                color="primary"
-                                onClick={() => handleEdit(index, log)}
+                                color="default"
+                                onClick={() => handleDeleteMail(log.mailId)}
                               >
-                                <span className="material-icons text-green-600">
-                                  check
-                                </span>
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Cancel" TransitionComponent={Zoom}>
-                              <IconButton
-                                color="error"
-                                onClick={handleCancelEdit}
-                              >
-                                <span className="material-icons">
-                                  close
+                                <span className="material-icons text-red-500">
+                                  delete
                                 </span>
                               </IconButton>
                             </Tooltip>
                           </div>
-                        ) : (
-                          <Tooltip title="Edit" TransitionComponent={Zoom}>
-                            <IconButton
-                              color="default"
-                              onClick={() => handleSetEdit(index, log)}
-                            >
-                              <span className="material-icons text-yellow-500">
-                                edit
-                              </span>
-                            </IconButton>
-                          </Tooltip>
                         )}
-                        <Tooltip title="Delete" TransitionComponent={Zoom}>
-                          <IconButton
-                            color="default"
-                            onClick={() => handleDeleteMail(log.mailId)}
-                          >
-                            <span className="material-icons text-red-500">
-                              delete
-                            </span>
-                          </IconButton>
-                        </Tooltip>
-                      </div>}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </TableContainer>
-        )}
+        }
         <div className="flex justify-end mt-5 space-x-3">
           <Button
             variant="contained"
             color="inherit"
-            startIcon={<span className="material-icons text-black">
-              refresh
-            </span>}
+            startIcon={
+              <span className="material-icons text-black">refresh</span>
+            }
             onClick={fetchData}
           >
             Refresh Data
@@ -352,9 +374,7 @@ const EmailTrackerCard: React.FC = () => {
           <Button
             variant="contained"
             color="secondary"
-            startIcon={<span className="material-icons text-white">
-              add
-            </span>}
+            startIcon={<span className="material-icons text-white">add</span>}
             onClick={() => setOpen(true)}
           >
             Add New Mail

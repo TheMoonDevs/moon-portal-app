@@ -25,7 +25,7 @@ import { WorklogSummaryView } from "../Worklogs/WorklogSummary/WorklogSummaryVie
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import useAsyncState from "@/utils/hooks/useAsyncState";
 import { LoadingSkeleton } from "@/components/elements/LoadingSkeleton";
-import { APP_ROUTES } from "@/utils/constants/appInfo";
+import { APP_ROUTES, TMD_PORTAL_API_KEY } from "@/utils/constants/appInfo";
 import { setReduxUser } from "@/utils/redux/auth/auth.slice";
 import media from "@/styles/media";
 import dayjs from "dayjs";
@@ -64,10 +64,13 @@ export const UserProfileDrawer: React.FC = () => {
 
   const fetchWorklogData = useCallback(async () => {
     setLoading(true);
-    console.log()
     try {
       const response = await PortalSdk.getData(
-        `/api/user/worklogs/summary?userId=${selectedUser?.id}&year=${dayjs().year()}&month=${dayjs().month(dayjs().month()).format("MM")}`,
+        `/api/user/worklogs/summary?userId=${
+          selectedUser?.id
+        }&year=${dayjs().year()}&month=${dayjs()
+          .month(dayjs().month())
+          .format("MM")}`,
         null
       );
       setWorklogSummary(response.data.workLogs);
@@ -142,6 +145,9 @@ export const UserProfileDrawer: React.FC = () => {
       const response = await fetch("/api/upload/file-upload", {
         method: "POST",
         body: formData,
+        headers: {
+          tmd_portal_api_key: TMD_PORTAL_API_KEY,
+        },
       });
 
       if (response.ok) {
@@ -228,7 +234,8 @@ export const UserProfileDrawer: React.FC = () => {
             <label className="absolute top-2 -right-2 bg-white rounded-full flex items-center justify-center cursor-pointer">
               <span
                 className="material-symbols-outlined absolute top-0 right-2 bg-white rounded-full p-[6px] cursor-pointer"
-                style={{ fontSize: "16px" }}>
+                style={{ fontSize: "16px" }}
+              >
                 add_a_photo
               </span>
               <input
@@ -252,12 +259,12 @@ export const UserProfileDrawer: React.FC = () => {
               />
             )}
 
-            {loggedinUser.user.id === selectedUser?.id && 
-             (
+            {loggedinUser.user.id === selectedUser?.id && (
               <label className="absolute top-2 -right-2 bg-white rounded-full p-[2px] flex items-center justify-center cursor-pointer">
                 <span
                   className="material-symbols-outlined bg-white rounded-full p-[4px]"
-                  style={{ fontSize: "16px" }}>
+                  style={{ fontSize: "16px" }}
+                >
                   add_a_photo
                 </span>
                 <input
@@ -295,10 +302,12 @@ export const UserProfileDrawer: React.FC = () => {
             <Link
               href={`https://slack.com/app_redirect?channel=${selectedUser?.slackId}`}
               target="_blank"
-              className="bg-black text-white px-3 py-2 rounded-lg text-sm flex gap-2 items-center hover:bg-gray-800 transition duration-300">
+              className="bg-black text-white px-3 py-2 rounded-lg text-sm flex gap-2 items-center hover:bg-gray-800 transition duration-300"
+            >
               <span
                 className="material-symbols-outlined"
-                style={{ fontSize: "20px" }}>
+                style={{ fontSize: "20px" }}
+              >
                 chat
               </span>
               Message
@@ -307,7 +316,8 @@ export const UserProfileDrawer: React.FC = () => {
               <button className="text-black border px-3 py-2 rounded-lg border-gray-300 flex items-center gap-2 hover:bg-gray-200 transition duration-300">
                 <span
                   className="material-symbols-outlined"
-                  style={{ fontSize: "20px" }}>
+                  style={{ fontSize: "20px" }}
+                >
                   edit_square
                 </span>
                 Edit Profile
@@ -332,7 +342,8 @@ export const UserProfileDrawer: React.FC = () => {
                 </div>
                 <Link
                   href={`${APP_ROUTES.userWorklogSummary}/${selectedUser?.id}`}
-                  className="absolute bottom-2 right-2 bg-white rounded-md border-gray-300 border-2 py-1 px-2 text-sm hover:bg-gray-200 transition duration-300">
+                  className="absolute bottom-2 right-2 bg-white rounded-md border-gray-300 border-2 py-1 px-2 text-sm hover:bg-gray-200 transition duration-300"
+                >
                   View Full Summary
                 </Link>
               </div>

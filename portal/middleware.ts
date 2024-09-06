@@ -53,6 +53,31 @@ export async function middleware(request: NextRequest) {
     corsOptions.maxAge?.toString() ?? ""
   );
 
+  // Check API key for methods that modify the database
+  const method = request.method.toUpperCase();
+  const modifyingMethods = ["POST", "PUT", "PATCH", "DELETE"];
+
+  if (modifyingMethods.includes(method)) {
+    const apiKey = request.headers.get("tmd_portal_api_key");
+    const expectedApiKey = process.env.NEXT_PUBLIC_TMD_PORTAL_API_KEY;
+    // console.log("API KEY >>>>>>>>>>>>>>>>>>>");
+    // console.log(apiKey);
+    // console.log(expectedApiKey);
+    // console.log("API KEY >>>>>>>>>>>>>>>>>>>");
+
+    if (apiKey !== expectedApiKey) {
+      return new NextResponse(
+        JSON.stringify({ error: "Invalid or missing API key" }),
+        {
+          status: 401,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+  }
+
   return response;
 }
 

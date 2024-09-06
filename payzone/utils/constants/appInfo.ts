@@ -15,6 +15,9 @@ const NEXT_PUBLIC_TMD_CONTRACT = process.env.NEXT_PUBLIC_TMD_CONTRACT
   ? process.env.NEXT_PUBLIC_TMD_CONTRACT
   : "0x718feaac496184980F7ccf0b07360C70b63c1705";
 
+export const TMD_PAYZONE_API_KEY = process.env
+  .NEXT_PUBLIC_TMD_PAYZONE_API_KEY as string;
+
 export enum APP_ROUTES {
   home = "/",
   dashboardHome = "/dashboard",
