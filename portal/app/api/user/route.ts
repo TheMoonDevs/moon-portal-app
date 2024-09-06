@@ -141,12 +141,11 @@ export async function PUT(request: Request) {
     });
     // console.log("old user", oldUser);
     // console.log("rest ", rest);
-    const user = await prisma.user.upsert({
+    const user = await prisma.user.update({
       where: {
         id,
       },
-      create: { ...rest },
-      update: { ...rest },
+      data: { ...rest },
     });
     const currentDate = new Date()
       .toLocaleDateString("en-GB")
