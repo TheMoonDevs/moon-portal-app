@@ -1,3 +1,5 @@
+import { TMD_PORTAL_API_KEY } from "../constants/appInfo";
+
 const METADATA_API_URL =
   process.env.METADATA_API_URL ||
   "https://apps.themoondevs.com/birthdaybook/links/metadata";
@@ -32,6 +34,7 @@ export const QuicklinksSdk = {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            tmd_portal_api_key: TMD_PORTAL_API_KEY,
           },
           body: JSON.stringify(data),
         };
@@ -60,6 +63,7 @@ export const QuicklinksSdk = {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
+            tmd_portal_api_key: TMD_PORTAL_API_KEY,
           },
           body: JSON.stringify(data),
         };
@@ -84,6 +88,7 @@ export const QuicklinksSdk = {
           method: "DELETE",
           headers: {
             "Content-Type": "application/json",
+            tmd_portal_api_key: TMD_PORTAL_API_KEY,
           },
         };
 

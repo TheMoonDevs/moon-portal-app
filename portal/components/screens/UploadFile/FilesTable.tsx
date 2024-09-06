@@ -13,6 +13,7 @@ import {
   deleteUploadedFile,
   setUploadedFiles,
 } from "@/utils/redux/filesUpload/fileUpload.slice";
+import { TMD_PORTAL_API_KEY } from "@/utils/constants/appInfo";
 
 interface TableProps extends React.HTMLProps<HTMLTableCellElement> {
   children: React.ReactNode;
@@ -74,6 +75,7 @@ const FilesTable = ({ users }: { users?: User[] }) => {
           method: "DELETE",
           headers: {
             "Content-Type": "application/json",
+            tmd_portal_api_key: TMD_PORTAL_API_KEY,
           },
           body: JSON.stringify({
             id: fileToDelete.id,
