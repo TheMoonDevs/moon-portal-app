@@ -13,6 +13,12 @@ import {
   CircleArrowUp,
   CircleX,
   History,
+  TrendingUp,
+  CircleAlert,
+  RefreshCw,
+  Star,
+  TriangleAlert,
+  Sparkles,
 } from "lucide-react";
 import { Stack, useMediaQuery } from "@mui/material";
 
@@ -51,11 +57,18 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
   const chartHeight = isSmallScreen ? 200 : 300;
   const barChartWidth = isSmallScreen ? 350 : 550;
   return (
-    <main className="flex flex-col justify-center gap-5 m-6 pb-20 ">
-      <h1 className="font-semibold text-lg text-center md:text-xl font-sans justify-start mt-4">
+    <main className="flex flex-col justify-center gap-5 m-6 pb-20">
+      <h1 className="font-semibold text-lg md:text-xl font-sans text-center justify-start mt-4 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 text-transparent bg-clip-text">
         Worklog Breakdown
       </h1>
 
+      <section className="text-center p-4 bg-blue-50 rounded-lg shadow-md mb-5">
+        <h2 className="text-lg font-semibold text-gray-700">Summary</h2>
+        <p className="text-sm text-gray-600">
+          {metrics.totalTasks} tasks logged with a{" "}
+          {metrics.taskCompletionRate.toFixed(2)}% completion rate.
+        </p>
+      </section>
       <Stack spacing={3} alignItems="center">
         <PieChart
           colors={["blue", "#22c55e", "red", "orange", "purple"]}
@@ -109,84 +122,58 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
         <div className="pb-5">
           <strong>Tasks by Weekday</strong>
         </div>
-        <div className="flex flex-wrap gap-5  justify-center items-stretch">
+        <div className="grid grid-cols-2 gap-5 w-full mb-8 max-sm:grid-cols-1">
           <MetricCard
-            title="Longest Productive Streak"
-            content={
-              <div>
-                You had a streak of {metrics.longestProductiveStreak}{" "}
-                consecutive productive days.
-              </div>
-            }
-            logo={<SquareGanttChart color="#31c449" size={20} />}
+            title="Productive Streak"
+            content={`${metrics.longestProductiveStreak} Days`}
+            logo={<Sparkles color="#4CAF50 " size={30} />}
           />
           <MetricCard
             title="Task Completion Rate"
-            content={
-              <div>
-                Your task completion rate is{" "}
-                {metrics.taskCompletionRate.toFixed(2)}%.
-              </div>
-            }
-            logo={<CircleCheckBig color="#31c449" size={20} />}
+            content={`${metrics.taskCompletionRate.toFixed(2)}%`}
+            logo={<CircleCheckBig color="#28A745 " size={30} />}
           />
           <MetricCard
             title="Missed Logs"
-            content={
-              <div>
-                There were {metrics.missedLogs} days without log entries.
-              </div>
-            }
-            logo={<CircleX color="#808080" size={20} />}
+            content={`${metrics.missedLogs} Days`}
+            logo={<CircleAlert color="#FF6347 " size={30} />}
           />
           <MetricCard
             title="Updated Logs Later"
-            content={
-              <div>
-                You updated your logs on a different day{" "}
-                {metrics.updatedLogsLater} times.
-              </div>
-            }
-            logo={<History color="#808080" size={20} />}
+            content={`${metrics.updatedLogsLater} Times`}
+            logo={<History color="#FF9800" size={30} />}
           />
           <MetricCard
             title="Update Frequency"
-            content={
-              <div>
-                You updated your worklog on {metrics.updateMetrics.updatedDays}{" "}
-                different days.
-              </div>
-            }
-            logo={<AudioLines color="#4169e1" size={20} />}
+            content={`${metrics.updateMetrics.updatedDays} Days`}
+            logo={<RefreshCw color="#2196F3 " size={30} />}
           />
           <MetricCard
             title="Average Tasks Per Day"
-            content={
-              <div>
-                On average, you complete {metrics.averageTasksPerDay.toFixed(2)}{" "}
-                tasks per day.
-              </div>
-            }
-            logo={<ListTodo color="#4169e1" size={20} />}
+            content={`${metrics.averageTasksPerDay.toFixed(2)}`}
+            logo={<ListTodo color="#03A9F4" size={30} />}
           />
           <MetricCard
             title="Top Productive Days"
-            content={metrics.topProductiveDays.map((day, index) => (
-              <div key={index}>
-                On {format(parseISO(day.date), "MMMM dd, yyyy")}, you completed{" "}
-                {day.completedTasks} tasks.
-              </div>
-            ))}
-            logo={<CalendarCheck color="#ff6f00" size={20} />}
-          />
-          <MetricCard
-            title="High Priority Tasks"
             content={
-              <div>
-                You have {metrics.highPriorityTasks} high-priority tasks.
+              <div className="flex flex-col gap-1">
+                {metrics.topProductiveDays.map((day, index) => (
+                  <div key={index} className="text-sm flex justify-between">
+                    <span>{format(parseISO(day.date), "MMM dd")}</span>
+                    <span className="font-semibold text-gray-700">
+                      {day.completedTasks.toString().padStart(2, "0")}
+                    </span>
+                  </div>
+                ))}
               </div>
             }
-            logo={<CircleArrowUp color="#ff6f00" size={20} />}
+            logo={<Star color="#FFC107" size={30} />}
+          />
+
+          <MetricCard
+            title="High Priority Tasks"
+            content={`${metrics.highPriorityTasks} Tasks`}
+            logo={<TriangleAlert color="#FF5722" size={30} />}
           />
         </div>
       </Stack>
