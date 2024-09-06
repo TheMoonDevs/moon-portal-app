@@ -40,16 +40,16 @@ const CreateMissionFields = ({ state, setState }: CreateMissionFieldsProps) => {
     (content: string) => {
       const newContent = content.length === 0 ? MARKDOWN_PLACEHOLDER : content;
       mdRef?.current?.setMarkdown(newContent);
-      setState((prev: any) => ({ ...prev, todoMarkdown: content }));
+      setState((prev: any) => ({ ...prev, description: content }));
     },
     [setState]
   );
 
   return (
-    <Grid container spacing={3} className='pt-4'>
+    <Grid container spacing={3} className='py-4'>
       <Grid item xs={12}>
         <label className='text-sm font-medium text-black' htmlFor='title'>
-          Title
+          Mission Title
         </label>
         <input
           type='text'
@@ -61,20 +61,20 @@ const CreateMissionFields = ({ state, setState }: CreateMissionFieldsProps) => {
       </Grid>
       <Grid item xs={12}>
         <label htmlFor='description' className='text-sm font-medium text-black'>
-          Description
+          Mission Description
         </label>
         <div className='h-[150px] overflow-y-scroll border border-gray-300 rounded-md p-2'>
           <MdxAppEditor
             ref={mdRef}
             key={`${user?.id}`}
             markdown={
-              state.todoMarkdown.trim().length === 0
+              state.description.trim().length === 0
                 ? MARKDOWN_PLACEHOLDER
-                : state.todoMarkdown
+                : state.description
             }
             className='flex-grow h-full'
             contentEditableClassName={`mdx_ce ${
-              state.todoMarkdown.trim() === MARKDOWN_PLACEHOLDER.trim()
+              state.description.trim() === MARKDOWN_PLACEHOLDER.trim()
                 ? ' mdx_uninit '
                 : ''
             } leading-1 imp-p-0 grow w-full h-full`}
@@ -150,7 +150,7 @@ const CreateMissionFields = ({ state, setState }: CreateMissionFieldsProps) => {
         <p className='text-sm font-medium text-black'>Indie Balance</p>
         <p className='text-lg font-semibold text-black'>
           {state.indiePoints -
-            state.tasks.reduce(
+            (state.tasks || []).reduce(
               (acc: number, task: MissionTask) => acc + task.indiePoints,
               0
             )}
@@ -159,9 +159,9 @@ const CreateMissionFields = ({ state, setState }: CreateMissionFieldsProps) => {
       <Grid item xs={12} sm={6}>
         <DatePicker
           label='Completed At'
-          value={state.completedAt}
+          value={state.completedAt ? state.completedAt : null}
           onChange={(newValue) =>
-            setState({ ...state, completedAt: newValue || dayjs() })
+            setState({ ...state, completedAt: newValue || null })
           }
           className='w-full'
         />
@@ -169,9 +169,9 @@ const CreateMissionFields = ({ state, setState }: CreateMissionFieldsProps) => {
       <Grid item xs={12} sm={6}>
         <DatePicker
           label='Expires At'
-          value={state.expiresAt}
+          value={state.expiresAt ? state.expiresAt : null}
           onChange={(newValue) =>
-            setState({ ...state, expiresAt: newValue || dayjs() })
+            setState({ ...state, expiresAt: newValue || null })
           }
           className='w-full'
         />
@@ -180,16 +180,16 @@ const CreateMissionFields = ({ state, setState }: CreateMissionFieldsProps) => {
         <PillSelector
           label='Is Completed'
           options={pillOptions}
-          selectedValue={state.isCompleted}
-          onChange={(value) => setState({ ...state, isCompleted: value })}
+          selectedValue={state.completed}
+          onChange={(value) => setState({ ...state, completed: value })}
         />
       </Grid>
       <Grid item xs={12} sm={6}>
         <PillSelector
           label='Is Expirable'
           options={pillOptions}
-          selectedValue={state.isExpirable}
-          onChange={(value) => setState({ ...state, isExpirable: value })}
+          selectedValue={state.expirable}
+          onChange={(value) => setState({ ...state, expirable: value })}
         />
       </Grid>
     </Grid>

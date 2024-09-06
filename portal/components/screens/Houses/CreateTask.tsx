@@ -1,48 +1,55 @@
 import { Grid } from '@mui/material';
 import React, { useCallback } from 'react';
 import dayjs, { Dayjs } from 'dayjs';
-import { User } from '@prisma/client';
+import { Mission, User } from '@prisma/client';
 import { DatePicker } from '@mui/x-date-pickers';
 import { pillOptions } from './CreateMissionFields';
 import { PillSelector } from './PillSelector';
+import { RootState, useAppDispatch, useAppSelector } from '@/utils/redux/store';
 
-type AddTaskState = {
+type taskState = {
+  missionId: string;
+  userId: string;
   title: string;
   description: string;
   indiePoints: number;
-  userId: string;
-  completedAt: Dayjs;
-  expiresAt: Dayjs;
-  isCompleted: boolean;
-  isExpirable: boolean;
-  userInfo: {
-    avatar: string;
-    name: string;
-    email: string;
-    id: string;
-  };
+  completedAt: Dayjs | null;
+  completed: boolean;
+  expirable: boolean;
+  expiresAt: Dayjs | null;
+  avatar: string;
+  name: string;
+  email: string;
+  userInfoId: string;
 };
 
 type CreateTaskProps = {
-  addTaskState: AddTaskState;
-  setAddTaskState: React.Dispatch<React.SetStateAction<AddTaskState>>;
+  taskState: taskState;
+  setTaskState: React.Dispatch<React.SetStateAction<taskState>>;
   houseMembers: User[];
 };
 
 const CreateTask = ({
-  addTaskState,
-  setAddTaskState,
+  taskState,
+  setTaskState,
   houseMembers,
 }: CreateTaskProps) => {
+  const missions = useAppSelector(
+    (state: RootState) => state.selectedMission.missions
+  );
+
   const handleInputChange = useCallback(
-    (key: keyof AddTaskState) => (e: React.ChangeEvent<HTMLInputElement>) => {
-      setAddTaskState((prevState) => ({
-        ...prevState,
-        [key]:
-          key === 'indiePoints' ? parseInt(e.target.value, 10) : e.target.value,
-      }));
-    },
-    [setAddTaskState]
+    (key: keyof taskState) =>
+      (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        setTaskState((prevState) => ({
+          ...prevState,
+          [key]:
+            key === 'indiePoints'
+              ? parseInt(e.target.value, 10)
+              : e.target.value,
+        }));
+      },
+    [setTaskState]
   );
 
   const handleUserChange = useCallback(
@@ -52,25 +59,28 @@ const CreateTask = ({
         (user) => user.id === selectedUserId
       );
 
-      setAddTaskState((prevState) => ({
+      setTaskState((prevState) => ({
         ...prevState,
         userId: selectedUserId,
-        userInfo: selectedUser
-          ? {
-              avatar: selectedUser.avatar ?? '',
-              name: selectedUser.name ?? '',
-              email: selectedUser.email ?? '',
-              id: selectedUser.id ?? '',
-            }
-          : {
-              avatar: '',
-              name: '',
-              email: '',
-              id: '',
-            },
+        avatar: selectedUser?.avatar || '',
+        name: selectedUser?.name || '',
+        email: selectedUser?.email || '',
+        userInfoId: selectedUser?.id || '',
       }));
     },
-    [setAddTaskState, houseMembers]
+    [setTaskState, houseMembers]
+  );
+
+  const handleMissionChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const selectedMissionId = e.target.value;
+
+      setTaskState((prevState) => ({
+        ...prevState,
+        missionId: selectedMissionId,
+      }));
+    },
+    [setTaskState]
   );
 
   return (
@@ -78,12 +88,32 @@ const CreateTask = ({
       <Grid container spacing={3} className='pt-4'>
         <Grid item xs={12}>
           <label className='text-sm font-medium text-black' htmlFor='title'>
+            Select Mission
+          </label>
+          <select
+            id='select-mission'
+            value={taskState.missionId}
+            onChange={handleMissionChange}
+            className='w-full px-4 py-2 border border-gray-300 rounded-md'
+          >
+            <option value='' disabled>
+              Select Mission
+            </option>
+            {missions?.map((mission: Mission) => (
+              <option key={mission.id} value={mission.id}>
+                {mission.title}
+              </option>
+            ))}
+          </select>
+        </Grid>
+        <Grid item xs={12}>
+          <label className='text-sm font-medium text-black' htmlFor='title'>
             Task Title
           </label>
           <input
             type='text'
             id='title'
-            value={addTaskState.title}
+            value={taskState.title}
             onChange={handleInputChange('title')}
             className='w-full px-4 py-2 border border-gray-300 rounded-md'
           />
@@ -95,12 +125,12 @@ const CreateTask = ({
           >
             Task Description
           </label>
-          <input
-            type='text'
+          <textarea
             id='description'
-            value={addTaskState.description}
+            value={taskState.description}
             onChange={handleInputChange('description')}
-            className='w-full px-4 py-2 border border-gray-300 rounded-md'
+            className='w-full px-4 py-2 border border-gray-300 rounded-md h-[150px]'
+            style={{ resize: 'none', maxHeight: '200px' }}
           />
         </Grid>
         <Grid item xs={12} sm={6}>
@@ -113,7 +143,7 @@ const CreateTask = ({
           <input
             type='number'
             id='indie-points'
-            value={addTaskState.indiePoints}
+            value={taskState.indiePoints}
             onChange={handleInputChange('indiePoints')}
             className='w-full px-4 py-2 border border-gray-300 rounded-md'
           />
@@ -127,7 +157,7 @@ const CreateTask = ({
           </label>
           <select
             id='select-user'
-            value={addTaskState.userId}
+            value={taskState.userId}
             onChange={handleUserChange}
             className='w-full px-4 py-2 border border-gray-300 rounded-md'
           >
@@ -144,11 +174,11 @@ const CreateTask = ({
         <Grid item xs={12} sm={6}>
           <DatePicker
             label='Completed At'
-            value={addTaskState.completedAt}
+            value={taskState.completedAt}
             onChange={(newValue) =>
-              setAddTaskState({
-                ...addTaskState,
-                completedAt: newValue || dayjs(),
+              setTaskState({
+                ...taskState,
+                completedAt: newValue || null,
               })
             }
             className='w-full'
@@ -157,11 +187,11 @@ const CreateTask = ({
         <Grid item xs={12} sm={6}>
           <DatePicker
             label='Expires At'
-            value={addTaskState.expiresAt}
+            value={taskState.expiresAt}
             onChange={(newValue) =>
-              setAddTaskState({
-                ...addTaskState,
-                expiresAt: newValue || dayjs(),
+              setTaskState({
+                ...taskState,
+                expiresAt: newValue || null,
               })
             }
             className='w-full'
@@ -171,9 +201,9 @@ const CreateTask = ({
           <PillSelector
             label='Is Task Completed'
             options={pillOptions}
-            selectedValue={addTaskState.isCompleted}
+            selectedValue={taskState.completed}
             onChange={(value) =>
-              setAddTaskState({ ...addTaskState, isCompleted: value })
+              setTaskState({ ...taskState, completed: value })
             }
           />
         </Grid>
@@ -181,9 +211,9 @@ const CreateTask = ({
           <PillSelector
             label='Is Task Expirable'
             options={pillOptions}
-            selectedValue={addTaskState.isExpirable}
+            selectedValue={taskState.expirable}
             onChange={(value) =>
-              setAddTaskState({ ...addTaskState, isExpirable: value })
+              setTaskState({ ...taskState, expirable: value })
             }
           />
         </Grid>
