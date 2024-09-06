@@ -30,6 +30,7 @@ import { setReduxUser } from "@/utils/redux/auth/auth.slice";
 import media from "@/styles/media";
 import DrawerComponent from "@/components/elements/DrawerComponent";
 import dayjs from "dayjs";
+import { ArrayHelper } from "@/utils/helpers/array";
 
 interface LoggedInUser {
   user: User;
@@ -302,7 +303,8 @@ export const UserProfileDrawer: React.FC = () => {
             <div className="border-2 border-gray-300 rounded-xl h-[310px] relative p-3 overflow-y-hidden">
               <div className="bottom-8 px-2 h-full overflow-hidden">
                 <WorklogSummaryView
-                  worklogSummary={worklogSummary.slice(0, 5)}
+                  workLogUser={selectedUser}
+                  worklogSummary={ArrayHelper.reverseSortByDate(worklogSummary, "date").slice(0, 5)}
                 />
                 <div className="absolute bottom-0 left-0 right-0 h-[30vh] bg-gradient-to-b from-transparent to-white flex flex-col justify-end">
                   <p className="font-semibold text-xs text-neutral-500 text-center p-2"></p>
