@@ -81,7 +81,7 @@ export async function POST(request: Request) {
             rest.personalData.dateOfBirth,
             rest.personalData.city,
             rest.workData?.positionInternal,
-            rest.workData.joining ? rest.workData.joining : currentDate,
+            rest.workData?.joining ? rest.workData.joining : currentDate,
             rest.personalData?.workHourOverlap,
             rest.personalData?.address,
             rest.personalData.govtId ? rest.personalData.govtId : "---",
@@ -141,12 +141,11 @@ export async function PUT(request: Request) {
     });
     // console.log("old user", oldUser);
     // console.log("rest ", rest);
-    const user = await prisma.user.upsert({
+    const user = await prisma.user.update({
       where: {
         id,
       },
-      create: { ...rest },
-      update: { ...rest },
+      data: { ...rest },
     });
     const currentDate = new Date()
       .toLocaleDateString("en-GB")
@@ -162,7 +161,7 @@ export async function PUT(request: Request) {
       rest.personalData?.dateOfBirth,
       rest.personalData?.city,
       rest.workData?.positionInternal,
-      rest.workData.joining ? rest.workData.joining : currentDate,
+      rest.workData?.joining ? rest.workData.joining : currentDate,
       rest.personalData?.workHourOverlap,
       rest.personalData?.address,
       rest.personalData?.govtId ? rest.personalData.govtId : "---",
@@ -181,7 +180,7 @@ export async function PUT(request: Request) {
       rest.workData?.positionInternal,
       rest.personalData?.workHourOverlap,
       rest.workData?.workHours,
-      rest.workData.joining ? rest.workData.joining : currentDate,
+      rest.workData?.joining ? rest.workData.joining : currentDate,
       "---", //office email
       rest.personalData?.address,
     ];

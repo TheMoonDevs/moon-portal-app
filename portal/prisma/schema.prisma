@@ -373,3 +373,52 @@ model MissionTask {
   email        String?
   userInfoId   String?
 }
+
+//-------------------------------------Badges-------------------------------------------
+
+model BadgeTemplate {
+  id  String   @id @default(auto()) @map("_id") @db.ObjectId
+  name String 
+  description String
+  badgeType BadgeType
+  imageurl String
+  criteria Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum BadgeType {
+  CUSTOM
+  STREAK
+  TIME_BASED
+}
+
+enum StreakType {
+  WORKLOG_BASED
+  TASK_BASED
+  MISSION_BASED
+  ARTICLE_BASED
+}
+
+//-------------------------------------Badges-Rewarded-------------------------------------------
+
+model BadgeRewarded {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String  
+  badgeTemplateId String       @db.ObjectId
+  name           String   
+  sequence       String   
+  date           String?
+  status         BadgeStatus @default(INACTIVE) 
+  imageUrl       String?  
+  showsCounter   Boolean  @default(false) 
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+enum BadgeStatus {
+  INACTIVE
+  ACTIVATED
+  REWARDED
+  SUSPENDED
+}
