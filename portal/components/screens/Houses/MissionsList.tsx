@@ -83,7 +83,7 @@ export const MissionsList = ({
   const [timeFrame, setTimeFrame] = useState("month");
   const [timeValue, setTimeValue] = useState(dayjs().format("YYYY-MM"));
   const [isOpen, setIsOpen] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState("missions");
+  const [activeTab, setActiveTab] = useState<string>("missions");
   const [tasksFetched, setTasksFetched] = useState(false);
   const [expanded, setExpanded] = useState<string | false>(false);
 
@@ -239,10 +239,21 @@ export const MissionsList = ({
           >
             Tasks
           </h3>
-          <Tooltip title="Add New Mission">
+          <Tooltip
+            title={
+              activeTab === "tasks" && missions.length === 0
+                ? "No mission found. Add a new mission to create tasks."
+                : activeTab === "tasks"
+                ? "Add New Task"
+                : "Add New Mission"
+            }
+          >
             <span
-              className="material-symbols-outlined cursor-pointer transition-transform duration-300 ease-in-out hover:scale-110"
-              onClick={() => setIsOpen(true)}
+              className={`material-symbols-outlined cursor-pointer transition-transform duration-300 ease-in-out hover:scale-110`}
+              onClick={() => {
+                if (activeTab === "tasks" && missions.length === 0) return;
+                setIsOpen(true);
+              }}
             >
               add_box
             </span>
@@ -343,7 +354,12 @@ export const MissionsList = ({
                       }}
                     ></div>
                   </div>
-                  <ExpandedMission expanded={expanded} mission={mission} />
+                  <ExpandedMission
+                    expanded={expanded}
+                    mission={mission}
+                    setIsOpen={() => setIsOpen(!isOpen)}
+                    setActiveTab={() => setActiveTab("tasks")}
+                  />
                 </React.Fragment>
               );
             })
@@ -359,6 +375,7 @@ export const MissionsList = ({
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
         houseMembers={houseMembers}
+        activeTab={activeTab}
       />
     </div>
   );
