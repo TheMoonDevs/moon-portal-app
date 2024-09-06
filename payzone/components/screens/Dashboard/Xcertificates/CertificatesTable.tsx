@@ -2,7 +2,7 @@
 import React, { use, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import { PORTAL_SERVER_API_URL } from "@/utils/service/MyServerApi";
+import { PORTAL_SERVER, PORTAL_SERVER_API_URL } from "@/utils/service/MyServerApi";
 import TableLoader from "@/components/elements/TableLoader";
 import ConfirmationModal from "./DeleteModal";
 import { User } from "@prisma/client";
@@ -16,6 +16,7 @@ import { IconEdit } from "@tabler/icons-react";
 import EditCertificateModal from "./EditCertificateInfo";
 import { Tooltip } from "@mui/material";
 import { useAuthSession } from "@/utils/hooks/useAuthSession";
+import { TMD_PAYZONE_API_KEY } from "@/utils/constants/appInfo";
 
 interface TableProps extends React.HTMLProps<HTMLTableCellElement> {
   children: React.ReactNode;
@@ -81,6 +82,7 @@ const CertificatesTable = () => {
             method: "DELETE",
             headers: {
               "Content-Type": "application/json",
+              [PORTAL_SERVER.headerField]: PORTAL_SERVER.apiKey,
             },
             body: JSON.stringify({
               id: fileToDelete.id,
@@ -155,8 +157,8 @@ const CertificatesTable = () => {
 
   const filteredCertificates = searchTerm
     ? certificates.filter((certificate: any) =>
-        certificate.title?.toLowerCase().startsWith(searchTerm.toLowerCase())
-      )
+      certificate.title?.toLowerCase().startsWith(searchTerm.toLowerCase())
+    )
     : certificates;
 
   if (filteredCertificates.length === 0 && searchTerm) {
@@ -213,7 +215,7 @@ const CertificatesTable = () => {
                 onClick={() => window.open(certificate.file.fileUrl!, "_blank")}
               >
                 {certificate.file.fileUrl &&
-                certificate.file.fileUrl.length > 40
+                  certificate.file.fileUrl.length > 40
                   ? `${certificate.file.fileUrl.substring(0, 40)}...`
                   : certificate.file.fileUrl}
               </TableCell>

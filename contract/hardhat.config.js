@@ -3,11 +3,11 @@ require("@nomicfoundation/hardhat-toolbox");
 
 //const { mnemonic } = require("./secrets.json");
 
-const PRIVATE_KEY_1 = process.env.PRIVATE_TMDTEST_KEY
-const BASE_API = process.env.BASE_API_KEY
-  ? process.env.BASE_API_KEY : "ce0d7f26-7250-4867-a5aa-b5a253a569ec";
+const PRIVATE_KEY_1 = process.env.PRIVATE_TMDTEST_KEY;
+const BASE_API = process.env.BASE_API_KEY ? process.env.BASE_API_KEY : "";
 const BASESEPOLIA_API = process.env.BASESCAN_API_KEY
-  ? process.env.BASESCAN_API_KEY : "ce0d7f26-7250-4867-a5aa-b5a253a569ec";
+  ? process.env.BASESCAN_API_KEY
+  : "ce0d7f26-7250-4867-a5aa-b5a253a569ec";
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
@@ -41,14 +41,18 @@ module.exports = {
     mainnet: {
       url: "https://bsc-dataseed.bnbchain.org/",
       chainId: 56,
-      gasPrice: 20000000000,
+      accounts: [PRIVATE_KEY_1],
+    },
+    base: {
+      url: "https://mainnet.base.org",
+      chainId: 8453,
       accounts: [PRIVATE_KEY_1],
     },
     base_sepolia: {
       url: "https://sepolia.base.org",
       gasPrice: 20000000000,
-      accounts: [PRIVATE_KEY_1]
-    }
+      accounts: [PRIVATE_KEY_1],
+    },
   },
   solidity: {
     version: "0.8.20",
@@ -78,16 +82,17 @@ module.exports = {
         chainId: 8453,
         urls: {
           apiURL: "https://api.basescan.org/api",
-          browserURL: "https://basescan.org"
+          browserURL: "https://basescan.org",
         },
       },
       {
-      network: "base_sepolia",
-      chainId: 84532,
-      urls: {
-        apiURL: "https://base-sepolia.blockscout.com/api",
-        browserURL: "https://base-sepolia.blockscout.com"
-      }
-    }]
-  }
+        network: "base_sepolia",
+        chainId: 84532,
+        urls: {
+          apiURL: "https://base-sepolia.blockscout.com/api",
+          browserURL: "https://base-sepolia.blockscout.com",
+        },
+      },
+    ],
+  },
 };
