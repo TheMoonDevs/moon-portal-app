@@ -1,15 +1,18 @@
 {
   "name": "moon-payments-app",
-  "version": "0.1.0",
+  "version": "1.0.1",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "compile": "npx hardhat compile",
+    "deploy": "npx hardhat run scripts/deploy.ts --network",
     "deploy-testnet": "npx hardhat run --network testnet scripts/deploy.ts",
     "deploy_base_sepolia": "npx hardhat run --network base_sepolia scripts/deploy.ts",
-    "verify_base_seploia": "npx hardhat verify --network base_sepolia"
+    "verify_base_seploia": "npx hardhat verify --network base_sepolia",
+    "verify:base": "hardhat verify --network base"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^5.0.2",

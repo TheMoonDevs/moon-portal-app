@@ -12,6 +12,8 @@ Owner - 0xe7883c2AEE56e664aAeb3E60334B1ae83d1E50C9 - SHARED - TMD_TESTNET_KEY
 
 Onwer -
 
+Base Chain official COntract Address - 0x6201b86028e299F43e077CC674DB7c7786a93451
+
 Deployment on Base Chain
 
 ```shell
@@ -22,5 +24,6 @@ npm run deploy base
 
 # copy contract address & Add consumer at - https://vrf.chain.link/polygon/512 or (subscriptionId)
 npm run generateABI base
+npm run verify:base
 npx hardhat verify --constructor-args arguments.js --network <chain> ADDRESS
 ```
