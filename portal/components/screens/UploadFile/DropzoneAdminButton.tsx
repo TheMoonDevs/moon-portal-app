@@ -12,6 +12,7 @@ import {
 } from "@/utils/redux/filesUpload/fileUpload.slice";
 import { useUser } from "@/utils/hooks/useUser";
 import { CircularProgress } from "@mui/material";
+import { TMD_PORTAL_API_KEY } from "@/utils/constants/appInfo";
 
 export default function DropzoneAdminButton({ users }: { users: User[] }) {
   const dispatch = useAppDispatch();
@@ -48,11 +49,14 @@ export default function DropzoneAdminButton({ users }: { users: User[] }) {
 
       formData.append("userId", userId);
       uploadedByUserId && formData.append("uploadedByUserId", uploadedByUserId);
-      formData.append("folderName", "userUploads")
+      formData.append("folderName", "userUploads");
       try {
         const response = await fetch(`api/upload/file-upload`, {
           method: "POST",
           body: formData,
+          headers: {
+            tmd_portal_api_key: TMD_PORTAL_API_KEY,
+          },
         });
         const responseJson = await response.json();
         console.log(responseJson.fileInfo);
