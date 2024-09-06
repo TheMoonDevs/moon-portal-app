@@ -9,6 +9,7 @@ import { useQuickLinkDirectory } from "../../hooks/useQuickLinkDirectory";
 import { Directory, ParentDirectory, ROOTTYPE } from "@prisma/client";
 import { AddSectionPopup } from "./AddSectionPopup";
 import { Tooltip } from "@mui/material";
+import { APP_ROUTES } from "../../../../../utils/constants/appInfo";
 
 export default function QuicklinkSidebar() {
   const {
@@ -31,15 +32,17 @@ export default function QuicklinkSidebar() {
   return (
     <div className="w-[350px] h-[100vh]  top-0">
       <aside className="fixed w-inherit h-[100vh] top-0 overflow-auto flex flex-col border-r-2">
-        <div className="flex flex-row items-center gap-2 p-6">
-          <Image
-            src="/logo/logo.png"
-            alt="The Moon Devs"
-            width={38}
-            height={38}
-          />
-          <h1 className="font-bold text-xl">The Moon Devs</h1>
-        </div>
+        <Link href={APP_ROUTES.home}>
+          <div className="flex flex-row items-center gap-2 p-6">
+            <Image
+              src="/logo/logo.png"
+              alt="The Moon Devs"
+              width={38}
+              height={38}
+            />
+            <h1 className="font-bold text-xl">The Moon Devs</h1>
+          </div>
+        </Link>
         {/* ---- Sidebar Root View  --- */}
         {viewType === "root" && (
           <nav className="mt-6">

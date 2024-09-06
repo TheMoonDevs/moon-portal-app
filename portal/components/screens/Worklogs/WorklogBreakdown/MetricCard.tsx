@@ -1,25 +1,37 @@
-import React from "react";
+import React from 'react';
+import { Tooltip } from '@mui/material';
 
 interface MetricCardProps {
   title: string;
   content: React.ReactNode;
   logo: React.ReactNode;
+  tooltip?: string;
 }
 
-const MetricCard = ({ title, content, logo }: MetricCardProps) => (
-  <div className="flex flex-col justify-between relative w-full md:w-[45%] p-4 md:p-6 shadow-md hover:shadow-lg cursor-pointer rounded-xl border border-neutral-400 mb-4 md:mb-6 bg-white">
-    <div>
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="font-semibold text-lg md:text-xl flex-1 mr-4">
-          {title}
+const MetricCard: React.FC<MetricCardProps> = ({
+  title,
+  content,
+  logo,
+  tooltip,
+}) => (
+  <Tooltip title={tooltip || ''} arrow>
+    <div className='flex flex-col justify-between w-full p-5 rounded-lg shadow-md bg-gradient-to-br from-white to-gray-50 hover:from-blue-50 hover:border-l-4 hover:border-blue-500 transition-all duration-300 cursor-pointer transform hover:scale-105'>
+      <div className='flex justify-between items-start gap-2 mb-3'>
+        <h1 className='font-semibold text-base text-gray-900 break-words'>
+          <span className='block w-full'>
+            {title.split(' ').slice(0, 2).join(' ')}
+          </span>
+          {title.split(' ').length > 2 && (
+            <span className='block w-full'>
+              {title.split(' ').slice(2).join(' ')}
+            </span>
+          )}
         </h1>
-        <div className="flex-shrink-0 md:absolute top-5 right-5">{logo}</div>
+        <div className=''>{logo}</div>{' '}
       </div>
-      <div className="text-sm md:text-base font-normal text-gray-700">
-        {content}
-      </div>
+      <div className='text-2xl font-bold text-gray-700'>{content}</div>
     </div>
-  </div>
+  </Tooltip>
 );
 
 export default MetricCard;

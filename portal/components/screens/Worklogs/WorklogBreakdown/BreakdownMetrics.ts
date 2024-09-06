@@ -54,9 +54,9 @@ export function calculateMetrics(
   isMonthly: boolean,
   isYearly?: boolean
 ): Metrics {
-  console.log("calculateMetrics called with worklogSummary:", worklogSummary);
-  console.log("calculateMetrics called with isMonthly:", isMonthly);
-  console.log("calculateMetrics called with isYearly:", isYearly);
+  //console.log("calculateMetrics called with worklogSummary:", worklogSummary);
+  //console.log("calculateMetrics called with isMonthly:", isMonthly);
+  //console.log("calculateMetrics called with isYearly:", isYearly);
   const completedTasks = getTaskCountByType(worklogSummary, TaskType.Completed);
   const taskCompletionRate = getTaskCompletionRate(worklogSummary);
   const averageTasksPerDay = getAverageTasksPerDay(worklogSummary);
@@ -321,13 +321,13 @@ export function getMissedLogs(
     parseISO(worklog.date || "")
   );
 
-  console.log("logDates:", logDates);
+  //console.log("logDates:", logDates);
 
   const missedDates = allDates.filter(
     (date) => !logDates.some((logDate) => isSameDay(date, logDate))
   );
 
-  console.log("missedDates:", missedDates);
+  //console.log("missedDates:", missedDates);
 
   return missedDates;
 }
