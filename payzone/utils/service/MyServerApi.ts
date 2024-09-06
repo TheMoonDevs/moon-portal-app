@@ -11,6 +11,11 @@ export enum SERVER_API_ENDPOINTS {
   updateExchangeConfigData = `/api/exchange`,
 }
 export const PORTAL_SERVER_API_URL = process.env.NEXT_PUBLIC_PORTAL_API_URL;
+export const PORTAL_SERVER = {
+  headerField: "tmd_portal_api_key",
+  url: PORTAL_SERVER_API_URL,
+  apiKey: process.env.NEXT_PUBLIC_PORTAL_API_KEY ?? "",
+};
 
 export const MyServerApi = {
   postData: (url: string, data: any) => {
