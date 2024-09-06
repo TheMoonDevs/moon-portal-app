@@ -6,7 +6,14 @@ import { useUser } from "@/utils/hooks/useUser";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { DocMarkdown, WorkLogs } from "@prisma/client";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  RefObject,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  createRef,
+} from "react";
 import store, { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import dayjs from "dayjs";
 import { WorkLogsHelper } from "./WorklogsHelper";
@@ -77,6 +84,7 @@ export const WorkLogItem = ({
       className={`flex flex-col  gap-3 rounded-lg border border-neutral-200 p-3 overflow-y-hidden min-h-[150px] ${
         data.logType === "privateLog" ? " h-full " : ""
       } ${selected ? " bg-white border-neutral-900 border-2 " : ""}`}
+      key={JSON.stringify(data.works)}
       onClick={onClick}
     >
       <div
@@ -289,6 +297,40 @@ export const WorklogsPage = () => {
     },
   ];
 
+  const handleWorkLogItemClick = (data: WorkLogs, isEditorSaving: boolean) => {
+    if (isEditorSaving) {
+      toast.error("Save your Logs! (Ctrl+S)");
+      return;
+    }
+    if (data.id?.trim().length > 0) {
+      setSelectedID(data.id);
+      if (data.date) setSelectedDate(data.date);
+    } else if (data.date) {
+      // console.log(data);
+      setSelectedID(undefined);
+      if (data.date) setSelectedDate(data.date);
+    }
+  };
+
+  const isFutureMonth =
+    monthTab > thisMonth || (monthTab === 0 && thisMonth === 11);
+
+  const filteredLogs = isFutureMonth
+    ? logsList.filter((data) => dayjs(data.date).month() === monthTab).slice(-4)
+    : logsList.filter((data) => dayjs(data.date).month() === monthTab);
+
+  const handleNextMonthClick = () => {
+    setMonthTab((prevMonth) => {
+      const nextMonth = (prevMonth + 1) % 12;
+      const newDate = dayjs()
+        .month(nextMonth)
+        .startOf("month")
+        .format("YYYY-MM-DD");
+      setSelectedDate(newDate);
+      return nextMonth;
+    });
+  };
+
   return (
     <div className="flex flex-col">
       <div className="fixed left-0 right-0 top-0 z-10 bg-white flex flex-row gap-3 py-2 px-3 items-center justify-between border-b border-neutral-400 md:pl-[6rem]">
@@ -364,30 +406,20 @@ export const WorklogsPage = () => {
               id={selectedID}
               date={centerdate.format("YYYY-MM-DD")}
               logType={"dayLog"}
+              monthTab={monthTab}
+              setMonthTab={setMonthTab}
+              handleNextMonthClick={handleNextMonthClick}
             />
           </div>
           <div className="grid grid-cols-2 lg:w-[30%] gap-3 p-2 max-lg:grid-cols-4 max-md:grid-cols-2 max-h-[80vh] overflow-y-scroll m-3">
-            {logsList.map(
+            {filteredLogs.map(
               (data) => (
                 <WorkLogItem
                   isTabletOrMore={isTabletOrMore}
                   key={data.id + "-" + data.date + "-" + data.userId}
                   data={data}
                   selected={selectedDate === data.date}
-                  onClick={() => {
-                    if (isEditorSaving) {
-                      toast.error("Save your Logs! (Ctrl+S)");
-                      return;
-                    }
-                    if (data.id?.trim().length > 0) {
-                      setSelectedID(data.id);
-                      if (data.date) setSelectedDate(data.date);
-                    } else if (data.date) {
-                      // console.log(data);
-                      setSelectedID(undefined);
-                      if (data.date) setSelectedDate(data.date);
-                    }
-                  }}
+                  onClick={() => handleWorkLogItemClick(data, isEditorSaving)}
                 />
               )
               //)
