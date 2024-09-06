@@ -9,6 +9,7 @@ import UserSelect from "./UserSelect";
 import { User } from "@prisma/client";
 import {
   MyServerApi,
+  PORTAL_SERVER,
   PORTAL_SERVER_API_URL,
 } from "@/utils/service/MyServerApi";
 
@@ -46,14 +47,22 @@ const EditCertificateModal: React.FC<EditCertificateModalProps> = ({
     try {
       setIsLoading(true);
 
-      const response = await MyServerApi.updateData(
+      const response = await fetch(
         `${PORTAL_SERVER_API_URL}/upload/certificate-upload`,
         {
-          certificate: updatedCertificate,
-          deleteCertificateFromPrevId:
-            certificateToEdit?.userId !== updatedCertificate?.userId
-              ? certificateToEdit?.userId
-              : null,
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            [PORTAL_SERVER.headerField]: PORTAL_SERVER.apiKey,
+          },
+          body: JSON.stringify({
+            certificate: updatedCertificate,
+            deleteCertificateFromPrevId:
+              certificateToEdit?.userId !== updatedCertificate?.userId
+                ? certificateToEdit?.userId
+                : null,
+          }),
         }
       );
       dispatch(updateCertificateData(updatedCertificate as ICertificate));

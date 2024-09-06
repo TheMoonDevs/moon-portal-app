@@ -1,5 +1,6 @@
 import React, { ChangeEvent, useState, useEffect } from "react";
 import GeneralModal from "../../components/elements/Modal";
+import { TMD_PORTAL_API_KEY } from "@/utils/constants/appInfo";
 
 interface EditJobPostModalProps {
   isOpen: boolean;
@@ -59,6 +60,7 @@ const EditJobPostModal: React.FC<EditJobPostModalProps> = ({
           method: "PUT", // Use PATCH for updating
           headers: {
             "Content-Type": "application/json",
+            tmd_portal_api_key: TMD_PORTAL_API_KEY,
           },
           body: JSON.stringify({ ...formData, id: jobPostData.jobPosts.id }),
         });

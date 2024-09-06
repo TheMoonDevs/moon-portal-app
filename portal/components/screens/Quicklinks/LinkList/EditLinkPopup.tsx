@@ -11,6 +11,7 @@ import {
   setToast,
   updateQuicklink,
 } from "@/utils/redux/quicklinks/quicklinks.slice";
+import { TMD_PORTAL_API_KEY } from "@/utils/constants/appInfo";
 
 export const EditLinkPopup = ({
   isModalOpen,
@@ -96,6 +97,9 @@ export const EditLinkPopup = ({
       const response = await fetch("/api/quicklinks/link/upload-img", {
         method: "POST",
         body: formData,
+        headers: {
+          tmd_portal_api_key: TMD_PORTAL_API_KEY,
+        },
       });
       const data = await response.json();
 

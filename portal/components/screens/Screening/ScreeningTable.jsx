@@ -4,7 +4,7 @@ import EditJobPostModal from "@/pages/edit-jobpost/page";
 import { NewJobPostModal } from "./JobPosts/_JobPostModal";
 import { useAppSelector } from "@/utils/redux/store";
 import { PortalSdk } from "@/utils/services/PortalSdk";
-
+import { TMD_PORTAL_API_KEY } from "@/utils/constants/appInfo";
 function ScreeningTable() {
   const [data, setData] = useState([]);
   const [selectedJobPost, setSelectedJobPost] = useState({});
@@ -70,6 +70,9 @@ function ScreeningTable() {
     try {
       const response = await fetch(`/api/jobPost?id=${id}}`, {
         method: "DELETE",
+        headers: {
+          tmd_portal_api_key: TMD_PORTAL_API_KEY,
+        },
       });
 
       if (response.ok) {
@@ -108,6 +111,7 @@ function ScreeningTable() {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+          tmd_portal_api_key: TMD_PORTAL_API_KEY,
         },
         body: JSON.stringify({ ...formData, id: selectedJobPost.id }),
       });

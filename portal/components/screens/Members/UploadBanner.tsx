@@ -10,11 +10,10 @@ import {
 } from "@/utils/redux/filesUpload/fileUpload.slice";
 import { FileWithPath } from "@mantine/dropzone";
 import { useUser } from "@/utils/hooks/useUser";
-
+import { TMD_PORTAL_API_KEY } from "@/utils/constants/appInfo";
 
 const UploadBanner = () => {
-
-    const { user } = useUser();
+  const { user } = useUser();
   const [isFileUploading, setIsFileUploading] = useState<boolean>(false);
   // const dispatch = useAppDispatch();
   // news state will be required here for the banner uploads
@@ -38,13 +37,16 @@ const UploadBanner = () => {
     formData.append("file", file, file.path);
     if (user) {
       const userId = user.id;
-      formData.append("userId", userId);  
+      formData.append("userId", userId);
     }
     formData.append("folderName", "userBanners");
     try {
       const response = await fetch("/api/upload/file-upload", {
         method: "POST",
         body: formData,
+        headers: {
+          tmd_portal_api_key: TMD_PORTAL_API_KEY,
+        },
       });
 
       if (response.ok) {
@@ -55,7 +57,7 @@ const UploadBanner = () => {
         // Update the Banner URL with the file's URL
         const bannerUrl = data.fileInfo[0].fileUrl;
         console.log(bannerUrl);
-        // again here new state logic will be required 
+        // again here new state logic will be required
         // dispatch(updateAvatarUrl(bannerUrl));
         setUploadedFiles([data.fileInfo]);
         // dispatch(resetPreview());
@@ -69,9 +71,7 @@ const UploadBanner = () => {
     }
   };
 
-  return (
-    <div>UploadBanner</div>
-  )
-}
+  return <div>UploadBanner</div>;
+};
 
-export default UploadBanner
+export default UploadBanner;
