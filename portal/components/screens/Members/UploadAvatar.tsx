@@ -13,6 +13,7 @@ import { CircularProgress } from "@mui/material";
 import { updateAvatarUrl } from "@/utils/redux/onboarding/onboarding.slice";
 import { FileWithPath } from "@mantine/dropzone";
 import { useUser } from "@/utils/hooks/useUser";
+import { TMD_PORTAL_API_KEY } from "@/utils/constants/appInfo";
 
 export function UploadAvatar() {
   const { user } = useUser();
@@ -38,13 +39,16 @@ export function UploadAvatar() {
     formData.append("file", file, file.path);
     if (user) {
       const userId = user.id;
-      formData.append("userId", userId); 
+      formData.append("userId", userId);
     }
     formData.append("folderName", "userAvatars");
     try {
       const response = await fetch("/api/upload/file-upload", {
         method: "POST",
         body: formData,
+        headers: {
+          tmd_portal_api_key: TMD_PORTAL_API_KEY,
+        },
       });
 
       if (response.ok) {
@@ -101,34 +105,32 @@ export function UploadAvatar() {
       ) : (
         <div className="flex gap-2 justify-center items-center">
           <img
-            src={avatarUrl?avatarUrl:"/icons/placeholderAvatar.svg"}
+            src={avatarUrl ? avatarUrl : "/icons/placeholderAvatar.svg"}
             alt="Profile photo"
             className="rounded-full w-10 h-10"
           />
           <label className="flex items-center cursor-pointer">
-          <span className="flex items-center border p-2 rounded-lg text-sm text-gray-500">
-            {isFileUploading ? (
-              <div className="flex items-center justify-center gap-2">
-                <CircularProgress size={20} color="inherit" />
-                <span className="text-gray-400 text-sm font-light">
-                  Uploading....
-                </span>
-              </div>
-            ) : (
-              "Upload Avatar"
-            )}
-          </span>
-          <input
-            type="file"
-            accept="image/jpeg,image/png"
-            onChange={handleFileChange}
-            className="hidden"
-          />
-        </label>
+            <span className="flex items-center border p-2 rounded-lg text-sm text-gray-500">
+              {isFileUploading ? (
+                <div className="flex items-center justify-center gap-2">
+                  <CircularProgress size={20} color="inherit" />
+                  <span className="text-gray-400 text-sm font-light">
+                    Uploading....
+                  </span>
+                </div>
+              ) : (
+                "Upload Avatar"
+              )}
+            </span>
+            <input
+              type="file"
+              accept="image/jpeg,image/png"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+          </label>
         </div>
       )}
     </div>
   );
 }
-
- 

@@ -35,6 +35,7 @@ import { Spinner } from "@/components/elements/Loaders";
 import Box from "@mui/material/Box";
 import Modal from "@mui/material/Modal";
 import { HOUSES_LIST } from "../Houses/HousesList";
+import { TMD_PORTAL_API_KEY } from "@/utils/constants/appInfo";
 
 interface OnboardingPageProps {
   onClose?: () => void;
@@ -86,6 +87,7 @@ export function OnboardingPage({ onClose }: OnboardingPageProps) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          tmd_portal_api_key: TMD_PORTAL_API_KEY,
         },
         body: JSON.stringify(updatedFormData),
       });

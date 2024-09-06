@@ -21,6 +21,7 @@ import { AdminUserWorkData } from "./AdminUserWorkData";
 import { AdminUserBasicData } from "./AdimUserBasicData";
 import { AdminUserPayData } from "./AdminUserPayData";
 import { AdminUserPersonalData } from "./AdminUserPersonalData";
+import { TMD_PORTAL_API_KEY } from "@/utils/constants/appInfo";
 const initialUserState: User = {
   id: "",
   name: "",
@@ -137,6 +138,9 @@ export const AdminUserEditor = () => {
     fetch("/api/user", {
       method: user.id.length > 0 ? "PUT" : "POST",
       body: JSON.stringify(user),
+      headers: {
+        tmd_portal_api_key: TMD_PORTAL_API_KEY,
+      },
     })
       .then((res) => res.json())
       .then((data) => {
