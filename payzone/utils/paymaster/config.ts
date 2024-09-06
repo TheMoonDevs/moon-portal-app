@@ -16,4 +16,4 @@ console.log("paymasterService", paymasterService);
 export const paymasterClient = createClient({
   chain: IS_TESTNET ? baseSepolia : base,
   transport: http(paymasterService),
-}).extend(paymasterActionsEip7677(ENTRYPOINT_ADDRESS_V06));
+}).extend(paymasterActionsEip7677({ entryPoint: ENTRYPOINT_ADDRESS_V06 }));
