@@ -51,7 +51,7 @@ const MonthTable: React.FC<MonthTableProps> = ({
 
   return (
     <Fade in={isMonthDropdownOpen} mountOnEnter unmountOnExit>
-      <table className="flex flex-col gap-1 absolute top-10 right-0 sm:right-[unset] shadow-lg rounded-md bg-white">
+      <table className="flex flex-col gap-1 absolute top-10 z-20 right-0 sm:right-[unset] shadow-lg rounded-md bg-white">
         <tbody>
           {Array.from({ length: 4 }, (_, rowIndex) => (
             <tr key={rowIndex} className="items-center !text-sm py-1">
@@ -90,7 +90,7 @@ const YearDropdown: React.FC<YearDropdownProps> = ({
   const pathName = usePathname();
   return (
     <Fade in={isYearDropdownOpen} mountOnEnter unmountOnExit>
-      <div className="absolute top-10 flex flex-col gap-1 shadow-lg rounded-md bg-white">
+      <div className="absolute top-10 z-20 flex flex-col gap-1 shadow-lg rounded-md bg-white">
         {yearArray.map((year) => (
           <Link
             href={
@@ -181,18 +181,18 @@ export const WorklogSummaryHeader = ({
     // });
   };
   return (
-    <div className="fixed left-0 right-0 top-0 z-10 bg-white flex flex-row gap-3 py-2 px-3 items-center justify-between border-b border-neutral-400  md:pl-[6rem]">
+    <div className="py-4 bg-white flex flex-row gap-3 px-3 items-center justify-between border-neutral-400">
       <div className="flex items-center justify-between w-full sm:w-[unset] sm:justify-start">
         <Link href={APP_ROUTES.home} className="flex items-center">
           <h1 className="hidden sm:block md:text-lg text-sm whitespace-nowrap cursor-pointer font-extrabold border-r-2 pr-3 mr-3">
             The Moon Devs
           </h1>
           <Image
-            src="/icon-192x192.png"
+            src="/logo/logo.png"
             width={30}
             height={30}
             alt="logo"
-            className="w-8 aspect-square sm:hidden mr-5"
+            className="w-6 aspect-square mr-3"
           />
         </Link>
         <div className="flex items-center sm:gap-4 pr-10">
@@ -202,7 +202,7 @@ export const WorklogSummaryHeader = ({
           <span className="material-symbols-outlined !text-neutral-400">
             chevron_right
           </span>
-          <div className="flex gap-1 sm:gap-2 items-center !text-sm relative">
+          <div className="flex gap-1 sm:gap-2 items-center !text-md relative">
             <Link
               href={`${pathName}?year=${selectedYear}`}
               className={`${onlyYearSummary ? "font-bold" : ""} cursor-pointer`}
@@ -229,18 +229,17 @@ export const WorklogSummaryHeader = ({
           <span className="material-symbols-outlined !text-neutral-400">
             chevron_right
           </span>
-          <div className="flex gap-1 sm:gap-2 items-center !text-sm sm:relative z-50">
+          <div className="flex gap-1 sm:gap-2 items-center !text-md sm:relative z-50">
             <Link
               href={
                 onlyYearSummary && selectedMonth !== null
                   ? `${pathName}?year=${selectedYear}&month=${dayjs()
-                      .month(selectedMonth)
-                      .format("MM")}`
+                    .month(selectedMonth)
+                    .format("MM")}`
                   : ""
               }
-              className={`cursor-pointer ${
-                !onlyYearSummary ? "font-bold" : ""
-              }`}
+              className={`cursor-pointer ${!onlyYearSummary ? "font-bold" : ""
+                }`}
               onClick={() =>
                 onlyYearSummary &&
                 selectedMonth !== null &&
