@@ -6,120 +6,78 @@ import { User, MissionTask } from '@prisma/client';
 import CreateTask from './CreateTask';
 import CreateMissionFields from './CreateMissionFields';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import Tasks from './Tasks';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 import { useUser } from '@/utils/hooks/useUser';
 import { toast, Toaster } from 'sonner';
 import { Spinner } from '@/components/elements/Loaders';
-import { initialAddTaskState, initialState } from './state';
+import { initialMissionState, initialTaskState } from './state';
 
 const CreateMission = ({
   isOpen,
   onClose,
   houseMembers,
+  activeTab,
 }: {
   isOpen: boolean;
   onClose: () => void;
   houseMembers: User[];
+  activeTab: string;
 }) => {
-  const [state, setState] = useState(initialState);
-  const [showTaskFields, setShowTaskFields] = useState(false);
-  const [addTaskState, setAddTaskState] = useState(initialAddTaskState);
+  const [missionState, setMissionState] = useState(initialMissionState);
+  const [taskState, setTaskState] = useState(initialTaskState);
   const { user } = useUser();
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
     const missionData = {
-      title: state.title,
-      description: state.todoMarkdown || null,
-      vertical: user ? user.vertical : null,
-      house: state.house,
+      ...missionState,
+      vertical: user?.vertical || null,
       month: dayjs().format('YYYY-MM'),
-      completed: state.isCompleted ?? false,
-      housePoints: Number(state.housePoints),
-      indiePoints: Number(state.indiePoints),
-      completedAt: state.completedAt
-        ? state.completedAt.toISOString()
-        : undefined,
-      expirable: state.isExpirable ?? true,
-      expiresAt: state.expiresAt ? state.expiresAt.toISOString() : undefined,
+      completedAt: missionState.completedAt
+        ? missionState.completedAt.toISOString()
+        : null,
+      expiresAt: missionState.expiresAt
+        ? missionState.expiresAt.toISOString()
+        : null,
     };
-
     setLoading(true);
     try {
       const res = await PortalSdk.postData('/api/missions', missionData);
       console.log('Mission created:', res);
-
-      if (state.tasks.length > 0 && res.data.mission.id) {
-        const tasksData = state.tasks.map((task: MissionTask) => ({
-          title: task.title || '',
-          description: task.description || '',
-          indiePoints: Number(task.indiePoints),
-          completedAt: task.completedAt ? task.completedAt.toISOString() : null,
-          expiresAt: task.expiresAt ? task.expiresAt.toISOString() : null,
-          missionId: res.data.mission.id,
-          userId: task.userId || '',
-          expirable: task.expirable ?? false,
-          avatar: task.avatar || '',
-          name: task.name || null,
-          email: task.email || null,
-          userInfoId: task.userInfoId || null,
-        }));
-
-        await Promise.all(
-          tasksData.map(async (taskData) => {
-            await PortalSdk.postData('/api/mission-tasks', taskData);
-          })
-        );
-      }
-
       setLoading(false);
       onClose();
-      setState(initialState);
+      setMissionState(initialMissionState);
       toast.success('Mission and tasks created successfully!');
     } catch (error) {
-      console.error('Error creating mission or tasks:', error);
+      console.error('Error creating mission:', error);
       setLoading(false);
-      toast.error('Failed to create mission or tasks');
+      toast.error('Failed to create mission');
     }
   };
 
-  const handleAddTask = () => {
-    const {
-      title,
-      description,
-      indiePoints,
-      userId,
-      completedAt,
-      isCompleted,
-      expiresAt,
-      isExpirable,
-      userInfo,
-    } = addTaskState;
-
-    if (!title.trim() || !description.trim()) return;
-
-    const newTask = {
-      title,
-      description,
-      indiePoints: Number(indiePoints),
-      userId,
-      completedAt: completedAt?.toDate() || undefined,
-      completed: isCompleted,
-      expiresAt: expiresAt?.toDate() || undefined,
-      expirable: isExpirable,
-      userInfoId: userInfo?.id || undefined,
-      avatar: userInfo?.avatar || undefined,
-      name: userInfo?.name || undefined,
-      email: userInfo?.email || undefined,
+  const handleCreateTask = async () => {
+    const taskData = {
+      ...taskState,
+      indiePoints: Number(taskState.indiePoints) || 0,
+      completedAt: taskState.completedAt
+        ? taskState.completedAt.toISOString()
+        : null,
+      expiresAt: taskState.expiresAt ? taskState.expiresAt.toISOString() : null,
     };
-
-    setState((prev) => ({
-      ...prev,
-      tasks: [...prev.tasks, newTask as MissionTask],
-    }));
-    setShowTaskFields(false);
-    setAddTaskState(initialAddTaskState);
+    console.log(taskData);
+    setLoading(true);
+    try {
+      const res = await PortalSdk.postData('/api/mission-tasks', taskState);
+      console.log('task created:', res);
+      setLoading(false);
+      onClose();
+      setTaskState(initialTaskState);
+      toast.success('Mission and tasks created successfully!');
+    } catch (error) {
+      console.error('Error creating tasks:', error);
+      setLoading(false);
+      toast.error('Failed to create tasks');
+    }
   };
 
   return (
@@ -149,55 +107,55 @@ const CreateMission = ({
                 close
               </span>
             </IconButton>
-            <CreateMissionFields state={state} setState={setState} />
-            {!showTaskFields && (
-              <Button
-                variant='contained'
-                color='primary'
-                sx={{ py: 1, my: 3 }}
-                onClick={() => setShowTaskFields(true)}
-              >
-                Add Task
-              </Button>
-            )}
-            {showTaskFields && (
+            {activeTab === 'missions' && (
               <>
-                <CreateTask
-                  addTaskState={addTaskState}
-                  setAddTaskState={setAddTaskState}
-                  houseMembers={houseMembers}
+                <CreateMissionFields
+                  state={missionState}
+                  setState={setMissionState}
                 />
                 <Button
                   fullWidth
                   variant='contained'
                   color='primary'
-                  sx={{ py: 2, my: 2 }}
-                  onClick={handleAddTask}
-                  disabled={
-                    !addTaskState.title.trim() ||
-                    !addTaskState.description.trim()
-                  }
+                  sx={{ py: 2 }}
+                  onClick={handleSubmit}
                 >
-                  Add Task
+                  {loading ? (
+                    <Spinner className='w-6 h-6  text-white' />
+                  ) : (
+                    'Create Mission'
+                  )}
                 </Button>
               </>
             )}
-            {state.tasks.length > 0 && (
-              <Tasks tasks={state.tasks} setState={setState} />
+            {activeTab === 'tasks' && (
+              <>
+                <CreateTask
+                  taskState={taskState}
+                  setTaskState={setTaskState}
+                  houseMembers={houseMembers}
+                />
+
+                <Button
+                  fullWidth
+                  variant='contained'
+                  color='primary'
+                  sx={{ py: 2, mt: 2 }}
+                  onClick={handleCreateTask}
+                  disabled={
+                    !taskState.title.trim() ||
+                    !taskState.description.trim() ||
+                    !taskState.missionId
+                  }
+                >
+                  {loading ? (
+                    <Spinner className='w-6 h-6  text-white' />
+                  ) : (
+                    'Create Task'
+                  )}
+                </Button>
+              </>
             )}
-            <Button
-              fullWidth
-              variant='contained'
-              color='primary'
-              sx={{ py: 2 }}
-              onClick={handleSubmit}
-            >
-              {loading ? (
-                <Spinner className='w-6 h-6  text-white' />
-              ) : (
-                'Create Mission'
-              )}
-            </Button>
           </LocalizationProvider>
         </Box>
       </Modal>

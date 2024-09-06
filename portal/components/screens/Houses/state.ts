@@ -1,27 +1,29 @@
-import { MissionTask } from "@prisma/client";
-import dayjs from "dayjs";
+import dayjs, { Dayjs } from 'dayjs';
 
-export const initialState = {
-  title: '',
+export const initialMissionState = {
   house: '',
+  completed: false,
   housePoints: 0,
   indiePoints: 0,
-  completedAt: dayjs(new Date()),
-  expiresAt: dayjs(new Date()),
-  isCompleted: false,
-  isExpirable: true,
-  todoMarkdown: '*',
-  tasks: [] as MissionTask[],
+  completedAt: null as Dayjs | null,
+  expirable: true,
+  expiresAt: null as Dayjs | null,
+  title: '',
+  description: '*',
 };
 
-export const initialAddTaskState = {
+export const initialTaskState = {
+  missionId: '',
+  userId: '',
   title: '',
   description: '',
   indiePoints: 0,
-  userId: '',
-  completedAt: dayjs(new Date()),
-  expiresAt: dayjs(new Date()),
-  isCompleted: false,
-  isExpirable: true,
-  userInfo: { avatar: '', name: '', email: '', id: '' },
+  completedAt: null as Dayjs | null,
+  completed: false,
+  expirable: true,
+  expiresAt: null as Dayjs | null,
+  avatar: '',
+  name: '',
+  email: '',
+  userInfoId: '',
 };
