@@ -42,13 +42,11 @@ const BadgeCard: React.FC<BadgeCardProps> = ({ badge }) => {
         if (daysRemaining > 0) {
           if (monthsRemaining > 0) {
             const remainingDays = daysRemaining % 30;
-            progressMessage = `${monthsRemaining} month${
-              monthsRemaining > 1 ? 's' : ''
-            } ${remainingDays} day${remainingDays !== 1 ? 's' : ''} left`;
+            progressMessage = `${monthsRemaining} month${monthsRemaining > 1 ? 's' : ''
+              } ${remainingDays} day${remainingDays !== 1 ? 's' : ''} left`;
           } else {
-            progressMessage = `${daysRemaining} day${
-              daysRemaining !== 1 ? 's' : ''
-            } left`;
+            progressMessage = `${daysRemaining} day${daysRemaining !== 1 ? 's' : ''
+              } left`;
           }
         } else {
           progressMessage = 'Badge expired';
@@ -62,6 +60,7 @@ const BadgeCard: React.FC<BadgeCardProps> = ({ badge }) => {
   const updateBadgeStatusToRewarded = async (badge: BadgeRewarded) => {
     try {
       const response = await PortalSdk.putData('/api/user/badge-rewarded', {
+        id: badge.id,
         userId: badge.userId,
         badgeTemplateId: badge.badgeTemplateId,
         name: badge.name,
@@ -82,14 +81,12 @@ const BadgeCard: React.FC<BadgeCardProps> = ({ badge }) => {
 
   return (
     <div
-      className={`relative flex items-center px-4 py-6 rounded-lg shadow-md transition-transform duration-300 transform hover:scale-105 cursor-pointer ${
-        !isAwarded ? 'bg-[#F7F8FD]' : 'bg-[#E0E4F4]'
-      }`}
+      className={`relative flex items-center px-4 py-6 rounded-lg shadow-md transition-transform duration-300 transform hover:scale-105 cursor-pointer ${!isAwarded ? 'bg-[#F7F8FD]' : 'bg-[#E0E4F4]'
+        }`}
     >
       <div
-        className={`w-14 h-14 relative overflow-hidden ${
-          isAwarded ? 'border-2 border-gray-200' : 'border-2 border-gray-300'
-        }`}
+        className={`w-14 h-14 relative overflow-hidden ${isAwarded ? 'border-2 border-gray-200' : 'border-2 border-gray-300'
+          }`}
         style={{
           clipPath:
             'polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%)',
@@ -107,9 +104,8 @@ const BadgeCard: React.FC<BadgeCardProps> = ({ badge }) => {
       <div className=' ml-4 flex-1 flex items-start justify-between'>
         <div className='w-full'>
           <h3
-            className={`text-lg font-semibold ${
-              isAwarded ? 'text-gray-800' : 'text-gray-700'
-            }`}
+            className={`text-lg font-semibold ${isAwarded ? 'text-gray-800' : 'text-gray-700'
+              }`}
           >
             {badge.name}
           </h3>
