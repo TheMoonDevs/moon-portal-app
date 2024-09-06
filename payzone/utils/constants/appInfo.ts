@@ -1,5 +1,14 @@
 import { baseSepolia } from "viem/chains";
-import { bill, license, payments, request, send_money, toll, admin, refer } from '../../public/icons/index'
+import {
+  bill,
+  license,
+  payments,
+  request,
+  send_money,
+  toll,
+  admin,
+  refer,
+} from "../../public/icons/index";
 import { toast } from "sonner";
 
 const NEXT_PUBLIC_TMD_CONTRACT = process.env.NEXT_PUBLIC_TMD_CONTRACT
@@ -67,15 +76,27 @@ export const REFERRAL_DASHBOARD_SIDEBAR_LINKS = [
   {
     title: "REFERRALS",
     href: APP_ROUTES.referralsDashboard,
-    icon: refer, adminOnly: false,
+    icon: refer,
+    adminOnly: false,
   },
   {
     title: "TRANSACTIONS",
     href: APP_ROUTES.referralsTransactions,
-    icon: send_money, adminOnly: false,
+    icon: send_money,
+    adminOnly: false,
   },
-  { title: "INVOICES", href: APP_ROUTES.referralsInvoices, icon: bill, adminOnly: false },
-  { title: "ADMIN", href: APP_ROUTES.referralsAdmin, icon: admin, adminOnly: true },
+  {
+    title: "INVOICES",
+    href: APP_ROUTES.referralsInvoices,
+    icon: bill,
+    adminOnly: false,
+  },
+  {
+    title: "ADMIN",
+    href: APP_ROUTES.referralsAdmin,
+    icon: admin,
+    adminOnly: true,
+  },
 ];
 
 export const APP_INFO = {

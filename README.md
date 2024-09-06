@@ -3,7 +3,7 @@
 Most repos us shared databases, hence when you make a change in prisma, please update it in all places accordingly.
 
 if you have a git pull issue, try this
-```git config --global core.compression 9```
+`git config --global core.compression 9`
 
 ## Portal App - /portal
 
@@ -13,7 +13,7 @@ Deployed on
 
 - Vercel
 - [portal.themoondevs.com](http://portal.themoondevs.com)
-
+- Docs at in /portal folder
 
 ## Payzone App - /payzone
 

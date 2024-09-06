@@ -1,10 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import {
-  usePublicClient,
-  useWalletClient,
-} from "wagmi";
+import { usePublicClient, useWalletClient } from "wagmi";
 import {
   FallbackProvider,
   JsonRpcProvider,
@@ -17,7 +14,7 @@ export function publicClientToProvider(publicClient: PublicClient) {
   const { chain, transport } = publicClient;
   const network = {
     chainId: chain?.id ?? 0,
-    name: chain?.name ?? '',
+    name: chain?.name ?? "",
     ensAddress: chain?.contracts?.ensRegistry?.address,
   };
   if (transport.type === "fallback") {
@@ -40,11 +37,11 @@ export function walletClientToSigner(walletClient: WalletClient) {
   const { account, chain, transport } = walletClient;
   const network = {
     chainId: chain?.id ?? 0,
-    name: chain?.name ?? '',
+    name: chain?.name ?? "",
     ensAddress: chain?.contracts?.ensRegistry?.address,
   };
   const provider = new BrowserProvider(transport, network);
-  const signer = new JsonRpcSigner(provider, account?.address ?? '');
+  const signer = new JsonRpcSigner(provider, account?.address ?? "");
   return signer;
 }
 
