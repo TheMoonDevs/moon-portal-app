@@ -11,6 +11,7 @@ import {
   MyServerApi,
   SERVER_API_ENDPOINTS,
   PORTAL_SERVER_API_URL,
+  PORTAL_SERVER,
 } from "@/utils/service/MyServerApi";
 import {
   addCertificateFilesToPreview,
@@ -70,6 +71,7 @@ export default function DropzoneAdminButton({ users }: { users: User[] }) {
             body: formData,
             headers: {
               tmd_payzone_api_key: TMD_PAYZONE_API_KEY,
+              [PORTAL_SERVER.headerField]: PORTAL_SERVER.apiKey,
             },
           }
         );
