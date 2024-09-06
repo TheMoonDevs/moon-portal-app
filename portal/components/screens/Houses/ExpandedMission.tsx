@@ -4,13 +4,18 @@ import { Mission } from '@prisma/client';
 import { RootState, useAppDispatch, useAppSelector } from '@/utils/redux/store';
 import { useMemo } from 'react';
 import { calculateMissionStat } from './MissionsList';
+import { Button } from '@mui/material';
 
 const ExpandedMission = ({
   expanded,
   mission,
+  setIsOpen,
+  setActiveTab,
 }: {
   expanded: string | false;
   mission: Mission;
+  setIsOpen: () => void;
+  setActiveTab: () => void;
 }) => {
   const { tasks } = useAppSelector((state: RootState) => state.missionsTasks);
 
@@ -27,7 +32,7 @@ const ExpandedMission = ({
   const missionBalance = useMemo(() => {
     return mission && calculateMissionStat(mission, missionTasks, 'balance');
   }, [mission, missionTasks]);
-  
+
   return (
     <div
       className={`overflow-hidden transition-all duration-500 ${
@@ -35,7 +40,7 @@ const ExpandedMission = ({
       } border border-neutral-300 rounded-lg shadow-sm overflow-y-scroll`}
     >
       <div className='p-4 bg-white'>
-        <div className='mb-2 flex flex-col gap-2'>
+        <div className='mb-4 flex flex-row items-center justify-between gap-4'>
           <p className='text-sm text-gray-500 font-medium'>
             <strong className='text-gray-700'>House Points:</strong>{' '}
             {mission.housePoints}
@@ -50,24 +55,26 @@ const ExpandedMission = ({
               ? 'Not Started yet'
               : calculateMissionStat(mission, missionTasks, 'status')}
           </p>
-          <div className='mb-6'>
-            <div className='w-full bg-gray-200 rounded-full h-2.5'>
-              <div
-                className='bg-blue-600 h-2.5 rounded-full'
-                style={{
-                  width: `${missionPercentage}%`,
-                }}
-              ></div>
-            </div>
-            <p className='text-sm text-gray-600 mt-1'>
-              {missionBalance} / {mission?.indiePoints} Indie Points remaining
-            </p>
-          </div>
         </div>
-        <div className='flex flex-col gap-2'>
-          <p className='text-sm text-gray-500'>Mission description</p>
+        <div className='mb-6'>
+          <div className='w-full bg-gray-200 rounded-full h-3'>
+            <div
+              className='bg-blue-600 h-3 rounded-full'
+              style={{
+                width: `${missionPercentage}%`,
+              }}
+            ></div>
+          </div>
+          <p className='text-sm text-gray-600 mt-2'>
+            {missionBalance} / {mission?.indiePoints} Indie Points remaining
+          </p>
+        </div>
+        <div className='flex flex-col gap-4'>
+          <p className='text-sm text-gray-500 font-medium'>
+            Mission description
+          </p>
           {mission?.description ? (
-            <div className='bg-gray-50 p-3 rounded-md shadow-inner'>
+            <div className='bg-gray-50 p-4 rounded-md shadow-inner'>
               <MdxAppEditor
                 key={mission?.id}
                 markdown={mission?.description}
@@ -76,10 +83,25 @@ const ExpandedMission = ({
               />
             </div>
           ) : (
-            <p className='text-sm text-gray-400'>
+            <p className='text-sm text-gray-400 italic'>
               Description not available for this mission
             </p>
           )}
+          {missionTasks.length > 0 && (
+            <p className='text-sm text-gray-500 font-medium'>
+              No of Tasks for this mission: 0/{missionTasks.length}
+            </p>
+          )}
+          <Button
+            variant='contained'
+            color='primary'
+            onClick={() => {
+              setActiveTab();
+              setIsOpen();
+            }}
+          >
+            Add New Task
+          </Button>
         </div>
       </div>
     </div>
