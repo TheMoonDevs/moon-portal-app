@@ -81,7 +81,7 @@ export async function POST(request: Request) {
             rest.personalData.dateOfBirth,
             rest.personalData.city,
             rest.workData?.positionInternal,
-            rest.workData.joining ? rest.workData.joining : currentDate,
+            rest.workData?.joining ? rest.workData.joining : currentDate,
             rest.personalData?.workHourOverlap,
             rest.personalData?.address,
             rest.personalData.govtId ? rest.personalData.govtId : "---",
@@ -161,7 +161,7 @@ export async function PUT(request: Request) {
       rest.personalData?.dateOfBirth,
       rest.personalData?.city,
       rest.workData?.positionInternal,
-      rest.workData.joining ? rest.workData.joining : currentDate,
+      rest.workData?.joining ? rest.workData.joining : currentDate,
       rest.personalData?.workHourOverlap,
       rest.personalData?.address,
       rest.personalData?.govtId ? rest.personalData.govtId : "---",
@@ -180,7 +180,7 @@ export async function PUT(request: Request) {
       rest.workData?.positionInternal,
       rest.personalData?.workHourOverlap,
       rest.workData?.workHours,
-      rest.workData.joining ? rest.workData.joining : currentDate,
+      rest.workData?.joining ? rest.workData.joining : currentDate,
       "---", //office email
       rest.personalData?.address,
     ];
