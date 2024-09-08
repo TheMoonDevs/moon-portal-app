@@ -5,18 +5,19 @@ import { RootState, useAppDispatch, useAppSelector } from '@/utils/redux/store';
 import { useMemo } from 'react';
 import { calculateMissionStat } from './MissionsList';
 import { Button } from '@mui/material';
+import {
+  setActiveTab,
+  setEditorModalOpen,
+} from '@/utils/redux/missions/missionTaskEditorSlice.slice';
 
 const ExpandedMission = ({
   expanded,
   mission,
-  setIsOpen,
-  setActiveTab,
 }: {
   expanded: string | false;
   mission: Mission;
-  setIsOpen: () => void;
-  setActiveTab: () => void;
 }) => {
+  const dispatch = useAppDispatch();
   const { tasks } = useAppSelector((state: RootState) => state.missionsTasks);
 
   const missionTasks = tasks?.filter((t) => t?.missionId === mission?.id);
@@ -96,8 +97,8 @@ const ExpandedMission = ({
             variant='contained'
             color='primary'
             onClick={() => {
-              setActiveTab();
-              setIsOpen();
+              dispatch(setActiveTab('tasks'));
+              dispatch(setEditorModalOpen(true));
             }}
           >
             Add New Task
