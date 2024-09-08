@@ -1,11 +1,19 @@
 /* eslint-disable @next/next/no-img-element */
 
 import React, { useMemo } from "react";
-import { RootState, useAppSelector } from "@/utils/redux/store";
+import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import { calculateMissionStat } from "./MissionsList";
 import { Mission, MissionTask } from "@prisma/client";
+import { IconButton } from "@mui/material";
+import {
+  setActiveTab,
+  setEditingMission,
+  setEditingTask,
+  setEditorModalOpen,
+} from "@/utils/redux/missions/missionTaskEditorSlice.slice";
 
 export const MissionDetails = ({ loading }: { loading: boolean }) => {
+  const dispatch = useAppDispatch();
   const { mission, missions, isOpen, missionsLoading } = useAppSelector(
     (state: RootState) => state.selectedMission
   );
@@ -14,18 +22,6 @@ export const MissionDetails = ({ loading }: { loading: boolean }) => {
   );
 
   const missionTasks = tasks?.filter((t) => t?.missionId === mission?.id);
-
-  const missionStatus = useMemo(() => {
-    return mission && calculateMissionStat(mission, missionTasks, "status");
-  }, [mission, missionTasks]);
-
-  const missionPercentage = useMemo(() => {
-    return mission && calculateMissionStat(mission, missionTasks, "percentage");
-  }, [mission, missionTasks]);
-
-  const missionBalance = useMemo(() => {
-    return mission && calculateMissionStat(mission, missionTasks, "balance");
-  }, [mission, missionTasks]);
 
   if (tasksLoading || missionsLoading) {
     return <MissionDetailsSkeleton />;
@@ -54,60 +50,56 @@ export const MissionDetails = ({ loading }: { loading: boolean }) => {
         </div>
       ) : (
         <div>
-          <h2 className="text-2xl font-bold mb-4">{mission?.title}</h2>
-          {/* <div className="flex items-center mb-4">
-            <img
-              src={`/images/houses/${mission?.house}.png`}
-              alt={mission?.house}
-              className="w-10 h-10 object-cover rounded-full mr-3"
-            />
-            <span className="text-lg font-semibold">{mission?.house}</span>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold ">{mission?.title}</h2>
+            <IconButton
+              onClick={() => {
+                dispatch(setEditingMission(mission));
+                dispatch(setActiveTab("missions"));
+                dispatch(setEditorModalOpen(true));
+              }}
+            >
+              <span className="material-symbols-outlined">edit_document</span>{" "}
+            </IconButton>
           </div>
-          <div className="mb-4">
-            <p>House Points: {mission?.housePoints}</p>
-            <p>Total Indie Points: {mission?.indiePoints}</p>
-            <p>
-              Status:{" "}
-              {missionStatus === 0 ? "Not Started yet" : missionStatus}
-            </p>
-          </div>
-          <div className="mb-6">
-            <div className="w-full bg-gray-200 rounded-full h-2.5">
-              <div
-                className="bg-blue-600 h-2.5 rounded-full"
-                style={{
-                  width: `${missionPercentage}%`,
-                }}
-              ></div>
-            </div>
-            <p className="text-sm text-gray-600 mt-1">
-              {missionBalance} / {mission?.indiePoints} Indie Points remaining
-            </p>
-          </div> */}
           <h3 className="text-xl font-semibold mb-4">Tasks</h3>
           <ul className="space-y-4">
             {missionTasks.length > 0 ? (
               missionTasks?.map((task: any) => (
-                <li key={task.id} className="rounded-lg p-4 shadow ">
+                <li
+                  key={task.id}
+                  className="rounded-lg p-4 shadow shadow-gray-300"
+                >
                   <div className="flex items-center mb-2">
                     <img
-                      src={
-                        task.userInfo?.avatar || "/icons/placeholderAvatar.svg"
-                      }
-                      alt={task.userInfo?.name}
+                      src={task.avatar || "/icons/placeholderAvatar.svg"}
+                      alt={task.name}
                       className="w-10 h-10 object-cover rounded-full mr-3"
                     />
                     <span className="font-semibold">
-                      {task.userInfo?.name || "Unknown"}
+                      {task.name || "Unknown"}
                     </span>
                   </div>
                   <p className="text-gray-700 mb-2 font-bold">{task.title}</p>
-                  <p className="text-gray-700 mb-2 text-sm">
+                  <p className="text-gray-700 mb-2 text-sm line-clamp-3">
                     {task.description}
                   </p>
-                  <p className="text-right font-medium text-blue-600 text-sm">
-                    {task.indiePoints} Indie Points
-                  </p>
+                  <div className="flex items-center justify-between gap-4">
+                    <p className="text-right font-medium text-blue-600 text-sm">
+                      {task.indiePoints} Indie Points
+                    </p>
+                    <IconButton
+                      onClick={() => {
+                        dispatch(setEditingTask(task));
+                        dispatch(setEditorModalOpen(true));
+                        dispatch(setActiveTab("tasks"));
+                      }}
+                    >
+                      <span className="material-symbols-outlined">
+                        edit_document
+                      </span>{" "}
+                    </IconButton>
+                  </div>
                 </li>
               ))
             ) : (
@@ -124,61 +116,24 @@ export const MissionComponent = (
   mission: Mission,
   missionTasks: MissionTask[]
 ): any => {
+  const filteredTasks = missionTasks.filter(
+    (task: any) => task.missionId === mission.id
+  );
   return (
     <div className="">
       <h2 className="text-2xl font-bold mb-4">{mission.title}</h2>
-      {/* <div className="flex items-center mb-4">
-        <img
-          src={`/images/houses/${mission.house}.png`}
-          alt={mission.house}
-          className="w-10 h-10 object-cover rounded-full mr-3"
-        />
-        <span className="text-lg font-semibold">{mission.house}</span>
-      </div>
-      <div className="mb-4">
-        <p>House Points: {mission.housePoints}</p>
-        <p>Total Indie Points: {mission.indiePoints}</p>
-        <p>
-          Status:{" "}
-          {calculateMissionStat(mission, missionTasks, "status") == 0
-            ? "Not Started yet"
-            : calculateMissionStat(mission, missionTasks, "status")}
-        </p>
-      </div>
-      <div className="mb-6">
-        <div className="w-full bg-gray-200 rounded-full h-2.5">
-          <div
-            className="bg-blue-600 h-2.5 rounded-full"
-            style={{
-              width: `${calculateMissionStat(
-                mission,
-                missionTasks,
-                "percentage"
-              )}%`,
-            }}
-          ></div>
-        </div>
-        <p className="text-sm text-gray-600 mt-1">
-          {calculateMissionStat(mission, missionTasks, "balance")} /{" "}
-          {mission.indiePoints} Indie Points remaining
-        </p>
-      </div> 
-      <h3 className="text-xl font-semibold mb-4">Tasks</h3>*/}
       <ul className="space-y-4">
-        {missionTasks.length > 0 ? (
-          missionTasks?.map((task: any, index: number) => (
+        {filteredTasks.length > 0 ? (
+          filteredTasks?.map((task: any, index: number) => (
             <li key={`${task.id}-${index}`} className="rounded-lg p-4 shadow ">
               <div className="flex items-center mb-2">
                 <img
-                  src={task.userInfo?.avatar || "/icons/placeholderAvatar.svg"}
-                  alt={task.userInfo?.name}
+                  src={task.avatar || "/icons/placeholderAvatar.svg"}
+                  alt={task.name}
                   className="w-10 h-10 object-cover rounded-full mr-3"
                 />
-                <span className="font-semibold">
-                  {task.userInfo?.name || "Unknown"}
-                </span>
+                <span className="font-semibold">{task.name || "Unknown"}</span>
               </div>
-
               <p className="text-gray-700 mb-2 font-bold">{task.title}</p>
               <p className="text-gray-700 mb-2 text-sm">{task.description}</p>
               <p className="text-right font-medium text-blue-600 text-sm">
