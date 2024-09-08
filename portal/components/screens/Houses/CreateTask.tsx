@@ -85,9 +85,12 @@ const CreateTask = ({
 
   return (
     <>
-      <Grid container spacing={3} className='pt-4'>
+      <Grid container spacing={4} className='py-4'>
         <Grid item xs={12}>
-          <label className='text-sm font-medium text-black' htmlFor='title'>
+          <label
+            className='text-sm font-medium text-black'
+            htmlFor='select-mission'
+          >
             Select Mission
           </label>
           <select
@@ -95,6 +98,8 @@ const CreateTask = ({
             value={taskState.missionId}
             onChange={handleMissionChange}
             className='w-full px-4 py-2 border border-gray-300 rounded-md'
+            aria-label='Select a mission'
+            required
           >
             <option value='' disabled>
               Select Mission
@@ -116,6 +121,8 @@ const CreateTask = ({
             value={taskState.title || ''}
             onChange={handleInputChange('title')}
             className='w-full px-4 py-2 border border-gray-300 rounded-md'
+            aria-label='Enter task title'
+            required
           />
         </Grid>
         <Grid item xs={12}>
@@ -129,8 +136,10 @@ const CreateTask = ({
             id='description'
             value={taskState.description || ''}
             onChange={handleInputChange('description')}
-            className='w-full px-4 py-2 border border-gray-300 rounded-md h-[150px]'
-            style={{ resize: 'none', maxHeight: '200px' }}
+            className='w-full px-4 py-2 border border-gray-300 rounded-md h-[150px] max-h-[200px]'
+            style={{ resize: 'none' }}
+            aria-label='Enter task description'
+            required
           />
         </Grid>
         <Grid item xs={12} sm={6}>
@@ -146,6 +155,7 @@ const CreateTask = ({
             value={taskState.indiePoints}
             onChange={handleInputChange('indiePoints')}
             className='w-full px-4 py-2 border border-gray-300 rounded-md'
+            aria-label='Enter indie points'
           />
         </Grid>
         <Grid item xs={12} sm={6}>
@@ -160,6 +170,8 @@ const CreateTask = ({
             value={taskState.userId || ''}
             onChange={handleUserChange}
             className='w-full px-4 py-2 border border-gray-300 rounded-md'
+            aria-label='Select a user'
+            required
           >
             <option value='' disabled>
               Select User
@@ -182,6 +194,7 @@ const CreateTask = ({
               })
             }
             className='w-full'
+            aria-label='Select completion date'
           />
         </Grid>
         <Grid item xs={12} sm={6}>
@@ -195,6 +208,7 @@ const CreateTask = ({
               })
             }
             className='w-full'
+            aria-label='Select expiration date'
           />
         </Grid>
         <Grid item xs={12} sm={6}>

@@ -20,7 +20,13 @@ export const PillSelector = ({
             key={option.value}
             variant={selectedValue === option.value ? 'contained' : 'outlined'}
             onClick={() => onChange(option.value)}
-            className='px-4 py-1 rounded-full focus:outline-none'
+            className={`pill-btn px-4 py-1 rounded-full ${
+              selectedValue === option.value ? 'selected' : ''
+            }`}
+            aria-label={`Select ${option.label}`}
+            sx={{
+              transition: 'background-color 0.3s ease, border-color 0.3s ease',
+            }}
           >
             {option.label}
           </Button>
