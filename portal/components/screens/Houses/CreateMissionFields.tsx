@@ -50,9 +50,12 @@ const CreateMissionFields = ({
   );
 
   return (
-    <Grid container spacing={3} className='py-4'>
+    <Grid container spacing={4} className='py-4'>
       <Grid item xs={12}>
-        <label className='text-sm font-medium text-black' htmlFor='title'>
+        <label
+          className='text-sm font-medium text-gray-700 mb-2 block'
+          htmlFor='title'
+        >
           Mission Title
         </label>
         <input
@@ -60,14 +63,18 @@ const CreateMissionFields = ({
           id='title'
           value={state.title}
           onChange={(e) => setState({ ...state, title: e.target.value })}
-          className='w-full px-4 py-2 border border-gray-300 rounded-md'
+          className='w-full px-4 py-3 border border-gray-300 rounded-md'
+          placeholder='Enter the mission title'
         />
       </Grid>
       <Grid item xs={12}>
-        <label htmlFor='description' className='text-sm font-medium text-black'>
+        <label
+          htmlFor='description'
+          className='text-sm font-medium text-gray-700 mb-2 block'
+        >
           Mission Description
         </label>
-        <div className='h-[150px] overflow-y-scroll border border-gray-300 rounded-md p-2'>
+        <div className='h-[180px] overflow-y-scroll border border-gray-300 rounded-md p-3 bg-white'>
           <MdxAppEditor
             ref={mdRef}
             key={`${user?.id}`}
@@ -76,19 +83,19 @@ const CreateMissionFields = ({
                 ? MARKDOWN_PLACEHOLDER
                 : state.description || ''
             }
-            className='flex-grow h-full'
+            className='w-full h-full'
             contentEditableClassName={`mdx_ce ${
               state.description?.trim() === MARKDOWN_PLACEHOLDER.trim()
-                ? ' mdx_uninit '
+                ? 'mdx_uninit'
                 : ''
-            } leading-1 imp-p-0 grow w-full h-full`}
+            } leading-tight w-full h-full`}
             onChange={handleMarkdownChange}
           />
         </div>
       </Grid>
       <Grid item xs={12} sm={6}>
         <label
-          className='text-sm font-medium text-black'
+          className='text-sm font-medium text-gray-700 mb-2 block'
           htmlFor='select-house'
         >
           Select House
@@ -99,7 +106,7 @@ const CreateMissionFields = ({
           onChange={(e) =>
             setState({ ...state, house: e.target.value as HOUSEID })
           }
-          className='w-full px-4 py-2 border border-gray-300 rounded-md'
+          className='w-full px-4 py-3 border border-gray-300 rounded-md'
         >
           <option value='' disabled>
             Select House
@@ -113,7 +120,7 @@ const CreateMissionFields = ({
       </Grid>
       <Grid item xs={12} sm={6}>
         <label
-          className='text-sm font-medium text-black'
+          className='text-sm font-medium text-gray-700 mb-2 block'
           htmlFor='house-points'
         >
           House Points
@@ -129,12 +136,12 @@ const CreateMissionFields = ({
               indiePoints: parseInt(e.target.value, 10) * 100,
             })
           }
-          className='w-full px-4 py-2 border border-gray-300 rounded-md'
+          className='w-full px-4 py-3 border border-gray-300 rounded-md'
         />
       </Grid>
       <Grid item xs={12} sm={6}>
         <label
-          className='text-sm font-medium text-black'
+          className='text-sm font-medium text-gray-700 mb-2 block'
           htmlFor='indie-points'
         >
           Indie Points
@@ -149,12 +156,12 @@ const CreateMissionFields = ({
               indiePoints: parseInt(e.target.value, 10),
             })
           }
-          className='w-full px-4 py-2 border border-gray-300 rounded-md'
+          className='w-full px-4 py-3 border border-gray-300 rounded-md'
         />
       </Grid>
       <Grid item xs={12} sm={6}>
-        <p className='text-sm font-medium text-black'>Indie Balance</p>
-        <p className='text-lg font-semibold text-black'>
+        <p className='text-sm font-medium text-gray-700'>Indie Balance</p>
+        <p className='text-lg font-semibold text-black mt-1'>
           {(state.indiePoints || 0) -
             (
               (state as Mission & { tasks?: MissionTask[] })?.tasks || []

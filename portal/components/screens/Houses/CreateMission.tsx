@@ -71,7 +71,6 @@ const CreateMission = ({
       setLoading(false);
       dispatch(clearEditorState());
       dispatch(setEditorModalOpen(false));
-      toast.success('Mission and tasks created successfully!');
     } catch (error) {
       console.error('Error creating mission:', error);
       setLoading(false);
@@ -138,6 +137,7 @@ const CreateMission = ({
             maxHeight: '80vh',
             position: 'relative',
             overflowY: 'auto',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.2)',
           }}
         >
           <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -146,10 +146,10 @@ const CreateMission = ({
                 dispatch(clearEditorState());
                 dispatch(setEditorModalOpen(false));
               }}
-              className='absolute top-4 right-4 bg-gray-300 hover:bg-gray-200 rounded-full flex items-center justify-center w-8 h-8 shadow-lg'
-              sx={{ position: 'absolute' }}
+              className='absolute top-4 right-4 bg-gray-300 hover:bg-gray-200 rounded-full w-10 h-10 flex items-center justify-center shadow-md'
+              sx={{ position: 'absolute', transition: 'all 0.3s ease-in-out' }}
             >
-              <span className='material-symbols-outlined text-black'>
+              <span className='material-symbols-outlined text-black text-lg'>
                 close
               </span>
             </IconButton>
@@ -163,11 +163,17 @@ const CreateMission = ({
                   fullWidth
                   variant='contained'
                   color='primary'
-                  sx={{ py: 2 }}
+                  sx={{
+                    py: 2,
+                    mt: 4,
+                    fontWeight: 'bold',
+                    borderRadius: '6px',
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                  }}
                   onClick={handleSubmit}
                 >
                   {loading ? (
-                    <Spinner className='w-6 h-6  text-white' />
+                    <Spinner className='w-6 h-6 text-white' />
                   ) : missionState.id ? (
                     'Update Mission'
                   ) : (
@@ -176,6 +182,7 @@ const CreateMission = ({
                 </Button>
               </>
             )}
+
             {activeTab === 'tasks' && (
               <>
                 <CreateTask
@@ -187,7 +194,13 @@ const CreateMission = ({
                   fullWidth
                   variant='contained'
                   color='primary'
-                  sx={{ py: 2, mt: 2 }}
+                  sx={{
+                    py: 2,
+                    mt: 4,
+                    fontWeight: 'bold',
+                    borderRadius: '6px',
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                  }}
                   onClick={handleCreateTask}
                   disabled={
                     !taskState.title?.trim() ||
@@ -196,7 +209,7 @@ const CreateMission = ({
                   }
                 >
                   {loading ? (
-                    <Spinner className='w-6 h-6  text-white' />
+                    <Spinner className='w-6 h-6 text-white' />
                   ) : taskState.id ? (
                     'Update Task'
                   ) : (
