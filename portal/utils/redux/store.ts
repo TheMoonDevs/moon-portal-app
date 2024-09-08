@@ -18,6 +18,7 @@ import laterTodosReducer from "./worklogs/laterTodos.slice";
 //import suggestionsReducer from './suggestions/suggestions.slice';
 import notificationsReducer from "./notification/notification.slice";
 import coreTeamSlice from "./coreTeam/coreTeam.slice";
+import missionTaskEditorSlice from './missions/missionTaskEditorSlice.slice'
 
 const store = configureStore({
   reducer: {
@@ -35,7 +36,8 @@ const store = configureStore({
     coreTeam: coreTeamSlice,
     //suggestions: suggestionsReducer,
     notifications: notificationsReducer,
-    missionsTasks: missionTasksReducer
+    missionsTasks: missionTasksReducer,
+    missionTaskEditor: missionTaskEditorSlice
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

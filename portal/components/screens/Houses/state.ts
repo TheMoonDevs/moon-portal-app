@@ -1,29 +1,38 @@
+import { HOUSEID, Mission, MissionTask } from '@prisma/client';
 import dayjs, { Dayjs } from 'dayjs';
 
-export const initialMissionState = {
-  house: '',
+export const initialMissionState: Partial<Mission> = {
+  id: '',
+  house: HOUSEID.MANAGEMENT,
+  month: '',
   completed: false,
   housePoints: 0,
   indiePoints: 0,
-  completedAt: null as Dayjs | null,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  completedAt: null,
   expirable: true,
-  expiresAt: null as Dayjs | null,
+  expiresAt: null,
   title: '',
-  description: '*',
+  description: '*', 
 };
 
-export const initialTaskState = {
+export const initialTaskState: Partial<MissionTask> = {
+  id: '',
   missionId: '',
-  userId: '',
-  title: '',
-  description: '',
+  userId: null,
+  title: null,
+  description: null,
   indiePoints: 0,
-  completedAt: null as Dayjs | null,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  completedAt: null,
   completed: false,
   expirable: true,
-  expiresAt: null as Dayjs | null,
+  expiresAt: null,
   avatar: '',
   name: '',
   email: '',
-  userInfoId: '',
+  userInfoId: null,
 };
+
