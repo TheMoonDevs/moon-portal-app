@@ -36,7 +36,7 @@ chainAPIData.set(chainEnum.baseSepolia, {
 });
 chainAPIData.set(chainEnum.base, {
   accountTxEndpoint: "?module=account&action=tokentx&page=1&sort=asc",
-  apiKey: API_KEYS.BSCTestnet,
+  apiKey: API_KEYS.BaseChain,
   baseURL: "https://api.basescan.org/api",
 });
 
