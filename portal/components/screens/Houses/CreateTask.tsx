@@ -1,7 +1,7 @@
 import { Grid } from '@mui/material';
 import React, { useCallback } from 'react';
 import dayjs, { Dayjs } from 'dayjs';
-import { Mission, User } from '@prisma/client';
+import { Mission, MissionTask, User } from '@prisma/client';
 import { DatePicker } from '@mui/x-date-pickers';
 import { pillOptions } from './CreateMissionFields';
 import { PillSelector } from './PillSelector';
@@ -9,23 +9,23 @@ import { RootState, useAppDispatch, useAppSelector } from '@/utils/redux/store';
 
 type taskState = {
   missionId: string;
-  userId: string;
-  title: string;
-  description: string;
+  userId: string | null;
+  title: string | null;
+  description: string | null;
   indiePoints: number;
-  completedAt: Dayjs | null;
-  completed: boolean;
-  expirable: boolean;
-  expiresAt: Dayjs | null;
-  avatar: string;
-  name: string;
-  email: string;
-  userInfoId: string;
+  completedAt: Dayjs | null | Date;
+  completed: boolean | null;
+  expirable: boolean | null;
+  expiresAt: Dayjs | null | Date;
+  avatar: string | null;
+  name: string | null;
+  email: string | null;
+  userInfoId: string | null;
 };
 
 type CreateTaskProps = {
-  taskState: taskState;
-  setTaskState: React.Dispatch<React.SetStateAction<taskState>>;
+  taskState: Partial<MissionTask>;
+  setTaskState: React.Dispatch<React.SetStateAction<Partial<MissionTask>>>;
   houseMembers: User[];
 };
 
@@ -35,7 +35,7 @@ const CreateTask = ({
   houseMembers,
 }: CreateTaskProps) => {
   const missions = useAppSelector(
-    (state: RootState) => state.selectedMission.missions
+    (state: RootState) => state.selectedMission?.missions
   );
 
   const handleInputChange = useCallback(
@@ -113,7 +113,7 @@ const CreateTask = ({
           <input
             type='text'
             id='title'
-            value={taskState.title}
+            value={taskState.title || ''}
             onChange={handleInputChange('title')}
             className='w-full px-4 py-2 border border-gray-300 rounded-md'
           />
@@ -127,7 +127,7 @@ const CreateTask = ({
           </label>
           <textarea
             id='description'
-            value={taskState.description}
+            value={taskState.description || ''}
             onChange={handleInputChange('description')}
             className='w-full px-4 py-2 border border-gray-300 rounded-md h-[150px]'
             style={{ resize: 'none', maxHeight: '200px' }}
@@ -157,7 +157,7 @@ const CreateTask = ({
           </label>
           <select
             id='select-user'
-            value={taskState.userId}
+            value={taskState.userId || ''}
             onChange={handleUserChange}
             className='w-full px-4 py-2 border border-gray-300 rounded-md'
           >
@@ -174,11 +174,11 @@ const CreateTask = ({
         <Grid item xs={12} sm={6}>
           <DatePicker
             label='Completed At'
-            value={taskState.completedAt}
+            value={taskState.completedAt ? dayjs(taskState.completedAt) : null}
             onChange={(newValue) =>
               setTaskState({
                 ...taskState,
-                completedAt: newValue || null,
+                completedAt: newValue ? newValue.toDate() : null,
               })
             }
             className='w-full'
@@ -187,11 +187,11 @@ const CreateTask = ({
         <Grid item xs={12} sm={6}>
           <DatePicker
             label='Expires At'
-            value={taskState.expiresAt}
+            value={taskState.expiresAt ? dayjs(taskState.expiresAt) : null}
             onChange={(newValue) =>
               setTaskState({
                 ...taskState,
-                expiresAt: newValue || null,
+                expiresAt: newValue ? newValue.toDate() : null,
               })
             }
             className='w-full'

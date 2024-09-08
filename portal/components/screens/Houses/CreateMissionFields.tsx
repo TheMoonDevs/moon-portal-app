@@ -7,7 +7,8 @@ import { DatePicker } from '@mui/x-date-pickers';
 import dayjs, { Dayjs } from 'dayjs';
 import { MDXEditorMethods } from '@mdxeditor/editor';
 import { PillSelector } from './PillSelector';
-import { MissionTask } from '@prisma/client';
+import { HOUSEID, Mission, MissionTask } from '@prisma/client';
+import { initialMissionState } from './state';
 
 export const pillOptions = [
   {
@@ -28,11 +29,14 @@ const housesList = [
 ];
 
 type CreateMissionFieldsProps = {
-  state: any;
-  setState: React.Dispatch<React.SetStateAction<any>>;
+  state: Partial<Mission>;
+  setState: React.Dispatch<React.SetStateAction<Partial<Mission>>>;
 };
 
-const CreateMissionFields = ({ state, setState }: CreateMissionFieldsProps) => {
+const CreateMissionFields = ({
+  state = initialMissionState,
+  setState,
+}: CreateMissionFieldsProps) => {
   const mdRef = useRef<MDXEditorMethods | null>(null);
 
   const { user } = useUser();
@@ -68,13 +72,13 @@ const CreateMissionFields = ({ state, setState }: CreateMissionFieldsProps) => {
             ref={mdRef}
             key={`${user?.id}`}
             markdown={
-              state.description.trim().length === 0
+              state.description?.trim().length === 0
                 ? MARKDOWN_PLACEHOLDER
-                : state.description
+                : state.description || ''
             }
             className='flex-grow h-full'
             contentEditableClassName={`mdx_ce ${
-              state.description.trim() === MARKDOWN_PLACEHOLDER.trim()
+              state.description?.trim() === MARKDOWN_PLACEHOLDER.trim()
                 ? ' mdx_uninit '
                 : ''
             } leading-1 imp-p-0 grow w-full h-full`}
@@ -92,7 +96,9 @@ const CreateMissionFields = ({ state, setState }: CreateMissionFieldsProps) => {
         <select
           id='select-house'
           value={state.house}
-          onChange={(e) => setState({ ...state, house: e.target.value })}
+          onChange={(e) =>
+            setState({ ...state, house: e.target.value as HOUSEID })
+          }
           className='w-full px-4 py-2 border border-gray-300 rounded-md'
         >
           <option value='' disabled>
@@ -149,8 +155,10 @@ const CreateMissionFields = ({ state, setState }: CreateMissionFieldsProps) => {
       <Grid item xs={12} sm={6}>
         <p className='text-sm font-medium text-black'>Indie Balance</p>
         <p className='text-lg font-semibold text-black'>
-          {state.indiePoints -
-            (state.tasks || []).reduce(
+          {(state.indiePoints || 0) -
+            (
+              (state as Mission & { tasks?: MissionTask[] })?.tasks || []
+            ).reduce(
               (acc: number, task: MissionTask) => acc + task.indiePoints,
               0
             )}
@@ -159,9 +167,12 @@ const CreateMissionFields = ({ state, setState }: CreateMissionFieldsProps) => {
       <Grid item xs={12} sm={6}>
         <DatePicker
           label='Completed At'
-          value={state.completedAt ? state.completedAt : null}
+          value={state.completedAt ? dayjs(state.completedAt) : null}
           onChange={(newValue) =>
-            setState({ ...state, completedAt: newValue || null })
+            setState((prevState) => ({
+              ...prevState,
+              completedAt: newValue ? newValue.toDate() : null,
+            }))
           }
           className='w-full'
         />
@@ -169,9 +180,12 @@ const CreateMissionFields = ({ state, setState }: CreateMissionFieldsProps) => {
       <Grid item xs={12} sm={6}>
         <DatePicker
           label='Expires At'
-          value={state.expiresAt ? state.expiresAt : null}
+          value={state.expiresAt ? dayjs(state.expiresAt) : null}
           onChange={(newValue) =>
-            setState({ ...state, expiresAt: newValue || null })
+            setState((prevState) => ({
+              ...prevState,
+              expiresAt: newValue ? newValue.toDate() : null,
+            }))
           }
           className='w-full'
         />
