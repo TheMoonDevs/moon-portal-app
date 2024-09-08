@@ -8,6 +8,7 @@ import {
   setMissionsLoading,
   setSelectedMission,
 } from "@/utils/redux/missions/selectedMission.slice";
+import { setActiveTab } from "@/utils/redux/missions/missionTaskEditorSlice.slice";
 import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import { Mission, MissionTask, User } from "@prisma/client";
 import { HOUSES_LIST } from "./HousesList";
@@ -29,6 +30,7 @@ import {
   setTasksLoading,
 } from "@/utils/redux/missions/missionsTasks.slice";
 import ExpandedMission from "./ExpandedMission";
+import { setEditorModalOpen } from "@/utils/redux/missions/missionTaskEditorSlice.slice";
 
 export function calculateMissionStat(
   mission: Mission,
@@ -79,11 +81,12 @@ export const MissionsList = ({
   const selectedMission = useAppSelector(
     (state: RootState) => state.selectedMission.mission
   );
+  const { activeTab } = useAppSelector(
+    (state: RootState) => state.missionTaskEditor
+  );
   const tasks = useAppSelector((state: RootState) => state.missionsTasks);
   const [timeFrame, setTimeFrame] = useState("month");
   const [timeValue, setTimeValue] = useState(dayjs().format("YYYY-MM"));
-  const [isOpen, setIsOpen] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<string>("missions");
   const [tasksFetched, setTasksFetched] = useState(false);
   const [expanded, setExpanded] = useState<string | false>(false);
 
@@ -225,7 +228,7 @@ export const MissionsList = ({
                 ? "border-neutral-400 bg-gray-100"
                 : "border-transparent bg-white"
             }`}
-            onClick={() => setActiveTab("missions")}
+            onClick={() => dispatch(setActiveTab("missions"))}
           >
             Missions
           </h3>
@@ -235,7 +238,7 @@ export const MissionsList = ({
                 ? "border-neutral-400 bg-gray-100"
                 : "border-transparent bg-white"
             }`}
-            onClick={() => setActiveTab("tasks")}
+            onClick={() => dispatch(setActiveTab("tasks"))}
           >
             Tasks
           </h3>
@@ -252,7 +255,7 @@ export const MissionsList = ({
               className={`material-symbols-outlined cursor-pointer transition-transform duration-300 ease-in-out hover:scale-110`}
               onClick={() => {
                 if (activeTab === "tasks" && missions.length === 0) return;
-                setIsOpen(true);
+                dispatch(setEditorModalOpen(true));
               }}
             >
               add_box
@@ -357,8 +360,6 @@ export const MissionsList = ({
                   <ExpandedMission
                     expanded={expanded}
                     mission={mission}
-                    setIsOpen={() => setIsOpen(!isOpen)}
-                    setActiveTab={() => setActiveTab("tasks")}
                   />
                 </React.Fragment>
               );
@@ -372,8 +373,6 @@ export const MissionsList = ({
         <TasksList currentHouseIndex={currentHouseIndex} />
       )}
       <CreateMission
-        isOpen={isOpen}
-        onClose={() => setIsOpen(false)}
         houseMembers={houseMembers}
         activeTab={activeTab}
       />
