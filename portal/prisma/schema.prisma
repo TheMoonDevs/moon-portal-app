@@ -106,6 +106,7 @@ model ParentDirectory {
   slug  String
   type  ROOTTYPE?
   links Link[]
+  isArchive Boolean @default(false)
   position Float @default(1)
   @@index([id, slug])
   @@index([position])
@@ -156,6 +157,7 @@ model Directory {
   parentDirId String?
   timestamp   DateTime @default(now())
   position    Float      @default(1)
+  isArchive Boolean @default(false)
   clickCount    Int      @default(0)
   @@index([parentDirId, position])
   @@index([id, slug])
