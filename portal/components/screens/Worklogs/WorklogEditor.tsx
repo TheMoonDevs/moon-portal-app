@@ -29,6 +29,8 @@ import {
   setEdiotrSaving,
   updateLogs,
 } from "@/utils/redux/worklogs/worklogs.slice";
+import { Popover } from "@mui/material";
+import EmojiLegend from "./WorklogTabs/EmojiLegend";
 
 export const MARKDOWN_PLACHELODER = `* `;
 
@@ -55,6 +57,16 @@ export const WorklogEditor = ({
   const _date = queryParams?.get("date");
   const [saving, setSaving] = useState<boolean>(false);
   const isAuotSaving = useRef(false);
+  const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
+  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+  const open = Boolean(anchorEl);
+  const id = open ? "simple-popover" : undefined;
+
   const isAutoSaved = useMemo(() => {
     return (
       JSON.stringify(serverLog) === JSON.stringify(workLog) &&
@@ -287,6 +299,40 @@ export const WorklogEditor = ({
                 <span className="icon_size material-icons">refresh</span>
               </div>
             )}
+            <div className="hidden max-sm:block cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700">
+              <span
+                className="icon_size material-icons"
+                onClick={handleClick}
+                aria-describedby={id}
+              >
+                emoji_objects
+              </span>
+            </div>
+            <Popover
+              id={id}
+              open={open}
+              anchorEl={anchorEl}
+              onClose={handleClose}
+              anchorOrigin={{
+                vertical: "bottom",
+                horizontal: "center",
+              }}
+              sx={{
+                ".MuiPopover-paper": {
+                  backgroundColor: "#fff",
+                  color: "#333",
+                  borderRadius: "12px",
+                  boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.2)",
+                  padding: "0px 16px",
+                  maxWidth: "90%",
+                },
+                my: "8px",
+              }}
+            >
+              <div className="px-2 pb-4 pt-0">
+                <EmojiLegend />
+              </div>
+            </Popover>
             <div className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700">
               <span className="icon_size material-icons">more_vert</span>
             </div>

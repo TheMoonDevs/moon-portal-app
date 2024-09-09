@@ -22,6 +22,8 @@ const ROOT_DIRECTORIES: Omit<Directory, "timestamp">[] = [
     parentDirId: null,
     slug: "/dashboard",
     logo: "dashboard",
+    clickCount: 0,
+    position: 10,
   },
   {
     id: "COMMON_RESOURCES",
@@ -29,6 +31,8 @@ const ROOT_DIRECTORIES: Omit<Directory, "timestamp">[] = [
     parentDirId: null,
     slug: "/common-resources",
     logo: "stack",
+    clickCount: 0,
+    position: 20,
   },
   {
     id: "DEPARTMENT",
@@ -36,6 +40,8 @@ const ROOT_DIRECTORIES: Omit<Directory, "timestamp">[] = [
     parentDirId: null,
     slug: "/department",
     logo: "groups",
+    clickCount: 0,
+    position: 20,
   },
 ];
 
