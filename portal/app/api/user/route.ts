@@ -126,6 +126,7 @@ export async function POST(request: Request) {
   } catch (e) {
     return new NextResponse(JSON.stringify(e), {
       status: 500,
+      statusText: JSON.stringify(e),
       headers: { "Content-Type": "application/json" },
     });
   }
@@ -346,6 +347,7 @@ export async function PUT(request: Request) {
     console.log("error", e);
     return new NextResponse(JSON.stringify(e), {
       status: 500,
+      statusText: JSON.stringify(e),
       headers: { "Content-Type": "application/json" },
     });
   }
