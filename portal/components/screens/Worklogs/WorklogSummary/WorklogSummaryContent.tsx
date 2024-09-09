@@ -66,7 +66,6 @@ export const WorklogSummaryContent = ({
   const isYearly = !!year && !month;
   const metrics = calculateMetrics(worklogSummary, isMonthly, isYearly);
 
-
   const { copyToClipboard } = useCopyToClipboard();
   const aiSummaryPdfTargetRef = useRef(null);
   const [aiSummary, setAiSummary] = useState<string | null>(null);
@@ -94,7 +93,7 @@ export const WorklogSummaryContent = ({
     <div className="flex flex-col md:flex-row bg-neutral-100">
       <div className="w-[100%] md:w-[50%] overflow-y-scroll h-screen m-4 mt-4 bg-white rounded-2xl shadow-xl">
         <div className="">
-          {userData &&
+          {userData && (
             <div className="flex items-center justify-start p-8 py-4 shadow-md gap-4 bg-white sticky top-0 z-10">
               <img
                 src={userData?.avatar ?? "/images/avatar.png"}
@@ -117,27 +116,38 @@ export const WorklogSummaryContent = ({
                           filename: `worklog_summary_${userData?.name}.pdf`,
                           page: { margin: Margin.LARGE },
                         })
-                      }>
-                      <span className="material-symbols-outlined !text-sm">download</span>
+                      }
+                    >
+                      <span className="material-symbols-outlined !text-sm">
+                        download
+                      </span>
                       <span>Download Summary as PDF</span>
                     </button>
                   </Tooltip>
                 </div>
               </div>
               <div className="ml-auto">
-                <h3 className="text-2xl font-bold">
-                  {summaryTitle}
-                </h3>
+                <h3 className="text-2xl font-bold">{summaryTitle}</h3>
                 <p className="text-xs font-regular">
                   {worklogSummary.length} Logs | {metrics.totalTasks} tasks
                 </p>
               </div>
             </div>
-          }
+          )}
           <div className="flex items-center justify-between bg-blue-50">
-            <h1 className="text-xs text-neutral-700 p-3 px-4">Generate an AI summary to use in Meeting Notes, Resume etc.. </h1>
+            <h1 className="text-xs text-neutral-700 p-3 px-4">
+              Generate an AI summary to use in Meeting Notes, Resume etc..{" "}
+            </h1>
             {view === "AI Summary" ? (
               <div className="flex gap-4 items-center px-4 !text-neutral-500">
+                <Tooltip title="Back to Worklogs">
+                  <span
+                    className="material-symbols-outlined hover:cursor-pointer hover:!text-neutral-600"
+                    onClick={() => setView("Worklogs")}
+                  >
+                    arrow_back
+                  </span>
+                </Tooltip>
                 <Tooltip title="Download AI Summary">
                   <span
                     className="material-symbols-outlined hover:cursor-pointer hover:!text-neutral-600"
@@ -147,14 +157,18 @@ export const WorklogSummaryContent = ({
                         filename: `ai_worklog_summary_${userData?.name}.pdf`,
                         page: { margin: Margin.LARGE },
                       })
-                    }>
+                    }
+                  >
                     download
                   </span>
                 </Tooltip>
                 <Tooltip title="Copy AI Summary">
                   <span
                     className="material-symbols-outlined hover:cursor-pointer hover:!text-neutral-600"
-                    onClick={() => aiSummary ? copyToClipboard(aiSummary) : {}}>
+                    onClick={() =>
+                      aiSummary ? copyToClipboard(aiSummary) : {}
+                    }
+                  >
                     stack
                   </span>
                 </Tooltip>
@@ -163,45 +177,52 @@ export const WorklogSummaryContent = ({
               <button
                 disabled={!worklogSummary.length}
                 onClick={handleAiSummaryBtnClick}
-                className="disabled:cursor-not-allowed flex gap-1 md:gap-2 items-center border bg-white text-xs text-black hover:bg-neutral-100 rounded-2xl px-2 py-1 mx-4">
+                className="disabled:cursor-not-allowed flex gap-1 md:gap-2 items-center border bg-white text-xs text-black hover:bg-neutral-100 rounded-2xl px-2 py-1 mx-4"
+              >
                 <span className="text-[0.8rem] md:text-[1rem]">✨</span>
                 <span>AI Summary</span>
               </button>
             )}
           </div>
-          {view === "Worklogs" ?
-            <div className="" ref={pdfTargetRef} >
+          {view === "Worklogs" ? (
+            <div className="" ref={pdfTargetRef}>
               {!loading ? (
-                <WorklogSummaryView worklogSummary={worklogSummary} workLogUser={userData} />
+                <WorklogSummaryView
+                  worklogSummary={worklogSummary}
+                  workLogUser={userData}
+                />
               ) : (
                 <LoadingSkeleton />
               )}
             </div>
-            : (
-              <div className="p-4">
-                {aiSummary && (
-                  <div ref={aiSummaryPdfTargetRef} className="">
-                    <div className="w-full">
-                      <MdxAppEditor
-                        className=""
-                        key={`ai_summary-${uniqueId()}`}
-                        readOnly
-                        contentEditableClassName="summary_mdx flex flex-col gap-4"
-                        markdown={aiSummary}
-                      />
-                    </div>
+          ) : (
+            <div className="p-4">
+              {aiSummary && (
+                <div ref={aiSummaryPdfTargetRef} className="">
+                  <div className="w-full">
+                    <MdxAppEditor
+                      className=""
+                      key={`ai_summary-${uniqueId()}`}
+                      readOnly
+                      contentEditableClassName="summary_mdx flex flex-col gap-4"
+                      markdown={aiSummary}
+                    />
                   </div>
-                )}
-                <button
-                  onClick={() => {
-                    setView("Worklogs");
-                  }}
-                  className="disabled:cursor-not-allowed flex gap-1 md:gap-2 items-center border bg-white text-sm text-black hover:bg-neutral-100 rounded-2xl px-2 py-1 mx-4">
-                  <span className="material-symbols-outlined !text-sm">arrow_back</span>
-                  <span>Back to Worklogs</span>
-                </button>
-              </div>
-            )}
+                </div>
+              )}
+              <button
+                onClick={() => {
+                  setView("Worklogs");
+                }}
+                className="disabled:cursor-not-allowed flex gap-1 md:gap-2 items-center border bg-white text-sm text-black hover:bg-neutral-100 rounded-2xl px-2 py-1 mx-4"
+              >
+                <span className="material-symbols-outlined !text-sm">
+                  arrow_back
+                </span>
+                <span>Back to Worklogs</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
       <WorklogSummaryActions
