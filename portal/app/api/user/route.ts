@@ -1,8 +1,7 @@
 import { prisma } from "@/prisma/prisma";
+import { sheetMap, spreadsheetId } from "@/utils/constants/spreadsheetData";
 import GoogleSheetsAPI from "@/utils/services/googleSheetSdk";
-import { SlackBotSdk } from "@/utils/services/slackBotSdk";
 import { HOUSEID, USERROLE, USERSTATUS, USERTYPE } from "@prisma/client";
-import { JsonObject } from "@prisma/client/runtime/library";
 import { NextResponse, NextRequest } from "next/server";
 
 const sheetConfig = {
@@ -22,7 +21,6 @@ export async function GET(request: NextRequest) {
   let error_response: any;
 
   try {
-    //console.log("fetching user on server", id, userType, role);
     const user = await prisma.user.findMany({
       where: {
         ...(id && { id }),
@@ -32,6 +30,7 @@ export async function GET(request: NextRequest) {
         status: status ? (status as USERSTATUS) : USERSTATUS.ACTIVE,
       },
     });
+    // console.log(user);
 
     if (error_response) {
       return new NextResponse(JSON.stringify(error_response), {
@@ -49,6 +48,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(json_response);
   } catch (e) {
+    console.log(e);
     return new NextResponse(JSON.stringify(e), {
       status: 404,
       headers: { "Content-Type": "application/json" },
@@ -64,34 +64,53 @@ export async function POST(request: Request) {
         ...rest,
       },
     });
-
     const currentDate = new Date()
       .toLocaleDateString("en-GB")
       .split("/")
       .reverse()
       .join("-");
 
-    const sheetData = [
-      `${rest.username}${rest.password}`,
-      rest.name,
-      rest.email,
-      rest.personalData.phone,
-      rest.payData.upiId,
-      "=(YEAR(NOW())-YEAR(G14))",
-      rest.personalData.dateOfBirth,
-      rest.vertical,
-      rest.personalData.city,
-      rest.workData.positionInternal,
-      rest.personalData.workHourOverlap,
-      rest.workData.workHours,
-      currentDate,
-      "---", //office email
-      rest.personalData.address,
-    ];
+    const sheetData =
+      rest.role == USERROLE.TRIAL_CANDIDATE
+        ? [
+            "=NOW()",
+            `${rest.username}${rest.password}`,
+            rest.name,
+            rest.email,
+            rest.personalData.phone,
+            rest.personalData.dateOfBirth,
+            rest.personalData.city,
+            rest.workData?.positionInternal,
+            rest.workData.joining ? rest.workData.joining : currentDate,
+            rest.personalData?.workHourOverlap,
+            rest.personalData?.address,
+            rest.personalData.govtId ? rest.personalData.govtId : "---",
+            rest.payData?.upiId,
+          ]
+        : [
+            `${rest.username}${rest.password}`,
+            rest.name,
+            rest.email,
+            rest.personalData.phone,
+            rest.payData.upiId,
+            `=(YEAR(NOW())-YEAR(INDIRECT("G" & ROW())))`,
+            rest.personalData.dateOfBirth,
+            rest.personalData.city,
+            rest.vertical,
+            rest.workData.positionInternal,
+            rest.personalData.workHourOverlap,
+            rest.workData.workHours,
+            currentDate,
+            "---", //office email
+            rest.personalData.address,
+          ];
 
     await sheetSDK.appendSheetData({
-      spreadsheetId: "1w2kCO6IIYHi7YJBqfeg9ytmiIDRGhOgGzUPb_0u-UZ0",
-      targetId: "0",
+      spreadsheetId,
+      targetId:
+        rest.role == USERROLE.TRIAL_CANDIDATE
+          ? sheetMap.Trial
+          : sheetMap.CoreTeam,
       values: [sheetData],
       range: "A:A",
       majorDimension: "ROWS",
@@ -115,7 +134,13 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     const { id, ...rest } = await request.json();
-
+    const oldUser = await prisma.user.findFirst({
+      where: {
+        id,
+      },
+    });
+    // console.log("old user", oldUser);
+    // console.log("rest ", rest);
     const user = await prisma.user.upsert({
       where: {
         id,
@@ -123,50 +148,143 @@ export async function PUT(request: Request) {
       create: { ...rest },
       update: { ...rest },
     });
-
     const currentDate = new Date()
       .toLocaleDateString("en-GB")
       .split("/")
       .reverse()
       .join("-");
-
-    const sheetData = [
+    const sheetDataTrial = [
+      "=NOW()",
       `${rest.username}${rest.password}`,
       rest.name,
       rest.email,
-      rest.personalData.phone,
-      rest.payData.upiId,
-      "=(YEAR(NOW())-YEAR(G14))",
-      rest.personalData.dateOfBirth,
-      rest.vertical,
-      rest.personalData.city,
-      rest.workData.positionInternal,
-      rest.personalData.workHourOverlap,
-      rest.workData.workHours,
-      currentDate,
-      "---", //office email
-      rest.personalData.address,
+      rest.personalData?.phone,
+      rest.personalData?.dateOfBirth,
+      rest.personalData?.city,
+      rest.workData?.positionInternal,
+      rest.workData.joining ? rest.workData.joining : currentDate,
+      rest.personalData?.workHourOverlap,
+      rest.personalData?.address,
+      rest.personalData?.govtId ? rest.personalData.govtId : "---",
+      rest.payData?.upiId,
     ];
+    const sheetDataCore = [
+      `${rest.username}${rest.password}`,
+      rest.name,
+      rest.email,
+      rest.personalData?.phone,
+      rest.payData?.upiId,
+      `=(YEAR(NOW())-YEAR(INDIRECT("G" & ROW())))`,
+      rest.personalData?.dateOfBirth,
+      rest.vertical,
+      rest.personalData?.city,
+      rest.workData?.positionInternal,
+      rest.personalData?.workHourOverlap,
+      rest.workData?.workHours,
+      rest.workData.joining ? rest.workData.joining : currentDate,
+      "---", //office email
+      rest.personalData?.address,
+    ];
+    // const sheetData =
+    //   rest.role == USERROLE.TRIAL_CANDIDATE
+    //     ? [
+    //         "=NOW()",
+    //         `${rest.username}${rest.password}`,
+    //         rest.name,
+    //         rest.email,
+    //         rest.personalData.phone,
+    //         rest.personalData.dateOfBirth,
+    //         rest.personalData.city,
+    //         rest.workData?.positionInternal,
+    //         rest.workData.joining ? rest.workData.joining : currentDate,
+    //         rest.personalData?.workHourOverlap,
+    //         rest.personalData?.address,
+    //         rest.personalData.govtId ? rest.personalData.govtId : "---",
+    //         rest.payData?.upiId,
+    //       ]
+    //     : [
+    //         `${rest.username}${rest.password}`,
+    //         rest.name,
+    //         rest.email,
+    //         rest.personalData?.phone,
+    //         rest.payData?.upiId,
+    //         "=(YEAR(NOW())-YEAR(G14))",
+    //         rest.personalData?.dateOfBirth,
+    //         rest.vertical,
+    //         rest.personalData?.city,
+    //         rest.workData?.positionInternal,
+    //         rest.personalData?.workHourOverlap,
+    //         rest.workData?.workHours,
+    //         currentDate,
+    //         "---", //office email
+    //         rest.personalData?.address,
+    //       ];
 
-    const sheet = await sheetSDK.getSheetData({
-      spreadsheetId: "1w2kCO6IIYHi7YJBqfeg9ytmiIDRGhOgGzUPb_0u-UZ0",
-      targetId: "0",
+    const newSheet = await sheetSDK.getSheetData({
+      spreadsheetId,
+      targetId:
+        rest.status === "ACTIVE"
+          ? rest.role == USERROLE.TRIAL_CANDIDATE
+            ? sheetMap.Trial
+            : sheetMap.CoreTeam
+          : sheetMap.Archive,
       range: "A:Z",
       majorDimension: "ROWS",
     });
-
+    const oldSheet = await sheetSDK.getSheetData({
+      spreadsheetId,
+      targetId:
+        oldUser?.status === "ACTIVE"
+          ? oldUser?.role == USERROLE.TRIAL_CANDIDATE
+            ? sheetMap.Trial
+            : sheetMap.CoreTeam
+          : sheetMap.Archive,
+      range: "A:Z",
+      majorDimension: "ROWS",
+    });
     let isSheetDataUpdated = false;
+    let deleteOldData = false;
     await Promise.all(
-      sheet.values.map(async (row: any, index: number) => {
-        console.log(row[0]);
-        if (row[0] === `${rest.username}${rest.password}`) {
-          await sheetSDK.updateSheetData({
-            spreadsheetId: "1w2kCO6IIYHi7YJBqfeg9ytmiIDRGhOgGzUPb_0u-UZ0",
-            targetId: "0",
-            values: [sheetData],
-            range: `A${index + 1}`,
-            majorDimension: "ROWS",
-          });
+      newSheet.values.map(async (row: any, index: number) => {
+        if (
+          row[rest.role == USERROLE.TRIAL_CANDIDATE ? 1 : 0] ===
+          `${rest.username}${rest.password}`
+        ) {
+          if (oldUser?.role == rest.role && oldUser?.status == rest.status) {
+            await sheetSDK.updateSheetData({
+              spreadsheetId,
+              targetId:
+                rest.role == USERROLE.TRIAL_CANDIDATE
+                  ? sheetMap.Trial
+                  : sheetMap.CoreTeam,
+              values: [
+                oldUser?.role == USERROLE.TRIAL_CANDIDATE
+                  ? sheetDataTrial
+                  : sheetDataCore,
+              ],
+              range: `A${index + 1}`,
+              majorDimension: "ROWS",
+            });
+          } else if (
+            oldUser?.role != rest.role &&
+            oldUser?.status == rest.status
+          ) {
+            await sheetSDK.updateSheetData({
+              spreadsheetId,
+              targetId:
+                rest.role == USERROLE.TRIAL_CANDIDATE
+                  ? sheetMap.Trial
+                  : sheetMap.CoreTeam,
+              values: [
+                rest.role == USERROLE.TRIAL_CANDIDATE
+                  ? sheetDataTrial
+                  : sheetDataCore,
+              ],
+              range: `A${index + 1}`,
+              majorDimension: "ROWS",
+            });
+            deleteOldData = true;
+          }
           isSheetDataUpdated = true;
         }
       })
@@ -174,14 +292,49 @@ export async function PUT(request: Request) {
 
     if (!isSheetDataUpdated) {
       await sheetSDK.appendSheetData({
-        spreadsheetId: "1w2kCO6IIYHi7YJBqfeg9ytmiIDRGhOgGzUPb_0u-UZ0",
-        targetId: "0",
-        values: [sheetData],
+        spreadsheetId,
+        targetId:
+          rest.status === "ACTIVE"
+            ? rest.role == USERROLE.TRIAL_CANDIDATE
+              ? sheetMap.Trial
+              : sheetMap.CoreTeam
+            : sheetMap.Archive,
+        values: [
+          rest.role == USERROLE.TRIAL_CANDIDATE
+            ? sheetDataTrial
+            : sheetDataCore,
+        ],
         range: "A:A",
         majorDimension: "ROWS",
       });
+      if (oldUser?.role != rest.role && oldUser?.status == rest.status) {
+        deleteOldData = true;
+      } else if (oldUser?.status != rest.status) {
+        deleteOldData = true;
+      }
     }
-
+    if (deleteOldData) {
+      await Promise.all(
+        oldSheet.values.map(async (row: any, index1: number) => {
+          if (
+            row[oldUser?.role == USERROLE.TRIAL_CANDIDATE ? 1 : 0] ===
+            `${rest.username}${rest.password}`
+          ) {
+            await sheetSDK.deleteRowOrColumn({
+              spreadsheetId,
+              targetId:
+                oldUser?.status === "ACTIVE"
+                  ? oldUser?.role == USERROLE.TRIAL_CANDIDATE
+                    ? sheetMap.Trial
+                    : sheetMap.CoreTeam
+                  : sheetMap.Archive,
+              majorDimension: "ROWS",
+              indexes: [index1],
+            });
+          }
+        })
+      );
+    }
     let json_response = {
       status: "success",
       data: {
@@ -191,6 +344,8 @@ export async function PUT(request: Request) {
 
     return NextResponse.json(json_response);
   } catch (e) {
+    console.log(e);
+
     return new NextResponse(JSON.stringify(e), {
       status: 404,
       headers: { "Content-Type": "application/json" },

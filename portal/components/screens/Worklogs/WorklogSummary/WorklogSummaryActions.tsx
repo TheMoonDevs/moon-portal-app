@@ -71,7 +71,7 @@ export const WorklogSummaryActions = ({
   const renderContent = () => {
     if (loading) {
       return (
-        <div className="pt-6 md:pt-14 min-w-[300px] md:min-w-[400px]">
+        <div className="pt-6 px-14 md:px-0 md:pt-14 w-full md:min-w-[300px] lg:min-w-[400px]">
           <LoadingSkeleton />
         </div>
       );
@@ -94,7 +94,7 @@ export const WorklogSummaryActions = ({
     if (view === "AI Summary" && aiSummary) {
       return (
         <>
-          <div className="flex gap-4 items-center absolute top-10 right-10 !text-neutral-500 z-50">
+          <div className="flex gap-4 items-center absolute top-9 left-10 md:left-auto md:right-10 !text-neutral-500 z-50">
             <Tooltip title="Download AI Summary">
               <span
                 className="material-symbols-outlined hover:cursor-pointer hover:!text-neutral-600"
@@ -104,26 +104,23 @@ export const WorklogSummaryActions = ({
                     filename: `ai_worklog_summary_${userData?.name}.pdf`,
                     page: { margin: Margin.LARGE },
                   })
-                }
-              >
+                }>
                 download
               </span>
             </Tooltip>
             <Tooltip title="Copy AI Summary">
               <span
                 className="material-symbols-outlined hover:cursor-pointer hover:!text-neutral-600"
-                onClick={() => copyToClipboard(aiSummary)}
-              >
+                onClick={() => copyToClipboard(aiSummary)}>
                 stack
               </span>
             </Tooltip>
           </div>
           <div
-            className={`overflow-y-auto w-full ${
+            className={`overflow-y-auto h-[80vh] w-full ${
               isContentVisible ? "block" : "hidden"
-            }`}
-          >
-            <div ref={aiSummaryPdfTargetRef} className="p-10 pt-14">
+            }`}>
+            <div ref={aiSummaryPdfTargetRef} className="p-10 pt-16">
               <div className="w-full">
                 <MdxAppEditor
                   className=""
@@ -169,10 +166,9 @@ export const WorklogSummaryActions = ({
       {isContentVisible && (
         <>
           <button
-            className="absolute -top-[30px] z-20 right-3 md:hidden"
-            onClick={toggleContentVisibility}
-          >
-            <CircleX color="red" />
+            className="absolute top-6 z-20 right-5 md:hidden"
+            onClick={toggleContentVisibility}>
+            <CircleX color="black" />
           </button>
 
           <div className="h-screen w-full md:hidden">{renderContent()}</div>
@@ -194,8 +190,7 @@ export const WorklogSummaryActions = ({
                 filename: `worklog_summary_${userData?.name}.pdf`,
                 page: { margin: Margin.LARGE },
               })
-            }
-          >
+            }>
             <span className="material-symbols-outlined">download</span>
             <span>Download as PDF</span>
           </button>
@@ -203,16 +198,14 @@ export const WorklogSummaryActions = ({
         <button
           disabled={!worklogSummary.length}
           className="disabled:cursor-not-allowed flex gap-1 md:gap-2 items-center border border-neutral-800 hover:bg-neutral-100 rounded-md px-2 md:px-4 py-1 md:py-2"
-          onClick={handleBreakdownBtnClick}
-        >
+          onClick={handleBreakdownBtnClick}>
           <span className="material-symbols-outlined">analytics</span>
           <span>Breakdown</span>
         </button>
         <button
           disabled={!worklogSummary.length}
           onClick={handleAiSummaryBtnClick}
-          className="disabled:cursor-not-allowed flex gap-1 md:gap-2 items-center border bg-neutral-900 text-white hover:bg-neutral-700 rounded-md px-2 md:px-4 py-2 md:py-2"
-        >
+          className="disabled:cursor-not-allowed flex gap-1 md:gap-2 items-center border bg-neutral-900 text-white hover:bg-neutral-700 rounded-md px-2 md:px-4 py-2 md:py-2">
           <span className="text-[0.8rem] md:text-[1rem]">✨</span>
           <span>AI Summary</span>
         </button>

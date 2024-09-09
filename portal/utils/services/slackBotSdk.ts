@@ -67,6 +67,7 @@ export type SlackMessageType = {
   unfurl_links?: boolean;
   unfurl_media?: boolean;
   username?: string;
+  ts?: string;
 };
 
 export type ClientInfo = {
@@ -87,6 +88,63 @@ export type MessageInfo = {
   channel?: string;
   altText?: string;
 };
+
+export interface SlackButtonAction {
+  action_id: string;
+  block_id: string;
+  text: {
+    type: string;
+    text: string;
+    emoji: boolean;
+  };
+  value: string;
+  style: string;
+  type: string;
+  action_ts: string;
+}
+
+export interface SlackInteractionPayload {
+  type: string;
+  user: {
+    id: string;
+    username: string;
+    name: string;
+    team_id: string;
+  };
+  api_app_id: string;
+  token: string;
+  container: {
+    type: string;
+    message_ts: string;
+    channel_id: string;
+    is_ephemeral: boolean;
+  };
+  trigger_id: string;
+  team: {
+    id: string;
+    domain: string;
+  };
+  enterprise: any;
+  is_enterprise_install: boolean;
+  channel: {
+    id: string;
+    name: string;
+  };
+  message: {
+    subtype: string;
+    text: string;
+    type: string;
+    ts: string;
+    bot_id: string;
+    blocks: any[];
+  };
+  state: {
+    values: any;
+  };
+  response_url: string;
+  actions: SlackButtonAction[];
+}
+
 
 /**
  * requires OAUTH_TOKEN to initialise.
@@ -176,26 +234,34 @@ export class SlackBotSdk {
   // post a message using API. passin channel or user_id
   sendSlackMessageviaAPI = async (message: SlackMessageType) => {
     try {
-      let channel = message.user_id || message.channel;
-
-      if (!channel) {
-        throw new Error("Channel is required");
+      if (!message?.user_id && !message?.channel) {
+        throw new Error("Either channel or user_id must be provided"); // Throw error if neither is provided
       }
+
+      let channel = message?.user_id || message?.channel;
 
       const data = new URLSearchParams();
       data.append("token", SLACK_BOT_OAUTH_TOKEN);
-      data.append("channel", channel);
-      data.append("text", message.text || "");
+      data.append("channel", channel || "");
       if (message.attachments) {
         data.append("attachments", JSON.stringify(message.attachments));
+      }
+      if (message.text) {
+        data.append("text", message.text);
       }
       if (message.blocks) {
         data.append("blocks", JSON.stringify(message.blocks));
       }
-      // other attachments can be added if necessary
-      console.log("Sending Slack message via API", data);
 
-      const response = await fetch("https://slack.com/api/chat.postMessage", {
+      const url = message?.ts
+        ? "https://slack.com/api/chat.update"
+        : "https://slack.com/api/chat.postMessage";
+
+      if (message?.ts) {
+        data.append("ts", message?.ts);
+      }
+
+      const response = await fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",

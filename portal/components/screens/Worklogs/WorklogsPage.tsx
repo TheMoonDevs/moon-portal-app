@@ -4,9 +4,9 @@ import { MdxAppEditor } from "@/utils/configure/MdxAppEditor";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
 import { useUser } from "@/utils/hooks/useUser";
 import { PortalSdk } from "@/utils/services/PortalSdk";
-import { WorkLogs } from "@prisma/client";
+import { DocMarkdown, WorkLogs } from "@prisma/client";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import store, { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import dayjs from "dayjs";
 import { WorkLogsHelper } from "./WorklogsHelper";
@@ -19,7 +19,11 @@ import { setLogsList } from "@/utils/redux/worklogs/worklogs.slice";
 import SimpleTabs from "@/components/elements/Tabs";
 import WorklogTips from "./WorklogTabs/WorklogTips";
 import TodoTab from "./WorklogTabs/TodoTab";
-
+import {
+  setCompletedTodos,
+  setIncompleteTodos,
+  setTodoMarkdown,
+} from "@/utils/redux/worklogs/laterTodos.slice";
 const tempData = [
   {
     id: "idsdjneslnfrnleskdnelrnv",
@@ -154,7 +158,9 @@ export const WorklogsPage = () => {
   const thisMonth = dayjs().month();
   const thisDate = dayjs().date();
   const dispatch = useAppDispatch();
-
+  const { todoMarkdown, incompleteTodos } = useAppSelector(
+    (state) => state.laterTodos
+  );
   const [monthTab, setMonthTab] = useState<number>(thisMonth);
   const logsList = useAppSelector((state) => state.worklogs.logsList);
   const [yearLogData, setYearLogData] = useState<any>();
@@ -163,6 +169,36 @@ export const WorklogsPage = () => {
   const isEditorSaving = useAppSelector(
     (state) => state.worklogs.isEditorSaving
   );
+
+  const fetchLaterToDo = (userId: string) => {
+    PortalSdk.getData(`/api/user/todolater?userId=${userId}`, null)
+      .then((data) => {
+        const content = data?.data?.markdown?.content || "";
+        dispatch(setTodoMarkdown(content));
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
+
+  useEffect(() => {
+    if (todoMarkdown) {
+      if (todoMarkdown.trim() === "*" || todoMarkdown.trim() === "") {
+        dispatch(setIncompleteTodos(0));
+      } else {
+        const total = (todoMarkdown.match(/\n/g) || []).length + 1;
+        const completed = (todoMarkdown.match(/✅/g) || []).length;
+        dispatch(setIncompleteTodos(total - completed));
+        dispatch(setCompletedTodos(completed));
+      }
+    }
+  }, [todoMarkdown]);
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchLaterToDo(user?.id);
+    }
+  }, [user?.id]);
 
   useEffect(() => {
     const _user = store.getState().auth.user;
@@ -241,7 +277,14 @@ export const WorklogsPage = () => {
   const tabs = [
     { label: "Tasks/Tips", content: <WorklogTips /> },
     {
-      label: "Todos for later",
+      label: (
+        <div className="flex items-center gap-2">
+          Todos for later
+          {incompleteTodos > 0 && (
+            <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse"></div>
+          )}
+        </div>
+      ),
       content: <TodoTab userId={user?.id as string} />,
     },
   ];
