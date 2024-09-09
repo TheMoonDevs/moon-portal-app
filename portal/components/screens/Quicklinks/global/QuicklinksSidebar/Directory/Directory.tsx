@@ -40,7 +40,6 @@ export const DirectoryTree = ({
   const [showModal, setShowModal] = useState(false);
   const [currDirectory, setCurrDirectory] = useState({} as Directory);
   const [isParent, setIsParent] = useState(false);
-
   useEffect(() => {
     if (!selectedDir) return;
 
@@ -184,63 +183,36 @@ export const DirectoryTree = ({
 
   const handleDeleteDirectory = async (
     directory: Directory,
-    parentId: string | null,
-    rootSlug?: string
+    parentId: string | null
   ) => {
     let apiPath = "/api/quicklinks/directory";
     if (!parentId) {
       apiPath = `/api/quicklinks/parent-directory`;
     }
+    const updatedDirectory = {
+      ...directory,
+      isArchive: true,
+    };
+
     try {
-      const response = await QuicklinksSdk.deleteData(
-        `${apiPath}?id=${directory.id}`
+      dispatch(updateDirectory(updatedDirectory));
+      const response = await QuicklinksSdk.updateData(
+        apiPath,
+        updatedDirectory
       );
-      if (!parentId) dispatch(deleteParentDir(response.data.newParentDirs.id));
-      else dispatch(deleteDirectory(response.data.directory.id));
-
-      if (directory.id === activeDirectoryId) {
-        //if any sub-dir is deleted redirect to its parent.
-        const parentDir = directories.find(
-          (dir) => dir.id === directory.parentDirId
-        );
-        if (parentDir) {
-          const timeString =
-            parentDir &&
-            new Date(parentDir.timestamp).getTime().toString().slice(-5);
-          router.replace(
-            `/quicklinks${rootSlug}/${parentDir?.slug}-${timeString}`
-          );
-          return;
-        }
-
-        const rootParentDir = parentDirs.find(
-          (dir) => dir.id === directory?.parentDirId
-        );
-
-        // If last sub-dir is deleted - e.g. IT in Management Department, then redirect to Management
-        if (rootParentDir) {
-          router.replace(`/quicklinks${rootSlug}`);
-          return;
-        }
-
-        //If the department or common resources itself is deleted - e.g. Management
-        // const currentRootDirId = rootDirectories.find(
-        //   (dir) => dir.slug === rootSlug
-        // )?.id;
-        // console.log(currentRootDirId, rootSlug);
-        // const url =
-        //   parentDirs.length > 0
-        //     ? `/quicklinks${rootSlug}/${
-        //         parentDirs.find((dir) => dir.type === currentRootDirId)?.slug
-        //       }`
-        //     : `/quicklinks/dashboard`;
-        // console.log(url);
-        // router.replace(url);
-        router.replace(APP_ROUTES.quicklinksDashboard);
-      }
-    } catch (error) {
-      console.log(error);
+      dispatch(
+        setToast({ toastMsg: "Done!", toastSev: ToastSeverity.success })
+      );
       revalidateRoot();
+    } catch (error) {
+      dispatch(
+        setToast({
+          toastMsg: "Something went wrong. Please try again.",
+          toastSev: ToastSeverity.error,
+        })
+      );
+      dispatch(updateDirectory(directory));
+      console.log(error);
     }
   };
 
@@ -254,8 +226,6 @@ export const DirectoryTree = ({
       apiPath = "/api/quicklinks/parent-directory/move";
       isParent = true;
     }
-    // console.log(directory);
-    // console.log(direction);
     try {
       const response = await QuicklinksSdk.moveData(apiPath, {
         directory,
@@ -280,6 +250,9 @@ export const DirectoryTree = ({
     <>
       {mainDirectory
         .sort((a, b) => a.position - b.position)
+        .filter(
+          (directory: Directory | ParentDirectory) => !directory.isArchive
+        )
         .map((directory: Directory | ParentDirectory, index) => (
           <div key={directory.id} className=" !border-gray-200">
             <DirectoryItem
