@@ -32,53 +32,32 @@ const MemberHomePage = () => {
         <ProfileSection user={user} />
         <DailySection user={user} />
         <ButtonBoard />
-        {!isTabletOrMore && <MoodTabs user={user} setTab={setTab} />}
-        {isTabletOrMore && (
-          <>
-            <StartSection />
-
-            {/* <InWorkSection visible={true} />
-            <InPlanSection visible={true} /> */}
-          </>
-        )}
+        <StartSection />
       </div>
-      {isTabletOrMore ? (
-        <div className="w-full  grid grid-cols-3 ">
-          <div className="pt-8">
-            <h4 className="text-lg font-bold px-4">Shortcuts & Utils</h4>
-            <ActionsSection />
-          </div>
-          <div className="pt-8 w-full flex flex-col">
-            <h4 className="text-lg font-bold px-4">In Progress Today </h4>
-            <InWorkSection visible={true} />
-            <Link
-              className="text-sm text-white self-stretch text-center uppercase tracking-[4px] font-bold bg-green-500 hover:bg-green-400 px-[30px] mx-4 py-3 rounded-md mt-3"
-              href={APP_ROUTES.userWorklogs}
-            >
-              <span>Enter &nbsp; Focus &nbsp; Mode</span>
-            </Link>
-            {/* <h4 className="text-lg font-bold mt-8 px-4">
+      <div className="w-full grid grid-cols-3 max-sm:grid-cols-1 ">
+        <div className="pt-8">
+          <h4 className="text-lg font-bold px-4">Shortcuts & Utils</h4>
+          <ActionsSection />
+        </div>
+        <div className="pt-8 w-full flex flex-col">
+          <h4 className="text-lg font-bold px-4">In Progress Today </h4>
+          <InWorkSection visible={true} />
+          <Link
+            className="text-sm text-white self-stretch text-center uppercase tracking-[4px] font-bold bg-green-500 hover:bg-green-400 px-[30px] mx-4 py-3 rounded-md mt-3"
+            href={APP_ROUTES.userWorklogs}
+          >
+            <span>Enter &nbsp; Focus &nbsp; Mode</span>
+          </Link>
+          {/* <h4 className="text-lg font-bold mt-8 px-4">
               Todo&apos;s for Tomorrow{" "}
             </h4>
             <InPlanSection visible={true} /> */}
-          </div>
-          <div className="pt-8">
-            <h4 className="text-lg font-bold px-4">Core Team Leaderboard</h4>
-            <CoreTeamSection />
-          </div>
         </div>
-      ) : (
-        <div className="w-full my-3 max-md:my-0">
-          {tab === HomeTabs.START && <StartSection />}
-          {tab === HomeTabs.CHARGING && <ActionsSection />}
-          <InWorkSection visible={tab === HomeTabs.INWORK} />
-          <InPlanSection visible={tab === HomeTabs.PLANUP} />
-          <div className="pt-4">
-            <h4 className="text-lg font-bold px-4">Core Team Leaderboard</h4>
-            <CoreTeamSection />
-          </div>
+        <div className="pt-8">
+          <h4 className="text-lg font-bold px-4">Core Team Leaderboard</h4>
+          <CoreTeamSection />
         </div>
-      )}
+      </div>
       <div className="h-[300px]"></div>
     </div>
   );
