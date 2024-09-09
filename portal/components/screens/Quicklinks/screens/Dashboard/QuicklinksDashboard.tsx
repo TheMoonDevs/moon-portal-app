@@ -38,6 +38,7 @@ export const QuicklinksDashboard = () => {
         );
         setLoading(false);
       } catch (e) {
+        setLoading(false);
         console.log(e);
         return null;
       }
@@ -74,7 +75,7 @@ export const QuicklinksDashboard = () => {
       </QuicklinkHeaderWrapper>
       <div className="mt-10 w-full">
         <TopUsedLink title="Recently Used Folders">
-          <RecentlyUsed loading={loading}/>
+          <RecentlyUsed loading={loading} />
         </TopUsedLink>
         <TopUsedLink>
           <LinkList
