@@ -26,6 +26,7 @@ export const AdminUserPersonalData = ({
   updateOverlap: (index: number, field: string, value: any) => void;
   saveUser: () => void;
 }) => {
+  console.log(user.personalData);
   return (
     <LandscapeCard className="items-start justify-start">
       <div className="flex mb-8 w-full gap-4 items-center justify-between">
@@ -65,7 +66,11 @@ export const AdminUserPersonalData = ({
               <input
                 id="personalData.phone"
                 type="text"
-                value={(user?.personalData as personalData)?.phone}
+                value={
+                  user.personalData
+                    ? (user?.personalData as personalData)?.phone
+                    : ""
+                }
                 onChange={updateField}
                 className="border border-neutral-400 rounded-lg p-2"
               />
@@ -75,7 +80,11 @@ export const AdminUserPersonalData = ({
               <input
                 id="personalData.address"
                 type="text"
-                value={(user?.personalData as personalData)?.address}
+                value={
+                  user.personalData
+                    ? (user?.personalData as personalData)?.address
+                    : ""
+                }
                 onChange={updateField}
                 className="border border-neutral-400 rounded-lg p-2"
               />
@@ -88,7 +97,11 @@ export const AdminUserPersonalData = ({
               <input
                 id="personalData.city"
                 type="text"
-                value={(user?.personalData as personalData)?.city}
+                value={
+                  user.personalData
+                    ? (user?.personalData as personalData)?.city
+                    : ""
+                }
                 onChange={updateField}
                 className="border border-neutral-400 rounded-lg p-2"
               />
@@ -98,7 +111,25 @@ export const AdminUserPersonalData = ({
               <input
                 id="personalData.workHourOverlap"
                 type="text"
-                value={(user?.personalData as personalData)?.workHourOverlap}
+                value={
+                  user.personalData
+                    ? (user?.personalData as personalData)?.workHourOverlap
+                    : ""
+                }
+                onChange={updateField}
+                className="border border-neutral-400 rounded-lg p-2"
+              />
+            </div>
+            <div className="flex flex-row gap-4 items-center justify-start">
+              <p className="w-40">Government Id</p>
+              <input
+                id="personalData.govtId"
+                type="url"
+                value={
+                  user.personalData
+                    ? (user?.personalData as personalData)?.govtId
+                    : ""
+                }
                 onChange={updateField}
                 className="border border-neutral-400 rounded-lg p-2"
               />

@@ -158,6 +158,7 @@ model Directory {
   timestamp   DateTime @default(now())
   position    Float      @default(1)
   isArchive Boolean @default(false)
+  clickCount    Int      @default(0)
   @@index([parentDirId, position])
   @@index([id, slug])
   @@index([position])
@@ -288,7 +289,7 @@ enum USERVERTICAL {
 }
 
 enum HOUSEID {
-  MANGEMENT
+  MANAGEMENT
   GROWTH
   PRODUCT_TECH
   EXECUTIVE
@@ -354,7 +355,7 @@ model Mission {
   month        String
   completed    Boolean?
   housePoints  Int
-  indiePoints  Int
+  indiePoints  Int  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   completedAt DateTime?

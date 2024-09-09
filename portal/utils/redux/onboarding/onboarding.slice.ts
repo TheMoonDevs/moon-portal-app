@@ -10,6 +10,7 @@ interface FormState {
   city: string;
   position: string;
   workHourOverlap: string;
+  house: string;
   address: string;
   username: string;
   passcode: string;
@@ -19,6 +20,7 @@ interface FormState {
   timezone: string;
   countryCode: string;
   phone: string;
+  govtId: string;
 }
 
 const initialState: FormState = {
@@ -30,6 +32,7 @@ const initialState: FormState = {
   username: "",
   city: "",
   position: "",
+  house: "",
   workHourOverlap: "",
   address: "",
   passcode: "",
@@ -39,6 +42,7 @@ const initialState: FormState = {
   timezone: "",
   countryCode: "",
   phone: "",
+  govtId: "",
 };
 
 const formSlice = createSlice({

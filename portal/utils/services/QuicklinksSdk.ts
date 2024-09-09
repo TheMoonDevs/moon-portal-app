@@ -112,7 +112,6 @@ export const QuicklinksSdk = {
         });
         if (res.ok) {
           const result = await res.json();
-          // console.log(result);
           const metadata = QuicklinksSdk.getMetaDataByType(result);
           return resolve(metadata);
         } else {
@@ -162,21 +161,23 @@ export const QuicklinksSdk = {
     const ogImageUrl = extractUrl(ogImage);
     const twitterImageUrl = extractUrl(twitterImage);
 
+    const linkUrl = requestUrl || ogUrl || twitterUrl || "";
+
     let imageUrl;
 
     if (ogImageUrl && twitterImageUrl && ogImageUrl === twitterImageUrl)
       imageUrl = ogImageUrl;
     else imageUrl = ogImageUrl || twitterImageUrl;
-
     const data = {
       title: twitterTitle || ogTitle || "",
       description: twitterDescription || ogDescription || "",
-      url: twitterUrl || ogUrl || requestUrl || "",
+      url: linkUrl,
       image: imageUrl,
       linkType: ogType || "website",
       logo: favicon?.startsWith("https://")
         ? favicon
-        : (rootBase.lenght > 2 ? rootBase[2] : "") + favicon,
+        : (rootBase.length > 2 ? rootBase[0] + "//" + rootBase[2] : "") +
+          favicon,
     };
     return data;
   },
