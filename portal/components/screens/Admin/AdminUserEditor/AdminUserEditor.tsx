@@ -3,7 +3,7 @@
 import { ChangeEvent, useEffect, useState } from "react";
 import dayjs from "dayjs";
 import { LoaderScreen } from "@/components/elements/Loaders";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AdminHeader } from "../AdminHeader";
 import { useToast } from "@/components/elements/Toast";
 import { PortalSdk } from "@/utils/services/PortalSdk";
@@ -21,42 +21,42 @@ import { AdminUserWorkData } from "./AdminUserWorkData";
 import { AdminUserBasicData } from "./AdimUserBasicData";
 import { AdminUserPayData } from "./AdminUserPayData";
 import { AdminUserPersonalData } from "./AdminUserPersonalData";
-
+const initialUserState: User = {
+  id: "",
+  name: "",
+  username: "",
+  password: "",
+  email: "",
+  avatar: "",
+  house: HOUSEID.PRODUCT_TECH,
+  userType: USERTYPE.MEMBER,
+  role: USERROLE.CORETEAM,
+  vertical: USERVERTICAL.DEV,
+  industry: USERINDUSTRY.OTHERS,
+  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  country: "",
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  status: USERSTATUS.ACTIVE,
+  isAdmin: false,
+  workData: {
+    joining: dayjs().format("YYYY-MM-DD"),
+    overlap: [],
+  },
+  personalData: null, // Add the missing property
+  payData: null, // Add the missing property
+  slackId: "",
+  thirdPartyData: null,
+  banner: "",
+  description: "",
+};
 export const AdminUserEditor = () => {
   const query = useSearchParams();
   const [loading, setLoading] = useState(false);
 
   const { showToast } = useToast();
-
-  const [user, setUser] = useState<User>({
-    id: "",
-    name: "",
-    username: "",
-    password: "",
-    email: "",
-    avatar: "",
-    userType: USERTYPE.MEMBER,
-    role: USERROLE.CORETEAM,
-    vertical: USERVERTICAL.DEV,
-    industry: USERINDUSTRY.OTHERS,
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    country: "",
-    house: null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    status: USERSTATUS.ACTIVE,
-    isAdmin: false,
-    workData: {
-      joining: dayjs().format("YYYY-MM-DD"),
-      overlap: [],
-    },
-    personalData: null, // Add the missing property
-    payData: null, // Add the missing property
-    slackId: "",
-    thirdPartyData: null,
-    banner: "",
-    description: "",
-  });
+  const router = useRouter();
+  const [user, setUser] = useState<User>(initialUserState);
 
   useEffect(() => {
     const id = query?.get("id");
@@ -73,8 +73,11 @@ export const AdminUserEditor = () => {
           console.log(err);
           setLoading(false);
         });
+    } else {
+      setUser(initialUserState);
+      router.refresh();
     }
-  }, [query]);
+  }, [query, router]);
 
   const updateOverlap = (index: number, field: string, value: any) => {
     setUser((u) => ({

@@ -7,6 +7,7 @@ import { useQuickLinkDirectory } from "../../../hooks/useQuickLinkDirectory";
 import { useUser } from "@/utils/hooks/useUser";
 import { setPopoverElementWithData } from "@/utils/redux/quicklinks/quicklinks.slice";
 import { useAppDispatch } from "@/utils/redux/store";
+import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
 
 interface IDirectoryItemProps {
   directory: Directory;
@@ -104,6 +105,38 @@ export const DirectoryItem = ({
     );
   };
 
+  const updateClickCount = async (
+    dir: Directory,
+    event: React.MouseEvent<HTMLDivElement>
+  ) => {
+    if (
+      (editable.isEditable && editable.id === dir.id) ||
+      event.button === 2 ||
+      !dir?.id ||
+      !dir.parentDirId
+    ) {
+      return;
+    }
+
+    const newClickCount = (dir.clickCount || 0) + 1;
+    let apiPath = `/api/quicklinks/directory`;
+
+    try {
+      if (!dir.id) {
+        throw new Error("Invalid directory ID");
+      }
+
+      const res = await QuicklinksSdk.updateData(apiPath, {
+        ...dir,
+        clickCount: newClickCount,
+      });
+
+      console.log(res);
+    } catch (error) {
+      console.error("An error happened: ", error);
+    }
+  };
+
   return (
     <div key={directory.id}>
       <div
@@ -124,10 +157,12 @@ export const DirectoryItem = ({
               : directory.logo}
           </span>
           <div
-            onClick={() => {
+            onClick={(event) => {
               toggleDirectory(directory.id);
-              if (editable.id !== directory.id)
+              if (editable.id !== directory.id) {
                 setEditable({ id: "", isEditable: false });
+              }
+              updateClickCount(directory, event);
             }}
             className="flex items-center cursor-pointer gap-1"
           >
