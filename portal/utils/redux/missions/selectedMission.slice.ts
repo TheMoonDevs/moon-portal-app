@@ -5,12 +5,14 @@ interface SelectedMissionState {
   mission: Mission | null;
   missions: Mission[] | null
   isOpen: boolean;
+  missionsLoading: boolean
 }
 
 const initialState: SelectedMissionState = {
   mission: null,
   isOpen: true,
-  missions: null
+  missions: null,
+  missionsLoading: false
 };
 
 export const selectedMissionSlice = createSlice({
@@ -21,14 +23,17 @@ export const selectedMissionSlice = createSlice({
       state.mission = action.payload;
     },
     setMissionDetailsOpen: (state, action: PayloadAction<boolean>) => {
-        state.isOpen = action.payload;
+      state.isOpen = action.payload;
     },
-    setAllMissions:(state,action: PayloadAction<Mission[] | null>) =>{
+    setAllMissions: (state, action: PayloadAction<Mission[] | null>) => {
       state.missions = action.payload
+    },
+    setMissionsLoading: (state, action: PayloadAction<boolean>) => {
+      state.missionsLoading = action.payload;
     }
   },
 });
 
-export const { setSelectedMission, setMissionDetailsOpen,setAllMissions } = selectedMissionSlice.actions;
+export const { setSelectedMission, setMissionDetailsOpen, setAllMissions, setMissionsLoading } = selectedMissionSlice.actions;
 
 export default selectedMissionSlice.reducer;

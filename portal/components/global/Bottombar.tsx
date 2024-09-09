@@ -28,16 +28,16 @@ const NAVIGATION_OPTIONS = [
     path: APP_ROUTES.houses,
     icon: "category",
   },
-  {
-    name: "Teams",
-    path: APP_ROUTES.teams,
-    icon: "workspaces",
-  },
-  {
-    name: "Growth",
-    path: APP_ROUTES.growth,
-    icon: "trending_up",
-  },
+  // {
+  //   name: "Teams",
+  //   path: APP_ROUTES.teams,
+  //   icon: "workspaces",
+  // },
+  // {
+  //   name: "Growth",
+  //   path: APP_ROUTES.growth,
+  //   icon: "trending_up",
+  // },
   {
     name: "Notifications",
     path: APP_ROUTES.notifications,
