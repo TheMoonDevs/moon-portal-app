@@ -12,9 +12,13 @@ import searchTermReducer from "./searchTerm/search.slice";
 import filesUploadReducer from "./filesUpload/fileUpload.slice";
 import onboardingFormReducer from "./onboarding/onboarding.slice";
 import worklogsReducer from "./worklogs/worklogs.slice";
+import selectedMissionReducer from './missions/selectedMission.slice';
+import missionTasksReducer from "./missions/missionsTasks.slice";
+import laterTodosReducer from "./worklogs/laterTodos.slice";
 //import suggestionsReducer from './suggestions/suggestions.slice';
 import notificationsReducer from "./notification/notification.slice";
-import userProfileDrawerReducer from "./userProfileDrawer/userProfileDrawer.slice";
+import coreTeamSlice from "./coreTeam/coreTeam.slice";
+import missionTaskEditorSlice from './missions/missionTaskEditorSlice.slice'
 
 const store = configureStore({
   reducer: {
@@ -25,11 +29,15 @@ const store = configureStore({
     zerotracker: zerotrackerReducer,
     filesUpload: filesUploadReducer,
     worklogs: worklogsReducer,
+    laterTodos: laterTodosReducer,
     searchTerm: searchTermReducer,
     onboardingForm: onboardingFormReducer,
-    userProfileDrawer: userProfileDrawerReducer,
+    selectedMission: selectedMissionReducer,
+    coreTeam: coreTeamSlice,
     //suggestions: suggestionsReducer,
     notifications: notificationsReducer,
+    missionsTasks: missionTasksReducer,
+    missionTaskEditor: missionTaskEditorSlice
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

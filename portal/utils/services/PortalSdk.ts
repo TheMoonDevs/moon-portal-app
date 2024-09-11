@@ -1,3 +1,5 @@
+import { TMD_PORTAL_API_KEY } from "../constants/appInfo";
+
 export const PortalSdk = {
   getData: (url: string, body: any) => {
     return new Promise<any>(async (resolve, reject) => {
@@ -28,6 +30,7 @@ export const PortalSdk = {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            tmd_portal_api_key: TMD_PORTAL_API_KEY,
           },
           body: JSON.stringify(data),
         });
@@ -50,6 +53,31 @@ export const PortalSdk = {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
+            tmd_portal_api_key: TMD_PORTAL_API_KEY,
+          },
+          body: JSON.stringify(data),
+        });
+        // console.log(await res.json());
+        if (res.ok) {
+          const result = await res.json();
+          return resolve(result);
+        } else {
+          return reject(res.status as any);
+        }
+      } catch (e) {
+        console.log(e);
+        return reject(e as any);
+      }
+    });
+  },
+  deleteData: (url: string, data: any) => {
+    return new Promise<any>(async (resolve, reject) => {
+      try {
+        const res = await fetch(url, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            tmd_portal_api_key: TMD_PORTAL_API_KEY,
           },
           body: JSON.stringify(data),
         });

@@ -1,4 +1,5 @@
 import { User } from "@prisma/client";
+import { TMD_PAYZONE_API_KEY } from "../constants/appInfo";
 
 export enum SERVER_API_ENDPOINTS {
   updateUser = `/api/user?id=`,
@@ -10,6 +11,11 @@ export enum SERVER_API_ENDPOINTS {
   updateExchangeConfigData = `/api/exchange`,
 }
 export const PORTAL_SERVER_API_URL = process.env.NEXT_PUBLIC_PORTAL_API_URL;
+export const PORTAL_SERVER = {
+  headerField: "tmd_portal_api_key",
+  url: PORTAL_SERVER_API_URL,
+  apiKey: process.env.NEXT_PUBLIC_PORTAL_API_KEY ?? "",
+};
 
 export const MyServerApi = {
   postData: (url: string, data: any) => {
@@ -19,6 +25,7 @@ export const MyServerApi = {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
+          tmd_payzone_api_key: TMD_PAYZONE_API_KEY,
         },
         body: JSON.stringify(data),
       })
@@ -73,6 +80,7 @@ export const MyServerApi = {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
+          tmd_payzone_api_key: TMD_PAYZONE_API_KEY,
         },
         body: JSON.stringify(updatedData),
       })
@@ -101,6 +109,7 @@ export const MyServerApi = {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
+          tmd_payzone_api_key: TMD_PAYZONE_API_KEY,
         },
         body: JSON.stringify(body),
       })
@@ -155,6 +164,7 @@ export const MyServerApi = {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
+          tmd_payzone_api_key: TMD_PAYZONE_API_KEY,
         },
         body: JSON.stringify(updatedData),
       })
@@ -233,6 +243,7 @@ export const MyServerApi = {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
+          tmd_payzone_api_key: TMD_PAYZONE_API_KEY,
         },
         body: JSON.stringify(updatedData),
       })
@@ -259,6 +270,7 @@ export const MyServerApi = {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
+          tmd_payzone_api_key: TMD_PAYZONE_API_KEY,
         },
         body: JSON.stringify(data),
       })
@@ -285,6 +297,7 @@ export const MyServerApi = {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
+          tmd_payzone_api_key: TMD_PAYZONE_API_KEY,
         },
         body: JSON.stringify(data),
       })

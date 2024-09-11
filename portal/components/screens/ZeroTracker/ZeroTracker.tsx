@@ -154,20 +154,20 @@ export const ZeroTrackerPage = () => {
       userId: user?.id,
       allZeros: _zeros,
     };
-    //console.log("final zeros record", _zeroRecord);
     setSelectedDates([]);
-    PortalSdk.putData(`/api/user/zeros`, { data: _zeroRecord })
-    .then(({ data }) => {
-      //console.log(data);
-      if (!data?.zeroRecords) return;
-      setZeroRecord(data.zeroRecords);
-      setIsSavingZeros(false);
-      setTrackerMode("normal");
-    })
-    .catch((error) => {
-      console.error(error);
-      setIsSavingZeros(false);
+    PortalSdk.putData(`/api/user/zeros`, { ..._zeroRecord })
+      .then(({ data }) => {
+        // console.log(data);
+        if (!data?.zeroRecords) return;
+        setZeroRecord(data.zeroRecords);
+        setIsSavingZeros(false);
+        setTrackerMode("normal");
+      })
+      .catch((error) => {
+        console.error(error);
+        setIsSavingZeros(false);
       });
+    console.log("request");
   };
 
   const handleZeroMarkerButtonClick = () => {
@@ -383,7 +383,7 @@ export const ZeroTrackerPage = () => {
             selectedDates={selectedDates}
             setTrackerMode={setTrackerMode}
             updateDates={updateDates}
-            isSavingZeroes = {isSavingZeroes}
+            isSavingZeroes={isSavingZeroes}
           />
         )}
 

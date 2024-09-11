@@ -1,5 +1,7 @@
 import { prisma } from "@/prisma/prisma";
+import { sheetMap, spreadsheetId } from "@/utils/constants/spreadsheetData";
 import GoogleSheetsAPI from "@/utils/services/googleSheetSdk";
+import { USERROLE } from "@prisma/client";
 import { NextResponse, NextRequest } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -11,6 +13,7 @@ export async function POST(request: NextRequest) {
       email,
       upiId,
       dateOfBirth,
+      startDate,
       city,
       position,
       workHourOverlap,
@@ -23,7 +26,14 @@ export async function POST(request: NextRequest) {
       avatar,
       banner,
       phone,
+      govtId,
     } = await request.json();
+
+    const currentDate = new Date()
+      .toLocaleDateString("en-GB")
+      .split("/")
+      .reverse()
+      .join("-");
 
     const user = await prisma.user.create({
       data: {
@@ -34,8 +44,9 @@ export async function POST(request: NextRequest) {
         timezone,
         password: passcode,
         vertical: userVertical,
+        role: USERROLE.TRIAL_CANDIDATE,
         workData: {
-          joining: new Date(),
+          joining: startDate ? startDate : currentDate,
           workHours: "",
           positionPublic: position,
           positionInternal: "",
@@ -44,11 +55,12 @@ export async function POST(request: NextRequest) {
         },
         personalData: {
           dateOfBirth: dateOfBirth,
-          phone: `${countryCode} ${phone}`,
+          phone: `${phone}`,
           address: address,
           city: city,
           workHourOverlap: `${workHourOverlap} ${timezone}`,
           countryCode: countryCode,
+          govtId: govtId,
         },
         payData: {
           upiId: upiId,
@@ -67,33 +79,43 @@ export async function POST(request: NextRequest) {
     };
 
     const sheetSDK = new GoogleSheetsAPI(sheetConfig);
-    const currentDate = new Date()
-      .toLocaleDateString("en-GB")
-      .split("/")
-      .reverse()
-      .join("-");
 
+    // const sheetData = [
+    //   `${username}${passcode}`,
+    //   name,
+    //   email,
+    //   phone,
+    //   upiId,
+    //   "=(YEAR(NOW())-YEAR(G14))",
+    //   dateOfBirth,
+    //   userVertical,
+    //   city,
+    //   position,
+    //   workHourOverlap,
+    //   "---", //workhours
+    //   currentDate,
+    //   "---", //office email
+    //   address,
+    // ];
     const sheetData = [
+      "=NOW()",
       `${username}${passcode}`,
       name,
       email,
       phone,
-      upiId,
-      "=(YEAR(NOW())-YEAR(G14))",
       dateOfBirth,
-      userVertical,
       city,
       position,
+      startDate ? startDate : currentDate,
       workHourOverlap,
-      "---", //workhours
-      currentDate,
-      "---", //office email
       address,
+      govtId,
+      upiId,
     ];
 
     await sheetSDK.appendSheetData({
-      spreadsheetId: "1w2kCO6IIYHi7YJBqfeg9ytmiIDRGhOgGzUPb_0u-UZ0",
-      targetId: "0",
+      spreadsheetId,
+      targetId: sheetMap.Trial,
       values: [sheetData],
       range: "A:A",
       majorDimension: "ROWS",

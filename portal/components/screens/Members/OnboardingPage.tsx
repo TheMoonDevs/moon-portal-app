@@ -27,13 +27,15 @@ import {
 import { UploadAvatar } from "./UploadAvatar";
 import { REGEXP_ONLY_CHARS } from "input-otp";
 import React, { useEffect, useState } from "react";
-import { USERVERTICAL } from "@prisma/client";
+import { HOUSEID, USERVERTICAL } from "@prisma/client";
 import { CircleCheck, CircleX, Info } from "lucide-react";
 import { TextField, Tooltip } from "@mui/material";
 import dayjs from "dayjs";
 import { Spinner } from "@/components/elements/Loaders";
 import Box from "@mui/material/Box";
 import Modal from "@mui/material/Modal";
+import { HOUSES_LIST } from "../Houses/HousesList";
+import { TMD_PORTAL_API_KEY } from "@/utils/constants/appInfo";
 
 interface OnboardingPageProps {
   onClose?: () => void;
@@ -47,7 +49,9 @@ export function OnboardingPage({ onClose }: OnboardingPageProps) {
   const [username, setUsername] = useState("");
   const [isUsernameValid, setIsUsernameValid] = useState(false);
   const [password, setPassword] = useState("");
-  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedDOB, setSelectedDOB] = useState("");
+  const [selectedStartDate, setSelectedStartDate] = useState("");
+  const [govtIdLink, setGovtIdLink] = useState("");
   const [loading, setLoading] = useState(false);
   const [submit, setSubmit] = useState(false);
   const handleChange = (
@@ -75,13 +79,15 @@ export function OnboardingPage({ onClose }: OnboardingPageProps) {
       name: fullName,
       username: username,
       passcode: password,
-      dateOfBirth: selectedDate,
+      dateOfBirth: selectedDOB,
+      startDate: selectedStartDate,
     };
     try {
       const response = await fetch("/api/onboarding", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          tmd_portal_api_key: TMD_PORTAL_API_KEY,
         },
         body: JSON.stringify(updatedFormData),
       });
@@ -143,7 +149,7 @@ export function OnboardingPage({ onClose }: OnboardingPageProps) {
     }
   };
 
-  console.log("selectedDate:", selectedDate);
+  // console.log("selectedDateOfBirth:", selectedDOB);
   const showMessage = (newMessage: string, newMessageColor: string) => {
     if (newMessage !== "" && newMessageColor !== "") {
       setMessage(newMessage);
@@ -163,10 +169,10 @@ export function OnboardingPage({ onClose }: OnboardingPageProps) {
   const handleDateChange = (selectedDate: string) => {
     if (selectedDate) {
       const formattedDate = new Date(selectedDate).toISOString().split("T")[0];
-      setSelectedDate(formattedDate);
+      setSelectedDOB(formattedDate);
     } else {
       // Clear the selected date
-      setSelectedDate("");
+      setSelectedDOB("");
     }
   };
 
@@ -187,7 +193,7 @@ export function OnboardingPage({ onClose }: OnboardingPageProps) {
     border: "2px solid #000",
     boxShadow: 24,
     py: 4,
-    px:0.5,
+    px: 0.5,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -218,7 +224,6 @@ export function OnboardingPage({ onClose }: OnboardingPageProps) {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
-      
       <Modal
         open={true}
         aria-labelledby="modal-modal-title"
@@ -336,13 +341,36 @@ export function OnboardingPage({ onClose }: OnboardingPageProps) {
                         error: false,
                       },
                     }}
-                    value={dayjs(selectedDate)}
+                    value={dayjs(selectedDOB)}
                     onChange={(value) => {
                       if (value) {
                         const formattedDate = value.format("YYYY-MM-DD");
-                        setSelectedDate(formattedDate);
+                        setSelectedDOB(formattedDate);
                       } else {
-                        setSelectedDate("");
+                        setSelectedDOB("");
+                      }
+                    }}
+                    className="max-w-[23rem] w-full"
+                    sx={InputStyles}
+                  />
+                </div>
+                <div className="w-full px-10 h-[1px] bg-gray-200"></div>
+                <div className="flex justify-between items-center flex-wrap">
+                  <label>Date of Joining:</label>
+                  <DatePicker
+                    slotProps={{
+                      textField: {
+                        size: "small",
+                        error: false,
+                      },
+                    }}
+                    value={dayjs(selectedStartDate)}
+                    onChange={(value) => {
+                      if (value) {
+                        const formattedDate = value.format("YYYY-MM-DD");
+                        setSelectedStartDate(formattedDate);
+                      } else {
+                        setSelectedStartDate("");
                       }
                     }}
                     className="max-w-[23rem] w-full"
@@ -468,6 +496,28 @@ export function OnboardingPage({ onClose }: OnboardingPageProps) {
                 </div>
                 <div className="w-full px-10 h-[1px] bg-gray-200"></div>
                 <div className="flex justify-between items-center flex-wrap">
+                  <label>Government Id:</label>
+                  <TextField
+                    name="govtId"
+                    type="url"
+                    size="small"
+                    required
+                    color="info"
+                    variant="outlined"
+                    value={formData.govtId}
+                    onChange={handleChange}
+                    className="max-w-[23rem] w-full"
+                    InputLabelProps={{
+                      shrink: false,
+                    }}
+                    InputProps={{
+                      notched: false,
+                    }}
+                    sx={InputStyles}
+                  />
+                </div>
+                <div className="w-full px-10 h-[1px] bg-gray-200"></div>
+                <div className="flex justify-between items-center flex-wrap">
                   <label htmlFor="username">Passcode:</label>
                   <div className="flex gap-2 items-center max-w-[23rem] w-full">
                     <div className="flex gap-4 items-center">
@@ -539,6 +589,7 @@ export function OnboardingPage({ onClose }: OnboardingPageProps) {
                   </div>
                 </div>
                 <div className="w-full px-10 h-[1px] bg-gray-200"></div>
+
                 <div className="flex justify-between items-center flex-wrap">
                   <label>Role:</label>
                   <Select
@@ -571,6 +622,39 @@ export function OnboardingPage({ onClose }: OnboardingPageProps) {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="w-full px-10 h-[1px] bg-gray-200"></div>
+
+                <div className="flex justify-between items-center flex-wrap">
+                  <label>House:</label>
+                  <Select
+                    name="house"
+                    value={formData.house || HOUSEID.PRODUCT_TECH}
+                    defaultValue={HOUSEID.PRODUCT_TECH}
+                    onValueChange={(value) =>
+                      handleSelectChange(value, "house")
+                    }
+                  >
+                    <SelectTrigger
+                      id="house"
+                      className="w-full max-w-[23rem] border-[2px] border-gray-300 rounded-xl px-4 py-2 cursor-pointer"
+                    >
+                      <SelectValue placeholder={"Select House"} />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white">
+                      {Object.values(HOUSEID).map((house) => (
+                        <SelectItem
+                          key={house}
+                          value={house}
+                          onClick={() => handleSelectChange(house, "house")}
+                          className="hover:bg-gray-200 rounded-lg cursor-pointer"
+                        >
+                          {house}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <div className="w-full px-10 h-[1px] bg-gray-200"></div>
                 <div className="flex justify-between items-center flex-wrap">
                   <label>TimeZone:</label>

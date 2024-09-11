@@ -1,32 +1,34 @@
 /* eslint-disable @next/next/no-img-element */
-import { APP_ROUTES } from "@/utils/constants/appInfo";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { USERROLE, USERTYPE, User } from "@prisma/client";
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { UserProfileDrawer } from "@/components/screens/Home/ProfileDrawer";
-import { openSlideIn } from "@/utils/redux/userProfileDrawer/userProfileDrawer.slice";
-import { useDispatch, useSelector } from "react-redux";
+import {
+  selectMember,
+  setMembers,
+} from "@/utils/redux/coreTeam/coreTeam.slice";
+import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
 
 export const CoreTeamSection = () => {
-  const [coreTeam, setCoreTeam] = useState<User[]>([]);
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
+  const coreTeam = useAppSelector((state: RootState) => state.coreTeam.members);
 
   useEffect(() => {
     PortalSdk.getData(
-      "/api/user?role=" + USERROLE.CORETEAM + "&userType=" + USERTYPE.MEMBER,
+      "/api/user?role=" + USERROLE.CORETEAM + "&userType=" + USERTYPE.MEMBER + "&status=ACTIVE",
       null
     )
       .then((data) => {
-        setCoreTeam(data?.data?.user || []);
+        dispatch(setMembers(data?.data?.user));
+        // console.log(coreTeam);
       })
       .catch((err) => {
         console.log(err);
       });
-  }, []);
+  }, [dispatch]);
 
   const handleOpenSlideIn = (user: User) => {
-    dispatch(openSlideIn(user));
+    dispatch(selectMember(user));
   };
 
   return (
@@ -36,17 +38,15 @@ export const CoreTeamSection = () => {
           <div
             key={user.id}
             onClick={() => handleOpenSlideIn(user)}
-            className="flex flex-row gap-1 items-center justify-between px-2 py-3 cursor-pointer hover:bg-black/5 border-b border-neutral-200"
-          >
+            className="flex flex-row gap-1 items-center justify-between px-2 py-3 cursor-pointer hover:bg-black/5 border-b border-neutral-200">
             <div className="flex items-center gap-4">
               <div className="rounded-full bg-neutral-400">
                 <img
                   src={
                     user?.avatar ||
-                    "https://via.placeholder.com/150?background=000000&text=" +
-                      user?.name?.charAt(0)
+                    `https://via.placeholder.com/150?text=${user?.name?.charAt(0) || 'U'}`
                   }
-                  alt={user?.name || ""}
+                  alt={user?.name?.charAt(0) || ""}
                   className="w-8 h-8 object-cover object-center rounded-full"
                 />
               </div>

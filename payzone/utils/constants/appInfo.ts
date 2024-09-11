@@ -1,10 +1,24 @@
-import { baseSepolia } from "viem/chains";
-import { bill, license, payments, request, send_money, toll, admin, refer } from '../../public/icons/index'
+import { baseSepolia, base } from "viem/chains";
+import {
+  bill,
+  license,
+  payments,
+  request,
+  send_money,
+  toll,
+  admin,
+  refer,
+} from "../../public/icons/index";
 import { toast } from "sonner";
 
 const NEXT_PUBLIC_TMD_CONTRACT = process.env.NEXT_PUBLIC_TMD_CONTRACT
   ? process.env.NEXT_PUBLIC_TMD_CONTRACT
   : "0x718feaac496184980F7ccf0b07360C70b63c1705";
+
+const IS_TESTNET = process.env.NEXT_PUBLIC_IS_TESTNET === "true";
+
+export const TMD_PAYZONE_API_KEY = process.env
+  .NEXT_PUBLIC_TMD_PAYZONE_API_KEY as string;
 
 export enum APP_ROUTES {
   home = "/",
@@ -67,15 +81,27 @@ export const REFERRAL_DASHBOARD_SIDEBAR_LINKS = [
   {
     title: "REFERRALS",
     href: APP_ROUTES.referralsDashboard,
-    icon: refer, adminOnly: false,
+    icon: refer,
+    adminOnly: false,
   },
   {
     title: "TRANSACTIONS",
     href: APP_ROUTES.referralsTransactions,
-    icon: send_money, adminOnly: false,
+    icon: send_money,
+    adminOnly: false,
   },
-  { title: "INVOICES", href: APP_ROUTES.referralsInvoices, icon: bill, adminOnly: false },
-  { title: "ADMIN", href: APP_ROUTES.referralsAdmin, icon: admin, adminOnly: true },
+  {
+    title: "INVOICES",
+    href: APP_ROUTES.referralsInvoices,
+    icon: bill,
+    adminOnly: false,
+  },
+  {
+    title: "ADMIN",
+    href: APP_ROUTES.referralsAdmin,
+    icon: admin,
+    adminOnly: true,
+  },
 ];
 
 export const APP_INFO = {
@@ -94,17 +120,21 @@ export const TOKEN_INFO = {
   decimals: 6,
   name: "TMDToken",
   contractAddress: NEXT_PUBLIC_TMD_CONTRACT,
-  chainId: chainEnum.baseSepolia,
+  chainId: IS_TESTNET ? chainEnum.baseSepolia : chainEnum.base,
   burnAddress: "0x000000000000000000000000000000000000dEaD",
-  chain: {
-    ...baseSepolia,
-    blockExplorers: {
-      default: {
-        name: "BlockScout-BaseSeploia",
-        url: "https://base-sepolia.blockscout.com",
+  chain: IS_TESTNET
+    ? {
+        ...baseSepolia,
+        blockExplorers: {
+          default: {
+            name: "BlockScout-BaseSeploia",
+            url: "https://base-sepolia.blockscout.com",
+          },
+        },
+      }
+    : {
+        ...base,
       },
-    },
-  },
 };
 
 export const copyUPI = (upiId: string) => {

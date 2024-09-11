@@ -11,6 +11,7 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { Spinner } from "@/components/elements/Loaders";
 import { useSearchParams } from "next/navigation";
 import {
+  HOUSEID,
   USERINDUSTRY,
   USERROLE,
   USERSTATUS,
@@ -178,6 +179,21 @@ export const AdminUserBasicData = ({
                   </select>
                 </div>
                 <div>
+                  <p>House:</p>
+                  <select
+                    id="house"
+                    value={user.house || ""}
+                    onChange={updateField}
+                    className="border border-neutral-400 rounded-lg p-2"
+                  >
+                    {Object.values(HOUSEID).map((house) => (
+                      <option key={house} value={house}>
+                        {house}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
                   <p>is Admin</p>
                   <input
                     type="checkbox"
@@ -223,12 +239,12 @@ export const AdminUserBasicData = ({
               />
             </div>
             <div className="flex flex-row gap-4 items-center justify-start">
-              <h2 className="w-40">Country</h2>
+              <p className="w-40">Country</p>
               <select
                 id="country"
                 value={user.country || ""}
                 onChange={updateField}
-                className="border border-neutral-400 rounded-lg p-2 cursor-pointer"
+                className="border border-neutral-400 rounded-lg p-2 cursor-pointer w-full"
               >
                 <option
                   key={"Select Country"}
@@ -253,6 +269,7 @@ export const AdminUserBasicData = ({
                 Created At
               </label>
               <DatePicker
+                className="w-full"
                 value={user.createdAt ? dayjs(user.createdAt) : null}
                 onChange={(newValue) => {
                   setUser((u) => ({
@@ -267,6 +284,7 @@ export const AdminUserBasicData = ({
                 Updated At
               </label>
               <DatePicker
+                className="w-full"
                 value={user.updatedAt ? dayjs(user.updatedAt) : null}
                 onChange={(newValue) => {
                   setUser((u) => ({
