@@ -82,10 +82,14 @@ export const useUser = (newfetch?: boolean) => {
     status: fetchedUser?.id != null ? "authenticated" : status,
     data,
     signOutUser: () => {
-      localStorage.removeItem(LOCAL_STORAGE.user);
       signOut({
         callbackUrl: APP_ROUTES.login,
-      });
+      }).then(() => {
+        localStorage.removeItem(LOCAL_STORAGE.user);
+      })
+        .catch((err: any) => {
+          console.log("signout error", err);
+        });
     },
     refetchUser,
   };

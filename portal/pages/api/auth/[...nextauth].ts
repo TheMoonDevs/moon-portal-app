@@ -59,7 +59,7 @@ export const authOptions = {
         // const _user = await prisma.user.findFirst({
         //   where: { id: token.accountId },
         // });
-        // console.log("session user", token, user);
+        console.log("session user", token, user);
         session.user = {
           name: token?.name,
           email: token?.email,
