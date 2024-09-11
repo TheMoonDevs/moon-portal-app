@@ -4,9 +4,16 @@ import { MdxAppEditor } from "@/utils/configure/MdxAppEditor";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
 import { useUser } from "@/utils/hooks/useUser";
 import { PortalSdk } from "@/utils/services/PortalSdk";
-import { WorkLogs } from "@prisma/client";
+import { DocMarkdown, WorkLogs } from "@prisma/client";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import React, {
+  RefObject,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  createRef,
+} from "react";
 import store, { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import dayjs from "dayjs";
 import { WorkLogsHelper } from "./WorklogsHelper";
@@ -19,7 +26,11 @@ import { setLogsList } from "@/utils/redux/worklogs/worklogs.slice";
 import SimpleTabs from "@/components/elements/Tabs";
 import WorklogTips from "./WorklogTabs/WorklogTips";
 import TodoTab from "./WorklogTabs/TodoTab";
-
+import {
+  setCompletedTodos,
+  setIncompleteTodos,
+  setTodoMarkdown,
+} from "@/utils/redux/worklogs/laterTodos.slice";
 const tempData = [
   {
     id: "idsdjneslnfrnleskdnelrnv",
@@ -73,6 +84,7 @@ export const WorkLogItem = ({
       className={`flex flex-col  gap-3 rounded-lg border border-neutral-200 p-3 overflow-y-hidden min-h-[150px] ${
         data.logType === "privateLog" ? " h-full " : ""
       } ${selected ? " bg-white border-neutral-900 border-2 " : ""}`}
+      key={JSON.stringify(data.works)}
       onClick={onClick}
     >
       <div
@@ -154,7 +166,9 @@ export const WorklogsPage = () => {
   const thisMonth = dayjs().month();
   const thisDate = dayjs().date();
   const dispatch = useAppDispatch();
-
+  const { todoMarkdown, incompleteTodos } = useAppSelector(
+    (state) => state.laterTodos
+  );
   const [monthTab, setMonthTab] = useState<number>(thisMonth);
   const logsList = useAppSelector((state) => state.worklogs.logsList);
   const [yearLogData, setYearLogData] = useState<any>();
@@ -163,6 +177,36 @@ export const WorklogsPage = () => {
   const isEditorSaving = useAppSelector(
     (state) => state.worklogs.isEditorSaving
   );
+
+  const fetchLaterToDo = (userId: string) => {
+    PortalSdk.getData(`/api/user/todolater?userId=${userId}`, null)
+      .then((data) => {
+        const content = data?.data?.markdown?.content || "";
+        dispatch(setTodoMarkdown(content));
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
+
+  useEffect(() => {
+    if (todoMarkdown) {
+      if (todoMarkdown.trim() === "*" || todoMarkdown.trim() === "") {
+        dispatch(setIncompleteTodos(0));
+      } else {
+        const total = (todoMarkdown.match(/\n/g) || []).length + 1;
+        const completed = (todoMarkdown.match(/✅/g) || []).length;
+        dispatch(setIncompleteTodos(total - completed));
+        dispatch(setCompletedTodos(completed));
+      }
+    }
+  }, [todoMarkdown]);
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchLaterToDo(user?.id);
+    }
+  }, [user?.id]);
 
   useEffect(() => {
     const _user = store.getState().auth.user;
@@ -241,10 +285,51 @@ export const WorklogsPage = () => {
   const tabs = [
     { label: "Tasks/Tips", content: <WorklogTips /> },
     {
-      label: "Todos for later",
+      label: (
+        <div className="flex items-center gap-2">
+          Todos for later
+          {incompleteTodos > 0 && (
+            <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse"></div>
+          )}
+        </div>
+      ),
       content: <TodoTab userId={user?.id as string} />,
     },
   ];
+
+  const handleWorkLogItemClick = (data: WorkLogs, isEditorSaving: boolean) => {
+    if (isEditorSaving) {
+      toast.error("Save your Logs! (Ctrl+S)");
+      return;
+    }
+    if (data.id?.trim().length > 0) {
+      setSelectedID(data.id);
+      if (data.date) setSelectedDate(data.date);
+    } else if (data.date) {
+      // console.log(data);
+      setSelectedID(undefined);
+      if (data.date) setSelectedDate(data.date);
+    }
+  };
+
+  const isFutureMonth =
+    monthTab > thisMonth || (monthTab === 0 && thisMonth === 11);
+
+  const filteredLogs = isFutureMonth
+    ? logsList.filter((data) => dayjs(data.date).month() === monthTab).slice(-4)
+    : logsList.filter((data) => dayjs(data.date).month() === monthTab);
+
+  const handleNextMonthClick = () => {
+    setMonthTab((prevMonth) => {
+      const nextMonth = (prevMonth + 1) % 12;
+      const newDate = dayjs()
+        .month(nextMonth)
+        .startOf("month")
+        .format("YYYY-MM-DD");
+      setSelectedDate(newDate);
+      return nextMonth;
+    });
+  };
 
   return (
     <div className="flex flex-col">
@@ -321,30 +406,20 @@ export const WorklogsPage = () => {
               id={selectedID}
               date={centerdate.format("YYYY-MM-DD")}
               logType={"dayLog"}
+              monthTab={monthTab}
+              setMonthTab={setMonthTab}
+              handleNextMonthClick={handleNextMonthClick}
             />
           </div>
           <div className="grid grid-cols-2 lg:w-[30%] gap-3 p-2 max-lg:grid-cols-4 max-md:grid-cols-2 max-h-[80vh] overflow-y-scroll m-3">
-            {logsList.map(
+            {filteredLogs.map(
               (data) => (
                 <WorkLogItem
                   isTabletOrMore={isTabletOrMore}
                   key={data.id + "-" + data.date + "-" + data.userId}
                   data={data}
                   selected={selectedDate === data.date}
-                  onClick={() => {
-                    if (isEditorSaving) {
-                      toast.error("Save your Logs! (Ctrl+S)");
-                      return;
-                    }
-                    if (data.id?.trim().length > 0) {
-                      setSelectedID(data.id);
-                      if (data.date) setSelectedDate(data.date);
-                    } else if (data.date) {
-                      // console.log(data);
-                      setSelectedID(undefined);
-                      if (data.date) setSelectedDate(data.date);
-                    }
-                  }}
+                  onClick={() => handleWorkLogItemClick(data, isEditorSaving)}
                 />
               )
               //)

@@ -52,11 +52,11 @@ enum TaskType {
 export function calculateMetrics(
   worklogSummary: WorkLogs[],
   isMonthly: boolean,
-  isYearly: boolean
+  isYearly?: boolean
 ): Metrics {
-  console.log("calculateMetrics called with worklogSummary:", worklogSummary);
-  console.log("calculateMetrics called with isMonthly:", isMonthly);
-  console.log("calculateMetrics called with isYearly:", isYearly);
+  //console.log("calculateMetrics called with worklogSummary:", worklogSummary);
+  //console.log("calculateMetrics called with isMonthly:", isMonthly);
+  //console.log("calculateMetrics called with isYearly:", isYearly);
   const completedTasks = getTaskCountByType(worklogSummary, TaskType.Completed);
   const taskCompletionRate = getTaskCompletionRate(worklogSummary);
   const averageTasksPerDay = getAverageTasksPerDay(worklogSummary);
@@ -88,8 +88,9 @@ export function calculateMetrics(
   const tasksByWeekday =
     getCompletedAndInProgressTasksByWeekday(worklogSummary);
 
-  const missedLogs = getMissedLogs(worklogSummary, isMonthly, isYearly);
-  const updatedLogsLater = getUpdatedLogsLater(worklogSummary);
+    const missedDates = getMissedLogs(worklogSummary, isMonthly, isYearly);
+    const missedLogsCount = missedDates.length; 
+    const updatedLogsLater = getUpdatedLogsLater(worklogSummary);
 
   return {
     completedTasks,
@@ -109,7 +110,7 @@ export function calculateMetrics(
     needClarificationTasks,
     highPriorityTasks,
     tasksByWeekday,
-    missedLogs,
+    missedLogs: missedLogsCount,
     updatedLogsLater,
   };
 }
@@ -291,11 +292,11 @@ function getCompletedAndInProgressTasksByWeekday(worklogSummary: WorkLogs[]): {
   return weekdayCounts;
 }
 
-function getMissedLogs(
+export function getMissedLogs(
   worklogSummary: WorkLogs[],
   isMonthly: boolean,
-  isYearly: boolean
-): number {
+  isYearly?: boolean
+): Date[] {
   const today = new Date();
   let startDate, endDate;
 
@@ -312,7 +313,7 @@ function getMissedLogs(
     startDate = firstWorklogDate || startOfYear(today);
     endDate = isToday(today) ? today : endOfYear(today);
   } else {
-    return 0;
+    return [];
   }
 
   const allDates = getAllDatesInRange(startDate, endDate);
@@ -320,15 +321,15 @@ function getMissedLogs(
     parseISO(worklog.date || "")
   );
 
-  console.log("logDates:", logDates);
+  //console.log("logDates:", logDates);
 
   const missedDates = allDates.filter(
     (date) => !logDates.some((logDate) => isSameDay(date, logDate))
   );
 
-  console.log("missedDates:", missedDates);
+  //console.log("missedDates:", missedDates);
 
-  return missedDates.length;
+  return missedDates;
 }
 
 function getUpdatedLogsLater(worklogSummary: WorkLogs[]): number {
