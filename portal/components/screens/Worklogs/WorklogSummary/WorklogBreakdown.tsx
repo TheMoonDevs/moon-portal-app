@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { User, WorkLogs } from "@prisma/client";
 import { PieChart, BarChart } from "@mui/x-charts";
 import { format, parseISO } from "date-fns";
@@ -21,6 +21,17 @@ import {
   Sparkles,
 } from "lucide-react";
 import { Stack, useMediaQuery } from "@mui/material";
+import Pattern from "./Pattern";
+import { setIsCreateLinkModalOpen } from "@/utils/redux/quicklinks/quicklinks.slice";
+import ToolTip from "@/components/elements/ToolTip";
+import StatiStics from "./StatiStics";
+import Pie from "./PieChart";
+
+const tabs: string[] = ["POINTERS", "ANALYTICS", "STATS", "GROWTH", "MISSIONS"];
+const icons = [
+  { icon: "show_chart", label: "Show Lines Chart" },
+  { icon: "bar_chart", label: "Show Histogram" },
+];
 
 interface WorklogBreakdownProps {
   worklogSummary: WorkLogs[];
@@ -34,6 +45,9 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
   isYearly,
 }) => {
   const metrics = calculateMetrics(worklogSummary, isMonthly, isYearly);
+  const [activeTab, setActiveTab] = useState("ANALYTICS");
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [gridVisible, setGridVisible] = useState(true);
 
   const weekdays = [
     "Monday",
@@ -57,11 +71,85 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
   const chartHeight = isSmallScreen ? 200 : 300;
   const barChartWidth = isSmallScreen ? 350 : 550;
   return (
-    <main className="flex flex-col justify-center gap-5 m-6 pb-20">
-      <h1 className="font-semibold text-lg md:text-xl font-sans text-center justify-start mt-4 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 text-transparent bg-clip-text">
+    <main className="flex flex-col justify-center gap-5 my-6 mx-2 px-2 pb-20 rounded-[32px] bg-white ">
+      <h1 className="font-semibold text-lg md:text-2xl font-sans text-center justify-start mt-4 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 text-transparent bg-clip-text">
         Worklog Breakdown
       </h1>
-
+      <div className="w-full flex items-center ml-6 gap-1 mt-6 mb-2 overflow-x-scroll no-scrollbar">
+        {tabs.map((tab: string, i: number) => (
+          <p
+            key={`${tab}-${i}`}
+            className={`text-sm text-black leading-3 tracking-widest px-2 pb-2 cursor-pointer transition-all duration-300 ease-in-out ${
+              activeTab === tab
+                ? "border-b-2 border-black font-extrabold rounded-b-sm rounded-t-sm rounded-r-sm rounded-l-sm"
+                : "border-b-2 border-transparent font-normal"
+            }`}
+            onClick={() => setActiveTab(tab)}
+          >
+            {tab}
+          </p>
+        ))}
+      </div>
+      <div className="w-full flex justify-between items-center px-4">
+        <p className="font-normal text-gray-500 text-xs leading-3">
+          Check your Productivity & High Impact Points
+        </p>
+        <div className="flex items-center gap-2 border border-[#00000033] rounded-lg p-2">
+          {icons.map((icon, index) => {
+            return (
+              <ToolTip key={icon.icon} title={icon.label}>
+                <div
+                  className={`flex items-center justify-center px-3 py-2 border border-[#00000033] rounded-lg hover:bg-neutral-100  transition-colors duration-300 cursor-pointer ${
+                    activeIndex === index ? "bg-neutral-200" : "bg-white"
+                  }`}
+                  key={icon.icon}
+                  onClick={() => setActiveIndex(index)}
+                >
+                  <span
+                    className="material-symbols-outlined"
+                    style={{ fontSize: "16px" }}
+                  >
+                    {icon.icon}
+                  </span>
+                </div>
+              </ToolTip>
+            );
+          })}
+          <ToolTip title={gridVisible ? "Hide Grid" : "Show Grid"}>
+            <div
+              className={`flex items-center justify-center px-3 py-2 border border-[#00000033] rounded-lg hover:bg-neutral-100  transition-colors duration-300 cursor-pointer ${
+                gridVisible ? "bg-neutral-200" : "bg-white"
+              }`}
+              onClick={() => setGridVisible(!gridVisible)}
+            >
+              <span
+                className="material-symbols-outlined"
+                style={{ fontSize: "16px" }}
+              >
+                {gridVisible ? "grid_off" : "grid_on"}
+              </span>
+            </div>
+          </ToolTip>
+        </div>
+      </div>
+      <div className="h-[400px] w-full py-4">
+        <p className=" py-4 text-sm text-black leading-3 tracking-widest text-center">
+          Total tasks and completed tasks (Day wise)
+        </p>
+        <Pattern gridVisible={gridVisible} worklogSummary={worklogSummary} />
+      </div>
+      <div className="py-4">
+        <p className="pb-4 text-sm text-black leading-3 tracking-widest text-center">
+          Check your Productivity (Total no. of tasks week wise)
+        </p>
+        <Pie worklogSummary={worklogSummary} />
+      </div>
+      <div className="">
+        <p className="pb-4 text-sm text-black leading-3 tracking-widest text-center">
+          Check your Productivity Stats
+        </p>
+        <StatiStics worklogSummary={worklogSummary} />
+      </div>
       <section className="text-center p-4 bg-blue-50 rounded-lg shadow-md mb-5">
         <h2 className="text-lg font-semibold text-gray-700">Summary</h2>
         <p className="text-sm text-gray-600">
