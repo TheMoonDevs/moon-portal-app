@@ -347,7 +347,7 @@ function getUpdatedLogsLater(worklogSummary: WorkLogs[]): number {
   return updatedLogsLater;
 }
 
-function getAllDatesInRange(startDate: Date, endDate: Date): Date[] {
+export function getAllDatesInRange(startDate: Date, endDate: Date): Date[] {
   const dates = [];
   let currentDate = startDate;
 
