@@ -29,6 +29,7 @@ export const AddSectionPopup = ({
         type: ROOTTYPE.DEPARTMENT,
         slug: "",
         logo: "",
+        position: 0,
       });
     } else if (root.id === ROOTTYPE.COMMON_RESOURCES) {
       setNewDirectory({
@@ -37,6 +38,7 @@ export const AddSectionPopup = ({
         type: ROOTTYPE.COMMON_RESOURCES,
         slug: "",
         logo: "",
+        position: 0,
       });
     } else setNewDirectory(null);
   };

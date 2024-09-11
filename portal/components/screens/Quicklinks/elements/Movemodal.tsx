@@ -40,6 +40,7 @@ export const MoveModal: React.FC<MoveToModalProps> = ({
   const filteredDirectories = parentDirs.filter(
     (dir) =>
       dir.type === selectedRootType &&
+      !dir.isArchive &&
       dir.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
