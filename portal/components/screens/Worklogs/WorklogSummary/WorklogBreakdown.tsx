@@ -21,11 +21,44 @@ import {
   Sparkles,
 } from "lucide-react";
 import { Stack, useMediaQuery } from "@mui/material";
-import Pattern from "./Pattern";
+// import Pattern from "./Pattern";
 import { setIsCreateLinkModalOpen } from "@/utils/redux/quicklinks/quicklinks.slice";
 import ToolTip from "@/components/elements/ToolTip";
-import StatiStics from "./StatiStics";
-import Pie from "./PieChart";
+// import StatiStics from "./StatiStics";
+// import Pie from "./PieChart";
+import dynamic from "next/dynamic";
+
+const LoadingAnimation = () => (
+  <div className="flex items-end justify-between w-[45px] h-[27px] pb-1/5">
+    <div className="cube flex-shrink-0 w-[9px] h-[9px] bg-teal-400 rounded-[25%] animate-bounce"></div>
+    <div className="cube flex-shrink-0 w-[9px] h-[9px] bg-teal-400 rounded-[25%] animate-bounce"></div>
+    <div className="cube flex-shrink-0 w-[9px] h-[9px] bg-teal-400 rounded-[25%] animate-bounce"></div>
+  </div>
+);
+
+const Pattern = dynamic(() => import("./Pattern"), {
+  loading: () => (
+    <div className="h-[200px] w-full flex items-center justify-center">
+      <LoadingAnimation />,
+    </div>
+  ),
+});
+
+const Pie = dynamic(() => import("./PieChart"), {
+  loading: () => (
+    <div className="h-[200px] w-full flex items-center justify-center">
+      <LoadingAnimation />
+    </div>
+  ),
+});
+
+const StatiStics = dynamic(() => import("./StatiStics"), {
+  loading: () => (
+    <div className="h-[200px] w-full flex items-center justify-center">
+      <LoadingAnimation />
+    </div>
+  ),
+});
 
 const tabs: string[] = ["POINTERS", "ANALYTICS", "STATS", "GROWTH", "MISSIONS"];
 const icons = [
@@ -132,6 +165,7 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
           </ToolTip>
         </div>
       </div>
+
       <div className="h-[400px] w-full py-4">
         <p className=" py-4 text-sm text-black leading-3 tracking-widest text-center">
           Total tasks and completed tasks (Day wise)
@@ -150,6 +184,7 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
         </p>
         <StatiStics worklogSummary={worklogSummary} />
       </div>
+
       <section className="text-center p-4 bg-blue-50 rounded-lg shadow-md mb-5">
         <h2 className="text-lg font-semibold text-gray-700">Summary</h2>
         <p className="text-sm text-gray-600">
