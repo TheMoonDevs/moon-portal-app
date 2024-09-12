@@ -2,6 +2,7 @@
 import { ResponsiveLine } from '@nivo/line';
 import dayjs from 'dayjs';
 import { WorkLogs } from '@prisma/client';
+import { ArrayHelper } from '@/utils/helpers/array';
 
 export const getStatsOfContent = (content: string) => {
   const checks = (content?.match(/✅/g) || []).length;
@@ -16,7 +17,12 @@ const Pattern = ({
   gridVisible: boolean;
   worklogSummary: WorkLogs[];
 }) => {
-  const formattedWorklogData = worklogSummary.map((log) => {
+  const sortedWorklogSummary = ArrayHelper.forwardSortByDate(
+    worklogSummary,
+    'date'
+  );
+
+  const formattedWorklogData = sortedWorklogSummary.map((log) => {
     const formattedDate = dayjs(log.date).format('MMM D');
     let totalTasks = 0;
     let completedTasks = 0;
