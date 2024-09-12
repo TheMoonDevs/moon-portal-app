@@ -9,6 +9,12 @@ import {
   endOfYear,
   isToday,
 } from "date-fns";
+import dayjs from 'dayjs';
+import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
+import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+
+dayjs.extend(isSameOrAfter);
+dayjs.extend(isSameOrBefore);
 
 interface Metrics {
   completedTasks: number;
@@ -88,9 +94,11 @@ export function calculateMetrics(
   const tasksByWeekday =
     getCompletedAndInProgressTasksByWeekday(worklogSummary);
 
-    const missedDates = getMissedLogs(worklogSummary, isMonthly, isYearly);
-    const missedLogsCount = missedDates.length; 
-    const updatedLogsLater = getUpdatedLogsLater(worklogSummary);
+  // const missedDates = getMissedLogs(worklogSummary, isMonthly, isYearly);
+  // const missedLogsCount = missedDates.length;
+  const missedDated = getMissedWorklogDates(worklogSummary);
+  const missedLogsCount = missedDated.length;
+  const updatedLogsLater = getUpdatedLogsLater(worklogSummary);
 
   return {
     completedTasks,
@@ -365,4 +373,26 @@ function isSameDay(date1: Date, date2: Date): boolean {
     date1.getUTCMonth() === date2.getUTCMonth() &&
     date1.getUTCDate() === date2.getUTCDate()
   );
+}
+
+function getMissedWorklogDates(logs: WorkLogs[]) {
+  if (!logs.length) return [];
+
+  const firstLogDate = dayjs(logs[0].date);
+  const year = firstLogDate.year();
+  const month = firstLogDate.month() + 1;
+
+  const loggedDatesSet = new Set(logs.map(log => dayjs(log.date).format('YYYY-MM-DD')));
+
+  const daysInMonth = firstLogDate.daysInMonth();
+  const missedDates = [];
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    if (!loggedDatesSet.has(date)) {
+      missedDates.push(date);
+    }
+  }
+
+  return missedDates;
 }
