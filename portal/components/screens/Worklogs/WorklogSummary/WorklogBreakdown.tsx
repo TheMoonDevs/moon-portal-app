@@ -27,6 +27,7 @@ import ToolTip from "@/components/elements/ToolTip";
 // import StatiStics from "./StatiStics";
 // import Pie from "./PieChart";
 import dynamic from "next/dynamic";
+import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
 
 const LoadingAnimation = () => (
   <div className="flex items-end justify-between w-[45px] h-[27px] pb-1/5">
@@ -81,6 +82,7 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
   const [activeTab, setActiveTab] = useState("STATS");
   const [activeIndex, setActiveIndex] = useState(0);
   const [gridVisible, setGridVisible] = useState(true);
+  const dispatch = useAppDispatch();
 
   const weekdays = [
     "Monday",
@@ -103,6 +105,39 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
   const chartWidth = isSmallScreen ? 380 : 450;
   const chartHeight = isSmallScreen ? 200 : 300;
   const barChartWidth = isSmallScreen ? 350 : 550;
+
+  const handleCardClick = (cardTitle: string) => {
+    if (cardTitle === "topProductiveDays") {
+      const topProductiveDay = metrics.topProductiveDays[0];
+      if (topProductiveDay) {
+        scrollToWorklog(topProductiveDay.date);
+      }
+    }
+    console.log(`Clicked card: ${cardTitle}`);
+  };
+
+  const scrollToWorklog = (date: string) => {
+    const worklogElement = document.querySelector(`[data-date="${date}"]`);
+    if (worklogElement) {
+      const container = worklogElement.closest(".scrollable-container-summaryView");
+      if (container) {
+        const containerRect = container.getBoundingClientRect();
+        const elementRect = worklogElement.getBoundingClientRect();
+        const offset = 20;
+        
+        const scrollPosition = elementRect.top + container.scrollTop - containerRect.top - offset;
+        
+        container.scrollTo({
+          top: scrollPosition,
+          behavior: "smooth",
+        });
+      } else {
+        worklogElement.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+  };
+  
+
   return (
     <main className="flex flex-col justify-center gap-5 my-6 mx-2 px-2 pb-20 rounded-[32px] bg-white ">
       <h1 className="font-semibold text-lg md:text-2xl font-sans text-center justify-start mt-4 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 text-transparent bg-clip-text">
@@ -262,8 +297,8 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
               ]}
               width={barChartWidth}
               height={chartHeight}
-            /> */}
-            {/* <div className="pb-5">
+            />
+            <div className="pb-5">
               <strong>Tasks by Weekday</strong>
             </div> */}
             <div className="grid grid-cols-2 gap-5 w-full mb-8 max-sm:grid-cols-1">
@@ -282,42 +317,49 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
                   </div>
                 }
                 logo={<Star color="#FFC107" size={30} />}
+                onClick={() => handleCardClick("topProductiveDays")}
               />
               <MetricCard
                 title="Productive Streak"
                 content={`${metrics.longestProductiveStreak} Days`}
                 logo={<Sparkles color="#4CAF50 " size={30} />}
+                onClick={() => handleCardClick("productiveStreak")}
               />
               <MetricCard
                 title="Task Completion Rate"
                 content={`${metrics.taskCompletionRate.toFixed(2)}%`}
                 logo={<CircleCheckBig color="#28A745 " size={30} />}
+                onClick={() => handleCardClick("taskCompletionRate")}
               />
               <MetricCard
                 title="Missed Logs"
                 content={`${metrics.missedLogs} Days`}
                 logo={<CircleAlert color="#FF6347 " size={30} />}
+                onClick={() => handleCardClick("missedLogs")}
               />
               <MetricCard
                 title="Updated Logs Later"
                 content={`${metrics.updatedLogsLater} Times`}
                 logo={<History color="#FF9800" size={30} />}
+                onClick={() => handleCardClick("updatedLogsLater")}
               />
               <MetricCard
                 title="Update Frequency"
                 content={`${metrics.updateMetrics.updatedDays} Days`}
                 logo={<RefreshCw color="#2196F3 " size={30} />}
+                onClick={() => handleCardClick("updateFrequency")}
               />
               <MetricCard
                 title="Average Tasks Per Day"
                 content={`${metrics.averageTasksPerDay.toFixed(2)}`}
                 logo={<ListTodo color="#03A9F4" size={30} />}
+                onClick={() => handleCardClick("averageTasksPerDay")}
               />
-
               <MetricCard
                 title="High Priority Tasks"
                 content={`${metrics.highPriorityTasks} Tasks`}
                 logo={<TriangleAlert color="#FF5722" size={30} />}
+                onClick={() => handleCardClick("highPriorityTasks")}
               />
             </div>
           </Stack>

@@ -40,7 +40,7 @@ export const getStatsOfContent = (content: string) => {
   // console.log(content);
   const checks = (content?.match(/✅/g) || []).length;
   const points = (content?.match(/\n/g) || []).length + 1;
-  console.log(content);
+  // console.log(content);
   return `${checks} / ${points}`;
 };
 

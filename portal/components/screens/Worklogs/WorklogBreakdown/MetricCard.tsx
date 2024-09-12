@@ -6,6 +6,7 @@ interface MetricCardProps {
   content: React.ReactNode;
   logo: React.ReactNode;
   tooltip?: string;
+  onClick?: () => void;
 }
 
 const MetricCard: React.FC<MetricCardProps> = ({
@@ -13,9 +14,13 @@ const MetricCard: React.FC<MetricCardProps> = ({
   content,
   logo,
   tooltip,
+  onClick,
 }) => (
   <Tooltip title={tooltip || ''} arrow>
-    <div className='flex flex-col justify-between w-full p-5 rounded-lg shadow-md bg-gradient-to-br from-white to-gray-50 hover:from-blue-50 hover:border-l-4 hover:border-blue-500 transition-all duration-300 cursor-pointer transform hover:scale-105'>
+    <div
+      className='flex flex-col justify-between w-full p-5 rounded-lg shadow-md bg-gradient-to-br from-white to-gray-50 hover:from-blue-50 hover:border-l-4 hover:border-blue-500 transition-all duration-300 cursor-pointer transform hover:scale-105'
+      onClick={onClick}
+    >
       <div className='flex justify-between items-start gap-2 mb-3'>
         <h1 className='font-semibold text-base text-gray-900 break-words'>
           <span className='block w-full'>
