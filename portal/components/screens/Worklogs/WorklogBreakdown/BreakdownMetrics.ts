@@ -145,6 +145,9 @@ function getTaskCountByType(
 
 function getTaskCompletionRate(worklogSummary: WorkLogs[]): number {
   const totalTasks = getTotalTasks(worklogSummary);
+  if (totalTasks === 0) {
+    return 0;
+  }
   const completedTasks = getTaskCountByType(worklogSummary, TaskType.Completed);
   return (completedTasks / totalTasks) * 100;
 }

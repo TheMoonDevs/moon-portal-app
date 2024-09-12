@@ -268,6 +268,22 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
             </div> */}
             <div className="grid grid-cols-2 gap-5 w-full mb-8 max-sm:grid-cols-1">
               <MetricCard
+                title="Top Productive Days"
+                content={
+                  <div className="flex flex-col gap-1">
+                    {metrics.topProductiveDays.map((day, index) => (
+                      <div key={index} className="text-sm flex justify-between">
+                        <span>{format(parseISO(day.date), "MMM dd")}</span>
+                        <span className="font-semibold text-gray-700">
+                          {day.completedTasks.toString().padStart(2, "0")}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                }
+                logo={<Star color="#FFC107" size={30} />}
+              />
+              <MetricCard
                 title="Productive Streak"
                 content={`${metrics.longestProductiveStreak} Days`}
                 logo={<Sparkles color="#4CAF50 " size={30} />}
@@ -296,22 +312,6 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
                 title="Average Tasks Per Day"
                 content={`${metrics.averageTasksPerDay.toFixed(2)}`}
                 logo={<ListTodo color="#03A9F4" size={30} />}
-              />
-              <MetricCard
-                title="Top Productive Days"
-                content={
-                  <div className="flex flex-col gap-1">
-                    {metrics.topProductiveDays.map((day, index) => (
-                      <div key={index} className="text-sm flex justify-between">
-                        <span>{format(parseISO(day.date), "MMM dd")}</span>
-                        <span className="font-semibold text-gray-700">
-                          {day.completedTasks.toString().padStart(2, "0")}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                }
-                logo={<Star color="#FFC107" size={30} />}
               />
 
               <MetricCard
