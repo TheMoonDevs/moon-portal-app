@@ -4,6 +4,7 @@ import { User, WorkLogs } from "@prisma/client";
 import { uniqueId } from "lodash";
 import { getStatsOfContent } from "../WorklogEditor";
 import Image from "next/image";
+import { format, parseISO } from "date-fns";
 
 interface WorklogSummaryViewProps {
   worklogSummary: WorkLogs[];
@@ -42,7 +43,7 @@ export const WorklogSummaryView = ({
   workLogUser,
 }: WorklogSummaryViewProps) => {
   return worklogSummary.length > 0 ? (
-    <div className="p-8">
+    <div className="scrollable-container-summaryView p-8 h-[500px] overflow-y-auto no-scrollbar">
       {ArrayHelper.reverseSortByDate(worklogSummary, "date").map((worklog) => {
         const markdownData = worklog?.works[0];
         const stats = markdownData
@@ -53,7 +54,11 @@ export const WorklogSummaryView = ({
         const [completed, total] = stats;
 
         return (
-          <div key={worklog.title}>
+          <div
+            key={worklog.date}
+            data-date={format(parseISO(worklog.date || ""), "yyyy-MM-dd")}
+            className="py-4"
+          >
             <div className="flex items-center justify-between">
               <h1 className="text-sm uppercase tracking-[2px] font-bold text-neutral-500">
                 {worklog.title}

@@ -364,3 +364,9 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .cube:nth-child(3) {
   animation-delay: -0.2s;
 }
+
+.scrollable-container-summaryView {
+  position: relative;
+  max-height: 100%; 
+  overflow-y: auto;
+}

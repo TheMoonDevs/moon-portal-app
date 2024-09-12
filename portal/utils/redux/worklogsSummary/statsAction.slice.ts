@@ -1,12 +1,16 @@
 import { createSlice } from "@reduxjs/toolkit";
 
+interface StatsState {
+}
+
+const initialState: StatsState = {
+};
+
 export const statsActionSlice = createSlice({
   name: "statsActionSlice",
-  initialState: {
-  },
+  initialState,
   reducers: {
   },
 });
 
-export const { } = statsActionSlice.actions;
 export default statsActionSlice.reducer;
