@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+"use client";
+import React, { useEffect, useState } from "react";
 import { User, WorkLogs } from "@prisma/client";
 import { PieChart, BarChart } from "@mui/x-charts";
 import { format, parseISO } from "date-fns";
@@ -28,6 +29,10 @@ import ToolTip from "@/components/elements/ToolTip";
 // import Pie from "./PieChart";
 import dynamic from "next/dynamic";
 import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
+import {
+  setIsShowProductiveStreak,
+  setProductiveStreakData,
+} from "@/utils/redux/worklogsSummary/statsAction.slice";
 
 const LoadingAnimation = () => (
   <div className="flex items-end justify-between w-[45px] h-[27px] pb-1/5">
@@ -83,6 +88,9 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
   const [activeIndex, setActiveIndex] = useState(0);
   const [gridVisible, setGridVisible] = useState(true);
   const dispatch = useAppDispatch();
+  const { isShowProductiveStreak, productiveStreakData } = useAppSelector(
+    (state: RootState) => state.statsAction
+  );
 
   const weekdays = [
     "Monday",
@@ -106,11 +114,25 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
   const chartHeight = isSmallScreen ? 200 : 300;
   const barChartWidth = isSmallScreen ? 350 : 550;
 
+  useEffect(() => {
+    if (
+      metrics.longestProductiveStreakData.length > 0 &&
+      productiveStreakData.length === 0
+    ) {
+      dispatch(setProductiveStreakData(metrics.longestProductiveStreakData));
+    }
+  }, [metrics.longestProductiveStreakData, productiveStreakData, dispatch]);
+
   const handleCardClick = (cardTitle: string) => {
     if (cardTitle === "topProductiveDays") {
       const topProductiveDay = metrics.topProductiveDays[0];
       if (topProductiveDay) {
         scrollToWorklog(topProductiveDay.date);
+      }
+    }
+    if (cardTitle === "productiveStreak") {
+      if (productiveStreakData.length > 0) {
+        dispatch(setIsShowProductiveStreak(!isShowProductiveStreak));
       }
     }
     console.log(`Clicked card: ${cardTitle}`);
@@ -119,14 +141,17 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
   const scrollToWorklog = (date: string) => {
     const worklogElement = document.querySelector(`[data-date="${date}"]`);
     if (worklogElement) {
-      const container = worklogElement.closest(".scrollable-container-summaryView");
+      const container = worklogElement.closest(
+        ".scrollable-container-summaryView"
+      );
       if (container) {
         const containerRect = container.getBoundingClientRect();
         const elementRect = worklogElement.getBoundingClientRect();
         const offset = 20;
-        
-        const scrollPosition = elementRect.top + container.scrollTop - containerRect.top - offset;
-        
+
+        const scrollPosition =
+          elementRect.top + container.scrollTop - containerRect.top - offset;
+
         container.scrollTo({
           top: scrollPosition,
           behavior: "smooth",
@@ -136,7 +161,6 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
       }
     }
   };
-  
 
   return (
     <main className="flex flex-col justify-center gap-5 my-6 mx-2 px-2 pb-20 rounded-[32px] bg-white ">
@@ -321,7 +345,7 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
               />
               <MetricCard
                 title="Productive Streak"
-                content={`${metrics.longestProductiveStreak} Days`}
+                content={`${metrics.longestProductiveStreakData.length} Days`}
                 logo={<Sparkles color="#4CAF50 " size={30} />}
                 onClick={() => handleCardClick("productiveStreak")}
               />
