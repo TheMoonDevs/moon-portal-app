@@ -5,6 +5,7 @@ import { PieChart, BarChart } from "@mui/x-charts";
 import { format, parseISO } from "date-fns";
 import {
   calculateMetrics,
+  getCompletedTasks,
   getLongestProductiveStreak,
   getMissedTasks,
   getMissedWorklogDates,
@@ -44,6 +45,8 @@ import {
   setShowMissedTasks,
   setMissedTasksData,
   setUpdatedLogsDates,
+  setCompletedTasksData,
+  setShowCompletedTasks,
 } from "@/utils/redux/worklogsSummary/statsAction.slice";
 
 const LoadingAnimation = () => (
@@ -154,11 +157,19 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
     }
   }, [worklogSummary, dispatch]);
 
+  useEffect(() => {
+    if (worklogSummary.length > 0) {
+      const completedTasksData = getCompletedTasks(worklogSummary);
+      dispatch(setCompletedTasksData(completedTasksData));
+    }
+  }, [worklogSummary, dispatch]);
+
   const handleCardClick = (cardTitle: string) => {
     dispatch(setIsShowProductiveStreak(false));
     dispatch(setShowMissedLogs(false));
     dispatch(setShowUpdatedLogs(false));
     dispatch(setShowMissedTasks(false));
+    dispatch(setShowCompletedTasks(false));
 
     if (cardTitle === "topProductiveDays") {
       const topProductiveDay = metrics.topProductiveDays[0];
@@ -179,6 +190,9 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
     }
     if (cardTitle === "missedTasks") {
       dispatch(setShowMissedTasks(true));
+    }
+    if (cardTitle === "taskCompletionRate") {
+      dispatch(setShowCompletedTasks(true));
     }
   };
 
@@ -412,10 +426,10 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
                 onClick={() => handleCardClick("updatedLogsLater")}
               />
               <MetricCard
-                title="Update Frequency"
-                content={`${metrics.updateMetrics.updatedDays} Days`}
-                logo={<RefreshCw color="#2196F3 " size={30} />}
-                onClick={() => handleCardClick("updateFrequency")}
+                title="Missed Tasks"
+                content={`${metrics.missedTasks} Tasks`}
+                logo={<TriangleAlert color="#FF5722" size={30} />}
+                onClick={() => handleCardClick("missedTasks")}
               />
               <MetricCard
                 title="Average Tasks Per Day"
@@ -424,10 +438,10 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
                 onClick={() => handleCardClick("averageTasksPerDay")}
               />
               <MetricCard
-                title="Missed Tasks"
-                content={`${metrics.missedTasks} Tasks`}
-                logo={<TriangleAlert color="#FF5722" size={30} />}
-                onClick={() => handleCardClick("missedTasks")}
+                title="Update Frequency"
+                content={`${metrics.updateMetrics.updatedDays} Days`}
+                logo={<RefreshCw color="#2196F3 " size={30} />}
+                onClick={() => handleCardClick("updateFrequency")}
               />
             </div>
           </Stack>

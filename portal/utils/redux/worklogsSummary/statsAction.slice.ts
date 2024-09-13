@@ -16,6 +16,8 @@ interface StatsState {
   updatedLogsDates: string[];
   showMissedTasks: boolean;
   missedTasksData: MissedTask[];
+  showCompletedTasks: boolean;
+  completedTasksData: MissedTask[]
 }
 
 const initialState: StatsState = {
@@ -27,6 +29,8 @@ const initialState: StatsState = {
   updatedLogsDates: [],
   showMissedTasks: false,
   missedTasksData: [],
+  showCompletedTasks: false,
+  completedTasksData: []
 };
 
 export const statsActionSlice = createSlice({
@@ -57,8 +61,14 @@ export const statsActionSlice = createSlice({
     setMissedTasksData: (state, action: PayloadAction<MissedTask[]>) => {
       state.missedTasksData = action.payload;
     },
+    setShowCompletedTasks: (state, action: PayloadAction<boolean>) => {
+      state.showCompletedTasks = action.payload;
+    },
+    setCompletedTasksData: (state, action: PayloadAction<MissedTask[]>) => {
+      state.completedTasksData = action.payload;
+    },
   },
 });
 
-export const { setProductiveStreakData, setIsShowProductiveStreak, setShowMissedLogs, setMissedDates, setShowUpdatedLogs, setUpdatedLogsDates, setShowMissedTasks, setMissedTasksData } = statsActionSlice.actions;
+export const { setProductiveStreakData, setIsShowProductiveStreak, setShowMissedLogs, setMissedDates, setShowUpdatedLogs, setUpdatedLogsDates, setShowMissedTasks, setMissedTasksData, setShowCompletedTasks, setCompletedTasksData } = statsActionSlice.actions;
 export default statsActionSlice.reducer;
