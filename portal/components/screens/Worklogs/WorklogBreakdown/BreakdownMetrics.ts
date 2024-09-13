@@ -39,7 +39,7 @@ interface Metrics {
       inProgress: number;
     };
   };
-  missedLogs: number;
+  missedLogsDates: string[];
   updatedLogsLater: number;
 }
 
@@ -96,8 +96,8 @@ export function calculateMetrics(
 
   // const missedDates = getMissedLogs(worklogSummary, isMonthly, isYearly);
   // const missedLogsCount = missedDates.length;
-  const missedDated = getMissedWorklogDates(worklogSummary);
-  const missedLogsCount = missedDated.length;
+  const missedDates = getMissedWorklogDates(worklogSummary);
+  // const missedLogsCount = missedDates.length;
   const updatedLogsLater = getUpdatedLogsLater(worklogSummary);
 
   const longestProductiveStreakData = getLongestProductiveStreak(worklogSummary);
@@ -120,7 +120,7 @@ export function calculateMetrics(
     needClarificationTasks,
     highPriorityTasks,
     tasksByWeekday,
-    missedLogs: missedLogsCount,
+    missedLogsDates: missedDates,
     updatedLogsLater,
   };
 }
@@ -390,7 +390,7 @@ function isSameDay(date1: Date, date2: Date): boolean {
   );
 }
 
-function getMissedWorklogDates(logs: WorkLogs[]) {
+export function getMissedWorklogDates(logs: WorkLogs[]) {
   if (!logs.length) return [];
 
   const firstLogDate = dayjs(logs[0].date);

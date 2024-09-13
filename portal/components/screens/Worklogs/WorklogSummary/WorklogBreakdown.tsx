@@ -3,7 +3,11 @@ import React, { useEffect, useState } from "react";
 import { User, WorkLogs } from "@prisma/client";
 import { PieChart, BarChart } from "@mui/x-charts";
 import { format, parseISO } from "date-fns";
-import { calculateMetrics } from "../WorklogBreakdown/BreakdownMetrics";
+import {
+  calculateMetrics,
+  getLongestProductiveStreak,
+  getMissedWorklogDates,
+} from "../WorklogBreakdown/BreakdownMetrics";
 import MetricCard from "../WorklogBreakdown/MetricCard";
 import {
   AudioLines,
@@ -31,7 +35,9 @@ import dynamic from "next/dynamic";
 import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import {
   setIsShowProductiveStreak,
+  setMissedDates,
   setProductiveStreakData,
+  setShowMissedLogs,
 } from "@/utils/redux/worklogsSummary/statsAction.slice";
 
 const LoadingAnimation = () => (
@@ -88,9 +94,8 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
   const [activeIndex, setActiveIndex] = useState(0);
   const [gridVisible, setGridVisible] = useState(true);
   const dispatch = useAppDispatch();
-  const { isShowProductiveStreak, productiveStreakData } = useAppSelector(
-    (state: RootState) => state.statsAction
-  );
+  const { isShowProductiveStreak, productiveStreakData, showMissedLogs } =
+    useAppSelector((state: RootState) => state.statsAction);
 
   const weekdays = [
     "Monday",
@@ -115,15 +120,24 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
   const barChartWidth = isSmallScreen ? 350 : 550;
 
   useEffect(() => {
-    if (
-      metrics.longestProductiveStreakData.length > 0 &&
-      productiveStreakData.length === 0
-    ) {
-      dispatch(setProductiveStreakData(metrics.longestProductiveStreakData));
+    if (worklogSummary.length > 0) {
+      const newProductiveStreakData =
+        getLongestProductiveStreak(worklogSummary);
+      dispatch(setProductiveStreakData(newProductiveStreakData));
     }
-  }, [metrics.longestProductiveStreakData, productiveStreakData, dispatch]);
+  }, [worklogSummary, dispatch]);
+
+  useEffect(() => {
+    if (worklogSummary.length > 0) {
+      const missedDates = getMissedWorklogDates(worklogSummary);
+      dispatch(setMissedDates(missedDates));
+    }
+  }, [worklogSummary, dispatch]);
 
   const handleCardClick = (cardTitle: string) => {
+    dispatch(setIsShowProductiveStreak(false));
+    dispatch(setShowMissedLogs(false));
+
     if (cardTitle === "topProductiveDays") {
       const topProductiveDay = metrics.topProductiveDays[0];
       if (topProductiveDay) {
@@ -132,10 +146,13 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
     }
     if (cardTitle === "productiveStreak") {
       if (productiveStreakData.length > 0) {
-        dispatch(setIsShowProductiveStreak(!isShowProductiveStreak));
+        dispatch(setIsShowProductiveStreak(true));
+        console.log("Productive Streak Data:", productiveStreakData);
       }
     }
-    console.log(`Clicked card: ${cardTitle}`);
+    if (cardTitle === "missedLogs") {
+      dispatch(setShowMissedLogs(true));
+    }
   };
 
   const scrollToWorklog = (date: string) => {
@@ -357,7 +374,7 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
               />
               <MetricCard
                 title="Missed Logs"
-                content={`${metrics.missedLogs} Days`}
+                content={`${metrics.missedLogsDates.length} Days`}
                 logo={<CircleAlert color="#FF6347 " size={30} />}
                 onClick={() => handleCardClick("missedLogs")}
               />

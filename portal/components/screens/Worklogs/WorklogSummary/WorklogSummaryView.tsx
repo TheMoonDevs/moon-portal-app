@@ -9,6 +9,7 @@ import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import {
   setIsShowProductiveStreak,
   setProductiveStreakData,
+  setShowMissedLogs,
 } from "@/utils/redux/worklogsSummary/statsAction.slice";
 import dayjs from "dayjs";
 
@@ -44,14 +45,34 @@ const getCompletionEmoji = (completed: number, total: number) => {
   return null;
 };
 
+const FilterPill = ({
+  label,
+  onClick,
+}: {
+  label: string;
+  onClick: () => void;
+}) => {
+  return (
+    <button className="disabled:cursor-not-allowed flex gap-1 md:gap-2 items-center border bg-white text-sm text-black hover:bg-neutral-100 rounded-2xl px-2 py-1 mx-4 mt-5">
+      <span className="material-symbols-outlined !text-sm" onClick={onClick}>
+        cancel
+      </span>
+      <span>{label}</span>
+    </button>
+  );
+};
+
 export const WorklogSummaryView = ({
   worklogSummary,
   workLogUser,
 }: WorklogSummaryViewProps) => {
   const dispatch = useAppDispatch();
-  const { isShowProductiveStreak, productiveStreakData } = useAppSelector(
-    (state: RootState) => state.statsAction
-  );
+  const {
+    isShowProductiveStreak,
+    productiveStreakData,
+    missedDates,
+    showMissedLogs,
+  } = useAppSelector((state: RootState) => state.statsAction);
 
   const firstStreakDate =
     productiveStreakData?.[productiveStreakData.length - 1]?.date || "";
@@ -60,19 +81,17 @@ export const WorklogSummaryView = ({
   const formattedFirstDate = dayjs(firstStreakDate).format("MMMM D");
   const formattedLastDate = dayjs(lastStreakDate).format("MMMM D");
 
+  const missedLogMonth =
+    missedDates.length > 0 ? dayjs(missedDates[0]).format("MMMM YYYY") : "";
+
   const renderSummary = (summaryData: WorkLogs[]) =>
     summaryData.length > 0 ? (
       <>
         {isShowProductiveStreak && productiveStreakData.length > 0 && (
-          <button className="disabled:cursor-not-allowed flex gap-1 md:gap-2 items-center border bg-white text-sm text-black hover:bg-neutral-100 rounded-2xl px-2 py-1 mx-4 mt-5">
-            <span
-              className="material-symbols-outlined !text-sm"
-              onClick={() => dispatch(setIsShowProductiveStreak(false))}
-            >
-              cancel
-            </span>
-            <span>{`Productive Streak (${formattedFirstDate} to ${formattedLastDate})`}</span>
-          </button>
+          <FilterPill
+            onClick={() => dispatch(setIsShowProductiveStreak(false))}
+            label={`Productive Streak (${formattedFirstDate} to ${formattedLastDate})`}
+          />
         )}
         <div className="scrollable-container-summaryView p-8 h-[500px] overflow-y-auto ">
           {(!isShowProductiveStreak
@@ -109,7 +128,6 @@ export const WorklogSummaryView = ({
                   )}
                 </div>
                 {worklog.works.map((work: any, index: number) => {
-                  console.log("Markdown data for work: ", work?.content, worklog.date);
                   return (
                     <div key={index}>
                       <MdxAppEditor
@@ -140,7 +158,36 @@ export const WorklogSummaryView = ({
       </div>
     );
 
-  return isShowProductiveStreak
-    ? renderSummary(productiveStreakData)
-    : renderSummary(worklogSummary);
+  const renderMissedDates = (missedDates: string[]) => {
+    return (
+      <div className="bg-white shadow-md rounded-lg p-6 mb-4">
+        <div className="mb-4">
+          <FilterPill
+            onClick={() => dispatch(setShowMissedLogs(false))}
+            label={`Missed Logs (${missedLogMonth})`}
+          />
+        </div>
+        <div className="flex flex-col gap-3 px-3">
+          {missedDates.map((date: string) => (
+            <div key={date} className="border-b border-neutral-200 pb-2 mb-2">
+              <p className="text-base text-gray-800 tracking-wide">
+                {dayjs(date).format("D MMMM")}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+  return (
+    <>
+      {showMissedLogs && renderMissedDates(missedDates)}
+      {!showMissedLogs &&
+        isShowProductiveStreak &&
+        renderSummary(productiveStreakData)}
+      {!showMissedLogs &&
+        !isShowProductiveStreak &&
+        renderSummary(worklogSummary)}
+    </>
+  );
 };

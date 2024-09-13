@@ -4,11 +4,15 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 interface StatsState {
   productiveStreakData: WorkLogs[];
   isShowProductiveStreak: boolean;
+  showMissedLogs: boolean;
+  missedDates: string[]
 }
 
 const initialState: StatsState = {
   productiveStreakData: [],
   isShowProductiveStreak: false,
+  showMissedLogs: false,
+  missedDates: []
 };
 
 export const statsActionSlice = createSlice({
@@ -21,8 +25,14 @@ export const statsActionSlice = createSlice({
     setIsShowProductiveStreak: (state, action: PayloadAction<boolean>) => {
       state.isShowProductiveStreak = action.payload;
     },
+    setShowMissedLogs: (state, action: PayloadAction<boolean>) => {
+      state.showMissedLogs = action.payload;
+    },
+    setMissedDates: (state, action: PayloadAction<string[]>) => {
+      state.missedDates = action.payload;
+    },
   },
 });
 
-export const { setProductiveStreakData, setIsShowProductiveStreak } = statsActionSlice.actions;
+export const { setProductiveStreakData, setIsShowProductiveStreak, setShowMissedLogs, setMissedDates } = statsActionSlice.actions;
 export default statsActionSlice.reducer;
