@@ -10,6 +10,7 @@ import {
   MissedTask,
   setIsShowProductiveStreak,
   setProductiveStreakData,
+  setShowCompletedTasks,
   setShowMissedLogs,
   setShowMissedTasks,
   setShowUpdatedLogs,
@@ -79,6 +80,8 @@ export const WorklogSummaryView = ({
     updatedLogsDates,
     showMissedTasks,
     missedTasksData,
+    showCompletedTasks,
+    completedTasksData,
   } = useAppSelector((state: RootState) => state.statsAction);
 
   const firstStreakDate =
@@ -195,17 +198,23 @@ export const WorklogSummaryView = ({
     );
   };
 
-  const renderMissedtasks = (missedTasksData: MissedTask[]) => {
+  const renderTasks = (tasksData: MissedTask[], isCompletedTasks: boolean) => {
     return (
       <div className="">
         <FilterPill
-          onClick={() => dispatch(setShowMissedTasks(false))}
+          onClick={() =>
+            !isCompletedTasks
+              ? dispatch(setShowMissedTasks(false))
+              : dispatch(setShowCompletedTasks(false))
+          }
           label={
-            "You missed marking tasks as complete. Below are the tasks you missed."
+            !isCompletedTasks
+              ? "You missed marking tasks as complete. Below are the tasks you missed."
+              : "Completed Tasks"
           }
         />
         <div className="pt-8 px-8">
-          {missedTasksData.map((log, index) => {
+          {tasksData.map((log, index) => {
             return (
               <div key={log.title}>
                 <h1 className="text-sm uppercase tracking-[2px] font-bold text-neutral-500">
@@ -232,16 +241,19 @@ export const WorklogSummaryView = ({
     <>
       {showMissedLogs && renderDates(missedDates, false)}
       {showUpdatedLogs && renderDates(updatedLogsDates, true)}
-      {showMissedTasks && renderMissedtasks(missedTasksData)}
+      {showMissedTasks && renderTasks(missedTasksData, false)}
+      {showCompletedTasks && renderTasks(completedTasksData, true)}
       {!showMissedLogs &&
         !showUpdatedLogs &&
         !showMissedTasks &&
         isShowProductiveStreak &&
+        !showCompletedTasks &&
         renderSummary(productiveStreakData)}
       {!showUpdatedLogs &&
         !showMissedLogs &&
         !isShowProductiveStreak &&
         !showMissedTasks &&
+        !showCompletedTasks &&
         renderSummary(worklogSummary)}
     </>
   );

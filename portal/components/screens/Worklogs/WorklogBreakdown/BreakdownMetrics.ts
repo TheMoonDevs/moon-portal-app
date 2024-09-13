@@ -450,3 +450,30 @@ export function getMissedTasks(worklogSummary: WorkLogs[]): MissedTask[] {
   return Object.values(missedTasksByDate);
 }
 
+
+export function getCompletedTasks(worklogSummary: WorkLogs[]): MissedTask[] {
+  const completedTasksByDate: { [key: string]: { title: string; content: string; date: string } } = {};
+
+  worklogSummary.forEach((worklog) => {
+    const date = format(parseISO(worklog.date || ""), "yyyy-MM-dd");
+
+    worklog.works.forEach((work: any) => {
+      const tasks = work.content.split("\n").map((task: string) => task.trim());
+      tasks.forEach((task: string) => {
+        if (task.includes("✅")) {
+          if (!completedTasksByDate[date]) {
+            completedTasksByDate[date] = {
+              title: worklog.title || "Untitled",
+              content: task,
+              date: date,
+            };
+          } else {
+            completedTasksByDate[date].content += `\n${task}`;
+          }
+        }
+      });
+    });
+  });
+
+  return Object.values(completedTasksByDate);
+}
