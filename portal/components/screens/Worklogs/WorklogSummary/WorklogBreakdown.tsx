@@ -130,39 +130,14 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
 
   useEffect(() => {
     if (worklogSummary.length > 0) {
-      const newProductiveStreakData =
-        getLongestProductiveStreak(worklogSummary);
-      dispatch(setProductiveStreakData(newProductiveStreakData));
+      dispatch(setProductiveStreakData(getLongestProductiveStreak(worklogSummary)));
+      dispatch(setMissedDates(getMissedWorklogDates(worklogSummary)));
+      dispatch(setMissedTasksData(getMissedTasks(worklogSummary)));
+      dispatch(setUpdatedLogsDates(getUpdatedLogsLater(worklogSummary)));
+      dispatch(setCompletedTasksData(getCompletedTasks(worklogSummary)));
     }
   }, [worklogSummary, dispatch]);
-
-  useEffect(() => {
-    if (worklogSummary.length > 0) {
-      const missedDates = getMissedWorklogDates(worklogSummary);
-      dispatch(setMissedDates(missedDates));
-    }
-  }, [worklogSummary, dispatch]);
-
-  useEffect(() => {
-    if (worklogSummary.length > 0) {
-      const missedTasksData = getMissedTasks(worklogSummary);
-      dispatch(setMissedTasksData(missedTasksData));
-    }
-  }, [worklogSummary, dispatch]);
-
-  useEffect(() => {
-    if (worklogSummary.length > 0) {
-      const laterUpdatedLogsDates = getUpdatedLogsLater(worklogSummary);
-      dispatch(setUpdatedLogsDates(laterUpdatedLogsDates));
-    }
-  }, [worklogSummary, dispatch]);
-
-  useEffect(() => {
-    if (worklogSummary.length > 0) {
-      const completedTasksData = getCompletedTasks(worklogSummary);
-      dispatch(setCompletedTasksData(completedTasksData));
-    }
-  }, [worklogSummary, dispatch]);
+  
 
   const handleCardClick = (cardTitle: string) => {
     dispatch(setIsShowProductiveStreak(false));
