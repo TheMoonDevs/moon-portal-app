@@ -7,9 +7,11 @@ import Image from "next/image";
 import { format, parseISO } from "date-fns";
 import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import {
+  MissedTask,
   setIsShowProductiveStreak,
   setProductiveStreakData,
   setShowMissedLogs,
+  setShowMissedTasks,
   setShowUpdatedLogs,
 } from "@/utils/redux/worklogsSummary/statsAction.slice";
 import dayjs from "dayjs";
@@ -75,6 +77,8 @@ export const WorklogSummaryView = ({
     showMissedLogs,
     showUpdatedLogs,
     updatedLogsDates,
+    showMissedTasks,
+    missedTasksData,
   } = useAppSelector((state: RootState) => state.statsAction);
 
   const firstStreakDate =
@@ -163,7 +167,7 @@ export const WorklogSummaryView = ({
 
   const renderDates = (missedDates: string[], isUpdatedLogs: boolean) => {
     return (
-      <div className="bg-white shadow-md rounded-lg p-6 mb-4">
+      <div className="bg-white shadow-md rounded-lg  mb-4">
         <div className="mb-4">
           <FilterPill
             onClick={() =>
@@ -178,7 +182,7 @@ export const WorklogSummaryView = ({
             }
           />
         </div>
-        <div className="flex flex-col gap-3 px-3">
+        <div className="flex flex-col gap-3 px-6">
           {missedDates.map((date: string) => (
             <div key={date} className="border-b border-neutral-200 pb-2 mb-2">
               <p className="text-base text-gray-800 tracking-wide">
@@ -191,17 +195,53 @@ export const WorklogSummaryView = ({
     );
   };
 
+  const renderMissedtasks = (missedTasksData: MissedTask[]) => {
+    return (
+      <div className="">
+        <FilterPill
+          onClick={() => dispatch(setShowMissedTasks(false))}
+          label={
+            "You missed marking tasks as complete. Below are the tasks you missed."
+          }
+        />
+        <div className="pt-8 px-8">
+          {missedTasksData.map((log, index) => {
+            return (
+              <div key={log.title}>
+                <h1 className="text-sm uppercase tracking-[2px] font-bold text-neutral-500">
+                  {log.title}
+                </h1>
+                <div key={index}>
+                  <MdxAppEditor
+                    readOnly
+                    key={`work-${uniqueId()}`}
+                    markdown={log?.content}
+                    contentEditableClassName="summary_mdx flex flex-col gap-4 z-1"
+                    className="z-1"
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <>
       {showMissedLogs && renderDates(missedDates, false)}
       {showUpdatedLogs && renderDates(updatedLogsDates, true)}
+      {showMissedTasks && renderMissedtasks(missedTasksData)}
       {!showMissedLogs &&
         !showUpdatedLogs &&
+        !showMissedTasks &&
         isShowProductiveStreak &&
         renderSummary(productiveStreakData)}
       {!showUpdatedLogs &&
         !showMissedLogs &&
         !isShowProductiveStreak &&
+        !showMissedTasks &&
         renderSummary(worklogSummary)}
     </>
   );

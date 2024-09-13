@@ -12,6 +12,8 @@ import {
 import dayjs from 'dayjs';
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+import { getStatsOfContent } from "../WorklogSummary/Pattern";
+import { MissedTask } from "@/utils/redux/worklogsSummary/statsAction.slice";
 
 dayjs.extend(isSameOrAfter);
 dayjs.extend(isSameOrBefore);
@@ -41,6 +43,7 @@ interface Metrics {
   };
   missedLogsDates: string[];
   updatedLogsLater: string[];
+  missedTasks: number
 }
 
 enum TaskType {
@@ -102,6 +105,14 @@ export function calculateMetrics(
 
   const longestProductiveStreakData = getLongestProductiveStreak(worklogSummary);
 
+  const missedTasks = getMissedTasks(worklogSummary);
+
+  const totalRemainingTasks = missedTasks.reduce((acc, taskGroup) => {
+    const taskCount = taskGroup.content.split("\n").filter(task => task.trim() !== "").length;
+    return acc + taskCount;
+  }, 0);
+
+
   return {
     completedTasks,
     taskCompletionRate,
@@ -122,6 +133,7 @@ export function calculateMetrics(
     tasksByWeekday,
     missedLogsDates: missedDates,
     updatedLogsLater,
+    missedTasks: totalRemainingTasks
   };
 }
 
@@ -410,3 +422,31 @@ export function getMissedWorklogDates(logs: WorkLogs[]) {
 
   return missedDates;
 }
+
+export function getMissedTasks(worklogSummary: WorkLogs[]): MissedTask[] {
+  const missedTasksByDate: { [key: string]: { title: string; content: string; date: string } } = {};
+
+  worklogSummary.forEach((worklog) => {
+    const date = format(parseISO(worklog.date || ""), "yyyy-MM-dd");
+
+    worklog.works.forEach((work: any) => {
+      const tasks = work.content.split("\n").map((task: string) => task.trim());
+      tasks.forEach((task: string) => {
+        if (!task.includes("✅")) {
+          if (!missedTasksByDate[date]) {
+            missedTasksByDate[date] = {
+              title: worklog.title || "Untitled",
+              content: task,
+              date: date,
+            };
+          } else {
+            missedTasksByDate[date].content += `\n${task}`;
+          }
+        }
+      });
+    });
+  });
+
+  return Object.values(missedTasksByDate);
+}
+

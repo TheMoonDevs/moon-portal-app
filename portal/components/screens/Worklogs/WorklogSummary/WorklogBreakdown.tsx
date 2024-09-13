@@ -6,6 +6,7 @@ import { format, parseISO } from "date-fns";
 import {
   calculateMetrics,
   getLongestProductiveStreak,
+  getMissedTasks,
   getMissedWorklogDates,
   getUpdatedLogsLater,
 } from "../WorklogBreakdown/BreakdownMetrics";
@@ -40,6 +41,8 @@ import {
   setProductiveStreakData,
   setShowMissedLogs,
   setShowUpdatedLogs,
+  setShowMissedTasks,
+  setMissedTasksData,
   setUpdatedLogsDates,
 } from "@/utils/redux/worklogsSummary/statsAction.slice";
 
@@ -139,6 +142,13 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
 
   useEffect(() => {
     if (worklogSummary.length > 0) {
+      const missedTasksData = getMissedTasks(worklogSummary);
+      dispatch(setMissedTasksData(missedTasksData));
+    }
+  }, [worklogSummary, dispatch]);
+
+  useEffect(() => {
+    if (worklogSummary.length > 0) {
       const laterUpdatedLogsDates = getUpdatedLogsLater(worklogSummary);
       dispatch(setUpdatedLogsDates(laterUpdatedLogsDates));
     }
@@ -148,6 +158,7 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
     dispatch(setIsShowProductiveStreak(false));
     dispatch(setShowMissedLogs(false));
     dispatch(setShowUpdatedLogs(false));
+    dispatch(setShowMissedTasks(false));
 
     if (cardTitle === "topProductiveDays") {
       const topProductiveDay = metrics.topProductiveDays[0];
@@ -158,7 +169,6 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
     if (cardTitle === "productiveStreak") {
       if (productiveStreakData.length > 0) {
         dispatch(setIsShowProductiveStreak(true));
-        console.log("Productive Streak Data:", productiveStreakData);
       }
     }
     if (cardTitle === "missedLogs") {
@@ -166,6 +176,9 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
     }
     if (cardTitle === "updatedLogsLater") {
       dispatch(setShowUpdatedLogs(true));
+    }
+    if (cardTitle === "missedTasks") {
+      dispatch(setShowMissedTasks(true));
     }
   };
 
@@ -411,10 +424,10 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
                 onClick={() => handleCardClick("averageTasksPerDay")}
               />
               <MetricCard
-                title="High Priority Tasks"
-                content={`${metrics.highPriorityTasks} Tasks`}
+                title="Missed Tasks"
+                content={`${metrics.missedTasks} Tasks`}
                 logo={<TriangleAlert color="#FF5722" size={30} />}
-                onClick={() => handleCardClick("highPriorityTasks")}
+                onClick={() => handleCardClick("missedTasks")}
               />
             </div>
           </Stack>
