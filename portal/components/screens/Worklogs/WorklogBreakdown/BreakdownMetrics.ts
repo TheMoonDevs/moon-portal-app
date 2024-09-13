@@ -40,7 +40,7 @@ interface Metrics {
     };
   };
   missedLogsDates: string[];
-  updatedLogsLater: number;
+  updatedLogsLater: string[];
 }
 
 enum TaskType {
@@ -355,19 +355,18 @@ export function getMissedLogs(
   return missedDates;
 }
 
-function getUpdatedLogsLater(worklogSummary: WorkLogs[]): number {
-  let updatedLogsLater = 0;
+export function getUpdatedLogsLater(worklogSummary: WorkLogs[]): string[] {
+  const updatedLogsDates: string[] = [];
 
   worklogSummary.forEach((worklog) => {
     const logDate = parseISO(worklog.date || "");
-    const updatedAt = parseISO(worklog.updatedAt.toString());
+    const updatedAt = parseISO(worklog.updatedAt?.toString() || "");
 
     if (differenceInDays(updatedAt, logDate) > 0) {
-      updatedLogsLater++;
+      updatedLogsDates.push(worklog.date || "");
     }
   });
-
-  return updatedLogsLater;
+  return updatedLogsDates;
 }
 
 export function getAllDatesInRange(startDate: Date, endDate: Date): Date[] {

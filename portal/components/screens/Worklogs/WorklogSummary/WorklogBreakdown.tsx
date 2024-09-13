@@ -7,6 +7,7 @@ import {
   calculateMetrics,
   getLongestProductiveStreak,
   getMissedWorklogDates,
+  getUpdatedLogsLater,
 } from "../WorklogBreakdown/BreakdownMetrics";
 import MetricCard from "../WorklogBreakdown/MetricCard";
 import {
@@ -38,6 +39,8 @@ import {
   setMissedDates,
   setProductiveStreakData,
   setShowMissedLogs,
+  setShowUpdatedLogs,
+  setUpdatedLogsDates,
 } from "@/utils/redux/worklogsSummary/statsAction.slice";
 
 const LoadingAnimation = () => (
@@ -134,9 +137,17 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
     }
   }, [worklogSummary, dispatch]);
 
+  useEffect(() => {
+    if (worklogSummary.length > 0) {
+      const laterUpdatedLogsDates = getUpdatedLogsLater(worklogSummary);
+      dispatch(setUpdatedLogsDates(laterUpdatedLogsDates));
+    }
+  }, [worklogSummary, dispatch]);
+
   const handleCardClick = (cardTitle: string) => {
     dispatch(setIsShowProductiveStreak(false));
     dispatch(setShowMissedLogs(false));
+    dispatch(setShowUpdatedLogs(false));
 
     if (cardTitle === "topProductiveDays") {
       const topProductiveDay = metrics.topProductiveDays[0];
@@ -152,6 +163,9 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
     }
     if (cardTitle === "missedLogs") {
       dispatch(setShowMissedLogs(true));
+    }
+    if (cardTitle === "updatedLogsLater") {
+      dispatch(setShowUpdatedLogs(true));
     }
   };
 
@@ -380,7 +394,7 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
               />
               <MetricCard
                 title="Updated Logs Later"
-                content={`${metrics.updatedLogsLater} Times`}
+                content={`${metrics.updatedLogsLater.length} Times`}
                 logo={<History color="#FF9800" size={30} />}
                 onClick={() => handleCardClick("updatedLogsLater")}
               />
