@@ -20,7 +20,7 @@ interface Metrics {
   completedTasks: number;
   taskCompletionRate: number;
   averageTasksPerDay: number;
-  longestProductiveStreak: number;
+  longestProductiveStreakData: WorkLogs[];
   updateMetrics: { updatedDays: number };
   contributionPercentage: number;
   topProductiveDays: { date: string; completedTasks: number }[];
@@ -66,7 +66,7 @@ export function calculateMetrics(
   const completedTasks = getTaskCountByType(worklogSummary, TaskType.Completed);
   const taskCompletionRate = getTaskCompletionRate(worklogSummary);
   const averageTasksPerDay = getAverageTasksPerDay(worklogSummary);
-  const longestProductiveStreak = getLongestProductiveStreak(worklogSummary);
+  // const longestProductiveStreak = getLongestProductiveStreak(worklogSummary);
   const updateMetrics = getUpdateMetrics(worklogSummary);
   const contributionPercentage = getContributionPercentage(worklogSummary);
   const topProductiveDays = getTopProductiveDays(worklogSummary);
@@ -100,11 +100,13 @@ export function calculateMetrics(
   const missedLogsCount = missedDated.length;
   const updatedLogsLater = getUpdatedLogsLater(worklogSummary);
 
+  const longestProductiveStreakData = getLongestProductiveStreak(worklogSummary);
+
   return {
     completedTasks,
     taskCompletionRate,
     averageTasksPerDay,
-    longestProductiveStreak,
+    longestProductiveStreakData,
     updateMetrics,
     contributionPercentage,
     topProductiveDays,
@@ -161,27 +163,37 @@ function getAverageTasksPerDay(worklogSummary: WorkLogs[]): number {
   return totalTasks / uniqueDates.length;
 }
 
-function getLongestProductiveStreak(worklogSummary: WorkLogs[]): number {
+export function getLongestProductiveStreak(worklogSummary: WorkLogs[]): WorkLogs[] {
   const dates = worklogSummary
     .map((worklog) => parseISO(worklog.date || ""))
     .sort((a, b) => a.getTime() - b.getTime());
 
   let longestStreak = 0;
   let currentStreak = 1;
+  let longestStreakData: WorkLogs[] = [];
+  let currentStreakData: WorkLogs[] = [worklogSummary[0]];
 
   for (let i = 1; i < dates.length; i++) {
     const diff = differenceInDays(dates[i], dates[i - 1]);
     if (diff === 1) {
       currentStreak++;
+      currentStreakData.push(worklogSummary[i]);
     } else {
       if (currentStreak > longestStreak) {
         longestStreak = currentStreak;
+        longestStreakData = [...currentStreakData];
       }
       currentStreak = 1;
+      currentStreakData = [worklogSummary[i]];
     }
   }
 
-  return Math.max(longestStreak, currentStreak);
+  if (currentStreak > longestStreak) {
+    longestStreak = currentStreak;
+    longestStreakData = [...currentStreakData];
+  }
+
+  return longestStreakData;
 }
 
 function getTotalTasks(worklogSummary: WorkLogs[]): number {
