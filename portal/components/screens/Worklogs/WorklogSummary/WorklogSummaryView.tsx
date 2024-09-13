@@ -10,6 +10,7 @@ import {
   setIsShowProductiveStreak,
   setProductiveStreakData,
   setShowMissedLogs,
+  setShowUpdatedLogs,
 } from "@/utils/redux/worklogsSummary/statsAction.slice";
 import dayjs from "dayjs";
 
@@ -72,6 +73,8 @@ export const WorklogSummaryView = ({
     productiveStreakData,
     missedDates,
     showMissedLogs,
+    showUpdatedLogs,
+    updatedLogsDates,
   } = useAppSelector((state: RootState) => state.statsAction);
 
   const firstStreakDate =
@@ -158,13 +161,21 @@ export const WorklogSummaryView = ({
       </div>
     );
 
-  const renderMissedDates = (missedDates: string[]) => {
+  const renderDates = (missedDates: string[], isUpdatedLogs: boolean) => {
     return (
       <div className="bg-white shadow-md rounded-lg p-6 mb-4">
         <div className="mb-4">
           <FilterPill
-            onClick={() => dispatch(setShowMissedLogs(false))}
-            label={`Missed Logs (${missedLogMonth})`}
+            onClick={() =>
+              isUpdatedLogs
+                ? dispatch(setShowUpdatedLogs(false))
+                : dispatch(setShowMissedLogs(false))
+            }
+            label={
+              isUpdatedLogs
+                ? `Updated Logs (${missedLogMonth})`
+                : `Missed Logs (${missedLogMonth})`
+            }
           />
         </div>
         <div className="flex flex-col gap-3 px-3">
@@ -179,13 +190,17 @@ export const WorklogSummaryView = ({
       </div>
     );
   };
+
   return (
     <>
-      {showMissedLogs && renderMissedDates(missedDates)}
+      {showMissedLogs && renderDates(missedDates, false)}
+      {showUpdatedLogs && renderDates(updatedLogsDates, true)}
       {!showMissedLogs &&
+        !showUpdatedLogs &&
         isShowProductiveStreak &&
         renderSummary(productiveStreakData)}
-      {!showMissedLogs &&
+      {!showUpdatedLogs &&
+        !showMissedLogs &&
         !isShowProductiveStreak &&
         renderSummary(worklogSummary)}
     </>

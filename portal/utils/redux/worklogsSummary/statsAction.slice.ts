@@ -5,14 +5,18 @@ interface StatsState {
   productiveStreakData: WorkLogs[];
   isShowProductiveStreak: boolean;
   showMissedLogs: boolean;
-  missedDates: string[]
+  missedDates: string[];
+  showUpdatedLogs: boolean;
+  updatedLogsDates: string[];
 }
 
 const initialState: StatsState = {
   productiveStreakData: [],
   isShowProductiveStreak: false,
   showMissedLogs: false,
-  missedDates: []
+  missedDates: [],
+  showUpdatedLogs: false,
+  updatedLogsDates: []
 };
 
 export const statsActionSlice = createSlice({
@@ -31,8 +35,14 @@ export const statsActionSlice = createSlice({
     setMissedDates: (state, action: PayloadAction<string[]>) => {
       state.missedDates = action.payload;
     },
+    setShowUpdatedLogs: (state, action: PayloadAction<boolean>) => {
+      state.showUpdatedLogs = action.payload;
+    },
+    setUpdatedLogsDates: (state, action: PayloadAction<string[]>) => {
+      state.updatedLogsDates = action.payload;
+    },
   },
 });
 
-export const { setProductiveStreakData, setIsShowProductiveStreak, setShowMissedLogs, setMissedDates } = statsActionSlice.actions;
+export const { setProductiveStreakData, setIsShowProductiveStreak, setShowMissedLogs, setMissedDates, setShowUpdatedLogs, setUpdatedLogsDates } = statsActionSlice.actions;
 export default statsActionSlice.reducer;
