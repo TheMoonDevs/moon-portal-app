@@ -34,6 +34,7 @@ import {
 import WorklogBuff from "./WorklogTabs/WorklogBuff";
 import ClickupTasks from "./WorklogTabs/ClickupTasks";
 import { PrivateWorklogView } from "./PrivateWorklogView";
+import { usePassphrase } from "@/utils/hooks/usePassphrase";
 const tempData = [
   {
     id: "idsdjneslnfrnleskdnelrnv",
@@ -301,6 +302,7 @@ export const WorklogsPage = () => {
       content: <TodoTab userId={user?.id as string} />,
     },
   ];
+  const { localPassphrase } = usePassphrase();
 
   const handleWorkLogItemClick = (data: WorkLogs, isEditorSaving: boolean) => {
     if (isEditorSaving) {
@@ -416,14 +418,16 @@ export const WorklogsPage = () => {
               setMonthTab={setMonthTab}
               handleNextMonthClick={handleNextMonthClick}
             />
-            <PrivateWorklogView
-              // id={selectedID}
-              date={centerdate.format("YYYY-MM-DD")}
-              logType={"privateWorklogs"}
-              monthTab={monthTab}
-              setMonthTab={setMonthTab}
-              handleNextMonthClick={handleNextMonthClick}
-            />
+            {localPassphrase && (
+              <PrivateWorklogView
+                date={centerdate.format("YYYY-MM-DD")}
+                localPassphrase={localPassphrase}
+                logType={"privateWorklogs"}
+                // monthTab={monthTab}
+                // setMonthTab={setMonthTab}
+                // handleNextMonthClick={handleNextMonthClick}
+              />
+            )}
           </div>
           <div className="grid grid-cols-2 lg:w-[30%] gap-3 p-2 max-lg:grid-cols-4 max-md:grid-cols-2 max-h-[80vh] overflow-y-scroll m-3">
             {filteredLogs.map(
