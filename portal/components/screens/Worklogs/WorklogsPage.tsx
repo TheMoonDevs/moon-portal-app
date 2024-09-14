@@ -4,7 +4,7 @@ import { MdxAppEditor } from "@/utils/configure/MdxAppEditor";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
 import { useUser } from "@/utils/hooks/useUser";
 import { PortalSdk } from "@/utils/services/PortalSdk";
-import { DocMarkdown, WorkLogs } from "@prisma/client";
+import { WorkLogs } from "@prisma/client";
 import Link from "next/link";
 import React, {
   RefObject,
@@ -33,6 +33,7 @@ import {
 } from "@/utils/redux/worklogs/laterTodos.slice";
 import WorklogBuff from "./WorklogTabs/WorklogBuff";
 import ClickupTasks from "./WorklogTabs/ClickupTasks";
+import { PrivateWorklogView } from "./PrivateWorklogView";
 const tempData = [
   {
     id: "idsdjneslnfrnleskdnelrnv",
@@ -411,6 +412,14 @@ export const WorklogsPage = () => {
               id={selectedID}
               date={centerdate.format("YYYY-MM-DD")}
               logType={"dayLog"}
+              monthTab={monthTab}
+              setMonthTab={setMonthTab}
+              handleNextMonthClick={handleNextMonthClick}
+            />
+            <PrivateWorklogView
+              // id={selectedID}
+              date={centerdate.format("YYYY-MM-DD")}
+              logType={"privateWorklogs"}
               monthTab={monthTab}
               setMonthTab={setMonthTab}
               handleNextMonthClick={handleNextMonthClick}
