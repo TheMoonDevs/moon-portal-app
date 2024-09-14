@@ -55,16 +55,26 @@ export const PrivateWorklogView = ({
     (content: string) => {
       if (!user?.id) return;
       setSaving(true);
+      const secretKey = hashPassphrase("karthik").hash;
+      console.log("Saving content:", content);
+      console.log("Secret key:", secretKey);
+      const encryptedContent = encryptData(content, secretKey);
+      console.log("Encrypted content:", encryptedContent);
+
       PortalSdk.putData(`/api/user/worklogs/private`, {
         userId: user?.id,
         logType: "privateWorklogs",
         markdown: {
-          content: encryptData(content, hashPassphrase("karthik").hash),
+          content: encryptedContent,
         },
         date,
       })
         .then(() => {
           console.log("Markdown saved successfully");
+          // Verify decryption
+          const decryptedContent = decryptData(encryptedContent, secretKey);
+          console.log("Decrypted content:", decryptedContent);
+          console.log("Decryption successful:", content === decryptedContent);
         })
         .catch((error) => {
           console.error("Error saving markdown", error);
@@ -87,13 +97,12 @@ export const PrivateWorklogView = ({
     PortalSdk.getData(`/api/user/worklogs/private${query}`, null)
       .then((data) => {
         const worklog = data?.data;
-        console.log(worklog?.markdown?.content);
-        console.log(
-          decryptData(
-            worklog?.markdown?.content,
-            hashPassphrase("karthik").hash
-          )
+        const decryptedContent = decryptData(
+          worklog?.markdown?.content,
+          hashPassphrase("karthik").hash
         );
+        console.log("Fetched encrypted content:", worklog?.markdown?.content);
+        console.log("Decrypted content:", decryptedContent);
         setPrivateWorklogs({
           ...worklog,
           markdown: {
@@ -193,7 +202,7 @@ export const PrivateWorklogView = ({
           key={`${user?.id}`}
           markdown={privateWorklogsMdx}
           className="flex-grow h-full"
-          placeholder="hehe"
+          placeholder="* Write your private logs here ..."
           contentEditableClassName={`mdx_ce ${
             privateWorklogsMdx?.trim() === MARKDOWN_PLACEHOLDER.trim()
               ? "mdx_uninit"

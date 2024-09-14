@@ -1,14 +1,16 @@
-import { pbkdf2Sync, randomBytes } from "crypto";
+import { pbkdf2Sync } from "crypto";
 
-const SALT_LENGTH = 16;
+const ITERATIONS = 10000;
 const KEY_LENGTH = 32;
-const ITERATIONS = 100000;
 
 export const hashPassphrase = (
   passphrase: string,
-  salt?: Buffer
+  salt?: string
 ): { hash: string; salt: string } => {
-  const usedSalt = salt || randomBytes(SALT_LENGTH);
+  // Use a fixed salt for debugging (DO NOT USE IN PRODUCTION)
+  const fixedSalt = "debugSalt123456789";
+  const usedSalt = salt || fixedSalt;
+
   const hash = pbkdf2Sync(
     passphrase,
     usedSalt,
@@ -16,20 +18,19 @@ export const hashPassphrase = (
     KEY_LENGTH,
     "sha256"
   );
+
   return {
     hash: hash.toString("hex"),
-    salt: usedSalt.toString("hex"),
+    salt: usedSalt,
   };
 };
 
-export const verifyPassphrase = (
-  passphrase: string,
-  hash: string,
-  salt: string
-): boolean => {
-  const { hash: newHash } = hashPassphrase(
-    passphrase,
-    Buffer.from(salt, "hex")
-  );
-  return newHash === hash;
+// Helper function to log hashing process
+export const logHashingProcess = (passphrase: string) => {
+  console.log("Passphrase:", passphrase);
+  const result = hashPassphrase(passphrase);
+  console.log("Hashed result:", result);
+  const result2 = hashPassphrase(passphrase);
+  console.log("Hashed result (second call):", result2);
+  console.log("Hash consistent:", result.hash === result2.hash);
 };
