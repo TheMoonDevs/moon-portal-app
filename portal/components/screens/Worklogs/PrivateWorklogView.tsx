@@ -1,142 +1,89 @@
-"use client";
-
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useUser } from "@/utils/hooks/useUser";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { DocMarkdown } from "@prisma/client";
-import {
-  Dispatch,
-  SetStateAction,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
-import { WorklogEditor } from "./WorklogEditor";
-import dayjs from "dayjs";
-import store from "@/utils/redux/store";
 import { MDXEditorMethods } from "@mdxeditor/editor";
 import { debounce } from "lodash";
 import { MdxAppEditor } from "@/utils/configure/MdxAppEditor";
 import { decryptData, encryptData } from "@/utils/privacy/encryption";
-import { hashPassphrase } from "@/utils/privacy/hashing";
 
-export const MARKDOWN_PLACEHOLDER = `*`;
+const MARKDOWN_PLACEHOLDER = "*";
 
-export const PrivateWorklogView = ({
+interface PrivateWorklogViewProps {
+  date: string;
+  logType?: string;
+  localPassphrase: string;
+  visible?: boolean;
+}
+
+export const PrivateWorklogView: React.FC<PrivateWorklogViewProps> = ({
   date,
   logType = "dayLog",
-  compactView,
+  localPassphrase,
   visible = true,
-  monthTab,
-  setMonthTab,
-  handleNextMonthClick,
-}: {
-  date: string;
-  compactView?: boolean;
-  visible?: boolean;
-  logType?: string | null;
-  monthTab?: number;
-  setMonthTab?: Dispatch<SetStateAction<number>>;
-  handleNextMonthClick?: () => void;
 }) => {
   const { user } = useUser();
-
-  const [privateWorklogs, setPrivateWorklogs] = useState<DocMarkdown | null>(
-    null
-  );
-  const [privateWorklogsMdx, setPrivateWorklogsMdx] =
-    useState<string>(MARKDOWN_PLACEHOLDER);
+  const [worklog, setWorklog] = useState<DocMarkdown | null>(null);
+  const [content, setContent] = useState<string>(MARKDOWN_PLACEHOLDER);
   const [loading, setLoading] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
-  const mdRef = useRef<MDXEditorMethods | null>(null);
+  const editorRef = useRef<MDXEditorMethods>(null);
 
-  // Debounced save function
-  const saveMarkdownContent = useCallback(
-    (content: string) => {
+  const fetchWorklog = useCallback(async () => {
+    if (!user?.id || !date) return;
+
+    setLoading(true);
+    try {
+      const query = `?logType=${logType}&userId=${user.id}&date=${date}`;
+      const { data } = await PortalSdk.getData(
+        `/api/user/worklogs/private${query}`,
+        null
+      );
+      const decryptedContent = decryptData(
+        data?.markdown?.content,
+        localPassphrase
+      );
+
+      setWorklog(data);
+      setContent(decryptedContent || MARKDOWN_PLACEHOLDER);
+      editorRef.current?.setMarkdown(decryptedContent || MARKDOWN_PLACEHOLDER);
+    } catch (error) {
+      console.error("Error fetching worklog:", error);
+      setContent(MARKDOWN_PLACEHOLDER);
+      editorRef.current?.setMarkdown(MARKDOWN_PLACEHOLDER);
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.id, date, logType, localPassphrase]);
+
+  const saveWorklog = useCallback(
+    async (newContent: string) => {
       if (!user?.id) return;
-      setSaving(true);
-      const secretKey = hashPassphrase("karthik").hash;
-      console.log("Saving content:", content);
-      console.log("Secret key:", secretKey);
-      const encryptedContent = encryptData(content, secretKey);
-      console.log("Encrypted content:", encryptedContent);
 
-      PortalSdk.putData(`/api/user/worklogs/private`, {
-        userId: user?.id,
-        logType: "privateWorklogs",
-        markdown: {
-          content: encryptedContent,
-        },
-        date,
-      })
-        .then(() => {
-          console.log("Markdown saved successfully");
-          // Verify decryption
-          const decryptedContent = decryptData(encryptedContent, secretKey);
-          console.log("Decrypted content:", decryptedContent);
-          console.log("Decryption successful:", content === decryptedContent);
-        })
-        .catch((error) => {
-          console.error("Error saving markdown", error);
-        })
-        .finally(() => {
-          setSaving(false);
+      setSaving(true);
+      try {
+        const encryptedContent = encryptData(newContent, localPassphrase);
+        await PortalSdk.putData(`/api/user/worklogs/private`, {
+          userId: user.id,
+          logType: "privateWorklogs",
+          docId: worklog?.docId,
+          markdown: { content: encryptedContent },
+          date,
         });
+        console.log("Worklog saved successfully");
+      } catch (error) {
+        console.error("Error saving worklog:", error);
+      } finally {
+        setSaving(false);
+      }
     },
-    [user?.id, date]
+    [user?.id, worklog?.docId, date, localPassphrase]
   );
 
-  const debouncedSave = useCallback(debounce(saveMarkdownContent, 1000), [
-    saveMarkdownContent,
-  ]);
+  const debouncedSave = useCallback(debounce(saveWorklog, 1000), [saveWorklog]);
 
-  const refreshWorklogs = useCallback(() => {
-    if (!user?.id || !date) return;
-    setLoading(true);
-    let query = `?logType=${logType}&userId=${user?.id}&date=${date}`;
-    PortalSdk.getData(`/api/user/worklogs/private${query}`, null)
-      .then((data) => {
-        const worklog = data?.data;
-        const decryptedContent = decryptData(
-          worklog?.markdown?.content,
-          hashPassphrase("karthik").hash
-        );
-        console.log("Fetched encrypted content:", worklog?.markdown?.content);
-        console.log("Decrypted content:", decryptedContent);
-        setPrivateWorklogs({
-          ...worklog,
-          markdown: {
-            content: decryptData(
-              worklog?.markdown?.content,
-              hashPassphrase("karthik").hash
-            ),
-          },
-        });
-        setPrivateWorklogsMdx(
-          decryptData(
-            worklog?.markdown?.content,
-            hashPassphrase("karthik").hash
-          ) || MARKDOWN_PLACEHOLDER
-        );
-        mdRef?.current?.setMarkdown(
-          decryptData(
-            worklog?.markdown?.content,
-            hashPassphrase("karthik").hash
-          )
-        );
-      })
-      .catch((err) => {
-        console.error(err);
-        setPrivateWorklogsMdx(MARKDOWN_PLACEHOLDER);
-        mdRef?.current?.setMarkdown(MARKDOWN_PLACEHOLDER);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, [logType, user?.id, date]);
-
-  const handleMarkdownChange = useCallback(
-    (content: string) => {
+  const handleContentChange = useCallback(
+    (newContent: string) => {
       const emojiMap: { [key: string]: string } = {
         ":check:": "✅",
         ":cross:": "❌",
@@ -149,26 +96,27 @@ export const PrivateWorklogView = ({
         ":star:": "⭐",
       };
 
-      let newContent = content;
-      for (const text in emojiMap) {
-        newContent = newContent.replaceAll(text, emojiMap[text]);
+      let processedContent = newContent;
+      for (const [text, emoji] of Object.entries(emojiMap)) {
+        processedContent = processedContent.replaceAll(text, emoji);
       }
 
-      if (newContent.trim() === "") {
-        newContent = MARKDOWN_PLACEHOLDER;
+      if (processedContent.trim() === "") {
+        processedContent = MARKDOWN_PLACEHOLDER;
       }
 
-      mdRef.current?.setMarkdown(newContent);
-      setPrivateWorklogsMdx(newContent);
-      debouncedSave(newContent);
+      setContent(processedContent);
+      editorRef.current?.setMarkdown(processedContent);
+      debouncedSave(processedContent);
     },
     [debouncedSave]
   );
 
   useEffect(() => {
-    if (!user?.id) return;
-    refreshWorklogs();
-  }, [user?.id, logType, date, refreshWorklogs]);
+    if (user?.id) {
+      fetchWorklog();
+    }
+  }, [user?.id, date, fetchWorklog]);
 
   if (!visible) return null;
 
@@ -176,39 +124,32 @@ export const PrivateWorklogView = ({
     <div className="px-4">
       <div className="text-sm flex items-center gap-2 leading-3 mb-2 text-neutral-500">
         {(saving || loading) && (
-          <div className="animate-spin rounded-full h-3 w-3 border-t-2 border-b-2 border-neutral-800"></div>
+          <div className="animate-spin rounded-full h-3 w-3 border-t-2 border-b-2 border-neutral-800" />
         )}
-        {/* {date ? dayjs(date).format("DD-MM-YYYY") : "My logs"} */}
-        PRIVATE LOGS
-        {" - "}
-        {saving ? "Saving..." : loading ? "Fetching..." : "Saved"}
+        PRIVATE LOGS - {saving ? "Saving..." : loading ? "Loading..." : "Saved"}
       </div>
       <div
         onKeyDown={(e) => {
           if (e.ctrlKey && e.key === "s") {
             e.preventDefault();
-            console.log("Saving Worklogs");
-            saveMarkdownContent(privateWorklogsMdx);
+            saveWorklog(content);
           }
           if (e.ctrlKey && e.key === "r") {
             e.preventDefault();
-            console.log("Refreshing Worklogs");
-            refreshWorklogs();
+            fetchWorklog();
           }
         }}
       >
         <MdxAppEditor
-          ref={mdRef}
-          key={`${user?.id}`}
-          markdown={privateWorklogsMdx}
+          ref={editorRef}
+          markdown={content}
           className="flex-grow h-full"
           placeholder="* Write your private logs here ..."
           contentEditableClassName={`mdx_ce ${
-            privateWorklogsMdx?.trim() === MARKDOWN_PLACEHOLDER.trim()
-              ? "mdx_uninit"
-              : ""
+            content.trim() === MARKDOWN_PLACEHOLDER ? "mdx_uninit" : ""
           } leading-1 imp-p-0 grow w-full h-full`}
-          onChange={handleMarkdownChange}
+          onChange={handleContentChange}
+          key={user?.id + date}
         />
       </div>
     </div>
