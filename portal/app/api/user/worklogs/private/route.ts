@@ -14,8 +14,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const docId = `${userId}-privateWorklogs`;
-
     if (!date) {
       return NextResponse.json(
         { success: false, error: "date is required" },
@@ -23,10 +21,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const docId = `${userId}-privateWorklogs-${date}`;
+
     const docMarkdown = await prisma.docMarkdown.findUnique({
       where: {
         docId: docId,
-        date: date,
         ...(logType && { logType }),
       },
     });
@@ -66,7 +65,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const docId = `${userId}-privateWorklogs`;
+    const docId = `${userId}-privateWorklogs-${date}`;
 
     const newDocMarkdown = await prisma.docMarkdown.upsert({
       where: {
