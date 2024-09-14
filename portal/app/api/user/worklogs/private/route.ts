@@ -5,8 +5,8 @@ export async function GET(request: NextRequest) {
   try {
     const userId = request.nextUrl.searchParams.get("userId") as string;
     const logType = request.nextUrl.searchParams.get("logType") as string;
-    console.log(userId);
-    console.log(logType);
+    const date = request.nextUrl.searchParams.get("date") as string;
+    console.log("??????????", date);
     if (!userId) {
       return NextResponse.json(
         { success: false, error: "userId is required" },
@@ -16,9 +16,17 @@ export async function GET(request: NextRequest) {
 
     const docId = `${userId}-privateWorklogs`;
 
+    if (!date) {
+      return NextResponse.json(
+        { success: false, error: "date is required" },
+        { status: 400 }
+      );
+    }
+
     const docMarkdown = await prisma.docMarkdown.findUnique({
       where: {
         docId: docId,
+        date: date,
         ...(logType && { logType }),
       },
     });
