@@ -5,7 +5,8 @@ import { DocMarkdown } from "@prisma/client";
 import { MDXEditorMethods } from "@mdxeditor/editor";
 import { debounce } from "lodash";
 import { MdxAppEditor } from "@/utils/configure/MdxAppEditor";
-import { decryptData, encryptData } from "@/utils/privacy/encryption";
+import { decryptData, encryptData } from "@/utils/security/encryption";
+import { toast } from "sonner";
 
 const MARKDOWN_PLACEHOLDER = "*";
 
@@ -47,8 +48,10 @@ export const PrivateWorklogView: React.FC<PrivateWorklogViewProps> = ({
       setWorklog(data);
       setContent(decryptedContent || MARKDOWN_PLACEHOLDER);
       editorRef.current?.setMarkdown(decryptedContent || MARKDOWN_PLACEHOLDER);
+      toast.success("Worklog fetched successfully.");
     } catch (error) {
       console.error("Error fetching worklog:", error);
+      toast.error("Failed to fetch worklog.");
       setContent(MARKDOWN_PLACEHOLDER);
       editorRef.current?.setMarkdown(MARKDOWN_PLACEHOLDER);
     } finally {
@@ -71,8 +74,10 @@ export const PrivateWorklogView: React.FC<PrivateWorklogViewProps> = ({
           date,
         });
         console.log("Worklog saved successfully");
+        toast.success("Worklog saved successfully.");
       } catch (error) {
         console.error("Error saving worklog:", error);
+        toast.error("Failed to save worklog.");
       } finally {
         setSaving(false);
       }
