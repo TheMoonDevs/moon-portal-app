@@ -1,31 +1,35 @@
-import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
-import { hashPassphrase, verifyPassphrase } from "./hashing";
+import CryptoJS from "crypto-js";
 
-const IV_LENGTH = 12;
+// Use a fixed IV for debugging (DO NOT USE IN PRODUCTION)
+const fixedIV = CryptoJS.enc.Utf8.parse("1234567890123456");
 
-export function encryptData(data: string, key: string): string {
-  const iv = randomBytes(IV_LENGTH);
-  const cipher = createCipheriv("aes-256-gcm", Buffer.from(key, "hex"), iv);
-  const encrypted = Buffer.concat([
-    cipher.update(data, "utf8"),
-    cipher.final(),
-  ]);
-  const tag = cipher.getAuthTag();
-  return Buffer.concat([iv, tag, encrypted]).toString("base64");
+export function encryptData(plainText: string, secret: string): string {
+  const key = CryptoJS.enc.Utf8.parse(secret);
+  const encrypted = CryptoJS.AES.encrypt(plainText, key, {
+    iv: fixedIV,
+    mode: CryptoJS.mode.CBC,
+    padding: CryptoJS.pad.Pkcs7,
+  });
+  return encrypted.toString();
 }
 
-export function decryptData(encryptedData: string, key: string): string {
-  const data = Buffer.from(encryptedData, "base64");
-  const iv = data.slice(0, IV_LENGTH);
-  const tag = data.slice(IV_LENGTH, IV_LENGTH + 16);
-  const encrypted = data.slice(IV_LENGTH + 16);
-  const decipher = createDecipheriv("aes-256-gcm", Buffer.from(key, "hex"), iv);
-  decipher.setAuthTag(tag);
-  return decipher.update(encrypted) + decipher.final("utf8");
+export function decryptData(cipherText: string, secret: string): string {
+  const key = CryptoJS.enc.Utf8.parse(secret);
+  const decrypted = CryptoJS.AES.decrypt(cipherText, key, {
+    iv: fixedIV,
+    mode: CryptoJS.mode.CBC,
+    padding: CryptoJS.pad.Pkcs7,
+  });
+  return decrypted.toString(CryptoJS.enc.Utf8);
 }
 
-async function verifyWithBackend(hash: string, salt: string) {
-  // Implement backend verification logic here
-  // This should send the hash and salt to the backend for verification
-  // Return true if verified, false otherwise
+// Helper function to log encryption/decryption process
+export function logEncryptionProcess(plainText: string, secret: string) {
+  console.log("Plain text:", plainText);
+  console.log("Secret:", secret);
+  const encrypted = encryptData(plainText, secret);
+  console.log("Encrypted:", encrypted);
+  const decrypted = decryptData(encrypted, secret);
+  console.log("Decrypted:", decrypted);
+  console.log("Decryption successful:", plainText === decrypted);
 }

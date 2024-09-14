@@ -27,6 +27,7 @@ const initialUserState: User = {
   name: "",
   username: "",
   password: "",
+  passphrase: "",
   email: "",
   avatar: "",
   house: HOUSEID.PRODUCT_TECH,
