@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { hashPassphrase } from "@/utils/privacy/hashing";
+import { hashPassphrase } from "@/utils/security/hashing";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { useUser } from "@/utils/hooks/useUser";
 import { LOCAL_STORAGE } from "../constants/appInfo";
