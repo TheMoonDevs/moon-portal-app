@@ -23,6 +23,7 @@ import Link from "next/link";
 import Events from "./Events";
 
 import { PassphraseModal } from "./PassphraseModal";
+import { Toaster } from "sonner";
 
 const MemberHomePage = () => {
   const { user } = useUser();
@@ -84,6 +85,7 @@ const MemberHomePage = () => {
         </div>
       </div>
       <div className="h-[300px]"></div>
+      <Toaster />
     </div>
   );
 };
