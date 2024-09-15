@@ -1,6 +1,5 @@
 "use client";
 import { QUICKLINK_ROUTES } from "@/utils/constants/appInfo";
-import { Directory } from "@prisma/client";
 import Link from "next/link";
 import { useQuickLinkDirectory } from "../../hooks/useQuickLinkDirectory";
 import { useState, FC, ReactNode, MouseEvent } from "react";
@@ -9,6 +8,12 @@ import { useAppDispatch } from "@/utils/redux/store";
 import { Divider, Tooltip } from "@mui/material";
 import { useUser } from "@/utils/hooks/useUser";
 import { setModal } from "@/utils/redux/quicklinks/slices/quicklinks.ui.slice";
+import { DirectoryList, ROOTTYPE } from "@prisma/client";
+import {
+  deleteDirectory,
+  updateDirectory,
+} from "@/utils/redux/quicklinks/slices/quicklinks.directory.slice";
+import { handleDeleteDirectory } from "@/utils/redux/quicklinks/quicklinks.thunks";
 
 // Types for constants and props
 interface NavItem {
@@ -26,7 +31,7 @@ interface SidebarNavItemProps {
 }
 
 interface SidebarSubNavProps {
-  dirs: Omit<Directory, "timestamp">[];
+  dirs: DirectoryList[];
   user: any;
   route: string;
   isActive: boolean;
@@ -39,7 +44,7 @@ interface ExpandedState {
 }
 
 // Constants for default directories and navigation items
-const ROOT_DIRECTORIES: Omit<Directory, "timestamp">[] = [
+const ROOT_DIRECTORIES: Omit<DirectoryList, "timestamp">[] = [
   {
     id: "root-my-dashboard",
     title: "My Dashboard",
@@ -49,6 +54,8 @@ const ROOT_DIRECTORIES: Omit<Directory, "timestamp">[] = [
     position: 10,
     isArchive: false,
     clickCount: 0,
+    tabType: null,
+    type: null,
   },
   {
     id: "COMMON_RESOURCES",
@@ -59,6 +66,8 @@ const ROOT_DIRECTORIES: Omit<Directory, "timestamp">[] = [
     position: 20,
     isArchive: false,
     clickCount: 0,
+    tabType: null,
+    type: null,
   },
   {
     id: "DEPARTMENT",
@@ -69,6 +78,8 @@ const ROOT_DIRECTORIES: Omit<Directory, "timestamp">[] = [
     position: 20,
     isArchive: false,
     clickCount: 0,
+    tabType: null,
+    type: null,
   },
 ];
 
@@ -99,7 +110,7 @@ const NAV_ITEMS = {
     },
     {
       title: "Top Used Folders",
-      icon: "history",
+      icon: "folder_special",
       route: QUICKLINK_ROUTES.userTopUsedFolders,
     },
   ],
@@ -126,12 +137,14 @@ const SidebarNavItem: FC<SidebarNavItemProps> = ({
   <li
     className={`${
       children ? "flex flex-col items-start" : "flex items-center"
-    } justify-between  py-2 px-3 cursor-pointer hover:bg-neutral-100 rounded-2xl ${
-      isActive && "bg-neutral-100"
-    }`}
-    onClick={onClick}
+    } justify-between  cursor-pointer rounded-2xl w-full `}
   >
-    <div className="flex justify-between items-center">
+    <div
+      className={`flex justify-between hover:bg-neutral-100 items-center py-2 px-3 rounded-3xl w-full ${
+        isActive && "bg-neutral-100"
+      }`}
+      onClick={onClick}
+    >
       <div className="flex gap-4">
         <span className="material-symbols-outlined">{nav.icon}</span>
         <span>{nav.title}</span>
@@ -151,7 +164,7 @@ const SidebarSubNav: FC<SidebarSubNavProps> = ({
   dispatch,
 }) => (
   <ul
-    className={`flex flex-col gap-2 ml-3 border-l pl-2 overflow-hidden transition-all ${
+    className={`flex flex-col gap-2 ml-3 border-l px-2  overflow-hidden transition-all w-full ${
       isActive ? "pt-4 max-h-full" : "max-h-0"
     }`}
   >
@@ -164,7 +177,10 @@ const SidebarSubNav: FC<SidebarSubNavProps> = ({
               data: {
                 selectedDirectory: {
                   parentDirId: null,
-                  root: route,
+                  root:
+                    route === QUICKLINK_ROUTES.department
+                      ? ROOTTYPE.DEPARTMENT
+                      : ROOTTYPE.COMMON_RESOURCES,
                   tabType: null,
                 },
               },
@@ -180,7 +196,7 @@ const SidebarSubNav: FC<SidebarSubNavProps> = ({
     {dirs.map((dir) => (
       <Link href={`${route}/${dir.slug}`} key={dir.id}>
         <li
-          className={`flex items-center justify-between py-2 px-3 hover:bg-neutral-100 rounded-2xl ${
+          className={`flex items-center justify-between py-2 pr-3 hover:bg-neutral-100 rounded-2xl ${
             dir.isArchive ? "hidden" : ""
           }`}
         >
@@ -191,7 +207,15 @@ const SidebarSubNav: FC<SidebarSubNavProps> = ({
           {user?.isAdmin && (
             <Tooltip
               title="Move to archive"
-              onClick={(e: MouseEvent) => e.stopPropagation()}
+              onClick={(e: MouseEvent) => {
+                e.stopPropagation();
+                dispatch(
+                  handleDeleteDirectory({
+                    directory: dir,
+                    parentId: dir.parentDirId,
+                  })
+                );
+              }}
             >
               <span className="material-symbols-outlined opacity-50 group-hover:!block hidden hover:scale-110">
                 archive
