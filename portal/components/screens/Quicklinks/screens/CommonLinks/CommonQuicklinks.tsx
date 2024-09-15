@@ -3,8 +3,11 @@ import store, { useAppSelector } from "@/utils/redux/store";
 import { ParentDirectoryLinks } from "../ParentDirectory/ParentDirectoryLinks";
 import { useQuickLinkDirs } from "../../hooks/useQuickLinksDirs";
 import { useRef } from "react";
-import { setActiveDirectoryId } from "@/utils/redux/quicklinks/quicklinks.slice";
 import QuicklinkHeaderWrapper from "../../global/QuicklinkHeaderWrapper";
+import { useQuickLinkDirectory } from "../../hooks/useQuickLinkDirectory";
+import { usePathname } from "next/navigation";
+import ListOfDirectories from "../../DirectoryList";
+import { setActiveDirectoryId } from "@/utils/redux/quicklinks/slices/quicklinks.directory.slice";
 // import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
 // import { useSearchParams } from "next/navigation";
 // import { useEffect } from "react";
@@ -86,22 +89,48 @@ export const CommonQuicklinks = ({
   const initialize = useRef(false);
 
   if (!initialize.current) {
+    console.log("rootParentDirId", rootParentDirId);
     store.dispatch(setActiveDirectoryId(rootParentDirId));
     initialize.current = true;
   }
-  const { activeDirectoryId } = useAppSelector((state) => state.quicklinks);
+  const { activeDirectoryId, directories } = useQuickLinkDirectory();
   const { thisDirectory } = useQuickLinkDirs(activeDirectoryId);
+  const pathname = usePathname();
+  const filteredDirectories = directories.filter(
+    (directory) => directory.parentDirId === activeDirectoryId
+  );
+  const { allQuicklinks } = useAppSelector((state) => state.quicklinksLinks);
+
   return (
     <div>
-      <QuicklinkHeaderWrapper>
-        <h1 className="text-3xl font-bold flex items-center gap-4">
-          <span className="material-symbols-outlined border border-neutral-200 rounded-full p-2">
-            stack
-          </span>{" "}
-          <span>{thisDirectory?.title}</span>
-        </h1>
-      </QuicklinkHeaderWrapper>
-      <ParentDirectoryLinks />
+      <QuicklinkHeaderWrapper
+        title={thisDirectory?.title || ""}
+        icon="group"
+        withBreadcrumb={{
+          rootType: "COMMON_RESOURCES",
+        }}
+      />
+      {allQuicklinks.length === 0 && filteredDirectories.length === 0 ? (
+        <div className="w-full flex items-center justify-center h-full">
+          Start by adding a folder or link
+        </div>
+      ) : (
+        <div className="flex gap-10">
+          <div className="mt-4 flex justify-stretch gap-6 w-[70%]">
+            <div className="w-full">
+              <ParentDirectoryLinks />
+            </div>
+          </div>
+          <div className="my-8 w-[30%]">
+            <h1 className="text-xl font-bold">Folders</h1>
+            <ListOfDirectories
+              view="listView"
+              pathname={pathname}
+              directories={filteredDirectories}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
