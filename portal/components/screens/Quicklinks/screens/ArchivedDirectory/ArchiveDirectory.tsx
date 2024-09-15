@@ -7,14 +7,8 @@ const ArchiveDirectory = () => {
   const { parentDirs } = useQuickLinkDirectory();
   return (
     <div>
-      <QuicklinkHeaderWrapper>
-        <h1 className="text-3xl font-bold flex items-center gap-4">
-          <span className="material-symbols-outlined border border-neutral-200 rounded-full p-2">
-            archive
-          </span>{" "}
-          <span>Archive</span>
-        </h1>
-      </QuicklinkHeaderWrapper>
+      <QuicklinkHeaderWrapper title="Archived" icon="archive" />
+
       <div className="flex flex-row flex-wrap gap-5 items-center mt-10">
         {parentDirs.map((parentDirectory, index) => (
           <ArchiveDirectoryItem
