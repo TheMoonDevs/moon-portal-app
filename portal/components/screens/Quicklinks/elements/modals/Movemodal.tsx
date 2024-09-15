@@ -1,36 +1,32 @@
 import React, { useState } from "react";
-import { useQuickLinkDirectory } from "../hooks/useQuickLinkDirectory";
-import { Directory, ParentDirectory, ROOTTYPE } from "@prisma/client";
-import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
+import { useQuickLinkDirectory } from "../../hooks/useQuickLinkDirectory";
 import {
-  setToast,
-  updateDirectory,
-} from "@/utils/redux/quicklinks/quicklinks.slice";
-import { useAppDispatch } from "@/utils/redux/store";
+  Directory,
+  DirectoryList,
+  ParentDirectory,
+  ROOTTYPE,
+} from "@prisma/client";
+import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
+
+import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import { ToastSeverity } from "@/components/elements/Toast";
 import { Modal, Popover, Tooltip } from "@mui/material";
 import { toast } from "sonner";
+import { updateDirectory } from "@/utils/redux/quicklinks/slices/quicklinks.directory.slice";
+import {
+  setModal,
+  setToast,
+} from "@/utils/redux/quicklinks/slices/quicklinks.ui.slice";
 
-interface MoveToModalProps {
-  showModal: boolean;
-  currentDirectory: Directory | ParentDirectory;
-  isParent: boolean;
-  onCancel: () => void;
-  onMove: () => void;
-}
-
-export const MoveModal: React.FC<MoveToModalProps> = ({
-  showModal,
-  onMove,
-  isParent,
-  onCancel,
-  currentDirectory,
-}) => {
+export const MoveModal = () => {
+  const { modal } = useAppSelector((state) => state.quicklinksUi);
+  const isParent = modal.data && modal.data.isParent;
+  const currentDirectory = modal.data && modal.data.selectedDirectory;
   const { parentDirs } = useQuickLinkDirectory();
   const dispatch = useAppDispatch();
   const rootTypes = Object.values(ROOTTYPE);
   const [selectedParentDirectory, setSelectedParentDirectory] =
-    useState<ParentDirectory | null>(null);
+    useState<DirectoryList | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRootType, setSelectedRootType] = useState<ROOTTYPE>(
     ROOTTYPE.DEPARTMENT
@@ -39,7 +35,7 @@ export const MoveModal: React.FC<MoveToModalProps> = ({
   const open = Boolean(anchorEl);
   const filteredDirectories = parentDirs.filter(
     (dir) =>
-      dir.type === selectedRootType &&
+      dir.tabType === selectedRootType &&
       !dir.isArchive &&
       dir.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -57,7 +53,7 @@ export const MoveModal: React.FC<MoveToModalProps> = ({
       updatedDirectory = {
         ...currentDirectory,
         type: selectedRootType,
-      } as ParentDirectory;
+      } as DirectoryList;
     } else {
       if (!selectedParentDirectory) {
         toast.error("Please Select a ParentDirectory");
@@ -66,7 +62,7 @@ export const MoveModal: React.FC<MoveToModalProps> = ({
       updatedDirectory = {
         ...currentDirectory,
         parentDirId: selectedParentDirectory.id,
-      } as Directory;
+      } as DirectoryList;
     }
 
     try {
@@ -86,13 +82,15 @@ export const MoveModal: React.FC<MoveToModalProps> = ({
       console.log(error);
     }
 
-    onMove();
+    dispatch(setModal({ type: null, data: null }));
   };
+
+  if (!(modal.type === "move-folder")) return null;
 
   return (
     <Modal
-      onClose={onCancel}
-      open={showModal}
+      onClose={() => dispatch(setModal({ type: null, data: null }))}
+      open={modal.type === "move-folder"}
       className=" text-black p-5 rounded-lg shadow-lg drop-shadow-sm flex items-center justify-center"
     >
       <div className="bg-white w-2/5 p-6 rounded-2xl outline-none">
@@ -188,7 +186,7 @@ export const MoveModal: React.FC<MoveToModalProps> = ({
         <div className="flex mt-5 gap-10">
           <button
             className="w-full px-5 py-3 border border-gray-500 text-gray-800 rounded-xl cursor-pointer"
-            onClick={onCancel}
+            onClick={() => dispatch(setModal({ type: null, data: null }))}
           >
             Cancel
           </button>
