@@ -8,7 +8,9 @@ const useClipboardURLDetection = () => {
   //   typeof window !== "undefined" && document.hasFocus()
   // );
   const [copiedURL, setCopiedURL] = useState<string | null>(null);
-  const { isCreateLinkModalOpen } = useAppSelector((state) => state.quicklinks);
+  const { isCreateLinkModalOpen } = useAppSelector(
+    (state) => state.quicklinksUi
+  );
   useEffect(() => {
     // const handleFocus = () => {
     //   setIsTabFocused(true);
