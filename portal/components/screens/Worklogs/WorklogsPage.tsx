@@ -31,6 +31,7 @@ import {
   setIncompleteTodos,
   setTodoMarkdown,
 } from "@/utils/redux/worklogs/laterTodos.slice";
+import ClickupTasks from "./WorklogTabs/ClickupTasks";
 const tempData = [
   {
     id: "idsdjneslnfrnleskdnelrnv",
@@ -283,7 +284,8 @@ export const WorklogsPage = () => {
 
   //if (!user?.workData) return null;
   const tabs = [
-    { label: "Tasks/Tips", content: <WorklogTips /> },
+    { label: "Tasks", content: <ClickupTasks /> },
+    { label: "Tips", content: <WorklogTips /> },
     {
       label: (
         <div className="flex items-center gap-2">
