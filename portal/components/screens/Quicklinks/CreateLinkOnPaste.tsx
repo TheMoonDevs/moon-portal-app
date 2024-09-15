@@ -18,12 +18,12 @@ import {
 import useClipboardURLDetection from "@/utils/hooks/useClipboardUrlDetection";
 import { toast, Toaster } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import { addNewQuicklink } from "@/utils/redux/quicklinks/quicklinks.slice";
 import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
 import { usePathname } from "next/navigation";
 import { useUser } from "@/utils/hooks/useUser";
-import { ParentDirectory, ROOTTYPE } from "@prisma/client";
+import { DirectoryList, ParentDirectory, ROOTTYPE } from "@prisma/client";
 import { isValidURL } from "@/utils/helpers/functions";
+import { addNewQuicklink } from "@/utils/redux/quicklinks/slices/quicklinks.links.slice";
 
 const modalStyle = {
   position: "absolute",
@@ -40,12 +40,13 @@ const CreateLinkOnPaste = () => {
   const { copiedURL, setCopiedURL } = useClipboardURLDetection();
   const [isEditing, setIsEditing] = useState(false);
   const dispatch = useAppDispatch();
-  const [selectedParentDir, setSelectedParentDir] = useState<ParentDirectory>({
+  const [selectedParentDir, setSelectedParentDir] = useState<DirectoryList>({
     id: "",
     title: "",
-  } as ParentDirectory);
-  const { parentDirs, directories, activeDirectoryId, isCreateLinkModalOpen } =
-    useAppSelector((state) => state.quicklinks);
+  } as DirectoryList);
+  const { parentDirs, directories, activeDirectoryId } = useAppSelector(
+    (state) => state.quicklinksDirectory
+  );
   const [fetchingMetadata, setFetchingMetadata] = useState(false);
   const path = usePathname();
   const { user } = useUser();
@@ -57,7 +58,7 @@ const CreateLinkOnPaste = () => {
     setSelectedParentDir({
       id: "",
       title: "",
-    } as ParentDirectory);
+    } as DirectoryList);
     setIsEditing(false);
   };
 
@@ -78,12 +79,12 @@ const CreateLinkOnPaste = () => {
         parentDirs?.find((_dir) => _dir.id === directoryId) ||
         directories?.find((_dir) => _dir.id === directoryId);
 
-      if (thisDirectory && "parentDirId" in thisDirectory) {
+      if (thisDirectory?.parentDirId && "parentDirId" in thisDirectory) {
         return getDepartmentId(thisDirectory?.parentDirId);
       } else {
         rootParentDirId =
-          thisDirectory?.type === ROOTTYPE.DEPARTMENT ||
-          thisDirectory?.type === ROOTTYPE.COMMON_RESOURCES
+          thisDirectory?.tabType === ROOTTYPE.DEPARTMENT ||
+          thisDirectory?.tabType === ROOTTYPE.COMMON_RESOURCES
             ? thisDirectory?.id
             : selectedParentDir.id;
         return rootParentDirId;
@@ -158,19 +159,19 @@ const CreateLinkOnPaste = () => {
     }
   };
 
-  const handleParentDirSelection = (parentDir: ParentDirectory) => {
+  const handleParentDirSelection = (parentDir: DirectoryList) => {
     setAnchorEl(null);
     if (parentDir.id === selectedParentDir.id) {
       setSelectedParentDir({
         id: "",
         title: "",
-      } as ParentDirectory);
+      } as DirectoryList);
       return;
     }
     setSelectedParentDir(parentDir);
   };
 
-  const getParentDirPath = (parentDir: ParentDirectory | null) => {
+  const getParentDirPath = (parentDir: DirectoryList | null) => {
     if (!parentDir) {
       const pathArray = path?.split("/");
       return pathArray?.filter((item) => item !== "quicklinks")?.join("/");
