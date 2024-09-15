@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Tooltip } from "@mui/material";
 import { useQuickLinkDirectory } from "../../../hooks/useQuickLinkDirectory";
 import { useUser } from "@/utils/hooks/useUser";
-import { setPopoverElementWithData } from "@/utils/redux/quicklinks/quicklinks.slice";
+import { setPopoverElementWithData } from "@/utils/redux/quicklinks/slices/quicklinks.slice";
 import { useAppDispatch } from "@/utils/redux/store";
 import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
 
