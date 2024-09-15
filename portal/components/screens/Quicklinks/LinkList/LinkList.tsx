@@ -1,11 +1,13 @@
 "use client";
 
-import { CircularProgress } from "@mui/material";
+import { Button, CircularProgress } from "@mui/material";
 import { Link as Quicklink } from "@prisma/client";
 
 import { ViewButtonGroup } from "./ViewButtonGroup";
 import { LinkItem } from "./LinkItem";
-import { useAppSelector } from "@/utils/redux/store";
+import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
+import Image from "next/image";
+import { setIsCreateLinkModalOpen } from "@/utils/redux/quicklinks/slices/quicklinks.ui.slice";
 
 export enum VIEW {
   list = "list",
@@ -28,7 +30,7 @@ export default function LinkList({
   inSearchBar?: boolean;
 }) {
   const { currentView } = useAppSelector((state) => state.quicklinksUi);
-
+  const dispatch = useAppDispatch();
   return (
     <>
       <div className={`w-full ${inSearchBar ? "overflow-hidden" : ""}`}>
@@ -39,8 +41,26 @@ export default function LinkList({
         )}
 
         {allQuicklinks?.length === 0 && !isLoading ? (
-          <div className="w-full flex justify-center h-52 items-center ">
-            Nothing to show
+          <div className="w-full flex flex-col justify-center h-[500px] items-center ">
+            <Image
+              className="rounded-full object-cover"
+              src="/images/nothing-2.png"
+              alt="No data"
+              width={300}
+              height={300}
+            />
+            <div>
+              <h1 className="text-gray-400 text-lg">No Quicklink was found!</h1>
+            </div>
+            <div className="flex items-center gap-5">
+              <h1 className="text-gray-400 text-base">
+                Press{" "}
+                <span className="border-b-2 border-blue-500 border-dashed text-blue-500 text-sm font-semibold">
+                  Ctrl + V
+                </span>{" "}
+                to add one
+              </h1>
+            </div>
           </div>
         ) : (
           <div

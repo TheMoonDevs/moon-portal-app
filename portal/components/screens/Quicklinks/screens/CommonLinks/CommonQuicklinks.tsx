@@ -8,6 +8,7 @@ import { useQuickLinkDirectory } from "../../hooks/useQuickLinkDirectory";
 import { usePathname } from "next/navigation";
 import ListOfDirectories from "../../DirectoryList";
 import { setActiveDirectoryId } from "@/utils/redux/quicklinks/slices/quicklinks.directory.slice";
+import Image from "next/image";
 // import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
 // import { useSearchParams } from "next/navigation";
 // import { useEffect } from "react";
@@ -111,8 +112,17 @@ export const CommonQuicklinks = ({
         }}
       />
       {allQuicklinks.length === 0 && filteredDirectories.length === 0 ? (
-        <div className="w-full flex items-center justify-center h-full">
-          Start by adding a folder or link
+        <div className="flex flex-col gap-3 items-center justify-center h-[350px] w-full">
+          <Image
+            className="rounded-full object-cover"
+            src="/images/no-data.jpg"
+            alt="No data"
+            width={400}
+            height={400}
+          />
+          <p className="text-gray-400 text-lg">
+            Start by adding a folder or link
+          </p>
         </div>
       ) : (
         <div className="flex gap-10">
