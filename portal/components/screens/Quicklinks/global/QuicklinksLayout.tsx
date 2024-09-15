@@ -1,18 +1,23 @@
 "use client";
-
-import QuicklinksSidebar from "@/components/screens/Quicklinks/global/QuicklinksSidebar/QuicklinkSidebar";
 import { useAppSelector } from "@/utils/redux/store";
 import { QuicklinksToast } from "../elements/QuicklinksToast";
-import {
-  setParentDirsList,
-  setDirectoryList,
-  setRootDirList,
-} from "@/utils/redux/quicklinks/quicklinks.slice";
+
 import { useStore } from "react-redux";
 import { useRef } from "react";
-import { ParentDirectory, Directory } from "@prisma/client";
+import { ParentDirectory, Directory, DirectoryList } from "@prisma/client";
 import { CreateLinkPopup } from "../CreateLinkPopup";
 import CreateLinkOnPaste from "../CreateLinkOnPaste";
+import QuicklinkSidebar from "./QuicklinksSidebar/QuicklinkSidebar";
+import QuicklinksGlobalHeader from "./QuicklinksGlobalHeader";
+import { PopoverFolderEdit } from "../elements/Popovers";
+import { MoveModal } from "../elements/modals/Movemodal";
+import RenameModal from "../elements/modals/RenameModal";
+import CreateDirectoryModal from "../elements/modals/CreateModal";
+import {
+  setDirectoryList,
+  setParentDirsList,
+  setRootDirList,
+} from "@/utils/redux/quicklinks/slices/quicklinks.directory.slice";
 
 // BAD PATTERN OF SLUG IS USED, WE CANT CHANGE IT BECAUSE IT IS USED IN THE MULTIPLE COMPONENTS
 const ROOT_DIRECTORIES: Omit<Directory, "timestamp">[] = [
@@ -25,7 +30,6 @@ const ROOT_DIRECTORIES: Omit<Directory, "timestamp">[] = [
     position: 10,
     isArchive: false,
     clickCount: 0,
-    position: 10,
   },
   {
     id: "COMMON_RESOURCES",
@@ -36,7 +40,6 @@ const ROOT_DIRECTORIES: Omit<Directory, "timestamp">[] = [
     position: 20,
     isArchive: false,
     clickCount: 0,
-    position: 20,
   },
   {
     id: "DEPARTMENT",
@@ -47,7 +50,6 @@ const ROOT_DIRECTORIES: Omit<Directory, "timestamp">[] = [
     position: 20,
     isArchive: false,
     clickCount: 0,
-    position: 20,
   },
 ];
 
@@ -57,8 +59,8 @@ export const QuicklinksLayout = ({
 }: {
   children: React.ReactNode;
   response: {
-    parentDirs: ParentDirectory[];
-    directories: Directory[];
+    parentDirs: DirectoryList[];
+    directories: DirectoryList[];
   };
 }) => {
   const store = useStore();
@@ -70,23 +72,33 @@ export const QuicklinksLayout = ({
     store.dispatch(setRootDirList(ROOT_DIRECTORIES));
     initialize.current = true;
   }
-  const { toast } = useAppSelector((state) => state.quicklinks);
+  // const { toast } = useAppSelector((state) => state.quicklinks);
+
   return (
-    <main className="flex min-h-screen ">
-      <QuicklinksSidebar />
-      <div className="relative my-8 pr-8 pl-2 w-full">
-        <div className="w-full relative h-screen mb-20">{children}</div>
+    <>
+      <QuicklinksGlobalHeader />
+      <main className="flex min-h-screen ">
+        <QuicklinkSidebar />
+        <div className="relative px-6 w-[calc(100%-256px)] ml-auto">
+          <div className="h-[76px]"></div>
+          <div className="w-full relative h-screen mb-20">{children}</div>
+
+          {/* <QuicklinksToast
+            severity={toast.toastSev}
+            message={toast.toastMsg}
+            position={{
+              vertical: "bottom",
+              horizontal: "left",
+            }}
+          /> */}
+        </div>
+        <PopoverFolderEdit />
+        <CreateDirectoryModal />
         <CreateLinkPopup />
         <CreateLinkOnPaste /> {/* Remove this to revert back to the old UI */}
-        <QuicklinksToast
-          severity={toast.toastSev}
-          message={toast.toastMsg}
-          position={{
-            vertical: "top",
-            horizontal: "center",
-          }}
-        />
-      </div>
-    </main>
+        <MoveModal />
+        <RenameModal />
+      </main>
+    </>
   );
 };
