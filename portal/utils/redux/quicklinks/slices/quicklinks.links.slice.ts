@@ -31,6 +31,14 @@ export const quicklinksLinksSlice = createSlice({
     addNewQuicklink: (state, action) => {
       state.allQuicklinks = [action.payload, ...state.allQuicklinks];
     },
+    updateQuicklink: (state, action) => {
+      state.allQuicklinks = state.allQuicklinks.map((link) => {
+        if (link.id === action.payload.id) {
+          return action.payload;
+        }
+        return link;
+      });
+    },
     setFavoriteLinksList: (state, action: PayloadAction<UserLink[]>) => {
       state.favoriteLinksList = action.payload.map((item) => {
         return {
@@ -71,6 +79,7 @@ export const quicklinksLinksSlice = createSlice({
 export const {
   setAllQuicklinks,
   addNewQuicklink,
+  updateQuicklink,
   setFavoriteLinksList,
   setTopUsedLinksList,
   deleteQuicklink,
