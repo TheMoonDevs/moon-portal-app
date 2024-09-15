@@ -27,7 +27,7 @@ export default function LinkList({
   isLoading?: boolean;
   inSearchBar?: boolean;
 }) {
-  const { currentView } = useAppSelector((state) => state.quicklinks);
+  const { currentView } = useAppSelector((state) => state.quicklinksUi);
 
   return (
     <>
