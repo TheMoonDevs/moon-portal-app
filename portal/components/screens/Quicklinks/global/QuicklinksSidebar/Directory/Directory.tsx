@@ -10,7 +10,7 @@ import {
   setToast,
   updateDirectory,
   updateMultipleDirectories,
-} from "@/utils/redux/quicklinks/quicklinks.slice";
+} from "@/utils/redux/quicklinks/slices/quicklinks.slice";
 import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
 import { usePathname, useRouter } from "next/navigation";
 import { Directory, ParentDirectory } from "@prisma/client";
@@ -20,7 +20,7 @@ import { DirectoryItem } from "./DirectoryItem";
 import { useQuickLinkDirectory } from "../../../hooks/useQuickLinkDirectory";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
 import { PopoverEmojis, PopoverFolderEdit } from "../../../elements/Popovers";
-import { MoveModal } from "../../../elements/Movemodal";
+import { MoveModal } from "../../../elements/modals/Movemodal";
 
 export const DirectoryTree = ({
   mainDirectory,
