@@ -48,6 +48,7 @@ import {
   setCompletedTasksData,
   setShowCompletedTasks,
 } from "@/utils/redux/worklogsSummary/statsAction.slice";
+import Pointers from "./Pointers";
 
 const LoadingAnimation = () => (
   <div className="flex items-end justify-between w-[45px] h-[27px] pb-1/5">
@@ -99,7 +100,7 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
   isYearly,
 }) => {
   const metrics = calculateMetrics(worklogSummary, isMonthly, isYearly);
-  const [activeTab, setActiveTab] = useState("STATS");
+  const [activeTab, setActiveTab] = useState("POINTERS");
   const [activeIndex, setActiveIndex] = useState(0);
   const [gridVisible, setGridVisible] = useState(true);
   const dispatch = useAppDispatch();
@@ -130,14 +131,15 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
 
   useEffect(() => {
     if (worklogSummary.length > 0) {
-      dispatch(setProductiveStreakData(getLongestProductiveStreak(worklogSummary)));
+      dispatch(
+        setProductiveStreakData(getLongestProductiveStreak(worklogSummary))
+      );
       dispatch(setMissedDates(getMissedWorklogDates(worklogSummary)));
       dispatch(setMissedTasksData(getMissedTasks(worklogSummary)));
       dispatch(setUpdatedLogsDates(getUpdatedLogsLater(worklogSummary)));
       dispatch(setCompletedTasksData(getCompletedTasks(worklogSummary)));
     }
   }, [worklogSummary, dispatch]);
-  
 
   const handleCardClick = (cardTitle: string) => {
     dispatch(setIsShowProductiveStreak(false));
@@ -424,8 +426,8 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
       )}
       {/* POINTERS */}
       {activeTab === "POINTERS" && (
-        <div className="flex justify-center items-center p-4">
-          Coming soon, Stay tuned!
+        <div className="">
+          <Pointers />
         </div>
       )}
       {/* GROWTH */}
