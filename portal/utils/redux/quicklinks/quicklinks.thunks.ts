@@ -131,15 +131,15 @@ export const handleAddChildDirectory = createAsyncThunk(
       ...(parentDirId && { parentDirId }),
       ...(rootType && { tabType: rootType }),
     };
-
     try {
       const response = await QuicklinksSdk.createData(
         "/api/quicklinks/directory-list",
         newDirectory
       );
       // Dispatch to add new directory to Redux state
-      if (!parentDirId) dispatch(setNewParentDir(response.data.parentDirs));
-      else dispatch(addNewDirectory(response.data.directory));
+
+      if (!response.data.parentDirId) dispatch(setNewParentDir(response.data));
+      else dispatch(addNewDirectory(response.data));
 
       // Show success toast
       dispatch(
@@ -148,6 +148,7 @@ export const handleAddChildDirectory = createAsyncThunk(
           toastSev: ToastSeverity.success,
         })
       );
+      dispatch(setModal({ type: null, data: null }));
 
       return response.data.directory; // Can be used for further processing
     } catch (error) {

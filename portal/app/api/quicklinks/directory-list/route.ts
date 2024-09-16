@@ -71,7 +71,7 @@ export async function POST(request: Request) {
     });
     let json_response = {
       status: "success",
-      data: { directory },
+      data: directory,
     };
     return NextResponse.json(json_response);
   } catch (e) {

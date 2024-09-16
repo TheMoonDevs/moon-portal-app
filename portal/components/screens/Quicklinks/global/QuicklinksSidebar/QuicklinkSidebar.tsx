@@ -230,12 +230,12 @@ const SidebarSubNav: FC<SidebarSubNavProps> = ({
 
 const QuicklinkSidebar: FC = () => {
   const { parentDirs } = useQuickLinkDirectory(true);
-  const departmentDir = parentDirs.filter(
-    (dir) => dir.tabType === "DEPARTMENT"
-  );
-  const commonResourcesDir = parentDirs.filter(
-    (dir) => dir.tabType === "COMMON_RESOURCES"
-  );
+  const departmentDir = parentDirs
+    .filter((dir) => dir.tabType === "DEPARTMENT")
+    .sort((a, b) => a.position - b.position);
+  const commonResourcesDir = parentDirs
+    .filter((dir) => dir.tabType === "COMMON_RESOURCES")
+    .sort((a, b) => a.position - b.position);
 
   const [expanded, setExpanded] = useState<ExpandedState>({
     id: "",
