@@ -1,7 +1,7 @@
 import { CommonLinksByDirId } from "@/components/screens/Quicklinks/screens/CommonLinks/CommonLinksByDirId";
 import { APP_BASE_URL } from "@/utils/constants/appInfo";
 import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
-import { Directory, DirectoryList, ROOTTYPE } from "@prisma/client";
+import { DirectoryList, ROOTTYPE } from "@prisma/client";
 import { notFound } from "next/navigation";
 
 async function slugToIdConversion(slug: string) {

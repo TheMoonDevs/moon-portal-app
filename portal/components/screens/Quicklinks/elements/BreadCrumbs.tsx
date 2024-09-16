@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useQuickLinkDirectory } from "../hooks/useQuickLinkDirectory";
 import { useCallback, useEffect, useState } from "react";
-import { Directory, ParentDirectory, ROOTTYPE } from "@prisma/client";
+import { ROOTTYPE } from "@prisma/client";
 import { useQuickLinkDirs } from "../hooks/useQuickLinksDirs";
 import { useAppDispatch } from "@/utils/redux/store";
 import { setPopoverElementWithData } from "@/utils/redux/quicklinks/slices/quicklinks.ui.slice";

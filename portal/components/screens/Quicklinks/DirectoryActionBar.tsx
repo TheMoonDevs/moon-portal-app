@@ -3,7 +3,7 @@
 import { handleDeleteDirectory } from "@/utils/redux/quicklinks/quicklinks.thunks";
 import { setModal } from "@/utils/redux/quicklinks/slices/quicklinks.ui.slice";
 import { useAppDispatch } from "@/utils/redux/store";
-import { Directory, DirectoryList } from "@prisma/client";
+import { DirectoryList } from "@prisma/client";
 
 const DirectoryActionBar = ({
   selectedDir,

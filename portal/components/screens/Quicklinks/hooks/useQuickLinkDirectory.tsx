@@ -1,5 +1,5 @@
 import { useAppSelector } from "@/utils/redux/store";
-import { Directory, DirectoryList, ParentDirectory } from "@prisma/client";
+import { DirectoryList } from "@prisma/client";
 import { useParams, usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 

@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import { useQuickLinkDirectory } from "./useQuickLinkDirectory";
-import { Directory, DirectoryList, ParentDirectory } from "@prisma/client";
-import { useAppSelector } from "@/utils/redux/store";
+import { DirectoryList } from "@prisma/client";
 
 export const useQuickLinkDirs = (directoryId?: string | null) => {
   const { parentDirs, directories } = useQuickLinkDirectory();

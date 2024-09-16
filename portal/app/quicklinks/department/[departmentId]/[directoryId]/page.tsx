@@ -1,7 +1,7 @@
 import { DepartmentLinksByDirId } from "@/components/screens/Quicklinks/screens/Department/DepartmentLinksByDirId";
 import { APP_BASE_URL } from "@/utils/constants/appInfo";
 import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
-import { Directory, ROOTTYPE } from "@prisma/client";
+import { DirectoryList, ROOTTYPE } from "@prisma/client";
 import { notFound } from "next/navigation";
 async function slugToIdConversion(slug: string) {
   try {
@@ -10,11 +10,11 @@ async function slugToIdConversion(slug: string) {
       `${APP_BASE_URL}/api/quicklinks/directory-list?slug=${slugString}&tabType=${ROOTTYPE.DEPARTMENT}`
     );
 
-    return response.data.directoryList.find((directory: Directory) => {
+    return response.data.directoryList.find((directory: DirectoryList) => {
       return (
         directory.slug +
           "-" +
-          new Date(directory.timestamp).getTime().toString().slice(-5) ===
+          new Date(directory.timestamp!).getTime().toString().slice(-5) ===
         slug
       );
     })?.id;

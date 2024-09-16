@@ -1,7 +1,7 @@
 import { QuicklinksLayout } from "@/components/screens/Quicklinks/global/QuicklinksLayout";
 import { APP_BASE_URL } from "@/utils/constants/appInfo";
 import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
-import { ParentDirectory, Directory, DirectoryList } from "@prisma/client";
+import { DirectoryList } from "@prisma/client";
 
 const getParentDirsAndSubDirs = async () => {
   try {
