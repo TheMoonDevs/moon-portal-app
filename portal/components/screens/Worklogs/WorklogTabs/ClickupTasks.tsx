@@ -41,13 +41,13 @@ const SingleTask = ({ status, tasks }: { status: string; tasks: Task[] }) => {
         <CircleIcon />
         <span>{status.toUpperCase()}</span>
       </h1>
-      <div>
+      <div className="flex flex-col gap-2">
         {tasks.map((task) => (
           <Link
             href={task.url}
             target="_blank"
             key={task.taskId}
-            className="flex justify-between"
+            className="flex justify-between rounded-lg px-2 py-1 hover:bg-gray-200"
           >
             <p>{task.name}</p>
             <p>
