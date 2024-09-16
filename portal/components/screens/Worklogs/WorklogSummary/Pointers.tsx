@@ -1,5 +1,6 @@
 'use client';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import useSWR, { useSWRConfig } from 'swr';
 import { useUser } from '@/utils/hooks/useUser';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 import { CircularProgress } from '@mui/material';
@@ -11,30 +12,28 @@ import { ReplyBox } from './ReplyBox';
 
 type PointerWithReplies = Pointer & { replies: Reply[] };
 
+const fetcher = (url: string) =>
+  PortalSdk.getData(url, null).then((res) => res.data);
+
 const Pointers = () => {
   const [inputValue, setInputValue] = useState('');
-  const [targetUserId, setTargetUserId] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [pointers, setPointers] = useState<PointerWithReplies[]>([]);
   const { user } = useUser();
   const path = usePathname();
+  const { mutate } = useSWRConfig();
 
   const chatContainerRef = useRef<HTMLDivElement | null>(null);
+  const targetUserId = path ? path.split('/').pop() ?? null : null;
 
-  useEffect(() => {
-    if (path) {
-      const pathSegments = path.split('/');
-      const lastSegment = pathSegments[pathSegments.length - 1];
-      setTargetUserId(lastSegment);
-    }
-  }, [path]);
-
-  useEffect(() => {
-    if (targetUserId) {
-      getPointers();
-    }
-  }, [targetUserId]);
+  const {
+    data: pointers,
+    error,
+    isValidating,
+  } = useSWR(
+    targetUserId ? `/api/pointers?userId=${targetUserId}` : null,
+    fetcher,
+    { refreshInterval: 3000 }
+  );
 
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -43,11 +42,14 @@ const Pointers = () => {
     }
   }, [pointers]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setInputValue(e.target.value);
-  };
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      setInputValue(e.target.value);
+    },
+    []
+  );
 
-  const handleSendMessage = async () => {
+  const handleSendMessage = useCallback(async () => {
     if (!inputValue.trim() || isSending) return;
     setIsSending(true);
     try {
@@ -57,29 +59,18 @@ const Pointers = () => {
         content: inputValue,
       });
       setInputValue('');
+      mutate(`/api/pointers?userId=${targetUserId}`);
     } catch (error) {
       console.error(error);
       toast.error('Error sending message.');
     } finally {
       setIsSending(false);
     }
-  };
+  }, [inputValue, isSending, user?.id, targetUserId, mutate]);
 
-  const getPointers = async () => {
-    setIsLoading(true);
-    try {
-      const res = await PortalSdk.getData(
-        `/api/pointers?userId=${targetUserId}`,
-        null
-      );
-      setPointers(res.data);
-    } catch (error) {
-      console.error(error);
-      toast.error('Error fetching messages.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  if (error) {
+    toast.error('Error fetching messages.');
+  }
 
   return (
     <>
@@ -87,16 +78,16 @@ const Pointers = () => {
         className='h-[500px] max-h-[600px] overflow-y-auto no-scrollbar p-3 border border-neutral-300 rounded-lg bg-neutral-50 text-neutral-700'
         ref={chatContainerRef}
       >
-        {isLoading ? (
+        {isValidating && !pointers ? (
           <div className='h-full w-full flex items-center justify-center'>
             <CircularProgress size={24} />
           </div>
-        ) : pointers.length === 0 ? (
+        ) : pointers && pointers.length === 0 ? (
           <div className='h-full w-full flex flex-col items-center text-neutral-400'>
             No Messages Found!
           </div>
         ) : (
-          pointers.map((pointer: PointerWithReplies, index: number) => (
+          pointers?.map((pointer: PointerWithReplies, index: number) => (
             <div key={pointer.id} className='flex flex-col gap-2'>
               <ChatCard pointer={pointer} index={index} />
             </div>

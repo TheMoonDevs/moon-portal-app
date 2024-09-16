@@ -45,7 +45,7 @@ const ChatCard = ({
         },
       });
       setInputValue('');
-      setIsReplying(false);
+      // setIsReplying(false);
     } catch (error) {
       console.error(error);
       toast.error('Error sending message.');
