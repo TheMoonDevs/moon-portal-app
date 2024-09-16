@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Avatar, CircularProgress } from '@mui/material';
+import { Avatar } from '@mui/material';
 import { Pointer, Reply } from '@prisma/client';
 import { RootState, useAppSelector } from '@/utils/redux/store';
 import { prettySinceTime } from '@/utils/helpers/prettyprint';
@@ -88,12 +88,14 @@ const ChatCard = ({
           >
             REPLY
           </button>
-          <button
-            onClick={toggleReplies}
-            className='self-start text-neutral-700 font-semibold tracking-wider text-sm underline'
-          >
-            {showComments ? 'HIDE COMMENTS' : 'SHOW COMMENTS'}
-          </button>
+          {pointer.replies.length > 0 && (
+            <button
+              onClick={toggleReplies}
+              className='self-start text-neutral-700 font-semibold tracking-wider text-sm underline'
+            >
+              {showComments ? 'HIDE COMMENTS' : 'SHOW COMMENTS'}
+            </button>
+          )}
         </div>
         <p className='text-neutral-400'>#{index + 1}</p>
       </div>
@@ -108,45 +110,42 @@ const ChatCard = ({
           isReplying={isReplying}
           isChatCard={true}
         />
-      )}
+      )}  
 
       {/* Show comments section */}
-      {showComments && (
-        <div
-          className='mt-4 max-h-40 overflow-y-auto space-y-4'
-          style={{ maxHeight: '200px' }}
-        >
-          {pointer.replies.length > 0 ? (
-            pointer.replies.map((reply) => {
-              const replyMember = coreTeam.find((m) => m.id === reply.userId);
-              return (
-                <div key={reply.id} className='p-2 border-b border-gray-200'>
-                  <div className='flex items-center gap-3'>
-                    <Avatar
-                      alt={replyMember?.name || 'User Avatar'}
-                      src={replyMember?.avatar || undefined}
-                      sx={{ width: 30, height: 30 }}
-                    />
-                    <div>
-                      <p className='text-sm font-semibold text-gray-900'>
-                        {replyMember?.name || 'Unknown User'}
-                      </p>
-                      <p className='text-xs text-gray-400'>
-                        {prettySinceTime(reply.createdAt.toString())}
-                      </p>
-                    </div>
+      <div
+        className={`mt-4 overflow-y-scroll transition-all duration-500 ease-in-out ${
+          showComments ? 'max-h-[200px] opacity-100' : 'max-h-0 opacity-0'
+        }`}
+      >
+        {pointer.replies.length > 0 ? (
+          pointer.replies.map((reply) => {
+            const replyMember = coreTeam.find((m) => m.id === reply.userId);
+            return (
+              <div key={reply.id} className='p-2 border-b border-gray-200'>
+                <div className='flex items-center gap-3'>
+                  <Avatar
+                    alt={replyMember?.name || 'User Avatar'}
+                    src={replyMember?.avatar || undefined}
+                    sx={{ width: 30, height: 30 }}
+                  />
+                  <div>
+                    <p className='text-sm font-semibold text-gray-900'>
+                      {replyMember?.name || 'Unknown User'}
+                    </p>
+                    <p className='text-xs text-gray-400'>
+                      {prettySinceTime(reply.createdAt.toString())}
+                    </p>
                   </div>
-                  <p className='text-gray-600 mt-2 text-base'>
-                    {reply.content}
-                  </p>
                 </div>
-              );
-            })
-          ) : (
-            <p className='text-gray-500 text-sm'>No comments yet.</p>
-          )}
-        </div>
-      )}
+                <p className='text-gray-600 mt-2 text-base'>{reply.content}</p>
+              </div>
+            );
+          })
+        ) : (
+          <p className='text-gray-500 text-sm'>No comments yet.</p>
+        )}
+      </div>
     </div>
   );
 };
