@@ -194,36 +194,41 @@ const SidebarSubNav: FC<SidebarSubNavProps> = ({
       </li>
     )}
     {dirs.map((dir) => (
-      <Link href={`${route}/${dir.slug}`} key={dir.id}>
-        <li
-          className={`flex items-center justify-between py-2 pr-3 hover:bg-neutral-100 rounded-2xl ${
-            dir.isArchive ? "hidden" : ""
-          }`}
+      <li
+        className={`flex items-center justify-between hover:bg-neutral-100 rounded-2xl ${
+          dir.isArchive ? "hidden" : ""
+        }`}
+        key={dir.id}
+      >
+        <Link
+          href={`${route}/${dir.slug}`}
+          className="w-full rounded-l-2xl py-2 pr-3"
         >
           <div className="flex gap-4">
             <span className="material-symbols-outlined">{dir.logo}</span>
             <span>{dir.title}</span>
           </div>
-          {user?.isAdmin && (
-            <Tooltip
-              title="Move to archive"
-              onClick={(e: MouseEvent) => {
-                e.stopPropagation();
-                dispatch(
-                  handleDeleteDirectory({
-                    directory: dir,
-                    parentId: dir.parentDirId,
-                  })
-                );
-              }}
-            >
-              <span className="material-symbols-outlined opacity-50 group-hover:!block hidden hover:scale-110">
-                archive
-              </span>
-            </Tooltip>
-          )}
-        </li>
-      </Link>
+        </Link>
+        {user?.isAdmin && (
+          <Tooltip
+            title="Move to archive"
+            className="rounded-r-2xl p-2"
+            onClick={(e: MouseEvent) => {
+              e.stopPropagation();
+              dispatch(
+                handleDeleteDirectory({
+                  directory: dir,
+                  parentId: dir.parentDirId,
+                })
+              );
+            }}
+          >
+            <span className="material-symbols-outlined opacity-50 group-hover:!block hidden hover:scale-110">
+              archive
+            </span>
+          </Tooltip>
+        )}
+      </li>
     ))}
   </ul>
 );
