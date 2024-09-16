@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useUser } from '@/utils/hooks/useUser';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 import { CircularProgress } from '@mui/material';
@@ -20,6 +20,8 @@ const Pointers = () => {
   const { user } = useUser();
   const path = usePathname();
 
+  const chatContainerRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
     if (path) {
       const pathSegments = path.split('/');
@@ -27,6 +29,19 @@ const Pointers = () => {
       setTargetUserId(lastSegment);
     }
   }, [path]);
+
+  useEffect(() => {
+    if (targetUserId) {
+      getPointers();
+    }
+  }, [targetUserId]);
+
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop =
+        chatContainerRef.current.scrollHeight;
+    }
+  }, [pointers]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInputValue(e.target.value);
@@ -36,12 +51,11 @@ const Pointers = () => {
     if (!inputValue.trim() || isSending) return;
     setIsSending(true);
     try {
-      const res = await PortalSdk.postData('/api/pointers', {
+      await PortalSdk.postData('/api/pointers', {
         userId: user?.id,
         targetUserId,
         content: inputValue,
       });
-      console.log(res);
       setInputValue('');
     } catch (error) {
       console.error(error);
@@ -50,12 +64,6 @@ const Pointers = () => {
       setIsSending(false);
     }
   };
-
-  useEffect(() => {
-    if (targetUserId) {
-      getPointers();
-    }
-  }, [targetUserId]);
 
   const getPointers = async () => {
     setIsLoading(true);
@@ -75,9 +83,12 @@ const Pointers = () => {
 
   return (
     <>
-      <div className='h-[500px] max-h-[600px] overflow-y-auto no-scrollbar p-3 border border-neutral-300 rounded-lg bg-neutral-50 text-neutral-700 '>
+      <div
+        className='h-[500px] max-h-[600px] overflow-y-auto no-scrollbar p-3 border border-neutral-300 rounded-lg bg-neutral-50 text-neutral-700'
+        ref={chatContainerRef}
+      >
         {isLoading ? (
-          <div className=' h-full w-full flex items-center justify-center'>
+          <div className='h-full w-full flex items-center justify-center'>
             <CircularProgress size={24} />
           </div>
         ) : pointers.length === 0 ? (
