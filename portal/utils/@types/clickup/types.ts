@@ -36,15 +36,3 @@ export type RawTask = {
   archived: boolean;
   [key: string]: any; // For any other properties
 };
-
-// Filtered Task type
-export type Task = {
-  taskId: ID;
-  name: string;
-  status: string;
-  priority: string | null;
-  assignees: string[];
-  url: string;
-  startDate: string | null;
-  dueDate: string | null;
-};
