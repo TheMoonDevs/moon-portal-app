@@ -1,15 +1,15 @@
 import React from "react";
-import { filterTasks, filterTasksByPerson } from "@/utils/clickup/helper";
-import { tasks } from "@/utils/dummy/clickup/tasks";
+import { filterTasksByPerson } from "@/utils/clickup/helper";
 import { useUser } from "@/utils/hooks/useUser";
-import { Task } from "@/utils/@types/clickup/types";
 import { CircleIcon, Flag } from "lucide-react";
 import Link from "next/link";
+import { Task } from "@prisma/client";
+import { useTasks } from "@/utils/hooks/useTasks";
 
 const ClickupTask = () => {
   const { user } = useUser();
-  const filteredTasks = filterTasks(tasks);
-  const myTasks = filterTasksByPerson(user?.email || "", filteredTasks);
+  const { tasks, loading } = useTasks();
+  const myTasks: Task[] = filterTasksByPerson(user?.email as string, tasks);
   const status = ["to do", "in development", "in review"];
   const separated: any = { "to do": [], "in review": [], "in development": [] };
   myTasks.forEach((task: Task) => {
@@ -17,9 +17,11 @@ const ClickupTask = () => {
   });
   return (
     <div className="p-4 rounded-lg space-y-4 font-sans">
-      {status.map((status) => (
-        <SingleTask key={status} status={status} tasks={separated[status]} />
-      ))}
+      {loading && <p>Loading ...</p>}
+      {!loading &&
+        status.map((status) => (
+          <SingleTask key={status} status={status} tasks={separated[status]} />
+        ))}
     </div>
   );
 };
