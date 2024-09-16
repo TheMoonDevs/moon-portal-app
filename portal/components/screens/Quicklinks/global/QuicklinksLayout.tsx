@@ -4,7 +4,7 @@ import { QuicklinksToast } from "../elements/QuicklinksToast";
 
 import { useStore } from "react-redux";
 import { useRef } from "react";
-import { ParentDirectory, Directory, DirectoryList } from "@prisma/client";
+import { DirectoryList } from "@prisma/client";
 import { CreateLinkPopup } from "../CreateLinkPopup";
 import CreateLinkOnPaste from "../CreateLinkOnPaste";
 import QuicklinkSidebar from "./QuicklinksSidebar/QuicklinkSidebar";
@@ -20,7 +20,7 @@ import {
 } from "@/utils/redux/quicklinks/slices/quicklinks.directory.slice";
 
 // BAD PATTERN OF SLUG IS USED, WE CANT CHANGE IT BECAUSE IT IS USED IN THE MULTIPLE COMPONENTS
-const ROOT_DIRECTORIES: Omit<Directory, "timestamp">[] = [
+const ROOT_DIRECTORIES: Omit<DirectoryList, "timestamp">[] = [
   {
     id: "root-my-dashboard",
     title: "My Dashboard",
@@ -30,6 +30,8 @@ const ROOT_DIRECTORIES: Omit<Directory, "timestamp">[] = [
     position: 10,
     isArchive: false,
     clickCount: 0,
+    tabType: null,
+    type: null,
   },
   {
     id: "COMMON_RESOURCES",
@@ -40,6 +42,8 @@ const ROOT_DIRECTORIES: Omit<Directory, "timestamp">[] = [
     position: 20,
     isArchive: false,
     clickCount: 0,
+    tabType: null,
+    type: null,
   },
   {
     id: "DEPARTMENT",
@@ -50,6 +54,8 @@ const ROOT_DIRECTORIES: Omit<Directory, "timestamp">[] = [
     position: 20,
     isArchive: false,
     clickCount: 0,
+    tabType: null,
+    type: null,
   },
 ];
 

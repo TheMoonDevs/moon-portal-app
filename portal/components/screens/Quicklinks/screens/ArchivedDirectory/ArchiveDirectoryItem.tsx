@@ -1,4 +1,4 @@
-import { Directory, DirectoryList, ParentDirectory } from "@prisma/client";
+import { DirectoryList } from "@prisma/client";
 import { useQuickLinkDirectory } from "../../hooks/useQuickLinkDirectory";
 import { useState } from "react";
 import { Modal } from "@mui/material";
@@ -26,7 +26,7 @@ const ArchiveDirectoryItem = ({
   const [showRestoreModal, setShowRestoreModal] = useState<boolean>(false);
 
   const name = !parent
-    ? `${(directory as ParentDirectory).type?.toLocaleLowerCase()} / ${
+    ? `${(directory as DirectoryList).tabType?.toLocaleLowerCase()} / ${
         directory.title
       }`
     : `${parent?.title} / ${directory.title}`;

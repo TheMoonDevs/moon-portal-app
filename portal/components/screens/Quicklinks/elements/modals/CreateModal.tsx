@@ -12,6 +12,8 @@ const CreateDirectoryModal = () => {
   const { modal } = useAppSelector((state) => state.quicklinksUi);
   const selectedDirectory = modal.data && modal.data.selectedDirectory;
 
+  console;
+
   if (!(modal.type === "create-folder")) return null;
 
   const handleNameChange = async () => {

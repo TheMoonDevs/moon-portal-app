@@ -7,7 +7,7 @@ import { setIsCreateLinkModalOpen } from "@/utils/redux/quicklinks/slices/quickl
 import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
 import { Popover, Slide, Tooltip } from "@mui/material";
-import { DirectoryList, ParentDirectory, ROOTTYPE } from "@prisma/client";
+import { DirectoryList, ROOTTYPE } from "@prisma/client";
 import { usePathname, useSearchParams } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
 import { toast, Toaster } from "sonner";

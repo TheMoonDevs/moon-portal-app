@@ -21,7 +21,7 @@ import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
 import { usePathname } from "next/navigation";
 import { useUser } from "@/utils/hooks/useUser";
-import { DirectoryList, ParentDirectory, ROOTTYPE } from "@prisma/client";
+import { DirectoryList, ROOTTYPE } from "@prisma/client";
 import { isValidURL } from "@/utils/helpers/functions";
 import { addNewQuicklink } from "@/utils/redux/quicklinks/slices/quicklinks.links.slice";
 

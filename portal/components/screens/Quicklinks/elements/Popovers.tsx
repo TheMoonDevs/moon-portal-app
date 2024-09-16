@@ -4,7 +4,7 @@ import { setModal } from "@/utils/redux/quicklinks/slices/quicklinks.ui.slice";
 
 import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import { Popover } from "@mui/material";
-import { Directory } from "@prisma/client";
+import { DirectoryList } from "@prisma/client";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
 import { FocusEvent } from "react";
 
@@ -13,9 +13,9 @@ export const PopoverEmojis = ({
 }: {
   handleDirectoryUpdate: (
     event: FocusEvent<HTMLInputElement | Element> | MouseEvent,
-    directory: Directory,
+    directory: DirectoryList,
     parentId: string | null,
-    updateInfo: Partial<Directory>
+    updateInfo: Partial<DirectoryList>
   ) => Promise<void>;
 }) => {
   const { handleClose, anchorElement, data, openEmojiSet } =

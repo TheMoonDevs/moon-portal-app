@@ -1,11 +1,6 @@
 import React, { useState } from "react";
 import { useQuickLinkDirectory } from "../../hooks/useQuickLinkDirectory";
-import {
-  Directory,
-  DirectoryList,
-  ParentDirectory,
-  ROOTTYPE,
-} from "@prisma/client";
+import { DirectoryList, ROOTTYPE } from "@prisma/client";
 import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
 
 import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
