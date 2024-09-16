@@ -48,7 +48,7 @@ const QuicklinkSearchBar: React.FC = () => {
 
   return (
     <div ref={ref} className="relative">
-      <div className="relative flex items-center w-full rounded-lg focus-within:shadow-lg bg-white overflow-hidden shadow-md transition-all border border-neutral-100">
+      <div className="relative flex items-center w-full rounded-3xl focus-within:shadow-lg bg-white overflow-hidden  transition-all border ">
         <div className="grid place-items-center h-full w-12 text-gray-300">
           <svg
             xmlns="http://www.w3.org/2000/svg"
