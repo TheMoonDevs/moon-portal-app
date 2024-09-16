@@ -33,16 +33,6 @@ export const ListView = ({
               </p>
             </div>
           </div>
-          <div className="flex flex-row justify-end mr-[40px]">
-            <img
-              className="!h-[20px] !w-[20px] !object-cover rounded-full"
-              src={(link as any).author?.avatar}
-              alt=""
-            />
-            <p className="text-sm max-w-[300px] truncate font-semibold">
-              Added By {(link as any).author?.name}
-            </p>
-          </div>
         </div>
         <Link
           href={link.url}
@@ -58,6 +48,16 @@ export const ListView = ({
         </Link>
 
         <p className="text-sm mt-2">{link.description}</p>
+      </div>
+      <div className="flex flex-row  mr-[40px] mt-6">
+        <img
+          className="!h-[20px] !w-[20px] !object-cover rounded-full"
+          src={(link as any).author?.avatar}
+          alt=""
+        />
+        <p className="text-sm max-w-[300px] truncate font-semibold ml-2">
+          Added By {(link as any).author?.name}
+        </p>
       </div>
       <div className="w-full my-8 flex items-center gap-2">
         <div className="w-full flex-grow-1 h-[1px] bg-neutral-200"></div>

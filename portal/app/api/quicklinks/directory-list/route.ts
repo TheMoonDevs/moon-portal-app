@@ -1,45 +1,77 @@
 import { prisma } from "@/prisma/prisma";
+import { ROOTTYPE } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   const id = request.nextUrl.searchParams.get("id");
   const slug = request.nextUrl.searchParams.get("slug");
+  const tabType = request.nextUrl.searchParams.get("tabType") as ROOTTYPE;
+  const userId = request.nextUrl.searchParams.get("userId") as string;
+  let directoryList = [];
   try {
-    const parentDirs = await prisma.parentDirectory.findMany({
-      where: {
-        ...(id && { id: id }),
-        ...(slug && { slug: slug }),
-      },
-    });
+    if (!userId) {
+      directoryList = await prisma.directoryList.findMany({
+        where: {
+          ...(id && { id: id }),
+          ...(slug && { slug: slug }),
+          ...(tabType && { tabType: tabType }),
+        },
+      });
+    } else {
+      directoryList = await prisma.directoryList.findMany({
+        where: {
+          ...(id && { id: id }),
+          ...(slug && { slug: slug }),
+        },
+
+        include: {
+          userDirectory: {
+            where: {
+              userId: userId,
+              directoryType: "FAVORITED",
+            },
+            select: {
+              directoryId: true,
+            },
+          },
+        },
+      });
+    }
     let json_response = {
       status: "success",
       data: {
-        parentDirs,
+        directoryList,
       },
     };
     return NextResponse.json(json_response);
   } catch (e) {
-    console.log(e);
     return new NextResponse(JSON.stringify(e), {
       status: 404,
       headers: { "Content-Type": "application/json" },
     });
   }
 }
+
 export async function POST(request: Request) {
-  const newParentDirs = await request.json();
-  //   return;
+  const newDirectory = await request.json();
 
   try {
-    const parentDirs = await prisma.parentDirectory.create({
-      data: newParentDirs,
+    const lastDirectory = await prisma.directoryList.findFirst({
+      where: { parentDirId: newDirectory.parentDirId },
+      orderBy: { position: "desc" },
+      select: { position: true },
     });
 
+    const newPosition = lastDirectory ? lastDirectory.position + 10 : 10;
+    const directory = await prisma.directoryList.create({
+      data: {
+        ...newDirectory,
+        position: newPosition,
+      },
+    });
     let json_response = {
       status: "success",
-      data: {
-        parentDirs,
-      },
+      data: { directory },
     };
     return NextResponse.json(json_response);
   } catch (e) {
@@ -60,7 +92,7 @@ export async function DELETE(request: NextRequest) {
     });
   }
   try {
-    const newParentDirs = await prisma.parentDirectory.delete({
+    const directory = await prisma.directoryList.delete({
       where: {
         id: id,
       },
@@ -68,7 +100,7 @@ export async function DELETE(request: NextRequest) {
     let json_response = {
       status: "success",
       data: {
-        newParentDirs,
+        directory,
       },
     };
     return NextResponse.json(json_response);
@@ -89,7 +121,7 @@ export async function PUT(request: NextRequest) {
     });
   }
   try {
-    const directory = await prisma.parentDirectory.update({
+    const directory = await prisma.directoryList.update({
       where: {
         id: id,
       },

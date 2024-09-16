@@ -6,12 +6,9 @@ import Image from "next/image";
 import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
 import { FormFields } from "./LinkActions";
 import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import {
-  setAllQuicklinks,
-  setToast,
-  updateQuicklink,
-} from "@/utils/redux/quicklinks/quicklinks.slice";
 import { TMD_PORTAL_API_KEY } from "@/utils/constants/appInfo";
+import { setToast } from "@/utils/redux/quicklinks/slices/quicklinks.ui.slice";
+import { updateQuicklink } from "@/utils/redux/quicklinks/slices/quicklinks.links.slice";
 
 export const EditLinkPopup = ({
   isModalOpen,
