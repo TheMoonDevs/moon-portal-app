@@ -422,3 +422,25 @@ enum BadgeStatus {
   REWARDED
   SUSPENDED
 }
+
+//-------------------------------------POINTERS - Chats And Replies-------------------------------------------
+
+model Pointer {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String   @db.ObjectId 
+  targetUserId String   @db.ObjectId 
+  content      String   
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  replies      Reply[]  @relation("PointerReplies")
+}
+
+model Reply {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  pointerId  String   @db.ObjectId
+  pointer    Pointer  @relation(fields: [pointerId], references: [id], name: "PointerReplies")
+  userId     String   @db.ObjectId
+  content    String   
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
