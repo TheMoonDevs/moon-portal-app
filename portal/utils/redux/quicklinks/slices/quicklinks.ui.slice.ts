@@ -1,6 +1,7 @@
 import { ToastSeverity } from "@/components/elements/Toast";
-import { UserLink, Link } from "@prisma/client";
+import { UserLink, Link, DirectoryList } from "@prisma/client";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { Dispatch, SetStateAction } from "react";
 
 type listView = "list" | "widget" | "thumbnail" | "line";
 
@@ -13,6 +14,7 @@ interface QuikcklinksUIState {
   modal: {
     type: "rename-folder" | "move-folder" | "create-folder" | null;
     data: any | null;
+    setSelectedDir?: Dispatch<SetStateAction<DirectoryList | null>>;
   };
   currentView: listView;
   toast: {

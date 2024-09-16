@@ -4,6 +4,7 @@ import { handleDeleteDirectory } from "@/utils/redux/quicklinks/quicklinks.thunk
 import { setModal } from "@/utils/redux/quicklinks/slices/quicklinks.ui.slice";
 import { useAppDispatch } from "@/utils/redux/store";
 import { DirectoryList } from "@prisma/client";
+import { useEffect } from "react";
 
 const DirectoryActionBar = ({
   selectedDir,
@@ -16,7 +17,6 @@ const DirectoryActionBar = ({
 }) => {
   const dispatch = useAppDispatch();
   if (!selectedDir) return null;
-
   return (
     <div className="w-full p-2 px-2 rounded-2xl bg-neutral-100 flex gap-6">
       <span
@@ -35,6 +35,7 @@ const DirectoryActionBar = ({
               setModal({
                 type: "rename-folder",
                 data: { selectedDirectory: selectedDir },
+                setSelectedDir: setSelectedDir,
               })
             )
           }

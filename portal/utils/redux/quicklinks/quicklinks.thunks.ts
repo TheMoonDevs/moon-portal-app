@@ -10,6 +10,7 @@ import {
   updateDirectory,
 } from "./slices/quicklinks.directory.slice";
 import { setModal, setToast } from "./slices/quicklinks.ui.slice";
+import { Dispatch, SetStateAction } from "react";
 
 export const handleDeleteDirectory = createAsyncThunk(
   "directory/deleteDirectory",

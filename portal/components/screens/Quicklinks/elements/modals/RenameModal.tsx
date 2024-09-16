@@ -12,15 +12,14 @@ const RenameModal = () => {
   const selectedDirectory = modal.data && modal.data.selectedDirectory;
   const name = selectedDirectory && selectedDirectory.title;
   const [newName, setNewName] = useState("");
-
+  console.log(selectedDirectory);
   useEffect(() => {
     setNewName(name);
   }, [name]);
-
   if (!(modal.type === "rename-folder")) return null;
   const handleRename = async () => {
     try {
-      dispatch(
+      const result = await dispatch(
         handleDirectoryUpdate({
           directory: selectedDirectory,
           parentId: selectedDirectory.parentDirId,
@@ -30,6 +29,7 @@ const RenameModal = () => {
           },
         })
       );
+      modal.setSelectedDir && modal.setSelectedDir(result.payload);
     } catch (error) {
       console.log(error);
     }
