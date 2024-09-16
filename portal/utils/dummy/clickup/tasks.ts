@@ -1,5 +1,3 @@
-import { Task } from "@/utils/@types/clickup/types";
-
 export const tasks = [
   {
     id: "86cwetrgj",
@@ -176,7 +174,7 @@ export const tasks = [
     tags: [],
     parent: null,
     priority: null,
-    due_date: null,
+    due_date: "1718865096050",
     start_date: null,
     points: null,
     time_estimate: null,
