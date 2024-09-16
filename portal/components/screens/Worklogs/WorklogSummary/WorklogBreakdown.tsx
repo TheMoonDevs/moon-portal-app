@@ -198,7 +198,11 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
   };
 
   return (
-    <main className="flex flex-col justify-center gap-5 my-6 mx-2 px-2 pb-20 rounded-[32px] bg-white ">
+    <main
+      className={`flex flex-col justify-center gap-5 my-6 mx-2 px-2 ${
+        activeTab === "POINTERS" ? "pb-28" : "pb-20"
+      } rounded-[32px] bg-white `}
+    >
       <h1 className="font-semibold text-lg md:text-2xl font-sans text-center justify-start mt-4 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 text-transparent bg-clip-text">
         Worklog Breakdown
       </h1>
