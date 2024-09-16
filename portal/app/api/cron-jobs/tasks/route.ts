@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/../../prisma/prisma";
-import { filterTasks } from "@/../../utils/clickup/helper";
+import { prisma } from "@/prisma/prisma";
+import { filterTasks } from "@/utils/clickup/helper";
 import { Task } from "@prisma/client";
 export const dynamic = "force-dynamic"; // static by default, unless reading the request
 export async function GET(request: NextRequest) {
