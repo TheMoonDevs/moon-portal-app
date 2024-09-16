@@ -464,3 +464,14 @@ enum BadgeStatus {
   REWARDED
   SUSPENDED
 }
+
+model Task {
+  taskId    String   @id @map("_id")
+  name      String
+  status    String
+  priority  String?   
+  assignees String[]  
+  url       String
+  startDate DateTime? 
+  dueDate   DateTime? 
+}
