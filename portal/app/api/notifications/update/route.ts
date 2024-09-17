@@ -10,7 +10,7 @@ export async function PUT(request: NextRequest) {
         id,
       },
       create: { id, ...data },
-      update: data,
+      update: {...data, updatedAt: new Date()},
     });
 
     const json_response = {
