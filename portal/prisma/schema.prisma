@@ -324,7 +324,7 @@ model Notification {
   updatedAt         DateTime          @updatedAt
   title             String
   description       String
-  matchId           String?           
+  matchId           String?           @unique
   matchType         String?
   notificationType  NotificationType
   notificationData  Json?
