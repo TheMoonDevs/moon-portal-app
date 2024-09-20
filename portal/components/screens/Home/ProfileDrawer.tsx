@@ -3,10 +3,9 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Drawer, Box, Fab, IconButton, useMediaQuery } from "@mui/material";
-
 import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import { useUser } from "@/utils/hooks/useUser";
-import { User, WorkLogs } from "@prisma/client";
+import { User, USERROLE, USERVERTICAL, WorkLogs } from "@prisma/client";
 import Link from "next/link";
 import { updateAvatarUrl } from "@/utils/redux/onboarding/onboarding.slice";
 import {
@@ -31,6 +30,8 @@ import media from "@/styles/media";
 import DrawerComponent from "@/components/elements/DrawerComponent";
 import dayjs from "dayjs";
 import { ArrayHelper } from "@/utils/helpers/array";
+import Image from "next/image";
+import ToolTip from "@/components/elements/ToolTip";
 
 interface LoggedInUser {
   user: User;
@@ -44,6 +45,56 @@ export interface PayData {
   payMethod?: string;
   stipendWalletAddress?: string;
 }
+
+const roleImageMap: Record<USERROLE, string> = {
+  CORETEAM: "/images/status/coreteam.jpeg",
+  ASSOCIATE: "/images/status/associate.jpeg",
+  FREELANCER: "/images/status/freelancer.jpeg",
+  INTERN: "/images/status/intern.jpeg",
+  TRIAL_CANDIDATE: "/images/status/trial.jpeg",
+};
+
+const verticalImageMap: Record<USERVERTICAL, string> = {
+  DEV: "/images/roles/developer.jpeg",
+  DESIGN: "/images/roles/Designer.jpeg",
+  MARKETING: "/images/roles/marketing.jpeg",
+  COMMUNITY: "/images/roles/community.jpeg",
+  FINANCE: "/images/roles/finance.jpeg",
+  LEGAL: "/images/roles/legal.jpeg",
+  HR: "/images/roles/hr.jpeg",
+  OPERATIONS: "/images/roles/operations.jpeg",
+};
+
+const getUserRoleImage = (role: USERROLE | null) =>
+  role ? roleImageMap[role] || "/images/default.jpeg" : "/images/default.jpeg";
+
+const getUserVerticalImage = (vertical: USERVERTICAL | null) =>
+  vertical
+    ? verticalImageMap[vertical] || "/images/default.jpeg"
+    : "/images/default.jpeg";
+
+const translateUserVertical = (vertical: string): string => {
+  const verticalMap: { [key: string]: string } = {
+    DEV: "Developer",
+    DESIGN: "Designer",
+    MARKETING: "Marketing",
+    COMMUNITY: "Community Manager",
+    FINANCE: "Finance Specialist",
+    LEGAL: "Legal Specialist",
+    HR: "Human Resources",
+    OPERATIONS: "Operations",
+  };
+  return verticalMap[vertical] || "Unknown Vertical";
+};
+
+const truncateAddress = (
+  address: string | undefined,
+  visibleChars: number = 4
+): string => {
+  if (!address) return "Not Available";
+  if (address.length <= visibleChars * 2) return address;
+  return `${address.slice(0, visibleChars)}...${address.slice(-visibleChars)}`;
+};
 
 export const UserProfileDrawer: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -68,7 +119,8 @@ export const UserProfileDrawer: React.FC = () => {
     setLoading(true);
     try {
       const response = await PortalSdk.getData(
-        `/api/user/worklogs/summary?userId=${selectedUser?.id
+        `/api/user/worklogs/summary?userId=${
+          selectedUser?.id
         }&year=${dayjs().year()}&month=${dayjs()
           .month(dayjs().month())
           .format("MM")}`,
@@ -89,31 +141,6 @@ export const UserProfileDrawer: React.FC = () => {
   }, [fetchWorklogData, isOpen, selectedUser]);
 
   if (!selectedUser) return null;
-
-  const translateUserVertical = (vertical: string): string => {
-    const verticalMap: { [key: string]: string } = {
-      DEV: "Developer",
-      DESIGN: "Designer",
-      MARKETING: "Marketing",
-      COMMUNITY: "Community Manager",
-      FINANCE: "Finance Specialist",
-      LEGAL: "Legal Specialist",
-      HR: "Human Resources",
-      OPERATIONS: "Operations",
-    };
-    return verticalMap[vertical] || "Unknown Vertical";
-  };
-
-  const truncateAddress = (
-    address: string | undefined,
-    visibleChars: number = 4
-  ): string => {
-    if (!address) return "Not Available";
-    if (address.length <= visibleChars * 2) return address;
-    return `${address.slice(0, visibleChars)}...${address.slice(
-      -visibleChars
-    )}`;
-  };
 
   const handleFileChange = (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -255,73 +282,81 @@ export const UserProfileDrawer: React.FC = () => {
         </div>
         <p className="text-sm py-1">
           @{selectedUser?.username + selectedUser?.password}{" "}
+          {selectedUser.positionTitle && `- ${selectedUser.positionTitle}`}
         </p>
-        <div className="flex gap-3 text-black font-bold text-xs py-2">
-          <div className="rounded-md border-2 border-gray-300 px-2 py-1 capitalize">
-            {translateUserVertical(selectedUser?.vertical || "")}
-          </div>
-          <div className="rounded-md border-2 border-gray-300 px-2 py-1 capitalize">
-            {selectedUser?.userType?.toLowerCase()}
-          </div>
-          <div className="rounded-md border-2 border-gray-300 px-2 py-1 capitalize">
-            {selectedUser?.role?.toLowerCase()}
-          </div>
-        </div>
-        <div className="flex gap-4 py-2">
+        <div className="flex gap-4 py-2 w-full">
           <Link
-            href={`https://slack.com/app_redirect?channel=${selectedUser?.slackId}`}
+            href={`${APP_ROUTES.userWorklogSummary}/${selectedUser?.id}`}
             target="_blank"
-            className="bg-black text-white px-3 py-2 rounded-lg text-sm flex gap-2 items-center hover:bg-gray-800 transition duration-300"
+            className="bg-black text-white px-3 py-2 rounded-lg text-sm 
+    flex justify-center gap-2 items-center hover:bg-gray-800 transition duration-300 border border-gray-300 flex-grow"
           >
             <span
               className="material-symbols-outlined"
               style={{ fontSize: "20px" }}
             >
-              chat
+              work_history
             </span>
+            Worklogs
+          </Link>
+          <Link
+            href={`https://slack.com/app_redirect?channel=${selectedUser?.slackId}`}
+            target="_parent"
+            className="text-black px-3 py-2 rounded-lg text-sm flex gap-2 items-center justify-center hover:bg-gray-200 transition duration-300 border border-gray-300 flex-grow"
+          >
+            <Image
+              src="/images/thirdparty/slack-new.svg"
+              alt="slack"
+              width={16}
+              height={16}
+            />
             Message
           </Link>
           {loggedinUser.user.id === selectedUser?.id && (
-            <button className="text-black border px-3 py-2 rounded-lg border-gray-300 flex items-center gap-2 hover:bg-gray-200 transition duration-300">
-              <span
-                className="material-symbols-outlined"
-                style={{ fontSize: "20px" }}
-              >
-                edit_square
-              </span>
-              Edit Profile
-            </button>
+            <ToolTip title="Edit Profile">
+              <button className="text-black border p-2 rounded-lg border-gray-300 flex items-center justify-center gap-2 hover:bg-gray-200 transition duration-300 flex-grow-0 w-auto">
+                <span
+                  className="material-symbols-outlined"
+                  style={{ fontSize: "20px" }}
+                >
+                  edit_square
+                </span>
+              </button>
+            </ToolTip>
           )}
         </div>
+
         <p className="text-sm py-4 ">
-          {selectedUser?.description ||
-            "This is the Seleted user's description or bio that will be displayed here and every user will have a unique bio or description that will show off their personality and their work."}
+          {selectedUser?.description || "Description not available."}
         </p>
-        {!loading ? (
-          <div className="flex gap-1 flex-col">
-            <h6 className="font-bold pb-2">Worklogs</h6>
-            <div className="border-2 border-gray-300 rounded-xl h-[310px] relative p-3 overflow-y-hidden">
-              <div className="bottom-8 px-2 h-full overflow-hidden">
-                <WorklogSummaryView
-                  workLogUser={selectedUser}
-                  worklogSummary={ArrayHelper.reverseSortByDate(worklogSummary, "date").slice(0, 5)}
-                />
-                <div className="absolute bottom-0 left-0 right-0 h-[30vh] bg-gradient-to-b from-transparent to-white flex flex-col justify-end">
-                  <p className="font-semibold text-xs text-neutral-500 text-center p-2"></p>
-                </div>
-              </div>
-              <Link
-                href={`${APP_ROUTES.userWorklogSummary}/${selectedUser?.id}`}
-                className="absolute bottom-2 right-2 bg-white rounded-md border-gray-300 border-2 py-1 px-2 text-sm hover:bg-gray-200 transition duration-300"
-              >
-                View Full Summary
-              </Link>
+        <div className="flex gap-6 py-4 items-center">
+          <div className="flex flex-col items-center">
+            <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-gray-300">
+              <img
+                src={getUserVerticalImage(selectedUser?.vertical)}
+                alt="user-vertical"
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="mt-2 text-center text-xs font-bold capitalize">
+              {translateUserVertical(selectedUser?.vertical || "")}
             </div>
           </div>
-        ) : (
-          <LoadingSkeleton />
-        )}
-        <div className="py-4">
+          <div className="flex flex-col items-center">
+            <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-gray-300">
+              <img
+                src={getUserRoleImage(selectedUser?.role)}
+                alt="user-role"
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="mt-2 text-center text-xs font-bold capitalize">
+              {selectedUser?.role?.toLowerCase()}
+            </div>
+          </div>
+        </div>
+
+        {/* <div className="py-4">
           <h6 className="font-bold pb-2">Engagements</h6>
           <ul className="flex flex-col gap-3 pt-2">
             <li className="flex items-center gap-3 text-sm">
@@ -343,21 +378,21 @@ export const UserProfileDrawer: React.FC = () => {
               This is the Third Engagement
             </li>
           </ul>
-        </div>
-        <div className="pb-4">
+        </div> */}
+        {/* <div className="pb-4">
           <h6 className="font-bold pb-2">Missions/Task</h6>
           <ul className="flex flex-col gap-1 p-3 border-2 mt-1 border-gray-300 rounded-xl list-none">
-            <li className="flex items-center pl-5 relative before:content-['•'] before:absolute before:left-0 before:text-gray-500 text-sm">
+            <li className="flex items-center pl-5 relative before:content-["•"] before:absolute before:left-0 before:text-gray-500 text-sm">
               Task 1 or mission 1
             </li>
-            <li className="flex items-center pl-5 relative before:content-['•'] before:absolute before:left-0 before:text-gray-500 text-sm">
+            <li className="flex items-center pl-5 relative before:content-["•"] before:absolute before:left-0 before:text-gray-500 text-sm">
               Task 2 or mission 2
             </li>
-            <li className="flex items-center pl-5 relative before:content-['•'] before:absolute before:left-0 before:text-gray-500 text-sm">
+            <li className="flex items-center pl-5 relative before:content-["•"] before:absolute before:left-0 before:text-gray-500 text-sm">
               Task 3 or mission 3
             </li>
           </ul>
-        </div>
+        </div> */}
         {loggedinUser.user.id === selectedUser?.id && (
           <div className="flex flex-col gap-1 pb-4">
             <h6 className="font-bold pb-2">Payment Details</h6>
@@ -380,8 +415,7 @@ export const UserProfileDrawer: React.FC = () => {
                 <p className="text-sm font-bold text-gray-700">
                   Wallet Address:{" "}
                   <span className="text-gray-900">
-                    {truncateAddress(payData?.walletAddress) ||
-                      "Not Available"}
+                    {truncateAddress(payData?.walletAddress) || "Not Available"}
                   </span>
                 </p>
               </div>
@@ -399,6 +433,34 @@ export const UserProfileDrawer: React.FC = () => {
               </div>
             </div>
           </div>
+        )}
+        {!loading ? (
+          <div className="flex gap-1 flex-col">
+            <h6 className="font-bold pb-2">Last worked on </h6>
+            <div className=" h-[310px] relative overflow-y-hidden">
+              <div className="bottom-8 h-full overflow-y-scroll">
+                <WorklogSummaryView
+                  workLogUser={selectedUser}
+                  worklogSummary={ArrayHelper.reverseSortByDate(
+                    worklogSummary,
+                    "date"
+                  ).slice(0, 5)}
+                  isDrawer={true}
+                />
+                <div className="absolute bottom-0 left-0 right-0 h-[30vh] bg-gradient-to-b from-transparent to-white flex flex-col justify-end">
+                  <p className="font-semibold text-xs text-neutral-500 text-center p-2"></p>
+                </div>
+              </div>
+              {/* <Link
+                href={`${APP_ROUTES.userWorklogSummary}/${selectedUser?.id}`}
+                className="absolute bottom-2 right-2 bg-white rounded-md border-gray-300 border-2 py-1 px-2 text-sm hover:bg-gray-200 transition duration-300"
+              >
+                View Full Summary
+              </Link> */}
+            </div>
+          </div>
+        ) : (
+          <LoadingSkeleton />
         )}
       </div>
     </DrawerComponent>
