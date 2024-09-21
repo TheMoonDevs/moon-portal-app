@@ -32,6 +32,7 @@ import dayjs from "dayjs";
 import { ArrayHelper } from "@/utils/helpers/array";
 import Image from "next/image";
 import ToolTip from "@/components/elements/ToolTip";
+import ReactActivityCalendar from "./ActivityCalendar";
 
 interface LoggedInUser {
   user: User;
@@ -355,7 +356,15 @@ export const UserProfileDrawer: React.FC = () => {
             </div>
           </div>
         </div>
-
+        <div className="w-full">
+          <h6 className="font-bold pb-2">
+            Contributions ({dayjs().format("MMM YYYY")})
+          </h6>
+          <ReactActivityCalendar
+            worklogSummary={worklogSummary}
+            loading={loading}
+          />
+        </div>
         {/* <div className="py-4">
           <h6 className="font-bold pb-2">Engagements</h6>
           <ul className="flex flex-col gap-3 pt-2">
