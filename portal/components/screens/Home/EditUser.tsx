@@ -17,6 +17,7 @@ import { TMD_PORTAL_API_KEY } from '@/utils/constants/appInfo';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 import { toast, Toaster } from 'sonner';
 import { setReduxUser } from '@/utils/redux/auth/auth.slice';
+import InputField from '@/components/elements/InputField';
 
 interface UpdatedUserData {
   id: string | undefined;
@@ -179,9 +180,9 @@ const EditUser = () => {
         disableEnforceFocus
       >
         <Box
-          className='w-full max-w-2xl bg-white rounded-lg fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 shadow-lg overflow-y-auto no-scrollbar outline-none'
+          className='w-full max-w-2xl bg-white rounded-lg fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 shadow-lg overflow-y-auto no-scrollbar outline-none max-h-[80vh] max-sm:max-h-[100vh] max-sm:z-9999 max-sm:pb-20'
           sx={{
-            maxHeight: '80vh',
+            // maxHeight: '80vh',
             position: 'relative',
             overflowY: 'auto',
             boxShadow: '0 4px 20px rgba(0, 0, 0, 0.2)',
@@ -199,7 +200,7 @@ const EditUser = () => {
             />
             <IconButton
               onClick={() => dispatch(setEditModalOpen(false))}
-              className='absolute top-4 left-[92%] bg-white hover:bg-gray-200 rounded-full w-10 h-10 flex items-center justify-center shadow-lg transition-all duration-300'
+              className='absolute top-4 left-[92%] bg-white hover:bg-gray-200 rounded-full w-10 h-10 flex items-center justify-center shadow-lg transition-all duration-300 max-sm:left-[88%]'
               sx={{ backgroundColor: 'white !important' }}
             >
               <span
@@ -251,77 +252,46 @@ const EditUser = () => {
           </div>
           <div className='p-8'>
             <div className='mt-8'>
-              <label htmlFor='name' className='block text-sm font-medium mb-1'>
-                Name
-              </label>
-              <input
-                type='text'
+              <InputField
                 id='name'
+                label='Name'
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className='border rounded w-full p-2 mt-1 mb-4 shadow-sm focus:ring focus:ring-blue-300 transition duration-150'
               />
-              <label htmlFor='email' className='block text-sm font-medium mb-1'>
-                Email
-              </label>
-              <input
-                type='email'
+              <InputField
                 id='email'
+                label='Email'
+                type='email'
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className='border rounded w-full p-2 mt-1 mb-4 shadow-sm focus:ring focus:ring-blue-300 transition duration-150'
               />
-              <label
-                htmlFor='description'
-                className='block text-sm font-medium mb-1'
-              >
-                Description
-              </label>
-              <textarea
+              <InputField
                 id='description'
+                label='Description'
+                textarea={true}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className='border rounded w-full p-2 mt-1 mb-4 shadow-sm focus:ring focus:ring-blue-300 transition duration-150'
-                rows={3}
               />
-              <label htmlFor='phone' className='block text-sm font-medium mb-1'>
-                Phone
-              </label>
-              <input
-                type='text'
+              <InputField
                 id='phone'
+                label='Phone'
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className='border rounded w-full p-2 mb-4 shadow-sm focus:ring focus:ring-blue-300 transition duration-150'
               />
-              <label
-                htmlFor='address'
-                className='block text-sm font-medium mb-1'
-              >
-                Address
-              </label>
-              <input
-                type='text'
+              <InputField
                 id='address'
+                label='Address'
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                className='border rounded w-full p-2 mb-4 shadow-sm focus:ring focus:ring-blue-300 transition duration-150'
               />
               <div className='flex items-center gap-2'>
                 <div className='flex-1 mt-4'>
                   {' '}
-                  <label
-                    htmlFor='city'
-                    className='block text-sm font-medium mb-1'
-                  >
-                    City
-                  </label>
-                  <input
-                    type='text'
+                  <InputField
                     id='city'
+                    label='City'
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
-                    className='border rounded w-full p-2 mb-4 shadow-sm focus:ring focus:ring-blue-300 transition duration-150 h-[56px]'
                   />
                 </div>
                 <div className='flex-1'>
@@ -338,34 +308,23 @@ const EditUser = () => {
                   </LocalizationProvider>
                 </div>
               </div>
-              <label
-                htmlFor='positionTitle'
-                className='block text-sm font-medium mb-1'
-              >
-                Position Title
-              </label>
-              <input
-                type='text'
+              <InputField
                 id='positionTitle'
+                label='Position Title'
                 value={positionTitle}
                 onChange={(e) => setPositionTitle(e.target.value)}
-                className='border rounded w-full p-2 mt-1 mb-4 shadow-sm focus:ring focus:ring-blue-300 transition duration-150'
               />
-              <label className='block text-sm font-medium mb-1'>UPI ID</label>
-              <input
-                type='text'
+              <InputField
+                id='upiId'
+                label='UPI ID'
                 value={upiId}
                 onChange={(e) => setUpiId(e.target.value)}
-                className='border rounded w-full p-2 shadow-sm focus:ring focus:ring-blue-300 transition duration-150 mb-4'
               />
-              <label className='block text-sm font-medium mb-1'>
-                Wallet Address
-              </label>
-              <input
-                type='text'
+              <InputField
+                id='walletAddress'
+                label='Wallet Address'
                 value={walletAddress}
                 onChange={(e) => setWalletAddress(e.target.value)}
-                className='border rounded w-full p-2 shadow-sm focus:ring focus:ring-blue-300 transition duration-150 mb-4'
               />
             </div>
             <div className='mt-6'>
@@ -373,7 +332,7 @@ const EditUser = () => {
                 variant='contained'
                 color='primary'
                 onClick={handleUpdate}
-                className='w-full capitalize'
+                sx={{ textTransform: 'none', py: 1, width: '100%' }}
               >
                 {isUpdating ? (
                   <Spinner className='w-6 h-6  text-green-600' />
@@ -389,4 +348,5 @@ const EditUser = () => {
     </>
   );
 };
+
 export default EditUser;
