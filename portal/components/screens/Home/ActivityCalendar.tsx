@@ -69,7 +69,7 @@ const ReactActivityCalendar = ({
     <div className='flex items-center justify-center py-4 ml-20 mr-20'>
       {loading ? (
         <SkeletonLoader />
-      ) : (
+      ) : worklogSummary.length > 0 ? (
         <ActivityCalendar
           data={calendarData}
           renderBlock={(block, activity) => (
@@ -93,6 +93,10 @@ const ReactActivityCalendar = ({
           blockSize={20}
           weekStart={0}
         />
+      ) : (
+        <div className='flex items-center justify-center'>
+          <p className='text-neutral-400'>No Activities Found.</p>
+        </div>
       )}
     </div>
   );
