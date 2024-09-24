@@ -33,7 +33,10 @@ export default async function getSpreadsheetData({
   const jwtClient = new google.auth.JWT(
     process.env.GIAM_CLIENT_EMAIL,
     process.env.GIAM_CLIENT_ID,
-    process.env.GIAM_PRIVATE_KEY?.replace(/\\n/gm, "\n"),
+    Buffer.from(
+      process.env.GIAM_PRIVATE_KEY as string,
+      "base64"
+    ).toString("ascii"),
     [
       "https://www.googleapis.com/auth/spreadsheets",
       "https://www.googleapis.com/auth/drive",
