@@ -1,0 +1,164 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String        @id @default(auto()) @map("_id") @db.ObjectId
+  username  String
+  password  String
+  email     String?
+  name      String?
+  avatar    String?
+  userType  USERTYPE?     @default(MEMBER)
+  role      USERROLE?     @default(CORETEAM)
+  vertical  USERVERTICAL? @default(DEV)
+  status    USERSTATUS?   @default(ACTIVE)
+  industry  USERINDUSTRY?
+  isAdmin   Boolean       @default(false)
+  timezone  String?
+  country   String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @default(now())
+  workData  Json?
+}
+
+model Candidate {
+  id                     String  @id @default(auto()) @map("_id") @db.ObjectId
+  name                   String
+  email                  String
+  mobileNumber           Int
+  portfolio              String?
+  resume                 String?
+  applicantAnswers       Json[]
+  educationQualification String?
+  skillQualification     String?
+  workExp                String?
+  jobPost                JobPost @relation(fields: [jobPostId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  jobPostId              String  @db.ObjectId
+  screeningRound1        Json?
+  screeningRound2        Json?
+  // result              CandidateResult   @default(PENDING)
+}
+
+model JobPost {
+  id          String      @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  deptName    String
+  description String
+  defaultReq  Json?
+  deptReq     Json?
+  adminReq    Json?
+  hrReq       Json?
+  status      JOBSTATUS   @default(ACTIVE)
+  jobpost     JOBPOST     @default(FULLTIME)
+  createdAt   DateTime    @default(now())
+  Candidate   Candidate[]
+}
+
+model Survey {
+  id       String  @id @default(auto()) @map("_id") @db.ObjectId
+  username String
+  password String
+  name     String?
+}
+
+model ShortLink {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  slug       String   @unique
+  redirectTo String
+  params     Json?
+  createdAt  DateTime @default(now())
+}
+
+model ClientLeadForm {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  teamSize        String?
+  industry        String?
+  requirementType String?
+  budget          Int?
+  time            String?
+  stage           String?
+  contact         Json
+  createdAt       DateTime @default(now())
+}
+
+model Article {
+  id              String      @id @default(auto()) @map("_id") @db.ObjectId
+  title           String
+  image           String?  
+  content         String
+  articleUrl      String
+  articleType     String
+  author          String
+  publishDate     DateTime
+  categories      String[]
+
+  @@index([title], name: "title_idx")
+  @@index([author], name: "author_idx")
+}
+
+enum JOBPOST {
+  FULLTIME
+  PARTTIME
+  INTERN
+}
+
+enum JOBSTATUS {
+  ACTIVE
+  INACTIVE
+}
+
+enum USERTYPE {
+  MEMBER
+  CLIENT
+}
+
+enum USERSTATUS {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+}
+
+enum USERROLE {
+  CORETEAM
+  ASSOCIATE
+  FREELANCER
+  INTERN
+}
+
+enum USERVERTICAL {
+  DEV
+  DESIGN
+  MARKETING
+  COMMUNITY
+  FINANCE
+  LEGAL
+  HR
+  OPERATIONS
+}
+
+enum USERINDUSTRY {
+  CRYPTO
+  FINANCE
+  HEALTHCARE
+  EDUCATION
+  RETAIL
+  REALSTATE
+  GAMING
+  SOCIAL
+  OTHERS
+}
+
+enum CANDIDATERESULT {
+  APPROVED
+  REJECTED
+  PENDING
+}
