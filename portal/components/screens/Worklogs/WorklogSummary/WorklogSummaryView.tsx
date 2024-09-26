@@ -37,13 +37,33 @@ const getCompletionEmoji = (completed: number, total: number) => {
   return null;
 };
 
+export const getLatestWorklogPerDate = (worklogs: WorkLogs[]): WorkLogs[] => {
+  const latestWorklogMap: Record<string, WorkLogs> = {};
+
+  worklogs.forEach((worklog) => {
+    if (worklog?.date) {
+      if (
+        !latestWorklogMap[worklog.date] ||
+        new Date(worklog.updatedAt) >
+          new Date(latestWorklogMap[worklog.date].updatedAt)
+      ) {
+        latestWorklogMap[worklog.date] = worklog;
+      }
+    }
+  });
+
+  return Object.values(latestWorklogMap);
+};
+
 export const WorklogSummaryView = ({
   worklogSummary,
   workLogUser,
 }: WorklogSummaryViewProps) => {
-  return worklogSummary.length > 0 ? (
+  const uniqueWorklogs = getLatestWorklogPerDate(worklogSummary); //removes duplicate data from worklogs and we will get the latest updated worklogs
+
+  return uniqueWorklogs.length > 0 ? (
     <div className="p-8">
-      {ArrayHelper.reverseSortByDate(worklogSummary, "date").map((worklog) => {
+      {ArrayHelper.reverseSortByDate(uniqueWorklogs, "date").map((worklog) => {
         const markdownData = worklog?.works[0];
         const stats = markdownData
           ? getStatsOfContent(markdownData.content as string)
