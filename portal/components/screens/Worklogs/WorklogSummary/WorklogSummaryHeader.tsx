@@ -256,7 +256,7 @@ export const WorklogSummaryHeader = ({
   }, [dispatch, coreTeam.length]);
 
   return (
-    <div className="py-4 bg-white flex flex-row gap-3 px-3 items-center justify-between border-neutral-400">
+    <div className="py-4 bg-white flex flex-row gap-3 px-3 items-center justify-between border-neutral-400 max-sm:flex-col max-sm:gap-4 max-sm:items-start max-sm:w-full ">
       <div className="flex items-center justify-between w-full sm:w-[unset] sm:justify-start">
         <Link href={APP_ROUTES.home} className="flex items-center">
           <h1 className="hidden sm:block md:text-lg text-sm whitespace-nowrap cursor-pointer font-extrabold border-r-2 pr-3 mr-3">
