@@ -22,13 +22,11 @@ const style = (left: number) => ({
 interface NotificationModalProps {
   open: boolean;
   onClose: () => void;
-  notifications: INotification[];
 }
 
 const NotificationModal: React.FC<NotificationModalProps> = ({
   open,
   onClose,
-  notifications,
 }) => {
   const [leftPosition, setLeftPosition] = useState<number>(0);
 
@@ -48,7 +46,7 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
       aria-describedby='notification-modal-description'
     >
       <Box sx={style(leftPosition)} className='no-scrollbar'>
-        <NotificationsList notifications={notifications} />
+        <NotificationsList />
       </Box>
     </Modal>
   );

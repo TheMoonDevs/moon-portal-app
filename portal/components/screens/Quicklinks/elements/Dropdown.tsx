@@ -1,7 +1,7 @@
+import { DirectoryList } from "@prisma/client";
 import { ChangeEvent } from "react";
-import { ParentDirectory } from "@prisma/client";
 interface DropdownProps {
-  options: ParentDirectory[];
+  options: DirectoryList[];
   placeholder: string;
   selectedDepartment: { title: string };
   handleOptionChange: (event: ChangeEvent<HTMLSelectElement>) => void;
