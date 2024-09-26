@@ -1,0 +1,109 @@
+{
+  "id": "job",
+  "type": "SharedSlice",
+  "name": "Job",
+  "description": "Job",
+  "variations": [
+    {
+      "id": "default",
+      "name": "Default",
+      "docURL": "...",
+      "version": "initial",
+      "description": "Default",
+      "imageUrl": "",
+      "primary": {
+        "image": {
+          "type": "Image",
+          "config": {
+            "label": "Image",
+            "constraint": {},
+            "thumbnails": []
+          }
+        },
+        "title": {
+          "type": "Text",
+          "config": {
+            "label": "Title",
+            "placeholder": ""
+          }
+        },
+        "description": {
+          "type": "StructuredText",
+          "config": {
+            "label": "Description",
+            "placeholder": "",
+            "allowTargetBlank": true,
+            "multi": "paragraph,preformatted,heading1,heading2,heading3,heading4,heading5,heading6,strong,em,hyperlink,image,embed,list-item,o-list-item,rtl"
+          }
+        },
+        "department": {
+          "type": "Text",
+          "config": {
+            "label": "Department",
+            "placeholder": ""
+          }
+        },
+        "spreadsheet_url": {
+          "type": "Text",
+          "config": {
+            "label": "Spreadsheet Url",
+            "placeholder": ""
+          }
+        },
+        "assignment_url": {
+          "type": "Text",
+          "config": {
+            "label": "Assignment Url",
+            "placeholder": ""
+          }
+        },
+        "requirements": {
+          "type": "StructuredText",
+          "config": {
+            "label": "Requirements",
+            "placeholder": "",
+            "allowTargetBlank": true,
+            "multi": "paragraph,preformatted,heading1,heading2,heading3,heading4,heading5,heading6,strong,em,hyperlink,image,embed,list-item,o-list-item,rtl"
+          }
+        },
+        "is_job_open": {
+          "type": "Boolean",
+          "config": {
+            "label": "Is Job Open",
+            "default_value": false,
+            "placeholder_true": "true",
+            "placeholder_false": "false"
+          }
+        }
+      },
+      "items": {
+        "question": {
+          "type": "Text",
+          "config": {
+            "label": "Question",
+            "placeholder": ""
+          }
+        },
+        "options": {
+          "type": "Text",
+          "config": {
+            "label": "Options",
+            "placeholder": ""
+          }
+        },
+        "question_type": {
+          "type": "Select",
+          "config": {
+            "label": "Question Type",
+            "placeholder": "",
+            "options": [
+              "Multi Select",
+              "Single Select"
+            ],
+            "default_value": "Multi Select"
+          }
+        }
+      }
+    }
+  ]
+}

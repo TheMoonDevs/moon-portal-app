@@ -1,28 +1,33 @@
 "use client";
 import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
 import { useSearchParams } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import LinkList from "../../LinkList/LinkList";
 import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import {
-  setAllQuicklinks,
-  setTopUsedList,
-} from "@/utils/redux/quicklinks/quicklinks.slice";
+
 import TopUsedLink from "../Dashboard/TopUsedLink";
 import { Link } from "@prisma/client";
 import useAsyncState from "@/utils/hooks/useAsyncState";
 import { LinkFiltersHeader } from "../../LinkList/LinkFiltersHeader";
 import { useQuickLinkDirs } from "../../hooks/useQuickLinksDirs";
+import { Box, styled, Tab, Tabs } from "@mui/material";
+import { ViewButtonGroup } from "../../LinkList/ViewButtonGroup";
+import QuicklinksTabs from "../../elements/Tabs";
+import { useQuickLinkDirectory } from "../../hooks/useQuickLinkDirectory";
+import {
+  setAllQuicklinks,
+  setTopUsedLinksList,
+} from "@/utils/redux/quicklinks/slices/quicklinks.links.slice";
 
 export const ParentDirectoryLinks = () => {
   const dispatch = useAppDispatch();
   //   const params = useSearchParams();
   //   const rootParentDirId = params?.get("id");
 
-  const { allQuicklinks, topUsedList, activeDirectoryId } = useAppSelector(
-    (state) => state.quicklinks
+  const { allQuicklinks, topUsedLinksList } = useAppSelector(
+    (state) => state.quicklinksLinks
   );
-  const { thisDirectory } = useQuickLinkDirs(activeDirectoryId);
+  const { activeDirectoryId } = useQuickLinkDirectory();
   const { loading, setLoading } = useAsyncState();
 
   //Fetch link by department Id
@@ -40,7 +45,7 @@ export const ParentDirectoryLinks = () => {
       const sortedQuicklinks = [...quicklinks]
         .sort((a, b) => b.clickCount - a.clickCount)
         .slice(0, 5);
-      dispatch(setTopUsedList(sortedQuicklinks));
+      dispatch(setTopUsedLinksList(sortedQuicklinks));
 
       setLoading(false);
       // } catch (error) {
@@ -51,17 +56,44 @@ export const ParentDirectoryLinks = () => {
   }, [activeDirectoryId, dispatch, setLoading]);
 
   return (
-    <div className="mt-8">
-      <TopUsedLink title={`Top Used in ${thisDirectory?.title}`}>
+    <div className="mt-2">
+      {/* <TopUsedLink title={`Top Used in ${thisDirectory?.title}`}>
         <LinkList
           allQuicklinks={topUsedList}
           withView="thumbnail"
           isLoading={loading}
         />
-      </TopUsedLink>
+      </TopUsedLink> */}
+      <div className="flex justify-between items-center">
+        <h1 className="py-[10px] font-bold text-xl">Links</h1>
+        <ViewButtonGroup />
+      </div>
+
       <div className="flex flex-col w-full pb-8">
-        <LinkFiltersHeader title={`View All in ${thisDirectory?.title}`} />
-        <LinkList allQuicklinks={allQuicklinks} isLoading={loading} />
+        <div className="w-full">
+          <QuicklinksTabs tabs={["All", "Top Used"]}>
+            {(value) => {
+              return (
+                <>
+                  {value === 0 && (
+                    <LinkList
+                      allQuicklinks={allQuicklinks}
+                      isLoading={loading}
+                    />
+                  )}
+                  {value === 1 && (
+                    <LinkList
+                      allQuicklinks={topUsedLinksList}
+                      withView="thumbnail"
+                      isLoading={loading}
+                    />
+                  )}
+                </>
+              );
+            }}
+          </QuicklinksTabs>
+        </div>
+        {/* <LinkFiltersHeader title={`View All in ${thisDirectory?.title}`} /> */}
       </div>
     </div>
   );

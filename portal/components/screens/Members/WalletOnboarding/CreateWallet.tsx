@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { APP_ROUTES, LOCAL_STORAGE } from "@/utils/constants/appInfo";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { JsonObject } from "@prisma/client/runtime/library";
-import { useNotifications } from "@/utils/hooks/useNotifications";
 import { INotification } from "@/components/screens/notifications/NotificationsList";
 import { useUser } from "@/utils/hooks/useUser";
 import DownloadCoinbase from "@/components/screens/Members/WalletOnboarding/Steps/DownloadCoinbase";
@@ -12,13 +11,16 @@ import CopyWalletAddress from "@/components/screens/Members/WalletOnboarding/Ste
 import UploadWalletAddress from "@/components/screens/Members/WalletOnboarding/Steps/UploadWalletAddress";
 import { isValidEthAddress } from "@/utils/helpers/functions";
 import { toast, Toaster } from "sonner";
+import { useAppSelector } from "@/utils/redux/store";
 
 const CreateWallet = () => {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const { user, refetchUser } = useUser();
   const router = useRouter();
-  const { notifications } = useNotifications();
+  const notifications = useAppSelector(
+    (state) => state.notifications.notifications
+  );
   useEffect(() => {
     if (!user?.payData) refetchUser();
   }, []);

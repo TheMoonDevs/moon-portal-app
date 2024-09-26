@@ -87,7 +87,7 @@ export const Bottombar = ({
     visibleOnlyOn ? visibleOnlyOn : media.default
   );
   const isMobile = useMediaQuery(media.largeMobile);
-  const { notificationsCount, notifications } = useNotifications();
+  const { notificationsCount } = useNotifications();
   const [isOpen, setIsOpen] = useState<boolean>(false)
 
   const options =
@@ -165,7 +165,6 @@ export const Bottombar = ({
       <NotificationModal
         open={isOpen}
         onClose={() => setIsOpen(false)}
-        notifications={notifications}
       />
     </div>
   );
