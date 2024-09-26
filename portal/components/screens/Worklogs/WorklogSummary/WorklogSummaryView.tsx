@@ -49,6 +49,24 @@ const getCompletionEmoji = (completed: number, total: number) => {
   return null;
 };
 
+export const getLatestWorklogPerDate = (worklogs: WorkLogs[]): WorkLogs[] => {
+  const latestWorklogMap: Record<string, WorkLogs> = {};
+
+  worklogs.forEach((worklog) => {
+    if (worklog?.date) {
+      if (
+        !latestWorklogMap[worklog.date] ||
+        new Date(worklog.updatedAt) >
+          new Date(latestWorklogMap[worklog.date].updatedAt)
+      ) {
+        latestWorklogMap[worklog.date] = worklog;
+      }
+    }
+  });
+
+  return Object.values(latestWorklogMap);
+};
+
 const FilterPill = ({
   label,
   onClick,
@@ -57,11 +75,20 @@ const FilterPill = ({
   onClick: () => void;
 }) => {
   return (
-    <button className="disabled:cursor-not-allowed flex gap-1 md:gap-2 items-center border bg-white text-sm text-black hover:bg-neutral-100 rounded-2xl px-2 py-1 mx-4 mt-5">
-      <span className="material-symbols-outlined !text-sm" onClick={onClick}>
+    <button
+      onClick={onClick}
+      className="group flex items-center gap-2 border border-neutral-400 bg-neutral-100 text-sm text-neutral-700 rounded-full px-4 py-1 mx-2 mt-5 transition duration-300 ease-in-out transform hover:bg-neutral-100 hover:border-neutral-500 hover:text-neutral-800 focus:outline-none focus:ring-2 focus:ring-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      <span
+        className="material-symbols-outlined text-base text-neutral-500 group-hover:text-neutral-700 transition duration-300 ease-in-out"
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick();
+        }}
+      >
         cancel
       </span>
-      <span>{label}</span>
+      <span className="whitespace-nowrap">{label}</span>
     </button>
   );
 };
@@ -70,6 +97,7 @@ export const WorklogSummaryView = ({
   worklogSummary,
   workLogUser,
 }: WorklogSummaryViewProps) => {
+  const uniqueWorklogs = getLatestWorklogPerDate(worklogSummary); //removes duplicate data from worklogs and we will get the latest updated worklogs
   const dispatch = useAppDispatch();
   const {
     isShowProductiveStreak,
@@ -100,7 +128,7 @@ export const WorklogSummaryView = ({
         {isShowProductiveStreak && productiveStreakData.length > 0 && (
           <FilterPill
             onClick={() => dispatch(setIsShowProductiveStreak(false))}
-            label={`Productive Streak (${formattedFirstDate} to ${formattedLastDate})`}
+            label={`Productive Streak (${formattedLastDate} to ${formattedFirstDate})`}
           />
         )}
         <div className="scrollable-container-summaryView p-8 h-[500px] overflow-y-auto ">
@@ -254,7 +282,7 @@ export const WorklogSummaryView = ({
         !isShowProductiveStreak &&
         !showMissedTasks &&
         !showCompletedTasks &&
-        renderSummary(worklogSummary)}
+        renderSummary(uniqueWorklogs)}
     </>
   );
 };
