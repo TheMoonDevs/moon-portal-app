@@ -1,30 +1,33 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { useDispatch, useSelector } from "react-redux";
 import { TypedUseSelectorHook } from "react-redux/es/types";
-// import authReducer from 'lib/redux/auth/auth.slice';
 
 import uiReducer from "./ui/ui.slice";
 import shortUrlReducer from "./shortUrl/shortUrl.slice";
 import authReducer from "./auth/auth.slice";
 import zerotrackerReducer from "./zerotracker/zerotracker.slice";
-import quicklinksReducer from "./quicklinks/quicklinks.slice";
 import searchTermReducer from "./searchTerm/search.slice";
 import filesUploadReducer from "./filesUpload/fileUpload.slice";
 import onboardingFormReducer from "./onboarding/onboarding.slice";
 import worklogsReducer from "./worklogs/worklogs.slice";
-import selectedMissionReducer from './missions/selectedMission.slice';
+import selectedMissionReducer from "./missions/selectedMission.slice";
 import missionTasksReducer from "./missions/missionsTasks.slice";
 import laterTodosReducer from "./worklogs/laterTodos.slice";
 //import suggestionsReducer from './suggestions/suggestions.slice';
 import notificationsReducer from "./notification/notification.slice";
 import coreTeamSlice from "./coreTeam/coreTeam.slice";
-import missionTaskEditorSlice from './missions/missionTaskEditorSlice.slice'
+import missionTaskEditorSlice from "./missions/missionTaskEditorSlice.slice";
+import quicklinksLinksReducer from "./quicklinks/slices/quicklinks.links.slice";
+import quicklinksDirectoryReducer from "./quicklinks/slices/quicklinks.directory.slice";
+import quicklinksUiReducer from "./quicklinks/slices/quicklinks.ui.slice";
 import statsActionSlice from './worklogsSummary/statsAction.slice'
 
 const store = configureStore({
   reducer: {
     auth: authReducer,
-    quicklinks: quicklinksReducer,
+    quicklinksLinks: quicklinksLinksReducer,
+    quicklinksDirectory: quicklinksDirectoryReducer,
+    quicklinksUi: quicklinksUiReducer,
     ui: uiReducer,
     shortUrl: shortUrlReducer,
     zerotracker: zerotrackerReducer,

@@ -1,4 +1,4 @@
-import { setToast } from "@/utils/redux/quicklinks/quicklinks.slice";
+import { setToast } from "@/utils/redux/quicklinks/slices/quicklinks.ui.slice";
 import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import { Alert, Snackbar } from "@mui/material";
 import { SyntheticEvent } from "react";
@@ -20,7 +20,7 @@ export const QuicklinksToast = ({
   severity: "success" | "info" | "warning" | "error" | undefined;
 }) => {
   const dispatch = useAppDispatch();
-  const { toast } = useAppSelector((state) => state.quicklinks);
+  const { toast } = useAppSelector((state) => state.quicklinksUi);
 
   const handleClose = (event: SyntheticEvent | Event, reason?: string) => {
     if (reason === "clickaway") {
