@@ -94,15 +94,15 @@ export const WorklogSummaryContent = ({
       <div className="w-[100%] md:w-[50%] overflow-y-scroll h-screen m-4 mt-4 bg-white rounded-2xl shadow-xl">
         <div className="">
           {userData && (
-            <div className="flex items-center justify-start p-8 py-4 shadow-md gap-4 bg-white sticky top-0 z-10">
+            <div className="flex items-center justify-start p-8 py-4 shadow-md gap-4 bg-white sticky top-0 z-10 max-sm:py-4 max-sm:px-2">
               <img
                 src={userData?.avatar ?? "/images/avatar.png"}
                 alt="avatar"
-                className="w-16 h-16 rounded-full"
+                className="w-16 h-16 rounded-full max-sm:w-12 max-sm:h-12 object-cover"
               />
               <div>
-                <p className="text-xl font-bold">{userData?.name}</p>
-                <div className="flex items-center gap-2">
+                <p className="text-xl font-bold max-sm:text-lg">{userData?.name}</p>
+                <div className="flex items-center gap-2 max-sm:gap-1">
                   {/* <p className="text-sm font-regular">
                     Worklog Summary
                   </p> */}
@@ -127,7 +127,7 @@ export const WorklogSummaryContent = ({
                 </div>
               </div>
               <div className="ml-auto">
-                <h3 className="text-2xl font-bold">{summaryTitle}</h3>
+                <h3 className="text-2xl font-bold max-sm:text-lg">{summaryTitle}</h3>
                 <p className="text-xs font-regular">
                   {worklogSummary.length} Logs | {metrics.totalTasks} tasks
                 </p>

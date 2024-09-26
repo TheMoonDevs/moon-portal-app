@@ -30,7 +30,7 @@ import {
 } from "lucide-react";
 import { Stack, useMediaQuery } from "@mui/material";
 // import Pattern from "./Pattern";
-import { setIsCreateLinkModalOpen } from "@/utils/redux/quicklinks/quicklinks.slice";
+// import { setIsCreateLinkModalOpen } from "@/utils/redux/quicklinks/quicklinks.slice";
 import ToolTip from "@/components/elements/ToolTip";
 // import StatiStics from "./StatiStics";
 // import Pie from "./PieChart";
@@ -114,19 +114,21 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
     "Friday",
     "Saturday",
   ];
-  const completedTasksData = weekdays.map(
-    (day) => metrics.tasksByWeekday[day]?.completed || 0
-  );
+  
+  // const completedTasksData = weekdays.map(
+  //   (day) => metrics.tasksByWeekday[day]?.completed || 0
+  // );
 
-  const inProgressTasksData = weekdays.map(
-    (day) => metrics.tasksByWeekday[day]?.inProgress || 0
-  );
+  // const inProgressTasksData = weekdays.map(
+  //   (day) => metrics.tasksByWeekday[day]?.inProgress || 0
+  // );
 
-  const isSmallScreen = useMediaQuery("(max-width:600px)");
+  // const isSmallScreen = useMediaQuery("(max-width:600px)");
 
-  const chartWidth = isSmallScreen ? 380 : 450;
-  const chartHeight = isSmallScreen ? 200 : 300;
-  const barChartWidth = isSmallScreen ? 350 : 550;
+  // const chartWidth = isSmallScreen ? 380 : 450;
+  // const chartHeight = isSmallScreen ? 200 : 300;
+  // const barChartWidth = isSmallScreen ? 350 : 550;
+
 
   useEffect(() => {
     if (worklogSummary.length > 0) {
@@ -286,7 +288,7 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
       {/* STATS */}
       {activeTab === "STATS" && (
         <>
-          {/* <section className="text-center p-4 bg-blue-50 rounded-lg shadow-md mb-5">
+          {/* {/* <section className="text-center p-4 bg-blue-50 rounded-lg shadow-md mb-5">
             <h2 className="text-lg font-semibold text-gray-700">Summary</h2>
             <p className="text-sm text-gray-600">
               {metrics.totalTasks} tasks logged with a{" "}
@@ -419,7 +421,7 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
                 onClick={() => handleCardClick("updateFrequency")}
               />
             </div>
-          </Stack>
+          </Stack> 
         </>
       )}
       {/* POINTERS */}

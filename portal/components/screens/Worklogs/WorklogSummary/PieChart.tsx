@@ -3,9 +3,11 @@ import { ResponsivePie } from '@nivo/pie';
 import dayjs from 'dayjs';
 import { WorkLogs } from '@prisma/client';
 import { groupByWeek } from './Breakdown';
+import { getLatestWorklogPerDate } from './WorklogSummaryView';
 
 const Pie = ({ worklogSummary }: { worklogSummary: WorkLogs[] }) => {
-  const groupedByWeek = groupByWeek(worklogSummary);
+  const uniqueWorklogs = getLatestWorklogPerDate(worklogSummary); //removes duplicate data from worklogs and we will get the latest updated worklogs
+  const groupedByWeek = groupByWeek(uniqueWorklogs);
 
   const data = Object.keys(groupedByWeek).map((weekLabel) => {
     const weekData = groupedByWeek[weekLabel];
@@ -17,7 +19,7 @@ const Pie = ({ worklogSummary }: { worklogSummary: WorkLogs[] }) => {
   });
 
   return (
-    <div style={{ height: '400px' }}>
+    <div style={{ height: '250px' }}>
       <ResponsivePie
         data={data}
         margin={{ top: 40, right: 20, bottom: 20, left: 80 }}
