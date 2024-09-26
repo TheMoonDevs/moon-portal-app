@@ -284,8 +284,8 @@ const EditUser = () => {
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
               />
-              <div className='flex items-center gap-2'>
-                <div className='flex-1 mt-4'>
+              <div className='flex items-center gap-2 max-sm:flex-col max-sm:mb-4'>
+                <div className='flex-1 mt-4 max-sm:w-full max-sm:mt-0'>
                   {' '}
                   <InputField
                     id='city'
@@ -294,7 +294,7 @@ const EditUser = () => {
                     onChange={(e) => setCity(e.target.value)}
                   />
                 </div>
-                <div className='flex-1'>
+                <div className='flex-1 max-sm:w-full'>
                   {' '}
                   <label className='block text-sm font-medium mb-1'>
                     Date of Birth
@@ -303,7 +303,11 @@ const EditUser = () => {
                     <DatePicker
                       value={dateOfBirth}
                       onChange={(newValue) => setDateOfBirth(newValue)}
-                      sx={{ width: '100%' }}
+                      sx={{
+                        width: '100%',
+                        border: 'rgb(156 163 175)',
+                      }}
+                      className='focus:border-gray-400 focus:ring focus:ring-gray-200 transition'
                     />
                   </LocalizationProvider>
                 </div>
