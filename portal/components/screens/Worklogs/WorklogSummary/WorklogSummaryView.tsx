@@ -49,6 +49,24 @@ const getCompletionEmoji = (completed: number, total: number) => {
   return null;
 };
 
+export const getLatestWorklogPerDate = (worklogs: WorkLogs[]): WorkLogs[] => {
+  const latestWorklogMap: Record<string, WorkLogs> = {};
+
+  worklogs.forEach((worklog) => {
+    if (worklog?.date) {
+      if (
+        !latestWorklogMap[worklog.date] ||
+        new Date(worklog.updatedAt) >
+          new Date(latestWorklogMap[worklog.date].updatedAt)
+      ) {
+        latestWorklogMap[worklog.date] = worklog;
+      }
+    }
+  });
+
+  return Object.values(latestWorklogMap);
+};
+
 const FilterPill = ({
   label,
   onClick,
@@ -70,6 +88,7 @@ export const WorklogSummaryView = ({
   worklogSummary,
   workLogUser,
 }: WorklogSummaryViewProps) => {
+  const uniqueWorklogs = getLatestWorklogPerDate(worklogSummary); //removes duplicate data from worklogs and we will get the latest updated worklogs
   const dispatch = useAppDispatch();
   const {
     isShowProductiveStreak,
@@ -254,7 +273,7 @@ export const WorklogSummaryView = ({
         !isShowProductiveStreak &&
         !showMissedTasks &&
         !showCompletedTasks &&
-        renderSummary(worklogSummary)}
+        renderSummary(uniqueWorklogs)}
     </>
   );
 };

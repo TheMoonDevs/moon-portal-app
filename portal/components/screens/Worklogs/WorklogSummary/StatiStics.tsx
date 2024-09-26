@@ -6,9 +6,11 @@ import {
   getWeekData,
   groupByWeek,
 } from './Breakdown';
+import { getLatestWorklogPerDate } from './WorklogSummaryView';
 
 const StatiStics = ({ worklogSummary }: { worklogSummary: WorkLogs[] }) => {
-  const groupedByWeek = groupByWeek(worklogSummary);
+  const uniqueWorklogs = getLatestWorklogPerDate(worklogSummary); //removes duplicate data from worklogs and we will get the latest updated worklogs
+  const groupedByWeek = groupByWeek(uniqueWorklogs);
   const weekData = getWeekData(groupedByWeek);
 
   return (
@@ -65,7 +67,9 @@ const StatiStics = ({ worklogSummary }: { worklogSummary: WorkLogs[] }) => {
                         {week.completedTasks} / {week.totalTasks}
                       </div>
                       {idx > 0 && (
-                        <div className={`text-xs mt-1 ${trendColor} flex flex-col items-center justify-center`}>
+                        <div
+                          className={`text-xs mt-1 ${trendColor} flex flex-col items-center justify-center`}
+                        >
                           <span className='material-symbols-outlined'>
                             {percentageChange > 0
                               ? 'arrow_drop_up'
