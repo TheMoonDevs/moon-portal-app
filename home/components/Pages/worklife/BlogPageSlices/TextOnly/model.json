@@ -1,0 +1,95 @@
+{
+  "id": "text_only",
+  "type": "SharedSlice",
+  "name": "TextOnly",
+  "description": "TextOnly",
+  "variations": [
+    {
+      "id": "default",
+      "name": "Default",
+      "docURL": "...",
+      "version": "initial",
+      "description": "Default",
+      "imageUrl": "",
+      "primary": {},
+      "items": {
+        "text": {
+          "type": "StructuredText",
+          "config": {
+            "label": "Text",
+            "placeholder": "",
+            "allowTargetBlank": true,
+            "multi": "paragraph,preformatted,heading1,heading2,heading3,heading4,heading5,heading6,strong,em,hyperlink,image,embed,list-item,o-list-item,rtl"
+          }
+        }
+      }
+    },
+    {
+      "id": "break",
+      "name": "Break",
+      "docURL": "...",
+      "version": "initial",
+      "description": "Default",
+      "imageUrl": "",
+      "primary": {
+        "number_of_breaks": {
+          "type": "Number",
+          "config": {
+            "label": "Number of Breaks",
+            "placeholder": ""
+          }
+        }
+      },
+      "items": {}
+    },
+    {
+      "id": "code",
+      "name": "Code",
+      "docURL": "...",
+      "version": "initial",
+      "description": "Default",
+      "imageUrl": "",
+      "primary": {},
+      "items": {
+        "code_file_name": {
+          "type": "Text",
+          "config": {
+            "label": "Code File Name",
+            "placeholder": ""
+          }
+        },
+        "code_language": {
+          "type": "Select",
+          "config": {
+            "label": "Code Language",
+            "placeholder": "",
+            "options": [
+              "html",
+              "javascript",
+              "css",
+              "markup",
+              "xml",
+              "svg",
+              "git",
+              "docker",
+              "graphql",
+              "powershell",
+              "python",
+              "jsx",
+              "tsx",
+              "solidity",
+              "typescript"
+            ]
+          }
+        },
+        "code": {
+          "type": "Text",
+          "config": {
+            "label": "Code",
+            "placeholder": ""
+          }
+        }
+      }
+    }
+  ]
+}

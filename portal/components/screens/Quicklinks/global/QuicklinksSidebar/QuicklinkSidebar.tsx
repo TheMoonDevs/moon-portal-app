@@ -1,305 +1,353 @@
 "use client";
-
-import Image from "next/image";
+import { QUICKLINK_ROUTES } from "@/utils/constants/appInfo";
 import Link from "next/link";
-import { DirectoryTree } from "./Directory/Directory";
-import { useEffect, useState } from "react";
-import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import { useQuickLinkDirectory } from "../../hooks/useQuickLinkDirectory";
-import { Directory, ParentDirectory, ROOTTYPE } from "@prisma/client";
-import { AddSectionPopup } from "./AddSectionPopup";
-import { Tooltip } from "@mui/material";
-import { APP_ROUTES } from "../../../../../utils/constants/appInfo";
+import { useState, FC, ReactNode, MouseEvent } from "react";
+import { usePathname } from "next/navigation";
+import { useAppDispatch } from "@/utils/redux/store";
+import { Divider, Tooltip } from "@mui/material";
+import { useUser } from "@/utils/hooks/useUser";
+import { setModal } from "@/utils/redux/quicklinks/slices/quicklinks.ui.slice";
+import { DirectoryList, ROOTTYPE } from "@prisma/client";
+import {
+  deleteDirectory,
+  updateDirectory,
+} from "@/utils/redux/quicklinks/slices/quicklinks.directory.slice";
+import { handleDeleteDirectory } from "@/utils/redux/quicklinks/quicklinks.thunks";
 
-export default function QuicklinkSidebar() {
-  const {
-    parentDirs,
-    rootDirectories,
-    selectedRootDir,
-    setSelectedRoot,
-    currentDirectory,
-    setCurrentDirectory,
-  } = useQuickLinkDirectory(true);
-  const [viewType, setViewType] = useState<"root" | "selected">("selected");
-  const [newDirectory, setNewDirectory] = useState<ParentDirectory | null>(
-    null
+// Types for constants and props
+interface NavItem {
+  title: string;
+  icon: string;
+  route: string;
+}
+
+interface SidebarNavItemProps {
+  nav: NavItem;
+  isActive: boolean;
+  children?: ReactNode;
+  onClick?: () => void;
+  endIcon?: ReactNode;
+}
+
+interface SidebarSubNavProps {
+  dirs: DirectoryList[];
+  user: any;
+  route: string;
+  isActive: boolean;
+  dispatch: ReturnType<typeof useAppDispatch>;
+}
+
+interface ExpandedState {
+  id: string;
+  expanded: boolean;
+}
+
+// Constants for default directories and navigation items
+const ROOT_DIRECTORIES: Omit<DirectoryList, "timestamp">[] = [
+  {
+    id: "root-my-dashboard",
+    title: "My Dashboard",
+    parentDirId: null,
+    slug: "/dashboard",
+    logo: "dashboard",
+    position: 10,
+    isArchive: false,
+    clickCount: 0,
+    tabType: null,
+    type: null,
+  },
+  {
+    id: "COMMON_RESOURCES",
+    title: "Team Resources",
+    parentDirId: null,
+    slug: "/common-resources",
+    logo: "stack",
+    position: 20,
+    isArchive: false,
+    clickCount: 0,
+    tabType: null,
+    type: null,
+  },
+  {
+    id: "DEPARTMENT",
+    title: "Departments",
+    parentDirId: null,
+    slug: "/department",
+    logo: "groups",
+    position: 20,
+    isArchive: false,
+    clickCount: 0,
+    tabType: null,
+    type: null,
+  },
+];
+
+const NAV_ITEMS = {
+  first: [
+    {
+      title: "Departments",
+      icon: "groups",
+      route: QUICKLINK_ROUTES.department,
+    },
+    {
+      title: "Team Resources",
+      icon: "stack",
+      route: QUICKLINK_ROUTES.commonResources,
+    },
+  ],
+  you: [
+    { title: "My List", icon: "list", route: QUICKLINK_ROUTES.userList },
+    {
+      title: "Top Used Links",
+      icon: "link",
+      route: QUICKLINK_ROUTES.userTopUsedLinks,
+    },
+    {
+      title: "Recent Folders",
+      icon: "history",
+      route: QUICKLINK_ROUTES.userRecentlyUsedFolders,
+    },
+    {
+      title: "Top Used Folders",
+      icon: "folder_special",
+      route: QUICKLINK_ROUTES.userTopUsedFolders,
+    },
+  ],
+  explore: [
+    {
+      title: "Trending Links",
+      icon: "trending_up",
+      route: QUICKLINK_ROUTES.dashboard,
+    },
+  ],
+  bottom: [
+    { title: "Archive", icon: "inventory_2", route: QUICKLINK_ROUTES.archive },
+  ],
+};
+
+// Sidebar navigation item component
+const SidebarNavItem: FC<SidebarNavItemProps> = ({
+  nav,
+  isActive,
+  children,
+  onClick,
+  endIcon,
+}) => (
+  <li
+    className={`${
+      children ? "flex flex-col items-start" : "flex items-center"
+    } justify-between  cursor-pointer rounded-2xl w-full `}
+  >
+    <div
+      className={`flex justify-between hover:bg-neutral-100 items-center py-2 px-3 rounded-3xl w-full ${
+        isActive && "bg-neutral-100"
+      }`}
+      onClick={onClick}
+    >
+      <div className="flex gap-4">
+        <span className="material-symbols-outlined">{nav.icon}</span>
+        <span>{nav.title}</span>
+      </div>
+      {endIcon && endIcon}
+    </div>
+    {children}
+  </li>
+);
+
+// Sidebar sub-navigation component
+const SidebarSubNav: FC<SidebarSubNavProps> = ({
+  dirs,
+  user,
+  route,
+  isActive,
+  dispatch,
+}) => (
+  <ul
+    className={`flex flex-col gap-2 ml-3 border-l px-2  overflow-hidden transition-all w-full ${
+      isActive ? "pt-4 max-h-full" : "max-h-0"
+    }`}
+  >
+    {user?.isAdmin && (
+      <li
+        onClick={() =>
+          dispatch(
+            setModal({
+              type: "create-folder",
+              data: {
+                selectedDirectory: {
+                  parentDirId: null,
+                  root:
+                    route === QUICKLINK_ROUTES.department
+                      ? ROOTTYPE.DEPARTMENT
+                      : ROOTTYPE.COMMON_RESOURCES,
+                  tabType: null,
+                },
+              },
+            })
+          )
+        }
+        className="flex gap-2 items-center py-2 px-3 border-2 border-dotted cursor-pointer rounded-2xl"
+      >
+        <span className="material-symbols-outlined">add</span>
+        <span>Add New Folder</span>
+      </li>
+    )}
+    {dirs.map((dir) => (
+      <Link href={`${route}/${dir.slug}`} key={dir.id}>
+        <li
+          className={`flex items-center justify-between py-2 pr-3 hover:bg-neutral-100 rounded-2xl ${
+            dir.isArchive ? "hidden" : ""
+          }`}
+        >
+          <div className="flex gap-4">
+            <span className="material-symbols-outlined">{dir.logo}</span>
+            <span>{dir.title}</span>
+          </div>
+          {user?.isAdmin && (
+            <Tooltip
+              title="Move to archive"
+              onClick={(e: MouseEvent) => {
+                e.stopPropagation();
+                dispatch(
+                  handleDeleteDirectory({
+                    directory: dir,
+                    parentId: dir.parentDirId,
+                  })
+                );
+              }}
+            >
+              <span className="material-symbols-outlined opacity-50 group-hover:!block hidden hover:scale-110">
+                archive
+              </span>
+            </Tooltip>
+          )}
+        </li>
+      </Link>
+    ))}
+  </ul>
+);
+
+const QuicklinkSidebar: FC = () => {
+  const { parentDirs } = useQuickLinkDirectory(true);
+  const departmentDir = parentDirs.filter(
+    (dir) => dir.tabType === "DEPARTMENT"
+  );
+  const commonResourcesDir = parentDirs.filter(
+    (dir) => dir.tabType === "COMMON_RESOURCES"
   );
 
-  useEffect(() => {
-    setViewType(currentDirectory ? "selected" : "selected");
-  }, [currentDirectory]);
+  const [expanded, setExpanded] = useState<ExpandedState>({
+    id: "",
+    expanded: false,
+  });
+  const pathname = usePathname();
+  const dispatch = useAppDispatch();
+  const { user } = useUser();
+
+  const handleExpand = (title: string) => {
+    setExpanded((prev) => ({
+      id: title,
+      expanded: prev.id === title ? !prev.expanded : true,
+    }));
+  };
 
   return (
-    <div className="w-[350px] h-[100vh]  top-0">
-      <aside className="fixed w-inherit h-[100vh] top-0 overflow-auto flex flex-col border-r-2">
-        <Link href={APP_ROUTES.home}>
-          <div className="flex flex-row items-center gap-2 p-6">
-            <Image
-              src="/logo/logo.png"
-              alt="The Moon Devs"
-              width={38}
-              height={38}
-            />
-            <h1 className="font-bold text-xl">The Moon Devs</h1>
-          </div>
+    <aside className="px-3 fixed left-0 top-0 w-[256px] flex-1 overflow-y-auto h-screen">
+      <div className="mt-[76px]" />
+      <nav className="flex flex-col gap-2">
+        <Link href={QUICKLINK_ROUTES.dashboard}>
+          <SidebarNavItem
+            nav={{
+              title: "Dashboard",
+              icon: "dashboard",
+              route: QUICKLINK_ROUTES.dashboard,
+            }}
+            isActive={pathname?.includes(QUICKLINK_ROUTES.dashboard) || false}
+          />
         </Link>
-        {/* ---- Sidebar Root View  --- */}
-        {viewType === "root" && (
-          <nav className="mt-6">
-            <ul className="flex flex-col  ">
-              {rootDirectories.map((item) => (
-                <div
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setSelectedRoot(item);
-                  }}
-                  key={item.id}
-                  className={`rounded-lg flex flex-col relative mx-2 border border-white 
-              ${
-                selectedRootDir?.id === item.id
-                  ? " border-neutral-900 my-2"
-                  : ""
-              }
-              `}
-                >
-                  <Link
-                    href={
-                      item.slug === "/dashboard"
-                        ? `/quicklinks/dashboard`
-                        : `/quicklinks${item.slug}/${
-                            parentDirs.find((dir) => dir.type === `${item.id}`)
-                              ?.slug
-                          }`
-                    }
-                    className=""
-                  >
-                    <li
-                      className={`px-2 py-3 flex items-center gap-2 curspor-pointer
-              hover:bg-neutral-100 group rounded-lg ${
-                selectedRootDir?.id === item.id ? " font-bold" : ""
-              }
-              `}
-                    >
-                      <span
-                        className={`material-symbols-outlined  !text-xl 
-                    ${
-                      selectedRootDir?.id === item.id
-                        ? " opacity-100"
-                        : " opacity-70"
-                    }
-                    `}
-                      >
-                        {item.logo}
-                      </span>
-                      {item.title}
-                      {item.slug != "/dashboard" && (
-                        <AddSectionPopup
-                          id={item.id}
-                          root={item}
-                          newDirectory={newDirectory}
-                          setNewDirectory={setNewDirectory}
-                        />
-                      )}
-                    </li>
-                  </Link>
 
-                  {selectedRootDir?.id === item.id && (
-                    <ul className="p-2 flex flex-col border-t-2">
-                      {parentDirs
-                        .filter((_dir) => _dir?.type === item.id)
-                        .map((dir) => (
-                          <Link
-                            key={dir.id}
-                            href={`/quicklinks${
-                              rootDirectories.find(
-                                (_dir) => _dir.id === dir.type
-                              )?.slug
-                            }/${dir.slug}`}
-                            className=""
-                            onClick={(e) => {
-                              setCurrentDirectory(dir);
-                              //e.preventDefault();
-                            }}
-                          >
-                            <li className="group flex w-full justify-between items-center gap-2 p-2 px-3 rounded-lg transition border border-neutral-100 hover:border-neutral-400">
-                              {dir.title}
-                              <button
-                                className={`p-[4px] w-6 h-6 flex items-center justify-center ml-auto text-xs  
-                 cursor-pointer invisible group-hover:visible rounded-full
-                 `}
-                              >
-                                <span
-                                  className={`material-symbols-outlined !text-sm `}
-                                >
-                                  chevron_right
-                                </span>
-                              </button>
-                            </li>
-                          </Link>
-                        ))}
-                      {/* <DirectoryTree
-                      mainDirectory={parentDirs.filter(
-                        (_dir) => _dir?.type === item.id
-                      )}
-                    /> */}
-                    </ul>
-                  )}
-                </div>
-              ))}
-            </ul>
-          </nav>
-        )}
-        {/* ---- Sidebar Selected View  --- */}
-        {viewType === "selected" && (
-          <div className="flex flex-col grow">
-            <ul className="flex flex-row items-stretch px-2 py-3 mb-3 gap-2">
-              {rootDirectories.map((item) => (
-                <Tooltip
-                  key={item.id}
-                  className="flex flex-col "
-                  title={item.title}
-                >
-                  <div
-                    onClick={(e) => {
-                      if (item.slug != "/dashboard") e.preventDefault();
-                      setSelectedRoot(item);
-                    }}
-                    className={`rounded-lg flex flex-col relative`}
-                  >
-                    <Link
-                      href={
-                        item.slug === "/dashboard"
-                          ? `/quicklinks/dashboard`
-                          : `/quicklinks${item.slug}/${
-                              parentDirs.find(
-                                (dir) => dir.type === `${item.id}`
-                              )?.slug
-                            }`
-                      }
-                      className={`p-2 flex flex-col items-center border border-neutral-100 curspor-pointer
-                      hover:border-neutral-500 group rounded-lg ${
-                        selectedRootDir?.id === item.id
-                          ? " font-bold border-neutral-900 drop-shadow-2xl"
-                          : ""
-                      }`}
-                    >
-                      <span
-                        className={`material-symbols-outlined  !text-md 
-                    ${
-                      selectedRootDir?.id === item.id
-                        ? " opacity-100"
-                        : " opacity-50"
-                    }
-                    `}
-                      >
-                        {item.logo}
-                      </span>
-                    </Link>
-                  </div>
-                </Tooltip>
-              ))}
-            </ul>
-            {selectedRootDir && (
-              <nav className="bg-neutral-100 grow rounded-3xl rounded-bl-none rounded-br-none drop-shadow-lg overflow-hidden">
-                <div className="static overflow-y-scroll">
-                  <div className="flex items-center justify-between px-2 py-3 sticky backdrop-blur-md">
-                    <div className="ml-3">
-                      <h4 className="text-lg font-bold">
-                        {selectedRootDir?.title}
-                      </h4>
-                      <p className="text-sm opacity-70">
-                        {currentDirectory?.title}
-                      </p>
-                    </div>
-                    {/* <button
-                      className={`p-[4px] w-8 h-8 flex items-center justify-center border-2 ml-auto text-xs  
-                 cursor-pointer hover:bg-neutral-300 rounded-full
-                 `}
-                      onClick={() => setCurrentDirectory(null)}
-                    >
-                      <span className={`material-symbols-outlined !text-sm`}>
-                        chevron_left
-                      </span>
-                    </button> */}
-                    {selectedRootDir && (
-                      <AddSectionPopup
-                        id={selectedRootDir?.id}
-                        root={selectedRootDir}
-                        newDirectory={newDirectory}
-                        setNewDirectory={setNewDirectory}
-                      />
-                    )}
-                  </div>
-                  {currentDirectory && (
-                    <div className="flex flex-col">
-                      <DirectoryTree
-                        mainDirectory={parentDirs.filter(
-                          (_dir) => _dir?.type === selectedRootDir?.id
-                        )}
-                        selectedDir={currentDirectory?.id}
-                      />
-                    </div>
-                  )}
-                </div>
-              </nav>
+        {NAV_ITEMS.first.map((nav, index) => (
+          <SidebarNavItem
+            key={index}
+            nav={nav}
+            isActive={pathname?.includes(nav.route) || false}
+            onClick={() => handleExpand(nav.title)}
+            endIcon={
+              <span
+                className={`material-symbols-outlined transition-all ${
+                  expanded.id === nav.title && expanded.expanded
+                    ? "rotate-180"
+                    : ""
+                }`}
+              >
+                keyboard_arrow_down
+              </span>
+            }
+          >
+            {nav.title === "Departments" && (
+              <SidebarSubNav
+                dirs={departmentDir}
+                user={user}
+                route={nav.route}
+                isActive={expanded.id === nav.title && expanded.expanded}
+                dispatch={dispatch}
+              />
             )}
-          </div>
-        )}
-      </aside>
+            {nav.title === "Team Resources" && (
+              <SidebarSubNav
+                dirs={commonResourcesDir}
+                user={user}
+                route={nav.route}
+                isActive={expanded.id === nav.title && expanded.expanded}
+                dispatch={dispatch}
+              />
+            )}
+          </SidebarNavItem>
+        ))}
 
-      {/* {newDirectory && (
-        <div className="z-[2000] fixed top-0 left-0 w-full h-full flex items-center justify-center bg-white/20 backdrop-blur-sm">
-          <div className="w-3/5 h-4/5 bg-white rounded-xl border">
-            <div className="flex flex-row items-center justify-between p-6  border-b-2 ">
-              <h1 className="font-bold text-2xl">
-                {rootDirectories.find((r) => r.id === newDirectory?.id)?.title}{" "}
-                {">"} {newDirectory?.title || "New Section"}
-              </h1>
-              <button
-                className="material-icons-outlined opacity-70 hover:opacity-50 !text-xl"
-                onClick={() => setNewDirectory(null)}
-              >
-                close
-              </button>
-            </div>
-            <div className="flex flex-col justify-center items-center gap-4 p-6">
-              <input
-                className="border-b focus:outline-none focus:border-b-gray-600 transition-colors duration-500"
-                type="text"
-                placeholder="Enter Section Name"
-                onChange={(e) => {
-                  setNewDirectory({
-                    ...newDirectory,
-                    title: e.target.value,
-                  });
-                }}
-                value={newDirectory?.title || ""}
-                required
-              />
-              <input
-                className="border-b focus:outline-none focus:border-b-gray-600 transition-colors duration-500"
-                type="text"
-                placeholder="Enter Section Slug"
-                onChange={(e) => {
-                  setNewDirectory({
-                    ...newDirectory,
-                    slug: e.target.value,
-                  });
-                }}
-                value={newDirectory?.slug || ""}
-                required
-              />
-              <button
-                className="!self-end !mt-8 w-full"
-                type="submit"
-                onClick={() => handleCreateDepartment()}
-              >
-                Add Section
-              </button>
-            </div>
-          </div>
-        </div>
-      )} */}
-    </div>
+        <Divider />
+        <NavSection title="You" items={NAV_ITEMS.you} pathname={pathname} />
+        <Divider />
+        <NavSection
+          title="Explore"
+          items={NAV_ITEMS.explore}
+          pathname={pathname}
+        />
+
+        <nav className="sticky bottom-0 bg-white py-2 w-full border-t mt-6">
+          <NavSection items={NAV_ITEMS.bottom} pathname={pathname} />
+        </nav>
+      </nav>
+    </aside>
   );
+};
+
+// Reusable section component for navigation
+interface NavSectionProps {
+  title?: string;
+  items: NavItem[];
+  pathname: string | null;
 }
+
+const NavSection: FC<NavSectionProps> = ({ title, items, pathname }) => (
+  <>
+    {title && <h6 className="font-bold ml-3 mb-1">{title}</h6>}
+    <ul className="flex flex-col gap-2">
+      {items.map((nav, index) => (
+        <Link href={nav.route} key={index}>
+          <li
+            className={`flex items-center gap-4 py-2 px-3 hover:bg-neutral-100 rounded-2xl ${
+              pathname?.includes(nav.route) && "bg-neutral-100"
+            }`}
+          >
+            <span className="material-symbols-outlined">{nav.icon}</span>
+            <span>{nav.title}</span>
+          </li>
+        </Link>
+      ))}
+    </ul>
+  </>
+);
+
+export default QuicklinkSidebar;
