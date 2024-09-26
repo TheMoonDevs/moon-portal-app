@@ -41,13 +41,14 @@ class GoogleSheetsAPI {
   private clientEmail: string;
   private privateKey: string;
 
-  constructor(config: Config) {
+  constructor(config?: Config) {
     this.baseUrl = "https://sheets.googleapis.com/v4/spreadsheets";
     this.clientEmail =
-      config.clientEmail || (process.env.GIAM_CLIENT_EMAIL as string);
-    this.privateKey = (
-      config.privateKey || (process.env.GIAM_PRIVATE_KEY as string)
-    ).replace(/\\n/g, "\n");
+      config?.clientEmail || (process.env.GIAM_CLIENT_EMAIL as string);
+    this.privateKey = Buffer.from(
+      config?.privateKey || (process.env.GIAM_PRIVATE_KEY as string),
+      "base64"
+    ).toString("ascii");
   }
 
   private async getAccessToken(): Promise<string> {

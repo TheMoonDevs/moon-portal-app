@@ -99,13 +99,36 @@ model ClientLeadForm {
 }
 
 // ---------------------------------------QUICKLINKS---------------------------
-model ParentDirectory {
-  id    String    @id @default(auto()) @map("_id") @db.ObjectId
-  title String
-  logo  String
-  slug  String
-  type  ROOTTYPE?
-  links Link[]
+
+model DirectoryList  {
+  id          String     @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  logo        String
+  slug        String
+  parentDirId String?    @db.ObjectId
+  timestamp   DateTime?  @default(now())
+  position    Float      @default(1)
+  isArchive   Boolean    @default(false)
+  clickCount  Int        @default(0)
+  tabType     ROOTTYPE?
+  type        DIRECTORYTYPE?
+  userDirectory UserDirectory[]
+
+  @@index([parentDirId, position])
+  @@index([id, slug])
+  @@index([position])
+}
+
+model UserDirectory {
+  id          String     @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String     @db.ObjectId
+  directoryId String     @db.ObjectId
+  directoryData DirectoryList @relation(fields: [directoryId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  directoryType USERDIRECTORYTYPE
+  clickCount  Int        @default(0)
+  timestamp   DateTime   @default(now())
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @default(now())
 }
 
 model UserLink {
@@ -131,7 +154,6 @@ model Link {
   url             String
   clickCount      Int
   isFavorite      Boolean          @default(false)
-  rootParentDir   ParentDirectory? @relation(fields: [rootParentDirId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   rootParentDirId String?          @db.ObjectId
   author          User?            @relation(name: "CreatedLinks", fields: [authorId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   userLink        UserLink[]
@@ -145,18 +167,18 @@ model Link {
   @@map("Links")
 }
 
-model Directory {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  title       String
-  logo        String
-  slug        String
-  parentDirId String?
-  timestamp   DateTime @default(now())
-}
-
 enum ROOTTYPE {
   DEPARTMENT
   COMMON_RESOURCES
+}
+
+enum DIRECTORYTYPE {
+ PARENT
+}
+
+enum USERDIRECTORYTYPE {
+  FAVORITED
+  OTHER
 }
 
 enum USERLINKTYPE {
@@ -324,7 +346,7 @@ model Notification {
   updatedAt         DateTime          @updatedAt
   title             String
   description       String
-  matchId           String?           
+  matchId           String?           @unique
   matchType         String?
   notificationType  NotificationType
   notificationData  Json?
