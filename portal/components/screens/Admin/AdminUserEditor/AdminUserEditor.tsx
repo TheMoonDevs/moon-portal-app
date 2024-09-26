@@ -50,6 +50,7 @@ const initialUserState: User = {
   thirdPartyData: null,
   banner: "",
   description: "",
+  positionTitle: "",
 };
 export const AdminUserEditor = () => {
   const query = useSearchParams();
