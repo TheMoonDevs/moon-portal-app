@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { Stack, useMediaQuery } from "@mui/material";
 // import Pattern from "./Pattern";
-import { setIsCreateLinkModalOpen } from "@/utils/redux/quicklinks/quicklinks.slice";
+// import { setIsCreateLinkModalOpen } from "@/utils/redux/quicklinks/quicklinks.slice";
 import ToolTip from "@/components/elements/ToolTip";
 // import StatiStics from "./StatiStics";
 // import Pie from "./PieChart";
@@ -90,19 +90,21 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
     "Friday",
     "Saturday",
   ];
-  const completedTasksData = weekdays.map(
-    (day) => metrics.tasksByWeekday[day]?.completed || 0
-  );
+  
+  // const completedTasksData = weekdays.map(
+  //   (day) => metrics.tasksByWeekday[day]?.completed || 0
+  // );
 
-  const inProgressTasksData = weekdays.map(
-    (day) => metrics.tasksByWeekday[day]?.inProgress || 0
-  );
+  // const inProgressTasksData = weekdays.map(
+  //   (day) => metrics.tasksByWeekday[day]?.inProgress || 0
+  // );
 
-  const isSmallScreen = useMediaQuery("(max-width:600px)");
+  // const isSmallScreen = useMediaQuery("(max-width:600px)");
 
-  const chartWidth = isSmallScreen ? 380 : 450;
-  const chartHeight = isSmallScreen ? 200 : 300;
-  const barChartWidth = isSmallScreen ? 350 : 550;
+  // const chartWidth = isSmallScreen ? 380 : 450;
+  // const chartHeight = isSmallScreen ? 200 : 300;
+  // const barChartWidth = isSmallScreen ? 350 : 550;
+
   return (
     <main className="flex flex-col justify-center gap-5 my-6 mx-2 px-2 pb-20 rounded-[32px] bg-white ">
       <h1 className="font-semibold text-lg md:text-2xl font-sans text-center justify-start mt-4 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 text-transparent bg-clip-text">
@@ -185,7 +187,7 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
         <StatiStics worklogSummary={worklogSummary} />
       </div>
 
-      <section className="text-center p-4 bg-blue-50 rounded-lg shadow-md mb-5">
+      {/* <section className="text-center p-4 bg-blue-50 rounded-lg shadow-md mb-5">
         <h2 className="text-lg font-semibold text-gray-700">Summary</h2>
         <p className="text-sm text-gray-600">
           {metrics.totalTasks} tasks logged with a{" "}
@@ -299,7 +301,7 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
             logo={<TriangleAlert color="#FF5722" size={30} />}
           />
         </div>
-      </Stack>
+      </Stack> */}
     </main>
   );
 };
