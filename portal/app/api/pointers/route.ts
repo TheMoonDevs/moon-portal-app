@@ -99,7 +99,13 @@ export async function GET(req: NextRequest) {
 
     const pointers = await prisma.pointer.findMany({
       where: { userId },
-      include: { replies: true },
+      include: {
+        replies: {
+          orderBy: {
+            createdAt: 'desc', 
+          },
+        },
+      },
     });
 
     return new NextResponse(
