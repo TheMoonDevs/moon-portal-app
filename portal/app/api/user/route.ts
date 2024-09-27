@@ -2,6 +2,7 @@ import { prisma } from "@/prisma/prisma";
 import { sheetMap, spreadsheetId } from "@/utils/constants/spreadsheetData";
 import GoogleSheetsAPI from "@/utils/services/googleSheetSdk";
 import { HOUSEID, USERROLE, USERSTATUS, USERTYPE } from "@prisma/client";
+import dayjs from "dayjs";
 import { NextResponse, NextRequest } from "next/server";
 
 const sheetConfig = {
@@ -17,6 +18,8 @@ export async function GET(request: NextRequest) {
   const role = request.nextUrl.searchParams.get("role") as USERROLE;
   const house = request.nextUrl.searchParams.get("house") as HOUSEID;
   const status = request.nextUrl.searchParams.get("status");
+  const month = request.nextUrl.searchParams.get("month");
+  const currentMonth = month ?? dayjs().format("MMMM");
 
   let error_response: any;
 
@@ -29,6 +32,13 @@ export async function GET(request: NextRequest) {
         ...(house && { house }),
         status: status ? (status as USERSTATUS) : USERSTATUS.ACTIVE,
       },
+      include: {
+        buffBadge: {
+          where: {
+            month: currentMonth,
+          }
+        }
+      }
     });
     // console.log(user);
 
