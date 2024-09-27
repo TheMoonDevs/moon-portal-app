@@ -31,6 +31,7 @@ import {
   setIncompleteTodos,
   setTodoMarkdown,
 } from "@/utils/redux/worklogs/laterTodos.slice";
+import WorklogBuff from "./WorklogTabs/WorklogBuff";
 const tempData = [
   {
     id: "idsdjneslnfrnleskdnelrnv",
@@ -387,6 +388,7 @@ export const WorklogsPage = () => {
 
         <div className="flex flex-row-reverse max-lg:flex-col w-full">
           <div className="hidden md:block p-3 invisible md:visible w-[40%] max-lg:w-full max-h-[80vh] overflow-y-scroll">
+            <WorklogBuff filteredLogs={filteredLogs} monthTab={monthTab}/>
             <SimpleTabs tabs={tabs} />
           </div>
           <div className="hidden md:block p-2 invisible md:visible w-[50%] max-lg:w-full rounded-lg border border-neutral-200 m-3  max-h-[80vh] overflow-y-scroll">
