@@ -229,7 +229,7 @@ const SidebarSubNav: FC<SidebarSubNavProps> = ({
 );
 
 const QuicklinkSidebar: FC = () => {
-  const { parentDirs } = useQuickLinkDirectory(true);
+  const { parentDirs } = useQuickLinkDirectory();
   const departmentDir = parentDirs.filter(
     (dir) => dir.tabType === "DEPARTMENT"
   );
