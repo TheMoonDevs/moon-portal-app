@@ -7,15 +7,12 @@ const buttonStyles: CSSProperties = {
   boxSizing: "border-box",
   display: "flex",
   alignItems: "center",
-  justifyContent: "space-between",
-  width: "200px",
-  fontFamily: "Arial, sans-serif",
+  justifyContent: "center",
   fontWeight: "bold",
-  fontSize: "18px",
+  gap: "0.5rem",
   color: "white",
   backgroundColor: "#0052FF",
-  paddingLeft: "15px",
-  paddingRight: "30px",
+  padding: "0rem 1rem",
   borderRadius: "10px",
 };
 
