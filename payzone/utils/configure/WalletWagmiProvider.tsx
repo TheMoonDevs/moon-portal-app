@@ -26,10 +26,10 @@ const connectors = connectorsForWallets(
       groupName: "Popular",
       wallets: [metaMaskWallet, rainbowWallet],
     },
-    {
-      groupName: "Wallet Connect",
-      wallets: [walletConnectWallet],
-    },
+    // {
+    //   groupName: "Wallet Connect",
+    //   wallets: [walletConnectWallet],
+    // },
   ],
   {
     appName: "TMD",
