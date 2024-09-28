@@ -25,7 +25,7 @@ export const useSyncBalances = (init?: boolean) => {
     (state) => state.balances
   );
   const [loading, setLoading] = useState<boolean>(true);
-
+  const walletAddress = (user?.payData as any)?.walletAddress;
   const tokenData = useReadContract({
     address: TOKEN_INFO.contractAddress as Address,
     abi: TMDTokenABI,
@@ -34,8 +34,9 @@ export const useSyncBalances = (init?: boolean) => {
 
   useEffect(() => {
     if (!init) return;
+    if (!walletAddress) return;
     const formattedBalance = Number(tokenData?.balance) / 10 ** 18;
-    console.log("balance", formattedBalance);
+    // console.log("balance", formattedBalance);
     dispatch(setBalance(formattedBalance));
   }, [tokenData, dispatch, init]);
 
