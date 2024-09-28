@@ -37,6 +37,8 @@ import { useClaimable } from "@/utils/hooks/useClaimable";
 import { useAccount } from "wagmi";
 import { useSmartWallet } from "@/utils/hooks/useSmartWallet";
 import ActionCard from "./action-card";
+import { BlueCreateWalletButton } from "./BlueCreateWalletButton";
+import { CustomConnectButton } from "./CustomConnectButton";
 
 const TMDConverter = ({
   refetchTransactions,
@@ -52,18 +54,23 @@ const TMDConverter = ({
   const [loading, setLoading] = useState(true);
   const [txProgress, setTxProgress] = useState<boolean>(false);
   const [approveProgress, setApproveProgress] = useState<boolean>(false);
+  const { isConnected } = useAccount();
   const { user } = useAuthSession();
   const Admin = user?.isAdmin;
   const [approvedAllowance, setApprovedAllowance] = useState("0.0");
 
   const [mintOpen, setMintOpen] = useState(false);
   const [sendOpen, setSendOpen] = useState(false);
+  const [claimOpen, setClaimOpen] = useState(false);
 
   const handleMintOpen = () => setMintOpen(true);
   const handleMintClose = () => setMintOpen(false);
 
   const handleSendOpen = () => setSendOpen(true);
   const handleSendClose = () => setSendOpen(false);
+
+  const handleClaimOpen = () => setClaimOpen(true);
+  const handleClaimClose = () => setClaimOpen(false);
 
   const [mintAmount, setMintAmount] = useState("");
   const [mintAddress, setMintAddress] = useState("");
@@ -277,16 +284,17 @@ const TMDConverter = ({
   };
 
   return (
-    <div className="bg-whiteSmoke h-fit flex flex-col p-4 justify-between gap-4 rounded-2xl">
+    <div className="bg-whiteSmoke h-fit flex flex-col p-4 justify-between gap-4 rounded-3xl">
       <div className="w-full border-b-2 border-neutral-500 rounded-sm py-2">
         <span className="text-sm font-black tracking-widest text-center">
           CONNECT WALLET
         </span>
       </div>
-      {/* <button className="text-sm font-black p-2 w-2/5 text-whiteSmoke bg-black">
-            Connect Wallet
-          </button> */}
-      <ConnectButton />
+      <div className="flex justify-between">
+        {/* <ConnectButton /> */}
+        <CustomConnectButton />
+        {!isConnected && <BlueCreateWalletButton />}
+      </div>
 
       <p className="text-sm font-thin text-midGrey">
         To perform transactions of TMD credits, you need to connect your Wallet,
@@ -296,26 +304,6 @@ const TMDConverter = ({
 
       <ActionCard action="sendtmd" onClickAction={handleSendOpen} />
       {Admin && <ActionCard action="minttmd" onClickAction={handleMintOpen} />}
-
-      {/* <div className="flex gap-2">
-        <button
-          className="text-sm font-black border border-midGrey p-2 hover:bg-midGrey hover:text-white transition-colors duration-200"
-          onClick={handleSendOpen}
-        >
-          Send TMD
-        </button>
-        <button className="text-sm font-black border border-midGrey p-2">
-              Receive TMD
-            </button> 
-        {Admin && (
-          <button
-            className="text-sm text-white bg-black font-black p-2 hover:bg-white hover:text-black transition-colors duration-200"
-            onClick={handleMintOpen}
-          >
-            Mint TMD
-          </button>
-        )}
-      </div> */}
 
       <Modal
         open={mintOpen}
@@ -488,33 +476,54 @@ const TMDConverter = ({
         <p className="text-sm font-black">{balance} TMD</p>
       </span>
 
-      {isClaimable && (
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleClaim();
-          }}
-        >
-          <div className="flex gap-2">
-            <input
-              type="number"
-              className="w-8/12 h-10 p-2 border border-midGrey"
-              placeholder="Request TMD Conversion"
-              value={claimAmount}
-              onChange={(e) => setClaimAmount(e.target.value)}
-              disabled={txProgress}
-            />
-            <button
-              className={`text-sm font-black w-1/3 text-whiteSmoke bg-black ${
-                txProgress && "opacity-50"
-              }`}
-              type="submit"
-              disabled={txProgress || !claimAmount}
-            >
-              {txProgress ? "Claiming...." : "Claim Now"}
-            </button>
-          </div>
-        </form>
+      {!isClaimable || !liquidityTMDCredits ? (
+        <ActionCard action="fiatunav" />
+      ) : (
+        <>
+          <ActionCard action="claimtmd" onClickAction={handleClaimOpen} />
+
+          <Modal
+            open={claimOpen}
+            onClose={handleClaimClose}
+            aria-labelledby="modal-modal-title"
+            aria-describedby="modal-modal-description"
+          >
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-1/3 bg-white border-2 border-midGrey shadow-lg p-4 rounded-lg">
+              <div className="flex justify-between items-center">
+                <span className="text-lg font-bold">Claim TMD</span>
+                <IconButton onClick={handleClaimClose}>
+                  <Image src={close} alt="close" width={20} height={20} />
+                </IconButton>
+              </div>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleClaim();
+                }}
+              >
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    className="w-8/12 h-10 p-2 border border-midGrey"
+                    placeholder="Request TMD Conversion"
+                    value={claimAmount}
+                    onChange={(e) => setClaimAmount(e.target.value)}
+                    disabled={txProgress}
+                  />
+                  <button
+                    className={`text-sm font-black w-1/3 text-whiteSmoke bg-black ${
+                      txProgress && "opacity-50"
+                    }`}
+                    type="submit"
+                    disabled={txProgress || !claimAmount}
+                  >
+                    {txProgress ? "Claiming...." : "Claim Now"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </Modal>
+        </>
       )}
     </div>
   );
