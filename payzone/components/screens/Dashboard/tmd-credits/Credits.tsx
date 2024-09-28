@@ -63,7 +63,7 @@ export const Credits = () => {
             className=" rotating-icon duration-300 ease-in !hover:scale-110  "
           />
           <div className="flex flex-col gap-1">
-            {!balance ? (
+            {balance === null ? (
               <>
                 <Skeleton
                   variant="text"

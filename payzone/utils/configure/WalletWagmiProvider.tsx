@@ -32,8 +32,8 @@ const connectors = connectorsForWallets(
     },
   ],
   {
-    appName: "Your App Name",
-    projectId: "<YOUR WALLETCONNECT PROJECT ID>",
+    appName: "TMD",
+    projectId: process.env.NEXT_PUBLIC_WC_PROJECT_ID as string,
   }
 );
 
