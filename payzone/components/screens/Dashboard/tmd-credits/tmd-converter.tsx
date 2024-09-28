@@ -23,6 +23,7 @@ import {
   ListItemText,
   Popover,
 } from "@mui/material";
+import ErrorIcon from "@mui/icons-material/Error";
 import { close } from "../../../../public/icons/index";
 import Image from "next/image";
 import { useSyncBalances } from "@/utils/hooks/useSyncBalances";
@@ -296,6 +297,18 @@ const TMDConverter = ({
         {!isConnected && <BlueCreateWalletButton />}
       </div>
 
+      {(user?.payData as any)?.walletAddress &&
+        walletAddress &&
+        (user?.payData as any)?.walletAddress != walletAddress && (
+          <h1 className="text-red-600">
+            <span>
+              <ErrorIcon />
+            </span>
+            You are connected to the wrong wallet. Please check your wallet
+            again.
+          </h1>
+        )}
+
       <p className="text-sm font-thin text-midGrey">
         To perform transactions of TMD credits, you need to connect your Wallet,
         please import your private key shared by the administration after
@@ -311,7 +324,7 @@ const TMDConverter = ({
         aria-labelledby="modal-modal-title"
         aria-describedby="modal-modal-description"
       >
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-1/3 bg-white border-2 border-midGrey shadow-lg p-4 rounded-lg">
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-1/3 bg-white border-2 border-[#00C2B1] shadow-lg p-4 rounded-3xl">
           <div className="flex justify-between items-center">
             <span className="text-lg font-bold">Mint TMD</span>
             <IconButton onClick={handleMintClose}>
@@ -330,7 +343,7 @@ const TMDConverter = ({
                 placeholder="Address"
                 value={mintAddress}
                 onChange={(e) => setMintAddress(e.target.value)}
-                className="w-full h-10 p-2 border border-midGrey rounded-sm text-black"
+                className="w-full h-10 p-2 border outline-none border-midGrey text-black rounded-3xl"
                 required
                 disabled={txProgress}
               />
@@ -339,7 +352,7 @@ const TMDConverter = ({
                 placeholder="Amount"
                 value={mintAmount}
                 onChange={(e) => setMintAmount(e.target.value)}
-                className="w-full h-10 p-2 border border-midGrey rounded-sm text-black"
+                className="w-full h-10 p-2 border outline-none border-midGrey text-black rounded-3xl"
                 required
                 disabled={txProgress}
               />
@@ -347,13 +360,13 @@ const TMDConverter = ({
             {!txProgress ? (
               <div className="flex gap-2 mt-3">
                 <button
-                  className="text-sm w-fit font-black text-whiteSmoke bg-black p-2 rounded-sm"
+                  className="text-sm w-fit font-medium px-4 text-whiteSmoke border-[#00C2B1] border hover:text-[#00C2B1] hover:bg-white bg-[#00C2B1] p-2 rounded-3xl transition-all"
                   type="submit"
                 >
                   Mint TMD
                 </button>
                 <button
-                  className="text-sm font-black w-fit text-whiteSmoke bg-black p-2 rounded-sm"
+                  className="text-sm w-fit font-medium px-4 hover:text-whiteSmoke border-[#00C2B1] border text-[#00C2B1] bg-white hover:bg-[#00C2B1] p-2 rounded-3xl transition-all"
                   onClick={handleMintClose}
                 >
                   Cancel
@@ -377,7 +390,7 @@ const TMDConverter = ({
         aria-labelledby="modal-modal-title"
         aria-describedby="modal-modal-description"
       >
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-1/3 bg-white border-2 border-midGrey shadow-lg p-4 rounded-lg">
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-1/3 bg-white border-[1px] border-[#FF0054] p-4 rounded-3xl">
           <div className="flex justify-between items-center">
             <h2 className="text-lg font-bold text-black">Send Tokens</h2>
             <IconButton onClick={handleSendClose}>
@@ -397,7 +410,7 @@ const TMDConverter = ({
                 value={sendAddress}
                 disabled={txProgress}
                 onChange={(e) => setSendAddress(e.target.value)}
-                className="w-full h-10 p-2 border border-midGrey rounded-sm text-black"
+                className="w-full h-10 p-2 border outline-none border-midGrey text-black rounded-3xl"
                 required
               />
               <input
@@ -406,17 +419,17 @@ const TMDConverter = ({
                 value={sendAmount}
                 disabled={txProgress}
                 onChange={(e) => setSendAmount(e.target.value)}
-                className="w-full h-10 p-2 border border-midGrey rounded-sm text-black"
+                className="w-full h-10 p-2 border outline-none border-midGrey rounded-3xl text-black"
                 required
               />
-              <p className="text-sm text-bgBlack">
+              <p className="text-sm text-[#FF0054] font-bold">
                 Approved : {approvedAllowance}
               </p>
             </div>
 
             <div className="flex gap-2 mt-3">
               <button
-                className="text-sm w-fit font-black text-whiteSmoke bg-black p-2 rounded-sm"
+                className="text-sm w-fit font-medium px-4 hover:text-whiteSmoke border-[#FF0054] border text-[#FF0054] bg-white hover:bg-[#FF0054] p-2 rounded-3xl transition-all"
                 onClick={(e) => {
                   e.preventDefault();
                   approveTokens();
@@ -425,7 +438,7 @@ const TMDConverter = ({
                 {!approveProgress ? "Approve" : "Approving..."}
               </button>
               <button
-                className="text-sm font-black w-fit text-whiteSmoke bg-black p-2 rounded-sm"
+                className="text-sm w-fit font-medium px-4 text-whiteSmoke border-[#FF0054] border hover:text-[#FF0054] hover:bg-white bg-[#FF0054] p-2 rounded-3xl transition-all"
                 type="submit"
               >
                 {!txProgress ? "Send" : "Sending..."}
@@ -488,7 +501,7 @@ const TMDConverter = ({
             aria-labelledby="modal-modal-title"
             aria-describedby="modal-modal-description"
           >
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-1/3 bg-white border-2 border-midGrey shadow-lg p-4 rounded-lg">
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-1/3 bg-white border-2 border-[#FFEA2F] shadow-lg p-4 rounded-3xl">
               <div className="flex justify-between items-center">
                 <span className="text-lg font-bold">Claim TMD</span>
                 <IconButton onClick={handleClaimClose}>
@@ -504,14 +517,14 @@ const TMDConverter = ({
                 <div className="flex gap-2">
                   <input
                     type="number"
-                    className="w-8/12 h-10 p-2 border border-midGrey"
+                    className="w-full h-10 p-2 border outline-none border-midGrey text-black rounded-3xl"
                     placeholder="Request TMD Conversion"
                     value={claimAmount}
                     onChange={(e) => setClaimAmount(e.target.value)}
                     disabled={txProgress}
                   />
                   <button
-                    className={`text-sm font-black w-1/3 text-whiteSmoke bg-black ${
+                    className={`text-sm w-44 font-medium px-4 text-black bg-[#FFEA2F] -2 rounded-3xl transition-all ${
                       txProgress && "opacity-50"
                     }`}
                     type="submit"

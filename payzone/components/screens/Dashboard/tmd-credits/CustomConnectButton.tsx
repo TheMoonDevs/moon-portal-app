@@ -1,5 +1,6 @@
 import React from "react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import Image from "next/image";
 
 export const CustomConnectButton = () => {
   return (
@@ -38,8 +39,14 @@ export const CustomConnectButton = () => {
                     <button
                       onClick={openConnectModal}
                       type="button"
-                      className="bg-[#0052FF] text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2"
+                      className="bg-[#CD6116] text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2"
                     >
+                      <Image
+                        src="/icons/metamask.svg"
+                        alt="metamask"
+                        height={20}
+                        width={20}
+                      />
                       Connect Wallet
                     </button>
                   </div>
