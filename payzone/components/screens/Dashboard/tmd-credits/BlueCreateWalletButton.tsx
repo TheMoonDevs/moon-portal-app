@@ -16,7 +16,11 @@ const buttonStyles: CSSProperties = {
   borderRadius: "10px",
 };
 
-export function BlueCreateWalletButton() {
+export function BlueCreateWalletButton({
+  customtailwind,
+}: {
+  customtailwind?: string;
+}) {
   const { connectors, connect } = useConnect();
 
   const createWallet = useCallback(() => {
@@ -29,7 +33,11 @@ export function BlueCreateWalletButton() {
   }, [connectors, connect]);
 
   return (
-    <button style={buttonStyles} onClick={createWallet}>
+    <button
+      style={buttonStyles}
+      className={customtailwind}
+      onClick={createWallet}
+    >
       <CoinbaseWalletLogo />
       Create Wallet
     </button>

@@ -1,9 +1,9 @@
 "use client";
 import { TOKEN_INFO } from "@/utils/constants/appInfo";
 import { useWallet } from "@/utils/hooks/useWallet";
-import { useAppDispatch } from "@/utils/redux/store";
+import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Modal from "@mui/material/Modal";
 import { useEthersSigner } from "@/utils/hooks/useEthers";
 import { Contract, formatEther, parseEther } from "ethers";
@@ -40,6 +40,7 @@ import { useSmartWallet } from "@/utils/hooks/useSmartWallet";
 import ActionCard from "./action-card";
 import { BlueCreateWalletButton } from "./BlueCreateWalletButton";
 import { CustomConnectButton } from "./CustomConnectButton";
+import OnboardingModal from "./onboarding";
 
 const TMDConverter = ({
   refetchTransactions,
@@ -56,9 +57,13 @@ const TMDConverter = ({
   const [txProgress, setTxProgress] = useState<boolean>(false);
   const [approveProgress, setApproveProgress] = useState<boolean>(false);
   const { isConnected } = useAccount();
-  const { user } = useAuthSession();
+  // const { user } = useAuthSession();
+  const user = useAppSelector((state) => state.auth.user);
   const Admin = user?.isAdmin;
+  // const userWalletAddress = (user?.payData as any)?.walletAddress;
+  const userWalletAddress = useAppSelector((state) => state.auth.address);
   const [approvedAllowance, setApprovedAllowance] = useState("0.0");
+  const [showOnboarding, setShowOnboarding] = useState<boolean>(false);
 
   const [mintOpen, setMintOpen] = useState(false);
   const [sendOpen, setSendOpen] = useState(false);
@@ -72,6 +77,8 @@ const TMDConverter = ({
 
   const handleClaimOpen = () => setClaimOpen(true);
   const handleClaimClose = () => setClaimOpen(false);
+
+  const handleOnboardingClose = () => setShowOnboarding(false);
 
   const [mintAmount, setMintAmount] = useState("");
   const [mintAddress, setMintAddress] = useState("");
@@ -286,10 +293,20 @@ const TMDConverter = ({
 
   return (
     <div className="bg-whiteSmoke h-fit flex flex-col p-4 justify-between gap-4 rounded-3xl">
-      <div className="w-full border-b-2 border-neutral-500 rounded-sm py-2">
+      <div className="w-full border-b-2 flex justify-between border-neutral-500 rounded-sm py-2">
         <span className="text-sm font-black tracking-widest text-center">
           CONNECT WALLET
         </span>
+        {!userWalletAddress && user && (
+          <button
+            className="text-sm font-normal tracking-widest text-center hover:font-medium hover:text-blue-700"
+            onClick={() => {
+              setShowOnboarding(true);
+            }}
+          >
+            New to crypto?
+          </button>
+        )}
       </div>
       <div className="flex justify-between">
         {/* <ConnectButton /> */}
@@ -297,9 +314,9 @@ const TMDConverter = ({
         {!isConnected && <BlueCreateWalletButton />}
       </div>
 
-      {(user?.payData as any)?.walletAddress &&
+      {userWalletAddress &&
         walletAddress &&
-        (user?.payData as any)?.walletAddress != walletAddress && (
+        userWalletAddress != walletAddress && (
           <h1 className="text-red-600">
             <span>
               <ErrorIcon />
@@ -317,7 +334,10 @@ const TMDConverter = ({
 
       <ActionCard action="sendtmd" onClickAction={handleSendOpen} />
       {Admin && <ActionCard action="minttmd" onClickAction={handleMintOpen} />}
-
+      <OnboardingModal
+        showOnboarding={showOnboarding}
+        handleOnboardingClose={handleOnboardingClose}
+      />
       <Modal
         open={mintOpen}
         onClose={handleMintClose}
