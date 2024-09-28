@@ -36,6 +36,7 @@ import CurrencySelectPopover from "@/components/global/CurrencySelectPopover";
 import { useClaimable } from "@/utils/hooks/useClaimable";
 import { useAccount } from "wagmi";
 import { useSmartWallet } from "@/utils/hooks/useSmartWallet";
+import ActionCard from "./action-card";
 
 const TMDConverter = ({
   refetchTransactions,
@@ -146,7 +147,7 @@ const TMDConverter = ({
       );
       return;
     }
-
+    if (balance === null) return;
     if (balance < parseInt(claimAmount)) {
       // alert("You don't have enough balance, please contact admin for support.");
       toast.error(
@@ -276,7 +277,7 @@ const TMDConverter = ({
   };
 
   return (
-    <div className="bg-whiteSmoke h-fit flex flex-col p-4 justify-between gap-4">
+    <div className="bg-whiteSmoke h-fit flex flex-col p-4 justify-between gap-4 rounded-2xl">
       <div className="w-full border-b-2 border-neutral-500 rounded-sm py-2">
         <span className="text-sm font-black tracking-widest text-center">
           CONNECT WALLET
@@ -293,16 +294,19 @@ const TMDConverter = ({
         Metamask logging
       </p>
 
-      <div className="flex gap-2">
+      <ActionCard action="sendtmd" onClickAction={handleSendOpen} />
+      {Admin && <ActionCard action="minttmd" onClickAction={handleMintOpen} />}
+
+      {/* <div className="flex gap-2">
         <button
           className="text-sm font-black border border-midGrey p-2 hover:bg-midGrey hover:text-white transition-colors duration-200"
           onClick={handleSendOpen}
         >
           Send TMD
         </button>
-        {/* <button className="text-sm font-black border border-midGrey p-2">
+        <button className="text-sm font-black border border-midGrey p-2">
               Receive TMD
-            </button> */}
+            </button> 
         {Admin && (
           <button
             className="text-sm text-white bg-black font-black p-2 hover:bg-white hover:text-black transition-colors duration-200"
@@ -311,7 +315,7 @@ const TMDConverter = ({
             Mint TMD
           </button>
         )}
-      </div>
+      </div> */}
 
       <Modal
         open={mintOpen}
