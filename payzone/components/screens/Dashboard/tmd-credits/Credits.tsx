@@ -8,7 +8,6 @@ import { useCallback, useEffect, useState } from "react";
 import { useSyncBalances } from "@/utils/hooks/useSyncBalances";
 import { Header } from "../Header";
 import CreditsTable from "./credits-table";
-import ClaimRequests from "./claim-requests";
 import TMDConverter from "./tmd-converter";
 import { useAuthSession } from "@/utils/hooks/useAuthSession";
 import Image from "next/image";
@@ -17,8 +16,9 @@ import { Skeleton } from "@mui/material";
 export const Credits = () => {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuthSession();
-  const userWalletAddress = (user?.payData as any)?.walletAddress;
+  const user = useAppSelector((state) => state.auth.user);
+  const userWalletAddress = useAppSelector((state) => state.auth.address);
+  // const userWalletAddress = (user?.payData as any)?.walletAddress;
   const { multiplicationFactor, balance, selectedCurrency } = useSyncBalances();
   const refetchTransactions = useCallback(() => {
     if (userWalletAddress === undefined) return;
@@ -49,7 +49,7 @@ export const Credits = () => {
 
   useEffect(() => {
     refetchTransactions();
-  }, [refetchTransactions]);
+  }, [refetchTransactions, user, userWalletAddress, balance]);
 
   return (
     <>

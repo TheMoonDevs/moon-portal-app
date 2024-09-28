@@ -12,6 +12,7 @@ import { zeroAddress } from "viem";
 import { SkeletonRow } from "@/components/elements/SkeletonRow";
 import { useState } from "react";
 import ClaimRequests from "./claim-requests";
+import { useAppSelector } from "@/utils/redux/store";
 
 enum SelectedTab {
   TMDTxn = "TMDTxn",
@@ -26,7 +27,8 @@ const CreditsTable = ({
   loading: boolean;
 }) => {
   const { user } = useAuthSession();
-  const userWalletAddress = (user?.payData as any)?.walletAddress;
+  // const userWalletAddress = (user?.payData as any)?.walletAddress;
+  const userWalletAddress = useAppSelector((state) => state.auth.address);
   const [selectedTab, setSelectedTab] = useState<SelectedTab>(
     SelectedTab.TMDTxn
   );
