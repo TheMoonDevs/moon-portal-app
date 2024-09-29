@@ -2,7 +2,14 @@
 "use client";
 import React, { useCallback, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Drawer, Box, Fab, IconButton, useMediaQuery } from "@mui/material";
+import {
+  Drawer,
+  Box,
+  Fab,
+  IconButton,
+  useMediaQuery,
+  Divider,
+} from "@mui/material";
 import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import { useUser } from "@/utils/hooks/useUser";
 import { User, USERROLE, USERVERTICAL, WorkLogs } from "@prisma/client";
@@ -228,7 +235,7 @@ export const UserProfileDrawer: React.FC = () => {
           handleAvatarChange={handleAvatarChange}
           avatarLoading={avatarLoading}
         />
-        <div className="flex flex-col px-5 pb-2">
+        <div className="flex flex-col px-5 pb-2 gap-3">
           <AboutUserSections
             selectedUser={selectedUser}
             loggedinUser={loggedinUser}
@@ -460,17 +467,46 @@ const AboutUserSections = ({
 }) => {
   const dispatch = useAppDispatch();
   return (
-    <>
-      <div className="flex pt-16 justify-between items-center">
-        <h3 className="font-bold text-2xl">{selectedUser?.name}</h3>
-        <p className="text-sm text-gray-500 font-semibold capitalize">
-          {selectedUser?.timezone}
+    <div>
+      <div className=" pt-16">
+        <div className="flex justify-between items-center">
+          <h3 className="font-bold text-2xl">{selectedUser?.name}</h3>
+          <p className="text-sm text-gray-500 font-semibold capitalize">
+            {selectedUser?.timezone}
+          </p>
+        </div>
+        <p className="text-sm text-gray-700">
+          @{selectedUser?.username + selectedUser?.password}{" "}
+          {selectedUser.positionTitle && `- ${selectedUser.positionTitle}`}
         </p>
       </div>
-      <p className="text-sm py-1 text-gray-700">
-        @{selectedUser?.username + selectedUser?.password}{" "}
-        {selectedUser.positionTitle && `- ${selectedUser.positionTitle}`}
-      </p>
+      {/* <h6 className="font-bold py-2"> Profile</h6> */}
+      <div className="flex gap-6 pb-4 items-center mt-4">
+        <div className="flex flex-col items-center">
+          <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-gray-300 shadow-lg">
+            <img
+              src={getUserVerticalImage(selectedUser?.vertical)}
+              alt="user-vertical"
+              className="w-full h-full object-cover"
+            />
+          </div>
+          <div className="mt-2 text-center text-xs font-bold capitalize">
+            {translateUserVertical(selectedUser?.vertical || "")}
+          </div>
+        </div>
+        <div className="flex flex-col items-center">
+          <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-gray-300 shadow-lg">
+            <img
+              src={getUserRoleImage(selectedUser?.role)}
+              alt="user-role"
+              className="w-full h-full object-cover"
+            />
+          </div>
+          <div className="mt-2 text-center text-xs font-bold capitalize">
+            {selectedUser?.role?.toLowerCase()}
+          </div>
+        </div>
+      </div>
       <div className="flex gap-4 py-2 w-full">
         <Link
           href={`${APP_ROUTES.userWorklogSummary}/${selectedUser?.id}`}
@@ -517,43 +553,16 @@ const AboutUserSections = ({
           </ToolTip>
         )}
       </div>
+      <Divider className="pt-4" />
+
       {selectedUser?.description && (
         <>
-          <h6 className="font-bold py-2">
-            About {selectedUser?.name || "User"}
-          </h6>
+          <h6 className="font-bold py-2 mt-4">About Me</h6>
           <p className="text-sm pb-4">
             {selectedUser?.description || "Description not available."}
           </p>
         </>
       )}
-      <h6 className="font-bold py-2"> Profile</h6>
-      <div className="flex gap-6 pb-4 items-center">
-        <div className="flex flex-col items-center">
-          <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-gray-300 shadow-lg">
-            <img
-              src={getUserVerticalImage(selectedUser?.vertical)}
-              alt="user-vertical"
-              className="w-full h-full object-cover"
-            />
-          </div>
-          <div className="mt-2 text-center text-xs font-bold capitalize">
-            {translateUserVertical(selectedUser?.vertical || "")}
-          </div>
-        </div>
-        <div className="flex flex-col items-center">
-          <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-gray-300 shadow-lg">
-            <img
-              src={getUserRoleImage(selectedUser?.role)}
-              alt="user-role"
-              className="w-full h-full object-cover"
-            />
-          </div>
-          <div className="mt-2 text-center text-xs font-bold capitalize">
-            {selectedUser?.role?.toLowerCase()}
-          </div>
-        </div>
-      </div>
-    </>
+    </div>
   );
 };
