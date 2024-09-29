@@ -15,7 +15,7 @@ export const ListView = ({
   handleDeleteLink: (linkId: string) => void;
 }) => {
   return (
-    <div className="group relative rounded-md my-6 max-w-[700px]">
+    <div className="group relative rounded-md my-6 w-full">
       <div>
         <div className="flex flex-row items-center justify-between mb-2">
           <div className="flex flex-row items-center justify-start">
