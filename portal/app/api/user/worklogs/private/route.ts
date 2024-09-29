@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
     const userId = request.nextUrl.searchParams.get("userId") as string;
     const logType = request.nextUrl.searchParams.get("logType") as string;
     const date = request.nextUrl.searchParams.get("date") as string;
-    console.log("??????????", date);
+    // console.log("??????????", date);
     if (!userId) {
       return NextResponse.json(
         { success: false, error: "userId is required" },
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
     );
   } catch (e) {
     return new NextResponse(JSON.stringify(e), {
-      status: 404,
+      status: 500,
       headers: {
         "Content-Type": "application/json",
       },
@@ -55,9 +55,9 @@ export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
     const { userId, logType, markdown, date } = body;
-    console.log(">>>>>>>>>>>>>>");
-    console.log(body);
-    console.log(">>>>>>>>>>>>>>");
+    // console.log(">>>>>>>>>>>>>>");
+    // console.log(body);
+    // console.log(">>>>>>>>>>>>>>");
     if (!userId || !logType || !markdown) {
       return NextResponse.json(
         { success: false, error: "Missing required fields" },
@@ -90,8 +90,9 @@ export async function PUT(request: NextRequest) {
       { status: 201 }
     );
   } catch (e) {
+    console.log(e);
     return new NextResponse(JSON.stringify(e), {
-      status: 404,
+      status: 500,
       headers: {
         "Content-Type": "application/json",
       },
