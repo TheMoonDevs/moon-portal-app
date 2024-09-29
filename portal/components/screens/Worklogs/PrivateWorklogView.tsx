@@ -44,14 +44,14 @@ export const PrivateWorklogView: React.FC<PrivateWorklogViewProps> = ({
         data?.markdown?.content,
         localPassphrase
       );
-
       setWorklog(data);
       setContent(decryptedContent || MARKDOWN_PLACEHOLDER);
       editorRef.current?.setMarkdown(decryptedContent || MARKDOWN_PLACEHOLDER);
-      toast.success("Worklog fetched successfully.");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching worklog:", error);
-      toast.error("Failed to fetch worklog.");
+      if (error.error !== "Document not found") {
+        toast.error("Failed to fetch private worklog.");
+      }
       setContent(MARKDOWN_PLACEHOLDER);
       editorRef.current?.setMarkdown(MARKDOWN_PLACEHOLDER);
     } finally {
@@ -74,10 +74,9 @@ export const PrivateWorklogView: React.FC<PrivateWorklogViewProps> = ({
           date,
         });
         console.log("Worklog saved successfully");
-        toast.success("Worklog saved successfully.");
       } catch (error) {
         console.error("Error saving worklog:", error);
-        toast.error("Failed to save worklog.");
+        toast.error("Failed to save private worklog.");
       } finally {
         setSaving(false);
       }
@@ -126,13 +125,23 @@ export const PrivateWorklogView: React.FC<PrivateWorklogViewProps> = ({
   if (!visible) return null;
 
   return (
-    <div className="px-4">
+    <div className="px-4 mt-10">
       <div className="text-sm flex items-center gap-2 leading-3 mb-2 text-neutral-500">
         {(saving || loading) && (
           <div className="animate-spin rounded-full h-3 w-3 border-t-2 border-b-2 border-neutral-800" />
         )}
-        PRIVATE LOGS - {saving ? "Saving..." : loading ? "Loading..." : "Saved"}
+        <div className="flex flex-col gap-1">
+          <span>
+            <span className="font-bold">PRIVATE LOGS - </span>
+            {saving ? "Saving..." : loading ? "Loading..." : "Saved"}
+          </span>
+        </div>
       </div>
+      <span className="text-xs flex items-center gap-1 font-bold text-neutral-400 mt-3">
+        <span className="material-symbols-outlined !text-xs"> lock </span>
+        <span> Private logs are encrypted and safely stored.</span>
+      </span>
+
       <div
         onKeyDown={(e) => {
           if (e.ctrlKey && e.key === "s") {
