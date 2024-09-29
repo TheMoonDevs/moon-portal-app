@@ -141,6 +141,8 @@ export const handleAddChildDirectory = createAsyncThunk(
       if (!parentDirId) dispatch(setNewParentDir(response.data.directory));
       else dispatch(addNewDirectory(response.data.directory));
 
+      dispatch(setModal({ type: null, data: null }));
+
       // Show success toast
       dispatch(
         setToast({
