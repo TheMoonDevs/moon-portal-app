@@ -270,9 +270,7 @@ export const UserProfileDrawer: React.FC = () => {
             </li>
           </ul>
         </div> */}
-          {loggedinUser.user.id === selectedUser?.id && (
-            <PayDataUI payData={payData} />
-          )}
+
           <div className="w-full">
             <h6 className="font-bold pb-2">
               Contributions ({dayjs().format("MMM YYYY")})
@@ -290,6 +288,9 @@ export const UserProfileDrawer: React.FC = () => {
           ) : (
             <LoadingSkeleton />
           )}
+          {loggedinUser.user.id === selectedUser?.id && (
+            <PayDataUI payData={payData} />
+          )}
         </div>
       </DrawerComponent>
       <EditUser />
@@ -301,37 +302,37 @@ export const PayDataUI = ({ payData }: { payData: PayData }) => {
   return (
     <div className="flex flex-col gap-1 pb-4">
       <h6 className="font-bold pb-2">Payment Details</h6>
-      <div className="relative flex flex-col gap-3 p-4 bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-lg shadow-lg overflow-hidden">
-        <div className="flex items-center justify-between border-b border-white pb-2 mb-2">
-          <span className="material-symbols-outlined text-2xl">
-            account_balance_wallet
-          </span>
-          <p className="text-sm font-bold">
-            UPI ID:{" "}
-            <span className="font-normal">{payData?.upiId || "N/A"}</span>
-          </p>
-        </div>
-        <div className="flex items-center justify-between border-b border-white pb-2 mb-2">
-          <span className="material-symbols-outlined text-2xl">
-            account_balance
-          </span>
-          <p className="text-sm font-bold">
-            Wallet Address:{" "}
-            <span className="font-normal">
-              {truncateAddress(payData?.walletAddress) || "N/A"}
+      <div className="relative flex flex-col gap-3 p-4 bg-gray-900 text-white rounded-2xl overflow-hidden">
+        <div className="flex items-center justify-between border-b border-neutral-600 pb-3">
+          <div className="flex gap-2 items-center">
+            <span className="material-symbols-outlined text-2xl">
+              account_balance_wallet
             </span>
-          </p>
+            <p className="text-sm font-bold">UPI ID </p>
+          </div>
+          <span className="font-normal">{payData?.upiId || "N/A"}</span>
+        </div>
+        <div className="flex items-center justify-between border-b border-neutral-600 pb-3">
+          <div className="flex gap-2 items-center">
+            <span className="material-symbols-outlined text-2xl">
+              account_balance
+            </span>
+            <p className="text-sm font-bold">Wallet Address </p>
+          </div>
+          <span className="font-normal">
+            {truncateAddress(payData?.walletAddress) || "N/A"}
+          </span>
         </div>
         <div className="flex items-center justify-between">
-          <span className="material-symbols-outlined text-2xl">
-            attach_money
-          </span>
-          <p className="text-sm font-bold">
-            Pay Out:{" "}
-            <span className="font-normal">
-              {payData?.stipendAmount || "N/A"} {payData?.stipendCurrency || ""}
+          <div className="flex gap-2 items-center">
+            <span className="material-symbols-outlined text-2xl">
+              attach_money
             </span>
-          </p>
+            <p className="text-sm font-bold">Pay Out: </p>
+          </div>
+          <span className="font-normal">
+            {payData?.stipendAmount || "N/A"} {payData?.stipendCurrency || ""}
+          </span>
         </div>
       </div>
     </div>
