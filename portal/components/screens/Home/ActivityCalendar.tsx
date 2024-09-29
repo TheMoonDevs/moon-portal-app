@@ -1,8 +1,8 @@
-import { WorkLogs } from '@prisma/client';
-import React from 'react';
-import dayjs from 'dayjs';
-import ActivityCalendar, { ThemeInput } from 'react-activity-calendar';
-import { Box, Tooltip as MuiTooltip, Skeleton } from '@mui/material';
+import { WorkLogs } from "@prisma/client";
+import React from "react";
+import dayjs from "dayjs";
+import ActivityCalendar, { ThemeInput } from "react-activity-calendar";
+import { Box, Tooltip as MuiTooltip, Skeleton } from "@mui/material";
 
 const getStatsOfContent = (content: string) => {
   const checks = (content?.match(/✅/g) || []).length;
@@ -11,16 +11,16 @@ const getStatsOfContent = (content: string) => {
 };
 
 const getAllDatesOfCurrentMonth = () => {
-  const startOfMonth = dayjs().startOf('month');
-  const endOfMonth = dayjs().endOf('month');
+  const startOfMonth = dayjs().startOf("month");
+  const endOfMonth = dayjs().endOf("month");
   const dates = [];
 
   for (
     let date = startOfMonth;
     date.isBefore(endOfMonth) || date.isSame(endOfMonth);
-    date = date.add(1, 'day')
+    date = date.add(1, "day")
   ) {
-    dates.push(date.format('YYYY-MM-DD'));
+    dates.push(date.format("YYYY-MM-DD"));
   }
 
   return dates;
@@ -42,14 +42,14 @@ const ReactActivityCalendar = ({
 
   const calendarData = allDatesOfCurrentMonth.map((date) => {
     const worklogForDate = worklogSummary.find((worklog) =>
-      dayjs(worklog.date).isSame(date, 'day')
+      dayjs(worklog.date).isSame(date, "day")
     );
 
     let checks = 0;
 
     if (worklogForDate && Array.isArray(worklogForDate.works)) {
       worklogForDate.works.forEach((work) => {
-        if (work && typeof work === 'object' && 'content' in work) {
+        if (work && typeof work === "object" && "content" in work) {
           const stats = getStatsOfContent(work.content as string);
           checks += stats.checks;
         }
@@ -66,7 +66,7 @@ const ReactActivityCalendar = ({
   });
 
   return (
-    <div className='flex items-center justify-center py-4 ml-20 mr-20'>
+    <div className="flex items-center  py-4 ">
       {loading ? (
         <SkeletonLoader />
       ) : worklogSummary.length > 0 ? (
@@ -75,7 +75,7 @@ const ReactActivityCalendar = ({
           renderBlock={(block, activity) => (
             <MuiTooltip
               title={`${activity.count} Contributions on ${activity.date}`}
-              sx={{ cursor: 'pointer' }}
+              sx={{ cursor: "pointer" }}
             >
               {block}
             </MuiTooltip>
@@ -89,13 +89,13 @@ const ReactActivityCalendar = ({
           hideColorLegend
           showWeekdayLabels
           hideTotalCount
-          blockRadius={8}
-          blockSize={20}
+          // blockRadius={8}
+          blockSize={12}
           weekStart={0}
         />
       ) : (
-        <div className='flex items-center justify-center'>
-          <p className='text-neutral-400'>No Activities Found.</p>
+        <div className="flex items-center justify-center">
+          <p className="text-neutral-400">No Activities Found.</p>
         </div>
       )}
     </div>
@@ -106,9 +106,9 @@ export default ReactActivityCalendar;
 
 const SkeletonLoader = () => {
   return (
-    <Box display='grid' gridTemplateColumns='repeat(10, 1fr)' gap={1} p={2}>
+    <Box display="grid" gridTemplateColumns="repeat(10, 1fr)" gap={1} p={2}>
       {Array.from(Array(30)).map((_, index) => (
-        <Skeleton key={index} variant='circular' width={20} height={20} />
+        <Skeleton key={index} variant="circular" width={20} height={20} />
       ))}
     </Box>
   );
