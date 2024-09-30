@@ -27,6 +27,7 @@ export const AdminUserBasicData = ({
   updateField,
   updateOverlap,
   saveUser,
+  updateTextareaField
 }: {
   user: User;
   loading: boolean;
@@ -34,6 +35,7 @@ export const AdminUserBasicData = ({
   updateField: (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
   updateOverlap: (index: number, field: string, value: any) => void;
   saveUser: () => void;
+  updateTextareaField: (e: ChangeEvent<HTMLTextAreaElement>) => void
 }) => {
   const query = useSearchParams();
 
@@ -100,6 +102,18 @@ export const AdminUserBasicData = ({
                 className="border border-neutral-400 rounded-lg p-2"
               />
             </div>
+            <div className="flex flex-row gap-20 items-center justify-start">
+              <label className="w-40" htmlFor="description">
+                Description
+              </label>
+              <textarea
+                id="description"
+                value={user.description || ""}
+                onChange={updateTextareaField}
+                className="resize-none border border-neutral-400 rounded-lg p-2 w-full max-h-[200px]"
+                
+              />
+            </div>
             <div className="flex flex-row gap-4 items-center justify-start">
               <p className="w-40">Profile Pic</p>
               <input
@@ -142,6 +156,18 @@ export const AdminUserBasicData = ({
                     </option>
                   ))}
                 </select>
+              </div>
+              <div className="flex flex-col justify-start">
+                <label className="w-40" htmlFor="positionTitle">
+                  Position Title
+                </label>
+                <input
+                  id="positionTitle"
+                  type="text"
+                  value={user.positionTitle || ""}
+                  onChange={updateField}
+                  className="border border-neutral-400 rounded-lg p-2"
+                />
               </div>
             </div>
             {user.userType === "MEMBER" && (

@@ -138,8 +138,10 @@ export const handleAddChildDirectory = createAsyncThunk(
         newDirectory
       );
       // Dispatch to add new directory to Redux state
-      if (!parentDirId) dispatch(setNewParentDir(response.data.parentDirs));
+      if (!parentDirId) dispatch(setNewParentDir(response.data.directory));
       else dispatch(addNewDirectory(response.data.directory));
+
+      dispatch(setModal({ type: null, data: null }));
 
       // Show success toast
       dispatch(
