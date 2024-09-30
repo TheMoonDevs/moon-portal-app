@@ -37,6 +37,7 @@ model User {
   thirdPartyData Json?
   slackId        String?
   buffBadge      BuffBadge[]
+  positionTitle  String?
 }
 
 model Candidate {

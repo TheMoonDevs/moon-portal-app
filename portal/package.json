@@ -51,6 +51,7 @@
     "next-auth": "^4.24.5",
     "next-pwa": "^5.6.0",
     "react": "^18",
+    "react-activity-calendar": "^2.5.2",
     "react-day-picker": "^8.10.1",
     "react-dom": "^18",
     "react-inline-editing": "^1.0.10",

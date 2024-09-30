@@ -118,7 +118,7 @@ const NAV_ITEMS = {
     {
       title: "Trending Links",
       icon: "trending_up",
-      route: QUICKLINK_ROUTES.dashboard,
+      route: QUICKLINK_ROUTES.trending,
     },
   ],
   bottom: [
@@ -229,7 +229,7 @@ const SidebarSubNav: FC<SidebarSubNavProps> = ({
 );
 
 const QuicklinkSidebar: FC = () => {
-  const { parentDirs } = useQuickLinkDirectory(true);
+  const { parentDirs } = useQuickLinkDirectory();
   const departmentDir = parentDirs.filter(
     (dir) => dir.tabType === "DEPARTMENT"
   );

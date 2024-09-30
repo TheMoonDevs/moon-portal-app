@@ -64,13 +64,13 @@ export default function LinkList({
           </div>
         ) : (
           <div
-            className={`${
+            className={`pb-6 ${
               (currentView === VIEW.list && withView === "all") ||
               (withView === "list"
                 ? "flex flex-col"
-                : withView === "widget"
-                ? "flex flex-row flex-wrap gap-2"
-                : "flex flex-row flex-wrap gap-2")
+                : currentView === "thumbnail"
+                ? "flex flex-row flex-wrap gap-5"
+                : "grid grid-cols-3 gap-2")
             } gap-10  w-full`}
           >
             {allQuicklinks?.map((link) => (
