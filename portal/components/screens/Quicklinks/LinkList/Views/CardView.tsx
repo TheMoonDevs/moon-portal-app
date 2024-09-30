@@ -14,7 +14,7 @@ export const CardView = ({
   handleDeleteLink: (linkId: string) => void;
 }) => {
   return (
-    <div className="group relative rounded-md max-w-[300px] border p-4 hover:bg-neutral-100 cursor-pointer">
+    <div className="group relative rounded-md w-full border p-4 hover:bg-neutral-100 cursor-pointer">
       <div onClick={() => handleLinkClick(link.id)}>
         <Link
           href={link.url}
@@ -35,7 +35,7 @@ export const CardView = ({
               ? link.title.substring(0, 50) + " ..."
               : link.title}
           </p>
-          <p className="text-[14px] opacity-[0.5] text-center max-w-[250px] truncate font-regular ">
+          <p className="text-[14px] opacity-[0.5] max-w-[250px] truncate font-regular ">
             {link.url?.replace("https://", "")}
           </p>
           <p className="text-sm">
