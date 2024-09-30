@@ -87,9 +87,6 @@ const WorklogBuff = ({
   const [loading, setLoading] = useState<boolean>(false);
   const { user } = useUser();
   const selectedMonth = dayjs().month(monthTab).format('MMMM');
-  const [lastSelectedMonth, setLastSelectedMonth] = useState<string | null>(
-    null
-  );
 
   const totalPoints = useMemo(() => {
     return filteredLogs.reduce((total, log: WorkLogs) => {
@@ -123,6 +120,7 @@ const WorklogBuff = ({
         null
       );
       setBuffBadge(res.data);
+      console.log(res.data)
     } catch (error) {
       console.log(error);
     } finally {
@@ -168,8 +166,7 @@ const WorklogBuff = ({
 
   useEffect(() => {
     getBuffBadges();
-    setLastSelectedMonth(selectedMonth);
-  }, [selectedMonth]);
+  }, []);
 
   useEffect(() => {
     const { level, title } = getBuffLevelAndTitle(totalPoints);
@@ -177,8 +174,7 @@ const WorklogBuff = ({
       createBadge(title, level);
     } else if (buffBadge.length > 0 && !loading) {
       if (
-        (selectedMonth === lastSelectedMonth &&
-          buffBadge[0].buffLevel !== level) ||
+        buffBadge[0].buffLevel !== level ||
         buffBadge[0].title !== title ||
         totalPoints !== buffBadge[0].points
       ) {
