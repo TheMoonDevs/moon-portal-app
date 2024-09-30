@@ -12,7 +12,9 @@ interface IPaginationWrapperProps {
     items: Link[],
     loadMore: () => void,
     loading: boolean,
-    hasMore: boolean
+    hasMore: boolean,
+    displayCount: number,
+    showLess: () => void
   ) => JSX.Element;
 }
 const PaginationWrapper = ({
@@ -26,14 +28,21 @@ const PaginationWrapper = ({
 }: IPaginationWrapperProps) => {
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [displayCount, setDisplayCount] = useState(initialPageSize); // Tracks how many items are displayed
 
   useEffect(() => {
     const loadItems = async () => {
       setLoading(true);
       const newItems = await fetchItems(page, initialPageSize);
-      console.log("newItems", newItems);
+      // If the response is empty, stop showing "Show More"
+      if (newItems?.length === 0) {
+        setHasMore(false);
+      }
 
-      // Dispatch the Redux action to update the items
+      if (newItems?.length && newItems?.length < initialPageSize) {
+        setHasMore(false);
+      }
+
       setItems(newItems);
 
       setLoading(false);
@@ -45,12 +54,26 @@ const PaginationWrapper = ({
   const loadMore = () => {
     if (hasMore && !loading) {
       setPage((prevPage: number) => prevPage + initialPageSize);
+      setDisplayCount((prevCount) => prevCount + initialPageSize);
     }
+  };
+
+  // Show less items by reducing the display count but keeping all items in memory
+  const showLess = () => {
+    setDisplayCount(initialPageSize); // Show only the first page's worth of items
+    setHasMore(true);
   };
 
   return (
     <div className="paginated-wrapper">
-      {children(items, loadMore, loading, hasMore)}
+      {children(
+        items.slice(0, displayCount),
+        loadMore,
+        loading,
+        hasMore,
+        displayCount,
+        showLess
+      )}
     </div>
   );
 };
