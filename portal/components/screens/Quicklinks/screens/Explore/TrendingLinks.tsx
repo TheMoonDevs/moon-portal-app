@@ -43,8 +43,8 @@ const TrendingLinks = () => {
         setItems={setItems}
         items={allQuicklinks}
       >
-        {(items, loadMore, loading, hasMore) => (
-          <div className="flex flex-col gap-5 w-full mt-4">
+        {(items, loadMore, loading, hasMore, displayCount, showLess) => (
+          <div className="flex flex-col gap-5 w-full mt-4 transition-all">
             <QuicklinkHeaderWrapper
               title="Trending"
               icon="trending_up"
@@ -57,13 +57,26 @@ const TrendingLinks = () => {
                   <CircularProgress />
                 </div>
               )}
-              {hasMore && !loading && (
-                <button
-                  className="w-full bg-neutral-200 hover:bg-neutral-100 rounded-xl p-2 font-bold text-neutral-600"
-                  onClick={loadMore}
-                >
-                  Show More
-                </button>
+              {!loading && (
+                <>
+                  {hasMore ? (
+                    <button
+                      className="w-full bg-neutral-200 hover:bg-neutral-100 rounded-xl p-2 font-bold text-neutral-600"
+                      onClick={loadMore}
+                    >
+                      Show More
+                    </button>
+                  ) : (
+                    displayCount !== NUMBER_OF_LINKS_TO_FETCH && (
+                      <button
+                        className="w-full bg-neutral-200 hover:bg-neutral-100 rounded-xl p-2 font-bold text-neutral-600"
+                        onClick={showLess}
+                      >
+                        Show Less
+                      </button>
+                    )
+                  )}
+                </>
               )}
             </div>
           </div>
