@@ -9,7 +9,7 @@ import PaginationWrapper from "../../global/PaginationWrapper";
 import LinkList from "../../LinkList/LinkList";
 import QuicklinkHeaderWrapper from "../../global/QuicklinkHeaderWrapper";
 import { CircularProgress } from "@mui/material";
-const NUMBER_OF_LINKS_TO_FETCH = 5;
+const NUMBER_OF_LINKS_TO_FETCH = 10;
 const TrendingLinks = () => {
   const { allQuicklinks } = useAppSelector((state) => state.quicklinksLinks);
   const dispatch = useAppDispatch();
@@ -51,8 +51,8 @@ const TrendingLinks = () => {
               type="link"
             />
             <div className="pl-4 mb-10">
-              <LinkList allQuicklinks={items} />
-              {loading && (
+              <LinkList allQuicklinks={items} isLoading={loading} />
+              {loading && page !== 0 && (
                 <div className="w-full items-center justify-center flex">
                   <CircularProgress />
                 </div>
