@@ -10,14 +10,12 @@ import { useState } from "react";
 const CreateDirectoryModal = () => {
   const dispatch = useAppDispatch();
   const [name, setName] = useState("");
-  const { modal } = useAppSelector((state) => state.quicklinksUi);
+  const { modal, isLoading } = useAppSelector((state) => state.quicklinksUi);
   const selectedDirectory = modal.data && modal.data.selectedDirectory;
-  const [isLoading, setIsLoading] = useState(false);
 
   if (!(modal.type === "create-folder")) return null;
 
   const handleNameChange = async () => {
-    setIsLoading(true); //  needs re-test
     try {
       if (selectedDirectory.root) {
         dispatch(
@@ -38,8 +36,6 @@ const CreateDirectoryModal = () => {
       }
     } catch (error) {
       console.log(error);
-    } finally{
-      setIsLoading(false)
     }
   };
   return (

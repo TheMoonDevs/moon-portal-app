@@ -9,11 +9,10 @@ import { useEffect, useState } from "react";
 
 const RenameModal = () => {
   const dispatch = useAppDispatch();
-  const { modal } = useAppSelector((state) => state.quicklinksUi);
+  const { modal, isLoading } = useAppSelector((state) => state.quicklinksUi);
   const selectedDirectory = modal.data && modal.data.selectedDirectory;
   const name = selectedDirectory && selectedDirectory.title;
   const [newName, setNewName] = useState("");
-  const [isRenaming, setIsRenaming] = useState(false)
 
   useEffect(() => {
     setNewName(name);
@@ -21,7 +20,6 @@ const RenameModal = () => {
 
   if (!(modal.type === "rename-folder")) return null;
   const handleRename = async () => {
-    setIsRenaming(true) //needs re-test
     try {
       dispatch(
         handleDirectoryUpdate({
@@ -35,8 +33,6 @@ const RenameModal = () => {
       );
     } catch (error) {
       console.log(error);
-    } finally {
-      setIsRenaming(false)
     }
   };
 
@@ -65,10 +61,10 @@ const RenameModal = () => {
           </button>
           <button
             onClick={handleRename}
-            disabled={newName === "" || isRenaming}
+            disabled={newName === "" || isLoading}
             className="px-6 text-sm  bg-gray-900 text-white rounded-xl cursor-pointer disabled:opacity-50"
           >
-            {isRenaming ? <Spinner className="w-6 h-6  text-neutral-600" /> : 'OK'}
+            {isLoading ? <Spinner className="w-6 h-6  text-neutral-600" /> : 'OK'}
           </button>
         </div>
       </div>
