@@ -1,5 +1,6 @@
 "use client";
 
+import { Spinner } from "@/components/elements/Loaders";
 import { handleDirectoryUpdate } from "@/utils/redux/quicklinks/quicklinks.thunks";
 import { setModal } from "@/utils/redux/quicklinks/slices/quicklinks.ui.slice";
 import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
@@ -12,6 +13,7 @@ const RenameModal = () => {
   const selectedDirectory = modal.data && modal.data.selectedDirectory;
   const name = selectedDirectory && selectedDirectory.title;
   const [newName, setNewName] = useState("");
+  const [isRenaming, setIsRenaming] = useState(false)
 
   useEffect(() => {
     setNewName(name);
@@ -19,6 +21,7 @@ const RenameModal = () => {
 
   if (!(modal.type === "rename-folder")) return null;
   const handleRename = async () => {
+    setIsRenaming(true) //needs re-test
     try {
       dispatch(
         handleDirectoryUpdate({
@@ -32,6 +35,8 @@ const RenameModal = () => {
       );
     } catch (error) {
       console.log(error);
+    } finally {
+      setIsRenaming(false)
     }
   };
 
@@ -60,10 +65,10 @@ const RenameModal = () => {
           </button>
           <button
             onClick={handleRename}
-            disabled={newName === ""}
+            disabled={newName === "" || isRenaming}
             className="px-6 text-sm  bg-gray-900 text-white rounded-xl cursor-pointer disabled:opacity-50"
           >
-            OK
+            {isRenaming ? <Spinner className="w-6 h-6  text-neutral-600" /> : 'OK'}
           </button>
         </div>
       </div>
