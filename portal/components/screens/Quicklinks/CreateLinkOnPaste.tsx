@@ -24,6 +24,7 @@ import { useUser } from "@/utils/hooks/useUser";
 import { DirectoryList, ROOTTYPE } from "@prisma/client";
 import { isValidURL } from "@/utils/helpers/functions";
 import { addNewQuicklink } from "@/utils/redux/quicklinks/slices/quicklinks.links.slice";
+import { excludedPaths } from "./CreateLinkPopup";
 
 const modalStyle = {
   position: "absolute",
@@ -213,7 +214,7 @@ const CreateLinkOnPaste = () => {
             <span className="block">Create New Quicklink</span>
             <span className="text-gray-500 text-sm">
               We have detected a copied link.{" "}
-              {path !== "/quicklinks/dashboard" ||
+              {!excludedPaths.includes(path || "") ||
               selectedParentDir.id !== "" ? (
                 <>
                   Wanna save it to <br />
@@ -234,7 +235,8 @@ const CreateLinkOnPaste = () => {
             value={copiedURL || ""}
             onChange={(e) => setCopiedURL(e.target.value)}
             InputProps={{
-              startAdornment: path === "/quicklinks/dashboard" && (
+              startAdornment: (excludedPaths.includes(path || "") ||
+                selectedParentDir.id !== "") && (
                 <InputAdornment position="start">
                   <Tooltip title="Select Department">
                     <div
