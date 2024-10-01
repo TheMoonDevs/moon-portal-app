@@ -30,7 +30,7 @@ const TrendingLinks = () => {
 
   const setItems = (trendingLinks: Link[] | undefined) => {
     if (!trendingLinks) return;
-    dispatch(setAllQuicklinks([...allQuicklinks, ...trendingLinks]));
+    dispatch(setAllQuicklinks(trendingLinks));
   };
 
   return (
