@@ -351,6 +351,7 @@ model Notification {
   matchType         String?
   notificationType  NotificationType
   notificationData  Json?
+  isRead            Boolean?          @default(false)
 }
 
 enum NotificationType {
