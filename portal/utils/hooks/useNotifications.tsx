@@ -4,6 +4,7 @@ import useSWR, { SWRResponse } from "swr";
 import { setNotifications } from "@/utils/redux/notification/notification.slice";
 import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import { INotification } from "@/components/screens/notifications/NotificationsList";
+import { PortalSdk } from "../services/PortalSdk";
 
 const NOTIFICATIONS_KEY = "notifications";
 const ONE_MINUTE = 60 * 1000;
@@ -52,6 +53,54 @@ export const useNotifications = () => {
   const notificationsCount = useAppSelector(
     (state) => state.notifications.notificationsCount
   );
+  const unreadNotifications = notifications.filter(
+    (notification: INotification) => !notification?.isRead
+  );
+
+  const toggleNotificationRead = async (notification: INotification) => {
+    try {
+      dispatch(
+        setNotifications(
+          notifications.map((n: INotification) =>
+            n.id === notification.id ? { ...n, isRead: !n.isRead } : n
+          )
+        )
+      );
+      await PortalSdk.putData("/api/notifications/update", {
+        ...notification,
+        isRead: !notification.isRead,
+      });
+    } catch (error) {
+      dispatch(setNotifications(notifications));
+      console.error("Error marking notification as read", error);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    if (unreadNotifications.length === 0) return;
+
+    try {
+      dispatch(
+        setNotifications(
+          notifications.map((notification: INotification) => ({
+            ...notification,
+            isRead: true,
+          }))
+        )
+      );
+      await Promise.all(
+        unreadNotifications.map((notification: INotification) =>
+          PortalSdk.putData("/api/notifications/update", {
+            ...notification,
+            isRead: true,
+          })
+        )
+      );
+    } catch (error) {
+      dispatch(setNotifications(notifications));
+      console.error("Error marking all notifications as read", error);
+    }
+  };
 
   const { data, error }: SWRResponse<any, Error> = useSWR(
     user ? `/api/notifications/get?userId=${user.id}` : null,
@@ -127,7 +176,11 @@ export const useNotifications = () => {
   return {
     notifications,
     notificationsCount,
+    unreadNotifications: unreadNotifications,
+    unreadNotificationsCount: unreadNotifications.length,
     isLoading: !error && !data?.notifications,
     isError: error,
+    toggleNotificationRead,
+    handleMarkAllAsRead,
   };
 };
