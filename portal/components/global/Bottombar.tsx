@@ -89,11 +89,8 @@ export const Bottombar = ({
     visibleOnlyOn ? visibleOnlyOn : media.default
   );
   const isMobile = useMediaQuery(media.largeMobile);
-  const { notificationsCount, notifications } = useNotifications();
+  const { unreadNotificationsCount } = useNotifications();
   const [isOpen, setIsOpen] = useState<boolean>(false);
-  const unreadNotificationsCount = notifications.filter(
-    (notification: INotification) => !notification?.isRead
-  ).length;
 
   const options =
     user?.userType === USERTYPE.CLIENT
