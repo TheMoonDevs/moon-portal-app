@@ -10,6 +10,7 @@ export const notificationsSlice = createSlice({
     setNotifications: (state, action) => {
       state.notifications = action.payload;
       state.notificationsCount = action.payload.length;
+      localStorage.setItem("notifications", JSON.stringify(action.payload));
     },
   },
 });
