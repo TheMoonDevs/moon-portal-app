@@ -149,9 +149,9 @@ model Link {
   id              String           @id @default(auto()) @map("_id") @db.ObjectId
   title           String
   description     String
-  logo            String
-  image           String
-  linkType        String
+  logo            String?
+  image           String?
+  linkType        String?
   url             String
   clickCount      Int
   isFavorite      Boolean          @default(false)
