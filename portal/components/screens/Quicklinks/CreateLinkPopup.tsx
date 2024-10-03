@@ -82,12 +82,12 @@ export const CreateLinkPopup = () => {
       setFetchingMetadata(false);
       // store the metadata in db
       const newLinkData = {
-        title: metadata.title,
-        description: metadata.description,
+        title: metadata.title || "Untitled",
+        description: metadata.description || "No description",
         logo: metadata.logo,
         image: metadata.image,
         linkType: metadata.linkType,
-        url: metadata.url,
+        url: link || metadata.url,
         clickCount: 0,
         directoryId: activeDirectoryId,
         rootParentDirId:
