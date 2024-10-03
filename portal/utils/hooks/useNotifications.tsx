@@ -58,36 +58,35 @@ export const useNotifications = () => {
   );
 
   const toggleNotificationRead = async (notification: INotification) => {
+    const { lastModified } = getNotificationsFromLocalStorage();
     try {
-      dispatch(
-        setNotifications(
-          notifications.map((n: INotification) =>
-            n.id === notification.id ? { ...n, isRead: !n.isRead } : n
-          )
-        )
+      const updatedNotifications = notifications.map((n: INotification) =>
+        n.id === notification.id ? { ...n, isRead: !n.isRead } : n
       );
+      dispatch(setNotifications(updatedNotifications));
+      saveNotificationsToLocalStorage(updatedNotifications, lastModified);
       await PortalSdk.putData("/api/notifications/update", {
         ...notification,
         isRead: !notification.isRead,
       });
     } catch (error) {
       dispatch(setNotifications(notifications));
+      saveNotificationsToLocalStorage(notifications, lastModified);
       console.error("Error marking notification as read", error);
     }
   };
 
   const handleMarkAllAsRead = async () => {
     if (unreadNotifications.length === 0) return;
-
+    const { lastModified } = getNotificationsFromLocalStorage();
     try {
-      dispatch(
-        setNotifications(
-          notifications.map((notification: INotification) => ({
-            ...notification,
-            isRead: true,
-          }))
-        )
+      const updatedNotifications = notifications.map(
+        (notification: INotification) => ({
+          ...notification,
+          isRead: true,
+        })
       );
+      dispatch(setNotifications(updatedNotifications));
       await Promise.all(
         unreadNotifications.map((notification: INotification) =>
           PortalSdk.putData("/api/notifications/update", {
@@ -98,6 +97,7 @@ export const useNotifications = () => {
       );
     } catch (error) {
       dispatch(setNotifications(notifications));
+      saveNotificationsToLocalStorage(notifications, lastModified);
       console.error("Error marking all notifications as read", error);
     }
   };
