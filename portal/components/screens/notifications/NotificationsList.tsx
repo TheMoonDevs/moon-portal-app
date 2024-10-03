@@ -3,10 +3,9 @@ import { Notification } from "@prisma/client";
 import React, { useState } from "react";
 import formatDistanceToNow from "date-fns/formatDistanceToNow";
 import Link from "next/link";
-import { useAppSelector } from "@/utils/redux/store";
-import { PortalSdk } from "@/utils/services/PortalSdk";
 import ToolTip from "@/components/elements/ToolTip";
 import { useUser } from "@/utils/hooks/useUser";
+import { useNotifications } from "@/utils/hooks/useNotifications";
 
 export interface INotification extends Omit<Notification, "notificationData"> {
   notificationData: INotificationData;
@@ -28,26 +27,17 @@ export const timeAgo = (timestamp: string) => {
 };
 
 const NotificationsList = () => {
-  const notifications = useAppSelector(
-    (state) => state.notifications.notifications
-  );
+  const {
+    notifications,
+    toggleNotificationRead,
+    handleMarkAllAsRead,
+  } = useNotifications();
   // console.log(notifications);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const hasUnreadNotifications = notifications.some(
     (notification: INotification) => !notification?.isRead
   );
   const { user } = useUser();
-
-  const handleRead = async (notification: INotification) => {
-    try {
-      await PortalSdk.putData("/api/notifications/update", {
-        ...notification,
-        isRead: !notification.isRead,
-      });
-    } catch (error) {
-      console.error("Error marking notification as read", error);
-    }
-  };
 
   const toggleDescription = (notification: INotification) => {
     if (expandedId === notification.id) {
@@ -56,28 +46,8 @@ const NotificationsList = () => {
       setExpandedId(notification.id);
 
       if (!notification.isRead) {
-        handleRead(notification);
+        toggleNotificationRead(notification);
       }
-    }
-  };
-
-  const handleMarkAllAsRead = async () => {
-    const unreadNotifications = notifications.filter(
-      (notification: INotification) => !notification?.isRead
-    );
-    if (unreadNotifications.length === 0) return;
-
-    try {
-      await Promise.all(
-        unreadNotifications.map((notification: INotification) =>
-          PortalSdk.putData("/api/notifications/update", {
-            ...notification,
-            isRead: true,
-          })
-        )
-      );
-    } catch (error) {
-      console.error("Error marking all notifications as read", error);
     }
   };
 
@@ -169,7 +139,7 @@ const NotificationsList = () => {
                           style={{ fontSize: "20px", cursor: "pointer" }}
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleRead(notification);
+                            toggleNotificationRead(notification);
                           }}
                         >
                           {notification.isRead
