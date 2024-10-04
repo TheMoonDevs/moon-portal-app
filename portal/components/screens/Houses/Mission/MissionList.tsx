@@ -3,7 +3,7 @@ import { Mission } from "@prisma/client";
 import { HOUSES_LIST } from "../HousesList";
 import MissionListItem from "./MissionListItem";
 import { useState } from "react";
-import ExpandedMission from "../ExpandedMission";
+import ExpandedMission from "./ExpandedMission";
 
 const MissionList = ({ currentHouseIndex }: { currentHouseIndex: number }) => {
   const { allMissions } = useAppSelector((state: RootState) => state.mission);
