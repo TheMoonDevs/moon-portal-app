@@ -14,7 +14,7 @@ import {
   setAllTasks,
   setTasksLoading,
 } from "@/utils/redux/missions/missionsTasks.slice";
-import ExpandedMission from "../ExpandedMission";
+import ExpandedMission from "./ExpandedMission";
 import CreateMissionSlider from "../CreateMissionSlider";
 import {
   setActiveMission,
