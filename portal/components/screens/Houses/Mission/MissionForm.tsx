@@ -19,7 +19,6 @@ import {
 } from "@mdxeditor/editor";
 import { MARKDOWN_PLACEHOLDER } from "../../Worklogs/WorklogTabs/TodoTab";
 import { Button, Checkbox, Divider, Select } from "@mui/material";
-import PopoverSelect from "@/components/elements/PopoverSelect";
 import dayjs from "dayjs";
 import { MdxAppEditor } from "@/utils/configure/MdxAppEditor";
 import { Spinner } from "@/components/elements/Loaders";
