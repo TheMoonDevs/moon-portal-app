@@ -10,8 +10,8 @@ export type FormFields = {
   description: string;
   url: string;
   id: string;
-  logo: string;
-  image: string;
+  logo: string | null;
+  image: string | null;
 };
 
 export const LinkActions = ({
@@ -34,7 +34,7 @@ export const LinkActions = ({
     logo: link.logo,
     image: link.image,
   });
-  const { toast } = useAppSelector((state) => state.quicklinks);
+  const { toast } = useAppSelector((state) => state.quicklinksUi);
 
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
@@ -139,7 +139,7 @@ export const LinkActions = ({
       <span
         aria-describedby={id}
         data-popover-trigger="hover"
-        className={`material-symbols-outlined !hidden group-hover:!block group-hover:!opacity-50 hover:bg-neutral-200 cursor-pointer transition-all`}
+        className={`material-symbols-outlined group-hover:!opacity-50 hover:bg-neutral-200 cursor-pointer transition-all`}
         onClick={handleClick}
       >
         more_vert

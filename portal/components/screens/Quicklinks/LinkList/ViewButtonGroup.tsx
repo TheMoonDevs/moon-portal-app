@@ -1,11 +1,11 @@
+import { setCurrentView } from "@/utils/redux/quicklinks/slices/quicklinks.ui.slice";
 import { VIEW } from "./LinkList";
 import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import { setCurrentView } from "@/utils/redux/quicklinks/quicklinks.slice";
 
 export const ViewButtonGroup = () => {
   const dispatch = useAppDispatch();
 
-  const { currentView } = useAppSelector((state) => state.quicklinks);
+  const { currentView } = useAppSelector((state) => state.quicklinksUi);
 
   return (
     <>

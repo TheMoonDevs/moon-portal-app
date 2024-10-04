@@ -4,24 +4,24 @@ import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import { useUser } from "@/utils/hooks/useUser";
 import { useCallback, useState } from "react";
 import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
-import {
-  deleteQuicklink,
-  setToast,
-  toggleFavorite,
-} from "@/utils/redux/quicklinks/quicklinks.slice";
+
 import { ToastSeverity } from "@/components/elements/Toast";
 import { debounce } from "@/utils/helpers/functions";
 import { Fade, Tooltip } from "@mui/material";
 import { ThumbnailView } from "./Views/ThumbnailView";
 import { ListView } from "./Views/ListView";
 import { CardView } from "./Views/CardView";
-import { LinkActions } from "./LinkActions";
 import { LineView } from "./Views/LineView";
+import {
+  deleteQuicklink,
+  toggleFavoriteLinks,
+} from "@/utils/redux/quicklinks/slices/quicklinks.links.slice";
+import { setToast } from "@/utils/redux/quicklinks/slices/quicklinks.ui.slice";
 
 export const LinkItem = ({
   allQuicklinks,
   link,
-  withView = "all",
+  withView = "list",
   isLoading,
 }: {
   link: Quicklink;
@@ -31,7 +31,7 @@ export const LinkItem = ({
 }) => {
   const dispatch = useAppDispatch();
   const { user } = useUser();
-  const { currentView } = useAppSelector((state) => state.quicklinks);
+  const { currentView } = useAppSelector((state) => state.quicklinksUi);
 
   const handleLinkClick = async (linkId: string) => {
     if (!user?.id) {
@@ -52,7 +52,7 @@ export const LinkItem = ({
   };
   const handleFavoriteClick = useCallback(
     async (link: Quicklink) => {
-      dispatch(toggleFavorite(link));
+      dispatch(toggleFavoriteLinks(link));
       try {
         if (!user?.id) {
           throw new Error("User not logged in");
@@ -80,7 +80,7 @@ export const LinkItem = ({
             toastSev: ToastSeverity.error,
           })
         );
-        dispatch(toggleFavorite(link));
+        dispatch(toggleFavoriteLinks(link));
         console.log(error);
       }
     },

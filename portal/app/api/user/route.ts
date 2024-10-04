@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
   const role = request.nextUrl.searchParams.get("role") as USERROLE;
   const house = request.nextUrl.searchParams.get("house") as HOUSEID;
   const status = request.nextUrl.searchParams.get("status");
+  const cache = request.nextUrl.searchParams.get("cache");
 
   let error_response: any;
 
@@ -46,7 +47,13 @@ export async function GET(request: NextRequest) {
       },
     };
 
-    return NextResponse.json(json_response);
+    const response = NextResponse.json(json_response);
+
+    if (cache) {
+      response.headers.set('Cache-Control', 'public, max-age=600, stale-while-revalidate=59');
+    }
+
+    return response;
   } catch (e) {
     console.log(e);
     return new NextResponse(JSON.stringify(e), {
@@ -125,7 +132,8 @@ export async function POST(request: Request) {
     return NextResponse.json(json_response);
   } catch (e) {
     return new NextResponse(JSON.stringify(e), {
-      status: 404,
+      status: 500,
+      statusText: JSON.stringify(e),
       headers: { "Content-Type": "application/json" },
     });
   }
@@ -343,10 +351,10 @@ export async function PUT(request: Request) {
 
     return NextResponse.json(json_response);
   } catch (e) {
-    console.log(e);
-
+    console.log("error", e);
     return new NextResponse(JSON.stringify(e), {
-      status: 404,
+      status: 500,
+      statusText: JSON.stringify(e),
       headers: { "Content-Type": "application/json" },
     });
   }

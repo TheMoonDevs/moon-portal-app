@@ -9,13 +9,11 @@ export const notificationsSlice = createSlice({
   reducers: {
     setNotifications: (state, action) => {
       state.notifications = action.payload;
-    },
-    setNotificationsCount: (state, action) => {
-      state.notificationsCount = action.payload;
+      state.notificationsCount = action.payload.length;
     },
   },
 });
 
-export const { setNotifications, setNotificationsCount } = notificationsSlice.actions;
+export const { setNotifications } = notificationsSlice.actions;
 
 export default notificationsSlice.reducer;
