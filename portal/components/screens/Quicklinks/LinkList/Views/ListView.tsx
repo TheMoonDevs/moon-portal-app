@@ -15,16 +15,26 @@ export const ListView = ({
   handleDeleteLink: (linkId: string) => void;
 }) => {
   return (
-    <div className="group relative rounded-md my-6 max-w-[700px]">
+    <div className="group relative rounded-md my-6 w-full">
       <div>
         <div className="flex flex-row items-center justify-between mb-2">
           <div className="flex flex-row items-center justify-start">
             <div className="bg-white rounded-full shadow-md">
-              <img
-                className="h-[30px] w-[30px] object-cover object-center rounded-full"
-                src={link.logo}
-                alt={link.title}
-              />
+              {link.logo ? (
+                <img
+                  className="h-[30px] w-[30px] object-cover object-center rounded-full"
+                  src={link.logo}
+                  alt={link.title}
+                />
+              ) : (
+                <Image
+                  className="!h-[30px] !w-[30px] object-cover object-center rounded-full"
+                  src="/logo/logo.png"
+                  width={100}
+                  height={100}
+                  alt={link.title}
+                />
+              )}
             </div>
             <div className="flex flex-col px-4">
               <p className="text-xs font-regular ">Like Site</p>
@@ -32,16 +42,6 @@ export const ListView = ({
                 {link.url?.replace("https://", "")}
               </p>
             </div>
-          </div>
-          <div className="flex flex-row justify-end mr-[40px]">
-            <img
-              className="!h-[20px] !w-[20px] !object-cover rounded-full"
-              src={(link as any).author?.avatar}
-              alt=""
-            />
-            <p className="text-sm max-w-[300px] truncate font-semibold">
-              Added By {(link as any).author?.name}
-            </p>
           </div>
         </div>
         <Link
@@ -58,6 +58,16 @@ export const ListView = ({
         </Link>
 
         <p className="text-sm mt-2">{link.description}</p>
+      </div>
+      <div className="flex flex-row  mr-[40px] mt-6">
+        <img
+          className="!h-[20px] !w-[20px] !object-cover rounded-full"
+          src={(link as any).author?.avatar}
+          alt=""
+        />
+        <p className="text-sm max-w-[300px] truncate font-semibold ml-2">
+          Added By {(link as any).author?.name}
+        </p>
       </div>
       <div className="w-full my-8 flex items-center gap-2">
         <div className="w-full flex-grow-1 h-[1px] bg-neutral-200"></div>

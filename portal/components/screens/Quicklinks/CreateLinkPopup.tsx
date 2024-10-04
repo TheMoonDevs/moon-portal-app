@@ -1,21 +1,24 @@
 import { isValidURL } from "@/utils/helpers/functions";
 import useClipboardURLDetection from "@/utils/hooks/useClipboardUrlDetection";
 import { useUser } from "@/utils/hooks/useUser";
-import {
-  addNewQuicklink,
-  setIsCreateLinkModalOpen,
-} from "@/utils/redux/quicklinks/quicklinks.slice";
+import { addNewQuicklink } from "@/utils/redux/quicklinks/slices/quicklinks.links.slice";
+import { setIsCreateLinkModalOpen } from "@/utils/redux/quicklinks/slices/quicklinks.ui.slice";
+
 import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
 import { Popover, Slide, Tooltip } from "@mui/material";
-import { ParentDirectory, ROOTTYPE } from "@prisma/client";
+import { DirectoryList, ROOTTYPE } from "@prisma/client";
 import { usePathname, useSearchParams } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
 import { toast, Toaster } from "sonner";
 
 export const CreateLinkPopup = () => {
-  const { parentDirs, directories, isCreateLinkModalOpen, activeDirectoryId } =
-    useAppSelector((state) => state.quicklinks);
+  const { parentDirs, directories, activeDirectoryId } = useAppSelector(
+    (state) => state.quicklinksDirectory
+  );
+  const { isCreateLinkModalOpen } = useAppSelector(
+    (state) => state.quicklinksUi
+  );
   const dispatch = useAppDispatch();
   const [anchorEl, setAnchorEl] = useState<HTMLSpanElement | null>(null);
   const path = usePathname();
@@ -44,12 +47,12 @@ export const CreateLinkPopup = () => {
         parentDirs?.find((_dir) => _dir.id === directoryId) ||
         directories?.find((_dir) => _dir.id === directoryId);
 
-      if (thisDirectory && "parentDirId" in thisDirectory) {
+      if (thisDirectory?.parentDirId && "parentDirId" in thisDirectory) {
         return getDepartmentId(thisDirectory?.parentDirId);
       } else {
         rootParentDirId =
-          thisDirectory?.type === ROOTTYPE.DEPARTMENT ||
-          thisDirectory?.type === ROOTTYPE.COMMON_RESOURCES
+          thisDirectory?.tabType === ROOTTYPE.DEPARTMENT ||
+          thisDirectory?.tabType === ROOTTYPE.COMMON_RESOURCES
             ? thisDirectory?.id
             : selectedParentDir.id;
         return rootParentDirId;
@@ -74,18 +77,17 @@ export const CreateLinkPopup = () => {
 
       const formData = new FormData(e.currentTarget);
       const link = formData.get("link") as string;
-      console.log(link);
       setFetchingMetadata(true);
       const metadata = await QuicklinksSdk.getLinkMetaData(link);
       setFetchingMetadata(false);
       // store the metadata in db
       const newLinkData = {
-        title: metadata.title,
-        description: metadata.description,
+        title: metadata.title || "Untitled",
+        description: metadata.description || "No description",
         logo: metadata.logo,
         image: metadata.image,
         linkType: metadata.linkType,
-        url: metadata.url,
+        url: link || metadata.url,
         clickCount: 0,
         directoryId: activeDirectoryId,
         rootParentDirId:
@@ -106,6 +108,7 @@ export const CreateLinkPopup = () => {
         loading: "Loading...",
         success: (data: any) => {
           dispatch(addNewQuicklink(data.data.link));
+          dispatch(setIsCreateLinkModalOpen(false));
 
           return (
             <div className="flex flex-col gap-2">
@@ -124,7 +127,7 @@ export const CreateLinkPopup = () => {
     }
   };
 
-  const handleParentDirSelection = (parentDir: ParentDirectory) => {
+  const handleParentDirSelection = (parentDir: DirectoryList) => {
     setAnchorEl(null);
     if (parentDir.id === selectedParentDir.id) {
       setSelectedParentDir({ id: "", title: "" });
@@ -139,7 +142,11 @@ export const CreateLinkPopup = () => {
   return (
     <Slide
       direction="up"
-      in={isCreateLinkModalOpen || Boolean(copiedURL)}
+      in={
+        isCreateLinkModalOpen
+        // uncomment below line to revert back to old UI
+        // || Boolean(copiedURL)
+      }
       mountOnEnter
       unmountOnExit
     >
@@ -240,6 +247,7 @@ export const CreateLinkPopup = () => {
               name="link"
               id="link"
               required
+              autoFocus
               placeholder="Paste Link Here"
             />
           </div>

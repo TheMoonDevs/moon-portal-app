@@ -41,13 +41,14 @@ class GoogleSheetsAPI {
   private clientEmail: string;
   private privateKey: string;
 
-  constructor(config: Config) {
+  constructor(config?: Config) {
     this.baseUrl = "https://sheets.googleapis.com/v4/spreadsheets";
     this.clientEmail =
-      config.clientEmail || (process.env.GIAM_CLIENT_EMAIL as string);
-    this.privateKey = (
-      config.privateKey || (process.env.GIAM_PRIVATE_KEY as string)
-    ).replace(/\\n/g, "\n");
+      config?.clientEmail || (process.env.GIAM_CLIENT_EMAIL as string);
+    this.privateKey = Buffer.from(
+      config?.privateKey || (process.env.GIAM_PRIVATE_KEY as string),
+      "base64"
+    ).toString("ascii");
   }
 
   private async getAccessToken(): Promise<string> {
@@ -112,177 +113,7 @@ class GoogleSheetsAPI {
     spreadsheetId: string,
     targetId: string
   ): Promise<string> {
-    const accessToken = await this.getAccessToken();
-    const url = `${this.baseUrl}/${spreadsheetId}?fields=sheets(properties(sheetId,title))`;
-
-    const response = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Error fetching sheet names: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    const sheet = data.sheets.find(
-      (s: any) => s.properties.sheetId == targetId
-    );
-
-    if (!sheet) {
-      throw new Error(`Sheet with ID ${targetId} not found`);
-    }
-
-    return sheet.properties.title;
-  }
-
-  async getSheetData(options: GetSheetDataOptions): Promise<any> {
-    const {
-      spreadsheetId,
-      range,
-      sheetName,
-      targetId,
-      majorDimension = "ROWS",
-      valueRenderOption = "FORMATTED_VALUE",
-    } = options;
-
-    let finalSheetName = sheetName;
-    if (!sheetName && targetId) {
-      finalSheetName = await this.getSheetName(spreadsheetId, targetId);
-    }
-
-    if (!finalSheetName) {
-      throw new Error("Either sheetName or targetId must be provided");
-    }
-
-    const accessToken = await this.getAccessToken();
-    const url = `${this.baseUrl}/${spreadsheetId}/values/${finalSheetName}!${range}?majorDimension=${majorDimension}&valueRenderOption=${valueRenderOption}`;
-
-    const response = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Error fetching data: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    return data;
-  }
-
-  async updateSheetData(options: UpdateSheetDataOptions): Promise<any> {
-    if (!options) {
-      throw new Error("updateSheetData: Options object is required");
-    }
-
-    const {
-      spreadsheetId,
-      range,
-      values,
-      sheetName,
-      targetId,
-      majorDimension = "ROWS",
-    } = options;
-
-    let finalSheetName = sheetName;
-    if (!sheetName && targetId) {
-      finalSheetName = await this.getSheetName(spreadsheetId, targetId);
-    }
-
-    if (!finalSheetName) {
-      throw new Error("Either sheetName or targetId must be provided");
-    }
-
-    const accessToken = await this.getAccessToken();
-    const encodedSheetName = encodeURIComponent(finalSheetName);
-    const encodedRange = encodeURIComponent(range);
-    const url = `${this.baseUrl}/${spreadsheetId}/values/${encodedSheetName}!${encodedRange}?valueInputOption=USER_ENTERED`;
-
-    const body = {
-      range: `${finalSheetName}!${range}`,
-      majorDimension: majorDimension,
-      values: values,
-    };
-
-    const response = await fetch(url, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Error updating data: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    return data;
-  }
-
-  async appendSheetData(options: AppendSheetDataOptions): Promise<any> {
-    const {
-      spreadsheetId,
-      values,
-      sheetName,
-      targetId,
-      range = "A:Z",
-      majorDimension = "ROWS",
-    } = options;
-
-    let finalSheetName = sheetName;
-    if (!sheetName && targetId) {
-      finalSheetName = await this.getSheetName(spreadsheetId, targetId);
-    }
-
-    console.log(finalSheetName);
-
-    if (!finalSheetName) {
-      throw new Error("Either sheetName or targetId must be provided");
-    }
-
-    const accessToken = await this.getAccessToken();
-    const encodedSheetName = encodeURIComponent(finalSheetName);
-    const encodedRange = encodeURIComponent(range);
-    const url = `${this.baseUrl}/${spreadsheetId}/values/${encodedSheetName}!${encodedRange}:append?valueInputOption=USER_ENTERED`;
-
-    const body = {
-      range: `${finalSheetName}!${range}`,
-      majorDimension: majorDimension,
-      values: values,
-    };
-
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify(body),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.log(data);
-      throw new Error(`Error appending data: ${response.statusText}`);
-    }
-
-    return data;
-  }
-  async deleteRowOrColumn(options: DeleteRowOrColumnOptions): Promise<any> {
-    const { spreadsheetId, sheetName, targetId, majorDimension, indexes } =
-      options;
-
-    let finalSheetName = sheetName;
-    let sheetId = targetId;
-    if (!sheetName && targetId) {
-      finalSheetName = await this.getSheetName(spreadsheetId, targetId);
-    } else if (!targetId && sheetName) {
+    try {
       const accessToken = await this.getAccessToken();
       const url = `${this.baseUrl}/${spreadsheetId}?fields=sheets(properties(sheetId,title))`;
 
@@ -298,80 +129,275 @@ class GoogleSheetsAPI {
 
       const data = await response.json();
       const sheet = data.sheets.find(
-        (s: any) => s.properties.title == sheetName
+        (s: any) => s.properties.sheetId == targetId
       );
 
       if (!sheet) {
-        throw new Error(`Sheet with name ${sheetName} not found`);
+        throw new Error(`Sheet with ID ${targetId} not found`);
       }
 
-      sheetId = sheet.properties.sheetId;
+      return sheet.properties.title;
+    } catch (error) {
+      console.log(error);
+      throw new Error(`Error geetung sheetname: ${error}`);
     }
+  }
 
-    if (!finalSheetName && !sheetId) {
-      throw new Error("Either sheetName or targetId must be provided");
+  async getSheetData(options: GetSheetDataOptions): Promise<any> {
+    try {
+      const {
+        spreadsheetId,
+        range,
+        sheetName,
+        targetId,
+        majorDimension = "ROWS",
+        valueRenderOption = "FORMATTED_VALUE",
+      } = options;
+
+      let finalSheetName = sheetName;
+      if (!sheetName && targetId) {
+        finalSheetName = await this.getSheetName(spreadsheetId, targetId);
+      }
+
+      if (!finalSheetName) {
+        throw new Error("Either sheetName or targetId must be provided");
+      }
+
+      const accessToken = await this.getAccessToken();
+      const url = `${this.baseUrl}/${spreadsheetId}/values/${finalSheetName}!${range}?majorDimension=${majorDimension}&valueRenderOption=${valueRenderOption}`;
+
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error fetching data: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.log(error);
+      throw new Error(`Error get sheet data: ${error}`);
     }
+  }
 
-    const accessToken = await this.getAccessToken();
-    const url = `${this.baseUrl}/${spreadsheetId}:batchUpdate`;
+  async updateSheetData(options: UpdateSheetDataOptions): Promise<any> {
+    try {
+      if (!options) {
+        throw new Error("updateSheetData: Options object is required");
+      }
 
-    // Sort and merge indexes
-    const sortedIndexes = indexes
-      .map((index) =>
-        typeof index === "number"
-          ? { startIndex: index, endIndex: index + 1 }
-          : index
-      )
-      .sort((a, b) => b.startIndex - a.startIndex);
+      const {
+        spreadsheetId,
+        range,
+        values,
+        sheetName,
+        targetId,
+        majorDimension = "ROWS",
+      } = options;
 
-    const mergedIndexes: { startIndex: number; endIndex: number }[] =
-      sortedIndexes.reduce<{ startIndex: number; endIndex: number }[]>(
-        (acc, curr) => {
-          if (acc.length === 0) {
-            acc.push(curr);
-          } else {
-            const last = acc[acc.length - 1];
-            if (last.startIndex <= curr.endIndex) {
-              last.startIndex = Math.min(last.startIndex, curr.startIndex);
-            } else {
+      let finalSheetName = sheetName;
+      if (!sheetName && targetId) {
+        finalSheetName = await this.getSheetName(spreadsheetId, targetId);
+      }
+
+      if (!finalSheetName) {
+        throw new Error("Either sheetName or targetId must be provided");
+      }
+
+      const accessToken = await this.getAccessToken();
+      const encodedSheetName = encodeURIComponent(finalSheetName);
+      const encodedRange = encodeURIComponent(range);
+      const url = `${this.baseUrl}/${spreadsheetId}/values/${encodedSheetName}!${encodedRange}?valueInputOption=USER_ENTERED`;
+
+      const body = {
+        range: `${finalSheetName}!${range}`,
+        majorDimension: majorDimension,
+        values: values,
+      };
+
+      const response = await fetch(url, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error updating data: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.log(error);
+      throw new Error(`Error updating sheet data: ${error}`);
+    }
+  }
+
+  async appendSheetData(options: AppendSheetDataOptions): Promise<any> {
+    try {
+      const {
+        spreadsheetId,
+        values,
+        sheetName,
+        targetId,
+        range = "A:Z",
+        majorDimension = "ROWS",
+      } = options;
+
+      let finalSheetName = sheetName;
+      if (!sheetName && targetId) {
+        finalSheetName = await this.getSheetName(spreadsheetId, targetId);
+      }
+
+      console.log(finalSheetName);
+
+      if (!finalSheetName) {
+        throw new Error("Either sheetName or targetId must be provided");
+      }
+
+      const accessToken = await this.getAccessToken();
+      const encodedSheetName = encodeURIComponent(finalSheetName);
+      const encodedRange = encodeURIComponent(range);
+      const url = `${this.baseUrl}/${spreadsheetId}/values/${encodedSheetName}!${encodedRange}:append?valueInputOption=USER_ENTERED`;
+
+      const body = {
+        range: `${finalSheetName}!${range}`,
+        majorDimension: majorDimension,
+        values: values,
+      };
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify(body),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.log(data);
+        throw new Error(`Error appending data: ${response.statusText}`);
+      }
+
+      return data;
+    } catch (error) {
+      console.log(error);
+      throw new Error(`Error appending data: ${error}`);
+    }
+  }
+  async deleteRowOrColumn(options: DeleteRowOrColumnOptions): Promise<any> {
+    try {
+      const { spreadsheetId, sheetName, targetId, majorDimension, indexes } =
+        options;
+
+      let finalSheetName = sheetName;
+      let sheetId = targetId;
+      if (!sheetName && targetId) {
+        finalSheetName = await this.getSheetName(spreadsheetId, targetId);
+      } else if (!targetId && sheetName) {
+        const accessToken = await this.getAccessToken();
+        const url = `${this.baseUrl}/${spreadsheetId}?fields=sheets(properties(sheetId,title))`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`Error fetching sheet names: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        const sheet = data.sheets.find(
+          (s: any) => s.properties.title == sheetName
+        );
+
+        if (!sheet) {
+          throw new Error(`Sheet with name ${sheetName} not found`);
+        }
+
+        sheetId = sheet.properties.sheetId;
+      }
+
+      if (!finalSheetName && !sheetId) {
+        throw new Error("Either sheetName or targetId must be provided");
+      }
+
+      const accessToken = await this.getAccessToken();
+      const url = `${this.baseUrl}/${spreadsheetId}:batchUpdate`;
+
+      // Sort and merge indexes
+      const sortedIndexes = indexes
+        .map((index) =>
+          typeof index === "number"
+            ? { startIndex: index, endIndex: index + 1 }
+            : index
+        )
+        .sort((a, b) => b.startIndex - a.startIndex);
+
+      const mergedIndexes: { startIndex: number; endIndex: number }[] =
+        sortedIndexes.reduce<{ startIndex: number; endIndex: number }[]>(
+          (acc, curr) => {
+            if (acc.length === 0) {
               acc.push(curr);
+            } else {
+              const last = acc[acc.length - 1];
+              if (last.startIndex <= curr.endIndex) {
+                last.startIndex = Math.min(last.startIndex, curr.startIndex);
+              } else {
+                acc.push(curr);
+              }
             }
-          }
-          return acc;
+            return acc;
+          },
+          []
+        );
+
+      const requests = mergedIndexes.map((index) => ({
+        deleteDimension: {
+          range: {
+            sheetId: sheetId,
+            dimension: majorDimension,
+            startIndex: index.startIndex,
+            endIndex: index.endIndex,
+          },
         },
-        []
-      );
+      }));
 
-    const requests = mergedIndexes.map((index) => ({
-      deleteDimension: {
-        range: {
-          sheetId: sheetId,
-          dimension: majorDimension,
-          startIndex: index.startIndex,
-          endIndex: index.endIndex,
+      const requestBody = {
+        requests: requests,
+      };
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
         },
-      },
-    }));
+        body: JSON.stringify(requestBody),
+      });
 
-    const requestBody = {
-      requests: requests,
-    };
+      if (!response.ok) {
+        throw new Error(`Error deleting row/column: ${response.statusText}`);
+      }
 
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify(requestBody),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Error deleting row/column: ${response.statusText}`);
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.log(error);
+      throw new Error(`Error deleting row/column: ${error}`);
     }
-
-    const data = await response.json();
-    return data;
   }
 }
 

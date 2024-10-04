@@ -1,0 +1,7 @@
+{
+  "repositoryName": "themoondevs",
+  "adapter": "@slicemachine/adapter-next",
+  "libraries": ["./components/Pages/worklife/BlogPageSlices", "./components/Pages/worklife/JobSlice"],
+  "localSliceSimulatorURL": "http://localhost:3000/slice-simulator"
+}
+

@@ -115,13 +115,13 @@ export const QuicklinksSdk = {
             "Content-Type": "application/json",
           },
         });
+        // console.log(res);
         if (res.ok) {
           const result = await res.json();
-          // console.log(result);
           const metadata = QuicklinksSdk.getMetaDataByType(result);
           return resolve(metadata);
         } else {
-          return reject((await res.json()) as any);
+          return resolve(res);
         }
       } catch (e) {
         // console.log(e);
@@ -167,22 +167,48 @@ export const QuicklinksSdk = {
     const ogImageUrl = extractUrl(ogImage);
     const twitterImageUrl = extractUrl(twitterImage);
 
+    const linkUrl = requestUrl || ogUrl || twitterUrl || "";
+
     let imageUrl;
 
     if (ogImageUrl && twitterImageUrl && ogImageUrl === twitterImageUrl)
       imageUrl = ogImageUrl;
     else imageUrl = ogImageUrl || twitterImageUrl;
-
     const data = {
       title: twitterTitle || ogTitle || "",
       description: twitterDescription || ogDescription || "",
-      url: twitterUrl || ogUrl || requestUrl || "",
+      url: linkUrl,
       image: imageUrl,
       linkType: ogType || "website",
       logo: favicon?.startsWith("https://")
         ? favicon
-        : (rootBase.lenght > 2 ? rootBase[2] : "") + favicon,
+        : (rootBase.length > 2 ? rootBase[0] + "//" + rootBase[2] : "") +
+          favicon,
     };
     return data;
+  },
+  moveData: (endpoint: string, data: any) => {
+    return new Promise<any>(async (resolve, reject) => {
+      try {
+        const options: any = {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(data),
+        };
+
+        const res = await fetch(endpoint, options);
+        if (res.ok) {
+          const result = await res.json();
+          return resolve(result);
+        } else {
+          return reject((await res.json()) as any);
+        }
+      } catch (e) {
+        console.log(e);
+        return reject(e as any);
+      }
+    });
   },
 };
