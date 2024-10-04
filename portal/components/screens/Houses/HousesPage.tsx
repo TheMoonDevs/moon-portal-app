@@ -6,6 +6,8 @@ import { MissionDetails } from "./MissionDetails";
 import { User } from "@prisma/client";
 import { RootState, useAppSelector } from "@/utils/redux/store";
 import { PortalSdk } from "@/utils/services/PortalSdk";
+import { Missions } from "./Mission/Missions";
+import Tasks from "./Mission/Task/Tasks";
 
 export const HousesPage = () => {
   const [loading, setloading] = useState<boolean>(true);
@@ -13,9 +15,6 @@ export const HousesPage = () => {
   const [currentHouseIndex, setCurrentHouseIndex] = useState<number>(0);
   const [houseMembers, setHouseMembers] = useState<User[]>([]);
   const [houseMembersLoading, setHouseMembersLoading] = useState<boolean>(true);
-  const { missions } = useAppSelector(
-    (state: RootState) => state.selectedMission
-  );
   useEffect(() => {
     PortalSdk.getData("/api/users", null)
       .then((data) => {
@@ -28,8 +27,8 @@ export const HousesPage = () => {
   }, []);
 
   return (
-    <div className="grid grid-cols-5 gap-4 max-h-[96vh] ">
-      <div className="col-span-2">
+    <div className="grid grid-cols-8 gap-4 max-h-[96vh] ">
+      <div className="col-span-3">
         <HousesList
           setCurrentHouseIndex={setCurrentHouseIndex}
           currentHouseIndex={currentHouseIndex}
@@ -37,15 +36,16 @@ export const HousesPage = () => {
           houseMembersLoading={houseMembersLoading}
         />
       </div>
-      <div className="col-span-2">
-        <MissionsList
+      <div className="col-span-3">
+        <Missions
           loading={loading}
           currentHouseIndex={currentHouseIndex}
           houseMembers={houseMembers}
         />
       </div>
-      <div className="col-span-1">
-        <MissionDetails loading={loading} />
+      <div className="col-span-2">
+        <Tasks userList={houseMembers} currentHouseIndex={currentHouseIndex} />
+        {/* <MissionDetails loading={loading} /> */}
       </div>
     </div>
   );
