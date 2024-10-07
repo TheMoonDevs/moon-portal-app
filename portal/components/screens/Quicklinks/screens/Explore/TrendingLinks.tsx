@@ -4,7 +4,7 @@ import { setAllQuicklinks } from "@/utils/redux/quicklinks/slices/quicklinks.lin
 import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
 import { Link } from "@prisma/client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import PaginationWrapper from "../../global/PaginationWrapper";
 import LinkList from "../../LinkList/LinkList";
 import QuicklinkHeaderWrapper from "../../global/QuicklinkHeaderWrapper";
@@ -14,6 +14,14 @@ const TrendingLinks = () => {
   const { allQuicklinks } = useAppSelector((state) => state.quicklinksLinks);
   const dispatch = useAppDispatch();
   const [page, setPage] = useState(0);
+  const isMounted = useRef(false);
+
+  useEffect(() => {
+    if (isMounted.current) return;
+    if (allQuicklinks.length > 0) dispatch(setAllQuicklinks([]));
+    isMounted.current = true;
+  }, [allQuicklinks.length, dispatch]);
+
   const fetchTrendingLinks = async () => {
     try {
       const fetchedLinks = await QuicklinksSdk.getData(

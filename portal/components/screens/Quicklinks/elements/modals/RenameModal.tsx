@@ -1,5 +1,6 @@
 "use client";
 
+import { Spinner } from "@/components/elements/Loaders";
 import { handleDirectoryUpdate } from "@/utils/redux/quicklinks/quicklinks.thunks";
 import { setModal } from "@/utils/redux/quicklinks/slices/quicklinks.ui.slice";
 import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
@@ -8,7 +9,7 @@ import { useEffect, useState } from "react";
 
 const RenameModal = () => {
   const dispatch = useAppDispatch();
-  const { modal } = useAppSelector((state) => state.quicklinksUi);
+  const { modal, isLoading } = useAppSelector((state) => state.quicklinksUi);
   const selectedDirectory = modal.data && modal.data.selectedDirectory;
   const name = selectedDirectory && selectedDirectory.title;
   const [newName, setNewName] = useState("");
@@ -60,10 +61,10 @@ const RenameModal = () => {
           </button>
           <button
             onClick={handleRename}
-            disabled={newName === ""}
+            disabled={newName === "" || isLoading}
             className="px-6 text-sm  bg-gray-900 text-white rounded-xl cursor-pointer disabled:opacity-50"
           >
-            OK
+            {isLoading ? <Spinner className="w-6 h-6  text-neutral-600" /> : 'OK'}
           </button>
         </div>
       </div>

@@ -21,6 +21,7 @@ interface QuikcklinksUIState {
     toastSev: ToastSeverity | undefined;
   };
   isCreateLinkModalOpen: boolean;
+  isLoading: boolean;
 }
 
 const initialState: QuikcklinksUIState = {
@@ -43,6 +44,7 @@ const initialState: QuikcklinksUIState = {
     toastSev: undefined,
   },
   isCreateLinkModalOpen: false,
+  isLoading: false
 };
 
 export const quicklinksUiSlice = createSlice({
@@ -77,6 +79,9 @@ export const quicklinksUiSlice = createSlice({
     setIsCreateLinkModalOpen: (state, action) => {
       state.isCreateLinkModalOpen = action.payload;
     },
+    setIsLoading: (state, action) => {
+      state.isLoading = action.payload
+    }
   },
 });
 
@@ -86,6 +91,7 @@ export const {
   setToast,
   setCurrentView,
   setIsCreateLinkModalOpen,
+  setIsLoading
 } = quicklinksUiSlice.actions;
 
 export default quicklinksUiSlice.reducer;
