@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, Box } from '@mui/material';
 import { Notification } from '@prisma/client';
-import NotificationsList, { INotification } from '../screens/notifications/NotificationsList';
+import NotificationsList, {
+  INotification,
+} from '../screens/notifications/NotificationsList';
 
 const style = (left: number) => ({
   position: 'absolute' as 'absolute',
@@ -44,6 +46,7 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
       onClose={onClose}
       aria-labelledby='notification-modal-title'
       aria-describedby='notification-modal-description'
+      sx={{ zIndex: 10 }}
     >
       <Box sx={style(leftPosition)} className='no-scrollbar'>
         <NotificationsList />
