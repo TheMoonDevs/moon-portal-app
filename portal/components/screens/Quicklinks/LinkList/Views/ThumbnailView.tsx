@@ -24,13 +24,23 @@ export const ThumbnailView = ({
         className="flex p-4 flex-col justify-between items-center "
       >
         <div className="bg-white rounded-full p-4 shadow-md mb-3">
-          <Image
-            className="!h-[40px] !w-[40px] !object-cover rounded-full"
-            src={link.logo}
-            alt={link.title}
-            width={100}
-            height={100}
-          />
+          {link.logo && link.title ? (
+            <Image
+              className="!h-[40px] !w-[40px] !object-cover rounded-full"
+              src={link.logo}
+              alt={link.title}
+              width={100}
+              height={100}
+            />
+          ) : (
+            <Image
+              className="!h-[40px] !w-[40px] !object-cover rounded-full"
+              src="/logo/logo.png"
+              alt="Moon Portal Logo"
+              width={100}
+              height={100}
+            />
+          )}
         </div>
         <p className="text-xs text-center max-w-[80px] truncate font-regular ">
           {link.title.length > 50

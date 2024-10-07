@@ -116,15 +116,15 @@ const CreateLinkOnPaste = () => {
 
       setFetchingMetadata(true);
       const metadata = await QuicklinksSdk.getLinkMetaData(link);
+      // console.log(metadata);
       setFetchingMetadata(false);
-
       const newLinkData = {
-        title: metadata.title,
-        description: metadata.description,
+        title: metadata.title || "Untitled",
+        description: metadata.description || "No description",
         logo: metadata.logo,
         image: metadata.image,
         linkType: metadata.linkType,
-        url: metadata.url,
+        url: link || metadata.url,
         clickCount: 0,
         directoryId:
           selectedParentDir.id !== ""
@@ -155,6 +155,7 @@ const CreateLinkOnPaste = () => {
         error: (error: any) => `${(error as Error).message}`,
       });
     } catch (error: any) {
+      // console.log(error);
       setFetchingMetadata(false);
       toast.error(`${(error as Error).message}`);
     }

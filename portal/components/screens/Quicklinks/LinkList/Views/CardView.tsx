@@ -22,13 +22,23 @@ export const CardView = ({
           className="flex flex-col overflow-hidden  gap-4"
         >
           <div className="w-full h-40 relative mb-2 overflow-hidden rounded-t-md shadow">
-            <Image
-              src={link.image || link.logo}
-              layout="fill"
-              objectFit="cover"
-              className="transition duration-500 ease-in-out transform group-hover:scale-105"
-              alt={link.title}
-            />
+            {link.image || link.logo ? (
+              <Image
+                src={link.image! || link.logo!}
+                layout="fill"
+                objectFit="cover"
+                className="transition duration-500 ease-in-out transform group-hover:scale-105"
+                alt={link.title}
+              />
+            ) : (
+              <Image
+                src="/logo/logo.png"
+                layout="fill"
+                objectFit="cover"
+                className="transition duration-500 ease-in-out transform group-hover:scale-105"
+                alt=""
+              />
+            )}
           </div>
           <p className="text-lg w-11/12 font-semibold">
             {link.title.length > 50
