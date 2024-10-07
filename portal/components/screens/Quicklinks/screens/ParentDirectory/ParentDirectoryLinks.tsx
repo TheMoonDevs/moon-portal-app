@@ -4,11 +4,15 @@ import LinkList from "../../LinkList/LinkList";
 import { useAppSelector } from "@/utils/redux/store";
 import { ViewButtonGroup } from "../../LinkList/ViewButtonGroup";
 import QuicklinksTabs from "../../elements/Tabs";
+import { useQuickLinkDirectory } from "../../hooks/useQuickLinkDirectory";
+import { useQuickLinkDirs } from "../../hooks/useQuickLinksDirs";
 
 export const ParentDirectoryLinks = ({ loading }: { loading: boolean }) => {
   const { allQuicklinks, topUsedLinksList } = useAppSelector(
     (state) => state.quicklinksLinks
   );
+  const { activeDirectoryId } = useQuickLinkDirectory();
+  const { thisDirectory } = useQuickLinkDirs(activeDirectoryId);
 
   return (
     <div className="mt-2">
@@ -26,7 +30,12 @@ export const ParentDirectoryLinks = ({ loading }: { loading: boolean }) => {
 
       <div className="flex flex-col w-full pb-8">
         <div className="w-full">
-          <QuicklinksTabs tabs={["All", "Top Used"]}>
+          <QuicklinksTabs
+            tabs={[
+              `All in ${thisDirectory?.title}`,
+              `Top Used in ${thisDirectory?.title}`,
+            ]}
+          >
             {(value) => {
               return (
                 <>
