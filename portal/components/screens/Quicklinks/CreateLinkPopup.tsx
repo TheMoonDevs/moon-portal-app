@@ -80,9 +80,17 @@ export const CreateLinkPopup = () => {
       setFetchingMetadata(true);
       const metadata = await QuicklinksSdk.getLinkMetaData(link);
       setFetchingMetadata(false);
+      const getLinkTitle = (link: string) => {
+        if (metadata.title) return metadata.title;
+        const url = new URL(link);
+        const splittedUrl = url.hostname.split(".");
+        let domain = splittedUrl.length > 2 ? splittedUrl[1] : splittedUrl[0];
+
+        return domain.charAt(0).toUpperCase() + domain.slice(1);
+      };
       // store the metadata in db
       const newLinkData = {
-        title: metadata.title || "Untitled",
+        title: getLinkTitle(link) || "Untitled",
         description: metadata.description || "No description",
         logo: metadata.logo,
         image: metadata.image,
