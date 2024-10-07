@@ -1,59 +1,18 @@
 "use client";
-import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
-import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
-import LinkList from "../../LinkList/LinkList";
-import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 
-import TopUsedLink from "../Dashboard/TopUsedLink";
-import { Link } from "@prisma/client";
-import useAsyncState from "@/utils/hooks/useAsyncState";
-import { LinkFiltersHeader } from "../../LinkList/LinkFiltersHeader";
-import { useQuickLinkDirs } from "../../hooks/useQuickLinksDirs";
-import { Box, styled, Tab, Tabs } from "@mui/material";
+import LinkList from "../../LinkList/LinkList";
+import { useAppSelector } from "@/utils/redux/store";
 import { ViewButtonGroup } from "../../LinkList/ViewButtonGroup";
 import QuicklinksTabs from "../../elements/Tabs";
 import { useQuickLinkDirectory } from "../../hooks/useQuickLinkDirectory";
-import {
-  setAllQuicklinks,
-  setTopUsedLinksList,
-} from "@/utils/redux/quicklinks/slices/quicklinks.links.slice";
+import { useQuickLinkDirs } from "../../hooks/useQuickLinksDirs";
 
-export const ParentDirectoryLinks = () => {
-  const dispatch = useAppDispatch();
-  //   const params = useSearchParams();
-  //   const rootParentDirId = params?.get("id");
-
+export const ParentDirectoryLinks = ({ loading }: { loading: boolean }) => {
   const { allQuicklinks, topUsedLinksList } = useAppSelector(
     (state) => state.quicklinksLinks
   );
   const { activeDirectoryId } = useQuickLinkDirectory();
-  const { loading, setLoading } = useAsyncState();
-
-  //Fetch link by department Id
-  useEffect(() => {
-    const getData = async () => {
-      setLoading(true);
-      // try {
-      const reponse = await QuicklinksSdk.getData(
-        `/api/quicklinks/link?rootParentDirId=${activeDirectoryId}`
-      );
-
-      let quicklinks: Link[] = reponse.data.links;
-      dispatch(setAllQuicklinks(quicklinks));
-
-      const sortedQuicklinks = [...quicklinks]
-        .sort((a, b) => b.clickCount - a.clickCount)
-        .slice(0, 5);
-      dispatch(setTopUsedLinksList(sortedQuicklinks));
-
-      setLoading(false);
-      // } catch (error) {
-      //   console.log(error);
-      // }
-    };
-    getData();
-  }, [activeDirectoryId, dispatch, setLoading]);
+  const { thisDirectory } = useQuickLinkDirs(activeDirectoryId);
 
   return (
     <div className="mt-2">
@@ -71,7 +30,12 @@ export const ParentDirectoryLinks = () => {
 
       <div className="flex flex-col w-full pb-8">
         <div className="w-full">
-          <QuicklinksTabs tabs={["All", "Top Used"]}>
+          <QuicklinksTabs
+            tabs={[
+              `All in ${thisDirectory?.title}`,
+              `Top Used in ${thisDirectory?.title}`,
+            ]}
+          >
             {(value) => {
               return (
                 <>
