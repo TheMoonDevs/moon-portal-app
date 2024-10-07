@@ -6,6 +6,7 @@ import SendNotifications from './SendNotifications';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 import { User } from '@prisma/client';
 import BadgeTemplate from './badge-template/AdminBadges';
+import EventForm from './Events/EventForm';
 
 export const AdminPage = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -24,10 +25,11 @@ export const AdminPage = () => {
       });
   }, []);
   return (
-    <div className='flex flex-row flex-wrap gap-4 items-center justify-center  bg-neutral-700 md:bg-neutral-900 h-screen overflow-y-hidden max-sm:flex-col max-sm:h-full max-sm:overflow-y-auto'>
+    <div className='flex flex-row flex-wrap gap-4 items-center justify-center  bg-neutral-700 md:bg-neutral-900 h-screen overflow-y-scroll max-sm:flex-col max-sm:h-full max-sm:overflow-y-auto py-5'>
       <AdminUsers users={users} loading={loading} />
       <SendNotifications users={users} loading={loading} />
       <BadgeTemplate />
+      <EventForm />
     </div>
   );
 };
