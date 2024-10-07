@@ -22,6 +22,8 @@ const UserTopUsedLinks = ({ withTitle }: { withTitle?: boolean }) => {
       return;
     }
     const getTopUsedLinks = async () => {
+      if (topUsedLinksList.length > 0) dispatch(setTopUsedLinksList([]));
+
       setLoading(true);
       try {
         const topUsedLinksData: UserLink[] = await QuicklinksSdk.getData(
@@ -43,7 +45,7 @@ const UserTopUsedLinks = ({ withTitle }: { withTitle?: boolean }) => {
     };
 
     getTopUsedLinks();
-  }, [dispatch, user?.id, setLoading]);
+  }, [dispatch, user?.id, setLoading, topUsedLinksList.length]);
   return (
     <div>
       <div className=" flex justify-between items-center">
