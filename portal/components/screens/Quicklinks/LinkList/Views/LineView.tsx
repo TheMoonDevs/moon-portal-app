@@ -26,11 +26,19 @@ export const LineView = ({
       >
         <div className="flex flex-row items-center justify-start">
           <div className="bg-white rounded-full shadow-md min-w-[30px]">
-            <img
-              className="!h-[30px] !w-[30px] object-cover object-center rounded-full"
-              src={link.logo}
-              alt={link.title}
-            />
+            {link.logo ? (
+              <img
+                className="!h-[30px] !w-[30px] object-cover object-center rounded-full"
+                src={link.logo}
+                alt={link.title}
+              />
+            ) : (
+              <img
+                className="!h-[30px] !w-[30px] object-cover object-center rounded-full"
+                src="/logo.png"
+                alt={link.title}
+              />
+            )}
           </div>
           <div className="flex flex-col px-4 overflow-hidden ">
             <p className="text-xs max-w-[70%] font-regular truncate ">
