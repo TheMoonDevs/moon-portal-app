@@ -36,6 +36,7 @@ interface SidebarSubNavProps {
   route: string;
   isActive: boolean;
   dispatch: ReturnType<typeof useAppDispatch>;
+  pathname: string | null;
 }
 
 interface ExpandedState {
@@ -162,6 +163,7 @@ const SidebarSubNav: FC<SidebarSubNavProps> = ({
   route,
   isActive,
   dispatch,
+  pathname,
 }) => (
   <ul
     className={`flex flex-col gap-2 ml-3 border-l px-2  overflow-hidden transition-all w-full ${
@@ -198,7 +200,7 @@ const SidebarSubNav: FC<SidebarSubNavProps> = ({
         <li
           className={`flex items-center justify-between py-2 pr-3 hover:bg-neutral-100 rounded-2xl ${
             dir.isArchive ? "hidden" : ""
-          }`}
+          } ${pathname === `${route}/${dir.slug}` ? "bg-neutral-100" : ""}`}
         >
           <div className="flex gap-4">
             <span className="material-symbols-outlined">{dir.logo}</span>
@@ -292,6 +294,7 @@ const QuicklinkSidebar: FC = () => {
                 route={nav.route}
                 isActive={expanded.id === nav.title && expanded.expanded}
                 dispatch={dispatch}
+                pathname={pathname}
               />
             )}
             {nav.title === "Team Resources" && (
@@ -301,6 +304,7 @@ const QuicklinkSidebar: FC = () => {
                 route={nav.route}
                 isActive={expanded.id === nav.title && expanded.expanded}
                 dispatch={dispatch}
+                pathname={pathname}
               />
             )}
           </SidebarNavItem>

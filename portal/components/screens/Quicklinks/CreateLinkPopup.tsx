@@ -12,6 +12,16 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
 import { toast, Toaster } from "sonner";
 
+export const excludedPaths = [
+  "/quicklinks/dashboard",
+  "/quicklinks/user/user-list",
+  "/quicklinks/user/links/top-used",
+  "/quicklinks/user/folders/recently-used",
+  "/quicklinks/user/folders/top-used",
+  "/quicklinks/explore/trending",
+  "/quicklinks/archive",
+];
+
 export const CreateLinkPopup = () => {
   const { parentDirs, directories, activeDirectoryId } = useAppSelector(
     (state) => state.quicklinksDirectory
@@ -182,7 +192,7 @@ export const CreateLinkPopup = () => {
             <span className="block">Create New Quicklink</span>
             <span className="text-gray-500 text-sm">
               We have detected a copied link.{" "}
-              {path !== "/quicklinks/dashboard" ||
+              {!excludedPaths.includes(path || "") ||
               selectedParentDir.id !== "" ? (
                 <>
                   Wanna save it to <br />
@@ -198,19 +208,22 @@ export const CreateLinkPopup = () => {
           </label>
           <div className="flex items-center gap-4">
             <div className="relative flex items-center bg-neutral-100 rounded-md">
-              <Tooltip title="Select Department">
-                <div
-                  className="flex items-center cursor-pointer"
-                  onClick={(e) => setAnchorEl(e.currentTarget)}
-                >
-                  <span className="material-icons-outlined text-gray-500 p-2">
-                    groups
-                  </span>
-                  <span className="material-icons-outlined text-gray-500 p-2">
-                    {open ? "arrow_drop_up" : "arrow_drop_down"}
-                  </span>
-                </div>
-              </Tooltip>
+              {(excludedPaths.includes(path || "") ||
+                selectedParentDir.id !== "") && (
+                <Tooltip title="Select Department">
+                  <div
+                    className="flex items-center cursor-pointer"
+                    onClick={(e) => setAnchorEl(e.currentTarget)}
+                  >
+                    <span className="material-icons-outlined text-gray-500 p-2">
+                      groups
+                    </span>
+                    <span className="material-icons-outlined text-gray-500 p-2">
+                      {open ? "arrow_drop_up" : "arrow_drop_down"}
+                    </span>
+                  </div>
+                </Tooltip>
+              )}
               <Popover
                 open={open}
                 anchorEl={anchorEl}
