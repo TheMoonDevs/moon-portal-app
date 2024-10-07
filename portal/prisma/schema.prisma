@@ -446,3 +446,17 @@ enum BadgeStatus {
   REWARDED
   SUSPENDED
 }
+
+// -------------------------------------Events-------------------------------------------
+model Event {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  subTitle  String
+  link      String   @unique
+  date      String
+  month     Int      
+  year      Int      
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
