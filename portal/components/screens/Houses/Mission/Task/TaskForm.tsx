@@ -56,7 +56,10 @@ const TaskForm = ({ houseMembers }: { houseMembers: User[] }) => {
   const { activeTask } = useAppSelector(
     (state: RootState) => state.missionsTasks
   );
-  const [taskState, setTaskState] = useState(activeTask || initialTaskState);
+
+  const [taskState, setTaskState] = useState(
+    activeTask || { ...initialTaskState, missionId: activeMission?.id }
+  );
   const handleUserChange = useCallback(
     (selectedUserId: string) => {
       setTaskState((prevState) => ({
@@ -143,6 +146,8 @@ const TaskForm = ({ houseMembers }: { houseMembers: User[] }) => {
       toast.error("Failed to delete task");
     }
   };
+
+  console.log(taskState.priority?.value);
   return (
     <div>
       <div className="px-4 py-4 font-bold flex items-center justify-between">
@@ -346,6 +351,7 @@ const TaskForm = ({ houseMembers }: { houseMembers: User[] }) => {
 
               <select
                 id="status"
+                defaultValue={taskState.status?.value}
                 value={taskState.status?.value}
                 onChange={(e) =>
                   setTaskState({
@@ -391,6 +397,7 @@ const TaskForm = ({ houseMembers }: { houseMembers: User[] }) => {
                 <span>Priority</span>
               </label>
               <select
+                placeholder="Priority"
                 value={taskState.priority?.value}
                 onChange={(e) =>
                   setTaskState({
@@ -410,6 +417,9 @@ const TaskForm = ({ houseMembers }: { houseMembers: User[] }) => {
                 }
                 className="text-sm w-full rounded-md appearance-none outline-none hover:bg-neutral-100 p-2"
               >
+                <option value="" hidden>
+                  Select Priority
+                </option>
                 {PRIORITY.map((priority) => (
                   <option
                     key={priority.value}
