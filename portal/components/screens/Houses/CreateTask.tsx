@@ -1,11 +1,11 @@
-import { Grid } from '@mui/material';
-import React, { useCallback } from 'react';
-import dayjs, { Dayjs } from 'dayjs';
-import { Mission, MissionTask, User } from '@prisma/client';
-import { DatePicker } from '@mui/x-date-pickers';
-import { pillOptions } from './CreateMissionFields';
-import { PillSelector } from './PillSelector';
-import { RootState, useAppDispatch, useAppSelector } from '@/utils/redux/store';
+import { Grid } from "@mui/material";
+import React, { useCallback } from "react";
+import dayjs, { Dayjs } from "dayjs";
+import { Mission, MissionTask, User } from "@prisma/client";
+import { DatePicker } from "@mui/x-date-pickers";
+import { pillOptions } from "./CreateMissionFields";
+import { PillSelector } from "./PillSelector";
+import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
 
 type taskState = {
   missionId: string;
@@ -34,9 +34,7 @@ const CreateTask = ({
   setTaskState,
   houseMembers,
 }: CreateTaskProps) => {
-  const missions = useAppSelector(
-    (state: RootState) => state.selectedMission?.missions
-  );
+  const { allMissions } = useAppSelector((state: RootState) => state.mission);
 
   const handleInputChange = useCallback(
     (key: keyof taskState) =>
@@ -44,7 +42,7 @@ const CreateTask = ({
         setTaskState((prevState) => ({
           ...prevState,
           [key]:
-            key === 'indiePoints'
+            key === "indiePoints"
               ? parseInt(e.target.value, 10)
               : e.target.value,
         }));
@@ -62,10 +60,10 @@ const CreateTask = ({
       setTaskState((prevState) => ({
         ...prevState,
         userId: selectedUserId,
-        avatar: selectedUser?.avatar || '',
-        name: selectedUser?.name || '',
-        email: selectedUser?.email || '',
-        userInfoId: selectedUser?.id || '',
+        avatar: selectedUser?.avatar || "",
+        name: selectedUser?.name || "",
+        email: selectedUser?.email || "",
+        userInfoId: selectedUser?.id || "",
       }));
     },
     [setTaskState, houseMembers]
@@ -85,26 +83,26 @@ const CreateTask = ({
 
   return (
     <>
-      <Grid container spacing={4} className='py-4'>
+      <Grid container spacing={4} className="py-4">
         <Grid item xs={12}>
           <label
-            className='text-sm font-medium text-black'
-            htmlFor='select-mission'
+            className="text-sm font-medium text-black"
+            htmlFor="select-mission"
           >
             Select Mission
           </label>
           <select
-            id='select-mission'
+            id="select-mission"
             value={taskState.missionId}
             onChange={handleMissionChange}
-            className='w-full px-4 py-2 border border-gray-300 rounded-md'
-            aria-label='Select a mission'
+            className="w-full px-4 py-2 border border-gray-300 rounded-md"
+            aria-label="Select a mission"
             required
           >
-            <option value='' disabled>
+            <option value="" disabled>
               Select Mission
             </option>
-            {missions?.map((mission: Mission) => (
+            {allMissions?.map((mission: Mission) => (
               <option key={mission.id} value={mission.id}>
                 {mission.title}
               </option>
@@ -112,68 +110,68 @@ const CreateTask = ({
           </select>
         </Grid>
         <Grid item xs={12}>
-          <label className='text-sm font-medium text-black' htmlFor='title'>
+          <label className="text-sm font-medium text-black" htmlFor="title">
             Task Title
           </label>
           <input
-            type='text'
-            id='title'
-            value={taskState.title || ''}
-            onChange={handleInputChange('title')}
-            className='w-full px-4 py-2 border border-gray-300 rounded-md'
-            aria-label='Enter task title'
+            type="text"
+            id="title"
+            value={taskState.title || ""}
+            onChange={handleInputChange("title")}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md"
+            aria-label="Enter task title"
             required
           />
         </Grid>
         <Grid item xs={12}>
           <label
-            className='text-sm font-medium text-black'
-            htmlFor='description'
+            className="text-sm font-medium text-black"
+            htmlFor="description"
           >
             Task Description
           </label>
           <textarea
-            id='description'
-            value={taskState.description || ''}
-            onChange={handleInputChange('description')}
-            className='w-full px-4 py-2 border border-gray-300 rounded-md h-[150px] max-h-[200px]'
-            style={{ resize: 'none' }}
-            aria-label='Enter task description'
+            id="description"
+            value={taskState.description || ""}
+            onChange={handleInputChange("description")}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md h-[150px] max-h-[200px]"
+            style={{ resize: "none" }}
+            aria-label="Enter task description"
             required
           />
         </Grid>
         <Grid item xs={12} sm={6}>
           <label
-            className='text-sm font-medium text-black'
-            htmlFor='indie-points'
+            className="text-sm font-medium text-black"
+            htmlFor="indie-points"
           >
             Task Indie Points
           </label>
           <input
-            type='number'
-            id='indie-points'
+            type="number"
+            id="indie-points"
             value={taskState.indiePoints}
-            onChange={handleInputChange('indiePoints')}
-            className='w-full px-4 py-2 border border-gray-300 rounded-md'
-            aria-label='Enter indie points'
+            onChange={handleInputChange("indiePoints")}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md"
+            aria-label="Enter indie points"
           />
         </Grid>
         <Grid item xs={12} sm={6}>
           <label
-            className='text-sm font-medium text-black'
-            htmlFor='select-user'
+            className="text-sm font-medium text-black"
+            htmlFor="select-user"
           >
             Select User to Assign Task
           </label>
           <select
-            id='select-user'
-            value={taskState.userId || ''}
+            id="select-user"
+            value={taskState.userId || ""}
             onChange={handleUserChange}
-            className='w-full px-4 py-2 border border-gray-300 rounded-md'
-            aria-label='Select a user'
+            className="w-full px-4 py-2 border border-gray-300 rounded-md"
+            aria-label="Select a user"
             required
           >
-            <option value='' disabled>
+            <option value="" disabled>
               Select User
             </option>
             {houseMembers.map((user) => (
@@ -185,7 +183,7 @@ const CreateTask = ({
         </Grid>
         <Grid item xs={12} sm={6}>
           <DatePicker
-            label='Completed At'
+            label="Completed At"
             value={taskState.completedAt ? dayjs(taskState.completedAt) : null}
             onChange={(newValue) =>
               setTaskState({
@@ -193,13 +191,13 @@ const CreateTask = ({
                 completedAt: newValue ? newValue.toDate() : null,
               })
             }
-            className='w-full'
-            aria-label='Select completion date'
+            className="w-full"
+            aria-label="Select completion date"
           />
         </Grid>
         <Grid item xs={12} sm={6}>
           <DatePicker
-            label='Expires At'
+            label="Expires At"
             value={taskState.expiresAt ? dayjs(taskState.expiresAt) : null}
             onChange={(newValue) =>
               setTaskState({
@@ -207,13 +205,13 @@ const CreateTask = ({
                 expiresAt: newValue ? newValue.toDate() : null,
               })
             }
-            className='w-full'
-            aria-label='Select expiration date'
+            className="w-full"
+            aria-label="Select expiration date"
           />
         </Grid>
         <Grid item xs={12} sm={6}>
           <PillSelector
-            label='Is Task Completed'
+            label="Is Task Completed"
             options={pillOptions}
             selectedValue={taskState.completed}
             onChange={(value) =>
@@ -223,7 +221,7 @@ const CreateTask = ({
         </Grid>
         <Grid item xs={12} sm={6}>
           <PillSelector
-            label='Is Task Expirable'
+            label="Is Task Expirable"
             options={pillOptions}
             selectedValue={taskState.expirable}
             onChange={(value) =>

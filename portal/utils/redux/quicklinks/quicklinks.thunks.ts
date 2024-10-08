@@ -9,7 +9,7 @@ import {
   setNewParentDir,
   updateDirectory,
 } from "./slices/quicklinks.directory.slice";
-import { setModal, setToast } from "./slices/quicklinks.ui.slice";
+import { setModal, setToast , setIsLoading} from "./slices/quicklinks.ui.slice";
 
 export const handleDeleteDirectory = createAsyncThunk(
   "directory/deleteDirectory",
@@ -71,6 +71,7 @@ export const handleDirectoryUpdate = createAsyncThunk(
     // let apiPath = parentId
     //   ? `/api/quicklinks/directory`
     //   : `/api/quicklinks/parent-directory`;
+    dispatch(setIsLoading(true))
 
     try {
       // Optimistic update in Redux state
@@ -101,6 +102,8 @@ export const handleDirectoryUpdate = createAsyncThunk(
       );
 
       throw error;
+    }finally{
+      dispatch(setIsLoading(false))
     }
   }
 );
@@ -123,6 +126,7 @@ export const handleAddChildDirectory = createAsyncThunk(
     // let apiPath = parentDirId
     //   ? `/api/quicklinks/directory`
     //   : `/api/quicklinks/parent-directory`;
+    dispatch(setIsLoading(true))
 
     const newDirectory: Partial<DirectoryList> = {
       title: title || `Untitled`,
@@ -161,6 +165,8 @@ export const handleAddChildDirectory = createAsyncThunk(
       );
 
       throw error;
+    }finally{
+      dispatch(setIsLoading(false));
     }
   }
 );

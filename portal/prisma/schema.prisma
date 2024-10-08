@@ -150,9 +150,9 @@ model Link {
   id              String           @id @default(auto()) @map("_id") @db.ObjectId
   title           String
   description     String
-  logo            String
-  image           String
-  linkType        String
+  logo            String?
+  image           String?
+  linkType        String?
   url             String
   clickCount      Int
   isFavorite      Boolean          @default(false)
@@ -352,6 +352,7 @@ model Notification {
   matchType         String?
   notificationType  NotificationType
   notificationData  Json?
+  isRead            Boolean?          @default(false)
 }
 
 enum NotificationType {
@@ -362,12 +363,27 @@ enum NotificationType {
 
 //-------------------------------------Missions-------------------------------------------
 
+type STATUS {
+  label String
+  value String
+  color String
+}
+
+type PRIORITY {
+  label String
+  value String
+  color String
+}
+
+
 model Mission {
   id  String   @id @default(auto()) @map("_id") @db.ObjectId
   house  HOUSEID
   vertical USERVERTICAL?
   month        String
   completed    Boolean?
+  status STATUS?
+  priority PRIORITY?
   housePoints  Int
   indiePoints  Int  
   createdAt DateTime @default(now())
@@ -383,8 +399,11 @@ model MissionTask {
   id           String   @id @default(auto()) @map("_id") @db.ObjectId
   missionId    String   
   userId       String?  
+  assignees    String[]  @db.ObjectId
   title        String?
   description  String?
+  status       STATUS? 
+  priority     PRIORITY?
   indiePoints  Int
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
