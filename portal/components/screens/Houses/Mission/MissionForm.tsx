@@ -277,6 +277,9 @@ const MissionForm = ({ currentHouseIndex }: { currentHouseIndex: number }) => {
                 }
                 className="text-sm w-full rounded-md appearance-none outline-none hover:bg-neutral-100 p-2"
               >
+                <option value="" hidden>
+                  Select Priority
+                </option>
                 {PRIORITY.map((priority) => (
                   <option
                     key={priority.value}

@@ -183,22 +183,24 @@ const Tasks = ({
                         {task.title}
                       </p>
                     </div>
-                    <div
-                      style={{
-                        color: task.priority?.color,
-                      }}
-                      className="text-sm flex items-center gap-1 font-bold text-neutral-400"
-                    >
-                      <span
+                    {task.priority && (
+                      <div
                         style={{
-                          fill: task.priority?.color,
+                          color: task.priority?.color,
                         }}
-                        className="icon_size material-icons "
+                        className="text-sm flex items-center gap-1 font-bold text-neutral-400"
                       >
-                        flag
-                      </span>
-                      <span>{task.priority?.label}</span>
-                    </div>
+                        <span
+                          style={{
+                            fill: task.priority?.color,
+                          }}
+                          className="icon_size material-icons "
+                        >
+                          flag
+                        </span>
+                        <span>{task.priority?.label}</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex items-center justify-between mt-3">
