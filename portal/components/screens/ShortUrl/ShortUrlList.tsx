@@ -1,11 +1,12 @@
-import TableLoader from "@/components/elements/TableLoader";
-import useCopyToClipboard from "@/utils/hooks/useCopyToClipboard";
-import { setAllLinks } from "@/utils/redux/shortUrl/shortUrl.slice";
-import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import { setError, setLoading, setSuccess } from "@/utils/redux/ui/ui.slice";
-import { ShortUrlSdk } from "@/utils/services/ShortUrlSdk";
-import { CircularProgress, Tooltip, TextField } from "@mui/material";
+import { Search as SearchIcon, ContentCopy, Check, Delete } from "@mui/icons-material"; // Import Material Icons
+import { InputAdornment, TextField, Tooltip, CircularProgress } from "@mui/material";
 import React, { useEffect, useRef, useState } from "react";
+import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
+import { setAllLinks } from "@/utils/redux/shortUrl/shortUrl.slice";
+import { setError, setLoading, setSuccess } from "@/utils/redux/ui/ui.slice";
+import useCopyToClipboard from "@/utils/hooks/useCopyToClipboard";
+import { ShortUrlSdk } from "@/utils/services/ShortUrlSdk";
+import TableLoader from "@/components/elements/TableLoader";
 
 export const ShortUrlList = () => {
   const { isLoading, error, success } = useAppSelector((state) => state.ui);
@@ -14,7 +15,6 @@ export const ShortUrlList = () => {
   const [activeCopyIndex, setActiveCopyIndex] = useState<null | number>(null);
   const [activeDeleteId, setActiveDeleteId] = useState<null | string>(null);
   const [searchQuery, setSearchQuery] = useState(""); // Search query state
-  const textRef = useRef<HTMLSpanElement | null>(null);
   const dispatch = useAppDispatch();
 
   const handleCopy = (index: number) => {
@@ -71,21 +71,28 @@ export const ShortUrlList = () => {
 
   return (
     <div className="w-11/12 flex flex-col rounded-lg min-h-full h-full overflow-y-auto bg-white">
-      <div className="sticky top-0 bg-white z-10 p-4 shadow">
+      <div className="sticky top-0 bg-white z-10 py-4 shadow">
         <TextField
           label="Search Links"
           variant="outlined"
           fullWidth
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+          }}
         />
       </div>
 
       {success ? (
         <table className="w-full space-y-2 overflow-y-auto">
           <thead className="border-b border-gray-400">
-            <tr className="text-left bg-gray-200">
-              <th className="p-4">Short Links</th>
+            <tr className="text-left bg-stone-800">
+              <th className="p-4 text-white">Short Links</th>
             </tr>
           </thead>
           <tbody>
@@ -93,7 +100,9 @@ export const ShortUrlList = () => {
               const isCopied = copied && activeCopyIndex === index;
               return (
                 <React.Fragment key={link.id}>
-                  <tr className="bg-slate-100 hover:bg-slate-200 rounded-l-lg rounded-r-lg py-4">
+                  <tr
+                    className="bg-white hover:bg-gray-600 hover:text-white rounded-l-lg rounded-r-lg py-4 transition duration-200 shadow-md group"
+                  >
                     <td className="px-4 py-3 flex flex-col gap-2 cursor-default">
                       <div className="flex items-center justify-between">
                         <Tooltip title={`${process.env.NEXT_PUBLIC_SHORT_LINK_BASE_URL}/l/${link.slug}`}>
@@ -101,7 +110,7 @@ export const ShortUrlList = () => {
                             href={`${process.env.NEXT_PUBLIC_SHORT_LINK_BASE_URL}/l/${link.slug}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="font-bold text-blue-600 hover:text-blue-800"
+                            className="font-bold text-stone-800 group-hover:text-white"
                           >
                             {process.env.NEXT_PUBLIC_SHORT_LINK_BASE_URL}/l/{link.slug}
                           </a>
@@ -109,33 +118,27 @@ export const ShortUrlList = () => {
                         <div className="flex gap-4">
                           <Tooltip title={isCopied ? "Copied!" : "Copy"}>
                             {isCopied ? (
-                              <span className="material-icons-outlined !text-xl cursor-pointer">
-                                check
-                              </span>
+                              <Check className="!text-xl cursor-pointer" />
                             ) : (
-                              <span
-                                className="material-icons-outlined !text-xl cursor-pointer"
+                              <ContentCopy
+                                className="!text-xl cursor-pointer"
                                 onClick={() => handleCopy(index)}
-                              >
-                                content_copy
-                              </span>
+                              />
                             )}
                           </Tooltip>
                           <Tooltip title="Delete">
                             {isLoading && activeDeleteId === link.id ? (
                               <CircularProgress size={24} />
                             ) : (
-                              <span
-                                className="material-icons-outlined !text-2xl hover:text-red-500 cursor-pointer"
+                              <Delete
+                                className="!text-2xl hover:text-red-500 cursor-pointer"
                                 onClick={() => handleDelete(link.id)}
-                              >
-                                delete
-                              </span>
+                              />
                             )}
                           </Tooltip>
                         </div>
                       </div>
-                      <span className="text-gray-500 text-sm">
+                      <span className="text-gray-500 group-hover:text-gray-100 text-sm ">
                         {new Date(link?.createdAt).toDateString()}
                       </span>
                       <div className="mt-3">
@@ -144,7 +147,7 @@ export const ShortUrlList = () => {
                             href={link.redirectTo}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="block text-black hover:text-white"
+                            className="block hover:text-white"
                           >
                             {link.redirectTo.length > 20
                               ? `${link.redirectTo.slice(0, 20)}...`
