@@ -11,6 +11,9 @@ import { useQuickLinkDirectory } from "../../hooks/useQuickLinkDirectory";
 import { setActiveDirectoryId } from "@/utils/redux/quicklinks/slices/quicklinks.directory.slice";
 import Image from "next/image";
 
+import { CircularProgress } from "@mui/material";
+import useFetchQuicklinksByDir from "../../hooks/useFetchQuicklinksByDir";
+
 export const DepartmentLinks = ({
   rootParentDirId,
 }: {
@@ -31,6 +34,15 @@ export const DepartmentLinks = ({
     (directory) => directory.parentDirId === activeDirectoryId
   );
   const { allQuicklinks } = useAppSelector((state) => state.quicklinksLinks);
+
+  const { loading } = useFetchQuicklinksByDir({ isRootDirectory: true });
+
+  if (loading)
+    return (
+      <div className="flex justify-center items-center w-full">
+        <CircularProgress color="inherit" />
+      </div>
+    );
 
   return (
     <div>
@@ -58,7 +70,7 @@ export const DepartmentLinks = ({
         <div className="flex gap-10">
           <div className="mt-4 flex justify-stretch gap-6 w-[70%]">
             <div className="w-full">
-              <ParentDirectoryLinks />
+              <ParentDirectoryLinks loading={loading} />
             </div>
           </div>
           <div className="my-8 w-[30%]">

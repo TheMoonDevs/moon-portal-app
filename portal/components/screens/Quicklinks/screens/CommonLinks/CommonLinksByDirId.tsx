@@ -10,56 +10,8 @@ import ListOfDirectories from "../../DirectoryList";
 import { usePathname } from "next/navigation";
 import { setActiveDirectoryId } from "@/utils/redux/quicklinks/slices/quicklinks.directory.slice";
 
-// import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
-// import { useEffect } from "react";
-// import LinkList from "../../LinkList/LinkList";
-// import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
-// import { setAllQuicklinks } from "@/utils/redux/quicklinks/quicklinks.slice";
-// import useAsyncState from "@/utils/hooks/useAsyncState";
-// import { LinkFiltersHeader } from "../../LinkList/LinkFiltersHeader";
-// import { useSearchParams } from "next/navigation";
-// import { useQuickLinkDirs } from "../../hooks/useQuickLinksDirs";
-
-// export const CommonLinksByDirId = ({
-//   directorySlug,
-//   departmentSlug,
-// }: {
-//   directorySlug: string;
-//   departmentSlug: string;
-// }) => {
-//   const dispatch = useAppDispatch();
-//   const params = useSearchParams();
-//   const directoryId = params?.get("id");
-//   const { thisDirectory, parentDirecotry } = useQuickLinkDirs(directoryId);
-//   const { allQuicklinks } = useAppSelector((state) => state.quicklinks);
-//   const { loading, setLoading, error, setError } = useAsyncState();
-//   useEffect(() => {
-//     const getData = async () => {
-//       setLoading(true);
-
-//       try {
-//         console.log("sent", directoryId);
-//         const allQuicklinks = await QuicklinksSdk.getData(
-//           `/api/quicklinks/link?directoryId=${directoryId}`
-//         );
-//         console.log("received", allQuicklinks);
-//         dispatch(setAllQuicklinks(allQuicklinks.data.links));
-
-//         setLoading(false);
-//       } catch (error) {
-//         console.log(error);
-//       }
-//     };
-
-//     getData();
-//   }, [directoryId, dispatch, setLoading]);
-//   return (
-//     <div className="flex flex-col w-full">
-//       <LinkFiltersHeader title={thisDirectory?.title} />
-//       <LinkList allQuicklinks={allQuicklinks} isLoading={loading} />
-//     </div>
-//   );
-// };
+import useFetchQuicklinksByDir from "../../hooks/useFetchQuicklinksByDir";
+import { CircularProgress } from "@mui/material";
 
 export const CommonLinksByDirId = ({
   directoryId,
@@ -81,6 +33,16 @@ export const CommonLinksByDirId = ({
     store.dispatch(setActiveDirectoryId(directoryId));
     initialize.current = true;
   }
+
+  const { loading } = useFetchQuicklinksByDir({ isRootDirectory: false });
+
+  if (loading)
+    return (
+      <div className="flex justify-center items-center w-full">
+        <CircularProgress color="inherit" />
+      </div>
+    );
+
   return (
     <div>
       <QuicklinkHeaderWrapper
@@ -98,7 +60,7 @@ export const CommonLinksByDirId = ({
         <div className="flex gap-10">
           <div className="mt-4 flex justify-stretch gap-6 w-[70%]">
             <div className="w-full">
-              <SubDirectoryLinks />
+              <SubDirectoryLinks loading={loading} />
             </div>
           </div>
           <div className="my-8 w-[30%]">

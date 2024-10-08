@@ -35,7 +35,8 @@ const QuicklinksGlobalHeader = () => {
             </Button>
 
             {user?.avatar ? (
-              <Image
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
                 src={user?.avatar || ""}
                 alt="avatar"
                 width={40}

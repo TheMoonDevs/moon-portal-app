@@ -23,7 +23,7 @@ export const CoreTeamSection = () => {
         USERROLE.CORETEAM +
         "&userType=" +
         USERTYPE.MEMBER +
-        "&status=ACTIVE" +
+        "&status=ACTIVE&cache=true" +
         `&month=${currentMonth}`,
       null
     )

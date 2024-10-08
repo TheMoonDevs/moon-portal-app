@@ -1,30 +1,57 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { MissionTask } from '@prisma/client';
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { MissionTask } from "@prisma/client";
 
 interface MissionsTasksState {
-  tasks: MissionTask[];
-  tasksLoading: boolean
+  allTasks: MissionTask[];
+  activeTask: MissionTask | null;
+
+  tasksLoading: boolean;
 }
 
 const initialState: MissionsTasksState = {
-  tasks: [],
-  tasksLoading: false
+  allTasks: [],
+  activeTask: null,
+  tasksLoading: false,
 };
 
 export const missionsTasksSlice = createSlice({
-  name: 'missionTasks',
+  name: "missionTasks",
   initialState,
   reducers: {
-    setAllTasks: (state, action: PayloadAction<MissionTask[]>) => {
-      state.tasks.push(...action.payload);
+    setActiveTask: (state, action: PayloadAction<MissionTask | null>) => {
+      state.activeTask = action.payload;
     },
+    setAllTasks: (state, action: PayloadAction<MissionTask[]>) => {
+      state.allTasks.push(...action.payload);
+    },
+
+    updateTask: (state, action: PayloadAction<MissionTask>) => {
+      const index = state.allTasks.findIndex(
+        (task) => task.id === action.payload.id
+      );
+      if (index !== -1) {
+        state.allTasks[index] = action.payload;
+      }
+    },
+
+    deleteTask: (state, action: PayloadAction<MissionTask>) => {
+      state.allTasks = state.allTasks.filter(
+        (task) => task.id !== action.payload.id
+      );
+    },
+
     setTasksLoading: (state, action: PayloadAction<boolean>) => {
-      state.tasksLoading = action.payload
-    }
+      state.tasksLoading = action.payload;
+    },
   },
 });
 
-
-export const { setAllTasks, setTasksLoading } = missionsTasksSlice.actions;
+export const {
+  setAllTasks,
+  setActiveTask,
+  setTasksLoading,
+  updateTask,
+  deleteTask,
+} = missionsTasksSlice.actions;
 
 export default missionsTasksSlice.reducer;

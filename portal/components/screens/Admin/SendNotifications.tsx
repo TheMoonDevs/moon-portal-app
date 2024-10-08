@@ -43,6 +43,7 @@ const SendNotifications = ({
       title,
       description,
       notificationType: 'ADMIN',
+      isRead: false
     };
     try {
       setSending(true);

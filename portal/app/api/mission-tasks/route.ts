@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
         ...(missionId && { missionId }),
       },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: "desc",
       },
     });
 
@@ -28,34 +28,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const {
-      missionId,
-      userId,
-      title,
-      description,
-      indiePoints,
-      expirable,
-      expiresAt,
-      avatar,
-      name,
-      email,
-      userInfoId,
-    } = await request.json();
+    const data = await request.json();
 
     const task = await prisma.missionTask.create({
-      data: {
-        missionId,
-        userId,
-        title,
-        description,
-        indiePoints,
-        expirable,
-        expiresAt,
-        avatar,
-        name,
-        email,
-        userInfoId,
-      },
+      data: data,
     });
 
     return NextResponse.json({
@@ -91,6 +67,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json(json_response);
   } catch (e) {
+    console.log(e);
     return new NextResponse(JSON.stringify(e), {
       status: 404,
       headers: { "Content-Type": "application/json" },
@@ -100,8 +77,13 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const { id } = await request.json();
-
+    const id = request.nextUrl.searchParams.get("id") as string;
+    if (!id) {
+      return new NextResponse(JSON.stringify({ error: "Missing id" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
     const task = await prisma.missionTask.delete({
       where: { id },
     });
