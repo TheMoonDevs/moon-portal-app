@@ -1,21 +1,6 @@
+import { cn } from "@/utils/helpers/twhelper";
 import React, { useCallback, CSSProperties } from "react";
 import { useConnect } from "wagmi";
-
-const buttonStyles: CSSProperties = {
-  background: "transparent",
-  border: "1px solid transparent",
-  boxSizing: "border-box",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  fontWeight: "bold",
-  gap: "0.5rem",
-  color: "white",
-  backgroundColor: "#0052FF",
-  padding: "0rem 1rem",
-  borderRadius: "10px",
-};
-
 export function BlueCreateWalletButton({
   customtailwind,
 }: {
@@ -34,8 +19,10 @@ export function BlueCreateWalletButton({
 
   return (
     <button
-      style={buttonStyles}
-      className={customtailwind}
+      className={cn(
+        "bg-transparent border border-transparent box-border flex items-center justify-center font-bold gap-2 text-white bg-[#0052FF] px-4 py-0 rounded-lg",
+        customtailwind
+      )}
       onClick={createWallet}
     >
       <CoinbaseWalletLogo />

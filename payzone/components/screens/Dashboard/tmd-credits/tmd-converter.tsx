@@ -2,8 +2,7 @@
 import { TOKEN_INFO } from "@/utils/constants/appInfo";
 import { useWallet } from "@/utils/hooks/useWallet";
 import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Modal from "@mui/material/Modal";
 import { useEthersSigner } from "@/utils/hooks/useEthers";
 import { Contract, formatEther, parseEther } from "ethers";
@@ -14,15 +13,7 @@ import {
   TRANSACTIONSTATUS,
   TRANSACTIONTYPE,
 } from "@prisma/client";
-import { useAuthSession } from "@/utils/hooks/useAuthSession";
-import {
-  Button,
-  IconButton,
-  List,
-  ListItem,
-  ListItemText,
-  Popover,
-} from "@mui/material";
+import { Button, IconButton } from "@mui/material";
 import ErrorIcon from "@mui/icons-material/Error";
 import { close } from "../../../../public/icons/index";
 import Image from "next/image";
@@ -299,7 +290,7 @@ const TMDConverter = ({
         </span>
         {!userWalletAddress && user && (
           <button
-            className="text-sm font-normal tracking-widest text-center hover:font-medium hover:text-blue-700"
+            className="text-sm tracking-widest text-center font-medium text-black hover:text-[#0052FF]"
             onClick={() => {
               setShowOnboarding(true);
             }}
@@ -308,10 +299,12 @@ const TMDConverter = ({
           </button>
         )}
       </div>
-      <div className="flex justify-between">
+      <div className="flex justify-between flex-col gap-2 lg:flex-row">
         {/* <ConnectButton /> */}
         <CustomConnectButton />
-        {!isConnected && <BlueCreateWalletButton />}
+        {!isConnected && (
+          <BlueCreateWalletButton customtailwind="text-white font-bold py-1 px-4 rounded-lg flex items-center justify-center gap-2" />
+        )}
       </div>
 
       {userWalletAddress &&
@@ -334,10 +327,12 @@ const TMDConverter = ({
 
       <ActionCard action="sendtmd" onClickAction={handleSendOpen} />
       {Admin && <ActionCard action="minttmd" onClickAction={handleMintOpen} />}
-      <OnboardingModal
-        showOnboarding={showOnboarding}
-        handleOnboardingClose={handleOnboardingClose}
-      />
+      {!userWalletAddress && (
+        <OnboardingModal
+          showOnboarding={showOnboarding}
+          handleOnboardingClose={handleOnboardingClose}
+        />
+      )}
       <Modal
         open={mintOpen}
         onClose={handleMintClose}
