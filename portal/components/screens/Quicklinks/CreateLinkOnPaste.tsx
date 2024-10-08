@@ -24,6 +24,7 @@ import { useUser } from "@/utils/hooks/useUser";
 import { DirectoryList, ROOTTYPE } from "@prisma/client";
 import { isValidURL } from "@/utils/helpers/functions";
 import { addNewQuicklink } from "@/utils/redux/quicklinks/slices/quicklinks.links.slice";
+import { excludedPaths } from "./CreateLinkPopup";
 
 const modalStyle = {
   position: "absolute",
@@ -115,10 +116,18 @@ const CreateLinkOnPaste = () => {
 
       setFetchingMetadata(true);
       const metadata = await QuicklinksSdk.getLinkMetaData(link);
+      const getLinkTitle = (link: string) => {
+        if (metadata.title) return metadata.title;
+        const url = new URL(link);
+        const splittedUrl = url.hostname.split(".");
+        let domain = splittedUrl.length > 2 ? splittedUrl[1] : splittedUrl[0];
+
+        return domain.charAt(0).toUpperCase() + domain.slice(1);
+      };
       // console.log(metadata);
       setFetchingMetadata(false);
       const newLinkData = {
-        title: metadata.title || "Untitled",
+        title: getLinkTitle(link) || "Untitled",
         description: metadata.description || "No description",
         logo: metadata.logo,
         image: metadata.image,
@@ -214,7 +223,7 @@ const CreateLinkOnPaste = () => {
             <span className="block">Create New Quicklink</span>
             <span className="text-gray-500 text-sm">
               We have detected a copied link.{" "}
-              {path !== "/quicklinks/dashboard" ||
+              {!excludedPaths.includes(path || "") ||
               selectedParentDir.id !== "" ? (
                 <>
                   Wanna save it to <br />
@@ -235,7 +244,8 @@ const CreateLinkOnPaste = () => {
             value={copiedURL || ""}
             onChange={(e) => setCopiedURL(e.target.value)}
             InputProps={{
-              startAdornment: path === "/quicklinks/dashboard" && (
+              startAdornment: (excludedPaths.includes(path || "") ||
+                selectedParentDir.id !== "") && (
                 <InputAdornment position="start">
                   <Tooltip title="Select Department">
                     <div
