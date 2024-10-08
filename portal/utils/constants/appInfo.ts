@@ -25,6 +25,18 @@ export enum APP_ROUTES {
   badgeEditor = "/admin/badge/editor",
 }
 
+export enum QUICKLINK_ROUTES {
+  dashboard = "/quicklinks/dashboard",
+  department = "/quicklinks/department",
+  commonResources = "/quicklinks/common-resources",
+  userList = "/quicklinks/user/user-list",
+  userTopUsedLinks = "/quicklinks/user/links/top-used",
+  userRecentlyUsedFolders = "/quicklinks/user/folders/recently-used",
+  userTopUsedFolders = "/quicklinks/user/folders/top-used",
+  trending = "/quicklinks/explore/trending",
+  archive = "/quicklinks/archive",
+}
+
 export enum GLOBAL_ROUTES {
   applicationForm = "/application/position/",
 }

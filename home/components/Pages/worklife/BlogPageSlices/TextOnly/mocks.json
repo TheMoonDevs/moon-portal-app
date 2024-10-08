@@ -1,0 +1,81 @@
+[
+	{
+		"__TYPE__": "SharedSliceContent",
+		"variation": "default",
+		"primary": {},
+		"items": [
+			{
+				"__TYPE__": "GroupItemContent",
+				"value": [
+					[
+						"text",
+						{
+							"__TYPE__": "StructuredTextContent",
+							"value": [
+								{
+									"type": "paragraph",
+									"content": {
+										"text": "Reprehenderit consectetur irure quis. Labore anim nisi proident in reprehenderit labore reprehenderit occaecat aute laborum ullamco eiusmod qui ipsum. Qui velit amet exercitation voluptate minim qui minim do pariatur in exercitation."
+									}
+								}
+							]
+						}
+					]
+				]
+			}
+		]
+	},
+	{
+		"__TYPE__": "SharedSliceContent",
+		"variation": "break",
+		"primary": {
+			"number_of_breaks": {
+				"__TYPE__": "FieldContent",
+				"value": "37",
+				"type": "Number"
+			}
+		},
+		"items": [
+			{
+				"__TYPE__": "GroupItemContent",
+				"value": []
+			}
+		]
+	},
+	{
+		"__TYPE__": "SharedSliceContent",
+		"variation": "code",
+		"primary": {},
+		"items": [
+			{
+				"__TYPE__": "GroupItemContent",
+				"value": [
+					[
+						"code_file_name",
+						{
+							"__TYPE__": "FieldContent",
+							"value": "driven",
+							"type": "Text"
+						}
+					],
+					[
+						"code",
+						{
+							"__TYPE__": "FieldContent",
+							"value": "generally",
+							"type": "Text"
+						}
+					],
+					[
+						"code_language",
+						{
+							"__TYPE__": "FieldContent",
+							"value": "markup",
+							"type": "Select"
+						}
+					]
+				]
+			}
+		]
+	}
+]
