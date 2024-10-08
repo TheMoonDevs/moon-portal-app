@@ -35,7 +35,7 @@ const Events = () => {
     setLoading(true);
     try {
       const res = await PortalSdk.getData(
-        `/api/events?year=${year}&month=${month}`,
+        `/api/events?year=${year}&month=${month}&limit=3`,
         null
       );
       setEvents(res.data);
@@ -102,7 +102,7 @@ const Events = () => {
                       <div className='text-lg font-bold text-white max-w-1/2'>
                         {selectedEvent.name} -{' '}
                         {dayjs(selectedEvent.date, 'DD-MM-YYYY').format(
-                          'MMMM D'
+                          'MMM D'
                         )}
                         {getDaySuffix(
                           dayjs(selectedEvent.date, 'DD-MM-YYYY').date()
@@ -118,7 +118,7 @@ const Events = () => {
                         const formattedDate = dayjs(
                           event.date,
                           'DD-MM-YYYY'
-                        ).format('MMMM D');
+                        ).format('MMM D');
                         const day = dayjs(event.date, 'DD-MM-YYYY').date();
                         return (
                           <div
@@ -155,12 +155,12 @@ const Events = () => {
                     href={selectedEvent.link}
                     target='_blank'
                     rel='noopener noreferrer'
-                    className='flex flex-col gap-2 items-center justify-center text-white'
+                    className='flex flex-col gap-2 items-center justify-center text-white opacity-50 hover:opacity-100 transition-opacity duration-300 cursor-pointer '
                   >
-                    <span className='material-symbols-outlined'>
+                    <span className='material-symbols-outlined '>
                       open_in_new
                     </span>
-                    Open Event
+                    <span className='tracking-widest'>TODAY</span>
                   </Link>
                 ) : (
                   <span className='text-[32px] font-normal text-white'>
