@@ -3,7 +3,7 @@ import EmojiLegend from "./EmojiLegend";
 
 const WorklogTips = () => {
   return (
-    <div>
+    <div className="p-3">
       <p className="text-lg font-bold mb-4">Tasks from clickup</p>
       <ul className=" font-mono text-sm tracking-widest">
         <li className="">Something...</li>

@@ -42,6 +42,9 @@ import Image from "next/image";
 import ToolTip from "@/components/elements/ToolTip";
 import ReactActivityCalendar from "./ActivityCalendar";
 import EditUser from "./EditUser";
+import { useTasks } from "@/utils/hooks/useTasks";
+import { filterTasksByPerson } from "@/utils/clickup/helper";
+import ClickupTask from "../Worklogs/WorklogTabs/ClickupTasks";
 
 interface LoggedInUser {
   user: User;
@@ -263,20 +266,12 @@ export const UserProfileDrawer: React.FC = () => {
             </li>
           </ul>
         </div> */}
-          {/* <div className="pb-4">
-          <h6 className="font-bold pb-2">Missions/Task</h6>
-          <ul className="flex flex-col gap-1 p-3 border-2 mt-1 border-gray-300 rounded-xl list-none">
-            <li className="flex items-center pl-5 relative before:content-["•"] before:absolute before:left-0 before:text-gray-500 text-sm">
-              Task 1 or mission 1
-            </li>
-            <li className="flex items-center pl-5 relative before:content-["•"] before:absolute before:left-0 before:text-gray-500 text-sm">
-              Task 2 or mission 2
-            </li>
-            <li className="flex items-center pl-5 relative before:content-["•"] before:absolute before:left-0 before:text-gray-500 text-sm">
-              Task 3 or mission 3
-            </li>
-          </ul>
-        </div> */}
+          <div className="pb-4">
+            <h6 className="font-bold pb-2">Missions/Task</h6>
+            <ul className="flex flex-col gap-1 p-3 border-2 mt-1 border-gray-300 rounded-xl list-none">
+              {<ClickupTask email={selectedUser?.email as string} />}
+            </ul>
+          </div>
 
           <div className="w-full">
             <h6 className="font-bold pb-2">
