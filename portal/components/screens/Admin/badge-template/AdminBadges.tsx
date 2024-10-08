@@ -56,7 +56,7 @@ const AdminBadges = () => {
           <Spinner />
         </div>
       ) : (
-        <div className='flex flex-col grow gap-4 my-2 justify-start max-h-full overflow-y-auto no-scrollbar text-white'>
+        <div className='flex flex-col grow gap-4 my-2 justify-start max-h-full overflow-y-auto no-scrollbar text-white max-sm:max-h-[500px]'>
           {badges.length > 0 ? (
             badges.map((badge) => (
               <Link
