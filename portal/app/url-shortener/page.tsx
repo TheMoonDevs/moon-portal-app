@@ -21,9 +21,13 @@ export default function URLShortnerPage() {
           </h1>
         </div>
         <div className="flex items-start justify-center gap-6 pt-16">
-          <div className="flex flex-col gap-8 items-center justify-center w-full max-sm:w-full">
-            <ShortUrlCard />
-            <ShortUrlList />
+          <div className="flex flex-col md:flex-row gap-8 items-center justify-center w-full max-sm:w-full">
+            <div className="w-full md:w-auto md:mx-8">
+              <ShortUrlCard />
+            </div>
+            <div className="flex-grow h-[80vh] overflow-hidden">
+              <ShortUrlList />
+            </div>
           </div>
         </div>
       </div>
