@@ -19,6 +19,7 @@ import media from "@/styles/media";
 import { useMediaQuery } from "@mui/material";
 import { CoreTeamSection } from "./CoreTeamSection";
 import Link from "next/link";
+import Events from "./Events";
 
 const MemberHomePage = () => {
   const { user } = useUser();
@@ -52,6 +53,9 @@ const MemberHomePage = () => {
               Todo&apos;s for Tomorrow{" "}
             </h4>
             <InPlanSection visible={true} /> */}
+          <div className="">
+            <Events />
+          </div>
         </div>
         <div className="pt-8">
           <h4 className="text-lg font-bold px-4">Core Team Leaderboard</h4>

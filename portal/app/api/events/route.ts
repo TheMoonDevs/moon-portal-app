@@ -53,6 +53,9 @@ export async function GET(req: NextRequest) {
       where: {
         month: month ? parseInt(month) : undefined,
         year: year ? parseInt(year) : undefined
+      },
+      orderBy: {
+        date: 'asc'
       }
     });
 
