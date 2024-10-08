@@ -1,0 +1,108 @@
+[
+	{
+		"__TYPE__": "SharedSliceContent",
+		"variation": "default",
+		"primary": {
+			"image": {
+				"origin": {
+					"id": "main",
+					"url": "https://images.unsplash.com/photo-1498050108023-c5249f4df085",
+					"width": 3882,
+					"height": 2584
+				},
+				"url": "https://images.unsplash.com/photo-1498050108023-c5249f4df085",
+				"width": 3882,
+				"height": 2584,
+				"edit": {
+					"zoom": 1,
+					"crop": {
+						"x": 0,
+						"y": 0
+					},
+					"background": "transparent"
+				},
+				"credits": null,
+				"alt": null,
+				"__TYPE__": "ImageContent",
+				"thumbnails": {}
+			},
+			"title": {
+				"__TYPE__": "FieldContent",
+				"value": "put",
+				"type": "Text"
+			},
+			"department": {
+				"__TYPE__": "FieldContent",
+				"value": "exercise",
+				"type": "Text"
+			},
+			"spreadsheet_url": {
+				"__TYPE__": "FieldContent",
+				"value": "hidden",
+				"type": "Text"
+			},
+			"is_job_open": {
+				"__TYPE__": "BooleanContent",
+				"value": true
+			},
+			"description": {
+				"__TYPE__": "StructuredTextContent",
+				"value": [
+					{
+						"type": "paragraph",
+						"content": {
+							"text": "Sit cillum labore do elit magna."
+						}
+					}
+				]
+			},
+			"requirements": {
+				"__TYPE__": "StructuredTextContent",
+				"value": [
+					{
+						"type": "paragraph",
+						"content": {
+							"text": "Nisi ut cupidatat dolor enim elit ad. Officia non in irure voluptate mollit esse amet ipsum elit dolore dolor. Adipisicing eiusmod exercitation cillum quis."
+						}
+					}
+				]
+			},
+			"assignment_url": {
+				"__TYPE__": "FieldContent",
+				"value": "horse",
+				"type": "Text"
+			}
+		},
+		"items": [
+			{
+				"__TYPE__": "GroupItemContent",
+				"value": [
+					[
+						"question",
+						{
+							"__TYPE__": "FieldContent",
+							"value": "produce",
+							"type": "Text"
+						}
+					],
+					[
+						"options",
+						{
+							"__TYPE__": "FieldContent",
+							"value": "am",
+							"type": "Text"
+						}
+					],
+					[
+						"question_type",
+						{
+							"__TYPE__": "FieldContent",
+							"value": "Single Select",
+							"type": "Select"
+						}
+					]
+				]
+			}
+		]
+	}
+]

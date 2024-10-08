@@ -1,9 +1,9 @@
-import { setPopoverElementWithData } from "../redux/quicklinks/quicklinks.slice";
+import { setPopoverElementWithData } from "../redux/quicklinks/slices/quicklinks.ui.slice";
 import { useAppDispatch, useAppSelector } from "../redux/store";
 
 export const useQuicklinksPopover = () => {
   const { popoverElementWithData } = useAppSelector(
-    (state) => state.quicklinks
+    (state) => state.quicklinksUi
   );
   const dispatch = useAppDispatch();
   const openEmojiSet = popoverElementWithData.anchorId === "emoji-set";
