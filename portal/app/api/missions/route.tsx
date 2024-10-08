@@ -71,6 +71,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(json_response);
   } catch (e) {
+    console.log("mission error", e);
     return new NextResponse(JSON.stringify(e), {
       status: 404,
       headers: { "Content-Type": "application/json" },
@@ -137,10 +138,16 @@ export async function PUT(request: Request) {
   }
 }
 
-export async function DELETE(request: Request) {
+export async function DELETE(request: NextRequest) {
   try {
-    const { id, ...rest } = await request.json();
+    const id = request.nextUrl.searchParams.get("id") as string;
 
+    if (!id) {
+      return new NextResponse(JSON.stringify({ error: "Missing id" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
     const mission = await prisma.mission.delete({
       where: {
         id,
