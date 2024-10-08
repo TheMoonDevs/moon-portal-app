@@ -2,36 +2,36 @@
 
 import React, { useMemo } from "react";
 import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import { calculateMissionStat } from "./MissionsList";
 import { Mission, MissionTask } from "@prisma/client";
 import { IconButton } from "@mui/material";
+import { setActiveMission } from "@/utils/redux/missions/mission.slice";
 import {
   setActiveTab,
-  setEditingMission,
-  setEditingTask,
-  setEditorModalOpen,
-} from "@/utils/redux/missions/missionTaskEditorSlice.slice";
+  setEditModalOpen,
+} from "@/utils/redux/missions/mission.ui.slice";
+import { setActiveTask } from "@/utils/redux/missions/missionsTasks.slice";
 
 export const MissionDetails = ({ loading }: { loading: boolean }) => {
   const dispatch = useAppDispatch();
-  const { mission, missions, isOpen, missionsLoading } = useAppSelector(
-    (state: RootState) => state.selectedMission
-  );
-  const { tasks, tasksLoading } = useAppSelector(
+  const { activeMission, allMissions, missionDetailsOpen, missionsLoading } =
+    useAppSelector((state: RootState) => state.mission);
+  const { allTasks, tasksLoading } = useAppSelector(
     (state: RootState) => state.missionsTasks
   );
 
-  const missionTasks = tasks?.filter((t) => t?.missionId === mission?.id);
+  const missionTasks = allTasks?.filter(
+    (t) => t?.missionId === activeMission?.id
+  );
 
   if (tasksLoading || missionsLoading) {
     return <MissionDetailsSkeleton />;
   }
 
-  if (missions?.length === 0) {
+  if (allMissions?.length === 0) {
     return <div className="text-center text-lg py-4">No missions found</div>;
   }
 
-  if (missions && missions.length > 0 && !mission) {
+  if (allMissions && allMissions.length > 0 && !activeMission) {
     return (
       <div className="text-center text-3xl">Select mission to see details</div>
     );
@@ -42,21 +42,21 @@ export const MissionDetails = ({ loading }: { loading: boolean }) => {
       className={`bg-white rounded-lg shadow-lg p-6 h-[96vh] overflow-y-scroll my-4 border-b border-neutral-200 
       `}
     >
-      {isOpen ? (
+      {missionDetailsOpen ? (
         <div className="flex flex-col gap-6">
-          {missions?.map((mission: Mission) =>
+          {allMissions?.map((mission: Mission) =>
             MissionComponent(mission, missionTasks)
           )}
         </div>
       ) : (
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold ">{mission?.title}</h2>
+            <h2 className="text-2xl font-bold ">{activeMission?.title}</h2>
             <IconButton
               onClick={() => {
-                dispatch(setEditingMission(mission));
+                dispatch(setActiveMission(activeMission));
                 dispatch(setActiveTab("missions"));
-                dispatch(setEditorModalOpen(true));
+                dispatch(setEditModalOpen(true));
               }}
             >
               <span className="material-symbols-outlined">edit_document</span>{" "}
@@ -90,8 +90,8 @@ export const MissionDetails = ({ loading }: { loading: boolean }) => {
                     </p>
                     <IconButton
                       onClick={() => {
-                        dispatch(setEditingTask(task));
-                        dispatch(setEditorModalOpen(true));
+                        dispatch(setActiveTask(task));
+                        dispatch(setEditModalOpen(true));
                         dispatch(setActiveTab("tasks"));
                       }}
                     >
