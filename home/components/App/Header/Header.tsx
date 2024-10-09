@@ -199,12 +199,12 @@ export const Header = () => {
             </p>
           </div>
           <button
-            className="rounded-full !bg-white text-black text-sm py-2 px-4 
-          font-medium flex items-center justify-center transition-all duration-300 ease-in-out
-          transform hover:translate-x-1 hover:-translate-y-1 max-lg:hidden"
+            className="rounded-full !bg-white text-black text-sm py-2 px-4 font-medium flex items-center justify-center transition-all duration-300 ease-in-out
+            transform hover:translate-x-1 hover:-translate-y-1 hover:shadow-hover:shadow-gray-400 max-lg:hidden"
           >
             Start Trial
           </button>
+
           {/* Hamburger */}
           <button
             className="hidden max-lg:block py-2 px-1"
