@@ -1,3 +1,4 @@
+'use client'
 import styled from "@emotion/styled";
 import { PrivacyHTMLData } from "./PrivacyData";
 import { TermsData } from "./TermsData";
@@ -6,13 +7,7 @@ import theme from "@/styles/theme";
 import { SectionWithGrids } from "../HomePage/SectionWithGrids";
 import Link from "next/link";
 import { SenseTermsData } from "./sense/TermsData";
-
-export enum DocumentPageType {
-  PRIVACY = "privacy",
-  TERMS = "terms",
-  SENSE_PRIVACY = "sense-privacy",
-  SENSE_TERMS = "sense-terms",
-}
+import { DocumentPageType } from "@/utils/constants/AppInfo";
 
 const isMainDocPage = Object.values(DocumentPageType);
 
@@ -72,6 +67,7 @@ const DocumentPageStyled = styled.div<{ darkMode?: boolean }>`
 `;
 
 export const DocumentPage = ({ docType }: { docType: DocumentPageType }) => {
+  console.log(docType)
   return (
     <DocumentPageStyled darkMode={
       docType != DocumentPageType.PRIVACY && docType != DocumentPageType.TERMS

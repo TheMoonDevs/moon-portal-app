@@ -1,3 +1,4 @@
+'use client'
 import { SectionWithGrids } from "@/components/Pages/HomePage/SectionWithGrids";
 import { HeaderStyled } from "./Header.styles";
 import Image from "next/image";
@@ -8,7 +9,7 @@ import Link from "next/link";
 import { APP_INFO, APP_ROUTES } from "@/utils/constants/AppInfo";
 import theme from "@/styles/theme";
 import { forwardRef, useEffect, useRef } from "react";
-import { useRouter } from "next/router";
+// import { useRouter } from "next/router";
 import { usePathname } from "next/navigation";
 
 export const HeaderComponent = () => {
@@ -49,8 +50,8 @@ export const Header = () => {
   const headerRef = useRef<HTMLDivElement | null>(null);
 
   const path = usePathname();
-  const router = useRouter();
-  const isDefinedRoute = Object.values(APP_ROUTES).includes(router.pathname);
+  // const router = useRouter();
+  const isDefinedRoute = Object.values(APP_ROUTES).includes(path as string);
   const showHeader =
     isDefinedRoute &&
     !path?.startsWith("/worklife") &&
