@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "secure-dev": "next dev --experimental-https",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -66,7 +67,8 @@
     "slick-carousel": "^1.8.1",
     "sonner": "^1.4.41",
     "swr": "^2.2.5",
-    "tailwind-merge": "^2.3.0"
+    "tailwind-merge": "^2.3.0",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@types/jsdom": "^21.1.7",
@@ -77,6 +79,7 @@
     "@types/react-select-country-list": "^2.2.3",
     "@types/react-slick": "^0.23.13",
     "@types/react-table": "^7.7.20",
+    "@types/web-push": "^3.6.3",
     "autoprefixer": "^10.0.1",
     "eslint": "^8",
     "eslint-config-next": "14.0.3",
