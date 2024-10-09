@@ -1,3 +1,4 @@
+'use client'
 import { APP_ROUTES } from "@/utils/constants/AppInfo";
 import styled from "@emotion/styled";
 import Link from "next/link";

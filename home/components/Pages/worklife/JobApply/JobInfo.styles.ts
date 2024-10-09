@@ -1,3 +1,4 @@
+'use client';
 import media from "@/styles/media";
 import styled from "@emotion/styled";
 
