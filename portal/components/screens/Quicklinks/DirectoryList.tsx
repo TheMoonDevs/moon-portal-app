@@ -13,6 +13,9 @@ import { toggleFavoriteDirectory } from "@/utils/redux/quicklinks/slices/quickli
 import { setToast } from "@/utils/redux/quicklinks/slices/quicklinks.ui.slice";
 import { useQuickLinkDirs } from "./hooks/useQuickLinksDirs";
 import { useQuickLinkDirectory } from "./hooks/useQuickLinkDirectory";
+import useCopyToClipboard from "@/utils/hooks/useCopyToClipboard";
+import { toast } from "sonner";
+import { APP_BASE_URL } from "@/utils/constants/appInfo";
 
 const ListOfDirectories = ({
   pathname = "",
@@ -34,6 +37,7 @@ const ListOfDirectories = ({
   const [selectedDir, setSelectedDir] = useState<DirectoryList | null>(null);
   const router = useRouter();
   const { user } = useUser();
+  const { copied, copyToClipboard } = useCopyToClipboard();
   const dispatch = useAppDispatch();
   const clickTimeout = useRef<NodeJS.Timeout | null>(null);
   if (!directories || directories.length === 0) return null;
@@ -167,12 +171,28 @@ const ListOfDirectories = ({
     );
   };
 
+  const handleShareLink = async (directory: DirectoryList) => {
+    try {
+      const linkURL = getConstructedPath(directory);
+      if (!linkURL) {
+        toast.error("Link can't be shared.");
+        return;
+      }
+      await copyToClipboard(APP_BASE_URL + linkURL);
+      toast.success("Copied link to clipboard.");
+    } catch (error: any) {
+      toast.error("Error copying link");
+      console.error(error.message);
+    }
+  };
+
   return (
     <div className="w-full">
       <DirectoryActionBar
         selectedDir={selectedDir}
         setSelectedDir={setSelectedDir}
         handleToggleFavorite={handleToggleFavorite}
+        handleShareLink={handleShareLink}
       />
       {/* <Divider /> */}
       {view === "gridView" && (
