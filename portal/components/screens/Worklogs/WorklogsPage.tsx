@@ -6,14 +6,7 @@ import { useUser } from "@/utils/hooks/useUser";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { WorkLogs } from "@prisma/client";
 import Link from "next/link";
-import React, {
-  RefObject,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  createRef,
-} from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import store, { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import dayjs from "dayjs";
 import { WorkLogsHelper } from "./WorklogsHelper";
@@ -165,6 +158,7 @@ export const WorkLogItem = ({
 };
 
 export const WorklogsPage = () => {
+  const { localPassphrase } = usePassphrase();
   const { user } = useUser();
 
   const thisYear = dayjs().year();
@@ -302,7 +296,6 @@ export const WorklogsPage = () => {
       content: <TodoTab userId={user?.id as string} />,
     },
   ];
-  const { localPassphrase } = usePassphrase();
 
   const handleWorkLogItemClick = (data: WorkLogs, isEditorSaving: boolean) => {
     if (isEditorSaving) {
@@ -418,16 +411,10 @@ export const WorklogsPage = () => {
               setMonthTab={setMonthTab}
               handleNextMonthClick={handleNextMonthClick}
             />
-            {localPassphrase && (
-              <PrivateWorklogView
-                date={centerdate.format("YYYY-MM-DD")}
-                localPassphrase={localPassphrase}
-                logType={"privateWorklogs"}
-                // monthTab={monthTab}
-                // setMonthTab={setMonthTab}
-                // handleNextMonthClick={handleNextMonthClick}
-              />
-            )}
+            <PrivateWorklogView
+              date={centerdate.format("YYYY-MM-DD")}
+              logType={"privateWorklogs"}
+            />
           </div>
           <div className="grid grid-cols-2 lg:w-[30%] gap-3 p-2 max-lg:grid-cols-4 max-md:grid-cols-2 max-h-[80vh] overflow-y-scroll m-3">
             {filteredLogs.map(
