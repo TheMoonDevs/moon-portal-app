@@ -8,73 +8,12 @@ import React, { useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 import { Skeleton } from '@mui/material';
 import MultiColorProgressBar from './MultiColorProgressBar';
-
-export const getPoints = (content: string) => {
-  const points = (content?.match(/\n/g) || []).length + 1;
-  return points;
-};
-
-const getColorsForBuffLevel = (level: BUFF_LEVEL) => {
-  switch (level) {
-    case BUFF_LEVEL.TRUTH_SEEKER:
-      return ['#4caf50', '#81c784'];
-    case BUFF_LEVEL.BABY_GROOT:
-      return ['#8bc34a', '#c5e1a5'];
-    case BUFF_LEVEL.WORK_HULK:
-      return ['#f44336', '#ef5350'];
-    case BUFF_LEVEL.VAMPIRE_LORD:
-      return ['#9c27b0', '#d81b60'];
-    case BUFF_LEVEL.ALIEN_PREDATOR:
-      return ['#ff5722', '#ff8a65'];
-    case BUFF_LEVEL.DEVIL:
-      return ['#f44336', '#d50000'];
-    default:
-      return ['#e0e0e0', '#9e9e9e'];
-  }
-};
-
-const isValidContent = (content: string) => {
-  const trimmedContent = content.trim();
-  return trimmedContent.length > 0 && /[a-zA-Z0-9]/.test(trimmedContent);
-};
-
-export const getBuffLevelAndTitle = (points: number) => {
-  if (points < 10)
-    return {
-      level: BUFF_LEVEL.TRUTH_SEEKER,
-      title: 'Truth Seeker',
-      src: '/images/buff/truthSeeker.jpeg',
-    };
-  if (points < 25)
-    return {
-      level: BUFF_LEVEL.BABY_GROOT,
-      title: 'Baby Groot',
-      src: '/images/buff/babyGroot.jpeg',
-    };
-  if (points < 100)
-    return {
-      level: BUFF_LEVEL.WORK_HULK,
-      title: 'Work Hulk',
-      src: '/images/buff/workHulk.jpeg',
-    };
-  if (points < 150)
-    return {
-      level: BUFF_LEVEL.VAMPIRE_LORD,
-      title: 'Vampire Lord',
-      src: '/images/buff/vampire.jpeg',
-    };
-  if (points < 200)
-    return {
-      level: BUFF_LEVEL.ALIEN_PREDATOR,
-      title: 'Alien Predator',
-      src: '/images/buff/alien.jpeg',
-    };
-  return {
-    level: BUFF_LEVEL.DEVIL,
-    title: 'Devil',
-    src: '/images/buff/devil.jpeg',
-  };
-};
+import {
+  getBuffLevelAndTitle,
+  getColorsForBuffLevel,
+  getPoints,
+  isValidContent,
+} from '@/utils/helpers/badges';
 
 const WorklogBuff = ({
   filteredLogs,
@@ -120,7 +59,7 @@ const WorklogBuff = ({
         null
       );
       setBuffBadge(res.data);
-      console.log(res.data)
+      // console.log(res.data)
     } catch (error) {
       console.log(error);
     } finally {
@@ -210,10 +149,10 @@ const WorklogBuff = ({
           }}
           height={224}
         />
-      ) : filteredLogs && buffBadge.length > 0 ? (
+      ) : filteredLogs && buffBadge.length > 0 && buffBadge[0].points > 0 ? (
         <>
           {
-            <div className='p-6 border border-neutral-700 rounded-xl shadow-xl bg-gradient-to-br from-neutral-800 to-neutral-900 text-white w-full max-w-lg mx-auto'>
+            <div className='p-6 border border-neutral-700 rounded-xl shadow-xl bg-gradient-to-br from-neutral-800 to-neutral-900 text-white w-full max-w-lg mx-auto'> 
               <h2 className='text-center text-2xl font-bold mb-4'>
                 {selectedMonth} Badge
               </h2>
