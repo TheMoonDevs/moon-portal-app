@@ -115,12 +115,13 @@ export const QuicklinksSdk = {
             "Content-Type": "application/json",
           },
         });
+        // console.log(res);
         if (res.ok) {
           const result = await res.json();
           const metadata = QuicklinksSdk.getMetaDataByType(result);
           return resolve(metadata);
         } else {
-          return reject((await res.json()) as any);
+          return resolve(res);
         }
       } catch (e) {
         // console.log(e);

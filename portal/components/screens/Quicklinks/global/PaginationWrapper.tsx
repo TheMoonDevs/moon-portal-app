@@ -34,6 +34,7 @@ const PaginationWrapper = ({
     const loadItems = async () => {
       setLoading(true);
       const newItems = await fetchItems(page, initialPageSize);
+      console.log(newItems);
       // If the response is empty, stop showing "Show More"
       if (newItems?.length === 0) {
         setHasMore(false);

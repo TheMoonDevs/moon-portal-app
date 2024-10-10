@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
   const status = request.nextUrl.searchParams.get("status");
   const month = request.nextUrl.searchParams.get("month");
   const currentMonth = month ?? dayjs().format("MMMM");
+  const cache = request.nextUrl.searchParams.get("cache");
 
   let error_response: any;
 
@@ -56,7 +57,13 @@ export async function GET(request: NextRequest) {
       },
     };
 
-    return NextResponse.json(json_response);
+    const response = NextResponse.json(json_response);
+
+    if (cache) {
+      response.headers.set('Cache-Control', 'public, max-age=600, stale-while-revalidate=59');
+    }
+
+    return response;
   } catch (e) {
     console.log(e);
     return new NextResponse(JSON.stringify(e), {
