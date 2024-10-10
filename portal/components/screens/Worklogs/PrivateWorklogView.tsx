@@ -7,20 +7,20 @@ import { debounce } from "lodash";
 import { MdxAppEditor } from "@/utils/configure/MdxAppEditor";
 import { decryptData, encryptData } from "@/utils/security/encryption";
 import { toast } from "sonner";
+import { PassphraseVerification } from "./PassphraseVerification";
+import { usePassphrase } from "@/utils/hooks/usePassphrase";
 
 const MARKDOWN_PLACEHOLDER = "*";
 
 interface PrivateWorklogViewProps {
   date: string;
   logType?: string;
-  localPassphrase: string;
   visible?: boolean;
 }
 
 export const PrivateWorklogView: React.FC<PrivateWorklogViewProps> = ({
   date,
   logType = "dayLog",
-  localPassphrase,
   visible = true,
 }) => {
   const { user } = useUser();
@@ -29,9 +29,10 @@ export const PrivateWorklogView: React.FC<PrivateWorklogViewProps> = ({
   const [loading, setLoading] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
   const editorRef = useRef<MDXEditorMethods>(null);
-
+  const { localPassphrase } = usePassphrase();
   const fetchWorklog = useCallback(async () => {
     if (!user?.id || !date) return;
+    if (!localPassphrase) return;
 
     setLoading(true);
     try {
@@ -48,7 +49,7 @@ export const PrivateWorklogView: React.FC<PrivateWorklogViewProps> = ({
       setContent(decryptedContent || MARKDOWN_PLACEHOLDER);
       editorRef.current?.setMarkdown(decryptedContent || MARKDOWN_PLACEHOLDER);
     } catch (error: any) {
-      console.error("Error fetching worklog:", error);
+      console.error("Error fetching worklog:", error.message);
       if (error.error !== "Document not found") {
         toast.error("Failed to fetch private worklog.");
       }
@@ -61,11 +62,20 @@ export const PrivateWorklogView: React.FC<PrivateWorklogViewProps> = ({
 
   const saveWorklog = useCallback(
     async (newContent: string) => {
+      console.log("im here")
+      if (!localPassphrase) return;
       if (!user?.id) return;
-
+      console.log("plain", newContent);
       setSaving(true);
       try {
         const encryptedContent = encryptData(newContent, localPassphrase);
+        const decryptTest = decryptData(encryptedContent, localPassphrase);
+        // console.log("plain", newContent);
+        // console.log("encryptedContent", encryptedContent);
+        // console.log("plain", newContent);
+        // console.log("decrypt test", decryptTest);
+        // console.log("plain", newContent);
+        if (newContent != decryptTest) return;
         await PortalSdk.putData(`/api/user/worklogs/private`, {
           userId: user.id,
           logType: "privateWorklogs",
@@ -81,7 +91,7 @@ export const PrivateWorklogView: React.FC<PrivateWorklogViewProps> = ({
         setSaving(false);
       }
     },
-    [user?.id, worklog?.docId, date, localPassphrase]
+    [user?.id, worklog?.docId, date]
   );
 
   const debouncedSave = useCallback(debounce(saveWorklog, 1000), [saveWorklog]);
@@ -117,13 +127,14 @@ export const PrivateWorklogView: React.FC<PrivateWorklogViewProps> = ({
   );
 
   useEffect(() => {
+    console.log("localPassphrasel", localPassphrase);
     if (user?.id) {
       fetchWorklog();
     }
-  }, [user?.id, date, fetchWorklog]);
+  }, [user?.id, date, fetchWorklog, localPassphrase]);
 
   if (!visible) return null;
-
+  if (!localPassphrase) return <PassphraseVerification />;
   return (
     <div className="px-4 mt-10">
       <div className="text-sm flex items-center gap-2 leading-3 mb-2 text-neutral-500">
@@ -159,12 +170,9 @@ export const PrivateWorklogView: React.FC<PrivateWorklogViewProps> = ({
           markdown={content}
           className="flex-grow h-full"
           placeholder="* Write your private logs here ..."
-          contentEditableClassName={`mdx_ce ${
-            content.trim() === MARKDOWN_PLACEHOLDER ? "mdx_uninit" : ""
-          } leading-1 imp-p-0 grow w-full h-full`}
+          contentEditableClassName={`mdx_ce ${content.trim() === MARKDOWN_PLACEHOLDER ? "mdx_uninit" : ""} leading-1 imp-p-0 grow w-full h-full`}
           onChange={handleContentChange}
-          key={user?.id + date}
-        />
+          key={user?.id + date} editorKey={""}        />
       </div>
     </div>
   );

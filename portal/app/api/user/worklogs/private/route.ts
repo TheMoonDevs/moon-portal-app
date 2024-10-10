@@ -99,3 +99,50 @@ export async function PUT(request: NextRequest) {
     });
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const userId = request.nextUrl.searchParams.get("userId") as string;
+    const logType = request.nextUrl.searchParams.get("logType") as string;
+
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: "userId is required" },
+        { status: 400 }
+      );
+    }
+
+    if (!logType || logType !== "privateWorklogs") {
+      return NextResponse.json(
+        { success: false, error: "logType must be 'privateWorklogs'" },
+        { status: 400 }
+      );
+    }
+
+    const deletedDocs = await prisma.docMarkdown.deleteMany({
+      where: {
+        userId: userId,
+        logType: logType,
+      },
+    });
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: `${deletedDocs.count} documents deleted successfully`,
+      },
+      { status: 200 }
+    );
+  } catch (e: any) {
+    console.error("Error deleting documents:", e);
+    return new NextResponse(
+      JSON.stringify({ success: false, error: e.message }),
+      {
+        status: 500,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+  }
+}
