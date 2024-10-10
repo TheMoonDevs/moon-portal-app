@@ -11,10 +11,10 @@ async function getUserDetailsFromUserId(userId: string) {
   console.log(userId);
   try {
     const user = await PortalSdk.getData(
-      `${APP_BASE_URL}/api/user?id=${userId}&role=${USERROLE.CORETEAM}`,
+      `${APP_BASE_URL}/api/user?id=${userId}`,
       null
     );
-    // console.log(user);
+    console.log(user);
     return user.data.user[0];
   } catch (e) {
     console.log(e);
@@ -29,7 +29,7 @@ export default async function WorklogViewPage({
   };
 }) {
   const response = await getUserDetailsFromUserId(params.id);
-  // console.log(response, "page");
+  console.log(response, "page");
   return (
     <PageAccess isAuthRequired={true}>
       <WorklogSummaryByUserId userId={params.id} userData={response} />
