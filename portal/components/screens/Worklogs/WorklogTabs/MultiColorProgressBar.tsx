@@ -46,9 +46,11 @@ const MultiColorProgressBar: React.FC<MultiColorProgressBarProps> = ({
           fontWeight: 'bold',
         }}
       >
-        {pointsRemaining > 0
-          ? `${pointsRemaining} Points to Next Badge`
-          : 'Next Badge Reached!'}
+        {pointsRemaining > 0 ? (
+          `${pointsRemaining} Points to Next Badge`
+        ) : (
+          <> 🌕 Max Level Unlocked! 🚀</>
+        )}
       </Typography>
       <CustomLinearProgress
         variant='determinate'

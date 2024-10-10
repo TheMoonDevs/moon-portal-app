@@ -84,19 +84,19 @@ export async function PUT(req: NextRequest) {
     const body = await req.json();
     const { id, userId, title, points, buffLevel } = body;
 
-    if (!id || !userId || !points || !buffLevel || !title) {
+    if (!id || !userId || !buffLevel || !title || points === undefined || points === null) {
       return new NextResponse(
-        JSON.stringify({ error: "Required fields are missing for update" }),
+        JSON.stringify({ error: "Required fields are missing for update", data: body }),
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
-
+    const updatedPoints = points && points > 0 ? points : 0;
     const updatedBuffBadge = await prisma.buffBadge.update({
       where: { id },
       data: {
         userId,
         title,
-        points,
+        points: updatedPoints,
         buffLevel,
       },
     });

@@ -9,8 +9,8 @@ import {
 } from "@/utils/redux/coreTeam/coreTeam.slice";
 import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import dayjs from "dayjs";
-import { getBuffLevelAndTitle } from "../Worklogs/WorklogTabs/WorklogBuff";
 import ToolTip from "@/components/elements/ToolTip";
+import { getBuffLevelAndTitle } from "@/utils/helpers/badges";
 
 export const CoreTeamSection = () => {
   const dispatch = useAppDispatch();
