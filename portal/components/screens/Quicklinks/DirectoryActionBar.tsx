@@ -10,10 +10,12 @@ const DirectoryActionBar = ({
   selectedDir,
   setSelectedDir,
   handleToggleFavorite,
+  handleShareLink,
 }: {
   selectedDir: DirectoryList | null;
   setSelectedDir: (dir: DirectoryList | null) => void;
   handleToggleFavorite: (directory: DirectoryList) => void;
+  handleShareLink: (directory: DirectoryList) => void;
 }) => {
   const dispatch = useAppDispatch();
   if (!selectedDir) return null;
@@ -99,7 +101,10 @@ const DirectoryActionBar = ({
           </span>
         </ToolTip>
         <ToolTip title="Link">
-          <span className="material-symbols-outlined !text-neutral-500 hover:scale-110 transition-all cursor-pointer">
+          <span
+            onClick={() => handleShareLink(selectedDir)}
+            className="material-symbols-outlined !text-neutral-500 hover:scale-110 transition-all cursor-pointer"
+          >
             link
           </span>
         </ToolTip>
