@@ -87,7 +87,7 @@ const ReactActivityCalendar = ({
           maxLevel={9}
           hideMonthLabels
           hideColorLegend
-          showWeekdayLabels
+          showWeekdayLabels={["sun", "mon", "tue", "wed", "thu", "fri", "sat"]}
           hideTotalCount
           // blockRadius={8}
           blockSize={12}

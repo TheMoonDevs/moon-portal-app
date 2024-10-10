@@ -1,5 +1,6 @@
 "use client";
 
+import ToolTip from "@/components/elements/ToolTip";
 import { handleDeleteDirectory } from "@/utils/redux/quicklinks/quicklinks.thunks";
 import { setModal } from "@/utils/redux/quicklinks/slices/quicklinks.ui.slice";
 import { useAppDispatch } from "@/utils/redux/store";
@@ -29,68 +30,79 @@ const DirectoryActionBar = ({
         {selectedDir?.title}
       </span>
       <div className="flex items-center gap-6">
-        <span
-          onClick={() =>
-            dispatch(
-              setModal({
-                type: "rename-folder",
-                data: { selectedDirectory: selectedDir },
-              })
-            )
-          }
-          className="material-symbols-outlined !text-neutral-500 hover:scale-110 transition-all cursor-pointer"
-        >
-          edit_square
-        </span>
-
-        {(selectedDir as any).isFavorite ? (
+        <ToolTip title="Rename">
           <span
-            onClick={() => handleToggleFavorite(selectedDir)}
-            className="material-icons !text-neutral-500 hover:scale-110 transition-all cursor-pointer"
-          >
-            star
-          </span>
-        ) : (
-          <span
-            onClick={() => handleToggleFavorite(selectedDir)}
+            onClick={() =>
+              dispatch(
+                setModal({
+                  type: "rename-folder",
+                  data: { selectedDirectory: selectedDir },
+                })
+              )
+            }
             className="material-symbols-outlined !text-neutral-500 hover:scale-110 transition-all cursor-pointer"
           >
-            star
+            edit_square
           </span>
-        )}
+        </ToolTip>
 
-        <span
-          onClick={() =>
-            dispatch(
-              setModal({
-                type: "move-folder",
-                data: {
-                  selectedDirectory: selectedDir,
-                  isParent: selectedDir.parentDirId === null,
-                },
-              })
-            )
-          }
-          className="material-symbols-outlined !text-neutral-500 hover:scale-110 transition-all cursor-pointer"
-        >
-          drive_file_move
-        </span>
-        <span
-          onClick={() => {
-            dispatch(
-              handleDeleteDirectory({
-                directory: selectedDir,
-                parentId: selectedDir.parentDirId,
-              })
-            );
-          }}
-          className="material-symbols-outlined !text-neutral-500 hover:scale-110 transition-all cursor-pointer"
-        >
-          delete
-        </span>
-        <span className="material-symbols-outlined !text-neutral-500 hover:scale-110 transition-all cursor-pointer">
-          link
-        </span>
+        {(selectedDir as any).isFavorite ? (
+          <ToolTip title="Remove Favourite">
+            <span
+              onClick={() => handleToggleFavorite(selectedDir)}
+              className="material-icons !text-neutral-500 hover:scale-110 transition-all cursor-pointer"
+            >
+              star
+            </span>
+          </ToolTip>
+        ) : (
+          <ToolTip title="Mark as Favourite">
+            <span
+              onClick={() => handleToggleFavorite(selectedDir)}
+              className="material-symbols-outlined !text-neutral-500 hover:scale-110 transition-all cursor-pointer"
+            >
+              star
+            </span>
+          </ToolTip>
+        )}
+        <ToolTip title="Move to">
+          <span
+            onClick={() =>
+              dispatch(
+                setModal({
+                  type: "move-folder",
+                  data: {
+                    selectedDirectory: selectedDir,
+                    isParent: selectedDir.parentDirId === null,
+                  },
+                })
+              )
+            }
+            className="material-symbols-outlined !text-neutral-500 hover:scale-110 transition-all cursor-pointer"
+          >
+            drive_file_move
+          </span>
+        </ToolTip>
+        <ToolTip title="Archive">
+          <span
+            onClick={() => {
+              dispatch(
+                handleDeleteDirectory({
+                  directory: selectedDir,
+                  parentId: selectedDir.parentDirId,
+                })
+              );
+            }}
+            className="material-symbols-outlined !text-neutral-500 hover:scale-110 transition-all cursor-pointer"
+          >
+            archive
+          </span>
+        </ToolTip>
+        <ToolTip title="Link">
+          <span className="material-symbols-outlined !text-neutral-500 hover:scale-110 transition-all cursor-pointer">
+            link
+          </span>
+        </ToolTip>
       </div>
     </div>
   );

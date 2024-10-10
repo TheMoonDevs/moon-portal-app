@@ -6,8 +6,8 @@ import { PortalSdk } from "@/utils/services/PortalSdk";
 import { Tooltip, Avatar, AvatarGroup } from "@mui/material";
 import { HOUSEID, Mission, User } from "@prisma/client";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { setMissionDetailsOpen } from "@/utils/redux/missions/selectedMission.slice";
-import { RootState, useAppSelector } from "@/utils/redux/store";
+import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
+import { setActiveMission } from "@/utils/redux/missions/mission.slice";
 
 interface House {
   id: HOUSEID;
@@ -70,10 +70,8 @@ export const HousesList = ({
   houseMembers,
   houseMembersLoading,
 }: HousesListProps) => {
-  const { missions } = useAppSelector(
-    (state: RootState) => state.selectedMission
-  );
-
+  const { allMissions } = useAppSelector((state: RootState) => state.mission);
+  const dispatch = useAppDispatch();
   const toggleHouse = useCallback(
     (index: number) => {
       setCurrentHouseIndex(currentHouseIndex === index ? -1 : index);
@@ -84,9 +82,9 @@ export const HousesList = ({
   const housePoints = useMemo(() => {
     return HOUSES_LIST.map((house) => ({
       id: house.id,
-      points: sumHousePoints(missions || [], house.id),
+      points: sumHousePoints(allMissions || [], house.id),
     }));
-  }, [missions]);
+  }, [allMissions]);
 
   const getHousePoints = (houseId: HOUSEID) => {
     const housePoint = housePoints.find((h) => h.id === houseId);
@@ -94,14 +92,17 @@ export const HousesList = ({
   };
 
   return (
-    <div className="flex flex-col gap-4 p-4 overflow-y-auto">
+    <div className="flex flex-col gap-4 p-4 pr-0 overflow-y-auto">
       {HOUSES_LIST.map((house, index) => (
         <div
           key={house.id}
           style={{
             background: house.background,
           }}
-          onClick={() => toggleHouse(index)}
+          onClick={() => {
+            dispatch(setActiveMission(null));
+            toggleHouse(index);
+          }}
           className="flex flex-col border border-neutral-200 text-white rounded-xl overflow-hidden transition-all duration-1000 ease-in-out"
         >
           <div className="relative">
@@ -180,7 +181,7 @@ export const HousesList = ({
                       {houseMembersLoading ? (
                         <Spinner />
                       ) : (
-                        sumHousePoints(missions || [], house.id)
+                        sumHousePoints(allMissions || [], house.id)
                       )}
                     </span>
                   </div>
