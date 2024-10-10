@@ -37,9 +37,9 @@ export async function GET(request: NextRequest) {
         buffBadge: {
           where: {
             month: currentMonth,
-          }
-        }
-      }
+          },
+        },
+      },
     });
     // console.log(user);
 
@@ -60,7 +60,10 @@ export async function GET(request: NextRequest) {
     const response = NextResponse.json(json_response);
 
     if (cache) {
-      response.headers.set('Cache-Control', 'public, max-age=600, stale-while-revalidate=59');
+      response.headers.set(
+        "Cache-Control",
+        "public, max-age=600, stale-while-revalidate=59"
+      );
     }
 
     return response;
