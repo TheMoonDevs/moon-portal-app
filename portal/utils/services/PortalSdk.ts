@@ -81,7 +81,7 @@ export const PortalSdk = {
           },
           body: JSON.stringify(data),
         });
-        // console.log(await res.json());
+        console.log(res);
         if (res.ok) {
           const result = await res.json();
           return resolve(result);

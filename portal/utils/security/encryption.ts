@@ -10,6 +10,7 @@ export function encryptData(plainText: string, secret: string): string {
     mode: CryptoJS.mode.CBC,
     padding: CryptoJS.pad.Pkcs7,
   });
+  console.log(encrypted);
   return encrypted.toString();
 }
 
@@ -20,6 +21,9 @@ export function decryptData(cipherText: string, secret: string): string {
     mode: CryptoJS.mode.CBC,
     padding: CryptoJS.pad.Pkcs7,
   });
+
+  console.log(decrypted);
+
   return decrypted.toString(CryptoJS.enc.Utf8);
 }
 

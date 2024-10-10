@@ -87,7 +87,7 @@ export const useUser = (newfetch?: boolean) => {
       })
         .then(() => {
           localStorage.removeItem(LOCAL_STORAGE.user);
-          localStorage.removeItem(LOCAL_STORAGE.passphrase);
+          // localStorage.removeItem(LOCAL_STORAGE.passphrase);
         })
         .catch((err: any) => {
           console.log("signout error", err);

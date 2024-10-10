@@ -37,7 +37,8 @@
     "@reduxjs/toolkit": "^1.9.7",
     "boring-avatars": "^1.11.2",
     "cn": "^0.1.1",
-    "countries-list": "^3.1.1",
+    "countries-list": "^3.0.6",
+    "crypto-js": "^4.2.0",
     "date-fns": "^2.30.0",
     "dayjs": "^1.11.13",
     "dotenv": "^16.4.5",
@@ -69,6 +70,8 @@
   "devDependencies": {
     "@cspell/eslint-plugin": "^8.15.2",
     "@types/lodash": "^4.17.0",
+    "@types/crypto-js": "^4.2.2",
+    "@types/jsdom": "^21.1.7",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18.3.1",

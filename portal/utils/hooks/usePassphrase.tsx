@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
-import { hashPassphrase } from "@/utils/security/hashing";
+import {
+  hashPassphrase,
+  generateRandomPassphrase,
+} from "@/utils/security/hashing";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { useUser } from "@/utils/hooks/useUser";
 import { LOCAL_STORAGE } from "../constants/appInfo";
@@ -7,21 +10,18 @@ import { toast } from "sonner";
 
 export const usePassphrase = () => {
   const { user, refetchUser } = useUser();
-  const [showModal, setShowModal] = useState(false);
-  const [modalMode, setModalMode] = useState<"set" | "verify">("set");
   const [localPassphrase, setLocalPassphrase] = useState<string | null>(null);
+  const [showVerifyModal, setShowVerifyModal] = useState<boolean>(false);
 
   useEffect(() => {
     try {
-      const storedPassphrase = localStorage.getItem("local_passphrase");
+      const storedPassphrase = localStorage.getItem(LOCAL_STORAGE.passphrase);
       if (storedPassphrase) {
         setLocalPassphrase(storedPassphrase);
-      } else if (user?.passphrase) {
-        setModalMode("verify");
-        setShowModal(true);
+      } else if (!user?.passphrase) {
+        handleGeneratePassphrase();
       } else {
-        setModalMode("set");
-        setShowModal(true);
+        setLocalPassphrase("");
       }
     } catch (error) {
       toast.error("Error retrieving passphrase from local storage.");
@@ -31,14 +31,14 @@ export const usePassphrase = () => {
 
   const updateUserPassphrase = async (
     userId: string,
-    doubleHashedPassphrase: string
+    hashedPassphrase: string
   ) => {
     try {
       await PortalSdk.putData("/api/user/", {
         id: userId,
-        passphrase: doubleHashedPassphrase,
+        passphrase: hashedPassphrase,
       });
-      console.log("Passphrase updated successfully in the database");
+      // console.log("Passphrase updated successfully in the database");
       refetchUser();
     } catch (error) {
       toast.error("Error updating passphrase in the database.");
@@ -47,54 +47,66 @@ export const usePassphrase = () => {
     }
   };
 
-  const handleSetPassphrase = async (passphrase: string) => {
+  const handleGeneratePassphrase = async () => {
     try {
-      const { hash: localHash } = hashPassphrase(passphrase);
-      localStorage.setItem(LOCAL_STORAGE.passphrase, localHash);
-      setLocalPassphrase(localHash);
+      const newPassphrase = generateRandomPassphrase(16);
+      localStorage.setItem(LOCAL_STORAGE.passphrase, newPassphrase);
+      setLocalPassphrase(newPassphrase);
 
-      const { hash: dbHash } = hashPassphrase(localHash);
-
+      const { hash: dbHash } = hashPassphrase(newPassphrase);
       if (user?.id) {
         await updateUserPassphrase(user.id, dbHash);
-        setShowModal(false);
-        toast.success("Passphrase set successfully.");
+        toast.success("Passphrase generated.");
       } else {
         toast.error("User ID is not available.");
-        console.error("User ID is not available.");
       }
-    } catch (error) {
-      toast.error("Failed to set passphrase.");
-      console.error("Failed to set passphrase:", error);
+    } catch (error: any) {
+      toast.error("Failed to generate and set passphrase.", error.message);
     }
   };
 
-  const handleVerifyPassphrase = async (passphrase: string) => {
+  const verifyPassphrase = async (passphrase: string) => {
     try {
-      const { hash: localHash } = hashPassphrase(passphrase);
-      const { hash: dbHash } = hashPassphrase(localHash);
-
+      const { hash: dbHash } = hashPassphrase(passphrase);
       if (dbHash === user?.passphrase) {
-        localStorage.setItem(LOCAL_STORAGE.passphrase, localHash);
-        setLocalPassphrase(localHash);
-        toast.success("Passphrase verified successfully.");
-        setShowModal(false);
-      } else {
-        toast.error("Incorrect passphrase. Please try again.");
-        console.error("Incorrect passphrase. Please try again.");
+        setLocalPassphrase(passphrase);
+        await refetchUser();
+        localStorage.setItem(LOCAL_STORAGE.passphrase, passphrase);
+        setShowVerifyModal(false);
+        toast.success("Passphrase verified.");
       }
-    } catch (error) {
-      toast.error("Error verifying passphrase.");
-      console.error("Error verifying passphrase:", error);
+    } catch (error: any) {
+      toast.error("Wrong passphrase.");
+      console.error("Error verifying passphrase:", error.message);
+    }
+  };
+
+  const handleResetPassphrase = async () => {
+    const userId = user?.id;
+    if (!userId) return;
+    try {
+      toast.info("Resetting private logs");
+      const query = `?logType=privateWorklogs&userId=${userId}`;
+      const data = await PortalSdk.deleteData(
+        `/api/user/worklogs/private${query}`,
+        null
+      );
+      if (data.success) {
+        toast.info("Creating new passphrase");
+        handleGeneratePassphrase();
+      }
+    } catch (error: any) {
+      toast.error("Error while resetting your private logs.");
+      console.error(error.message);
     }
   };
 
   return {
-    showModal,
-    setShowModal,
-    modalMode,
     localPassphrase,
-    handleSetPassphrase,
-    handleVerifyPassphrase,
+    verifyPassphrase,
+    showVerifyModal,
+    setShowVerifyModal,
+    setLocalPassphrase,
+    handleResetPassphrase,
   };
 };
