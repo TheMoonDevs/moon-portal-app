@@ -34,3 +34,16 @@ export const logHashingProcess = (passphrase: string) => {
   console.log("Hashed result (second call):", result2);
   console.log("Hash consistent:", result.hash === result2.hash);
 };
+
+// Function to generate a random passphrase
+export const generateRandomPassphrase = (length: number = 16): string => {
+  const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let passphrase = "";
+
+  for (let i = 0; i < length; i++) {
+    const randomIndex = Math.floor(Math.random() * charset.length);
+    passphrase += charset[randomIndex];
+  }
+  console.log("generated", passphrase);
+  return passphrase;
+};
