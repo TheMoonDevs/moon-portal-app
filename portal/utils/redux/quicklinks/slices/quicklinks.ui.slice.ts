@@ -34,17 +34,16 @@ const initialState: QuikcklinksUIState = {
     type: null,
     data: null,
   },
-  currentView:
-    typeof window !== "undefined" && localStorage.getItem("currentView")
-      ? (localStorage.getItem("currentView") as listView)
-      : "widget",
+  currentView: localStorage.getItem("currentView")
+    ? (localStorage.getItem("currentView") as listView)
+    : "widget",
   toast: {
     showToast: false,
     toastMsg: "",
     toastSev: undefined,
   },
   isCreateLinkModalOpen: false,
-  isLoading: false
+  isLoading: false,
 };
 
 export const quicklinksUiSlice = createSlice({
@@ -80,8 +79,8 @@ export const quicklinksUiSlice = createSlice({
       state.isCreateLinkModalOpen = action.payload;
     },
     setIsLoading: (state, action) => {
-      state.isLoading = action.payload
-    }
+      state.isLoading = action.payload;
+    },
   },
 });
 
@@ -91,7 +90,7 @@ export const {
   setToast,
   setCurrentView,
   setIsCreateLinkModalOpen,
-  setIsLoading
+  setIsLoading,
 } = quicklinksUiSlice.actions;
 
 export default quicklinksUiSlice.reducer;

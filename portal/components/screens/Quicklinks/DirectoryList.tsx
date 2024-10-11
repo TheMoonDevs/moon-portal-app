@@ -16,6 +16,7 @@ import { useQuickLinkDirectory } from "./hooks/useQuickLinkDirectory";
 import useCopyToClipboard from "@/utils/hooks/useCopyToClipboard";
 import { toast } from "sonner";
 import { APP_BASE_URL } from "@/utils/constants/appInfo";
+import RecursiveDirectoryTree from "./DirectoryTree";
 
 const ListOfDirectories = ({
   pathname = "",
@@ -100,7 +101,7 @@ const ListOfDirectories = ({
         }
       );
       const href = getConstructedPath(directory);
-      console.log("href", href);
+      // console.log("href", href);
       router.push(href || "/");
     } catch (error) {
       console.log(error);
@@ -130,7 +131,7 @@ const ListOfDirectories = ({
   };
 
   const getConstructedPath = (directory: DirectoryList): string | null => {
-    console.log("Constructing path for:", directory);
+    // console.log("Constructing path for:", directory);
 
     const rootPath = "/quicklinks";
     const basePath =
@@ -229,7 +230,6 @@ const ListOfDirectories = ({
             })}
         </div>
       )}
-
       {view === "listView" && (
         <div className={` mt-2 flex flex-col gap-4 `}>
           {directories.length > 0 &&
@@ -265,6 +265,7 @@ const ListOfDirectories = ({
             })}
         </div>
       )}
+      <RecursiveDirectoryTree />
     </div>
   );
 };
