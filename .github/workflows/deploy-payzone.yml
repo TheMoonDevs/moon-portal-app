@@ -2,14 +2,14 @@ name: Deploy Payzone
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, closed]
   push:
     branches:
       - main
 
 jobs:
   deploy-preview:
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && github.event.action != 'closed'
     runs-on: ubuntu-latest
 
     steps:
@@ -26,7 +26,7 @@ jobs:
             git checkout pr-${{ github.event.number }}
             npm install
             npm run build
-            pm2 start --name payzone-pr-${{ github.event.number }} "npm run start" -- -p $((8000 + ${{ github.event.number }}))
+            PORT=$((8000 + ${{ github.event.number }})) pm2 start --name payzone-pr-${{ github.event.number }} "npm run start"
           EOF
 
       - name: Comment Preview URL
