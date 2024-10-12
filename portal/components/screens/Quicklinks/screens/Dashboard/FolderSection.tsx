@@ -9,18 +9,23 @@ const FolderSection = () => {
     <div>
       <h1 className="text-2xl font-bold flex items-center gap-4">Folders</h1>
       <QuicklinksTabs tabs={["Recently Used", "Top Used"]}>
-        {(value) => {
+        {(value, searchQuery) => {
           return (
             <div>
               {value === 0 && (
                 <UserRecentlyUsedDirectories
                   view="listView"
                   withTitle={false}
+                  searchQuery={searchQuery}
                 />
               )}
               {value === 1 && (
                 // <></>
-                <UserTopUsedDirectories withTitle={false} view="listView" />
+                <UserTopUsedDirectories
+                  withTitle={false}
+                  view="listView"
+                  searchQuery={searchQuery}
+                />
               )}
             </div>
           );
