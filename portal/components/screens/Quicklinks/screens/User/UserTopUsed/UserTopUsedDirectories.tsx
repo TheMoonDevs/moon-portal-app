@@ -3,7 +3,7 @@
 import { useUser } from "@/utils/hooks/useUser";
 import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
-import { USERDIRECTORYTYPE } from "@prisma/client";
+import { DirectoryList, USERDIRECTORYTYPE } from "@prisma/client";
 import { useEffect } from "react";
 import ListOfDirectories from "../../../DirectoryList";
 import { setTopUsedDirectoryList } from "@/utils/redux/quicklinks/slices/quicklinks.directory.slice";
@@ -12,15 +12,27 @@ import { useQuickLinkDirectory } from "../../../hooks/useQuickLinkDirectory";
 const UserTopUsedDirectories = ({
   withTitle = true,
   view = "gridView",
+  searchQuery,
 }: {
   withTitle?: boolean;
   view?: "listView" | "gridView";
+  searchQuery?: string;
 }) => {
   const { user } = useUser();
   const { topUsedDirectoryList } = useAppSelector(
     (state) => state.quicklinksDirectory
   );
   const dispatch = useAppDispatch();
+
+  const filterDirectory = (
+    searchQuery: string | undefined
+  ): DirectoryList[] => {
+    if (!searchQuery) return topUsedDirectoryList;
+    return topUsedDirectoryList.filter((dir) =>
+      dir.title.toLowerCase().includes(searchQuery)
+    );
+  };
+
   useEffect(() => {
     if (!user) return;
     const getTopUsedDirectories = async () => {
@@ -59,7 +71,10 @@ const UserTopUsedDirectories = ({
           </h1>
         </div>
       )}
-      <ListOfDirectories view={view} directories={topUsedDirectoryList} />
+      <ListOfDirectories
+        view={view}
+        directories={filterDirectory(searchQuery)}
+      />
     </div>
   );
 };

@@ -6,6 +6,7 @@ import { ViewButtonGroup } from "../../LinkList/ViewButtonGroup";
 import QuicklinksTabs from "../../elements/Tabs";
 import { useQuickLinkDirectory } from "../../hooks/useQuickLinkDirectory";
 import { useQuickLinkDirs } from "../../hooks/useQuickLinksDirs";
+import { Link } from "@prisma/client";
 
 export const ParentDirectoryLinks = ({ loading }: { loading: boolean }) => {
   const { allQuicklinks, topUsedLinksList } = useAppSelector(
@@ -13,6 +14,16 @@ export const ParentDirectoryLinks = ({ loading }: { loading: boolean }) => {
   );
   const { activeDirectoryId } = useQuickLinkDirectory();
   const { thisDirectory } = useQuickLinkDirs(activeDirectoryId);
+
+  const filterLinks = (
+    searchQuery: string | undefined,
+    links: Link[]
+  ): Link[] => {
+    if (!searchQuery) return allQuicklinks;
+    return links.filter((link) =>
+      link.title.toLowerCase().includes(searchQuery)
+    );
+  };
 
   return (
     <div className="mt-2">
@@ -36,18 +47,18 @@ export const ParentDirectoryLinks = ({ loading }: { loading: boolean }) => {
               `Top Used in ${thisDirectory?.title}`,
             ]}
           >
-            {(value) => {
+            {(value, searchQuery) => {
               return (
                 <>
                   {value === 0 && (
                     <LinkList
-                      allQuicklinks={allQuicklinks}
+                      allQuicklinks={filterLinks(searchQuery, allQuicklinks)}
                       isLoading={loading}
                     />
                   )}
                   {value === 1 && (
                     <LinkList
-                      allQuicklinks={topUsedLinksList}
+                      allQuicklinks={filterLinks(searchQuery, topUsedLinksList)}
                       withView="thumbnail"
                       isLoading={loading}
                     />
