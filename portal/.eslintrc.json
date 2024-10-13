@@ -21,11 +21,14 @@
       "files": ["**/*.ts", "**/*.tsx"],
       "plugins": [
         "@typescript-eslint",
+        "prettier",
         "unused-imports",
         "simple-import-sort",
         "tailwindcss"
       ],
       "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/recommended",
         "plugin:tailwindcss/recommended",
         "next/core-web-vitals",
         "plugin:prettier/recommended"
