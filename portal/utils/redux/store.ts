@@ -7,6 +7,7 @@ import shortUrlReducer from "./shortUrl/shortUrl.slice";
 import authReducer from "./auth/auth.slice";
 import zerotrackerReducer from "./zerotracker/zerotracker.slice";
 import searchTermReducer from "./searchTerm/search.slice";
+import tasksReducer from "./tasks/tasks.slice";
 import filesUploadReducer from "./filesUpload/fileUpload.slice";
 import onboardingFormReducer from "./onboarding/onboarding.slice";
 import worklogsReducer from "./worklogs/worklogs.slice";
@@ -41,6 +42,7 @@ const store = configureStore({
     coreTeam: coreTeamSlice,
     //suggestions: suggestionsReducer,
     notifications: notificationsReducer,
+    tasks: tasksReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

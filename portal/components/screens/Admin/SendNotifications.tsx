@@ -139,6 +139,7 @@ const SendNotifications = ({
                   onChange={(e) => setDescription(e.target.value)}
                   className='w-full p-2 bg-neutral-800 text-neutral-200 border border-neutral-500 rounded'
                   placeholder='Enter description...'
+                  style={{resize:'none'}}
                 />
               </div>
             </div>
