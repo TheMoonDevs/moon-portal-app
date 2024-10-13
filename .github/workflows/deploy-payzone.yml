@@ -2,21 +2,22 @@ name: Deploy Payzone
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, closed]
-    paths:
-      - "payzone/**"
+    types: [opened, edited, synchronize, reopened, closed]
   push:
     branches:
       - main
-    paths:
-      - "payzone/**"
 
 jobs:
   deploy-preview:
-    if: github.event_name == 'pull_request' && github.event.action != 'closed'
+    if: github.event_name == 'pull_request' && github.event.action != 'closed' && contains(github.event.pull_request.changed_files, 'payzone/')
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.5.3
         with:
@@ -25,27 +26,43 @@ jobs:
       - name: Deploy Payzone Preview to DigitalOcean
         run: |
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} <<EOF
-            cd apps/moon-portal-app/payzone
+            cd payzone
             git fetch origin pull/${{ github.event.number }}/head:pr-${{ github.event.number }}
             git checkout pr-${{ github.event.number }}
             npm install
             npm run build
-            PORT=$((8000 + ${{ github.event.number }})) pm2 start --name payzone-pr-${{ github.event.number }} "npm run start"
+            PORT=$((8000 + ${{ github.event.number }}))
+
+            # Restart or start the PM2 process for the PR
+            if pm2 list | grep -q "payzone-pr-${{ github.event.number }}"; then
+              pm2 restart payzone-pr-${{ github.event.number }};
+            else
+              pm2 start --name payzone-pr-${{ github.event.number }} "npm run start";
+            fi
           EOF
 
       - name: Comment Preview URL
-        run: |
-          PREVIEW_URL="http://payzone-pr-${{ github.event.number }}.pay.themoondevs.com"
-          curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            -X POST \
-            -d "{\"body\": \"🚀 Payzone preview available at: [${PREVIEW_URL}](${PREVIEW_URL})\"}" \
-            https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.number }}/comments
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const previewUrl = `https://payzone-pr-${{ github.event.number }}.pay.themoondevs.com`;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🚀 Payzone preview available at: [${previewUrl}](${previewUrl})\n\n` +
+                    `👉 **Approve the deployment**: [Click here](${{ github.server_url }}/${{ github.repository }}/actions/workflows/approve-preview.yml/dispatch?project=payzone&pr_number=${{ github.event.number }})\n` +
+                    `🗑️ **Remove this preview**: [Click here](${{ github.server_url }}/${{ github.repository }}/actions/workflows/cleanup.yml/dispatch?project=payzone&pr_number=${{ github.event.number }})`
+            });
 
   deploy-production:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && contains(github.event.head_commit.modified, 'payzone/')
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.5.3
         with:
@@ -54,26 +71,10 @@ jobs:
       - name: Deploy Payzone to Production
         run: |
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} <<EOF
-            cd apps/moon-portal-app/payzone
+            cd payzone
             git checkout main
             git pull origin main
             npm install
             npm run build
             pm2 restart payzone-main
-          EOF
-
-  cleanup:
-    if: github.event.action == 'closed'
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Set up SSH
-        uses: webfactory/ssh-agent@v0.5.3
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Remove Payzone Preview Deployment
-        run: |
-          ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} <<EOF
-            pm2 delete payzone-pr-${{ github.event.number }} || true
           EOF
