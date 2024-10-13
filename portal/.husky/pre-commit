@@ -1,2 +1,1 @@
 npx lint-staged --concurrent false
-npm run prettier:format
