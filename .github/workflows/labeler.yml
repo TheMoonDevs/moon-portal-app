@@ -30,28 +30,44 @@ jobs:
             const frontendPaths = ['app', 'components', 'public', 'styles', 'utils'];
             const backendPaths = ['app/api', 'prisma'];
 
-            const isFrontend = fileNames.some(f =>
-              projectPaths.some(project =>
-                frontendPaths.some(path => f.startsWith(`${project}/${path}`)) &&
-                !backendPaths.some(path => f.startsWith(`${project}/${path}`))
-              )
-            );
+            let isFrontend = false;
+            let isBackend = false;
 
-            const isBackend = fileNames.some(f =>
-              projectPaths.some(project =>
-                backendPaths.some(path => f.startsWith(`${project}/${path}`))
-              )
-            );
+            for (const file of fileNames) {
+              // Check for frontend changes
+              if (!isFrontend && projectPaths.some(project =>
+                frontendPaths.some(path => file.startsWith(`${project}/${path}`)) &&
+                !backendPaths.some(path => file.startsWith(`${project}/${path}`))
+              )) {
+                isFrontend = true;
+              }
 
-            // Determine which labels to add
+              // Check for backend changes
+              if (!isBackend && (
+                projectPaths.some(project => backendPaths.some(path => file.startsWith(`${project}/${path}`))) ||
+                file.includes('middleware')
+              )) {
+                isBackend = true;
+              }
+
+              // Check for dependency changes
+              if (file.endsWith('package.json') || file.endsWith('package-lock.json')) {
+                labels.add("dependencies");
+              }
+
+              // Check for documentation changes
+              if (file.toLowerCase().includes('readme')) {
+                labels.add("documentation");
+              }
+            }
+
+            // Determine which main label to add
             if (isFrontend && isBackend) {
               labels.add("fullstack");
             } else if (isFrontend) {
               labels.add("frontend");
             } else if (isBackend) {
               labels.add("backend");
-            } else {
-              labels.add("other");
             }
 
             // Apply labels to the pull request if any were identified
