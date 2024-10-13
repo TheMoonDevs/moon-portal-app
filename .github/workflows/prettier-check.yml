@@ -1,5 +1,4 @@
 name: Prettier Check
-
 on:
   pull_request:
     branches:
@@ -11,37 +10,38 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Log Changed Files
-        run: /
-          echo "${{ github.event.pull_request.changed_files }}"
-          echo "${{ github.event.pull_request.head.sha }}"
-          echo "${{ github.event.pull_request.base.sha }}"
-          
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
+          cache: 'npm'
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v41
 
       - name: Prettier Check - Payzone
-        if: contains(github.event.pull_request.changed_files, 'payzone/')
+        if: contains(steps.changed-files.outputs.all_changed_files, 'payzone/')
         run: |
           cd payzone
-          npm install
+          npm ci
           npm run prettier:check
 
       - name: Prettier Check - Portal
-        if: contains(github.event.pull_request.changed_files, 'portal/')
+        if: contains(steps.changed-files.outputs.all_changed_files, 'portal/')
         run: |
           cd portal
-          npm install
+          npm ci
           npm run prettier:check
 
       - name: Prettier Check - Home
-        if: contains(github.event.pull_request.changed_files, 'home/')
+        if: contains(steps.changed-files.outputs.all_changed_files, 'home/')
         run: |
           cd home
-          npm install
+          npm ci
           npm run prettier:check
 
       - name: Comment on PR if Prettier issues found
