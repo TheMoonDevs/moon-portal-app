@@ -1,0 +1,56 @@
+name: Auto Label PR
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v3
+
+      - name: Label PR based on changed files
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const labels = new Set();
+            const changedFiles = await github.paginate(
+              "GET /repos/{owner}/{repo}/pulls/{pull_number}/files",
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.issue.number,
+              }
+            );
+
+            const fileNames = changedFiles.map(f => f.filename);
+
+            // Define file path checks for each project.
+            const isFrontend = fileNames.some(f =>
+              f.match(/apps\/moon-portal-app\/(portal|payzone|home)\/(app(?!\/api)|components|public|styles|utils)/)
+            );
+            const isBackend = fileNames.some(f =>
+              f.match(/apps\/moon-portal-app\/(portal|payzone|home)\/(app\/api|prisma)/)
+            );
+
+            // Determine which labels to add.
+            if (isFrontend && isBackend) {
+              labels.add("fullstack");
+            } else if (isFrontend) {
+              labels.add("frontend");
+            } else if (isBackend) {
+              labels.add("backend");
+            }
+
+            // Apply labels to the pull request if any were identified.
+            if (labels.size > 0) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: Array.from(labels),
+              });
+            }
