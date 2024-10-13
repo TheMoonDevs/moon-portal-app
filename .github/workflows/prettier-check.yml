@@ -1,0 +1,51 @@
+name: Prettier Check
+
+on:
+  pull_request:
+    branches:
+      - "**"
+
+jobs:
+  prettier:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Prettier Check - Payzone
+        if: contains(github.event.pull_request.changed_files, 'payzone/')
+        run: |
+          cd payzone
+          npm install
+          npm run prettier:check
+
+      - name: Prettier Check - Portal
+        if: contains(github.event.pull_request.changed_files, 'portal/')
+        run: |
+          cd portal
+          npm install
+          npm run prettier:check
+
+      - name: Prettier Check - Home
+        if: contains(github.event.pull_request.changed_files, 'home/')
+        run: |
+          cd home
+          npm install
+          npm run prettier:check
+
+      - name: Comment on PR if Prettier issues found
+        if: failure()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '❌ Code formatting issues detected. Please run `npm run prettier:fix` in the relevant project directory and push the changes.'
+            })
