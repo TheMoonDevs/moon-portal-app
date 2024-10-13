@@ -1,0 +1,114 @@
+name: Deploy
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened, closed]
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action to perform (approve or cleanup)'
+        required: true
+      project:
+        description: 'Project name (payzone, portal, home)'
+        required: true
+      pr_number:
+        description: 'Pull request number'
+        required: true
+
+jobs:
+  determine_project:
+    runs-on: ubuntu-latest
+    outputs:
+      projects: ${{ steps.set-projects.outputs.projects }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Determine changed projects
+        id: set-projects
+        run: |
+          changed_files=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} || git diff --name-only HEAD~1 HEAD)
+          projects=()
+          if echo "$changed_files" | grep -q "^payzone/"; then projects+=("payzone"); fi
+          if echo "$changed_files" | grep -q "^portal/"; then projects+=("portal"); fi
+          if echo "$changed_files" | grep -q "^home/"; then projects+=("home"); fi
+          echo "projects=${projects[@]}" >> $GITHUB_OUTPUT
+
+  deploy:
+    needs: determine_project
+    if: >
+      (github.event_name == 'pull_request' && github.event.action != 'closed') ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'approve')
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        project: ${{ fromJson(needs.determine_project.outputs.projects) }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+      - name: Deploy to DigitalOcean
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number || github.event.inputs.pr_number }}
+          IS_PRODUCTION: ${{ github.ref == 'refs/heads/main' }}
+        run: |
+          ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} <<EOF
+            cd ${{ matrix.project }}
+            if [ "$IS_PRODUCTION" = "true" ]; then
+              git checkout main
+              git pull origin main
+            else
+              git fetch origin pull/$PR_NUMBER/head:pr-$PR_NUMBER
+              git checkout pr-$PR_NUMBER
+            fi
+            npm install
+            npm run build
+            if [ "$IS_PRODUCTION" = "true" ]; then
+              pm2 restart ${{ matrix.project }}-main
+            else
+              PORT=$((8000 + $PR_NUMBER))
+              if pm2 list | grep -q "${{ matrix.project }}-pr-$PR_NUMBER"; then
+                pm2 restart ${{ matrix.project }}-pr-$PR_NUMBER;
+              else
+                pm2 start --name ${{ matrix.project }}-pr-$PR_NUMBER "npm run start -- -p $PORT";
+              fi
+            fi
+          EOF
+      - name: Comment Preview URL
+        if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'approve')
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const project = '${{ matrix.project }}';
+            const prNumber = '${{ github.event.pull_request.number || github.event.inputs.pr_number }}';
+            const previewUrl = `https://${project}-pr-${prNumber}.${project}.themoondevs.com`;
+            const body = `🚀 ${project.charAt(0).toUpperCase() + project.slice(1)} preview available at: [${previewUrl}](${previewUrl})\n\n` +
+                         `👉 **Approve the deployment**: [Click here](${{ github.server_url }}/${{ github.repository }}/actions/workflows/unified-deployment-workflow.yml/dispatch?action=approve&project=${project}&pr_number=${prNumber})\n` +
+                         `🗑️ **Remove this preview**: [Click here](${{ github.server_url }}/${{ github.repository }}/actions/workflows/unified-deployment-workflow.yml/dispatch?action=cleanup&project=${project}&pr_number=${prNumber})`;
+            github.rest.issues.createComment({
+              issue_number: parseInt(prNumber),
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+
+  cleanup:
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'cleanup'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+      - name: Remove Preview Deployment
+        run: |
+          ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} <<EOF
+            pm2 delete ${{ github.event.inputs.project }}-pr-${{ github.event.inputs.pr_number }} || true
+          EOF
