@@ -112,31 +112,69 @@ const NewHeader = () => {
 export default NewHeader;
 
 const HamBurger = () => {
+  const path = usePathname();
+
   return (
     <div className='text-white bg-black mx-6 rounded-bl-lg rounded-br-lg py-4 px-5 max-lg:mx-2 max-lg:my-[-10px]'>
-      <p className='text-2xl max-sm:text-lg font-bold py-2 flex items-center justify-between'>
-        Public Bots{' '}
-        <span className='material-symbols-outlined'>keyboard_arrow_down</span>
-      </p>
-      <p className='text-2xl max-sm:text-lg font-bold py-2 flex items-center justify-between'>
-        Resources{' '}
-        <span className='material-symbols-outlined'>keyboard_arrow_down</span>
-      </p>
-      <p className='text-2xl max-sm:text-lg font-bold py-2'>Pricing</p>
-      <div className='flex items-center gap-4 max-sm:gap-2 max-sm:flex-col border-t-[1px] border-gray-300 mt-6 py-4 max-sm:py-2'>
-        <button
-          className='w-1/2 max-sm:w-full rounded-md text-sm py-2 bg-white text-black font-semibold'
-          style={{ border: '2px solid white' }}
-        >
-          View Demo
-        </button>
-        <button
-          className='w-1/2 max-sm:w-full rounded-md text-sm py-2 bg-black text-white font-semibold'
-          style={{ border: '2px solid white' }}
-        >
-          Sign In
-        </button>
-      </div>
+      {path === '/' && (
+        <>
+          <p className='text-2xl max-sm:text-lg font-bold py-2 flex items-center justify-between'>
+            Products
+            <span className='material-symbols-outlined'>
+              keyboard_arrow_down
+            </span>
+          </p>
+          <p className='text-2xl max-sm:text-lg font-bold py-2 flex items-center justify-between'>
+            Services
+            <span className='material-symbols-outlined'>
+              keyboard_arrow_down
+            </span>
+          </p>
+          <p className='text-2xl max-sm:text-lg font-bold py-2'>Dev Folio</p>
+          <p className='text-2xl max-sm:text-lg font-bold py-2'>Unit Rates</p>
+
+          <p className='text-2xl max-sm:text-lg font-bold py-2'>Sign In</p>
+          <div className='flex items-center gap-4 max-sm:gap-2 max-sm:flex-col border-t-[1px] border-gray-300 mt-6 py-4 max-sm:py-2'>
+            <button
+              className='w-full max-sm:w-full rounded-md text-sm py-2 bg-white text-black font-semibold'
+              style={{ border: '2px solid white' }}
+            >
+              Book a Call
+            </button>
+          </div>
+        </>
+      )}
+      {path === '/products/custom-bots' && (
+        <>
+          <p className='text-2xl max-sm:text-lg font-bold py-2 flex items-center justify-between'>
+            Public Bots{' '}
+            <span className='material-symbols-outlined'>
+              keyboard_arrow_down
+            </span>
+          </p>
+          <p className='text-2xl max-sm:text-lg font-bold py-2 flex items-center justify-between'>
+            Resources
+            <span className='material-symbols-outlined'>
+              keyboard_arrow_down
+            </span>
+          </p>
+          <p className='text-2xl max-sm:text-lg font-bold py-2'>Pricing</p>
+          <div className='flex items-center gap-4 max-sm:gap-2 max-sm:flex-col border-t-[1px] border-gray-300 mt-6 py-4 max-sm:py-2'>
+            <button
+              className='w-1/2 max-sm:w-full rounded-md text-sm py-2 bg-white text-black font-semibold'
+              style={{ border: '2px solid white' }}
+            >
+              View Demo
+            </button>
+            <button
+              className='w-1/2 max-sm:w-full rounded-md text-sm py-2 bg-black text-white font-semibold'
+              style={{ border: '2px solid white' }}
+            >
+              Sign In
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 };
