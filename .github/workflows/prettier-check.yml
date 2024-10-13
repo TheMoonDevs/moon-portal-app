@@ -7,6 +7,9 @@ on:
 jobs:
   prettier:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        project: [payzone, portal, home]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -18,29 +21,16 @@ jobs:
         with:
           node-version: 18
           cache: 'npm'
+          cache-dependency-path: ${{ matrix.project }}/package-lock.json
 
       - name: Get changed files
         id: changed-files
         uses: tj-actions/changed-files@v41
 
-      - name: Prettier Check - Payzone
-        if: contains(steps.changed-files.outputs.all_changed_files, 'payzone/')
+      - name: Prettier Check - ${{ matrix.project }}
+        if: contains(steps.changed-files.outputs.all_changed_files, format('{0}/', matrix.project))
+        working-directory: ${{ matrix.project }}
         run: |
-          cd payzone
-          npm ci
-          npm run prettier:check
-
-      - name: Prettier Check - Portal
-        if: contains(steps.changed-files.outputs.all_changed_files, 'portal/')
-        run: |
-          cd portal
-          npm ci
-          npm run prettier:check
-
-      - name: Prettier Check - Home
-        if: contains(steps.changed-files.outputs.all_changed_files, 'home/')
-        run: |
-          cd home
           npm ci
           npm run prettier:check
 
@@ -53,5 +43,5 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '❌ Code formatting issues detected. Please run `npm run prettier:fix` in the relevant project directory and push the changes.'
+              body: '❌ Code formatting issues detected in ${{ matrix.project }}. Please run `npm run prettier:fix` in the ${{ matrix.project }} directory and push the changes.'
             })
