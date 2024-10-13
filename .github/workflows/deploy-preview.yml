@@ -2,7 +2,7 @@ name: Deploy Payzone or Portal
 
 on:
   pull_request:
-    types: [opened, edited, synchronize, reopened, closed]
+    types: [opened, edited, synchronize, reopened]
 
 jobs:
   check-changes:
