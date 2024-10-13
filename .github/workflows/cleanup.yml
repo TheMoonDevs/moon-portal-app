@@ -1,20 +1,12 @@
-name: Cleanup Preview Deployment
+name: Cleanup Preview Deployments
 
 on:
-  workflow_dispatch:
-    inputs:
-      project:
-        description: 'Project name (payzone, portal, home)'
-        required: true
-      pr_number:
-        description: 'Pull request number'
-        required: true
+  pull_request:
+    types: [closed]
 
 jobs:
   cleanup:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
 
     steps:
       - name: Set up SSH
@@ -22,8 +14,14 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Remove Preview Deployment
+      - name: Remove Payzone Preview Deployment if exists
         run: |
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} <<EOF
-            pm2 delete ${{ github.event.inputs.project }}-pr-${{ github.event.inputs.pr_number }} || true
+            pm2 delete payzone-pr-${{ github.event.number }} || true
+          EOF
+
+      - name: Remove Portal Preview Deployment if exists
+        run: |
+          ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} <<EOF
+            pm2 delete portal-pr-${{ github.event.number }} || true
           EOF

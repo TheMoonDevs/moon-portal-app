@@ -1,0 +1,99 @@
+name: Deploy Payzone or Portal
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened, closed]
+
+jobs:
+  check-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      deploy_payzone: ${{ steps.check.outputs.deploy_payzone }}
+      deploy_portal: ${{ steps.check.outputs.deploy_portal }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Determine changed directories
+        id: check
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const changedFiles = await github.paginate(
+              "GET /repos/{owner}/{repo}/pulls/{pull_number}/files",
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.issue.number,
+              }
+            );
+
+            const fileNames = changedFiles.map(file => file.filename);
+            const payzoneChanged = fileNames.some(f => f.startsWith('payzone/'));
+            const portalChanged = fileNames.some(f => f.startsWith('portal/'));
+
+            return {
+              deploy_payzone: payzoneChanged,
+              deploy_portal: portalChanged
+            };
+    
+  deploy-payzone:
+    if: github.event_name == 'pull_request' && needs.check-changes.outputs.deploy_payzone == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy Payzone Preview to DigitalOcean
+        run: |
+          ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} <<EOF
+            cd apps/moon-portal-app/payzone
+            git fetch origin pull/${{ github.event.number }}/head:pr-${{ github.event.number }}
+            git checkout pr-${{ github.event.number }}
+            npm install
+            npm run build
+            if pm2 list | grep -q "payzone-pr-${{ github.event.number }}"; then
+              PORT=$((8000 + ${{ github.event.number }})) pm2 restart payzone-pr-${{ github.event.number }};
+            else
+              PORT=$((8000 + ${{ github.event.number }})) pm2 start --name payzone-pr-${{ github.event.number }} "npm run start";
+            fi
+          EOF
+
+      - name: Comment Preview URL
+        run: |
+          PREVIEW_URL="https://payzone-pr-${{ github.event.number }}.pay.themoondevs.com"
+          curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -X POST \
+            -d "{\"body\": \"🚀 Payzone preview available at: [${PREVIEW_URL}](${PREVIEW_URL})\"}" \
+            https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments
+
+  deploy-portal:
+    if: github.event_name == 'pull_request' && needs.check-changes.outputs.deploy_portal == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy Portal Preview to DigitalOcean
+        run: |
+          ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} <<EOF
+            cd apps/moon-portal-app/portal
+            git fetch origin pull/${{ github.event.number }}/head:pr-${{ github.event.number }}
+            git checkout pr-${{ github.event.number }}
+            npm install
+            npm run build
+            if pm2 list | grep -q "portal-pr-${{ github.event.number }}"; then
+              PORT=$((8000 + ${{ github.event.number }})) pm2 restart portal-pr-${{ github.event.number }};
+            else
+              PORT=$((8000 + ${{ github.event.number }})) pm2 start --name portal-pr-${{ github.event.number }} "npm run start";
+            fi
+          EOF
+
+      - name: Comment Preview URL
+        run: |
+          PREVIEW_URL="https://portal-pr-${{ github.event.number }}.portal.themoondevs.com"
+          curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -X POST \
+            -d "{\"body\": \"🚀 Portal preview available at: [${PREVIEW_URL}](${PREVIEW_URL})\"}" \
+            https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments
