@@ -1,16 +1,16 @@
-name: Deploy Payzone
+name: Deploy Portal
 
 on:
   pull_request:
     types: [opened, synchronize, reopened, closed]
     paths:
-      - "payzone/**"
+      - "portal/**" # Only run this workflow if changes are made in the Portal directory.
   push:
     branches:
       - main
     paths:
-      - "payzone/**"
-
+      - "portal/**"
+      
 jobs:
   deploy-preview:
     if: github.event_name == 'pull_request' && github.event.action != 'closed'
@@ -22,23 +22,23 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Deploy Payzone Preview to DigitalOcean
+      - name: Deploy Portal Preview to DigitalOcean
         run: |
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} <<EOF
-            cd apps/moon-portal-app/payzone
+            cd apps/moon-portal-app/portal
             git fetch origin pull/${{ github.event.number }}/head:pr-${{ github.event.number }}
             git checkout pr-${{ github.event.number }}
             npm install
             npm run build
-            PORT=$((8000 + ${{ github.event.number }})) pm2 start --name payzone-pr-${{ github.event.number }} "npm run start"
+            $((8000 + ${{ github.event.number }})) pm2 start --name portal-pr-${{ github.event.number }} "npm run start"
           EOF
 
       - name: Comment Preview URL
         run: |
-          PREVIEW_URL="http://payzone-pr-${{ github.event.number }}.pay.themoondevs.com"
+          PREVIEW_URL="http://portal-pr-${{ github.event.number }}.portal.themoondevs.com"
           curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -X POST \
-            -d "{\"body\": \"🚀 Payzone preview available at: [${PREVIEW_URL}](${PREVIEW_URL})\"}" \
+            -d "{\"body\": \"🚀 Portal preview available at: [${PREVIEW_URL}](${PREVIEW_URL})\"}" \
             https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.number }}/comments
 
   deploy-production:
@@ -51,15 +51,15 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Deploy Payzone to Production
+      - name: Deploy Portal to Production
         run: |
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} <<EOF
-            cd apps/moon-portal-app/payzone
+            cd apps/moon-portal-app/portal
             git checkout main
             git pull origin main
             npm install
             npm run build
-            pm2 restart payzone-main
+            pm2 restart portal-main
           EOF
 
   cleanup:
@@ -72,8 +72,8 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Remove Payzone Preview Deployment
+      - name: Remove Portal Preview Deployment
         run: |
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} <<EOF
-            pm2 delete payzone-pr-${{ github.event.number }} || true
+            pm2 delete portal-pr-${{ github.event.number }} || true
           EOF
