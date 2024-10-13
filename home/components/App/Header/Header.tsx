@@ -7,7 +7,7 @@ import { FirebaseEvents, FirebaseSDK } from "@/utils/service/firebase";
 import Link from "next/link";
 import { APP_INFO, APP_ROUTES } from "@/utils/constants/AppInfo";
 import theme from "@/styles/theme";
-import { forwardRef, useEffect, useRef } from "react";
+import { forwardRef, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import { usePathname } from "next/navigation";
 
@@ -47,6 +47,11 @@ export const HeaderWithGrids = SectionWithGrids(HeaderComponent, {
 
 export const Header = () => {
   const headerRef = useRef<HTMLDivElement | null>(null);
+  const [showDropdown, setShowDropdown] = useState({
+    publicBots: false,
+    pricing: false,
+  });
+  const [open, setOpen] = useState(false);
 
   const path = usePathname();
   const router = useRouter();
@@ -55,6 +60,10 @@ export const Header = () => {
     isDefinedRoute &&
     !path?.startsWith("/worklife") &&
     !path?.startsWith("/offers");
+
+  const closeDropdowns = () => {
+    setShowDropdown({ publicBots: false, pricing: false });
+  };
 
   useEffect(() => {
     //console.log("Header mounted");
@@ -128,6 +137,7 @@ export const Header = () => {
         top: 0,
         zIndex: 100,
         transition: "0.3s background-color ease-in-out",
+        background: "transparent",
       }}
     >
       <HeaderWithGrids />
