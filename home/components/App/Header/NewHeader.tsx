@@ -1,4 +1,5 @@
 'use client';
+import { APP_ROUTES } from '@/utils/constants/AppInfo';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -23,7 +24,10 @@ const NewHeader = () => {
         className={` relative bg-transparent my-6 mx-6 flex items-center justify-between ${open && '!bg-black mb-0 rounded-t-lg rounded-tr-lg'} max-lg:mx-2 max-lg:my-2`}
       >
         <div className='h-12 max-w-fit rounded-lg bg-black text-white flex items-center px-2 justify-between'>
-          <div className='flex items-center gap-3 max-lg:gap-0'>
+          <Link
+            className='flex items-center gap-3 max-lg:gap-0'
+            href={APP_ROUTES.index}
+          >
             <Image
               src='/logo/logo_white.png'
               alt='logo'
@@ -33,7 +37,7 @@ const NewHeader = () => {
             <p className='text-sm py-2 px-2 font-semibold max-lg:hidden'>
               TheMoonDevs
             </p>
-          </div>
+          </Link>
           {path === '/' && (
             <>
               <MenuItem label='Dev Folio' />
@@ -85,7 +89,7 @@ const NewHeader = () => {
           {path === '/' && (
             <>
               <div className='flex items-center '>
-                <MenuItem label='Products' />
+                <MenuItem label='Products' to='/products/custom-bots' />
                 <MenuItem label='Services' />
                 <MenuItem label='Sign In' />
               </div>
@@ -194,12 +198,13 @@ interface MenuItemProps {
   label: string;
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
+  to?: string;
 }
 
-const MenuItem = ({ label, onMouseEnter, onMouseLeave }: MenuItemProps) => {
+const MenuItem = ({ label, onMouseEnter, onMouseLeave, to }: MenuItemProps) => {
   return (
     <Link
-      href='#'
+      href={to || '#'}
       className='text-sm py-2 px-2 font-semibold cursor-pointer border-2 border-transparent hover:bg-[#414a4c] rounded-md transition-colors duration-300 ease-in-out max-lg:hidden'
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
