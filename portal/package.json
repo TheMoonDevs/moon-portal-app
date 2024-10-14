@@ -75,6 +75,7 @@
     "tailwind-merge": "^2.3.0"
   },
   "devDependencies": {
+    "@cspell/eslint-plugin": "^8.15.2",
     "@types/jsdom": "^21.1.7",
     "@types/node": "^20",
     "@types/react": "^18",

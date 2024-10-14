@@ -29,6 +29,7 @@
       "extends": [
         "eslint:recommended",
         "plugin:@typescript-eslint/recommended",
+        "plugin:@cspell/recommended",
         "plugin:tailwindcss/recommended",
         "next/core-web-vitals",
         "plugin:prettier/recommended"
@@ -37,6 +38,11 @@
         "project": "./tsconfig.json"
       },
       "rules": {
+        "@cspell/spellchecker": [
+          "warn",
+          { "checkComments": false, "autoFix": true }
+        ],
+        "@typescript-eslint/no-explicit-any": "off",
         "prettier/prettier": [
           "error",
           {

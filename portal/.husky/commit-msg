@@ -1,8 +1,22 @@
 #!/bin/sh
 if ! head -1 "$1" | grep -qE "^(feat|fix|chore|docs|test|style|refactor|perf|build|ci|revert|update)(\(.+?\))?: .{1,}$"; then
     echo "Aborting commit. Your commit message is invalid." >&2
+    echo "Please follow the commit message guidelines:" >&2
+    echo "  feat: a new feature" >&2
+    echo "  fix: a bug fix" >&2
+    echo "  chore: updating grunt tasks etc; no production code change" >&2
+    echo "  docs: documentation only changes" >&2
+    echo "  test: adding missing tests or correcting existing tests" >&2
+    echo "  style: changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)" >&2
+    echo "  refactor: a code change that neither fixes a bug nor adds a feature" >&2
+    echo "  perf: a code change that improves performance" >&2
+    echo "  build: changes that affect the build system or external dependencies" >&2
+    echo "  ci: changes to CI configuration files and script" >&2
+    echo "  revert: revert to a commit" >&2
+    echo "  update: updating the code due to external dependencies" >&2
     exit 1
 fi
+
 if ! head -1 "$1" | grep -qE "^.{1,88}$"; then
     echo "Aborting commit. Your commit message is too long." >&2
     exit 1
