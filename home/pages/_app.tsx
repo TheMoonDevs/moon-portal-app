@@ -20,6 +20,7 @@ import { FirebaseSDK } from "@/utils/service/firebase";
 import { APP_ROUTES } from "@/utils/constants/AppInfo";
 import { useRouter } from "next/router";
 import NewHeader from "@/components/App/Header/NewHeader";
+import { FooterSection } from "@/components/Pages/HomePage/FooterSection";
 
 const clientSideEmotionCache = createEmotionCache();
 
@@ -44,6 +45,7 @@ const MyLayout: React.FC<{ show: boolean; children?: React.ReactNode }> = ({
       {/* <Header /> */}
       <NewHeader/>
       <main>{children}</main>
+      <FooterSection/>
       <AppPageLoader />
       {/* <Footer /> */}
       {/* <LoginModal /> */}
