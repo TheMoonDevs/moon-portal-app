@@ -1,8 +1,9 @@
 'use client';
 import { APP_ROUTES } from '@/utils/constants/AppInfo';
+import { useAuthSession } from '@/utils/hooks/useAuthSession';
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import React, { useState } from 'react';
 
 const NewHeader = () => {
@@ -12,9 +13,23 @@ const NewHeader = () => {
   });
   const [open, setOpen] = useState(false);
   const path = usePathname();
+  const router = useRouter();
+
+  const { signInWithSocial } = useAuthSession();
 
   const closeDropdowns = () => {
     setShowDropdown({ publicBots: false, pricing: false });
+  };
+
+  const handleGoogleSignIn = async (redirectUrl?: string) => {
+    try {
+      const user = await signInWithSocial();
+      console.log('Google sign-in successful: ', user);
+      router.push(redirectUrl || '/');
+      open && setOpen(false);
+    } catch (error) {
+      console.error('Google sign-in error: ', error);
+    }
   };
 
   return (
@@ -80,7 +95,12 @@ const NewHeader = () => {
               <div className='flex items-center '>
                 <MenuItem label='Resources' />
                 <MenuItem label='View Demo' />
-                <MenuItem label='Sign In' />
+                <button
+                  className='text-sm py-2 px-2 font-semibold cursor-pointer border-2 border-transparent hover:bg-[#414a4c] rounded-md transition-colors duration-300 ease-in-out max-lg:hidden'
+                  onClick={() => handleGoogleSignIn('/products/custom-bots')}
+                >
+                  Sign In
+                </button>
               </div>
               <Button label='Start Trial' />
             </>
@@ -91,7 +111,12 @@ const NewHeader = () => {
               <div className='flex items-center '>
                 <MenuItem label='Products' to='/products/custom-bots' />
                 <MenuItem label='Services' />
-                <MenuItem label='Sign In' />
+                <button
+                  className='text-sm py-2 px-2 font-semibold cursor-pointer border-2 border-transparent hover:bg-[#414a4c] rounded-md transition-colors duration-300 ease-in-out max-lg:hidden'
+                  onClick={() => handleGoogleSignIn('/')}
+                >
+                  Sign In
+                </button>
               </div>
               <Button label='Book a Call' />
             </>
@@ -108,14 +133,18 @@ const NewHeader = () => {
           </button>
         </div>
       </div>
-      {open && <HamBurger />}
+      {open && <HamBurger handleGoogleSignIn={handleGoogleSignIn} />}
     </div>
   );
 };
 
 export default NewHeader;
 
-const HamBurger = () => {
+const HamBurger = ({
+  handleGoogleSignIn,
+}: {
+  handleGoogleSignIn?: (path: string) => void;
+}) => {
   const path = usePathname();
 
   return (
@@ -137,7 +166,12 @@ const HamBurger = () => {
           <p className='text-2xl max-sm:text-lg font-bold py-2'>Dev Folio</p>
           <p className='text-2xl max-sm:text-lg font-bold py-2'>Unit Rates</p>
 
-          <p className='text-2xl max-sm:text-lg font-bold py-2'>Sign In</p>
+          <p
+            className='text-2xl max-sm:text-lg font-bold py-2'
+            onClick={() => handleGoogleSignIn && handleGoogleSignIn('/')}
+          >
+            Sign In
+          </p>
           <div className='flex items-center gap-4 max-sm:gap-2 max-sm:flex-col border-t-[1px] border-gray-300 mt-6 py-4 max-sm:py-2'>
             <button
               className='w-full max-sm:w-full rounded-md text-sm py-2 bg-white text-black font-semibold'
@@ -173,6 +207,10 @@ const HamBurger = () => {
             <button
               className='w-1/2 max-sm:w-full rounded-md text-sm py-2 bg-black text-white font-semibold'
               style={{ border: '2px solid white' }}
+              onClick={() =>
+                handleGoogleSignIn &&
+                handleGoogleSignIn('/products/custom-bots')
+              }
             >
               Sign In
             </button>
