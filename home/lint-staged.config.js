@@ -1,5 +1,4 @@
 module.exports = {
-  '*.{js,jsx,ts,tsx}': ['eslint --fix', 'eslint'],
-  '**/*.ts?(x)': () => 'npm run check-types',
-  '*.json': ['prettier --write'],
+  'portal/**/*.{js,jsx,ts,tsx}': ['eslint --cache --fix', 'prettier --write'],
+  '**/*.ts?(x)': () => 'npm run check-types'
 };

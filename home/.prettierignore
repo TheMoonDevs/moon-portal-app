@@ -2,3 +2,5 @@
 .next
 dist
 node_modules
+package.json
+package-lock.json

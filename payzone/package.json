@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "lint:fix": "next lint --fix",
     "postinstall": "prisma generate",
     "prepare": "cd .. && husky payzone/.husky",
     "check-types": "tsc --noEmit --pretty",
@@ -53,6 +54,7 @@
     "wagmi": "^2.12.7"
   },
   "devDependencies": {
+    "@cspell/eslint-plugin": "^8.15.2",
     "@safe-global/safe-apps-sdk": "^9.0.0",
     "@types/node": "^20",
     "@types/react": "^18",
