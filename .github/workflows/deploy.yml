@@ -10,12 +10,6 @@ on:
       action:
         description: 'Action to perform (approve or cleanup)'
         required: true
-      project:
-        description: 'Project name (payzone, portal, home)'
-        required: true
-      pr_number:
-        description: 'Pull request number'
-        required: true
 
 jobs:
   determine_project:
@@ -27,21 +21,39 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
       - name: Determine changed projects
         id: set-projects
         run: |
-          changed_files=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} || git diff --name-only HEAD~1 HEAD)
+          # Fetch all history for accurate diffing
+          git fetch --prune --unshallow || true
+          git fetch origin +refs/heads/*:refs/remotes/origin/*
+          
+          # Determine the base for diffing
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            base_ref="${{ github.event.pull_request.base.sha }}"
+            head_ref="${{ github.event.pull_request.head.sha }}"
+          else
+            base_ref="${{ github.event.before }}"
+            head_ref="${{ github.sha }}"
+          fi
+
+          # Get the list of changed files
+          changed_files=$(git diff --name-only $base_ref $head_ref)
+
+          # Determine if changes are in the payzone or portal directories
           projects=()
           if echo "$changed_files" | grep -q "^payzone/"; then projects+=("payzone"); fi
           if echo "$changed_files" | grep -q "^portal/"; then projects+=("portal"); fi
-          if echo "$changed_files" | grep -q "^home/"; then projects+=("home"); fi
-          echo "projects=${projects[@]}" >> $GITHUB_OUTPUT
+
+          # Output the projects array as a JSON string
+          echo "projects=$(jq -c -n --argjson projects "$(printf '%s\n' "${projects[@]}" | jq -R . | jq -s .)" '$projects')" >> $GITHUB_OUTPUT
 
   deploy:
     needs: determine_project
     if: >
-      (github.event_name == 'pull_request' && github.event.action != 'closed') ||
-      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'pull_request' && github.event.action != 'closed' && needs.determine_project.outputs.projects != '[]') ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.determine_project.outputs.projects != '[]') ||
       (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'approve')
     runs-on: ubuntu-latest
     strategy:
@@ -50,17 +62,19 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.5.3
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
       - name: Deploy to DigitalOcean
         env:
-          PR_NUMBER: ${{ github.event.pull_request.number || github.event.inputs.pr_number }}
+          PR_NUMBER: ${{ github.event.pull_request.number || github.event.number }}
           IS_PRODUCTION: ${{ github.ref == 'refs/heads/main' }}
         run: |
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} <<EOF
-            cd ${{ matrix.project }}
+            cd apps/moon-portal-app/${{ matrix.project }}
             if [ "$IS_PRODUCTION" = "true" ]; then
               git checkout main
               git pull origin main
@@ -75,23 +89,24 @@ jobs:
             else
               PORT=$((8000 + $PR_NUMBER))
               if pm2 list | grep -q "${{ matrix.project }}-pr-$PR_NUMBER"; then
-                pm2 restart ${{ matrix.project }}-pr-$PR_NUMBER;
+                pm2 restart ${{ matrix.project }}-pr-$PR_NUMBER --update-env;
               else
-                pm2 start --name ${{ matrix.project }}-pr-$PR_NUMBER "npm run start -- -p $PORT";
+                pm2 start npm --name ${{ matrix.project }}-pr-$PR_NUMBER -- run start -- -p $PORT
               fi
             fi
           EOF
+
       - name: Comment Preview URL
         if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'approve')
         uses: actions/github-script@v6
         with:
           script: |
             const project = '${{ matrix.project }}';
-            const prNumber = '${{ github.event.pull_request.number || github.event.inputs.pr_number }}';
+            const prNumber = '${{ github.event.pull_request.number || github.event.number }}';
             const previewUrl = `https://${project}-pr-${prNumber}.${project}.themoondevs.com`;
             const body = `🚀 ${project.charAt(0).toUpperCase() + project.slice(1)} preview available at: [${previewUrl}](${previewUrl})\n\n` +
-                         `👉 **Approve the deployment**: [Click here](${{ github.server_url }}/${{ github.repository }}/actions/workflows/unified-deployment-workflow.yml/dispatch?action=approve&project=${project}&pr_number=${prNumber})\n` +
-                         `🗑️ **Remove this preview**: [Click here](${{ github.server_url }}/${{ github.repository }}/actions/workflows/unified-deployment-workflow.yml/dispatch?action=cleanup&project=${project}&pr_number=${prNumber})`;
+                         `👉 **Approve the deployment**: [Click here](${{ github.server_url }}/${{ github.repository }}/actions/workflows/deploy.yml/dispatch?action=approve)\n` +
+                         `🗑️ **Remove this preview**: [Click here](${{ github.server_url }}/${{ github.repository }}/actions/workflows/deploy.yml/dispatch?action=cleanup)`;
             github.rest.issues.createComment({
               issue_number: parseInt(prNumber),
               owner: context.repo.owner,
@@ -110,5 +125,6 @@ jobs:
       - name: Remove Preview Deployment
         run: |
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} <<EOF
-            pm2 delete ${{ github.event.inputs.project }}-pr-${{ github.event.inputs.pr_number }} || true
+            pm2 delete payzone-pr-${{ github.event.number }} || true
+            pm2 delete portal-pr-${{ github.event.number }} || true
           EOF
