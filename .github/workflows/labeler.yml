@@ -32,6 +32,7 @@ jobs:
 
             let isFrontend = false;
             let isBackend = false;
+            let isConfigurations = false;
 
             for (const file of fileNames) {
               // Check for frontend changes
@@ -59,6 +60,11 @@ jobs:
               if (file.toLowerCase().includes('readme')) {
                 labels.add("documentation");
               }
+
+              // Check for configuration changes
+              if (!isFrontend && !isBackend && !file.endsWith('package.json') && !file.endsWith('package-lock.json') && !file.toLowerCase().includes('readme')) {
+                isConfigurations = true;
+              }
             }
 
             // Determine which main label to add
@@ -68,6 +74,11 @@ jobs:
               labels.add("frontend");
             } else if (isBackend) {
               labels.add("backend");
+            }
+
+            // Add configurations label if applicable
+            if (isConfigurations) {
+              labels.add("configurations");
             }
 
             // Apply labels to the pull request if any were identified
