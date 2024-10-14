@@ -35,35 +35,34 @@ const NewHeroSection = () => {
         <h1 className='w-1/2 px-16 flex justify-end items-end text-end text-5xl font-extrabold text-white max-md:w-[80%] max-md:px-12 max-sm:w-full max-sm:px-4'>
           Paving the tech for the leading startups in the world.
         </h1>
-        
       </div>
       <div className='relative z-10 flex flex-col items-center py-16 gap-16 max-md:gap-12 max-sm:gap-8 max-sm:py-12 max-sm:items-start'>
-          <p className='flex flex-col gap-4 w-1/4 text-lg font-medium text-white max-md:w-1/2 max-sm:w-full max-sm:px-4 '>
-            <span>
-              Innovation is the name of our game. We work in hyper-speed sprints
-              to achieve edge tech solutions and deliver products that aim to
-              beat the competition.
-            </span>
-            <span>We strive to excel.</span>
-          </p>
-          <div className='flex items-center gap-4 max-sm:px-4'>
-            <button
-              className='bg-black px-4 py-2 rounded-2xl font-medium '
-              style={{ border: '2px solid black' }}
-            >
-              Start Trial
-            </button>
-            <button
-              className='px-4 py-2 rounded-2xl font-medium'
-              style={{ border: '2px solid white' }}
-            >
-              View Demo
-            </button>
-          </div>
-          <div className='p-12 text-3xl font-extrabold text-white w-full flex items-center justify-center max-md:p-8'>
-            Footer
-          </div>
+        <p className='flex flex-col gap-4 w-1/4 text-lg font-medium text-white max-md:w-1/2 max-sm:w-full max-sm:px-4 '>
+          <span>
+            Innovation is the name of our game. We work in hyper-speed sprints
+            to achieve edge tech solutions and deliver products that aim to beat
+            the competition.
+          </span>
+          <span>We strive to excel.</span>
+        </p>
+        <div className='flex items-center gap-4 max-sm:px-4'>
+          <button
+            className='bg-black px-4 py-2 rounded-2xl font-medium '
+            style={{ border: '2px solid black' }}
+          >
+            Start Trial
+          </button>
+          <button
+            className='px-4 py-2 rounded-2xl font-medium'
+            style={{ border: '2px solid white' }}
+          >
+            View Demo
+          </button>
         </div>
+        <div className='p-12 text-3xl font-extrabold text-white w-full flex items-center justify-center max-md:p-8'>
+          Hero Section Footer
+        </div>
+      </div>
     </div>
   );
 };
