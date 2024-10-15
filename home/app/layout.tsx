@@ -11,6 +11,7 @@ import { repositoryName } from '@/prismicio';
 import { Header } from '@/components/App/Header/Header';
 import { AppPageLoader } from '@/components/App/PageLoader';
 import MetaInfo, { MetaInfoProps } from '@/components/App/MetaInfo';
+import '../styles/globals.css';
 // import Footer from "@/components/Global/Footer";
 
 const inter = Inter({ subsets: ['latin'] });

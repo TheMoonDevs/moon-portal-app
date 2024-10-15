@@ -98,7 +98,7 @@ export const SurveyFooter = ({ step, setStep }: StepParams) => {
 
   return (
     <SurveyFooterStyled>
-      <p className="timer_text !text-red-500">{percentageDone}% done</p>
+      <p className="timer_text ">{percentageDone}% done</p>
       <div className="step_container">
         {Object.values(SurveySteps).map((step, index) => (
           <div className="step" key={step} onClick={() => setStep(step)}>
