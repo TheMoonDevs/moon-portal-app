@@ -1,0 +1,62 @@
+name: Production Deployment
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  determine_project:
+    runs-on: ubuntu-latest
+    outputs:
+      projects: ${{ steps.set-projects.outputs.projects }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine changed projects
+        id: set-projects
+        run: |
+          git fetch --prune --unshallow || true
+          git fetch origin +refs/heads/*:refs/remotes/origin/*
+          base_ref="${{ github.event.before }}"
+          head_ref="${{ github.sha }}"
+          changed_files=$(git diff --name-only $base_ref $head_ref)
+          projects=()
+          if echo "$changed_files" | grep -q "^payzone/"; then projects+=("payzone"); fi
+          if echo "$changed_files" | grep -q "^portal/"; then projects+=("portal"); fi
+          echo "projects=$(jq -c -n --argjson projects "$(printf '%s\n' "${projects[@]}" | jq -R . | jq -s .)" '$projects')" >> $GITHUB_OUTPUT
+
+  deploy:
+    needs: determine_project
+    if: needs.determine_project.outputs.projects != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        project: ${{ fromJson(needs.determine_project.outputs.projects) }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Deploy to DigitalOcean
+        env:
+          IS_PRODUCTION: true
+        run: |
+          ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} <<EOF
+            cd apps/moon-portal-app/${{ matrix.project }}
+            git checkout main
+            git pull origin main
+            npm install
+            npm run build
+            pm2 restart ${{ matrix.project }}-main
+          EOF
