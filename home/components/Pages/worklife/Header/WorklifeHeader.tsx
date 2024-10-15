@@ -1,7 +1,7 @@
 'use client'
 import { APP_ROUTES } from "@/utils/constants/AppInfo";
 import styled from "@emotion/styled";
-import Link from "next/link";
+import { Link } from "react-transition-progress/next";
 import logo from "/public/logo/logo.png";
 import Image from "next/image";
 import media from "@/styles/media";

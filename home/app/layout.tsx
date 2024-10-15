@@ -12,6 +12,7 @@ import { Header } from '@/components/App/Header/Header';
 import { AppPageLoader } from '@/components/App/PageLoader';
 import MetaInfo, { MetaInfoProps } from '@/components/App/MetaInfo';
 import '../styles/globals.css';
+import { ProgressBar, ProgressBarProvider } from 'react-transition-progress';
 // import Footer from "@/components/Global/Footer";
 
 const inter = Inter({ subsets: ['latin'] });
@@ -19,17 +20,18 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata: Metadata = {
   manifest: '/manifest.json',
   title: 'The Moon Devs',
-  description: 'A community of developers and designers building the future of the web',
+  description:
+    'A community of developers and designers building the future of the web',
 };
 
 const meta: MetaInfoProps = {
   title: metadata.title?.toString() ?? null,
   description: metadata.description?.toString() ?? null,
-  ogType: "website", 
-  image: "/path/to/image.jpg",
-  url: "https://yourwebsite.com", 
-  keywords: "developers, designers, web development", 
-  robots: null, 
+  ogType: 'website',
+  image: '/path/to/image.jpg',
+  url: 'https://yourwebsite.com',
+  keywords: 'developers, designers, web development',
+  robots: null,
 };
 export default function RootLayout({
   children,
@@ -54,11 +56,14 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <MUIThemeRegistry options={{ key: 'mui' }}>
-        <MetaInfo meta={meta} />
+          <MetaInfo meta={meta} />
           <ReduxProvider>
-          <Header />
-          <main>{children}</main>
-          <AppPageLoader />
+            <ProgressBarProvider>
+              <ProgressBar className='fixed h-1 shadow-lg shadow-sky-500/20 bg-black top-0 z-[9999]' />
+              <Header />
+              <main>{children}</main>
+              {/* <AppPageLoader /> */}
+            </ProgressBarProvider>
           </ReduxProvider>
         </MUIThemeRegistry>
         <PrismicPreview repositoryName={repositoryName} />
