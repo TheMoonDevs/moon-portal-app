@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { SectionWithGrids } from "./SectionWithGrids";
 import { FirebaseEvents, FirebaseSDK } from "@/utils/service/firebase";
 import { APP_INFO, APP_ROUTES } from "@/utils/constants/AppInfo";
-import Link from "next/link";
+import { Link } from "react-transition-progress/next";
 import theme from "@/styles/theme";
 import useOnScreen from "@/utils/hooks/useOnScreen";
 import {

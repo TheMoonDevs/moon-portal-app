@@ -4,7 +4,7 @@ import Image from "next/image";
 import { WorklifeHeroStyled } from "./WorklifeHeroSection.styles";
 import { useMediaQuery } from "@mui/material";
 import media from "@/styles/media";
-import Link from "next/link";
+import { Link } from "react-transition-progress/next";
 export const WorklifeHeroSection = (): JSX.Element => {
   const isMobile = useMediaQuery(media.largeMobile);
   return (
