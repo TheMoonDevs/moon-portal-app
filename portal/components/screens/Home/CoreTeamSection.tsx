@@ -8,14 +8,18 @@ import {
   setMembers,
 } from "@/utils/redux/coreTeam/coreTeam.slice";
 import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
+interface CoreTeamSectionProps {
+  userRoles: USERROLE[];
+}
 
-export const CoreTeamSection = () => {
+export const CoreTeamSection = ({ userRoles }: CoreTeamSectionProps) => {
   const dispatch = useAppDispatch();
   const coreTeam = useAppSelector((state: RootState) => state.coreTeam.members);
 
   useEffect(() => {
+    const rolesQuery = userRoles.map((role) => `role=${role}`).join("&");
     PortalSdk.getData(
-      "/api/user?role=" + USERROLE.CORETEAM + "&userType=" + USERTYPE.MEMBER + "&status=ACTIVE&cache=true",
+      `/api/user?${rolesQuery}&userType=${USERTYPE.MEMBER}&status=ACTIVE&cache=true`,
       null
     )
       .then((data) => {

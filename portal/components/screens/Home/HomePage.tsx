@@ -15,11 +15,13 @@ import { APP_ROUTES } from "@/utils/constants/appInfo";
 import { useRouter } from "next/navigation";
 import { InWorkSection } from "./InWorkSection";
 import { InPlanSection } from "./InPlanSection";
+import { USERROLE } from "@prisma/client";
 import media from "@/styles/media";
 import { useMediaQuery } from "@mui/material";
 import { CoreTeamSection } from "./CoreTeamSection";
 import Link from "next/link";
 import Events from "./Events";
+const nonCoreRoles = Object.values(USERROLE).filter((role) => role !== USERROLE.CORETEAM);
 
 const MemberHomePage = () => {
   const { user } = useUser();
@@ -59,7 +61,11 @@ const MemberHomePage = () => {
         </div>
         <div className="pt-8">
           <h4 className="text-lg font-bold px-4">Core Team Leaderboard</h4>
-          <CoreTeamSection />
+          <CoreTeamSection  userRoles={[USERROLE.CORETEAM]}/>
+        </div>
+        <div className="pt-8">
+          <h4 className="text-lg font-bold px-4">In Trail Team Leaderboard</h4>
+          <CoreTeamSection userRoles={nonCoreRoles} />
         </div>
       </div>
       <div className="h-[300px]"></div>
