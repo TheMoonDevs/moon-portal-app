@@ -1,0 +1,38 @@
+name: Manual Actions
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action to perform (approve or cleanup)'
+        required: true
+      pr_number:
+        description: 'PR number for cleanup'
+        required: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  cleanup:
+    if: github.event.inputs.action == 'cleanup'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+      - name: Remove Preview Deployment
+        run: |
+          ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} <<EOF
+            pm2 delete payzone-pr-${{ github.event.inputs.pr_number }} || true
+            pm2 delete portal-pr-${{ github.event.inputs.pr_number }} || true
+          EOF
+
+  approve:
+    if: github.event.inputs.action == 'approve'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Approval noted
+        run: echo "Deployment approval received."
