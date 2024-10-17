@@ -21,13 +21,12 @@ import { useMediaQuery } from "@mui/material";
 import { CoreTeamSection } from "./CoreTeamSection";
 import Link from "next/link";
 import Events from "./Events";
-const nonCoreRoles = Object.values(USERROLE).filter((role) => role !== USERROLE.CORETEAM);
+
 
 const MemberHomePage = () => {
   const { user } = useUser();
   const [tab, setTab] = useState(HomeTabs.START);
   const isTabletOrMore = useMediaQuery(media.moreTablet);
-
   if (!user) return <LoaderScreen />;
   return (
     <div className="home_bg bg-white min-h-screen flex md:pl-4 justify-start max-md:flex-col max-lg:flex-col scroll-smooth">
@@ -61,11 +60,9 @@ const MemberHomePage = () => {
         </div>
         <div className="pt-8">
           <h4 className="text-lg font-bold px-4">Core Team Leaderboard</h4>
-          <CoreTeamSection  userRoles={[USERROLE.CORETEAM]}/>
-        </div>
-        <div className="pt-8">
-          <h4 className="text-lg font-bold px-4">In Trail Team Leaderboard</h4>
-          <CoreTeamSection userRoles={nonCoreRoles} />
+          <CoreTeamSection  key="coreteam" userRoles={USERROLE.CORETEAM}/>
+          <h4 className="text-lg font-bold px-4">In Trial Members Leaderboard</h4>
+          <CoreTeamSection key="trialteam" userRoles={USERROLE.TRIAL_CANDIDATE} />
         </div>
       </div>
       <div className="h-[300px]"></div>
