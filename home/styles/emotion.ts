@@ -1,3 +1,4 @@
+'use client';
 import createCache from "@emotion/cache";
 // import createEmotionServer from "@emotion/server/create-instance";
 // import { cache } from "@emotion/css";

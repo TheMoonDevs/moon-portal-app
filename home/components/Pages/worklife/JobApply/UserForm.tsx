@@ -56,11 +56,11 @@ export const UserForm = ({
     }
 
     const response = await fetch(
-      `/api/spreadsheet?spreadsheetId=${spreadsheetId}&sheetId=${sheetId}`,
+      `/api/spreadsheet?spreadsheetId=${spreadsheetId}&targetId=${sheetId}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rowData }),
+        body: JSON.stringify({ values: [rowData] }),
       }
     );
     return response;

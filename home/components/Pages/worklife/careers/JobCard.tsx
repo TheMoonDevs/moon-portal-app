@@ -1,5 +1,5 @@
 import { PrismicNextImage } from '@prismicio/next';
-import Link from 'next/link';
+import { Link } from "react-transition-progress/next";
 import React from 'react';
 import styled from '@emotion/styled';
 import media from '@/styles/media';

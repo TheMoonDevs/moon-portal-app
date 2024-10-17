@@ -1,3 +1,4 @@
+'use client'
 import { useEffect, useState } from "react";
 import styled from "@emotion/styled";
 import { HelloStep } from "./1_HelloStep";

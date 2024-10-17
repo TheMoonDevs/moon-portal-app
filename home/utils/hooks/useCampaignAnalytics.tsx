@@ -6,14 +6,16 @@ const useCampaignAnalytics = (autolog?: boolean) => {
   const queryParams = useSearchParams();
 
   const logEventsFromQuery = useCallback(() => {
-    const campaign = queryParams.get("campaign");
-    const strategy = queryParams.get("strategy");
-    const strategem = queryParams.get("strategem");
-    if (campaign) {
-      FirebaseSDK.logEvents(campaign, {
-        strategy,
-        strategem,
-      });
+    if (queryParams) {
+      const campaign = queryParams.get("campaign");
+      const strategy = queryParams.get("strategy");
+      const strategem = queryParams.get("strategem");
+      if (campaign) {
+        FirebaseSDK.logEvents(campaign, {
+          strategy,
+          strategem,
+        });
+      }
     }
   }, [queryParams]);
 
