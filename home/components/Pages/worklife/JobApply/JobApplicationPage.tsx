@@ -7,7 +7,7 @@ import { UserForm } from "@/components/Pages/worklife/JobApply/UserForm";
 import { JobInfo } from "@/components/Pages/worklife/JobApply/JobInfo";
 import { JobApplicationPageStyled } from "./JobApplicationPage.styles";
 import { JobSlice } from "@/prismicio-types";
-import Link from "next/link";
+import { Link } from "react-transition-progress/next";
 import { APP_ROUTES } from "@/utils/constants/AppInfo";
 
 export const JobApplicationPage = ({

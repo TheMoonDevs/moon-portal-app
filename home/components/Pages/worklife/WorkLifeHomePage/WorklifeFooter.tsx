@@ -1,6 +1,7 @@
+'use client'
 import React from "react";
 import Image from "next/image";
-import Link from "next/link";
+import { Link } from "react-transition-progress/next";
 import { WorklifeFooterStyled } from "./WorklifeFooter.styles";
 import { usePathname } from "next/navigation";
 import { APP_ROUTES } from "@/utils/constants/AppInfo";
