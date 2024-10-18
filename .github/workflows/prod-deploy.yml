@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: production-deploy
+  cancel-in-progress: true
+
 jobs:
   determine_project:
     runs-on: ubuntu-latest
@@ -53,10 +57,19 @@ jobs:
           IS_PRODUCTION: true
         run: |
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} <<EOF
+            LOCK_FILE="/tmp/deploy-production.lock"
+            if [ -f "$LOCK_FILE" ]; then
+              echo "Another production deployment is currently in progress. Waiting..."
+              while [ -f "$LOCK_FILE" ]; do sleep 10; done
+            fi
+            touch "$LOCK_FILE"
+
             cd apps/moon-portal-app/${{ matrix.project }}
             git checkout main
             git pull origin main
             npm install
             npm run build
             pm2 restart ${{ matrix.project }}-main
+
+            rm -f "$LOCK_FILE"
           EOF

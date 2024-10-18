@@ -8,6 +8,10 @@ permissions:
   contents: write
   pull-requests: write
 
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}-preview
+  cancel-in-progress: true
+
 jobs:
   determine_project:
     runs-on: ubuntu-latest
@@ -41,19 +45,8 @@ jobs:
           # Output the projects array as a JSON string
           echo "projects=$(jq -c -n --argjson projects "$(printf '%s\n' "${projects[@]}" | jq -R . | jq -s .)" '$projects')" >> $GITHUB_OUTPUT
 
-  wait_for_approval:
-    needs: determine_project
-    if: needs.determine_project.outputs.projects != '[]' && github.event.action != 'closed'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Wait for manual approval
-        run: |
-          echo "Manual approval required to proceed with deployment."
-          echo "👉 **Approve the deployment** manually through 'workflow_dispatch'."
-          exit 1
-
   deploy_preview:
-    needs: [determine_project, wait_for_approval]
+    needs: determine_project
     if: needs.determine_project.outputs.projects != '[]' && github.event.action != 'closed'
     runs-on: ubuntu-latest
     strategy:
@@ -73,6 +66,13 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} <<EOF
+            LOCK_FILE="/tmp/deploy-pr-${{ github.event.pull_request.number }}.lock"
+            if [ -f "$LOCK_FILE" ]; then
+              echo "Another deployment is currently in progress for PR #${{ github.event.pull_request.number }}. Waiting..."
+              while [ -f "$LOCK_FILE" ]; do sleep 10; done
+            fi
+            touch "$LOCK_FILE"
+
             cd apps/moon-portal-app/${{ matrix.project }}
             git fetch origin pull/$PR_NUMBER/head:pr-$PR_NUMBER
             git checkout pr-$PR_NUMBER
@@ -84,6 +84,8 @@ jobs:
             else
               pm2 start npm --name ${{ matrix.project }}-pr-$PR_NUMBER -- run start -- -p $PORT
             fi
+
+            rm -f "$LOCK_FILE"
           EOF
 
       - name: Comment Preview URL
@@ -94,8 +96,7 @@ jobs:
             const prNumber = '${{ github.event.pull_request.number }}';
             const previewUrl = `https://${project}-pr-${prNumber}.${project}.themoondevs.com`;
             const body = `🚀 ${project.charAt(0).toUpperCase() + project.slice(1)} preview available at: [${previewUrl}](${previewUrl})\n\n` +
-                         `👉 **Approve the deployment**: [Click here](${{ github.server_url }}/${{ github.repository }}/actions/workflows/manual-actions.yml/dispatch?action=approve)\n` +
-                         `🗑️ **Remove this preview**: [Click here](${{ github.server_url }}/${{ github.repository }}/actions/workflows/manual-actions.yml/dispatch?action=cleanup)`;
+                         `🗑️ **Remove this preview**: [Click here](${{ github.server_url }}/${{ github.repository }}/actions/workflows/manual-actions.yml/dispatch?action=cleanup&pr_number=${prNumber})`;
             github.rest.issues.createComment({
               issue_number: parseInt(prNumber),
               owner: context.repo.owner,
