@@ -8,10 +8,6 @@ permissions:
   contents: write
   pull-requests: write
 
-concurrency:
-  group: pr-${{ github.event.pull_request.number }}-preview
-  cancel-in-progress: true
-
 jobs:
   determine_project:
     runs-on: ubuntu-latest
@@ -52,6 +48,9 @@ jobs:
     strategy:
       matrix:
         project: ${{ fromJson(needs.determine_project.outputs.projects) }}
+    concurrency:
+      group: vps-global-deployment
+      cancel-in-progress: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -66,13 +65,17 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} <<EOF
-            LOCK_FILE="/tmp/deploy-pr-${{ github.event.pull_request.number }}.lock"
-            if [ -f "$LOCK_FILE" ]; then
-              echo "Another deployment is currently in progress for PR #${{ github.event.pull_request.number }}. Waiting..."
-              while [ -f "$LOCK_FILE" ]; do sleep 10; done
-            fi
+            LOCK_FILE="/tmp/deploy-global.lock"
+            echo "Checking for ongoing deployments..."
+
+            while [ -f "$LOCK_FILE" ]; do
+              echo "Deployment lock exists. Waiting..."
+              sleep 10
+            done
+
             touch "$LOCK_FILE"
 
+            echo "Starting deployment for PR #${{ github.event.pull_request.number }} - Project: ${{ matrix.project }}"
             cd apps/moon-portal-app/${{ matrix.project }}
             git fetch origin pull/$PR_NUMBER/head:pr-$PR_NUMBER
             git checkout pr-$PR_NUMBER
@@ -86,6 +89,7 @@ jobs:
             fi
 
             rm -f "$LOCK_FILE"
+            echo "Deployment completed for PR #${{ github.event.pull_request.number }} - Project: ${{ matrix.project }}"
           EOF
 
       - name: Comment Preview URL
