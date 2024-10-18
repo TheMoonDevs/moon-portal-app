@@ -8,10 +8,6 @@ on:
 permissions:
   contents: write
 
-concurrency:
-  group: production-deploy
-  cancel-in-progress: true
-
 jobs:
   determine_project:
     runs-on: ubuntu-latest
@@ -43,6 +39,9 @@ jobs:
     strategy:
       matrix:
         project: ${{ fromJson(needs.determine_project.outputs.projects) }}
+    concurrency:
+      group: vps-global-deployment
+      cancel-in-progress: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -57,13 +56,17 @@ jobs:
           IS_PRODUCTION: true
         run: |
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} <<EOF
-            LOCK_FILE="/tmp/deploy-production.lock"
-            if [ -f "$LOCK_FILE" ]; then
-              echo "Another production deployment is currently in progress. Waiting..."
-              while [ -f "$LOCK_FILE" ]; do sleep 10; done
-            fi
+            LOCK_FILE="/tmp/deploy-global.lock"
+            echo "Checking for ongoing deployments..."
+
+            while [ -f "$LOCK_FILE" ]; do
+              echo "Deployment lock exists. Waiting..."
+              sleep 10
+            done
+
             touch "$LOCK_FILE"
 
+            echo "Starting production deployment for project: ${{ matrix.project }}"
             cd apps/moon-portal-app/${{ matrix.project }}
             git checkout main
             git pull origin main
@@ -72,4 +75,5 @@ jobs:
             pm2 restart ${{ matrix.project }}-main
 
             rm -f "$LOCK_FILE"
+            echo "Deployment completed for project: ${{ matrix.project }}"
           EOF
