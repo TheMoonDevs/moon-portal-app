@@ -43,3 +43,10 @@ export const APP_INFO = {
     "mailto:contact@themoondevs.com?subject=Referral%20Program%20-%20TheMoonDevs",
   no_reply_mail: "no-reply@themoondevs.com",
 };
+
+export enum DocumentPageType {
+  PRIVACY = "privacy",
+  TERMS = "terms",
+  SENSE_PRIVACY = "sense-privacy",
+  SENSE_TERMS = "sense-terms",
+}

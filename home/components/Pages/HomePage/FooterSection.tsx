@@ -3,7 +3,7 @@ import Image from "next/image";
 import { FooterSectionStyled } from "./FooterSection.styles";
 import { SectionWithGrids } from "./SectionWithGrids";
 import theme from "@/styles/theme";
-import Link from "next/link";
+import { Link } from "react-transition-progress/next";
 import { APP_ROUTES, SOCIAL_ROUTES } from "@/utils/constants/AppInfo";
 import { Tooltip } from "@mui/material";
 

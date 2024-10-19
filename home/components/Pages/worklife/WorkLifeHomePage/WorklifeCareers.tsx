@@ -1,4 +1,6 @@
-import Link from "next/link";
+'use client'
+
+import { Link } from "react-transition-progress/next";
 import {
   WorklifeCareersStyled,
   WorklifeJobsCardStyled,

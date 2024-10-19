@@ -8,7 +8,7 @@ import { useMediaQuery } from "@mui/material";
 import theme from "@/styles/theme";
 import Carousel from "react-multi-carousel";
 import media from "@/styles/media";
-import Link from "next/link";
+import { Link } from "react-transition-progress/next";
 import "react-multi-carousel/lib/styles.css";
 import { prettySinceTime } from "@/helpers/prettyprint";
 import { MyServerApi } from "../../../utils/service/MyServerApi";

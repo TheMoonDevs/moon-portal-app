@@ -3,7 +3,7 @@ import { ReferFooterStyles } from "./ReferFooter.styles";
 import { Button, useMediaQuery } from "@mui/material";
 import { reverseMedia } from "@/styles/media";
 import { ReferScrollState } from "../types";
-import Link from "next/link";
+import { Link } from "react-transition-progress/next";
 import { APP_INFO } from "@/utils/constants/AppInfo";
 
 export const ReferFooter = () => {

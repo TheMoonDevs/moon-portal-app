@@ -1,5 +1,4 @@
 "use client";
-
 import CssBaseline from "@mui/material/CssBaseline";
 import { createTheme, ThemeProvider, styled } from "@mui/material/styles";
 import theme from "./theme";
@@ -7,7 +6,6 @@ import createCache from "@emotion/cache";
 import { useServerInsertedHTML } from "next/navigation";
 import { CacheProvider } from "@emotion/react";
 import { useState } from "react";
-
 export const MUIThemeProvider = ({ children }: any) => {
   const muiTheme = createTheme(theme);
   return (
@@ -17,23 +15,20 @@ export const MUIThemeProvider = ({ children }: any) => {
     </ThemeProvider>
   );
 };
-
 const muiTheme = createTheme(theme);
-
 // This implementation is from emotion-js
 // https://github.com/emotion-js/emotion/issues/2928#issuecomment-1319747902
 export const MUIThemeRegistry = (props: any) => {
   const { options, children } = props;
-
   const [{ cache, flush }] = useState(() => {
     const cache = createCache(options);
     cache.compat = true;
-    const prevInsert = cache.insert;
+    const prevInsert: any = cache.insert;
     let inserted: string[] = [];
-    cache.insert = (...args) => {
+    cache.insert = (...args: any[]) => {
       const serialized = args[1];
-      if (cache.inserted[serialized.name] === undefined) {
-        inserted.push(serialized.name);
+      if (cache.inserted[serialized?.name] === undefined) {
+        inserted.push(serialized?.name);
       }
       return prevInsert(...args);
     };
@@ -44,7 +39,6 @@ export const MUIThemeRegistry = (props: any) => {
     };
     return { cache, flush };
   });
-
   useServerInsertedHTML(() => {
     const names = flush();
     if (names.length === 0) {
@@ -64,7 +58,6 @@ export const MUIThemeRegistry = (props: any) => {
       />
     );
   });
-
   return (
     <CacheProvider value={cache}>
       <ThemeProvider theme={muiTheme}>
