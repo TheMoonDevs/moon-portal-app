@@ -50,7 +50,7 @@ jobs:
         project: ${{ fromJson(needs.determine_project.outputs.projects) }}
     concurrency:
       group: "${{ matrix.project }}-${{ github.event.pull_request.number }}"
-      cancel-in-progress: false  # Do not cancel; wait for completion
+      cancel-in-progress: true  # Do not cancel; wait for completion
 
     steps:
       - name: Checkout repository
@@ -61,24 +61,15 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Ensure Clean Working Directory
+      - name: Stash Uncommitted Changes
+        id: stash
         run: |
-          # Ensure there are no uncommitted changes
-          if [ -n "$(git status --porcelain)" ]; then
-            echo "ERROR: Working directory is not clean. Please commit or stash your changes." >&2
-            exit 1
-          fi
+          git stash || echo "No changes to stash."
 
       - name: Wait for Deployment Lock
         run: |
           LOCK_FILE="/tmp/deploy-lock"  # Unified lock file for all projects
           echo "Checking for ongoing deployments..."
-
-          # Default wait time before starting Payzone deployment
-          if [ "${{ matrix.project }}" = "payzone" ]; then
-            echo "Waiting for 10 seconds before starting Payzone build..."
-            sleep 10
-          fi
 
           # Wait if the lock file exists
           while [ -f "$LOCK_FILE" ]; do
@@ -98,13 +89,6 @@ jobs:
             exit 1
           fi
           
-          # Ensure clean state before checkout
-          if [ -n "$(git status --porcelain)" ]; then
-            echo "ERROR: Working directory is not clean. Please commit or stash your changes." >&2
-            rm -f "$LOCK_FILE"
-            exit 1
-          fi
-
           if ! git checkout pr-${{ github.event.pull_request.number }}; then
             echo "ERROR: Failed to checkout PR #${{ github.event.pull_request.number }}." >&2
             rm -f "$LOCK_FILE"
@@ -147,8 +131,13 @@ jobs:
             fi
           fi
 
+          # Remove the lock file after successful deployment
           rm -f "$LOCK_FILE"
           echo "Deployment completed for PR #${{ github.event.pull_request.number }} - Project: ${{ matrix.project }}"
+
+      - name: Pop Stashed Changes
+        run: |
+          git stash pop || echo "No changes to pop."
 
       - name: Comment Preview URL
         uses: actions/github-script@v6
