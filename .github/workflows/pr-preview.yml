@@ -49,7 +49,7 @@ jobs:
       matrix:
         project: ${{ fromJson(needs.determine_project.outputs.projects) }}
     concurrency:
-      group: vps-global-deployment
+      group: ${{ github.event.pull_request.number }}-${{ matrix.project }} # Group by PR number and project
       cancel-in-progress: true
     steps:
       - name: Checkout repository
@@ -81,7 +81,11 @@ jobs:
             git checkout pr-$PR_NUMBER
             npm install
             npm run build
-            PORT=$((8000 + $PR_NUMBER))
+            if [ "${{ github.event.repository.name }}" = "portal" ]; then
+              PORT=$((8000 + ${{ github.event.number }}))
+            else
+              PORT=$((9000 + ${{ github.event.number }}))
+            fi
             if pm2 list | grep -q "${{ matrix.project }}-pr-$PR_NUMBER"; then
               pm2 restart ${{ matrix.project }}-pr-$PR_NUMBER --update-env;
             else
