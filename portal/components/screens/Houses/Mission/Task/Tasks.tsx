@@ -78,7 +78,7 @@ const Tasks = ({
 
   if (
     allMissions?.length === 0 ||
-    allMissions?.filter((m) => m.house === HOUSES_LIST[currentHouseIndex].id)
+    allMissions?.filter((m) => m.house === HOUSES_LIST[currentHouseIndex]?.id)
       .length === 0
   ) {
     return (
