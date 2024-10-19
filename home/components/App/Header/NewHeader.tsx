@@ -2,9 +2,9 @@
 import { APP_ROUTES } from '@/utils/constants/AppInfo';
 import { useAuthSession } from '@/utils/hooks/useAuthSession';
 import Image from 'next/image';
-import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import React, { useState } from 'react';
+import { Link } from 'react-transition-progress/next';
 
 const NewHeader = () => {
   const [showDropdown, setShowDropdown] = useState({
@@ -53,12 +53,13 @@ const NewHeader = () => {
               TheMoonDevs
             </p>
           </Link>
-          {path === '/' && (
+          {path !== '/products/custom-bots' && (
             <>
               <MenuItem label='Dev Folio' />
               <MenuItem label='Unit Rates' />
             </>
           )}
+
           {path === '/products/custom-bots' && (
             <>
               <MenuItem
@@ -106,7 +107,7 @@ const NewHeader = () => {
             </>
           )}
 
-          {path === '/' && (
+          {path !== '/products/custom-bots' && (
             <>
               <div className='flex items-center '>
                 <MenuItem label='Products' to='/products/custom-bots' />

@@ -40,7 +40,8 @@
     "react-multi-carousel": "^2.8.5",
     "react-redux": "^9.0.2",
     "react-transition-progress": "^0.0.4",
-    "styled-components": "^6.1.11"
+    "styled-components": "^6.1.11",
+    "tailwind-merge": "^2.5.4"
   },
   "devDependencies": {
     "@slicemachine/adapter-next": "^0.3.38",
