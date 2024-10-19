@@ -1,13 +1,11 @@
-import { HOUSEID, Mission, MissionTask } from "@prisma/client";
+import { HOUSEID, Mission } from "@prisma/client";
 import { initialMissionState } from "../state";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useUser } from "@/utils/hooks/useUser";
 import {
-  BlockTypeSelect,
   BoldItalicUnderlineToggles,
   CreateLink,
   headingsPlugin,
-  linkDialogPlugin,
   linkPlugin,
   listsPlugin,
   markdownShortcutPlugin,
@@ -15,10 +13,9 @@ import {
   quotePlugin,
   thematicBreakPlugin,
   toolbarPlugin,
-  UndoRedo,
 } from "@mdxeditor/editor";
 import { MARKDOWN_PLACEHOLDER } from "../../Worklogs/WorklogTabs/TodoTab";
-import { Button, Checkbox, Divider, Select } from "@mui/material";
+import { Button, Divider } from "@mui/material";
 import dayjs from "dayjs";
 import { MdxAppEditor } from "@/utils/configure/MdxAppEditor";
 import { Spinner } from "@/components/elements/Loaders";
@@ -43,11 +40,6 @@ const housesList = [
   { label: "Product Tech", value: "PRODUCT_TECH" },
   { label: "Executive", value: "EXECUTIVE" },
 ];
-
-type CreateMissionFieldsProps = {
-  state: Partial<Mission>;
-  setState: React.Dispatch<React.SetStateAction<Partial<Mission>>>;
-};
 
 const MissionForm = ({ currentHouseIndex }: { currentHouseIndex: number }) => {
   console.log("currentHouseIndex", currentHouseIndex);
@@ -179,7 +171,7 @@ const MissionForm = ({ currentHouseIndex }: { currentHouseIndex: number }) => {
               </label>
               <select
                 id="select-house"
-                defaultValue={HOUSES_LIST[currentHouseIndex].name}
+                defaultValue={HOUSES_LIST[currentHouseIndex]?.name}
                 onChange={(e) =>
                   setMissionState({
                     ...missionState,
