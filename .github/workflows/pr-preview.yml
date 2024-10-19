@@ -25,7 +25,7 @@ jobs:
           # Fetch all history for accurate diffing
           git fetch --prune --unshallow || true
           git fetch origin +refs/heads/*:refs/remotes/origin/*
-          
+
           # Determine the base for diffing
           base_ref="${{ github.event.pull_request.base.sha }}"
           head_ref="${{ github.event.pull_request.head.sha }}"
@@ -50,7 +50,7 @@ jobs:
         project: ${{ fromJson(needs.determine_project.outputs.projects) }}
     concurrency:
       group: "${{ matrix.project }}-${{ github.event.pull_request.number }}"
-      cancel-in-progress: true  # Do not cancel; wait for completion
+      cancel-in-progress: true
 
     steps:
       - name: Set up SSH
@@ -69,7 +69,7 @@ jobs:
             # Wait if the lock file exists
             while [ -f "$LOCK_FILE" ]; do
               echo "Deployment lock exists. Waiting..."
-              sleep 10  # Wait for 10 seconds before checking again
+              sleep 10
             done
 
             touch "$LOCK_FILE"  # Create the lock file to indicate the deployment is in progress
@@ -77,11 +77,11 @@ jobs:
             # Change to the project directory
             cd apps/moon-portal-app/${{ matrix.project }}
 
-            # Stash any local changes
-            git stash || { echo "ERROR: Failed to stash changes." >&2; exit 1; }
+            # Stash any local changes before switching branches
+            git stash || echo "No changes to stash."
 
-            # Create a temporary branch for the PR
-            TEMP_BRANCH="pr-${{ github.event.pull_request.number }}"
+            # Create a unique temporary branch name for this PR
+            TEMP_BRANCH="pr-${{ github.event.pull_request.number }}-$(date +%s)"
             git fetch origin pull/${{ github.event.pull_request.number }}/head:$TEMP_BRANCH || { echo "ERROR: Failed to fetch the pull request." >&2; exit 1; }
             git checkout $TEMP_BRANCH || { echo "ERROR: Failed to checkout PR #${{ github.event.pull_request.number }}." >&2; exit 1; }
 
@@ -96,7 +96,7 @@ jobs:
               exit 1
             fi
 
-            # Make sure PORT is set correctly
+            # Define PORT based on project and PR number
             if [ "${{ matrix.project }}" = "portal" ]; then
               PORT=$((8000 + ${{ github.event.number }}))
             else
@@ -120,8 +120,9 @@ jobs:
             # Pop the stashed changes after deployment
             git stash pop || echo "No stashed changes to pop."
 
+            # Remove the lock file after successful deployment
+            rm -f "$LOCK_FILE"  
             echo "Deployment completed for PR #${{ github.event.pull_request.number }} - Project: ${{ matrix.project }}"
-            rm -f "$LOCK_FILE"  # Remove the lock file after successful deployment
           EOF
 
       - name: Cleanup Lock File
@@ -162,7 +163,7 @@ jobs:
         uses: webfactory/ssh-agent@v0.5.3
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-      
+
       - name: Remove Preview Deployment
         run: |
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << "EOF"
