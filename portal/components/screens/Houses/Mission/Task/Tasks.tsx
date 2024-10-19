@@ -12,7 +12,6 @@ import { PortalSdk } from "@/utils/services/PortalSdk";
 import {
   setActiveTab,
   setEditingMission,
-  setEditingTask,
   setEditModalOpen,
 } from "@/utils/redux/missions/mission.ui.slice";
 import { HOUSES_LIST } from "../../HousesList";
