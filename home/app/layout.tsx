@@ -13,6 +13,7 @@ import { AppPageLoader } from '@/components/App/PageLoader';
 import MetaInfo, { MetaInfoProps } from '@/components/App/MetaInfo';
 import '../styles/globals.css';
 import { ProgressBar, ProgressBarProvider } from 'react-transition-progress';
+import NewHeader from '@/components/App/Header/NewHeader';
 // import Footer from "@/components/Global/Footer";
 
 const inter = Inter({ subsets: ['latin'] });
@@ -60,7 +61,7 @@ export default function RootLayout({
           <ReduxProvider>
             <ProgressBarProvider>
               <ProgressBar className='fixed h-1 shadow-lg shadow-sky-500/20 bg-black top-0 z-[9999]' />
-              <Header />
+              <NewHeader />
               <main>{children}</main>
               {/* <AppPageLoader /> */}
             </ProgressBarProvider>
