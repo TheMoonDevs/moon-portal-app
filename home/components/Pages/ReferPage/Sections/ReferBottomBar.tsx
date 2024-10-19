@@ -1,5 +1,5 @@
 import { APP_INFO, APP_ROUTES } from "@/utils/constants/AppInfo";
-import Link from "next/link";
+import { Link } from "react-transition-progress/next";
 import { ReferScrollState } from "../types";
 
 export const ReferBottomBar = ({

@@ -1,3 +1,4 @@
+'use client'
 import theme from "@/styles/theme";
 import { SectionWithGrids } from "../../HomePage/SectionWithGrids";
 import { TrailPageStyled } from "./TrailPageStyled";
