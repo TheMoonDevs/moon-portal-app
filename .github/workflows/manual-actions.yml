@@ -26,6 +26,7 @@ jobs:
       - name: Remove Preview Deployment
         run: |
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} <<EOF
+            rm -f /tmp/deploy-lock
             pm2 delete payzone-pr-${{ github.event.inputs.pr_number }} || true
             pm2 delete portal-pr-${{ github.event.inputs.pr_number }} || true
           EOF
