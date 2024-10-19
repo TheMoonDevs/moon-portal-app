@@ -44,6 +44,7 @@ const nextConfig = {
     serverSourceMaps: false,
     //looseMode: true,
     esmExternals: "loose", // <-- add this
+    optimizePackageImports: ['@mantine/core', '@mantine/styles', '@mantine/utils'],
   },
   eslint: {
     // Warning: This allows production builds to successfully complete even if
