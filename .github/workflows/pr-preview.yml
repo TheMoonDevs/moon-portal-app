@@ -77,6 +77,7 @@ jobs:
           touch "$LOCK_FILE"
 
           echo "Starting deployment for PR #${{ github.event.pull_request.number }} - Project: ${{ matrix.project }}"
+          ls
           cd apps/moon-portal-app/${{ matrix.project }}
           git fetch origin pull/$PR_NUMBER/head:pr-$PR_NUMBER
           git checkout pr-$PR_NUMBER
