@@ -42,7 +42,7 @@ const MyLayout: React.FC<{ show: boolean; children?: React.ReactNode }> = ({
   return (
     <MUIThemeProvider>
       {/* <Header /> */}
-      <NewHeader/>
+      {/* <NewHeader/> */}
       <main>{children}</main>
       <AppPageLoader />
       {/* <Footer /> */}
