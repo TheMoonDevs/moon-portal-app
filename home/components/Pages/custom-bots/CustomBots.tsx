@@ -1,9 +1,9 @@
 'use client';
+import BottomSection from '@/components/App/custom-bots/BottomSection';
 import CustomBotsHero from '@/components/App/custom-bots/CustomBotsHero';
 import ToolTip from '@/components/App/Global/ToolTip';
 import Image from 'next/image';
 import React from 'react';
-import BottomSection from '../../App/custom-bots/BottomSection';
 
 const CustomBotsPage = () => {
   return (
