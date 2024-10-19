@@ -1,4 +1,7 @@
 const runtimeCaching = require("next-pwa/cache");
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+})
 const withPWA = require("next-pwa")({
   //dest: "public",
   //reactStrictMode: true,
@@ -41,7 +44,6 @@ const nextConfig = {
     serverSourceMaps: false,
     //looseMode: true,
     esmExternals: "loose", // <-- add this
-    serverComponentsExternalPackages: ["mongoose"], // <-- and this
   },
   eslint: {
     // Warning: This allows production builds to successfully complete even if
@@ -66,4 +68,4 @@ const nextConfig = {
   },
 };
 
-module.exports = withPWA(nextConfig);
+module.exports = withBundleAnalyzer(withPWA(nextConfig));
