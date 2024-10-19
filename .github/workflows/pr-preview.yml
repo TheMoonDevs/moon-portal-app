@@ -59,32 +59,48 @@ jobs:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
       - name: Wait for Deployment Lock
+        id: deploy_lock
         run: |
-          LOCK_FILE="/tmp/deploy-lock"  # Unified lock file for all projects
-          echo "Checking for ongoing deployments..."
-
-          # Wait if the lock file exists
-          while [ -f "$LOCK_FILE" ]; do
-            echo "Deployment lock exists for ${{ matrix.project }}. Waiting..."
-            sleep 10  # Wait for 10 seconds before checking again
-          done
-
-          touch "$LOCK_FILE"  # Create the lock file to indicate the deployment is in progress
-
           # Deploy commands to be executed on the VPS
           echo "Starting deployment for PR #${{ github.event.pull_request.number }} - Project: ${{ matrix.project }}"
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << EOF
+            LOCK_FILE="/tmp/deploy-lock"  # Unified lock file for all projects
+            echo "Checking for ongoing deployments..."
+
+            # Wait if the lock file exists
+            while [ -f "\$LOCK_FILE" ]; do
+              echo "Deployment lock exists for ${{ matrix.project }}. Waiting..."
+              sleep 10  # Wait for 10 seconds before checking again
+            done
+
+            touch "\$LOCK_FILE"  # Create the lock file to indicate the deployment is in progress
+
+            # Change to the project directory
             cd apps/moon-portal-app/${{ matrix.project }}
 
             # Fetch and check out the PR
-            git fetch origin pull/${{ github.event.pull_request.number }}/head:pr-${{ github.event.pull_request.number }}
-            git checkout pr-${{ github.event.pull_request.number }}
+            if ! git fetch origin pull/${{ github.event.pull_request.number }}/head:pr-${{ github.event.pull_request.number }}; then
+              echo "ERROR: Failed to fetch the pull request." >&2
+              exit 1
+            fi
+            
+            if ! git checkout pr-${{ github.event.pull_request.number }}; then
+              echo "ERROR: Failed to checkout PR #${{ github.event.pull_request.number }}." >&2
+              exit 1
+            fi
 
-            # Install dependencies and build
-            npm install
-            npm run build
+            # Handle errors during installation and build
+            if ! npm install; then
+              echo "ERROR: npm install failed. Cleaning up..." >&2
+              exit 1
+            fi
 
-            # Set the PORT based on the project
+            if ! npm run build; then
+              echo "ERROR: Build failed. Cleaning up..." >&2
+              exit 1
+            fi
+
+            # Make sure PORT is set correctly
             if [ "${{ matrix.project }}" = "portal" ]; then
               PORT=\$((8000 + ${{ github.event.number }}))
             else
@@ -93,15 +109,31 @@ jobs:
 
             # PM2 management with error handling
             if pm2 list | grep -q "${{ matrix.project }}-pr-${{ github.event.number }}"; then
-              pm2 restart ${{ matrix.project }}-pr-${{ github.event.number }} --update-env
+              if ! pm2 restart ${{ matrix.project }}-pr-${{ github.event.number }} --update-env; then
+                echo "ERROR: Failed to restart PM2 process. Cleaning up..." >&2
+                pm2 delete ${{ matrix.project }}-pr-${{ github.event.number }} || true
+                exit 1
+              fi
             else
-              pm2 start npm --name ${{ matrix.project }}-pr-${{ github.event.number }} -- run start -- -p \$PORT
+              if ! pm2 start npm --name ${{ matrix.project }}-pr-${{ github.event.number }} -- run start -- -p \$PORT; then
+                echo "ERROR: Failed to start PM2 process. Cleaning up..." >&2
+                exit 1
+              fi
             fi
 
-            # Remove the lock file after successful deployment
-            rm -f "$LOCK_FILE"
             echo "Deployment completed for PR #${{ github.event.pull_request.number }} - Project: ${{ matrix.project }}"
           EOF
+
+      - name: Cleanup Lock File
+        if: failure() || cancelled() || always()
+        run: |
+          ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} <<EOF
+            LOCK_FILE="/tmp/deploy-lock"
+            if [ -f "\$LOCK_FILE" ]; then
+              echo "Removing lock file..."
+              rm -f "\$LOCK_FILE"
+            fi
+            EOF
 
       - name: Comment Preview URL
         uses: actions/github-script@v6
@@ -110,8 +142,10 @@ jobs:
             const project = '${{ matrix.project }}';
             const prNumber = '${{ github.event.pull_request.number }}';
             const previewUrl = `https://${project}-pr-${prNumber}.${project}.themoondevs.com`;
+            const deleteLockUrl = `${{ github.server_url }}/${{ github.repository }}/actions/workflows/manual-actions.yml/dispatch?action=cleanup&pr_number=${prNumber}`; 
             const body = `🚀 ${project.charAt(0).toUpperCase() + project.slice(1)} preview available at: [${previewUrl}](${previewUrl})\n\n` +
-                         `🗑️ **Remove this preview**: [Click here](${{ github.server_url }}/${{ github.repository }}/actions/workflows/manual-actions.yml/dispatch?action=cleanup&pr_number=${prNumber})`;
+                         `🗑️ **Remove this preview**: [Click here](${deleteLockUrl})\n` +
+                         `🔒 If you need to manually delete the lock file, you can use this URL: [Delete Lock File](${deleteLockUrl})`;
             github.rest.issues.createComment({
               issue_number: parseInt(prNumber),
               owner: context.repo.owner,
