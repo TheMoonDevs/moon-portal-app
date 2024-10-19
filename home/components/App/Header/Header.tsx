@@ -10,7 +10,6 @@ import { APP_INFO, APP_ROUTES } from "@/utils/constants/AppInfo";
 import theme from "@/styles/theme";
 import { forwardRef, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
-// import { useRouter } from "next/router";
 import { usePathname } from "next/navigation";
 
 export const HeaderComponent = () => {
