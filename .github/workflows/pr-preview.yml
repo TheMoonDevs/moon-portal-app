@@ -25,7 +25,7 @@ jobs:
           # Fetch all history for accurate diffing
           git fetch --prune --unshallow || true
           git fetch origin +refs/heads/*:refs/remotes/origin/*
-          
+
           # Determine the base for diffing
           base_ref="${{ github.event.pull_request.base.sha }}"
           head_ref="${{ github.event.pull_request.head.sha }}"
@@ -50,7 +50,7 @@ jobs:
         project: ${{ fromJson(needs.determine_project.outputs.projects) }}
     concurrency:
       group: "${{ matrix.project }}-${{ github.event.pull_request.number }}"
-      cancel-in-progress: true  # Do not cancel; wait for completion
+      cancel-in-progress: true # Do not cancel; wait for completion
 
     steps:
       - name: Set up SSH
@@ -61,9 +61,8 @@ jobs:
       - name: Wait for Deployment Lock
         id: deploy_lock
         run: |
-          # Deploy commands to be executed on the VPS
           echo "Starting deployment for PR #${{ github.event.pull_request.number }} - Project: ${{ matrix.project }}"
-          ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << EOF
+          ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << 'EOF'
             LOCK_FILE="/tmp/deploy-lock"  # Unified lock file for all projects
             echo "Checking for ongoing deployments..."
 
@@ -78,16 +77,10 @@ jobs:
             # Change to the project directory
             cd apps/moon-portal-app/${{ matrix.project }}
 
-            # Fetch and check out the PR
-            if ! git fetch origin pull/${{ github.event.pull_request.number }}/head:pr-${{ github.event.pull_request.number }}; then
-              echo "ERROR: Failed to fetch the pull request." >&2
-              exit 1
-            fi
-            
-            if ! git checkout pr-${{ github.event.pull_request.number }}; then
-              echo "ERROR: Failed to checkout PR #${{ github.event.pull_request.number }}." >&2
-              exit 1
-            fi
+            # Create a temporary branch for the PR
+            TEMP_BRANCH="pr-${{ github.event.pull_request.number }}"
+            git fetch origin pull/${{ github.event.pull_request.number }}/head:\$TEMP_BRANCH || { echo "ERROR: Failed to fetch the pull request." >&2; exit 1; }
+            git checkout \$TEMP_BRANCH || { echo "ERROR: Failed to checkout PR #${{ github.event.pull_request.number }}." >&2; exit 1; }
 
             # Handle errors during installation and build
             if ! npm install; then
@@ -122,18 +115,19 @@ jobs:
             fi
 
             echo "Deployment completed for PR #${{ github.event.pull_request.number }} - Project: ${{ matrix.project }}"
+            rm -f "\$LOCK_FILE"  # Remove the lock file after successful deployment
           EOF
 
       - name: Cleanup Lock File
         if: failure() || cancelled() || always()
         run: |
-          ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} <<EOF
+          ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << 'EOF'
             LOCK_FILE="/tmp/deploy-lock"
             if [ -f "\$LOCK_FILE" ]; then
               echo "Removing lock file..."
               rm -f "\$LOCK_FILE"
             fi
-            EOF
+          EOF
 
       - name: Comment Preview URL
         uses: actions/github-script@v6
@@ -161,10 +155,10 @@ jobs:
         uses: webfactory/ssh-agent@v0.5.3
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-      
+
       - name: Remove Preview Deployment
         run: |
-          ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} <<EOF
+          ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << 'EOF'
             pm2 delete payzone-pr-${{ github.event.number }} || true
             pm2 delete portal-pr-${{ github.event.number }} || true
           EOF
