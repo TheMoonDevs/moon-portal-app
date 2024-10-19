@@ -25,7 +25,7 @@ jobs:
           # Fetch all history for accurate diffing
           git fetch --prune --unshallow || true
           git fetch origin +refs/heads/*:refs/remotes/origin/*
-
+          
           # Determine the base for diffing
           base_ref="${{ github.event.pull_request.base.sha }}"
           head_ref="${{ github.event.pull_request.head.sha }}"
@@ -50,7 +50,7 @@ jobs:
         project: ${{ fromJson(needs.determine_project.outputs.projects) }}
     concurrency:
       group: "${{ matrix.project }}-${{ github.event.pull_request.number }}"
-      cancel-in-progress: true # Do not cancel; wait for completion
+      cancel-in-progress: true  # Do not cancel; wait for completion
 
     steps:
       - name: Set up SSH
@@ -62,25 +62,25 @@ jobs:
         id: deploy_lock
         run: |
           echo "Starting deployment for PR #${{ github.event.pull_request.number }} - Project: ${{ matrix.project }}"
-          ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << "EOF"
             LOCK_FILE="/tmp/deploy-lock"  # Unified lock file for all projects
             echo "Checking for ongoing deployments..."
 
             # Wait if the lock file exists
-            while [ -f "\$LOCK_FILE" ]; do
-              echo "Deployment lock exists for ${{ matrix.project }}. Waiting..."
+            while [ -f "$LOCK_FILE" ]; do
+              echo "Deployment lock exists. Waiting..."
               sleep 10  # Wait for 10 seconds before checking again
             done
 
-            touch "\$LOCK_FILE"  # Create the lock file to indicate the deployment is in progress
+            touch "$LOCK_FILE"  # Create the lock file to indicate the deployment is in progress
 
             # Change to the project directory
             cd apps/moon-portal-app/${{ matrix.project }}
 
             # Create a temporary branch for the PR
             TEMP_BRANCH="pr-${{ github.event.pull_request.number }}"
-            git fetch origin pull/${{ github.event.pull_request.number }}/head:\$TEMP_BRANCH || { echo "ERROR: Failed to fetch the pull request." >&2; exit 1; }
-            git checkout \$TEMP_BRANCH || { echo "ERROR: Failed to checkout PR #${{ github.event.pull_request.number }}." >&2; exit 1; }
+            git fetch origin pull/${{ github.event.pull_request.number }}/head:$TEMP_BRANCH || { echo "ERROR: Failed to fetch the pull request." >&2; exit 1; }
+            git checkout $TEMP_BRANCH || { echo "ERROR: Failed to checkout PR #${{ github.event.pull_request.number }}." >&2; exit 1; }
 
             # Handle errors during installation and build
             if ! npm install; then
@@ -95,9 +95,9 @@ jobs:
 
             # Make sure PORT is set correctly
             if [ "${{ matrix.project }}" = "portal" ]; then
-              PORT=\$((8000 + ${{ github.event.number }}))
+              PORT=$((8000 + ${{ github.event.number }}))
             else
-              PORT=\$((9000 + ${{ github.event.number }}))
+              PORT=$((9000 + ${{ github.event.number }}))
             fi
 
             # PM2 management with error handling
@@ -108,24 +108,24 @@ jobs:
                 exit 1
               fi
             else
-              if ! pm2 start npm --name ${{ matrix.project }}-pr-${{ github.event.number }} -- run start -- -p \$PORT; then
+              if ! pm2 start npm --name ${{ matrix.project }}-pr-${{ github.event.number }} -- run start -- -p $PORT; then
                 echo "ERROR: Failed to start PM2 process. Cleaning up..." >&2
                 exit 1
               fi
             fi
 
             echo "Deployment completed for PR #${{ github.event.pull_request.number }} - Project: ${{ matrix.project }}"
-            rm -f "\$LOCK_FILE"  # Remove the lock file after successful deployment
+            rm -f "$LOCK_FILE"  # Remove the lock file after successful deployment
           EOF
 
       - name: Cleanup Lock File
         if: failure() || cancelled() || always()
         run: |
-          ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << "EOF"
             LOCK_FILE="/tmp/deploy-lock"
-            if [ -f "\$LOCK_FILE" ]; then
+            if [ -f "$LOCK_FILE" ]; then
               echo "Removing lock file..."
-              rm -f "\$LOCK_FILE"
+              rm -f "$LOCK_FILE"
             fi
           EOF
 
@@ -155,10 +155,10 @@ jobs:
         uses: webfactory/ssh-agent@v0.5.3
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
+      
       - name: Remove Preview Deployment
         run: |
-          ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << "EOF"
             pm2 delete payzone-pr-${{ github.event.number }} || true
             pm2 delete portal-pr-${{ github.event.number }} || true
           EOF
