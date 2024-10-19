@@ -1,3 +1,4 @@
+'use client'
 import quantize, { RgbPixel } from "quantize";
 import { useEffect, useState, useCallback } from "react";
 import { luminance, rgbPixelToColor } from "@/helpers/functions";
