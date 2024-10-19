@@ -5,9 +5,16 @@ const withPWA = require("next-pwa")({
   dest: "public",
   register: true,
   disable: process.env.NODE_ENV === "development",
-  skipWaiting: true,
+  skipWaiting: false,
+  clientsClaim: false,
   runtimeCaching,
-  buildExcludes: [/middleware-manifest.json$/],
+  buildExcludes: [
+    /middleware-manifest.json$/,
+    /app-build-manifest.json$/,
+    /build-manifest.json$/,
+  ],
+  runtimeCaching,
+
   // cacheOnFrontEndNav: true,
   // aggressiveFrontEndNavCaching: true,
   // reloadOnOnline: true,
@@ -20,17 +27,33 @@ const withPWA = require("next-pwa")({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  productionBrowserSourceMaps: false,
   experimental: {
+    serverSourceMaps: false,
     //looseMode: true,
     esmExternals: "loose", // <-- add this
     serverComponentsExternalPackages: ["mongoose"], // <-- and this
   },
-  webpack: (config) => {
+  eslint: {
+    // Warning: This allows production builds to successfully complete even if
+    // your project has ESLint errors.
+    ignoreDuringBuilds: true,
+  },
+  webpack: (
+    config,
+    { buildId, dev, isServer, defaultLoaders, nextRuntime, webpack }
+  ) => {
     config.experiments = {
       topLevelAwait: true,
       layers: true,
     };
-    return config;
+    // if (config.cache && !dev) {
+    //   config.cache = Object.freeze({
+    //     type: 'memory',
+    //   })
+    // }
+    // Important: return the modified config
+    return config
   },
 };
 
