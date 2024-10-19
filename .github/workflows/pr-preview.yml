@@ -50,7 +50,7 @@ jobs:
         project: ${{ fromJson(needs.determine_project.outputs.projects) }}
     concurrency:
       group: "${{ matrix.project }}-${{ github.event.pull_request.number }}"
-      cancel-in-progress: true  # Cancel previous builds for the same project if a new commit comes in
+      cancel-in-progress: false  # Do not cancel; wait for completion
 
     steps:
       - name: Checkout repository
@@ -69,33 +69,41 @@ jobs:
             exit 1
           fi
 
+      - name: Wait for Portal Deployment
+        if: matrix.project == 'payzone'
+        run: |
+          echo "Waiting for portal deployment to finish if it's in progress..."
+          for i in {1..60}; do  # Wait up to 10 minutes (10 seconds each)
+            if ! pm2 list | grep -q "portal-pr-${{ github.event.pull_request.number }}"; then
+              break
+            fi
+            echo "Portal is still building. Waiting..."
+            sleep 10
+          done
+
       - name: Deploy to DigitalOcean
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          # Unique lock files for each project
           LOCK_FILE="/tmp/deploy-${{ matrix.project }}-lock"
           echo "Checking for ongoing deployments..."
 
-          # Wait for a default time to allow the other project to lock if it's building
-          for i in {1..6}; do  # Wait for 10 seconds total (1 second each iteration for 10 times)
-            if [ ! -f "$LOCK_FILE" ]; then
-              break
-            fi
-            echo "Deployment lock exists for ${{ matrix.project }}. Waiting... (attempt $i)"
-            sleep 1
-          done
+          # Default wait time before starting Payzone deployment
+          if [ "${{ matrix.project }}" = "payzone" ]; then
+            echo "Waiting for 10 seconds before starting Payzone build..."
+            sleep 10
+          fi
 
-          # Wait if the lock file still exists
+          # Wait if the lock file exists
           while [ -f "$LOCK_FILE" ]; do
-            echo "Deployment lock still exists for ${{ matrix.project }}. Waiting..."
+            echo "Deployment lock exists for ${{ matrix.project }}. Waiting..."
             sleep 10  # Wait for 10 seconds before checking again
           done
 
           touch "$LOCK_FILE"
 
           echo "Starting deployment for PR #${{ github.event.pull_request.number }} - Project: ${{ matrix.project }}"
-          ls
+          # ls
           # cd apps/moon-portal-app/${{ matrix.project }}
           cd ${{ matrix.project }}
           
