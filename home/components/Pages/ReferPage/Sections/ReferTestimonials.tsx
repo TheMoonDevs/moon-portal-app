@@ -2,7 +2,7 @@ import Image from "next/image";
 import { TestimonialsStyled } from "./ReferTestimonials.styles";
 import Carousel from "react-multi-carousel";
 import { ReferScrollState } from "../types";
-import Link from "next/link";
+import { Link } from "react-transition-progress/next";
 import { Engagement } from "next/font/google";
 const Testimonials = [
   {
