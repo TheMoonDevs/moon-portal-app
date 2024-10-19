@@ -40,7 +40,7 @@ jobs:
       matrix:
         project: ${{ fromJson(needs.determine_project.outputs.projects) }}
     concurrency:
-      group: vps-global-deployment
+      group: main-deployment-${{ matrix.project }}  # Group by project name to allow queueing
       cancel-in-progress: true
     steps:
       - name: Checkout repository
