@@ -28,8 +28,8 @@ jobs:
           head_ref="${{ github.sha }}"
           changed_files=$(git diff --name-only $base_ref $head_ref)
           projects=()
-          if echo "$changed_files" | grep -q "^payzone/"; then projects+=("payzone"); fi
           if echo "$changed_files" | grep -q "^portal/"; then projects+=("portal"); fi
+          if echo "$changed_files" | grep -q "^payzone/"; then projects+=("payzone"); fi
           echo "projects=$(jq -c -n --argjson projects "$(printf '%s\n' "${projects[@]}" | jq -R . | jq -s .)" '$projects')" >> $GITHUB_OUTPUT
 
   deploy:
@@ -39,9 +39,9 @@ jobs:
     strategy:
       matrix:
         project: ${{ fromJson(needs.determine_project.outputs.projects) }}
+      max-parallel: 1  # Only one deployment at a time
     concurrency:
-      group: main-deployment-${{ matrix.project }}  # Group by project name to allow queueing
-      cancel-in-progress: true
+      group: main-deployment  # Use a single concurrency group to queue all deployments.
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
