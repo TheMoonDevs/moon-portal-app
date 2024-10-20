@@ -10,7 +10,7 @@ function loadEnvironment() {
 
   switch (envType) {
     case 'preview':
-      envFile = '.env.preview';
+      envFile = '.env';
       break;
     case 'production':
       envFile = '.env.production';
