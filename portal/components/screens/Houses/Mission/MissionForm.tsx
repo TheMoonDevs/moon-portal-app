@@ -545,6 +545,7 @@ const MissionForm = ({ currentHouseIndex }: { currentHouseIndex: number }) => {
                     ),
                   }),
                 ]}
+                key={`${user?.id}`}
                 editorKey={`${user?.id}`}
                 markdown={
                   missionState.description?.trim().length === 0 ||

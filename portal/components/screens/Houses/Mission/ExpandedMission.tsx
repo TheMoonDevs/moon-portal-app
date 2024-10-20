@@ -56,6 +56,7 @@ const ExpandedMission = ({
             <div>
               <h1 className="text-lg font-bold mb-2">Description</h1>
               <MdxAppEditor
+                key={mission?.id}
                 editorKey={mission?.id}
                 markdown={mission?.description}
                 readOnly={true}

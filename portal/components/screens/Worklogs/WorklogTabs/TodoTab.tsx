@@ -143,6 +143,7 @@ const TodoTabs: React.FC<TodoTabsProps> = ({ userId }) => {
       >
         <MdxAppEditor
           ref={mdRef}
+          key={`${userId}`}
           editorKey={`${userId}`}
           markdown={
             todoMarkdown.trim().length === 0

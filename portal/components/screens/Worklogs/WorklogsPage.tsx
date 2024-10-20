@@ -134,6 +134,7 @@ export const WorkLogItem = ({
               >
                 <div className="text-sm font-light">
                   <MdxAppEditor
+                    key={point?.id}
                     editorKey={point?.id}
                     markdown={point?.content}
                     readOnly={true}
