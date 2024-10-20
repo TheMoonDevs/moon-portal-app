@@ -45,12 +45,13 @@ jobs:
     needs: determine_project
     if: needs.determine_project.outputs.projects != '[]' && github.event.action != 'closed'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     strategy:
       matrix:
         project: ${{ fromJson(needs.determine_project.outputs.projects) }}
     concurrency:
       group: "${{ matrix.project }}-${{ github.event.pull_request.number }}"
-      cancel-in-progress: true
+      cancel-in-progress: false
 
     steps:
       - name: Set up SSH
@@ -58,7 +59,7 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Wait for Deployment Lock
+      - name: Deploy Preview on DigitalOcean
         id: deploy_lock
         run: |
           echo "Starting deployment for PR #${{ github.event.pull_request.number }} - Project: ${{ matrix.project }}"
