@@ -4,7 +4,7 @@
 import React from "react";
 
 import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import { Mission, MissionTask, User } from "@prisma/client";
+import { Mission, User } from "@prisma/client";
 import { HOUSES_LIST } from "../HousesList";
 import { useEffect, useState } from "react";
 import { PortalSdk } from "@/utils/services/PortalSdk";
@@ -14,7 +14,6 @@ import {
   setAllTasks,
   setTasksLoading,
 } from "@/utils/redux/missions/missionsTasks.slice";
-import ExpandedMission from "./ExpandedMission";
 import CreateMissionSlider from "../CreateMissionSlider";
 import {
   setActiveMission,
@@ -28,7 +27,6 @@ import { getQueryString } from "./mission.utils";
 import MissionList from "./MissionList";
 
 export const Missions = ({
-  loading,
   currentHouseIndex,
   houseMembers,
 }: {
@@ -38,9 +36,7 @@ export const Missions = ({
 }) => {
   const dispatch = useAppDispatch();
   const { allMissions } = useAppSelector((state: RootState) => state.mission);
-  const { activeMission } = useAppSelector((state: RootState) => state.mission);
   const { activeTab } = useAppSelector((state: RootState) => state.missionUi);
-  const tasks = useAppSelector((state: RootState) => state.missionsTasks);
   const [timeFrame, setTimeFrame] = useState("month");
   const [timeValue, setTimeValue] = useState(dayjs().format("YYYY-MM"));
   const [tasksFetched, setTasksFetched] = useState(false);

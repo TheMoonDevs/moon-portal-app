@@ -1,10 +1,7 @@
 "use client";
 import { HousesList } from "./HousesList";
 import { useEffect, useState } from "react";
-import { MissionsList } from "./MissionsList";
-import { MissionDetails } from "./MissionDetails";
 import { User } from "@prisma/client";
-import { RootState, useAppSelector } from "@/utils/redux/store";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { Missions } from "./Mission/Missions";
 import Tasks from "./Mission/Task/Tasks";
