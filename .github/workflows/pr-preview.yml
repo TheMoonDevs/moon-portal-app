@@ -1,0 +1,185 @@
+name: PR Preview Deployment
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened, closed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  determine_project:
+    runs-on: ubuntu-latest
+    outputs:
+      projects: ${{ steps.set-projects.outputs.projects }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine changed projects
+        id: set-projects
+        run: |
+          # Fetch all history for accurate diffing
+          git fetch --prune --unshallow || true
+          git fetch origin +refs/heads/*:refs/remotes/origin/*
+
+          # Determine the base for diffing
+          base_ref="${{ github.event.pull_request.base.sha }}"
+          head_ref="${{ github.event.pull_request.head.sha }}"
+
+          # Get the list of changed files
+          changed_files=$(git diff --name-only $base_ref $head_ref)
+
+          # Determine if changes are in the payzone or portal directories
+          projects=()
+          if echo "$changed_files" | grep -q "^payzone/"; then projects+=("payzone"); fi
+          if echo "$changed_files" | grep -q "^portal/"; then projects+=("portal"); fi
+
+          # Output the projects array as a JSON string
+          echo "projects=$(jq -c -n --argjson projects "$(printf '%s\n' "${projects[@]}" | jq -R . | jq -s .)" '$projects')" >> $GITHUB_OUTPUT
+
+  deploy_preview:
+    needs: determine_project
+    if: needs.determine_project.outputs.projects != '[]' && github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        project: ${{ fromJson(needs.determine_project.outputs.projects) }}
+    concurrency:
+      group: "${{ matrix.project }}-${{ github.event.pull_request.number }}"
+      cancel-in-progress: false
+
+    steps:
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Deploy Preview on DigitalOcean
+        id: deploy_lock
+        run: |
+          echo "Starting deployment for PR #${{ github.event.pull_request.number }} - Project: ${{ matrix.project }}"
+          ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << "EOF"
+            LOCK_FILE="/tmp/deploy-lock"  # Unified lock file for all projects
+            echo "Checking for ongoing deployments..."
+
+            # Wait if the lock file exists
+            while [ -f "$LOCK_FILE" ]; do
+              echo "Deployment lock exists. Waiting..."
+              sleep 10
+            done
+
+            touch "$LOCK_FILE"  # Create the lock file to indicate the deployment is in progress
+
+            # Change to the project directory
+            cd apps/moon-portal-app/${{ matrix.project }}
+
+            # Stash any local changes before switching branches
+            git stash || { echo "ERROR: Failed to stash changes." >&2; exit 1; }
+
+            # Create a unique temporary branch name for this PR
+            TEMP_BRANCH="pr-${{ github.event.pull_request.number }}-$(date +%s)"
+            git fetch origin pull/${{ github.event.pull_request.number }}/head:$TEMP_BRANCH || { echo "ERROR: Failed to fetch the pull request." >&2; exit 1; }
+            git checkout $TEMP_BRANCH || { echo "ERROR: Failed to checkout PR #${{ github.event.pull_request.number }}." >&2; exit 1; }
+
+            # Handle errors during installation and build
+            if ! npm install; then
+              echo "ERROR: npm install failed. Cleaning up..." >&2
+              git stash pop || echo "No stashed changes to pop."
+              rm -f "$LOCK_FILE"
+              exit 1
+            fi
+
+            # Set envs for preview deployment
+            export NEXT_PUBLIC_ENV_TYPE=preview
+
+            if ! npm run build; then
+              echo "ERROR: Build failed. Cleaning up..." >&2
+              git stash pop || echo "No stashed changes to pop."
+              rm -f "$LOCK_FILE"
+              exit 1
+            fi
+
+            # Define PORT based on project and PR number
+            if [ "${{ matrix.project }}" = "portal" ]; then
+              PORT=$((8000 + ${{ github.event.number }}))
+            else
+              PORT=$((9000 + ${{ github.event.number }}))
+            fi
+
+            # PM2 management with error handling
+            if pm2 list | grep -q "${{ matrix.project }}-pr-${{ github.event.number }}"; then
+              pm2 restart ${{ matrix.project }}-pr-${{ github.event.number }} --update-env || {
+                echo "ERROR: Failed to restart PM2 process. Cleaning up..." >&2
+                pm2 delete ${{ matrix.project }}-pr-${{ github.event.number }} || true
+                git stash pop || echo "No stashed changes to pop."
+                rm -f "$LOCK_FILE"
+                exit 1
+              }
+            else
+              pm2 start npm --name ${{ matrix.project }}-pr-${{ github.event.number }} -- run start -- -p $PORT || {
+                echo "ERROR: Failed to start PM2 process. Cleaning up..." >&2
+                pm2 delete ${{ matrix.project }}-pr-${{ github.event.number }} || true
+                git stash pop || echo "No stashed changes to pop."
+                rm -f "$LOCK_FILE"
+                exit 1
+              }
+            fi
+
+            # Pop the stashed changes after deployment
+            git stash pop || echo "No stashed changes to pop."
+
+            # Remove the lock file after successful deployment
+            rm -f "$LOCK_FILE"
+            echo "Deployment completed for PR #${{ github.event.pull_request.number }} - Project: ${{ matrix.project }}"
+          EOF
+
+      - name: Cleanup Lock File
+        if: failure() || cancelled() || always()
+        run: |
+          ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << "EOF"
+            LOCK_FILE="/tmp/deploy-lock"
+            if [ -f "$LOCK_FILE" ]; then
+              echo "Removing lock file..."
+              rm -f "$LOCK_FILE"
+            fi
+          EOF
+
+      - name: Comment Preview URL
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const project = '${{ matrix.project }}';
+            const prNumber = '${{ github.event.pull_request.number }}';
+            const subdomain = project === 'payzone' ? 'pay' : project; // Use 'pay' for payzone project
+            const previewUrl = `https://${project}-pr-${prNumber}.${subdomain}.themoondevs.com`;
+            const deleteLockUrl = `${{ github.server_url }}/${{ github.repository }}/actions/workflows/manual-actions.yml/dispatch?action=cleanup&pr_number=${prNumber}`; 
+            const body = `🚀 ${subdomain.charAt(0).toUpperCase() + subdomain.slice(1)} preview available at: [${previewUrl}](${previewUrl})\n\n` +
+                         `🗑️ **Remove this preview**: [Click here](${deleteLockUrl})\n` +
+                         `🔒 If you need to manually delete the lock file, you can use this URL: [Delete Lock File](${deleteLockUrl})`;
+            github.rest.issues.createComment({
+              issue_number: parseInt(prNumber),
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+
+  cleanup_on_close:
+    if: github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Remove Preview Deployment
+        run: |
+          ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << "EOF"
+            pm2 delete payzone-pr-${{ github.event.number }} || true
+            pm2 delete portal-pr-${{ github.event.number }} || true
+          EOF

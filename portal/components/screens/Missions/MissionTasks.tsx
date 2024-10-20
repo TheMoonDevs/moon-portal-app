@@ -1,24 +1,26 @@
 // import { MissionTask } from "@/prisma/missionTasks";
 import {
-  Button,
-  TextField,
-  Select,
-  MenuItem,
-  Checkbox,
-  Typography,
-  Paper,
-  Grid,
   Box,
+  Button,
+  Checkbox,
+  Grid,
   IconButton,
-  Tooltip,
+  MenuItem,
+  Paper,
+  Select,
   Skeleton,
-} from "@mui/material";
-import { DatePicker } from "@mui/x-date-pickers";
-import { Mission, User, MissionTask } from "@prisma/client";
-import dayjs from "dayjs";
-import { Dispatch, SetStateAction, useCallback, useState } from "react";
-import { Delete, Plus, X, Save, Trash2, Loader } from "lucide-react";
-import { PortalSdk } from "@/utils/services/PortalSdk";
+  TextField,
+  Tooltip,
+  Typography,
+} from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers';
+import type { Mission, MissionTask, User } from '@prisma/client';
+import dayjs from 'dayjs';
+import { Loader, Plus, Save, Trash2, X } from 'lucide-react';
+import type { Dispatch, SetStateAction } from 'react';
+import { useCallback, useState } from 'react';
+
+import { PortalSdk } from '@/utils/services/PortalSdk';
 
 export const MissionTasks = ({
   mission,
@@ -29,7 +31,7 @@ export const MissionTasks = ({
   coreTeam,
 }: {
   mission: Mission & { tasks?: MissionTask[] };
-  setShow: Dispatch<SetStateAction<Boolean>>;
+  setShow: Dispatch<SetStateAction<boolean>>;
   setMission: Dispatch<SetStateAction<Mission & { tasks?: MissionTask[] }>>;
   tasks: MissionTask[];
   coreTeam: User[];
@@ -45,12 +47,12 @@ export const MissionTasks = ({
         return {
           ...m,
           tasks: (m.tasks || [])?.map((task, i) =>
-            i === index ? callback(task) : task
+            i === index ? callback(task) : task,
           ),
         };
       });
     },
-    [setMission]
+    [setMission],
   );
 
   const deleteSelectedTask = useCallback(
@@ -63,7 +65,7 @@ export const MissionTasks = ({
         };
       });
     },
-    [setMission]
+    [setMission],
   );
 
   const addNewTask = useCallback(() => {
@@ -74,11 +76,11 @@ export const MissionTasks = ({
         tasks: [
           ...((m.tasks || []) as MissionTask[]),
           {
-            title: "New Task",
-            description: "New Task Description",
+            title: 'New Task',
+            description: 'New Task Description',
             indiePoints: 100,
             expirable: true,
-            expiresAt: dayjs().add(1, "day").toDate(),
+            expiresAt: dayjs().add(1, 'day').toDate(),
             completed: false,
           } as MissionTask,
         ],
@@ -88,7 +90,7 @@ export const MissionTasks = ({
 
   const handleSave = async (index: number) => {
     if (!mission.tasks) {
-      console.error("Mission tasks are undefined");
+      console.error('Mission tasks are undefined');
       return;
     }
     setSavingTask(true);
@@ -96,29 +98,29 @@ export const MissionTasks = ({
     const task = mission.tasks[index];
 
     try {
-      let response = await (task.id
-        ? PortalSdk.putData("/api/mission-tasks", task)
-        : PortalSdk.postData("/api/mission-tasks", {
+      const response = await (task.id
+        ? PortalSdk.putData('/api/mission-tasks', task)
+        : PortalSdk.postData('/api/mission-tasks', {
             ...task,
             missionId: mission.id,
           }));
 
-      if (response.status === "success") {
-        console.log("Task saved successfully:", response.data.task);
+      if (response.status === 'success') {
+        console.log('Task saved successfully:', response.data.task);
         setSelectedTask(index, () => response.data.task);
       } else {
-        console.error("Failed to save task:", response.message);
+        console.error('Failed to save task:', response.message);
       }
       setSavingTask(false);
     } catch (error) {
-      console.error("Error saving task:", error);
+      console.error('Error saving task:', error);
       setSavingTask(false);
     }
   };
 
   const handleDelete = async (index: number) => {
     if (!mission.tasks) {
-      console.error("Mission tasks are undefined");
+      console.error('Mission tasks are undefined');
       return;
     }
 
@@ -130,17 +132,17 @@ export const MissionTasks = ({
       if (task.id) {
         const response = await PortalSdk.deleteData(`/api/mission-tasks`, task);
 
-        if (response.status === "success") {
-          console.log("Task deleted successfully:", response.data);
+        if (response.status === 'success') {
+          console.log('Task deleted successfully:', response.data);
         } else {
-          console.error("Failed to delete task:", response.message);
+          console.error('Failed to delete task:', response.message);
         }
       } else {
-        console.error("Task ID is missing for deletion");
+        console.error('Task ID is missing for deletion');
       }
       setDeletingTask(false);
     } catch (error) {
-      console.error("Error deleting task:", error);
+      console.error('Error deleting task:', error);
       setDeletingTask(false);
     }
   };
@@ -151,7 +153,7 @@ export const MissionTasks = ({
         <Typography variant="h6">Tasks of {mission.title}</Typography>
         <Box
           sx={{
-            padding: "8px 0",
+            padding: '8px 0',
           }}
         >
           <Button
@@ -175,14 +177,14 @@ export const MissionTasks = ({
         </Box>
       </Box>
       {tasksLoading ? (
-        <div className="flex justify-center items-center h-32">
-          <Skeleton variant="rounded" sx={{ width: "100%", height: "100%" }} />
+        <div className="flex h-32 items-center justify-center">
+          <Skeleton variant="rounded" sx={{ width: '100%', height: '100%' }} />
         </div>
       ) : (
         <>
           {tasks?.length > 0 ? (
             <>
-              <Grid container spacing={2} className="font-semibold mb-2">
+              <Grid container spacing={2} className="mb-2 font-semibold">
                 <Grid item xs={2}>
                   Title
                 </Grid>
@@ -228,7 +230,7 @@ export const MissionTasks = ({
                         setSelectedTask(
                           index,
                           (sm) =>
-                            ({ ...sm, title: e.target.value } as MissionTask)
+                            ({ ...sm, title: e.target.value }) as MissionTask,
                         )
                       }
                     />
@@ -245,7 +247,7 @@ export const MissionTasks = ({
                             ({
                               ...sm,
                               description: e.target.value,
-                            } as MissionTask)
+                            }) as MissionTask,
                         )
                       }
                     />
@@ -263,7 +265,7 @@ export const MissionTasks = ({
                             ({
                               ...sm,
                               indiePoints: parseInt(e.target.value),
-                            } as MissionTask)
+                            }) as MissionTask,
                         )
                       }
                     />
@@ -272,24 +274,24 @@ export const MissionTasks = ({
                     <Select
                       fullWidth
                       size="small"
-                      value={task.userInfoId || ""}
+                      value={task.userInfoId || ''}
                       onChange={(e) =>
                         setSelectedTask(index, (sm) => {
-                          let sel_user = coreTeam.find(
-                            (user) => user.id === e.target.value
+                          const sel_user = coreTeam.find(
+                            (user) => user.id === e.target.value,
                           );
                           console.log(sel_user);
-                          let userInfo = {
-                            avatar: sel_user?.avatar || "",
-                            name: sel_user?.name || "",
-                            email: sel_user?.email || "",
-                            userInfoId: sel_user?.id || "",
-                          };
+                          // let userInfo = {
+                          //   avatar: sel_user?.avatar || '',
+                          //   name: sel_user?.name || '',
+                          //   email: sel_user?.email || '',
+                          //   userInfoId: sel_user?.id || '',
+                          // };
                           return {
                             ...sm,
-                            avatar: sel_user?.avatar || "",
-                            name: sel_user?.name || "",
-                            email: sel_user?.email || "",
+                            avatar: sel_user?.avatar || '',
+                            name: sel_user?.name || '',
+                            email: sel_user?.email || '',
                             userInfoId: sel_user?.id,
                           } as MissionTask;
                         })
@@ -314,10 +316,10 @@ export const MissionTasks = ({
                               completedAt: newValue
                                 ? (newValue.toDate() as any)
                                 : null,
-                            } as MissionTask)
+                            }) as MissionTask,
                         )
                       }
-                      slotProps={{ textField: { size: "small" } }}
+                      slotProps={{ textField: { size: 'small' } }}
                     />
                   </Grid>
                   <Grid item xs={1}>
@@ -330,7 +332,7 @@ export const MissionTasks = ({
                             ({
                               ...sm,
                               completed: e.target.checked,
-                            } as MissionTask)
+                            }) as MissionTask,
                         )
                       }
                     />
@@ -347,10 +349,10 @@ export const MissionTasks = ({
                               expiresAt: newValue
                                 ? (newValue.toDate() as any)
                                 : null,
-                            } as MissionTask)
+                            }) as MissionTask,
                         )
                       }
-                      slotProps={{ textField: { size: "small" } }}
+                      slotProps={{ textField: { size: 'small' } }}
                     />
                   </Grid>
                   <Grid item xs={1}>
@@ -363,7 +365,7 @@ export const MissionTasks = ({
                             ({
                               ...sm,
                               expirable: e.target.checked,
-                            } as MissionTask)
+                            }) as MissionTask,
                         )
                       }
                     />
@@ -395,7 +397,7 @@ export const MissionTasks = ({
               ))}
             </>
           ) : (
-            <h1 className="text-center text-lg ">No Tasks Found</h1>
+            <h1 className="text-center text-lg">No Tasks Found</h1>
           )}
         </>
       )}
