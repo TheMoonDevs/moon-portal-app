@@ -43,13 +43,14 @@ jobs:
     needs: determine_project
     if: needs.determine_project.outputs.projects != '[]'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     strategy:
       matrix:
         project: ${{ fromJson(needs.determine_project.outputs.projects) }}
       max-parallel: 1 # Ensure deployments run sequentially
     concurrency:
       group: main-deployment # Queue all deployments into a single group
-      cancel-in-progress: true
+      cancel-in-progress: false
 
     steps:
       - name: Checkout repository
