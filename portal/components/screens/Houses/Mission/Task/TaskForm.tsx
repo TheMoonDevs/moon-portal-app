@@ -543,6 +543,7 @@ const TaskForm = ({ houseMembers }: { houseMembers: User[] }) => {
                     ),
                   }),
                 ]}
+                key={`${user?.id}`}
                 editorKey={`${user?.id}`}
                 markdown={
                   taskState.description?.trim().length === 0 ||

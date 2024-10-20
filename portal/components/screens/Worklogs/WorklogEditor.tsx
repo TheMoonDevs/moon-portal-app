@@ -444,6 +444,15 @@ export const WorklogEditor = ({
                     ? markdownRefs.current[bd_index]
                     : null
                 }
+                key={
+                  loading
+                    ? "uninit"
+                    : workLog?.id +
+                      "-" +
+                      _markdownDat.link_id +
+                      "-" +
+                      workLog?.title
+                }
                 editorKey={
                   loading
                     ? "uninit"
