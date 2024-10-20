@@ -1,4 +1,8 @@
 const runtimeCaching = require("next-pwa/cache");
+const loadEnvironment = require('./loadEnv');
+
+loadEnvironment();
+
 const withPWA = require("next-pwa")({
   //dest: "public",
   //reactStrictMode: true,
