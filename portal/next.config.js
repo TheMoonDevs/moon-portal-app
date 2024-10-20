@@ -2,6 +2,10 @@ const runtimeCaching = require("next-pwa/cache");
 const withBundleAnalyzer = require('@next/bundle-analyzer')({
   enabled: process.env.ANALYZE === 'true',
 })
+const loadEnvironment = require('./loadEnv');
+
+loadEnvironment();
+
 const withPWA = require("next-pwa")({
   //dest: "public",
   //reactStrictMode: true,
