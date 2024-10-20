@@ -444,7 +444,7 @@ export const WorklogEditor = ({
                     ? markdownRefs.current[bd_index]
                     : null
                 }
-                key={
+                editorKey={
                   loading
                     ? "uninit"
                     : workLog?.id +

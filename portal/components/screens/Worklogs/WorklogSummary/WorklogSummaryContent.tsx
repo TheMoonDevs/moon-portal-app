@@ -184,7 +184,7 @@ export const WorklogSummaryContent = ({
                     <div className="w-full">
                       <MdxAppEditor
                         className=""
-                        key={`ai_summary-${uniqueId()}`}
+                        editorKey={`ai_summary-${uniqueId()}`}
                         readOnly
                         contentEditableClassName="summary_mdx flex flex-col gap-4"
                         markdown={aiSummary}

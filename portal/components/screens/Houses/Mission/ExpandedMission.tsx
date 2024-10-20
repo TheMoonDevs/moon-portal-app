@@ -56,7 +56,7 @@ const ExpandedMission = ({
             <div>
               <h1 className="text-lg font-bold mb-2">Description</h1>
               <MdxAppEditor
-                key={mission?.id}
+                editorKey={mission?.id}
                 markdown={mission?.description}
                 readOnly={true}
                 contentEditableClassName="mdx_ce_min leading-6 text-sm text-gray-800 bg-neutral-100 rounded-md"
@@ -114,7 +114,7 @@ const ExpandedMission = ({
 //       {mission?.description ? (
 //         <div className="bg-gray-50 p-4 rounded-md shadow-inner">
 //           <MdxAppEditor
-//             key={mission?.id}
+//             editorKey={mission?.id}
 //             markdown={mission?.description}
 //             readOnly={true}
 //             contentEditableClassName="mdx_ce_min leading-6 text-sm text-gray-800"
