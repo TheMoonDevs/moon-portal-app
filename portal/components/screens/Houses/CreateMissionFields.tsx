@@ -77,7 +77,7 @@ const CreateMissionFields = ({
         <div className="h-[180px] overflow-y-scroll border border-gray-300 rounded-md p-3 bg-white">
           <MdxAppEditor
             ref={mdRef}
-            key={`${user?.id}`}
+            editorKey={`${user?.id}`}
             markdown={
               state.description?.trim().length === 0
                 ? MARKDOWN_PLACEHOLDER
