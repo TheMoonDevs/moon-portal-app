@@ -22,14 +22,21 @@ jobs:
       - name: Determine changed projects
         id: set-projects
         run: |
+          # Fetch all history for accurate diffing
           git fetch --prune --unshallow || true
           git fetch origin +refs/heads/*:refs/remotes/origin/*
           base_ref="${{ github.event.before }}"
           head_ref="${{ github.sha }}"
+
+          # Get the list of changed files
           changed_files=$(git diff --name-only $base_ref $head_ref)
+
+          # Determine if changes are in the payzone or portal directories
           projects=()
           if echo "$changed_files" | grep -q "^portal/"; then projects+=("portal"); fi
           if echo "$changed_files" | grep -q "^payzone/"; then projects+=("payzone"); fi
+
+          # Output the projects array as a JSON string
           echo "projects=$(jq -c -n --argjson projects "$(printf '%s\n' "${projects[@]}" | jq -R . | jq -s .)" '$projects')" >> $GITHUB_OUTPUT
 
   deploy:
@@ -39,9 +46,11 @@ jobs:
     strategy:
       matrix:
         project: ${{ fromJson(needs.determine_project.outputs.projects) }}
-      max-parallel: 1  # Only one deployment at a time
+      max-parallel: 1  # Ensure deployments run sequentially
     concurrency:
-      group: main-deployment  # Use a single concurrency group to queue all deployments.
+      group: main-deployment  # Queue all deployments into a single group
+      cancel-in-progress: true
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -53,27 +62,70 @@ jobs:
 
       - name: Deploy to DigitalOcean
         env:
+          NODE_ENV: production
+          NEXT_PUBLIC_ENV_TYPE: production
           IS_PRODUCTION: true
         run: |
-          ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} <<EOF
-            LOCK_FILE="/tmp/deploy-global.lock"
+          ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << "EOF"
+            LOCK_FILE="/tmp/deploy-lock"  # Unified lock file for all projects
             echo "Checking for ongoing deployments..."
 
+            # Wait if the lock file exists
             while [ -f "$LOCK_FILE" ]; do
               echo "Deployment lock exists. Waiting..."
               sleep 10
             done
 
             touch "$LOCK_FILE"
-
             echo "Starting production deployment for project: ${{ matrix.project }}"
-            cd apps/moon-portal-app/${{ matrix.project }}
-            git checkout main
-            git pull origin main
-            npm install
-            npm run build
-            pm2 restart ${{ matrix.project }}-main
 
+            # Change to the project directory
+            cd apps/moon-portal-app/${{ matrix.project }}
+
+            # Pull the latest changes
+            git checkout main
+            git pull origin main || { echo "ERROR: Failed to pull latest changes." >&2; rm -f "$LOCK_FILE"; exit 1; }
+
+            # Install dependencies and build with error handling
+            if ! npm install; then
+              echo "ERROR: npm install failed. Cleaning up..." >&2
+              rm -f "$LOCK_FILE"
+              exit 1
+            fi
+
+            if ! npm run build; then
+              echo "ERROR: Build failed. Cleaning up..." >&2
+              rm -f "$LOCK_FILE"
+              exit 1
+            fi
+
+            # Restart the PM2 process for the project
+            if pm2 list | grep -q "${{ matrix.project }}-main"; then
+              pm2 restart ${{ matrix.project }}-main --update-env || {
+                echo "ERROR: Failed to restart PM2 process. Cleaning up..." >&2
+                rm -f "$LOCK_FILE"
+                exit 1
+              }
+            else
+              pm2 start npm --name ${{ matrix.project }}-main -- run start || {
+                echo "ERROR: Failed to start PM2 process. Cleaning up..." >&2
+                rm -f "$LOCK_FILE"
+                exit 1
+              }
+            fi
+
+            # Remove the lock file after successful deployment
             rm -f "$LOCK_FILE"
             echo "Deployment completed for project: ${{ matrix.project }}"
+          EOF
+
+      - name: Cleanup Lock File
+        if: failure() || cancelled() || always()
+        run: |
+          ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << "EOF"
+            LOCK_FILE="/tmp/deploy-lock"
+            if [ -f "$LOCK_FILE" ]; then
+              echo "Removing lock file..."
+              rm -f "$LOCK_FILE"
+            fi
           EOF
