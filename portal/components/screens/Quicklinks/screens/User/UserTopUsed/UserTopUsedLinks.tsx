@@ -45,7 +45,7 @@ const UserTopUsedLinks = ({ withTitle }: { withTitle?: boolean }) => {
     };
 
     getTopUsedLinks();
-  }, [dispatch, user?.id, setLoading, topUsedLinksList.length]);
+  }, [dispatch, user?.id, setLoading]);
   return (
     <div>
       <div className=" flex justify-between items-center">
