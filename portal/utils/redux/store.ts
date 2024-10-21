@@ -20,6 +20,7 @@ import missionTaskEditorSlice from "./missions/missionTaskEditorSlice.slice";
 import quicklinksLinksReducer from "./quicklinks/slices/quicklinks.links.slice";
 import quicklinksDirectoryReducer from "./quicklinks/slices/quicklinks.directory.slice";
 import quicklinksUiReducer from "./quicklinks/slices/quicklinks.ui.slice";
+import statsActionSlice from './worklogsSummary/statsAction.slice'
 
 const store = configureStore({
   reducer: {
@@ -41,6 +42,7 @@ const store = configureStore({
     notifications: notificationsReducer,
     missionsTasks: missionTasksReducer,
     missionTaskEditor: missionTaskEditorSlice,
+    statsAction: statsActionSlice
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
