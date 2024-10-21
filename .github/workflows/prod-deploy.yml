@@ -23,7 +23,7 @@ jobs:
         id: set-projects
         run: |
           # Fetch all history for accurate diffing
-          git fetch --prune --unshallow || true
+          git fetch --prune
           git fetch origin +refs/heads/*:refs/remotes/origin/*
           base_ref="${{ github.event.before }}"
           head_ref="${{ github.sha }}"
