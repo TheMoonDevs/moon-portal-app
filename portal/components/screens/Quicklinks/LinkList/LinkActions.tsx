@@ -10,8 +10,8 @@ export type FormFields = {
   description: string;
   url: string;
   id: string;
-  logo: string;
-  image: string;
+  logo: string | null;
+  image: string | null;
 };
 
 export const LinkActions = ({

@@ -15,7 +15,7 @@ export const CoreTeamSection = () => {
 
   useEffect(() => {
     PortalSdk.getData(
-      "/api/user?role=" + USERROLE.CORETEAM + "&userType=" + USERTYPE.MEMBER + "&status=ACTIVE",
+      "/api/user?role=" + USERROLE.CORETEAM + "&userType=" + USERTYPE.MEMBER + "&status=ACTIVE&cache=true",
       null
     )
       .then((data) => {

@@ -22,6 +22,8 @@ const UserTopUsedLinks = ({ withTitle }: { withTitle?: boolean }) => {
       return;
     }
     const getTopUsedLinks = async () => {
+      if (topUsedLinksList.length > 0) dispatch(setTopUsedLinksList([]));
+
       setLoading(true);
       try {
         const topUsedLinksData: UserLink[] = await QuicklinksSdk.getData(

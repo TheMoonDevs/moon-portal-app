@@ -453,6 +453,15 @@ export const WorklogEditor = ({
                       "-" +
                       workLog?.title
                 }
+                editorKey={
+                  loading
+                    ? "uninit"
+                    : workLog?.id +
+                      "-" +
+                      _markdownDat.link_id +
+                      "-" +
+                      workLog?.title
+                }
                 markdown={
                   _markdownDat.content.trim().length != 0
                     ? _markdownDat.content

@@ -11,6 +11,8 @@ import media from "@/styles/media";
 import { useNotifications } from "@/utils/hooks/useNotifications";
 import { useRef, useState } from "react";
 import NotificationModal from "./NotificationModal";
+import { useAppSelector } from "@/utils/redux/store";
+import { INotification } from "../screens/notifications/NotificationsList";
 
 const NAVIGATION_OPTIONS = [
   {
@@ -87,8 +89,8 @@ export const Bottombar = ({
     visibleOnlyOn ? visibleOnlyOn : media.default
   );
   const isMobile = useMediaQuery(media.largeMobile);
-  const { notificationsCount } = useNotifications();
-  const [isOpen, setIsOpen] = useState<boolean>(false)
+  const { unreadNotificationsCount } = useNotifications();
+  const [isOpen, setIsOpen] = useState<boolean>(false);
 
   const options =
     user?.userType === USERTYPE.CLIENT
@@ -134,21 +136,22 @@ export const Bottombar = ({
             option.path === path ? "bg-white text-black" : "bg-black text-white"
           } flex flex-col items-center justify-center py-1 w-1/3 cursor-pointer rounded-2xl md:w-full`}
         >
-          <Badge
-            badgeContent={
-              option.name === "Notifications" ? notificationsCount : 0
-            }
-            color="error"
-            max={20}
-          >
-            <span
-              className={` ${
-                option.path === path ? "text-black" : "text-white"
-              } font-thin material-icons-outlined text-md `}
+            <Badge
+              badgeContent={
+                option.name === "Notifications" ? unreadNotificationsCount : 0
+              }
+              color="error"
+              max={20}
+              invisible={!unreadNotificationsCount}
             >
-              {option.icon}
-            </span>
-          </Badge>
+              <span
+                className={` ${
+                  option.path === path ? "text-black" : "text-white"
+                } font-thin material-icons-outlined text-md `}
+              >
+                {option.icon}
+              </span>
+            </Badge>
           <p className="text-[0.5em] opacity-75">{option.name}</p>
         </div>
       ))}{" "}
@@ -162,10 +165,7 @@ export const Bottombar = ({
           </span>
         </button>
       </Link>
-      <NotificationModal
-        open={isOpen}
-        onClose={() => setIsOpen(false)}
-      />
+      <NotificationModal open={isOpen} onClose={() => setIsOpen(false)} />
     </div>
   );
 };

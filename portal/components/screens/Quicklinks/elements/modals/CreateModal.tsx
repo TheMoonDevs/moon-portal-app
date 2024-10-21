@@ -1,5 +1,6 @@
 "use client";
 
+import { Spinner } from "@/components/elements/Loaders";
 import { handleAddChildDirectory } from "@/utils/redux/quicklinks/quicklinks.thunks";
 import { setModal } from "@/utils/redux/quicklinks/slices/quicklinks.ui.slice";
 import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
@@ -9,10 +10,8 @@ import { useState } from "react";
 const CreateDirectoryModal = () => {
   const dispatch = useAppDispatch();
   const [name, setName] = useState("");
-  const { modal } = useAppSelector((state) => state.quicklinksUi);
+  const { modal, isLoading } = useAppSelector((state) => state.quicklinksUi);
   const selectedDirectory = modal.data && modal.data.selectedDirectory;
-
-  console;
 
   if (!(modal.type === "create-folder")) return null;
 
@@ -76,10 +75,10 @@ const CreateDirectoryModal = () => {
           </button>
           <button
             onClick={handleNameChange}
-            disabled={name === ""}
+            disabled={name === "" || isLoading}
             className="px-6 text-sm  bg-gray-900 text-white rounded-xl cursor-pointer disabled:opacity-50"
           >
-            OK
+            {isLoading ? <Spinner className="w-6 h-6 text-neutral-600" /> : 'OK'}
           </button>
         </div>
       </div>
