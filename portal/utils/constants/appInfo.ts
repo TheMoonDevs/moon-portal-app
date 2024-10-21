@@ -33,6 +33,7 @@ export enum QUICKLINK_ROUTES {
   userTopUsedLinks = "/quicklinks/user/links/top-used",
   userRecentlyUsedFolders = "/quicklinks/user/folders/recently-used",
   userTopUsedFolders = "/quicklinks/user/folders/top-used",
+  trending = "/quicklinks/explore/trending",
   archive = "/quicklinks/archive",
 }
 

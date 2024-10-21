@@ -15,16 +15,26 @@ export const ListView = ({
   handleDeleteLink: (linkId: string) => void;
 }) => {
   return (
-    <div className="group relative rounded-md my-6 max-w-[700px]">
+    <div className="group relative rounded-md my-6 w-full">
       <div>
         <div className="flex flex-row items-center justify-between mb-2">
           <div className="flex flex-row items-center justify-start">
             <div className="bg-white rounded-full shadow-md">
-              <img
-                className="h-[30px] w-[30px] object-cover object-center rounded-full"
-                src={link.logo}
-                alt={link.title}
-              />
+              {link.logo ? (
+                <img
+                  className="h-[30px] w-[30px] object-cover object-center rounded-full"
+                  src={link.logo}
+                  alt={link.title}
+                />
+              ) : (
+                <Image
+                  className="!h-[30px] !w-[30px] object-cover object-center rounded-full"
+                  src="/logo/logo.png"
+                  width={100}
+                  height={100}
+                  alt={link.title}
+                />
+              )}
             </div>
             <div className="flex flex-col px-4">
               <p className="text-xs font-regular ">Like Site</p>

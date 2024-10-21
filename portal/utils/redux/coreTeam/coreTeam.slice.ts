@@ -5,12 +5,14 @@ interface CoreTeamState {
   members: User[];
   selectedMember: User | null;
   isDrawerOpen: boolean;
+  isEditModalOpen: boolean;
 }
 
 const initialState: CoreTeamState = {
   members: [],
   selectedMember: null,
   isDrawerOpen: false,
+  isEditModalOpen: false,
 };
 
 export const coreTeamSlice = createSlice({
@@ -37,7 +39,9 @@ export const coreTeamSlice = createSlice({
     closeDrawer: (state) => {
       state.isDrawerOpen = false;
     },
-
+    setEditModalOpen: (state, action: PayloadAction<boolean>) => {
+      state.isEditModalOpen = action.payload;
+    }
   },
 });
 
@@ -47,6 +51,7 @@ export const {
   openDrawer,
   updateMember,
   closeDrawer,
+  setEditModalOpen
 } = coreTeamSlice.actions;
 
 export default coreTeamSlice.reducer;

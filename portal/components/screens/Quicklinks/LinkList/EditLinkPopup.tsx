@@ -200,75 +200,71 @@ export const EditLinkPopup = ({
         />
 
         {/* Cover Image */}
-        {(fields.image || previewImage.image) && (
+
+        <div
+          className="w-full h-48 relative rounded-t-lg overflow-hidden cursor-pointer group"
+          onClick={() => imageInputRef.current?.click()}
+        >
+          <Image
+            src={previewImage.image || fields.image || "/logo/logo.png"}
+            alt="cover image"
+            layout="fill"
+            objectFit="cover"
+            className={`w-full h-48 border-b-2 object-cover border-gray-200 ${
+              imageLoading ? "blur-[2px]" : ""
+            }`}
+          />
+          {imageLoading && (
+            <div className="absolute inset-0 flex justify-center items-center bg-black bg-opacity-50">
+              <CircularProgress sx={{ color: "whitesmoke" }} />
+            </div>
+          )}
+          <Tooltip title="Edit Profile Image">
+            <div
+              className="group-hover:flex hidden absolute top-2 left-2 w-2 h-auto cursor-pointer  justify-center items-center gap-1 py-2 px-4 shadow-sm text-sm font-medium text-gray-600 border-2 border-gray-400
+              bg-opacity-80 hover:bg-opacity-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black hover:bg-gray-200 bg-gray-200 rounded-full"
+            >
+              <span
+                className="material-symbols-outlined"
+                style={{ fontSize: "16px" }}
+              >
+                edit
+              </span>
+            </div>
+          </Tooltip>
+        </div>
+
+        {/* Logo */}
+
+        <div className="relative mb-2 flex justify-center">
           <div
-            className="w-full h-48 relative rounded-t-lg overflow-hidden cursor-pointer group"
-            onClick={() => imageInputRef.current?.click()}
+            className="w-28 h-28 -mt-12  relative rounded-full border-4 border-black bg-white cursor-pointer "
+            onClick={() => logoInputRef.current?.click()}
           >
             <Image
-              src={previewImage.image || fields.image}
-              alt="cover image"
+              src={previewImage.logo || fields.logo || "/logo/logo.png"}
+              alt="logo"
               layout="fill"
               objectFit="cover"
-              className={`w-full h-48 border-b-2 object-cover border-gray-200 ${
-                imageLoading ? "blur-[2px]" : ""
-              }`}
+              className={`rounded-full p-1 ${logoLoading ? "blur-[2px]" : ""}`}
             />
-            {imageLoading && (
-              <div className="absolute inset-0 flex justify-center items-center bg-black bg-opacity-50">
+            {logoLoading && (
+              <div className="absolute inset-0 flex justify-center items-center bg-black bg-opacity-50 rounded-full">
                 <CircularProgress sx={{ color: "whitesmoke" }} />
               </div>
             )}
-            <Tooltip title="Edit Profile Image">
-              <div
-                className="group-hover:flex hidden absolute top-2 left-2 w-2 h-auto cursor-pointer  justify-center items-center gap-1 py-2 px-4 shadow-sm text-sm font-medium text-gray-600 border-2 border-gray-400
-              bg-opacity-80 hover:bg-opacity-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black hover:bg-gray-200 bg-gray-200 rounded-full"
-              >
+            <Tooltip title="Edit Logo">
+              <div className="w-7 h-7 absolute bottom-2 right-0 z-10 p-1 flex items-center justify-center rounded-full text-gray-600  focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 cursor-pointer border-[2px] border-gray-600 bg-gray-200  ">
                 <span
                   className="material-symbols-outlined"
-                  style={{ fontSize: "16px" }}
+                  style={{ fontSize: "15px" }}
                 >
                   edit
                 </span>
               </div>
             </Tooltip>
           </div>
-        )}
-
-        {/* Logo */}
-        {(fields.logo || previewImage.logo) && (
-          <div className="relative mb-2 flex justify-center">
-            <div
-              className="w-28 h-28 -mt-12  relative rounded-full border-4 border-black bg-white cursor-pointer "
-              onClick={() => logoInputRef.current?.click()}
-            >
-              <Image
-                src={previewImage.logo || fields.logo}
-                alt="logo"
-                layout="fill"
-                objectFit="cover"
-                className={`rounded-full p-1 ${
-                  logoLoading ? "blur-[2px]" : ""
-                }`}
-              />
-              {logoLoading && (
-                <div className="absolute inset-0 flex justify-center items-center bg-black bg-opacity-50 rounded-full">
-                  <CircularProgress sx={{ color: "whitesmoke" }} />
-                </div>
-              )}
-              <Tooltip title="Edit Logo">
-                <div className="w-7 h-7 absolute bottom-2 right-0 z-10 p-1 flex items-center justify-center rounded-full text-gray-600  focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 cursor-pointer border-[2px] border-gray-600 bg-gray-200  ">
-                  <span
-                    className="material-symbols-outlined"
-                    style={{ fontSize: "15px" }}
-                  >
-                    edit
-                  </span>
-                </div>
-              </Tooltip>
-            </div>
-          </div>
-        )}
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 p-6">
           <div>
