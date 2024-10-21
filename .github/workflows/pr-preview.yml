@@ -152,25 +152,18 @@ jobs:
           script: |
             const project = '${{ matrix.project }}';
             const prNumber = '${{ github.event.pull_request.number }}';
-            const subdomain = project === 'payzone' ? 'pay' : project; // Use 'pay' for payzone project
+            const subdomain = project === 'payzone'? 'pay' : project; // Use 'pay' for payzone project
             const previewUrl = `https://${project}-pr-${prNumber}.${subdomain}.themoondevs.com`;
                     
-            // Instructions for triggering manual actions
-            const deletePreviewUrl = `curl -X POST \\
-              -H "Accept: application/vnd.github+json" \\
-              -H "Authorization: Bearer \${{ secrets.GITHUB_TOKEN }}" \\
-              https://api.github.com/repos/${{ github.repository }}/actions/workflows/manual-actions.yml/dispatches \\
-              -d '{"ref": "main", "inputs": {"action": "cleanup", "pr_number": "${prNumber}"}}'`;
-                    
-            const deleteLockUrl = `curl -X POST \\
-              -H "Accept: application/vnd.github+json" \\
-              -H "Authorization: Bearer \${{ secrets.GITHUB_TOKEN }}" \\
-              https://api.github.com/repos/${{ github.repository }}/actions/workflows/manual-actions.yml/dispatches \\
-              -d '{"ref": "main", "inputs": {"action": "delete_lock", "pr_number": "${prNumber}"}}'`;
+            // Update delete lock/command URL to reflect new workflow trigger method
+            const deleteLockComment = `@bot delete_lock`;
+            const cleanupComment = `@bot cleanup #${prNumber}`;
                     
             const body = `🚀 ${subdomain.charAt(0).toUpperCase() + subdomain.slice(1)} preview available at: [${previewUrl}](${previewUrl})\n\n` +
-             `🗑️ **Remove this preview**: Run the following command:\n\`\`\`\n${deletePreviewUrl}\n\`\`\`\n\n` +
-             `🔒 If you need to manually delete the lock file, use this command:\n\`\`\`\n${deleteLockUrl}\n\`\`\``;
+                           `**Preview Management Commands:**\n` +
+                           `🗑️ **Cleanup (Delete Preview)**: Comment with \`${cleanupComment}\` to remove this preview.\n` +
+                           `🔒 **Delete Lock File**: Comment with \`${deleteLockComment}\` to manually delete the lock file (use if cleanup fails).`;
+                    
             github.rest.issues.createComment({
               issue_number: parseInt(prNumber),
               owner: context.repo.owner,
