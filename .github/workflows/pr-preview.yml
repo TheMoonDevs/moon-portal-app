@@ -157,9 +157,10 @@ jobs:
             const prNumber = '${{ github.event.pull_request.number }}';
             const subdomain = project === 'payzone' ? 'pay' : project; // Use 'pay' for payzone project
             const previewUrl = `https://${project}-pr-${prNumber}.${subdomain}.themoondevs.com`;
-            const deleteLockUrl = `${{ github.server_url }}/${{ github.repository }}/actions/workflows/manual-actions.yml/dispatch?action=cleanup&pr_number=${prNumber}`; 
+            const deletePreviewUrl = `${{ github.server_url }}/${{ github.repository }}/actions/workflows/manual-actions.yml/dispatch?action=cleanup&pr_number=${prNumber}`; 
+            const deleteLockUrl = `${{ github.server_url }}/${{ github.repository }}/actions/workflows/manual-actions.yml/dispatch?action=delete_lock&pr_number=${prNumber}`; 
             const body = `🚀 ${subdomain.charAt(0).toUpperCase() + subdomain.slice(1)} preview available at: [${previewUrl}](${previewUrl})\n\n` +
-                         `🗑️ **Remove this preview**: [Click here](${deleteLockUrl})\n` +
+                         `🗑️ **Remove this preview**: [Click here](${deletePreviewUrl})\n` +
                          `🔒 If you need to manually delete the lock file, you can use this URL: [Delete Lock File](${deleteLockUrl})`;
             github.rest.issues.createComment({
               issue_number: parseInt(prNumber),
