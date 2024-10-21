@@ -3,6 +3,7 @@ import { APP_ROUTES } from "@/utils/constants/appInfo";
 import { User } from "@prisma/client";
 import Link from "next/link";
 import BoringAvatar from "boring-avatars";
+import PushSubscriptionToggleButton from "@/components/global/PushSubscriptionToggleButton";
 
 export const ProfileSection = ({ user }: { user: User }) => {
   if (!user?.id) return null;
@@ -36,7 +37,8 @@ export const ProfileSection = ({ user }: { user: User }) => {
           <p className="text-neutral-500 text-xs">{user?.email}</p>
         </div>
       </div>
-      <div className="absolute top-1 right-1">
+      <div className="absolute top-1 right-1 flex items-center gap-2">
+        <PushSubscriptionToggleButton />
         <Link href={APP_ROUTES.logout}>
           <button className="text-xs border border-neutral-400 rounded-lg px-2 text-neutral-900 hover:text-neutral-700">
             <span className="icon_size material-icons"></span>
