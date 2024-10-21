@@ -40,7 +40,7 @@ export const WorklogSummaryContent = ({
       year: string | number | undefined | null;
       month?: string | number | undefined | null;
     }) => {
-      console.log(userData?.id);
+      // console.log(userData?.id);
       setLoading(true);
       try {
         const response = await PortalSdk.getData(
