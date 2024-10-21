@@ -48,6 +48,7 @@ import {
   setCompletedTasksData,
   setShowCompletedTasks,
 } from "@/utils/redux/worklogsSummary/statsAction.slice";
+import Pointers from "./Pointers";
 import LoadingAnimation from "@/components/elements/LoadingAnimation";
 
 const Pattern = dynamic(() => import("./Pattern"), {
@@ -92,7 +93,7 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
   isYearly,
 }) => {
   const metrics = calculateMetrics(worklogSummary, isMonthly, isYearly);
-  const [activeTab, setActiveTab] = useState("STATS");
+  const [activeTab, setActiveTab] = useState("POINTERS");
   const [activeIndex, setActiveIndex] = useState(0);
   const [gridVisible, setGridVisible] = useState(true);
   const dispatch = useAppDispatch();
@@ -125,14 +126,15 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
 
   useEffect(() => {
     if (worklogSummary.length > 0) {
-      dispatch(setProductiveStreakData(getLongestProductiveStreak(worklogSummary)));
+      dispatch(
+        setProductiveStreakData(getLongestProductiveStreak(worklogSummary))
+      );
       dispatch(setMissedDates(getMissedWorklogDates(worklogSummary)));
       dispatch(setMissedTasksData(getMissedTasks(worklogSummary)));
       dispatch(setUpdatedLogsDates(getUpdatedLogsLater(worklogSummary)));
       dispatch(setCompletedTasksData(getCompletedTasks(worklogSummary)));
     }
   }, [worklogSummary, dispatch]);
-  
 
   const handleCardClick = (cardTitle: string) => {
     dispatch(setIsShowProductiveStreak(false));
@@ -191,7 +193,11 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
   };
 
   return (
-    <main className="flex flex-col justify-center gap-5 my-6 mx-2 px-2 pb-20 rounded-[32px] bg-white ">
+    <main
+      className={`flex flex-col justify-center gap-5 my-6 mx-2 px-2 ${
+        activeTab === "POINTERS" ? "pb-28" : "pb-20"
+      } rounded-[32px] bg-white `}
+    >
       <h1 className="font-semibold text-lg md:text-2xl font-sans text-center justify-start mt-4 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 text-transparent bg-clip-text">
         Worklog Breakdown
       </h1>
@@ -419,8 +425,8 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
       )}
       {/* POINTERS */}
       {activeTab === "POINTERS" && (
-        <div className="flex justify-center items-center p-4">
-          Coming soon, Stay tuned!
+        <div className="">
+          <Pointers />
         </div>
       )}
       {/* GROWTH */}
