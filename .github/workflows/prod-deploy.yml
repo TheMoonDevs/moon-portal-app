@@ -64,7 +64,7 @@ jobs:
       - name: Deploy to DigitalOcean
         run: |
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << "EOF"
-            LOCK_FILE="/tmp/deploy-lock"  # Unified lock file for all projects
+            LOCK_FILE="/tmp/deploy/deploy-lock"  # Unified lock file for all projects
             echo "Checking for ongoing deployments..."
 
             # Wait if the lock file exists
@@ -124,7 +124,7 @@ jobs:
         if: failure() || cancelled() || always()
         run: |
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << "EOF"
-            LOCK_FILE="/tmp/deploy-lock"
+            LOCK_FILE="/tmp/deploy/deploy-lock"
             if [ -f "$LOCK_FILE" ]; then
               echo "Removing lock file..."
               rm -f "$LOCK_FILE"

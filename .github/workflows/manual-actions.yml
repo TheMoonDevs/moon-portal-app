@@ -45,7 +45,7 @@ jobs:
       - name: Remove Deploy Lock File
         run: |
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} <<EOF
-            LOCK_FILE="/tmp/deploy-lock"
+            LOCK_FILE="/tmp/deploy/deploy-lock"
 
             echo "Checking if deploy lock file exists..."
             # Check if the lock file exists before removing
