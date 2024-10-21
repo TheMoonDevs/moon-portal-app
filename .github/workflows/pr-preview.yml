@@ -94,10 +94,7 @@ jobs:
               exit 1
             fi
 
-            # Set envs for preview deployment
-            export NEXT_PUBLIC_ENV_TYPE=preview
-
-            if ! npm run build; then
+            if ! npm run build:preview; then
               echo "ERROR: Build failed. Cleaning up..." >&2
               git stash pop || echo "No stashed changes to pop."
               rm -f "$LOCK_FILE"
