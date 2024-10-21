@@ -1,13 +1,7 @@
 import { LoadingSkeleton } from "@/components/elements/LoadingSkeleton";
-import { MdxAppEditor } from "@/utils/configure/MdxAppEditor";
 import useAsyncState from "@/utils/hooks/useAsyncState";
-import useCopyToClipboard from "@/utils/hooks/useCopyToClipboard";
-import { GenAiSdk } from "@/utils/services/GenAiSdk";
-import { Tooltip } from "@mui/material";
 import { User, WorkLogs } from "@prisma/client";
-import { uniqueId } from "lodash";
-import { useRef, useState } from "react";
-import generatePDF, { Margin } from "react-to-pdf";
+import { useState } from "react";
 import WorklogBreakdown from "./WorklogBreakdown";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";

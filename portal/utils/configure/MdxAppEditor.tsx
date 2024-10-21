@@ -11,21 +11,20 @@ const Editor = dynamic(() => import("./InitializedMDXEditor"), {
   ssr: false,
 });
 
-interface extraProps {
-  key: string;
+interface ExtraProps {
+  editorKey: string;
 }
 // This is what is imported by other components. Pre-initialized with plugins, and ready
 // to accept other props, including a ref.
 export const MdxAppEditor = memo(
-  forwardRef<MDXEditorMethods, extraProps & MDXEditorProps>((props, ref) => (
+  forwardRef<MDXEditorMethods, ExtraProps & MDXEditorProps>((props, ref) => (
     <Editor {...props} editorRef={ref} />
   )),
   (prev, next) => {
-    // console.log("prev", prev.key);
-    // console.log("next", next.key);
-    return "key" in prev && "key" in next && prev.key === next.key;
+    // console.log("prev", prev.editorKey);
+    // console.log("next", next.editorKey);
+    return "editorKey" in prev && "editorKey" in next && prev.editorKey === next.editorKey;
   }
 );
-
 // TS complains without the following line
 MdxAppEditor.displayName = "MdxAppEditor";
