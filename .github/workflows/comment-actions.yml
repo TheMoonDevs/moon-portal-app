@@ -1,0 +1,63 @@
+name: Comment Actions
+
+on:
+  issue_comment:
+    types:
+      - created
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  handle-comment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract Action, Project, and Optional PR Number
+        id: extract
+        run: |
+          ACTION=$(echo "${{ github.event.comment.body }}" | awk '{for(i=1;i<=NF;i++) if ($i~/^@bot/) {print $i; exit}}' | cut -d''-f2)
+          PROJECT=$(echo "${{ github.event.comment.body }}" | awk -v action="${ACTION}" '$0 ~ action {for(i=1;i<=NF;i++) if ($i~/^(payzone|portal)$/) {print $i; exit}}')
+          PR_NUMBER_COMMENT=$(echo "${{ github.event.comment.body }}" | grep -oE '#([0-9]+)' | cut -d'#' -f2)
+          PR_NUMBER_GITHUB=$(echo "${GITHUB_CONTEXT}" | jq -r '.issue.pull_request.url | sub(".*/"; "") | sub("/pull/"; "") |.[:-1]')
+          PR_NUMBER=${PR_NUMBER_COMMENT:-${PR_NUMBER_GITHUB}}
+          echo "ACTION=$ACTION" >> $GITHUB_ENV
+          echo "PROJECT=$PROJECT" >> $GITHUB_ENV
+          echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_ENV
+
+      - name: Execute Action
+        run: |
+          if [ "${{ env.ACTION }}" = "cleanup" ]; then
+            if [ -n "${{ env.PROJECT }}" ] && [ -n "${{ env.PR_NUMBER }}" ]; then
+              case "${{ env.PROJECT }}" in
+                payzone) SUBDOMAIN="pay";;
+                portal) SUBDOMAIN="portal";;
+                *) echo "Invalid project. Supported projects: payzone, portal"; exit 1;;
+              esac
+              ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} <<EOF
+                echo "Starting cleanup for ${SUBDOMAIN}-pr-${{ env.PR_NUMBER }}..."
+                pm2 delete ${SUBDOMAIN}-pr-${{ env.PR_NUMBER }} || true
+                echo "Cleanup completed for ${SUBDOMAIN}-pr-${{ env.PR_NUMBER }}."
+              EOF
+            else
+              echo "Cannot perform cleanup without a project and PR number. Please provide both in the comment (e.g., '@bot cleanup payzone #1234') or ensure the comment is on the correct PR with a detectable project context."
+          elif [ "${{ env.ACTION }}" = "delete_lock" ]; then
+            ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} <<EOF
+              LOCK_FILE="/tmp/deploy/deploy-lock"
+              if [ -f "$LOCK_FILE" ]; then
+                rm -f "$LOCK_FILE"
+                echo "Deploy lock file removed."
+              else
+                echo "No deploy lock file found."
+              fi
+            EOF
+          else
+            echo "Invalid action from comment. Please use '@bot cleanup' or '@bot delete_lock'."
+          fi
+        env:
+          GITHUB_CONTEXT: ${{ github }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          if: 
+            contains(github.event.comment.body, '@bot') && 
+            (github.event.comment.body == '*@bot cleanup*' || 
+             github.event.comment.body == '*@bot delete_lock*')
