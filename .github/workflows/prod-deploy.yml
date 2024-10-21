@@ -25,19 +25,43 @@ jobs:
           # Fetch all history for accurate diffing
           git fetch --prune
           git fetch origin +refs/heads/*:refs/remotes/origin/*
-          base_ref="${{ github.event.before }}"
+          git branch -a
+
+          # Check if github.event.before is set
+          if [ -n "${{ github.event.before }}" ]; then
+            base_ref="${{ github.event.before }}"
+          else
+            # Handle the case when github.event.before is not set (e.g., force push to main)
+            # For example, compare with the commit before the latest one
+            base_ref=$(git rev-parse HEAD~1)
+          fi
           head_ref="${{ github.sha }}"
+
+          echo "Base ref: $base_ref"
+          echo "Head ref: $head_ref"
+
+          # Initialize and update submodules if necessary (uncomment if you have submodules)
+          # git submodule update --init --recursive
 
           # Get the list of changed files
           changed_files=$(git diff --name-only $base_ref $head_ref)
+          echo "Changed files: $changed_files"
 
           # Determine if changes are in the payzone or portal directories
           projects=()
-          if echo "$changed_files" | grep -q "^portal/"; then projects+=("portal"); fi
-          if echo "$changed_files" | grep -q "^payzone/"; then projects+=("payzone"); fi
+          if echo "$changed_files" | grep -q "^portal/"; then
+            projects+=("portal")
+            echo "Portal project changed"
+          fi
+          if echo "$changed_files" | grep -q "^payzone/"; then
+            projects+=("payzone")
+            echo "Payzone project changed"
+          fi
 
           # Output the projects array as a JSON string
           echo "projects=$(jq -c -n --argjson projects "$(printf '%s\n' "${projects[@]}" | jq -R . | jq -s .)" '$projects')" >> $GITHUB_OUTPUT
+          # Get the list of changed files
+          changed_files=$(git diff --name-only $base_ref $head_ref)
 
   deploy:
     needs: determine_project
