@@ -1,9 +1,3 @@
-// @ts-check
-
-/// <reference no-default-lib="true" />
-/// <reference lib="esnext" />
-/// <reference lib="webworker" />
-
 const sw = /** @type {ServiceWorkerGlobalScope & typeof globalThis} */ (
   globalThis
 );
