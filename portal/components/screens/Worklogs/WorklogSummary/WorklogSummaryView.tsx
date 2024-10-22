@@ -30,6 +30,7 @@ export const WorklogSummaryView = ({
                 <MdxAppEditor
                   readOnly
                   key={`work-${uniqueId()}`}
+                  editorKey={`work-${uniqueId()}`}
                   markdown={work?.content}
                   contentEditableClassName="summary_mdx flex flex-col gap-4 z-1"
                   className="z-1"
