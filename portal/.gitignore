@@ -46,6 +46,6 @@ next-env.d.ts
 
 sw.*
 workbox-*
-worker*
+worker*.js
 swe-worker-*
 certificates
