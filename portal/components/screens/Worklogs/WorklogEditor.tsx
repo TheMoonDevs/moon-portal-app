@@ -29,8 +29,9 @@ import {
   setEdiotrSaving,
   updateLogs,
 } from "@/utils/redux/worklogs/worklogs.slice";
-import { Popover, IconButton } from "@mui/material";
+import { Popover, IconButton, Drawer } from "@mui/material";
 import EmojiLegend from "./WorklogTabs/EmojiLegend";
+import TodoTab from "./WorklogTabs/TodoTab";
 
 export const MARKDOWN_PLACHELODER = `* `;
 
@@ -53,6 +54,7 @@ export const WorklogEditor = ({
 }) => {
   const dispatch = useAppDispatch();
   const { user } = useUser();
+  const [openTodo, setOpenTodo] = useState<boolean>(false);
   const [markdownDatas, setMarkdownDatas] = useState<WorkLogPoints[]>(
     DEFAULT_MARKDOWN_DATA
   );
@@ -273,6 +275,12 @@ export const WorklogEditor = ({
       handleNextMonthClick();
     }
   };
+  const handleClickTodo = () => {
+    setOpenTodo(true);
+  };
+  const handleCloseTodo = () => {
+    setOpenTodo(false);
+  };
 
   return (
     <div
@@ -338,6 +346,15 @@ export const WorklogEditor = ({
                 emoji_objects
               </span>
             </div>
+            <div className="hidden max-sm:block cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700">
+              <span
+                className="icon_size material-icons"
+                onClick={handleClickTodo}
+                aria-describedby={id}
+              >
+                format_list_bulleted
+              </span>
+            </div>
             <Popover
               id={id}
               open={open}
@@ -363,6 +380,27 @@ export const WorklogEditor = ({
                 <EmojiLegend />
               </div>
             </Popover>
+            <Drawer
+              anchor="bottom"
+              open={openTodo}
+              onClose={handleCloseTodo}
+              sx={{
+                ".MuiDrawer-paper": {
+                  backgroundColor: "#fff",
+                  padding: "16px",
+                  borderRadius: "12px 12px 0 0",
+                  boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.2)",
+                  height: "95vh"
+                },
+              }}
+            >
+              <div className="hidden max-sm:block cursor-pointer rounded-lg text-neutral-900 hover:text-neutral-700">
+                <span className="icon_size material-icons" onClick={handleCloseTodo}>
+                  close_icon
+                </span>
+              </div>
+              <TodoTab userId={user?.id as string} />
+            </Drawer>
             <div className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700">
               <span className="icon_size material-icons">more_vert</span>
             </div>
@@ -388,9 +426,9 @@ export const WorklogEditor = ({
             setWorkLog((wl) =>
               wl
                 ? {
-                    ...wl,
-                    title: e.target.value,
-                  }
+                  ...wl,
+                  title: e.target.value,
+                }
                 : null
             );
           }}
@@ -406,10 +444,10 @@ export const WorklogEditor = ({
           {saving
             ? "saving..."
             : loading
-            ? "fetching.."
-            : !isAutoSaved
-            ? "In-Edit"
-            : "Saved"}
+              ? "fetching.."
+              : !isAutoSaved
+                ? "In-Edit"
+                : "Saved"}
           <span className="icon_size material-symbols-outlined text-neutral-500">
             {!isAutoSaved ? "edit" : "done"}
           </span>
@@ -434,6 +472,10 @@ export const WorklogEditor = ({
                 // console.log("✅ pressed");
                 insertToContent("✅", bd_index);
               }
+              if (e.ctrlKey && e.key === "q") {
+                e.preventDefault();
+                insertToContent("❌", bd_index);
+              }
             }}
           >
             {_markdownDat.content && (
@@ -448,19 +490,19 @@ export const WorklogEditor = ({
                   loading
                     ? "uninit"
                     : workLog?.id +
-                      "-" +
-                      _markdownDat.link_id +
-                      "-" +
-                      workLog?.title
+                    "-" +
+                    _markdownDat.link_id +
+                    "-" +
+                    workLog?.title
                 }
                 editorKey={
                   loading
                     ? "uninit"
                     : workLog?.id +
-                      "-" +
-                      _markdownDat.link_id +
-                      "-" +
-                      workLog?.title
+                    "-" +
+                    _markdownDat.link_id +
+                    "-" +
+                    workLog?.title
                 }
                 markdown={
                   _markdownDat.content.trim().length != 0
@@ -468,11 +510,10 @@ export const WorklogEditor = ({
                     : MARKDOWN_PLACHELODER
                 }
                 className="flex-grow h-full"
-                contentEditableClassName={`mdx_ce ${
-                  _markdownDat.content.trim() == MARKDOWN_PLACHELODER.trim()
-                    ? " mdx_uninit "
-                    : ""
-                } leading-1 imp-p-0 grow w-full h-full`}
+                contentEditableClassName={`mdx_ce ${_markdownDat.content.trim() == MARKDOWN_PLACHELODER.trim()
+                  ? " mdx_uninit "
+                  : ""
+                  } leading-1 imp-p-0 grow w-full h-full`}
                 onChange={(content: any) => {
                   changeMarkData(
                     content,
