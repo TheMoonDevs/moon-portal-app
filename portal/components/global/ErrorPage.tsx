@@ -7,7 +7,7 @@ const ErrorPage = () => {
     const bgRef = useRef<HTMLSpanElement>(null);
 
     const handleMouseMove = (event: MouseEvent) => {
-        setMousePosition({ x: event.clientX, y: event.clientY });
+        setMousePosition({ x: event?.clientX, y: event?.clientY });
     };
 
     const handleMouseLeave = () => {
