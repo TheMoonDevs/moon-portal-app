@@ -1,27 +1,24 @@
-import { PortalSdk } from "@/utils/services/PortalSdk";
 import {
-  Button,
-  TextField,
-  Select,
-  MenuItem,
   Checkbox,
-  Paper,
   Grid,
   IconButton,
+  MenuItem,
+  Paper,
+  Select,
+  TextField,
   Tooltip,
-} from "@mui/material";
-import { DatePicker } from "@mui/x-date-pickers";
-import { HOUSEID, Mission, MissionTask, User } from "@prisma/client";
-import dayjs from "dayjs";
-import {
-  Dispatch,
-  SetStateAction,
-  useCallback,
-  useEffect,
-  useState,
-} from "react";
-import { ChevronDown, ChevronUp, Loader, Save, Trash2 } from "lucide-react";
-import { MissionTasks } from "./MissionTasks";
+} from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers';
+import type { Mission, MissionTask, User } from '@prisma/client';
+import { HOUSEID } from '@prisma/client';
+import dayjs from 'dayjs';
+import { ChevronDown, ChevronUp, Loader, Save, Trash2 } from 'lucide-react';
+import type { Dispatch, SetStateAction } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+
+import { PortalSdk } from '@/utils/services/PortalSdk';
+
+import { MissionTasks } from './MissionTasks';
 
 export const MissionEntry = ({
   _mission,
@@ -32,11 +29,11 @@ export const MissionEntry = ({
   setMissions: Dispatch<SetStateAction<Mission[]>>;
   coreTeam: User[];
 }) => {
-  const [showMissionTasks, setShowMissionTasks] = useState<Boolean>(false);
+  const [showMissionTasks, setShowMissionTasks] = useState<boolean>(false);
   const [savingMission, setSavingMission] = useState<string | null>(null);
   const [deletingMission, setDeletingMission] = useState<string | null>(null);
   const [mission, setMission] = useState<Mission & { tasks?: MissionTask[] }>(
-    _mission
+    _mission,
   );
   const [tasksLoading, setTasksLoading] = useState(false);
 
@@ -48,8 +45,8 @@ export const MissionEntry = ({
       tasks: undefined,
     };
 
-    PortalSdk.putData("/api/missions", missionData)
-      .then((data) => {
+    PortalSdk.putData('/api/missions', missionData)
+      .then(() => {
         // console.log(data);
         setSavingMission(null);
       })
@@ -61,10 +58,10 @@ export const MissionEntry = ({
 
   const deleteMission = useCallback(() => {
     setDeletingMission(mission.id);
-    PortalSdk.deleteData("/api/missions", mission)
+    PortalSdk.deleteData('/api/missions', mission)
       .then((data) => {
         // console.log(data);
-        if (data.status == "success") {
+        if (data.status == 'success') {
           setMissions((old) => old.filter((m) => m.id != data.data.mission.id));
         }
         setDeletingMission(null);
@@ -80,12 +77,12 @@ export const MissionEntry = ({
     try {
       const response = await PortalSdk.getData(
         `/api/mission-tasks?missionId=${mission.id}`,
-        null
+        null,
       );
       setMission((sm) => ({ ...sm, tasks: response.data.tasks }));
       setTasksLoading(false);
     } catch (error) {
-      console.error("Error fetching tasks:", error);
+      console.error('Error fetching tasks:', error);
       setTasksLoading(false);
     }
   }, [mission.id]);
@@ -110,7 +107,7 @@ export const MissionEntry = ({
             fullWidth
             value={mission.title}
             onChange={(e) => {
-              setMission((sm) => ({ ...sm, title: e.target.value } as Mission));
+              setMission((sm) => ({ ...sm, title: e.target.value }) as Mission);
             }}
           />
         </Grid>
@@ -124,7 +121,7 @@ export const MissionEntry = ({
                   ({
                     ...sm,
                     house: e.target.value as HOUSEID,
-                  } as Mission)
+                  }) as Mission,
               )
             }
           >
@@ -147,7 +144,7 @@ export const MissionEntry = ({
                     ...sm,
                     housePoints: parseInt(e.target.value),
                     indiePoints: parseInt(e.target.value) * 100,
-                  } as Mission)
+                  }) as Mission,
               )
             }
           />
@@ -163,7 +160,7 @@ export const MissionEntry = ({
                   ({
                     ...sm,
                     indiePoints: parseInt(e.target.value),
-                  } as Mission)
+                  }) as Mission,
               )
             }
           />
@@ -172,7 +169,7 @@ export const MissionEntry = ({
           {mission.indiePoints -
             ((mission.tasks as any[]) || []).reduce(
               (acc, task) => acc + task.indiePoints,
-              0
+              0,
             )}
         </Grid>
         <Grid item xs={1}>
@@ -184,7 +181,7 @@ export const MissionEntry = ({
                   ({
                     ...sm,
                     completedAt: newValue ? (newValue.toDate() as any) : null,
-                  } as Mission)
+                  }) as Mission,
               )
             }
           />
@@ -194,7 +191,7 @@ export const MissionEntry = ({
             checked={mission.completed !== null ? mission.completed : false}
             onChange={(e) =>
               setMission(
-                (sm) => ({ ...sm, completed: e.target.checked } as Mission)
+                (sm) => ({ ...sm, completed: e.target.checked }) as Mission,
               )
             }
           />
@@ -208,7 +205,7 @@ export const MissionEntry = ({
                   ({
                     ...sm,
                     expiresAt: newValue ? (newValue.toDate() as any) : null,
-                  } as Mission)
+                  }) as Mission,
               )
             }
           />
@@ -218,7 +215,7 @@ export const MissionEntry = ({
             checked={mission.expirable !== null ? mission.expirable : false}
             onChange={(e) =>
               setMission(
-                (sm) => ({ ...sm, expirable: e.target.checked } as Mission)
+                (sm) => ({ ...sm, expirable: e.target.checked }) as Mission,
               )
             }
           />
