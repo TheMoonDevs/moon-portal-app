@@ -390,7 +390,7 @@ export const WorklogEditor = ({
                   padding: "16px",
                   borderRadius: "12px 12px 0 0",
                   boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.2)",
-                  height: "95vh"
+                  height: "90vh"
                 },
               }}
             >
