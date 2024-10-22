@@ -20,6 +20,7 @@ const WorklogTips = () => {
       <ul className="list-disc font-mono text-sm tracking-widest">
         <li className="">+ and Spacebar === • (For Bullet Points)</li>
         <li className="">Ctrl+Spacebar === ✅</li>
+        <li className="">Ctrl+Q === ❌ </li>
         <li className="">Ctrl+S to save the logs manually</li>
         <li className="">Ctrl+R to Refresh the logs</li>
         <li className="">Type `-` to add bulletin</li>
