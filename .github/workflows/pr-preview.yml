@@ -26,17 +26,31 @@ jobs:
           git fetch --prune
           git fetch origin +refs/heads/*:refs/remotes/origin/*
 
-          # Determine the base for diffing
-          base_ref="${{ github.event.pull_request.base.sha }}"
-          head_ref="${{ github.event.pull_request.head.sha }}"
+          # Get the list of changed files in the PR
+          changed_files=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }})
 
-          # Get the list of changed files
-          changed_files=$(git diff --name-only $base_ref $head_ref)
-
-          # Determine if changes are in the payzone or portal directories
+          # Define arrays for different paths
+          project_paths=("portal" "payzone" "home")
           projects=()
-          if echo "$changed_files" | grep -q "^payzone/"; then projects+=("payzone"); fi
-          if echo "$changed_files" | grep -q "^portal/"; then projects+=("portal"); fi
+          home_changed=false
+
+          # Detect changes in the "home" directory specifically
+          if echo "$changed_files" | grep -q "^home/"; then
+            home_changed=true
+          fi
+
+          # Check for changes in "portal" and "payzone" directories
+          if echo "$changed_files" | grep -q "^portal/"; then
+            projects+=("portal")
+          fi
+          if echo "$changed_files" | grep -q "^payzone/"; then
+            projects+=("payzone")
+          fi
+
+          # If changes are outside of portal, payzone, or home, deploy both projects
+          if ! $home_changed && [ ${#projects[@]} -eq 0 ] && echo "$changed_files" | grep -vq "^portal/" && echo "$changed_files" | grep -vq "^payzone/" && echo "$changed_files" | grep -vq "^home/"; then
+            projects=("portal" "payzone")
+          fi
 
           # Output the projects array as a JSON string
           echo "projects=$(jq -c -n --argjson projects "$(printf '%s\n' "${projects[@]}" | jq -R . | jq -s .)" '$projects')" >> $GITHUB_OUTPUT

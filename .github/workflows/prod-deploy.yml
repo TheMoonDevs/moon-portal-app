@@ -27,12 +27,10 @@ jobs:
           git fetch origin +refs/heads/*:refs/remotes/origin/*
           git branch -a
 
-          # Check if github.event.before is set
+          # Determine the base reference for diffing
           if [ -n "${{ github.event.before }}" ]; then
             base_ref="${{ github.event.before }}"
           else
-            # Handle the case when github.event.before is not set (e.g., force push to main)
-            # For example, compare with the commit before the latest one
             base_ref=$(git rev-parse HEAD~1)
           fi
           head_ref="${{ github.sha }}"
@@ -40,15 +38,15 @@ jobs:
           echo "Base ref: $base_ref"
           echo "Head ref: $head_ref"
 
-          # Initialize and update submodules if necessary (uncomment if you have submodules)
-          # git submodule update --init --recursive
-
           # Get the list of changed files
           changed_files=$(git diff --name-only $base_ref $head_ref)
           echo "Changed files: $changed_files"
 
-          # Determine if changes are in the payzone or portal directories
+          # Define arrays for different paths
+          project_paths=("portal" "payzone")
           projects=()
+
+          # Detect changes in the "portal" and "payzone" directories
           if echo "$changed_files" | grep -q "^portal/"; then
             projects+=("portal")
             echo "Portal project changed"
@@ -58,10 +56,14 @@ jobs:
             echo "Payzone project changed"
           fi
 
+          # If changes are outside portal and payzone directories, deploy both
+          if [ ${#projects[@]} -eq 0 ] && echo "$changed_files" | grep -vq "^portal/" && echo "$changed_files" | grep -vq "^payzone/"; then
+            projects=("portal" "payzone")
+            echo "Changes detected outside specific projects. Deploying both."
+          fi
+
           # Output the projects array as a JSON string
           echo "projects=$(jq -c -n --argjson projects "$(printf '%s\n' "${projects[@]}" | jq -R . | jq -s .)" '$projects')" >> $GITHUB_OUTPUT
-          # Get the list of changed files
-          changed_files=$(git diff --name-only $base_ref $head_ref)
 
   deploy:
     needs: determine_project
@@ -103,9 +105,15 @@ jobs:
             # Change to the project directory
             cd apps/moon-portal-app/${{ matrix.project }}
 
+            # Stash any local changes before pulling the latest changes
+            git stash || true
+
             # Pull the latest changes
             git checkout main
-            git pull origin main || { echo "ERROR: Failed to pull latest changes." >&2; rm -f "$LOCK_FILE"; exit 1; }
+            git pull origin main || { echo "ERROR: Failed to pull latest changes." >&2; git stash pop || true; rm -f "$LOCK_FILE"; exit 1; }
+
+            # Apply stashed changes back
+            git stash pop || true
 
             # Install dependencies and build with error handling
             if ! npm install; then
