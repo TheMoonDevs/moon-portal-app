@@ -32,12 +32,12 @@ const GeneralModal: React.FC<GeneralModalProps> = ({
   const [formData, setFormData] = useState<any>(defaultValues || {});
 
   // Handle input changes
-  const handleChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prevData: any) => ({ ...prevData, [name]: value }));
-  };
+  // const handleChange = (
+  //   e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  // ) => {
+  //   const { name, value } = e.target;
+  //   setFormData((prevData: any) => ({ ...prevData, [name]: value }));
+  // };
 
   // Handle form submission
   const handleSubmit = () => {
