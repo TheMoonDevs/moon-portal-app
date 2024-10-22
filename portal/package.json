@@ -4,12 +4,15 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "secure-dev": "next dev --experimental-https",
     "build": "next build",
+    "build:preview": "cp .env.preview .env.local && next build",
+    "build:prod": "cp .env.prod .env.local && next build",
     "start": "next start",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
     "postinstall": "prisma generate",
-    "prepare": "if [ \"$NODE_ENV\" != \"production\" ]; then husky install; fi",
+    "prepare": "husky install",
     "check-types": "tsc --noEmit --pretty",
     "prettier:format": "prettier --write .",
     "prettier:check": "prettier --check \"**/*.{ts,tsx,json}\""
@@ -59,6 +62,7 @@
     "slick-carousel": "^1.8.1",
     "sonner": "^1.5.0",
     "swr": "^2.2.5",
+    "web-push": "^3.6.7",
     "tailwind-merge": "^2.5.4"
   },
   "devDependencies": {
@@ -66,11 +70,12 @@
     "@types/lodash": "^4.17.0",
     "@types/node": "^20",
     "@types/react": "^18",
-    "@types/react-dom": "^18",
+    "@types/react-dom": "^18.3.1",
     "@types/react-modal": "^3.16.3",
     "@types/react-select-country-list": "^2.2.3",
     "@types/react-slick": "^0.23.13",
     "@types/react-table": "^7.7.20",
+    "@types/web-push": "^3.6.3",
     "@typescript-eslint/eslint-plugin": "7.0.0",
     "@typescript-eslint/parser": "6.21.0",
     "autoprefixer": "^10.0.1",
@@ -85,15 +90,15 @@
     "eslint-plugin-tailwindcss": "^3.17.5",
     "eslint-plugin-testing-library": "6.3.0",
     "eslint-plugin-unused-imports": "^4.1.4",
-    "husky": "9.1.5",
+    "husky": "9.1.6",
     "lint-staged": "^15.2.10",
-    "postcss": "^8.4.38",
+    "postcss": "^8.4.47",
     "postcss-preset-mantine": "^1.15.0",
     "postcss-simple-vars": "^7.0.1",
     "prettier": "3.3.3",
     "prettier-plugin-tailwindcss": "0.6.6",
-    "prisma": "^5.8.1",
-    "tailwindcss": "^3.4.13",
-    "typescript": "^5.6.2"
+    "prisma": "^5.21.1",
+    "tailwindcss": "^3.4.14",
+    "typescript": "^5.6.3"
   }
 }
