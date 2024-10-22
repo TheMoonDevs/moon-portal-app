@@ -78,8 +78,8 @@ jobs:
             # Change to the project directory
             cd apps/moon-portal-app/${{ matrix.project }}
 
-            # Stash any local changes before switching branches
-            git stash || { echo "ERROR: Failed to stash changes." >&2; exit 1; }
+            # Stash any local changes before switching branches, and don't pop them back
+            git stash || git reset --hard || { echo "ERROR: Failed to stash or reset changes." >&2; exit 1; }
 
             # Create a unique temporary branch name for this PR
             TEMP_BRANCH="pr-${{ github.event.pull_request.number }}-$(date +%s)"
@@ -89,14 +89,12 @@ jobs:
             # Handle errors during installation and build
             if ! npm install; then
               echo "ERROR: npm install failed. Cleaning up..." >&2
-              git stash pop || echo "No stashed changes to pop."
               rm -f "$LOCK_FILE"
               exit 1
             fi
 
             if ! npm run build:preview; then
               echo "ERROR: Build failed. Cleaning up..." >&2
-              git stash pop || echo "No stashed changes to pop."
               rm -f "$LOCK_FILE"
               exit 1
             fi
@@ -113,7 +111,6 @@ jobs:
               pm2 restart ${{ matrix.project }}-pr-${{ github.event.number }} --update-env || {
                 echo "ERROR: Failed to restart PM2 process. Cleaning up..." >&2
                 pm2 delete ${{ matrix.project }}-pr-${{ github.event.number }} || true
-                git stash pop || echo "No stashed changes to pop."
                 rm -f "$LOCK_FILE"
                 exit 1
               }
@@ -121,7 +118,6 @@ jobs:
               pm2 start npm --name ${{ matrix.project }}-pr-${{ github.event.number }} -- run start -- -p $PORT || {
                 echo "ERROR: Failed to start PM2 process. Cleaning up..." >&2
                 pm2 delete ${{ matrix.project }}-pr-${{ github.event.number }} || true
-                git stash pop || echo "No stashed changes to pop."
                 rm -f "$LOCK_FILE"
                 exit 1
               }
