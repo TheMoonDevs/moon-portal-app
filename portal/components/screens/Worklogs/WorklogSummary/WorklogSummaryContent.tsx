@@ -94,14 +94,16 @@ export const WorklogSummaryContent = ({
       <div className="m-4 mt-4 h-screen w-[100%] overflow-y-scroll rounded-2xl bg-white shadow-xl md:w-[50%]">
         <div className="">
           {userData && (
-            <div className="flex items-center justify-start p-8 py-4 shadow-md gap-4 bg-white sticky top-0 z-10 max-sm:py-4 max-sm:px-2">
+            <div className="sticky top-0 z-10 flex items-center justify-start gap-4 bg-white p-8 py-4 shadow-md max-sm:px-2 max-sm:py-4">
               <img
                 src={userData?.avatar ?? '/images/avatar.png'}
                 alt="avatar"
-                className="w-16 h-16 rounded-full max-sm:w-12 max-sm:h-12 object-cover"
+                className="h-16 w-16 rounded-full object-cover max-sm:h-12 max-sm:w-12"
               />
               <div>
-                <p className="text-xl font-bold max-sm:text-lg">{userData?.name}</p>
+                <p className="text-xl font-bold max-sm:text-lg">
+                  {userData?.name}
+                </p>
                 <div className="flex items-center gap-2 max-sm:gap-1">
                   {/* <p className="text-sm font-regular">
                     Worklog Summary
@@ -109,10 +111,10 @@ export const WorklogSummaryContent = ({
                   <Tooltip title="Download Worklog">
                     <button
                       disabled={!worklogSummary.length}
-                      className="disabled:cursor-not-allowed flex gap-1 items-center text-sm border-b border-transparent hover:border-neutral-500"
+                      className="flex items-center gap-1 border-b border-transparent text-sm hover:border-neutral-500 disabled:cursor-not-allowed"
                       onClick={() =>
                         generatePDF(pdfTargetRef, {
-                          method: "open",
+                          method: 'open',
                           filename: `worklog_summary_${userData?.name}.pdf`,
                           page: { margin: Margin.LARGE },
                         })
@@ -127,23 +129,25 @@ export const WorklogSummaryContent = ({
                 </div>
               </div>
               <div className="ml-auto">
-                <h3 className="text-2xl font-bold max-sm:text-lg">{summaryTitle}</h3>
-                <p className="text-xs font-regular">
+                <h3 className="text-2xl font-bold max-sm:text-lg">
+                  {summaryTitle}
+                </h3>
+                <p className="font-regular text-xs">
                   {worklogSummary.length} Logs | {metrics.totalTasks} tasks
                 </p>
               </div>
             </div>
           )}
           <div className="flex items-center justify-between bg-blue-50">
-            <h1 className="text-xs text-neutral-700 p-3 px-4">
-              Generate an AI summary to use in Meeting Notes, Resume etc..{" "}
+            <h1 className="p-3 px-4 text-xs text-neutral-700">
+              Generate an AI summary to use in Meeting Notes, Resume etc..{' '}
             </h1>
-            {view === "AI Summary" ? (
-              <div className="flex gap-4 items-center px-4 !text-neutral-500">
+            {view === 'AI Summary' ? (
+              <div className="flex items-center gap-4 px-4 !text-neutral-500">
                 <Tooltip title="Back to Worklogs">
                   <span
                     className="material-symbols-outlined hover:cursor-pointer hover:!text-neutral-600"
-                    onClick={() => setView("Worklogs")}
+                    onClick={() => setView('Worklogs')}
                   >
                     arrow_back
                   </span>
@@ -178,14 +182,13 @@ export const WorklogSummaryContent = ({
                 disabled={!worklogSummary.length}
                 onClick={handleAiSummaryBtnClick}
                 className="mx-4 flex items-center gap-1 rounded-2xl border bg-white px-2 py-1 text-xs text-black hover:bg-neutral-100 disabled:cursor-not-allowed md:gap-2"
-              
               >
                 <span className="text-[0.8rem] md:text-[1rem]">✨</span>
                 <span>AI Summary</span>
               </button>
             )}
           </div>
-          {view === "Worklogs" ? (
+          {view === 'Worklogs' ? (
             <div className="" ref={pdfTargetRef}>
               {!loading ? (
                 <WorklogSummaryView
@@ -204,6 +207,7 @@ export const WorklogSummaryContent = ({
                     <MdxAppEditor
                       className=""
                       key={`ai_summary-${uniqueId()}`}
+                      editorKey={`ai_summary-${uniqueId()}`}
                       readOnly
                       contentEditableClassName="summary_mdx flex flex-col gap-4"
                       markdown={aiSummary}
@@ -213,9 +217,9 @@ export const WorklogSummaryContent = ({
               )}
               <button
                 onClick={() => {
-                  setView("Worklogs");
+                  setView('Worklogs');
                 }}
-                className="disabled:cursor-not-allowed flex gap-1 md:gap-2 items-center border bg-white text-sm text-black hover:bg-neutral-100 rounded-2xl px-2 py-1 mx-4"
+                className="mx-4 flex items-center gap-1 rounded-2xl border bg-white px-2 py-1 text-sm text-black hover:bg-neutral-100 disabled:cursor-not-allowed md:gap-2"
               >
                 <span className="material-symbols-outlined !text-sm">
                   arrow_back
