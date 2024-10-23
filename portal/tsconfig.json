@@ -28,7 +28,8 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "app/api/link-shortener/get-link/[slug]",
-    "app/api/quicklinks/department/route.ts"
+    "app/api/quicklinks/department/route.ts",
+    "worker/index.js"
   ],
   "exclude": ["node_modules"]
 }

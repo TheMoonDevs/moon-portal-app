@@ -1,43 +1,10 @@
 "use client";
-
-import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
-import { useEffect } from "react";
+import { useAppSelector } from "@/utils/redux/store";
 import LinkList from "../../LinkList/LinkList";
-import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import useAsyncState from "@/utils/hooks/useAsyncState";
-import { LinkFiltersHeader } from "../../LinkList/LinkFiltersHeader";
-import { useQuickLinkDirs } from "../../hooks/useQuickLinksDirs";
 import { ViewButtonGroup } from "../../LinkList/ViewButtonGroup";
-import { useQuickLinkDirectory } from "../../hooks/useQuickLinkDirectory";
-import { setAllQuicklinks } from "@/utils/redux/quicklinks/slices/quicklinks.links.slice";
 
-export const SubDirectoryLinks = () => {
-  const dispatch = useAppDispatch();
+export const SubDirectoryLinks = ({ loading }: { loading: boolean }) => {
   const { allQuicklinks } = useAppSelector((state) => state.quicklinksLinks);
-  const { activeDirectoryId } = useQuickLinkDirectory();
-  const { thisDirectory, parentDirecotry } =
-    useQuickLinkDirs(activeDirectoryId);
-  const { loading, setLoading, error, setError } = useAsyncState();
-  useEffect(() => {
-    if (!activeDirectoryId) return;
-    const getData = async () => {
-      setLoading(true);
-      try {
-        // console.log("sent", activeDirectoryId);
-        const allQuicklinks = await QuicklinksSdk.getData(
-          `/api/quicklinks/link?directoryId=${activeDirectoryId}`
-        );
-        // console.log("received", allQuicklinks);
-        dispatch(setAllQuicklinks(allQuicklinks.data.links));
-
-        setLoading(false);
-      } catch (error) {
-        console.log(error);
-      }
-    };
-
-    getData();
-  }, [activeDirectoryId, dispatch, setLoading]);
 
   if (allQuicklinks.length === 0) return null;
 

@@ -134,6 +134,14 @@ export const AdminUserEditor = () => {
     }
   };
 
+  const updateTextareaField = (e: ChangeEvent<HTMLTextAreaElement>) => {
+    const { id, value } = e.target;
+    setUser((u) => ({
+      ...u,
+      [id]: value,
+    }));
+  };
+
   const saveUser = () => {
     setLoading(true);
     fetch("/api/user", {
@@ -181,6 +189,7 @@ export const AdminUserEditor = () => {
         updateField={updateField}
         loading={loading}
         updateOverlap={updateOverlap}
+        updateTextareaField={updateTextareaField}
       />
       <AdminUserWorkData
         user={user}

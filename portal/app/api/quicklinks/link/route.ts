@@ -6,6 +6,8 @@ export async function GET(request: NextRequest) {
   const linkId = request.nextUrl.searchParams.get("linkId");
   const rootParentDirId = request.nextUrl.searchParams.get("rootParentDirId");
   const searchQuery = request.nextUrl.searchParams.get("searchQuery");
+  const offset = request.nextUrl.searchParams.get("offset");
+  const limit = request.nextUrl.searchParams.get("limit");
 
   try {
     const links = await prisma.link.findMany({
@@ -30,6 +32,8 @@ export async function GET(request: NextRequest) {
           },
         },
       },
+      skip: offset ? Number(offset) : 0,
+      ...(limit && { take: Number(limit) }),
     });
     let json_response = {
       status: "success",

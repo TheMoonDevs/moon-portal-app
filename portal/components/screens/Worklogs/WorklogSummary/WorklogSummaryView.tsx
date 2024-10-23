@@ -96,6 +96,7 @@ const FilterPill = ({
 export const WorklogSummaryView = ({
   worklogSummary,
   workLogUser,
+  // isDrawer,
 }: WorklogSummaryViewProps) => {
   const uniqueWorklogs = getLatestWorklogPerDate(worklogSummary); //removes duplicate data from worklogs and we will get the latest updated worklogs
   const dispatch = useAppDispatch();
@@ -173,6 +174,7 @@ export const WorklogSummaryView = ({
                         key={`work-${uniqueId()}`}
                         markdown={work?.content}
                         contentEditableClassName="summary_mdx flex flex-col gap-4 z-1"
+                        editorKey={`work-${uniqueId()}`}
                         className="z-1"
                       />
                     </div>
@@ -254,6 +256,7 @@ export const WorklogSummaryView = ({
                     key={`work-${uniqueId()}`}
                     markdown={log?.content}
                     contentEditableClassName="summary_mdx flex flex-col gap-4 z-1"
+                    editorKey={`work-${uniqueId()}`}
                     className="z-1"
                   />
                 </div>

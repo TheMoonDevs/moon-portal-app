@@ -17,6 +17,13 @@
 /build
 
 # misc
+.env*
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+secrets.json
 .DS_Store
 *.pem
 
@@ -26,7 +33,6 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files
-.env
 .env*.local
 
 # vercel
@@ -40,4 +46,6 @@ next-env.d.ts
 
 sw.*
 workbox-*
+worker*.js
 swe-worker-*
+certificates
