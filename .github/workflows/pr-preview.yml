@@ -165,7 +165,7 @@ jobs:
 
   deploy_preview:
     needs: determine_project
-    if: needs.determine_project.outputs.projects != '[]' && (github.event.action == 'opened' || (github.event.action == 'created' && contains(github.event.comment.body, '@bot deploy')))
+    if: needs.determine_project.outputs.projects != '[]' && (github.event.action != 'closed' || (github.event.action == 'created' && contains(github.event.comment.body, '@bot deploy')))
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
