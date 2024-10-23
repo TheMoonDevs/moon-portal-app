@@ -57,11 +57,19 @@ jobs:
       - name: Extract Action, Project, and Optional PR Number
         id: extract
         run: |
-          ACTION=$(echo "${{ github.event.comment.body }}" | awk '{for(i=1;i<=NF;i++) if ($i~/^@bot/) {print $i; exit}}' | cut -d' ' -f2)
-          PROJECT=$(echo "${{ github.event.comment.body }}" | awk -v action="${ACTION}" '$0 ~ action {for(i=1;i<=NF;i++) if ($i~/^(portal|payzone|both)$/) {print $i; exit}}')
+          # Extract the action following @bot
+          ACTION=$(echo "${{ github.event.comment.body }}" | awk '{for(i=1;i<=NF;i++) if ($i ~ /^@bot/) {print $(i+1); exit}}')
+
+          # Extract the project (portal, payzone, both) after the action word, allowing for any order
+          PROJECT=$(echo "${{ github.event.comment.body }}" | awk -v action="${ACTION}" '{for(i=1;i<=NF;i++) if ($i ~ action) {for(j=i+1;j<=NF;j++) if ($j ~ /^(portal|payzone|both)$/) {print $j; exit}}}')
+
+          # Check for the presence of "--clean" and set the CLEAN_FLAG
           CLEAN_FLAG=$(echo "${{ github.event.comment.body }}" | grep -qE "--clean" && echo "true" || echo "false")
-          PR_NUMBER_COMMENT=$(echo "${{ github.event.comment.body }}" | grep -oE '#([0-9]+)' | cut -d'#' -f2)
+
+          # Extract the PR number from a comment, if present (e.g., "#1234"), otherwise fallback to the current issue/PR number
+          PR_NUMBER_COMMENT=$(echo "${{ github.event.comment.body }}" | grep -oE '#[0-9]+' | cut -d'#' -f2)
           PR_NUMBER=${PR_NUMBER_COMMENT:-${{ github.event.issue.number }}}
+          
           echo "ACTION=$ACTION" >> $GITHUB_ENV
           echo "PROJECT=$PROJECT" >> $GITHUB_ENV
           echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_ENV
