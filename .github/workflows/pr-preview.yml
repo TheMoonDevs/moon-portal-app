@@ -105,9 +105,9 @@ jobs:
               exit 1
             fi
 
-            UNIQUE_ID="${{ env.PROJECT }}-${{ env.PR_NUMBER }}-$PORT"
+            UNIQUE_ID="$PROJECT-SUPER-$PORT"
 
-            if [ "${{ env.ACTION }}" = "cleanup" ] && [ -n "${{ env.PROJECT }}" ] && [ -n "${{ env.PR_NUMBER }}" ]; then
+            if [ "$ACTION" = "cleanup"] && [ -n "$PROJECT"] && [ -n "$PR_NUMBER" ]; then
               echo "Starting cleanup for $UNIQUE_ID ..."
               pm2 delete $UNIQUE_ID || true
               rm -rf /home/techteam/apps/moon-portal-app/portal/build/pr-${{ env.PR_NUMBER }}/$UNIQUE_ID
@@ -150,8 +150,8 @@ jobs:
 
               git stash pop || echo "No stashed changes to pop."
               rm -f "$LOCK_FILE"
-              echo "Redeployment completed for PR #${{ env.PR_NUMBER }} - Project: ${{ env.PROJECT }} on port $PORT."
-            elif [ "${{ env.ACTION }}" = "delete_lock" ]; then
+              echo "Redeployment completed for PR #$PR_NUMBER - Project: $PROJECT on port $PORT."
+            elif [ "$ACTION}" = "delete_lock" ]; then
               if [ -f "$LOCK_FILE" ]; then
                 rm -f "$LOCK_FILE"
                 echo "Deploy lock file removed."
@@ -204,20 +204,20 @@ jobs:
               exit 1
             fi
 
-            UNIQUE_ID="${{ env.PROJECT }}-${{ env.PR_NUMBER }}-$PORT"
+            UNIQUE_ID="$PROJECT-$PR_NUMBER-$PORT"
 
             echo "Cleaning up before redeployment..."
-            pm2 list | grep -E "${{ env.PROJECT }}-${{ env.PR_NUMBER }}-" | awk '{print $2}' | xargs -r pm2 delete
-            rm -rf /home/techteam/apps/moon-portal-app/portal/build/pr-${{ env.PR_NUMBER }}
-            rm -rf /home/techteam/apps/moon-portal-app/payzone/build/pr-${{ env.PR_NUMBER }}
+            pm2 list | grep -E "$PROJECT-$PR_NUMBER-" | awk '{print $2}' | xargs -r pm2 delete
+            rm -rf /home/techteam/apps/moon-portal-app/portal/build/pr-$PR_NUMBER
+            rm -rf /home/techteam/apps/moon-portal-app/payzone/build/pr-$PR_NUMBER
 
-            echo "Redeploying for ${{ env.PROJECT }} PR #${{ env.PR_NUMBER }}..."
+            echo "Redeploying for $PROJECT PR # $PR_NUMBER..."
 
-            export NEXT_PUBLIC_BUILD_PATH=${{ env.PR_NUMBER }}/$UNIQUE_ID
+            export NEXT_PUBLIC_BUILD_PATH=$PR_NUMBER/$UNIQUE_ID
 
-            cd apps/moon-portal-app/${{ env.PROJECT }}
+            cd apps/moon-portal-app/$PROJECT
             git stash || git reset --hard
-            git fetch origin pull/${{ env.PR_NUMBER }}/head:$UNIQUE_ID
+            git fetch origin pull/$PR_NUMBER/head:$UNIQUE_ID
             git checkout $UNIQUE_ID
 
             if ! npm install; then
@@ -240,7 +240,7 @@ jobs:
 
             git stash pop || echo "No stashed changes to pop."
             rm -f "$LOCK_FILE"
-            echo "Redeployment completed for PR #${{ env.PR_NUMBER }} - Project: ${{ env.PROJECT }} on port $PORT."
+            echo "Redeployment completed for PR #$PR_NUMBER - Project: $PROJECT on port $PORT."
           EOF
 
       - name: Comment Preview URL
