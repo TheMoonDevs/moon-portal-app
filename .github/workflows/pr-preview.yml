@@ -124,9 +124,8 @@ jobs:
 
               cd apps/moon-portal-app/${{ env.PROJECT }}
               git stash || git reset --hard
-              TEMP_BRANCH="pr-${{ env.PR_NUMBER }}-$UNIQUE_ID"
-              git fetch origin pull/${{ env.PR_NUMBER }}/head:$TEMP_BRANCH
-              git checkout $TEMP_BRANCH
+              git fetch origin pull/${{ env.PR_NUMBER }}/head:$UNIQUE_ID
+              git checkout $UNIQUE_ID
 
               if ! npm install; then
                 echo "ERROR: npm install failed."
@@ -215,9 +214,8 @@ jobs:
 
             cd apps/moon-portal-app/${{ env.PROJECT }}
             git stash || git reset --hard
-            TEMP_BRANCH="pr-${{ env.PR_NUMBER }}-$UNIQUE_ID"
-            git fetch origin pull/${{ env.PR_NUMBER }}/head:$TEMP_BRANCH
-            git checkout $TEMP_BRANCH
+            git fetch origin pull/${{ env.PR_NUMBER }}/head:$UNIQUE_ID
+            git checkout $UNIQUE_ID
 
             if ! npm install; then
               echo "ERROR: npm install failed."
