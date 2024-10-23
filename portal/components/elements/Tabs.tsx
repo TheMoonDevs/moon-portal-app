@@ -24,7 +24,7 @@ const TabPanel: React.FC<{
       {...other}
     >
       {value === index && (
-        <Box sx={{ p: 3 }}>
+        <Box>
           <Typography component="div">{children}</Typography>
         </Box>
       )}

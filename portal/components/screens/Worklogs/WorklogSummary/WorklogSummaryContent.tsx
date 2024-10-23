@@ -1,19 +1,19 @@
-import { LoadingSkeleton } from "@/components/elements/LoadingSkeleton";
-import { WorklogSummaryView } from "./WorklogSummaryView";
-import { WorklogSummaryActions } from "./WorklogSummaryActions";
-import useAsyncState from "@/utils/hooks/useAsyncState";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { PortalSdk } from "@/utils/services/PortalSdk";
-import { User, WorkLogs } from "@prisma/client";
-import { useSearchParams } from "next/navigation";
-import dayjs from "dayjs";
-import { calculateMetrics } from "../WorklogBreakdown/BreakdownMetrics";
-import generatePDF, { Margin } from "react-to-pdf";
-import { Tooltip } from "@mui/material";
-import { GenAiSdk } from "@/utils/services/GenAiSdk";
-import useCopyToClipboard from "@/utils/hooks/useCopyToClipboard";
-import { MdxAppEditor } from "@/utils/configure/MdxAppEditor";
-import { uniqueId } from "lodash";
+import { LoadingSkeleton } from '@/components/elements/LoadingSkeleton';
+import { WorklogSummaryView } from './WorklogSummaryView';
+import { WorklogSummaryActions } from './WorklogSummaryActions';
+import useAsyncState from '@/utils/hooks/useAsyncState';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { PortalSdk } from '@/utils/services/PortalSdk';
+import { User, WorkLogs } from '@prisma/client';
+import { useSearchParams } from 'next/navigation';
+import dayjs from 'dayjs';
+import { calculateMetrics } from '../WorklogBreakdown/BreakdownMetrics';
+import generatePDF, { Margin } from 'react-to-pdf';
+import { Tooltip } from '@mui/material';
+import { GenAiSdk } from '@/utils/services/GenAiSdk';
+import useCopyToClipboard from '@/utils/hooks/useCopyToClipboard';
+import { MdxAppEditor } from '@/utils/configure/MdxAppEditor';
+import { uniqueId } from 'lodash';
 
 export const WorklogSummaryContent = ({
   userData,
@@ -25,9 +25,9 @@ export const WorklogSummaryContent = ({
   onlyYearSummary: boolean;
 }) => {
   const searchParams = useSearchParams();
-  const year = searchParams?.get("year") || dayjs().year();
+  const year = searchParams?.get('year') || dayjs().year();
   let month = !onlyYearSummary
-    ? searchParams?.get("month") || dayjs().month(dayjs().month()).format("MM")
+    ? searchParams?.get('month') || dayjs().month(dayjs().month()).format('MM')
     : null;
 
   const [worklogSummary, setWorklogSummary] = useState<WorkLogs[]>([]);
@@ -45,7 +45,7 @@ export const WorklogSummaryContent = ({
       try {
         const response = await PortalSdk.getData(
           `/api/user/worklogs/summary?userId=${userData?.id}&year=${query.year}&month=${query.month}`,
-          null
+          null,
         );
         setWorklogSummary(response.data.workLogs);
         setLoading(false);
@@ -54,7 +54,7 @@ export const WorklogSummaryContent = ({
         setLoading(false);
       }
     },
-    [setLoading, userData?.id]
+    [setLoading, userData?.id],
   );
 
   useEffect(() => {
@@ -69,7 +69,7 @@ export const WorklogSummaryContent = ({
   const { copyToClipboard } = useCopyToClipboard();
   const aiSummaryPdfTargetRef = useRef(null);
   const [aiSummary, setAiSummary] = useState<string | null>(null);
-  const [view, setView] = useState<"AI Summary" | "Worklogs">("Worklogs");
+  const [view, setView] = useState<'AI Summary' | 'Worklogs'>('Worklogs');
 
   const handleAiSummaryBtnClick = async () => {
     if (worklogSummary.length === 0) return;
@@ -78,10 +78,10 @@ export const WorklogSummaryContent = ({
       const response = await GenAiSdk.generateWorklogSummary(
         `${userData?.name}'s ${summaryTitle} Summary`,
         userData?.name,
-        worklogSummary.map((wl) => wl.works)
+        worklogSummary.map((wl) => wl.works),
       );
       setAiSummary(response);
-      setView("AI Summary");
+      setView('AI Summary');
     } catch (error) {
       console.error(error);
     } finally {
@@ -90,13 +90,13 @@ export const WorklogSummaryContent = ({
   };
 
   return (
-    <div className="flex flex-col md:flex-row bg-neutral-100">
-      <div className="w-[100%] md:w-[50%] overflow-y-scroll h-screen m-4 mt-4 bg-white rounded-2xl shadow-xl">
+    <div className="flex flex-col bg-neutral-100 md:flex-row">
+      <div className="m-4 mt-4 h-screen w-[100%] overflow-y-scroll rounded-2xl bg-white shadow-xl md:w-[50%]">
         <div className="">
           {userData && (
             <div className="flex items-center justify-start p-8 py-4 shadow-md gap-4 bg-white sticky top-0 z-10 max-sm:py-4 max-sm:px-2">
               <img
-                src={userData?.avatar ?? "/images/avatar.png"}
+                src={userData?.avatar ?? '/images/avatar.png'}
                 alt="avatar"
                 className="w-16 h-16 rounded-full max-sm:w-12 max-sm:h-12 object-cover"
               />
@@ -153,7 +153,7 @@ export const WorklogSummaryContent = ({
                     className="material-symbols-outlined hover:cursor-pointer hover:!text-neutral-600"
                     onClick={() =>
                       generatePDF(aiSummaryPdfTargetRef, {
-                        method: "open",
+                        method: 'open',
                         filename: `ai_worklog_summary_${userData?.name}.pdf`,
                         page: { margin: Margin.LARGE },
                       })
@@ -177,7 +177,8 @@ export const WorklogSummaryContent = ({
               <button
                 disabled={!worklogSummary.length}
                 onClick={handleAiSummaryBtnClick}
-                className="disabled:cursor-not-allowed flex gap-1 md:gap-2 items-center border bg-white text-xs text-black hover:bg-neutral-100 rounded-2xl px-2 py-1 mx-4"
+                className="mx-4 flex items-center gap-1 rounded-2xl border bg-white px-2 py-1 text-xs text-black hover:bg-neutral-100 disabled:cursor-not-allowed md:gap-2"
+              
               >
                 <span className="text-[0.8rem] md:text-[1rem]">✨</span>
                 <span>AI Summary</span>

@@ -12,6 +12,7 @@ import {
   setModal,
   setToast,
 } from "@/utils/redux/quicklinks/slices/quicklinks.ui.slice";
+import { Spinner } from "@/components/elements/Loaders";
 
 export const MoveModal = () => {
   const { modal } = useAppSelector((state) => state.quicklinksUi);
@@ -27,6 +28,7 @@ export const MoveModal = () => {
     ROOTTYPE.DEPARTMENT
   );
   const [anchorEl, setAnchorEl] = useState<HTMLSpanElement | null>(null);
+  const [isMoving, setIsMoving] = useState<boolean>(false);
   const open = Boolean(anchorEl);
   const filteredDirectories = parentDirs.filter(
     (dir) =>
@@ -41,6 +43,7 @@ export const MoveModal = () => {
   };
 
   const handleMove = async () => {
+    setIsMoving(true);
     let updatedDirectory = {};
     let apiPath = "/api/quicklinks/directory";
     if (isParent) {
@@ -75,6 +78,8 @@ export const MoveModal = () => {
       );
       dispatch(updateDirectory(currentDirectory));
       console.log(error);
+    }finally{
+      setIsMoving(false);
     }
 
     dispatch(setModal({ type: null, data: null }));
@@ -188,9 +193,9 @@ export const MoveModal = () => {
           <button
             className="w-full px-5 py-3 bg-gray-900 text-white rounded-xl cursor-pointer disabled:opacity-50"
             onClick={handleMove}
-            disabled={isParent ? !selectedRootType : !selectedParentDirectory}
+            disabled={isParent ? !selectedRootType : !selectedParentDirectory || isMoving}
           >
-            Move
+            {isMoving ? <Spinner className="w-6 h-6  text-neutral-600" /> : 'Move'}
           </button>
         </div>
       </div>

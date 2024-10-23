@@ -7,16 +7,17 @@ import shortUrlReducer from "./shortUrl/shortUrl.slice";
 import authReducer from "./auth/auth.slice";
 import zerotrackerReducer from "./zerotracker/zerotracker.slice";
 import searchTermReducer from "./searchTerm/search.slice";
+import tasksReducer from "./tasks/tasks.slice";
 import filesUploadReducer from "./filesUpload/fileUpload.slice";
 import onboardingFormReducer from "./onboarding/onboarding.slice";
 import worklogsReducer from "./worklogs/worklogs.slice";
-import selectedMissionReducer from "./missions/selectedMission.slice";
+import missionReducer from "./missions/mission.slice";
 import missionTasksReducer from "./missions/missionsTasks.slice";
+import missionUiSlice from "./missions/mission.ui.slice";
 import laterTodosReducer from "./worklogs/laterTodos.slice";
 //import suggestionsReducer from './suggestions/suggestions.slice';
 import notificationsReducer from "./notification/notification.slice";
 import coreTeamSlice from "./coreTeam/coreTeam.slice";
-import missionTaskEditorSlice from "./missions/missionTaskEditorSlice.slice";
 import quicklinksLinksReducer from "./quicklinks/slices/quicklinks.links.slice";
 import quicklinksDirectoryReducer from "./quicklinks/slices/quicklinks.directory.slice";
 import quicklinksUiReducer from "./quicklinks/slices/quicklinks.ui.slice";
@@ -36,12 +37,13 @@ const store = configureStore({
     laterTodos: laterTodosReducer,
     searchTerm: searchTermReducer,
     onboardingForm: onboardingFormReducer,
-    selectedMission: selectedMissionReducer,
+    mission: missionReducer,
+    missionsTasks: missionTasksReducer,
+    missionUi: missionUiSlice,
     coreTeam: coreTeamSlice,
     //suggestions: suggestionsReducer,
     notifications: notificationsReducer,
-    missionsTasks: missionTasksReducer,
-    missionTaskEditor: missionTaskEditorSlice,
+    tasks: tasksReducer,
     statsAction: statsActionSlice
   },
   middleware: (getDefaultMiddleware) =>

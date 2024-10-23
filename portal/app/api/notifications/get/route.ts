@@ -13,9 +13,11 @@ export async function GET(request: NextRequest) {
         userId,
         ...(lastModifiedDate && { updatedAt: { gt: lastModifiedDate } }),
       },
-      orderBy: {
-        updatedAt: "desc",
-      },
+      orderBy: [
+        { isRead: 'asc' },
+        { updatedAt: 'desc' },
+        { createdAt: 'desc' },
+      ],
     });
 
     if (notifications.length === 0) {
