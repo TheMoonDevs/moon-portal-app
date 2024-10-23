@@ -49,6 +49,8 @@ jobs:
             projects=("portal" "payzone")
           fi
 
+          echo "Changed projects: ${projects[@]}"
+
           echo "projects=$(jq -c -n --argjson projects "$(printf '%s\n' "${projects[@]}" | jq -R . | jq -s .)" '$projects')" >> $GITHUB_OUTPUT
 
   comment_actions:
