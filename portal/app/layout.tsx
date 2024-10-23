@@ -19,6 +19,7 @@ import { APP_ROUTES } from "@/utils/constants/appInfo";
 import { AppLayout } from "@/components/global/AppLayout";
 import { MantineProvider } from "@mantine/core";
 import { UpdatePWA } from "@/components/global/UpdatePWA";
+import PushServiceRegistration from "@/components/global/PushServiceRegistration";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -57,9 +58,11 @@ export default function RootLayout({
           <MUIThemeRegistry options={{ key: "mui" }}>
             <MantineProvider>
               <ReduxProvider>
-                <UpdatePWA>
-                  <AppLayout>{children}</AppLayout>
-                </UpdatePWA>
+                <PushServiceRegistration>
+                  <UpdatePWA>
+                    <AppLayout>{children}</AppLayout>
+                  </UpdatePWA>
+                </PushServiceRegistration>
                 <ToastsContainer />
               </ReduxProvider>
             </MantineProvider>

@@ -10,7 +10,7 @@ import {
 } from "@mui/material";
 import { useCallback, useRef, useState } from "react";
 import { initialTaskState } from "../../state";
-import { STATUS, User } from "@prisma/client";
+import { User } from "@prisma/client";
 import {
   BoldItalicUnderlineToggles,
   CreateLink,
@@ -397,7 +397,6 @@ const TaskForm = ({ houseMembers }: { houseMembers: User[] }) => {
                 <span>Priority</span>
               </label>
               <select
-                placeholder="Priority"
                 value={taskState.priority?.value}
                 onChange={(e) =>
                   setTaskState({
@@ -545,6 +544,7 @@ const TaskForm = ({ houseMembers }: { houseMembers: User[] }) => {
                   }),
                 ]}
                 key={`${user?.id}`}
+                editorKey={`${user?.id}`}
                 markdown={
                   taskState.description?.trim().length === 0 ||
                   taskState.description === null ||
