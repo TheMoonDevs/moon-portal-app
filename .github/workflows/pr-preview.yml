@@ -2,7 +2,8 @@ name: PR Preview Deployment
 
 on:
   pull_request:
-    types: [opened, closed]
+    types: [opened, edited, synchronize, reopened, closed]
+    # types: [opened, closed]
 
   issue_comment:
     types: [created]
