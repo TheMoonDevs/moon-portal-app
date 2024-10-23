@@ -489,6 +489,23 @@ model Task {
   dueDate   DateTime? 
 }
 
+//-------------------------------------PUSH NOTIFICATIONS-------------------------------------------
+
+type KEYS {
+  p256dh String
+  auth   String
+}
+type PUSHNOTIFICATION {
+  endpoint String
+  expirationTime String?
+  keys     KEYS
+}
+
+model Subscription {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String  @db.ObjectId  @unique
+  subscriptions PUSHNOTIFICATION[]
+}
 //-------------------------------------Worklog-Buff-Badge-----------------------------------------
 
 model BuffBadge {

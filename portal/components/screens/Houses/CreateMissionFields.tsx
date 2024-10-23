@@ -78,6 +78,7 @@ const CreateMissionFields = ({
           <MdxAppEditor
             ref={mdRef}
             key={`${user?.id}`}
+            editorKey={`${user?.id}`}
             markdown={
               state.description?.trim().length === 0
                 ? MARKDOWN_PLACEHOLDER

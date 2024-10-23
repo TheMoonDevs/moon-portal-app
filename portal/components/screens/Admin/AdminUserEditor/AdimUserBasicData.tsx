@@ -5,7 +5,7 @@ import { ChangeEvent, Dispatch, SetStateAction, useMemo } from "react";
 import TimezoneSelect from "react-timezone-select";
 import { getCountryDataList } from "countries-list";
 import dayjs from "dayjs";
-import { DatePicker } from "@mui/x-date-pickers";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { Spinner } from "@/components/elements/Loaders";
@@ -260,7 +260,7 @@ export const AdminUserBasicData = ({
                 inputId="timezone"
                 value={user.timezone || ""}
                 onChange={(timezone) => {
-                  setUser((u) => ({ ...u, timezone: timezone.value }));
+                  setUser((u) => ({ ...u, timezone: typeof timezone === "string" ? timezone : timezone.value }));
                 }}
               />
             </div>
