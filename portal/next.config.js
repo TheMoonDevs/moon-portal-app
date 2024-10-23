@@ -39,6 +39,7 @@ const nextConfig = {
       },
     ],
   },
+  distDir: `build/${process.env.NEXT_PUBLIC_BUILD_PATH || "main"}`,
   swcMinify: true,
   productionBrowserSourceMaps: false,
   experimental: {
