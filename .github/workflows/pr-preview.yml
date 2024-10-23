@@ -49,7 +49,6 @@ jobs:
           fi
 
           echo "Changed projects: ${projects[@]}"
-
           echo "projects=$(jq -c -n --argjson projects "$(printf '%s\n' "${projects[@]}" | jq -R . | jq -s .)" '$projects')" >> $GITHUB_OUTPUT
 
   comment_actions:
@@ -77,20 +76,28 @@ jobs:
           PR_NUMBER_COMMENT=$(echo "${{ github.event.comment.body }}" | grep -oE '#([0-9]+)' | cut -d'#' -f2)
           PR_NUMBER=${PR_NUMBER_COMMENT:-${{ github.event.issue.number }}}
 
-          echo "ACTION=$ACTION" >> $GITHUB_ENV
-          echo "PROJECT=$PROJECT" >> $GITHUB_ENV
-          echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_ENV
-          echo "CLEAN_FLAG=$CLEAN_FLAG" >> $GITHUB_ENV
-
           # Set outputs
           echo "::set-output name=action::$ACTION"
           echo "::set-output name=project::$PROJECT"
           echo "::set-output name=pr_number::$PR_NUMBER"
           echo "::set-output name=clean_flag::$CLEAN_FLAG"
 
+      - name: Trigger Appropriate Command
+        run: |
+          if [[ "${{ steps.extract.outputs.action }}" == "deploy" ]]; then
+            echo "Deploying based on comment action..."
+          elif [[ "${{ steps.extract.outputs.action }}" == "cleanup" ]]; then
+            echo "Cleaning up based on comment action..."
+          elif [[ "${{ steps.extract.outputs.action }}" == "delete_lock" ]]; then
+            echo "Deleting lock based on comment action..."
+          else
+            echo "No recognized action found. Skipping."
+            exit 1
+          fi
+
   deploy_preview:
     needs: [determine_project, comment_actions]
-    if: needs.determine_project.outputs.projects != '[]' && (github.event.action != 'closed' || (github.event.action == 'created' && contains(github.event.comment.body, '@bot deploy')))
+    if: needs.determine_project.outputs.projects != '[]' || needs.comment_actions.outputs.action == 'deploy'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
@@ -108,7 +115,7 @@ jobs:
 
       - name: Deploy or Redeploy Preview on DigitalOcean
         run: |
-          echo "Starting deployment for PR #${{ needs.comment_actions.outputs.pr_number }} - Project: ${{ needs.comment_actions.outputs.project }}"
+          echo "Starting deployment for PR #${{ github.event.pull_request.number }} - Project: ${{ matrix.project }}"
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << "EOF"
             LOCK_FILE="/tmp/deploy/deploy-lock"
 
@@ -129,20 +136,20 @@ jobs:
               exit 1
             fi
 
-            UNIQUE_ID="${{ needs.comment_actions.outputs.project }}-${{ needs.comment_actions.outputs.pr_number }}-$PORT"
+            UNIQUE_ID="${{ matrix.project }}-${{ github.event.pull_request.number }}-$PORT"
 
             echo "Cleaning up before redeployment..."
-            pm2 list | grep -E "${{ needs.comment_actions.outputs.project }}-${{ needs.comment_actions.outputs.pr_number }}-" | awk '{print $2}' | xargs -r pm2 delete
-            rm -rf /home/techteam/apps/moon-portal-app/portal/build/pr-${{ needs.comment_actions.outputs.pr_number }}
-            rm -rf /home/techteam/apps/moon-portal-app/payzone/build/pr-${{ needs.comment_actions.outputs.pr_number }}
+            pm2 list | grep -E "${{ matrix.project }}-${{ github.event.pull_request.number }}-" | awk '{print $2}' | xargs -r pm2 delete
+            rm -rf /home/techteam/apps/moon-portal-app/portal/build/pr-${{ github.event.pull_request.number }}
+            rm -rf /home/techteam/apps/moon-portal-app/payzone/build/pr-${{ github.event.pull_request.number }}
 
-            echo "Redeploying for ${{ needs.comment_actions.outputs.project }} PR #${{ needs.comment_actions.outputs.pr_number }}..."
+            echo "Redeploying for ${{ matrix.project }} PR #${{ github.event.pull_request.number }}..."
 
-            export NEXT_PUBLIC_BUILD_PATH=${{ needs.comment_actions.outputs.pr_number }}/$UNIQUE_ID
+            export NEXT_PUBLIC_BUILD_PATH=${{ github.event.pull_request.number }}/$UNIQUE_ID
 
-            cd apps/moon-portal-app/${{ needs.comment_actions.outputs.project }}
+            cd apps/moon-portal-app/${{ matrix.project }}
             git stash || git reset --hard
-            git fetch origin pull/${{ needs.comment_actions.outputs.pr_number }}/head:$UNIQUE_ID
+            git fetch origin pull/${{ github.event.pull_request.number }}/head:$UNIQUE_ID
             git checkout $UNIQUE_ID
 
             if ! npm install; then
@@ -165,16 +172,16 @@ jobs:
 
             git stash pop || echo "No stashed changes to pop."
             rm -f "$LOCK_FILE"
-            echo "Redeployment completed for PR #${{ needs.comment_actions.outputs.pr_number }} - Project: ${{ needs.comment_actions.outputs.project }} on port $PORT."
+            echo "Redeployment completed for PR #${{ github.event.pull_request.number }} - Project: ${{ matrix.project }} on port $PORT."
           EOF
 
       - name: Comment Preview URL
         uses: actions/github-script@v6
         with:
           script: |
-            const project = '${{ needs.comment_actions.outputs.project }}';
-            const prNumber = '${{ needs.comment_actions.outputs.pr_number }}';
-            const uniqueId = 'init'; // This should be replaced by the dynamic uniqueId used above if needed
+            const project = '${{ matrix.project }}';
+            const prNumber = '${{ github.event.pull_request.number }}';
+            const uniqueId = 'init';
             const port = parseInt(process.env.PORT);
             const previewUrl = `https://${project}-pr-${prNumber}-${uniqueId}.${project}.themoondevs.com:${port}`;
             github.rest.issues.createComment({
