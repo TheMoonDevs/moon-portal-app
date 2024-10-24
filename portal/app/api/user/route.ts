@@ -34,11 +34,13 @@ export async function GET(request: NextRequest) {
         status: status ? (status as USERSTATUS) : USERSTATUS.ACTIVE,
       },
       include: {
-        buffBadge: {
-          where: {
-            month: currentMonth,
+        ...(month && {
+          buffBadge: {
+            where: {
+              month: currentMonth,
+            },
           },
-        },
+        }),
       },
     });
     // console.log(user);

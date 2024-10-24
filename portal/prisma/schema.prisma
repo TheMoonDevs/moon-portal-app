@@ -37,6 +37,7 @@ model User {
   thirdPartyData Json?
   slackId        String?
   positionTitle  String?
+  buffBadge      BuffBadge[]
 }
 
 model Candidate {
@@ -500,6 +501,7 @@ model BuffBadge {
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
   month          String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@unique([userId, month]) 
 }
