@@ -111,6 +111,11 @@ jobs:
       cancel-in-progress: false
 
     steps:
+      - name: Debug Outputs
+        run: |
+          echo "Projects output: ${{ needs.determine_project.outputs.projects }}"
+          echo "Comment action: ${{ needs.comment_actions.outputs.action }}"
+
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.5.3
         with:
@@ -122,7 +127,7 @@ jobs:
           PROJECT=${{ matrix.project }}
           CLEAN_FLAG=${{ needs.comment_actions.outputs.clean_flag }}
           echo "Starting deployment for PR #$PR_NUMBER - Project: $PROJECT"
-          
+
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << "EOF"
             LOCK_FILE="/tmp/deploy/deploy-lock"
 
