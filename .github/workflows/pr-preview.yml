@@ -135,9 +135,9 @@ jobs:
           echo "Starting deployment for PR #$PR_NUMBER - Project: $PROJECT"
 
           # Find the first available port starting from 8000
-          START_PORT = 8000
-          MAX_PORT = 10000
-          PORT = $START_PORT
+          START_PORT=8000
+          MAX_PORT=10000
+          PORT=$START_PORT
           while [ $PORT -lt $MAX_PORT ]; do
             if ! ss -tlnp | grep :${PORT} > /dev/null; then
               break
