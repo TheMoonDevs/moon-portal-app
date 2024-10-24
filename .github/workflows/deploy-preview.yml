@@ -29,9 +29,9 @@ jobs:
 
       - name: Deploy or Redeploy Preview on DigitalOcean
         run: |
-          PR_NUMBER=${{github.event.pull_request.number || needs.comment_actions.outputs.pr_number }}
-          PROJECT=${{ matrix.project }}
-          CLEAN_FLAG=${{ needs.comment_actions.outputs.clean_flag }}
+          PR_NUMBER=${{inputs.pr_number || github.event.pull_request.number }}
+          PROJECT=${{ inputs.project }}
+          CLEAN_FLAG=${{ inputs.clean_flag }}
           echo "Starting deployment for PR #$PR_NUMBER - Project: $PROJECT"
 
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << "EOF"
@@ -45,11 +45,11 @@ jobs:
           done
 
           touch "$LOCK_FILE"
-          echo "Starting production deployment for project: ${{ matrix.project }}"
+          echo "Starting production deployment for project: ${{ inputs.project }}"
 
-          PR_NUMBER=${{github.event.pull_request.number || needs.comment_actions.outputs.pr_number }}
-          PROJECT=${{ matrix.project }}
-          CLEAN_FLAG=${{ needs.comment_actions.outputs.clean_flag }}
+          PR_NUMBER=${{inputs.pr_number || github.event.pull_request.number }}
+          PROJECT=${{ inputs.project }}
+          CLEAN_FLAG=${{ inputs.clean_flag }}
           echo "Starting deployment for PR #$PR_NUMBER - Project: $PROJECT"
             # Find the first available port starting from 8000
             START_PORT=8000
@@ -112,9 +112,9 @@ jobs:
           PORT: ${{ env.PREVIEW_PORT }}
         with:
           script: |
-            const project = '${{ matrix.project }}';
+            const project = '${{ inputs.project }}';
             const subdomain = project === 'payzone' ? 'pay' : project;
-            const prNumber = '${{ needs.comment_actions.outputs.pr_number || github.event.pull_request.number }}';
+            const prNumber = '${{ inputs.pr_number || github.event.pull_request.number }}';
             const port = process.env.PORT;
             const uniqueId = `preview-${prNumber}-${port}`;
             const previewUrl = `https://${uniqueId}.${subdomain}.themoondevs.com`;
