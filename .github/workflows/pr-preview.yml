@@ -56,15 +56,14 @@ jobs:
         if: steps.set-projects.outputs.projects != '[]'
         with:
           script: |
-            const projects = ${{ steps.set-projects.outputs.projects }};
-            const projectList = JSON.parse(projects).map(p => `- \`@bot deploy ${p}\``).join('\n');
+            const projects = JSON.parse('${{ steps.set-projects.outputs.projects }}');
+            const projectList = projects.map(p => `- \`@bot deploy ${p}\``).join('\n');
             github.rest.issues.createComment({
               issue_number: context.payload.pull_request.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `🚀 Detected changes in the following projects:\n${projectList}\n\n` +
-                    `You can trigger deployments using the comments above.\n` +
-                    `For example: \`@bot deploy portal\` to deploy the portal.`
+              body: `🚀 Detected changes in the following projects:\n${projects}\n\n` +
+                    `Deploying preview:\n${projectList}\n\n` +
             });
 
   comment_actions:
