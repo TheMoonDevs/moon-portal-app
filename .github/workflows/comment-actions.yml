@@ -12,6 +12,7 @@ jobs:
   handle_comment:
     if: github.event_name == 'issue_comment'
     runs-on: ubuntu-latest
+    if: github.event_name == 'issue_comment'
     outputs:
       action: ${{ steps.extract.outputs.action }}
       project: ${{ steps.extract.outputs.project }}
