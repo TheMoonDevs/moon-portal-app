@@ -3,7 +3,6 @@ name: PR Preview Deployment
 on:
   pull_request:
     types: [opened, edited, synchronize, reopened, closed]
-
   issue_comment:
     types: [created]
 
@@ -123,14 +122,14 @@ jobs:
 
       - name: Deploy or Redeploy Preview on DigitalOcean
         run: |
-          PR_NUMBER=${{github.event.pull_request.number || needs.comment_actions.outputs.pr_number }}
+          PR_NUMBER=${{ github.event.pull_request.number || needs.comment_actions.outputs.pr_number }}
           PROJECT=${{ matrix.project }}
           CLEAN_FLAG=${{ needs.comment_actions.outputs.clean_flag }}
           echo "Starting deployment for PR #$PR_NUMBER - Project: $PROJECT"
           
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << EOF
           LOCK_FILE="/tmp/deploy/deploy-lock"
-          PR_NUMBER=${{github.event.pull_request.number || needs.comment_actions.outputs.pr_number }}
+          PR_NUMBER=${{ github.event.pull_request.number || needs.comment_actions.outputs.pr_number }}
           PROJECT=${{ matrix.project }}
           CLEAN_FLAG=${{ needs.comment_actions.outputs.clean_flag }}
           echo "Starting deployment for PR #$PR_NUMBER - Project: $PROJECT"
@@ -218,3 +217,4 @@ jobs:
                     `🔄 Redeploy: @bot deploy ${project}\n` +
                     `🔒 Delete Lock: @bot delete_lock`
             });
+          
