@@ -49,23 +49,18 @@ jobs:
   deploy_preview:
     needs: determine_project
     if: needs.determine_project.outputs.projects != 'null' && needs.determine_project.outputs.projects != '[]'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
     strategy:
       matrix:
         project: ${{ fromJson(needs.determine_project.outputs.projects) }}
       max-parallel: 1 # Ensure deployments run sequentially
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Call Deploy Preview
-        uses: ./.github/workflows/deploy-preview/
-        with:
-          pr_number: ${{ github.event.pull_request.number }}
-          project: ${{ matrix.project }}
-          clean_flag: true
+    uses: ./.github/workflows/deploy-preview.yml
+    with:
+      pr_number: ${{ github.event.pull_request.number }}
+      project: ${{ matrix.project }}
+      clean_flag: true
+    secrets:
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      DROPLET_IP: ${{ secrets.DROPLET_IP }}
 
   cleanup_on_pr_close:
     if: always() && (github.event.pull_request.merged == true || github.event.pull_request.state == 'closed')
