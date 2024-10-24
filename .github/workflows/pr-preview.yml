@@ -138,16 +138,16 @@ jobs:
           START_PORT=8000
           MAX_PORT=10000
           PORT=$START_PORT
+          echo "Checking for available ports..."
+          echo "start port: $PORT"
+          echo "max port: $MAX_PORT"
           while [ $PORT -lt $MAX_PORT ]; do
-            echo "Checking port $PORT..."
             if ! ss -tlnp | grep ":${PORT} " > /dev/null; then
               break
             fi
             PORT=$((PORT + 1))
           done
 
-          echo `port found: $PORT`
-          echo `max port: $MAX_PORT`
 
           if [ $PORT -ge $MAX_PORT ]; then
             echo "ERROR: No available ports found."
