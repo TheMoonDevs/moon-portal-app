@@ -20,6 +20,7 @@ import dayjs from "dayjs";
 interface WorklogSummaryViewProps {
   worklogSummary: WorkLogs[];
   workLogUser: User | null | undefined;
+  isDrawer?: boolean
 }
 
 const getCompletionEmoji = (completed: number, total: number) => {
@@ -96,7 +97,7 @@ const FilterPill = ({
 export const WorklogSummaryView = ({
   worklogSummary,
   workLogUser,
-  // isDrawer,
+  isDrawer,
 }: WorklogSummaryViewProps) => {
   const uniqueWorklogs = getLatestWorklogPerDate(worklogSummary); //removes duplicate data from worklogs and we will get the latest updated worklogs
   const dispatch = useAppDispatch();
