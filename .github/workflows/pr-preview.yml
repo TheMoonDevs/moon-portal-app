@@ -55,70 +55,9 @@ jobs:
         run: |
           echo "Projects output: ${{ steps.set-projects.outputs.projects }}"
 
-  comment_actions:
-    if: contains(github.event.comment.body, '@bot')
-    runs-on: ubuntu-latest
-    outputs:
-      action: ${{ steps.extract.outputs.action }}
-      project: ${{ steps.extract.outputs.project }}
-      pr_number: ${{ steps.extract.outputs.pr_number }}
-      clean_flag: ${{ steps.extract.outputs.clean_flag }}
-    steps:
-      - name: Extract Action, Project, and Optional PR Number
-        id: extract
-        run: |
-          # Extract the action word following @bot
-          ACTION=$(echo "${{ github.event.comment.body }}" | awk '{for(i=1;i<=NF;i++) if ($i ~ /^@bot/) {print $(i+1); exit}}')
-
-          # Extract the project (looks for "portal", "payzone", or defaults to "portal" if none specified)
-          PROJECT=$(echo "${{ github.event.comment.body }}" | grep -Eo "\b(portal|payzone)\b" || echo "portal")
-
-          # Determine if the clean flag is present (--clean)
-          CLEAN_FLAG=$(echo "${{ github.event.comment.body }}" | grep -qE "--clean" && echo "true" || echo "false")
-
-          # Extract PR number from the comment, or fall back to the issue number if not explicitly mentioned
-          PR_NUMBER_COMMENT=$(echo "${{ github.event.comment.body }}" | grep -oE '#([0-9]+)' | cut -d'#' -f2)
-          PR_NUMBER=${PR_NUMBER_COMMENT:-${{ github.event.issue.number }}}
-
-          # Debugging the extracted values
-          echo "Extracted Action: $ACTION"
-          echo "Extracted Project: $PROJECT"
-          echo "Extracted PR Number: $PR_NUMBER"
-          echo "Clean Flag: $CLEAN_FLAG"
-
-          # Set outputs
-          echo "action=$ACTION" >> $GITHUB_ENV
-          echo "project=$PROJECT" >> $GITHUB_ENV
-          echo "pr_number=$PR_NUMBER" >> $GITHUB_ENV
-          echo "clean_flag=$CLEAN_FLAG" >> $GITHUB_ENV
-          echo "::set-output name=action::$ACTION"
-          echo "::set-output name=project::$PROJECT"
-          echo "::set-output name=pr_number::$PR_NUMBER"
-          echo "::set-output name=clean_flag::$CLEAN_FLAG"
-
-      - name: Debug Comment Actions
-        run: |
-          echo "Action: ${{ steps.extract.outputs.action }}"
-          echo "Project: ${{ steps.extract.outputs.project }}"
-          echo "PR Number: ${{ steps.extract.outputs.pr_number }}"
-          echo "Clean Flag: ${{ steps.extract.outputs.clean_flag }}"
-
-      - name: Trigger Appropriate Command
-        run: |
-          if [[ "${{ steps.extract.outputs.action }}" == "deploy" ]]; then
-            echo "Deploying based on comment action..."
-          elif [[ "${{ steps.extract.outputs.action }}" == "cleanup" ]]; then
-            echo "Cleaning up based on comment action..."
-          elif [[ "${{ steps.extract.outputs.action }}" == "delete_lock" ]]; then
-            echo "Deleting lock based on comment action..."
-          else
-            echo "No recognized action found. Skipping."
-            exit 1
-          fi
-
   deploy_preview:
-    needs: [determine_project, comment_actions]
-    if: needs.determine_project.outputs.projects != '[]' || needs.comment_actions.outputs.action == 'deploy'
+    needs: [determine_project]
+    if: needs.determine_project.outputs.projects != 'null' && needs.determine_project.outputs.projects != '[]' || needs.comment_actions.outputs.action == 'deploy'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
