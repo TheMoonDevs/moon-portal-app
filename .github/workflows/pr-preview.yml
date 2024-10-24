@@ -2,7 +2,7 @@ name: PR Preview Deployment
 
 on:
   pull_request:
-    types: [opened, edited, synchronize, reopened, closed]
+    types: [opened, closed]
 
   issue_comment:
     types: [created]
@@ -49,8 +49,9 @@ jobs:
       - name: Debug Changed Projects Output
         run: |
           echo "Projects output: ${{ steps.set-projects.outputs.projects }}"
+
   comment_actions:
-    if: github.event_name == 'issue_comment' && contains(github.event.comment.body, '@bot')
+    if: github.event_name == 'issue_comment'
     runs-on: ubuntu-latest
     outputs:
       action: ${{ steps.extract.outputs.action }}
@@ -66,22 +67,41 @@ jobs:
         id: extract
         run: |
           COMMENT_BODY="${{ github.event.comment.body }}"
-          ACTION=$(echo "$COMMENT_BODY" | awk '{for(i=1;i<=NF;i++) if ($i ~ /^@bot/) {print $(i+1); exit}}')
-          PROJECT=$(echo "$COMMENT_BODY" | grep -Eo "\b(portal|payzone)\b" || echo "portal")
-          CLEAN_FLAG=$(echo "$COMMENT_BODY" | grep -qE "--clean" && echo "true" || echo "false")
-          PR_NUMBER=$(echo "$COMMENT_BODY" | grep -oE '#([0-9]+)' | cut -d'#' -f2)
-          PR_NUMBER=${PR_NUMBER:-${{ github.event.issue.number }}}
 
-          echo "Extracted Action: $ACTION"
-          echo "Extracted Project: $PROJECT"
-          echo "Extracted PR Number: $PR_NUMBER"
-          echo "Clean Flag: $CLEAN_FLAG"
+          # Ensure that the comment matches the expected pattern exactly
+          if [[ "$COMMENT_BODY" =~ ^@bot[[:space:]]+(deploy|cleanup|delete_lock)([[:space:]]+--clean)?([[:space:]]+#\d+)?$ ]]; then
+            # Extract the action word following @bot
+            ACTION=$(echo "$COMMENT_BODY" | awk '{for(i=1;i<=NF;i++) if ($i ~ /^@bot/) {print $(i+1); exit}}')
 
-          echo "action=$ACTION" >> $GITHUB_OUTPUT
-          echo "project=$PROJECT" >> $GITHUB_OUTPUT
-          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
-          echo "clean_flag=$CLEAN_FLAG" >> $GITHUB_OUTPUT
-          
+            # Extract the project (looks for "portal", "payzone", or defaults to "portal" if none specified)
+            PROJECT=$(echo "$COMMENT_BODY" | grep -Eo "\b(portal|payzone)\b" || echo "portal")
+
+            # Determine if the clean flag is present (--clean)
+            CLEAN_FLAG=$(echo "$COMMENT_BODY" | grep -qE "--clean" && echo "true" || echo "false")
+
+            # Extract PR number from the comment, or fall back to the issue number if not explicitly mentioned
+            PR_NUMBER=$(echo "$COMMENT_BODY" | grep -oE '#([0-9]+)' | cut -d'#' -f2)
+            PR_NUMBER=${PR_NUMBER:-${{ github.event.issue.number }}}
+
+            # Debugging the extracted values
+            echo "Extracted Action: $ACTION"
+            echo "Extracted Project: $PROJECT"
+            echo "Extracted PR Number: $PR_NUMBER"
+            echo "Clean Flag: $CLEAN_FLAG"
+
+            # Set outputs
+            echo "action=$ACTION" >> $GITHUB_OUTPUT
+            echo "project=$PROJECT" >> $GITHUB_OUTPUT
+            echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+            echo "clean_flag=$CLEAN_FLAG" >> $GITHUB_OUTPUT
+          else
+            echo "Comment did not match the expected pattern, skipping action."
+            echo "action=" >> $GITHUB_OUTPUT
+            echo "project=" >> $GITHUB_OUTPUT
+            echo "pr_number=" >> $GITHUB_OUTPUT
+            echo "clean_flag=" >> $GITHUB_OUTPUT
+          fi
+
   deploy_preview:
     needs: [determine_project, comment_actions]
     if: always() && (needs.determine_project.outputs.projects != 'null' && needs.determine_project.outputs.projects != '[]' || needs.comment_actions.outputs.action == 'deploy')
@@ -111,7 +131,7 @@ jobs:
           PROJECT=${{ matrix.project }}
           CLEAN_FLAG=${{ needs.comment_actions.outputs.clean_flag }}
           echo "Starting deployment for PR #$PR_NUMBER - Project: $PROJECT"
-          
+
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << "EOF"
           LOCK_FILE="/tmp/deploy/deploy-lock"
           PR_NUMBER=${{github.event.pull_request.number || needs.comment_actions.outputs.pr_number }}
@@ -137,11 +157,10 @@ jobs:
             if [[ "$CLEAN_FLAG" == "true" ]]; then
               echo "Cleaning up before redeployment..."
               pm2 list | grep -E "${PROJECT}-${PR_NUMBER}-" | awk '{print $2}' | xargs -r pm2 delete
-              rm -rf /home/techteam/apps/moon-portal-app/portal/build/pr-${PR_NUMBER}
-              rm -rf /home/techteam/apps/moon-portal-app/payzone/build/pr-${PR_NUMBER}
+              rm -rf /home/techteam/apps/moon-portal-app/${PROJECT}/build/${PR_NUMBER}
             fi
             echo "Redeploying for $PROJECT PR #$PR_NUMBER..."
-            export NEXT_PUBLIC_BUILD_PATH=${PR_NUMBER}/$UNIQUE_ID
+            export NEXT_PUBLIC_BUILD_PATH=${PR_NUMBER}/$PORT
             echo `Deploying Project: $PROJECT - PR: $PR_NUMBER - Port: $PORT - Unique ID: $UNIQUE_ID`
             cd apps/moon-portal-app/$PROJECT
             git stash || git reset --hard
@@ -166,7 +185,7 @@ jobs:
             rm -f "$LOCK_FILE"
             echo "PREVIEW_PORT=$PORT" > /tmp/preview-port-${PR_NUMBER}.txt
           EOF
-  
+
       - name: Retrieve Preview Port
         run: |
           # Retrieve the preview port from the remote server
@@ -174,7 +193,7 @@ jobs:
           cat preview-port.txt
           PREVIEW_PORT=$(cat preview-port.txt | grep 'PREVIEW_PORT' | cut -d'=' -f2)
           echo "PREVIEW_PORT=${PREVIEW_PORT}" >> $GITHUB_ENV
-            
+
       - name: Comment Preview URL
         uses: actions/github-script@v6
         env:
@@ -185,7 +204,7 @@ jobs:
             const subdomain = project === 'payzone' ? 'pay' : project;
             const prNumber = '${{ needs.comment_actions.outputs.pr_number || github.event.pull_request.number }}';
             const port = process.env.PORT;
-            const uniqueId = `${project}-pr-${prNumber}-${port}`;
+            const uniqueId = `preview-${prNumber}-${port}`;
             const previewUrl = `https://${uniqueId}.${subdomain}.themoondevs.com`;
             github.rest.issues.createComment({
               issue_number: parseInt(prNumber),
