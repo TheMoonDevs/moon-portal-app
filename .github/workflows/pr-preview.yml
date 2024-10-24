@@ -56,6 +56,10 @@ jobs:
         project: ${{ fromJson(needs.determine_project.outputs.projects) }}
       max-parallel: 1 # Ensure deployments run sequentially
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Call Deploy Preview
         uses: ./.github/workflows/deploy-preview.yml
         with:
