@@ -54,6 +54,7 @@ jobs:
     strategy:
       matrix:
         project: ${{ fromJson(needs.determine_project.outputs.projects) }}
+      max-parallel: 1 # Ensure deployments run sequentially
     steps:
       - name: Call Deploy Preview
         uses: ./.github/workflows/deploy-preview.yml
