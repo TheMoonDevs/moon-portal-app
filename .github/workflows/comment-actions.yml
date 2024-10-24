@@ -1,63 +1,91 @@
-name: Comment Actions
+name: Comment-Based Deploy Actions
 
 on:
   issue_comment:
-    types:
-      - created
+    types: [created]
 
 permissions:
   contents: write
   pull-requests: write
 
 jobs:
-  handle-comment:
+  handle_comment:
     runs-on: ubuntu-latest
+    outputs:
+      action: ${{ steps.extract.outputs.action }}
+      project: ${{ steps.extract.outputs.project }}
+      pr_number: ${{ steps.extract.outputs.pr_number }}
+      clean_flag: ${{ steps.extract.outputs.clean_flag }}
     steps:
+      - name: Log Comment Body
+        run: |
+          echo "Comment Body: ${{ github.event.comment.body }}"
+
       - name: Extract Action, Project, and Optional PR Number
         id: extract
         run: |
-          ACTION=$(echo "${{ github.event.comment.body }}" | awk '{for(i=1;i<=NF;i++) if ($i~/^@bot/) {print $i; exit}}' | cut -d''-f2)
-          PROJECT=$(echo "${{ github.event.comment.body }}" | awk -v action="${ACTION}" '$0 ~ action {for(i=1;i<=NF;i++) if ($i~/^(payzone|portal)$/) {print $i; exit}}')
-          PR_NUMBER_COMMENT=$(echo "${{ github.event.comment.body }}" | grep -oE '#([0-9]+)' | cut -d'#' -f2)
-          PR_NUMBER_GITHUB=$(echo "${GITHUB_CONTEXT}" | jq -r '.issue.pull_request.url | sub(".*/"; "") | sub("/pull/"; "") |.[:-1]')
-          PR_NUMBER=${PR_NUMBER_COMMENT:-${PR_NUMBER_GITHUB}}
-          echo "ACTION=$ACTION" >> $GITHUB_ENV
-          echo "PROJECT=$PROJECT" >> $GITHUB_ENV
-          echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_ENV
+          COMMENT_BODY="${{ github.event.comment.body }}"
 
-      - name: Execute Action
-        run: |
-          if [ "${{ env.ACTION }}" = "cleanup" ]; then
-            if [ -n "${{ env.PROJECT }}" ] && [ -n "${{ env.PR_NUMBER }}" ]; then
-              case "${{ env.PROJECT }}" in
-                payzone) SUBDOMAIN="pay";;
-                portal) SUBDOMAIN="portal";;
-                *) echo "Invalid project. Supported projects: payzone, portal"; exit 1;;
-              esac
-              ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} <<EOF
-                echo "Starting cleanup for ${SUBDOMAIN}-pr-${{ env.PR_NUMBER }}..."
-                pm2 delete ${SUBDOMAIN}-pr-${{ env.PR_NUMBER }} || true
-                echo "Cleanup completed for ${SUBDOMAIN}-pr-${{ env.PR_NUMBER }}."
-              EOF
-            else
-              echo "Cannot perform cleanup without a project and PR number. Please provide both in the comment (e.g., '@bot cleanup payzone #1234') or ensure the comment is on the correct PR with a detectable project context."
-          elif [ "${{ env.ACTION }}" = "delete_lock" ]; then
-            ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} <<EOF
-              LOCK_FILE="/tmp/deploy/deploy-lock"
-              if [ -f "$LOCK_FILE" ]; then
-                rm -f "$LOCK_FILE"
-                echo "Deploy lock file removed."
-              else
-                echo "No deploy lock file found."
-              fi
-            EOF
+          # Ensure that the comment matches the expected pattern exactly
+          if [[ "$COMMENT_BODY" =~ ^@bot[[:space:]]+(deploy|cleanup|delete_lock)([[:space:]]+--clean)?([[:space:]]+#\d+)?$ ]]; then
+            # Extract the action word following @bot
+            ACTION=$(echo "$COMMENT_BODY" | awk '{for(i=1;i<=NF;i++) if ($i ~ /^@bot/) {print $(i+1); exit}}')
+
+            # Extract the project (looks for "portal", "payzone", or defaults to "portal" if none specified)
+            PROJECT=$(echo "$COMMENT_BODY" | grep -Eo "\b(portal|payzone)\b" || echo "portal")
+
+            # Determine if the clean flag is present (--clean)
+            CLEAN_FLAG=$(echo "$COMMENT_BODY" | grep -qE "--clean" && echo "true" || echo "false")
+
+            # Extract PR number from the comment, or fall back to the issue number if not explicitly mentioned
+            PR_NUMBER=$(echo "$COMMENT_BODY" | grep -oE '#([0-9]+)' | cut -d'#' -f2)
+            PR_NUMBER=${PR_NUMBER:-${{ github.event.issue.number }}}
+
+            # Debugging the extracted values
+            echo "Extracted Action: $ACTION"
+            echo "Extracted Project: $PROJECT"
+            echo "Extracted PR Number: $PR_NUMBER"
+            echo "Clean Flag: $CLEAN_FLAG"
+
+            # Set outputs
+            echo "action=$ACTION" >> $GITHUB_OUTPUT
+            echo "project=$PROJECT" >> $GITHUB_OUTPUT
+            echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+            echo "clean_flag=$CLEAN_FLAG" >> $GITHUB_OUTPUT
           else
-            echo "Invalid action from comment. Please use '@bot cleanup' or '@bot delete_lock'."
+            echo "Comment did not match the expected pattern, skipping action."
+            echo "action=" >> $GITHUB_OUTPUT
+            echo "project=" >> $GITHUB_OUTPUT
+            echo "pr_number=" >> $GITHUB_OUTPUT
+            echo "clean_flag=" >> $GITHUB_OUTPUT
           fi
-        env:
-          GITHUB_CONTEXT: ${{ github }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          if: 
-            contains(github.event.comment.body, '@bot') && 
-            (github.event.comment.body == '*@bot cleanup*' || 
-             github.event.comment.body == '*@bot delete_lock*')
+
+      - name: Call Deploy Preview
+        if: steps.extract.outputs.action == 'deploy'
+        uses: ./.github/workflows/deploy-preview.yml
+        with:
+          pr_number: ${{ steps.extract.outputs.pr_number }}
+          project: ${{ steps.extract.outputs.project }}
+          clean_flag: ${{ steps.extract.outputs.clean_flag }}
+
+      - name: Cleanup Deployments
+        if: steps.extract.outputs.action == 'cleanup'
+        run: |
+          PR_NUMBER=${{ steps.extract.outputs.pr_number }}
+          echo "Cleaning up deployments for PR #$PR_NUMBER"
+
+          ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} <<EOF
+          pm2 list | grep -E "-${PR_NUMBER}-" | awk '{print \$2}' | xargs -r pm2 delete
+          rm -rf /home/techteam/apps/moon-portal-app/portal/build/${PR_NUMBER}
+          rm -rf /home/techteam/apps/moon-portal-app/payzone/build/${PR_NUMBER}
+          echo "Cleaned up PR #$PR_NUMBER."
+          EOF
+
+      - name: Delete Lock
+        if: steps.extract.outputs.action == 'delete_lock'
+        run: |
+          ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << "EOF"
+          LOCK_FILE="/tmp/deploy/deploy-lock"
+          rm -f "$LOCK_FILE"
+          echo "Deleted lock file."
+          EOF
