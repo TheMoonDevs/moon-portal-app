@@ -64,7 +64,7 @@ jobs:
           clean_flag: true
 
   cleanup_on_pr_close:
-    if: github.event.pull_request.merged == true || github.event.pull_request.closed == true
+    if: github.event.pull_request.merged == true || github.event.pull_request.state == 'closed'
     runs-on: ubuntu-latest
     needs: [determine_project]
     steps:
