@@ -50,7 +50,7 @@ jobs:
         run: |
           echo "Projects output: ${{ steps.set-projects.outputs.projects }}"
   comment_actions:
-    if: always() && contains(github.event.comment.body, '@bot')
+    if: github.event_name == 'issue_comment' && contains(github.event.comment.body, '@bot')
     runs-on: ubuntu-latest
     outputs:
       action: ${{ steps.extract.outputs.action }}
@@ -58,30 +58,30 @@ jobs:
       pr_number: ${{ steps.extract.outputs.pr_number }}
       clean_flag: ${{ steps.extract.outputs.clean_flag }}
     steps:
+      - name: Log Comment Body
+        run: |
+          echo "Comment Body: ${{ github.event.comment.body }}"
+
       - name: Extract Action, Project, and Optional PR Number
         id: extract
         run: |
-          # Extract the action word following @bot
-          ACTION=$(echo "${{ github.event.comment.body }}" | awk '{for(i=1;i<=NF;i++) if ($i ~ /^@bot/) {print $(i+1); exit}}')
-          # Extract the project (looks for "portal", "payzone", or defaults to "portal" if none specified)
-          PROJECT=$(echo "${{ github.event.comment.body }}" | grep -Eo "\b(portal|payzone)\b" || echo "portal")
-          # Determine if the clean flag is present (--clean)
-          CLEAN_FLAG=$(echo "${{ github.event.comment.body }}" | grep -qE "--clean" && echo "true" || echo "false")
-          # Extract PR number from the comment, or fall back to the issue number if not explicitly mentioned
-          PR_NUMBER_COMMENT=$(echo "${{ github.event.comment.body }}" | grep -oE '#([0-9]+)' | cut -d'#' -f2)
-          PR_NUMBER=${PR_NUMBER_COMMENT:-${{ github.event.issue.number }}}
-          # Debugging the extracted values
+          COMMENT_BODY="${{ github.event.comment.body }}"
+          ACTION=$(echo "$COMMENT_BODY" | awk '{for(i=1;i<=NF;i++) if ($i ~ /^@bot/) {print $(i+1); exit}}')
+          PROJECT=$(echo "$COMMENT_BODY" | grep -Eo "\b(portal|payzone)\b" || echo "portal")
+          CLEAN_FLAG=$(echo "$COMMENT_BODY" | grep -qE "--clean" && echo "true" || echo "false")
+          PR_NUMBER=$(echo "$COMMENT_BODY" | grep -oE '#([0-9]+)' | cut -d'#' -f2)
+          PR_NUMBER=${PR_NUMBER:-${{ github.event.issue.number }}}
+
           echo "Extracted Action: $ACTION"
           echo "Extracted Project: $PROJECT"
           echo "Extracted PR Number: $PR_NUMBER"
           echo "Clean Flag: $CLEAN_FLAG"
-          # Set outputs
-          echo "action=$ACTION" >> $GITHUB_ENV
-          echo "clean_flag=$CLEAN_FLAG" >> $GITHUB_ENV
-          echo "::set-output name=action::$ACTION"
-          echo "::set-output name=project::$PROJECT"
-          echo "::set-output name=pr_number::$PR_NUMBER"
-          echo "::set-output name=clean_flag::$CLEAN_FLAG"
+
+          echo "action=$ACTION" >> $GITHUB_OUTPUT
+          echo "project=$PROJECT" >> $GITHUB_OUTPUT
+          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+          echo "clean_flag=$CLEAN_FLAG" >> $GITHUB_OUTPUT
+          
   deploy_preview:
     needs: [determine_project, comment_actions]
     if: always() && (needs.determine_project.outputs.projects != 'null' && needs.determine_project.outputs.projects != '[]' || needs.comment_actions.outputs.action == 'deploy')
@@ -214,8 +214,8 @@ jobs:
           echo "Cleaning up deployments for closed PR #$PR_NUMBER"
 
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << EOF
-          pm2 list | grep -E "-pr-${PR_NUMBER}-" | awk '{print \$2}' | xargs -r pm2 delete
-          rm -rf /home/techteam/apps/moon-portal-app/portal/build/pr-\${PR_NUMBER}
-          rm -rf /home/techteam/apps/moon-portal-app/payzone/build/pr-\${PR_NUMBER}
+          pm2 list | grep -E "-${PR_NUMBER}-" | awk '{print \$2}' | xargs -r pm2 delete
+          rm -rf /home/techteam/apps/moon-portal-app/portal/build/${PR_NUMBER}
+          rm -rf /home/techteam/apps/moon-portal-app/payzone/build/${PR_NUMBER}
           echo "Cleaned up PR #$PR_NUMBER."
           EOF
