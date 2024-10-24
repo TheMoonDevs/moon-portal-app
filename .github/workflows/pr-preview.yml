@@ -120,7 +120,7 @@ jobs:
           MAX_PORT=10000
           PORT=$START_PORT
 
-          while [ \$PORT -lt \$MAX_PORT ]; do
+          while [ "\$PORT" -lt "\$MAX_PORT" ]; do
             if ! ss -tlnp | grep :\$PORT > /dev/null; then
               break
             fi
