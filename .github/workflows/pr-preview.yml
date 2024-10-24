@@ -164,9 +164,17 @@ jobs:
             }
             git stash pop || echo "No stashed changes to pop."
             rm -f "$LOCK_FILE"
-            echo "Redeployment completed for PR #$PR_NUMBER - Project: $PROJECT on port $PORT."
-            echo "PREVIEW_PORT=$PORT" >> $GITHUB_ENV  
+            echo "PREVIEW_PORT=$PORT" > /tmp/preview-port-${PR_NUMBER}.txt
           EOF
+  
+      - name: Retrieve Preview Port
+        run: |
+          # Retrieve the preview port from the remote server
+          ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} "cat /tmp/preview-port-${{ github.event.pull_request.number }}.txt" > preview-port.txt
+          cat preview-port.txt
+          PREVIEW_PORT=$(cat preview-port.txt | grep 'PREVIEW_PORT' | cut -d'=' -f2)
+          echo "PREVIEW_PORT=${PREVIEW_PORT}" >> $GITHUB_ENV
+            
       - name: Comment Preview URL
         uses: actions/github-script@v6
         env:
