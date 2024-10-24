@@ -51,6 +51,10 @@ jobs:
           echo "Changed projects: ${projects[@]}"
           echo "projects=$(jq -c -n --argjson projects "$(printf '%s\n' "${projects[@]}" | jq -R . | jq -s .)" '$projects')" >> $GITHUB_OUTPUT
 
+      - name: Debug Changed Projects Output
+        run: |
+          echo "Projects output: ${{ steps.set-projects.outputs.projects }}"
+
   comment_actions:
     if: contains(github.event.comment.body, '@bot')
     runs-on: ubuntu-latest
@@ -76,6 +80,12 @@ jobs:
           PR_NUMBER_COMMENT=$(echo "${{ github.event.comment.body }}" | grep -oE '#([0-9]+)' | cut -d'#' -f2)
           PR_NUMBER=${PR_NUMBER_COMMENT:-${{ github.event.issue.number }}}
 
+          # Debugging the extracted values
+          echo "Extracted Action: $ACTION"
+          echo "Extracted Project: $PROJECT"
+          echo "Extracted PR Number: $PR_NUMBER"
+          echo "Clean Flag: $CLEAN_FLAG"
+
           # Set outputs
           echo "action=$ACTION" >> $GITHUB_ENV
           echo "project=$PROJECT" >> $GITHUB_ENV
@@ -85,6 +95,13 @@ jobs:
           echo "::set-output name=project::$PROJECT"
           echo "::set-output name=pr_number::$PR_NUMBER"
           echo "::set-output name=clean_flag::$CLEAN_FLAG"
+
+      - name: Debug Comment Actions
+        run: |
+          echo "Action: ${{ steps.extract.outputs.action }}"
+          echo "Project: ${{ steps.extract.outputs.project }}"
+          echo "PR Number: ${{ steps.extract.outputs.pr_number }}"
+          echo "Clean Flag: ${{ steps.extract.outputs.clean_flag }}"
 
       - name: Trigger Appropriate Command
         run: |
@@ -101,6 +118,7 @@ jobs:
 
   deploy_preview:
     needs: [determine_project, comment_actions]
+    if: needs.determine_project.outputs.projects != '[]' || needs.comment_actions.outputs.action == 'deploy'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
@@ -111,10 +129,11 @@ jobs:
       cancel-in-progress: false
 
     steps:
-      - name: Debug Outputs
+      - name: Debug Outputs for Deploy Preview
         run: |
           echo "Projects output: ${{ needs.determine_project.outputs.projects }}"
           echo "Comment action: ${{ needs.comment_actions.outputs.action }}"
+          echo "Project for deployment: ${{ matrix.project }}"
 
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.5.3
@@ -195,7 +214,7 @@ jobs:
           script: |
             const project = '${{ matrix.project }};
             const subdomain = '${{ matrix.project }} === "payzone" ? "pay" : "portal"';
-            const prNumber = '${{ github.event.pull_request.number }}';
+            const prNumber = '${{ needs.comment_actions.outputs.pr_number || github.event.pull_request.number }}';
             const port = parseInt(process.env.PORT);
             const uniqueId = ${project}-pr-${prNumber}-${port};
             const previewUrl = `https://${uniqueId}.${subdomain}.themoondevs.com`;
