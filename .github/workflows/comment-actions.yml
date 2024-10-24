@@ -11,7 +11,7 @@ permissions:
 jobs:
   handle_comment:
     runs-on: ubuntu-latest
-    if: github.event_name == 'issue_comment' && contains('@bot', github.event.comment.body)
+    if: github.event_name == 'issue_comment'
     outputs:
       action: ${{ steps.extract.outputs.action }}
       project: ${{ steps.extract.outputs.project }}
