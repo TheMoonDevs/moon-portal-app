@@ -31,9 +31,9 @@
     "@mui/material": "^5.16.7",
     "@mui/x-charts": "^7.21.0",
     "@mui/x-date-pickers": "^6.20.2",
+    "@next/bundle-analyzer": "^14.2.15",
     "@nivo/line": "^0.87.0",
     "@nivo/pie": "^0.87.0",
-    "@next/bundle-analyzer": "^14.2.15",
     "@prisma/client": "^5.21.1",
     "@radix-ui/react-select": "^2.1.2",
     "@reduxjs/toolkit": "^1.9.7",
@@ -64,8 +64,8 @@
     "slick-carousel": "^1.8.1",
     "sonner": "^1.5.0",
     "swr": "^2.2.5",
-    "web-push": "^3.6.7",
-    "tailwind-merge": "^2.5.4"
+    "tailwind-merge": "^2.5.4",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@cspell/eslint-plugin": "^8.15.2",
