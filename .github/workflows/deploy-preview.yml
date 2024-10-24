@@ -29,12 +29,12 @@ jobs:
 
       - name: Deploy or Redeploy Preview on DigitalOcean
         run: |
-          PR_NUMBER=${{ inputs.pr_number }}
+          PR_NUMBER=${{inputs.pr_number || github.event.pull_request.number }}
           PROJECT=${{ inputs.project }}
           CLEAN_FLAG=${{ inputs.clean_flag }}
           echo "Starting deployment for PR #$PR_NUMBER - Project: $PROJECT"
 
-          ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} <<EOF
+          ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << "EOF"
           LOCK_FILE="/tmp/deploy/deploy-lock"  # Unified lock file for all projects
           echo "Checking for ongoing deployments..."
 
@@ -46,43 +46,49 @@ jobs:
 
           touch "$LOCK_FILE"
           echo "Starting production deployment for project: ${{ inputs.project }}"
-          
-          START_PORT=8000
-          MAX_PORT=10000
-          PORT=\$START_PORT
-          while [ \$PORT -lt \$MAX_PORT ]; do
-            if ! ss -tlnp | grep ":${PORT} " > /dev/null; then
-              break
+
+          PR_NUMBER=${{inputs.pr_number || github.event.pull_request.number }}
+          PROJECT=${{ inputs.project }}
+          CLEAN_FLAG=${{ inputs.clean_flag }}
+          echo "Starting deployment for PR #$PR_NUMBER - Project: $PROJECT"
+            # Find the first available port starting from 8000
+            START_PORT=8000
+            MAX_PORT=10000
+            PORT=$START_PORT
+            while [ $PORT -lt $MAX_PORT ]; do
+              if ! ss -tlnp | grep ":${PORT} " > /dev/null; then
+                break
+              fi
+              PORT=$((PORT + 1))
+            done
+            if [ $PORT -ge $MAX_PORT ]; then
+              echo "ERROR: No available ports found."
+              rm -f "$LOCK_FILE"
+              exit 1
             fi
-            PORT=\$((PORT + 1))
-          done
-          if [ \$PORT -ge \$MAX_PORT ]; then
-            echo "ERROR: No available ports found."
-            rm -f "\$LOCK_FILE"
-            exit 1
-          fi
-          UNIQUE_ID="\${PROJECT}-\${PR_NUMBER}-\${PORT}"
-          if [[ "\$CLEAN_FLAG" == "true" ]]; then
-            echo "Cleaning up before redeployment..."
-            pm2 list | grep -E "\${PROJECT}-\${PR_NUMBER}-" | awk '{print \$2}' | xargs -r pm2 delete
-            rm -rf /home/techteam/apps/moon-portal-app/\${PROJECT}/build/\${PR_NUMBER}
-          fi
-          echo "Redeploying for \${PROJECT} PR #\${PR_NUMBER}..."
-          export NEXT_PUBLIC_BUILD_PATH=\${PR_NUMBER}/\${PORT}
-          cd apps/moon-portal-app/\$PROJECT
-          git stash || git reset --hard
-          git fetch origin pull/\${PR_NUMBER}/head:\${UNIQUE_ID}
-          git checkout \${UNIQUE_ID}
-          if ! npm install; then
-            echo "ERROR: npm install failed."
-            rm -f "$LOCK_FILE"
-            exit 1
-          fi
-          if ! npm run build:preview; then
-            echo "ERROR: Build failed."
-            rm -f "$LOCK_FILE"
-            exit 1
-          fi
+            UNIQUE_ID="${PROJECT}-${PR_NUMBER}-$PORT"
+            if [[ "$CLEAN_FLAG" == "true" ]]; then
+              echo "Cleaning up before redeployment..."
+              pm2 list | grep -E "${PROJECT}-${PR_NUMBER}-" | awk '{print $2}' | xargs -r pm2 delete
+              rm -rf /home/techteam/apps/moon-portal-app/${PROJECT}/build/${PR_NUMBER}
+            fi
+            echo "Redeploying for $PROJECT PR #$PR_NUMBER..."
+            export NEXT_PUBLIC_BUILD_PATH=${PR_NUMBER}/$PORT
+            echo `Deploying Project: $PROJECT - PR: $PR_NUMBER - Port: $PORT - Unique ID: $UNIQUE_ID`
+            cd apps/moon-portal-app/$PROJECT
+            git stash || git reset --hard
+            git fetch origin pull/$PR_NUMBER/head:$UNIQUE_ID
+            git checkout $UNIQUE_ID
+            if ! npm install; then
+              echo "ERROR: npm install failed."
+              rm -f "$LOCK_FILE"
+              exit 1
+            fi
+            if ! npm run build:preview; then
+              echo "ERROR: Build failed."
+              rm -f "$LOCK_FILE"
+              exit 1
+            fi
             pm2 start npm --name "$UNIQUE_ID" -- run start -- -p $PORT || {
               echo "ERROR: Failed to start PM2 process."
               rm -f "$LOCK_FILE"
@@ -106,9 +112,9 @@ jobs:
           PORT: ${{ env.PREVIEW_PORT }}
         with:
           script: |
-            const project = '${{ matrix.project }}';
+            const project = '${{ inputs.project }}';
             const subdomain = project === 'payzone' ? 'pay' : project;
-            const prNumber = '${{ needs.comment_actions.outputs.pr_number || github.event.pull_request.number }}';
+            const prNumber = '${{ inputs.pr_number || github.event.pull_request.number }}';
             const port = process.env.PORT;
             const uniqueId = `preview-${prNumber}-${port}`;
             const previewUrl = `https://${uniqueId}.${subdomain}.themoondevs.com`;
