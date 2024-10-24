@@ -101,7 +101,6 @@ jobs:
 
   deploy_preview:
     needs: [determine_project, comment_actions]
-    if: needs.determine_project.outputs.projects != '[]' || needs.comment_actions.outputs.action == 'deploy'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
