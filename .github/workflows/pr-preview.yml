@@ -192,19 +192,19 @@ jobs:
             echo "Redeployment completed for PR #$PR_NUMBER - Project: $PROJECT on port $PORT."
 
             # Write the port to a file
-            echo "PORT=$PORT" >> $GITHUB_ENV
+            echo "PREVIEW_PORT=$PORT" >> $GITHUB_ENV
           EOF
 
       - name: Comment Preview URL
         uses: actions/github-script@v6
         env:
-          PORT: ${{ env.PORT }}
+          PORT: ${{ env.PREVIEW_PORT }}
         with:
           script: |
             const project = '${{ matrix.project }}';
             const subdomain = project === 'payzone' ? 'pay' : project;
             const prNumber = '${{ needs.comment_actions.outputs.pr_number || github.event.pull_request.number }}';
-            const port = parseInt(process.env.PORT);
+            const port = parseInt(process.env.PREVIEW_PORT);
             const uniqueId = `${project}-pr-${prNumber}-${port}`;
             const previewUrl = `https://${uniqueId}.${subdomain}.themoondevs.com`;
             github.rest.issues.createComment({
