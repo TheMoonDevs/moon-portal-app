@@ -10,6 +10,7 @@ permissions:
 
 jobs:
   handle_comment:
+    if: github.event_name == 'issue_comment'
     runs-on: ubuntu-latest
     outputs:
       action: ${{ steps.extract.outputs.action }}
