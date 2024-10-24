@@ -36,6 +36,7 @@
     "app/api/link-shortener/get-link/[slug]",
     "app/api/quicklinks/department/route.ts",
     "worker/index.js",
+    "build/**/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"
