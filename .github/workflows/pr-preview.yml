@@ -51,28 +51,66 @@ jobs:
           echo "Changed projects: ${projects[@]}"
           echo "projects=$(jq -c -n --argjson projects "$(printf '%s\n' "${projects[@]}" | jq -R . | jq -s .)" '$projects')" >> $GITHUB_OUTPUT
 
-      - name: Debug Changed Projects Output
+      - name: Comment Deployment Options
+        uses: actions/github-script@v6
+        if: steps.set-projects.outputs.projects != '[]'
+        with:
+          script: |
+            const projects = ${{ steps.set-projects.outputs.projects }};
+            const projectList = JSON.parse(projects).map(p => `- \`@bot deploy ${p}\``).join('\n');
+            github.rest.issues.createComment({
+              issue_number: context.payload.pull_request.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🚀 Detected changes in the following projects:\n${projectList}\n\n` +
+                    `You can trigger deployments using the comments above.\n` +
+                    `For example: \`@bot deploy portal\` to deploy the portal.`
+            });
+
+  comment_actions:
+    if: contains(github.event.comment.body, '@bot')
+    runs-on: ubuntu-latest
+    outputs:
+      action: ${{ steps.extract.outputs.action }}
+      project: ${{ steps.extract.outputs.project }}
+      pr_number: ${{ steps.extract.outputs.pr_number }}
+      clean_flag: ${{ steps.extract.outputs.clean_flag }}
+    steps:
+      - name: Extract Action, Project, and Optional PR Number
+        id: extract
         run: |
-          echo "Projects output: ${{ steps.set-projects.outputs.projects }}"
+          ACTION=$(echo "${{ github.event.comment.body }}" | awk '{for(i=1;i<=NF;i++) if ($i ~ /^@bot/) {print $(i+1); exit}}')
+          PROJECT=$(echo "${{ github.event.comment.body }}" | grep -Eo "\b(portal|payzone)\b" || echo "portal")
+          CLEAN_FLAG=$(echo "${{ github.event.comment.body }}" | grep -qE "--clean" && echo "true" || echo "false")
+          PR_NUMBER_COMMENT=$(echo "${{ github.event.comment.body }}" | grep -oE '#([0-9]+)' | cut -d'#' -f2)
+          PR_NUMBER=${PR_NUMBER_COMMENT:-${{ github.event.issue.number }}}
+
+          echo "action=$ACTION" >> $GITHUB_ENV
+          echo "project=$PROJECT" >> $GITHUB_ENV
+          echo "pr_number=$PR_NUMBER" >> $GITHUB_ENV
+          echo "clean_flag=$CLEAN_FLAG" >> $GITHUB_ENV
+          echo "::set-output name=action::$ACTION"
+          echo "::set-output name=project::$PROJECT"
+          echo "::set-output name=pr_number::$PR_NUMBER"
+          echo "::set-output name=clean_flag::$CLEAN_FLAG"
 
   deploy_preview:
-    needs: [determine_project]
-    if: needs.determine_project.outputs.projects != 'null' && needs.determine_project.outputs.projects != '[]' || needs.comment_actions.outputs.action == 'deploy'
+    needs: [comment_actions]
+    if: needs.comment_actions.outputs.action == 'deploy'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
       matrix:
-        project: ${{ fromJson(needs.determine_project.outputs.projects) }}
+        project: ${{ fromJson(needs.comment_actions.outputs.project) }}
     concurrency:
-      group: "${{ matrix.project }}-${{ needs.comment_actions.outputs.pr_number || github.event.pull_request.number }}"
+      group: "${{ matrix.project }}-${{ needs.comment_actions.outputs.pr_number }}"
       cancel-in-progress: false
 
     steps:
       - name: Debug Outputs for Deploy Preview
         run: |
-          echo "Projects output: ${{ needs.determine_project.outputs.projects }}"
-          echo "Comment action: ${{ needs.comment_actions.outputs.action }}"
           echo "Project for deployment: ${{ matrix.project }}"
+          echo "Comment action: ${{ needs.comment_actions.outputs.action }}"
 
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.5.3
@@ -81,7 +119,7 @@ jobs:
 
       - name: Deploy or Redeploy Preview on DigitalOcean
         run: |
-          PR_NUMBER=${{ needs.comment_actions.outputs.pr_number || github.event.pull_request.number }}
+          PR_NUMBER=${{ needs.comment_actions.outputs.pr_number }}
           PROJECT=${{ matrix.project }}
           CLEAN_FLAG=${{ needs.comment_actions.outputs.clean_flag }}
           echo "Starting deployment for PR #$PR_NUMBER - Project: $PROJECT"
