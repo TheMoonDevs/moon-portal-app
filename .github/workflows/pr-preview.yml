@@ -196,8 +196,8 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            const project = '${{ matrix.project }};
-            const subdomain = '${{ matrix.project }} === "payzone" ? "pay" : "portal"';
+            const project = '${{ matrix.project }}';
+            const subdomain = project === 'payzone'? 'pay' : project;
             const prNumber = '${{ needs.comment_actions.outputs.pr_number || github.event.pull_request.number }}';
             const port = parseInt(process.env.PORT);
             const uniqueId = ${project}-pr-${prNumber}-${port};
