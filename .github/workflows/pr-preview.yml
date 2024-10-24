@@ -122,13 +122,17 @@ jobs:
 
       - name: Deploy or Redeploy Preview on DigitalOcean
         run: |
-          PR_NUMBER=${{ needs.comment_actions.outputs.pr_number || github.event.pull_request.number }}
+          PR_NUMBER=${{github.event.pull_request.number || needs.comment_actions.outputs.pr_number }}
           PROJECT=${{ matrix.project }}
           CLEAN_FLAG=${{ needs.comment_actions.outputs.clean_flag }}
           echo "Starting deployment for PR #$PR_NUMBER - Project: $PROJECT"
-
+          
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << "EOF"
-            LOCK_FILE="/tmp/deploy/deploy-lock"
+          LOCK_FILE="/tmp/deploy/deploy-lock"
+          PR_NUMBER=${{github.event.pull_request.number || needs.comment_actions.outputs.pr_number }}
+          PROJECT=${{ matrix.project }}
+          CLEAN_FLAG=${{ needs.comment_actions.outputs.clean_flag }}
+          echo "Starting deployment for PR #$PR_NUMBER - Project: $PROJECT"
 
             # Find the first available port starting from 8000
             START_PORT=8000
