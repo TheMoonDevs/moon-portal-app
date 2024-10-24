@@ -182,20 +182,20 @@ jobs:
         with:
           script: |
             const project = '${{ matrix.project }}';
-            const subdomain = project === 'payzone'? 'pay' : project;
+            const subdomain = project === 'payzone' ? 'pay' : project;
             const prNumber = '${{ needs.comment_actions.outputs.pr_number || github.event.pull_request.number }}';
             const port = process.env.PORT;
-            const uniqueId = ${project}-pr-${prNumber}-${port};
-            const previewUrl = https://${uniqueId}.${subdomain}.themoondevs.com;
+            const uniqueId = `${project}-pr-${prNumber}-${port}`;
+            const previewUrl = `https://${uniqueId}.${subdomain}.themoondevs.com`;
             github.rest.issues.createComment({
               issue_number: parseInt(prNumber),
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: 🚀 ${project.charAt(0).toUpperCase() + project.slice(1)} preview available at: [${previewUrl}](${previewUrl})\n\n +
-                    To redeploy or manage, use comment commands:\n +
-                    🗑️ Cleanup: \@bot cleanup #${prNumber}\\n +
-                    🔄 Redeploy: \@bot deploy ${project}\\n +
-                    🔒 Delete Lock: \@bot delete_lock\`
+              body: `🚀 ${project.charAt(0).toUpperCase() + project.slice(1)} preview available at: [${previewUrl}](${previewUrl})\n\n` +
+                    `To redeploy or manage, use comment commands:\n` +
+                    `🗑️ Cleanup: @bot cleanup #${prNumber}\n` +
+                    `🔄 Redeploy: @bot deploy ${project}\n` +
+                    `🔒 Delete Lock: @bot delete_lock`
             });
 
   cleanup_on_pr_close:
