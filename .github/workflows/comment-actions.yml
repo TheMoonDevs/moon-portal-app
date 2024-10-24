@@ -60,18 +60,31 @@ jobs:
             echo "clean_flag=" >> $GITHUB_OUTPUT
           fi
 
-      - name: Call Deploy Preview
-        if: steps.extract.outputs.action == 'deploy'
-        uses: ./.github/workflows/deploy-preview.yml
+  deploy_preview:
+    needs: handle_comment
+    if: needs.handle_comment.outputs.action == 'deploy'
+    uses: ./.github/workflows/deploy-preview.yml
+    with:
+      pr_number: ${{ needs.handle_comment.outputs.pr_number }}
+      project: ${{ needs.handle_comment.outputs.project }}
+      clean_flag: ${{ needs.handle_comment.outputs.clean_flag }}
+    secrets:
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      DROPLET_IP: ${{ secrets.DROPLET_IP }}
+
+  cleanup_deployments:
+    needs: handle_comment
+    if: needs.handle_comment.outputs.action == 'cleanup'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.3
         with:
-          pr_number: ${{ steps.extract.outputs.pr_number }}
-          project: ${{ steps.extract.outputs.project }}
-          clean_flag: ${{ steps.extract.outputs.clean_flag }}
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
       - name: Cleanup Deployments
-        if: steps.extract.outputs.action == 'cleanup'
         run: |
-          PR_NUMBER=${{ steps.extract.outputs.pr_number }}
+          PR_NUMBER=${{ needs.handle_comment.outputs.pr_number }}
           echo "Cleaning up deployments for PR #$PR_NUMBER"
 
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} <<EOF
@@ -81,8 +94,17 @@ jobs:
           echo "Cleaned up PR #$PR_NUMBER."
           EOF
 
+  delete_lock:
+    needs: handle_comment
+    if: needs.handle_comment.outputs.action == 'delete_lock'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
       - name: Delete Lock
-        if: steps.extract.outputs.action == 'delete_lock'
         run: |
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << "EOF"
           LOCK_FILE="/tmp/deploy/deploy-lock"
