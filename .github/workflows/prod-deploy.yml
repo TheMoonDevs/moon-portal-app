@@ -80,14 +80,14 @@ jobs:
             touch "$LOCK_FILE"
             echo "Starting production deployment for project: ${{ matrix.project }}"
 
-            cp -r /home/techteam/apps/moon-portal-app/${{ matrix.project }}/build/main /home/techteam/apps/moon-portal-app/${{ matrix.project }}/build/main-backup
+            cp -r /home/techteam/apps/moon-portal-app/${{ matrix.project }}/build/prod/main /home/techteam/apps/moon-portal-app/${{ matrix.project }}/build/prod/main-backup
 
             # Change to the project directory
-            export NEXT_PUBLIC_BUILD_PATH=main
-            cd apps/moon-portal-app/${{ matrix.project }}/build
+            export NEXT_PUBLIC_BUILD_PATH=prod/main
+            cd apps/moon-portal-app/${{ matrix.project }}
 
             # Stash any local changes before pulling the latest changes
-            git stash || true
+            git stash || git reset --hard || true
 
             # Pull the latest changes
             git checkout main
@@ -131,15 +131,20 @@ jobs:
             echo "Deployment completed for project: ${{ matrix.project }}"
           EOF
 
-      - name: Cleanup Lock File
-        if: failure() || cancelled() || always()
+      - name: Fall back to previous version
+        if: failure() || cancelled()
+        run: |
+          ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << "EOF"
+            cd apps/moon-portal-app/${{ matrix.project }}/build/prod
+            rm -f main
+            mv main-backup main
+            pm2 restart ${{ matrix.project }}-main
+          EOF
+
+      - name: Clean up deployment lock
         run: |
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << "EOF"
             LOCK_FILE="/tmp/deploy/deploy-lock"
             rm -f "$LOCK_FILE"
-            cd apps/moon-portal-app/${{ matrix.project }}/build
-            rm -f main
-            mv main-backup main
-            pm2 restart ${{ matrix.project }}-main
             git stash pop || echo "No stashed changes to pop."
           EOF
