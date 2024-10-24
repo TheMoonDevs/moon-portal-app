@@ -135,17 +135,15 @@ jobs:
           echo "Starting deployment for PR #$PR_NUMBER - Project: $PROJECT"
 
           # Find the first available port starting from 8000
-          START_PORT=8000
-          MAX_PORT=10000
-          PORT=$START_PORT
-          while [ $PORT -lt $MAX_PORT ]; do
-            if ! ss -tlnp | grep :${PORT} > /dev/null; then
+          PORT=8000
+          while [ $PORT -lt 10000 ]; do
+            if ! ss -tlnp | grep :"${PORT}" > /dev/null; then
               break
             fi
             PORT=$(( PORT + 1 ))
           done
 
-          if [ $PORT -ge $MAX_PORT ]; then
+          if [ $PORT -ge 10000 ]; then
             echo "ERROR: No available ports found."
             rm -f "$LOCK_FILE"
             exit 1
