@@ -61,7 +61,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Call Deploy Preview
-        uses: ./.github/workflows/deploy-preview.yml
+        uses: ./.github/workflows/deploy-preview/
         with:
           pr_number: ${{ github.event.pull_request.number }}
           project: ${{ matrix.project }}
