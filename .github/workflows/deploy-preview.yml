@@ -29,11 +29,6 @@ jobs:
 
       - name: Deploy or Redeploy Preview on DigitalOcean
         run: |
-          PR_NUMBER=${{ inputs.pr_number }}
-          PROJECT=${{ inputs.project }}
-          CLEAN_FLAG=${{ inputs.clean_flag }}
-          echo "Starting deployment for PR #$PR_NUMBER - Project: $PROJECT"
-
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} <<EOF
           LOCK_FILE="/tmp/deploy/deploy-lock"  # Unified lock file for all projects
           echo "Checking for ongoing deployments..."
@@ -44,8 +39,12 @@ jobs:
             sleep 10
           done
 
+          PR_NUMBER=${{ inputs.pr_number }}
+          PROJECT=${{ inputs.project }}
+          CLEAN_FLAG=${{ inputs.clean_flag }}
+          echo "Starting deployment for PR #$PR_NUMBER - Project: $PROJECT"
+
           touch "$LOCK_FILE"
-          echo "Starting production deployment for project: ${{ inputs.project }}"
           
           START_PORT=8000
           MAX_PORT=10000
