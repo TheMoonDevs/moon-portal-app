@@ -288,7 +288,7 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
         {/* STATS */}
         {activeTab === "STATS" && (
           <>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-4">
               <div className="grid grid-cols-2 gap-2 max-sm:grid-cols-1">
                 <MetricCard
                   title="Top Productive Days"
@@ -297,7 +297,9 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
                       {metrics.topProductiveDays
                         .map(
                           (day) =>
-                            `${format(parseISO(day.date), "MMM d")}(${day.completedTasks.toString().padStart(2, "0")})`,
+                            `${format(parseISO(day.date), "MMM d")}(${day.completedTasks
+                              .toString()
+                              .padStart(2, "0")})`,
                         )
                         .join(", ")}
                     </div>
@@ -312,6 +314,7 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
                   onClick={() => handleCardClick("taskCompletionRate")}
                 />
               </div>
+
               <div className="grid grid-cols-4 gap-2 max-md:grid-cols-2">
                 <SquareCard
                   icon={<Sparkles color="#4CAF50" size={24} />}
@@ -338,6 +341,7 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
                   onClick={() => handleCardClick("missedTasks")}
                 />
               </div>
+
               <table className="min-w-full rounded-lg border border-gray-200 shadow-md">
                 <thead className="bg-gray-100">
                   <tr>
@@ -351,20 +355,20 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
                 </thead>
                 <tbody>
                   <tr className="transition duration-200 hover:bg-gray-50">
-                    <td className="flex items-center gap-2 border-b p-3">
+                    <td className="flex items-center gap-2 border-b p-4">
                       <ListTodo color="#03A9F4" size={24} />
                       Average Tasks Per Day
                     </td>
-                    <td className="border-b p-3">
+                    <td className="border-b p-4">
                       {metrics.averageTasksPerDay.toFixed(2)}%
                     </td>
                   </tr>
                   <tr className="transition duration-200 hover:bg-gray-50">
-                    <td className="flex items-center gap-2 border-b p-3">
+                    <td className="flex items-center gap-2 border-b p-4">
                       <RefreshCw color="#2196F3 " size={24} />
                       Update Frequency
                     </td>
-                    <td className="border-b p-3">
+                    <td className="border-b p-4">
                       {metrics.updateMetrics.updatedDays} Days
                     </td>
                   </tr>
