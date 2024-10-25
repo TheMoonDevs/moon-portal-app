@@ -11,7 +11,7 @@ import {
   getMissedWorklogDates,
   getUpdatedLogsLater,
 } from "../WorklogBreakdown/BreakdownMetrics";
-import MetricCard from "../WorklogBreakdown/MetricCard";
+import MetricCard, { SquareCard } from "../WorklogBreakdown/MetricCard";
 import {
   AudioLines,
   CircleCheckBig,
@@ -288,104 +288,22 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
         {/* STATS */}
         {activeTab === "STATS" && (
           <>
-            {/* {/* <section className="text-center p-4 bg-blue-50 rounded-lg shadow-md mb-5">
-            <h2 className="text-lg font-semibold text-gray-700">Summary</h2>
-            <p className="text-sm text-gray-600">
-              {metrics.totalTasks} tasks logged with a{" "}
-              {metrics.taskCompletionRate.toFixed(2)}% completion rate.
-            </p>
-          </section> */}
-            <Stack spacing={3} alignItems="center">
-              {/* <PieChart
-              colors={["blue", "#22c55e", "red", "orange", "purple"]}
-              series={[
-                {
-                  arcLabel: (item) => `${item.label} (${item.value})`,
-                  arcLabelMinAngle: 45,
-                  data: [
-                    {
-                      label: "In Progress",
-                      value: metrics.inProgressTasks,
-                      id: 0,
-                    },
-                    {
-                      label: "Completed",
-                      value: metrics.completedTasks,
-                      id: 1,
-                    },
-                    { label: "Failed", value: metrics.failedTasks, id: 2 },
-                    { label: "Blocked", value: metrics.blockedTasks, id: 3 },
-                    {
-                      label: "Scheduled",
-                      value: metrics.scheduledTasks,
-                      id: 4,
-                    },
-                  ],
-                },
-              ]}
-              width={chartWidth}
-              height={chartHeight}
-            />
-            <div>
-              <strong>Total Tasks:</strong> {metrics.totalTasks}
-            </div>
-            <BarChart
-              xAxis={[
-                {
-                  scaleType: "band",
-                  data: weekdays,
-                  label: "Days",
-                },
-              ]}
-              yAxis={[
-                {
-                  label: "Tasks",
-                },
-              ]}
-              series={[
-                {
-                  data: completedTasksData,
-                  color: "#22c55e",
-                  label: "Completed tasks",
-                },
-                {
-                  data: inProgressTasksData,
-                  color: "blue",
-                  label: "In Progress tasks",
-                },
-              ]}
-              width={barChartWidth}
-              height={chartHeight}
-            />
-            <div className="pb-5">
-              <strong>Tasks by Weekday</strong>
-            </div> */}
-              <div className="mb-8 grid w-full grid-cols-2 gap-5 max-sm:grid-cols-1">
+            <div className="flex flex-col gap-2">
+              <div className="grid grid-cols-2 gap-2 max-sm:grid-cols-1">
                 <MetricCard
                   title="Top Productive Days"
                   content={
-                    <div className="flex flex-col gap-1">
-                      {metrics.topProductiveDays.map((day, index) => (
-                        <div
-                          key={index}
-                          className="flex justify-between text-sm"
-                        >
-                          <span>{format(parseISO(day.date), "MMM dd")}</span>
-                          <span className="font-semibold text-gray-700">
-                            {day.completedTasks.toString().padStart(2, "0")}
-                          </span>
-                        </div>
-                      ))}
+                    <div className="max-w-[80%] text-sm">
+                      {metrics.topProductiveDays
+                        .map(
+                          (day) =>
+                            `${format(parseISO(day.date), "MMM d")}(${day.completedTasks.toString().padStart(2, "0")})`,
+                        )
+                        .join(", ")}
                     </div>
                   }
                   logo={<Star color="#FFC107" size={30} />}
                   onClick={() => handleCardClick("topProductiveDays")}
-                />
-                <MetricCard
-                  title="Productive Streak"
-                  content={`${metrics.longestProductiveStreakData.length} Days`}
-                  logo={<Sparkles color="#4CAF50 " size={30} />}
-                  onClick={() => handleCardClick("productiveStreak")}
                 />
                 <MetricCard
                   title="Task Completion Rate"
@@ -393,38 +311,66 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
                   logo={<CircleCheckBig color="#28A745 " size={30} />}
                   onClick={() => handleCardClick("taskCompletionRate")}
                 />
-                <MetricCard
+              </div>
+              <div className="grid grid-cols-4 gap-2 max-md:grid-cols-2">
+                <SquareCard
+                  icon={<Sparkles color="#4CAF50" size={24} />}
+                  content={`${metrics.longestProductiveStreakData.length}`}
+                  title="Productive Streak"
+                  onClick={() => handleCardClick("productiveStreak")}
+                />
+                <SquareCard
+                  icon={<CircleAlert color="#FF6347" size={24} />}
+                  content={`${metrics.missedLogsDates.length}`}
                   title="Missed Logs"
-                  content={`${metrics.missedLogsDates.length} Days`}
-                  logo={<CircleAlert color="#FF6347 " size={30} />}
                   onClick={() => handleCardClick("missedLogs")}
                 />
-                <MetricCard
+                <SquareCard
+                  icon={<History color="#FF9800" size={24} />}
+                  content={`${metrics.updatedLogsLater.length}`}
                   title="Updated Logs Later"
-                  content={`${metrics.updatedLogsLater.length} Times`}
-                  logo={<History color="#FF9800" size={30} />}
                   onClick={() => handleCardClick("updatedLogsLater")}
                 />
-                <MetricCard
+                <SquareCard
+                  icon={<TriangleAlert color="#FF5722" size={24} />}
+                  content={`${metrics.missedTasks}`}
                   title="Missed Tasks"
-                  content={`${metrics.missedTasks} Tasks`}
-                  logo={<TriangleAlert color="#FF5722" size={30} />}
                   onClick={() => handleCardClick("missedTasks")}
                 />
-                <MetricCard
-                  title="Average Tasks Per Day"
-                  content={`${metrics.averageTasksPerDay.toFixed(2)}`}
-                  logo={<ListTodo color="#03A9F4" size={30} />}
-                  onClick={() => handleCardClick("averageTasksPerDay")}
-                />
-                <MetricCard
-                  title="Update Frequency"
-                  content={`${metrics.updateMetrics.updatedDays} Days`}
-                  logo={<RefreshCw color="#2196F3 " size={30} />}
-                  onClick={() => handleCardClick("updateFrequency")}
-                />
               </div>
-            </Stack>
+              <table className="min-w-full rounded-lg border border-gray-200 shadow-md">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="p-3 text-left font-semibold text-gray-600">
+                      Metric
+                    </th>
+                    <th className="p-3 text-left font-semibold text-gray-600">
+                      Value
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="transition duration-200 hover:bg-gray-50">
+                    <td className="flex items-center gap-2 border-b p-3">
+                      <ListTodo color="#03A9F4" size={24} />
+                      Average Tasks Per Day
+                    </td>
+                    <td className="border-b p-3">
+                      {metrics.averageTasksPerDay.toFixed(2)}%
+                    </td>
+                  </tr>
+                  <tr className="transition duration-200 hover:bg-gray-50">
+                    <td className="flex items-center gap-2 border-b p-3">
+                      <RefreshCw color="#2196F3 " size={24} />
+                      Update Frequency
+                    </td>
+                    <td className="border-b p-3">
+                      {metrics.updateMetrics.updatedDays} Days
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </>
         )}
         {/* POINTERS */}
