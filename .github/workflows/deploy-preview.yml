@@ -104,7 +104,7 @@ jobs:
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} "cat /tmp/preview-port-${{ inputs.pr_number }}.txt" > preview-port.txt
           cat preview-port.txt
           PREVIEW_PORT=$(cat preview-port.txt | grep 'PREVIEW_PORT' | cut -d'=' -f2)
-          echo "PREVIEW_PORT=\${PREVIEW_PORT}" >> $GITHUB_ENV
+          echo "PREVIEW_PORT=${PREVIEW_PORT}" >> $GITHUB_ENV
 
       - name: Comment Preview URL
         uses: actions/github-script@v6
