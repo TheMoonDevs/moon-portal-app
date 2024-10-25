@@ -27,7 +27,8 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "scripts/deploy.ts",
-    "../DeleteModal.tsx"
+    "../DeleteModal.tsx",
+    "build/**/*.ts",
   ],
   "exclude": ["node_modules"]
 }

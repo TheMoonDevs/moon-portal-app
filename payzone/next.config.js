@@ -35,6 +35,7 @@ const nextConfig = {
     esmExternals: "loose", // <-- add this
     serverComponentsExternalPackages: ["mongoose"], // <-- and this
   },
+  distDir: `build/${process.env.NEXT_PUBLIC_BUILD_PATH || "prod/main"}`,
   eslint: {
     // Warning: This allows production builds to successfully complete even if
     // your project has ESLint errors.
