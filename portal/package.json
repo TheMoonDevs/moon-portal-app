@@ -59,11 +59,12 @@
     "react-table": "^7.8.0",
     "react-timezone-select": "^2.1.2",
     "react-to-pdf": "^1.0.1",
+    "sharp": "^0.33.5",
     "slick-carousel": "^1.8.1",
     "sonner": "^1.5.0",
     "swr": "^2.2.5",
-    "web-push": "^3.6.7",
-    "tailwind-merge": "^2.5.4"
+    "tailwind-merge": "^2.5.4",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@cspell/eslint-plugin": "^8.15.2",
