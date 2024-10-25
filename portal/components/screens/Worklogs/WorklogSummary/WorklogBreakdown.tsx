@@ -53,7 +53,7 @@ import LoadingAnimation from "@/components/elements/LoadingAnimation";
 
 const Pattern = dynamic(() => import("./Pattern"), {
   loading: () => (
-    <div className="h-[200px] w-full flex items-center justify-center">
+    <div className="flex h-[200px] w-full items-center justify-center">
       <LoadingAnimation />,
     </div>
   ),
@@ -61,7 +61,7 @@ const Pattern = dynamic(() => import("./Pattern"), {
 
 const Pie = dynamic(() => import("./PieChart"), {
   loading: () => (
-    <div className="h-[200px] w-full flex items-center justify-center">
+    <div className="flex h-[200px] w-full items-center justify-center">
       <LoadingAnimation />
     </div>
   ),
@@ -69,7 +69,7 @@ const Pie = dynamic(() => import("./PieChart"), {
 
 const StatiStics = dynamic(() => import("./StatiStics"), {
   loading: () => (
-    <div className="h-[200px] w-full flex items-center justify-center">
+    <div className="flex h-[200px] w-full items-center justify-center">
       <LoadingAnimation />
     </div>
   ),
@@ -108,7 +108,7 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
     "Friday",
     "Saturday",
   ];
-  
+
   // const completedTasksData = weekdays.map(
   //   (day) => metrics.tasksByWeekday[day]?.completed || 0
   // );
@@ -123,11 +123,10 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
   // const chartHeight = isSmallScreen ? 200 : 300;
   // const barChartWidth = isSmallScreen ? 350 : 550;
 
-
   useEffect(() => {
     if (worklogSummary.length > 0) {
       dispatch(
-        setProductiveStreakData(getLongestProductiveStreak(worklogSummary))
+        setProductiveStreakData(getLongestProductiveStreak(worklogSummary)),
       );
       dispatch(setMissedDates(getMissedWorklogDates(worklogSummary)));
       dispatch(setMissedTasksData(getMissedTasks(worklogSummary)));
@@ -172,7 +171,7 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
     const worklogElement = document.querySelector(`[data-date="${date}"]`);
     if (worklogElement) {
       const container = worklogElement.closest(
-        ".scrollable-container-summaryView"
+        ".scrollable-container-summaryView",
       );
       if (container) {
         const containerRect = container.getBoundingClientRect();
@@ -194,108 +193,110 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
 
   return (
     <main
-      className={`flex flex-col justify-center gap-5 my-6 mx-2 px-2 ${
-        activeTab === "POINTERS" ? "pb-28" : "pb-20"
-      } rounded-[32px] bg-white `}
+      className={`overflow-y-hiddem relative mx-2 my-4 flex flex-col justify-start gap-5 overflow-x-hidden rounded-b-2xl bg-white px-2`}
+      style={{ height: "calc(100vh - 110px)" }}
     >
-      <h1 className="font-semibold text-lg md:text-2xl font-sans text-center justify-start mt-4 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 text-transparent bg-clip-text">
-        Worklog Breakdown
-      </h1>
-      <div className="w-full flex items-center ml-6 gap-1 mt-6 mb-2 overflow-x-scroll no-scrollbar">
-        {tabs.map((tab: string, i: number) => (
-          <p
-            key={`${tab}-${i}`}
-            className={`text-sm text-black leading-3 tracking-widest px-2 pb-2 cursor-pointer transition-all duration-300 ease-in-out ${
-              activeTab === tab
-                ? "border-b-2 border-black font-extrabold rounded-b-sm rounded-t-sm rounded-r-sm rounded-l-sm"
-                : "border-b-2 border-transparent font-normal"
-            }`}
-            onClick={() => setActiveTab(tab)}
-          >
-            {tab}
-          </p>
-        ))}
-      </div>
-      {/* ANALYTICS */}
-      {activeTab === "ANALYTICS" && (
-        <div>
-          <div className="w-full flex justify-between items-center px-4">
-            <p className="font-normal text-gray-500 text-xs leading-3">
-              Check your Productivity & High Impact Points
+      <div className="absolute top-0 z-10 w-full bg-white">
+        <h1 className="mt-4 justify-start bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-center font-sans text-lg font-semibold text-transparent md:text-2xl">
+          Worklog Breakdown
+        </h1>
+        <div className="no-scrollbar mb-2 ml-6 mt-6 flex w-full items-center gap-1">
+          {tabs.map((tab: string, i: number) => (
+            <p
+              key={`${tab}-${i}`}
+              className={`cursor-pointer px-2 pb-2 text-sm leading-3 tracking-widest text-black transition-all duration-300 ease-in-out ${
+                activeTab === tab
+                  ? "rounded-b-sm rounded-l-sm rounded-r-sm rounded-t-sm border-b-2 border-black font-extrabold"
+                  : "border-b-2 border-transparent font-normal"
+              }`}
+              onClick={() => setActiveTab(tab)}
+            >
+              {tab}
             </p>
-            <div className="flex items-center gap-2 border border-[#00000033] rounded-lg p-2">
-              {icons.map((icon, index) => {
-                return (
-                  <ToolTip key={icon.icon} title={icon.label}>
-                    <div
-                      className={`flex items-center justify-center px-3 py-2 border border-[#00000033] rounded-lg hover:bg-neutral-100  transition-colors duration-300 cursor-pointer ${
-                        activeIndex === index ? "bg-neutral-200" : "bg-white"
-                      }`}
-                      key={icon.icon}
-                      onClick={() => setActiveIndex(index)}
-                    >
-                      <span
-                        className="material-symbols-outlined"
-                        style={{ fontSize: "16px" }}
+          ))}
+        </div>
+      </div>
+      <div className="relative top-28 pb-6">
+        {/* ANALYTICS */}
+        {activeTab === "ANALYTICS" && (
+          <div>
+            <div className="flex w-full items-center justify-between px-4">
+              <p className="text-xs font-normal leading-3 text-gray-500">
+                Check your Productivity & High Impact Points
+              </p>
+              <div className="flex items-center gap-2 rounded-lg border border-[#00000033] p-2">
+                {icons.map((icon, index) => {
+                  return (
+                    <ToolTip key={icon.icon} title={icon.label}>
+                      <div
+                        className={`flex cursor-pointer items-center justify-center rounded-lg border border-[#00000033] px-3 py-2 transition-colors duration-300 hover:bg-neutral-100 ${
+                          activeIndex === index ? "bg-neutral-200" : "bg-white"
+                        }`}
+                        key={icon.icon}
+                        onClick={() => setActiveIndex(index)}
                       >
-                        {icon.icon}
-                      </span>
-                    </div>
-                  </ToolTip>
-                );
-              })}
-              <ToolTip title={gridVisible ? "Hide Grid" : "Show Grid"}>
-                <div
-                  className={`flex items-center justify-center px-3 py-2 border border-[#00000033] rounded-lg hover:bg-neutral-100  transition-colors duration-300 cursor-pointer ${
-                    gridVisible ? "bg-neutral-200" : "bg-white"
-                  }`}
-                  onClick={() => setGridVisible(!gridVisible)}
-                >
-                  <span
-                    className="material-symbols-outlined"
-                    style={{ fontSize: "16px" }}
+                        <span
+                          className="material-symbols-outlined"
+                          style={{ fontSize: "16px" }}
+                        >
+                          {icon.icon}
+                        </span>
+                      </div>
+                    </ToolTip>
+                  );
+                })}
+                <ToolTip title={gridVisible ? "Hide Grid" : "Show Grid"}>
+                  <div
+                    className={`flex cursor-pointer items-center justify-center rounded-lg border border-[#00000033] px-3 py-2 transition-colors duration-300 hover:bg-neutral-100 ${
+                      gridVisible ? "bg-neutral-200" : "bg-white"
+                    }`}
+                    onClick={() => setGridVisible(!gridVisible)}
                   >
-                    {gridVisible ? "grid_off" : "grid_on"}
-                  </span>
-                </div>
-              </ToolTip>
+                    <span
+                      className="material-symbols-outlined"
+                      style={{ fontSize: "16px" }}
+                    >
+                      {gridVisible ? "grid_off" : "grid_on"}
+                    </span>
+                  </div>
+                </ToolTip>
+              </div>
+            </div>
+            <div className="h-[400px] w-full py-4">
+              <p className="py-4 text-center text-sm leading-3 tracking-widest text-black">
+                Total tasks and completed tasks (Day wise)
+              </p>
+              <Pattern
+                gridVisible={gridVisible}
+                worklogSummary={worklogSummary}
+              />
+            </div>
+            <div className="py-4">
+              <p className="pb-4 text-center text-sm leading-3 tracking-widest text-black">
+                Check your Productivity (Total no. of tasks week wise)
+              </p>
+              <Pie worklogSummary={worklogSummary} />
+            </div>
+            <div className="">
+              <p className="pb-4 text-center text-sm leading-3 tracking-widest text-black">
+                Check your Productivity Stats
+              </p>
+              <StatiStics worklogSummary={worklogSummary} />
             </div>
           </div>
-          <div className="h-[400px] w-full py-4">
-            <p className=" py-4 text-sm text-black leading-3 tracking-widest text-center">
-              Total tasks and completed tasks (Day wise)
-            </p>
-            <Pattern
-              gridVisible={gridVisible}
-              worklogSummary={worklogSummary}
-            />
-          </div>
-          <div className="py-4">
-            <p className="pb-4 text-sm text-black leading-3 tracking-widest text-center">
-              Check your Productivity (Total no. of tasks week wise)
-            </p>
-            <Pie worklogSummary={worklogSummary} />
-          </div>
-          <div className="">
-            <p className="pb-4 text-sm text-black leading-3 tracking-widest text-center">
-              Check your Productivity Stats
-            </p>
-            <StatiStics worklogSummary={worklogSummary} />
-          </div>
-        </div>
-      )}
-      {/* STATS */}
-      {activeTab === "STATS" && (
-        <>
-          {/* {/* <section className="text-center p-4 bg-blue-50 rounded-lg shadow-md mb-5">
+        )}
+        {/* STATS */}
+        {activeTab === "STATS" && (
+          <>
+            {/* {/* <section className="text-center p-4 bg-blue-50 rounded-lg shadow-md mb-5">
             <h2 className="text-lg font-semibold text-gray-700">Summary</h2>
             <p className="text-sm text-gray-600">
               {metrics.totalTasks} tasks logged with a{" "}
               {metrics.taskCompletionRate.toFixed(2)}% completion rate.
             </p>
           </section> */}
-          <Stack spacing={3} alignItems="center">
-            {/* <PieChart
+            <Stack spacing={3} alignItems="center">
+              {/* <PieChart
               colors={["blue", "#22c55e", "red", "orange", "purple"]}
               series={[
                 {
@@ -359,88 +360,92 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
             <div className="pb-5">
               <strong>Tasks by Weekday</strong>
             </div> */}
-            <div className="grid grid-cols-2 gap-5 w-full mb-8 max-sm:grid-cols-1">
-              <MetricCard
-                title="Top Productive Days"
-                content={
-                  <div className="flex flex-col gap-1">
-                    {metrics.topProductiveDays.map((day, index) => (
-                      <div key={index} className="text-sm flex justify-between">
-                        <span>{format(parseISO(day.date), "MMM dd")}</span>
-                        <span className="font-semibold text-gray-700">
-                          {day.completedTasks.toString().padStart(2, "0")}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                }
-                logo={<Star color="#FFC107" size={30} />}
-                onClick={() => handleCardClick("topProductiveDays")}
-              />
-              <MetricCard
-                title="Productive Streak"
-                content={`${metrics.longestProductiveStreakData.length} Days`}
-                logo={<Sparkles color="#4CAF50 " size={30} />}
-                onClick={() => handleCardClick("productiveStreak")}
-              />
-              <MetricCard
-                title="Task Completion Rate"
-                content={`${metrics.taskCompletionRate.toFixed(2)}%`}
-                logo={<CircleCheckBig color="#28A745 " size={30} />}
-                onClick={() => handleCardClick("taskCompletionRate")}
-              />
-              <MetricCard
-                title="Missed Logs"
-                content={`${metrics.missedLogsDates.length} Days`}
-                logo={<CircleAlert color="#FF6347 " size={30} />}
-                onClick={() => handleCardClick("missedLogs")}
-              />
-              <MetricCard
-                title="Updated Logs Later"
-                content={`${metrics.updatedLogsLater.length} Times`}
-                logo={<History color="#FF9800" size={30} />}
-                onClick={() => handleCardClick("updatedLogsLater")}
-              />
-              <MetricCard
-                title="Missed Tasks"
-                content={`${metrics.missedTasks} Tasks`}
-                logo={<TriangleAlert color="#FF5722" size={30} />}
-                onClick={() => handleCardClick("missedTasks")}
-              />
-              <MetricCard
-                title="Average Tasks Per Day"
-                content={`${metrics.averageTasksPerDay.toFixed(2)}`}
-                logo={<ListTodo color="#03A9F4" size={30} />}
-                onClick={() => handleCardClick("averageTasksPerDay")}
-              />
-              <MetricCard
-                title="Update Frequency"
-                content={`${metrics.updateMetrics.updatedDays} Days`}
-                logo={<RefreshCw color="#2196F3 " size={30} />}
-                onClick={() => handleCardClick("updateFrequency")}
-              />
-            </div>
-          </Stack> 
-        </>
-      )}
-      {/* POINTERS */}
-      {activeTab === "POINTERS" && (
-        <div className="">
-          <Pointers />
-        </div>
-      )}
-      {/* GROWTH */}
-      {activeTab === "GROWTH" && (
-        <div className="flex justify-center items-center p-4">
-          Coming soon, Stay tuned!
-        </div>
-      )}{" "}
-      {/* MISSIONS */}
-      {activeTab === "MISSIONS" && (
-        <div className="flex justify-center items-center p-4">
-          Coming soon, Stay tuned!
-        </div>
-      )}
+              <div className="mb-8 grid w-full grid-cols-2 gap-5 max-sm:grid-cols-1">
+                <MetricCard
+                  title="Top Productive Days"
+                  content={
+                    <div className="flex flex-col gap-1">
+                      {metrics.topProductiveDays.map((day, index) => (
+                        <div
+                          key={index}
+                          className="flex justify-between text-sm"
+                        >
+                          <span>{format(parseISO(day.date), "MMM dd")}</span>
+                          <span className="font-semibold text-gray-700">
+                            {day.completedTasks.toString().padStart(2, "0")}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  }
+                  logo={<Star color="#FFC107" size={30} />}
+                  onClick={() => handleCardClick("topProductiveDays")}
+                />
+                <MetricCard
+                  title="Productive Streak"
+                  content={`${metrics.longestProductiveStreakData.length} Days`}
+                  logo={<Sparkles color="#4CAF50 " size={30} />}
+                  onClick={() => handleCardClick("productiveStreak")}
+                />
+                <MetricCard
+                  title="Task Completion Rate"
+                  content={`${metrics.taskCompletionRate.toFixed(2)}%`}
+                  logo={<CircleCheckBig color="#28A745 " size={30} />}
+                  onClick={() => handleCardClick("taskCompletionRate")}
+                />
+                <MetricCard
+                  title="Missed Logs"
+                  content={`${metrics.missedLogsDates.length} Days`}
+                  logo={<CircleAlert color="#FF6347 " size={30} />}
+                  onClick={() => handleCardClick("missedLogs")}
+                />
+                <MetricCard
+                  title="Updated Logs Later"
+                  content={`${metrics.updatedLogsLater.length} Times`}
+                  logo={<History color="#FF9800" size={30} />}
+                  onClick={() => handleCardClick("updatedLogsLater")}
+                />
+                <MetricCard
+                  title="Missed Tasks"
+                  content={`${metrics.missedTasks} Tasks`}
+                  logo={<TriangleAlert color="#FF5722" size={30} />}
+                  onClick={() => handleCardClick("missedTasks")}
+                />
+                <MetricCard
+                  title="Average Tasks Per Day"
+                  content={`${metrics.averageTasksPerDay.toFixed(2)}`}
+                  logo={<ListTodo color="#03A9F4" size={30} />}
+                  onClick={() => handleCardClick("averageTasksPerDay")}
+                />
+                <MetricCard
+                  title="Update Frequency"
+                  content={`${metrics.updateMetrics.updatedDays} Days`}
+                  logo={<RefreshCw color="#2196F3 " size={30} />}
+                  onClick={() => handleCardClick("updateFrequency")}
+                />
+              </div>
+            </Stack>
+          </>
+        )}
+        {/* POINTERS */}
+        {activeTab === "POINTERS" && (
+          <div className="h-full">
+            <Pointers />
+          </div>
+        )}
+        {/* GROWTH */}
+        {activeTab === "GROWTH" && (
+          <div className="flex items-center justify-center p-4">
+            Coming soon, Stay tuned!
+          </div>
+        )}{" "}
+        {/* MISSIONS */}
+        {activeTab === "MISSIONS" && (
+          <div className="flex items-center justify-center p-4">
+            Coming soon, Stay tuned!
+          </div>
+        )}
+      </div>
     </main>
   );
 };

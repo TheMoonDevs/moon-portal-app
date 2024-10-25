@@ -14,6 +14,7 @@ import { GenAiSdk } from '@/utils/services/GenAiSdk';
 import useCopyToClipboard from '@/utils/hooks/useCopyToClipboard';
 import { MdxAppEditor } from '@/utils/configure/MdxAppEditor';
 import { uniqueId } from 'lodash';
+import { RootState, useAppSelector } from '@/utils/redux/store';
 
 export const WorklogSummaryContent = ({
   userData,
@@ -34,6 +35,19 @@ export const WorklogSummaryContent = ({
   const [userInfo, setUserInfo] = useState<User | null | undefined>(undefined);
   const { loading, setLoading } = useAsyncState();
   const pdfTargetRef = useRef(null);
+  const {
+    isShowProductiveStreak,
+    productiveStreakData,
+    missedDates,
+    showMissedLogs,
+    showUpdatedLogs,
+    updatedLogsDates,
+    showMissedTasks,
+    missedTasksData,
+    showCompletedTasks,
+    completedTasksData,
+  } = useAppSelector((state: RootState) => state.statsAction);
+
   // console.log(userData?.id);
   const fetchWorklogData = useCallback(
     async (query: {
@@ -90,8 +104,10 @@ export const WorklogSummaryContent = ({
   };
 
   return (
-    <div className="flex flex-col bg-neutral-100 md:flex-row">
-      <div className="m-4 mt-4 h-screen w-[100%] overflow-y-scroll rounded-2xl bg-white shadow-xl md:w-[50%]">
+    <div className="flex h-screen-minus-74 flex-col bg-neutral-100 md:flex-row">
+      <div
+        className={`m-4 mt-4 w-[100%] max-sm:mx-0 ${showCompletedTasks || showMissedLogs || showUpdatedLogs || showMissedTasks ? 'overflow-y-scroll' : ''} rounded-2xl bg-white shadow-xl md:w-[50%]`}
+      >
         <div className="">
           {userData && (
             <div className="sticky top-0 z-10 flex items-center justify-start gap-4 bg-white p-8 py-4 shadow-md max-sm:px-2 max-sm:py-4">

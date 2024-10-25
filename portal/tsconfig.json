@@ -37,6 +37,7 @@
     "app/api/quicklinks/department/route.ts",
     "worker/index.js",
     "build/**/*.ts",
+    "build/prod/main/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"
