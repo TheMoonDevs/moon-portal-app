@@ -134,8 +134,9 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << "EOF"
             cd apps/moon-portal-app/${{ matrix.project }}/build/prod
+            pm2 stop ${{ matrix.project }}-main
             rm -rf main
-            cp main-backup main
+            cp -r main-backup main
             pm2 restart ${{ matrix.project }}-main
           EOF
 

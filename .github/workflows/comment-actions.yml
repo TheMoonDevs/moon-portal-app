@@ -26,9 +26,9 @@ jobs:
         id: extract
         run: |
           COMMENT_BODY="${{ github.event.comment.body }}"
-          
+
           echo "Comment Body: $COMMENT_BODY"
-          
+
           # Ensure that the comment matches the expected pattern exactly
           if [[ "$COMMENT_BODY" =~ ^@bot[[:space:]]+(deploy|cleanup|delete_lock)([[:space:]]+(portal|payzone))?([[:space:]]+--clean)?([[:space:]]+#?[0-9]*)?$ ]]; then
             echo "Comment matches the expected pattern."
@@ -95,10 +95,10 @@ jobs:
           echo "Cleaning up deployments for PR #$PR_NUMBER"
 
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} <<EOF
-          pm2 list | grep -- "-${PR_NUMBER}-" | awk '{print $2}' | xargs -r pm2 delete
-          rm -rf /home/techteam/apps/moon-portal-app/portal/build/${PR_NUMBER}
-          rm -rf /home/techteam/apps/moon-portal-app/payzone/build/${PR_NUMBER}
-          echo "Cleaned up PR #$PR_NUMBER."
+            pm2 list | grep -- "-${PR_NUMBER}-" | awk '{print $2}' | xargs -r pm2 delete
+            rm -rf /home/techteam/apps/moon-portal-app/portal/build/${PR_NUMBER}
+            rm -rf /home/techteam/apps/moon-portal-app/payzone/build/${PR_NUMBER}
+            echo "Cleaned up PR #$PR_NUMBER."
           EOF
 
   delete_lock:
@@ -114,7 +114,7 @@ jobs:
       - name: Delete Lock
         run: |
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << "EOF"
-          LOCK_FILE="/tmp/deploy/deploy-lock"
-          rm -f "$LOCK_FILE"
-          echo "Deleted lock file."
+            LOCK_FILE="/tmp/deploy/deploy-lock"
+            rm -f "$LOCK_FILE"
+            echo "Deleted lock file."
           EOF
