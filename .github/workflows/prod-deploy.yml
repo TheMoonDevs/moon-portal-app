@@ -22,52 +22,33 @@ jobs:
       - name: Determine changed projects
         id: set-projects
         run: |
-          # Fetch all history for accurate diffing
           git fetch --prune
           git fetch origin +refs/heads/*:refs/remotes/origin/*
-          git branch -a
-
-          # Determine the base reference for diffing
-          if [ -n "${{ github.event.before }}" ]; then
-            base_ref="${{ github.event.before }}"
-          else
-            base_ref=$(git rev-parse HEAD~1)
-          fi
-          head_ref="${{ github.sha }}"
-
-          echo "Base ref: $base_ref"
-          echo "Head ref: $head_ref"
-
-          # Get the list of changed files
-          changed_files=$(git diff --name-only $base_ref $head_ref)
-          echo "Changed files: $changed_files"
-
-          # Define arrays for different paths
-          project_paths=("portal" "payzone")
+          changed_files=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }})
+          project_paths=("portal" "payzone" "home")
           projects=()
-
-          # Detect changes in the "portal" and "payzone" directories
+          home_changed=false
+          if echo "$changed_files" | grep -q "^home/"; then
+            home_changed=true
+          fi
           if echo "$changed_files" | grep -q "^portal/"; then
             projects+=("portal")
-            echo "Portal project changed"
           fi
           if echo "$changed_files" | grep -q "^payzone/"; then
             projects+=("payzone")
-            echo "Payzone project changed"
           fi
-
-          # If changes are outside portal and payzone directories, deploy both
-          if [ ${#projects[@]} -eq 0 ] && echo "$changed_files" | grep -vq "^portal/" && echo "$changed_files" | grep -vq "^payzone/"; then
+          if ! $home_changed && [ ${#projects[@]} -eq 0 ] && echo "$changed_files" | grep -vq "^portal/" && echo "$changed_files" | grep -vq "^payzone/" && echo "$changed_files" | grep -vq "^home/"; then
             projects=("portal" "payzone")
-            echo "Changes detected outside specific projects. Deploying both."
           fi
-
-          # Output the projects array as a JSON string
+          echo "Changed projects: ${projects[@]}"
           echo "projects=$(jq -c -n --argjson projects "$(printf '%s\n' "${projects[@]}" | jq -R . | jq -s .)" '$projects')" >> $GITHUB_OUTPUT
+      - name: Debug Changed Projects Output
+        run: |
+          echo "Projects output: ${{ steps.set-projects.outputs.projects }}"
 
   deploy:
     needs: determine_project
-    if: needs.determine_project.outputs.projects != '[]'
+    if: needs.determine_project.outputs.projects != 'null' && needs.determine_project.outputs.projects != '[]'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
@@ -79,15 +60,12 @@ jobs:
       cancel-in-progress: false
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.5.3
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Deploy to DigitalOcean
+      - name: Deploy Prod to DigitalOcean
         run: |
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << "EOF"
             LOCK_FILE="/tmp/deploy/deploy-lock"  # Unified lock file for all projects
@@ -102,11 +80,14 @@ jobs:
             touch "$LOCK_FILE"
             echo "Starting production deployment for project: ${{ matrix.project }}"
 
+            cp -r /home/techteam/apps/moon-portal-app/${{ matrix.project }}/build/prod/main /home/techteam/apps/moon-portal-app/${{ matrix.project }}/build/prod/main-backup
+
             # Change to the project directory
+            export NEXT_PUBLIC_BUILD_PATH=prod/main
             cd apps/moon-portal-app/${{ matrix.project }}
 
             # Stash any local changes before pulling the latest changes
-            git stash || true
+            git stash || git reset --hard || true
 
             # Pull the latest changes
             git checkout main
@@ -118,12 +99,14 @@ jobs:
             # Install dependencies and build with error handling
             if ! npm install; then
               echo "ERROR: npm install failed. Cleaning up..." >&2
+              git stash pop || echo "No stashed changes to pop."
               rm -f "$LOCK_FILE"
               exit 1
             fi
             
             if ! npm run build:prod; then
               echo "ERROR: Build failed. Cleaning up..." >&2
+              git stash pop || echo "No stashed changes to pop."
               rm -f "$LOCK_FILE"
               exit 1
             fi
@@ -132,29 +115,36 @@ jobs:
             if pm2 list | grep -q "${{ matrix.project }}-main"; then
               pm2 restart ${{ matrix.project }}-main --update-env || {
                 echo "ERROR: Failed to restart PM2 process. Cleaning up..." >&2
+                git stash pop || echo "No stashed changes to pop."
                 rm -f "$LOCK_FILE"
                 exit 1
               }
             else
               pm2 start npm --name ${{ matrix.project }}-main -- run start || {
                 echo "ERROR: Failed to start PM2 process. Cleaning up..." >&2
+                git stash pop || echo "No stashed changes to pop."
                 rm -f "$LOCK_FILE"
                 exit 1
               }
             fi
 
-            # Remove the lock file after successful deployment
-            rm -f "$LOCK_FILE"
             echo "Deployment completed for project: ${{ matrix.project }}"
           EOF
 
-      - name: Cleanup Lock File
-        if: failure() || cancelled() || always()
+      - name: Fall back to previous version
+        if: failure() || cancelled()
+        run: |
+          ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << "EOF"
+            cd apps/moon-portal-app/${{ matrix.project }}/build/prod
+            rm -f main
+            mv main-backup main
+            pm2 restart ${{ matrix.project }}-main
+          EOF
+
+      - name: Clean up deployment lock
         run: |
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << "EOF"
             LOCK_FILE="/tmp/deploy/deploy-lock"
-            if [ -f "$LOCK_FILE" ]; then
-              echo "Removing lock file..."
-              rm -f "$LOCK_FILE"
-            fi
+            rm -f "$LOCK_FILE"
+            git stash pop || echo "No stashed changes to pop."
           EOF
