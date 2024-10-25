@@ -23,7 +23,7 @@ const Pointers = () => {
   const { mutate } = useSWRConfig();
 
   const chatContainerRef = useRef<HTMLDivElement | null>(null);
-  const targetUserId = path ? path.split('/').pop() ?? null : null;
+  const targetUserId = path ? (path.split('/').pop() ?? null) : null;
 
   const {
     data: pointers,
@@ -32,7 +32,7 @@ const Pointers = () => {
   } = useSWR(
     targetUserId ? `/api/pointers?userId=${targetUserId}` : null,
     fetcher,
-    { refreshInterval: 3000 }
+    { refreshInterval: 3000 },
   );
 
   useEffect(() => {
@@ -46,7 +46,7 @@ const Pointers = () => {
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       setInputValue(e.target.value);
     },
-    []
+    [],
   );
 
   const handleSendMessage = useCallback(async () => {
@@ -73,22 +73,22 @@ const Pointers = () => {
   }
 
   return (
-    <>
+    <div className="h-full">
       <div
-        className='h-[500px] max-h-[600px] overflow-y-auto no-scrollbar p-3 border border-neutral-300 rounded-lg bg-neutral-50 text-neutral-700'
+        className="no-scrollbar h-[600px] max-h-[800px] overflow-y-auto rounded-lg border border-neutral-300 bg-neutral-50 p-3 pb-5 text-neutral-700"
         ref={chatContainerRef}
       >
         {isValidating && !pointers ? (
-          <div className='h-full w-full flex items-center justify-center'>
+          <div className="flex h-full w-full items-center justify-center">
             <CircularProgress size={24} />
           </div>
         ) : pointers && pointers.length === 0 ? (
-          <div className='h-full w-full flex flex-col items-center text-neutral-400'>
+          <div className="flex h-full w-full flex-col items-center text-neutral-400">
             No Messages Found!
           </div>
         ) : (
           pointers?.map((pointer: PointerWithReplies, index: number) => (
-            <div key={pointer.id} className='flex flex-col gap-2'>
+            <div key={pointer.id} className="flex flex-col gap-2">
               <ChatCard pointer={pointer} index={index} />
             </div>
           ))
@@ -100,8 +100,8 @@ const Pointers = () => {
         handleReplySend={handleSendMessage}
         isSending={isSending}
       />
-      <Toaster richColors duration={3000} closeButton position='bottom-left' />
-    </>
+      <Toaster richColors duration={3000} closeButton position="bottom-left" />
+    </div>
   );
 };
 

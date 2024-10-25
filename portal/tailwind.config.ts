@@ -16,6 +16,11 @@ const config: Config = {
       animation: {
         fadeInTopDown: "fadeInTopDown 1s ease",
       },
+      height: {
+        'screen-minus-74': 'calc(100vh - 74px)',
+        'screen-minus-250' : 'calc(100vh - 250px)',
+        'screen-minus-310': 'calc(100vh - 310px)',
+      },
       keyframes: {
         fadeInTopDown: {
           "0%": {
