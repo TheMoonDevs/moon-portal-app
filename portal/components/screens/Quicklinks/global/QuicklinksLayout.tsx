@@ -18,6 +18,7 @@ import {
   setParentDirsList,
   setRootDirList,
 } from "@/utils/redux/quicklinks/slices/quicklinks.directory.slice";
+import clsx from 'clsx';
 
 // BAD PATTERN OF SLUG IS USED, WE CANT CHANGE IT BECAUSE IT IS USED IN THE MULTIPLE COMPONENTS
 const ROOT_DIRECTORIES: Omit<DirectoryList, "timestamp">[] = [
@@ -79,13 +80,14 @@ export const QuicklinksLayout = ({
     initialize.current = true;
   }
   // const { toast } = useAppSelector((state) => state.quicklinks);
+  const isCollapsed = useAppSelector((state) => state.quicklinksUi.isCollapsed);
 
   return (
     <>
       <QuicklinksGlobalHeader />
       <main className="flex min-h-screen ">
         <QuicklinkSidebar />
-        <div className="relative px-6 w-[calc(100%-256px)] ml-auto">
+        <div className={clsx("relative px-6 ml-auto transition-width duration-300", isCollapsed ? 'w-[calc(100%-75px)]' : 'w-[calc(100%-240px)]')}>
           <div className="h-[76px]"></div>
           <div className="w-full relative h-screen mb-20">{children}</div>
 
