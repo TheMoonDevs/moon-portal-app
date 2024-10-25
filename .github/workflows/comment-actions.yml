@@ -10,8 +10,8 @@ permissions:
 
 jobs:
   handle_comment:
-    runs-on: ubuntu-latest
     if: github.event_name == 'issue_comment'
+    runs-on: ubuntu-latest
     outputs:
       action: ${{ steps.extract.outputs.action }}
       project: ${{ steps.extract.outputs.project }}
@@ -69,7 +69,7 @@ jobs:
 
   deploy_preview:
     needs: handle_comment
-    if: always() && needs.handle_comment.outputs.action == 'deploy'
+    if: ${{ needs.handle_comment.outputs.action == 'deploy' }}
     uses: ./.github/workflows/deploy-preview.yml
     with:
       pr_number: ${{ needs.handle_comment.outputs.pr_number }}
@@ -95,7 +95,7 @@ jobs:
           echo "Cleaning up deployments for PR #$PR_NUMBER"
 
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} <<EOF
-          pm2 list | grep -E "-${PR_NUMBER}-" | awk '{print \$2}' | xargs -r pm2 delete
+          pm2 list | grep -- "-${PR_NUMBER}-" | awk '{print $2}' | xargs -r pm2 delete
           rm -rf /home/techteam/apps/moon-portal-app/portal/build/${PR_NUMBER}
           rm -rf /home/techteam/apps/moon-portal-app/payzone/build/${PR_NUMBER}
           echo "Cleaned up PR #$PR_NUMBER."
