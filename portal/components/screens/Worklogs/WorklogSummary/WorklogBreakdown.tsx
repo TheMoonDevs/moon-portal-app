@@ -231,7 +231,7 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
         {activeTab === "ANALYTICS" && (
           <div>
             <div className="flex w-full items-center justify-between px-4">
-              <p className="text-xs font-normal leading-3 text-gray-500">
+              <p className="text-sm font-normal leading-4 text-gray-500">
                 Check your Productivity & High Impact Points
               </p>
               <div className="flex items-center gap-2 rounded-lg border border-[#00000033] p-2">
@@ -273,8 +273,11 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
               </div>
             </div>
             <div className="h-[400px] w-full py-4">
-              <p className="py-4 text-center text-sm leading-3 tracking-widest text-black">
-                Total tasks and completed tasks (Day wise)
+              <p className="p-4 text-base font-semibold leading-4 tracking-widest text-black">
+                Total tasks and completed tasks <br />{" "}
+                <span className="text-xs font-medium text-gray-500">
+                  (Day wise)
+                </span>
               </p>
               {activeIndex === 0 ? (
                 <Pattern
@@ -282,18 +285,27 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
                   worklogSummary={uniqueWorklogs}
                 />
               ) : (
-                <BarChart worklogSummary={uniqueWorklogs} />
+                <BarChart
+                  worklogSummary={uniqueWorklogs}
+                  gridVisible={gridVisible}
+                />
               )}
             </div>
             <div className="py-4">
-              <p className="pb-4 text-center text-sm leading-3 tracking-widest text-black">
-                Check your Productivity (Total no. of tasks week wise)
+              <p className="px-4 pb-4 text-base font-semibold leading-4 tracking-widest text-black">
+                Check your Productivity <br />
+                <span className="text-xs font-medium text-gray-500">
+                  (Total no. of tasks week wise)
+                </span>
               </p>
               <Pie worklogSummary={uniqueWorklogs} />
             </div>
-            <div className="">
-              <p className="pb-4 text-center text-sm leading-3 tracking-widest text-black">
-                Check your Productivity Stats
+            <div className="py-4">
+              <p className="px-4 pb-4 text-base font-semibold leading-4 tracking-widest text-black">
+                Check your Productivity Stats <br />
+                <span className="text-xs font-medium text-gray-500">
+                  (Week wise data)
+                </span>
               </p>
               <StatiStics worklogSummary={uniqueWorklogs} />
             </div>

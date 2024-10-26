@@ -4,7 +4,7 @@ import React from 'react';
 import { ResponsiveBar } from '@nivo/bar';
 import dayjs from 'dayjs';
 
-const Histogram = ({ worklogSummary }: { worklogSummary: WorkLogs[] }) => {
+const Histogram = ({ worklogSummary, gridVisible }: { worklogSummary: WorkLogs[], gridVisible: boolean }) => {
 
   // Function to prepare the data for the histogram
   const prepareHistogramData = (worklogs: WorkLogs[]) => {
@@ -75,6 +75,8 @@ const Histogram = ({ worklogSummary }: { worklogSummary: WorkLogs[] }) => {
         role="img"
         ariaLabel="Histogram chart"
         enableLabel={true}
+        enableGridX={gridVisible}
+        enableGridY={gridVisible}
       />
     </div>
   );
