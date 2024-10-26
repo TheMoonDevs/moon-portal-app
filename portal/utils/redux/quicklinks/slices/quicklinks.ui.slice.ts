@@ -35,10 +35,9 @@ const initialState: QuikcklinksUIState = {
     type: null,
     data: null,
   },
-  currentView:
-    typeof window !== "undefined" && localStorage.getItem("currentView")
-      ? (localStorage.getItem("currentView") as listView)
-      : "widget",
+  currentView: localStorage.getItem("currentView")
+    ? (localStorage.getItem("currentView") as listView)
+    : "widget",
   toast: {
     showToast: false,
     toastMsg: "",
@@ -85,7 +84,7 @@ export const quicklinksUiSlice = createSlice({
       state.isLoading = action.payload
     },
     setToggleSidebar: (state,action) => {
-    state.isCollapsed = action.payload
+      state.isCollapsed = action.payload
     }
   },
 });
