@@ -51,6 +51,7 @@ const UserTopUsedLinks = ({ withTitle }: { withTitle?: boolean }) => {
 
     getTopUsedDirectories();
   }, [user, dispatch]);
+  
   return (
     <div>
       <div className="flex justify-between items-center">

@@ -1,6 +1,7 @@
 "use client";
 
 import { setUser } from "@/utils/redux/auth/auth.slice";
+import { updateWalletAddress } from "@/utils/redux/auth/auth.slice";
 import { useAppSelector } from "@/utils/redux/store";
 import { MyServerApi, SERVER_API_ENDPOINTS } from "@/utils/service/MyServerApi";
 import { TRANSACTIONCATEGORY, User } from "@prisma/client";
@@ -45,6 +46,7 @@ export const PaymentMethod = () => {
       .then((data: unknown) => {
         const userData = (data as UserData).data.user;
         dispatch(setUser(userData));
+        dispatch(updateWalletAddress(walletAddress));
         setUpiId("");
         setWalletAddress("");
         setUpdating(false);
