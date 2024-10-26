@@ -13,6 +13,7 @@ import {
   rainbowWallet,
   walletConnectWallet,
 } from "@rainbow-me/rainbowkit/wallets";
+import { APP_INFO } from "../constants/appInfo";
 
 coinbaseWallet.preference = "all";
 
@@ -26,14 +27,14 @@ const connectors = connectorsForWallets(
       groupName: "Popular",
       wallets: [metaMaskWallet, rainbowWallet],
     },
-    {
-      groupName: "Wallet Connect",
-      wallets: [walletConnectWallet],
-    },
+    // {
+    //   groupName: "Wallet Connect",
+    //   wallets: [walletConnectWallet],
+    // },
   ],
   {
-    appName: "Your App Name",
-    projectId: "<YOUR WALLETCONNECT PROJECT ID>",
+    appName: APP_INFO.name,
+    projectId: "2f785c1b9ea689743190f2e9871ce3df",
   }
 );
 

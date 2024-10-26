@@ -5,36 +5,42 @@ import { useEffect, useState } from "react";
 import { UserProfileDrawer } from "@/components/screens/Home/ProfileDrawer";
 import {
   selectMember,
-  setMembers,
+  setCoreTeamMembers,
+  setTrialCandidates
 } from "@/utils/redux/coreTeam/coreTeam.slice";
 import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import dayjs from "dayjs";
 import ToolTip from "@/components/elements/ToolTip";
 import { getBuffLevelAndTitle } from "@/utils/helpers/badges";
+interface CoreTeamSectionProps {
+  userRoles: USERROLE;
+}
 
-export const CoreTeamSection = () => {
+export const CoreTeamSection = ({ userRoles }: CoreTeamSectionProps) => {
   const dispatch = useAppDispatch();
-  const coreTeam = useAppSelector((state: RootState) => state.coreTeam.members);
   const currentMonth = dayjs().format("MMMM");
 
+  const coreTeam = useAppSelector((state: RootState) =>
+    userRoles === USERROLE.CORETEAM
+      ? state.coreTeam.coreTeamMembers
+      : state.coreTeam.trialCandidates
+  );
   useEffect(() => {
     PortalSdk.getData(
-      "/api/user?role=" +
-        USERROLE.CORETEAM +
-        "&userType=" +
-        USERTYPE.MEMBER +
-        "&status=ACTIVE&cache=true" +
-        `&month=${currentMonth}`,
+      "/api/user?role=" + userRoles  + "&userType=" + USERTYPE.MEMBER + "&status=ACTIVE&cache=true" + `&month=${currentMonth}`,
       null
     )
       .then((data) => {
-        dispatch(setMembers(data?.data?.user));
-        // console.log(coreTeam);
+        if (userRoles === USERROLE.CORETEAM) {
+          dispatch(setCoreTeamMembers(data?.data?.user));
+        } else if (userRoles === USERROLE.TRIAL_CANDIDATE) {
+          dispatch(setTrialCandidates(data?.data?.user));
+        }
       })
       .catch((err) => {
         console.log(err);
       });
-  }, [dispatch]);
+  }, [dispatch,userRoles]);
 
   const handleOpenSlideIn = (user: User) => {
     dispatch(selectMember(user));

@@ -68,7 +68,7 @@ const EditJobPostModal: React.FC<EditJobPostModalProps> = ({
         if (response.ok) {
           console.log("Job Post updated successfully");
           onClose();
-          window.location.reload();
+          window.location?.reload();
         } else {
           console.error("Error updating Job Post");
         }

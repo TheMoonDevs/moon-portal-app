@@ -39,6 +39,7 @@ const nextConfig = {
       },
     ],
   },
+  distDir: `build/${process.env.NEXT_PUBLIC_BUILD_PATH || "prod/main"}`,
   swcMinify: true,
   productionBrowserSourceMaps: false,
   experimental: {
@@ -52,6 +53,13 @@ const nextConfig = {
     // your project has ESLint errors.
     ignoreDuringBuilds: true,
   },
+  // typescript: {
+    // !! WARN !!
+    // Dangerously allow production builds to successfully complete even if
+    // your project has type errors.
+    // !! WARN !!
+    // ignoreBuildErrors: true,
+  // },
   webpack: (
     config,
     { buildId, dev, isServer, defaultLoaders, nextRuntime, webpack }

@@ -8,6 +8,7 @@ interface AuthState {
   user?: User | null;
   refUser?: User | null;
   authType: "referral" | "payzone" | null;
+  address: string;
 }
 
 const initialState: AuthState = {
@@ -17,6 +18,7 @@ const initialState: AuthState = {
   user: null,
   refUser: null,
   authType: null,
+  address: "",
 };
 
 const authSlice = createSlice({
@@ -46,6 +48,9 @@ const authSlice = createSlice({
     setAuthLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload;
     },
+    updateWalletAddress: (state, action: PayloadAction<string>) => {
+      state.address = action.payload;
+    },
   },
 });
 
@@ -56,6 +61,7 @@ export const {
   setUser,
   setRefUser,
   setAuthType,
+  updateWalletAddress,
 } = authSlice.actions;
 
 export default authSlice.reducer;
