@@ -6,11 +6,9 @@ import {
   getWeekData,
   groupByWeek,
 } from './Breakdown';
-import { getLatestWorklogPerDate } from './WorklogSummaryView';
 
 const StatiStics = ({ worklogSummary }: { worklogSummary: WorkLogs[] }) => {
-  const uniqueWorklogs = getLatestWorklogPerDate(worklogSummary); //removes duplicate data from worklogs and we will get the latest updated worklogs
-  const groupedByWeek = groupByWeek(uniqueWorklogs);
+  const groupedByWeek = groupByWeek(worklogSummary);
   const weekData = getWeekData(groupedByWeek);
 
   return (

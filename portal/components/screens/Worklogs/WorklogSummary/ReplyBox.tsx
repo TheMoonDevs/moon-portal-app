@@ -35,7 +35,7 @@ export const ReplyBox: React.FC<ReplyBoxProps> = ({
         <button
           onClick={handleReplySend}
           disabled={!inputValue.trim() || isSending}
-          className={`absolute bottom-5 right-4 py-1 px-4 rounded-md ${
+          className={`absolute bottom-5 right-4  flex items-center justify-center py-1 px-4 rounded-md ${
             !inputValue.trim() ? 'text-neutral-400 bg-gray-100' : 'bg-[#6b4bf2] text-white'
           }`}
         >

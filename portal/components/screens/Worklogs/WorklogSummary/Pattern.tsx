@@ -3,7 +3,6 @@ import { ResponsiveLine } from '@nivo/line';
 import dayjs from 'dayjs';
 import { WorkLogs } from '@prisma/client';
 import { ArrayHelper } from '@/utils/helpers/array';
-import { getLatestWorklogPerDate } from './WorklogSummaryView';
 
 export const getStatsOfContent = (content: string) => {
   const checks = (content?.match(/✅/g) || []).length;
@@ -18,10 +17,8 @@ const Pattern = ({
   gridVisible: boolean;
   worklogSummary: WorkLogs[];
 }) => {
-  const uniqueWorklogs = getLatestWorklogPerDate(worklogSummary); //removes duplicate data from worklogs and we will get the latest updated worklogs
-
   const sortedWorklogSummary = ArrayHelper.forwardSortByDate(
-    uniqueWorklogs,
+    worklogSummary,
     'date'
   );
 
@@ -66,7 +63,7 @@ const Pattern = ({
   return (
     <ResponsiveLine
       data={data}
-      margin={{ top: 10, right: 20, bottom: 80, left: 50 }}
+      margin={{ top: 10, right: 20, bottom: 100, left: 50 }}
       xScale={{ type: 'point' }}
       yScale={{
         type: 'linear',
