@@ -75,7 +75,7 @@ const Pointers = () => {
   return (
     <div className="h-full">
       <div
-        className="no-scrollbar h-[600px] max-h-[800px] overflow-y-auto rounded-lg border border-neutral-300 bg-neutral-50 p-3 pb-5 text-neutral-700"
+        className="h-screen-minus-340 overflow-y-auto rounded-lg p-3 text-neutral-700"
         ref={chatContainerRef}
       >
         {isValidating && !pointers ? (

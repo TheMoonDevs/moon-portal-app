@@ -1,3 +1,4 @@
+'use client';
 import React, { useState } from 'react';
 import { Avatar } from '@mui/material';
 import { Pointer, Reply } from '@prisma/client';
@@ -7,6 +8,11 @@ import { Toaster, toast } from 'sonner';
 import { ReplyBox } from './ReplyBox';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 import { useUser } from '@/utils/hooks/useUser';
+import ToolTip from '@/components/elements/ToolTip';
+import EmojiPicker, {
+  EmojiClickData,
+  SuggestionMode,
+} from 'emoji-picker-react';
 
 const ChatCard = ({
   pointer,
@@ -19,6 +25,7 @@ const ChatCard = ({
   const [isSending, setIsSending] = useState(false);
   const [isReplying, setIsReplying] = useState(false);
   const [showComments, setShowComments] = useState(false);
+  const [isOpenEmoji, setIsOpenEmoji] = useState(false);
   const coreTeam = useAppSelector((state: RootState) => state.coreTeam.members);
   const member = coreTeam.find((member) => member.id === pointer.userId);
   const { user } = useUser();
@@ -32,8 +39,9 @@ const ChatCard = ({
     setInputValue(e.target.value);
   };
 
-  const handleReplySend = async () => {
-    if (!inputValue.trim() || isSending) return;
+  const handleReplySend = async (emoji?: string) => {
+    const contentToSend = emoji || inputValue;
+    if (!contentToSend.trim() || isSending) return;
 
     setIsSending(true);
     try {
@@ -41,11 +49,10 @@ const ChatCard = ({
         pointerId: pointer.id,
         reply: {
           userId: user?.id,
-          content: inputValue,
+          content: contentToSend,
         },
       });
       setInputValue('');
-      // setIsReplying(false);
     } catch (error) {
       console.error(error);
       toast.error('Error sending message.');
@@ -63,42 +70,60 @@ const ChatCard = ({
   };
 
   return (
-    <div className='p-4 mb-4 bg-white border rounded-lg shadow-md flex flex-col'>
-      <div className='flex items-center gap-3 mb-4'>
-        <Avatar
-          alt={member?.name || 'User Avatar'}
-          src={member?.avatar || undefined}
-          sx={{ width: 40, height: 40 }}
-        />
-        <div className='flex-1 gap-1'>
-          <p className='font-semibold text-lg text-gray-900'>
-            {member?.name || 'Unknown User'}
-          </p>
-          <p className='text-xs text-gray-400'>{prettySinceTime(createdAt)}</p>
+    <div className="mb-4 flex flex-col rounded-lg border bg-white p-4 shadow-md">
+      <div className="flex flex-row items-start justify-between">
+        <div className="mb-2 flex items-center gap-2 text-gray-600">
+          <Avatar
+            alt={member?.name || 'User Avatar'}
+            src={member?.avatar || undefined}
+            sx={{ width: 30, height: 30 }}
+          />
+          <div className="flex flex-1 flex-col">
+            <div className="text-sm font-semibold text-gray-800">
+              {member?.name || 'Unknown User'}
+            </div>
+            <p className="text-xs text-gray-400">
+              {prettySinceTime(createdAt)}
+            </p>
+          </div>
         </div>
+        <p className="text-xs text-neutral-400">#{index + 1}</p>
       </div>
-      <p className='text-gray-600 mb-4 text-base font-medium'>
+      <p className="mb-4 text-base font-semibold leading-relaxed text-gray-800">
         {pointer.content}
       </p>
-      <div className='flex flex-row items-center justify-between'>
-        <div className='flex items-center gap-2'>
+
+      {/* <div className="flex flex-row items-center justify-between"> */}
+      <div className="flex items-center gap-2">
+        <button
+          onClick={toggleReplyBox}
+          className="self-start text-xs font-bold text-gray-400 underline decoration-1 underline-offset-2"
+        >
+          REPLY
+        </button>
+        {pointer.replies.length > 0 && (
           <button
-            onClick={toggleReplyBox}
-            className='self-start text-neutral-700 font-semibold tracking-wider text-sm underline'
+            onClick={toggleReplies}
+            className="self-start text-xs font-bold text-gray-400"
           >
-            REPLY
+            {showComments ? 'HIDE COMMENTS' : 'SHOW COMMENTS'}
           </button>
-          {pointer.replies.length > 0 && (
-            <button
-              onClick={toggleReplies}
-              className='self-start text-neutral-700 font-semibold tracking-wider text-sm underline'
-            >
-              {showComments ? 'HIDE COMMENTS' : 'SHOW COMMENTS'}
-            </button>
-          )}
-        </div>
-        <p className='text-neutral-400'>#{index + 1}</p>
+        )}
+        <ToolTip title="Emoji" arrow={true}>
+          <span
+            className="material-symbols-outlined cursor-pointer font-bold text-gray-400"
+            style={{ fontSize: '16px' }}
+            onClick={() => setIsOpenEmoji(!isOpenEmoji)}
+          >
+            add_reaction
+          </span>
+        </ToolTip>
       </div>
+      <EmojiPopOver
+        open={isOpenEmoji}
+        handleClose={() => setIsOpenEmoji(false)}
+        onEmojiSelect={handleReplySend}
+      />
 
       {/* Display Reply Box */}
       {(isReplying || showComments) && (
@@ -110,11 +135,11 @@ const ChatCard = ({
           isReplying={isReplying}
           isChatCard={true}
         />
-      )}  
+      )}
 
       {/* Show comments section */}
       <div
-        className={`mt-4 overflow-y-scroll transition-all duration-500 ease-in-out ${
+        className={`overflow-y-scroll transition-all duration-500 ease-in-out ${
           showComments ? 'max-h-[200px] opacity-100' : 'max-h-0 opacity-0'
         }`}
       >
@@ -122,28 +147,28 @@ const ChatCard = ({
           pointer.replies.map((reply) => {
             const replyMember = coreTeam.find((m) => m.id === reply.userId);
             return (
-              <div key={reply.id} className='p-2 border-b border-gray-200'>
-                <div className='flex items-center gap-3'>
+              <div key={reply.id} className="border-b border-gray-200 p-2">
+                <div className="flex items-center gap-2">
                   <Avatar
                     alt={replyMember?.name || 'User Avatar'}
                     src={replyMember?.avatar || undefined}
-                    sx={{ width: 30, height: 30 }}
+                    sx={{ width: 24, height: 24 }}
                   />
                   <div>
-                    <p className='text-sm font-semibold text-gray-900'>
+                    <p className="text-xs font-semibold text-gray-900">
                       {replyMember?.name || 'Unknown User'}
                     </p>
-                    <p className='text-xs text-gray-400'>
+                    <p className="text-[10px] text-gray-400">
                       {prettySinceTime(reply.createdAt.toString())}
                     </p>
                   </div>
                 </div>
-                <p className='text-gray-600 mt-2 text-base'>{reply.content}</p>
+                <p className="mt-2 text-base text-gray-600">{reply.content}</p>
               </div>
             );
           })
         ) : (
-          <p className='text-gray-500 text-sm'>No comments yet.</p>
+          <p className="text-sm text-gray-500">No comments yet.</p>
         )}
       </div>
     </div>
@@ -151,3 +176,30 @@ const ChatCard = ({
 };
 
 export default ChatCard;
+
+const EmojiPopOver = ({
+  open,
+  handleClose,
+  onEmojiSelect,
+}: {
+  open: boolean;
+  handleClose: () => void;
+  onEmojiSelect: (emoji: string) => void;
+}) => {
+  return (
+    <EmojiPicker
+      open={open}
+      autoFocusSearch={false}
+      suggestedEmojisMode={SuggestionMode.FREQUENT}
+      skinTonesDisabled
+      lazyLoadEmojis
+      className="mt-4"
+      previewConfig={{ showPreview: false }}
+      height={300}
+      onEmojiClick={(emojiData: EmojiClickData, event: MouseEvent) => {
+        onEmojiSelect(emojiData.emoji);
+        handleClose();
+      }}
+    />
+  );
+};
