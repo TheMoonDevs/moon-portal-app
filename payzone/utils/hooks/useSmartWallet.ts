@@ -46,7 +46,7 @@ export const useSmartWallet = () => {
     ) {
       return {
         paymasterService: {
-          url: `${document.location.origin}/api/paymaster/`,
+          url: `${document?.location?.origin}/api/paymaster/`,
         },
       };
     }
