@@ -18,6 +18,7 @@ const WorklogTips = () => {
       </ul>
       <p className="text-lg font-bold  my-4">Shortcuts</p>
       <ul className="list-disc font-mono text-sm tracking-widest">
+        <li className="">+ and Spacebar === • (For Bullet Points)</li>
         <li className="">Ctrl+Spacebar === ✅</li>
         <li className="">Ctrl+Q === ❌ </li>
         <li className="">Ctrl+S to save the logs manually</li>

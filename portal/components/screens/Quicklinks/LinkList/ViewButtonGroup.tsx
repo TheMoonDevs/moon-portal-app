@@ -1,3 +1,4 @@
+"use client";
 import { setCurrentView } from "@/utils/redux/quicklinks/slices/quicklinks.ui.slice";
 import { VIEW } from "./LinkList";
 import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
