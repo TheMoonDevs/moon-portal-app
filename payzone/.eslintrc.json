@@ -35,7 +35,7 @@
         "plugin:prettier/recommended"
       ],
       "parserOptions": {
-        "project": "payzone/tsconfig.json"
+        "project": ["tsconfig.json", "payzone/tsconfig.json"]
       },
       "rules": {
         "@cspell/spellchecker": [
