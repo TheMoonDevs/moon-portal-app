@@ -18,26 +18,28 @@ import {
 
 // DO NOT PASS INIT true more than once in the entire repo.
 export const useSyncBalances = (init?: boolean) => {
-  const { user } = useAuthSession();
+  // const { user } = useAuthSession();
+  const user = useAppSelector((state) => state.auth.user);
   const dispatch = useAppDispatch();
   const { exchange } = useAppSelector((state) => state.balances);
   const { selectedCurrency, selectedCurrencyValue, balance } = useAppSelector(
     (state) => state.balances
   );
   const [loading, setLoading] = useState<boolean>(true);
-
+  // const walletAddress = (user?.payData as any)?.walletAddress;
+  const walletAddress = useAppSelector((state) => state.auth.address);
   const tokenData = useReadContract({
     address: TOKEN_INFO.contractAddress as Address,
     abi: TMDTokenABI,
     chain: TOKEN_INFO.chainId,
   });
-
   useEffect(() => {
     if (!init) return;
+    if (!walletAddress) return;
     const formattedBalance = Number(tokenData?.balance) / 10 ** 18;
-    console.log("balance", formattedBalance);
+    // console.log("balance", formattedBalance);
     dispatch(setBalance(formattedBalance));
-  }, [tokenData, dispatch, init]);
+  }, [tokenData, dispatch, init, walletAddress]);
 
   useEffect(() => {
     fetch("/api/exchange")
