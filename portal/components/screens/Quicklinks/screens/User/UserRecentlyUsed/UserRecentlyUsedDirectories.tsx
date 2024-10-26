@@ -16,9 +16,11 @@ import { setRecentlyUsedDirectoryList } from "@/utils/redux/quicklinks/slices/qu
 const UserRecentlyUsedDirectories = ({
   withTitle = true,
   view = "gridView",
+  searchQuery,
 }: {
   withTitle?: boolean;
   view?: "listView" | "gridView";
+  searchQuery?: string;
 }) => {
   const { user } = useUser();
 
@@ -27,6 +29,15 @@ const UserRecentlyUsedDirectories = ({
   const { recentlyUsedDirectoryList } = useAppSelector(
     (state) => state.quicklinksDirectory
   );
+
+  const filterDirectory = (
+    searchQuery: string | undefined
+  ): DirectoryList[] => {
+    if (!searchQuery) return recentlyUsedDirectoryList;
+    return recentlyUsedDirectoryList.filter((dir) =>
+      dir.title.toLowerCase().includes(searchQuery)
+    );
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -68,7 +79,10 @@ const UserRecentlyUsedDirectories = ({
           </h1>
         </div>
       )}
-      <ListOfDirectories view={view} directories={recentlyUsedDirectoryList} />
+      <ListOfDirectories
+        view={view}
+        directories={filterDirectory(searchQuery)}
+      />
     </div>
   );
 };

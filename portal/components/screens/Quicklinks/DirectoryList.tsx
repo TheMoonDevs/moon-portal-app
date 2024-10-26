@@ -13,6 +13,10 @@ import { toggleFavoriteDirectory } from "@/utils/redux/quicklinks/slices/quickli
 import { setToast } from "@/utils/redux/quicklinks/slices/quicklinks.ui.slice";
 import { useQuickLinkDirs } from "./hooks/useQuickLinksDirs";
 import { useQuickLinkDirectory } from "./hooks/useQuickLinkDirectory";
+import useCopyToClipboard from "@/utils/hooks/useCopyToClipboard";
+import { toast } from "sonner";
+import { APP_BASE_URL } from "@/utils/constants/appInfo";
+import RecursiveDirectoryTree from "./DirectoryTree";
 
 const ListOfDirectories = ({
   pathname = "",
@@ -34,6 +38,7 @@ const ListOfDirectories = ({
   const [selectedDir, setSelectedDir] = useState<DirectoryList | null>(null);
   const router = useRouter();
   const { user } = useUser();
+  const { copied, copyToClipboard } = useCopyToClipboard();
   const dispatch = useAppDispatch();
   const clickTimeout = useRef<NodeJS.Timeout | null>(null);
   if (!directories || directories.length === 0) return null;
@@ -96,7 +101,7 @@ const ListOfDirectories = ({
         }
       );
       const href = getConstructedPath(directory);
-      console.log("href", href);
+      // console.log("href", href);
       router.push(href || "/");
     } catch (error) {
       console.log(error);
@@ -126,7 +131,7 @@ const ListOfDirectories = ({
   };
 
   const getConstructedPath = (directory: DirectoryList): string | null => {
-    console.log("Constructing path for:", directory);
+    // console.log("Constructing path for:", directory);
 
     const rootPath = "/quicklinks";
     const basePath =
@@ -167,12 +172,28 @@ const ListOfDirectories = ({
     );
   };
 
+  const handleShareLink = async (directory: DirectoryList) => {
+    try {
+      const linkURL = getConstructedPath(directory);
+      if (!linkURL) {
+        toast.error("Link can't be shared.");
+        return;
+      }
+      await copyToClipboard(APP_BASE_URL + linkURL);
+      toast.success("Copied link to clipboard.");
+    } catch (error: any) {
+      toast.error("Error copying link");
+      console.error(error.message);
+    }
+  };
+
   return (
     <div className="w-full">
       <DirectoryActionBar
         selectedDir={selectedDir}
         setSelectedDir={setSelectedDir}
         handleToggleFavorite={handleToggleFavorite}
+        handleShareLink={handleShareLink}
       />
       {/* <Divider /> */}
       {view === "gridView" && (
@@ -209,7 +230,6 @@ const ListOfDirectories = ({
             })}
         </div>
       )}
-
       {view === "listView" && (
         <div className={` mt-2 flex flex-col gap-4 `}>
           {directories.length > 0 &&
@@ -245,6 +265,7 @@ const ListOfDirectories = ({
             })}
         </div>
       )}
+      <RecursiveDirectoryTree />
     </div>
   );
 };
