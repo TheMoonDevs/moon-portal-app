@@ -26,14 +26,14 @@ const connectors = connectorsForWallets(
       groupName: "Popular",
       wallets: [metaMaskWallet, rainbowWallet],
     },
-    {
-      groupName: "Wallet Connect",
-      wallets: [walletConnectWallet],
-    },
+    // {
+    //   groupName: "Wallet Connect",
+    //   wallets: [walletConnectWallet],
+    // },
   ],
   {
-    appName: "Your App Name",
-    projectId: "<YOUR WALLETCONNECT PROJECT ID>",
+    appName: "TMD",
+    projectId: process.env.NEXT_PUBLIC_WC_PROJECT_ID as string,
   }
 );
 
