@@ -1,32 +1,33 @@
-"use client";
-import { useAppSelector } from "@/utils/redux/store";
-import { QuicklinksToast } from "../elements/QuicklinksToast";
+'use client';
+import { useAppSelector } from '@/utils/redux/store';
+import { QuicklinksToast } from '../elements/QuicklinksToast';
 
-import { useStore } from "react-redux";
-import { useRef } from "react";
-import { DirectoryList } from "@prisma/client";
-import { CreateLinkPopup } from "../CreateLinkPopup";
-import CreateLinkOnPaste from "../CreateLinkOnPaste";
-import QuicklinkSidebar from "./QuicklinksSidebar/QuicklinkSidebar";
-import QuicklinksGlobalHeader from "./QuicklinksGlobalHeader";
-import { PopoverFolderEdit } from "../elements/Popovers";
-import { MoveModal } from "../elements/modals/Movemodal";
-import RenameModal from "../elements/modals/RenameModal";
-import CreateDirectoryModal from "../elements/modals/CreateModal";
+import { useStore } from 'react-redux';
+import { useRef } from 'react';
+import { DirectoryList } from '@prisma/client';
+import { CreateLinkPopup } from '../CreateLinkPopup';
+import CreateLinkOnPaste from '../CreateLinkOnPaste';
+import QuicklinkSidebar from './QuicklinksSidebar/QuicklinkSidebar';
+import QuicklinksGlobalHeader from './QuicklinksGlobalHeader';
+import { PopoverFolderEdit } from '../elements/Popovers';
+import { MoveModal } from '../elements/modals/Movemodal';
+import RenameModal from '../elements/modals/RenameModal';
+import CreateDirectoryModal from '../elements/modals/CreateModal';
 import {
   setDirectoryList,
   setParentDirsList,
   setRootDirList,
-} from "@/utils/redux/quicklinks/slices/quicklinks.directory.slice";
+} from '@/utils/redux/quicklinks/slices/quicklinks.directory.slice';
+import clsx from 'clsx';
 
 // BAD PATTERN OF SLUG IS USED, WE CANT CHANGE IT BECAUSE IT IS USED IN THE MULTIPLE COMPONENTS
-const ROOT_DIRECTORIES: Omit<DirectoryList, "timestamp">[] = [
+const ROOT_DIRECTORIES: Omit<DirectoryList, 'timestamp'>[] = [
   {
-    id: "root-my-dashboard",
-    title: "My Dashboard",
+    id: 'root-my-dashboard',
+    title: 'My Dashboard',
     parentDirId: null,
-    slug: "/dashboard",
-    logo: "dashboard",
+    slug: '/dashboard',
+    logo: 'dashboard',
     position: 10,
     isArchive: false,
     clickCount: 0,
@@ -34,11 +35,11 @@ const ROOT_DIRECTORIES: Omit<DirectoryList, "timestamp">[] = [
     type: null,
   },
   {
-    id: "COMMON_RESOURCES",
-    title: "Team Resources",
+    id: 'COMMON_RESOURCES',
+    title: 'Team Resources',
     parentDirId: null,
-    slug: "/common-resources",
-    logo: "stack",
+    slug: '/common-resources',
+    logo: 'stack',
     position: 20,
     isArchive: false,
     clickCount: 0,
@@ -46,11 +47,11 @@ const ROOT_DIRECTORIES: Omit<DirectoryList, "timestamp">[] = [
     type: null,
   },
   {
-    id: "DEPARTMENT",
-    title: "Departments",
+    id: 'DEPARTMENT',
+    title: 'Departments',
     parentDirId: null,
-    slug: "/department",
-    logo: "groups",
+    slug: '/department',
+    logo: 'groups',
     position: 20,
     isArchive: false,
     clickCount: 0,
@@ -79,15 +80,21 @@ export const QuicklinksLayout = ({
     initialize.current = true;
   }
   // const { toast } = useAppSelector((state) => state.quicklinks);
+  const isCollapsed = useAppSelector((state) => state.quicklinksUi.isCollapsed);
 
   return (
     <>
       <QuicklinksGlobalHeader />
-      <main className="flex min-h-screen ">
+      <main className="flex min-h-screen">
         <QuicklinkSidebar />
-        <div className="relative px-6 w-[calc(100%-256px)] ml-auto">
+        <div
+          className={clsx(
+            'transition-width relative ml-auto px-6 duration-300',
+            isCollapsed ? 'w-[calc(100%-75px)]' : 'w-[calc(100%-256px)]',
+          )}
+        >
           <div className="h-[76px]"></div>
-          <div className="w-full relative h-screen mb-20">{children}</div>
+          <div className="relative mb-20 h-screen w-full">{children}</div>
 
           {/* <QuicklinksToast
             severity={toast.toastSev}

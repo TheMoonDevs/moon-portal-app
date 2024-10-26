@@ -1,12 +1,13 @@
 import { useAccount } from "wagmi";
 import { useCapabilities, useWriteContracts } from "wagmi/experimental";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { TOKEN_INFO } from "@/utils/constants/appInfo";
 import { WalletCapabilities } from "viem";
 
 export const useSmartWallet = () => {
-  const { connector } = useAccount();
-  const account = useAccount();
+  const { connector, address, chainId } = useAccount();
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const [id, setId] = useState<string | undefined>(undefined);
   const { writeContractsAsync } = useWriteContracts({
@@ -14,141 +15,157 @@ export const useSmartWallet = () => {
   });
 
   const isCoinbaseConnection = connector?.id === "coinbaseWalletSDK";
-  const { data: availableCapabilities } = isCoinbaseConnection
-    ? useCapabilities({
-        account: account.address,
-      })
-    : ({} as WalletCapabilities);
+
+  const { data: availableCapabilities, isError: isCapabilitiesError } =
+    useCapabilities({
+      account: address,
+    });
+
+  useEffect(() => {
+    if (isCapabilitiesError) {
+      setError("Error fetching wallet capabilities");
+    } else {
+      setError(null);
+    }
+  }, [isCapabilitiesError]);
+
+  useEffect(() => {
+    if (connector && address && chainId) {
+      setIsInitialized(true);
+    } else {
+      setIsInitialized(false);
+    }
+  }, [connector, address, chainId]);
+
   const capabilities = useMemo(() => {
-    if (!isCoinbaseConnection || !availableCapabilities || !account.chainId)
-      return {};
-    const capabilitiesForChain = availableCapabilities[account.chainId];
+    if (!isCoinbaseConnection || !availableCapabilities || !chainId) return {};
+    const capabilitiesForChain = availableCapabilities[chainId];
     if (
-      capabilitiesForChain["paymasterService"] &&
-      capabilitiesForChain["paymasterService"].supported
+      capabilitiesForChain?.["paymasterService"] &&
+      capabilitiesForChain["paymasterService"]?.supported
     ) {
       return {
         paymasterService: {
-          url: `${document.location.origin}/api/paymaster/`,
+          url: `${document?.location?.origin}/api/paymaster/`,
         },
       };
     }
     return {};
-  }, [availableCapabilities, account.chainId, isCoinbaseConnection]);
+  }, [availableCapabilities, chainId, isCoinbaseConnection]);
 
-  const mint = async (address: string, amount: bigint) => {
-    if (!isCoinbaseConnection) return null;
+  const executeSmartWalletFunction = async (
+    functionName: string,
+    abi: any[],
+    args: any[]
+  ) => {
+    if (!isCoinbaseConnection || !isInitialized) {
+      console.warn(
+        `Cannot execute ${functionName}: Not a Coinbase connection or not initialized`
+      );
+      return null;
+    }
 
-    return writeContractsAsync({
-      contracts: [
-        {
-          address: TOKEN_INFO.contractAddress as `0x${string}`,
-          abi: [
-            {
-              inputs: [
-                { internalType: "address", name: "to", type: "address" },
-                { internalType: "uint256", name: "amount", type: "uint256" },
-              ],
-              name: "reward",
-              outputs: [],
-              stateMutability: "nonpayable",
-              type: "function",
-            },
-          ],
-          functionName: "reward",
-          args: [address, amount],
-        },
-      ],
-      capabilities,
-    });
+    try {
+      return await writeContractsAsync({
+        contracts: [
+          {
+            address: TOKEN_INFO.contractAddress as `0x${string}`,
+            abi,
+            functionName,
+            args,
+          },
+        ],
+        capabilities,
+      });
+    } catch (err) {
+      console.error(`Error executing ${functionName}:`, err);
+      setError(`Failed to execute ${functionName}`);
+      return null;
+    }
   };
 
-  const claim = async (amount: bigint) => {
-    if (!isCoinbaseConnection) return null;
-
-    return writeContractsAsync({
-      contracts: [
+  const mint = (address: string, amount: bigint) =>
+    executeSmartWalletFunction(
+      "reward",
+      [
         {
-          address: TOKEN_INFO.contractAddress as `0x${string}`,
-          abi: [
-            {
-              inputs: [
-                {
-                  internalType: "uint256",
-                  name: "amount",
-                  type: "uint256",
-                },
-              ],
-              name: "claim",
-              outputs: [],
-              stateMutability: "nonpayable",
-              type: "function",
-            },
+          inputs: [
+            { internalType: "address", name: "to", type: "address" },
+            { internalType: "uint256", name: "amount", type: "uint256" },
           ],
-          functionName: "claim",
-          args: [amount],
+          name: "reward",
+          outputs: [],
+          stateMutability: "nonpayable",
+          type: "function",
         },
       ],
-      capabilities,
-    });
-  };
+      [address, amount]
+    );
 
-  const transfer = async (to: string, amount: bigint) => {
-    if (!isCoinbaseConnection) return null;
-
-    return writeContractsAsync({
-      contracts: [
+  const claim = (amount: bigint) =>
+    executeSmartWalletFunction(
+      "claim",
+      [
         {
-          address: TOKEN_INFO.contractAddress as `0x${string}`,
-          abi: [
+          inputs: [
             {
-              inputs: [
-                { internalType: "address", name: "to", type: "address" },
-                { internalType: "uint256", name: "amount", type: "uint256" },
-              ],
-              name: "transfer",
-              outputs: [{ internalType: "bool", name: "", type: "bool" }],
-              stateMutability: "nonpayable",
-              type: "function",
+              internalType: "uint256",
+              name: "amount",
+              type: "uint256",
             },
           ],
-          functionName: "transfer",
-          args: [to, amount],
+          name: "claim",
+          outputs: [],
+          stateMutability: "nonpayable",
+          type: "function",
         },
       ],
-      capabilities,
-    });
-  };
-  const setClaimable = async (value: boolean) => {
-    if (!isCoinbaseConnection) return;
-    return writeContractsAsync({
-      contracts: [
+      [amount]
+    );
+
+  const transfer = (to: string, amount: bigint) =>
+    executeSmartWalletFunction(
+      "transfer",
+      [
         {
-          address: TOKEN_INFO.contractAddress as `0x${string}`,
-          abi: [
+          inputs: [
+            { internalType: "address", name: "to", type: "address" },
+            { internalType: "uint256", name: "amount", type: "uint256" },
+          ],
+          name: "transfer",
+          outputs: [{ internalType: "bool", name: "", type: "bool" }],
+          stateMutability: "nonpayable",
+          type: "function",
+        },
+      ],
+      [to, amount]
+    );
+
+  const setClaimable = (value: boolean) =>
+    executeSmartWalletFunction(
+      "setIsClaimable",
+      [
+        {
+          inputs: [
             {
-              inputs: [
-                {
-                  internalType: "bool",
-                  name: "_isClaimable",
-                  type: "bool",
-                },
-              ],
-              name: "setIsClaimable",
-              outputs: [],
-              stateMutability: "nonpayable",
-              type: "function",
+              internalType: "bool",
+              name: "_isClaimable",
+              type: "bool",
             },
           ],
-          functionName: "setIsClaimable",
-          args: [value],
+          name: "setIsClaimable",
+          outputs: [],
+          stateMutability: "nonpayable",
+          type: "function",
         },
       ],
-      capabilities,
-    });
-  };
+      [value]
+    );
+
   return {
     isCoinbaseConnection,
+    isInitialized,
+    error,
     mint,
     claim,
     transfer,

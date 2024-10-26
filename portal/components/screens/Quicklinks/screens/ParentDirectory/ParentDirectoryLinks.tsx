@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import LinkList from "../../LinkList/LinkList";
 import { useAppSelector } from "@/utils/redux/store";
@@ -8,9 +8,10 @@ import { useQuickLinkDirectory } from "../../hooks/useQuickLinkDirectory";
 import { useQuickLinkDirs } from "../../hooks/useQuickLinksDirs";
 import { Link } from "@prisma/client";
 
+
 export const ParentDirectoryLinks = ({ loading }: { loading: boolean }) => {
   const { allQuicklinks, topUsedLinksList } = useAppSelector(
-    (state) => state.quicklinksLinks
+    (state) => state.quicklinksLinks,
   );
   const { activeDirectoryId } = useQuickLinkDirectory();
   const { thisDirectory } = useQuickLinkDirs(activeDirectoryId);
@@ -34,12 +35,12 @@ export const ParentDirectoryLinks = ({ loading }: { loading: boolean }) => {
           isLoading={loading}
         />
       </TopUsedLink> */}
-      <div className="flex justify-between items-center">
-        <h1 className="py-[10px] font-bold text-xl">Links</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="py-[10px] text-xl font-bold">Links</h1>
         <ViewButtonGroup />
       </div>
 
-      <div className="flex flex-col w-full pb-8">
+      <div className="flex w-full flex-col pb-8">
         <div className="w-full">
           <QuicklinksTabs
             tabs={[
@@ -59,7 +60,6 @@ export const ParentDirectoryLinks = ({ loading }: { loading: boolean }) => {
                   {value === 1 && (
                     <LinkList
                       allQuicklinks={filterLinks(searchQuery, topUsedLinksList)}
-                      withView="thumbnail"
                       isLoading={loading}
                     />
                   )}
