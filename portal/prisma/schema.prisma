@@ -37,6 +37,7 @@ model User {
   thirdPartyData Json?
   slackId        String?
   positionTitle  String?
+  buffBadge      BuffBadge[]
 }
 
 model Candidate {
@@ -487,6 +488,31 @@ model Task {
   url       String
   startDate DateTime? 
   dueDate   DateTime? 
+}
+
+//-------------------------------------Worklog-Buff-Badge-----------------------------------------
+
+model BuffBadge {
+  id             String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String      @db.ObjectId
+  title          String
+  points         Int
+  buffLevel      BUFF_LEVEL 
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  month          String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([userId, month]) 
+}
+
+enum BUFF_LEVEL {
+  TRUTH_SEEKER
+  BABY_GROOT
+  WORK_HULK
+  VAMPIRE_LORD
+  ALIEN_PREDATOR
+  DEVIL
 }
 
 //-------------------------------------PUSH NOTIFICATIONS-------------------------------------------
