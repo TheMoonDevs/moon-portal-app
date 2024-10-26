@@ -38,12 +38,12 @@ const ClaimRequests = () => {
   return (
     <div>
       <div className="h-[35%] p-3 flex flex-col gap-3">
-        <span className="font-semibold text-lg">Pending Claim Requests</span>
+        {/* <span className="font-semibold text-lg">Pending Claim Requests</span> */}
         <div className=" flex flex-col gap-2">
           {claimTransactions.map((tx) => (
             <div
               key={tx.id}
-              className="flex flex-col border border-midGrey w-full h-14 px-2 py-1 gap-1"
+              className="flex flex-col border border-midGrey w-full h-fit px-3 py-2 gap-1 rounded-xl"
             >
               <div className="flex justify-between">
                 <div className="flex gap-1">
@@ -71,8 +71,8 @@ const ClaimRequests = () => {
                   </Link>
                 )}
 
-                <span className="text-xs font-black text-white bg-yellow-400 px-3">
-                  pending
+                <span className="text-xs font-semibold text-orange-900 bg-yellow-300 px-3 py-2 rounded-3xl">
+                  Pending
                 </span>
               </div>
             </div>
