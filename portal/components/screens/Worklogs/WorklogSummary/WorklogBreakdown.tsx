@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { User, WorkLogs } from "@prisma/client";
-import { PieChart, BarChart } from "@mui/x-charts";
+// import { PieChart, BarChart } from "@mui/x-charts";
 import { format, parseISO } from "date-fns";
 import {
   calculateMetrics,
@@ -50,6 +50,7 @@ import {
 } from "@/utils/redux/worklogsSummary/statsAction.slice";
 import Pointers from "./Pointers";
 import LoadingAnimation from "@/components/elements/LoadingAnimation";
+import { getLatestWorklogPerDate } from "./WorklogSummaryView";
 
 const Pattern = dynamic(() => import("./Pattern"), {
   loading: () => (
@@ -68,6 +69,14 @@ const Pie = dynamic(() => import("./PieChart"), {
 });
 
 const StatiStics = dynamic(() => import("./StatiStics"), {
+  loading: () => (
+    <div className="flex h-[200px] w-full items-center justify-center">
+      <LoadingAnimation />
+    </div>
+  ),
+});
+
+const BarChart = dynamic(() => import("./Histogram"), {
   loading: () => (
     <div className="flex h-[200px] w-full items-center justify-center">
       <LoadingAnimation />
@@ -99,6 +108,7 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
   const dispatch = useAppDispatch();
   const { isShowProductiveStreak, productiveStreakData, showMissedLogs } =
     useAppSelector((state: RootState) => state.statsAction);
+  const uniqueWorklogs = getLatestWorklogPerDate(worklogSummary); //removes duplicate data from worklogs and we will get the latest updated worklogs
 
   const weekdays = [
     "Monday",
@@ -266,22 +276,26 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
               <p className="py-4 text-center text-sm leading-3 tracking-widest text-black">
                 Total tasks and completed tasks (Day wise)
               </p>
-              <Pattern
-                gridVisible={gridVisible}
-                worklogSummary={worklogSummary}
-              />
+              {activeIndex === 0 ? (
+                <Pattern
+                  gridVisible={gridVisible}
+                  worklogSummary={uniqueWorklogs}
+                />
+              ) : (
+                <BarChart worklogSummary={uniqueWorklogs} />
+              )}
             </div>
             <div className="py-4">
               <p className="pb-4 text-center text-sm leading-3 tracking-widest text-black">
                 Check your Productivity (Total no. of tasks week wise)
               </p>
-              <Pie worklogSummary={worklogSummary} />
+              <Pie worklogSummary={uniqueWorklogs} />
             </div>
             <div className="">
               <p className="pb-4 text-center text-sm leading-3 tracking-widest text-black">
                 Check your Productivity Stats
               </p>
-              <StatiStics worklogSummary={worklogSummary} />
+              <StatiStics worklogSummary={uniqueWorklogs} />
             </div>
           </div>
         )}
