@@ -53,13 +53,13 @@ const nextConfig = {
     // your project has ESLint errors.
     ignoreDuringBuilds: true,
   },
-  // typescript: {
+  typescript: {
     // !! WARN !!
     // Dangerously allow production builds to successfully complete even if
     // your project has type errors.
     // !! WARN !!
     // ignoreBuildErrors: true,
-  // },
+  },
   webpack: (
     config,
     { buildId, dev, isServer, defaultLoaders, nextRuntime, webpack }
@@ -68,12 +68,11 @@ const nextConfig = {
       topLevelAwait: true,
       layers: true,
     };
-    // if (config.cache && !dev) {
-    //   config.cache = Object.freeze({
-    //     type: 'memory',
-    //   })
-    // }
-    // Important: return the modified config
+    if (config.cache && !dev) {
+      config.cache = Object.freeze({
+        type: 'memory',
+      })
+    }
     return config
   },
 };
