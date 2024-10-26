@@ -24,7 +24,7 @@ jobs:
         run: |
           git fetch --prune
           git fetch origin +refs/heads/*:refs/remotes/origin/*
-          changed_files=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }})
+          changed_files=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }})
           project_paths=("portal" "payzone" "home")
           projects=()
           home_changed=false
@@ -93,9 +93,6 @@ jobs:
             git checkout main
             git pull origin main || { echo "ERROR: Failed to pull latest changes." >&2; git stash pop || true; rm -f "$LOCK_FILE"; exit 1; }
 
-            # Apply stashed changes back
-            git stash pop || true
-
             # Install dependencies and build with error handling
             if ! npm install; then
               echo "ERROR: npm install failed. Cleaning up..." >&2
@@ -111,18 +108,19 @@ jobs:
               exit 1
             fi
 
+            # Apply stashed changes back
+            git stash pop || echo "No stashed changes to pop."
+
             # Restart the PM2 process for the project
             if pm2 list | grep -q "${{ matrix.project }}-main"; then
               pm2 restart ${{ matrix.project }}-main --update-env || {
                 echo "ERROR: Failed to restart PM2 process. Cleaning up..." >&2
-                git stash pop || echo "No stashed changes to pop."
                 rm -f "$LOCK_FILE"
                 exit 1
               }
             else
               pm2 start npm --name ${{ matrix.project }}-main -- run start || {
                 echo "ERROR: Failed to start PM2 process. Cleaning up..." >&2
-                git stash pop || echo "No stashed changes to pop."
                 rm -f "$LOCK_FILE"
                 exit 1
               }
@@ -136,12 +134,14 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << "EOF"
             cd apps/moon-portal-app/${{ matrix.project }}/build/prod
-            rm -f main
-            mv main-backup main
+            pm2 stop ${{ matrix.project }}-main
+            rm -rf main
+            cp -r main-backup main
             pm2 restart ${{ matrix.project }}-main
           EOF
 
       - name: Clean up deployment lock
+        if: always()
         run: |
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << "EOF"
             LOCK_FILE="/tmp/deploy/deploy-lock"

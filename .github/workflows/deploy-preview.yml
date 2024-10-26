@@ -109,13 +109,13 @@ jobs:
       - name: Comment Preview URL
         uses: actions/github-script@v6
         env:
-          PORT: ${{ env.PREVIEW_PORT }}
+          PREVIEW_PORT: ${{ env.PREVIEW_PORT }}
         with:
           script: |
             const project = '${{ inputs.project }}';
             const subdomain = project === 'payzone' ? 'pay' : project;
             const prNumber = '${{ inputs.pr_number || github.event.pull_request.number }}';
-            const port = process.env.PORT;
+            const port = process.env.PREVIEW_PORT;
             const uniqueId = `preview-${prNumber}-${port}`;
             const previewUrl = `https://${uniqueId}.${subdomain}.themoondevs.com`;
             github.rest.issues.createComment({
@@ -128,3 +128,13 @@ jobs:
                     `🔄 Redeploy: @bot deploy ${project}\n` +
                     `🔒 Delete Lock: @bot delete_lock`
             });
+
+      - name: Clean up deployment lock
+        if: failure() || cancelled()
+        run: |
+          ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << "EOF"
+            LOCK_FILE="/tmp/deploy/deploy-lock"
+            rm -f "$LOCK_FILE"
+            git stash pop || echo "No stashed changes to pop."
+          EOF
+    
