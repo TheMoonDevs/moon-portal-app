@@ -93,44 +93,35 @@ jobs:
             # Install dependencies and build with error handling
             if ! npm install; then
               echo "ERROR: npm install failed. Cleaning up..." >&2
-              git stash pop || echo "No stashed changes to pop."
-              rm -f "$LOCK_FILE"
               exit 1
             fi
             
             if ! npm run build:prod; then
               echo "ERROR: Build failed. Cleaning up..." >&2
-              git stash pop || echo "No stashed changes to pop."
-              rm -f "$LOCK_FILE"
               exit 1
             fi
-            
-            cp -r /build/prod/main /build/prod/main-backup
-            cp -r /.next/standalone /build/prod/main
-            cp -r /.next/static /build/prod/main/static
-            cp -r /public /build/prod/main/public
+
+            cd ../
 
             if pm2 list | grep -q "${{ matrix.project }}-main"; then
               pm2 stop ${{ matrix.project }}-main
-              rm -rf build/prod/main
-              mv build/prod/temp build/prod/main
+              cp -r /builds/${{ matrix.project }}/prod/main /builds/${{ matrix.project }}/prod/main-backup
+              cp -r /${{ matrix.project }}/.next/standalone /builds/${{ matrix.project }}/prod/main
+              cp -r /${{ matrix.project }}/.next/static /builds/${{ matrix.project }}/prod/main/static
+              cp -r /${{ matrix.project }}/public ../builds/${{ matrix.project }}/prod/main/public
             fi
 
-            cd build/prod/main
+            cd builds/${{ matrix.project }}/prod/main
 
             # Restart the PM2 process for the project
             if pm2 list | grep -q "${{ matrix.project }}-main"; then
               pm2 restart ${{ matrix.project }}-main --update-env || {
                 echo "ERROR: Failed to restart PM2 process. Cleaning up..." >&2
-                cd ../../../
-                rm -f "$LOCK_FILE"
                 exit 1
               }
             else
               pm2 start node --name ${{ matrix.project }}-main -- server.js || {
                 echo "ERROR: Failed to start PM2 process. Cleaning up..." >&2
-                cd ../../../
-                rm -f "$LOCK_FILE"
                 exit 1
               }
             fi
@@ -144,7 +135,7 @@ jobs:
         if: failure() || cancelled()
         run: |
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << "EOF"
-            cd apps/moon-portal-app/${{ matrix.project }}/build/prod
+            cd apps/moon-portal-app/builds/${{ matrix.project }}/prod
             pm2 stop ${{ matrix.project }}-main
             rm -rf main
             cp -r main-backup main

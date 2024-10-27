@@ -70,7 +70,7 @@ jobs:
             if [[ "$CLEAN_FLAG" == "true" ]]; then
               echo "Cleaning up before redeployment..."
               pm2 list | grep -E "${PROJECT}-${PR_NUMBER}-" | awk '{print $2}' | xargs -r pm2 delete
-              rm -rf /home/techteam/apps/moon-portal-app/${PROJECT}/build/${PR_NUMBER}
+              rm -rf /home/techteam/apps/moon-portal-app/builds/${PROJECT}/${PR_NUMBER}
             fi
 
             echo "Redeploying for $PROJECT PR #$PR_NUMBER..."
@@ -89,11 +89,13 @@ jobs:
               exit 1
             fi
 
-            cp -r /.next/standalone /build/$PR_NUMBER/$PORT
-            cp -r /.next/static /build/$PR_NUMBER/$PORT/static
-            cp -r /public /build/$PR_NUMBER/$PORT/public
+            cd ../
 
-            cd build/$PR_NUMBER/$PORT
+            cp -r /$PROJECT/.next/standalone /builds/${PROJECT}/$PR_NUMBER/$PORT
+            cp -r /$PROJECT/.next/static /builds/${PROJECT}/$PR_NUMBER/$PORT/static
+            cp -r /$PROJECT/public /builds/${PROJECT}/$PR_NUMBER/$PORT/public
+
+            cd builds/${PROJECT}/$PR_NUMBER/$PORT
 
             pm2 start node --name "$UNIQUE_ID" -- server.js -p $PORT || {
               echo "ERROR: Failed to start PM2 process."
