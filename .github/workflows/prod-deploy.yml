@@ -184,7 +184,7 @@ jobs:
       - name: Lighthouse Check
         uses: foo-software/lighthouse-check-action@master
         with:
-          urls: ${{ steps.set-domain.outputs.domain }}
+          urls: https://www.foo.software, https://www.google.com, "https://${{ steps.set-domain.outputs.domain }}"
 
       - name: Clean up deployment lock
         if: always()
