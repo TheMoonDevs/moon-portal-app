@@ -77,8 +77,21 @@ jobs:
           echo "Cleaning up deployments for closed PR #$PR_NUMBER"
 
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << EOF
-            pm2 list | grep -E "portal-${PR_NUMBER}-" | awk '{print $2}' | xargs -r pm2 delete
-            pm2 list | grep -E "payzone-${PR_NUMBER}-" | awk '{print $2}' | xargs -r pm2 delete
+            # Delete portal processes
+            PORTAL_PROCESSES=$(pm2 list | grep -E "portal-${PR_NUMBER}-" | awk '{print $2}')
+            if [ -n "$PORTAL_PROCESSES" ]; then
+              echo "$PORTAL_PROCESSES" | xargs -r pm2 delete
+            else
+              echo "No portal processes found for PR number ${PR_NUMBER}"
+            fi
+                
+            # Delete payzone processes
+            PAYZONE_PROCESSES=$(pm2 list | grep -E "payzone-${PR_NUMBER}-" | awk '{print $2}')
+            if [ -n "$PAYZONE_PROCESSES" ]; then
+              echo "$PAYZONE_PROCESSES" | xargs -r pm2 delete
+            else
+              echo "No payzone processes found for PR number ${PR_NUMBER}"
+            fi
             rm -rf /home/techteam/apps/moon-portal-app/builds/portal/${PR_NUMBER}
             rm -rf /home/techteam/apps/moon-portal-app/builds/payzone/${PR_NUMBER}
             rm -f /tmp/deploy/deploy-lock  # Remove lock file if it exists
