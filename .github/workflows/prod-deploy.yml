@@ -77,6 +77,7 @@ jobs:
               sleep 10
             done
 
+            mkdir -p /tmp/deploy
             touch "$LOCK_FILE"
             echo "Starting production deployment for project: ${{ matrix.project }}"
 
@@ -103,24 +104,37 @@ jobs:
 
             cd ../
 
-            if pm2 list | grep -q "${{ matrix.project }}-main"; then
+            if pm2 list | grep -q ${{ matrix.project }}-main; then
               pm2 stop ${{ matrix.project }}-main
-              cp -r /builds/${{ matrix.project }}/prod/main /builds/${{ matrix.project }}/prod/main-backup
-              cp -r /${{ matrix.project }}/.next/standalone /builds/${{ matrix.project }}/prod/main
-              cp -r /${{ matrix.project }}/.next/static /builds/${{ matrix.project }}/prod/main/static
-              cp -r /${{ matrix.project }}/public ../builds/${{ matrix.project }}/prod/main/public
             fi
+
+            # Enable dotglob to include hidden files in wildcard matches
+            shopt -s dotglob
+
+            cp -r builds/${{ matrix.project }}/prod/main/* builds/${{ matrix.project }}/prod/main-backup
+            cp -r ${{ matrix.project }}/.next/standalone/* builds/${{ matrix.project }}/prod/main
+            cp -r ${{ matrix.project }}/.next/static builds/${{ matrix.project }}/prod/main/.next/static
+            cp -r ${{ matrix.project }}/public builds/${{ matrix.project }}/prod/main/public
+            cp ${{ matrix.project }}/.env.prod builds/${{ matrix.project }}/prod/main/.env
 
             cd builds/${{ matrix.project }}/prod/main
 
+            if [ "${{ matrix.project }}" = "portal" ]; then
+              PORT=3001
+              export PORT=3001
+            elif [ "${{ matrix.project }}" = "payzone" ]; then
+              PORT=3002
+              export PORT=3002
+            fi
+            
             # Restart the PM2 process for the project
-            if pm2 list | grep -q "${{ matrix.project }}-main"; then
+            if pm2 list | grep -q ${{ matrix.project }}-main ; then
               pm2 restart ${{ matrix.project }}-main --update-env || {
                 echo "ERROR: Failed to restart PM2 process. Cleaning up..." >&2
                 exit 1
               }
             else
-              pm2 start node --name ${{ matrix.project }}-main -- server.js || {
+              PORT=$PORT pm2 start node --name ${{ matrix.project }}-main -- server.js || {
                 echo "ERROR: Failed to start PM2 process. Cleaning up..." >&2
                 exit 1
               }
@@ -138,7 +152,11 @@ jobs:
             cd apps/moon-portal-app/builds/${{ matrix.project }}/prod
             pm2 stop ${{ matrix.project }}-main
             rm -rf main
-            cp -r main-backup main
+
+            # Enable dotglob to include hidden files in wildcard matches
+            shopt -s dotglob
+
+            cp -r main-backup/* main
             pm2 restart ${{ matrix.project }}-main
           EOF
 
