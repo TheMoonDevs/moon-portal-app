@@ -81,5 +81,6 @@ jobs:
             pm2 list | grep -E "payzone-${{ github.event.pull_request.number }}-" | awk '{print $2}' | xargs -r pm2 delete
             rm -rf /home/techteam/apps/moon-portal-app/builds/portal/${PR_NUMBER}
             rm -rf /home/techteam/apps/moon-portal-app/builds/payzone/${PR_NUMBER}
-            echo "Cleaned up PR #$PR_NUMBER."
+            rm -f /tmp/deploy/deploy-lock  # Remove lock file if it exists
+            echo "Cleaned up PR #$PR_NUMBER and removed lock file if it existed."
           EOF

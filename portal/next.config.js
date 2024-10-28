@@ -68,11 +68,11 @@ const nextConfig = {
       topLevelAwait: true,
       layers: true,
     };
-    if (config.cache && !dev) {
-      config.cache = Object.freeze({
-        type: 'memory',
-      })
-    }
+    // if (config.cache && !dev) {
+    //   config.cache = Object.freeze({
+    //     type: 'memory',
+    //   })
+    // }
     return config
   },
 };
