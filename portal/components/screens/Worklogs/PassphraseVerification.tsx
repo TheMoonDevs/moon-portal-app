@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { usePassphrase } from "@/utils/hooks/usePassphrase";
 import { Modal, Box, Typography, Button, TextField } from "@mui/material";
+import { Lock, Unlock } from "lucide-react";
 
 export const PassphraseVerification = () => {
   const [isResetModalOpen, setResetModalOpen] = useState<boolean>(false);
@@ -14,7 +15,6 @@ export const PassphraseVerification = () => {
     handleResetPassphrase,
     localPassphrase,
   } = usePassphrase();
-
   // Handle passphrase verification
   const handleVerify = () => {
     toast.info("Verifying passphrase");
@@ -42,24 +42,20 @@ export const PassphraseVerification = () => {
   return (
     <>
       {/* Warning message */}
-      <div className="bg-red-100 text-red-800 p-4 rounded-2xl">
-        <p>
-          You need to verify your passphrase, or your private logs will be lost.
-        </p>
-        <div className="flex justify-end space-x-4 mt-4">
-          <button
-            className="bg-green-300 text-black px-4 py-2 rounded-full hover:bg-green-600 hover:text-white transition-all"
-            onClick={() => setShowVerifyModal(true)}
-          >
-            Verify
-          </button>
-          <button
-            className="bg-red-300 text-black px-4 py-2 rounded-full  hover:bg-red-600 hover:text-white transition-all"
-            onClick={() => setResetModalOpen(true)}
-          >
-            Reset
-          </button>
-        </div>
+      <div className="absolute top-0 flex h-full w-[95%] justify-center items-center">
+      <button
+  className="flex justify-center text-xl font-semibold relative group outline-none"
+  onClick={() => setShowVerifyModal(true)}
+>
+  <span>
+    <span className="absolute transition-opacity duration-200 opacity-100 group-hover:opacity-0">
+      <Lock className="text-3xl"/>
+    </span>
+    <span className="absolute transition-opacity duration-200 opacity-0 group-hover:opacity-100">
+      <Unlock />
+    </span>
+  </span>
+</button>
       </div>
 
       {/* Verify Modal */}
@@ -93,8 +89,17 @@ export const PassphraseVerification = () => {
             onChange={(e) => setPassphraseInput(e.target.value)}
             className="outline-none border border-black rounded-2xl px-2 py-1 w-full h-12 my-3"
           />
+          <div className="text-gray-500 mb-2 space-x-1">
+            <span>
+            Passphrase slipped your mind?
+            </span>
+            <button className="hover:text-black ml-1" onClick={()=>{
+              setShowVerifyModal(false);
+              setResetModalOpen(true)
+            }}>Reset it here!</button>
+          </div>
           <button
-            className="bg-green-300 text-black px-3 py-1 rounded-2xl  hover:bg-green-600 hover:text-white transition-all w-fit"
+            className="bg-black text-white px-3 py-1 rounded-2xl border border-black  hover:bg-white hover:text-black transition-all w-fit"
             onClick={handleVerify}
           >
             Verify
@@ -136,8 +141,15 @@ export const PassphraseVerification = () => {
             onChange={(e) => setConfirmInput(e.target.value)}
             className="outline-none border border-black rounded-2xl px-2 py-1 w-full h-12 my-3"
           />
+          <div className="text-gray-500 mb-2 -mt-1 space-x-1">
+          <span>Protect your logs</span>
+            <button className="hover:text-black" onClick={()=>{
+              setResetModalOpen(false)
+              setShowVerifyModal(true);
+            }}>verify here!</button>
+          </div>
           <button
-            className="bg-red-300 text-black px-3 py-1 rounded-2xl  hover:bg-red-600 hover:text-white transition-all w-fit"
+            className="bg-black text-white px-3 py-1 rounded-2xl border border-black  hover:bg-white hover:text-black transition-all w-fit"
             onClick={handleConfirmReset}
           >
             Confirm Reset

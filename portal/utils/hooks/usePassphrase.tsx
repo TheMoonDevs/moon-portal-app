@@ -34,13 +34,14 @@ export const usePassphrase = () => {
     hashedPassphrase: string
   ) => {
     try {
-      await PortalSdk.putData("/api/user/", {
+      await PortalSdk.putData("/api/user", {
         id: userId,
         passphrase: hashedPassphrase,
       });
       // console.log("Passphrase updated successfully in the database");
       refetchUser();
     } catch (error) {
+      toast.dismiss()
       toast.error("Error updating passphrase in the database.");
       console.error("Error updating passphrase in the database:", error);
       throw error;
@@ -55,12 +56,15 @@ export const usePassphrase = () => {
 
       const { hash: dbHash } = hashPassphrase(newPassphrase);
       if (user?.id) {
-        await updateUserPassphrase(user.id, dbHash);
+        await updateUserPassphrase(user?.id, dbHash);
+        toast.dismiss()
         toast.success("Passphrase generated.");
       } else {
+        toast.dismiss()
         toast.error("User ID is not available.");
       }
     } catch (error: any) {
+      toast.dismiss()
       toast.error("Failed to generate and set passphrase.", error.message);
     }
   };
@@ -73,9 +77,11 @@ export const usePassphrase = () => {
         await refetchUser();
         localStorage.setItem(LOCAL_STORAGE.passphrase, passphrase);
         setShowVerifyModal(false);
+        toast.dismiss()
         toast.success("Passphrase verified.");
       }
     } catch (error: any) {
+      toast.dismiss()
       toast.error("Wrong passphrase.");
       console.error("Error verifying passphrase:", error.message);
     }
@@ -85,6 +91,7 @@ export const usePassphrase = () => {
     const userId = user?.id;
     if (!userId) return;
     try {
+      toast.dismiss()
       toast.info("Resetting private logs");
       const query = `?logType=privateWorklogs&userId=${userId}`;
       const data = await PortalSdk.deleteData(
@@ -92,10 +99,12 @@ export const usePassphrase = () => {
         null
       );
       if (data.success) {
+        toast.dismiss()
         toast.info("Creating new passphrase");
         handleGeneratePassphrase();
       }
     } catch (error: any) {
+      toast.dismiss()
       toast.error("Error while resetting your private logs.");
       console.error(error.message);
     }
