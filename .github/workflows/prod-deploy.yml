@@ -160,6 +160,27 @@ jobs:
             cp -r main-backup/* main
             pm2 restart ${{ matrix.project }}-main
           EOF
+          
+      - name: Set domain output
+        id: set-domain
+        run: |
+          if [ "${{ matrix.project }}" = "portal" ]; then
+            DOMAIN="portal.themoondevs.com"
+          elif [ "${{ matrix.project }}" = "payzone" ]; then
+            DOMAIN="pay.themoondevs.com"
+          else
+            echo "ERROR: Unknown project name. Exiting..." >&2
+            exit 1
+          fi
+
+          echo "::set-output name=domain::${DOMAIN}"
+      
+      - uses: actions/checkout@master
+      
+      - name: Lighthouse Check
+        uses: foo-software/lighthouse-check-action@master
+        with:
+          urls: ${{ steps.set-domain.outputs.domain }}
 
       - name: Clean up deployment lock
         if: always()
