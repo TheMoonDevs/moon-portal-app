@@ -63,6 +63,8 @@ jobs:
               exit 1
             fi
 
+            export PORT=$PORT
+
             UNIQUE_ID="${PROJECT}-${PR_NUMBER}-$PORT"
             if [[ "$CLEAN_FLAG" == "true" ]]; then
               echo "Cleaning up before redeployment..."
@@ -90,12 +92,16 @@ jobs:
             fi
 
             cd ../
-            cp -r /${PROJECT}/.next/standalone /builds/${PROJECT}/${PR_NUMBER}/${PORT}
-            cp -r /${PROJECT}/.next/static /builds/${PROJECT}/${PR_NUMBER}/${PORT}/static
-            cp -r /${PROJECT}/public /builds/${PROJECT}/${PR_NUMBER}/${PORT}/public
+
+            # Enable dotglob to include hidden files in wildcard matches
+            shopt -s dotglob
+            
+            cp -r ${PROJECT}/.next/standalone/* builds/${PROJECT}/${PR_NUMBER}/${PORT}
+            cp -r ${PROJECT}/.next/static builds/${PROJECT}/${PR_NUMBER}/${PORT}/static
+            cp -r ${PROJECT}/public builds/${PROJECT}/${PR_NUMBER}/${PORT}/public
 
             cd builds/${PROJECT}/${PR_NUMBER}/${PORT}
-            pm2 start node --name "$UNIQUE_ID" -- server.js -p $PORT || {
+            pm2 start node --name "$UNIQUE_ID" -- server.js || {
               echo "ERROR: Failed to start PM2 process."
               rm -f "$LOCK_FILE"
               exit 1
