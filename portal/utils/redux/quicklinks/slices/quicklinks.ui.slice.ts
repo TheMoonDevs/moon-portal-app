@@ -35,7 +35,7 @@ const initialState: QuikcklinksUIState = {
     type: null,
     data: null,
   },
-  currentView: localStorage.getItem("currentView")
+  currentView: typeof window !== "undefined" && localStorage.getItem("currentView")
     ? (localStorage.getItem("currentView") as listView)
     : "widget",
   toast: {

@@ -1,4 +1,5 @@
 module.exports = {
-  'portal/**/*.{js,jsx,ts,tsx}': ['eslint --cache --fix', 'prettier --write'],
-  '**/*.ts?(x)': () => 'npm run check-types'
+  // '*.{js,jsx,ts,tsx}': ['prettier --write', 'eslint --cache --fix', 'eslint'],
+  '*.{js,jsx,ts,tsx}': ['prettier --write', 'npx oxlint@latest'],
+  '**/*.ts?(x)': () => 'npm run check-types',
 };

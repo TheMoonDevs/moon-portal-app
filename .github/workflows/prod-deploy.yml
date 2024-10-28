@@ -77,13 +77,11 @@ jobs:
               sleep 10
             done
 
+            mkdir -p /tmp/deploy
             touch "$LOCK_FILE"
             echo "Starting production deployment for project: ${{ matrix.project }}"
 
-            cp -r /home/techteam/apps/moon-portal-app/${{ matrix.project }}/build/prod/main /home/techteam/apps/moon-portal-app/${{ matrix.project }}/build/prod/main-backup
-
             # Change to the project directory
-            export NEXT_PUBLIC_BUILD_PATH=prod/main
             cd apps/moon-portal-app/${{ matrix.project }}
 
             # Stash any local changes before pulling the latest changes
@@ -96,36 +94,58 @@ jobs:
             # Install dependencies and build with error handling
             if ! npm install; then
               echo "ERROR: npm install failed. Cleaning up..." >&2
-              git stash pop || echo "No stashed changes to pop."
-              rm -f "$LOCK_FILE"
               exit 1
             fi
             
             if ! npm run build:prod; then
               echo "ERROR: Build failed. Cleaning up..." >&2
-              git stash pop || echo "No stashed changes to pop."
-              rm -f "$LOCK_FILE"
               exit 1
+            fi
+
+            cd ../
+
+            if pm2 list | grep -q ${{ matrix.project }}-main; then
+              pm2 stop ${{ matrix.project }}-main
+            fi
+
+            # Enable dotglob to include hidden files in wildcard matches
+            shopt -s dotglob
+
+            mkdir -p builds/${{ matrix.project }}/prod/main-backup
+            mkdir -p builds/${{ matrix.project }}/prod/main/.next/static
+            mkdir -p builds/${{ matrix.project }}/prod/main/public
+            
+            cp -r builds/${{ matrix.project }}/prod/main/* builds/${{ matrix.project }}/prod/main-backup
+            cp -r ${{ matrix.project }}/.next/standalone/* builds/${{ matrix.project }}/prod/main
+            cp -r ${{ matrix.project }}/.next/static builds/${{ matrix.project }}/prod/main/.next/static
+            cp -r ${{ matrix.project }}/public builds/${{ matrix.project }}/prod/main/public
+            cp ${{ matrix.project }}/.env.prod builds/${{ matrix.project }}/prod/main/.env
+
+            cd builds/${{ matrix.project }}/prod/main
+
+            if [ "${{ matrix.project }}" = "portal" ]; then
+              PORT=3001
+              export PORT=3001
+            elif [ "${{ matrix.project }}" = "payzone" ]; then
+              PORT=3002
+              export PORT=3002
+            fi
+            
+            # Restart the PM2 process for the project
+            if pm2 list | grep -q ${{ matrix.project }}-main ; then
+              pm2 restart ${{ matrix.project }}-main --update-env || {
+                echo "ERROR: Failed to restart PM2 process. Cleaning up..." >&2
+                exit 1
+              }
+            else
+              PORT=$PORT pm2 start node --name ${{ matrix.project }}-main -- server.js || {
+                echo "ERROR: Failed to start PM2 process. Cleaning up..." >&2
+                exit 1
+              }
             fi
 
             # Apply stashed changes back
             git stash pop || echo "No stashed changes to pop."
-
-            # Restart the PM2 process for the project
-            if pm2 list | grep -q "${{ matrix.project }}-main"; then
-              pm2 restart ${{ matrix.project }}-main --update-env || {
-                echo "ERROR: Failed to restart PM2 process. Cleaning up..." >&2
-                rm -f "$LOCK_FILE"
-                exit 1
-              }
-            else
-              pm2 start npm --name ${{ matrix.project }}-main -- run start || {
-                echo "ERROR: Failed to start PM2 process. Cleaning up..." >&2
-                rm -f "$LOCK_FILE"
-                exit 1
-              }
-            fi
-
             echo "Deployment completed for project: ${{ matrix.project }}"
           EOF
 
@@ -133,12 +153,38 @@ jobs:
         if: failure() || cancelled()
         run: |
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << "EOF"
-            cd apps/moon-portal-app/${{ matrix.project }}/build/prod
+            cd apps/moon-portal-app/builds/${{ matrix.project }}/prod
             pm2 stop ${{ matrix.project }}-main
             rm -rf main
-            cp -r main-backup main
+
+            # Enable dotglob to include hidden files in wildcard matches
+            shopt -s dotglob
+
+            mkdir -p main
+            cp -r main-backup/* main
             pm2 restart ${{ matrix.project }}-main
           EOF
+          
+      - name: Set domain output
+        id: set-domain
+        run: |
+          if [ "${{ matrix.project }}" = "portal" ]; then
+            DOMAIN="portal.themoondevs.com"
+          elif [ "${{ matrix.project }}" = "payzone" ]; then
+            DOMAIN="pay.themoondevs.com"
+          else
+            echo "ERROR: Unknown project name. Exiting..." >&2
+            exit 1
+          fi
+
+          echo "::set-output name=domain::${DOMAIN}"
+      
+      - uses: actions/checkout@master
+      
+      - name: Lighthouse Check
+        uses: foo-software/lighthouse-check-action@master
+        with:
+          urls: https://www.foo.software, https://www.google.com, "https://${{ steps.set-domain.outputs.domain }}"
 
       - name: Clean up deployment lock
         if: always()
