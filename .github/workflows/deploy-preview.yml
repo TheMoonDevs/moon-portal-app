@@ -162,7 +162,7 @@ jobs:
       - name: Lighthouse Check
         uses: foo-software/lighthouse-check-action@master
         with:
-          urls: ${{ steps.preview-url.outputs.preview-url }}
+          urls: https://www.foo.software, https://www.google.com, "${{ steps.comment-preview-url.outputs.previewUrl }}"
       
       - name: Clean up deployment lock
         if: failure() || cancelled()
