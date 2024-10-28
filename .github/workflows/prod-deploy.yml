@@ -103,7 +103,7 @@ jobs:
 
             cd ../
 
-            if pm2 list | grep -q "${{ matrix.project }}-main"; then
+            if pm2 list | grep -q ${{ matrix.project }}-main; then
               pm2 stop ${{ matrix.project }}-main
             fi
 
@@ -126,7 +126,7 @@ jobs:
             fi
             
             # Restart the PM2 process for the project
-            if pm2 list | grep -q "${{ matrix.project }}-main"; then
+            if pm2 list | grep -q ${{ matrix.project }}-main ; then
               pm2 restart ${{ matrix.project }}-main --update-env || {
                 echo "ERROR: Failed to restart PM2 process. Cleaning up..." >&2
                 exit 1

@@ -95,8 +95,8 @@ jobs:
           echo "Cleaning up deployments for PR #$PR_NUMBER"
 
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} <<EOF
-            pm2 list | grep -E "portal-${PR_NUMBER}-" | awk '{print $2}' | xargs -r pm2 delete
-            pm2 list | grep -E "payzone-${PR_NUMBER}-" | awk '{print $2}' | xargs -r pm2 delete
+            pm2 list | grep -E portal-${PR_NUMBER}- | awk '{print $2}' | xargs -r pm2 delete
+            pm2 list | grep -E payzone-${PR_NUMBER}- | awk '{print $2}' | xargs -r pm2 delete
             rm -rf /home/techteam/apps/moon-portal-app/build/portal/${PR_NUMBER}
             rm -rf /home/techteam/apps/moon-portal-app/build/payzone/${PR_NUMBER}
             echo "Cleaned up PR #$PR_NUMBER."

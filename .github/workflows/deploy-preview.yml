@@ -68,7 +68,7 @@ jobs:
             UNIQUE_ID="${PROJECT}-${PR_NUMBER}-$PORT"
             if [[ "$CLEAN_FLAG" == "true" ]]; then
               echo "Cleaning up before redeployment..."
-              pm2 list | grep -E "${PROJECT}-${PR_NUMBER}-" | awk '{print $2}' | xargs -r pm2 delete
+              pm2 list | grep -E ${PROJECT}-${PR_NUMBER}- | awk '{print $2}' | xargs -r pm2 delete
               rm -rf /home/techteam/apps/moon-portal-app/builds/${PROJECT}/${PR_NUMBER}
             fi
 
