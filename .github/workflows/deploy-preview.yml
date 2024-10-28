@@ -133,7 +133,6 @@ jobs:
           echo "PREVIEW_PORT=${PREVIEW_PORT}" >> $GITHUB_ENV
 
       - name: Comment Preview URL
-        id: preview-url
         uses: actions/github-script@v6
         env:
           PREVIEW_PORT: ${{ env.PREVIEW_PORT }}
@@ -155,13 +154,16 @@ jobs:
                     `🔄 Redeploy: @bot deploy ${project}\n` +
                     `🔒 Delete Lock: @bot delete_lock`
             });
+            echo "PREVIEW_URL=${previewUrl}" >> $GITHUB_ENV
 
       - uses: actions/checkout@master
 
       - name: Lighthouse Check
+        env:
+          PREVIEW_URL: ${{ env.PREVIEW_URL }}
         uses: foo-software/lighthouse-check-action@master
         with:
-          urls: https://www.foo.software, https://www.google.com, "${{ steps.comment-preview-url.outputs.previewUrl }}"
+          urls: https://www.foo.software, https://www.google.com, process.env.PREVIEW_URL
 
       - name: Clean up deployment lock
         if: failure() || cancelled()
