@@ -156,6 +156,7 @@ jobs:
             # Enable dotglob to include hidden files in wildcard matches
             shopt -s dotglob
 
+            mkdir -p main
             cp -r main-backup/* main
             pm2 restart ${{ matrix.project }}-main
           EOF
