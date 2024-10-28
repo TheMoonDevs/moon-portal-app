@@ -41,6 +41,7 @@ jobs:
             done
 
             # Create the lock file to indicate the start of a new deployment
+            mkdir -p /tmp/deploy
             touch "$LOCK_FILE"
             echo "Deployment lock created. Proceeding with deployment for PR #${PR_NUMBER} - Project: ${PROJECT}"
             
@@ -95,13 +96,14 @@ jobs:
 
             # Enable dotglob to include hidden files in wildcard matches
             shopt -s dotglob
-            
+            mkdir -p builds/${PROJECT}/${PR_NUMBER}/${PORT}
             cp -r ${PROJECT}/.next/standalone/* builds/${PROJECT}/${PR_NUMBER}/${PORT}
-            cp -r ${PROJECT}/.next/static builds/${PROJECT}/${PR_NUMBER}/${PORT}/static
+            cp -r ${PROJECT}/.next/static builds/${PROJECT}/${PR_NUMBER}/${PORT}/.next/static
             cp -r ${PROJECT}/public builds/${PROJECT}/${PR_NUMBER}/${PORT}/public
+            cp ${PROJECT}/.env.preview builds/${PROJECT}/${PR_NUMBER}/${PORT}/.env
 
             cd builds/${PROJECT}/${PR_NUMBER}/${PORT}
-            pm2 start node --name "$UNIQUE_ID" -- server.js || {
+            PORT=$PORT pm2 start node --name "$UNIQUE_ID" -- server.js || {
               echo "ERROR: Failed to start PM2 process."
               rm -f "$LOCK_FILE"
               exit 1
