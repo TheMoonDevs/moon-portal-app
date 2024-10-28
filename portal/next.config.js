@@ -39,7 +39,7 @@ const nextConfig = {
       },
     ],
   },
-  distDir: `build/${process.env.NEXT_PUBLIC_BUILD_PATH || "prod/main"}`,
+  output: "standalone",
   swcMinify: true,
   productionBrowserSourceMaps: false,
   experimental: {
@@ -53,13 +53,13 @@ const nextConfig = {
     // your project has ESLint errors.
     ignoreDuringBuilds: true,
   },
-  // typescript: {
+  typescript: {
     // !! WARN !!
     // Dangerously allow production builds to successfully complete even if
     // your project has type errors.
     // !! WARN !!
     // ignoreBuildErrors: true,
-  // },
+  },
   webpack: (
     config,
     { buildId, dev, isServer, defaultLoaders, nextRuntime, webpack }
@@ -73,7 +73,6 @@ const nextConfig = {
     //     type: 'memory',
     //   })
     // }
-    // Important: return the modified config
     return config
   },
 };
