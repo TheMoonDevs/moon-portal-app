@@ -77,6 +77,7 @@ jobs:
               sleep 10
             done
 
+            mkdir -p /tmp/deploy
             touch "$LOCK_FILE"
             echo "Starting production deployment for project: ${{ matrix.project }}"
 
@@ -103,7 +104,7 @@ jobs:
 
             cd ../
 
-            if pm2 list | grep -q "${{ matrix.project }}-main"; then
+            if pm2 list | grep -q ${{ matrix.project }}-main; then
               pm2 stop ${{ matrix.project }}-main
             fi
 
@@ -112,8 +113,9 @@ jobs:
 
             cp -r builds/${{ matrix.project }}/prod/main/* builds/${{ matrix.project }}/prod/main-backup
             cp -r ${{ matrix.project }}/.next/standalone/* builds/${{ matrix.project }}/prod/main
-            cp -r ${{ matrix.project }}/.next/static builds/${{ matrix.project }}/prod/main/static
+            cp -r ${{ matrix.project }}/.next/static builds/${{ matrix.project }}/prod/main/.next/static
             cp -r ${{ matrix.project }}/public builds/${{ matrix.project }}/prod/main/public
+            cp ${{ matrix.project }}/.env.prod builds/${{ matrix.project }}/prod/main/.env
 
             cd builds/${{ matrix.project }}/prod/main
 
@@ -126,13 +128,13 @@ jobs:
             fi
             
             # Restart the PM2 process for the project
-            if pm2 list | grep -q "${{ matrix.project }}-main"; then
+            if pm2 list | grep -q ${{ matrix.project }}-main ; then
               pm2 restart ${{ matrix.project }}-main --update-env || {
                 echo "ERROR: Failed to restart PM2 process. Cleaning up..." >&2
                 exit 1
               }
             else
-              pm2 start node --name ${{ matrix.project }}-main -- server.js || {
+              PORT=$PORT pm2 start node --name ${{ matrix.project }}-main -- server.js || {
                 echo "ERROR: Failed to start PM2 process. Cleaning up..." >&2
                 exit 1
               }
