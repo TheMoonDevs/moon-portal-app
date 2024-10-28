@@ -155,15 +155,14 @@ jobs:
                     `🔄 Redeploy: @bot deploy ${project}\n` +
                     `🔒 Delete Lock: @bot delete_lock`
             });
-            echo "::set-output name=preview-url::${previewUrl}"
-      
+
       - uses: actions/checkout@master
 
       - name: Lighthouse Check
         uses: foo-software/lighthouse-check-action@master
         with:
           urls: https://www.foo.software, https://www.google.com, "${{ steps.comment-preview-url.outputs.previewUrl }}"
-      
+
       - name: Clean up deployment lock
         if: failure() || cancelled()
         run: |
