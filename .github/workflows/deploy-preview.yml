@@ -41,6 +41,7 @@ jobs:
             done
 
             # Create the lock file to indicate the start of a new deployment
+            mkdir -p /tmp/deploy
             touch "$LOCK_FILE"
             echo "Deployment lock created. Proceeding with deployment for PR #${PR_NUMBER} - Project: ${PROJECT}"
             
@@ -68,7 +69,18 @@ jobs:
             UNIQUE_ID="${PROJECT}-${PR_NUMBER}-$PORT"
             if [[ "$CLEAN_FLAG" == "true" ]]; then
               echo "Cleaning up before redeployment..."
-              pm2 list | grep -E "${PROJECT}-${PR_NUMBER}-" | awk '{print $2}' | xargs -r pm2 delete
+              # Print the pm2 list output for debugging
+              echo "PM2 List Output:"
+              pm2 list
+
+              # Delete project processes
+              PROJECT_PROCESSES=$(pm2 list | grep -E "${PROJECT}-${PR_NUMBER}-" | awk '{print $2}')
+              echo "Project Processes: $PROJECT_PROCESSES"
+              if [ -n "$PROJECT_PROCESSES" ]; then
+                echo "$PROJECT_PROCESSES" | xargs -r pm2 delete
+              else
+                echo "No processes found for project ${PROJECT} with PR number ${PR_NUMBER}"
+              fi
               rm -rf /home/techteam/apps/moon-portal-app/builds/${PROJECT}/${PR_NUMBER}
             fi
 
@@ -95,13 +107,14 @@ jobs:
 
             # Enable dotglob to include hidden files in wildcard matches
             shopt -s dotglob
-            
+            mkdir -p builds/${PROJECT}/${PR_NUMBER}/${PORT}
             cp -r ${PROJECT}/.next/standalone/* builds/${PROJECT}/${PR_NUMBER}/${PORT}
-            cp -r ${PROJECT}/.next/static builds/${PROJECT}/${PR_NUMBER}/${PORT}/static
+            cp -r ${PROJECT}/.next/static builds/${PROJECT}/${PR_NUMBER}/${PORT}/.next/static
             cp -r ${PROJECT}/public builds/${PROJECT}/${PR_NUMBER}/${PORT}/public
+            cp ${PROJECT}/.env.preview builds/${PROJECT}/${PR_NUMBER}/${PORT}/.env
 
             cd builds/${PROJECT}/${PR_NUMBER}/${PORT}
-            pm2 start node --name "$UNIQUE_ID" -- server.js || {
+            PORT=$PORT pm2 start node --name "$UNIQUE_ID" -- server.js || {
               echo "ERROR: Failed to start PM2 process."
               rm -f "$LOCK_FILE"
               exit 1
