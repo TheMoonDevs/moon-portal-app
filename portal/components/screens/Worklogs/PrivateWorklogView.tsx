@@ -9,6 +9,7 @@ import { decryptData, encryptData } from "@/utils/security/encryption";
 import { toast } from "sonner";
 import { PassphraseVerification } from "./PassphraseVerification";
 import { usePassphrase } from "@/utils/hooks/usePassphrase";
+import { cn } from "@/app/lib/utils";
 
 const MARKDOWN_PLACEHOLDER = "*";
 
@@ -60,21 +61,21 @@ export const PrivateWorklogView: React.FC<PrivateWorklogViewProps> = ({
     }
   }, [user?.id, date, logType, localPassphrase]);
 
+  useEffect(() => {
+    if (user?.id) {
+      fetchWorklog();
+    }
+  }, [user?.id, date, fetchWorklog, localPassphrase]);
+
+
   const saveWorklog = useCallback(
     async (newContent: string) => {
-      console.log("im here")
       if (!localPassphrase) return;
       if (!user?.id) return;
-      console.log("plain", newContent);
       setSaving(true);
       try {
         const encryptedContent = encryptData(newContent, localPassphrase);
         const decryptTest = decryptData(encryptedContent, localPassphrase);
-        // console.log("plain", newContent);
-        // console.log("encryptedContent", encryptedContent);
-        // console.log("plain", newContent);
-        // console.log("decrypt test", decryptTest);
-        // console.log("plain", newContent);
         if (newContent != decryptTest) return;
         await PortalSdk.putData(`/api/user/worklogs/private`, {
           userId: user.id,
@@ -126,17 +127,12 @@ export const PrivateWorklogView: React.FC<PrivateWorklogViewProps> = ({
     [debouncedSave]
   );
 
-  useEffect(() => {
-    console.log("localPassphrasel", localPassphrase);
-    if (user?.id) {
-      fetchWorklog();
-    }
-  }, [user?.id, date, fetchWorklog, localPassphrase]);
-
+  
   if (!visible) return null;
-  if (!localPassphrase) return <PassphraseVerification />;
+  // if (!localPassphrase) return <PassphraseVerification />;
   return (
-    <div className="px-4 mt-10">
+    <div className="relative px-4 mt-10">
+      <div className={cn(!localPassphrase && "blur-[3px]")}>
       <div className="text-sm flex items-center gap-2 leading-3 mb-2 text-neutral-500">
         {(saving || loading) && (
           <div className="animate-spin rounded-full h-3 w-3 border-t-2 border-b-2 border-neutral-800" />
@@ -172,8 +168,13 @@ export const PrivateWorklogView: React.FC<PrivateWorklogViewProps> = ({
           placeholder="* Write your private logs here ..."
           contentEditableClassName={`mdx_ce ${content.trim() === MARKDOWN_PLACEHOLDER ? "mdx_uninit" : ""} leading-1 imp-p-0 grow w-full h-full`}
           onChange={handleContentChange}
-          key={user?.id + date} editorKey={""}        />
+          key={user?.id + date} editorKey={""}/>
       </div>
+      {!localPassphrase && <div>
+        1.You need to verify to view this</div>}
+      </div>
+      
+      {!localPassphrase && <PassphraseVerification/>}
     </div>
   );
 };
