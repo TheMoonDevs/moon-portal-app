@@ -73,7 +73,8 @@ export async function middleware(request: NextRequest) {
   if (
     modifyingMethods.includes(method) &&
     !request.url.includes('/api/auth') &&
-    !request.url.includes('/api/slack')
+    !request.url.includes('/api/slack') &&
+    !request.url.includes('/api/client-survey')
   ) {
     const apiKey = request.headers.get('tmd_portal_api_key');
     const expectedApiKey = process.env.NEXT_PUBLIC_TMD_PORTAL_API_KEY;
