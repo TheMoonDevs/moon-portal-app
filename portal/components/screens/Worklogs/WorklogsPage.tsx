@@ -4,16 +4,9 @@ import { MdxAppEditor } from "@/utils/configure/MdxAppEditor";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
 import { useUser } from "@/utils/hooks/useUser";
 import { PortalSdk } from "@/utils/services/PortalSdk";
-import { DocMarkdown, WorkLogs } from "@prisma/client";
+import { WorkLogs } from "@prisma/client";
 import Link from "next/link";
-import React, {
-  RefObject,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  createRef,
-} from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import store, { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import dayjs from "dayjs";
 import { WorkLogsHelper } from "./WorklogsHelper";
@@ -33,6 +26,8 @@ import {
 } from "@/utils/redux/worklogs/laterTodos.slice";
 import WorklogBuff from "./WorklogTabs/WorklogBuff";
 import ClickupTasks from "./WorklogTabs/ClickupTasks";
+import { PrivateWorklogView } from "./PrivateWorklogView";
+import { usePassphrase } from "@/utils/hooks/usePassphrase";
 const tempData = [
   {
     id: "idsdjneslnfrnleskdnelrnv",
@@ -163,6 +158,7 @@ export const WorkLogItem = ({
 };
 
 export const WorklogsPage = () => {
+  const { localPassphrase } = usePassphrase();
   const { user } = useUser();
 
   const thisYear = dayjs().year();
@@ -414,6 +410,10 @@ export const WorklogsPage = () => {
               monthTab={monthTab}
               setMonthTab={setMonthTab}
               handleNextMonthClick={handleNextMonthClick}
+            />
+            <PrivateWorklogView
+              date={centerdate.format("YYYY-MM-DD")}
+              logType={"privateWorklogs"}
             />
           </div>
           <div className="grid grid-cols-2 lg:w-[30%] gap-3 p-2 max-lg:grid-cols-4 max-md:grid-cols-2 max-h-[80vh] overflow-y-scroll m-3">
