@@ -16,7 +16,7 @@ export const MyServerApi = {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            [PORTAL_SERVER.headerField] : PORTAL_SERVER.apiKey,
+            //[PORTAL_SERVER.headerField] : PORTAL_SERVER.apiKey,
           },
           body: JSON.stringify(form),
         })
