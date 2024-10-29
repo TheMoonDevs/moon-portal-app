@@ -24,12 +24,6 @@ export async function middleware(request: NextRequest) {
 
   // Allowed origins check
   const origin = request.headers.get('origin') ?? '';
-  console.log(
-    'ORIGIN >>>>>>>>>>>>>>>>>>>',
-    origin,
-    'allowedOrigins',
-    corsOptions.allowedOrigins,
-  );
   if (origin === '') {
     response.headers.set('Access-Control-Allow-Origin', '*');
   } else if (
@@ -91,8 +85,6 @@ export async function middleware(request: NextRequest) {
       );
     }
   }
-
-  console.log('headers', response.headers);
 
   return response;
 }
