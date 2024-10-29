@@ -35,6 +35,8 @@ export async function middleware(request: NextRequest) {
     response.headers.set('Access-Control-Allow-Origin', '*');
   }
 
+  console.log('Origin:', origin, 'headers:', response.headers);
+
   // Set default CORS headers
   response.headers.set(
     'Access-Control-Allow-Credentials',
@@ -85,6 +87,15 @@ export async function middleware(request: NextRequest) {
       );
     }
   }
+
+  console.log(
+    'Request:',
+    request.url,
+    'Method:',
+    method,
+    'Headers:',
+    response.headers,
+  );
   return response;
 }
 
