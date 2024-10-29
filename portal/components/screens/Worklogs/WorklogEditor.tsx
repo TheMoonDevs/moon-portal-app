@@ -296,7 +296,7 @@ export const WorklogEditor = ({
           refreshWorklogs();
         }
       }}
-      className="flex flex-col md:max-w-[800px] min-h-screen"
+      className="flex flex-col md:max-w-[800px]"
     >
       {!compactView && (
         <div id="header" className="flex flex-row justify-between items-center">
