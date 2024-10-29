@@ -109,8 +109,8 @@ jobs:
             shopt -s dotglob
             mkdir -p builds/${PROJECT}/${PR_NUMBER}/${PORT}
             cp -r ${PROJECT}/.next/standalone/* builds/${PROJECT}/${PR_NUMBER}/${PORT}
-            cp -r ${PROJECT}/.next/static builds/${PROJECT}/${PR_NUMBER}/${PORT}/.next/static
-            cp -r ${PROJECT}/public builds/${PROJECT}/${PR_NUMBER}/${PORT}/public
+            cp -r ${PROJECT}/.next/static/* builds/${PROJECT}/${PR_NUMBER}/${PORT}/.next/static
+            cp -r ${PROJECT}/public/* builds/${PROJECT}/${PR_NUMBER}/${PORT}/public
             cp ${PROJECT}/.env.preview builds/${PROJECT}/${PR_NUMBER}/${PORT}/.env
 
             cd builds/${PROJECT}/${PR_NUMBER}/${PORT}
