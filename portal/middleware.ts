@@ -30,19 +30,10 @@ export async function middleware(request: NextRequest) {
     corsOptions.allowedOrigins.includes('*') ||
     corsOptions.allowedOrigins.includes(origin)
   ) {
-    response.headers.set('Access-Control-Allow-Origin', origin);
+    response.headers.set('Access-Control-Allow-Origin', '*');
   } else {
     response.headers.set('Access-Control-Allow-Origin', '*');
   }
-
-  console.log(
-    'Origin:',
-    origin,
-    'headers:',
-    response.headers,
-    'allowed:',
-    corsOptions.allowedHeaders,
-  );
 
   // Set default CORS headers
   response.headers.set(
@@ -96,14 +87,6 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  console.log(
-    'Request:',
-    request.url,
-    'Method:',
-    method,
-    'Headers:',
-    response.headers,
-  );
   return response;
 }
 
