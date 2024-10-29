@@ -92,6 +92,7 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  console.log('headers', response.headers);
   return response;
 }
 
