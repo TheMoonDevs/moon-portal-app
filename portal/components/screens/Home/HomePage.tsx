@@ -23,10 +23,13 @@ import Link from "next/link";
 import Events from "./Events";
 
 
+import { Toaster } from "sonner";
+
 const MemberHomePage = () => {
   const { user } = useUser();
   const [tab, setTab] = useState(HomeTabs.START);
   const isTabletOrMore = useMediaQuery(media.moreTablet);
+
   if (!user) return <LoaderScreen />;
   return (
     <div className="home_bg bg-white min-h-screen flex md:pl-4 justify-start max-md:flex-col max-lg:flex-col scroll-smooth">
@@ -66,6 +69,7 @@ const MemberHomePage = () => {
         </div>
       </div>
       <div className="h-[300px]"></div>
+      <Toaster />
     </div>
   );
 };
@@ -102,3 +106,7 @@ export const HomePage = () => {
     </div>
   );
 };
+function usePassphrase(): { showModal: any; setShowModal: any; modalMode: any; handleSetPassphrase: any; handleVerifyPassphrase: any; } {
+  throw new Error("Function not implemented.");
+}
+
