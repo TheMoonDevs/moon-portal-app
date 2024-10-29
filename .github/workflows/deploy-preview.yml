@@ -154,7 +154,9 @@ jobs:
                     `🔄 Redeploy: @bot deploy ${project}\n` +
                     `🔒 Delete Lock: @bot delete_lock`
             });
-            echo "PREVIEW_URL=${previewUrl}" >> $GITHUB_ENV
+            // Store preview URL in the environment file
+            require('fs').appendFileSync(process.env.GITHUB_ENV, `PREVIEW_URL=${previewUrl}\n`);
+
 
       - uses: actions/checkout@master
 
