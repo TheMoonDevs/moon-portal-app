@@ -4,12 +4,13 @@ import { APP_ROUTES, AppRoutesHelper } from "@/utils/constants/appInfo";
 import { useUser } from "@/utils/hooks/useUser";
 import { USERTYPE } from "@prisma/client";
 import { usePathname, useRouter } from "next/navigation";
+import { PortalSdk } from "@/utils/services/PortalSdk";
 import Image from "next/image";
 import Link from "next/link";
 import { useMediaQuery, Badge } from "@mui/material";
 import media from "@/styles/media";
 import { useNotifications } from "@/utils/hooks/useNotifications";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import NotificationModal from "./NotificationModal";
 import { useAppSelector } from "@/utils/redux/store";
 import { INotification } from "../screens/notifications/NotificationsList";
@@ -91,6 +92,8 @@ export const Bottombar = ({
   const isMobile = useMediaQuery(media.largeMobile);
   const { unreadNotificationsCount } = useNotifications();
   const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [workLogId, setWorkLogId] = useState<string | null>(null);
+  const [loadingWorkLog, setLoadingWorkLog] = useState<boolean>(true);
 
   const options =
     user?.userType === USERTYPE.CLIENT
@@ -105,6 +108,33 @@ export const Bottombar = ({
       router.push(APP_ROUTES.notifications);
     } else {
       setIsOpen(!isOpen);
+    }
+  };
+  useEffect(() => {
+    const fetchWorkLogs = async () => {
+      if (isMobile && user?.id) {
+        const currentDate = new Date().toISOString().split("T")[0];
+        try {
+          const data = await PortalSdk.getData(`/api/user/worklogs?date=${currentDate}&userId=${user?.id}`, null);
+          const id = data?.data?.workLogs?.[0]?.id || null;
+          console.log(data, id);
+          setWorkLogId(id);
+        } catch (error) {
+          console.error("Error fetching worklogs:", error);
+        } finally {
+          setLoadingWorkLog(false); // Set loading to false after fetching
+        }
+      }
+    };
+
+    fetchWorkLogs();
+  }); 
+  const workLogClick = (path: string) => {
+    if (isMobile && workLogId && !loadingWorkLog) { // Check for loading state
+      const currentDate = new Date().toISOString().split("T")[0];
+      router.push(`${path}/${workLogId}?logType=dayLog&date=${currentDate}`);
+    } else {
+      router.push(APP_ROUTES.userWorklogs);
     }
   };
 
@@ -127,7 +157,11 @@ export const Bottombar = ({
           onClick={() => {
             if (option.name === "Notifications") {
               handleNotificationClick();
-            } else {
+            }
+            else if (option.name === "Worklogs") {
+              workLogClick(option.path);
+            } 
+             else {
               router.push(option.path);
             }
           }}
