@@ -350,12 +350,12 @@ export const WorklogEditor = ({
                 onClick={refreshWorklogs}
                 className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700"
               >
-                <span className="icon_size material-icons">refresh</span>
+                <span className="text-4xl material-icons">refresh</span>
               </div>
             )}
-            <div className="hidden cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700 max-sm:block max-sm:">
+            <div className="hidden cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700 max-sm:block">
               <span
-                className="icon_size material-icons"
+                className="text-4xl material-icons"
                 onClick={handleClick}
                 aria-describedby={id}
               >
@@ -364,7 +364,7 @@ export const WorklogEditor = ({
             </div>
             <div className="hidden cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700 max-sm:block">
               <span
-                className="icon_size material-icons"
+                className="text-4xl material-icons"
                 onClick={handleClickTodo}
                 aria-describedby={id}
               >
@@ -403,16 +403,16 @@ export const WorklogEditor = ({
               sx={{
                 '.MuiDrawer-paper': {
                   backgroundColor: '#fff',
-                  padding: '16px',
-                  borderRadius: '12px 12px 0 0',
+                  padding: '24px',
+                  borderRadius: '16px 16px 0 0',
                   boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.2)',
                   height: '90vh',
                 },
               }}
             >
-              <div className="hidden cursor-pointer rounded-lg text-neutral-900 hover:text-neutral-700 max-sm:block">
+              <div className="hidden absolute right-0 top-4 w-10 cursor-pointer  text-neutral-900 hover:text-neutral-700 max-sm:block">
                 <span
-                  className="icon_size material-icons"
+                  className="text-4xl material-icons"
                   onClick={handleCloseTodo}
                 >
                   close_icon
@@ -424,31 +424,50 @@ export const WorklogEditor = ({
               className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700"
               onClick={togglePopup}
             >
-              <span className="icon_size material-icons">more_vert</span>
+              <span className="text-4xl material-icons">more_vert</span>
               {showPopup && (
-              <div           
-              ref={popupRef}
-              className="popup absolute rounded-lg bg-white p-4 shadow-lg">
-                <ul>
-                  {fetchOptions.map((option) => (
-                    <li
-                      key={option.date}
-                      className="cursor-pointer p-2 hover:bg-neutral-100"
-                      onClick={() => {
-                        fetchXTasksForDay(option.date).then(
-                          (updatedWorkLog) => {
-                            setWorkLog(updatedWorkLog);
-                            setShowPopup(false);
-                          },
-                        );
-                      }}
+                <div
+                  ref={popupRef}
+                  className="popup absolute max-sm:right-0 z-10 mt-3 rounded-lg bg-white p-4 text-lg shadow-lg max-sm:text-base"
+                >
+                  <ul>
+                    {fetchOptions.map((option) => (
+                      <li
+                        key={option.date}
+                        className="cursor-pointer p-2 hover:bg-neutral-100"
+                        onClick={() => {
+                          fetchXTasksForDay(option.date).then(
+                            (updatedWorkLog) => {
+                              setWorkLog(updatedWorkLog);
+                              setShowPopup(false);
+                            },
+                          );
+                        }}
+                      >
+                        {option.label}
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="hidden mt-2 max-sm:flex flex-col">
+                    <div
+                      className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700"
+                      onClick={handleClick}
                     >
-                      {option.label}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+                      <span className="text-4xl material-icons">
+                        emoji_objects
+                      </span>
+                    </div>
+                    <div
+                      className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700"
+                      onClick={handleClickTodo}
+                    >
+                      <span className="text-4xl material-icons">
+                        format_list_bulleted
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
             {!isAutoSaved && !loading && (
               <button
