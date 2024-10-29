@@ -78,6 +78,7 @@ export async function middleware(request: NextRequest) {
   ) {
     const apiKey = request.headers.get('tmd_portal_api_key');
     const expectedApiKey = process.env.NEXT_PUBLIC_TMD_PORTAL_API_KEY;
+
     // console.log("API KEY >>>>>>>>>>>>>>>>>>>");
     // console.log(apiKey);
     // console.log(expectedApiKey);
