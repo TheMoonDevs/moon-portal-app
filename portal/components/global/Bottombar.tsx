@@ -117,7 +117,6 @@ export const Bottombar = ({
         try {
           const data = await PortalSdk.getData(`/api/user/worklogs?date=${currentDate}&userId=${user?.id}`, null);
           const id = data?.data?.workLogs?.[0]?.id || null;
-          console.log(data, id);
           setWorkLogId(id);
         } catch (error) {
           console.error("Error fetching worklogs:", error);
