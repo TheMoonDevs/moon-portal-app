@@ -23,6 +23,7 @@ interface QuikcklinksUIState {
   isCreateLinkModalOpen: boolean;
   isLoading: boolean;
   isCollapsed:boolean;
+  isHamburgerOpen: boolean;
 }
 
 const initialState: QuikcklinksUIState = {
@@ -46,6 +47,7 @@ const initialState: QuikcklinksUIState = {
   isCreateLinkModalOpen: false,
   isLoading: false,
   isCollapsed:false,
+  isHamburgerOpen: false,
 };
 
 export const quicklinksUiSlice = createSlice({
@@ -85,6 +87,9 @@ export const quicklinksUiSlice = createSlice({
     },
     setToggleSidebar: (state,action) => {
       state.isCollapsed = action.payload
+    },
+    setHamburgerOpen: (state, action) => {
+      state.isHamburgerOpen = action.payload
     }
   },
 });
@@ -97,6 +102,7 @@ export const {
   setIsCreateLinkModalOpen,
   setIsLoading,
   setToggleSidebar,
+  setHamburgerOpen
 } = quicklinksUiSlice.actions;
 
 export default quicklinksUiSlice.reducer;
