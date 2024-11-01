@@ -8,7 +8,7 @@
     "build": "next build",
     "build:preview": "cp .env.preview .env.local && next build",
     "build:prod": "cp .env.prod .env.local && next build",
-    "start": "next start -p 3001",
+    "start": "node .next/standalone/server.js",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
     "postinstall": "prisma generate",
