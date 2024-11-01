@@ -1,0 +1,22 @@
+name: Build Check
+
+on:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: "16" # Replace with the appropriate Node.js version for your project
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run build
+        run: npm run build
