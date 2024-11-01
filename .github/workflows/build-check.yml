@@ -12,8 +12,6 @@ jobs:
 
       - name: 'Use NodeJS 20'
         uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
 
       - name: Install dependencies for Portal
         working-directory: ./portal
@@ -31,8 +29,6 @@ jobs:
 
       - name: 'Use NodeJS 20'
         uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
 
       - name: Install dependencies for Payzone
         working-directory: ./payzone
