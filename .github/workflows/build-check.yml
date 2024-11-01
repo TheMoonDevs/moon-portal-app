@@ -4,7 +4,7 @@ on:
   pull_request:
 
 jobs:
-  build:
+  build_portal:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
@@ -13,10 +13,31 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v2
         with:
-          node-version: "16" # Replace with the appropriate Node.js version for your project
+          node-version: '16' # Specify the Node.js version for your projects
 
-      - name: Install dependencies
+      - name: Install dependencies for Portal
+        working-directory: ./portal
         run: npm install
 
-      - name: Run build
+      - name: Build Portal
+        working-directory: ./portal
+        run: npm run build
+
+  build_payzone:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16' # Specify the Node.js version for your projects
+
+      - name: Install dependencies for Payzone
+        working-directory: ./payzone
+        run: npm install
+
+      - name: Build Payzone
+        working-directory: ./payzone
         run: npm run build
