@@ -10,10 +10,10 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v2
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v2
+      - name: 'Use NodeJS 20'
+        uses: actions/setup-node@v4
         with:
-          node-version: '16' # Specify the Node.js version for your projects
+          node-version-file: .nvmrc
 
       - name: Install dependencies for Portal
         working-directory: ./portal
@@ -29,10 +29,10 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v2
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v2
+      - name: 'Use NodeJS 20'
+        uses: actions/setup-node@v4
         with:
-          node-version: '16' # Specify the Node.js version for your projects
+          node-version-file: .nvmrc
 
       - name: Install dependencies for Payzone
         working-directory: ./payzone
