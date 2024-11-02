@@ -189,6 +189,8 @@ jobs:
         if: success()
         id: deploy
         env:
+          DEPLOY_USER: ${{ secrets.DROPLET_USER }}
+          DEPLOY_HOST: ${{ secrets.DROPLET_IP }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PROJECT: ${{ matrix.project }}
           PORT: ${{ steps.calculate-port.outputs.port }}
