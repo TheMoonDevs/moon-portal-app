@@ -1,0 +1,92 @@
+# name: Auto Label PR
+# on:
+#   pull_request:
+#     types: [opened, synchronize]
+
+# jobs:
+#   label:
+#     runs-on: ubuntu-latest
+#     permissions:
+#       contents: read
+#       pull-requests: write
+#     steps:
+#       - name: Label PR based on changed files
+#         uses: actions/github-script@v6
+#         with:
+#           script: |
+#             const labels = new Set();
+#             const changedFiles = await github.paginate(
+#               github.rest.pulls.listFiles,
+#               {
+#                 owner: context.repo.owner,
+#                 repo: context.repo.repo,
+#                 pull_number: context.issue.number,
+#               }
+#             );
+#             const fileNames = changedFiles.map(f => f.filename);
+
+#             // Define file path checks for each project
+#             const projectPaths = ['portal', 'payzone', 'home'];
+#             const frontendPaths = ['app', 'components', 'public', 'styles', 'utils'];
+#             const backendPaths = ['app/api', 'prisma'];
+
+#             let isFrontend = false;
+#             let isBackend = false;
+#             let isConfigurations = false;
+
+#             for (const file of fileNames) {
+#               // Check for frontend changes
+#               if (!isFrontend && projectPaths.some(project =>
+#                 frontendPaths.some(path => file.startsWith(`${project}/${path}`)) &&
+#                 !backendPaths.some(path => file.startsWith(`${project}/${path}`))
+#               )) {
+#                 isFrontend = true;
+#               }
+
+#               // Check for backend changes
+#               if (!isBackend && (
+#                 projectPaths.some(project => backendPaths.some(path => file.startsWith(`${project}/${path}`))) ||
+#                 file.includes('middleware')
+#               )) {
+#                 isBackend = true;
+#               }
+
+#               // Check for dependency changes
+#               if (file.endsWith('package.json') || file.endsWith('package-lock.json')) {
+#                 labels.add("dependencies");
+#               }
+
+#               // Check for documentation changes
+#               if (file.toLowerCase().includes('readme')) {
+#                 labels.add("documentation");
+#               }
+
+#               // Check for configuration changes
+#               if (!isFrontend && !isBackend && !file.endsWith('package.json') && !file.endsWith('package-lock.json') && !file.toLowerCase().includes('readme')) {
+#                 isConfigurations = true;
+#               }
+#             }
+
+#             // Determine which main label to add
+#             if (isFrontend && isBackend) {
+#               labels.add("fullstack");
+#             } else if (isFrontend) {
+#               labels.add("frontend");
+#             } else if (isBackend) {
+#               labels.add("backend");
+#             }
+
+#             // Add configurations label if applicable
+#             if (isConfigurations) {
+#               labels.add("configurations");
+#             }
+
+#             // Apply labels to the pull request if any were identified
+#             if (labels.size > 0) {
+#               await github.rest.issues.addLabels({
+#                 owner: context.repo.owner,
+#                 repo: context.repo.repo,
+#                 issue_number: context.issue.number,
+#                 labels: Array.from(labels),
+#               });
+#             }
