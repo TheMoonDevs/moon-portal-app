@@ -167,7 +167,7 @@ jobs:
       - name: Archive deployment files
         if: success()
         run: |
-          tar -czf preview_${{ matrix.project }}.tar.gz -C build/${{ matrix.project }} ${{ github.event.pull_request.number }}
+          tar -czf preview_${{ matrix.project }}_${{ github.event.pull_request.number }}.tar.gz -C build/${{ matrix.project }} ${{ github.event.pull_request.number }}
 
       - name: Upload to DigitalOcean
         if: success()
@@ -176,7 +176,7 @@ jobs:
           host: ${{ secrets.DROPLET_IP }}
           username: ${{ secrets.DROPLET_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "preview_${{ matrix.project }}.tar.gz"
+          source: "preview_${{ matrix.project }}_${{ github.event.pull_request.number }}.tar.gz"
           target: "/tmp/"
 
       - name: Set up SSH (secured)
@@ -206,7 +206,7 @@ jobs:
           mkdir -p "${PROJECT_DIR}"
           
           # Unpack deployment files
-          tar -xzf /tmp/preview_${PROJECT}.tar.gz -C "apps/moon-portal-app/builds/${PROJECT}"
+          tar -xzf /tmp/preview_${PROJECT}_${PR_NUMBER}.tar.gz -C "apps/moon-portal-app/builds/${PROJECT}"
           
           # Copy environment file
           cp "apps/moon-portal-app/${PROJECT}/.env.preview" "${PROJECT_DIR}/.env"
@@ -215,7 +215,7 @@ jobs:
           echo "PORT=${PORT}" >> "${PROJECT_DIR}/.env"
           
           # Cleanup
-          rm -f /tmp/preview_${PROJECT}.tar.gz
+          rm -f /tmp/preview_${PROJECT}_${PR_NUMBER}.tar.gz
           
           # PM2 management
           if pm2 list | grep -q "${PROJECT}-${PR_NUMBER}"; then
