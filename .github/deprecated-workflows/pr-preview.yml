@@ -1,0 +1,104 @@
+name: PR Preview Deployment
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  determine_project:
+    if: github.event_name == 'pull_request' && github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    outputs:
+      projects: ${{ steps.set-projects.outputs.projects }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine changed projects
+        id: set-projects
+        run: |
+          git fetch --prune
+          git fetch origin +refs/heads/*:refs/remotes/origin/*
+          changed_files=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }})
+          project_paths=("portal" "payzone" "home")
+          projects=()
+          home_changed=false
+          if echo "$changed_files" | grep -q "^home/"; then
+            home_changed=true
+          fi
+          if echo "$changed_files" | grep -q "^portal/"; then
+            projects+=("portal")
+          fi
+          if echo "$changed_files" | grep -q "^payzone/"; then
+            projects+=("payzone")
+          fi
+          if ! $home_changed && [ ${#projects[@]} -eq 0 ] && echo "$changed_files" | grep -vq "^portal/" && echo "$changed_files" | grep -vq "^payzone/" && echo "$changed_files" | grep -vq "^home/"; then
+            projects=("portal" "payzone")
+          fi
+          echo "Changed projects: ${projects[@]}"
+          echo "projects=$(jq -c -n --argjson projects "$(printf '%s\n' "${projects[@]}" | jq -R . | jq -s .)" '$projects')" >> $GITHUB_OUTPUT
+      - name: Debug Changed Projects Output
+        run: |
+          echo "Projects output: ${{ steps.set-projects.outputs.projects }}"
+
+  deploy_preview:
+    needs: determine_project
+    if: needs.determine_project.outputs.projects != 'null' && needs.determine_project.outputs.projects != '[]' && github.event.pull_request.state == 'open'
+    strategy:
+      matrix:
+        project: ${{ fromJson(needs.determine_project.outputs.projects) }}
+      max-parallel: 1 # Ensure deployments run sequentially
+    uses: ./.github/workflows/deploy-preview.yml
+    with:
+      pr_number: ${{ github.event.pull_request.number }}
+      project: ${{ matrix.project }}
+      clean_flag: true
+    secrets:
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      DROPLET_IP: ${{ secrets.DROPLET_IP }}
+
+  cleanup_on_pr_close:
+    if: always() && (github.event.pull_request.merged == true || github.event.pull_request.state == 'closed')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Cleanup Deployments for Closed PR
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          echo "Cleaning up deployments for closed PR #$PR_NUMBER"
+          ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << EOF
+            # Print the pm2 list output for debugging
+            echo "PM2 List Output:"
+            pm2 list
+
+            # Delete portal processes
+            PORTAL_PROCESSES=\$(pm2 list | grep -E "portal-${PR_NUMBER}-" | awk '{print \$2}')
+            echo "Portal Processes: \$PORTAL_PROCESSES"
+            if [ -n "\$PORTAL_PROCESSES" ]; then
+              echo "\$PORTAL_PROCESSES" | xargs -r pm2 delete
+            else
+              echo "No portal processes found for PR number ${PR_NUMBER}"
+            fi
+
+            # Delete payzone processes
+            PAYZONE_PROCESSES=\$(pm2 list | grep -E "payzone-${PR_NUMBER}-" | awk '{print \$2}')
+            echo "Payzone Processes: \$PAYZONE_PROCESSES"
+            if [ -n "\$PAYZONE_PROCESSES" ]; then
+              echo "\$PAYZONE_PROCESSES" | xargs -r pm2 delete
+            else
+              echo "No payzone processes found for PR number ${PR_NUMBER}"
+            fi
+            rm -rf /home/techteam/apps/moon-portal-app/builds/portal/${PR_NUMBER}
+            rm -rf /home/techteam/apps/moon-portal-app/builds/payzone/${PR_NUMBER}
+            rm -f /tmp/deploy/deploy-lock  # Remove lock file if it exists
+            echo "Cleaned up PR #$PR_NUMBER and removed lock file if it existed."
+          EOF
