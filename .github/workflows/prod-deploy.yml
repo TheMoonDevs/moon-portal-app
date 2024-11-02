@@ -60,6 +60,12 @@ jobs:
 
       - name: Build project
         working-directory: ./${{ matrix.project }}
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+          GIAM_CLIENT_EMAIL: ${{ secrets.PROD_GIAM_CLIENT_EMAIL }}
+          GIAM_CLIENT_ID: ${{ secrets.PROD_GIAM_CLIENT_ID }}
+          GIAM_PRIVATE_KEY: ${{ secrets.PROD_GIAM_PRIVATE_KEY }}
+          SLACK_OAUTH_TOKEN: ${{ secrets.SLACK_OAUTH_TOKEN }}
         run: npm run build
 
       - name: Prepare deployment files
@@ -89,40 +95,53 @@ jobs:
       - name: Deploy on DigitalOcean
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} << "EOF"
-            # PROJECT_DIR="apps/moon-portal-app/builds/${{ matrix.project }}/prod"
-            PROJECT_DIR="apps/builds/${{ matrix.project }}/prod"
+            PROJECT="${{ matrix.project }}"
+            PROJECT_DIR="apps/builds/$PROJECT/prod"
             MAIN_DIR="$PROJECT_DIR/main"
             BACKUP_DIR="$PROJECT_DIR/main-backup"
             PORT=0
 
-            # Determine the port
-            if [ "${{ matrix.project }}" = "portal" ]; then
+            # Determine the port for the project
+            if [ "$PROJECT" = "portal" ]; then
               PORT=3001
-            elif [ "${{ matrix.project }}" = "payzone" ]; then
+            elif [ "$PROJECT" = "payzone" ]; then
               PORT=3002
             fi
 
-            # Create directories if they don't exist
-            mkdir -p "$MAIN_DIR" "$BACKUP_DIR"
-            
-            # Unpack the deployment files directly to the MAIN_DIR
-            tar -xzf /tmp/prod_${{ matrix.project }}.tar.gz -C "$PROJECT_DIR"
-            
-            # Ensure .env file is copied from a secure central location
-            cp "apps/moon-portal-app/${{matrix.project}}/.env.prod" "$MAIN_DIR/.env"
-
-            # Remove temporary upload
-            rm -rf /tmp/prod_${{ matrix.project }}.tar.gz
-
-            # Start or restart PM2 for the app
-            if pm2 list | grep -q "${{ matrix.project }}-main"; then
-              pm2 restart "${{ matrix.project }}-main" --update-env
-            else
-              cd "$MAIN_DIR"
-              PORT=$PORT pm2 start node --name "${{ matrix.project }}-main" -- "server.js"
+            # Create required directories and backup the current main directory
+            mkdir -p "$PROJECT_DIR"
+            if [ -d "$MAIN_DIR" ]; then
+              rm -rf "$BACKUP_DIR"
+              mv "$MAIN_DIR" "$BACKUP_DIR"
             fi
 
-            echo "Deployment completed for project: ${{ matrix.project }}"
+            # Unpack the deployment files to the new main directory
+            mkdir -p "$MAIN_DIR"
+            tar -xzf /tmp/prod_${PROJECT}.tar.gz -C "$PROJECT_DIR"
+            
+            # Copy .env.prod from secure location and set permissions
+            if [ -f "/home/${{ secrets.DROPLET_USER }}/apps/moon-portal-app/$PROJECT/.env.prod" ]; then
+              cp "apps/moon-portal-app/$PROJECT/.env.prod" "$MAIN_DIR/.env"
+              echo "PORT=$PORT" >> "$MAIN_DIR/.env"
+              chmod 600 "$MAIN_DIR/.env"
+            else
+              echo "Error: .env.prod file not found for $PROJECT"
+              exit 1
+            fi
+
+            # Clean up the uploaded tarball
+            rm -f /tmp/prod_${PROJECT}.tar.gz
+
+            # Restart the project with PM2 or start if not already running
+            if pm2 list | grep -q "${PROJECT}-main"; then
+              pm2 restart "${PROJECT}-main" --update-env
+            else
+              cd "$MAIN_DIR"
+              cd ../
+              pm2 start node --name "${PROJECT}-main" -- "server.js"
+            fi
+
+            echo "Deployment completed for project: $PROJECT on port $PORT"
           EOF
 
       - name: Set domain output
