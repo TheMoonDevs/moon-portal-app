@@ -8,6 +8,10 @@ permissions:
   contents: write
   pull-requests: write
 
+env:
+  PORT_RANGE_START: 8000
+  PORT_RANGE_END: 9000
+
 jobs:
   determine_project:
     if: github.event_name == 'pull_request' && github.event.action != 'closed'
@@ -26,18 +30,23 @@ jobs:
           git fetch --prune
           git fetch origin +refs/heads/*:refs/remotes/origin/*
           changed_files=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }})
+          project_paths=("portal" "payzone" "home")
           projects=()
+          home_changed=false
+          if echo "$changed_files" | grep -q "^home/"; then
+            home_changed=true
+          fi
           if echo "$changed_files" | grep -q "^portal/"; then
             projects+=("portal")
           fi
           if echo "$changed_files" | grep -q "^payzone/"; then
             projects+=("payzone")
           fi
-          if [ ${#projects[@]} -eq 0 ] && echo "$changed_files" | grep -vq "^portal/" && echo "$changed_files" | grep -vq "^payzone/"; then
+          if ! $home_changed && [ ${#projects[@]} -eq 0 ] && echo "$changed_files" | grep -vq "^portal/" && echo "$changed_files" | grep -vq "^payzone/" && echo "$changed_files" | grep -vq "^home/"; then
             projects=("portal" "payzone")
           fi
-          echo "projects=$(printf '%s\n' "${projects[@]}" | jq -R . | jq -s .)" >> $GITHUB_OUTPUT
-
+          echo "Changed projects: ${projects[@]}"
+          echo "projects=$(jq -c -n --argjson projects "$(printf '%s\n' "${projects[@]}" | jq -R . | jq -s .)" '$projects')" >> $GITHUB_OUTPUT
       - name: Debug Changed Projects Output
         run: |
           echo "Projects output: ${{ steps.set-projects.outputs.projects }}"
@@ -70,6 +79,28 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Calculate preview port
+        id: calculate-port
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          PROJECT_OFFSET=$([ "${{ matrix.project }}" = "portal" ] && echo 0 || echo 500)
+          PORT_RANGE=$((PORT_RANGE_END - PORT_RANGE_START))
+          PORT=$((PORT_RANGE_START + (PR_NUMBER + PROJECT_OFFSET) % PORT_RANGE))
+          echo "port=$PORT" >> $GITHUB_OUTPUT
+
+      # Create build environment file with GitHub secrets
+      - name: Setup build environment
+        run: |
+          mkdir -p ./${{ matrix.project }}
+          
+          cat << EOF > ./${{ matrix.project }}/.env.build
+          DATABASE_URL=${{ secrets.PREVIEW_DATABASE_URL }}
+          GIAM_CLIENT_EMAIL=${{ secrets.PREVIEW_GIAM_CLIENT_EMAIL }}
+          GIAM_CLIENT_ID=${{ secrets.PREVIEW_GIAM_CLIENT_ID }}
+          GIAM_PRIVATE_KEY='${{ secrets.PREVIEW_GIAM_PRIVATE_KEY }}'
+          SLACK_OAUTH_TOKEN=${{ secrets.SLACK_OAUTH_TOKEN }}
+          EOF
+
       - name: Use Node.js 20
         uses: actions/setup-node@v4
         with:
@@ -83,6 +114,12 @@ jobs:
       - name: Build project
         id: build
         working-directory: ./${{ matrix.project }}
+        env:
+          DATABASE_URL: ${{ secrets.PREVIEW_DATABASE_URL }}
+          GIAM_CLIENT_EMAIL: ${{ secrets.PREVIEW_GIAM_CLIENT_EMAIL }}
+          GIAM_CLIENT_ID: ${{ secrets.PREVIEW_GIAM_CLIENT_ID }}
+          GIAM_PRIVATE_KEY: ${{ secrets.PREVIEW_GIAM_PRIVATE_KEY }}
+          SLACK_OAUTH_TOKEN: ${{ secrets.SLACK_OAUTH_TOKEN }}
         run: npm run build
         continue-on-error: false
 
@@ -100,12 +137,16 @@ jobs:
               
               The build process has failed. Please check the [build logs](${context.serverUrl}/${context.repo.owner}/${context.repo.name}/actions/runs/${context.runId}) for more details.`
             });
-
-      - name: Add build failure label
-        if: failure()
-        uses: actions/github-script@v6
-        with:
-          script: |
+            
+            try {
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.name,
+                issue_number: context.issue.number,
+                name: 'preview-deployed'
+              });
+            } catch (e) {}
+            
             await github.rest.issues.addLabels({
               owner: context.repo.owner,
               repo: context.repo.name,
@@ -145,14 +186,7 @@ jobs:
             PR_NUMBER="${{ github.event.pull_request.number }}"
             # PROJECT_DIR="apps/moon-portal-app/builds/${{ matrix.project }}/$PR_NUMBER"
             PROJECT_DIR="apps/builds/${{ matrix.project }}/preview/$PR_NUMBER"
-            
-            # Calculate port based on PR number (starting from base ports)
-            if [ "${{ matrix.project }}" = "portal" ]; then
-              BASE_PORT=8000
-            else
-              BASE_PORT=9000
-            fi
-            PORT=\$((BASE_PORT + PR_NUMBER % 1000))
+            PORT="${{ steps.calculate-port.outputs.port }}"
             
             # Create directory if it doesn't exist
             mkdir -p "$PROJECT_DIR"
@@ -160,22 +194,25 @@ jobs:
             # Unpack the deployment files
             tar -xzf /tmp/preview_${{ matrix.project }}.tar.gz -C "apps/moon-portal-app/builds/${{ matrix.project }}"
             
-            # Copy environment file
+            # Copy the runtime environment file from the central location
             cp "apps/moon-portal-app/${{ matrix.project }}/.env.preview" "$PROJECT_DIR/.env"
+            
+            # Append the port to the environment file
+            echo "PORT=$PORT" >> "$PROJECT_DIR/.env"
             
             # Remove temporary upload
             rm -f /tmp/preview_${{ matrix.project }}.tar.gz
             
             # Start or restart PM2
             if pm2 list | grep -q "${{ matrix.project }}-$PR_NUMBER"; then
-              PORT=\$PORT pm2 restart "${{ matrix.project }}-$PR_NUMBER" --update-env
+              pm2 restart "${{ matrix.project }}-$PR_NUMBER" --update-env
             else
               cd "$PROJECT_DIR"
-              PORT=\$PORT pm2 start node --name "${{ matrix.project }}-$PR_NUMBER" -- "server.js"
+              pm2 start node --name "${{ matrix.project }}-$PR_NUMBER" -- "server.js"
             fi
             
-            echo "::set-output name=preview_port::\$PORT"
-            echo "Deployment completed for ${{ matrix.project }} PR #$PR_NUMBER on port \$PORT"
+            echo "::set-output name=preview_port::$PORT"
+            echo "Deployment completed for ${{ matrix.project }} PR #$PR_NUMBER on port $PORT"
           EOF
 
       - name: Update comment with preview URL
@@ -184,7 +221,7 @@ jobs:
         with:
           script: |
             const domain = '${{ matrix.project }}' === 'portal' ? 'portal-preview.themoondevs.com' : 'pay-preview.themoondevs.com';
-            const port = '${{ steps.deploy.outputs.preview_port }}';
+            const port = '${{ steps.calculate-port.outputs.port }}';
             const previewUrl = `https://${domain}:${port}`;
             
             const commentId = '${{ steps.deployment-comment.outputs.result }}';
@@ -200,11 +237,15 @@ jobs:
               [View build logs](${context.serverUrl}/${context.repo.owner}/${context.repo.name}/actions/runs/${context.runId})`
             });
 
-      - name: Add deployment success label
-        if: success()
-        uses: actions/github-script@v6
-        with:
-          script: |
+            try {
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.name,
+                issue_number: context.issue.number,
+                name: 'build-failed'
+              });
+            } catch (e) {}
+            
             await github.rest.issues.addLabels({
               owner: context.repo.owner,
               repo: context.repo.name,
