@@ -93,7 +93,7 @@ jobs:
       - name: Setup build environment
         run: |
           mkdir -p ./${{ matrix.project }}
-          
+
           cat << EOF > ./${{ matrix.project }}/.env.build
           DATABASE_URL=${{ secrets.PREVIEW_DATABASE_URL }}
           GIAM_CLIENT_EMAIL=${{ secrets.PREVIEW_GIAM_CLIENT_EMAIL }}
@@ -138,7 +138,7 @@ jobs:
               
               The build process has failed. Please check the [build logs](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for more details.`
             });
-            
+
             try {
               await github.rest.issues.removeLabel({
                 owner: context.repo.owner,
@@ -147,7 +147,7 @@ jobs:
                 name: 'preview-deployed'
               });
             } catch (e) {}
-            
+
             await github.rest.issues.addLabels({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -178,63 +178,61 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "preview_${{ matrix.project }}_${{ github.event.pull_request.number }}.tar.gz"
           target: "/tmp/"
+          strip_components: 1
 
       - name: Set up SSH (secured)
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
           log-public-key: false
-          
+
       - name: Deploy on DigitalOcean
         if: success()
         id: deploy
-        env:
-          DEPLOY_USER: ${{ secrets.DROPLET_USER }}
-          DEPLOY_HOST: ${{ secrets.DROPLET_IP }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          PROJECT: ${{ matrix.project }}
-          PORT: ${{ steps.calculate-port.outputs.port }}
+        continue-on-error: true # Allow other projects to continue if one fails
         run: |
-          # Create deployment script
-          cat << 'EOF' > deploy.sh
-          #!/bin/bash
-          set -e
-
-          PROJECT='${{env.PROJECT}}'
-          PR_NUMBER='${{env.PR_NUMBER}}'
-          PORT='${{env.PORT}}'
-          DEPLOY_USER='${{env.DEPLOY_USER}}'
-          DEPLOY_HOST='${{env.DEPLOY_HOST}}'
-          PROJECT_DIR="apps/builds/${PROJECT}/preview/${PR_NUMBER}"
-          
-          # Create directory
-          mkdir -p "${PROJECT_DIR}"
-          
-          # Unpack deployment files
-          tar -xzf /tmp/preview_${PROJECT}_${PR_NUMBER}.tar.gz -C "apps/moon-portal-app/builds/${PROJECT}"
-          
-          # Copy environment file
-          cp "apps/moon-portal-app/${PROJECT}/.env.preview" "${PROJECT_DIR}/.env"
-          
-          # Add port to environment
-          echo "PORT=${PORT}" >> "${PROJECT_DIR}/.env"
-          
-          # Cleanup
-          rm -f /tmp/preview_${PROJECT}_${PR_NUMBER}.tar.gz
-          
-          # PM2 management
-          if pm2 list | grep -q "${PROJECT}-${PR_NUMBER}"; then
-            pm2 restart "${PROJECT}-${PR_NUMBER}" --update-env
-          else
-            cd "${PROJECT_DIR}"
-            pm2 start node --name "${PROJECT}-${PR_NUMBER}" -- "server.js"
-          fi
-          EOF
-          
-          # Execute deployment
-          chmod +x deploy.sh
-          scp -o StrictHostKeyChecking=no deploy.sh ${DEPLOY_USER}@${DEPLOY_HOST}:deploy.sh
-          ssh -o StrictHostKeyChecking=no ${DEPLOY_USER}@${DEPLOY_HOST} "./deploy.sh && rm deploy.sh"
+          ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} << 'ENDSSH'
+            # Set variables
+            PROJECT="${{ matrix.project }}"
+            PR_NUMBER="${{ github.event.pull_request.number }}"
+            PORT="${{ steps.calculate-port.outputs.port }}"
+            
+            # Create required directories with proper permissions
+            mkdir -p ~/apps/builds/${PROJECT}/preview/${PR_NUMBER}
+            
+            # Extract files with proper ownership
+            cd ~/apps/builds/${PROJECT}/preview/${PR_NUMBER}
+            tar xzf /tmp/preview_${PROJECT}_${PR_NUMBER}.tar.gz
+            
+            # Copy environment file if it exists
+            if [ -f ~/apps/moon-portal-app/${PROJECT}/.env.preview ]; then
+              cp ~/apps/moon-portal-app/${PROJECT}/.env.preview .env
+              echo "PORT=${PORT}" >> .env
+              chmod 600 .env  # Secure permissions for env file
+            else
+              echo "Warning: .env.preview file not found"
+              exit 1
+            fi
+            
+            # Clean up temporary files
+            rm -f /tmp/preview_${PROJECT}_${PR_NUMBER}.tar.gz
+            
+            # PM2 process management
+            if pm2 list | grep -q "${PROJECT}-${PR_NUMBER}"; then
+              pm2 restart "${PROJECT}-${PR_NUMBER}" --update-env
+            else
+              cd "${PROJECT_DIR}"
+              pm2 start node --name "${PROJECT}-${PR_NUMBER}" -- "server.js"
+            fi
+            
+            # Verify deployment
+            if ! pm2 show "${PROJECT}-${PR_NUMBER}" > /dev/null 2>&1; then
+              echo "Failed to start/restart PM2 process"
+              exit 1
+            fi
+            
+            echo "Successfully deployed ${PROJECT} preview for PR #${PR_NUMBER}"
+          ENDSSH
 
       - name: Update comment with preview URL
         if: success()
@@ -245,7 +243,7 @@ jobs:
             const subdomain = '${{ matrix.project }}' === 'payzone' ? 'pay' : 'portal';
             const pr_number = '${{ github.event.pull_request.number }}';
             const previewUrl = `https://preview-${pr_number}-${port}.${subdomain}.themoondevs.com`;
-            
+
             const commentId = '${{ steps.deployment-comment.outputs.result }}';
             await github.rest.issues.updateComment({
               owner: context.repo.owner,
@@ -267,7 +265,7 @@ jobs:
                 name: 'build-failed'
               });
             } catch (e) {}
-            
+
             await github.rest.issues.addLabels({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -307,13 +305,13 @@ jobs:
               repo: context.repo.repo,
               issue_number: context.issue.number
             });
-            
+
             const deploymentComments = comments.data.filter(comment => 
               comment.body.includes('Preview Deployed Successfully') ||
               comment.body.includes('Deploying') ||
               comment.body.includes('Preview Build Failed')
             );
-            
+
             for (const comment of deploymentComments) {
               await github.rest.issues.updateComment({
                 owner: context.repo.owner,
