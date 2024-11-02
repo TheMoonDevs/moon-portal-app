@@ -1,25 +1,219 @@
-name: Deploy Preview
+name: Preview Deployment
 
 on:
-  workflow_call:
-    inputs:
-      pr_number:
-        required: true
-        type: string
-      project:
-        required: true
-        type: string
-      clean_flag:
-        required: false
-        type: boolean
-    secrets:
-      DROPLET_IP:
-        required: true
-      SSH_PRIVATE_KEY:
-        required: true
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
-  deploy:
+  determine_project:
+    if: github.event_name == 'pull_request' && github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    outputs:
+      projects: ${{ steps.set-projects.outputs.projects }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine changed projects
+        id: set-projects
+        run: |
+          git fetch --prune
+          git fetch origin +refs/heads/*:refs/remotes/origin/*
+          changed_files=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }})
+          projects=()
+          if echo "$changed_files" | grep -q "^portal/"; then
+            projects+=("portal")
+          fi
+          if echo "$changed_files" | grep -q "^payzone/"; then
+            projects+=("payzone")
+          fi
+          if [ ${#projects[@]} -eq 0 ] && echo "$changed_files" | grep -vq "^portal/" && echo "$changed_files" | grep -vq "^payzone/"; then
+            projects=("portal" "payzone")
+          fi
+          echo "projects=$(printf '%s\n' "${projects[@]}" | jq -R . | jq -s .)" >> $GITHUB_OUTPUT
+
+      - name: Debug Changed Projects Output
+        run: |
+          echo "Projects output: ${{ steps.set-projects.outputs.projects }}"
+
+  build_and_deploy:
+    needs: determine_project
+    if: needs.determine_project.outputs.projects != 'null' && needs.determine_project.outputs.projects != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        project: ${{ fromJson(needs.determine_project.outputs.projects) }}
+    steps:
+      - name: Create initial deployment comment
+        uses: actions/github-script@v6
+        id: deployment-comment
+        with:
+          script: |
+            const comment = await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.name,
+              issue_number: context.issue.number,
+              body: `## 🚀 Deploying ${{ matrix.project }} Preview
+              
+              ⏳ Build and deployment in progress...
+              
+              [View build logs](${context.serverUrl}/${context.repo.owner}/${context.repo.name}/actions/runs/${context.runId})`
+            });
+            return comment.data.id;
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        working-directory: ./${{ matrix.project }}
+        run: npm install
+        continue-on-error: false
+
+      - name: Build project
+        id: build
+        working-directory: ./${{ matrix.project }}
+        run: npm run build
+        continue-on-error: false
+
+      - name: Update comment on build failure
+        if: failure()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const commentId = '${{ steps.deployment-comment.outputs.result }}';
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.name,
+              comment_id: commentId,
+              body: `## ❌ ${{ matrix.project }} Preview Build Failed
+              
+              The build process has failed. Please check the [build logs](${context.serverUrl}/${context.repo.owner}/${context.repo.name}/actions/runs/${context.runId}) for more details.`
+            });
+
+      - name: Add build failure label
+        if: failure()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.name,
+              issue_number: context.issue.number,
+              labels: ['build-failed']
+            });
+
+      - name: Prepare deployment files
+        if: success()
+        run: |
+          mkdir -p build/${{ matrix.project }}/${{ github.event.pull_request.number }}/.next/static
+          mkdir -p build/${{ matrix.project }}/${{ github.event.pull_request.number }}/public
+          cp -r ./${{ matrix.project }}/.next/standalone/* build/${{ matrix.project }}/${{ github.event.pull_request.number }}
+          cp -r ./${{ matrix.project }}/.next/static/* build/${{ matrix.project }}/${{ github.event.pull_request.number }}/.next/static
+          cp -r ./${{ matrix.project }}/public/* build/${{ matrix.project }}/${{ github.event.pull_request.number }}/public
+
+      - name: Archive deployment files
+        if: success()
+        run: |
+          tar -czf preview_${{ matrix.project }}.tar.gz -C build/${{ matrix.project }} ${{ github.event.pull_request.number }}
+
+      - name: Upload to DigitalOcean
+        if: success()
+        uses: appleboy/scp-action@v0.1.6
+        with:
+          host: ${{ secrets.DROPLET_IP }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "preview_${{ matrix.project }}.tar.gz"
+          target: "/tmp/"
+
+      - name: Deploy on DigitalOcean
+        if: success()
+        id: deploy
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} << EOF
+            PR_NUMBER="${{ github.event.pull_request.number }}"
+            # PROJECT_DIR="apps/moon-portal-app/builds/${{ matrix.project }}/$PR_NUMBER"
+            PROJECT_DIR="apps/builds/${{ matrix.project }}/preview/$PR_NUMBER"
+            
+            # Calculate port based on PR number (starting from base ports)
+            if [ "${{ matrix.project }}" = "portal" ]; then
+              BASE_PORT=8000
+            else
+              BASE_PORT=9000
+            fi
+            PORT=\$((BASE_PORT + PR_NUMBER % 1000))
+            
+            # Create directory if it doesn't exist
+            mkdir -p "$PROJECT_DIR"
+            
+            # Unpack the deployment files
+            tar -xzf /tmp/preview_${{ matrix.project }}.tar.gz -C "apps/moon-portal-app/builds/${{ matrix.project }}"
+            
+            # Copy environment file
+            cp "apps/moon-portal-app/${{ matrix.project }}/.env.preview" "$PROJECT_DIR/.env"
+            
+            # Remove temporary upload
+            rm -f /tmp/preview_${{ matrix.project }}.tar.gz
+            
+            # Start or restart PM2
+            if pm2 list | grep -q "${{ matrix.project }}-$PR_NUMBER"; then
+              PORT=\$PORT pm2 restart "${{ matrix.project }}-$PR_NUMBER" --update-env
+            else
+              cd "$PROJECT_DIR"
+              PORT=\$PORT pm2 start node --name "${{ matrix.project }}-$PR_NUMBER" -- "server.js"
+            fi
+            
+            echo "::set-output name=preview_port::\$PORT"
+            echo "Deployment completed for ${{ matrix.project }} PR #$PR_NUMBER on port \$PORT"
+          EOF
+
+      - name: Update comment with preview URL
+        if: success()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const domain = '${{ matrix.project }}' === 'portal' ? 'portal-preview.themoondevs.com' : 'pay-preview.themoondevs.com';
+            const port = '${{ steps.deploy.outputs.preview_port }}';
+            const previewUrl = `https://${domain}:${port}`;
+            
+            const commentId = '${{ steps.deployment-comment.outputs.result }}';
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.name,
+              comment_id: commentId,
+              body: `## ✅ ${{ matrix.project }} Preview Deployed Successfully
+              
+              🔍 Preview URL: ${previewUrl}
+              
+              Built from [${context.sha.substring(0, 7)}](${context.serverUrl}/${context.repo.owner}/${context.repo.name}/commit/${context.sha})
+              [View build logs](${context.serverUrl}/${context.repo.owner}/${context.repo.name}/actions/runs/${context.runId})`
+            });
+
+      - name: Add deployment success label
+        if: success()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.name,
+              issue_number: context.issue.number,
+              labels: ['preview-deployed']
+            });
+
+  cleanup_on_pr_close:
+    if: github.event.action == 'closed'
     runs-on: ubuntu-latest
     steps:
       - name: Set up SSH
@@ -27,151 +221,43 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Deploy or Redeploy Preview on DigitalOcean
+      - name: Cleanup Deployments
         run: |
-
-          ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << "EOF"
-            LOCK_FILE="/tmp/deploy/deploy-lock"
-            echo "Checking for ongoing deployments..."
-
-            # Wait if the lock file exists
-            while [ -f "$LOCK_FILE" ]; do
-              echo "Deployment lock exists. Waiting..."
-              sleep 10
-            done
-
-            # Create the lock file to indicate the start of a new deployment
-            mkdir -p /tmp/deploy
-            touch "$LOCK_FILE"
-            echo "Deployment lock created. Proceeding with deployment for PR #${PR_NUMBER} - Project: ${PROJECT}"
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} << EOF
+            # Stop and remove PM2 processes
+            pm2 list | grep -E "(portal|payzone)-${PR_NUMBER}" | awk '{print \$2}' | xargs -r pm2 delete
             
-            PR_NUMBER=${{ inputs.pr_number }}
-            PROJECT=${{ inputs.project }}
-            CLEAN_FLAG=${{ inputs.clean_flag }}
-            # Find the first available port starting from 8000
-            START_PORT=8000
-            MAX_PORT=10000
-            PORT=$START_PORT
-            while [ $PORT -lt $MAX_PORT ]; do
-              if ! ss -tlnp | grep ":${PORT} " > /dev/null; then
-                break
-              fi
-              PORT=$((PORT + 1))
-            done
-            if [ $PORT -ge $MAX_PORT ]; then
-              echo "ERROR: No available ports found."
-              rm -f "$LOCK_FILE"
-              exit 1
-            fi
-
-            export PORT=$PORT
-
-            UNIQUE_ID="${PROJECT}-${PR_NUMBER}-$PORT"
-            if [[ "$CLEAN_FLAG" == "true" ]]; then
-              echo "Cleaning up before redeployment..."
-              # Print the pm2 list output for debugging
-              echo "PM2 List Output:"
-              pm2 list
-
-              # Delete project processes
-              PROJECT_PROCESSES=$(pm2 list | grep -E "${PROJECT}-${PR_NUMBER}-" | awk '{print $2}')
-              echo "Project Processes: $PROJECT_PROCESSES"
-              if [ -n "$PROJECT_PROCESSES" ]; then
-                echo "$PROJECT_PROCESSES" | xargs -r pm2 delete
-              else
-                echo "No processes found for project ${PROJECT} with PR number ${PR_NUMBER}"
-              fi
-              rm -rf /home/techteam/apps/moon-portal-app/builds/${PROJECT}/${PR_NUMBER}
-            fi
-
-            echo "Redeploying for ${PROJECT} PR #${PR_NUMBER}..."
-
-            cd apps/moon-portal-app/${PROJECT}
-            git stash || git reset --hard
-            git fetch origin pull/${PR_NUMBER}/head:${UNIQUE_ID}
-            git checkout ${UNIQUE_ID}
-
-            if ! npm install; then
-              echo "ERROR: npm install failed."
-              rm -f "$LOCK_FILE"
-              exit 1
-            fi
-
-            if ! npm run build:preview; then
-              echo "ERROR: Build failed."
-              rm -f "$LOCK_FILE"
-              exit 1
-            fi
-
-            cd ../
-
-            # Enable dotglob to include hidden files in wildcard matches
-            shopt -s dotglob
-            mkdir -p builds/${PROJECT}/${PR_NUMBER}/${PORT}
-            cp -r ${PROJECT}/.next/standalone/* builds/${PROJECT}/${PR_NUMBER}/${PORT}
-            cp -r ${PROJECT}/.next/static/* builds/${PROJECT}/${PR_NUMBER}/${PORT}/.next/static
-            cp -r ${PROJECT}/public/* builds/${PROJECT}/${PR_NUMBER}/${PORT}/public
-            cp ${PROJECT}/.env.preview builds/${PROJECT}/${PR_NUMBER}/${PORT}/.env
-
-            cd builds/${PROJECT}/${PR_NUMBER}/${PORT}
-            PORT=$PORT pm2 start node --name "$UNIQUE_ID" -- server.js || {
-              echo "ERROR: Failed to start PM2 process."
-              rm -f "$LOCK_FILE"
-              exit 1
-            }
-
-            echo "PREVIEW_PORT=$PORT" > /tmp/preview-port-${PR_NUMBER}.txt
-            rm -f "$LOCK_FILE"
-            echo "Deployment completed and lock released for PR #${PR_NUMBER}"
+            # Remove deployment directories
+            rm -rf /home/techteam/apps/moon-portal-app/builds/portal/${PR_NUMBER}
+            rm -rf /home/techteam/apps/moon-portal-app/builds/payzone/${PR_NUMBER}
+            
+            echo "Cleaned up PR #$PR_NUMBER"
           EOF
 
-      - name: Retrieve Preview Port
-        run: |
-          ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} "cat /tmp/preview-port-${{ inputs.pr_number }}.txt" > preview-port.txt
-          cat preview-port.txt
-          PREVIEW_PORT=$(cat preview-port.txt | grep 'PREVIEW_PORT' | cut -d'=' -f2)
-          echo "PREVIEW_PORT=${PREVIEW_PORT}" >> $GITHUB_ENV
-
-      - name: Comment Preview URL
+      - name: Update comment for cleanup
         uses: actions/github-script@v6
-        env:
-          PREVIEW_PORT: ${{ env.PREVIEW_PORT }}
         with:
           script: |
-            const project = '${{ inputs.project }}';
-            const subdomain = project === 'payzone' ? 'pay' : project;
-            const prNumber = '${{ inputs.pr_number || github.event.pull_request.number }}';
-            const port = process.env.PREVIEW_PORT;
-            const uniqueId = `preview-${prNumber}-${port}`;
-            const previewUrl = `https://${uniqueId}.${subdomain}.themoondevs.com`;
-            github.rest.issues.createComment({
-              issue_number: parseInt(prNumber),
+            const comments = await github.rest.issues.listComments({
               owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `🚀 ${project.charAt(0).toUpperCase() + project.slice(1)} preview available at: [${previewUrl}](${previewUrl})\n\n` +
-                    `To redeploy or manage, use comment commands:\n` +
-                    `🗑️ Cleanup: @bot cleanup #${prNumber}\n` +
-                    `🔄 Redeploy: @bot deploy ${project}\n` +
-                    `🔒 Delete Lock: @bot delete_lock`
+              repo: context.repo.name,
+              issue_number: context.issue.number
             });
-            // Store preview URL in the environment file
-            require('fs').appendFileSync(process.env.GITHUB_ENV, `PREVIEW_URL=${previewUrl}\n`);
-
-
-      - uses: actions/checkout@master
-
-      - name: Lighthouse Check
-        env:
-          PREVIEW_URL: ${{ env.PREVIEW_URL }}
-        uses: foo-software/lighthouse-check-action@master
-        with:
-          urls: https://www.foo.software, https://www.google.com, process.env.PREVIEW_URL
-
-      - name: Clean up deployment lock
-        if: failure() || cancelled()
-        run: |
-          ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << "EOF"
-            LOCK_FILE="/tmp/deploy/deploy-lock"
-            rm -f "$LOCK_FILE"
-            git stash pop || echo "No stashed changes to pop."
-          EOF
+            
+            const deploymentComments = comments.data.filter(comment => 
+              comment.body.includes('Preview Deployed Successfully') ||
+              comment.body.includes('Deploying') ||
+              comment.body.includes('Preview Build Failed')
+            );
+            
+            for (const comment of deploymentComments) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.name,
+                comment_id: comment.id,
+                body: `## 🗑️ Preview Environment Removed
+                
+                This preview environment has been cleaned up as the PR was closed.`
+              });
+            }
