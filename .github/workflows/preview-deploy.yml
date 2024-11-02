@@ -179,17 +179,14 @@ jobs:
             exit 1
           fi
 
-      - name: Upload to DigitalOcean
+      - name: Upload using rsync
         if: success()
-        uses: appleboy/scp-action@v0.1.6
-        with:
-          host: ${{ secrets.DROPLET_IP }}
-          username: ${{ secrets.DROPLET_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "preview_${{ matrix.project }}_${{ github.event.pull_request.number }}.tar.gz"
-          target: "/tmp/"
-          strip_components: 1
-        continue-on-error: true
+        run: |
+          rsync -av --delete \
+            -e "ssh -o StrictHostKeyChecking=no -i ${{ secrets.SSH_PRIVATE_KEY }}" \
+            build/${{ matrix.project }}/${{ github.event.pull_request.number }}/ \
+            ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }}:/home/techteam/apps/builds/${{ matrix.project }}/preview/${{ github.event.pull_request.number }}
+
 
       - name: Set up SSH (secured)
         uses: webfactory/ssh-agent@v0.9.0
@@ -207,28 +204,14 @@ jobs:
             PROJECT="${{ matrix.project }}"
             PR_NUMBER="${{ github.event.pull_request.number }}"
             PORT="${{ steps.calculate-port.outputs.port }}"
-            
-            # Create required directories with proper permissions
-            mkdir -p ~/apps/builds/${PROJECT}/preview
-            
-            # Extract files with proper ownership
-            cd ~/apps/builds/${PROJECT}/preview
-            TAR_FILE="/tmp/preview_${PROJECT}_${PR_NUMBER}.tar.gz"
-            if [ ! -f "$TAR_FILE" ]; then
-            echo "Error: TAR file not found at $TAR_FILE"
-            exit 1
-            fi
-            tar xzf "$TAR_FILE"
-            if [ $? -ne 0 ]; then
-            echo "Error extracting TAR file"
-            exit 1
-            fi
-            
-            cd ${PR_NUMBER}
+            APP_PATH="/home/techteam/apps/builds/${PROJECT}/preview/${PR_NUMBER}"
+
+            # Navigate to the deployment path
+            cd "$APP_PATH"
             
             # Copy environment file if it exists
-            if [ -f ~/apps/moon-portal-app/${PROJECT}/.env.preview ]; then
-              cp ~/apps/moon-portal-app/${PROJECT}/.env.preview .env
+            if [ -f /home/techteam/apps/moon-portal-app/${PROJECT}/.env.preview ]; then
+              cp /home/techteam/apps/moon-portal-app/${PROJECT}/.env.preview .env
               echo "PORT=${PORT}" >> .env
               chmod 600 .env  # Secure permissions for env file
             else
@@ -236,17 +219,13 @@ jobs:
               exit 1
             fi
             
-            # Clean up temporary files
-            rm -f /tmp/preview_${PROJECT}_${PR_NUMBER}.tar.gz
-            
             # PM2 process management
             if pm2 list | grep -q "${PROJECT}-${PR_NUMBER}"; then
               pm2 restart "${PROJECT}-${PR_NUMBER}" --update-env
             else
-              cd "${PROJECT_DIR}"
               pm2 start node --name "${PROJECT}-${PR_NUMBER}" -- "server.js"
             fi
-            
+
             # Verify deployment
             if ! pm2 show "${PROJECT}-${PR_NUMBER}" > /dev/null 2>&1; then
               echo "Failed to start/restart PM2 process"
@@ -255,6 +234,7 @@ jobs:
             
             echo "Successfully deployed ${PROJECT} preview for PR #${PR_NUMBER}"
           ENDSSH
+
 
       - name: Update comment with preview URL
         if: success()
