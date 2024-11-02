@@ -199,7 +199,12 @@ jobs:
           cat << 'EOF' > deploy.sh
           #!/bin/bash
           set -e
-          
+
+          PROJECT='${{env.PROJECT}}'
+          PR_NUMBER='${{env.PR_NUMBER}}'
+          PORT='${{env.PORT}}'
+          DEPLOY_USER='${{env.DEPLOY_USER}}'
+          DEPLOY_HOST='${{env.DEPLOY_HOST}}'
           PROJECT_DIR="apps/builds/${PROJECT}/preview/${PR_NUMBER}"
           
           # Create directory
