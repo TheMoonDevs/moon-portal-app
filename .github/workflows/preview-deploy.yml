@@ -164,6 +164,8 @@ jobs:
       - name: Prepare deployment files
         if: success()
         run: |
+          # Enable dotglob to include hidden files in wildcard matches
+          shopt -s dotglob
           mkdir -p build/${{ matrix.project }}/${{ github.event.pull_request.number }}/.next/static
           mkdir -p build/${{ matrix.project }}/${{ github.event.pull_request.number }}/public
           cp -r ./${{ matrix.project }}/.next/standalone/* build/${{ matrix.project }}/${{ github.event.pull_request.number }}
@@ -173,7 +175,7 @@ jobs:
       - name: Upload using rsync
         uses: burnett01/rsync-deployments@7.0.1
         with:
-          switches: "-av --delete"
+          switches: "-av --delete --partial --bwlimit=5000"
           path: "build/${{ matrix.project }}/${{ github.event.pull_request.number }}/" # Local path to upload
           remote_path: "/home/techteam/apps/builds/${{ matrix.project }}/preview/${{ github.event.pull_request.number }}" # Remote destination path
           remote_host: ${{ secrets.DROPLET_IP }}
