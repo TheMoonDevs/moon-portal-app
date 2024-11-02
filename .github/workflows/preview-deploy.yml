@@ -167,7 +167,7 @@ jobs:
       - name: Archive deployment files
         if: success()
         run: |
-          tar -czf preview_${{ matrix.project }}_${{ github.event.pull_request.number }}.tar.gz -C build/${{ matrix.project }} ${{ github.event.pull_request.number }}
+          tar -czf preview_${{ matrix.project }}_${{ github.event.pull_request.number }}.tar.gz -C build/${{ matrix.project }}/${{ github.event.pull_request.number }}
 
       - name: Upload to DigitalOcean
         if: success()
