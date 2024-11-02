@@ -73,7 +73,7 @@ jobs:
               
               ⏳ Build and deployment in progress...
               
-              [View build logs](${context.serverUrl}/${context.repo.owner}/${context.repo.name}/actions/runs/${context.runId})`
+              [View build logs](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`
             });
             return comment.data.id;
 
@@ -136,7 +136,7 @@ jobs:
               comment_id: commentId,
               body: `## ❌ ${{ matrix.project }} Preview Build Failed
               
-              The build process has failed. Please check the [build logs](${context.serverUrl}/${context.repo.owner}/${context.repo.name}/actions/runs/${context.runId}) for more details.`
+              The build process has failed. Please check the [build logs](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for more details.`
             });
             
             try {
@@ -179,6 +179,11 @@ jobs:
           source: "preview_${{ matrix.project }}.tar.gz"
           target: "/tmp/"
 
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          
       - name: Deploy on DigitalOcean
         if: success()
         id: deploy
@@ -234,8 +239,8 @@ jobs:
               
               🔍 Preview URL: ${previewUrl}
               
-              Built from [${context.sha.substring(0, 7)}](${context.serverUrl}/${context.repo.owner}/${context.repo.name}/commit/${context.sha})
-              [View build logs](${context.serverUrl}/${context.repo.owner}/${context.repo.name}/actions/runs/${context.runId})`
+              Built from [${context.sha.substring(0, 7)}](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/commit/${context.sha})
+              [View build logs](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`
             });
 
             try {
