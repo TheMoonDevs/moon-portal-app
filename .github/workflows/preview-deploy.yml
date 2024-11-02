@@ -179,56 +179,65 @@ jobs:
           source: "preview_${{ matrix.project }}.tar.gz"
           target: "/tmp/"
 
-      - name: Set up SSH
-        uses: webfactory/ssh-agent@v0.5.3
+      - name: Set up SSH (secured)
+        uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          log-public-key: false
           
       - name: Deploy on DigitalOcean
         if: success()
         id: deploy
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PROJECT: ${{ matrix.project }}
+          PORT: ${{ steps.calculate-port.outputs.port }}
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} << EOF
-            PR_NUMBER="${{ github.event.pull_request.number }}"
-            # PROJECT_DIR="apps/moon-portal-app/builds/${{ matrix.project }}/$PR_NUMBER"
-            PROJECT_DIR="apps/builds/${{ matrix.project }}/preview/$PR_NUMBER"
-            PORT="${{ steps.calculate-port.outputs.port }}"
-            
-            # Create directory if it doesn't exist
-            mkdir -p "$PROJECT_DIR"
-            
-            # Unpack the deployment files
-            tar -xzf /tmp/preview_${{ matrix.project }}.tar.gz -C "apps/moon-portal-app/builds/${{ matrix.project }}"
-            
-            # Copy the runtime environment file from the central location
-            cp "apps/moon-portal-app/${{ matrix.project }}/.env.preview" "$PROJECT_DIR/.env"
-            
-            # Append the port to the environment file
-            echo "PORT=$PORT" >> "$PROJECT_DIR/.env"
-            
-            # Remove temporary upload
-            rm -f /tmp/preview_${{ matrix.project }}.tar.gz
-            
-            # Start or restart PM2
-            if pm2 list | grep -q "${{ matrix.project }}-$PR_NUMBER"; then
-              pm2 restart "${{ matrix.project }}-$PR_NUMBER" --update-env
-            else
-              cd "$PROJECT_DIR"
-              pm2 start node --name "${{ matrix.project }}-$PR_NUMBER" -- "server.js"
-            fi
-            
-            echo "::set-output name=preview_port::$PORT"
-            echo "Deployment completed for ${{ matrix.project }} PR #$PR_NUMBER on port $PORT"
+          # Create deployment script
+          cat << 'EOF' > deploy.sh
+          #!/bin/bash
+          set -e
+          
+          PROJECT_DIR="apps/builds/${PROJECT}/preview/${PR_NUMBER}"
+          
+          # Create directory
+          mkdir -p "${PROJECT_DIR}"
+          
+          # Unpack deployment files
+          tar -xzf /tmp/preview_${PROJECT}.tar.gz -C "apps/moon-portal-app/builds/${PROJECT}"
+          
+          # Copy environment file
+          cp "apps/moon-portal-app/${PROJECT}/.env.preview" "${PROJECT_DIR}/.env"
+          
+          # Add port to environment
+          echo "PORT=${PORT}" >> "${PROJECT_DIR}/.env"
+          
+          # Cleanup
+          rm -f /tmp/preview_${PROJECT}.tar.gz
+          
+          # PM2 management
+          if pm2 list | grep -q "${PROJECT}-${PR_NUMBER}"; then
+            pm2 restart "${PROJECT}-${PR_NUMBER}" --update-env
+          else
+            cd "${PROJECT_DIR}"
+            pm2 start node --name "${PROJECT}-${PR_NUMBER}" -- "server.js"
+          fi
           EOF
+          
+          # Execute deployment
+          chmod +x deploy.sh
+          scp -o StrictHostKeyChecking=no deploy.sh ${DEPLOY_USER}@${DEPLOY_HOST}:deploy.sh
+          ssh -o StrictHostKeyChecking=no ${DEPLOY_USER}@${DEPLOY_HOST} "./deploy.sh && rm deploy.sh"
 
       - name: Update comment with preview URL
         if: success()
         uses: actions/github-script@v6
         with:
           script: |
-            const domain = '${{ matrix.project }}' === 'portal' ? 'portal-preview.themoondevs.com' : 'pay-preview.themoondevs.com';
             const port = '${{ steps.calculate-port.outputs.port }}';
-            const previewUrl = `https://${domain}:${port}`;
+            const subdomain = '${{ matrix.project }}' === 'payzone' ? 'pay' : 'portal';
+            const pr_number = '${{ github.event.pull_request.number }}';
+            const previewUrl = `https://preview-${pr_number}-${port}.${subdomain}.themoondevs.com`;
             
             const commentId = '${{ steps.deployment-comment.outputs.result }}';
             await github.rest.issues.updateComment({
