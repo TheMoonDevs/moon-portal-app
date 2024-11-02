@@ -82,6 +82,10 @@ jobs:
       - name: Archive deployment files
         run: |
           tar -czf prod_${{ matrix.project }}.tar.gz -C build/${{ matrix.project }} main
+          if [ ! -f prod_${{ matrix.project }}.tar.gz ]; then
+            echo "Error: TAR file not created."
+            exit 1
+          fi
 
       - name: Upload to DigitalOcean
         uses: appleboy/scp-action@v0.1.6
@@ -91,6 +95,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "prod_${{ matrix.project }}.tar.gz"
           target: "/tmp/"
+        continue-on-error: true
 
       - name: Deploy on DigitalOcean
         run: |
@@ -117,11 +122,23 @@ jobs:
 
             # Unpack the deployment files to the new main directory
             mkdir -p "$MAIN_DIR"
-            tar -xzf /tmp/prod_${PROJECT}.tar.gz -C "$PROJECT_DIR"
+            cd ~/apps/builds/${PROJECT}/prod
+            TAR_FILE="/tmp/prod_${PROJECT}.tar.gz"
+            if [ ! -f "$TAR_FILE" ]; then
+            echo "Error: TAR file not found at $TAR_FILE"
+            exit 1
+            fi
+            tar xzf "$TAR_FILE"
+            if [ $? -ne 0 ]; then
+            echo "Error extracting TAR file"
+            exit 1
+            fi
+            
+            cd main
             
             # Copy .env.prod from secure location and set permissions
-            if [ -f "/home/${{ secrets.DROPLET_USER }}/apps/moon-portal-app/$PROJECT/.env.prod" ]; then
-              cp "apps/moon-portal-app/$PROJECT/.env.prod" "$MAIN_DIR/.env"
+            if [ -f "~/apps/moon-portal-app/$PROJECT/.env.prod" ]; then
+              cp "~/apps/moon-portal-app/$PROJECT/.env.prod" ".env"
               echo "PORT=$PORT" >> "$MAIN_DIR/.env"
               chmod 600 "$MAIN_DIR/.env"
             else
@@ -136,8 +153,6 @@ jobs:
             if pm2 list | grep -q "${PROJECT}-main"; then
               pm2 restart "${PROJECT}-main" --update-env
             else
-              cd "$MAIN_DIR"
-              cd ../
               pm2 start node --name "${PROJECT}-main" -- "server.js"
             fi
 
