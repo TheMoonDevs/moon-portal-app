@@ -167,7 +167,7 @@ jobs:
       - name: Archive deployment files
         if: success()
         run: |
-          tar -czf preview_${{ matrix.project }}_${{ github.event.pull_request.number }}.tar.gz -C build/${{ matrix.project }}/${{ github.event.pull_request.number }}
+          tar -czf preview_${{ matrix.project }}_${{ github.event.pull_request.number }}.tar.gz -C build/${{ matrix.project }} ${{ github.event.pull_request.number }}
 
       - name: Upload to DigitalOcean
         if: success()
@@ -198,11 +198,13 @@ jobs:
             PORT="${{ steps.calculate-port.outputs.port }}"
             
             # Create required directories with proper permissions
-            mkdir -p ~/apps/builds/${PROJECT}/preview/${PR_NUMBER}
+            mkdir -p ~/apps/builds/${PROJECT}/preview
             
             # Extract files with proper ownership
-            cd ~/apps/builds/${PROJECT}/preview/${PR_NUMBER}
+            cd ~/apps/builds/${PROJECT}/preview
             tar xzf /tmp/preview_${PROJECT}_${PR_NUMBER}.tar.gz
+
+            cd ${PR_NUMBER}
             
             # Copy environment file if it exists
             if [ -f ~/apps/moon-portal-app/${PROJECT}/.env.preview ]; then
