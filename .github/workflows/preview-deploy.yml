@@ -170,28 +170,22 @@ jobs:
           cp -r ./${{ matrix.project }}/.next/static/* build/${{ matrix.project }}/${{ github.event.pull_request.number }}/.next/static
           cp -r ./${{ matrix.project }}/public/* build/${{ matrix.project }}/${{ github.event.pull_request.number }}/public
 
-      - name: Archive deployment files
-        if: success()
-        run: |
-          tar -czf preview_${{ matrix.project }}_${{ github.event.pull_request.number }}.tar.gz -C build/${{ matrix.project }} ${{ github.event.pull_request.number }}
-          if [ ! -f preview_${{ matrix.project }}_${{ github.event.pull_request.number }}.tar.gz ]; then
-            echo "Error: TAR file not created."
-            exit 1
-          fi
+      - name: Upload using rsync
+        uses: burnett01/rsync-deployments@7.0.1
+        with:
+          switches: "-av --delete"
+          path: "build/${{ matrix.project }}/${{ github.event.pull_request.number }}/" # Local path to upload
+          remote_path: "/home/techteam/apps/builds/${{ matrix.project }}/preview/${{ github.event.pull_request.number }}" # Remote destination path
+          remote_host: ${{ secrets.DROPLET_IP }}
+          remote_user: ${{ secrets.DROPLET_USER }}
+          remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
+          args: "--exclude '.git' --exclude 'node_modules'"
 
       - name: Set up SSH (secured)
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
           log-public-key: false
-
-      - name: Upload using rsync
-        if: success()
-        run: |
-          rsync -av --delete \
-            -e "ssh -o StrictHostKeyChecking=no -i ${{ secrets.SSH_PRIVATE_KEY }}" \
-            build/${{ matrix.project }}/${{ github.event.pull_request.number }}/ \
-            ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }}:/home/techteam/apps/builds/${{ matrix.project }}/preview/${{ github.event.pull_request.number }}
 
       - name: Deploy on DigitalOcean
         if: success()
@@ -233,7 +227,6 @@ jobs:
             
             echo "Successfully deployed ${PROJECT} preview for PR #${PR_NUMBER}"
           ENDSSH
-
 
       - name: Update comment with preview URL
         if: success()
