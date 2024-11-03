@@ -1,20 +1,26 @@
 "use client";
 
-import { styled, Tab, Tabs } from "@mui/material";
+import { setIsParentDirectoryFoldersOpen } from "@/utils/redux/quicklinks/slices/quicklinks.ui.slice";
+import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
+import { IconButton, styled, Tab, Tabs } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
 
 const QuicklinksTabs = ({
   children,
   tabs,
+  isParentDir
 }: {
   children: (value: number, searchQuery?: string) => React.ReactNode;
   tabs: string[];
+  isParentDir?: boolean;
 }) => {
   const [value, setValue] = useState<number>(0);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const targetRef = useRef<HTMLInputElement>(null);
   const [isHovered, setIsHovered] = useState<boolean>(false);
   const [isFocused, setIsFocused] = useState<boolean>(false);
+  const { isParentDirectoryFoldersOpen } = useAppSelector((state) => state.quicklinksUi)
+  const dispatch = useAppDispatch();
 
   const showSearchInput = isHovered || isFocused;
 
@@ -74,13 +80,24 @@ const QuicklinksTabs = ({
   return (
     <div className="space-y-3 bg-white">
       <div className="flex items-center gap-2 max-sm:flex-col max-sm:gap-0">
-        <input
-          // ref={targetRef}
-          placeholder="Search Folders..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className={`hidden max-sm:block border p-3 my-3 border-gray-700 bg-transparent outline-none transition-all duration-300 focus:border-b-2 focus:border-gray-600 w-full rounded-2xl shadow-md placeholder-gray-500`}
-        />
+        <div className="flex items-center justify-between gap-2 max-sm:w-full">
+          <input
+            // ref={targetRef}
+            placeholder="Search Folders..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className={`my-3 hidden w-full rounded-2xl border border-gray-700 bg-transparent p-3 placeholder-gray-500 shadow-md outline-none transition-all duration-300 focus:border-b-2 focus:border-gray-600 max-sm:block`}
+          />
+          {isParentDir && (
+            <IconButton
+              onClick={() => {
+                dispatch(setIsParentDirectoryFoldersOpen(!isParentDirectoryFoldersOpen))
+              }}
+            >
+              <span className="material-symbols-outlined">folder</span>
+            </IconButton>
+          )}
+        </div>
         <AntTabs
           className="mb-3"
           value={value}
