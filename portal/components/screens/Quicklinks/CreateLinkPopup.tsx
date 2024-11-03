@@ -168,7 +168,7 @@ export const CreateLinkPopup = () => {
       mountOnEnter
       unmountOnExit
     >
-      <div className={`fixed bottom-8 right-8 w-fit shadow-md bg-white p-6`}>
+      <div className={`fixed bottom-8 right-8 w-fit shadow-md bg-white p-6 max-sm:right-4 max-sm:left-4`}>
         <span
           onClick={() => {
             dispatch(setIsCreateLinkModalOpen(false));
