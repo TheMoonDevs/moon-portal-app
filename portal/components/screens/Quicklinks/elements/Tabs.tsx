@@ -72,8 +72,15 @@ const QuicklinksTabs = ({
   );
 
   return (
-    <div className="bg-white space-y-3">
-      <div className="flex items-center gap-2">
+    <div className="space-y-3 bg-white">
+      <div className="flex items-center gap-2 max-sm:flex-col max-sm:gap-0">
+        <input
+          // ref={targetRef}
+          placeholder="Search Folders..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className={`hidden max-sm:block border p-3 my-3 border-gray-700 bg-transparent outline-none transition-all duration-300 focus:border-b-2 focus:border-gray-600 w-full rounded-2xl shadow-md placeholder-gray-500`}
+        />
         <AntTabs
           className="mb-3"
           value={value}
@@ -85,8 +92,8 @@ const QuicklinksTabs = ({
           ))}
         </AntTabs>
         <div
-          className={`flex items-center  rounded-full px-1 py-2 transition-all duration-500 ${
-            showSearchInput ? "w-60 bg-neutral-100" : "w-10"
+          className={`flex items-center rounded-full px-1 py-2 transition-all duration-500 max-sm:hidden ${
+            showSearchInput ? 'w-60 bg-neutral-100' : 'w-10'
           }`}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
@@ -94,7 +101,7 @@ const QuicklinksTabs = ({
           onBlur={() => setIsFocused(false)}
           // style={{ transition: "width 0.5s ease-in-out" }}
         >
-          <span className="material-symbols-outlined !font-extralight rounded-full">
+          <span className="material-symbols-outlined rounded-full !font-extralight">
             search
           </span>
 
@@ -103,8 +110,8 @@ const QuicklinksTabs = ({
             placeholder="Search..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className={`outline-none border-b focus:border-b-2 border-black bg-transparent transition-all duration-300 ${
-              showSearchInput ? "w-full" : "w-0"
+            className={`border-b border-black bg-transparent outline-none transition-all duration-300 focus:border-b-2 ${
+              showSearchInput ? 'w-full' : 'w-0'
             }`}
             // style={{ transition: "width 0.5s ease-in-out" }} // Optional inline transition if needed
           />
