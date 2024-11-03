@@ -24,6 +24,7 @@ interface QuikcklinksUIState {
   isLoading: boolean;
   isCollapsed:boolean;
   isHamburgerOpen: boolean;
+  isParentDirectoryFoldersOpen: boolean;
 }
 
 const initialState: QuikcklinksUIState = {
@@ -48,6 +49,7 @@ const initialState: QuikcklinksUIState = {
   isLoading: false,
   isCollapsed:false,
   isHamburgerOpen: false,
+  isParentDirectoryFoldersOpen: false
 };
 
 export const quicklinksUiSlice = createSlice({
@@ -90,6 +92,9 @@ export const quicklinksUiSlice = createSlice({
     },
     setHamburgerOpen: (state, action) => {
       state.isHamburgerOpen = action.payload
+    },
+    setIsParentDirectoryFoldersOpen: (state, action) => {
+      state.isParentDirectoryFoldersOpen = action.payload
     }
   },
 });
@@ -102,7 +107,8 @@ export const {
   setIsCreateLinkModalOpen,
   setIsLoading,
   setToggleSidebar,
-  setHamburgerOpen
+  setHamburgerOpen,
+  setIsParentDirectoryFoldersOpen
 } = quicklinksUiSlice.actions;
 
 export default quicklinksUiSlice.reducer;

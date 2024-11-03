@@ -117,9 +117,29 @@ const FoldersDrawer = ({
   handleClose: () => void;
 }) => {
   return (
+    <ReusableFolderDrawer open={foldersOpen} handleClose={handleClose}>
+      <div className="p-2">
+        <div className="">
+          <FolderSection />
+        </div>
+      </div>
+    </ReusableFolderDrawer>
+  );
+};
+
+export const ReusableFolderDrawer = ({
+  open,
+  handleClose,
+  children,
+}: {
+  open: boolean;
+  handleClose: () => void;
+  children: React.ReactNode;
+}) => {
+  return (
     <Drawer
       anchor="right"
-      open={foldersOpen}
+      open={open}
       onClose={handleClose}
       sx={{ '& .MuiDrawer-paper': { height: '100vh' } }}
     >
@@ -132,19 +152,15 @@ const FoldersDrawer = ({
         }}
         role="presentation"
       >
-        <div className="p-2">
-          <IconButton onClick={handleClose} className="!pb-4">
-            <span
-              className="material-symbols-outlined"
-              style={{ fontSize: '20px' }}
-            >
-              arrow_forward_ios
-            </span>
-          </IconButton>
-          <div className="">
-            <FolderSection />
-          </div>
-        </div>
+        <IconButton onClick={handleClose} className="!pb-4">
+          <span
+            className="material-symbols-outlined"
+            style={{ fontSize: '20px' }}
+          >
+            arrow_forward_ios
+          </span>
+        </IconButton>
+        {children}
       </Box>
     </Drawer>
   );
