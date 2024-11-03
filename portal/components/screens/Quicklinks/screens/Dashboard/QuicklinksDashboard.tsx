@@ -5,10 +5,10 @@ export const QuicklinksDashboard = () => {
   return (
     <>
       <div className=" w-full flex gap-10">
-        <div className="w-[65%]">
+        <div className="w-[65%] max-sm:w-full">
           <LinksSection />
         </div>
-        <div className="w-[35%] mt-[10px]">
+        <div className="w-[35%] mt-[10px] max-sm:hidden">
           <FolderSection />
         </div>
       </div>

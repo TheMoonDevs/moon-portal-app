@@ -77,8 +77,8 @@ const TopLinksFromDirectory = ({ directory }: { directory: DirectoryList }) => {
               </>
             );
           return (
-            <div className="flex flex-col bg-neutral-50 rounded-2xl p-2 py-3 gap-5 w-full transition-all">
-              <div className="px-4">
+            <div className="flex flex-col bg-neutral-50 rounded-2xl p-2 py-3 gap-5 w-full transition-all max-sm:px-2">
+              <div className="px-4 max-sm:px-0">
                 <h1 className="mb-3 text-3xl font-semibold">
                   {directory.title}
                 </h1>
