@@ -1,5 +1,5 @@
 'use client';
-import { QUICKLINK_ROUTES } from '@/utils/constants/appInfo';
+import { APP_ROUTES, QUICKLINK_ROUTES } from '@/utils/constants/appInfo';
 import Link from 'next/link';
 import { useQuickLinkDirectory } from '../../hooks/useQuickLinkDirectory';
 import { useState, FC, ReactNode, MouseEvent, useEffect } from 'react';
@@ -307,13 +307,39 @@ const QuicklinkSidebar: FC = () => {
           }}
           role="presentation"
         >
-          <div className="flex items-center justify-between py-4 sticky top-0 z-10 bg-white">
+          <div className="sticky top-0 z-10 flex items-center justify-between bg-white py-4">
             <h6 className="text-xl font-bold">Quicklinks</h6>
-            <IconButton onClick={handleClose} className='flex itemc-center justify-center'>
-              <span className="material-symbols-outlined" style={{fontSize:'20px'}}>arrow_back_ios</span>
+            <IconButton
+              onClick={handleClose}
+              className="itemc-center flex justify-center"
+            >
+              <span
+                className="material-symbols-outlined"
+                style={{ fontSize: '20px' }}
+              >
+                arrow_back_ios
+              </span>
             </IconButton>
           </div>
-          <div className="">{sidebarContent()}</div>
+          <div className="">
+            <Link
+              href={APP_ROUTES.home}
+              className="mb-2 flex cursor-pointer items-center gap-4 rounded-3xl px-3 py-2"
+            >
+              <span className="material-symbols-outlined">home</span>Go To
+              Home
+            </Link>
+            <Divider />
+            {sidebarContent()}
+            <Divider />
+            <Link
+              href={APP_ROUTES.logout}
+              className="mt-2 flex cursor-pointer items-center gap-4 rounded-3xl px-3 py-2"
+            >
+              {' '}
+              <span className="material-symbols-outlined">logout</span>Logout
+            </Link>
+          </div>
         </Box>
       </Drawer>
     </>
