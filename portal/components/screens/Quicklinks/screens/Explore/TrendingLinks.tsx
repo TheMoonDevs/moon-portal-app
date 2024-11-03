@@ -42,7 +42,7 @@ const TrendingLinks = () => {
   };
 
   return (
-    <div className="px-6">
+    <div className="px-6 max-sm:px-2">
       <PaginationWrapper
         page={page}
         setPage={setPage}

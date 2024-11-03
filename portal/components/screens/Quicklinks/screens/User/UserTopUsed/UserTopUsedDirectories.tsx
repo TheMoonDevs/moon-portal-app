@@ -63,7 +63,7 @@ const UserTopUsedDirectories = ({
     <div>
       {withTitle && (
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-4">
+          <h1 className="text-3xl font-bold flex items-center gap-4 ">
             <span className="material-symbols-outlined border border-neutral-200 rounded-full p-2">
               history
             </span>{" "}
