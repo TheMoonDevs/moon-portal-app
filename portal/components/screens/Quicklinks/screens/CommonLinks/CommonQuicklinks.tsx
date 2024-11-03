@@ -122,7 +122,7 @@ export const CommonQuicklinks = ({
         }}
       />
       {allQuicklinks.length === 0 && filteredDirectories.length === 0 ? (
-        <div className="flex flex-col gap-3 items-center justify-center h-[350px] w-full">
+        <div className="flex flex-col gap-3 items-center justify-center h-[350px] w-full max-sm:!mt-16">
           <Image
             className="rounded-full object-cover"
             src="/images/no-data.jpg"
