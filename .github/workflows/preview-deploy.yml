@@ -181,7 +181,6 @@ jobs:
           remote_host: ${{ secrets.DROPLET_IP }}
           remote_user: ${{ secrets.DROPLET_USER }}
           remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
-          args: "--exclude '.git' --exclude 'node_modules'"
 
       - name: Set up SSH (secured)
         uses: webfactory/ssh-agent@v0.9.0
@@ -218,7 +217,7 @@ jobs:
             if pm2 list | grep -q "${PROJECT}-${PR_NUMBER}"; then
               pm2 restart "${PROJECT}-${PR_NUMBER}" --update-env
             else
-              pm2 start node --name "${PROJECT}-${PR_NUMBER}" -- "server.js"
+              pm2 start npm --name "${PROJECT}-${PR_NUMBER}" -- run start:prod
             fi
 
             # Verify deployment
