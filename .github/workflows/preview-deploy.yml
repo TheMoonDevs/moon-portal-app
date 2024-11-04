@@ -51,6 +51,49 @@ jobs:
         run: |
           echo "Projects output: ${{ steps.set-projects.outputs.projects }}"
 
+      - name: Create or Update Initial Status Comments
+        uses: actions/github-script@v6
+        id: status-comments
+        with:
+          script: |
+            const prNumber = context.issue.number;
+            const projects = ["portal", "payzone"];
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber
+            });
+            const logsUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+
+            const initialTable = `
+            | Project | Status        | Build Logs                | Preview URL   |
+            | ------- | ------------- | ------------------------- | ------------- |
+            | portal  | Not Started   | [Build Logs](${logsUrl})  | -             |
+            | payzone | Not Started   | [Build Logs](${logsUrl})  | -             |
+            `;
+
+            projects.forEach(async (project) => {
+              let existingComment = comments.data.find(comment => 
+                comment.body.includes(`### ${project.toUpperCase()} Preview`)
+              );
+
+              if (!existingComment) {
+                await github.rest.issues.createComment({
+                  issue_number: prNumber,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: `### ${project.toUpperCase()} Preview\n${initialTable}`
+                });
+              } else {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: existingComment.id,
+                  body: `### ${project.toUpperCase()} Preview\n${initialTable}`
+                });
+              }
+            });
+
   build_and_deploy:
     needs: determine_project
     if: needs.determine_project.outputs.projects != 'null' && needs.determine_project.outputs.projects != '[]'
@@ -74,14 +117,6 @@ jobs:
               [View build logs](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`
             });
             return comment.data.id;
-
-      - name: Cache Node Modules
-        uses: actions/cache@v3
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
 
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -128,22 +163,37 @@ jobs:
           GIAM_PRIVATE_KEY: ${{ secrets.PREVIEW_GIAM_PRIVATE_KEY }}
           SLACK_OAUTH_TOKEN: ${{ secrets.SLACK_OAUTH_TOKEN }}
         run: npm run build
-        continue-on-error: false
 
-      - name: Update comment on build failure
-        if: failure()
+      - name: Update Build Status in Comment
+        if: success() || failure()
         uses: actions/github-script@v6
         with:
           script: |
-            const commentId = '${{ steps.deployment-comment.outputs.result }}';
-            await github.rest.issues.updateComment({
+            const project = '${{ matrix.project }}';
+            const comments = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              comment_id: commentId,
-              body: `## ❌ ${{ matrix.project }} Preview Build Failed
-              
-              The build process has failed. Please check the [build logs](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for more details.`
+              issue_number: context.issue.number
             });
+            const comment = comments.data.find(c => c.body.includes(`### ${project.toUpperCase()} Preview`));
+            const status = failure() ? 'Build Failed' : 'Build Succeeded';
+
+            if (comment) {
+              const logsUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+              
+              const updatedTable = `
+              | Project | Status         | Build Logs                  | Preview URL   |
+              | ------- | -------------- | --------------------------- | ------------- |
+              | ${project}  | ${status}  | [Build Logs](${logsUrl})   | -             |
+              `;
+
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: comment.id,
+                body: `### ${project.toUpperCase()} Preview\n${updatedTable}`
+              });
+            }
 
             try {
               await github.rest.issues.removeLabel({
@@ -219,10 +269,14 @@ jobs:
             else
               pm2 start npm --name "${PROJECT}-${PR_NUMBER}" -- run start:prod
             fi
-
-            # Verify deployment
+            
+            # Verify deployment and handle errors
             if ! pm2 show "${PROJECT}-${PR_NUMBER}" > /dev/null 2>&1; then
-              echo "Failed to start/restart PM2 process"
+              echo "Failed to start/restart PM2 process for ${PROJECT}"
+              # Update status to deployment failed
+              ssh -T ${{ secrets.GITHUB_TOKEN }} << EOF
+                gh issue edit ${context.issue.number} --label-remove "deployed-${PROJECT}" --label-add "deploy-failed-${PROJECT}"
+              EOF
               exit 1
             fi
             
@@ -230,43 +284,68 @@ jobs:
           ENDSSH
 
       - name: Update comment with preview URL
-        if: success()
+        if: success() || failure()
         uses: actions/github-script@v6
         with:
           script: |
+            const project = '${{ matrix.project }}';
             const port = '${{ steps.calculate-port.outputs.port }}';
-            const subdomain = '${{ matrix.project }}' === 'payzone' ? 'pay' : 'portal';
-            const pr_number = '${{ github.event.pull_request.number }}';
-            const previewUrl = `https://preview-${pr_number}-${port}.${subdomain}.themoondevs.com`;
+            const subdomain = project === 'payzone' ? 'pay' : 'portal';
+            const prNumber = '${{ github.event.pull_request.number }}';
+            const previewUrl = `https://preview-${prNumber}-${port}.${subdomain}.themoondevs.com`;
 
-            const commentId = '${{ steps.deployment-comment.outputs.result }}';
-            await github.rest.issues.updateComment({
+            const comments = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              comment_id: commentId,
-              body: `## ✅ ${{ matrix.project }} Preview Deployed Successfully
-              
-              🔍 Preview URL: ${previewUrl}
-              
-              Built from [${context.sha.substring(0, 7)}](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/commit/${context.sha})
-              [View build logs](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`
+              issue_number: context.issue.number
             });
+            const comment = comments.data.find(c => c.body.includes(`### ${project.toUpperCase()} Preview`));
+            const status = failure() ? 'Deployment Failed' : 'Deployed Successfully';
+
+            if (comment) {
+              const logsUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+              
+              const updatedTable = `
+              | Project | Status         | Build Logs                  | Preview URL                  |
+              | ------- | -------------- | --------------------------- | ---------------------------- |
+              | ${project}  | ${status}  | [Build Logs](${logsUrl})   | [Preview URL](${previewUrl}) |
+              `;
+
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: comment.id,
+                body: `### ${project.toUpperCase()} Preview\n${updatedTable}`
+              });
+            }
 
             try {
-              await github.rest.issues.removeLabel({
+              // Remove any related labels first
+              const existingLabels = ["portal-build-failed","payzone-build-failed", "portal-deploy-failed", "payzone-deploy-failed", "portal-deployed", "payzone-deployed"];
+              await Promise.all(existingLabels.map(async label => {
+                try {
+                  await github.rest.issues.removeLabel({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: context.issue.number,
+                    name: label
+                  });
+                } catch (e) {
+                  // Label might not exist, ignore errors here
+                }
+              }));
+
+              // Add deployed label based on the project
+              const deployedLabel = `deployed-${project}`;
+              await github.rest.issues.addLabels({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.issue.number,
-                name: 'build-failed'
+                labels: [deployedLabel]
               });
-            } catch (e) {}
-
-            await github.rest.issues.addLabels({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              labels: ['preview-deployed']
-            });
+            } catch (e) {
+              core.warning(`Failed to update labels: ${e.message}`);
+            }
 
   cleanup_on_pr_close:
     if: github.event.action == 'closed'
