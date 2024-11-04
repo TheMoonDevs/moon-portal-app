@@ -133,7 +133,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: ./${{ matrix.project }}
-        run: npm ci
+        run: npm i
         continue-on-error: false
 
       - name: Build project
@@ -264,7 +264,7 @@ jobs:
               EOF
               exit 1
             fi
-            
+            EOF
             echo "Successfully deployed ${PROJECT} preview for PR #${PR_NUMBER}"
           ENDSSH
 
