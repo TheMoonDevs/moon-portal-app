@@ -136,7 +136,7 @@ const HamBurger = () => {
           <p className='text-2xl max-sm:text-lg font-bold py-2'>Sign In</p>
           <div className='flex items-center gap-4 max-sm:gap-2 max-sm:flex-col border-t-[1px] border-gray-300 mt-6 py-4 max-sm:py-2'>
             <button
-              className='w-full max-sm:w-full rounded-md text-sm py-2 bg-white text-black font-semibold'
+              className='w-full max-sm:w-full rounded-md text-sm py-2 bg-white text-black font-semibold transition-all duration-300 hover:bg-black hover:text-white'
               style={{ border: '2px solid white' }}
             >
               Book a Call
@@ -182,8 +182,8 @@ const HamBurger = () => {
 const Button = ({ label }: { label: string }) => {
   return (
     <button
-      className='rounded-full !bg-white text-black text-sm py-2 px-4 font-medium flex items-center justify-center transition-all duration-300 ease-in-out
-transform hover:translate-x-1 hover:-translate-y-1 hover:shadow-hover:shadow-gray-400 max-lg:hidden'
+      className='rounded-lg !bg-white text-black text-sm py-2 px-4 font-medium flex items-center justify-center transition-all duration-300 ease-in-out
+      transform hover:translate-x-0.5 hover:-translate-y-0.5 hover:shadow-hover:shadow-gray-400 max-lg:hidden'
     >
       {label}
     </button>
