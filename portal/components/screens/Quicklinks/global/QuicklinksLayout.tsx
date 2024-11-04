@@ -89,7 +89,7 @@ export const QuicklinksLayout = ({
         <QuicklinkSidebar />
         <div
           className={clsx(
-            'transition-width relative ml-auto px-6 duration-300 max-sm:w-full max-sm:px-2',
+            'transition-width relative ml-auto px-6 duration-300 max-md:w-full max-md:px-2',
             isCollapsed ? 'w-[calc(100%-75px)]' : 'w-[calc(100%-256px)]',
           )}
         >

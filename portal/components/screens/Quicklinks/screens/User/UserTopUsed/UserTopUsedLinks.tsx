@@ -57,7 +57,7 @@ const UserTopUsedLinks = ({ withTitle }: { withTitle?: boolean }) => {
   
   return (
     <>
-      <div className="hidden items-center justify-between gap-2 px-1 py-2 max-sm:flex">
+      <div className="hidden items-center justify-between gap-2 px-1 py-2 max-md:flex">
         <QuicklinkSearchBar />
         <IconButton
           onClick={() => {
