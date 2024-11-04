@@ -1,6 +1,7 @@
 import { prisma } from "@/prisma/prisma";
 import { NextRequest, NextResponse } from "next/server";
-import { JsonObject } from "@prisma/client/runtime/library";
+
+export const dynamic = 'force-dynamic';
 
 export interface EmailLogsData {
   id: string; // Typically the current date in string format
@@ -43,15 +44,15 @@ export async function GET(request: NextRequest) {
     // Extract the emailTracker array from the configuration data
     const currentDate = new Date().toISOString().split("T")[0];
     console.log(currentDate);
-    const existingData = existingConfig.configData as JsonObject;
-    const emailTracker = (existingData.emailTracker as JsonObject[]) || [];
+    const existingData = existingConfig.configData as any ;
+    const emailTracker = (existingData?.emailTracker) || [];
 
     // Check if any log's date is different
-    const isDateDifferent = emailTracker.some((log) => log.id !== currentDate);
+    const isDateDifferent = emailTracker.some((log: { id: string; }) => log.id !== currentDate);
 
     if (isDateDifferent) {
       // If any log's date is different, then map through all to update
-      const updatedEmailTracker = emailTracker.map((log) => {
+      const updatedEmailTracker = emailTracker.map((log: { id: string; }) => {
         if (log.id !== currentDate) {
           return {
             ...log,
@@ -77,7 +78,7 @@ export async function GET(request: NextRequest) {
 
     // If a mailId query parameter is provided, find the corresponding email log
     if (mailId) {
-      const emailLog = emailTracker?.find((log) => log.mailId === mailId);
+      const emailLog = emailTracker?.find((log: { mailId: string; }) => log.mailId === mailId);
 
       // If the specific email log is not found, return a 404 response
       if (!emailLog) {

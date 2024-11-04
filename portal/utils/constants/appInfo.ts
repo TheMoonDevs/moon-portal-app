@@ -56,6 +56,7 @@ export enum APP_SOCIAL {
 
 export enum LOCAL_STORAGE {
   user = "moon_portal_user",
+  passphrase = "local_passphrase",
 }
 export const IN_DEV = process.env.NODE_ENV === "development";
 export const APP_BASE_URL = IN_DEV

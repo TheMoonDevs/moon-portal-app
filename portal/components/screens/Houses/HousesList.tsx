@@ -1,8 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useCallback, useMemo } from "react";
 import { Spinner } from "@/components/elements/Loaders";
-import { PortalSdk } from "@/utils/services/PortalSdk";
 import { Tooltip, Avatar, AvatarGroup } from "@mui/material";
 import { HOUSEID, Mission, User } from "@prisma/client";
 import { ChevronDown, ChevronUp } from "lucide-react";

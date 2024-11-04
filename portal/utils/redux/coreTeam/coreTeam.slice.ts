@@ -3,6 +3,8 @@ import { User } from '@prisma/client';
 
 interface CoreTeamState {
   members: User[];
+  coreTeamMembers: User[];
+  trialCandidates: User[];
   selectedMember: User | null;
   isDrawerOpen: boolean;
   isEditModalOpen: boolean;
@@ -10,6 +12,8 @@ interface CoreTeamState {
 
 const initialState: CoreTeamState = {
   members: [],
+  coreTeamMembers: [],
+  trialCandidates: [],
   selectedMember: null,
   isDrawerOpen: false,
   isEditModalOpen: false,
@@ -19,6 +23,12 @@ export const coreTeamSlice = createSlice({
   name: 'coreTeam',
   initialState,
   reducers: {
+    setCoreTeamMembers: (state, action: PayloadAction<User[]>) => {
+      state.coreTeamMembers = action.payload;
+    },
+    setTrialCandidates: (state, action: PayloadAction<User[]>) => {
+      state.trialCandidates = action.payload;
+    },
     setMembers: (state, action: PayloadAction<User[]>) => {
       state.members = action.payload;
     },
@@ -46,6 +56,8 @@ export const coreTeamSlice = createSlice({
 });
 
 export const {
+  setCoreTeamMembers,
+  setTrialCandidates,
   setMembers,
   selectMember,
   openDrawer,

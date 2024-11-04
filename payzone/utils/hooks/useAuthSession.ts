@@ -12,6 +12,7 @@ import {
   setUser,
 } from "../redux/auth/auth.slice";
 import { APP_ROUTES } from "../constants/appInfo";
+import { updateWalletAddress } from "../redux/auth/auth.slice";
 interface UserData {
   data: {
     user: IUser;
@@ -168,6 +169,11 @@ export const useAuthSession = (initialize?: boolean) => {
           //console.log("userData", userData);
           if (userData.data.user) {
             dispatch(setUser(userData.data.user));
+            dispatch(
+              updateWalletAddress(
+                (userData.data.user.payData as any)?.walletAddress
+              )
+            );
             if (!path.startsWith(APP_ROUTES.dashboardHome))
               router.push(APP_ROUTES.dashboard);
           } else {

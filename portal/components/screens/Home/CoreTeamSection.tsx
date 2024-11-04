@@ -5,27 +5,42 @@ import { useEffect, useState } from "react";
 import { UserProfileDrawer } from "@/components/screens/Home/ProfileDrawer";
 import {
   selectMember,
-  setMembers,
+  setCoreTeamMembers,
+  setTrialCandidates
 } from "@/utils/redux/coreTeam/coreTeam.slice";
 import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
+import dayjs from "dayjs";
+import ToolTip from "@/components/elements/ToolTip";
+import { getBuffLevelAndTitle } from "@/utils/helpers/badges";
+interface CoreTeamSectionProps {
+  userRoles: USERROLE;
+}
 
-export const CoreTeamSection = () => {
+export const CoreTeamSection = ({ userRoles }: CoreTeamSectionProps) => {
   const dispatch = useAppDispatch();
-  const coreTeam = useAppSelector((state: RootState) => state.coreTeam.members);
+  const currentMonth = dayjs().format("MMMM");
 
+  const coreTeam = useAppSelector((state: RootState) =>
+    userRoles === USERROLE.CORETEAM
+      ? state.coreTeam.coreTeamMembers
+      : state.coreTeam.trialCandidates
+  );
   useEffect(() => {
     PortalSdk.getData(
-      "/api/user?role=" + USERROLE.CORETEAM + "&userType=" + USERTYPE.MEMBER + "&status=ACTIVE&cache=true",
+      "/api/user?role=" + userRoles  + "&userType=" + USERTYPE.MEMBER + "&status=ACTIVE&cache=true" + `&month=${currentMonth}`,
       null
     )
       .then((data) => {
-        dispatch(setMembers(data?.data?.user));
-        // console.log(coreTeam);
+        if (userRoles === USERROLE.CORETEAM) {
+          dispatch(setCoreTeamMembers(data?.data?.user));
+        } else if (userRoles === USERROLE.TRIAL_CANDIDATE) {
+          dispatch(setTrialCandidates(data?.data?.user));
+        }
       })
       .catch((err) => {
         console.log(err);
       });
-  }, [dispatch]);
+  }, [dispatch,userRoles]);
 
   const handleOpenSlideIn = (user: User) => {
     dispatch(selectMember(user));
@@ -34,37 +49,53 @@ export const CoreTeamSection = () => {
   return (
     <section className="bg-white m-4 mt-6 px-0 border-neutral-400 rounded-xl shadow-md overflow-hidden">
       <div className="flex flex-col items-stretch justify-center">
-        {coreTeam.map((user) => (
-          <div
-            key={user.id}
-            onClick={() => handleOpenSlideIn(user)}
-            className="flex flex-row gap-1 items-center justify-between px-2 py-3 cursor-pointer hover:bg-black/5 border-b border-neutral-200">
-            <div className="flex items-center gap-4">
-              <div className="rounded-full bg-neutral-400">
-                <img
-                  src={
-                    user?.avatar ||
-                    `https://via.placeholder.com/150?text=${user?.name?.charAt(0) || 'U'}`
-                  }
-                  alt={user?.name?.charAt(0) || ""}
-                  className="w-8 h-8 object-cover object-center rounded-full"
-                />
+        {coreTeam.map((user) => {
+          const badge = (user as any).buffBadge;
+          return (
+            <div
+              key={user.id}
+              onClick={() => handleOpenSlideIn(user)}
+              className="flex flex-row gap-1 items-center justify-between px-2 py-3 cursor-pointer hover:bg-black/5 border-b border-neutral-200"
+            >
+              <div className="flex items-center gap-4">
+                <div className="rounded-full bg-neutral-400">
+                  <img
+                    src={
+                      user?.avatar ||
+                      `https://via.placeholder.com/150?text=${
+                        user?.name?.charAt(0) || "U"
+                      }`
+                    }
+                    alt={user?.name?.charAt(0) || ""}
+                    className="w-8 h-8 object-cover object-center rounded-full"
+                  />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-semibold text-neutral-900 line-clamp-1">
+                    {user.name}
+                  </p>
+                </div>
               </div>
-              <div className="text-left">
-                <p className="text-sm font-semibold text-neutral-900 line-clamp-1">
-                  {user.name}
-                </p>
+              <div className="flex items-center justify-end gap-2">
+                {(user as any).buffBadge.length > 0 ? (
+                  <ToolTip title={badge[0].title} arrow={true}>
+                    <img
+                      src={getBuffLevelAndTitle(badge[0].points).src}
+                      alt={badge[0].title.charAt(0)}
+                      className="w-8 h-8 rounded-full shadow-md"
+                    />
+                  </ToolTip>
+                ) : (
+                  <span className="text-[8px] border rounded-lg p-2">
+                    {user.vertical && user.vertical?.length > 2
+                      ? user.vertical?.substring(0, 3).toUpperCase()
+                      : user.vertical}
+                  </span>
+                )}
               </div>
             </div>
-            <div className="flex items-center justify-end gap-2">
-              <span className="text-[8px] border rounded-lg p-2">
-                {user.vertical && user.vertical?.length > 2
-                  ? user.vertical?.substring(0, 3).toUpperCase()
-                  : user.vertical}
-              </span>
-            </div>
-          </div>
-        ))}
+          );
+        })}{" "}
       </div>
       <UserProfileDrawer />
     </section>

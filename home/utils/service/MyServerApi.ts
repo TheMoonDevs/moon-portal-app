@@ -2,6 +2,12 @@ import { FormInfo } from "@/components/Pages/GetStartedPage/SurveySections/_Surv
 
 const SERVER_API_URL = process.env.NEXT_PUBLIC_SERVER_API_URL; //Cors has to be enabled on the server
 
+export const PORTAL_SERVER = {
+  headerField: "tmd_portal_api_key",
+  url: SERVER_API_URL,
+  apiKey: process.env.NEXT_PUBLIC_PORTAL_API_KEY ?? "",
+};
+
 export const MyServerApi = {
   storeFormDataToDB: (form: FormInfo | undefined) => {
     if (form && Object.keys(form).length !== 0) {
@@ -10,6 +16,7 @@ export const MyServerApi = {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            //[PORTAL_SERVER.headerField] : PORTAL_SERVER.apiKey,
           },
           body: JSON.stringify(form),
         })

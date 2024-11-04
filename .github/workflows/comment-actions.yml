@@ -1,0 +1,140 @@
+name: Comment-Based Deploy Actions
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  handle_comment:
+    if: github.event_name == 'issue_comment'
+    runs-on: ubuntu-latest
+    outputs:
+      action: ${{ steps.extract.outputs.action }}
+      project: ${{ steps.extract.outputs.project }}
+      pr_number: ${{ steps.extract.outputs.pr_number }}
+      clean_flag: ${{ steps.extract.outputs.clean_flag }}
+    steps:
+      - name: Log Comment Body
+        run: |
+          echo "Comment Body: ${{ github.event.comment.body }}"
+
+      - name: Extract Action, Project, and Optional PR Number
+        id: extract
+        run: |
+          COMMENT_BODY="${{ github.event.comment.body }}"
+
+          echo "Comment Body: $COMMENT_BODY"
+
+          # Ensure that the comment matches the expected pattern exactly
+          if [[ "$COMMENT_BODY" =~ ^@bot[[:space:]]+(deploy|cleanup|delete_lock)([[:space:]]+(portal|payzone))?([[:space:]]+--clean)?([[:space:]]+#?[0-9]*)?$ ]]; then
+            echo "Comment matches the expected pattern."
+            
+            # Extract the action word following @bot
+            ACTION=$(echo "$COMMENT_BODY" | awk '{for(i=1;i<=NF;i++) if ($i ~ /^@bot/) {print $(i+1); exit}}')
+            echo "Extracted Action: $ACTION"
+            
+            # Extract the project (looks for "portal", "payzone", or defaults to "portal" if none specified)
+            PROJECT=$(echo "$COMMENT_BODY" | grep -Eo "\b(portal|payzone)\b" || echo "portal")
+            echo "Extracted Project: $PROJECT"
+            
+            # Determine if the clean flag is present (--clean)
+            if echo "$COMMENT_BODY" | grep -q "\--clean"; then
+              CLEAN_FLAG="true"
+            else
+              CLEAN_FLAG="false"
+            fi
+            echo "Clean Flag: $CLEAN_FLAG"
+            
+            # Extract PR number from the comment, or fall back to the issue number if not explicitly mentioned
+            PR_NUMBER=$(echo "$COMMENT_BODY" | grep -oE '#([0-9]+)' | cut -d'#' -f2)
+            PR_NUMBER=${PR_NUMBER:-${{ github.event.issue.number }}}
+            echo "Extracted PR Number: $PR_NUMBER"
+            
+            # Set outputs
+            echo "action=$ACTION" >> $GITHUB_OUTPUT
+            echo "project=$PROJECT" >> $GITHUB_OUTPUT
+            echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+            echo "clean_flag=$CLEAN_FLAG" >> $GITHUB_OUTPUT
+          else
+            echo "Comment did not match the expected pattern, skipping action."
+            echo "action=" >> $GITHUB_OUTPUT
+            echo "project=" >> $GITHUB_OUTPUT
+            echo "pr_number=" >> $GITHUB_OUTPUT
+            echo "clean_flag=" >> $GITHUB_OUTPUT
+          fi
+
+  deploy_preview:
+    needs: handle_comment
+    if: needs.handle_comment.outputs.action == 'deploy'
+    uses: ./.github/workflows/deploy-preview.yml
+    with:
+      pr_number: ${{ needs.handle_comment.outputs.pr_number }}
+      project: ${{ needs.handle_comment.outputs.project }}
+      clean_flag: ${{ fromJSON(needs.handle_comment.outputs.clean_flag) }}
+    secrets:
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      DROPLET_IP: ${{ secrets.DROPLET_IP }}
+
+  cleanup_deployments:
+    needs: handle_comment
+    if: needs.handle_comment.outputs.action == 'cleanup'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Cleanup Deployments
+        run: |
+          PR_NUMBER=${{ needs.handle_comment.outputs.pr_number }}
+          echo "Cleaning up deployments for PR #$PR_NUMBER"
+
+          ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} <<EOF
+            # Print the pm2 list output for debugging
+            echo "PM2 List Output:"
+            pm2 list
+                
+            # Delete portal processes
+            PORTAL_PROCESSES=$(pm2 list | grep -E "portal-${PR_NUMBER}-" | awk '{print $2}')
+            echo "Portal Processes: $PORTAL_PROCESSES"
+            if [ -n "$PORTAL_PROCESSES" ]; then
+              echo "$PORTAL_PROCESSES" | xargs -r pm2 delete
+            else
+              echo "No portal processes found for PR number ${PR_NUMBER}"
+            fi
+                
+            # Delete payzone processes
+            PAYZONE_PROCESSES=$(pm2 list | grep -E "payzone-${PR_NUMBER}-" | awk '{print $2}')
+            echo "Payzone Processes: $PAYZONE_PROCESSES"
+            if [ -n "$PAYZONE_PROCESSES" ]; then
+              echo "$PAYZONE_PROCESSES" | xargs -r pm2 delete
+            else
+              echo "No payzone processes found for PR number ${PR_NUMBER}"
+            fi
+            rm -rf /home/techteam/apps/moon-portal-app/build/portal/${PR_NUMBER}
+            rm -rf /home/techteam/apps/moon-portal-app/build/payzone/${PR_NUMBER}
+            echo "Cleaned up PR #$PR_NUMBER."
+          EOF
+
+  delete_lock:
+    needs: handle_comment
+    if: needs.handle_comment.outputs.action == 'delete_lock'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Delete Lock
+        run: |
+          ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << "EOF"
+            LOCK_FILE="/tmp/deploy/deploy-lock"
+            rm -f "$LOCK_FILE"
+            echo "Deleted lock file."
+          EOF
