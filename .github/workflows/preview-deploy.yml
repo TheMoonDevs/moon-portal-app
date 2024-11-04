@@ -68,7 +68,7 @@ jobs:
             const initialTable = `
             | Label       | Portal Status   | Payzone Status   |
             | ----------- | --------------- | ---------------- |
-            | Status      | Not Started     | Not Started      |
+            | Status      | 🚧 Building     | 🚧 Building      |
             | Build Logs  | [Build Logs](${logsUrl}) | [Build Logs](${logsUrl}) |
             | Preview URL | -               | -                |
             `;
@@ -152,7 +152,6 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            const core = require('@actions/core');
             const project = '${{ matrix.project }}';
             const comments = await github.rest.issues.listComments({
               owner: context.repo.owner,
@@ -160,7 +159,7 @@ jobs:
               issue_number: context.issue.number
             });
             const comment = comments.data.find(c => c.body.includes(`### Preview Deployment Status`));
-            const status = core.getInput('job-status') === 'failure' ? 'Build Failed' : 'Build Succeeded';
+            const status = core.getInput('job-status') === 'failure' ? '❌ Build Failed' : '✅ Build Succeeded';
 
             if (comment) {
               const logsUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
@@ -274,7 +273,6 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            const core = require('@actions/core');
             const project = '${{ matrix.project }}';
             const port = '${{ steps.calculate-port.outputs.port }}';
             const subdomain = project === 'payzone' ? 'pay' : 'portal';
@@ -287,7 +285,7 @@ jobs:
               issue_number: context.issue.number
             });
             const comment = comments.data.find(c => c.body.includes(`### Preview Deployment Status`));
-            const status = core.getInput('job-status') === 'failure' ? 'Deployment Failed' : 'Deployed Successfully';
+            const status = core.getInput('job-status') === 'failure' ? '❌ Deployment Failed' : '✅ Deployed Successfully';
 
             if (comment) {
               const logsUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
