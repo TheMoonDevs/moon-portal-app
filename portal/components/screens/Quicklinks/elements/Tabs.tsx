@@ -79,14 +79,14 @@ const QuicklinksTabs = ({
 
   return (
     <div className="space-y-3 bg-white">
-      <div className="flex items-center gap-2 max-sm:flex-col max-sm:gap-0">
-        <div className="flex items-center justify-between gap-2 max-sm:w-full">
+      <div className="flex items-center gap-2 max-md:flex-col max-sm:gap-0">
+        <div className="flex items-center justify-between gap-2 max-md:w-full">
           <input
             // ref={targetRef}
             placeholder="Search Folders..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className={`my-3 hidden w-full rounded-2xl border border-gray-700 bg-transparent p-3 placeholder-gray-500 shadow-md outline-none transition-all duration-300 focus:border-b-2 focus:border-gray-600 max-sm:block`}
+            className={`my-3 hidden w-full rounded-2xl border border-gray-700 bg-transparent p-3 placeholder-gray-500 shadow-md outline-none transition-all duration-300 focus:border-b-2 focus:border-gray-600 max-md:block`}
           />
           {isParentDir && (
             <IconButton
@@ -109,7 +109,7 @@ const QuicklinksTabs = ({
           ))}
         </AntTabs>
         <div
-          className={`flex items-center rounded-full px-1 py-2 transition-all duration-500 max-sm:hidden ${
+          className={`flex items-center rounded-full px-1 py-2 transition-all duration-500 max-md:hidden ${
             showSearchInput ? 'w-60 bg-neutral-100' : 'w-10'
           }`}
           onMouseEnter={() => setIsHovered(true)}

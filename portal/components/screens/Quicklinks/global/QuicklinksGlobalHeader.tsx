@@ -16,7 +16,7 @@ const QuicklinksGlobalHeader = () => {
   const dispatch = useAppDispatch();
   const { user } = useUser();
   const {isCollapsed, isHamburgerOpen} = useAppSelector((state) => state.quicklinksUi);
-  const isMobile = useMediaQuery(media.largeMobile)
+  const isTablet = useMediaQuery(media.tablet);
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
@@ -33,12 +33,12 @@ const QuicklinksGlobalHeader = () => {
 
   return (
     <div className="fixed top-0 z-[1] flex w-full flex-col">
-      <div className="grid h-[56px] w-full grid-cols-[1fr_1.5fr_1fr] items-center justify-between bg-white px-4 max-sm:px-2 max-sm:grid-cols-[1fr_1fr]">
+      <div className="grid h-[56px] w-full grid-cols-[1fr_1.5fr_1fr] items-center justify-between bg-white px-4 max-md:px-2 max-md:grid-cols-[1fr_1fr]">
         <h1 className="flex items-center gap-4 max-sm:gap-2">
           <span
             className="material-symbols-outlined cursor-pointer rounded-full p-2 transition-colors hover:bg-neutral-100"
             onClick={() => {
-              !isMobile
+              !isTablet
                 ? dispatch(setToggleSidebar(!isCollapsed))
                 : dispatch(setHamburgerOpen(!isHamburgerOpen));
             }}
@@ -47,7 +47,7 @@ const QuicklinksGlobalHeader = () => {
           </span>
           <span className="text-2xl font-semibold max-sm:text-xl">QUICKLINKS</span>
         </h1>
-        <div className="max-sm:hidden">
+        <div className="max-md:hidden">
           <QuicklinkSearchBar />
         </div>
         <div className="flex justify-end">
@@ -64,7 +64,7 @@ const QuicklinksGlobalHeader = () => {
             >
               Quicklink
             </Button>
-            <div onClick={handleClick} className="cursor-pointer max-sm:hidden">
+            <div onClick={handleClick} className="cursor-pointer max-md:hidden">
               {user?.avatar ? (
                 <img
                   src={user?.avatar}

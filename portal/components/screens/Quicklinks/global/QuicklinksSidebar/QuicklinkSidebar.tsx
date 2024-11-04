@@ -53,7 +53,7 @@ interface SidebarSubNavProps {
   dispatch: ReturnType<typeof useAppDispatch>;
   pathname: string | null;
   isCollapsed?: boolean;
-  isMobile?: boolean;
+  isTablet?: boolean;
 }
 
 interface ExpandedState {
@@ -125,7 +125,7 @@ const QuicklinkSidebar: FC = () => {
   const { isCollapsed, isHamburgerOpen } = useAppSelector(
     (state) => state.quicklinksUi,
   );
-  const isMobile = useMediaQuery(media.largeMobile);
+  const isTablet = useMediaQuery(media.tablet);
 
   const handleExpand = (title: string) => {
     if (isCollapsed) {
@@ -162,7 +162,7 @@ const QuicklinkSidebar: FC = () => {
               route: QUICKLINK_ROUTES.dashboard,
             }}
             isActive={pathname?.includes(QUICKLINK_ROUTES.dashboard) || false}
-            onClick={() => isMobile && dispatch(setHamburgerOpen(false))}
+            onClick={() => isTablet && dispatch(setHamburgerOpen(false))}
             isCollapsed={isCollapsed}
           />
         </Link>
@@ -202,7 +202,7 @@ const QuicklinkSidebar: FC = () => {
                     dispatch={dispatch}
                     pathname={pathname}
                     isCollapsed={isCollapsed}
-                    isMobile={isMobile}
+                    isTablet={isTablet}
                   />
                 )}
                 {nav.title === "Team Resources" && (
@@ -214,7 +214,7 @@ const QuicklinkSidebar: FC = () => {
                     dispatch={dispatch}
                     pathname={pathname}
                     isCollapsed={isCollapsed}
-                    isMobile={isMobile}
+                    isTablet={isTablet}
                   />
                 )}
               </>
@@ -232,7 +232,7 @@ const QuicklinkSidebar: FC = () => {
             items={NAV_ITEMS.you}
             pathname={pathname}
             isCollapsed={isCollapsed}
-            isMobile={isMobile}
+            isTablet={isTablet}
           />
         </div>
 
@@ -246,13 +246,13 @@ const QuicklinkSidebar: FC = () => {
             items={NAV_ITEMS.explore}
             pathname={pathname}
             isCollapsed={isCollapsed}
-            isMobile={isMobile}
+            isTablet={isTablet}
           />
         </div>
 
         {/* Bottom Navigation */}
         <nav
-          className={`${!isMobile && 'sticky bottom-0'} max-sm:mt-0 mt-6 w-full border-t bg-white py-2`}
+          className={`${!isTablet && 'sticky bottom-0'} max-sm:mt-0 mt-6 w-full border-t bg-white py-2`}
         >
           <Link href={QUICKLINK_ROUTES.archive}>
             <div
@@ -262,7 +262,7 @@ const QuicklinkSidebar: FC = () => {
                   'bg-neutral-100',
                 isCollapsed && 'justify-center',
               )}
-              onClick={() => isMobile && dispatch(setHamburgerOpen(false))}
+              onClick={() => isTablet && dispatch(setHamburgerOpen(false))}
             >
               <span className="material-symbols-outlined">inventory_2</span>
               {!isCollapsed && <span>Archive</span>}
@@ -282,7 +282,7 @@ const QuicklinkSidebar: FC = () => {
     <>
       <aside
         className={clsx(
-          'fixed left-0 top-0 h-screen flex-1 overflow-y-auto px-3 transition-all duration-300 max-sm:hidden',
+          'fixed left-0 top-0 h-screen flex-1 overflow-y-auto px-3 transition-all duration-300 max-md:hidden',
           isCollapsed ? 'w-[72px]' : 'w-[256px]',
         )}
       >
@@ -388,7 +388,7 @@ const SidebarSubNav: FC<SidebarSubNavProps> = ({
   dispatch,
   pathname,
   isCollapsed,
-  isMobile,
+  isTablet,
 }) => (
   <ul
     className={clsx(
@@ -414,7 +414,7 @@ const SidebarSubNav: FC<SidebarSubNavProps> = ({
               },
             }),
           );
-          isMobile && dispatch(setHamburgerOpen(false));
+          isTablet && dispatch(setHamburgerOpen(false));
         }}
         className="flex cursor-pointer items-center gap-2 rounded-2xl border-2 border-dotted px-3 py-2"
       >
@@ -426,7 +426,7 @@ const SidebarSubNav: FC<SidebarSubNavProps> = ({
       <Link
         href={`${route}/${dir.slug}`}
         key={dir.id}
-        onClick={() => isMobile && dispatch(setHamburgerOpen(false))}
+        onClick={() => isTablet && dispatch(setHamburgerOpen(false))}
       >
         <li
           className={clsx(
@@ -470,7 +470,7 @@ interface CollapsedSectionProps {
   items: NavItem[];
   pathname: string | null;
   isCollapsed: boolean;
-  isMobile?: boolean;
+  isTablet?: boolean;
 }
 
 const CollapsedSection: FC<CollapsedSectionProps> = ({
@@ -479,7 +479,7 @@ const CollapsedSection: FC<CollapsedSectionProps> = ({
   items,
   pathname,
   isCollapsed,
-  isMobile,
+  isTablet,
 }) => (
   <div className={clsx('cursor-pointer', isCollapsed ? 'px-3' : 'px-0')}>
     {isCollapsed ? (
@@ -491,7 +491,7 @@ const CollapsedSection: FC<CollapsedSectionProps> = ({
         title={title}
         items={items}
         pathname={pathname}
-        isMobile={isMobile}
+        isTablet={isTablet}
       />
     )}
   </div>
@@ -501,14 +501,14 @@ interface NavSectionProps {
   title?: string;
   items: NavItem[];
   pathname: string | null;
-  isMobile?: boolean;
+  isTablet?: boolean;
 }
 
 const NavSection: FC<NavSectionProps> = ({
   title,
   items,
   pathname,
-  isMobile,
+  isTablet,
 }) => {
   const dispatch = useAppDispatch();
 
@@ -520,7 +520,7 @@ const NavSection: FC<NavSectionProps> = ({
           <Link
             href={nav.route}
             key={index}
-            onClick={() => isMobile && dispatch(setHamburgerOpen(false))}
+            onClick={() => isTablet && dispatch(setHamburgerOpen(false))}
           >
             <li
               className={clsx(
