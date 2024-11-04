@@ -140,12 +140,12 @@ export const CommonQuicklinks = ({
         </div>
       ) : (
         <div className="flex gap-10">
-          <div className="mt-4 flex justify-stretch gap-6 w-[70%] max-sm:w-full">
+          <div className="mt-4 flex justify-stretch gap-6 w-[70%] max-md:w-full">
             <div className="w-full">
               <ParentDirectoryLinks loading={loading} />
             </div>
           </div>
-          <div className="my-8 w-[30%] max-sm:hidden">
+          <div className="my-8 w-[30%] max-md:hidden">
             <h1 className="text-xl font-bold">Folders</h1>
             <ListOfDirectories
               view="listView"
