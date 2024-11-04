@@ -1,29 +1,29 @@
-"use client";
+'use client';
 
-import useAsyncState from "@/utils/hooks/useAsyncState";
-import { CircularProgress } from "@mui/material";
-import Image from "next/image";
-import { User } from "@prisma/client";
-import { useAppDispatch } from "@/utils/redux/store";
-import { useRouter } from "next/navigation";
-import { useAuthSession } from "@/utils/hooks/useAuthSession";
-import { MyServerApi } from "@/utils/service/MyServerApi";
-import { setUser } from "@/utils/redux/auth/auth.slice";
-import { APP_ROUTES } from "@/utils/constants/appInfo";
+import useAsyncState from '@/utils/hooks/useAsyncState';
+import { CircularProgress } from '@mui/material';
+import Image from 'next/image';
+import { User } from '@prisma/client';
+import { useAppDispatch } from '@/utils/redux/store';
+import { useRouter } from 'next/navigation';
+import { useAuthSession } from '@/utils/hooks/useAuthSession';
+import { MyServerApi } from '@/utils/service/MyServerApi';
+import { setUser } from '@/utils/redux/auth/auth.slice';
+import { APP_ROUTES } from '@/utils/constants/appInfo';
 
 const ReferralHeroSection = () => {
   const { loading, signInReferralWithSocial, authStatus } = useAuthSession();
 
   return (
-    <section className=" mt-28 text-white">
-      <div className=" flex flex-col items-center justify-center">
+    <section className="mt-28 text-white">
+      <div className="flex flex-col items-center justify-center">
         <HeroText />
         <button
-          className="flex items-center justify-center gap-5 mt-28 mb-4 px-14 py-3 border-borderGrey border-[1px]"
+          className="mb-4 mt-28 flex items-center justify-center gap-5 border-[1px] border-borderGrey px-14 py-3"
           onClick={signInReferralWithSocial}
           disabled={loading}
         >
-          {authStatus === "authenticating" ? (
+          {authStatus === 'authenticating' ? (
             <CircularProgress size={30} color="inherit" />
           ) : (
             <Image src="/logo/google.png" alt="" width={30} height={30} />
@@ -38,9 +38,9 @@ const ReferralHeroSection = () => {
 const HeroText = () => {
   return (
     <>
-      <div className="flex flex-col text-center mb-12 gap-3">
+      <div className="mb-12 flex flex-col gap-3 text-center">
         <div className="relative">
-          <p className="hero_text font-unica text-8xl z-10 first-letter:text-[#0AFF7C]">
+          <p className="hero_text z-10 font-unica text-8xl first-letter:text-[#0AFF7C]">
             UPLIFT YOUR NETWORK
           </p>
           <Image
@@ -48,11 +48,11 @@ const HeroText = () => {
             alt=""
             width={100}
             height={100}
-            className="absolute z-0 self-end right-[-4rem] top-[-3.4rem]"
+            className="absolute right-[-4rem] top-[-3.4rem] z-0 self-end"
           />
         </div>
-        <pre className="hero_text text-3xl opacity-50 font-light tracking-[0.2em]">
-          turn your connections into cash{" "}
+        <pre className="hero_text text-3xl font-light tracking-[0.2em] opacity-50">
+          turn your connections into cash{' '}
         </pre>
       </div>
       <p className="hero_text text-md w-[55%] text-center">

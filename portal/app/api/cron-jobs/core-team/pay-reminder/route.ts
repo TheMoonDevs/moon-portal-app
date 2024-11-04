@@ -66,6 +66,9 @@ export async function GET(request: NextRequest) {
 
     for (const user of filteredUsers) {
       const { workData, name, slackId, payData } = user;
+
+      if (slackId === SlackUsers.subhakar) continue; //edge case for not sending notifications to subhakar
+
       const joiningDate = (workData as JsonObject)?.joining;
       const userDuration = getUserDuration(joiningDate as string);
       const upiId = ((payData as JsonObject)?.upiId as string) || "";

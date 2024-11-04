@@ -2,16 +2,6 @@ import { prisma } from "@/prisma/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { JsonObject } from "@prisma/client/runtime/library";
 
-interface EmailLogsData {
-  id: string; // Typically the current date in string format
-  status: "Sendable" | "Exhausted";
-  fallbackMailId?: string;
-  mailId: string;
-  mailCurrentCount: number;
-  mailMaxCount: number;
-  lastMailSentAt?: string;
-}
-
 export async function PATCH(req: NextRequest) {
   // Check if the request body is present
   if (!req.body) {
@@ -41,8 +31,8 @@ export async function PATCH(req: NextRequest) {
       });
     }
 
-    const existingData = existingConfig.configData as JsonObject;
-    const emailTracker = (existingData.emailTracker as JsonObject[]) || [];
+    const existingData = existingConfig.configData as any;
+    const emailTracker = (existingData.emailTracker) || [];
 
     let updatedEmailTracker = emailTracker.map((log: JsonObject) => {
       if (log.mailId === mailId) {
@@ -69,7 +59,7 @@ export async function PATCH(req: NextRequest) {
     });
 
     // Ensure the mailId exists in the configuration
-    if (!updatedEmailTracker.find((log) => log.mailId === mailId)) {
+    if (!updatedEmailTracker.find((log: { mailId: any; }) => log.mailId === mailId)) {
       return new NextResponse(JSON.stringify({ error: "Mail ID not found" }), {
         status: 404,
         headers: { "Content-Type": "application/json" },

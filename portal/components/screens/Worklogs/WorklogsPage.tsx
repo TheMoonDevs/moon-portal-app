@@ -4,16 +4,9 @@ import { MdxAppEditor } from "@/utils/configure/MdxAppEditor";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
 import { useUser } from "@/utils/hooks/useUser";
 import { PortalSdk } from "@/utils/services/PortalSdk";
-import { DocMarkdown, WorkLogs } from "@prisma/client";
+import { WorkLogs } from "@prisma/client";
 import Link from "next/link";
-import React, {
-  RefObject,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  createRef,
-} from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import store, { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import dayjs from "dayjs";
 import { WorkLogsHelper } from "./WorklogsHelper";
@@ -31,7 +24,10 @@ import {
   setIncompleteTodos,
   setTodoMarkdown,
 } from "@/utils/redux/worklogs/laterTodos.slice";
+import WorklogBuff from "./WorklogTabs/WorklogBuff";
 import ClickupTasks from "./WorklogTabs/ClickupTasks";
+import { PrivateWorklogView } from "./PrivateWorklogView";
+import { usePassphrase } from "@/utils/hooks/usePassphrase";
 const tempData = [
   {
     id: "idsdjneslnfrnleskdnelrnv",
@@ -135,6 +131,7 @@ export const WorkLogItem = ({
                 <div className="text-sm font-light">
                   <MdxAppEditor
                     key={point?.id}
+                    editorKey={point?.id}
                     markdown={point?.content}
                     readOnly={true}
                     contentEditableClassName="mdx_ce_min leading-0 imp-p-0 grow w-full h-full line-clamp-4"
@@ -161,6 +158,7 @@ export const WorkLogItem = ({
 };
 
 export const WorklogsPage = () => {
+  const { localPassphrase } = usePassphrase();
   const { user } = useUser();
 
   const thisYear = dayjs().year();
@@ -389,6 +387,7 @@ export const WorklogsPage = () => {
 
         <div className="flex flex-row-reverse max-lg:flex-col w-full">
           <div className="hidden md:block p-3 invisible md:visible w-[40%] max-lg:w-full max-h-[80vh] overflow-y-scroll">
+            <WorklogBuff filteredLogs={filteredLogs} monthTab={monthTab}/>
             <SimpleTabs tabs={tabs} />
           </div>
           <div className="hidden md:block p-2 invisible md:visible w-[50%] max-lg:w-full rounded-lg border border-neutral-200 m-3  max-h-[80vh] overflow-y-scroll">
@@ -411,6 +410,10 @@ export const WorklogsPage = () => {
               monthTab={monthTab}
               setMonthTab={setMonthTab}
               handleNextMonthClick={handleNextMonthClick}
+            />
+            <PrivateWorklogView
+              date={centerdate.format("YYYY-MM-DD")}
+              logType={"privateWorklogs"}
             />
           </div>
           <div className="grid grid-cols-2 lg:w-[30%] gap-3 p-2 max-lg:grid-cols-4 max-md:grid-cols-2 max-h-[80vh] overflow-y-scroll m-3">
