@@ -66,33 +66,32 @@ jobs:
             const logsUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
 
             const initialTable = `
-            | Project | Status        | Build Logs                | Preview URL   |
-            | ------- | ------------- | ------------------------- | ------------- |
-            | portal  | Not Started   | [Build Logs](${logsUrl})  | -             |
-            | payzone | Not Started   | [Build Logs](${logsUrl})  | -             |
+            | Label       | Portal Status   | Payzone Status   |
+            | ----------- | --------------- | ---------------- |
+            | Status      | Not Started     | Not Started      |
+            | Build Logs  | [Build Logs](${logsUrl}) | [Build Logs](${logsUrl}) |
+            | Preview URL | -               | -                |
             `;
 
-            projects.forEach(async (project) => {
-              let existingComment = comments.data.find(comment => 
-                comment.body.includes(`### ${project.toUpperCase()} Preview`)
-              );
+            let existingComment = comments.data.find(comment => 
+              comment.body.includes(`### Preview Deployment Status`)
+            );
 
-              if (!existingComment) {
-                await github.rest.issues.createComment({
-                  issue_number: prNumber,
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  body: `### ${project.toUpperCase()} Preview\n${initialTable}`
-                });
-              } else {
-                await github.rest.issues.updateComment({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  comment_id: existingComment.id,
-                  body: `### ${project.toUpperCase()} Preview\n${initialTable}`
-                });
-              }
-            });
+            if (!existingComment) {
+              await github.rest.issues.createComment({
+                issue_number: prNumber,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `### Preview Deployment Status\n${initialTable}`
+              });
+            } else {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body: `### Preview Deployment Status\n${initialTable}`
+              });
+            }
 
   build_and_deploy:
     needs: determine_project
@@ -102,22 +101,6 @@ jobs:
       matrix:
         project: ${{ fromJson(needs.determine_project.outputs.projects) }}
     steps:
-      - name: Create initial deployment comment
-        uses: actions/github-script@v6
-        id: deployment-comment
-        with:
-          script: |
-            const prNumber = '${{ github.event.pull_request.number }}';
-            const comment = await github.rest.issues.createComment({
-              issue_number: parseInt(prNumber),
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `## 🚀 Deploying ${{ matrix.project }} Preview
-              ⏳ Build and deployment in progress...
-              [View build logs](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`
-            });
-            return comment.data.id;
-
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -169,29 +152,32 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
+            const core = require('@actions/core');
             const project = '${{ matrix.project }}';
             const comments = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number
             });
-            const comment = comments.data.find(c => c.body.includes(`### ${project.toUpperCase()} Preview`));
-            const status = failure() ? 'Build Failed' : 'Build Succeeded';
+            const comment = comments.data.find(c => c.body.includes(`### Preview Deployment Status`));
+            const status = core.getInput('job-status') === 'failure' ? 'Build Failed' : 'Build Succeeded';
 
             if (comment) {
               const logsUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
               
-              const updatedTable = `
-              | Project | Status         | Build Logs                  | Preview URL   |
-              | ------- | -------------- | --------------------------- | ------------- |
-              | ${project}  | ${status}  | [Build Logs](${logsUrl})   | -             |
-              `;
+              const updatedTable = comment.body.replace(
+                new RegExp(`\\| ${project.charAt(0).toUpperCase() + project.slice(1)} Status\\s+\\| [^|]+\\|`),
+                `| ${project.charAt(0).toUpperCase() + project.slice(1)} Status | ${status} |`
+              ).replace(
+                new RegExp(`\\| ${project.charAt(0).toUpperCase() + project.slice(1)} Build Logs\\s+\\| [^|]+\\|`),
+                `| ${project.charAt(0).toUpperCase() + project.slice(1)} Build Logs | [Build Logs](${logsUrl}) |`
+              );
 
               await github.rest.issues.updateComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 comment_id: comment.id,
-                body: `### ${project.toUpperCase()} Preview\n${updatedTable}`
+                body: updatedTable
               });
             }
 
@@ -288,6 +274,7 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
+            const core = require('@actions/core');
             const project = '${{ matrix.project }}';
             const port = '${{ steps.calculate-port.outputs.port }}';
             const subdomain = project === 'payzone' ? 'pay' : 'portal';
@@ -299,23 +286,25 @@ jobs:
               repo: context.repo.repo,
               issue_number: context.issue.number
             });
-            const comment = comments.data.find(c => c.body.includes(`### ${project.toUpperCase()} Preview`));
-            const status = failure() ? 'Deployment Failed' : 'Deployed Successfully';
+            const comment = comments.data.find(c => c.body.includes(`### Preview Deployment Status`));
+            const status = core.getInput('job-status') === 'failure' ? 'Deployment Failed' : 'Deployed Successfully';
 
             if (comment) {
               const logsUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
               
-              const updatedTable = `
-              | Project | Status         | Build Logs                  | Preview URL                  |
-              | ------- | -------------- | --------------------------- | ---------------------------- |
-              | ${project}  | ${status}  | [Build Logs](${logsUrl})   | [Preview URL](${previewUrl}) |
-              `;
+              const updatedTable = comment.body.replace(
+                new RegExp(`\\| ${project.charAt(0).toUpperCase() + project.slice(1)} Status\\s+\\| [^|]+\\|`),
+                `| ${project.charAt(0).toUpperCase() + project.slice(1)} Status | ${status} |`
+              ).replace(
+                new RegExp(`\\| ${project.charAt(0).toUpperCase() + project.slice(1)} Preview URL\\s+\\| [^|]+\\|`),
+                `| ${project.charAt(0).toUpperCase() + project.slice(1)} Preview URL | [Preview URL](${previewUrl}) |`
+              );
 
               await github.rest.issues.updateComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 comment_id: comment.id,
-                body: `### ${project.toUpperCase()} Preview\n${updatedTable}`
+                body: updatedTable
               });
             }
 
