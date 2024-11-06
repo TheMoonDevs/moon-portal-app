@@ -1,10 +1,10 @@
 'use client'
 import React from "react";
 import Image from "next/image";
-import { Link } from "react-transition-progress/next";
 import { WorklifeFooterStyled } from "./WorklifeFooter.styles";
 import { usePathname } from "next/navigation";
 import { APP_ROUTES } from "@/utils/constants/AppInfo";
+import { Link } from "@/components/App/Global/react-transition-progress/CustomLink";
 export const WorklifeFooter = () => {
   const path = usePathname();
   return (

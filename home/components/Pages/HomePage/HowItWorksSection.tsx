@@ -3,9 +3,9 @@ import Image from "next/image";
 import { HowItWorksSectionStyled } from "./HowItWorksSection.styles";
 import { SectionWithGrids } from "./SectionWithGrids";
 import theme from "@/styles/theme";
-import { Link } from "react-transition-progress/next";
 import { FirebaseEvents, FirebaseSDK } from "@/utils/service/firebase";
 import { APP_INFO } from "@/utils/constants/AppInfo";
+import { Link } from "@/components/App/Global/react-transition-progress/CustomLink";
 
 const howItWorksPoints = [
   {
