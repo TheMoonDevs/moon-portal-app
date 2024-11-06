@@ -534,3 +534,46 @@ model Subscription {
   userId    String  @db.ObjectId  @unique
   subscriptions PUSHNOTIFICATION[]
 }
+
+
+//-------------------------------------DEV PROFILES-------------------------------------------
+
+
+type WORKEXPERIENCE {
+  company String
+  position String
+  startDate String
+  endDate String
+  technologies String[]
+  description String
+}
+
+type PROJECTS {
+  name String
+  link String
+  startDate String
+  endDate String
+  technologies String[]
+  description String
+}
+
+model DevProfile {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String  @db.ObjectId  @unique
+  firstName String
+  lastName String
+  email String @unique
+  avatar String
+  bio String
+  address String
+  city String
+  state String
+  country String
+  profession String
+  availability String
+  expertise String[]
+  workExperience WORKEXPERIENCE[]
+  projects PROJECTS[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
