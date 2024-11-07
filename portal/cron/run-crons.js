@@ -16,6 +16,13 @@ const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
 const now = dayjs();
 const lastInterval = dayjs().subtract(30, 'minute');
 
+// Check if the current time is at 0 or 30 minutes
+const currentMinutes = now.minute();
+if (currentMinutes !== 0 && currentMinutes !== 30) {
+  console.log(`${new Date()}: Script is not running because the current time is not at 0 or 30 minutes.`);
+  process.exit(0);
+}
+
 async function runCronJobs() {
   for (const job of config.crons) {
     try {
