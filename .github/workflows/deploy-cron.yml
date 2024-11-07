@@ -26,18 +26,11 @@ jobs:
             git checkout main
             git pull origin main || { echo "ERROR: Failed to pull latest changes." >&2; git stash pop || true; rm -f "$LOCK_FILE"; exit 1; }
 
-            # Restart the PM2 process for the project
-            if pm2 list | grep -q cron-runner ; then
-              pm2 restart cron-runner || {
-                echo "ERROR: Failed to restart PM2 process. Cleaning up..." >&2
-                exit 1
-              }
-            else
-              pm2 start run-crons.js --name "cron-runner" --cron "0,30 * * * *" || {
-                echo "ERROR: Failed to start PM2 process. Cleaning up..." >&2
-                exit 1
-              }
-            fi
+            # Start or restart the PM2 process using the ecosystem config
+            pm2 startOrReload ecosystem.config.js || {
+              echo "ERROR: Failed to start/reload PM2 process." >&2
+              exit 1
+            }
 
             # Apply stashed changes back
             git stash pop || echo "No stashed changes to pop."
