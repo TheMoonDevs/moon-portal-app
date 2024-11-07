@@ -19,6 +19,8 @@ import {
   setRootDirList,
 } from '@/utils/redux/quicklinks/slices/quicklinks.directory.slice';
 import clsx from 'clsx';
+import { useMediaQuery } from '@mui/material';
+import media from '@/styles/media';
 
 // BAD PATTERN OF SLUG IS USED, WE CANT CHANGE IT BECAUSE IT IS USED IN THE MULTIPLE COMPONENTS
 const ROOT_DIRECTORIES: Omit<DirectoryList, 'timestamp'>[] = [
@@ -72,6 +74,7 @@ export const QuicklinksLayout = ({
 }) => {
   const store = useStore();
   const initialize = useRef(false);
+  const isTablet = useMediaQuery(media.tablet);
 
   if (!initialize.current) {
     store.dispatch(setParentDirsList(response.parentDirs));
@@ -89,7 +92,7 @@ export const QuicklinksLayout = ({
         <QuicklinkSidebar />
         <div
           className={clsx(
-            'transition-width relative ml-auto px-6 duration-300 max-md:w-full max-md:px-2',
+            `transition-width relative ml-auto px-4 duration-300 ${isTablet && 'w-full'} max-sm:px-4`,
             isCollapsed ? 'w-[calc(100%-75px)]' : 'w-[calc(100%-256px)]',
           )}
         >

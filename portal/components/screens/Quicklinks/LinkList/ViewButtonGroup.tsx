@@ -2,9 +2,12 @@
 import { setCurrentView } from "@/utils/redux/quicklinks/slices/quicklinks.ui.slice";
 import { VIEW } from "./LinkList";
 import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
+import { useMediaQuery } from "@mui/material";
+import media from "@/styles/media";
 
 export const ViewButtonGroup = () => {
   const dispatch = useAppDispatch();
+  const isMobile = useMediaQuery(media.largeMobile);
 
   const { currentView } = useAppSelector((state) => state.quicklinksUi);
 
@@ -31,6 +34,7 @@ export const ViewButtonGroup = () => {
                 ? "text-neutral-200 bg-neutral-900"
                 : "text-neutral-800 bg-white hover:bg-neutral-200"
             }`}
+            style={{fontSize: isMobile ? '20px' : undefined}}
             key={item.icon}
             onClick={() => dispatch(setCurrentView(item.viewName))}
           >
