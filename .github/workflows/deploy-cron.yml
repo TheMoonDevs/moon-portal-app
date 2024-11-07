@@ -16,15 +16,10 @@ jobs:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
           log-public-key: false
 
-      - name: Use Node.js 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
       - name: Deploy and Restart PM2 Cron Jobs
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} << "EOF"
-            cd apps/moon-portal-app/portal
+            cd /home/${{ secrets.DROPLET_USER }}/apps/moon-portal-app/portal
 
             # Stash any local changes, including untracked files, before pulling the latest changes
             git stash --include-untracked || git reset --hard || true
@@ -33,8 +28,11 @@ jobs:
             git checkout main
             git pull origin main || { echo "ERROR: Failed to pull latest changes." >&2; git stash pop || true; exit 1; }
 
+            # Ensure Node.js is installed
+            node --version || { echo "ERROR: Node.js is not installed." >&2; exit 1; }
+
             # Start or restart the PM2 process using the ecosystem config
-            pm2 startOrReload ecosystem.config.js || {
+            pm2 startOrReload /home/${{ secrets.DROPLET_USER }}/apps/moon-portal-app/portal/ecosystem.config.js || {
               echo "ERROR: Failed to start/reload PM2 process." >&2
               exit 1
             }
