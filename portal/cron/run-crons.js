@@ -42,12 +42,12 @@ async function runCronJobs() {
         // Execute the job by sending a fetch request to its URL
         const response = await fetch(job.url);
         const result = await response.json();
-        console.log(`${new Date()}: Job ${job.name} completed successfully:`, result);
+        console.log(`${new Date()}: Job "${job.name}" completed successfully:`, result);
       } else {
-        console.log(`${new Date()}: Skipping job ${job.name}, not due this interval.`);
+        console.log(`${new Date()}: Skipping job "${job.name}", not due this interval.`);
       }
     } catch (error) {
-      console.error(`${new Date()}: Failed to run job ${job.name}:`, error.message);
+      console.error(`${new Date()}: Failed to run job "${job.name}":`, error.message);
     }
   }
 }
