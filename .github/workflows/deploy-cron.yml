@@ -19,6 +19,8 @@ jobs:
       - name: Deploy and Restart PM2 Cron Jobs
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} << "EOF"
+            source ~/.nvm/nvm.sh
+            nvm use 20  # Explicitly set Node version to 20
             cd /home/${{ secrets.DROPLET_USER }}/apps/moon-portal-app/portal
 
             # Stash any local changes, including untracked files, before pulling the latest changes
