@@ -84,8 +84,8 @@ jobs:
             # Change to the project directory
             cd apps/moon-portal-app/${{ matrix.project }}
 
-            # Stash any local changes before pulling the latest changes
-            git stash || git reset --hard || true
+            # Stash any local changes, including untracked files, before pulling the latest changes
+            git stash --include-untracked || git reset --hard || true
 
             # Pull the latest changes
             git checkout main
