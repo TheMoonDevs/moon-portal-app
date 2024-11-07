@@ -10,9 +10,10 @@ import ListOfDirectories from "../../DirectoryList";
 import { setActiveDirectoryId } from "@/utils/redux/quicklinks/slices/quicklinks.directory.slice";
 import Image from "next/image";
 import useFetchQuicklinksByDir from "../../hooks/useFetchQuicklinksByDir";
-import { CircularProgress } from "@mui/material";
+import { CircularProgress, useMediaQuery } from "@mui/material";
 import { ReusableFolderDrawer } from "../User/UserTopUsed/UserTopUsedLinks";
 import { setIsParentDirectoryFoldersOpen } from "@/utils/redux/quicklinks/slices/quicklinks.ui.slice";
+import media from "@/styles/media";
 // import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
 // import { useSearchParams } from "next/navigation";
 // import { useEffect } from "react";
@@ -108,6 +109,7 @@ export const CommonQuicklinks = ({
   const { loading } = useFetchQuicklinksByDir({ isRootDirectory: true });
   const { isParentDirectoryFoldersOpen } = useAppSelector((state) => state.quicklinksUi)
   const dispatch = useAppDispatch();
+  const isTablet = useMediaQuery(media.tablet);
 
   if (loading)
     return (
@@ -140,12 +142,12 @@ export const CommonQuicklinks = ({
         </div>
       ) : (
         <div className="flex gap-10">
-          <div className="mt-4 flex justify-stretch gap-6 w-[70%] max-md:w-full">
+          <div className={`mt-4 flex justify-stretch gap-6 w-[70%] ${isTablet && 'w-full'}`}>
             <div className="w-full">
               <ParentDirectoryLinks loading={loading} />
             </div>
           </div>
-          <div className="my-8 w-[30%] max-md:hidden">
+          <div className={`my-8 w-[30%] ${isTablet && 'hidden'}`}>
             <h1 className="text-xl font-bold">Folders</h1>
             <ListOfDirectories
               view="listView"

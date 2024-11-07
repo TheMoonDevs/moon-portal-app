@@ -79,7 +79,7 @@ export default function LinkList({
             className={cn(
               'py-4',
               currentView === VIEW.thumbnail &&
-                'flex flex-wrap items-center gap-4 max-md:justify-center',
+                'flex flex-wrap items-center gap-4',
               currentView === VIEW.group &&
                 'grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-4',
             )}

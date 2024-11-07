@@ -11,9 +11,11 @@ import { ViewButtonGroup } from "../../../LinkList/ViewButtonGroup";
 
 import { setTopUsedDirectoryList } from "@/utils/redux/quicklinks/slices/quicklinks.directory.slice";
 import TopLinksFromDirectory from "./TopLinksFromDirectory";
-import { Box, CircularProgress, Drawer, IconButton } from "@mui/material";
+import { Box, CircularProgress, Drawer, IconButton, useMediaQuery } from "@mui/material";
 import QuicklinkSearchBar from "../../../global/QuicklinkSearchBar";
 import FolderSection from "../../Dashboard/FolderSection";
+import media from "@/styles/media";
+import { setIsFolderSectionOpen } from "@/utils/redux/quicklinks/slices/quicklinks.ui.slice";
 
 const UserTopUsedLinks = ({ withTitle }: { withTitle?: boolean }) => {
   const dispatch = useDispatch();
@@ -22,7 +24,11 @@ const UserTopUsedLinks = ({ withTitle }: { withTitle?: boolean }) => {
   const { topUsedDirectoryList } = useAppSelector(
     (state) => state.quicklinksDirectory
   );
-  const [isFolderSectionOpen, setIsFolderSectionOpen] = useState(false);
+  const isFolderSectionOpen = useAppSelector(
+    (state) => state.quicklinksUi.isFolderSectionOpen
+  );
+  // const [isFolderSectionOpen, setIsFolderSectionOpen] = useState(false);
+  const isTablet = useMediaQuery(media.tablet);
 
   useEffect(() => {
     if (!user) return;
@@ -57,11 +63,11 @@ const UserTopUsedLinks = ({ withTitle }: { withTitle?: boolean }) => {
   
   return (
     <>
-      <div className="hidden items-center justify-between gap-2 px-1 py-2 max-md:flex">
+      <div className={`${isTablet ? 'flex items-center justify-between gap-2 px-1 py-2' : 'hidden' }`}>
         <QuicklinkSearchBar />
         <IconButton
           onClick={() => {
-            setIsFolderSectionOpen(!isFolderSectionOpen);
+            dispatch(setIsFolderSectionOpen(!isFolderSectionOpen))
           }}
         >
           <span className="material-symbols-outlined">folder</span>
@@ -70,11 +76,11 @@ const UserTopUsedLinks = ({ withTitle }: { withTitle?: boolean }) => {
       <div>
         <div className="flex items-center justify-between">
           {withTitle && (
-            <h1 className="flex items-center gap-4 py-[10px] text-xl font-bold max-sm:text-lg">
+            <h1 className="flex items-center gap-4 py-[10px] text-xl font-bold max-sm:text-lg max-sm:gap-3">
               <span className="material-symbols-outlined rounded-full border border-neutral-200 p-2">
                 link
               </span>{' '}
-              <span className="flex items-center gap-4 text-2xl font-bold">
+              <span className="flex items-center gap-4 text-2xl font-bold max-sm:text-xl">
                 Your Top Used Links
               </span>
             </h1>
@@ -100,7 +106,7 @@ const UserTopUsedLinks = ({ withTitle }: { withTitle?: boolean }) => {
       <FoldersDrawer
         foldersOpen={isFolderSectionOpen}
         handleClose={() => {
-          setIsFolderSectionOpen(false);
+          dispatch(setIsFolderSectionOpen(false))
         }}
       />
     </>
@@ -149,17 +155,10 @@ export const ReusableFolderDrawer = ({
           overflowX: 'hidden',
           overflowY: 'scroll',
           px: 1,
+          py: 3
         }}
         role="presentation"
       >
-        <IconButton onClick={handleClose} className="!pb-4">
-          <span
-            className="material-symbols-outlined"
-            style={{ fontSize: '20px' }}
-          >
-            arrow_forward_ios
-          </span>
-        </IconButton>
         {children}
       </Box>
     </Drawer>

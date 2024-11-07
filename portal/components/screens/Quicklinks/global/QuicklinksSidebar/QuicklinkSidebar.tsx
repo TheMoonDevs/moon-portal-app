@@ -257,7 +257,7 @@ const QuicklinkSidebar: FC = () => {
           <Link href={QUICKLINK_ROUTES.archive}>
             <div
               className={clsx(
-                'flex items-center gap-4 rounded-2xl px-3 py-2  hover:bg-neutral-100',
+                'flex items-center gap-4 rounded-2xl px-3 py-2  hover:bg-neutral-100 text-sm',
                 pathname?.includes(QUICKLINK_ROUTES.archive) &&
                   'bg-neutral-100',
                 isCollapsed && 'justify-center',
@@ -282,7 +282,7 @@ const QuicklinkSidebar: FC = () => {
     <>
       <aside
         className={clsx(
-          'fixed left-0 top-0 h-screen flex-1 overflow-y-auto px-3 transition-all duration-300 max-md:hidden',
+          `fixed left-0 top-0 h-screen flex-1 overflow-y-auto px-3 transition-all duration-300 ${isTablet && 'hidden'}`,
           isCollapsed ? 'w-[72px]' : 'w-[256px]',
         )}
       >
@@ -363,13 +363,13 @@ const SidebarNavItem: FC<SidebarNavItemProps> = ({
   >
     <div
       className={clsx(
-        'flex items-center rounded-3xl px-3 py-2 hover:bg-neutral-100',
+        'flex items-center rounded-3xl px-3 py-2 hover:bg-neutral-100 text-sm',
         isActive && 'bg-neutral-100',
         isCollapsed ? 'w-11 justify-center' : 'w-full justify-between',
       )}
       onClick={onClick}
     >
-      <div className={clsx('flex gap-4', isCollapsed && 'gap-0')}>
+      <div className={clsx('flex gap-4 items-center', isCollapsed && 'gap-0')}>
         <span className="material-symbols-outlined">{nav.icon}</span>
         {!isCollapsed && <span>{nav.title}</span>}
       </div>
@@ -524,7 +524,7 @@ const NavSection: FC<NavSectionProps> = ({
           >
             <li
               className={clsx(
-                'flex items-center gap-4 rounded-2xl px-3 py-2 hover:bg-neutral-100',
+                'flex items-center gap-4 rounded-2xl px-3 py-2 hover:bg-neutral-100 !text-sm',
                 pathname?.includes(nav.route) && 'bg-neutral-100',
               )}
             >
