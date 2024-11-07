@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  deploy:
+  deploy-cron:
     runs-on: ubuntu-latest
 
     steps:
@@ -19,12 +19,13 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} << "EOF"
             cd apps/moon-portal-app/portal
-            # Stash any local changes before pulling the latest changes
-            git stash || git reset --hard || true
+
+            # Stash any local changes, including untracked files, before pulling the latest changes
+            git stash --include-untracked || git reset --hard || true
 
             # Pull the latest changes
             git checkout main
-            git pull origin main || { echo "ERROR: Failed to pull latest changes." >&2; git stash pop || true; rm -f "$LOCK_FILE"; exit 1; }
+            git pull origin main || { echo "ERROR: Failed to pull latest changes." >&2; git stash pop || true; exit 1; }
 
             # Start or restart the PM2 process using the ecosystem config
             pm2 startOrReload ecosystem.config.js || {
