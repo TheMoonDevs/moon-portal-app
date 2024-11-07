@@ -1,4 +1,5 @@
 const fs = require('fs');
+const path = require('path');
 const cronParser = require('cron-parser');
 const dayjs = require('dayjs');
 const isSameOrBefore = require('dayjs/plugin/isSameOrBefore');
@@ -8,7 +9,8 @@ dayjs.extend(isSameOrBefore);
 dayjs.extend(isSameOrAfter);
 
 // Load cron configuration
-const config = JSON.parse(fs.readFileSync('cron-config.json', 'utf-8'));
+const configPath = path.join(__dirname, 'cron-config.json');
+const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
 
 // Calculate the previous 30-minute interval
 const now = dayjs();
@@ -23,22 +25,22 @@ async function runCronJobs() {
       // Get the most recent execution time before or equal to `now`
       const prevExecutionTime = dayjs(interval.prev().toDate());
 
-      console.log(`Checking job: ${job.name}`);
+      console.log(`${new Date()}: Checking job: ${job.name}`);
       // console.log(`Previous Execution Time: ${prevExecutionTime.format()}, Interval Start: ${lastInterval.format()}, Now: ${now.format()}`);
 
       // Check if the previous execution time is within the last 30-minute interval
       if (prevExecutionTime.isSameOrAfter(lastInterval) && prevExecutionTime.isSameOrBefore(now)) {
-        console.log(`Executing job: ${job.name} at ${prevExecutionTime.format()}`);
+        console.log(`${new Date()}: Executing job: "${job.name}" Scheduled at ${prevExecutionTime.format()}`);
         
         // Execute the job by sending a fetch request to its URL
         const response = await fetch(job.url);
         const result = await response.json();
-        console.log(`Job ${job.name} completed successfully:`, result);
+        console.log(`${new Date()}: Job ${job.name} completed successfully:`, result);
       } else {
-        console.log(`Skipping job ${job.name}, not due this interval.`);
+        console.log(`${new Date()}: Skipping job ${job.name}, not due this interval.`);
       }
     } catch (error) {
-      console.error(`Failed to run job ${job.name}:`, error.message);
+      console.error(`${new Date()}: Failed to run job ${job.name}:`, error.message);
     }
   }
 }
