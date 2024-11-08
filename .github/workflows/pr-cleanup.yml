@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Cancel Preview Deployment Workflow
-        uses: styfle/cancel-workflow-action
+        uses: styfle/cancel-workflow-action@0.9.1
         with:
           ignore_sha: true
           workflow_id: Preview Deployment
