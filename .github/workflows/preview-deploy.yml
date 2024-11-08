@@ -160,7 +160,7 @@ jobs:
               repo: context.repo.repo,
               issue_number: context.issue.number
             });
-            const comment = comments.data.find(c => c.body.includes(`### Preview Deployment Status`));
+            const comment = comments.data.find(c => c.body.includes(`<!-- PREVIEW_DEPLOYMENT_STATUS -->`));
             const status = core.getInput('job-status') === 'failure' ? '❌ Build Failed' : '✅ Build Succeeded';
 
             if (comment) {
@@ -289,7 +289,7 @@ jobs:
               repo: context.repo.repo,
               issue_number: context.issue.number
             });
-            const comment = comments.data.find(c => c.body.includes(`### Preview Deployment Status`));
+            const comment = comments.data.find(c => c.body.includes(`<!-- PREVIEW_DEPLOYMENT_STATUS -->`));
             const status = core.getInput('job-status') === 'failure' ? '❌ Deployment Failed' : '✅ Deployed Successfully';
 
             if (comment) {
