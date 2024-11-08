@@ -95,7 +95,7 @@ jobs:
               });
             }
 
-  build_and_deploy:
+  build_and_sync:
     needs: determine_project
     if: needs.determine_project.outputs.projects != 'null' && needs.determine_project.outputs.projects != '[]'
     runs-on: ubuntu-latest
@@ -115,11 +115,9 @@ jobs:
           PORT=$((PORT_RANGE_START + (PR_NUMBER + PROJECT_OFFSET) % PORT_RANGE))
           echo "port=$PORT" >> $GITHUB_OUTPUT
 
-      # Create build environment file with GitHub secrets
       - name: Setup build environment
         run: |
           mkdir -p ./${{ matrix.project }}
-
           cat << EOF > ./${{ matrix.project }}/.env.build
           DATABASE_URL=${{ secrets.PREVIEW_DATABASE_URL }}
           GIAM_CLIENT_EMAIL=${{ secrets.PREVIEW_GIAM_CLIENT_EMAIL }}
@@ -149,6 +147,30 @@ jobs:
           SLACK_OAUTH_TOKEN: ${{ secrets.SLACK_OAUTH_TOKEN }}
         run: npm run build
 
+      - name: Prepare deployment files
+        if: success()
+        run: |
+          shopt -s dotglob
+          mkdir -p build/${{ matrix.project }}/${{ github.event.pull_request.number }}/.next/static
+          mkdir -p build/${{ matrix.project }}/${{ github.event.pull_request.number }}/public
+          cp -r ./${{ matrix.project }}/.next/standalone/* build/${{ matrix.project }}/${{ github.event.pull_request.number }}
+          cp -r ./${{ matrix.project }}/.next/static/* build/${{ matrix.project }}/${{ github.event.pull_request.number }}/.next/static
+          cp -r ./${{ matrix.project }}/public/* build/${{ matrix.project }}/${{ github.event.pull_request.number }}/public
+
+      - name: Upload using rsync
+        uses: burnett01/rsync-deployments@7.0.1
+        with:
+          switches: "-av --delete --partial --bwlimit=5000"
+          path: "build/${{ matrix.project }}/${{ github.event.pull_request.number }}/" 
+          remote_path: "/home/techteam/apps/builds/${{ matrix.project }}/preview/${{ github.event.pull_request.number }}" 
+          remote_host: ${{ secrets.DROPLET_IP }}
+          remote_user: ${{ secrets.DROPLET_USER }}
+          remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+  update_comment_after_build:
+    needs: build_and_sync
+    runs-on: ubuntu-latest
+    steps:
       - name: Update Build Status in Comment
         if: success() || failure()
         uses: actions/github-script@v6
@@ -198,27 +220,13 @@ jobs:
               labels: ['build-failed']
             });
 
-      - name: Prepare deployment files
-        if: success()
-        run: |
-          # Enable dotglob to include hidden files in wildcard matches
-          shopt -s dotglob
-          mkdir -p build/${{ matrix.project }}/${{ github.event.pull_request.number }}/.next/static
-          mkdir -p build/${{ matrix.project }}/${{ github.event.pull_request.number }}/public
-          cp -r ./${{ matrix.project }}/.next/standalone/* build/${{ matrix.project }}/${{ github.event.pull_request.number }}
-          cp -r ./${{ matrix.project }}/.next/static/* build/${{ matrix.project }}/${{ github.event.pull_request.number }}/.next/static
-          cp -r ./${{ matrix.project }}/public/* build/${{ matrix.project }}/${{ github.event.pull_request.number }}/public
-
-      - name: Upload using rsync
-        uses: burnett01/rsync-deployments@7.0.1
-        with:
-          switches: "-av --delete --partial --bwlimit=5000"
-          path: "build/${{ matrix.project }}/${{ github.event.pull_request.number }}/" # Local path to upload
-          remote_path: "/home/techteam/apps/builds/${{ matrix.project }}/preview/${{ github.event.pull_request.number }}" # Remote destination path
-          remote_host: ${{ secrets.DROPLET_IP }}
-          remote_user: ${{ secrets.DROPLET_USER }}
-          remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
-
+  deploy:
+    needs: update_comment_after_build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        project: ${{ fromJson(needs.determine_project.outputs.projects) }}
+    steps:
       - name: Set up SSH (secured)
         uses: webfactory/ssh-agent@v0.9.0
         with:
@@ -228,7 +236,7 @@ jobs:
       - name: Deploy on DigitalOcean
         if: success()
         id: deploy
-        continue-on-error: true # Allow other projects to continue if one fails
+        continue-on-error: true
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} << 'ENDSSH'
 
@@ -254,7 +262,6 @@ jobs:
               exit 1
             fi
             
-            # PM2 process management
             if pm2 list | grep -q "${PROJECT}-${PR_NUMBER}"; then
               pm2 restart "${PROJECT}-${PR_NUMBER}" --update-env
             else
@@ -273,8 +280,8 @@ jobs:
             echo "Successfully deployed ${PROJECT} preview for PR #${PR_NUMBER}"
           ENDSSH
 
-  update_comment:
-    needs: build_and_deploy
+  update_comment_after_deploy:
+    needs: deploy
     runs-on: ubuntu-latest
     steps:
       - name: Update comment with preview URL
@@ -314,7 +321,6 @@ jobs:
             });
 
             try {
-              // Remove any related labels first
               const existingLabels = ["portal-build-failed","payzone-build-failed", "portal-deploy-failed", "payzone-deploy-failed", "portal-deployed", "payzone-deployed"];
               await Promise.all(existingLabels.map(async label => {
                 try {
@@ -324,12 +330,9 @@ jobs:
                     issue_number: context.issue.number,
                     name: label
                   });
-                } catch (e) {
-                  // Label might not exist, ignore errors here
-                }
+                } catch (e) {}
               }));
 
-              // Add deployed label based on the project
               for (const project of projects) {
                 const deployedLabel = `deployed-${project}`;
                 await github.rest.issues.addLabels({
