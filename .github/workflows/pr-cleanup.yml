@@ -16,10 +16,11 @@ jobs:
   cleanup_on_pr_close:
     runs-on: ubuntu-latest
     steps:
-      - name: Use Node.js 20
-        uses: actions/setup-node@v4
+      - name: Cancel Preview Deployment Workflow
+        uses: styfle/cancel-workflow-action@0.9.1
         with:
-          node-version: "20"
+          workflow_id: Preview Deployment
+          access_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up SSH (secured)
         uses: webfactory/ssh-agent@v0.9.0
