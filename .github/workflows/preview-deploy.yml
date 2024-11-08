@@ -69,7 +69,7 @@ jobs:
             | Label       | Portal Status   | Payzone Status   |
             | ----------- | --------------- | ---------------- |
             | Status      | 🚧 Building     | 🚧 Building      |
-            | Build Logs  | [Build Logs](${logsUrl}) | [Build Logs](${logsUrl}) |
+            | Logs        | [View Logs](${logsUrl}) | [View Logs](${logsUrl}) |
             | Preview URL | -               | -                |
             `;
 
@@ -170,8 +170,8 @@ jobs:
                 new RegExp(`\\| ${project.charAt(0).toUpperCase() + project.slice(1)} Status\\s+\\| [^|]+\\|`),
                 `| ${project.charAt(0).toUpperCase() + project.slice(1)} Status | ${status} |`
               ).replace(
-                new RegExp(`\\| ${project.charAt(0).toUpperCase() + project.slice(1)} Build Logs\\s+\\| [^|]+\\|`),
-                `| ${project.charAt(0).toUpperCase() + project.slice(1)} Build Logs | [Build Logs](${logsUrl}) |`
+                new RegExp(`\\| ${project.charAt(0).toUpperCase() + project.slice(1)} Logs\\s+\\| [^|]+\\|`),
+                `| ${project.charAt(0).toUpperCase() + project.slice(1)} Logs | [View Logs](${logsUrl}) |`
               );
 
               await github.rest.issues.updateComment({
@@ -273,43 +273,45 @@ jobs:
             echo "Successfully deployed ${PROJECT} preview for PR #${PR_NUMBER}"
           ENDSSH
 
+  update_comment:
+    needs: build_and_deploy
+    runs-on: ubuntu-latest
+    steps:
       - name: Update comment with preview URL
-        if: success() || failure()
         uses: actions/github-script@v6
         with:
           script: |
-            const project = '${{ matrix.project }}';
-            const port = '${{ steps.calculate-port.outputs.port }}';
-            const subdomain = project === 'payzone' ? 'pay' : 'portal';
+            const projects = ${{ fromJson(needs.determine_project.outputs.projects) }};
             const prNumber = '${{ github.event.pull_request.number }}';
-            const previewUrl = `https://preview-${prNumber}-${port}.${subdomain}.themoondevs.com`;
-
             const comments = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number
             });
             const comment = comments.data.find(c => c.body.includes(`<!-- PREVIEW_DEPLOYMENT_STATUS -->`));
-            const status = core.getInput('job-status') === 'failure' ? '❌ Deployment Failed' : '✅ Deployed Successfully';
+            let updatedTable = comment.body;
 
-            if (comment) {
-              const logsUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-              
-              const updatedTable = comment.body.replace(
+            for (const project of projects) {
+              const port = '${{ steps.calculate-port.outputs.port }}';
+              const subdomain = project === 'payzone' ? 'pay' : 'portal';
+              const previewUrl = `https://preview-${prNumber}-${port}.${subdomain}.themoondevs.com`;
+              const status = core.getInput('job-status') === 'failure' ? '❌ Deployment Failed' : '✅ Deployed Successfully';
+
+              updatedTable = updatedTable.replace(
                 new RegExp(`\\| ${project.charAt(0).toUpperCase() + project.slice(1)} Status\\s+\\| [^|]+\\|`),
                 `| ${project.charAt(0).toUpperCase() + project.slice(1)} Status | ${status} |`
               ).replace(
                 new RegExp(`\\| ${project.charAt(0).toUpperCase() + project.slice(1)} Preview URL\\s+\\| [^|]+\\|`),
                 `| ${project.charAt(0).toUpperCase() + project.slice(1)} Preview URL | [Preview URL](${previewUrl}) |`
               );
-
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: comment.id,
-                body: updatedTable
-              });
             }
+
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: comment.id,
+              body: updatedTable
+            });
 
             try {
               // Remove any related labels first
@@ -328,13 +330,15 @@ jobs:
               }));
 
               // Add deployed label based on the project
-              const deployedLabel = `deployed-${project}`;
-              await github.rest.issues.addLabels({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                labels: [deployedLabel]
-              });
+              for (const project of projects) {
+                const deployedLabel = `deployed-${project}`;
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  labels: [deployedLabel]
+                });
+              }
             } catch (e) {
               core.warning(`Failed to update labels: ${e.message}`);
             }
