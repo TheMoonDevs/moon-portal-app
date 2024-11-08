@@ -256,6 +256,8 @@ jobs:
             });
             const uniqueIdentifier = project === 'portal' ? '<!-- PORTAL_PREVIEW_STATUS -->' : '<!-- PAYZONE_PREVIEW_STATUS -->';
             const existingComment = comments.data.find(comment => comment.body.includes(uniqueIdentifier));
+            const logsUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            
             if (existingComment) {
               const updatedTable = `
               | Label | ${project.charAt(0).toUpperCase() + project.slice(1)} Status |
