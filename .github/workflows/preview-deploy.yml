@@ -47,9 +47,9 @@ jobs:
           fi
           echo "Changed projects: ${projects[@]}"
           echo "projects=$(jq -c -n --argjson projects "$(printf '%s\n' "${projects[@]}" | jq -R . | jq -s .)" '$projects')" >> $GITHUB_OUTPUT
-      - name: Debug Changed Projects Output
+      - name: Output Projects for Debugging
         run: |
-          echo "Projects output: ${{ steps.set-projects.outputs.projects }}"
+          echo "Raw Projects JSON: ${{ steps.set-projects.outputs.projects }}"
 
       - name: Create or Update Initial Status Comments
         uses: actions/github-script@v6
@@ -57,42 +57,39 @@ jobs:
         with:
           script: |
             const prNumber = context.issue.number;
-            const projects = ["portal", "payzone"];
-            const comments = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: prNumber
-            });
+            const projects = ${{ fromJson(steps.set-projects.outputs.projects) }};
             const logsUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
 
-            const initialTable = `
-            | Label       | Portal Status   | Payzone Status   |
-            | ----------- | --------------- | ---------------- |
-            | Status      | 🚧 Building     | 🚧 Building      |
-            | Logs        | [View Logs](${logsUrl}) | [View Logs](${logsUrl}) |
-            | Preview URL | -               | -                |
+            const initialTable = (project) => `
+            | Label       | ${project.charAt(0).toUpperCase() + project.slice(1)} Status   |
+            | ----------- | ------------------ |
+            | Status      | 🚧 Building        |
+            | Logs        | [View Logs](${logsUrl}) |
+            | Preview URL | -                  |
             `;
 
-            const uniqueIdentifier = `<!-- PREVIEW_DEPLOYMENT_STATUS -->`;
+            for (const project of projects) {
+              const uniqueIdentifier = `<!-- ${project.toUpperCase()}_DEPLOYMENT_STATUS -->`;
 
-            let existingComment = comments.data.find(comment =>
-              comment.body.includes(uniqueIdentifier)
-            );
+              let existingComment = comments.data.find(comment =>
+                comment.body.includes(uniqueIdentifier)
+              );
 
-            if (!existingComment) {
-              await github.rest.issues.createComment({
-                issue_number: prNumber,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: `${uniqueIdentifier}\n### Preview Deployment Status\n${initialTable}`
-              });
-            } else {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existingComment.id,
-                body: `${uniqueIdentifier}\n### Preview Deployment Status\n${initialTable}`
-              });
+              if (!existingComment) {
+                await github.rest.issues.createComment({
+                  issue_number: prNumber,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: `${uniqueIdentifier}\n### ${project.charAt(0).toUpperCase() + project.slice(1)} Deployment Status\n${initialTable(project)}`
+                });
+              } else {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: existingComment.id,
+                  body: `${uniqueIdentifier}\n### ${project.charAt(0).toUpperCase() + project.slice(1)} Deployment Status\n${initialTable(project)}`
+                });
+              }
             }
 
   build_and_sync:
@@ -102,18 +99,12 @@ jobs:
     strategy:
       matrix:
         project: ${{ fromJson(needs.determine_project.outputs.projects) }}
+    outputs:
+      project: ${{ steps.set-project.outputs.project }}
+      status: ${{ job.status }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Calculate preview port
-        id: calculate-port
-        run: |
-          PR_NUMBER=${{ github.event.pull_request.number }}
-          PROJECT_OFFSET=$([ "${{ matrix.project }}" = "portal" ] && echo 0 || echo 500)
-          PORT_RANGE=$((PORT_RANGE_END - PORT_RANGE_START))
-          PORT=$((PORT_RANGE_START + (PR_NUMBER + PROJECT_OFFSET) % PORT_RANGE))
-          echo "port=$PORT" >> $GITHUB_OUTPUT
 
       - name: Setup build environment
         run: |
@@ -161,11 +152,16 @@ jobs:
         uses: burnett01/rsync-deployments@7.0.1
         with:
           switches: "-av --delete --partial --bwlimit=5000"
-          path: "build/${{ matrix.project }}/${{ github.event.pull_request.number }}/" 
-          remote_path: "/home/techteam/apps/builds/${{ matrix.project }}/preview/${{ github.event.pull_request.number }}" 
+          path: "build/${{ matrix.project }}/${{ github.event.pull_request.number }}/"
+          remote_path: "/home/techteam/apps/builds/${{ matrix.project }}/preview/${{ github.event.pull_request.number }}"
           remote_host: ${{ secrets.DROPLET_IP }}
           remote_user: ${{ secrets.DROPLET_USER }}
           remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
+    
+      - name: output project
+        id: set-project
+        run: |
+          echo "Project: ${{ matrix.project }}" >> $GITHUB_OUTPUT
 
   update_comment_after_build:
     needs: build_and_sync
@@ -176,18 +172,16 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            const project = '${{ matrix.project }}';
-            const comments = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number
-            });
-            const comment = comments.data.find(c => c.body.includes(`<!-- PREVIEW_DEPLOYMENT_STATUS -->`));
-            const status = core.getInput('job-status') === 'failure' ? '❌ Build Failed' : '✅ Build Succeeded';
+            const project = '${{ fromJson(needs.build_and_sync.outputs.project) }}';
+            const uniqueIdentifier = `<!-- ${project.toUpperCase()}_DEPLOYMENT_STATUS -->`;
+            const status = ${{ fromJson(needs.build_and_sync.outputs.status) }} === 'failure' ? '❌ Build Failed' : '✅ Build Succeeded';
+            const logsUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+
+            const comment = comments.data.find(comment =>
+              comment.body.includes(uniqueIdentifier)
+            );
 
             if (comment) {
-              const logsUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-              
               const updatedTable = comment.body.replace(
                 new RegExp(`\\| ${project.charAt(0).toUpperCase() + project.slice(1)} Status\\s+\\| [^|]+\\|`),
                 `| ${project.charAt(0).toUpperCase() + project.slice(1)} Status | ${status} |`
@@ -204,34 +198,29 @@ jobs:
               });
             }
 
-            try {
-              await github.rest.issues.removeLabel({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                name: 'preview-deployed'
-              });
-            } catch (e) {}
-
-            await github.rest.issues.addLabels({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              labels: ['build-failed']
-            });
-
   deploy:
-    needs: update_comment_after_build
+    needs: [update_comment_after_build, determine_project]
     runs-on: ubuntu-latest
     strategy:
       matrix:
         project: ${{ fromJson(needs.determine_project.outputs.projects) }}
+    outputs:
+      port: ${{ steps.calculate-port.outputs.port }}
     steps:
       - name: Set up SSH (secured)
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
           log-public-key: false
+
+      - name: Calculate preview port
+        id: calculate-port
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          PROJECT_OFFSET=$([ "${{ matrix.project }}" = "portal" ] && echo 0 || echo 500)
+          PORT_RANGE=$((PORT_RANGE_END - PORT_RANGE_START))
+          PORT=$((PORT_RANGE_START + (PR_NUMBER + PROJECT_OFFSET) % PORT_RANGE))
+          echo "port=$PORT" >> $GITHUB_OUTPUT
 
       - name: Deploy on DigitalOcean
         if: success()
@@ -281,7 +270,7 @@ jobs:
           ENDSSH
 
   update_comment_after_deploy:
-    needs: deploy
+    needs: [determine_project, deploy]
     runs-on: ubuntu-latest
     steps:
       - name: Update comment with preview URL
@@ -290,60 +279,34 @@ jobs:
           script: |
             const projects = ${{ fromJson(needs.determine_project.outputs.projects) }};
             const prNumber = '${{ github.event.pull_request.number }}';
-            const comments = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number
-            });
-            const comment = comments.data.find(c => c.body.includes(`<!-- PREVIEW_DEPLOYMENT_STATUS -->`));
-            let updatedTable = comment.body;
 
             for (const project of projects) {
-              const port = '${{ steps.calculate-port.outputs.port }}';
-              const subdomain = project === 'payzone' ? 'pay' : 'portal';
-              const previewUrl = `https://preview-${prNumber}-${port}.${subdomain}.themoondevs.com`;
-              const status = core.getInput('job-status') === 'failure' ? '❌ Deployment Failed' : '✅ Deployed Successfully';
-
-              updatedTable = updatedTable.replace(
-                new RegExp(`\\| ${project.charAt(0).toUpperCase() + project.slice(1)} Status\\s+\\| [^|]+\\|`),
-                `| ${project.charAt(0).toUpperCase() + project.slice(1)} Status | ${status} |`
-              ).replace(
-                new RegExp(`\\| ${project.charAt(0).toUpperCase() + project.slice(1)} Preview URL\\s+\\| [^|]+\\|`),
-                `| ${project.charAt(0).toUpperCase() + project.slice(1)} Preview URL | [Preview URL](${previewUrl}) |`
+              const uniqueIdentifier = `<!-- ${project.toUpperCase()}_DEPLOYMENT_STATUS -->`;
+              const comment = comments.data.find(comment =>
+                comment.body.includes(uniqueIdentifier)
               );
-            }
+                const port = '${{ needs.deploy.outputs.port }}';
+              if (comment) {
+                const port = '${{ needs.deploy.outputs.port }}';
+                const subdomain = project === 'payzone' ? 'pay' : 'portal';
+                const previewUrl = `https://preview-${prNumber}-${port}.${subdomain}.themoondevs.com`;
+                const status = core.getInput('job-status') === 'failure' ? '❌ Deployment Failed' : '✅ Deployed Successfully`;
 
-            await github.rest.issues.updateComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              comment_id: comment.id,
-              body: updatedTable
-            });
+                const updatedTable = comment.body.replace(
+                  new RegExp(`\\| ${project.charAt(0).toUpperCase() + project.slice(1)} Status\\s+\\| [^|]+\\|`),
+                  `| ${project.charAt(0).toUpperCase() + project.slice(1)} Status | ${status} |`
+                ).replace(
+                  new RegExp(`\\| ${project.charAt(0).toUpperCase() + project.slice(1)} Preview URL\\s+\\| [^|]+\\|`),
+                  `| ${project.charAt(0).toUpperCase() + project.slice(1)} Preview URL | [Preview URL](${previewUrl}) |`
+                );
 
-            try {
-              const existingLabels = ["portal-build-failed","payzone-build-failed", "portal-deploy-failed", "payzone-deploy-failed", "portal-deployed", "payzone-deployed"];
-              await Promise.all(existingLabels.map(async label => {
-                try {
-                  await github.rest.issues.removeLabel({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    issue_number: context.issue.number,
-                    name: label
-                  });
-                } catch (e) {}
-              }));
-
-              for (const project of projects) {
-                const deployedLabel = `deployed-${project}`;
-                await github.rest.issues.addLabels({
+                await github.rest.issues.updateComment({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
-                  issue_number: context.issue.number,
-                  labels: [deployedLabel]
+                  comment_id: comment.id,
+                  body: updatedTable
                 });
               }
-            } catch (e) {
-              core.warning(`Failed to update labels: ${e.message}`);
             }
 
   cleanup_on_pr_close:
