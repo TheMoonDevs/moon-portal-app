@@ -11,7 +11,6 @@ env:
   PORT_RANGE_END: 9000
 
 jobs:
-
   determine_project:
     if: github.event_name == 'pull_request' && github.event.action != 'closed'
     runs-on: ubuntu-latest
@@ -98,10 +97,11 @@ jobs:
             });
             const logsUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const initialTable = `
-            | Label       | ${project.charAt(0).toUpperCase() + project.slice(1)} Status   |
-            | ----------- | ------------------- |
-            | Status      | 🚧 Building         |
-            | Logs        | [View Logs](${logsUrl}) |
+            | Label | ${project.charAt(0).toUpperCase() + project.slice(1)} Status |
+            | ----- | ------------------- |
+            | Status| 🚧 Building         |
+            | Logs  | [View Logs](${logsUrl}) |
+            | Preview URL | - |
             `;
             const uniqueIdentifier = project === 'portal' ? '<!-- PORTAL_PREVIEW_STATUS -->' : '<!-- PAYZONE_PREVIEW_STATUS -->';
             let existingComment = comments.data.find(comment =>
@@ -151,16 +151,20 @@ jobs:
             const logsUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const status = core.getInput('job-status') === 'failure' ? '❌ Build Failed' : '✅ Build Succeeded';
 
+            const updatedTable = `
+              | Label | ${project.charAt(0).toUpperCase() + project.slice(1)} Status |
+              | ----- | ------------------- |
+              | Status| ${status}          |
+              | Logs  | [View Logs](${logsUrl}) |
+              | Preview URL | - |
+              `;
+
             if (existingComment) {
-              const updatedTable = existingComment.body.replace(
-                new RegExp(`\\| ${project.charAt(0).toUpperCase() + project.slice(1)} Status\\s+\\| [^|]+\\|`),
-                `| ${project.charAt(0).toUpperCase() + project.slice(1)} Status | ${status} |`
-              );
               await github.rest.issues.updateComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 comment_id: existingComment.id,
-                body: updatedTable
+                body: `${uniqueIdentifier}\n### ${project.charAt(0).toUpperCase() + project.slice(1)} Preview Deployment Status\n${updatedTable}`
               });
             }
 
@@ -253,15 +257,18 @@ jobs:
             const uniqueIdentifier = project === 'portal' ? '<!-- PORTAL_PREVIEW_STATUS -->' : '<!-- PAYZONE_PREVIEW_STATUS -->';
             const existingComment = comments.data.find(comment => comment.body.includes(uniqueIdentifier));
             if (existingComment) {
-              const updatedTable = existingComment.body.replace(
-                new RegExp(`\\| ${project.charAt(0).toUpperCase() + project.slice(1)} Preview URL\\s+\\| [^|]+\\|`),
-                `| ${project.charAt(0).toUpperCase() + project.slice(1)} Preview URL | [Preview URL](${previewUrl}) |`
-              );
+              const updatedTable = `
+              | Label | ${project.charAt(0).toUpperCase() + project.slice(1)} Status |
+              | ----- | ------------------- |
+              | Status| ✅ Build Succeeded  |
+              | Logs  | [View Logs](${logsUrl}) |
+              | Preview URL | [Preview URL](${previewUrl}) |
+              `;
               await github.rest.issues.updateComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 comment_id: existingComment.id,
-                body: updatedTable
+                body: `${uniqueIdentifier}\n### ${project.charAt(0).toUpperCase() + project.slice(1)} Preview Deployment Status\n${updatedTable}`
               });
             }
             try {
