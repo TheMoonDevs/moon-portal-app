@@ -79,31 +79,32 @@ jobs:
           cp -r ./${{ matrix.project }}/.next/static/* build/${{ matrix.project }}/main/.next/static
           cp -r ./${{ matrix.project }}/public/* build/${{ matrix.project }}/main/public
 
-      - name: Archive deployment files
-        run: |
-          tar -czf prod_${{ matrix.project }}.tar.gz -C build/${{ matrix.project }} main
-          if [ ! -f prod_${{ matrix.project }}.tar.gz ]; then
-            echo "Error: TAR file not created."
-            exit 1
-          fi
-
-      - name: Upload to DigitalOcean
-        uses: appleboy/scp-action@v0.1.6
+      - name: Upload using rsync
+        uses: burnett01/rsync-deployments@7.0.1
         with:
-          host: ${{ secrets.DROPLET_IP }}
-          username: ${{ secrets.DROPLET_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "prod_${{ matrix.project }}.tar.gz"
-          target: "/tmp/"
-        continue-on-error: true
+          switches: "-av --delete --partial --bwlimit=5000"
+          path: "build/${{ matrix.project }}/main/" # Local path to upload
+          remote_path: "/home/${{ secrets.DROPLET_USER }}/apps/builds/${{ matrix.project }}/prod/main-copy" # Remote destination path
+          remote_host: ${{ secrets.DROPLET_IP }}
+          remote_user: ${{ secrets.DROPLET_USER }}
+          remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Set up SSH (secured)
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          log-public-key: false
 
       - name: Deploy on DigitalOcean
+        if: success()
+        id: deploy
+        continue-on-error: true # Allow other projects to continue if one fails
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} << "EOF"
+          ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} << 'ENDSSH'
+            source ~/.nvm/nvm.sh
+            nvm use 20  # Explicitly set Node version to 20
             PROJECT="${{ matrix.project }}"
-            PROJECT_DIR="apps/builds/$PROJECT/prod"
-            MAIN_DIR="$PROJECT_DIR/main"
-            BACKUP_DIR="$PROJECT_DIR/main-backup"
+
             PORT=0
 
             # Determine the port for the project
@@ -113,51 +114,42 @@ jobs:
               PORT=3002
             fi
 
-            # Create required directories and backup the current main directory
-            mkdir -p "$PROJECT_DIR"
+            PROJECT_DIR="/home/${{ secrets.DROPLET_USER }}/apps/builds/$PROJECT/prod"
+            MAIN_DIR="$PROJECT_DIR/main"
+            MAIN_COPY_DIR="$PROJECT_DIR/main-copy"
+            BACKUP_DIR="$PROJECT_DIR/main-backup"
+
+            cd "$PROJECT_DIR"
+
             if [ -d "$MAIN_DIR" ]; then
               rm -rf "$BACKUP_DIR"
               mv "$MAIN_DIR" "$BACKUP_DIR"
             fi
-
-            # Unpack the deployment files to the new main directory
-            mkdir -p "$MAIN_DIR"
-            cd ~/apps/builds/${PROJECT}/prod
-            TAR_FILE="/tmp/prod_${PROJECT}.tar.gz"
-            if [ ! -f "$TAR_FILE" ]; then
-            echo "Error: TAR file not found at $TAR_FILE"
-            exit 1
-            fi
-            tar xzf "$TAR_FILE"
-            if [ $? -ne 0 ]; then
-            echo "Error extracting TAR file"
-            exit 1
-            fi
-            
-            cd main
-            
-            # Copy .env.prod from secure location and set permissions
-            if [ -f "~/apps/moon-portal-app/$PROJECT/.env.prod" ]; then
-              cp "~/apps/moon-portal-app/$PROJECT/.env.prod" ".env"
+            mv "$MAIN_COPY_DIR" "$MAIN_DIR"
+            if [ -f /home/${{ secrets.DROPLET_USER }}/apps/moon-portal-app/$PROJECT/.env.prod ]; then
+              cp /home/${{ secrets.DROPLET_USER }}/apps/moon-portal-app/$PROJECT/.env.prod "$MAIN_DIR/.env"
               echo "PORT=$PORT" >> "$MAIN_DIR/.env"
               chmod 600 "$MAIN_DIR/.env"
             else
               echo "Error: .env.prod file not found for $PROJECT"
+              rm -rf "$MAIN_DIR"
+              mv "$BACKUP_DIR" "$MAIN_DIR"
               exit 1
             fi
-
-            # Clean up the uploaded tarball
-            rm -f /tmp/prod_${PROJECT}.tar.gz
-
-            # Restart the project with PM2 or start if not already running
             if pm2 list | grep -q "${PROJECT}-main"; then
               pm2 restart "${PROJECT}-main" --update-env
             else
-              pm2 start node --name "${PROJECT}-main" -- "server.js"
+              pm2 start npm --name "${PROJECT}-main" -- run start:prod
             fi
-
-            echo "Deployment completed for project: $PROJECT on port $PORT"
-          EOF
+            if ! pm2 show "${PROJECT}-main" > /dev/null 2>&1; then
+              echo "Failed to start/restart PM2 process for ${PROJECT}"
+              rm -rf "$MAIN_DIR"
+              mv "$BACKUP_DIR" "$MAIN_DIR"
+              pm2 restart "${PROJECT}-main" --update-env
+              exit 1
+            fi
+            echo "Successfully deployed ${PROJECT} on port $PORT"
+          ENDSSH
 
       - name: Set domain output
         id: set-domain
