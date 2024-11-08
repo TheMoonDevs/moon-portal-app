@@ -25,14 +25,23 @@ jobs:
           git fetch --prune
           git fetch origin +refs/heads/*:refs/remotes/origin/*
           changed_files=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }})
+          project_paths=("portal" "payzone" "home")
           projects=()
+          home_changed=false
+          if echo "$changed_files" | grep -q "^home/"; then
+            home_changed=true
+          fi
           if echo "$changed_files" | grep -q "^portal/"; then
             projects+=("portal")
           fi
           if echo "$changed_files" | grep -q "^payzone/"; then
             projects+=("payzone")
           fi
-          echo "projects=$(printf '%s\n' "${projects[@]}" | jq -R . | jq -s .)" >> $GITHUB_OUTPUT
+          if ! $home_changed && [ ${#projects[@]} -eq 0 ] && echo "$changed_files" | grep -vq "^portal/" && echo "$changed_files" | grep -vq "^payzone/" && echo "$changed_files" | grep -vq "^home/"; then
+            projects=("portal" "payzone")
+          fi
+          echo "Changed projects: ${projects[@]}"
+          echo "projects=$(jq -c -n --argjson projects "$(printf '%s\n' "${projects[@]}" | jq -R . | jq -s .)" '$projects')" >> $GITHUB_OUTPUT
 
       - name: Debug Changed Projects Output
         run: |
