@@ -96,12 +96,26 @@ jobs:
               issue_number: prNumber
             });
             const logsUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-            const initialTable = `
-            | Status| 🚧 Building         |
-            | ----- | ------------------- |
-            | Logs  | [View Logs](${logsUrl}) |
-            | Preview URL | - |
-            `;
+
+            // Add building label
+            try {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                labels: [`building-${project}`]
+              });
+            } catch (e) {
+              console.error('Failed to add building label:', e);
+            }
+
+            const initialStatus = [
+              '| Status | 🚧 Building |',
+              '| ------ | ----------- |',
+              `| Logs | [View Logs](${logsUrl}) |`,
+              '| Preview URL | - |'
+            ].join('\n');
+
             const uniqueIdentifier = project === 'portal' ? '<!-- PORTAL_PREVIEW_STATUS -->' : '<!-- PAYZONE_PREVIEW_STATUS -->';
             let existingComment = comments.data.find(comment =>
               comment.body.includes(uniqueIdentifier)
@@ -111,14 +125,14 @@ jobs:
                 issue_number: prNumber,
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                body: `${uniqueIdentifier}\n### ${project.charAt(0).toUpperCase() + project.slice(1)} Preview Deployment Status\n${initialTable}`
+                body: `${uniqueIdentifier}\n### ${project.charAt(0).toUpperCase() + project.slice(1)} Preview Deployment Status\n\n${initialStatus}`
               });
             } else {
               await github.rest.issues.updateComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 comment_id: existingComment.id,
-                body: `${uniqueIdentifier}\n### ${project.charAt(0).toUpperCase() + project.slice(1)} Preview Deployment Status\n${initialTable}`
+                body: `${uniqueIdentifier}\n### ${project.charAt(0).toUpperCase() + project.slice(1)} Preview Deployment Status\n\n${initialStatus}`
               });
             }
 
@@ -146,10 +160,9 @@ jobs:
               issue_number: context.issue.number
             });
 
-            // Handle labels first
-            try {
+            // Handle labels
               // Remove existing build status labels
-              const labelsToRemove = [`${project}-build-failed`, `${project}-preview-deployed`];
+              const labelsToRemove = [`building-${project}`, `${project}-build-failed`, `${project}-preview-deployed`];
               for (const label of labelsToRemove) {
                 try {
                   await github.rest.issues.removeLabel({
@@ -175,25 +188,25 @@ jobs:
               console.error('Failed to update labels:', e);
             }
 
-            // Update comment
+            // Update comment with proper table formatting
             const uniqueIdentifier = project === 'portal' ? '<!-- PORTAL_PREVIEW_STATUS -->' : '<!-- PAYZONE_PREVIEW_STATUS -->';
             const existingComment = comments.data.find(comment => comment.body.includes(uniqueIdentifier));
             const logsUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const status = buildFailed ? '❌ Build Failed' : '✅ Build Succeeded';
 
-            const updatedTable = `
-            | Status| ${status}          |
-            | ----- | ------------------- |
-            | Logs  | [View Logs](${logsUrl}) |
-            | Preview URL | - |
-            `;
+            const updatedStatus = [
+              '| Status | ' + status + ' |',
+              '| ------ | ----------- |',
+              `| Logs | [View Logs](${logsUrl}) |`,
+              '| Preview URL | - |'
+            ].join('\n');
 
             if (existingComment) {
               await github.rest.issues.updateComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 comment_id: existingComment.id,
-                body: `${uniqueIdentifier}\n### ${project.charAt(0).toUpperCase() + project.slice(1)} Preview Deployment Status\n${updatedTable}`
+                body: `${uniqueIdentifier}\n### ${project.charAt(0).toUpperCase() + project.slice(1)} Preview Deployment Status\n\n${updatedStatus}`
               });
             }
 
@@ -249,20 +262,15 @@ jobs:
               exit 1
             fi
             
-            # PM2 process management
             if pm2 list | grep -q "${PROJECT}-${PR_NUMBER}"; then
               pm2 restart "${PROJECT}-${PR_NUMBER}" --update-env
             else
               pm2 start npm --name "${PROJECT}-${PR_NUMBER}" -- run start:prod
             fi
             
-            # Verify deployment and handle errors
+            # Verify deployment
             if ! pm2 show "${PROJECT}-${PR_NUMBER}" > /dev/null 2>&1; then
               echo "Failed to start/restart PM2 process for ${PROJECT}"
-              # Update status to deployment failed
-              ssh -T ${{ secrets.GITHUB_TOKEN }} << 'ENDSSH2'
-                gh issue edit ${context.issue.number} --label-remove "${PROJECT}-deployed" --label-add "${PROJECT}-deploy-failed"
-              ENDSSH2
               exit 1
             fi
             echo "Successfully deployed ${PROJECT} preview for PR #${PR_NUMBER}"
@@ -284,7 +292,8 @@ jobs:
               const labelsToRemove = [
                 `${project}-build-failed`,
                 `${project}-deploy-failed`,
-                `${project}-preview-deployed`
+                `${project}-preview-deployed`,
+                `building-${project}`
               ];
               
               // Remove existing labels
@@ -321,20 +330,20 @@ jobs:
               const logsUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
               
               if (existingComment) {
-                const updatedTable = `
-                | Status| ✅ Preview Deployed  |
-                | ----- | ------------------- |
-                | Logs  | [View Logs](${logsUrl}) |
-                | Preview URL | [Preview URL](${previewUrl}) |
-                `;
+                const updatedStatus = [
+                  '| Status | ✅ Preview Deployed |',
+                  '| ------ | ----------------- |',
+                  `| Logs | [View Logs](${logsUrl}) |`,
+                  `| Preview URL | [Preview URL](${previewUrl}) |`
+                ].join('\n');
+
                 await github.rest.issues.updateComment({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   comment_id: existingComment.id,
-                  body: `${uniqueIdentifier}\n### ${project.charAt(0).toUpperCase() + project.slice(1)} Preview Deployment Status\n${updatedTable}`
+                  body: `${uniqueIdentifier}\n### ${project.charAt(0).toUpperCase() + project.slice(1)} Preview Deployment Status\n\n${updatedStatus}`
                 });
               }
-    
             } catch (e) {
               console.error('Failed to update deployment status:', e);
               core.setFailed(`Failed to update deployment status: ${e.message}`);
