@@ -1,3 +1,5 @@
+name: Preview Deployment
+
 on:
   pull_request:
     types: [opened, synchronize, reopened, closed]
@@ -10,14 +12,16 @@ env:
   PORT_RANGE_START: 8000
   PORT_RANGE_END: 9000
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   determine_project:
     if: github.event_name == 'pull_request' && github.event.action != 'closed'
     runs-on: ubuntu-latest
     outputs:
-      portal_changed: ${{ steps.set-projects.outputs.portal_changed }}
-      payzone_changed: ${{ steps.set-projects.outputs.payzone_changed }}
-
+      projects: ${{ steps.set-projects.outputs.projects }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -29,25 +33,36 @@ jobs:
         run: |
           git fetch --prune
           git fetch origin +refs/heads/*:refs/remotes/origin/*
-          changed_files=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }})
-          portal_changed=false
-          payzone_changed=false
+          changed_files=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }})
+          project_paths=("portal" "payzone" "home")
+          projects=()
+          home_changed=false
+          if echo "$changed_files" | grep -q "^home/"; then
+            home_changed=true
+          fi
           if echo "$changed_files" | grep -q "^portal/"; then
-            portal_changed=true
+            projects+=("portal")
           fi
           if echo "$changed_files" | grep -q "^payzone/"; then
-            payzone_changed=true
+            projects+=("payzone")
           fi
-          echo "portal_changed=$portal_changed" >> $GITHUB_OUTPUT
-          echo "payzone_changed=$payzone_changed" >> $GITHUB_OUTPUT
+          if ! $home_changed && [ ${#projects[@]} -eq 0 ] && echo "$changed_files" | grep -vq "^portal/" && echo "$changed_files" | grep -vq "^payzone/" && echo "$changed_files" | grep -vq "^home/"; then
+            projects=("portal" "payzone")
+          fi
+          echo "Changed projects: ${projects[@]}"
+          echo "projects=$(jq -c -n --argjson projects "$(printf '%s\n' "${projects[@]}" | jq -R . | jq -s .)" '$projects')" >> $GITHUB_OUTPUT
+
+      - name: Debug Changed Projects Output
+        run: |
+          echo "Projects output: ${{ steps.set-projects.outputs.projects }}"
 
   build_and_deploy:
     needs: determine_project
-    if: needs.determine_project.outputs.portal_changed == 'true' || needs.determine_project.outputs.payzone_changed == 'true'
+    if: needs.determine_project.outputs.projects != 'null' && needs.determine_project.outputs.projects != '[]'
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        project: [portal, payzone]
+        project: ${{ fromJson(needs.determine_project.outputs.projects) }}
 
     steps:
       - name: Checkout repository
@@ -81,9 +96,10 @@ jobs:
       - name: Install dependencies
         working-directory: ./${{ matrix.project }}
         run: npm i
-        continue-on-error: false
+        continue-on-error: true # Allow other projects to continue if one fails
 
       - name: Create or Update Initial Status Comments
+        continue-on-error: true
         uses: actions/github-script@v6
         id: status-comments
         with:
@@ -137,6 +153,7 @@ jobs:
             }
 
       - name: Build project
+        continue-on-error: true
         id: build
         working-directory: ./${{ matrix.project }}
         env:
@@ -148,6 +165,7 @@ jobs:
         run: npm run build
 
       - name: Update Build Status in Comments
+        continue-on-error: true
         if: success() || failure()
         uses: actions/github-script@v6
         with:
@@ -208,6 +226,7 @@ jobs:
             }
 
       - name: Prepare deployment files
+        continue-on-error: true
         if: success()
         run: |
           shopt -s dotglob
@@ -218,6 +237,7 @@ jobs:
           cp -r ./${{ matrix.project }}/public/* build/${{ matrix.project }}/${{ github.event.pull_request.number }}/public
 
       - name: Upload using rsync
+        continue-on-error: true
         uses: burnett01/rsync-deployments@7.0.1
         with:
           switches: "-av --delete --partial --bwlimit=5000"
@@ -234,9 +254,9 @@ jobs:
           log-public-key: false
 
       - name: Deploy on DigitalOcean
+        continue-on-error: true
         if: success()
         id: deploy
-        continue-on-error: true # Allow other projects to continue if one fails
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} << 'ENDSSH'
             source ~/.nvm/nvm.sh
@@ -274,6 +294,7 @@ jobs:
           ENDSSH
 
       - name: Update comment with preview URL
+        continue-on-error: true
         if: success()
         uses: actions/github-script@v6
         with:
