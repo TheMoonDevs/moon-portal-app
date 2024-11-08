@@ -222,7 +222,7 @@ jobs:
         with:
           switches: "-av --delete --partial --bwlimit=5000"
           path: "build/${{ matrix.project }}/${{ github.event.pull_request.number }}/" # Local path to upload
-          remote_path: "/home/techteam/apps/builds/${{ matrix.project }}/preview/${{ github.event.pull_request.number }}" # Remote destination path
+          remote_path: "/home/${{ secrets.DROPLET_USER }}/apps/builds/${{ matrix.project }}/preview/${{ github.event.pull_request.number }}" # Remote destination path
           remote_host: ${{ secrets.DROPLET_IP }}
           remote_user: ${{ secrets.DROPLET_USER }}
           remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
@@ -250,8 +250,8 @@ jobs:
             cd "$APP_PATH"
             
             # Copy environment file if it exists
-            if [ -f /home/techteam/apps/moon-portal-app/${PROJECT}/.env.preview ]; then
-              cp /home/techteam/apps/moon-portal-app/${PROJECT}/.env.preview .env
+            if [ -f /home/${{ secrets.DROPLET_USER }}/apps/moon-portal-app/${PROJECT}/.env.preview ]; then
+              cp /home/${{ secrets.DROPLET_USER }}/apps/moon-portal-app/${PROJECT}/.env.preview .env
               echo "PORT=${PORT}" >> .env
               chmod 600 .env  # Secure permissions for env file
             else
@@ -363,8 +363,8 @@ jobs:
             pm2 list | grep -E "(portal|payzone)-${PR_NUMBER}" | awk '{print \$2}' | xargs -r pm2 delete
             
             # Remove deployment directories
-            rm -rf /home/techteam/apps/moon-portal-app/builds/portal/${PR_NUMBER}
-            rm -rf /home/techteam/apps/moon-portal-app/builds/payzone/${PR_NUMBER}
+            rm -rf /home/${{ secrets.DROPLET_USER }}/apps/moon-portal-app/builds/portal/${PR_NUMBER}
+            rm -rf /home/${{ secrets.DROPLET_USER }}/apps/moon-portal-app/builds/payzone/${PR_NUMBER}
             
             echo "Cleaned up PR #$PR_NUMBER"
           EOF
