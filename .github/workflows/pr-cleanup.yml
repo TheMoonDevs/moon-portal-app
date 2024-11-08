@@ -16,15 +16,21 @@ jobs:
   cleanup_on_pr_close:
     runs-on: ubuntu-latest
     steps:
-      - name: Set up SSH
-        uses: webfactory/ssh-agent@v0.5.3
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Set up SSH (secured)
+        uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          log-public-key: false
 
       - name: Cleanup Deployments
         run: |
-          PR_NUMBER=${{ github.event.pull_request.number }}
           ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} << EOF
+            PR_NUMBER=${{ github.event.pull_request.number }}
             # Stop and remove PM2 processes
             pm2 list | grep -E "portal-${PR_NUMBER}" | awk '{print $2}' | xargs -r pm2 delete
             pm2 list | grep -E "payzone-${PR_NUMBER}" | awk '{print $2}' | xargs -r pm2 delete
