@@ -229,11 +229,15 @@ jobs:
         continue-on-error: true # Allow other projects to continue if one fails
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} << 'ENDSSH'
+
+            source ~/.nvm/nvm.sh
+            nvm use 20  # Explicitly set Node version to 20
+
             # Set variables
             PROJECT="${{ matrix.project }}"
             PR_NUMBER="${{ github.event.pull_request.number }}"
             PORT="${{ steps.calculate-port.outputs.port }}"
-            APP_PATH="/home/techteam/apps/builds/${PROJECT}/preview/${PR_NUMBER}"
+            APP_PATH="/home/${{ secrets.DROPLET_USER }}/apps/builds/${PROJECT}/preview/${PR_NUMBER}"
 
             # Navigate to the deployment path
             cd "$APP_PATH"
