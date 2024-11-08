@@ -73,8 +73,10 @@ jobs:
             | Preview URL | -               | -                |
             `;
 
-            let existingComment = comments.data.find(comment => 
-              comment.body.includes(`### Preview Deployment Status`)
+            const uniqueIdentifier = `<!-- PREVIEW_DEPLOYMENT_STATUS -->`;
+
+            let existingComment = comments.data.find(comment =>
+              comment.body.includes(uniqueIdentifier)
             );
 
             if (!existingComment) {
@@ -82,14 +84,14 @@ jobs:
                 issue_number: prNumber,
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                body: `### Preview Deployment Status\n${initialTable}`
+                body: `${uniqueIdentifier}\n### Preview Deployment Status\n${initialTable}`
               });
             } else {
               await github.rest.issues.updateComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 comment_id: existingComment.id,
-                body: `### Preview Deployment Status\n${initialTable}`
+                body: `${uniqueIdentifier}\n### Preview Deployment Status\n${initialTable}`
               });
             }
 
@@ -263,12 +265,11 @@ jobs:
             if ! pm2 show "${PROJECT}-${PR_NUMBER}" > /dev/null 2>&1; then
               echo "Failed to start/restart PM2 process for ${PROJECT}"
               # Update status to deployment failed
-              ssh -T ${{ secrets.GITHUB_TOKEN }} << EOF
+              ssh -T ${{ secrets.GITHUB_TOKEN }} << 'ENDSSH2'
                 gh issue edit ${context.issue.number} --label-remove "deployed-${PROJECT}" --label-add "deploy-failed-${PROJECT}"
-              EOF
+              ENDSSH2
               exit 1
             fi
-            EOF
             echo "Successfully deployed ${PROJECT} preview for PR #${PR_NUMBER}"
           ENDSSH
 
