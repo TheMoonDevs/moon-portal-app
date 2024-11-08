@@ -86,20 +86,20 @@ jobs:
         continue-on-error: true # Allow other projects to continue if one fails
         run: |
           # Create the deployment structure in GitHub Actions
-          mkdir -p build/${{ matrix.project }}/main/.next/static
-          mkdir -p build/${{ matrix.project }}/main/public
+          mkdir -p build/${{ matrix.project }}/main-copy/.next/static
+          mkdir -p build/${{ matrix.project }}/main-copy/public
 
-          # Move and rename build files to the "main" folder structure
-          cp -r ./${{ matrix.project }}/.next/standalone/* build/${{ matrix.project }}/main
-          cp -r ./${{ matrix.project }}/.next/static/* build/${{ matrix.project }}/main/.next/static
-          cp -r ./${{ matrix.project }}/public/* build/${{ matrix.project }}/main/public
+          # Move and rename build files to the "main-copy" folder structure
+          cp -r ./${{ matrix.project }}/.next/standalone/* build/${{ matrix.project }}/main-copy
+          cp -r ./${{ matrix.project }}/.next/static/* build/${{ matrix.project }}/main-copy/.next/static
+          cp -r ./${{ matrix.project }}/public/* build/${{ matrix.project }}/main-copy/public
 
       - name: Upload using rsync
         continue-on-error: true 
         uses: burnett01/rsync-deployments@7.0.1
         with:
           switches: "-av --delete --partial --bwlimit=5000"
-          path: "build/${{ matrix.project }}/main/" # Local path to upload
+          path: "build/${{ matrix.project }}/main-copy/" # Local path to upload
           remote_path: "/home/${{ secrets.DROPLET_USER }}/apps/builds/${{ matrix.project }}/prod/main-copy" # Remote destination path
           remote_host: ${{ secrets.DROPLET_IP }}
           remote_user: ${{ secrets.DROPLET_USER }}
