@@ -17,10 +17,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Cancel Preview Deployment Workflow
-        uses: styfle/cancel-workflow-action@0.9.1
+        uses: styfle/cancel-workflow-action
         with:
+          ignore_sha: true
           workflow_id: Preview Deployment
-          access_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up SSH (secured)
         uses: webfactory/ssh-agent@v0.9.0
