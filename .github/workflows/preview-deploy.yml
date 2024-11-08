@@ -57,7 +57,7 @@ jobs:
         with:
           script: |
             const prNumber = context.issue.number;
-            const projects = ${{ fromJson(steps.set-projects.outputs.projects) }};
+            const projects = JSON.parse('${{ steps.set-projects.outputs.projects }}');
             const logsUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
 
             const initialTable = (project) => `
