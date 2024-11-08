@@ -67,6 +67,18 @@ jobs:
             echo "clean_flag=" >> $GITHUB_OUTPUT
           fi
 
+  deploy_preview:
+    needs: handle_comment
+    if: needs.handle_comment.outputs.action == 'deploy'
+    uses: ./.github/workflows/deploy-preview.yml
+    with:
+      pr_number: ${{ needs.handle_comment.outputs.pr_number }}
+      project: ${{ needs.handle_comment.outputs.project }}
+      clean_flag: ${{ fromJSON(needs.handle_comment.outputs.clean_flag) }}
+    secrets:
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      DROPLET_IP: ${{ secrets.DROPLET_IP }}
+
   cleanup_deployments:
     needs: handle_comment
     if: needs.handle_comment.outputs.action == 'cleanup'
