@@ -124,32 +124,37 @@ jobs:
             PORT=0
 
             # Determine the port for the project
-            if [ "$PROJECT" = "portal" ]; then
+            if [ "${PROJECT}" = "portal" ]; then
               PORT=3001
-            elif [ "$PROJECT" = "payzone" ]; then
+            elif [ "${PROJECT}" = "payzone" ]; then
               PORT=3002
             fi
 
-            PROJECT_DIR="/home/${{ secrets.DROPLET_USER }}/apps/builds/$PROJECT/prod"
-            MAIN_DIR="$PROJECT_DIR/main"
-            MAIN_COPY_DIR="$PROJECT_DIR/main-copy"
-            BACKUP_DIR="$PROJECT_DIR/main-backup"
+            PROJECT_DIR="/home/${{ secrets.DROPLET_USER }}/apps/builds/${PROJECT}/prod"
+            MAIN_DIR="${PROJECT_DIR}/main"
+            MAIN_COPY_DIR="${PROJECT_DIR}/main-copy"
+            BACKUP_DIR="${PROJECT_DIR}/main-backup"
 
-            cd "$PROJECT_DIR"
+            mkdir -p "${PROJECT_DIR}"
+            mkdir -p "${PROJECT_DIR}"
+            mkdir -p "${MAIN_DIR}"
+            mkdir -p "${MAIN_COPY_DIR}"
 
-            if [ -d "$MAIN_DIR" ]; then
-              rm -rf "$BACKUP_DIR"
-              mv "$MAIN_DIR" "$BACKUP_DIR"
+            cd "${PROJECT_DIR}"
+
+            if [ -d "${MAIN_DIR}" ]; then
+              rm -rf "${BACKUP_DIR}"
+              mv "${MAIN_DIR}" "${BACKUP_DIR}"
             fi
-            mv "$MAIN_COPY_DIR" "$MAIN_DIR"
-            if [ -f /home/${{ secrets.DROPLET_USER }}/apps/moon-portal-app/$PROJECT/.env.prod ]; then
-              cp /home/${{ secrets.DROPLET_USER }}/apps/moon-portal-app/$PROJECT/.env.prod "$MAIN_DIR/.env"
-              echo "PORT=$PORT" >> "$MAIN_DIR/.env"
-              chmod 600 "$MAIN_DIR/.env"
+            mv "${MAIN_COPY_DIR}" "${MAIN_DIR}"
+            if [ -f /home/${{ secrets.DROPLET_USER }}/apps/moon-portal-app/${PROJECT}/.env.prod ]; then
+              cp /home/${{ secrets.DROPLET_USER }}/apps/moon-portal-app/${PROJECT}/.env.prod "${MAIN_DIR}/.env"
+              echo "PORT=${PORT}" >> "${MAIN_DIR}/.env"
+              chmod 600 "${MAIN_DIR}/.env"
             else
-              echo "Error: .env.prod file not found for $PROJECT"
-              rm -rf "$MAIN_DIR"
-              mv "$BACKUP_DIR" "$MAIN_DIR"
+              echo "Error: .env.prod file not found for ${PROJECT}"
+              rm -rf "${MAIN_DIR}"
+              mv "${BACKUP_DIR}" "${MAIN_DIR}"
               exit 1
             fi
             if pm2 list | grep -q "${PROJECT}-main"; then
@@ -159,12 +164,12 @@ jobs:
             fi
             if ! pm2 show "${PROJECT}-main" > /dev/null 2>&1; then
               echo "Failed to start/restart PM2 process for ${PROJECT}"
-              rm -rf "$MAIN_DIR"
-              mv "$BACKUP_DIR" "$MAIN_DIR"
+              rm -rf "${MAIN_DIR}"
+              mv "${BACKUP_DIR}" "${MAIN_DIR}"
               pm2 restart "${PROJECT}-main" --update-env
               exit 1
             fi
-            echo "Successfully deployed ${PROJECT} on port $PORT"
+            echo "Successfully deployed ${PROJECT} on port ${PORT}"
           ENDSSH
 
       - name: Set domain output
