@@ -2,7 +2,7 @@ name: Preview Deployment
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, closed]
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: write
@@ -349,7 +349,7 @@ jobs:
               
               if (existingComment) {
                 const updatedStatus = [
-                  '| Status | ✅ Preview Deployed |',
+                  '| Status | 🚀 Preview Deployed |',
                   '| ------ | ----------------- |',
                   `| Logs | [View Logs](${logsUrl}) |`,
                   `| Preview URL | [Preview URL](${previewUrl}) |`
@@ -365,82 +365,4 @@ jobs:
             } catch (e) {
               console.error('Failed to update deployment status:', e);
               core.setFailed(`Failed to update deployment status: ${e.message}`);
-            }
-
-  cleanup_on_pr_close:
-    if: github.event.action == 'closed'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Set up SSH
-        uses: webfactory/ssh-agent@v0.5.3
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Cleanup Deployments
-        run: |
-          PR_NUMBER=${{ github.event.pull_request.number }}
-          ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} << EOF
-            # Stop and remove PM2 processes
-            pm2 list | grep -E "(portal|payzone)-${PR_NUMBER}" | awk '{print \$2}' | xargs -r pm2 delete
-            
-            # Remove deployment directories
-            rm -rf /home/${{ secrets.DROPLET_USER }}/apps/moon-portal-app/builds/portal/${PR_NUMBER}
-            rm -rf /home/${{ secrets.DROPLET_USER }}/apps/moon-portal-app/builds/payzone/${PR_NUMBER}
-            
-            echo "Cleaned up PR #$PR_NUMBER"
-          EOF
-
-      - name: Update Comments and Remove Labels
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const comments = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number
-            });
-
-            // Update comments
-            const portalComment = comments.data.find(comment => comment.body.includes('<!-- PORTAL_PREVIEW_STATUS -->'));
-            const payzoneComment = comments.data.find(comment => comment.body.includes('<!-- PAYZONE_PREVIEW_STATUS -->'));
-
-            if (portalComment) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: portalComment.id,
-                body: `## 🗑️ Portal Preview Environment Removed\n\nThis portal preview environment has been cleaned up as the PR was closed.`
-              });
-            }
-
-            if (payzoneComment) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: payzoneComment.id,
-                body: `## 🗑️ Payzone Preview Environment Removed\n\nThis payzone preview environment has been cleaned up as the PR was closed.`
-              });
-            }
-
-            // Remove all related labels
-            const labelsToRemove = [
-              'portal-build-failed',
-              'portal-deploy-failed',
-              'portal-preview-deployed',
-              'payzone-build-failed',
-              'payzone-deploy-failed',
-              'payzone-preview-deployed'
-            ];
-
-            for (const label of labelsToRemove) {
-              try {
-                await github.rest.issues.removeLabel({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: context.issue.number,
-                  name: label
-                });
-              } catch (e) {
-                // Ignore if label doesn't exist
-              }
             }

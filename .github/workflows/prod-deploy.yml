@@ -95,8 +95,8 @@ jobs:
           cp -r ./${{ matrix.project }}/public/* build/${{ matrix.project }}/main/public
 
       - name: Upload using rsync
-        uses: burnett01/rsync-deployments@7.0.1
         continue-on-error: true 
+        uses: burnett01/rsync-deployments@7.0.1
         with:
           switches: "-av --delete --partial --bwlimit=5000"
           path: "build/${{ matrix.project }}/main/" # Local path to upload
