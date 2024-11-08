@@ -16,10 +16,11 @@ jobs:
   cleanup_on_pr_close:
     runs-on: ubuntu-latest
     steps:
-      - name: Use Node.js 20
-        uses: actions/setup-node@v4
+      - name: Cancel Preview Deployment Workflow
+        uses: styfle/cancel-workflow-action@0.9.1
         with:
-          node-version: "20"
+          workflow_id: Preview Deployment
+          access_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up SSH (secured)
         uses: webfactory/ssh-agent@v0.9.0
@@ -30,14 +31,14 @@ jobs:
       - name: Cleanup Deployments
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} << EOF
-            PR_NUMBER=${{ github.event.pull_request.number }}
+            PR_NUMBER="${{ github.event.pull_request.number }}"
             # Stop and remove PM2 processes
             pm2 list | grep -E "portal-${PR_NUMBER}" | awk '{print $2}' | xargs -r pm2 delete
             pm2 list | grep -E "payzone-${PR_NUMBER}" | awk '{print $2}' | xargs -r pm2 delete
             
             # Remove deployment directories
-            rm -rf /home/${{ secrets.DROPLET_USER }}/apps/builds/portal/${PR_NUMBER}
-            rm -rf /home/${{ secrets.DROPLET_USER }}/apps/builds/payzone/${PR_NUMBER}
+            rm -rf /home/${{ secrets.DROPLET_USER }}/apps/builds/portal/preview/${PR_NUMBER}/
+            rm -rf /home/${{ secrets.DROPLET_USER }}/apps/builds/payzone/preview/${PR_NUMBER}/
             
             echo "Cleaned up PR #$PR_NUMBER"
           EOF
