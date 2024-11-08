@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   determine_project:
     runs-on: ubuntu-latest
@@ -76,8 +80,10 @@ jobs:
           GIAM_PRIVATE_KEY: ${{ secrets.PROD_GIAM_PRIVATE_KEY }}
           SLACK_OAUTH_TOKEN: ${{ secrets.SLACK_OAUTH_TOKEN }}
         run: npm run build
+        continue-on-error: true
 
       - name: Prepare deployment files
+        continue-on-error: true # Allow other projects to continue if one fails
         run: |
           # Create the deployment structure in GitHub Actions
           mkdir -p build/${{ matrix.project }}/main/.next/static
@@ -90,6 +96,7 @@ jobs:
 
       - name: Upload using rsync
         uses: burnett01/rsync-deployments@7.0.1
+        continue-on-error: true 
         with:
           switches: "-av --delete --partial --bwlimit=5000"
           path: "build/${{ matrix.project }}/main/" # Local path to upload
@@ -105,9 +112,9 @@ jobs:
           log-public-key: false
 
       - name: Deploy on DigitalOcean
+        continue-on-error: true 
         if: success()
         id: deploy
-        continue-on-error: true # Allow other projects to continue if one fails
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} << 'ENDSSH'
             source ~/.nvm/nvm.sh
@@ -161,6 +168,7 @@ jobs:
           ENDSSH
 
       - name: Set domain output
+        continue-on-error: true 
         id: set-domain
         run: |
           if [ "${{ matrix.project }}" = "portal" ]; then
@@ -173,6 +181,7 @@ jobs:
           echo "::set-output name=domain::${DOMAIN}"
 
       - name: Lighthouse Check
+        continue-on-error: true 
         uses: foo-software/lighthouse-check-action@master
         with:
           urls: https://${{ steps.set-domain.outputs.domain }}
