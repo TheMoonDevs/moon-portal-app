@@ -132,46 +132,52 @@ jobs:
               PORT=3002
             fi
 
-            # Enable dotglob to include hidden files in wildcard matches
-            shopt -s dotglob
-            PROJECT_DIR=/home/${{ secrets.DROPLET_USER }}/apps/builds/${PROJECT}/prod
-            MAIN_DIR=${PROJECT_DIR}/main
-            MAIN_COPY_DIR=${PROJECT_DIR}/main-copy
-            BACKUP_DIR=${PROJECT_DIR}/main-backup
+            PROJECT_DIR="/home/${{ secrets.DROPLET_USER }}/apps/builds/${PROJECT}/prod"
             
-            mkdir -p ${PROJECT_DIR} ${MAIN_COPY_DIR} ${BACKUP_DIR}
+            mkdir -p ${PROJECT_DIR}
             
             cd ${PROJECT_DIR}
+
+            # Enable dotglob to include hidden files in wildcard matches
+            shopt -s dotglob
+
+            mkdir -p main main-copy main-backup
             
-            if [ -d ${MAIN_DIR} ]; then
-              cp -r ${MAIN_DIR}/* ${BACKUP_DIR}
+            if [ -d main ]; then
+              cp -r main/* main-backup
             fi
             
-            mkdir -p ${MAIN_DIR}
-            cp -r ${MAIN_COPY_DIR}/* ${MAIN_DIR}
+            cp -r main-copy/* main
             if [ -f /home/${{ secrets.DROPLET_USER }}/apps/moon-portal-app/${PROJECT}/.env.prod ]; then
               cp /home/${{ secrets.DROPLET_USER }}/apps/moon-portal-app/${PROJECT}/.env.prod main/.env
-              echo "PORT=${PORT}" >> ${MAIN_DIR}/.env
-              chmod 600 ${MAIN_DIR}/.env
+              echo "PORT=${PORT}" >> main/.env
+              chmod 600 main/.env
             else
               echo "Error: .env.prod file not found for ${PROJECT}"
-              rm -rf ${MAIN_DIR}
-              cp -r ${BACKUP_DIR} ${MAIN_DIR}
+              rm -rf main
+              cp -r main-backup/* main
               pm2 restart "${PROJECT}-main" --update-env
               exit 1
             fi
 
-            cd ${MAIN_DIR}
+            cd main
+            # Enable dotglob to include hidden files in wildcard matches
+            shopt -s dotglob
 
             if pm2 list | grep -q "${PROJECT}-main"; then
               pm2 restart "${PROJECT}-main" --update-env
             else
               pm2 start npm --name "${PROJECT}-main" -- run start:prod
             fi
+
+            cd ../
+            # Enable dotglob to include hidden files in wildcard matches
+            shopt -s dotglob
+            
             if ! pm2 show "${PROJECT}-main" > /dev/null 2>&1; then
               echo "Failed to start/restart PM2 process for ${PROJECT}"
-              rm -rf ${MAIN_DIR}
-              cp -r ${BACKUP_DIR}/* ${MAIN_DIR}
+              rm -rf main
+              cp -r main-backup/* main
               pm2 restart "${PROJECT}-main" --update-env
               exit 1
             fi
