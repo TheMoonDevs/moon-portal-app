@@ -6,7 +6,6 @@ on:
 
 permissions:
   contents: write
-  actions: write
   pull-requests: write
 
 concurrency:
@@ -17,12 +16,6 @@ jobs:
   cleanup_on_pr_close:
     runs-on: ubuntu-latest
     steps:
-      - name: Cancel Preview Deployment Workflow
-        uses: styfle/cancel-workflow-action@0.9.1
-        with:
-          ignore_sha: true
-          workflow_id: Preview Deployment
-
       - name: Set up SSH (secured)
         uses: webfactory/ssh-agent@v0.9.0
         with:
@@ -32,69 +25,13 @@ jobs:
       - name: Cleanup Deployments
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} << EOF
-            PR_NUMBER="${{ github.event.pull_request.number }}"
             # Stop and remove PM2 processes
-            pm2 list | grep -E "portal-${PR_NUMBER}" | awk '{print $2}' | xargs -r pm2 delete
-            pm2 list | grep -E "payzone-${PR_NUMBER}" | awk '{print $2}' | xargs -r pm2 delete
+            pm2 list | grep -E "portal-${{ github.event.pull_request.number }}" | awk '{print $2}' | xargs -r pm2 delete
+            pm2 list | grep -E "payzone-${{ github.event.pull_request.number }}" | awk '{print $2}' | xargs -r pm2 delete
             
             # Remove deployment directories
-            rm -rf /home/${{ secrets.DROPLET_USER }}/apps/builds/portal/preview/${PR_NUMBER}/
-            rm -rf /home/${{ secrets.DROPLET_USER }}/apps/builds/payzone/preview/${PR_NUMBER}/
+            rm -rf /home/${{ secrets.DROPLET_USER }}/apps/builds/portal/preview/${{ github.event.pull_request.number }}/
+            rm -rf /home/${{ secrets.DROPLET_USER }}/apps/builds/payzone/preview/${{ github.event.pull_request.number }}/
             
-            echo "Cleaned up PR #$PR_NUMBER"
+            echo "Cleaned up PR #${{ github.event.pull_request.number }}"
           EOF
-
-      - name: Update Comments and Remove Labels
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const comments = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number
-            });
-
-            // Update comments
-            const portalComment = comments.data.find(comment => comment.body.includes('<!-- PORTAL_PREVIEW_STATUS -->'));
-            const payzoneComment = comments.data.find(comment => comment.body.includes('<!-- PAYZONE_PREVIEW_STATUS -->'));
-
-            if (portalComment) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: portalComment.id,
-                body: `## 🗑️ Portal Preview Environment Removed\n\nThis portal preview environment has been cleaned up as the PR was closed.`
-              });
-            }
-
-            if (payzoneComment) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: payzoneComment.id,
-                body: `## 🗑️ Payzone Preview Environment Removed\n\nThis payzone preview environment has been cleaned up as the PR was closed.`
-              });
-            }
-
-            // Remove all related labels
-            const labelsToRemove = [
-              'portal-build-failed',
-              'portal-deploy-failed',
-              'portal-preview-deployed',
-              'payzone-build-failed',
-              'payzone-deploy-failed',
-              'payzone-preview-deployed'
-            ];
-
-            for (const label of labelsToRemove) {
-              try {
-                await github.rest.issues.removeLabel({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: context.issue.number,
-                  name: label
-                });
-              } catch (e) {
-                // Ignore if label doesn't exist
-              }
-            }
