@@ -135,13 +135,15 @@ jobs:
             MAIN_COPY_DIR="${PROJECT_DIR}/main-copy"
             BACKUP_DIR="${PROJECT_DIR}/main-backup"
 
+            mkdir -p "${PROJECT_DIR}" "${MAIN_DIR}" "${MAIN_COPY_DIR}" "${BACKUP_DIR}"
+
             cd "${PROJECT_DIR}"
 
             if [ -d "${MAIN_DIR}" ]; then
               rm -rf "${BACKUP_DIR}"
               mv "${MAIN_DIR}" "${BACKUP_DIR}"
             fi
-            mv "${MAIN_COPY_DIR}" "${MAIN_DIR}"
+            cp -r "${MAIN_COPY_DIR}" "${MAIN_DIR}"
             if [ -f /home/${{ secrets.DROPLET_USER }}/apps/moon-portal-app/${PROJECT}/.env.prod ]; then
               cp /home/${{ secrets.DROPLET_USER }}/apps/moon-portal-app/${PROJECT}/.env.prod "${MAIN_DIR}/.env"
               echo "PORT=${PORT}" >> "${MAIN_DIR}/.env"
