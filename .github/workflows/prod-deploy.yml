@@ -97,7 +97,7 @@ jobs:
           cp -r ./${{ matrix.project }}/public/* build/${{ matrix.project }}/main-copy/public
 
       - name: Upload using rsync
-        continue-on-error: true 
+        continue-on-error: true
         uses: burnett01/rsync-deployments@7.0.1
         with:
           switches: "-av --delete --partial --bwlimit=5000"
@@ -114,7 +114,7 @@ jobs:
           log-public-key: false
 
       - name: Deploy on DigitalOcean
-        continue-on-error: true 
+        continue-on-error: true
         if: success()
         id: deploy
         run: |
@@ -160,14 +160,20 @@ jobs:
             fi
 
             cd main
-            shopt -s dotglob
 
-            if pm2 list | grep -q "${PROJECT}-main"; then
-              pm2 restart "${PROJECT}-main" --update-env
+            # Restart the PM2 process for the project
+            if pm2 list | grep -q "${PROJECT}-main" ; then
+              pm2 restart "${PROJECT}-main" --update-env || {
+                echo "ERROR: Failed to restart PM2 process. Cleaning up..." >&2
+                exit 1
+              }
             else
-              pm2 start npm --name "${PROJECT}-main" -- run start:prod
+              pm2 start npm --name "${PROJECT}-main" -- run start:prod || {
+                echo "ERROR: Failed to start PM2 process. Cleaning up..." >&2
+                exit 1
+              }
             fi
-
+            
             cd ../
             shopt -s dotglob
 
@@ -183,7 +189,7 @@ jobs:
           ENDSSH
 
       - name: Set domain output
-        continue-on-error: true 
+        continue-on-error: true
         id: set-domain
         run: |
           if [ "${{ matrix.project }}" = "portal" ]; then
@@ -196,7 +202,7 @@ jobs:
           echo "::set-output name=domain::${DOMAIN}"
 
       - name: Lighthouse Check
-        continue-on-error: true 
+        continue-on-error: true
         uses: foo-software/lighthouse-check-action@master
         with:
           urls: https://${{ steps.set-domain.outputs.domain }}
