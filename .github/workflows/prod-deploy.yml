@@ -135,8 +135,6 @@ jobs:
             MAIN_COPY_DIR="${PROJECT_DIR}/main-copy"
             BACKUP_DIR="${PROJECT_DIR}/main-backup"
 
-            mkdir -p "${PROJECT_DIR}" "${MAIN_DIR}" "${MAIN_COPY_DIR}" "${BACKUP_DIR}"
-
             cd "${PROJECT_DIR}"
 
             if [ -d "${MAIN_DIR}" ]; then
