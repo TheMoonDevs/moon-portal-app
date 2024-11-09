@@ -85,6 +85,8 @@ jobs:
       - name: Prepare deployment files
         continue-on-error: true # Allow other projects to continue if one fails
         run: |
+          # Enable dotglob to include hidden files in wildcard matches
+          shopt -s dotglob
           # Create the deployment structure in GitHub Actions
           mkdir -p build/${{ matrix.project }}/main-copy/.next/static
           mkdir -p build/${{ matrix.project }}/main-copy/public
@@ -130,20 +132,23 @@ jobs:
               PORT=3002
             fi
 
+            # Enable dotglob to include hidden files in wildcard matches
+            shopt -s dotglob
             PROJECT_DIR="/home/${{ secrets.DROPLET_USER }}/apps/builds/${PROJECT}/prod"
             MAIN_DIR="${PROJECT_DIR}/main"
             MAIN_COPY_DIR="${PROJECT_DIR}/main-copy"
             BACKUP_DIR="${PROJECT_DIR}/main-backup"
-
-            mkdir -p "${PROJECT_DIR}" "${MAIN_DIR}" "${MAIN_COPY_DIR}" "${BACKUP_DIR}"
-
+            
+            mkdir -p "${PROJECT_DIR}" "${MAIN_COPY_DIR}" "${BACKUP_DIR}"
+            
             cd "${PROJECT_DIR}"
-
+            
             if [ -d "${MAIN_DIR}" ]; then
               rm -rf "${BACKUP_DIR}"
               mv "${MAIN_DIR}" "${BACKUP_DIR}"
             fi
-            cp -r "${MAIN_COPY_DIR}/*" "${MAIN_DIR}"
+            mkdir -p "${MAIN_DIR}"
+            cp -r "${MAIN_COPY_DIR}/." "${MAIN_DIR}"
             if [ -f /home/${{ secrets.DROPLET_USER }}/apps/moon-portal-app/${PROJECT}/.env.prod ]; then
               cp /home/${{ secrets.DROPLET_USER }}/apps/moon-portal-app/${PROJECT}/.env.prod "${MAIN_DIR}/.env"
               echo "PORT=${PORT}" >> "${MAIN_DIR}/.env"
