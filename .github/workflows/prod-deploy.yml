@@ -143,7 +143,7 @@ jobs:
               rm -rf "${BACKUP_DIR}"
               mv "${MAIN_DIR}" "${BACKUP_DIR}"
             fi
-            cp -r "${MAIN_COPY_DIR}" "${MAIN_DIR}"
+            cp -r "${MAIN_COPY_DIR}/*" "${MAIN_DIR}"
             if [ -f /home/${{ secrets.DROPLET_USER }}/apps/moon-portal-app/${PROJECT}/.env.prod ]; then
               cp /home/${{ secrets.DROPLET_USER }}/apps/moon-portal-app/${PROJECT}/.env.prod "${MAIN_DIR}/.env"
               echo "PORT=${PORT}" >> "${MAIN_DIR}/.env"
