@@ -134,10 +134,10 @@ jobs:
 
             # Enable dotglob to include hidden files in wildcard matches
             shopt -s dotglob
-            PROJECT_DIR="/home/${{ secrets.DROPLET_USER }}/apps/builds/${PROJECT}/prod"
-            MAIN_DIR="${PROJECT_DIR}/main"
-            MAIN_COPY_DIR="${PROJECT_DIR}/main-copy"
-            BACKUP_DIR="${PROJECT_DIR}/main-backup"
+            PROJECT_DIR=/home/${{ secrets.DROPLET_USER }}/apps/builds/${PROJECT}/prod
+            MAIN_DIR=${PROJECT_DIR}/main
+            MAIN_COPY_DIR=${PROJECT_DIR}/main-copy
+            BACKUP_DIR=${PROJECT_DIR}/main-backup
             
             mkdir -p ${PROJECT_DIR} ${MAIN_COPY_DIR} ${BACKUP_DIR}
             
@@ -150,7 +150,7 @@ jobs:
             mkdir -p ${MAIN_DIR}
             cp -r ${MAIN_COPY_DIR}/* ${MAIN_DIR}
             if [ -f /home/${{ secrets.DROPLET_USER }}/apps/moon-portal-app/${PROJECT}/.env.prod ]; then
-              cp /home/${{ secrets.DROPLET_USER }}/apps/moon-portal-app/${PROJECT}/.env.prod "main/.env"
+              cp /home/${{ secrets.DROPLET_USER }}/apps/moon-portal-app/${PROJECT}/.env.prod main/.env
               echo "PORT=${PORT}" >> ${MAIN_DIR}/.env
               chmod 600 ${MAIN_DIR}/.env
             else
