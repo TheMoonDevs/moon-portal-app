@@ -279,7 +279,7 @@ jobs:
               exit 1
             fi
             
-            if pm2 list | grep -q "${PROJECT}-${PR_NUMBER}"; then
+            if pm2 list | grep -q "${PROJECT}-${PR_NUMBER}" ; then
               pm2 restart "${PROJECT}-${PR_NUMBER}" --update-env
             else
               pm2 start npm --name "${PROJECT}-${PR_NUMBER}" -- run start:prod
