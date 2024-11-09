@@ -153,6 +153,7 @@ jobs:
             else
               echo "Error: .env.prod file not found for ${PROJECT}"
               rm -rf main
+              mkdir -p main
               cp -r main-backup/* main
               pm2 restart "${PROJECT}-main" --update-env
               exit 1
@@ -173,6 +174,7 @@ jobs:
             if ! pm2 show "${PROJECT}-main" > /dev/null 2>&1; then
               echo "Failed to start/restart PM2 process for ${PROJECT}"
               rm -rf main
+              mkdir -p main
               cp -r main-backup/* main
               pm2 restart "${PROJECT}-main" --update-env
               exit 1
