@@ -142,19 +142,19 @@ jobs:
             mkdir -p main main-copy main-backup
             
             if [ -d main ]; then
-              cp -r main/* main-backup
+              cp -r ./main/* main-backup
             fi
             
-            cp -r main-copy/* main
+            cp -r ./main-copy/* main
             if [ -f /home/${{ secrets.DROPLET_USER }}/apps/moon-portal-app/${PROJECT}/.env.prod ]; then
-              cp /home/${{ secrets.DROPLET_USER }}/apps/moon-portal-app/${PROJECT}/.env.prod main/.env
+              cp /home/${{ secrets.DROPLET_USER }}/apps/moon-portal-app/${PROJECT}/.env.prod ./main/.env
               echo "PORT=${PORT}" >> main/.env
               chmod 600 main/.env
             else
               echo "Error: .env.prod file not found for ${PROJECT}"
               rm -rf main
               mkdir -p main
-              cp -r main-backup/* main
+              cp -r ./main-backup/* main
               pm2 restart "${PROJECT}-main" --update-env
               exit 1
             fi
@@ -175,7 +175,7 @@ jobs:
               echo "Failed to start/restart PM2 process for ${PROJECT}"
               rm -rf main
               mkdir -p main
-              cp -r main-backup/* main
+              cp -r ./main-backup/* main
               pm2 restart "${PROJECT}-main" --update-env
               exit 1
             fi
