@@ -132,11 +132,9 @@ jobs:
               PORT=3002
             fi
 
-            PROJECT_DIR="/home/${{ secrets.DROPLET_USER }}/apps/builds/${PROJECT}/prod"
+            mkdir -p /home/${{ secrets.DROPLET_USER }}/apps/builds/${PROJECT}/prod
             
-            mkdir -p ${PROJECT_DIR}
-            
-            cd ${PROJECT_DIR}
+            cd /home/${{ secrets.DROPLET_USER }}/apps/builds/${PROJECT}/prod
 
             # Enable dotglob to include hidden files in wildcard matches
             shopt -s dotglob
@@ -161,7 +159,6 @@ jobs:
             fi
 
             cd main
-            # Enable dotglob to include hidden files in wildcard matches
             shopt -s dotglob
 
             if pm2 list | grep -q "${PROJECT}-main"; then
@@ -171,9 +168,8 @@ jobs:
             fi
 
             cd ../
-            # Enable dotglob to include hidden files in wildcard matches
             shopt -s dotglob
-            
+
             if ! pm2 show "${PROJECT}-main" > /dev/null 2>&1; then
               echo "Failed to start/restart PM2 process for ${PROJECT}"
               rm -rf main
