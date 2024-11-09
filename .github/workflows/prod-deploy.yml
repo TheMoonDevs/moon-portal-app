@@ -139,26 +139,30 @@ jobs:
             MAIN_COPY_DIR="${PROJECT_DIR}/main-copy"
             BACKUP_DIR="${PROJECT_DIR}/main-backup"
             
-            mkdir -p "${PROJECT_DIR}" "${MAIN_COPY_DIR}" "${BACKUP_DIR}"
+            mkdir -p ${PROJECT_DIR} ${MAIN_COPY_DIR} ${BACKUP_DIR}
             
-            cd "${PROJECT_DIR}"
+            cd ${PROJECT_DIR}
             
-            if [ -d "${MAIN_DIR}" ]; then
-              rm -rf "${BACKUP_DIR}"
-              mv "${MAIN_DIR}" "${BACKUP_DIR}"
+            if [ -d ${MAIN_DIR} ]; then
+              cp -r ${MAIN_DIR}/* ${BACKUP_DIR}
             fi
-            mkdir -p "${MAIN_DIR}"
-            cp -r "${MAIN_COPY_DIR}/." "${MAIN_DIR}"
+            
+            mkdir -p ${MAIN_DIR}
+            cp -r ${MAIN_COPY_DIR}/* ${MAIN_DIR}
             if [ -f /home/${{ secrets.DROPLET_USER }}/apps/moon-portal-app/${PROJECT}/.env.prod ]; then
-              cp /home/${{ secrets.DROPLET_USER }}/apps/moon-portal-app/${PROJECT}/.env.prod "${MAIN_DIR}/.env"
-              echo "PORT=${PORT}" >> "${MAIN_DIR}/.env"
-              chmod 600 "${MAIN_DIR}/.env"
+              cp /home/${{ secrets.DROPLET_USER }}/apps/moon-portal-app/${PROJECT}/.env.prod "main/.env"
+              echo "PORT=${PORT}" >> ${MAIN_DIR}/.env
+              chmod 600 ${MAIN_DIR}/.env
             else
               echo "Error: .env.prod file not found for ${PROJECT}"
-              rm -rf "${MAIN_DIR}"
-              mv "${BACKUP_DIR}" "${MAIN_DIR}"
+              rm -rf ${MAIN_DIR}
+              cp -r ${BACKUP_DIR} ${MAIN_DIR}
+              pm2 restart "${PROJECT}-main" --update-env
               exit 1
             fi
+
+            cd ${MAIN_DIR}
+
             if pm2 list | grep -q "${PROJECT}-main"; then
               pm2 restart "${PROJECT}-main" --update-env
             else
@@ -166,8 +170,8 @@ jobs:
             fi
             if ! pm2 show "${PROJECT}-main" > /dev/null 2>&1; then
               echo "Failed to start/restart PM2 process for ${PROJECT}"
-              rm -rf "${MAIN_DIR}"
-              mv "${BACKUP_DIR}" "${MAIN_DIR}"
+              rm -rf ${MAIN_DIR}
+              cp -r ${BACKUP_DIR}/* ${MAIN_DIR}
               pm2 restart "${PROJECT}-main" --update-env
               exit 1
             fi
