@@ -80,13 +80,6 @@ jobs:
       - name: Setup build environment
         run: |
           mkdir -p ./${{ matrix.project }}
-          cat << EOF > ./${{ matrix.project }}/.env.build
-          DATABASE_URL=${{ secrets.PREVIEW_DATABASE_URL }}
-          GIAM_CLIENT_EMAIL=${{ secrets.PREVIEW_GIAM_CLIENT_EMAIL }}
-          GIAM_CLIENT_ID=${{ secrets.PREVIEW_GIAM_CLIENT_ID }}
-          GIAM_PRIVATE_KEY='${{ secrets.PREVIEW_GIAM_PRIVATE_KEY }}'
-          SLACK_OAUTH_TOKEN=${{ secrets.SLACK_OAUTH_TOKEN }}
-          EOF
 
       - name: Use Node.js 20
         uses: actions/setup-node@v4
@@ -156,13 +149,13 @@ jobs:
         continue-on-error: true
         id: build
         working-directory: ./${{ matrix.project }}
-        env:
-          DATABASE_URL: ${{ secrets.PREVIEW_DATABASE_URL }}
-          GIAM_CLIENT_EMAIL: ${{ secrets.PREVIEW_GIAM_CLIENT_EMAIL }}
-          GIAM_CLIENT_ID: ${{ secrets.PREVIEW_GIAM_CLIENT_ID }}
-          GIAM_PRIVATE_KEY: ${{ secrets.PREVIEW_GIAM_PRIVATE_KEY }}
-          SLACK_OAUTH_TOKEN: ${{ secrets.SLACK_OAUTH_TOKEN }}
-        run: npm run build
+        run: |
+          if [ "${{ matrix.project }}" = "portal" ]; then
+            export DOTENV_KEY=${{ secrets.PORTAL_DOTENV_KEY }}
+          else
+            export DOTENV_KEY=${{ secrets.PAYZONE_DOTENV_KEY }}
+          fi
+          npm run build
 
       - name: Update Build Status in Comments
         continue-on-error: true
@@ -270,15 +263,21 @@ jobs:
             cd "$APP_PATH"
             
             # Copy environment file if it exists
-            if [ -f /home/${{ secrets.DROPLET_USER }}/apps/moon-portal-app/${PROJECT}/.env.preview ]; then
-              cp /home/${{ secrets.DROPLET_USER }}/apps/moon-portal-app/${PROJECT}/.env.preview .env
-              echo "PORT=${PORT}" >> .env
-              chmod 600 .env  # Secure permissions for env file
+            # if [ -f /home/${{ secrets.DROPLET_USER }}/apps/moon-portal-app/${PROJECT}/.env.preview ]; then
+            #   cp /home/${{ secrets.DROPLET_USER }}/apps/moon-portal-app/${PROJECT}/.env.preview .env
+            #   echo "PORT=${PORT}" >> .env
+            #   chmod 600 .env  # Secure permissions for env file
+            # else
+            #   echo "Warning: .env.preview file not found"
+            #   exit 1
+            # fi
+
+            if [ "${{ matrix.project }}" = "portal" ]; then
+              export DOTENV_KEY=${{ secrets.PORTAL_DOTENV_KEY }}
             else
-              echo "Warning: .env.preview file not found"
-              exit 1
+              export DOTENV_KEY=${{ secrets.PAYZONE_DOTENV_KEY }}
             fi
-            
+
             if pm2 list | grep -q "${PROJECT}-${PR_NUMBER}" ; then
               pm2 restart "${PROJECT}-${PR_NUMBER}" --update-env
             else
