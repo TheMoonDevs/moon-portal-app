@@ -86,10 +86,19 @@ jobs:
         with:
           node-version: "20"
 
+      - name: Cache dependencies and build artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            ${{ github.workspace }}/${{ matrix.project }}/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
+
       - name: Install dependencies
         working-directory: ./${{ matrix.project }}
         run: npm i
-        continue-on-error: true # Allow other projects to continue if one fails
 
       - name: Create or Update Initial Status Comments
         continue-on-error: true
@@ -155,7 +164,7 @@ jobs:
           else
             export DOTENV_KEY=${{ secrets.PAYZONE_DOTENV_KEY }}
           fi
-          npm run build:ci
+          npm run build:ci || exit 1
 
       - name: Update Build Status in Comments
         continue-on-error: true
@@ -217,9 +226,11 @@ jobs:
                 body: `${uniqueIdentifier}\n### ${project.charAt(0).toUpperCase() + project.slice(1)} Preview Deployment Status\n\n${updatedStatus}`
               });
             }
+            if (buildFailed) {
+              exit(1);
+            }
 
       - name: Prepare deployment files
-        continue-on-error: true
         if: success()
         run: |
           shopt -s dotglob
@@ -230,7 +241,7 @@ jobs:
           cp -r ./${{ matrix.project }}/public/* build/${{ matrix.project }}/${{ github.event.pull_request.number }}/public
 
       - name: Upload using rsync
-        continue-on-error: true
+        if: success()
         uses: burnett01/rsync-deployments@7.0.1
         with:
           switches: "-av --delete --partial --bwlimit=5000"
@@ -241,13 +252,13 @@ jobs:
           remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
 
       - name: Set up SSH (secured)
+        if: success()
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
           log-public-key: false
 
       - name: Deploy on DigitalOcean
-        continue-on-error: true
         if: success()
         id: deploy
         run: |
@@ -293,7 +304,6 @@ jobs:
           ENDSSH
 
       - name: Update comment with preview URL
-        continue-on-error: true
         if: success()
         uses: actions/github-script@v6
         with:
