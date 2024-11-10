@@ -134,7 +134,10 @@ jobs:
         with:
           path: |
             ~/.npm
-            ${{ github.workspace }}/${{ matrix.project }}/.next/cache
+            .next/cache
+            ${{ github.workspace }}/.next/cache
+            node_modules
+            ~/${{ matrix.project }}
           key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx') }}
           restore-keys: |
             ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
@@ -179,29 +182,23 @@ jobs:
             });
 
             // Handle labels
-            try {
-              // Remove existing build status labels
-              const labelsToRemove = [`building-${project}`, `${project}-build-failed`, `${project}-preview-deployed`];
-              for (const label of labelsToRemove) {
-                  await github.rest.issues.removeLabel({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    issue_number: context.issue.number,
-                    name: label
-                  });
-                }
-
-              // Add appropriate label based on build status
-              const newLabel = buildFailed ? `${project}-build-failed` : `${project}-preview-deployed`;
-              await github.rest.issues.addLabels({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                labels: [newLabel]
-              });
-            } catch (e) {
-              console.error('Failed to update labels:', e);
-            }
+            const labelsToRemove = [`building-${project}`, `${project}-build-failed`, `${project}-preview-deployed`];
+            for (const label of labelsToRemove) {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  name: label
+                });
+              }
+            // Add appropriate label based on build status
+            const newLabel = buildFailed ? `${project}-build-failed` : `${project}-preview-deployed`;
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: [newLabel]
+            });
 
             // Update comment with proper table formatting
             const uniqueIdentifier = project === 'portal' ? '<!-- PORTAL_PREVIEW_STATUS -->' : '<!-- PAYZONE_PREVIEW_STATUS -->';
@@ -224,14 +221,14 @@ jobs:
                 body: `${uniqueIdentifier}\n### ${project.charAt(0).toUpperCase() + project.slice(1)} Preview Deployment Status\n\n${updatedStatus}`
               });
             }
+
             if (buildFailed) {
               core.setFailed(`Failed to build ${project}`);
-              exit(1);
             }
 
       - name: Prepare deployment files
         continue-on-error: true
-        if: success()
+        if: ${{steps.build.outputs.build-status == 1 }}
         run: |
           shopt -s dotglob
           mkdir -p build/${{ matrix.project }}/${{ github.event.pull_request.number }}/.next/static
