@@ -60,10 +60,10 @@ jobs:
               issue_number: prNumber
             });
             const logsUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-      
+
             console.log('Projects:', projects);
             console.log('PR Number:', prNumber);
-      
+
             projects.forEach(async (project) => {
               const uniqueIdentifier = project === 'portal' ? '<!-- PORTAL_PREVIEW_STATUS -->' : '<!-- PAYZONE_PREVIEW_STATUS -->';
               const initialStatus = [
@@ -72,15 +72,15 @@ jobs:
                 `| Logs | [View Logs](${logsUrl}) |`,
                 '| Preview URL | - |'
               ].join('\n');
-      
+
               console.log('Processing project:', project);
               console.log('Unique Identifier:', uniqueIdentifier);
               console.log('Initial Status:', initialStatus);
-      
+
               let existingComment = comments.data.find(comment =>
                 comment.body.includes(uniqueIdentifier)
               );
-      
+
               if (!existingComment) {
                 console.log('Creating new comment for project:', project);
                 await github.rest.issues.createComment({
@@ -159,8 +159,10 @@ jobs:
             export DOTENV_KEY=${{ secrets.PAYZONE_DOTENV_KEY }}
           fi
           if ! npm run build:ci; then
+            echo "build-status=0" >> $GITHUB_OUTPUT
             exit 1
           fi
+          echo "build-status=1" >> $GITHUB_OUTPUT
 
       - name: Update Build Status in Comments
         continue-on-error: true
@@ -169,7 +171,7 @@ jobs:
         with:
           script: |
             const project = '${{ matrix.project }}';
-            const buildFailed = '${{ job.status }}' === 'failure';
+            const buildFailed = ${{ steps.build.outputs.build-status}} === 0;
             const comments = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
