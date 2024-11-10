@@ -279,16 +279,18 @@ jobs:
             #   exit 1
             # fi
 
-            if [ "${{ matrix.project }}" = "portal" ]; then
-              export DOTENV_KEY=${{ secrets.PORTAL_DOTENV_KEY }}
-            else
-              export DOTENV_KEY=${{ secrets.PAYZONE_DOTENV_KEY }}
-            fi
+            # if [ "${{ matrix.project }}" = "portal" ]; then
+            #   export DOTENV_KEY=${{ secrets.PORTAL_DOTENV_KEY }}
+            # else
+            #   export DOTENV_KEY=${{ secrets.PAYZONE_DOTENV_KEY }}
+            # fi
+
+            # npm install dotenv --save
 
             if pm2 list | grep -q "${PROJECT}-${PR_NUMBER}" ; then
-              pm2 restart "${PROJECT}-${PR_NUMBER}" --update-env || { echo "Failed to restart PM2 process"; exit 1; }
+              PORT=$PORT && pm2 restart "${PROJECT}-${PR_NUMBER}" --update-env || { echo "Failed to restart PM2 process"; exit 1; }
             else
-              pm2 start npm --name "${PROJECT}-${PR_NUMBER}" -- run start:ci || { echo "Failed to start PM2 process"; exit 1; }
+              PORT=$PORT && pm2 start npm --name "${PROJECT}-${PR_NUMBER}" -- run start:ci || { echo "Failed to start PM2 process"; exit 1; }
             fi
             
             # Verify deployment
