@@ -63,7 +63,6 @@ jobs:
       
             console.log('Projects:', projects);
             console.log('PR Number:', prNumber);
-            console.log('Comments:', comments);
       
             projects.forEach(async (project) => {
               const uniqueIdentifier = project === 'portal' ? '<!-- PORTAL_PREVIEW_STATUS -->' : '<!-- PAYZONE_PREVIEW_STATUS -->';
@@ -91,7 +90,12 @@ jobs:
                   body: `${uniqueIdentifier}\n### ${project.charAt(0).toUpperCase() + project.slice(1)} Preview Deployment Status\n\n${initialStatus}`
                 });
               } else {
-                console.log('Existing comment found for project:', project);
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: existingComment.id,
+                  body: `${uniqueIdentifier}\n### ${project.charAt(0).toUpperCase() + project.slice(1)} Preview Deployment Status\n\n${initialStatus}`
+                });
               }
             });
 
