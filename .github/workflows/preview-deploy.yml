@@ -65,6 +65,29 @@ jobs:
             console.log('PR Number:', prNumber);
 
             projects.forEach(async (project) => {
+              // Remove Old labels
+              const labelsToRemove = [`building-${project}`, `${project}-build-failed`, `${project}-preview-deployed`];
+              for (const label of labelsToRemove) {
+                try{
+                  await github.rest.issues.removeLabel({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: context.issue.number,
+                    name: label
+                  });
+                } catch (e) {
+                    console.error(`Failed to remove label: ${label}`, e.message);
+                }
+              }
+              
+              const newLabel = `building-${project}`;
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: [newLabel]
+              });
+              
               const uniqueIdentifier = project === 'portal' ? '<!-- PORTAL_PREVIEW_STATUS -->' : '<!-- PAYZONE_PREVIEW_STATUS -->';
               const initialStatus = [
                 '| Status | 🚧 Building |',
@@ -179,20 +202,17 @@ jobs:
               issue_number: context.issue.number
             });
 
-            // Handle labels
-            const labelsToRemove = [`building-${project}`, `${project}-build-failed`, `${project}-preview-deployed`];
-            for (const label of labelsToRemove) {
-              try{
-                await github.rest.issues.removeLabel({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: context.issue.number,
-                  name: label
-                });
-              } catch (e) {
-                  console.error(`Failed to remove label: ${label}`, e.message);
-              }
+            try{
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                name: `building-${project}`
+              });
+            } catch (e) {
+                console.error(`Failed to remove label: ${label}`, e.message);
             }
+
             // Add appropriate label based on build status
             const newLabel = buildFailed ? `${project}-build-failed` : `${project}-preview-deployed`;
             await github.rest.issues.addLabels({
