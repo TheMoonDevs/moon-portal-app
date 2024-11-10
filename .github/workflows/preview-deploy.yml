@@ -318,10 +318,11 @@ jobs:
               exit 1
             fi
             echo "Successfully deployed ${PROJECT} preview for PR #${PR_NUMBER}"
-          ENDSSH || {
+          ENDSSH
+          if [ $? -ne 0 ]; then
             echo "Deployment step failed for ${PROJECT} on PR #${{ github.event.pull_request.number }}"
             exit 1
-          }
+          fi
 
       - name: Update comment with preview deployment status
         if: ${{ steps.build.outputs.build-status == 1 }}
