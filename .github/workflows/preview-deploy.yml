@@ -339,7 +339,7 @@ jobs:
               let deploymentFailed = false;
 
               // Check if deployment step failed
-              if (${{ steps.deploy.outcome }} === 'failure') {
+              if (`${{ steps.deploy.outcome }}` === 'failure') {
                 deploymentFailed = true;
               }
               
