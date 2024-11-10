@@ -237,6 +237,7 @@ jobs:
           cp -r ./${{ matrix.project }}/.next/standalone/* build/${{ matrix.project }}/${{ github.event.pull_request.number }}
           cp -r ./${{ matrix.project }}/.next/static/* build/${{ matrix.project }}/${{ github.event.pull_request.number }}/.next/static
           cp -r ./${{ matrix.project }}/public/* build/${{ matrix.project }}/${{ github.event.pull_request.number }}/public
+          cp ./${{ matrix.project }}/.env.vault build/${{ matrix.project }}/${{ github.event.pull_request.number }}/.env.vault
 
       - name: Upload using rsync
         if: ${{steps.build.outputs.build-status == 1 }}
