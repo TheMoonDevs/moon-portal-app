@@ -164,7 +164,7 @@ jobs:
           else
             export DOTENV_KEY=${{ secrets.PAYZONE_DOTENV_KEY }}
           fi
-          npm run build:ci || exit 1
+          npm run build:ci || (echo "Failed to build ${{ matrix.project }}" && core.setFailed(`Failed to build ${project}`) && exit 1)
 
       - name: Update Build Status in Comments
         continue-on-error: true
@@ -227,10 +227,12 @@ jobs:
               });
             }
             if (buildFailed) {
+              core.setFailed(`Failed to build ${project}`);
               exit(1);
             }
 
       - name: Prepare deployment files
+        continue-on-error: true
         if: success()
         run: |
           shopt -s dotglob
@@ -241,6 +243,7 @@ jobs:
           cp -r ./${{ matrix.project }}/public/* build/${{ matrix.project }}/${{ github.event.pull_request.number }}/public
 
       - name: Upload using rsync
+        continue-on-error: true
         if: success()
         uses: burnett01/rsync-deployments@7.0.1
         with:
@@ -259,6 +262,7 @@ jobs:
           log-public-key: false
 
       - name: Deploy on DigitalOcean
+        continue-on-error: true
         if: success()
         id: deploy
         run: |
