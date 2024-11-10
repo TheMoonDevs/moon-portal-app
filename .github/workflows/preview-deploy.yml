@@ -52,9 +52,41 @@ jobs:
           echo "Changed projects: ${projects[@]}"
           echo "projects=$(jq -c -n --argjson projects "$(printf '%s\n' "${projects[@]}" | jq -R . | jq -s .)" '$projects')" >> $GITHUB_OUTPUT
 
-      - name: Debug Changed Projects Output
-        run: |
-          echo "Projects output: ${{ steps.set-projects.outputs.projects }}"
+      - name: Create Initial Status Comments for Changed Projects
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const projects = JSON.parse('${{ steps.set-projects.outputs.projects }}');
+            const prNumber = context.issue.number;
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber
+            });
+            const logsUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+
+            projects.forEach(async (project) => {
+              const uniqueIdentifier = project === 'portal' ? '<!-- PORTAL_PREVIEW_STATUS -->' : '<!-- PAYZONE_PREVIEW_STATUS -->';
+              const initialStatus = [
+                '| Status | 🚧 Building |',
+                '| ------ | ----------- |',
+                `| Logs | [View Logs](${logsUrl}) |`,
+                '| Preview URL | - |'
+              ].join('\n');
+
+              let existingComment = comments.data.find(comment =>
+                comment.body.includes(uniqueIdentifier)
+              );
+
+              if (!existingComment) {
+                await github.rest.issues.createComment({
+                  issue_number: prNumber,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: `${uniqueIdentifier}\n### ${project.charAt(0).toUpperCase() + project.slice(1)} Preview Deployment Status\n\n${initialStatus}`
+                });
+              }
+            });
 
   build_and_deploy:
     needs: determine_project
@@ -77,60 +109,6 @@ jobs:
           PORT=$((PORT_RANGE_START + (PR_NUMBER + PROJECT_OFFSET) % PORT_RANGE))
           echo "port=$PORT" >> $GITHUB_OUTPUT
 
-      - name: Create or Update Initial Status Comments
-        continue-on-error: true
-        uses: actions/github-script@v6
-        id: status-comments
-        with:
-          script: |
-            const project = '${{ matrix.project }}';
-            const prNumber = context.issue.number;
-            const comments = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: prNumber
-            });
-            const logsUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-
-            // Add building label
-            try {
-              await github.rest.issues.addLabels({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: prNumber,
-                labels: [`building-${project}`]
-              });
-            } catch (e) {
-              console.error('Failed to add building label:', e);
-            }
-
-            const initialStatus = [
-              '| Status | 🚧 Building |',
-              '| ------ | ----------- |',
-              `| Logs | [View Logs](${logsUrl}) |`,
-              '| Preview URL | - |'
-            ].join('\n');
-
-            const uniqueIdentifier = project === 'portal' ? '<!-- PORTAL_PREVIEW_STATUS -->' : '<!-- PAYZONE_PREVIEW_STATUS -->';
-            let existingComment = comments.data.find(comment =>
-              comment.body.includes(uniqueIdentifier)
-            );
-            if (!existingComment) {
-              await github.rest.issues.createComment({
-                issue_number: prNumber,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: `${uniqueIdentifier}\n### ${project.charAt(0).toUpperCase() + project.slice(1)} Preview Deployment Status\n\n${initialStatus}`
-              });
-            } else {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existingComment.id,
-                body: `${uniqueIdentifier}\n### ${project.charAt(0).toUpperCase() + project.slice(1)} Preview Deployment Status\n\n${initialStatus}`
-              });
-            }
-
       - name: Use Node.js 20
         uses: actions/setup-node@v4
         with:
@@ -152,9 +130,17 @@ jobs:
 
       - name: Install dependencies
         working-directory: ./${{ matrix.project }}
-        run: npm i
+        run: |
+          if ! npm i; then
+            echo "Failed to install dependencies for ${{ matrix.project }}"
+            core.setFailed("Failed to install dependencies for ${{ matrix.project }}")
+            exit 1
+          fi
+
+        continue-on-error: true
 
       - name: Build project
+        if: success()
         continue-on-error: true
         id: build
         working-directory: ./${{ matrix.project }}
@@ -164,7 +150,11 @@ jobs:
           else
             export DOTENV_KEY=${{ secrets.PAYZONE_DOTENV_KEY }}
           fi
-          npm run build:ci || { core.setFailed(`Failed to build ${project}`); echo "Failed to build ${{ matrix.project }}"; exit 1; }
+          if ! npm run build:ci; then
+            echo "Build failed for ${{ matrix.project }}"
+            core.setFailed("Build failed for ${{ matrix.project }}")
+            exit 1
+          fi
 
       - name: Update Build Status in Comments
         continue-on-error: true
@@ -294,9 +284,9 @@ jobs:
             fi
 
             if pm2 list | grep -q "${PROJECT}-${PR_NUMBER}" ; then
-              pm2 restart "${PROJECT}-${PR_NUMBER}" --update-env
+              pm2 restart "${PROJECT}-${PR_NUMBER}" --update-env || { echo "Failed to restart PM2 process"; exit 1; }
             else
-              pm2 start npm --name "${PROJECT}-${PR_NUMBER}" -- run start:ci
+              pm2 start npm --name "${PROJECT}-${PR_NUMBER}" -- run start:ci || { echo "Failed to start PM2 process"; exit 1; }
             fi
             
             # Verify deployment
@@ -322,8 +312,6 @@ jobs:
               // Update labels for successful deployment
               const labelsToRemove = [
                 `${project}-build-failed`,
-                `${project}-deploy-failed`,
-                `${project}-preview-deployed`,
                 `building-${project}`
               ];
               
