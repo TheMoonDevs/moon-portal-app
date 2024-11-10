@@ -155,7 +155,7 @@ jobs:
           else
             export DOTENV_KEY=${{ secrets.PAYZONE_DOTENV_KEY }}
           fi
-          npm run build
+          npm run build:ci
 
       - name: Update Build Status in Comments
         continue-on-error: true
@@ -281,7 +281,7 @@ jobs:
             if pm2 list | grep -q "${PROJECT}-${PR_NUMBER}" ; then
               pm2 restart "${PROJECT}-${PR_NUMBER}" --update-env
             else
-              pm2 start npm --name "${PROJECT}-${PR_NUMBER}" -- run start:prod
+              pm2 start npm --name "${PROJECT}-${PR_NUMBER}" -- run start:ci
             fi
             
             # Verify deployment
