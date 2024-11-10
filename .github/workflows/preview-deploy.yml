@@ -60,7 +60,11 @@ jobs:
               issue_number: prNumber
             });
             const logsUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-
+      
+            console.log('Projects:', projects);
+            console.log('PR Number:', prNumber);
+            console.log('Comments:', comments);
+      
             projects.forEach(async (project) => {
               const uniqueIdentifier = project === 'portal' ? '<!-- PORTAL_PREVIEW_STATUS -->' : '<!-- PAYZONE_PREVIEW_STATUS -->';
               const initialStatus = [
@@ -69,18 +73,25 @@ jobs:
                 `| Logs | [View Logs](${logsUrl}) |`,
                 '| Preview URL | - |'
               ].join('\n');
-
+      
+              console.log('Processing project:', project);
+              console.log('Unique Identifier:', uniqueIdentifier);
+              console.log('Initial Status:', initialStatus);
+      
               let existingComment = comments.data.find(comment =>
                 comment.body.includes(uniqueIdentifier)
               );
-
+      
               if (!existingComment) {
+                console.log('Creating new comment for project:', project);
                 await github.rest.issues.createComment({
                   issue_number: prNumber,
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   body: `${uniqueIdentifier}\n### ${project.charAt(0).toUpperCase() + project.slice(1)} Preview Deployment Status\n\n${initialStatus}`
                 });
+              } else {
+                console.log('Existing comment found for project:', project);
               }
             });
 
@@ -129,7 +140,6 @@ jobs:
         working-directory: ./${{ matrix.project }}
         run: |
           if ! npm i; then
-            core.setFailed("Failed to install dependencies for ${{ matrix.project }}")
             exit 1
           fi
 
@@ -145,7 +155,6 @@ jobs:
             export DOTENV_KEY=${{ secrets.PAYZONE_DOTENV_KEY }}
           fi
           if ! npm run build:ci; then
-            core.setFailed("Build failed for ${{ matrix.project }}")
             exit 1
           fi
 
