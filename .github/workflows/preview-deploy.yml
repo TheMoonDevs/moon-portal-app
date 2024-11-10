@@ -321,8 +321,10 @@ jobs:
               exit 1
             fi
             echo "Successfully deployed ${PROJECT} preview for PR #${PR_NUMBER}"
-            echo "deploy-status=1" >> $GITHUB_OUTPUT
-          ENDSSH
+          ENDSSH || {
+            echo "Deployment step failed for ${PROJECT} on PR #${{ github.event.pull_request.number }}"
+            exit 1
+          }
 
       - name: Update comment with preview deployment status
         if: ${{ steps.build.outputs.build-status == 1 }}
@@ -336,10 +338,13 @@ jobs:
             const previewUrl = `https://preview-${prNumber}-${port}.${subdomain}.themoondevs.com`;
 
             try {
-              // Update labels based on deployment success or failure
-              let deploymentFailed = ${{ steps.deploy.outputs.deploy-status }} === 0;
-              console.log('Is Deployment failed? ', deploymentFailed);
+              let deploymentFailed = false;
 
+              // Check if deployment step failed
+              if (${{ steps.deploy.outcome }} === 'failure') {
+                deploymentFailed = true;
+              }
+              
               try {
                 await github.rest.issues.removeLabel({
                   owner: context.repo.owner,
