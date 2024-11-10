@@ -303,13 +303,11 @@ jobs:
             if pm2 list | grep -q "${PROJECT}-${PR_NUMBER}" ; then
               if ! pm2 restart "${PROJECT}-${PR_NUMBER}" --update-env ; then
                 echo "Failed to restart PM2 process"
-                echo "deploy-status=0" >> $GITHUB_OUTPUT
                 exit 1
               fi
             else
               if ! pm2 start npm --name "${PROJECT}-${PR_NUMBER}" -- run start:ci ; then
                 echo "Failed to start PM2 process"
-                echo "deploy-status=0" >> $GITHUB_OUTPUT
                 exit 1
               fi
             fi
@@ -317,7 +315,6 @@ jobs:
             # Verify deployment
             if ! pm2 show "${PROJECT}-${PR_NUMBER}" > /dev/null 2>&1; then
               echo "Failed to start/restart PM2 process for ${PROJECT}"
-              echo "deploy-status=0" >> $GITHUB_OUTPUT
               exit 1
             fi
             echo "Successfully deployed ${PROJECT} preview for PR #${PR_NUMBER}"
