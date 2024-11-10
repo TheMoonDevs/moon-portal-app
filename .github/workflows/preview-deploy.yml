@@ -104,6 +104,7 @@ jobs:
     if: needs.determine_project.outputs.projects != 'null' && needs.determine_project.outputs.projects != '[]'
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         project: ${{ fromJson(needs.determine_project.outputs.projects) }}
 
@@ -140,7 +141,6 @@ jobs:
             ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
 
       - name: Install dependencies
-        continue-on-error: true
         id: install
         working-directory: ./${{ matrix.project }}
         run: |
@@ -148,13 +148,13 @@ jobs:
             echo "install-status=0" >> $GITHUB_OUTPUT
             exit 1
           fi
+          echo "install-status=1" >> $GITHUB_OUTPUT
 
       - name: Build project
-        continue-on-error: true
         id: build
         working-directory: ./${{ matrix.project }}
         run: |
-          if [${{steps.install.outputs.install-status == 0}} ]; then
+          if ${{steps.install.outputs.install-status == 0}} ; then
             echo "npm install failed"
             echo "build-status=0" >> $GITHUB_OUTPUT
             exit 1
@@ -173,7 +173,6 @@ jobs:
           echo "build-status=1" >> $GITHUB_OUTPUT
 
       - name: Update Build Status in Comments
-        continue-on-error: true
         if: success() || failure()
         uses: actions/github-script@v6
         with:
@@ -236,7 +235,6 @@ jobs:
             }
 
       - name: Prepare deployment files
-        continue-on-error: true
         if: ${{steps.build.outputs.build-status == 1 }}
         run: |
           shopt -s dotglob
@@ -247,7 +245,6 @@ jobs:
           cp -r ./${{ matrix.project }}/public/* build/${{ matrix.project }}/${{ github.event.pull_request.number }}/public
 
       - name: Upload using rsync
-        continue-on-error: true
         if: ${{steps.build.outputs.build-status == 1 }}
         uses: burnett01/rsync-deployments@7.0.1
         with:
@@ -266,7 +263,6 @@ jobs:
           log-public-key: false
 
       - name: Deploy on DigitalOcean
-        continue-on-error: true
         if: ${{steps.build.outputs.build-status == 1 }}
         id: deploy
         run: |
