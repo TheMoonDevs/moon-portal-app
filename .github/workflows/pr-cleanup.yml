@@ -1,6 +1,9 @@
 name: Cleanup PR Preview Environments
 
 on:
+  workflow_run:
+    workflows: ["Preview Deployment"] 
+    types: [completed]  # Ensures it runs only after the deployment workflow finishes
   pull_request:
     types: [closed]
 
@@ -9,7 +12,7 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  group: ${{ github.repository }}-pr-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
