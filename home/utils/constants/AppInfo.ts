@@ -34,7 +34,7 @@ export const APP_INFO = {
   logo: IS_DARK_MODE ? '/logo_dark.svg' : 'logo/logo.png',
   logo_dark: 'logo/logo.png',
   base_url: IN_DEV
-    ? 'https://91fb-183-82-160-27.ngrok-free.app/'
+    ? 'http://localhost:3000'
     : IN_TESTNET
       ? 'https://themoondevs.com/'
       : 'https://themoondevs.com/',
