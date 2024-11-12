@@ -40,7 +40,13 @@ frontend:
   - 'payzone/{app,components,pages,public,styles,utils}/**/*'
   - '!payzone/app/api/**/*'
   - 'home/{app,components,pages,public,redux,styles,utils}/**/*'
+  - '!home/app/api/**/*'
   - '!home/pages/api/**/*'
+  - '!.github/**/*'
+  - '!**/middleware.ts'
+  - '!**/package.json'
+  - '!**/package-lock.json'
+  - '!**/README.md'
 
 # --------------- Backend labels ---------------
 # Add 'backend' to any changes within backend-related folders in Next.js apps
