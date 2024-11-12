@@ -1,24 +1,24 @@
-import React, { useEffect, useRef } from "react";
-import { usePathname } from "next/navigation";
-import { Provider as ReduxProvider } from "react-redux";
-import type { AppType } from "next/app";
-import { AppProps } from "next/app";
+import React, { useEffect, useRef } from 'react';
+import { usePathname } from 'next/navigation';
+import { Provider as ReduxProvider } from 'react-redux';
+import type { AppType } from 'next/app';
+import { AppProps } from 'next/app';
 
-import { CacheProvider, EmotionCache, Global } from "@emotion/react";
+import { CacheProvider, EmotionCache, Global } from '@emotion/react';
 
-import { Header } from "@/components/App/Header/Header";
-import MetaInfo, { MetaInfoProps } from "@/components/App/MetaInfo";
-import { AppPageLoader } from "@/components/App/PageLoader";
+import { Header } from '@/components/App/Header/Header';
+import MetaInfo, { MetaInfoProps } from '@/components/App/MetaInfo';
+import { AppPageLoader } from '@/components/App/PageLoader';
 
-import { MUIThemeProvider } from "@/styles/provider";
-import createEmotionCache from "@/styles/emotion";
-import globalStyles from "@/styles/global";
-import "../styles/globals.css";
+import { MUIThemeProvider } from '@/styles/provider';
+import createEmotionCache from '@/styles/emotion';
+import globalStyles from '@/styles/global';
+import '../styles/globals.css';
 
-import store from "@/redux/store";
-import { FirebaseSDK } from "@/utils/service/firebase";
-import { APP_ROUTES } from "@/utils/constants/AppInfo";
-import { useRouter } from "next/router";
+import store from '@/redux/store';
+import { FirebaseSDK } from '@/utils/service/firebase';
+import { APP_ROUTES } from '@/utils/constants/AppInfo';
+import { useRouter } from 'next/router';
 
 const clientSideEmotionCache = createEmotionCache();
 
@@ -63,7 +63,6 @@ const MyApp: AppType<{
   return (
     <CacheProvider value={emotionCache}>
       <ReduxProvider store={store}>
-        <MetaInfo meta={pageProps.meta} />
         <Global styles={globalStyles} />
         {/* <Script
           src={`https://www.googletagmanager.com/gtag/js?id=G-${GTAG_ID}`}
