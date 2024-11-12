@@ -8,10 +8,6 @@ permissions:
   contents: write
   pull-requests: write
 
-env:
-  PORT_RANGE_START: 8000
-  PORT_RANGE_END: 9000
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
@@ -52,15 +48,86 @@ jobs:
           echo "Changed projects: ${projects[@]}"
           echo "projects=$(jq -c -n --argjson projects "$(printf '%s\n' "${projects[@]}" | jq -R . | jq -s .)" '$projects')" >> $GITHUB_OUTPUT
 
-      - name: Debug Changed Projects Output
-        run: |
-          echo "Projects output: ${{ steps.set-projects.outputs.projects }}"
+      - name: Create Initial Status Comments for Changed Projects
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const projects = JSON.parse('${{ steps.set-projects.outputs.projects }}');
+            const prNumber = context.issue.number;
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber
+            });
+            const logsUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+
+            console.log('Projects:', projects);
+            console.log('PR Number:', prNumber);
+
+            projects.forEach(async (project) => {
+              // Remove Old labels
+              const labelsToRemove = [`building-${project}`, `${project}-build-failed`, `${project}-build-success`, `${project}-preview-deployed`, `${project}-preview-failed`];
+              for (const label of labelsToRemove) {
+                try{
+                  await github.rest.issues.removeLabel({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: context.issue.number,
+                    name: label
+                  });
+                } catch (e) {
+                    console.error(`Failed to remove label: ${label}`, e.message);
+                }
+              }
+              
+              const newLabel = `building-${project}`;
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: [newLabel]
+              });
+              
+              const uniqueIdentifier = project === 'portal' ? '<!-- PORTAL_PREVIEW_STATUS -->' : '<!-- PAYZONE_PREVIEW_STATUS -->';
+              const initialStatus = [
+                '| Status | 🚧 Building |',
+                '| ------ | ----------- |',
+                `| Logs | [View Logs](${logsUrl}) |`,
+                '| Preview URL | - |'
+              ].join('\n');
+
+              console.log('Processing project:', project);
+              console.log('Unique Identifier:', uniqueIdentifier);
+              console.log('Initial Status:', initialStatus);
+
+              let existingComment = comments.data.find(comment =>
+                comment.body.includes(uniqueIdentifier)
+              );
+
+              if (!existingComment) {
+                console.log('Creating new comment for project:', project);
+                await github.rest.issues.createComment({
+                  issue_number: prNumber,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: `${uniqueIdentifier}\n### ${project.charAt(0).toUpperCase() + project.slice(1)} Preview Deployment Status\n\n${initialStatus}`
+                });
+              } else {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: existingComment.id,
+                  body: `${uniqueIdentifier}\n### ${project.charAt(0).toUpperCase() + project.slice(1)} Preview Deployment Status\n\n${initialStatus}`
+                });
+              }
+            });
 
   build_and_deploy:
     needs: determine_project
     if: needs.determine_project.outputs.projects != 'null' && needs.determine_project.outputs.projects != '[]'
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         project: ${{ fromJson(needs.determine_project.outputs.projects) }}
 
@@ -73,135 +140,87 @@ jobs:
         run: |
           PR_NUMBER=${{ github.event.pull_request.number }}
           PROJECT_OFFSET=$([ "${{ matrix.project }}" = "portal" ] && echo 0 || echo 500)
-          PORT_RANGE=$((PORT_RANGE_END - PORT_RANGE_START))
-          PORT=$((PORT_RANGE_START + (PR_NUMBER + PROJECT_OFFSET) % PORT_RANGE))
+          PORT_RANGE=1000
+          PORT=$((8000 + (PR_NUMBER + PROJECT_OFFSET) % PORT_RANGE))
           echo "port=$PORT" >> $GITHUB_OUTPUT
-
-      - name: Setup build environment
-        run: |
-          mkdir -p ./${{ matrix.project }}
-          cat << EOF > ./${{ matrix.project }}/.env.build
-          DATABASE_URL=${{ secrets.PREVIEW_DATABASE_URL }}
-          GIAM_CLIENT_EMAIL=${{ secrets.PREVIEW_GIAM_CLIENT_EMAIL }}
-          GIAM_CLIENT_ID=${{ secrets.PREVIEW_GIAM_CLIENT_ID }}
-          GIAM_PRIVATE_KEY='${{ secrets.PREVIEW_GIAM_PRIVATE_KEY }}'
-          SLACK_OAUTH_TOKEN=${{ secrets.SLACK_OAUTH_TOKEN }}
-          EOF
 
       - name: Use Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: "20"
 
-      - name: Install dependencies
-        working-directory: ./${{ matrix.project }}
-        run: npm i
-        continue-on-error: true # Allow other projects to continue if one fails
-
-      - name: Create or Update Initial Status Comments
-        continue-on-error: true
-        uses: actions/github-script@v6
-        id: status-comments
+      - name: Cache dependencies and build artifacts
+        uses: actions/cache@v4
         with:
-          script: |
-            const project = '${{ matrix.project }}';
-            const prNumber = context.issue.number;
-            const comments = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: prNumber
-            });
-            const logsUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+          path: ${{ github.workspace }}/${{ matrix.project }}/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
 
-            // Add building label
-            try {
-              await github.rest.issues.addLabels({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: prNumber,
-                labels: [`building-${project}`]
-              });
-            } catch (e) {
-              console.error('Failed to add building label:', e);
-            }
-
-            const initialStatus = [
-              '| Status | 🚧 Building |',
-              '| ------ | ----------- |',
-              `| Logs | [View Logs](${logsUrl}) |`,
-              '| Preview URL | - |'
-            ].join('\n');
-
-            const uniqueIdentifier = project === 'portal' ? '<!-- PORTAL_PREVIEW_STATUS -->' : '<!-- PAYZONE_PREVIEW_STATUS -->';
-            let existingComment = comments.data.find(comment =>
-              comment.body.includes(uniqueIdentifier)
-            );
-            if (!existingComment) {
-              await github.rest.issues.createComment({
-                issue_number: prNumber,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: `${uniqueIdentifier}\n### ${project.charAt(0).toUpperCase() + project.slice(1)} Preview Deployment Status\n\n${initialStatus}`
-              });
-            } else {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existingComment.id,
-                body: `${uniqueIdentifier}\n### ${project.charAt(0).toUpperCase() + project.slice(1)} Preview Deployment Status\n\n${initialStatus}`
-              });
-            }
+      - name: Install dependencies
+        id: install
+        working-directory: ./${{ matrix.project }}
+        run: |
+          if ! npm i; then
+            echo "install-status=0" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          echo "install-status=1" >> $GITHUB_OUTPUT
 
       - name: Build project
-        continue-on-error: true
         id: build
         working-directory: ./${{ matrix.project }}
-        env:
-          DATABASE_URL: ${{ secrets.PREVIEW_DATABASE_URL }}
-          GIAM_CLIENT_EMAIL: ${{ secrets.PREVIEW_GIAM_CLIENT_EMAIL }}
-          GIAM_CLIENT_ID: ${{ secrets.PREVIEW_GIAM_CLIENT_ID }}
-          GIAM_PRIVATE_KEY: ${{ secrets.PREVIEW_GIAM_PRIVATE_KEY }}
-          SLACK_OAUTH_TOKEN: ${{ secrets.SLACK_OAUTH_TOKEN }}
-        run: npm run build
+        run: |
+          if ${{steps.install.outputs.install-status == 0}} ; then
+            echo "npm install failed"
+            echo "build-status=0" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+          if [ "${{ matrix.project }}" = "portal" ]; then
+            export DOTENV_KEY=${{ secrets.PORTAL_DOTENV_KEY }}
+          else
+            export DOTENV_KEY=${{ secrets.PAYZONE_DOTENV_KEY }}
+          fi
+
+          if ! npm run build:ci; then
+            echo "build-status=0" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          echo "build-status=1" >> $GITHUB_OUTPUT
 
       - name: Update Build Status in Comments
-        continue-on-error: true
         if: success() || failure()
         uses: actions/github-script@v6
         with:
           script: |
             const project = '${{ matrix.project }}';
-            const buildFailed = '${{ job.status }}' === 'failure';
+            const buildFailed = ${{ steps.build.outputs.build-status}} === 0;
             const comments = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number
             });
 
-            // Handle labels
-            try {
-              // Remove existing build status labels
-              const labelsToRemove = [`building-${project}`, `${project}-build-failed`, `${project}-preview-deployed`];
-              for (const label of labelsToRemove) {
-                  await github.rest.issues.removeLabel({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    issue_number: context.issue.number,
-                    name: label
-                  });
-                }
-
-              // Add appropriate label based on build status
-              const newLabel = buildFailed ? `${project}-build-failed` : `${project}-preview-deployed`;
-              await github.rest.issues.addLabels({
+            try{
+              await github.rest.issues.removeLabel({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.issue.number,
-                labels: [newLabel]
+                name: `building-${project}`
               });
             } catch (e) {
-              console.error('Failed to update labels:', e);
+                console.error(`Failed to remove label: ${label}`, e.message);
             }
+
+            // Add appropriate label based on build status
+            const newLabel = buildFailed ? `${project}-build-failed` : `${project}-build-success`;
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: [newLabel]
+            });
 
             // Update comment with proper table formatting
             const uniqueIdentifier = project === 'portal' ? '<!-- PORTAL_PREVIEW_STATUS -->' : '<!-- PAYZONE_PREVIEW_STATUS -->';
@@ -225,9 +244,12 @@ jobs:
               });
             }
 
+            if (buildFailed) {
+              core.setFailed(`Failed to build ${project}`);
+            }
+
       - name: Prepare deployment files
-        continue-on-error: true
-        if: success()
+        if: ${{steps.build.outputs.build-status == 1 }}
         run: |
           shopt -s dotglob
           mkdir -p build/${{ matrix.project }}/${{ github.event.pull_request.number }}/.next/static
@@ -235,9 +257,10 @@ jobs:
           cp -r ./${{ matrix.project }}/.next/standalone/* build/${{ matrix.project }}/${{ github.event.pull_request.number }}
           cp -r ./${{ matrix.project }}/.next/static/* build/${{ matrix.project }}/${{ github.event.pull_request.number }}/.next/static
           cp -r ./${{ matrix.project }}/public/* build/${{ matrix.project }}/${{ github.event.pull_request.number }}/public
+          cp ./${{ matrix.project }}/.env.vault build/${{ matrix.project }}/${{ github.event.pull_request.number }}/.env.vault
 
       - name: Upload using rsync
-        continue-on-error: true
+        if: ${{steps.build.outputs.build-status == 1 }}
         uses: burnett01/rsync-deployments@7.0.1
         with:
           switches: "-av --delete --partial --bwlimit=5000"
@@ -248,41 +271,45 @@ jobs:
           remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
 
       - name: Set up SSH (secured)
+        if: ${{steps.build.outputs.build-status == 1 }}
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
           log-public-key: false
 
       - name: Deploy on DigitalOcean
-        continue-on-error: true
-        if: success()
+        if: ${{steps.build.outputs.build-status == 1 }}
         id: deploy
         run: |
+          set -e  # Enable immediate exit on error to catch all deployment errors
           ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} << 'ENDSSH'
             source ~/.nvm/nvm.sh
             nvm use 20  # Explicitly set Node version to 20
             # Set variables
             PROJECT="${{ matrix.project }}"
             PR_NUMBER="${{ github.event.pull_request.number }}"
-            PORT="${{ steps.calculate-port.outputs.port }}"
             APP_PATH="/home/${{ secrets.DROPLET_USER }}/apps/builds/${PROJECT}/preview/${PR_NUMBER}"
             # Navigate to the deployment path
             cd "$APP_PATH"
             
-            # Copy environment file if it exists
-            if [ -f /home/${{ secrets.DROPLET_USER }}/apps/moon-portal-app/${PROJECT}/.env.preview ]; then
-              cp /home/${{ secrets.DROPLET_USER }}/apps/moon-portal-app/${PROJECT}/.env.preview .env
-              echo "PORT=${PORT}" >> .env
-              chmod 600 .env  # Secure permissions for env file
+            if [ "${{ matrix.project }}" = "portal" ]; then
+              export DOTENV_KEY=${{ secrets.PORTAL_DOTENV_KEY }}
             else
-              echo "Warning: .env.preview file not found"
-              exit 1
+              export DOTENV_KEY=${{ secrets.PAYZONE_DOTENV_KEY }}
             fi
-            
+
+            export PORT=${{ steps.calculate-port.outputs.port }}
+
             if pm2 list | grep -q "${PROJECT}-${PR_NUMBER}" ; then
-              pm2 restart "${PROJECT}-${PR_NUMBER}" --update-env
+              if ! pm2 restart "${PROJECT}-${PR_NUMBER}" --update-env ; then
+                echo "Failed to restart PM2 process"
+                exit 1
+              fi
             else
-              pm2 start npm --name "${PROJECT}-${PR_NUMBER}" -- run start:prod
+              if ! pm2 start npm --name "${PROJECT}-${PR_NUMBER}" -- run start:ci ; then
+                echo "Failed to start PM2 process"
+                exit 1
+              fi
             fi
             
             # Verify deployment
@@ -292,10 +319,13 @@ jobs:
             fi
             echo "Successfully deployed ${PROJECT} preview for PR #${PR_NUMBER}"
           ENDSSH
+          if [ $? -ne 0 ]; then
+            echo "Deployment step failed for ${PROJECT} on PR #${{ github.event.pull_request.number }}"
+            exit 1
+          fi
 
-      - name: Update comment with preview URL
-        continue-on-error: true
-        if: success()
+      - name: Update comment with preview deployment status
+        if: ${{ steps.build.outputs.build-status == 1 }}
         uses: actions/github-script@v6
         with:
           script: |
@@ -306,37 +336,34 @@ jobs:
             const previewUrl = `https://preview-${prNumber}-${port}.${subdomain}.themoondevs.com`;
 
             try {
-              // Update labels for successful deployment
-              const labelsToRemove = [
-                `${project}-build-failed`,
-                `${project}-deploy-failed`,
-                `${project}-preview-deployed`,
-                `building-${project}`
-              ];
-              
-              // Remove existing labels
-              for (const label of labelsToRemove) {
-                try {
-                  await github.rest.issues.removeLabel({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    issue_number: context.issue.number,
-                    name: label
-                  });
-                } catch (e) {
-                  // Ignore if label doesn't exist
-                }
+              let deploymentFailed = false;
+
+              // Check if deployment step failed
+              if (`${{ steps.deploy.outcome }}` === 'failure') {
+                deploymentFailed = true;
               }
               
-              // Add deployed label
+              try {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  name: `${project}-build-success`
+                });
+              } catch (e) {
+                console.error(`Failed to remove label ${label}:`, e.message);
+              }
+
+              // Add appropriate label
+              const newLabel = deploymentFailed ? `${project}-preview-failed` : `${project}-preview-deployed`;
               await github.rest.issues.addLabels({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.issue.number,
-                labels: [`${project}-preview-deployed`]
+                labels: [newLabel]
               });
-              
-              // Update comment with preview URL
+
+              // Update comment with status and URL
               const comments = await github.rest.issues.listComments({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -346,15 +373,19 @@ jobs:
               const uniqueIdentifier = project === 'portal' ? '<!-- PORTAL_PREVIEW_STATUS -->' : '<!-- PAYZONE_PREVIEW_STATUS -->';
               const existingComment = comments.data.find(comment => comment.body.includes(uniqueIdentifier));
               const logsUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-              
-              if (existingComment) {
-                const updatedStatus = [
-                  '| Status | 🚀 Preview Deployed |',
-                  '| ------ | ----------------- |',
-                  `| Logs | [View Logs](${logsUrl}) |`,
-                  `| Preview URL | [Preview URL](${previewUrl}) |`
-                ].join('\n');
 
+              // Set status and URL text based on success or failure
+              const status = deploymentFailed ? '❌ Deployment Failed' : '🚀 Preview Deployed';
+              const previewUrlText = deploymentFailed ? '❌ Failed' : `[Preview URL](${previewUrl})`;
+
+              const updatedStatus = [
+                `| Status | ${status} |`,
+                `| ------ | ----------- |`,
+                `| Logs | [View Logs](${logsUrl}) |`,
+                `| Preview URL | ${previewUrlText} |`
+              ].join('\n');
+
+              if (existingComment) {
                 await github.rest.issues.updateComment({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
