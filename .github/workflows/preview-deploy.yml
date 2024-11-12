@@ -66,7 +66,7 @@ jobs:
 
             projects.forEach(async (project) => {
               // Remove Old labels
-              const labelsToRemove = [`building-${project}`, `${project}-build-failed`, `${project}-build-success`, `${project}-preview-deployed`, `${project}-preview-failed`];
+              const labelsToRemove = [`${project}-build-failed`, `${project}-build-success`, `${project}-preview-deployed`, `${project}-preview-failed`];
               for (const label of labelsToRemove) {
                 try{
                   await github.rest.issues.removeLabel({
