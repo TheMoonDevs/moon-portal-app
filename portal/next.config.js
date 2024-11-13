@@ -1,10 +1,14 @@
 const runtimeCaching = require("next-pwa/cache");
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+})
+
 const withPWA = require("next-pwa")({
   //dest: "public",
   //reactStrictMode: true,
   dest: "public",
   register: true,
-  disable: process.env.NODE_ENV === "development",
+  disable: process.env.NODE_ENV !== "production",
   skipWaiting: false,
   clientsClaim: false,
   runtimeCaching,
@@ -35,20 +39,42 @@ const nextConfig = {
       },
     ],
   },
+  output: "standalone",
+  swcMinify: true,
+  productionBrowserSourceMaps: false,
   experimental: {
+    serverSourceMaps: false,
     //looseMode: true,
     esmExternals: "loose", // <-- add this
-    serverComponentsExternalPackages: ["mongoose"], // <-- and this
+    optimizePackageImports: ['@mantine/core', '@mantine/styles', '@mantine/utils'],
   },
-  webpack: (config, { isServer }) => {
-    // Experiments configuration
+  eslint: {
+    // Warning: This allows production builds to successfully complete even if
+    // your project has ESLint errors.
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    // !! WARN !!
+    // Dangerously allow production builds to successfully complete even if
+    // your project has type errors.
+    // !! WARN !!
+    // ignoreBuildErrors: true,
+  },
+  webpack: (
+    config,
+    { buildId, dev, isServer, defaultLoaders, nextRuntime, webpack }
+  ) => {
     config.experiments = {
       topLevelAwait: true,
       layers: true,
     };
-
-    return config;
+    // if (config.cache && !dev) {
+    //   config.cache = Object.freeze({
+    //     type: 'memory',
+    //   })
+    // }
+    return config
   },
 };
 
-module.exports = withPWA(nextConfig);
+module.exports = withBundleAnalyzer(withPWA(nextConfig));

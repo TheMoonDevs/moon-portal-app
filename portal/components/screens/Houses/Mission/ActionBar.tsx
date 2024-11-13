@@ -13,7 +13,6 @@ import {
 } from "@mui/material";
 import { getTimeValueOptions } from "./mission.utils";
 import dayjs from "dayjs";
-import { setActiveMission } from "@/utils/redux/missions/mission.slice";
 import { HOUSES_LIST } from "../HousesList";
 
 const ActionBar = ({
@@ -72,7 +71,7 @@ const ActionBar = ({
           onClick={() => dispatch(setActiveTab("missions"))}
         >
           <span className="font-bold">
-            {HOUSES_LIST[currentHouseIndex].name}
+            {HOUSES_LIST[currentHouseIndex]?.name}
           </span>{" "}
           /<span className="text-xs"> Missions</span>
         </h3>

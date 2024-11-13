@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { FilterCardStyled } from './FilterCard.styles';
-import { Link } from "react-transition-progress/next";
 import { APP_ROUTES } from "@/utils/constants/AppInfo";
+import { Link } from '@/components/App/Global/react-transition-progress/CustomLink';
 
 const FilterCard = ({
   toggleTextVisibility,

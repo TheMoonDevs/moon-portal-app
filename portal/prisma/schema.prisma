@@ -14,6 +14,7 @@ model User {
   id             String        @id @default(auto()) @map("_id") @db.ObjectId
   username       String
   password       String
+  passphrase     String?
   email          String?
   name           String?
   avatar         String?
@@ -37,6 +38,7 @@ model User {
   thirdPartyData Json?
   slackId        String?
   positionTitle  String?
+  buffBadge      BuffBadge[]
 }
 
 model Candidate {
@@ -332,9 +334,10 @@ model DocMarkdown {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   docId     String   @unique
   logType   String
-  userId    String   @unique
+  userId    String   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  date      String?
   markdown  Json
 }
 
@@ -487,4 +490,47 @@ model Task {
   url       String
   startDate DateTime? 
   dueDate   DateTime? 
+}
+
+//-------------------------------------Worklog-Buff-Badge-----------------------------------------
+
+model BuffBadge {
+  id             String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String      @db.ObjectId
+  title          String
+  points         Int
+  buffLevel      BUFF_LEVEL 
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  month          String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([userId, month]) 
+}
+
+enum BUFF_LEVEL {
+  TRUTH_SEEKER
+  BABY_GROOT
+  WORK_HULK
+  VAMPIRE_LORD
+  ALIEN_PREDATOR
+  DEVIL
+}
+
+//-------------------------------------PUSH NOTIFICATIONS-------------------------------------------
+
+type KEYS {
+  p256dh String
+  auth   String
+}
+type PUSHNOTIFICATION {
+  endpoint String
+  expirationTime String?
+  keys     KEYS
+}
+
+model Subscription {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String  @db.ObjectId  @unique
+  subscriptions PUSHNOTIFICATION[]
 }
