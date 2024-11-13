@@ -12,7 +12,7 @@ export const APP_ROUTES = {
   blogs: "/worklife/blogs",
   story: "/worklife/story",
   careers: "/worklife/careers",
-  refer_earn: "/offers/refer-&-earn",
+  refer_earn: "/offers/refer-and-earn",
   docs_privacy: "/documents/privacy",
   docs_terms: "/documents/terms",
 };

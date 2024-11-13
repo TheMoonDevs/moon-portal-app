@@ -1,7 +1,7 @@
 import { APP_ROUTES } from "@/utils/constants/AppInfo";
 import Image from "next/image";
-import { Link } from "react-transition-progress/next";
 import { CareerHeaderStyled } from "./CareersHeader.styles";
+import { Link } from "@/components/App/Global/react-transition-progress/CustomLink";
 
 const CareersHeader = () => {
   return (

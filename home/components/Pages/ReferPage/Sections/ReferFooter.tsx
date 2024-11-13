@@ -3,8 +3,8 @@ import { ReferFooterStyles } from "./ReferFooter.styles";
 import { Button, useMediaQuery } from "@mui/material";
 import { reverseMedia } from "@/styles/media";
 import { ReferScrollState } from "../types";
-import { Link } from "react-transition-progress/next";
 import { APP_INFO } from "@/utils/constants/AppInfo";
+import { Link } from "@/components/App/Global/react-transition-progress/CustomLink";
 
 export const ReferFooter = () => {
   const isTablet = useMediaQuery(reverseMedia.tablet);
