@@ -26,7 +26,7 @@ export const SOCIAL_ROUTES = {
 export const APP_INFO = {
   title: 'TheMoonDevs',
   description:
-    'Hire expert developers risk-free with The Moon Devs. Start a 7-day free trial to experience high-quality development. Commitment is optional, and confidentiality is guaranteed.',
+    'We provide high-quality developer guidance and solutions for start-ups, and lead companies that struggle with finding the right and robust team to launch their products or unblock the tougher cogs in complicated digital problems. As the trusted technology partner, we go beyond mere development. We provide comprehensive support and maintenance services, ensuring that your digital assets remain secure, up-to-date, and optimized for peak performance. Our commitment to your success extends beyond the initial launch, as we continually strive to keep your digital presence at the forefront of industry trends.',
   //"images/logo/socialbanner.png",
   image_url: 'logo/logo.png',
   default_keywords:
