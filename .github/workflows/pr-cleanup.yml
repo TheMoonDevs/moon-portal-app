@@ -1,9 +1,6 @@
 name: Cleanup PR Preview Environments
 
 on:
-  workflow_run:
-    workflows: ["Preview Deployment"] 
-    types: [completed]  # Ensures it runs only after the deployment workflow finishes
   pull_request:
     types: [closed]
 
@@ -33,8 +30,11 @@ jobs:
             pm2 list | grep -E "payzone-${{ github.event.pull_request.number }}" | awk '{print $2}' | xargs -r pm2 delete
             
             # Remove deployment directories
-            rm -rf /home/${{ secrets.DROPLET_USER }}/apps/builds/portal/preview/${{ github.event.pull_request.number }}/
-            rm -rf /home/${{ secrets.DROPLET_USER }}/apps/builds/payzone/preview/${{ github.event.pull_request.number }}/
+
+            cd /home/${{ secrets.DROPLET_USER }}/apps/builds/portal/preview/
+            rm -rf ${{ github.event.pull_request.number }}/
+            cd /home/${{ secrets.DROPLET_USER }}/apps/builds/payzone/preview/
+            rm -rf ${{ github.event.pull_request.number }}/
             
             echo "Cleaned up PR #${{ github.event.pull_request.number }}"
           EOF
