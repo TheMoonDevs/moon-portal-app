@@ -558,6 +558,11 @@ type PROJECTS {
   description String
 }
 
+type SOCIALLINK {
+  platform  String
+  link      String
+}
+
 model DevProfile {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   userId    String  @db.ObjectId  @unique
@@ -571,10 +576,11 @@ model DevProfile {
   state String
   country String
   profession String
-  availability String
+  availability String?
   expertise String[]
   workExperience WORKEXPERIENCE[]
   projects PROJECTS[]
+  socialLinks SOCIALLINK[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
