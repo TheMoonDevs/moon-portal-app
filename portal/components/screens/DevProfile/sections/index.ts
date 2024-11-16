@@ -37,41 +37,51 @@ const fieldLabels: Record<string, string> = {
   profession: 'Profession',
 };
 
-export const validateStepFields = (step: number, data: DevProfile) => {
+export const validateStepFields = (step: number, data: DevProfile, suppressToast = false) => {
   switch (step) {
     case 0:
       const missingFieldsStep1 = Object.keys(fieldLabels).filter(field => !data[field as keyof DevProfile]);
       if (missingFieldsStep1.length > 0) {
         const missingLabels = missingFieldsStep1.map(field => fieldLabels[field]);
-        toast.error(`Please fill out the missing fields in Personal Details: ${missingLabels.join(', ')}`);
+        if (!suppressToast) {
+          toast.error(`Please fill out the missing fields in Personal Details: ${missingLabels.join(', ')}`);
+        }
         return false;
       }
       break;
 
     case 1:
       if (data.workExperience.length === 0) {
-        toast.error('Please add at least one work experience in Work Experience.');
+        if (!suppressToast) {
+          toast.error('Please add at least one work experience in Work Experience.');
+        }
         return false;
       }
       break;
 
     case 2:
       if (data.projects.length === 0) {
-        toast.error('Please add at least one project in Projects.');
+        if (!suppressToast) {
+          toast.error('Please add at least one project in Projects.');
+        }
         return false;
       }
       break;
 
     case 3:
       if (data.expertise.length === 0) {
-        toast.error('Please add skills in Skills section.');
+        if (!suppressToast) {
+          toast.error('Please add skills in Skills section.');
+        }
         return false;
       }
       break;
 
     case 4:
       if (data.socialLinks.length === 0) {
-        toast.error('Please add at least one social link in Social Links section.');
+        if (!suppressToast) {
+          toast.error('Please add at least one social link in Social Links section.');
+        }
         return false;
       }
       break;

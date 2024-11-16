@@ -25,13 +25,26 @@ const SkillsForm = () => {
 
   const handleSelectionChange = (
     event: React.SyntheticEvent,
-    newValue: string,
+    newValue: string | null,
   ) => {
     if (newValue && !expertiseValues.includes(newValue)) {
       const updatedItems = [...expertiseValues, newValue];
       setValue('expertise', updatedItems);
     }
     setInputValue('');
+  };
+
+  const handleKeyPress = (event: React.KeyboardEvent) => {
+    if (
+      event.key === 'Enter' &&
+      inputValue.trim() &&
+      !expertiseValues.includes(inputValue.trim())
+    ) {
+      const updatedItems = [...expertiseValues, inputValue.trim()];
+      setValue('expertise', updatedItems);
+      setInputValue('');
+      event.preventDefault();
+    }
   };
 
   const handleDelete = (itemToDelete: string) => {
@@ -44,6 +57,7 @@ const SkillsForm = () => {
   return (
     <div className="h-[400px]">
       <Autocomplete
+        freeSolo
         options={fetchedSkills}
         value={null}
         inputValue={inputValue}
@@ -72,9 +86,10 @@ const SkillsForm = () => {
         renderInput={(params) => (
           <TextField
             {...params}
-            label="Search Skills"
+            label="Search or Add Skills"
             InputLabelProps={{ style: { color: '#4B5563' } }}
             variant="outlined"
+            onKeyDown={handleKeyPress}
           />
         )}
       />

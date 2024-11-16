@@ -82,6 +82,21 @@ const ProjectsForm = () => {
       return;
     }
 
+    if (dayjs(project.endDate).isBefore(dayjs(project.startDate))) {
+      toast.error('End date cannot be earlier than start date.');
+      return;
+    }
+
+    if (dayjs(project.startDate).isAfter(dayjs())) {
+      toast.error('Start date cannot be in the future.');
+      return;
+    }
+
+    if (dayjs(project.endDate).isAfter(dayjs())) {
+      toast.error('End date cannot be in the future.');
+      return;
+    }
+
     const formattedData = {
       ...project,
       startDate: formatDate(project.startDate),
@@ -183,11 +198,17 @@ const ProjectsForm = () => {
           <Autocomplete
             id="skills"
             multiple
+            freeSolo
             size="small"
             options={fetchedSkills}
             value={project.technologies}
-            onChange={handleSkillsChange}
-            renderInput={(params) => <TextField {...params} />}
+            onChange={(event, newValue) => {
+              const uniqueSkills = Array.from(new Set(newValue));
+              setProject({ ...project, technologies: uniqueSkills });
+            }}
+            renderInput={(params) => (
+              <TextField {...params} label="Search or Add Skills" />
+            )}
             isOptionEqualToValue={(option, value) => option === value}
             disabled={fetchedSkills.length === 0}
             className="!focus:outline-none !focus:ring-1 !focus:ring-gray-500 !rounded-lg !border !border-gray-300 !shadow-sm"

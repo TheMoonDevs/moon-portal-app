@@ -37,9 +37,9 @@ export const ProfileSection = ({ user }: { user: User }) => {
           <p className="text-neutral-500 text-xs">{user?.email}</p>
           <Link
             href={APP_ROUTES.devProfile}
-            className="mt-0 flex items-center text-xs text-neutral-500 transition hover:text-neutral-800"
+            className="mt-2 flex items-center justify-center text-xs text-white transition px-2 py-2 bg-black rounded-lg hover:bg-neutral-700"
           >
-            Edit Dev Profile{' '}
+            Dev Profile{' '}
             <span className="material-symbols-outlined !text-xs">
               open_in_new
             </span>

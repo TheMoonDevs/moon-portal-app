@@ -16,14 +16,6 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { stepDescriptions, steps } from '@/utils/constants/devProfileConstants';
 import { toast } from 'sonner';
 
-const stepComponents = [
-  DetailsForm,
-  ExperienceForm,
-  ProjectsForm,
-  SkillsForm,
-  SocialLinksForm,
-];
-
 const DevProfileLayout = () => {
   const methods = useForm({
     defaultValues,
@@ -190,67 +182,71 @@ const DevProfileLayout = () => {
       <Spinner />
     </div>
   ) : (
-    <div className="no-scrollbar flex h-full w-full items-start gap-2 overflow-y-scroll bg-[#F2F4F7] px-6 py-4 max-md:px-3 max-sm:flex-col max-sm:px-2">
-      <div className="w-1/5 px-2 py-4 max-md:px-0 max-sm:w-full">
-        <StepperCompo
-          activeStep={activeStep}
-          handleStepChange={handleStepChange}
-        />
-      </div>
-      <div
-        className={`relative h-full w-4/5 overflow-y-scroll rounded-lg bg-white px-4 pb-4 max-sm:w-full`}
-      >
+    <FormProvider {...methods}>
+      <div className="no-scrollbar flex h-full w-full items-start gap-2 overflow-y-scroll bg-[#F2F4F7] px-6 py-4 max-md:px-3 max-sm:flex-col max-sm:px-2">
+        <div className="w-1/5 px-2 py-4 max-md:px-0 max-sm:w-full">
+          <StepperCompo
+            activeStep={activeStep}
+            handleStepChange={handleStepChange}
+          />
+        </div>
         <div
-          className={`transition-all duration-300 ease-in-out ${
-            transitioning
-              ? 'translate-y-2 opacity-0'
-              : 'translate-y-0 opacity-100'
-          }`}
+          className={`relative h-full w-4/5 overflow-y-scroll rounded-lg bg-white px-4 pb-4 max-sm:w-full`}
         >
-          <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-white">
-            <div className="mb-4 py-4 pb-4">
-              <h2 className="text-2xl font-semibold text-gray-800 max-sm:text-xl">
-                {steps[activeStep].label}
-              </h2>
-              <p className="mt-2 text-sm text-gray-600">
-                {stepDescriptions[activeStep]}
-              </p>
+          <div
+            className={`transition-all duration-300 ease-in-out ${
+              transitioning
+                ? 'translate-y-2 opacity-0'
+                : 'translate-y-0 opacity-100'
+            }`}
+          >
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-white">
+              <div className="mb-4 py-4 pb-4">
+                <h2 className="text-2xl font-semibold text-gray-800 max-sm:text-xl">
+                  {steps[activeStep].label}
+                </h2>
+                <p className="mt-2 text-sm text-gray-600">
+                  {stepDescriptions[activeStep]}
+                </p>
+              </div>
+              {!profile && (
+                <button
+                  className={`cursor-pointer rounded-lg bg-black px-4 py-4 text-sm text-white transition duration-300 ease-in-out ${!isButtonEnabled || creatingDevProfile ? 'cursor-not-allowed bg-gray-300 text-gray-600' : ''}`}
+                  disabled={!isButtonEnabled || creatingDevProfile}
+                  onClick={handleCreateDevProfile}
+                >
+                  {!creatingDevProfile ? (
+                    'Create Dev Profile'
+                  ) : (
+                    <span className="itemc-center flex justify-center gap-2 !text-gray-500">
+                      Creating...
+                      <Spinner className="h-4 w-4" />
+                    </span>
+                  )}
+                </button>
+              )}
+              {profile && isProfileUpdated && (
+                <button
+                  className="cursor-pointer rounded-lg bg-black px-4 py-4 text-sm text-white transition duration-300 ease-in-out"
+                  onClick={handleCreateDevProfile}
+                >
+                  Update Dev Profile
+                </button>
+              )}
             </div>
-            {!profile && (
-              <button
-                className={`cursor-pointer rounded-lg bg-black px-4 py-4 text-sm text-white transition duration-300 ease-in-out ${!isButtonEnabled || creatingDevProfile ? 'cursor-not-allowed bg-gray-300 text-gray-600' : ''}`}
-                disabled={!isButtonEnabled || creatingDevProfile}
-                onClick={handleCreateDevProfile}
-              >
-                {!creatingDevProfile ? (
-                  'Create Dev Profile'
-                ) : (
-                  <span className="itemc-center flex justify-center gap-2 !text-gray-500">
-                    Creating...
-                    <Spinner className="h-4 w-4" />
-                  </span>
-                )}
-              </button>
-            )}
-            {profile && isProfileUpdated && (
-              <button
-                className="cursor-pointer rounded-lg bg-black px-4 py-4 text-sm text-white transition duration-300 ease-in-out"
-                onClick={handleCreateDevProfile}
-              >
-                Update Dev Profile
-              </button>
-            )}
-          </div>
-          <div className="rounded-lg bg-gray-50 p-4 shadow-inner">
-            <LocalizationProvider dateAdapter={AdapterDayjs}>
-              <FormProvider {...methods}>
-                {React.createElement(stepComponents[activeStep])}
-              </FormProvider>
-            </LocalizationProvider>
+            <div className="rounded-lg bg-gray-50 p-4 shadow-inner">
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                {activeStep === 0 && <DetailsForm />}
+                {activeStep === 1 && <ExperienceForm />}
+                {activeStep === 2 && <ProjectsForm />}
+                {activeStep === 3 && <SkillsForm />}
+                {activeStep === 4 && <SocialLinksForm />}
+              </LocalizationProvider>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </FormProvider>
   );
 };
 

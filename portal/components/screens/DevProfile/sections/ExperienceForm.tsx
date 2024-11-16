@@ -67,6 +67,7 @@ const ExperienceForm = () => {
 
   const handleAddExperience = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
+
     if (
       !workExperience.startDate ||
       !workExperience.endDate ||
@@ -76,6 +77,16 @@ const ExperienceForm = () => {
       workExperience.technologies.length === 0
     ) {
       toast.error('Please fill in all the fields to add work experience.');
+      return;
+    }
+
+    if (workExperience.endDate.isBefore(workExperience.startDate)) {
+      toast.error('End date cannot be earlier than start date.');
+      return;
+    }
+
+    if (workExperience.startDate.isAfter(dayjs())) {
+      toast.error('Start date cannot be in the future.');
       return;
     }
 
@@ -184,6 +195,7 @@ const ExperienceForm = () => {
             size="small"
             options={fetchedSkills}
             value={workExperience.technologies}
+            freeSolo
             onChange={handleSkillsChange}
             renderInput={(params) => <TextField {...params} />}
             isOptionEqualToValue={(option, value) => option === value}
