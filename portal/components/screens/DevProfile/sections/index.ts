@@ -98,3 +98,23 @@ export const formatDate = (date: dayjs.Dayjs | null) => {
 
 export const linkRegex = /^(https?|chrome):\/\/[^\s$.?#].[^\s]*$/gm;
 
+export const areAllFieldsFilled = (formData: Record<string, any>) => {
+  return Object.entries(formData).every(([key, value]) => {
+    if (['createdAt', 'updatedAt', 'id', 'availability'].includes(key)) {
+      return true;
+    }
+
+    if (typeof value === 'string') {
+      const trimmedValue = value.trim();
+
+      return trimmedValue !== '';
+    }
+
+    if (Array.isArray(value)) {
+      return value.length > 0;
+    }
+
+    const result = value !== null && value !== undefined;
+    return result;
+  });
+};
