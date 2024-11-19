@@ -71,7 +71,7 @@ export const WorklogEditor = ({
   const isAuotSaving = useRef(false);
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
   const [showPopup, setShowPopup] = useState<boolean>(false);
-  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+  const handleClick = (event: any) => {
     setAnchorEl(event.currentTarget);
   };
   const handleClose = () => {
