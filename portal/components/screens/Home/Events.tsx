@@ -61,7 +61,9 @@ const Events = () => {
     dayjs(selectedEvent.date, 'DD-MM-YYYY').isSame(dayjs(), 'day');
   const isEventPast =
     selectedEvent &&
-    dayjs(selectedEvent.date, 'DD-MM-YYYY').isBefore(dayjs(), 'day');
+    dayjs(`${selectedEvent.date} ${selectedEvent.time}`, 'DD-MM-YYYY HH:mm')
+      .add(60, 'minute')
+      .isBefore(dayjs());
 
   return (
     <div>
@@ -147,35 +149,62 @@ const Events = () => {
               {/* Days to go section */}
               <div className='text-[10px] text-neutral-500 px-4'>
                 {isEventPast ? (
-                  <span className='text-red-500 font-normal w-1/2'>
-                    Event is expired
+                  <span className="flex flex-col items-center font-normal text-red-500">
+                    <span>Event</span>
+                    <span>is expired</span>
                   </span>
-                ) : isEventToday ? (
-                  <Link
-                    href={selectedEvent.link}
-                    target='_blank'
-                    rel='noopener noreferrer'
-                    className='flex flex-col gap-2 items-center justify-center text-white opacity-50 hover:opacity-100 transition-opacity duration-300 cursor-pointer '
-                  >
-                    <span className='material-symbols-outlined '>
-                      open_in_new
-                    </span>
-                    <span className='tracking-widest'>TODAY</span>
-                  </Link>
                 ) : (
-                  <span className='text-[32px] font-normal text-white'>
-                    {selectedEvent
-                      ? String(
-                          dayjs(selectedEvent.date, 'DD-MM-YYYY').diff(
-                            dayjs(),
-                            'day'
-                          )
-                        ).padStart(2, '0')
-                      : '00'}
-                  </span>
+                  (() => {
+                    if (!selectedEvent) return null;
+                    const eventDateTime = dayjs(
+                      `${selectedEvent.date} ${selectedEvent.time}`,
+                      'DD-MM-YYYY HH:mm',
+                    );
+                    const diffInMinutes = eventDateTime.diff(dayjs(), 'minute');
+                    const diffInHours = Math.floor(diffInMinutes / 60);
+                    const diffInDays = Math.floor(diffInHours / 24);
+
+                    if (diffInMinutes <= 5) {
+                      return (
+                        <Link
+                          href={selectedEvent.link || ''}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex cursor-pointer flex-col items-center justify-center gap-2 text-white opacity-50 transition-opacity duration-300 hover:opacity-100"
+                        >
+                          <span className="material-symbols-outlined">
+                            open_in_new
+                          </span>
+                          <span className="tracking-widest">JOIN EVENT</span>
+                        </Link>
+                      );
+                    } else if (diffInMinutes < 60) {
+                      return (
+                        <span className="flex flex-col items-center justify-center gap-0 text-[32px] font-normal text-white">
+                          {String(diffInMinutes).padStart(2, '0')}{' '}
+                          <span className="text-[10px]">Minutes to go</span>
+                        </span>
+                      );
+                    } else if (eventDateTime.isSame(dayjs(), 'day')) {
+                      return (
+                        <span className="flex flex-col items-center justify-center gap-0 text-[32px] font-normal text-white">
+                          {String(diffInHours).padStart(2, '0')}{' '}
+                          <span className="text-[10px]">hours to go</span>
+                        </span>
+                      );
+                    } else {
+                      return (
+                        <div className="text-center">
+                          <span className="text-[32px] font-normal text-white">
+                            {String(diffInDays).padStart(2, '0')}
+                          </span>
+                          <br />
+                          <span>Days to go</span>
+                        </div>
+                      );
+                    }
+                  })()
                 )}
-                <br />
-                {isEventPast || isEventToday ? null : <span>Days to go</span>}
               </div>
             </div>
           </div>

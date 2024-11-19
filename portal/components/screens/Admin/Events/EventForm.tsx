@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { MobileBox } from '../../Login/Login';
 import { Spinner } from '@/components/elements/Loaders';
 import dayjs, { Dayjs } from 'dayjs';
-import { DatePicker } from '@mui/x-date-pickers';
+import { DatePicker, TimePicker } from '@mui/x-date-pickers';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { toast, Toaster } from 'sonner';
@@ -11,8 +11,9 @@ import { PortalSdk } from '@/utils/services/PortalSdk';
 import { Event } from '@prisma/client';
 import { IconButton } from '@mui/material';
 import ToolTip from '@/components/elements/ToolTip';
+import { EventCard } from './EventCard';
 
-type loadingState = {
+export type loadingState = {
   addNew: boolean;
   fetching: boolean;
   adding: boolean;
@@ -27,6 +28,7 @@ const EventForm = () => {
   const [link, setLink] = useState('');
   const [date, setDate] = useState<Dayjs | null>(null);
   const [events, setEvents] = useState<Event[]>([]);
+  const [time, setTime] = useState<Dayjs | null>(null);
   const [loadingState, setLoadingState] = useState<loadingState>({
     addNew: false,
     fetching: false,
@@ -40,6 +42,7 @@ const EventForm = () => {
     setSubTitle('');
     setLink('');
     setDate(null);
+    setTime(null);
   };
 
   const getEvents = async () => {
@@ -56,8 +59,9 @@ const EventForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!date || !title || !subTitle || !link) return;
+    if (!date || !title || !subTitle || !link || !time) return;
     const formattedDate = date.format('DD-MM-YYYY');
+    const formattedTime = time.format('HH:mm');
     const year = date.year();
     const month = Number(date.format('M'));
     const eventData = {
@@ -65,10 +69,12 @@ const EventForm = () => {
       subTitle,
       link,
       date: formattedDate,
+      time: formattedTime,
       month,
       year,
     };
     setLoadingState({ ...loadingState, adding: true });
+    console.log(eventData);
 
     try {
       await PortalSdk.postData('api/events', eventData);
@@ -85,8 +91,9 @@ const EventForm = () => {
   const handleUpdate = async (event: Event, e: React.FormEvent) => {
     e.preventDefault();
     setLoadingState((prev) => ({ ...prev, updateUploading: true }));
-    if (!date || !title || !subTitle || !link) return;
+    if (!date || !title || !subTitle || !link || !time) return;
     const formattedDate = date.format('DD-MM-YYYY');
+    const formattedTime = time.format('HH:mm');
     const year = date.year();
     const month = Number(date.format('M'));
     const eventData = {
@@ -95,6 +102,7 @@ const EventForm = () => {
       subTitle,
       link,
       date: formattedDate,
+      time: formattedTime,
       month,
       year,
     };
@@ -127,6 +135,7 @@ const EventForm = () => {
       setSubTitle(selectedEvent.subTitle || '');
       setLink(selectedEvent.link || '');
       setDate(dayjs(selectedEvent.date, 'DD-MM-YYYY') || null);
+      setTime(dayjs(selectedEvent.time, 'HH:mm') || null);
     } else {
       resetForm();
     }
@@ -138,7 +147,7 @@ const EventForm = () => {
 
   return (
     <>
-      <MobileBox>
+      <MobileBox customClass='overflow-y-scroll'>
         <p className='text-neutral-400 tracking-[0.5em] uppercase text-xs text-center mb-6'>
           Add Event
         </p>
@@ -167,7 +176,7 @@ const EventForm = () => {
                 </ToolTip>
                 <form
                   onSubmit={handleFormSubmit}
-                  className='w-full flex flex-col flex-grow my-2 relative h-full overflow-y-scroll no-scrollbar'
+                  className='w-full flex flex-col flex-grow my-2 relative h-full'
                 >
                   <div className='flex-grow'>
                     <div className='mb-5'>
@@ -235,7 +244,32 @@ const EventForm = () => {
                               color: 'white !important',
                             },
                           }}
-                          format='DD-MM-YYYY'
+                          format="DD-MM-YYYY"
+                        />
+                      </div>
+                      <div className="mb-5">
+                        <label
+                          htmlFor="time"
+                          className="mb-1 block text-sm font-medium text-neutral-300"
+                        >
+                          Add Event Time
+                        </label>
+                        <TimePicker
+                          value={time}
+                          onChange={(newValue) => setTime(newValue)}
+                          sx={{
+                            border: '1px solid #737373',
+                            borderRadius: '4px',
+                            width: '100%',
+                            backgroundColor: '#262626',
+                            '& .MuiInputBase-input': {
+                              color: 'white !important',
+                            },
+                            '& .MuiButtonBase-root': {
+                              color: 'white !important',
+                            },
+                          }}
+                          format="HH:mm"
                         />
                       </div>
                     </LocalizationProvider>
@@ -258,11 +292,11 @@ const EventForm = () => {
                     <div className='mt-auto'>
                       <button
                         type='submit'
-                        className='py-2 px-5 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg flex items-center justify-center shadow-md w-full'
+                        className='py-2 px-5 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg flex items-center justify-center shadow-md w-full mb-5'
                         disabled={!title || !subTitle || !date || !link}
                       >
                         {loadingState.adding || loadingState.updateUploading ? (
-                          <Spinner />
+                          <Spinner className='w-4 h-4'/>
                         ) : (
                           <>
                             {selectedEvent ? 'Update Event' : 'Add Event'}
@@ -316,60 +350,6 @@ const EventForm = () => {
       </MobileBox>
       <Toaster richColors duration={3000} closeButton position='bottom-right' />
     </>
-  );
-};
-
-const EventCard = ({
-  event,
-  setEvents,
-  setSelectedEvent,
-  setLoadingState,
-  loadingState,
-}: {
-  event: Event;
-  setEvents: React.Dispatch<React.SetStateAction<Event[]>>;
-  setSelectedEvent: React.Dispatch<React.SetStateAction<Event | null>>;
-  setLoadingState: React.Dispatch<React.SetStateAction<loadingState>>;
-  loadingState: loadingState;
-}) => {
-  const [deleting, setDeleting] = useState(false);
-
-  const deleteEvent = async (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation();
-    setDeleting(true);
-    try {
-      await PortalSdk.deleteData('/api/events', event);
-      toast.success('Event deleted successfully!');
-      setEvents((prevEvents) => prevEvents.filter((e) => e.id !== event.id));
-    } catch (error) {
-      console.error('Error deleting event:', error);
-      toast.error('Failed to delete event. Please try again.');
-    } finally {
-      setDeleting(false);
-    }
-  };
-
-  return (
-    <div
-      className='flex py-2 text-white items-center justify-between cursor-pointer'
-      onClick={(e) => {
-        e.stopPropagation();
-        setSelectedEvent(event);
-        setLoadingState({ ...loadingState, updating: true });
-      }}
-    >
-      <div className='flex flex-col gap-1 items-start'>
-        <p className='text-neutral-300 text-sm'>{event.name}</p>
-        <p className='text-neutral-500 text-xs'>{event.date}</p>
-      </div>
-      {deleting ? (
-        <Spinner className='h-5 w-5 mr-2' />
-      ) : (
-        <IconButton sx={{ backgroundColor: '#1b1b1b' }} onClick={deleteEvent}>
-          <span className='material-symbols-outlined text-red-600'>delete</span>
-        </IconButton>
-      )}
-    </div>
   );
 };
 
