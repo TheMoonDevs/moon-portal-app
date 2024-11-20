@@ -1,0 +1,40 @@
+name: Cleanup PR Preview Environments
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: ${{ github.repository }}-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  cleanup_on_pr_close:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up SSH (secured)
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          log-public-key: false
+
+      - name: Cleanup Deployments
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} << EOF
+            # Stop and remove PM2 processes
+            pm2 list | grep -E "portal-${{ github.event.pull_request.number }}" | awk '{print $2}' | xargs -r pm2 delete
+            pm2 list | grep -E "payzone-${{ github.event.pull_request.number }}" | awk '{print $2}' | xargs -r pm2 delete
+            
+            # Remove deployment directories
+
+            cd /home/${{ secrets.DROPLET_USER }}/apps/builds/portal/preview/
+            rm -rf ${{ github.event.pull_request.number }}/
+            cd /home/${{ secrets.DROPLET_USER }}/apps/builds/payzone/preview/
+            rm -rf ${{ github.event.pull_request.number }}/
+            
+            echo "Cleaned up PR #${{ github.event.pull_request.number }}"
+          EOF

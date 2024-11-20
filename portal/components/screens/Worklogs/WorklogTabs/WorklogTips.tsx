@@ -21,6 +21,9 @@ const WorklogTips = () => {
         <li className="">+ and Spacebar === • (For Bullet Points)</li>
         <li className="">Ctrl+Spacebar === ✅</li>
         <li className="">Ctrl+Q === ❌ </li>
+        <li className="">Select-Text+Ctrl+B === <strong>Bold Text</strong></li>
+        <li className="">Select-Text+Ctrl+I === <em>Italic Text</em></li>
+        <li className="">Select-Text+Ctrl+U === <u>Underline Text</u></li>
         <li className="">Ctrl+S to save the logs manually</li>
         <li className="">Ctrl+R to Refresh the logs</li>
         <li className="">Type `-` to add bulletin</li>
