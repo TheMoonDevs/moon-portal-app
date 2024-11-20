@@ -56,7 +56,7 @@ const WorklogBuff = ({
 
       const res = await PortalSdk.getData(
         `/api/badges/buff-badges?${params}`,
-        null
+        null,
       );
       setBuffBadge(res.data);
       // console.log(res.data)
@@ -86,7 +86,7 @@ const WorklogBuff = ({
   const updateBadge = async (
     badgeId: string,
     title: string,
-    buffLevel: BUFF_LEVEL
+    buffLevel: BUFF_LEVEL,
   ) => {
     if (!user?.id) return;
     try {
@@ -128,21 +128,21 @@ const WorklogBuff = ({
     level === BUFF_LEVEL.TRUTH_SEEKER
       ? 10
       : level === BUFF_LEVEL.BABY_GROOT
-      ? 25
-      : level === BUFF_LEVEL.WORK_HULK
-      ? 100
-      : level === BUFF_LEVEL.VAMPIRE_LORD
-      ? 150
-      : level === BUFF_LEVEL.ALIEN_PREDATOR
-      ? 200
-      : 250;
+        ? 25
+        : level === BUFF_LEVEL.WORK_HULK
+          ? 100
+          : level === BUFF_LEVEL.VAMPIRE_LORD
+            ? 150
+            : level === BUFF_LEVEL.ALIEN_PREDATOR
+              ? 200
+              : 250;
 
   return (
     <>
       {loading ? (
         <Skeleton
-          variant='rectangular'
-          animation='wave'
+          variant="rectangular"
+          animation="wave"
           sx={{
             borderRadius: '6px',
             boxShadow: '0 0 10px 0 rgba(0, 0, 0, 0.1)',
@@ -152,27 +152,30 @@ const WorklogBuff = ({
       ) : filteredLogs && buffBadge.length > 0 && buffBadge[0].points > 0 ? (
         <>
           {
-            <div className='p-6 border border-neutral-700 rounded-xl shadow-xl bg-gradient-to-br from-neutral-800 to-neutral-900 text-white w-full max-w-lg mx-auto'> 
-              <h2 className='text-center text-2xl font-bold mb-4'>
+            <div className="group mx-auto w-full max-w-lg rounded-xl border border-neutral-700 bg-gradient-to-br from-neutral-800 to-neutral-900 p-6 text-white shadow-xl">
+              <h2 className="mb-4 text-center text-2xl font-bold">
                 {selectedMonth} Badge
               </h2>
-              <div className='flex flex-row items-center justify-center gap-4'>
-                <img
-                  src={getBuffLevelAndTitle(buffBadge[0].points).src}
-                  alt={buffBadge[0].title.charAt(0)}
-                  className='w-24 h-24 rounded-full mb-2 border-4 border-neutral-600 shadow-md'
-                />
-                <div className='flex flex-col gap-2'>
-                  <h3 className='text-xl font-semibold'>
+              <div className="flex flex-row items-center justify-center gap-4">
+                <div className="hover:before:animate-shine focus:before:animate-shine relative overflow-hidden rounded-full before:absolute before:left-[-75%] before:top-0 before:z-[2] before:h-full before:w-1/4 before:skew-x-[-25deg] before:transform before:bg-[linear-gradient(to_right,rgba(255,255,255,0.4)_0%,rgba(255,255,255,0.4)_100%)] before:content-['']">
+                  <img
+                    src={getBuffLevelAndTitle(buffBadge[0].points).src}
+                    alt={buffBadge[0].title.charAt(0)}
+                    className="mb-2 h-24 w-24 rounded-full border-4 border-neutral-600 shadow-md"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <h3 className="text-xl font-semibold">
                     {buffBadge[0].title}
                   </h3>
-                  <p className='text-base text-neutral-400'>
+                  <p className="text-base text-neutral-400">
                     {selectedMonth} Work Points -{' '}
-                    <span className='font-bold'>{buffBadge[0].points} pts</span>
+                    <span className="font-bold">{buffBadge[0].points} pts</span>
                   </p>
                 </div>
               </div>
-              <div className='mt-6'>
+              <div className="mt-6">
                 <MultiColorProgressBar
                   currentPoints={totalPoints}
                   nextLevelPoints={nextLevelPoints}
