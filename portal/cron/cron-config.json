@@ -1,0 +1,39 @@
+{
+  "crons": [
+    {
+      "name": "Core Team Pay Reminder",
+      "url": "http://localhost:3001/api/cron-jobs/core-team/pay-reminder",
+      "schedule": "0 12 * * *"
+    },
+    {
+      "name": "Core Team Birthday Reminder",
+      "url": "http://localhost:3001/api/cron-jobs/core-team/birthday-reminder",
+      "schedule": "0 12 * * *"
+    },
+    {
+      "name": "Core Team Worklog Reminder",
+      "url": "http://localhost:3001/api/cron-jobs/core-team/worklog-reminder",
+      "schedule": "30 4 * * *"
+    },
+    {
+      "name": "Core Team Add Wallet Address Notification",
+      "url": "http://localhost:3001/api/cron-jobs/core-team/wallet-notification",
+      "schedule": "30 4 * * *"
+    },
+    {
+      "name": "Sync Slack Users",
+      "url": "http://localhost:3001/api/cron-jobs/sync/slack-users",
+      "schedule": "0 12 * * *"
+    },
+    {
+      "name": "Sync Medium Articles",
+      "url": "http://localhost:3001/api/cron-jobs/sync/medium-articles",
+      "schedule": "0 12 * * *"
+    },
+    {
+      "name": "Sync ClickUp Tasks",
+      "url": "http://localhost:3001/api/cron-jobs/sync/clickup-tasks",
+      "schedule": "*/30 * * * *"
+    }
+  ]
+}

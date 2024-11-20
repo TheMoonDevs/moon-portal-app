@@ -2,7 +2,7 @@ name: PR Preview Deployment
 
 on:
   pull_request:
-    types: [opened, closed]
+    types: [opened, synchronize, reopened, closed]
 permissions:
   contents: write
   pull-requests: write
@@ -48,7 +48,7 @@ jobs:
 
   deploy_preview:
     needs: determine_project
-    if: needs.determine_project.outputs.projects != 'null' && needs.determine_project.outputs.projects != '[]'
+    if: needs.determine_project.outputs.projects != 'null' && needs.determine_project.outputs.projects != '[]' && github.event.pull_request.state == 'open'
     strategy:
       matrix:
         project: ${{ fromJson(needs.determine_project.outputs.projects) }}
