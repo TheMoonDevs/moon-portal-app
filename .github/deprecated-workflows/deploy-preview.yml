@@ -29,7 +29,6 @@ jobs:
 
       - name: Deploy or Redeploy Preview on DigitalOcean
         run: |
-
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << "EOF"
             LOCK_FILE="/tmp/deploy/deploy-lock"
             echo "Checking for ongoing deployments..."
@@ -43,7 +42,7 @@ jobs:
             # Create the lock file to indicate the start of a new deployment
             mkdir -p /tmp/deploy
             touch "$LOCK_FILE"
-            echo "Deployment lock created. Proceeding with deployment for PR #${PR_NUMBER} - Project: ${PROJECT}"
+            echo "Deployment lock created. Proceeding with deployment for PR #$PR_NUMBER - Project: $PROJECT"
             
             PR_NUMBER=${{ inputs.pr_number }}
             PROJECT=${{ inputs.project }}
@@ -109,8 +108,8 @@ jobs:
             shopt -s dotglob
             mkdir -p builds/${PROJECT}/${PR_NUMBER}/${PORT}
             cp -r ${PROJECT}/.next/standalone/* builds/${PROJECT}/${PR_NUMBER}/${PORT}
-            cp -r ${PROJECT}/.next/static builds/${PROJECT}/${PR_NUMBER}/${PORT}/.next/static
-            cp -r ${PROJECT}/public builds/${PROJECT}/${PR_NUMBER}/${PORT}/public
+            cp -r ${PROJECT}/.next/static/* builds/${PROJECT}/${PR_NUMBER}/${PORT}/.next/static
+            cp -r ${PROJECT}/public/* builds/${PROJECT}/${PR_NUMBER}/${PORT}/public
             cp ${PROJECT}/.env.preview builds/${PROJECT}/${PR_NUMBER}/${PORT}/.env
 
             cd builds/${PROJECT}/${PR_NUMBER}/${PORT}
@@ -140,7 +139,7 @@ jobs:
           script: |
             const project = '${{ inputs.project }}';
             const subdomain = project === 'payzone' ? 'pay' : project;
-            const prNumber = '${{ inputs.pr_number || github.event.pull_request.number }}';
+            const prNumber = '${{ inputs.pr_number }}';
             const port = process.env.PREVIEW_PORT;
             const uniqueId = `preview-${prNumber}-${port}`;
             const previewUrl = `https://${uniqueId}.${subdomain}.themoondevs.com`;
@@ -154,7 +153,8 @@ jobs:
                     `🔄 Redeploy: @bot deploy ${project}\n` +
                     `🔒 Delete Lock: @bot delete_lock`
             });
-            echo "PREVIEW_URL=${previewUrl}" >> $GITHUB_ENV
+            // Store preview URL in the environment file
+            require('fs').appendFileSync(process.env.GITHUB_ENV, `PREVIEW_URL=${previewUrl}\n`);
 
       - uses: actions/checkout@master
 
@@ -163,13 +163,15 @@ jobs:
           PREVIEW_URL: ${{ env.PREVIEW_URL }}
         uses: foo-software/lighthouse-check-action@master
         with:
-          urls: https://www.foo.software, https://www.google.com, process.env.PREVIEW_URL
+          urls: process.env.PREVIEW_URL
 
       - name: Clean up deployment lock
         if: failure() || cancelled()
         run: |
           ssh -o StrictHostKeyChecking=no techteam@${{ secrets.DROPLET_IP }} << "EOF"
             LOCK_FILE="/tmp/deploy/deploy-lock"
-            rm -f "$LOCK_FILE"
+            if [ -f "$LOCK_FILE" ]; then
+              rm -f "$LOCK_FILE"
+            fi
             git stash pop || echo "No stashed changes to pop."
           EOF

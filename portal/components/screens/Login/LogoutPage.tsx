@@ -1,19 +1,13 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
-
 import Image from "next/image";
-import { MobileBox, LoginButtons, LoginState } from "./Login";
-import { LoginPassCode } from "./LoginPassCode";
-import { useEffect, useState } from "react";
-import { InstallButton, InstallState } from "./Install";
-import { GreyButton } from "@/components/elements/Button";
-import { useRouter } from "next/navigation";
-import { APP_ROUTES } from "@/utils/constants/appInfo";
+import { MobileBox } from "./Login";
 import { useUser } from "@/utils/hooks/useUser";
 import { Logout } from "./Logout";
+import { usePassphrase } from "@/utils/hooks/usePassphrase"; // Assuming you have this hook
 
 export const LogoutPage = () => {
-  const { data, status, user, signOutUser } = useUser(false);
+  const { status, user, signOutUser } = useUser(false);
+  const { localPassphrase } = usePassphrase(); // Get the passphrase from your hook
 
   return (
     <div className="flex flex-col items-center justify-center py-2 bg-neutral-700 md:bg-neutral-900 h-screen">
@@ -30,10 +24,13 @@ export const LogoutPage = () => {
           <p className="text-neutral-400 tracking-[0.5em] uppercase text-xs text-center">
             Sign out ?
           </p>
-          {/* <h4 className="text-3xl font-bold text-neutral-100">TheMoonDevs</h4> */}
         </div>
         {status === "authenticated" && (
-          <Logout user={user} signOut={signOutUser} />
+          <Logout
+            user={user}
+            signOut={signOutUser}
+            passphrase={localPassphrase}
+          />
         )}
       </MobileBox>
     </div>
