@@ -10,6 +10,7 @@ interface InputProps {
   errors?: any;
   value?: string;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  required?: boolean;
 }
 
 const Input: React.FC<InputProps> = ({
@@ -20,6 +21,7 @@ const Input: React.FC<InputProps> = ({
   errors,
   value,
   onChange,
+  required
 }) => {
   return (
     <div className="mb-4 flex w-full flex-col">
@@ -30,6 +32,7 @@ const Input: React.FC<InputProps> = ({
         className="mt-1 w-full rounded-lg border border-gray-300 p-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-gray-500"
         value={value}
         onChange={onChange} 
+        required={required}
       />
       {errors && errors[id] && (
         <p className="mt-1 text-xs text-red-500">{errors[id].message}</p>

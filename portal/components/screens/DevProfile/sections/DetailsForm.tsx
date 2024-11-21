@@ -2,19 +2,24 @@
 import Textarea from '@/components/elements/Textarea';
 import Input from '@/components/elements/Input';
 import React, { useEffect, useRef, useState } from 'react';
-import { useFormContext } from 'react-hook-form';
+import { useFormContext, UseFormReturn } from 'react-hook-form';
 import { useUser } from '@/utils/hooks/useUser';
 import { TMD_PORTAL_API_KEY } from '@/utils/constants/appInfo';
 import { Spinner } from '@/components/elements/Loaders';
 import { toast } from 'sonner';
+import { DevProfile } from '@prisma/client';
 
-const DetailsForm = () => {
+const DetailsForm = ({
+  methods,
+}: {
+  methods: UseFormReturn<DevProfile | any | undefined>;
+}) => {
   const {
+    setValue,
+    getValues,
     register,
     formState: { errors },
-    getValues,
-    setValue,
-  } = useFormContext();
+  } = methods;
   const [isUploadingImg, setIsUploadingImg] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const user = useUser();
@@ -62,8 +67,8 @@ const DetailsForm = () => {
 
   return (
     <>
-      <form className="flex w-full items-start gap-10 py-4 flex-row max-sm:flex-col">
-        <div className="flex flex-col items-center gap-4 w-1/3 max-md:w-1/2 max-sm:w-full">
+      <div className="flex w-full flex-row items-start gap-10 py-4 max-sm:flex-col">
+        <div className="flex w-1/3 flex-col items-center gap-4 max-md:w-1/2 max-sm:w-full">
           <img
             src={getValues('avatar') || '/user.png'}
             alt="logo"
@@ -90,7 +95,7 @@ const DetailsForm = () => {
           />
         </div>
 
-        <div className="flex max-w-3xl flex-col gap-4 w-2/3 max-md:w-1/2 max-sm:w-full">
+        <div className="flex w-2/3 max-w-3xl flex-col gap-4 max-md:w-1/2 max-sm:w-full">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <Input
               id="firstName"
@@ -98,6 +103,7 @@ const DetailsForm = () => {
               register={register}
               requiredMessage="First name is required"
               errors={errors}
+              required
             />
             <Input
               id="lastName"
@@ -105,6 +111,7 @@ const DetailsForm = () => {
               register={register}
               requiredMessage="Last name is required"
               errors={errors}
+              required
             />
           </div>
 
@@ -115,6 +122,7 @@ const DetailsForm = () => {
               register={register}
               requiredMessage="Email is required"
               errors={errors}
+              required
             />
             <Input
               id="address"
@@ -164,7 +172,7 @@ const DetailsForm = () => {
             errors={errors}
           />
         </div>
-      </form>
+      </div>
     </>
   );
 };

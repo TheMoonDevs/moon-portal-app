@@ -25,12 +25,13 @@ import {
   DialogContent,
   DialogTitle,
 } from '@mui/material';
+import { DevProfile } from '@prisma/client';
 
 const DevProfileLayout = () => {
   const methods = useForm({
     defaultValues,
   });
-  const { getValues } = methods;
+  const { getValues, handleSubmit } = methods;
   const [activeStep, setActiveStep] = useState(0);
   const [transitioning, setTransitioning] = useState(false);
   const [isProfileFetching, setIsProfileFetching] = useState(false);
@@ -105,11 +106,13 @@ const DevProfileLayout = () => {
     }, 200);
   };
 
-  const handleSaveAndProceed = async (newStep: number | null) => {
+  const handleSaveAndProceed = async (
+    newStep: number | null,
+    data: DevProfile,
+  ) => {
     setUploading(true);
-    const formValues = getValues();
-    const { id, createdAt, updatedAt, ...filteredFormData } =
-      formValues as Record<string, unknown>;
+    // const formValues = getValues();
+    const { id, createdAt, updatedAt, ...filteredFormData } = data;
 
     const changes = Object.entries(filteredFormData).reduce(
       (acc, [key, value]) => {
@@ -147,7 +150,7 @@ const DevProfileLayout = () => {
       const res = await PortalSdk.postData('/api/dev-profile', payload);
       toast.success('Profile saved successfully');
       setProfile(res);
-      if (!areAllFieldsFilled(formValues)) {
+      if (!areAllFieldsFilled(data)) {
         if (newStep !== null) {
           proceedToStep(newStep);
         }
@@ -167,6 +170,12 @@ const DevProfileLayout = () => {
     }
   }, [activeStep, methods]);
 
+  const handleForm = (data: DevProfile) => {
+    activeStep === steps.length - 1
+      ? handleSaveAndProceed(null, data)
+      : handleSaveAndProceed(activeStep + 1, data);
+  };
+
   return isProfileFetching || !user?.user?.id ? (
     <div className="flex h-full w-full items-center justify-center">
       <Spinner />
@@ -174,75 +183,82 @@ const DevProfileLayout = () => {
   ) : (
     <>
       <FormProvider {...methods}>
-        <div className="no-scrollbar flex h-full w-full items-start gap-2 overflow-y-scroll bg-[#F2F4F7] px-6 py-4 max-md:px-3 max-sm:flex-col max-sm:px-2">
-          <div className="w-1/5 px-2 py-4 max-md:px-0 max-sm:w-full">
-            <StepperCompo
-              activeStep={activeStep}
-              handleStepChange={handleStepChange}
-            />
-          </div>
-          <div
-            className={`relative h-full w-4/5 overflow-y-scroll rounded-lg bg-white px-4 pb-4 max-sm:w-full`}
-          >
+        <form onSubmit={handleSubmit(handleForm)}>
+          <div className="no-scrollbar flex h-full w-full items-start gap-2 overflow-y-scroll bg-[#F2F4F7] px-6 py-4 max-md:px-3 max-sm:flex-col max-sm:px-2">
+            <div className="w-1/5 px-2 py-4 max-md:px-0 max-sm:w-full">
+              <StepperCompo
+                activeStep={activeStep}
+                handleStepChange={handleStepChange}
+              />
+            </div>
             <div
-              className={`transition-all duration-300 ease-in-out ${
-                transitioning
-                  ? 'translate-y-2 opacity-0'
-                  : 'translate-y-0 opacity-100'
-              }`}
+              className={`relative h-full w-4/5 overflow-y-scroll rounded-lg bg-white px-4 pb-4 max-sm:w-full`}
             >
-              <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-white">
-                <div className="mb-4 py-4 pb-4">
-                  <h2 className="text-2xl font-semibold text-gray-800 max-sm:text-xl">
-                    {steps[activeStep].label}
-                  </h2>
-                  <p className="mt-2 text-sm text-gray-600">
-                    {stepDescriptions[activeStep]}
-                  </p>
+              <div
+                className={`transition-all duration-300 ease-in-out ${
+                  transitioning
+                    ? 'translate-y-2 opacity-0'
+                    : 'translate-y-0 opacity-100'
+                }`}
+              >
+                <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-white">
+                  <div className="mb-4 py-4 pb-4">
+                    <h2 className="text-2xl font-semibold text-gray-800 max-sm:text-xl">
+                      {steps[activeStep].label}
+                    </h2>
+                    <p className="mt-2 text-sm text-gray-600">
+                      {stepDescriptions[activeStep]}
+                    </p>
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      // activeStep === steps.length - 1
+                      //   ? handleSaveAndProceed(null)
+                      //   : handleSaveAndProceed(activeStep + 1)
+                      e.preventDefault();
+                    }}
+                    className={`cursor-pointer rounded-lg bg-black px-4 py-2 text-sm text-white transition duration-300 ease-in-out ${transitioning && 'cursor-not-allowed opacity-50'}`}
+                    disabled={transitioning}
+                    type="submit"
+                  >
+                    {uploading ? (
+                      <span className="flex items-center justify-center gap-2">
+                        Saving... <Spinner className="h-4 w-4" />
+                      </span>
+                    ) : showUpdate ? (
+                      'Update'
+                    ) : activeStep === steps.length - 1 ? (
+                      'Submit'
+                    ) : (
+                      'Save & Continue'
+                    )}
+                  </button>
                 </div>
-                <button
-                  onClick={() =>
-                    activeStep === steps.length - 1
-                      ? handleSaveAndProceed(null)
-                      : handleSaveAndProceed(activeStep + 1)
-                  }
-                  className="cursor-pointer rounded-lg bg-black px-4 py-2 text-sm text-white transition duration-300 ease-in-out"
-                  disabled={
-                    transitioning ||
-                    !validateStepFields(activeStep, getValues(), true)
-                  }
-                >
-                  {uploading ? (
-                    <span className="flex items-center justify-center gap-2">
-                      Uploading... <Spinner className="h-4 w-4" />
-                    </span>
-                  ) : showUpdate ? (
-                    'Update'
-                  ) : activeStep === steps.length - 1 ? (
-                    'Submit'
-                  ) : (
-                    'Save & Continue'
-                  )}
-                </button>
-              </div>
-              <div className="rounded-lg bg-gray-50 p-4 shadow-inner">
-                <LocalizationProvider dateAdapter={AdapterDayjs}>
-                  {activeStep === 0 && <DetailsForm />}
-                  {activeStep === 1 && <ExperienceForm />}
-                  {activeStep === 2 && <ProjectsForm />}
-                  {activeStep === 3 && <SkillsForm />}
-                  {activeStep === 4 && <SocialLinksForm />}
-                </LocalizationProvider>
+                <div className="rounded-lg bg-gray-50 p-4 shadow-inner">
+                  <LocalizationProvider dateAdapter={AdapterDayjs}>
+                    {activeStep === 0 && (
+                      <DetailsForm
+                        // handleSaveAndProceed={handleSaveAndProceed}
+                        methods={methods}
+                      />
+                    )}
+                    {activeStep === 1 && <ExperienceForm />}
+                    {activeStep === 2 && <ProjectsForm />}
+                    {activeStep === 3 && <SkillsForm />}
+                    {activeStep === 4 && <SocialLinksForm />}
+                  </LocalizationProvider>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </form>
       </FormProvider>
       <Modal
         openModal={openModal}
         setOpenModal={setOpenModal}
         handleSaveAndProceed={handleSaveAndProceed}
         activeStep={activeStep}
+        data={getValues()}
         uploading={uploading}
       />
     </>
@@ -257,12 +273,14 @@ const Modal = ({
   handleSaveAndProceed,
   activeStep,
   uploading,
+  data,
 }: {
   openModal: boolean;
   setOpenModal: Dispatch<SetStateAction<boolean>>;
-  handleSaveAndProceed: (newStep: number | null) => void;
+  handleSaveAndProceed: (newStep: number | null, data: DevProfile) => void;
   activeStep: number;
   uploading: boolean;
+  data: DevProfile;
 }) => {
   return (
     <Dialog
@@ -289,7 +307,7 @@ const Modal = ({
         </button>
         <button
           onClick={() => {
-            handleSaveAndProceed(activeStep + 1);
+            handleSaveAndProceed(activeStep + 1, data);
           }}
           className="cursor-pointer rounded-lg bg-black px-4 py-2 text-sm text-white transition-colors duration-300 ease-in-out hover:bg-gray-800"
         >
