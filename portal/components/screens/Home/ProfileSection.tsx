@@ -35,6 +35,15 @@ export const ProfileSection = ({ user }: { user: User }) => {
           <p className="font-bold text-black text-md">Hello, </p>
           <h4 className="text-xl text-neutral-900">{user?.name}</h4>
           <p className="text-neutral-500 text-xs">{user?.email}</p>
+          <Link
+            href={APP_ROUTES.devProfile}
+            className="mt-2 flex items-center justify-center text-xs text-white transition px-2 py-2 bg-black rounded-lg hover:bg-neutral-700 gap-1"
+          >
+            Dev Profile{' '}
+            <span className="material-symbols-outlined !text-xs">
+              open_in_new
+            </span>
+          </Link>
         </div>
       </div>
       <div className="absolute top-1 right-1 flex items-center gap-2">
