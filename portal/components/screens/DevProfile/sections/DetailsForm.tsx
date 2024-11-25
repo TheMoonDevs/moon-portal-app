@@ -129,31 +129,22 @@ const DetailsForm = ({
               label="Address"
               register={register}
               errors={errors}
-              requiredMessage="Address is required"
             />
           </div>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <Input
-              id="city"
-              label="City"
-              register={register}
-              errors={errors}
-              requiredMessage="City is required"
-            />
+            <Input id="city" label="City" register={register} errors={errors} />
             <Input
               id="state"
               label="State"
               register={register}
               errors={errors}
-              requiredMessage="State is required"
             />
             <Input
               id="country"
               label="Country"
               register={register}
               errors={errors}
-              requiredMessage="Country is required"
             />
           </div>
 
@@ -162,15 +153,8 @@ const DetailsForm = ({
             label="Profession"
             register={register}
             errors={errors}
-            requiredMessage="Profession is required"
           />
-          <Textarea
-            id="bio"
-            label="Bio"
-            register={register}
-            requiredMessage="Bio is required"
-            errors={errors}
-          />
+          <Textarea id="bio" label="Bio" register={register} errors={errors} />
         </div>
       </div>
     </>
