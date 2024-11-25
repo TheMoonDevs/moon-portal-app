@@ -41,7 +41,7 @@ const SocialLinksForm = () => {
 
   return (
     <div className="min-h-[400px]">
-      <form className="flex w-full flex-row items-center gap-2 max-md:flex-col max-md:gap-0">
+      <div className="flex w-full flex-row items-center gap-2 max-md:flex-col max-md:gap-0">
         <Input
           id="platform"
           label="Platform"
@@ -64,7 +64,7 @@ const SocialLinksForm = () => {
         >
           Add
         </button>
-      </form>
+      </div>
 
       <div className="mt-4">
         {socialLinksValues.length > 0 ? (

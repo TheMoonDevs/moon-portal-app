@@ -29,7 +29,6 @@ const ExperienceForm = () => {
   const workExperienceValues = watch('workExperience');
   const [isEditing, setIsEditing] = useState(false);
   const [editIndex, setEditIndex] = useState<number | null>(null);
-
   const fetchSkills = async () => {
     try {
       const res = await PortalSdk.getData('/api/dev-profile/skills', null);
@@ -132,7 +131,7 @@ const ExperienceForm = () => {
     <div
       className={`flex h-full w-full ${workExperienceValues.length === 0 ? 'items-center' : 'items-start'} gap-4 max-sm:flex-col`}
     >
-      <form className="flex w-1/2 flex-col gap-2 max-sm:w-full">
+      <div className="flex w-1/2 flex-col gap-2 max-sm:w-full">
         <Input
           id="company"
           label="Company"
@@ -219,7 +218,7 @@ const ExperienceForm = () => {
             </button>
           )}
         </div>
-      </form>
+      </div>
       <div className="flex h-full w-1/2 flex-col gap-4 max-sm:w-full">
         {workExperienceValues.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center text-gray-500">
