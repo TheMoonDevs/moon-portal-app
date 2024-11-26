@@ -15,6 +15,7 @@ const config: Config = {
       },
       animation: {
         fadeInTopDown: "fadeInTopDown 1s ease",
+        shine: 'shine 0.85s ease-out',
       },
       keyframes: {
         fadeInTopDown: {
@@ -26,6 +27,9 @@ const config: Config = {
             opacity: "1",
             transform: "translateY(0)",
           },
+        },
+        shine: {
+          '100%': { left: '125%' },
         },
       },
     },
