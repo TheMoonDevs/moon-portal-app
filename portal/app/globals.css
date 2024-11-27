@@ -301,3 +301,13 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   width: calc(var(--size) - 1rem);
   height: calc(var(--size) - 1rem);
 }
+
+.react-activity-calendar__calendar{
+  padding-bottom: 4px;
+}
+
+.react-activity-calendar__scroll-container{
+  overflow-x: auto; 
+  scrollbar-width: thin; 
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track); 
+}
