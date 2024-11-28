@@ -116,7 +116,7 @@ const ReactActivityCalendar = () => {
   });
 
   return (
-    <div className="flex items-center py-4">
+    <div className="flex items-center py-4 max-sm:max-w-[90vw]">
       {loading ? (
         <SkeletonLoader />
       ) : worklogSummary.length > 0 ? (
