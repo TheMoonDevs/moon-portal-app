@@ -13,7 +13,7 @@
     {
       "name": "Core Team Worklog Reminder",
       "url": "http://localhost:3001/api/cron-jobs/core-team/worklog-reminder",
-      "schedule": "30 4 * * *"
+      "schedule": "0 0 1 1 *"
     },
     {
       "name": "Core Team Add Wallet Address Notification",
