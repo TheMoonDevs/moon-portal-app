@@ -80,14 +80,6 @@ jobs:
                 }
               }
               
-              const newLabel = `building-${project}`;
-              await github.rest.issues.addLabels({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                labels: [newLabel]
-              });
-              
               const uniqueIdentifier = project === 'portal' ? '<!-- PORTAL_PREVIEW_STATUS -->' : '<!-- PAYZONE_PREVIEW_STATUS -->';
               const initialStatus = [
                 '| Status | 🚧 Building |',
@@ -202,25 +194,15 @@ jobs:
               issue_number: context.issue.number
             });
 
-            try{
-              await github.rest.issues.removeLabel({
+            if (buildFailed){
+              const newLabel = `${project}-build-failed``;
+              await github.rest.issues.addLabels({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.issue.number,
-                name: `building-${project}`
+                labels: [newLabel]
               });
-            } catch (e) {
-                console.error(`Failed to remove label: ${label}`, e.message);
             }
-
-            // Add appropriate label based on build status
-            const newLabel = buildFailed ? `${project}-build-failed` : `${project}-build-success`;
-            await github.rest.issues.addLabels({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              labels: [newLabel]
-            });
 
             // Update comment with proper table formatting
             const uniqueIdentifier = project === 'portal' ? '<!-- PORTAL_PREVIEW_STATUS -->' : '<!-- PAYZONE_PREVIEW_STATUS -->';
