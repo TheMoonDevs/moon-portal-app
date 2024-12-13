@@ -50,8 +50,7 @@ jobs:
 
       - name: Create Initial Comment for first changed project
         run: |
-          projects=$(echo '${{ steps.set-projects.outputs.projects }}' | jq -r '. | @sh')
-          first_project=$(echo $projects | jq -r '.[0]')
+          first_project=$(echo '${{ steps.set-projects.outputs.projects }}' | jq -r '.[0]')
           curl -X POST https://faas-blr1-8177d592.doserverless.co/api/v1/web/fn-6185e47d-4554-4609-9a0f-9f875f4d98f5/pr-services/main \
           -H "Content-Type: application/json" \
           -d '{
@@ -63,12 +62,11 @@ jobs:
               "logsUrl": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             }
           }'
-      
+
       - name: Create Initial Comment for second changed project
         if: ${{ steps.set-projects.outputs.projects != 'null' && fromJson(steps.set-projects.outputs.projects).length > 1 }}
         run: |
-          projects=$(echo '${{ steps.set-projects.outputs.projects }}' | jq -r '. | @sh')
-          second_project=$(echo $projects | jq -r '.[1]')
+          second_project=$(echo '${{ steps.set-projects.outputs.projects }}' | jq -r '.[1]')
           curl -X POST https://faas-blr1-8177d592.doserverless.co/api/v1/web/fn-6185e47d-4554-4609-9a0f-9f875f4d98f5/pr-services/main \
           -H "Content-Type: application/json" \
           -d '{
