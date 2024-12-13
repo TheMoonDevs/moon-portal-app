@@ -1,0 +1,57 @@
+name: Lighthouse Report
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "Pull Request Number"
+        required: true
+        type: string
+      project_name:
+        description: "Project Name"
+        required: true
+        type: string
+      preview_url:
+        description: "Preview URL for Lighthouse Report"
+        required: true
+        type: string
+
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install Lighthouse
+        run: npm install -g lighthouse
+
+      - name: Run Lighthouse
+        id: lighthouse
+        run: |
+          lighthouse ${{ github.event.inputs.preview_url }} \
+            --output json \
+            --output-path ./lighthouse-results.json
+
+      - name: Parse Results
+        id: parse-results
+        run: |
+          cat ./lighthouse-results.json | jq '.categories | {
+            performance: (.performance.score * 100 | floor),
+            accessibility: (.accessibility.score * 100 | floor),
+            bestPractices: (."best-practices".score * 100 | floor),
+            seo: (.seo.score * 100 | floor)
+          }' > ./lighthouse-results.json
+          echo "results=$(cat ./lighthouse-results.json)" >> $GITHUB_ENV
+
+      - name: Call Microservice
+        run: |
+          curl -X POST https://faas-blr1-8177d592.doserverless.co/api/v1/web/fn-6185e47d-4554-4609-9a0f-9f875f4d98f5/pr-services/main \
+          -H "Content-Type: application/json" \
+          -d '{
+            "type": "lighthouse-report",
+            "inputData": {
+              "prNumber": "${{ github.event.inputs.pr_number }}",
+              "project": "${{ github.event.inputs.project_name }}",
+              "previewUrl": "${{ github.event.inputs.preview_url }}",
+              "results": '$results'
+            }
+          }'
