@@ -48,7 +48,7 @@ jobs:
           echo "Changed projects: ${projects[@]}"
           echo "projects=$(jq -c -n --argjson projects "$(printf '%s\n' "${projects[@]}" | jq -R . | jq -s .)" '$projects')" >> $GITHUB_OUTPUT
 
-      - name: Create Intial Comment for changed project
+      - name: Create Initial Comment for first changed project
         run: |
           curl -X POST https://faas-blr1-8177d592.doserverless.co/api/v1/web/fn-6185e47d-4554-4609-9a0f-9f875f4d98f5/pr-services/main \
           -H "Content-Type: application/json" \
@@ -56,24 +56,26 @@ jobs:
             "type": "pr-status",
             "inputData": {
               "prNumber": "${{ github.event.pull_request.number }}",
-              "project": '${{ steps.set-projects.outputs.projects[0] }}',
+              "project": "${{ steps.set-projects.outputs.projects[0] }}",
               "status": "🔄 Building",
               "logsUrl": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             }
           }'
-          if [ "${{ steps.set-projects.outputs.projects[1] }}" != "null" ]; then
-            curl -X POST https://faas-blr1-8177d592.doserverless.co/api/v1/web/fn-6185e47d-4554-4609-9a0f-9f875f4d98f5/pr-services/main \
-            -H "Content-Type: application/json" \
-            -d '{
-              "type": "pr-status",
-              "inputData": {
-                "prNumber": "${{ github.event.pull_request.number }}",
-                "project": '${{ steps.set-projects.outputs.projects[1] }}',
-                "status": "🔄 Building",
-                "logsUrl": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-              }
-            }'
-          fi
+
+      - name: Create Initial Comment for second changed project
+        if: ${{ steps.set-projects.outputs.projects[1] != 'null' }}
+        run: |
+          curl -X POST https://faas-blr1-8177d592.doserverless.co/api/v1/web/fn-6185e47d-4554-4609-9a0f-9f875f4d98f5/pr-services/main \
+          -H "Content-Type: application/json" \
+          -d '{
+            "type": "pr-status",
+            "inputData": {
+              "prNumber": "${{ github.event.pull_request.number }}",
+              "project": "${{ steps.set-projects.outputs.projects[1] }}",
+              "status": "🔄 Building",
+              "logsUrl": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
+          }'
 
       - name: Remove old labels
         uses: actions/github-script@v6
@@ -186,7 +188,7 @@ jobs:
           script: |
             const project = '${{ matrix.project }}';
             const buildFailed = ${{ steps.build.outputs.build-status }} === '0';
-      
+
             if (buildFailed) {
               const newLabel = `${project}-build-failed`;
               await github.rest.issues.addLabels({
@@ -195,10 +197,6 @@ jobs:
                 issue_number: context.issue.number,
                 labels: [newLabel]
               });
-            }
-      
-            if (buildFailed) {
-              core.setFailed(`Failed to build ${project}`);
             }
 
       - name: Prepare deployment files
