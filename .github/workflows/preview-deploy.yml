@@ -49,6 +49,7 @@ jobs:
           echo "projects=$(jq -c -n --argjson projects "$(printf '%s\n' "${projects[@]}" | jq -R . | jq -s .)" '$projects')" >> $GITHUB_OUTPUT
 
       - name: Create Initial Comment for first changed project
+        if: ${{ steps.set-projects.outputs.projects != 'null' && steps.set-projects.outputs.projects != '[]' }}
         run: |
           first_project=$(echo '${{ steps.set-projects.outputs.projects }}' | jq -r '.[0]')
           curl -X POST https://faas-blr1-8177d592.doserverless.co/api/v1/web/fn-6185e47d-4554-4609-9a0f-9f875f4d98f5/pr-services/main \
@@ -64,20 +65,22 @@ jobs:
           }'
 
       - name: Create Initial Comment for second changed project
-        if: ${{ steps.set-projects.outputs.projects != 'null' && fromJson(steps.set-projects.outputs.projects).length > 1 }}
+        if: ${{ steps.set-projects.outputs.projects != 'null' && steps.set-projects.outputs.projects != '[]' }}
         run: |
           second_project=$(echo '${{ steps.set-projects.outputs.projects }}' | jq -r '.[1]')
-          curl -X POST https://faas-blr1-8177d592.doserverless.co/api/v1/web/fn-6185e47d-4554-4609-9a0f-9f875f4d98f5/pr-services/main \
-          -H "Content-Type: application/json" \
-          -d '{
-            "type": "pr-status",
-            "inputData": {
-              "prNumber": "${{ github.event.pull_request.number }}",
-              "project": "'"$second_project"'",
-              "status": "🔄 Building",
-              "logsUrl": "[View Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
-            }
-          }'
+          if [ "$second_project" != "null" ]; then
+            curl -X POST https://faas-blr1-8177d592.doserverless.co/api/v1/web/fn-6185e47d-4554-4609-9a0f-9f875f4d98f5/pr-services/main \
+            -H "Content-Type: application/json" \
+            -d '{
+              "type": "pr-status",
+              "inputData": {
+                "prNumber": "${{ github.event.pull_request.number }}",
+                "project": "'"$second_project"'",
+                "status": "🔄 Building",
+                "logsUrl": "[View Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+              }
+            }'
+          fi
 
       - name: Remove old labels
         uses: actions/github-script@v6
