@@ -86,7 +86,7 @@ jobs:
 
       - name: Create Intial Comment for changed project
         run: |
-          curl -X POST https://your-microservice-endpoint/update-pr-comment \
+          curl -X POST https://faas-blr1-8177d592.doserverless.co/api/v1/web/fn-6185e47d-4554-4609-9a0f-9f875f4d98f5/pr-services/main \
           -H "Content-Type: application/json" \
           -d '{
             "type": "pr-status",
@@ -153,7 +153,7 @@ jobs:
 
       - name: Update comment with build status
         run: |
-          curl -X POST https://your-microservice-endpoint/update-pr-comment \
+          curl -X POST https://faas-blr1-8177d592.doserverless.co/api/v1/web/fn-6185e47d-4554-4609-9a0f-9f875f4d98f5/pr-services/main \
           -H "Content-Type: application/json" \
           -d '{
             "type": "pr-status",
@@ -264,7 +264,7 @@ jobs:
 
       - name: Update comment with build status
         run: |
-          curl -X POST https://your-microservice-endpoint/update-pr-comment \
+          curl -X POST https://faas-blr1-8177d592.doserverless.co/api/v1/web/fn-6185e47d-4554-4609-9a0f-9f875f4d98f5/pr-services/main \
           -H "Content-Type: application/json" \
           -d '{
             "type": "pr-status",
