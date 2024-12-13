@@ -59,7 +59,7 @@ jobs:
               "prNumber": "${{ github.event.pull_request.number }}",
               "project": "'"$first_project"'",
               "status": "🔄 Building",
-              "logsUrl": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+              "logsUrl": "[View Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
             }
           }'
 
@@ -75,7 +75,7 @@ jobs:
               "prNumber": "${{ github.event.pull_request.number }}",
               "project": "'"$second_project"'",
               "status": "🔄 Building",
-              "logsUrl": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+              "logsUrl": "[View Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
             }
           }'
 
@@ -179,7 +179,7 @@ jobs:
             "inputData": {
               "prNumber": "${{ github.event.pull_request.number }}",
               "project": "${{ matrix.project }}",
-              "status": "${{ steps.build.outputs.build-status == '1' && '✅ Build Successful' || '❌ Build Failed' }}",
+              "status": "${{ steps.build.outputs.build-status == '1' && '✅ Build Successful' || '❌ Build Failed' }}"
             }
           }'
 
@@ -286,8 +286,8 @@ jobs:
             "inputData": {
               "prNumber": "${{ github.event.pull_request.number }}",
               "project": "${{ matrix.project }}",
-              "status": "${{ steps.build.outputs.build-status == '1' && '🚀 Preview Deployed!' || '🚀 Preview Failed' }}",
-              "previewUrl": "https://preview-${{ github.event.pull_request.number }}-${{ steps.calculate-port.outputs.port }}.${{ matrix.project == 'payzone' && 'pay' || 'portal' }}.themoondevs.com",
+              "status": "${{ steps.build.outputs.build-status == '1' && '🚀 Preview Deployed!' || '❌ Preview Failed!' }}",
+              "previewUrl": "[Preview URL](https://preview-${{ github.event.pull_request.number }}-${{ steps.calculate-port.outputs.port }}.${{ matrix.project == 'payzone' && 'pay' || 'portal' }}.themoondevs.com)"
             }
           }'
 
