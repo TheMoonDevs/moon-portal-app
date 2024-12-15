@@ -100,7 +100,7 @@ jobs:
 
   build_and_deploy:
     needs: determine_project
-    if: success() && needs.determine_project.outputs.projects != 'null' && needs.determine_project.outputs.projects != '[]'
+    if: success() && needs.determine_project.outputs.projects && needs.determine_project.outputs.projects != '[]'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
