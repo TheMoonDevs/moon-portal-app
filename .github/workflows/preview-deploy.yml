@@ -38,8 +38,11 @@ jobs:
             projects+=("payzone")
           fi
           echo "Changed projects: ${projects[@]}"
-          echo "projects=$(jq -c -n --argjson projects "$(printf '%s\n' "${projects[@]}" | jq -R . | jq -s .)" '$projects')" >> $GITHUB_OUTPUT
-
+          if [ ${#projects[@]} -eq 0 ]; then
+            echo "projects=[]" >> $GITHUB_OUTPUT
+          else
+            echo "projects=$(jq -c -n --argjson projects "$(printf '%s\n' "${projects[@]}" | jq -R . | jq -s .)" '$projects')" >> $GITHUB_OUTPUT
+          fi
       - name: Create Initial Comment for first changed project
         if: ${{ steps.set-projects.outputs.projects != 'null' && steps.set-projects.outputs.projects != '[]' }}
         run: |
