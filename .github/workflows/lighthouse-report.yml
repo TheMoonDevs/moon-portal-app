@@ -21,6 +21,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Set up dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget unzip
+          wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+          sudo dpkg -i google-chrome-stable_current_amd64.deb || sudo apt-get -fy install
+
       - name: Install Lighthouse
         run: npm install -g lighthouse
 
@@ -29,7 +36,8 @@ jobs:
         run: |
           lighthouse ${{ github.event.inputs.preview_url }} \
             --output json \
-            --output-path ./lighthouse-results.json
+            --output-path ./lighthouse-results.json \
+            --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage"
 
       - name: Parse Results
         id: parse-results
@@ -39,10 +47,12 @@ jobs:
             accessibility: (.accessibility.score * 100 | floor),
             bestPractices: (."best-practices".score * 100 | floor),
             seo: (.seo.score * 100 | floor)
-          }' > ./lighthouse-results.json
-          echo "results=$(cat ./lighthouse-results.json)" >> $GITHUB_ENV
+          }' > ./lighthouse-parsed-results.json
+          echo "results=$(cat ./lighthouse-parsed-results.json)" >> $GITHUB_ENV
 
       - name: Call Microservice
+        env:
+          RESULTS: ${{ env.results }}
         run: |
           curl -X POST https://faas-blr1-8177d592.doserverless.co/api/v1/web/fn-6185e47d-4554-4609-9a0f-9f875f4d98f5/pr-services/main \
           -H "Content-Type: application/json" \
@@ -52,6 +62,6 @@ jobs:
               "prNumber": "${{ github.event.inputs.pr_number }}",
               "project": "${{ github.event.inputs.project_name }}",
               "previewUrl": "${{ github.event.inputs.preview_url }}",
-              "results": '$results'
+              "results": $RESULTS
             }
           }'
