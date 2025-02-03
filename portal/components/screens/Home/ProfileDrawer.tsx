@@ -277,10 +277,7 @@ export const UserProfileDrawer: React.FC = () => {
             <h6 className="font-bold pb-2">
               Contributions ({dayjs().format("MMM YYYY")})
             </h6>
-            <ReactActivityCalendar
-              worklogSummary={worklogSummary}
-              loading={loading}
-            />
+            <ReactActivityCalendar />
           </div>
           {!loading ? (
             <WorkLogSection
