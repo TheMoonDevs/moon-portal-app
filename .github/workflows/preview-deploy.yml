@@ -30,24 +30,19 @@ jobs:
           git fetch --prune
           git fetch origin +refs/heads/*:refs/remotes/origin/*
           changed_files=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }})
-          project_paths=("portal" "payzone" "home")
           projects=()
-          home_changed=false
-          if echo "$changed_files" | grep -q "^home/"; then
-            home_changed=true
-          fi
           if echo "$changed_files" | grep -q "^portal/"; then
             projects+=("portal")
           fi
           if echo "$changed_files" | grep -q "^payzone/"; then
             projects+=("payzone")
           fi
-          if ! $home_changed && [ ${#projects[@]} -eq 0 ] && echo "$changed_files" | grep -vq "^portal/" && echo "$changed_files" | grep -vq "^payzone/" && echo "$changed_files" | grep -vq "^home/"; then
-            projects=("portal" "payzone")
-          fi
           echo "Changed projects: ${projects[@]}"
-          echo "projects=$(jq -c -n --argjson projects "$(printf '%s\n' "${projects[@]}" | jq -R . | jq -s .)" '$projects')" >> $GITHUB_OUTPUT
-
+          if [ ${#projects[@]} -eq 0 ]; then
+            echo "projects=[]" >> $GITHUB_OUTPUT
+          else
+            echo "projects=$(jq -c -n --argjson projects "$(printf '%s\n' "${projects[@]}" | jq -R . | jq -s .)" '$projects')" >> $GITHUB_OUTPUT
+          fi
       - name: Create Initial Comment for first changed project
         if: ${{ steps.set-projects.outputs.projects != 'null' && steps.set-projects.outputs.projects != '[]' }}
         run: |
@@ -108,7 +103,7 @@ jobs:
 
   build_and_deploy:
     needs: determine_project
-    if: success() && needs.determine_project.outputs.projects != 'null' && needs.determine_project.outputs.projects != '[]'
+    if: success() && needs.determine_project.outputs.projects && needs.determine_project.outputs.projects != '[]'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
