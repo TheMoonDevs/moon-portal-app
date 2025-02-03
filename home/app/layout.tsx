@@ -13,7 +13,10 @@ import MetaInfo, { MetaInfoProps } from '@/components/App/MetaInfo';
 import '../styles/globals.css';
 import NewHeader from '@/components/App/Header/NewHeader';
 import { FooterSection } from '@/components/Pages/HomePage/FooterSection';
-import { ProgressBar, ProgressBarProvider } from '@/components/App/Global/react-transition-progress/CustomProgress';
+import {
+  ProgressBar,
+  ProgressBarProvider,
+} from '@/components/App/Global/react-transition-progress/CustomProgress';
 // import Footer from "@/components/Global/Footer";
 
 const inter = Inter({ subsets: ['latin'] });
@@ -28,9 +31,11 @@ export const metadata: Metadata = {
 const meta: MetaInfoProps = {
   title: metadata.title?.toString() ?? undefined,
   description: metadata.description?.toString() ?? undefined,
-  ogType: 'website',
-  image: '/path/to/image.jpg',
-  url: 'https://yourwebsite.com',
+  openGraph: {
+    ogType: 'website',
+    image: '/path/to/image.jpg',
+    url: 'https://yourwebsite.com',
+  },
   keywords: 'developers, designers, web development',
   robots: undefined,
 };
@@ -40,32 +45,32 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang='en'>
+    <html lang="en">
       <head>
         <link
-          href='https://fonts.googleapis.com/icon?family=Material+Icons'
-          rel='stylesheet'
+          href="https://fonts.googleapis.com/icon?family=Material+Icons"
+          rel="stylesheet"
         ></link>
         <link
-          href='https://fonts.googleapis.com/icon?family=Material+Icons+Outlined'
-          rel='stylesheet'
+          href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined"
+          rel="stylesheet"
         ></link>
         <link
-          rel='stylesheet'
-          href='https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200'
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
         ></link>
       </head>
       <body className={inter.className}>
         <MUIThemeRegistry options={{ key: 'mui' }}>
           <MetaInfo meta={meta} />
           <ReduxProvider>
-              <ProgressBarProvider>
-                <ProgressBar className='fixed h-1 shadow-lg shadow-sky-500/20 bg-black top-0 z-[9999]'/>
+            <ProgressBarProvider>
+              <ProgressBar className="fixed top-0 z-[9999] h-1 bg-black shadow-lg shadow-sky-500/20" />
               <NewHeader />
               <main>{children}</main>
               <FooterSection />
               {/* <AppPageLoader /> */}
-              </ProgressBarProvider>
+            </ProgressBarProvider>
           </ReduxProvider>
         </MUIThemeRegistry>
         <PrismicPreview repositoryName={repositoryName} />

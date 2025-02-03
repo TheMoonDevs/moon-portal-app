@@ -1,17 +1,18 @@
 import Head from 'next/head';
 import { APP_INFO, IN_DEV, IN_TESTNET } from '@/utils/constants/AppInfo';
 
-const MetaInfo = ({
-  title,
-  description,
-  keywords,
-  robots,
-  openGraph,
-  enableOpenGraph,
-  enableTwitter,
-  twitter,
-  structuredData,
-}: MetaInfoProps) => {
+const MetaInfo = ({ meta }: { meta: MetaInfoProps }) => {
+  const {
+    title,
+    description,
+    keywords,
+    robots,
+    openGraph,
+    enableOpenGraph,
+    enableTwitter,
+    twitter,
+    structuredData,
+  } = meta;
   const fullTitle = title || APP_INFO.title;
   const fullDescription = description || APP_INFO.description;
   const fullImage =
