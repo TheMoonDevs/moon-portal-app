@@ -1,7 +1,7 @@
-'use client'
-import { useEffect, useRef, useState } from "react";
-import { Error404Styled } from "./Error404.styles";
-import { Link } from "@/components/App/Global/react-transition-progress/CustomLink";
+'use client';
+import { useEffect, useRef, useState } from 'react';
+import { Error404Styled } from './Error404.styles';
+import { Link } from '@/components/App/Global/react-transition-progress/CustomLink';
 
 const Error404 = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -16,12 +16,12 @@ const Error404 = () => {
   };
 
   useEffect(() => {
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseleave", handleMouseLeave);
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseleave', handleMouseLeave);
 
     return () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseleave", handleMouseLeave);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseleave', handleMouseLeave);
     };
   }, []);
 
@@ -35,7 +35,7 @@ const Error404 = () => {
         yTilt = 0;
       }
       bgRef.current.style.transform = `perspective(1000px) rotateX(${xTilt}deg) rotateY(${yTilt}deg)`;
-      bgRef.current.style.transition = "all 0.2s ease-out";
+      bgRef.current.style.transition = 'all 0.2s ease-out';
     }
   }, [mousePosition]);
 
