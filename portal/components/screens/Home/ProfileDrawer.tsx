@@ -277,10 +277,7 @@ export const UserProfileDrawer: React.FC = () => {
             <h6 className="font-bold pb-2">
               Contributions ({dayjs().format("MMM YYYY")})
             </h6>
-            <ReactActivityCalendar
-              worklogSummary={worklogSummary}
-              loading={loading}
-            />
+            <ReactActivityCalendar />
           </div>
           {!loading ? (
             <WorkLogSection
@@ -505,8 +502,10 @@ const AboutUserSections = ({
       <div className="flex gap-4 py-2 w-full">
         <Link
           href={`${APP_ROUTES.userWorklogSummary}/${selectedUser?.id}`}
-          target="_blank"
           className="bg-black text-white px-4 py-2 rounded-lg text-sm flex justify-center gap-2 items-center hover:bg-gray-800 transition duration-300 border border-gray-300 flex-grow shadow-md"
+          onClick={() => {
+            dispatch(closeDrawer());
+          }}
         >
           <span
             className="material-symbols-outlined"
@@ -518,7 +517,7 @@ const AboutUserSections = ({
         </Link>
         <Link
           href={`https://slack.com/app_redirect?channel=${selectedUser?.slackId}`}
-          target="_parent"
+          target="_blank"
           className="text-black px-4 py-2 rounded-lg text-sm flex gap-2 items-center justify-center hover:bg-gray-200 transition duration-300 border border-gray-300 flex-grow shadow-md"
         >
           <Image

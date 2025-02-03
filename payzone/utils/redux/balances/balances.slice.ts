@@ -2,7 +2,7 @@ import { ExchangeConfigData } from "@/prisma/extraDbTypes";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface BalancesState {
-  balance: number;
+  balance: number | null;
   totalEarned: string;
   exchange: {
     exchangeData: ExchangeConfigData;
@@ -13,10 +13,10 @@ interface BalancesState {
 }
 
 const initialState: BalancesState = {
-  balance: 0,
+  balance: null,
   totalEarned: "0",
   exchange: null,
-  selectedCurrency: 'INR',
+  selectedCurrency: "INR",
   selectedCurrencyValue: 1,
 };
 
@@ -48,6 +48,11 @@ const balancesSlice = createSlice({
   },
 });
 
-export const { setBalance, setTotalEarned, setExchange, updateSelectedCurrency, updateSelectedCurrencyValue } =
-  balancesSlice.actions;
+export const {
+  setBalance,
+  setTotalEarned,
+  setExchange,
+  updateSelectedCurrency,
+  updateSelectedCurrencyValue,
+} = balancesSlice.actions;
 export default balancesSlice.reducer;

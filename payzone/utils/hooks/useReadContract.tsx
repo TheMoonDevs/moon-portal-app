@@ -6,6 +6,8 @@ import { useWallet } from "./useWallet";
 import { useAppSelector } from "../redux/store";
 import { useAuthSession } from "./useAuthSession";
 import { chainEnum } from "../constants/appInfo";
+import { useEthersProvider } from "./useEthers";
+import { Contract as EthersContract } from "ethers";
 
 interface Contract {
   chain: chainEnum;
@@ -27,6 +29,17 @@ const useReadContract = (contract: Contract): TokenData => {
   });
   const { user } = useAuthSession();
 
+  const provider = useEthersProvider();
+
+  const getContract = new EthersContract(
+    contract.address,
+    contract.abi,
+    provider
+  );
+  const getBalance = async (wallet: string) => {
+    return getContract.balanceOf(wallet);
+  };
+
   const walletAddress = (user?.payData as any)?.walletAddress;
 
   useEffect(() => {
@@ -35,11 +48,12 @@ const useReadContract = (contract: Contract): TokenData => {
       // const totalBurnedAmount = await readContractData(contract, "totalBurnedAmount");
       //console.log("walletAddress", walletAddress);
       if (!walletAddress) return;
-      const balance = await readContractData(
-        contract,
-        "balanceOf",
-        walletAddress
-      );
+      // const balance = await readContractData(
+      //   contract,
+      //   "balanceOf",
+      //   walletAddress
+      // );
+      const balance = await getBalance(walletAddress);
 
       setTokenData((prev) => ({ ...prev, balance: balance }));
     };
