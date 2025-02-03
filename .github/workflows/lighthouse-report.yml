@@ -48,7 +48,7 @@ jobs:
             bestPractices: (."best-practices".score * 100 | floor),
             seo: (.seo.score * 100 | floor)
           }' > ./lighthouse-parsed-results.json
-          echo "results=$(cat ./lighthouse-parsed-results.json)" >> $GITHUB_ENV
+          echo "results=$(cat ./lighthouse-parsed-results.json | jq -c .)" >> $GITHUB_ENV
 
       - name: Call Microservice
         env:
@@ -62,6 +62,6 @@ jobs:
               "prNumber": "${{ github.event.inputs.pr_number }}",
               "project": "${{ github.event.inputs.project_name }}",
               "previewUrl": "${{ github.event.inputs.preview_url }}",
-              "results": $RESULTS
+              "results": '"$RESULTS"'
             }
           }'
