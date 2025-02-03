@@ -1,0 +1,320 @@
+name: Preview Deployment
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: ${{ github.repository }}-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  determine_project:
+    if: github.event_name == 'pull_request' && github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    outputs:
+      projects: ${{ steps.set-projects.outputs.projects }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine changed projects
+        id: set-projects
+        run: |
+          git fetch --prune
+          git fetch origin +refs/heads/*:refs/remotes/origin/*
+          changed_files=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }})
+          projects=()
+          if echo "$changed_files" | grep -q "^portal/"; then
+            projects+=("portal")
+          fi
+          if echo "$changed_files" | grep -q "^payzone/"; then
+            projects+=("payzone")
+          fi
+          echo "Changed projects: ${projects[@]}"
+          if [ ${#projects[@]} -eq 0 ]; then
+            echo "projects=[]" >> $GITHUB_OUTPUT
+          else
+            echo "projects=$(jq -c -n --argjson projects "$(printf '%s\n' "${projects[@]}" | jq -R . | jq -s .)" '$projects')" >> $GITHUB_OUTPUT
+          fi
+      - name: Create Initial Comment for first changed project
+        if: ${{ steps.set-projects.outputs.projects != 'null' && steps.set-projects.outputs.projects != '[]' }}
+        run: |
+          first_project=$(echo '${{ steps.set-projects.outputs.projects }}' | jq -r '.[0]')
+          curl -X POST https://faas-blr1-8177d592.doserverless.co/api/v1/web/fn-6185e47d-4554-4609-9a0f-9f875f4d98f5/pr-services/main \
+          -H "Content-Type: application/json" \
+          -d '{
+            "type": "pr-status",
+            "inputData": {
+              "prNumber": "${{ github.event.pull_request.number }}",
+              "project": "'"$first_project"'",
+              "status": "🔄 Building",
+              "logsUrl": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
+          }'
+
+      - name: Create Initial Comment for second changed project
+        if: ${{ steps.set-projects.outputs.projects != 'null' && steps.set-projects.outputs.projects != '[]' }}
+        run: |
+          second_project=$(echo '${{ steps.set-projects.outputs.projects }}' | jq -r '.[1]')
+          if [ "$second_project" != "null" ]; then
+            curl -X POST https://faas-blr1-8177d592.doserverless.co/api/v1/web/fn-6185e47d-4554-4609-9a0f-9f875f4d98f5/pr-services/main \
+            -H "Content-Type: application/json" \
+            -d '{
+              "type": "pr-status",
+              "inputData": {
+                "prNumber": "${{ github.event.pull_request.number }}",
+                "project": "'"$second_project"'",
+                "status": "🔄 Building",
+                "logsUrl": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+              }
+            }'
+          fi
+
+      - name: Remove old labels
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const projects = JSON.parse('${{ steps.set-projects.outputs.projects }}');
+            const prNumber = context.issue.number;
+
+            projects.forEach(async (project) => {
+              // Remove Old labels
+              const labelsToRemove = [`${project}-build-failed`, `${project}-preview-deployed`, `${project}-preview-failed`];
+              for (const label of labelsToRemove) {
+                try{
+                  await github.rest.issues.removeLabel({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: context.issue.number,
+                    name: label
+                  });
+                } catch (e) {
+                    console.error(`Failed to remove label: ${label}`, e.message);
+                }
+              }
+            });
+
+  build_and_deploy:
+    needs: determine_project
+    if: success() && needs.determine_project.outputs.projects && needs.determine_project.outputs.projects != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        project: ${{ fromJson(needs.determine_project.outputs.projects) }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Calculate preview port
+        id: calculate-port
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          PROJECT_OFFSET=$([ "${{ matrix.project }}" = "portal" ] && echo 0 || echo 500)
+          PORT_RANGE=1000
+          PORT=$((8000 + (PR_NUMBER + PROJECT_OFFSET) % PORT_RANGE))
+          echo "port=$PORT" >> $GITHUB_OUTPUT
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Cache dependencies and build artifacts
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/${{ matrix.project }}/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
+
+      - name: Install dependencies
+        id: install
+        working-directory: ./${{ matrix.project }}
+        run: |
+          if ! npm i; then
+            echo "install-status=0" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          echo "install-status=1" >> $GITHUB_OUTPUT
+
+      - name: Build project
+        id: build
+        working-directory: ./${{ matrix.project }}
+        run: |
+          if ${{steps.install.outputs.install-status == 0}} ; then
+            echo "npm install failed"
+            echo "build-status=0" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+          if [ "${{ matrix.project }}" = "portal" ]; then
+            export DOTENV_KEY=${{ secrets.PORTAL_DOTENV_KEY }}
+          else
+            export DOTENV_KEY=${{ secrets.PAYZONE_DOTENV_KEY }}
+          fi
+
+          if ! npm run build:ci; then
+            echo "build-status=0" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          echo "build-status=1" >> $GITHUB_OUTPUT
+
+      - name: Update comment with build status
+        run: |
+          curl -X POST https://faas-blr1-8177d592.doserverless.co/api/v1/web/fn-6185e47d-4554-4609-9a0f-9f875f4d98f5/pr-services/main \
+          -H "Content-Type: application/json" \
+          -d '{
+            "type": "pr-status",
+            "inputData": {
+              "prNumber": "${{ github.event.pull_request.number }}",
+              "project": "${{ matrix.project }}",
+              "status": "${{ steps.build.outputs.build-status == '1' && '✅ Build Successful' || '❌ Build Failed' }}",
+              "logsUrl": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
+          }'
+
+      - name: Add Build Status Label
+        if: success() || failure()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const project = '${{ matrix.project }}';
+            const buildFailed = ${{ steps.build.outputs.build-status }} === '0';
+
+            if (buildFailed) {
+              const newLabel = `${project}-build-failed`;
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: [newLabel]
+              });
+            }
+
+      - name: Prepare deployment files
+        if: ${{steps.build.outputs.build-status == 1 }}
+        run: |
+          shopt -s dotglob
+          mkdir -p build/${{ matrix.project }}/${{ github.event.pull_request.number }}/.next/static
+          mkdir -p build/${{ matrix.project }}/${{ github.event.pull_request.number }}/public
+          cp -r ./${{ matrix.project }}/.next/standalone/* build/${{ matrix.project }}/${{ github.event.pull_request.number }}
+          cp -r ./${{ matrix.project }}/.next/static/* build/${{ matrix.project }}/${{ github.event.pull_request.number }}/.next/static
+          cp -r ./${{ matrix.project }}/public/* build/${{ matrix.project }}/${{ github.event.pull_request.number }}/public
+          cp ./${{ matrix.project }}/.env.vault build/${{ matrix.project }}/${{ github.event.pull_request.number }}/.env.vault
+
+      - name: Upload using rsync
+        if: ${{steps.build.outputs.build-status == 1 }}
+        uses: burnett01/rsync-deployments@7.0.1
+        with:
+          switches: "-av --delete --partial --bwlimit=5000"
+          path: "build/${{ matrix.project }}/${{ github.event.pull_request.number }}/" # Local path to upload
+          remote_path: "/home/${{ secrets.DROPLET_USER }}/apps/builds/${{ matrix.project }}/preview/${{ github.event.pull_request.number }}" # Remote destination path
+          remote_host: ${{ secrets.DROPLET_IP }}
+          remote_user: ${{ secrets.DROPLET_USER }}
+          remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Set up SSH (secured)
+        if: ${{steps.build.outputs.build-status == 1 }}
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          log-public-key: false
+
+      - name: Deploy on DigitalOcean
+        if: ${{steps.build.outputs.build-status == 1 }}
+        id: deploy
+        run: |
+          set -e  # Enable immediate exit on error to catch all deployment errors
+          ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} << 'ENDSSH'
+            source ~/.nvm/nvm.sh
+            nvm use 20  # Explicitly set Node version to 20
+            # Set variables
+            PROJECT="${{ matrix.project }}"
+            PR_NUMBER="${{ github.event.pull_request.number }}"
+            APP_PATH="/home/${{ secrets.DROPLET_USER }}/apps/builds/${PROJECT}/preview/${PR_NUMBER}"
+            # Navigate to the deployment path
+            cd "$APP_PATH"
+            
+            if [ "${{ matrix.project }}" = "portal" ]; then
+              export DOTENV_KEY=${{ secrets.PORTAL_DOTENV_KEY }}
+            else
+              export DOTENV_KEY=${{ secrets.PAYZONE_DOTENV_KEY }}
+            fi
+
+            export PORT=${{ steps.calculate-port.outputs.port }}
+
+            if pm2 list | grep -q "${PROJECT}-${PR_NUMBER}" ; then
+              if ! pm2 restart "${PROJECT}-${PR_NUMBER}" --update-env ; then
+                echo "Failed to restart PM2 process"
+                exit 1
+              fi
+            else
+              if ! pm2 start npm --name "${PROJECT}-${PR_NUMBER}" -- run start:ci ; then
+                echo "Failed to start PM2 process"
+                exit 1
+              fi
+            fi
+            
+            # Verify deployment
+            if ! pm2 show "${PROJECT}-${PR_NUMBER}" > /dev/null 2>&1; then
+              echo "Failed to start/restart PM2 process for ${PROJECT}"
+              exit 1
+            fi
+            echo "Successfully deployed ${PROJECT} preview for PR #${PR_NUMBER}"
+          ENDSSH
+          if [ $? -ne 0 ]; then
+            echo "Deployment step failed for ${PROJECT} on PR #${{ github.event.pull_request.number }}"
+            exit 1
+          fi
+
+      - name: Update comment with preview status
+        run: |
+          curl -X POST https://faas-blr1-8177d592.doserverless.co/api/v1/web/fn-6185e47d-4554-4609-9a0f-9f875f4d98f5/pr-services/main \
+          -H "Content-Type: application/json" \
+          -d '{
+            "type": "pr-status",
+            "inputData": {
+              "prNumber": "${{ github.event.pull_request.number }}",
+              "project": "${{ matrix.project }}",
+              "status": "${{ steps.build.outputs.build-status == '1' && '🚀 Preview Deployed!' || '❌ Preview Failed!' }}",
+              "logsUrl": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "previewUrl": "https://preview-${{ github.event.pull_request.number }}-${{ steps.calculate-port.outputs.port }}.${{ matrix.project == 'payzone' && 'pay' || 'portal' }}.themoondevs.com"
+            }
+          }'
+
+      - name: Add Deployment Status Label
+        if: ${{ steps.build.outputs.build-status == 1 }}
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const project = '${{ matrix.project }}';
+
+            try {
+              let deploymentFailed = false;
+
+              // Check if deployment step failed
+              if (`${{ steps.deploy.outcome }}` === 'failure') {
+                deploymentFailed = true;
+              }
+              
+              // Add appropriate label
+              const newLabel = deploymentFailed ? `${project}-preview-failed` : `${project}-preview-deployed`;
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: [newLabel]
+              });
+            } catch (e) {
+              console.error('Failed to update deployment status:', e);
+              core.setFailed(`Failed to update deployment status: ${e.message}`);
+            }

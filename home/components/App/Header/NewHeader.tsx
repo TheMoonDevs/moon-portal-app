@@ -1,6 +1,8 @@
 'use client';
+import { APP_ROUTES } from '@/utils/constants/AppInfo';
+import { useAuthSession } from '@/utils/hooks/useAuthSession';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import React, { useState } from 'react';
 import { Link } from '../Global/react-transition-progress/CustomLink';
 
@@ -11,9 +13,23 @@ const NewHeader = () => {
   });
   const [open, setOpen] = useState(false);
   const path = usePathname();
+  const router = useRouter();
+
+  const { signInWithSocial } = useAuthSession();
 
   const closeDropdowns = () => {
     setShowDropdown({ publicBots: false, pricing: false });
+  };
+
+  const handleGoogleSignIn = async (redirectUrl?: string) => {
+    try {
+      const user = await signInWithSocial();
+      console.log('Google sign-in successful: ', user);
+      router.push(redirectUrl || '/');
+      open && setOpen(false);
+    } catch (error) {
+      console.error('Google sign-in error: ', error);
+    }
   };
 
   return (
@@ -23,7 +39,10 @@ const NewHeader = () => {
         className={` relative bg-transparent my-6 mx-6 flex items-center justify-between ${open && '!bg-black mb-0 rounded-t-lg rounded-tr-lg'} max-lg:mx-2 max-lg:my-2`}
       >
         <div className='h-12 max-w-fit rounded-lg bg-black text-white flex items-center px-2 justify-between'>
-          <div className='flex items-center gap-3 max-lg:gap-0'>
+          <Link
+            className='flex items-center gap-3 max-lg:gap-0'
+            href={APP_ROUTES.index}
+          >
             <Image
               src='/logo/logo_white.png'
               alt='logo'
@@ -33,13 +52,14 @@ const NewHeader = () => {
             <p className='text-sm py-2 px-2 font-semibold max-lg:hidden'>
               TheMoonDevs
             </p>
-          </div>
-          {path === '/' && (
+          </Link>
+          {path !== '/products/custom-bots' && (
             <>
               <MenuItem label='Dev Folio' />
               <MenuItem label='Unit Rates' />
             </>
           )}
+
           {path === '/products/custom-bots' && (
             <>
               <MenuItem
@@ -76,18 +96,28 @@ const NewHeader = () => {
               <div className='flex items-center '>
                 <MenuItem label='Resources' />
                 <MenuItem label='View Demo' />
-                <MenuItem label='Sign In' />
+                <button
+                  className='text-sm py-2 px-2 font-semibold cursor-pointer border-2 border-transparent hover:bg-[#414a4c] rounded-md transition-colors duration-300 ease-in-out max-lg:hidden'
+                  onClick={() => handleGoogleSignIn('/products/custom-bots')}
+                >
+                  Sign In
+                </button>
               </div>
               <Button label='Start Trial' />
             </>
           )}
 
-          {path === '/' && (
+          {path !== '/products/custom-bots' && (
             <>
               <div className='flex items-center '>
-                <MenuItem label='Products' />
+                <MenuItem label='Products' to='/products/custom-bots' />
                 <MenuItem label='Services' />
-                <MenuItem label='Sign In' />
+                <button
+                  className='text-sm py-2 px-2 font-semibold cursor-pointer border-2 border-transparent hover:bg-[#414a4c] rounded-md transition-colors duration-300 ease-in-out max-lg:hidden'
+                  onClick={() => handleGoogleSignIn('/')}
+                >
+                  Sign In
+                </button>
               </div>
               <Button label='Book a Call' />
             </>
@@ -104,14 +134,18 @@ const NewHeader = () => {
           </button>
         </div>
       </div>
-      {open && <HamBurger />}
+      {open && <HamBurger handleGoogleSignIn={handleGoogleSignIn} />}
     </div>
   );
 };
 
 export default NewHeader;
 
-const HamBurger = () => {
+const HamBurger = ({
+  handleGoogleSignIn,
+}: {
+  handleGoogleSignIn?: (path: string) => void;
+}) => {
   const path = usePathname();
 
   return (
@@ -133,7 +167,12 @@ const HamBurger = () => {
           <p className='text-2xl max-sm:text-lg font-bold py-2'>Dev Folio</p>
           <p className='text-2xl max-sm:text-lg font-bold py-2'>Unit Rates</p>
 
-          <p className='text-2xl max-sm:text-lg font-bold py-2'>Sign In</p>
+          <p
+            className='text-2xl max-sm:text-lg font-bold py-2'
+            onClick={() => handleGoogleSignIn && handleGoogleSignIn('/')}
+          >
+            Sign In
+          </p>
           <div className='flex items-center gap-4 max-sm:gap-2 max-sm:flex-col border-t-[1px] border-gray-300 mt-6 py-4 max-sm:py-2'>
             <button
               className='w-full max-sm:w-full rounded-md text-sm py-2 bg-white text-black font-semibold transition-all duration-300 hover:bg-black hover:text-white'
@@ -169,6 +208,10 @@ const HamBurger = () => {
             <button
               className='w-1/2 max-sm:w-full rounded-md text-sm py-2 bg-black text-white font-semibold'
               style={{ border: '2px solid white' }}
+              onClick={() =>
+                handleGoogleSignIn &&
+                handleGoogleSignIn('/products/custom-bots')
+              }
             >
               Sign In
             </button>
@@ -194,12 +237,13 @@ interface MenuItemProps {
   label: string;
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
+  to?: string;
 }
 
-const MenuItem = ({ label, onMouseEnter, onMouseLeave }: MenuItemProps) => {
+const MenuItem = ({ label, onMouseEnter, onMouseLeave, to }: MenuItemProps) => {
   return (
     <Link
-      href='#'
+      href={to || '#'}
       className='text-sm py-2 px-2 font-semibold cursor-pointer border-2 border-transparent hover:bg-[#414a4c] rounded-md transition-colors duration-300 ease-in-out max-lg:hidden'
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
