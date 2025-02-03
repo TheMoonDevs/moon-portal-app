@@ -12,6 +12,7 @@ import { HowItWorksSectionWithGrids } from "./HowItWorksSection";
 import { SocialProofSectionWithGrids } from "./SocialProofSection";
 import useCampaignAnalytics from "@/utils/hooks/useCampaignAnalytics";
 import { MediumBlogsWithGrids } from "./MediumBlogsSection";
+import NewHeroSection from "./NewHeroSection";
 
 export const HomePage = () => {
   const { logEventsFromQuery } = useCampaignAnalytics();
@@ -21,16 +22,19 @@ export const HomePage = () => {
   }, [logEventsFromQuery]);
 
   return (
-    <HomePageStyled>
-      <HeroSectionWithGrids />
-      <SocialProofSectionWithGrids />
-      <BenefitsSectionWithGrids />
-      <CompareSectionWithGrids />
-      <ExpertiseSectionWithGrids />
-      <HowItWorksSectionWithGrids />
-      <MediumBlogsWithGrids />
-      <FAQSectionWithGrids />
-      <FooterSectionWithGrids />
-    </HomePageStyled>
+    // <HomePageStyled>
+    //   <HeroSectionWithGrids />
+    //   <SocialProofSectionWithGrids />
+    //   <BenefitsSectionWithGrids />
+    //   <CompareSectionWithGrids />
+    //   <ExpertiseSectionWithGrids />
+    //   <HowItWorksSectionWithGrids />
+    //   <MediumBlogsWithGrids />
+    //   <FAQSectionWithGrids />
+    //   <FooterSectionWithGrids />
+    // </HomePageStyled>
+    <div>
+      <NewHeroSection />
+    </div>
   );
 };
