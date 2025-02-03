@@ -18,10 +18,9 @@ import PersonIcon from "@mui/icons-material/Person";
 import BadgeIcon from "@mui/icons-material/Badge";
 import NumbersIcon from "@mui/icons-material/Numbers";
 import CurrencyBitcoinIcon from "@mui/icons-material/CurrencyBitcoin";
-import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { DatePicker } from "@mui/x-date-pickers";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { Button } from "@/components/elements/Button";
 import { InvoiceData } from "./InvoicePage";
 import { Spinner } from "@/components/elements/Loaders";
@@ -227,7 +226,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                       InputProps={{
                         startAdornment: (
                           <IconButton edge="start">
-                            <AccountBalanceWalletIcon color="primary" />
+                            <WalletIcon color="primary" />
                           </IconButton>
                         ),
                       }}

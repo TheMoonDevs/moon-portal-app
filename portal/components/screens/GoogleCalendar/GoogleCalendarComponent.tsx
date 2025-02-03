@@ -1,33 +1,29 @@
-import React, { ChangeEvent, useRef } from "react";
-import Image from "next/image";
-import {
-  Checkbox,
-  MenuItem,
-  Select,
-  SelectChangeEvent,
-  TextField,
-  Tooltip,
-} from "@mui/material";
-import { Button } from "@/components/elements/Button";
-import { Textarea } from "@mantine/core";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { Textarea } from '@mantine/core';
+import type { SelectChangeEvent } from '@mui/material';
+import { Checkbox, MenuItem, Select, TextField, Tooltip } from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import Image from 'next/image';
+import type { ChangeEvent } from 'react';
+import React, { useRef } from 'react';
+
+import { Button } from '@/components/elements/Button';
 
 export const Header: React.FC = () => (
-  <div className="flex justify-center items-center space-x-4 md:space-x-6">
+  <div className="flex items-center justify-center space-x-4 md:space-x-6">
     <Image
       src="/logo/logo.png"
       alt="Moon Portal Logo"
       width={80}
       height={80}
-      className="w-14 h-14  rounded pointer-events-none"
+      className="pointer-events-none size-14 rounded"
     />
-    <div className="text-black text-2xl font-normal">X</div>
+    <div className="text-2xl font-normal text-black">X</div>
     <Image
       src="/icons/google-calendar.svg"
       alt="Google Calendar Icon"
       width={80}
       height={80}
-      className="w-14 h-14 rounded pointer-events-none"
+      className="pointer-events-none size-14 rounded"
     />
   </div>
 );
@@ -43,25 +39,25 @@ export const AllDayCheckbox: React.FC<AllDayCheckboxProps> = ({
   checked,
   onChange,
 }) => (
-  <div className="flex justify-end items-center h-5">
-    <Tooltip title={"Set Task All Day"} arrow>
+  <div className="flex h-5 items-center justify-end">
+    <Tooltip title={'Set Task All Day'} arrow>
       <Checkbox
         checked={checked}
         onChange={onChange}
         sx={{
-          color: "#ddd",
-          "&.Mui-checked": {
-            color: "#0096FF",
+          color: '#ddd',
+          '&.Mui-checked': {
+            color: '#0096FF',
           },
-          "& .MuiSvgIcon-root": {
-            width: "1.2em",
-            height: "1.2em",
+          '& .MuiSvgIcon-root': {
+            width: '1.2em',
+            height: '1.2em',
           },
         }}
       />
     </Tooltip>
     <label
-      className="text-sm font-medium text-black leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+      className="text-sm font-medium leading-none text-black peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
       htmlFor="allDay"
     >
       All Day
@@ -82,13 +78,13 @@ export const TitleInput: React.FC<TitleInputProps> = ({
   onChange,
   error,
 }) => (
-  <div className="mb-4 flex flex-col w-full">
+  <div className="mb-4 flex w-full flex-col">
     <span
-      className={`text-sm font-semibold mb-2 leading-none ${
-        error ? "text-red-500" : "text-gray-700"
+      className={`mb-2 text-sm font-semibold leading-none ${
+        error ? 'text-red-500' : 'text-gray-700'
       }`}
     >
-      {error ? "*Title is Required" : "*Title"}
+      {error ? '*Title is Required' : '*Title'}
     </span>
     <TextField
       type="text"
@@ -118,7 +114,7 @@ export const DetailsInput: React.FC<DetailsInputProps> = ({
   <div className="mb-4 w-full">
     <label
       htmlFor="details"
-      className="text-sm font-medium mt-1 text-black leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+      className="mt-1 text-sm font-medium leading-none text-black peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
     >
       Details
     </label>
@@ -144,8 +140,8 @@ export const LocationInput: React.FC<LocationInputProps> = ({
   value,
   onChange,
 }) => (
-  <div className="mb-4 flex flex-col w-full">
-    <span className={`text-sm font-semibold mb-2 leading-none text-gray-700 `}>
+  <div className="mb-4 flex w-full flex-col">
+    <span className={`mb-2 text-sm font-semibold leading-none text-gray-700`}>
       Location
     </span>
     <TextField
@@ -176,20 +172,20 @@ export const StartDatePicker: React.FC<DatePickerProps> = ({
   error,
 }) => {
   return (
-    <div className="mb-4 flex flex-col w-full">
+    <div className="mb-4 flex w-full flex-col">
       <span
-        className={`text-sm font-semibold mb-2 mt-4 md:mt-0 leading-none ${
-          error ? "text-red-500" : "text-gray-700"
+        className={`mb-2 mt-4 text-sm font-semibold leading-none md:mt-0 ${
+          error ? 'text-red-500' : 'text-gray-700'
         }`}
       >
-        {error ? "*Start Date is Required" : "*Start Date"}
+        {error ? '*Start Date is Required' : '*Start Date'}
       </span>
       <DatePicker
         slotProps={{
           textField: {
-            size: "small",
-            variant: "outlined",
-            color: "info",
+            size: 'small',
+            variant: 'outlined',
+            color: 'info',
           },
         }}
         className="w-full border-black"
@@ -210,7 +206,7 @@ interface RepeatOptionsProps {
 }
 
 const getWeekdayFromDate = (date: Date) => {
-  return new Intl.DateTimeFormat("en-US", { weekday: "long" }).format(date);
+  return new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(date);
 };
 
 const today = new Date();
@@ -226,37 +222,37 @@ export const RepeatOptions: React.FC<RepeatOptionsProps> = ({
 
   return (
     <div className="mb-4 w-full">
-      <div className="flex flex-col md:flex-row justify-between w-full items-center gap-3">
-        <div className="mb-4 md:mb-0 flex flex-col w-full">
-          <span className="text-sm font-semibold leading-none text-gray-700 mb-2">
+      <div className="flex w-full flex-col items-center justify-between gap-3 md:flex-row">
+        <div className="mb-4 flex w-full flex-col md:mb-0">
+          <span className="mb-2 text-sm font-semibold leading-none text-gray-700">
             Repeat
           </span>
           <Select
             value={repeatValue}
             onChange={onRepeatChange}
             displayEmpty
-            inputProps={{ "aria-label": "Without label" }}
+            inputProps={{ 'aria-label': 'Without label' }}
             className="w-full"
             style={{
-              backgroundColor: "white",
-              color: "#4A5568",
-              fontWeight: "500",
-              height: "40px",
-              borderRadius: "4px",
-              fontSize: "14px",
-              paddingRight: "30px",
+              backgroundColor: 'white',
+              color: '#4A5568',
+              fontWeight: '500',
+              height: '40px',
+              borderRadius: '4px',
+              fontSize: '14px',
+              paddingRight: '30px',
             }}
             MenuProps={{
               PaperProps: {
                 style: {
-                  backgroundColor: "white",
-                  color: "#4A5568",
+                  backgroundColor: 'white',
+                  color: '#4A5568',
                 },
               },
             }}
             renderValue={(selected) => (
-              <span style={{ color: selected ? "#4A5568" : "#BCCCDC" }}>
-                {selected || "Select"}
+              <span style={{ color: selected ? '#4A5568' : '#BCCCDC' }}>
+                {selected || 'Select'}
               </span>
             )}
           >
@@ -269,35 +265,35 @@ export const RepeatOptions: React.FC<RepeatOptionsProps> = ({
               Monthly on the third {getWeekdayFromDate(startDateValue)}
             </MenuItem>
             <MenuItem value="annually">
-              Annually on{" "}
-              {new Intl.DateTimeFormat("en-US", {
-                month: "long",
-                day: "numeric",
+              Annually on{' '}
+              {new Intl.DateTimeFormat('en-US', {
+                month: 'long',
+                day: 'numeric',
               }).format(startDateValue)}
             </MenuItem>
             <MenuItem value="every-weekday">Weekly on Weekdays</MenuItem>
           </Select>
         </div>
 
-        {repeatValue !== "no-repeat" && (
-          <div className="mb-4 md:mb-0 flex flex-col w-full">
-            <span className="text-sm font-semibold leading-none text-gray-700 mb-2">
+        {repeatValue !== 'no-repeat' && (
+          <div className="mb-4 flex w-full flex-col md:mb-0">
+            <span className="mb-2 text-sm font-semibold leading-none text-gray-700">
               End Repeat
             </span>
             <DatePicker
               slotProps={{
                 textField: {
-                  size: "small",
-                  variant: "outlined",
-                  color: "primary",
+                  size: 'small',
+                  variant: 'outlined',
+                  color: 'primary',
                   InputProps: {
                     style: {
-                      borderColor: "black", // Ensure black border
-                      backgroundColor: "transparent", // Ensure no conflicting background color
+                      borderColor: 'black', // Ensure black border
+                      backgroundColor: 'transparent', // Ensure no conflicting background color
                     },
                     classes: {
-                      root: "customDatePickerRoot", // Apply a custom class to ensure specificity
-                      error: "customDatePickerError", // Apply a class to override error state if needed
+                      root: 'customDatePickerRoot', // Apply a custom class to ensure specificity
+                      error: 'customDatePickerError', // Apply a class to override error state if needed
                     },
                   },
                 },
@@ -321,20 +317,20 @@ interface TimeInputsProps {
 }
 
 export const TimeInputs: React.FC<TimeInputsProps> = ({
-  startTime = "11:00",
+  startTime = '11:00',
   onStartTimeChange,
-  endTime = "12:00",
+  endTime = '12:00',
   onEndTimeChange,
 }) => {
   const startTimeRef = useRef<HTMLInputElement>(null);
   const endTimeRef = useRef<HTMLInputElement>(null);
 
   return (
-    <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 w-full">
-      <div className="w-full  md:w-1/2">
+    <div className="flex w-full flex-col space-y-4 md:flex-row md:space-x-4 md:space-y-0">
+      <div className="w-full md:w-1/2">
         <label
           htmlFor="start-time"
-          className="text-sm font-medium  text-black leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          className="text-sm font-medium leading-none text-black peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
         >
           Start Time
         </label>
@@ -348,13 +344,13 @@ export const TimeInputs: React.FC<TimeInputsProps> = ({
             startTimeRef.current && startTimeRef.current.showPicker()
           }
           onChange={(e) => onStartTimeChange(e.target.value)}
-          className="flex h-10 w-full cursor-pointer rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 no-clock-icon"
+          className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring no-clock-icon flex h-10 w-full cursor-pointer rounded-md border px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
         />
       </div>
       <div className="w-full md:w-1/2">
         <label
           htmlFor="end-time"
-          className="text-sm font-medium mt-1 text-black leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          className="mt-1 text-sm font-medium leading-none text-black peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
         >
           End Time
         </label>
@@ -366,7 +362,7 @@ export const TimeInputs: React.FC<TimeInputsProps> = ({
           ref={endTimeRef}
           onClick={() => endTimeRef.current && endTimeRef.current.showPicker()}
           onChange={(e) => onEndTimeChange(e.target.value)}
-          className="flex h-10 w-full cursor-pointer  rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 no-clock-icon"
+          className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring no-clock-icon flex h-10 w-full cursor-pointer rounded-md border px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
         />
       </div>
     </div>
@@ -376,7 +372,7 @@ export const TimeInputs: React.FC<TimeInputsProps> = ({
 //! SubmitButton 🚀
 
 export const SubmitButton = () => (
-  <Tooltip title={"Generate Google Calendar link"} arrow>
+  <Tooltip title={'Generate Google Calendar link'} arrow>
     <span>
       <Button type="submit">Generate Link</Button>
     </span>

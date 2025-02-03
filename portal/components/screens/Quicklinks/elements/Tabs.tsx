@@ -1,17 +1,29 @@
 "use client";
 
 import { styled, Tab, Tabs } from "@mui/material";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const QuicklinksTabs = ({
   children,
   tabs,
 }: {
-  children: (value: number) => React.ReactNode;
+  children: (value: number, searchQuery?: string) => React.ReactNode;
   tabs: string[];
 }) => {
-  const [value, setValue] = useState(0);
+  const [value, setValue] = useState<number>(0);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const targetRef = useRef<HTMLInputElement>(null);
+  const [isHovered, setIsHovered] = useState<boolean>(false);
+  const [isFocused, setIsFocused] = useState<boolean>(false);
 
+  const showSearchInput = isHovered || isFocused;
+
+  useEffect(() => {
+    if (!showSearchInput && targetRef.current) {
+      targetRef.current.value = "";
+      setSearchQuery("");
+    }
+  }, [showSearchInput]);
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
   };
@@ -60,25 +72,46 @@ const QuicklinksTabs = ({
   );
 
   return (
-    <div className="bg-white ">
-      <AntTabs
-        className="mb-3"
-        value={value}
-        onChange={handleChange}
-        aria-label="ant example"
-      >
-        {tabs.map((tab, index) => (
-          <AntTab label={tab} key={index} />
-        ))}
-        <div className="py-3 flex items-center">
-          <span className="material-symbols-outlined !font-extralight">
+    <div className="bg-white space-y-3">
+      <div className="flex items-center gap-2">
+        <AntTabs
+          className="mb-3"
+          value={value}
+          onChange={handleChange}
+          aria-label="ant example"
+        >
+          {tabs.map((tab, index) => (
+            <AntTab label={tab} key={index} />
+          ))}
+        </AntTabs>
+        <div
+          className={`flex items-center  rounded-full px-1 py-2 transition-all duration-500 ${
+            showSearchInput ? "w-60 bg-neutral-100" : "w-10"
+          }`}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          // style={{ transition: "width 0.5s ease-in-out" }}
+        >
+          <span className="material-symbols-outlined !font-extralight rounded-full">
             search
           </span>
-        </div>
-        {/* <AntTab label="Tab 3" /> */}
-      </AntTabs>
 
-      {children(value)}
+          <input
+            ref={targetRef}
+            placeholder="Search..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className={`outline-none border-b focus:border-b-2 border-black bg-transparent transition-all duration-300 ${
+              showSearchInput ? "w-full" : "w-0"
+            }`}
+            // style={{ transition: "width 0.5s ease-in-out" }} // Optional inline transition if needed
+          />
+        </div>
+      </div>
+
+      {children(value, searchQuery.toLowerCase())}
     </div>
   );
 };

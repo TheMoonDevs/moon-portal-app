@@ -1,0 +1,207 @@
+name: Production Deployment
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  determine_project:
+    runs-on: ubuntu-latest
+    outputs:
+      projects: ${{ steps.set-projects.outputs.projects }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine changed projects
+        id: set-projects
+        run: |
+          git fetch --prune
+          git fetch origin +refs/heads/*:refs/remotes/origin/*
+          changed_files=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }})
+          project_paths=("portal" "payzone" "home")
+          projects=()
+          home_changed=false
+          if echo "$changed_files" | grep -q "^home/"; then
+            home_changed=true
+          fi
+          if echo "$changed_files" | grep -q "^portal/"; then
+            projects+=("portal")
+          fi
+          if echo "$changed_files" | grep -q "^payzone/"; then
+            projects+=("payzone")
+          fi
+          if ! $home_changed && [ ${#projects[@]} -eq 0 ] && echo "$changed_files" | grep -vq "^portal/" && echo "$changed_files" | grep -vq "^payzone/" && echo "$changed_files" | grep -vq "^home/"; then
+            projects=("portal" "payzone")
+          fi
+          echo "Changed projects: ${projects[@]}"
+          echo "projects=$(jq -c -n --argjson projects "$(printf '%s\n' "${projects[@]}" | jq -R . | jq -s .)" '$projects')" >> $GITHUB_OUTPUT
+
+      - name: Debug Changed Projects Output
+        run: |
+          echo "Projects output: ${{ steps.set-projects.outputs.projects }}"
+
+  build_and_deploy:
+    needs: determine_project
+    if: needs.determine_project.outputs.projects != 'null' && needs.determine_project.outputs.projects != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        project: ${{ fromJson(needs.determine_project.outputs.projects) }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Cache dependencies and build artifacts
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/${{ matrix.project }}/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
+
+      - name: Install dependencies
+        working-directory: ./${{ matrix.project }}
+        run: |
+          if ! npm i; then
+            exit 1
+          fi
+
+      - name: Build project
+        if: success()
+        working-directory: ./${{ matrix.project }}
+        run: |
+          if [ "${{ matrix.project }}" = "portal" ]; then
+            export DOTENV_KEY=${{ secrets.PROD_PORTAL_DOTENV_KEY }}
+          else
+            export DOTENV_KEY=${{ secrets.PROD_PAYZONE_DOTENV_KEY }}
+          fi
+          if ! npm run build:ci; then
+            exit 1
+          fi
+
+      - name: Prepare deployment files
+        if: success()
+        run: |
+          # Enable dotglob to include hidden files in wildcard matches
+          shopt -s dotglob
+          # Create the deployment structure in GitHub Actions
+          mkdir -p build/${{ matrix.project }}/main-copy/.next/static
+          mkdir -p build/${{ matrix.project }}/main-copy/public
+
+          # Move and rename build files to the "main-copy" folder structure
+          cp -r ./${{ matrix.project }}/.next/standalone/* build/${{ matrix.project }}/main-copy
+          cp -r ./${{ matrix.project }}/.next/static/* build/${{ matrix.project }}/main-copy/.next/static
+          cp -r ./${{ matrix.project }}/public/* build/${{ matrix.project }}/main-copy/public
+          cp ./${{ matrix.project }}/.env.vault build/${{ matrix.project }}/main-copy/.env.vault
+
+      - name: Upload using rsync
+        if: success()
+        uses: burnett01/rsync-deployments@7.0.1
+        with:
+          switches: "-av --delete --partial --bwlimit=5000"
+          path: "build/${{ matrix.project }}/main-copy/" # Local path to upload
+          remote_path: "/home/${{ secrets.DROPLET_USER }}/apps/builds/${{ matrix.project }}/prod/main-copy" # Remote destination path
+          remote_host: ${{ secrets.DROPLET_IP }}
+          remote_user: ${{ secrets.DROPLET_USER }}
+          remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Set up SSH (secured)
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          log-public-key: false
+
+      - name: Deploy on DigitalOcean
+        if: success()
+        id: deploy
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} << 'ENDSSH'
+            source ~/.nvm/nvm.sh
+            nvm use 20  # Explicitly set Node version to 20
+            PROJECT="${{ matrix.project }}"
+
+            if [ "${{ matrix.project }}" = "portal" ]; then
+              export DOTENV_KEY=${{ secrets.PROD_PORTAL_DOTENV_KEY }}
+            else
+              export DOTENV_KEY=${{ secrets.PROD_PAYZONE_DOTENV_KEY }}
+            fi
+
+            mkdir -p /home/${{ secrets.DROPLET_USER }}/apps/builds/${PROJECT}/prod
+            
+            cd /home/${{ secrets.DROPLET_USER }}/apps/builds/${PROJECT}/prod
+
+            # Enable dotglob to include hidden files in wildcard matches
+            shopt -s dotglob
+
+            mkdir -p main main-copy main-backup
+            
+            if [ -d main ]; then
+              cp -r ./main/* main-backup
+            fi
+            
+            cp -r ./main-copy/* main
+
+            cd main
+
+            # Restart the PM2 process for the project
+            if pm2 list | grep -q "${PROJECT}-main" ; then
+              pm2 restart "${PROJECT}-main" --update-env || {
+                echo "ERROR: Failed to restart PM2 process. Cleaning up..." >&2
+                exit 1
+              }
+            else
+              pm2 start npm --name "${PROJECT}-main" -- run start:ci || {
+                echo "ERROR: Failed to start PM2 process. Cleaning up..." >&2
+                exit 1
+              }
+            fi
+            
+            cd ../
+            shopt -s dotglob
+
+            if ! pm2 show "${PROJECT}-main" > /dev/null 2>&1; then
+              echo "Failed to start/restart PM2 process for ${PROJECT}"
+              rm -rf main
+              mkdir -p main
+              cp -r ./main-backup/* main
+              pm2 restart "${PROJECT}-main" --update-env
+              exit 1
+            fi
+            echo "Successfully deployed ${PROJECT} on port ${PORT}"
+          ENDSSH
+
+      - name: Set domain output
+        continue-on-error: true
+        id: set-domain
+        run: |
+          if [ "${{ matrix.project }}" = "portal" ]; then
+            DOMAIN="portal.themoondevs.com"
+          elif [ "${{ matrix.project }}" = "payzone" ]; then
+            DOMAIN="pay.themoondevs.com"
+          else
+            exit 1
+          fi
+          echo "::set-output name=domain::${DOMAIN}"
+
+      - name: Lighthouse Check
+        continue-on-error: true
+        uses: foo-software/lighthouse-check-action@master
+        with:
+          urls: https://${{ steps.set-domain.outputs.domain }}

@@ -39,7 +39,7 @@ export const usePwaUpdate = () => {
               const { state = "" } =
                 (event.target as unknown as { state: string }) || {};
               if (state === "activated") {
-                window.location.reload();
+                window.location?.reload();
               }
             }
           );

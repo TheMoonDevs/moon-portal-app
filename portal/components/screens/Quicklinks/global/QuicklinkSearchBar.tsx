@@ -1,11 +1,11 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Link as Quicklink } from "@prisma/client";
-import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
-import { debounce } from "@/utils/helpers/functions";
-import LinkList from "../LinkList/LinkList";
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Link as Quicklink } from '@prisma/client';
+import { QuicklinksSdk } from '@/utils/services/QuicklinksSdk';
+import { debounce } from '@/utils/helpers/functions';
+import LinkList from '../LinkList/LinkList';
 
 const QuicklinkSearchBar: React.FC = () => {
-  const [query, setQuery] = useState<string>("");
+  const [query, setQuery] = useState<string>('');
   const [results, setResults] = useState<Quicklink[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [showResults, setShowResults] = useState<boolean>(false);
@@ -18,9 +18,9 @@ const QuicklinkSearchBar: React.FC = () => {
         setShowResults(false);
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showResults]);
 
@@ -32,24 +32,24 @@ const QuicklinkSearchBar: React.FC = () => {
 
       try {
         const data = await QuicklinksSdk.getData(
-          `/api/quicklinks/link?searchQuery=${value}`
+          `/api/quicklinks/link?searchQuery=${value}`,
         );
         setResults(data.data.links);
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error('Error fetching data:', error);
       } finally {
         setLoading(false);
       }
     },
-    []
+    [],
   );
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+
   const debouncedHandleChange = useCallback(debounce(handleChange, 500), []);
 
   return (
-    <div ref={ref} className="relative">
-      <div className="relative flex items-center w-full rounded-3xl focus-within:shadow-lg bg-white overflow-hidden  transition-all border ">
-        <div className="grid place-items-center h-full w-12 text-gray-300">
+    <div ref={ref} className="relative w-full">
+      <div className="relative flex w-full items-center overflow-hidden rounded-3xl border bg-white transition-all focus-within:shadow-lg">
+        <div className="grid h-full w-12 place-items-center text-gray-300">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className="h-6 w-6"
@@ -67,7 +67,7 @@ const QuicklinkSearchBar: React.FC = () => {
         </div>
 
         <input
-          className="peer h-full w-full outline-none text-sm text-gray-700 pr-2 p-[0.65rem] bg-white"
+          className="peer h-full w-full bg-white p-[0.65rem] pr-2 text-sm text-gray-700 outline-none"
           type="text"
           id="search"
           value={query}
@@ -80,16 +80,18 @@ const QuicklinkSearchBar: React.FC = () => {
           placeholder="⚡ Search quicklinks.."
         />
       </div>
-      {/* <div className="relative">
-        <span className="material-symbols-outlined absolute -left-4 text-neutral-300">
-          search
-        </span>
-        <input className="border-b border-b-gray-300 focus:border-b-gray-500  w-full outline-none transition-all bg-white"></input>
-      </div> */}
+
       {showResults && (
-        <div className="absolute h-72 z-10 w-64 bg-white overflow-y-scroll shadow-lg px-4 pl-2 mt-4 rounded-b-lg  py-4 pt-2 overflow-x-hidden">
+        <div className="absolute top-full z-10 mt-2 h-72 w-full overflow-y-scroll rounded-b-lg bg-white px-4 py-4 pl-2 pt-2 shadow-lg">
           {loading ? (
-            <p>Loading...</p>
+            Array(5)
+            .fill(null)
+            .map((_, index) => (
+              <div
+                key={index}
+                className="h-10 w-full animate-pulse rounded-md bg-gray-200 mb-2 "
+              ></div>
+            ))
           ) : (
             query && (
               <LinkList

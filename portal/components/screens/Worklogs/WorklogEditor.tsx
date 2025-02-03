@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { LOGLINKTYPE, WorkLogPoints } from "@/utils/@types/interfaces";
-import { MdxAppEditor } from "@/utils/configure/MdxAppEditor";
-import { useUser } from "@/utils/hooks/useUser";
-import { PortalSdk } from "@/utils/services/PortalSdk";
-import { WorkLogs } from "@prisma/client";
-import dayjs from "dayjs";
-import { useSearchParams } from "next/navigation";
+import { LOGLINKTYPE, WorkLogPoints } from '@/utils/@types/interfaces';
+import { MdxAppEditor } from '@/utils/configure/MdxAppEditor';
+import { useUser } from '@/utils/hooks/useUser';
+import { PortalSdk } from '@/utils/services/PortalSdk';
+import { WorkLogs } from '@prisma/client';
+import dayjs from 'dayjs';
+import { useSearchParams } from 'next/navigation';
 import {
   Dispatch,
   RefObject,
@@ -17,20 +17,21 @@ import {
   useMemo,
   useRef,
   useState,
-} from "react";
-import { DEFAULT_MARKDOWN_DATA } from "./WorklogsHelper";
-import { useDebouncedEffect } from "@/utils/hooks/useDebouncedHook";
-import { debounce } from "lodash";
-import store, { useAppDispatch } from "@/utils/redux/store";
-import Link from "next/link";
-import { APP_ROUTES } from "@/utils/constants/appInfo";
-import { MDXEditorMethods } from "@mdxeditor/editor";
+} from 'react';
+import { DEFAULT_MARKDOWN_DATA } from './WorklogsHelper';
+import { useDebouncedEffect } from '@/utils/hooks/useDebouncedHook';
+import { debounce } from 'lodash';
+import store, { useAppDispatch } from '@/utils/redux/store';
+import Link from 'next/link';
+import { APP_ROUTES } from '@/utils/constants/appInfo';
+import { MDXEditorMethods } from '@mdxeditor/editor';
 import {
   setEdiotrSaving,
   updateLogs,
-} from "@/utils/redux/worklogs/worklogs.slice";
-import { Popover, IconButton } from "@mui/material";
-import EmojiLegend from "./WorklogTabs/EmojiLegend";
+} from '@/utils/redux/worklogs/worklogs.slice';
+import { Popover, IconButton, Drawer } from '@mui/material';
+import EmojiLegend from './WorklogTabs/EmojiLegend';
+import TodoTab from './WorklogTabs/TodoTab';
 
 export const MARKDOWN_PLACHELODER = `* `;
 
@@ -42,6 +43,8 @@ export const WorklogEditor = ({
   monthTab = 0,
   setMonthTab,
   handleNextMonthClick,
+  fetchXTasksForDay,
+  fetchOptions,
 }: {
   loading: boolean;
   editWorkLogs: WorkLogs | null;
@@ -50,28 +53,32 @@ export const WorklogEditor = ({
   monthTab?: number;
   setMonthTab?: (month: number) => void;
   handleNextMonthClick?: () => void;
+  fetchXTasksForDay: (date: string) => Promise<WorkLogs | null>;
+  fetchOptions: { label: string; date: string }[];
 }) => {
   const dispatch = useAppDispatch();
   const { user } = useUser();
+  const [openTodo, setOpenTodo] = useState<boolean>(false);
   const [markdownDatas, setMarkdownDatas] = useState<WorkLogPoints[]>(
-    DEFAULT_MARKDOWN_DATA
+    DEFAULT_MARKDOWN_DATA,
   );
-  const [newProjectText, setNewProjectText] = useState<string>("");
+  const [newProjectText, setNewProjectText] = useState<string>('');
   const queryParams = useSearchParams();
   const [serverLog, setServerLog] = useState<WorkLogs | null>(null);
   const [workLog, setWorkLog] = useState<WorkLogs | null>(null);
-  const _date = queryParams?.get("date");
+  const _date = queryParams?.get('date');
   const [saving, setSaving] = useState<boolean>(false);
   const isAuotSaving = useRef(false);
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
-  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+  const [showPopup, setShowPopup] = useState<boolean>(false);
+  const handleClick = (event: any) => {
     setAnchorEl(event.currentTarget);
   };
   const handleClose = () => {
     setAnchorEl(null);
   };
   const open = Boolean(anchorEl);
-  const id = open ? "simple-popover" : undefined;
+  const id = open ? 'simple-popover' : undefined;
 
   const isAutoSaved = useMemo(() => {
     return (
@@ -92,11 +99,11 @@ export const WorklogEditor = ({
     if (!user) return;
     if (!editWorkLogs) {
       setWorkLog({
-        id: "",
+        id: '',
         userId: user?.id,
-        logType: "dayLog",
-        title: `${dayjs().format("MMMM DD")}  - ${dayjs().format("dddd")}`,
-        date: dayjs().format("YYYY-MM-DD"),
+        logType: 'dayLog',
+        title: `${dayjs().format('MMMM DD')}  - ${dayjs().format('dddd')}`,
+        date: dayjs().format('YYYY-MM-DD'),
         createdAt: new Date(),
         updatedAt: new Date(),
         works: markdownDatas as any[],
@@ -107,13 +114,8 @@ export const WorklogEditor = ({
     setWorkLog(editWorkLogs);
     setServerLog(editWorkLogs);
     setMarkdownDatas(editWorkLogs.works as any[]);
-    // console.log("placed ", editWorkLogs);
     isAuotSaving.current = true;
   }, [editWorkLogs]);
-
-  // useEffect(() => {
-  //   console.log("markdown datas changed", markdownDatas);
-  // }, [markdownDatas]);
 
   const saveWorkLog = useCallback(
     (_workLog: { works: WorkLogPoints[] } | null) => {
@@ -138,33 +140,33 @@ export const WorklogEditor = ({
           setWorkLog(data?.data?.workLogs);
           setServerLog(data?.data?.workLogs);
           dispatch(updateLogs(data?.data?.workLogs));
-          console.log("saved", data?.data?.workLogs);
+          console.log('saved', data?.data?.workLogs);
         })
         .catch((err) => {
           setSaving(false);
           console.log(err);
         });
     },
-    [workLog]
+    [workLog],
   );
 
   const changeMarkData = (
     content: string,
     bd_index: number,
     _markdownDat: WorkLogPoints,
-    _fullpoints: WorkLogPoints[]
+    _fullpoints: WorkLogPoints[],
   ) => {
     // console.log(content);
     const emojiMap: { [key: string]: string } = {
-      ":check:": "✅",
-      ":cross:": "❌",
-      ":yellow:": "🟡",
-      ":red:": "🔴",
-      ":calendar:": "📅",
-      ":pencil:": "✏️",
-      ":bulb:": "💡",
-      ":question:": "❓",
-      ":star:": "⭐",
+      ':check:': '✅',
+      ':cross:': '❌',
+      ':yellow:': '🟡',
+      ':red:': '🔴',
+      ':calendar:': '📅',
+      ':pencil:': '✏️',
+      ':bulb:': '💡',
+      ':question:': '❓',
+      ':star:': '⭐',
     };
 
     let new_content = content;
@@ -204,14 +206,14 @@ export const WorklogEditor = ({
       saveWorkLog(workLog as any);
     },
     [serverLog, workLog],
-    3000
+    3000,
   );
 
   const addNewProject = () => {
     if (
       !newProjectText ||
       markdownDatas.find(
-        (md) => md.title?.toLowerCase() === newProjectText?.toLowerCase()
+        (md) => md.title?.toLowerCase() === newProjectText?.toLowerCase(),
       ) ||
       newProjectText.trim().length <= 0
     )
@@ -220,9 +222,9 @@ export const WorklogEditor = ({
       const new_md = [
         ...md,
         {
-          link_id: newProjectText.toLowerCase().replace(/\s/g, "-"),
+          link_id: newProjectText.toLowerCase().replace(/\s/g, '-'),
           link_type: LOGLINKTYPE.ABSTRACT,
-          icon: "work",
+          icon: 'work',
           title: newProjectText,
           content: MARKDOWN_PLACHELODER,
         },
@@ -230,7 +232,7 @@ export const WorklogEditor = ({
       setWorkLog((wl: any) => ({ ...wl, works: new_md }));
       return new_md;
     });
-    setNewProjectText("");
+    setNewProjectText('');
   };
 
   const markdownRefs = useRef<RefObject<MDXEditorMethods>[]>([]);
@@ -247,10 +249,10 @@ export const WorklogEditor = ({
     //console.log("inserting ", text, index);
     if (index != undefined)
       console.log(
-        "inserting ",
+        'inserting ',
         text,
         index,
-        markdownRefs.current[index]?.current
+        markdownRefs.current[index]?.current,
       );
     markdownRefs.current[index || 0]?.current?.insertMarkdown(text);
   };
@@ -266,44 +268,66 @@ export const WorklogEditor = ({
 
   const lastDateOfSelectedMonth = dayjs()
     .month(monthTab || 0)
-    .endOf("month");
+    .endOf('month');
 
   const handleMonthChange = () => {
     if (handleNextMonthClick) {
       handleNextMonthClick();
     }
   };
+  const handleClickTodo = () => {
+    setOpenTodo(true);
+  };
+  const handleCloseTodo = () => {
+    setOpenTodo(false);
+  };
+  const togglePopup = () => {
+    setShowPopup(!showPopup);
+  };
+  const popupRef = useRef<HTMLDivElement | null>(null);
+  const handleClickOutside = (event: MouseEvent) => {
+    if (popupRef.current && !popupRef.current.contains(event.target as Node)) {
+      setShowPopup(false);
+    }
+  };
+
+  useEffect(() => {
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   return (
     <div
       onKeyDown={(e) => {
-        if (e.ctrlKey && e.key === "s") {
+        if (e.ctrlKey && e.key === 's') {
           e.preventDefault();
-          console.log("Saving Worklogs");
+          console.log('Saving Worklogs');
           saveWorkLog(workLog as any);
         }
-        if (e.ctrlKey && e.key === "r") {
+        if (e.ctrlKey && e.key === 'r') {
           e.preventDefault();
-          console.log("Refreshing Worklogs");
+          console.log('Refreshing Worklogs');
           refreshWorklogs();
         }
       }}
-      className="flex flex-col md:max-w-[800px] min-h-screen"
+      className="flex min-h-screen flex-col md:max-w-[800px]"
     >
       {!compactView && (
-        <div id="header" className="flex flex-row justify-between items-center">
+        <div id="header" className="flex flex-row items-center justify-between">
           <div className="flex items-center">
             <Link href={APP_ROUTES.userWorklogs} className="">
-              <IconButton sx={{ fontSize: "16px" }}>
+              <IconButton sx={{ fontSize: '16px' }}>
                 <span className="icon_size material-icons text-neutral-900 hover:text-neutral-700">
                   arrow_back
                 </span>
               </IconButton>
             </Link>
             {workLog?.date &&
-              dayjs(workLog.date).isSame(lastDateOfSelectedMonth, "day") && (
+              dayjs(workLog.date).isSame(lastDateOfSelectedMonth, 'day') && (
                 <IconButton
-                  sx={{ fontSize: "16px" }}
+                  sx={{ fontSize: '16px' }}
                   onClick={handleMonthChange}
                 >
                   <span className="icon_size material-icons text-neutral-900 hover:text-neutral-700">
@@ -320,22 +344,31 @@ export const WorklogEditor = ({
               <span className="icon_size material-icons">✅</span>
             </div> */}
             {loading ? (
-              <div className="animate-spin rounded-full h-5 w-5 p-2 mt-2 border-t-2 border-b-2 border-neutral-700"></div>
+              <div className="mt-2 h-5 w-5 animate-spin rounded-full border-b-2 border-t-2 border-neutral-700 p-2"></div>
             ) : (
               <div
                 onClick={refreshWorklogs}
                 className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700"
               >
-                <span className="icon_size material-icons">refresh</span>
+                <span className="text-4xl material-icons">refresh</span>
               </div>
             )}
-            <div className="hidden max-sm:block cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700">
+            <div className="hidden cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700 max-sm:block">
               <span
-                className="icon_size material-icons"
+                className="text-4xl material-icons"
                 onClick={handleClick}
                 aria-describedby={id}
               >
                 emoji_objects
+              </span>
+            </div>
+            <div className="hidden cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700 max-sm:block">
+              <span
+                className="text-4xl material-icons"
+                onClick={handleClickTodo}
+                aria-describedby={id}
+              >
+                format_list_bulleted
               </span>
             </div>
             <Popover
@@ -344,27 +377,97 @@ export const WorklogEditor = ({
               anchorEl={anchorEl}
               onClose={handleClose}
               anchorOrigin={{
-                vertical: "bottom",
-                horizontal: "center",
+                vertical: 'bottom',
+                horizontal: 'center',
               }}
               sx={{
-                ".MuiPopover-paper": {
-                  backgroundColor: "#fff",
-                  color: "#333",
-                  borderRadius: "12px",
-                  boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.2)",
-                  padding: "0px 16px",
-                  maxWidth: "90%",
+                '.MuiPopover-paper': {
+                  backgroundColor: '#fff',
+                  color: '#333',
+                  borderRadius: '12px',
+                  boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.2)',
+                  padding: '0px 16px',
+                  maxWidth: '90%',
                 },
-                my: "8px",
+                my: '8px',
               }}
             >
               <div className="px-2 pb-4 pt-0">
                 <EmojiLegend />
               </div>
             </Popover>
-            <div className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700">
-              <span className="icon_size material-icons">more_vert</span>
+            <Drawer
+              anchor="bottom"
+              open={openTodo}
+              onClose={handleCloseTodo}
+              sx={{
+                '.MuiDrawer-paper': {
+                  backgroundColor: '#fff',
+                  padding: '24px',
+                  borderRadius: '16px 16px 0 0',
+                  boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.2)',
+                  height: '90vh',
+                },
+              }}
+            >
+              <div className="hidden absolute right-0 top-4 w-10 cursor-pointer  text-neutral-900 hover:text-neutral-700 max-sm:block">
+                <span
+                  className="text-4xl material-icons"
+                  onClick={handleCloseTodo}
+                >
+                  close_icon
+                </span>
+              </div>
+              <TodoTab userId={user?.id as string} />
+            </Drawer>
+            <div
+              className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700"
+              onClick={togglePopup}
+            >
+              <span className="text-4xl material-icons">more_vert</span>
+              {showPopup && (
+                <div
+                  ref={popupRef}
+                  className="popup absolute max-sm:right-0 z-10 mt-3 rounded-lg bg-white p-4 text-lg shadow-lg max-sm:text-base"
+                >
+                  <ul>
+                    {fetchOptions.map((option) => (
+                      <li
+                        key={option.date}
+                        className="cursor-pointer p-2 hover:bg-neutral-100"
+                        onClick={() => {
+                          fetchXTasksForDay(option.date).then(
+                            (updatedWorkLog) => {
+                              setWorkLog(updatedWorkLog);
+                              setShowPopup(false);
+                            },
+                          );
+                        }}
+                      >
+                        {option.label}
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="hidden mt-2 max-sm:flex flex-col">
+                    <div
+                      className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700"
+                      onClick={handleClick}
+                    >
+                      <span className="text-4xl material-icons">
+                        emoji_objects
+                      </span>
+                    </div>
+                    <div
+                      className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700"
+                      onClick={handleClickTodo}
+                    >
+                      <span className="text-4xl material-icons">
+                        format_list_bulleted
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
             {!isAutoSaved && !loading && (
               <button
@@ -377,13 +480,13 @@ export const WorklogEditor = ({
           </div>
         </div>
       )}
-      <div className="p-4 mb-4 ">
+      <div className="mb-4 p-4">
         <input
           disabled={compactView}
           type="text"
-          className="text-2xl  outline-none bg-transparent"
+          className="bg-transparent text-2xl outline-none"
           placeholder="Jotdown a new project/task/goal..."
-          value={workLog?.title || "March 27 - Sunday"}
+          value={workLog?.title || 'March 27 - Sunday'}
           onChange={(e) => {
             setWorkLog((wl) =>
               wl
@@ -391,48 +494,52 @@ export const WorklogEditor = ({
                     ...wl,
                     title: e.target.value,
                   }
-                : null
+                : null,
             );
           }}
         />
-        <div className="text-xs flex item-center gap-2 leading-3 mt-3 text-neutral-500">
+        <div className="item-center mt-3 flex gap-2 text-xs leading-3 text-neutral-500">
           {saving && (
-            <div className="animate-spin rounded-full h-3 w-3 border-t-2 border-b-2 mr-2 border-neutral-800"></div>
+            <div className="mr-2 h-3 w-3 animate-spin rounded-full border-b-2 border-t-2 border-neutral-800"></div>
           )}
-          {workLog?.logType === "dayLog"
-            ? dayjs(workLog?.date).format("DD-MM-YYYY")
-            : "My logs"}{" "}
-          {/* | {workLog?.logType}  */}|{" "}
+          {workLog?.logType === 'dayLog'
+            ? dayjs(workLog?.date).format('DD-MM-YYYY')
+            : 'My logs'}{' '}
+          {/* | {workLog?.logType}  */}|{' '}
           {saving
-            ? "saving..."
+            ? 'saving...'
             : loading
-            ? "fetching.."
-            : !isAutoSaved
-            ? "In-Edit"
-            : "Saved"}
+              ? 'fetching..'
+              : !isAutoSaved
+                ? 'In-Edit'
+                : 'Saved'}
           <span className="icon_size material-symbols-outlined text-neutral-500">
-            {!isAutoSaved ? "edit" : "done"}
+            {!isAutoSaved ? 'edit' : 'done'}
           </span>
         </div>
-        <div className={`h-[${compactView ? "1em" : "3em"}]`}></div>
+        <div className={`h-[${compactView ? '1em' : '3em'}]`}></div>
       </div>
       {markdownDatas.map((_markdownDat, bd_index) => (
         <div
           key={_markdownDat.link_id}
-          className="flex flex-col flex-grow-1 items-stretch"
+          className="flex-grow-1 flex flex-col items-stretch"
         >
-          <p className="text-[0.8em] mb-2 tracking-widest uppercase text-neutral-500 px-4">
+          <p className="mb-2 px-4 text-[0.8em] uppercase tracking-widest text-neutral-500">
             {_markdownDat.title} - {getStatsOfContent(_markdownDat.content)}
           </p>
           <div
-            className="relative flex flex-row items-stretch px-4 mb-3"
+            className="relative mb-3 flex flex-row items-stretch px-4"
             onKeyDown={(e) => {
               //console.log("keyup", e.key);
               // detect ctrl + space
-              if (e.ctrlKey && e.key === " ") {
+              if (e.ctrlKey && e.key === ' ') {
                 e.preventDefault();
                 // console.log("✅ pressed");
-                insertToContent("✅", bd_index);
+                insertToContent('✅', bd_index);
+              }
+              if (e.ctrlKey && e.key === 'q') {
+                e.preventDefault();
+                insertToContent('❌', bd_index);
               }
             }}
           >
@@ -446,11 +553,20 @@ export const WorklogEditor = ({
                 }
                 key={
                   loading
-                    ? "uninit"
+                    ? 'uninit'
                     : workLog?.id +
-                      "-" +
+                      '-' +
                       _markdownDat.link_id +
-                      "-" +
+                      '-' +
+                      workLog?.title
+                }
+                editorKey={
+                  loading
+                    ? 'uninit'
+                    : workLog?.id +
+                      '-' +
+                      _markdownDat.link_id +
+                      '-' +
                       workLog?.title
                 }
                 markdown={
@@ -458,18 +574,18 @@ export const WorklogEditor = ({
                     ? _markdownDat.content
                     : MARKDOWN_PLACHELODER
                 }
-                className="flex-grow h-full"
+                className="h-full flex-grow"
                 contentEditableClassName={`mdx_ce ${
                   _markdownDat.content.trim() == MARKDOWN_PLACHELODER.trim()
-                    ? " mdx_uninit "
-                    : ""
+                    ? ' mdx_uninit '
+                    : ''
                 } leading-1 imp-p-0 grow w-full h-full`}
                 onChange={(content: any) => {
                   changeMarkData(
                     content,
                     bd_index,
                     _markdownDat,
-                    markdownDatas
+                    markdownDatas,
                   );
                   //   debounceSaveWorkLogsMarkdownData(
                   //     content,
@@ -491,7 +607,7 @@ export const WorklogEditor = ({
       {!compactView && (
         <div
           id="bottom-bar"
-          className="fixed bottom-[0.5rem] left-0 md:hidden right-0 mx-3 my-1 flex flex-row gap-3"
+          className="fixed bottom-[0.5rem] left-0 right-0 mx-3 my-1 flex flex-row gap-3 md:hidden"
         >
           {/* <div
             id="input-bar"

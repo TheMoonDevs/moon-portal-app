@@ -1,0 +1,66 @@
+# --------------- Top level labels ---------------
+# Add 'configuration' to any changes within root folder
+config:
+  - "*"
+
+# --------------- CI Labels ---------------
+# Add 'workflow' to any changes within '.github' folder
+workflow:
+  - .github/*
+  - .github/workflows/**/*
+
+# --------------- App level labels ---------------
+# Add 'contract' to any changes within 'contract' folder
+contract:
+  - contract/*
+
+# Add 'home' to any changes within 'home' folder
+home:
+  - home/**/*
+
+# Add 'payzone' to any changes within 'payzone' folder
+payzone:
+  - payzone/**/*
+
+# Add 'portal' to any changes within 'portal' folder
+portal:
+  - portal/**/*
+
+# --------------- Package.json labels ---------------
+# Add 'dependencies' to any changes within any 'package.json' file in the repository
+dependencies:
+  - '**/package.json'
+  - '**/package-lock.json'
+
+# --------------- Frontend labels ---------------
+# Add 'frontend' to any changes within frontend-related folders in Next.js apps
+frontend:
+  - 'portal/{app,components,pages,public,styles,utils,worker}/**/*'
+  - '!portal/app/api/**/*'
+  - 'payzone/{app,components,pages,public,styles,utils}/**/*'
+  - '!payzone/app/api/**/*'
+  - 'home/{app,components,pages,public,redux,styles,utils}/**/*'
+  - '!home/app/api/**/*'
+  - '!home/pages/api/**/*'
+  - '!.github/**/*'
+  - '!**/middleware.ts'
+  - '!**/package.json'
+  - '!**/package-lock.json'
+  - '!**/README.md'
+
+# --------------- Backend labels ---------------
+# Add 'backend' to any changes within backend-related folders in Next.js apps
+backend:
+  - 'portal/app/api/**/*'
+  - 'portal/prisma/**/*'
+  - 'payzone/app/api/**/*'
+  - 'payzone/prisma/**/*'
+  - 'home/app/api/**/*'
+  - 'home/pages/api/**/*'
+  - 'home/prisma/**/*'
+  - '**/middleware.ts'
+
+# --------------- Documentation labels ---------------
+# Add 'documentation' to any changes within README files
+documentation:
+  - '**/README.md'

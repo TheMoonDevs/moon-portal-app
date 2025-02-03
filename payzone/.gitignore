@@ -17,7 +17,7 @@
 /build
 
 # misc
-.env
+.env*
 .DS_Store
 .env.local
 .env.development.local
@@ -41,3 +41,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+.db_assets
+
+
+sw.*
+workbox-*
+swe-worker-*
+.flaskenv*
+!.env.project
+!.env.vault
