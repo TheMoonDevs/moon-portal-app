@@ -48,50 +48,25 @@ jobs:
           echo "Changed projects: ${projects[@]}"
           echo "projects=$(jq -c -n --argjson projects "$(printf '%s\n' "${projects[@]}" | jq -R . | jq -s .)" '$projects')" >> $GITHUB_OUTPUT
 
-      - name: Create Initial Comment for first changed project
-        if: ${{ steps.set-projects.outputs.projects != 'null' && steps.set-projects.outputs.projects != '[]' }}
-        run: |
-          first_project=$(echo '${{ steps.set-projects.outputs.projects }}' | jq -r '.[0]')
-          curl -X POST https://faas-blr1-8177d592.doserverless.co/api/v1/web/fn-6185e47d-4554-4609-9a0f-9f875f4d98f5/pr-services/main \
-          -H "Content-Type: application/json" \
-          -d '{
-            "type": "pr-status",
-            "inputData": {
-              "prNumber": "${{ github.event.pull_request.number }}",
-              "project": "'"$first_project"'",
-              "status": "🔄 Building",
-              "logsUrl": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            }
-          }'
-
-      - name: Create Initial Comment for second changed project
-        if: ${{ steps.set-projects.outputs.projects != 'null' && steps.set-projects.outputs.projects != '[]' }}
-        run: |
-          second_project=$(echo '${{ steps.set-projects.outputs.projects }}' | jq -r '.[1]')
-          if [ "$second_project" != "null" ]; then
-            curl -X POST https://faas-blr1-8177d592.doserverless.co/api/v1/web/fn-6185e47d-4554-4609-9a0f-9f875f4d98f5/pr-services/main \
-            -H "Content-Type: application/json" \
-            -d '{
-              "type": "pr-status",
-              "inputData": {
-                "prNumber": "${{ github.event.pull_request.number }}",
-                "project": "'"$second_project"'",
-                "status": "🔄 Building",
-                "logsUrl": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-              }
-            }'
-          fi
-
-      - name: Remove old labels
+      - name: Create Initial Status Comments for Changed Projects
         uses: actions/github-script@v6
         with:
           script: |
             const projects = JSON.parse('${{ steps.set-projects.outputs.projects }}');
             const prNumber = context.issue.number;
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber
+            });
+            const logsUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+
+            console.log('Projects:', projects);
+            console.log('PR Number:', prNumber);
 
             projects.forEach(async (project) => {
               // Remove Old labels
-              const labelsToRemove = [`${project}-build-failed`, `${project}-preview-deployed`, `${project}-preview-failed`];
+              const labelsToRemove = [`${project}-build-failed`, `${project}-build-success`, `${project}-preview-deployed`, `${project}-preview-failed`];
               for (const label of labelsToRemove) {
                 try{
                   await github.rest.issues.removeLabel({
@@ -104,11 +79,52 @@ jobs:
                     console.error(`Failed to remove label: ${label}`, e.message);
                 }
               }
+              
+              const newLabel = `building-${project}`;
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: [newLabel]
+              });
+              
+              const uniqueIdentifier = project === 'portal' ? '<!-- PORTAL_PREVIEW_STATUS -->' : '<!-- PAYZONE_PREVIEW_STATUS -->';
+              const initialStatus = [
+                '| Status | 🚧 Building |',
+                '| ------ | ----------- |',
+                `| Logs | [View Logs](${logsUrl}) |`,
+                '| Preview URL | - |'
+              ].join('\n');
+
+              console.log('Processing project:', project);
+              console.log('Unique Identifier:', uniqueIdentifier);
+              console.log('Initial Status:', initialStatus);
+
+              let existingComment = comments.data.find(comment =>
+                comment.body.includes(uniqueIdentifier)
+              );
+
+              if (!existingComment) {
+                console.log('Creating new comment for project:', project);
+                await github.rest.issues.createComment({
+                  issue_number: prNumber,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: `${uniqueIdentifier}\n### ${project.charAt(0).toUpperCase() + project.slice(1)} Preview Deployment Status\n\n${initialStatus}`
+                });
+              } else {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: existingComment.id,
+                  body: `${uniqueIdentifier}\n### ${project.charAt(0).toUpperCase() + project.slice(1)} Preview Deployment Status\n\n${initialStatus}`
+                });
+              }
             });
 
   build_and_deploy:
     needs: determine_project
-    if: success() && needs.determine_project.outputs.projects != 'null' && needs.determine_project.outputs.projects != '[]'
+    if: needs.determine_project.outputs.projects != 'null' && needs.determine_project.outputs.projects != '[]'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -173,36 +189,63 @@ jobs:
           fi
           echo "build-status=1" >> $GITHUB_OUTPUT
 
-      - name: Update comment with build status
-        run: |
-          curl -X POST https://faas-blr1-8177d592.doserverless.co/api/v1/web/fn-6185e47d-4554-4609-9a0f-9f875f4d98f5/pr-services/main \
-          -H "Content-Type: application/json" \
-          -d '{
-            "type": "pr-status",
-            "inputData": {
-              "prNumber": "${{ github.event.pull_request.number }}",
-              "project": "${{ matrix.project }}",
-              "status": "${{ steps.build.outputs.build-status == '1' && '✅ Build Successful' || '❌ Build Failed' }}",
-              "logsUrl": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            }
-          }'
-
-      - name: Add Build Status Label
+      - name: Update Build Status in Comments
         if: success() || failure()
         uses: actions/github-script@v6
         with:
           script: |
             const project = '${{ matrix.project }}';
-            const buildFailed = ${{ steps.build.outputs.build-status }} === '0';
+            const buildFailed = ${{ steps.build.outputs.build-status}} === 0;
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number
+            });
 
-            if (buildFailed) {
-              const newLabel = `${project}-build-failed`;
-              await github.rest.issues.addLabels({
+            try{
+              await github.rest.issues.removeLabel({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.issue.number,
-                labels: [newLabel]
+                name: `building-${project}`
               });
+            } catch (e) {
+                console.error(`Failed to remove label: ${label}`, e.message);
+            }
+
+            // Add appropriate label based on build status
+            const newLabel = buildFailed ? `${project}-build-failed` : `${project}-build-success`;
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: [newLabel]
+            });
+
+            // Update comment with proper table formatting
+            const uniqueIdentifier = project === 'portal' ? '<!-- PORTAL_PREVIEW_STATUS -->' : '<!-- PAYZONE_PREVIEW_STATUS -->';
+            const existingComment = comments.data.find(comment => comment.body.includes(uniqueIdentifier));
+            const logsUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const status = buildFailed ? '❌ Build Failed' : '✅ Build Succeeded';
+
+            const updatedStatus = [
+              '| Status | ' + status + ' |',
+              '| ------ | ----------- |',
+              `| Logs | [View Logs](${logsUrl}) |`,
+              '| Preview URL | - |'
+            ].join('\n');
+
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body: `${uniqueIdentifier}\n### ${project.charAt(0).toUpperCase() + project.slice(1)} Preview Deployment Status\n\n${updatedStatus}`
+              });
+            }
+
+            if (buildFailed) {
+              core.setFailed(`Failed to build ${project}`);
             }
 
       - name: Prepare deployment files
@@ -281,27 +324,16 @@ jobs:
             exit 1
           fi
 
-      - name: Update comment with preview status
-        run: |
-          curl -X POST https://faas-blr1-8177d592.doserverless.co/api/v1/web/fn-6185e47d-4554-4609-9a0f-9f875f4d98f5/pr-services/main \
-          -H "Content-Type: application/json" \
-          -d '{
-            "type": "pr-status",
-            "inputData": {
-              "prNumber": "${{ github.event.pull_request.number }}",
-              "project": "${{ matrix.project }}",
-              "status": "${{ steps.build.outputs.build-status == '1' && '🚀 Preview Deployed!' || '❌ Preview Failed!' }}",
-              "logsUrl": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-              "previewUrl": "https://preview-${{ github.event.pull_request.number }}-${{ steps.calculate-port.outputs.port }}.${{ matrix.project == 'payzone' && 'pay' || 'portal' }}.themoondevs.com"
-            }
-          }'
-
-      - name: Add Deployment Status Label
+      - name: Update comment with preview deployment status
         if: ${{ steps.build.outputs.build-status == 1 }}
         uses: actions/github-script@v6
         with:
           script: |
             const project = '${{ matrix.project }}';
+            const port = '${{ steps.calculate-port.outputs.port }}';
+            const subdomain = project === 'payzone' ? 'pay' : 'portal';
+            const prNumber = '${{ github.event.pull_request.number }}';
+            const previewUrl = `https://preview-${prNumber}-${port}.${subdomain}.themoondevs.com`;
 
             try {
               let deploymentFailed = false;
@@ -311,6 +343,17 @@ jobs:
                 deploymentFailed = true;
               }
               
+              try {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  name: `${project}-build-success`
+                });
+              } catch (e) {
+                console.error(`Failed to remove label ${label}:`, e.message);
+              }
+
               // Add appropriate label
               const newLabel = deploymentFailed ? `${project}-preview-failed` : `${project}-preview-deployed`;
               await github.rest.issues.addLabels({
@@ -319,6 +362,37 @@ jobs:
                 issue_number: context.issue.number,
                 labels: [newLabel]
               });
+
+              // Update comment with status and URL
+              const comments = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number
+              });
+              
+              const uniqueIdentifier = project === 'portal' ? '<!-- PORTAL_PREVIEW_STATUS -->' : '<!-- PAYZONE_PREVIEW_STATUS -->';
+              const existingComment = comments.data.find(comment => comment.body.includes(uniqueIdentifier));
+              const logsUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+
+              // Set status and URL text based on success or failure
+              const status = deploymentFailed ? '❌ Deployment Failed' : '🚀 Preview Deployed';
+              const previewUrlText = deploymentFailed ? '❌ Failed' : `[Preview URL](${previewUrl})`;
+
+              const updatedStatus = [
+                `| Status | ${status} |`,
+                `| ------ | ----------- |`,
+                `| Logs | [View Logs](${logsUrl}) |`,
+                `| Preview URL | ${previewUrlText} |`
+              ].join('\n');
+
+              if (existingComment) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: existingComment.id,
+                  body: `${uniqueIdentifier}\n### ${project.charAt(0).toUpperCase() + project.slice(1)} Preview Deployment Status\n\n${updatedStatus}`
+                });
+              }
             } catch (e) {
               console.error('Failed to update deployment status:', e);
               core.setFailed(`Failed to update deployment status: ${e.message}`);
