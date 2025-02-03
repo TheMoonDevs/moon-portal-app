@@ -1,8 +1,8 @@
 import { PrismicNextImage } from '@prismicio/next';
-import { Link } from "react-transition-progress/next";
 import React from 'react';
 import styled from '@emotion/styled';
 import media from '@/styles/media';
+import { Link } from '@/components/App/Global/react-transition-progress/CustomLink';
 
 const JobCard = ({
   job,
