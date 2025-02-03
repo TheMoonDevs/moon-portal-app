@@ -5,12 +5,12 @@ import Image from "next/image";
 import { useMediaQuery } from "@mui/material";
 import media from "@/styles/media";
 import { FirebaseEvents, FirebaseSDK } from "@/utils/service/firebase";
-import { Link } from "react-transition-progress/next";
 import { APP_INFO, APP_ROUTES } from "@/utils/constants/AppInfo";
 import theme from "@/styles/theme";
 import { forwardRef, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import { usePathname } from "next/navigation";
+import { Link } from "../Global/react-transition-progress/CustomLink";
 
 export const HeaderComponent = () => {
   const isMobile = useMediaQuery(media.largeMobile);

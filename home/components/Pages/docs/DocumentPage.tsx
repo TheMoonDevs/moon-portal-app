@@ -5,9 +5,9 @@ import { TermsData } from "./TermsData";
 import { SensePrivacyData } from "./sense/PrivacyData";
 import theme from "@/styles/theme";
 import { SectionWithGrids } from "../HomePage/SectionWithGrids";
-import { Link } from "react-transition-progress/next";
 import { SenseTermsData } from "./sense/TermsData";
 import { DocumentPageType } from "@/utils/constants/AppInfo";
+import { Link } from "@/components/App/Global/react-transition-progress/CustomLink";
 
 const isMainDocPage = Object.values(DocumentPageType);
 

@@ -1,7 +1,6 @@
 'use client'
 import { APP_ROUTES } from "@/utils/constants/AppInfo";
 import styled from "@emotion/styled";
-import { Link } from "react-transition-progress/next";
 import logo from "/public/logo/logo.png";
 import Image from "next/image";
 import media from "@/styles/media";
@@ -10,6 +9,7 @@ import { useEffect, useRef } from "react";
 import { ScrollProgressBar } from "./ScrollProgressBar";
 import { useImageColors } from "@/utils/hooks/useImageColors";
 import { useTextBg } from "@/utils/hooks/useTextBg";
+import { Link } from "@/components/App/Global/react-transition-progress/CustomLink";
 
 export const WorklifeHeader = ({
   title,

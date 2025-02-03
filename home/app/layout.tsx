@@ -9,12 +9,12 @@ import { PrismicPreview } from '@prismicio/next';
 
 import { repositoryName } from '@/prismicio';
 import { Header } from '@/components/App/Header/Header';
-import { AppPageLoader } from '@/components/App/PageLoader';
 import MetaInfo, { MetaInfoProps } from '@/components/App/MetaInfo';
 import '../styles/globals.css';
-import { ProgressBar, ProgressBarProvider } from 'react-transition-progress';
 import NewHeader from '@/components/App/Header/NewHeader';
 import { FooterSection } from '@/components/Pages/HomePage/FooterSection';
+import { ProgressBar, ProgressBarProvider } from '@/components/App/Global/react-transition-progress/CustomProgress';
+// import Footer from "@/components/Global/Footer";
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -26,13 +26,13 @@ export const metadata: Metadata = {
 };
 
 const meta: MetaInfoProps = {
-  title: metadata.title?.toString() ?? null,
-  description: metadata.description?.toString() ?? null,
+  title: metadata.title?.toString() ?? undefined,
+  description: metadata.description?.toString() ?? undefined,
   ogType: 'website',
   image: '/path/to/image.jpg',
   url: 'https://yourwebsite.com',
   keywords: 'developers, designers, web development',
-  robots: null,
+  robots: undefined,
 };
 export default function RootLayout({
   children,
@@ -59,13 +59,13 @@ export default function RootLayout({
         <MUIThemeRegistry options={{ key: 'mui' }}>
           <MetaInfo meta={meta} />
           <ReduxProvider>
-            <ProgressBarProvider>
-              <ProgressBar className='fixed h-1 shadow-lg shadow-sky-500/20 bg-black top-0 z-[9999]' />
+              <ProgressBarProvider>
+                <ProgressBar className='fixed h-1 shadow-lg shadow-sky-500/20 bg-black top-0 z-[9999]'/>
               <NewHeader />
               <main>{children}</main>
               <FooterSection />
               {/* <AppPageLoader /> */}
-            </ProgressBarProvider>
+              </ProgressBarProvider>
           </ReduxProvider>
         </MUIThemeRegistry>
         <PrismicPreview repositoryName={repositoryName} />
