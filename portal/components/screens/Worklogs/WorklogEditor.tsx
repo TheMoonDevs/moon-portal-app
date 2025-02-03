@@ -35,6 +35,16 @@ import TodoTab from './WorklogTabs/TodoTab';
 
 export const MARKDOWN_PLACHELODER = `* `;
 
+export const getStatsOfContent = (content: string) => {
+  //const _content = content.replaceAll(":check:", "✅");
+  // how many times ✅ is there in content
+  // console.log(content);
+  const checks = (content?.match(/✅/g) || []).length;
+  const points = (content?.match(/\n/g) || []).length + 1;
+  // console.log(content);
+  return `${checks} / ${points}`;
+};
+
 export const WorklogEditor = ({
   loading,
   editWorkLogs,
@@ -255,15 +265,6 @@ export const WorklogEditor = ({
         markdownRefs.current[index]?.current,
       );
     markdownRefs.current[index || 0]?.current?.insertMarkdown(text);
-  };
-
-  const getStatsOfContent = (content: string) => {
-    //const _content = content.replaceAll(":check:", "✅");
-    // how many times ✅ is there in content
-    // console.log(content);
-    const checks = (content.match(/✅/g) || []).length;
-    const points = (content.match(/\n/g) || []).length + 1;
-    return `${checks} / ${points}`;
   };
 
   const lastDateOfSelectedMonth = dayjs()
