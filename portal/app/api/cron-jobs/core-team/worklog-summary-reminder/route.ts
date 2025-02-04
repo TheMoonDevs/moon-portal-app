@@ -5,39 +5,39 @@ import { formatISO, startOfDay, subDays } from "date-fns";
 
 
 export async function GET(request: NextRequest) {
-  const today = formatISO(startOfDay(new Date()));
-  const yesterday = formatISO(startOfDay(subDays(new Date(), 1)));
-
-  const users = await prisma.user.findMany({
-    where: {
-      userType: "MEMBER",
-      role: "CORETEAM",
-      status: "ACTIVE",
-      // id: "665bfefcc58926c7f6935c0c", //remove and add your user id for testing
-    },
-  });
-
-  const usersWithWorkLogs = await Promise.all(
-    users.map(async (user: User) => {
-      const workLogs = await prisma.workLogs.findMany({
-        where: {
-          userId: user.id,
-          date: {
-            gte: yesterday.split('T')[0],
-            lte: today.split('T')[0],
-          },
-        },
-      });
-
-      return {
-        userName: user.name,
-        workLogs,
-        slackId: user.slackId,
-      };
-    })
-  );
-
   try {
+    const today = formatISO(startOfDay(new Date()));
+    const yesterday = formatISO(startOfDay(subDays(new Date(), 1)));
+
+    const users = await prisma.user.findMany({
+      where: {
+        userType: "MEMBER",
+        role: "CORETEAM",
+        status: "ACTIVE",
+        // id: "665bfefcc58926c7f6935c0c", //remove and add your user id for testing
+      },
+    });
+
+    const usersWithWorkLogs = await Promise.all(
+      users.map(async (user: User) => {
+        const workLogs = await prisma.workLogs.findMany({
+          where: {
+            userId: user.id,
+            date: {
+              gte: yesterday.split('T')[0],
+              lte: today.split('T')[0],
+            },
+          },
+        });
+
+        return {
+          userName: user.name,
+          workLogs,
+          slackId: user.slackId,
+        };
+      })
+    );
+
     const jsonResponse = {
       status: "success",
       message: "Reminders Sent!",
