@@ -34,6 +34,11 @@
       "name": "Sync ClickUp Tasks",
       "url": "http://localhost:3001/api/cron-jobs/sync/clickup-tasks",
       "schedule": "*/30 * * * *"
+    },
+    {
+      "name": "Core Team Worklog Summary Reminder",
+      "url": "http://localhost:3001/api/cron-jobs/core-team/worklog-summary-reminder",
+      "schedule": "0 9 * * *"
     }
   ]
 }
