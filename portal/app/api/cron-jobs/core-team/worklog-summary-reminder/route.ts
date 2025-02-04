@@ -29,7 +29,7 @@ const generateMessages = (usersWithWorkLogs: any[]) => {
 
     // Edge case when no tasks were logged for both yesterday and today
     if (totalTasksYesterDay === 0 && totalTasksToday === 0) {
-      message += " has no tasks logged for yesterday and today.";
+      message += " has no tasks logged for yesterday and today.🙅‍♂️";
     } else if (incompleteTasksYesterday === totalTasksYesterDay && totalTasksToday === 0) {
       // If all tasks were incomplete yesterday and no tasks planned today
       message += ` had ${incompleteTasksYesterday} unfinished tasks since yesterday 🙅‍♂️`;
@@ -55,7 +55,7 @@ const generateMessages = (usersWithWorkLogs: any[]) => {
       // If no tasks were logged yesterday but tasks are planned for today
       message += ` has no tasks logged yesterday or was on leave🫥, but has ${totalTasksToday} tasks planned for today 🎯${userSummaryLink}`;
     } else {
-      message += ` has ${incompleteTasksYesterday} incomplete tasks since yesterday😢  and ${totalTasksToday} tasks planned for today 🎯${userSummaryLink}`;
+      message += ` has ${incompleteTasksYesterday} unfinished tasks since yesterday😢  and ${totalTasksToday} tasks planned for today 🎯${userSummaryLink}`;
     }
 
     messageParts.push(message);
