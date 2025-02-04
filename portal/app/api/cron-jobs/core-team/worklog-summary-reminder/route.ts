@@ -72,10 +72,17 @@ const getStatsOfContent = (content: string) => {
 
 const slackBot = new SlackBotSdk();
 
+const isWeekend = (date: Date) => {
+  const day = date.getDay();
+  return day === 0 || day === 6; // Sun -0 & Sat -6
+};
+
 export async function GET(request: NextRequest) {
   try {
     const today = formatISO(startOfDay(new Date())).split('T')[0];
     const yesterday = formatISO(startOfDay(subDays(new Date(), 1))).split('T')[0];
+    const yesterdayDate = subDays(new Date(), 1);
+    const isYesterdayWeekend = isWeekend(yesterdayDate);
 
     const users = await prisma.user.findMany({
       where: {
@@ -137,18 +144,26 @@ export async function GET(request: NextRequest) {
     );
 
 
-    const messages = generateMessages(usersWithWorkLogs);
-    console.warn(messages);
-
-    await slackBot.sendSlackMessageviaAPI({
-      text: messages,
-      channel: 'C07AQ8F3LH2', //change the channel id to Slack channel id where you want to send the message
+    const filteredUsersWithWorkLogs = usersWithWorkLogs.filter((user) => {
+      if (isYesterdayWeekend) {
+        return user.totalTasksYesterDay > 0;
+      }
+      return true;
     });
+
+
+    if (filteredUsersWithWorkLogs.length > 0) {
+      const messages = generateMessages(filteredUsersWithWorkLogs);
+
+      await slackBot.sendSlackMessageviaAPI({
+        text: messages,
+        channel: 'C07AQ8F3LH2', //change the channel id to Slack channel id where you want to send the message
+      });
+    }
 
     const jsonResponse = {
       status: "success",
       message: "Reminders Sent!",
-      // messages: messages,
     };
 
     return NextResponse.json(jsonResponse);
