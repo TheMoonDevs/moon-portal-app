@@ -97,7 +97,7 @@ export const WorklogViewPageWrapper = ({ id }: { id: string }) => {
 
   return (
     <div className="my-4 h-[90vh] overflow-y-scroll bg-white">
-      <WorklogView id={id} date={_date} logType={_logType} />;
+      <WorklogView id={id} date={_date} logType={_logType} />
       <PrivateWorklogView
         date={dayjs(_date)?.format('YYYY-MM-DD')}
         logType={'privateWorklogs'}
