@@ -1,36 +1,36 @@
-import { WorkLogs } from "@prisma/client";
-import React, { useCallback, useEffect, useState } from "react";
-import dayjs from "dayjs";
-import ActivityCalendar, { ThemeInput } from "react-activity-calendar";
-import { Box, Tooltip as MuiTooltip, Skeleton } from "@mui/material";
-import useAsyncState from "@/utils/hooks/useAsyncState";
-import { PortalSdk } from "@/utils/services/PortalSdk";
-import { RootState, useAppSelector } from "@/utils/redux/store";
+import { WorkLogs } from '@prisma/client';
+import React, { useCallback, useEffect, useState } from 'react';
+import dayjs from 'dayjs';
+import ActivityCalendar, { ThemeInput } from 'react-activity-calendar';
+import { Box, Tooltip as MuiTooltip, Skeleton } from '@mui/material';
+import useAsyncState from '@/utils/hooks/useAsyncState';
+import { PortalSdk } from '@/utils/services/PortalSdk';
+import { RootState, useAppSelector } from '@/utils/redux/store';
 
 const customTheme: ThemeInput = {
   light: [
-    "#d6d6d6",
-    "#e8f5e9",
-    "#c8e6c9",
-    "#a5d6a7",
-    "#81c784",
-    "#66bb6a",
-    "#43a047",
-    "#2e7d32",
-    "#1b5e20",
-    "#000000",
+    '#d6d6d6',
+    '#e8f5e9',
+    '#c8e6c9',
+    '#a5d6a7',
+    '#81c784',
+    '#66bb6a',
+    '#43a047',
+    '#2e7d32',
+    '#1b5e20',
+    '#000000',
   ],
   dark: [
-    "#2e2e2e",
-    "#1b5e20",
-    "#388e3c",
-    "#43a047",
-    "#66bb6a",
-    "#81c784",
-    "#a5d6a7",
-    "#c8e6c9",
-    "#e8f5e9",
-    "#d6d6d6",
+    '#2e2e2e',
+    '#1b5e20',
+    '#388e3c',
+    '#43a047',
+    '#66bb6a',
+    '#81c784',
+    '#a5d6a7',
+    '#c8e6c9',
+    '#e8f5e9',
+    '#d6d6d6',
   ],
 };
 
@@ -41,16 +41,16 @@ const getStatsOfContent = (content: string) => {
 };
 
 const getAllDatesOfCurrentYear = () => {
-  const startOfYear = dayjs().startOf("year");
-  const endOfYear = dayjs().endOf("year");
+  const startOfYear = dayjs().startOf('year');
+  const endOfYear = dayjs().endOf('year');
   const dates = [];
 
   for (
     let date = startOfYear;
     date.isBefore(endOfYear) || date.isSame(endOfYear);
-    date = date.add(1, "day")
+    date = date.add(1, 'day')
   ) {
-    dates.push(date.format("YYYY-MM-DD"));
+    dates.push(date.format('YYYY-MM-DD'));
   }
 
   return dates;
@@ -92,14 +92,14 @@ const ReactActivityCalendar = () => {
 
   const calendarData = allDatesOfCurrentYear.map((date) => {
     const worklogForDate = worklogSummary.find((worklog) =>
-      dayjs(worklog.date).isSame(date, "day"),
+      dayjs(worklog.date).isSame(date, 'day'),
     );
 
     let checks = 0;
 
     if (worklogForDate && Array.isArray(worklogForDate.works)) {
       worklogForDate.works.forEach((work) => {
-        if (work && typeof work === "object" && "content" in work) {
+        if (work && typeof work === 'object' && 'content' in work) {
           const stats = getStatsOfContent(work.content as string);
           checks += stats.checks;
         }
@@ -116,7 +116,12 @@ const ReactActivityCalendar = () => {
   });
 
   return (
-    <div className="flex items-center py-4">
+    <div
+      className={`flex items-center overflow-x-auto py-4`}
+      style={{
+        width: innerWidth,
+      }}
+    >
       {loading ? (
         <SkeletonLoader />
       ) : worklogSummary.length > 0 ? (
@@ -125,7 +130,7 @@ const ReactActivityCalendar = () => {
           renderBlock={(block, activity) => (
             <MuiTooltip
               title={`${activity.count} Contributions on ${activity.date}`}
-              sx={{ cursor: "pointer" }}
+              sx={{ cursor: 'pointer' }}
             >
               {block}
             </MuiTooltip>

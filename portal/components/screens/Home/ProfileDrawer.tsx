@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
-"use client";
-import React, { useCallback, useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+'use client';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   Drawer,
   Box,
@@ -9,42 +9,42 @@ import {
   IconButton,
   useMediaQuery,
   Divider,
-} from "@mui/material";
-import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import { useUser } from "@/utils/hooks/useUser";
-import { User, USERROLE, USERVERTICAL, WorkLogs } from "@prisma/client";
-import Link from "next/link";
-import { updateAvatarUrl } from "@/utils/redux/onboarding/onboarding.slice";
+} from '@mui/material';
+import { RootState, useAppDispatch, useAppSelector } from '@/utils/redux/store';
+import { useUser } from '@/utils/hooks/useUser';
+import { User, USERROLE, USERVERTICAL, WorkLogs } from '@prisma/client';
+import Link from 'next/link';
+import { updateAvatarUrl } from '@/utils/redux/onboarding/onboarding.slice';
 import {
   closeDrawer,
   openDrawer,
   selectMember,
   updateMember,
   setEditModalOpen,
-} from "@/utils/redux/coreTeam/coreTeam.slice";
+} from '@/utils/redux/coreTeam/coreTeam.slice';
 import {
   addFilesToPreview,
   resetPreview,
   setUploadedFiles,
-} from "@/utils/redux/filesUpload/fileUpload.slice";
-import { FileWithPath } from "@mantine/dropzone";
-import { WorklogSummaryView } from "../Worklogs/WorklogSummary/WorklogSummaryView";
-import { PortalSdk } from "@/utils/services/PortalSdk";
-import useAsyncState from "@/utils/hooks/useAsyncState";
-import { LoadingSkeleton } from "@/components/elements/LoadingSkeleton";
-import { APP_ROUTES, TMD_PORTAL_API_KEY } from "@/utils/constants/appInfo";
-import { setReduxUser } from "@/utils/redux/auth/auth.slice";
-import media from "@/styles/media";
-import DrawerComponent from "@/components/elements/DrawerComponent";
-import dayjs from "dayjs";
-import { ArrayHelper } from "@/utils/helpers/array";
-import Image from "next/image";
-import ToolTip from "@/components/elements/ToolTip";
-import ReactActivityCalendar from "./ActivityCalendar";
-import EditUser from "./EditUser";
-import { useTasks } from "@/utils/hooks/useTasks";
-import { filterTasksByPerson } from "@/utils/clickup/helper";
-import ClickupTask from "../Worklogs/WorklogTabs/ClickupTasks";
+} from '@/utils/redux/filesUpload/fileUpload.slice';
+import { FileWithPath } from '@mantine/dropzone';
+import { WorklogSummaryView } from '../Worklogs/WorklogSummary/WorklogSummaryView';
+import { PortalSdk } from '@/utils/services/PortalSdk';
+import useAsyncState from '@/utils/hooks/useAsyncState';
+import { LoadingSkeleton } from '@/components/elements/LoadingSkeleton';
+import { APP_ROUTES, TMD_PORTAL_API_KEY } from '@/utils/constants/appInfo';
+import { setReduxUser } from '@/utils/redux/auth/auth.slice';
+import media from '@/styles/media';
+import DrawerComponent from '@/components/elements/DrawerComponent';
+import dayjs from 'dayjs';
+import { ArrayHelper } from '@/utils/helpers/array';
+import Image from 'next/image';
+import ToolTip from '@/components/elements/ToolTip';
+import ReactActivityCalendar from './ActivityCalendar';
+import EditUser from './EditUser';
+import { useTasks } from '@/utils/hooks/useTasks';
+import { filterTasksByPerson } from '@/utils/clickup/helper';
+import ClickupTask from '../Worklogs/WorklogTabs/ClickupTasks';
 
 interface LoggedInUser {
   user: User;
@@ -60,51 +60,51 @@ export interface PayData {
 }
 
 const roleImageMap: Record<USERROLE, string> = {
-  CORETEAM: "/images/status/coreteam.jpeg",
-  ASSOCIATE: "/images/status/associate.jpeg",
-  FREELANCER: "/images/status/freelancer.jpeg",
-  INTERN: "/images/status/intern.jpeg",
-  TRIAL_CANDIDATE: "/images/status/trial.jpeg",
+  CORETEAM: '/images/status/coreteam.jpeg',
+  ASSOCIATE: '/images/status/associate.jpeg',
+  FREELANCER: '/images/status/freelancer.jpeg',
+  INTERN: '/images/status/intern.jpeg',
+  TRIAL_CANDIDATE: '/images/status/trial.jpeg',
 };
 
 const verticalImageMap: Record<USERVERTICAL, string> = {
-  DEV: "/images/roles/developer.jpeg",
-  DESIGN: "/images/roles/Designer.jpeg",
-  MARKETING: "/images/roles/marketing.jpeg",
-  COMMUNITY: "/images/roles/community.jpeg",
-  FINANCE: "/images/roles/finance.jpeg",
-  LEGAL: "/images/roles/legal.jpeg",
-  HR: "/images/roles/hr.jpeg",
-  OPERATIONS: "/images/roles/operations.jpeg",
+  DEV: '/images/roles/developer.jpeg',
+  DESIGN: '/images/roles/Designer.jpeg',
+  MARKETING: '/images/roles/marketing.jpeg',
+  COMMUNITY: '/images/roles/community.jpeg',
+  FINANCE: '/images/roles/finance.jpeg',
+  LEGAL: '/images/roles/legal.jpeg',
+  HR: '/images/roles/hr.jpeg',
+  OPERATIONS: '/images/roles/operations.jpeg',
 };
 
 const getUserRoleImage = (role: USERROLE | null) =>
-  role ? roleImageMap[role] || "/images/default.jpeg" : "/images/default.jpeg";
+  role ? roleImageMap[role] || '/images/default.jpeg' : '/images/default.jpeg';
 
 const getUserVerticalImage = (vertical: USERVERTICAL | null) =>
   vertical
-    ? verticalImageMap[vertical] || "/images/default.jpeg"
-    : "/images/default.jpeg";
+    ? verticalImageMap[vertical] || '/images/default.jpeg'
+    : '/images/default.jpeg';
 
 const translateUserVertical = (vertical: string): string => {
   const verticalMap: { [key: string]: string } = {
-    DEV: "Developer",
-    DESIGN: "Designer",
-    MARKETING: "Marketing",
-    COMMUNITY: "Community Manager",
-    FINANCE: "Finance Specialist",
-    LEGAL: "Legal Specialist",
-    HR: "Human Resources",
-    OPERATIONS: "Operations",
+    DEV: 'Developer',
+    DESIGN: 'Designer',
+    MARKETING: 'Marketing',
+    COMMUNITY: 'Community Manager',
+    FINANCE: 'Finance Specialist',
+    LEGAL: 'Legal Specialist',
+    HR: 'Human Resources',
+    OPERATIONS: 'Operations',
   };
-  return verticalMap[vertical] || "Unknown Vertical";
+  return verticalMap[vertical] || 'Unknown Vertical';
 };
 
 const truncateAddress = (
   address: string | undefined,
-  visibleChars: number = 4
+  visibleChars: number = 4,
 ): string => {
-  if (!address) return "Not Available";
+  if (!address) return 'Not Available';
   if (address.length <= visibleChars * 2) return address;
   return `${address.slice(0, visibleChars)}...${address.slice(-visibleChars)}`;
 };
@@ -112,10 +112,10 @@ const truncateAddress = (
 export const UserProfileDrawer: React.FC = () => {
   const dispatch = useAppDispatch();
   const isOpen = useAppSelector(
-    (state: RootState) => state.coreTeam.isDrawerOpen
+    (state: RootState) => state.coreTeam.isDrawerOpen,
   );
   const selectedUser = useAppSelector(
-    (state: RootState) => state.coreTeam.selectedMember
+    (state: RootState) => state.coreTeam.selectedMember,
   );
   const isMobile = useMediaQuery(media.largeMobile);
   const [avatarLoading, setAvatarLoading] = useState<boolean>(false);
@@ -136,8 +136,8 @@ export const UserProfileDrawer: React.FC = () => {
           selectedUser?.id
         }&year=${dayjs().year()}&month=${dayjs()
           .month(dayjs().month())
-          .format("MM")}`,
-        null
+          .format('MM')}`,
+        null,
       );
       setWorklogSummary(response.data.workLogs);
     } catch (error) {
@@ -157,7 +157,7 @@ export const UserProfileDrawer: React.FC = () => {
 
   const handleFileChange = (
     event: React.ChangeEvent<HTMLInputElement>,
-    fileType: "avatar" | "banner"
+    fileType: 'avatar' | 'banner',
   ) => {
     const fileList = event.target.files;
     if (fileList && fileList.length > 0) {
@@ -169,22 +169,22 @@ export const UserProfileDrawer: React.FC = () => {
 
   const uploadFile = async (
     file: FileWithPath,
-    fileType: "avatar" | "banner"
+    fileType: 'avatar' | 'banner',
   ) => {
-    fileType === "avatar" ? setAvatarLoading(true) : setBannerLoading(true);
+    fileType === 'avatar' ? setAvatarLoading(true) : setBannerLoading(true);
     const formData = new FormData();
-    formData.append("file", file, file.path);
+    formData.append('file', file, file.path);
     if (loggedinUser) {
-      formData.append("userId", loggedinUser.user.id);
+      formData.append('userId', loggedinUser.user.id);
     }
     formData.append(
-      "folderName",
-      fileType === "avatar" ? "userAvatars" : "userBanners"
+      'folderName',
+      fileType === 'avatar' ? 'userAvatars' : 'userBanners',
     );
 
     try {
-      const response = await fetch("/api/upload/file-upload", {
-        method: "POST",
+      const response = await fetch('/api/upload/file-upload', {
+        method: 'POST',
         body: formData,
         headers: {
           tmd_portal_api_key: TMD_PORTAL_API_KEY,
@@ -193,7 +193,7 @@ export const UserProfileDrawer: React.FC = () => {
 
       if (response.ok) {
         const data = await response.json();
-        const userResponse = await PortalSdk.putData("/api/user", {
+        const userResponse = await PortalSdk.putData('/api/user', {
           id: loggedinUser.user.id,
           [fileType]: data.fileInfo[0].fileUrl,
         });
@@ -204,28 +204,28 @@ export const UserProfileDrawer: React.FC = () => {
           updateMember({
             ...selectedUser,
             [fileType]: data.fileInfo[0].fileUrl,
-          })
+          }),
         );
         setUploadedFiles([data.fileInfo]);
       } else {
-        fileType === "avatar"
+        fileType === 'avatar'
           ? setAvatarLoading(false)
           : setBannerLoading(false);
-        console.error("Failed to upload file:", response.statusText);
+        console.error('Failed to upload file:', response.statusText);
       }
     } catch (error) {
-      console.error("Error uploading file:", error);
-      fileType === "avatar" ? setAvatarLoading(false) : setBannerLoading(false);
+      console.error('Error uploading file:', error);
+      fileType === 'avatar' ? setAvatarLoading(false) : setBannerLoading(false);
     } finally {
-      fileType === "avatar" ? setAvatarLoading(false) : setBannerLoading(false);
+      fileType === 'avatar' ? setAvatarLoading(false) : setBannerLoading(false);
     }
   };
 
   const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) =>
-    handleFileChange(event, "avatar");
+    handleFileChange(event, 'avatar');
 
   const handleBannerChange = (event: React.ChangeEvent<HTMLInputElement>) =>
-    handleFileChange(event, "banner");
+    handleFileChange(event, 'banner');
 
   return (
     <>
@@ -238,7 +238,7 @@ export const UserProfileDrawer: React.FC = () => {
           handleAvatarChange={handleAvatarChange}
           avatarLoading={avatarLoading}
         />
-        <div className="flex flex-col px-5 pb-2 gap-3">
+        <div className="flex flex-col gap-3 px-5 pb-2">
           <AboutUserSections
             selectedUser={selectedUser}
             loggedinUser={loggedinUser}
@@ -267,15 +267,15 @@ export const UserProfileDrawer: React.FC = () => {
           </ul>
         </div> */}
           <div className="pb-4">
-            <h6 className="font-bold pb-2">Missions/Task</h6>
-            <ul className="flex flex-col gap-1 p-3 border-2 mt-1 border-gray-300 rounded-xl list-none">
+            <h6 className="pb-2 font-bold">Missions/Task</h6>
+            <ul className="mt-1 flex list-none flex-col gap-1 rounded-xl border-2 border-gray-300 p-3">
               {<ClickupTask email={selectedUser?.email as string} />}
             </ul>
           </div>
 
           <div className="w-full">
-            <h6 className="font-bold pb-2">
-              Contributions ({dayjs().format("MMM YYYY")})
+            <h6 className="pb-2 font-bold">
+              Contributions ({dayjs().format('MMM YYYY')})
             </h6>
             <ReactActivityCalendar />
           </div>
@@ -300,37 +300,37 @@ export const UserProfileDrawer: React.FC = () => {
 export const PayDataUI = ({ payData }: { payData: PayData }) => {
   return (
     <div className="flex flex-col gap-1 pb-4">
-      <h6 className="font-bold pb-2">Payment Details</h6>
-      <div className="relative flex flex-col gap-3 p-4 bg-gray-900 text-white rounded-2xl overflow-hidden">
+      <h6 className="pb-2 font-bold">Payment Details</h6>
+      <div className="relative flex flex-col gap-3 overflow-hidden rounded-2xl bg-gray-900 p-4 text-white">
         <div className="flex items-center justify-between border-b border-neutral-600 pb-3">
-          <div className="flex gap-2 items-center">
+          <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-2xl">
               account_balance_wallet
             </span>
             <p className="text-sm font-bold">UPI ID </p>
           </div>
-          <span className="font-normal">{payData?.upiId || "N/A"}</span>
+          <span className="font-normal">{payData?.upiId || 'N/A'}</span>
         </div>
         <div className="flex items-center justify-between border-b border-neutral-600 pb-3">
-          <div className="flex gap-2 items-center">
+          <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-2xl">
               account_balance
             </span>
             <p className="text-sm font-bold">Wallet Address </p>
           </div>
           <span className="font-normal">
-            {truncateAddress(payData?.walletAddress) || "N/A"}
+            {truncateAddress(payData?.walletAddress) || 'N/A'}
           </span>
         </div>
         <div className="flex items-center justify-between">
-          <div className="flex gap-2 items-center">
+          <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-2xl">
               attach_money
             </span>
             <p className="text-sm font-bold">Pay Out: </p>
           </div>
           <span className="font-normal">
-            {payData?.stipendAmount || "N/A"} {payData?.stipendCurrency || ""}
+            {payData?.stipendAmount || 'N/A'} {payData?.stipendCurrency || ''}
           </span>
         </div>
       </div>
@@ -346,20 +346,20 @@ export const WorkLogSection = ({
   worklogSummary: WorkLogs[];
 }) => {
   return (
-    <div className="flex gap-1 flex-col">
-      <h6 className="font-bold pb-2">Last worked on</h6>
-      <div className="h-[310px] relative overflow-y-hidden">
+    <div className="flex flex-col gap-1">
+      <h6 className="pb-2 font-bold">Last worked on</h6>
+      <div className="relative h-[310px] overflow-y-hidden">
         <div className="bottom-8 h-full">
           <WorklogSummaryView
             workLogUser={selectedUser}
             worklogSummary={ArrayHelper.reverseSortByDate(
               worklogSummary,
-              "date"
+              'date',
             ).slice(0, 5)}
             isDrawer={true}
           />
-          <div className="absolute bottom-0 left-0 right-0 h-[30vh] bg-gradient-to-b from-transparent to-white flex flex-col justify-end">
-            <p className="font-semibold text-xs text-neutral-500 text-center p-2"></p>
+          <div className="absolute bottom-0 left-0 right-0 flex h-[30vh] flex-col justify-end bg-gradient-to-b from-transparent to-white">
+            <p className="p-2 text-center text-xs font-semibold text-neutral-500"></p>
           </div>
         </div>
         {/* <Link
@@ -389,21 +389,21 @@ const ProfileImagesSection = ({
   avatarLoading: boolean;
 }) => {
   return (
-    <div className="h-[120px] relative">
+    <div className="relative h-[120px]">
       {bannerLoading ? (
-        <div className="w-full h-full bg-gray-300 animate-pulse" />
+        <div className="h-full w-full animate-pulse bg-gray-300" />
       ) : (
         <img
-          src={selectedUser?.banner || "/images/gradientBanner.jpg"}
-          className="absolute w-full h-full object-cover"
+          src={selectedUser?.banner || '/images/gradientBanner.jpg'}
+          className="absolute h-full w-full object-cover"
           alt="Profile Banner"
         />
       )}
       {loggedinUser.user.id === selectedUser?.id && (
-        <label className="absolute top-2 -right-2 bg-white rounded-full flex items-center justify-center cursor-pointer">
+        <label className="absolute -right-2 top-2 flex cursor-pointer items-center justify-center rounded-full bg-white">
           <span
-            className="material-symbols-outlined absolute top-0 right-2 bg-white rounded-full p-[6px] cursor-pointer"
-            style={{ fontSize: "16px" }}
+            className="material-symbols-outlined absolute right-2 top-0 cursor-pointer rounded-full bg-white p-[6px]"
+            style={{ fontSize: '16px' }}
           >
             add_a_photo
           </span>
@@ -415,24 +415,24 @@ const ProfileImagesSection = ({
           />
         </label>
       )}
-      <div className="rounded-full absolute -bottom-[3.25rem] left-5 border-4 w-24 h-24 border-white">
+      <div className="absolute -bottom-[3.25rem] left-5 h-24 w-24 rounded-full border-4 border-white">
         {avatarLoading ? (
-          <div className="bg-white rounded-full">
-            <div className="rounded-full w-24 h-24 bg-gray-300 animate-pulse" />
+          <div className="rounded-full bg-white">
+            <div className="h-24 w-24 animate-pulse rounded-full bg-gray-300" />
           </div>
         ) : (
           <img
-            src={selectedUser?.avatar || "/icons/placeholderAvatar.svg"}
-            alt={selectedUser?.name?.charAt(0) || ""}
-            className="object-cover rounded-full w-full h-full bg-white"
+            src={selectedUser?.avatar || '/icons/placeholderAvatar.svg'}
+            alt={selectedUser?.name?.charAt(0) || ''}
+            className="h-full w-full rounded-full bg-white object-cover"
           />
         )}
 
         {loggedinUser.user.id === selectedUser?.id && (
-          <label className="absolute top-2 -right-2 bg-white rounded-full p-[2px] flex items-center justify-center cursor-pointer">
+          <label className="absolute -right-2 top-2 flex cursor-pointer items-center justify-center rounded-full bg-white p-[2px]">
             <span
-              className="material-symbols-outlined bg-white rounded-full p-[4px]"
-              style={{ fontSize: "16px" }}
+              className="material-symbols-outlined rounded-full bg-white p-[4px]"
+              style={{ fontSize: '16px' }}
             >
               add_a_photo
             </span>
@@ -460,38 +460,38 @@ const AboutUserSections = ({
   const dispatch = useAppDispatch();
   return (
     <div>
-      <div className=" pt-16">
-        <div className="flex justify-between items-center">
-          <h3 className="font-bold text-2xl">{selectedUser?.name}</h3>
-          <p className="text-sm text-gray-500 font-semibold capitalize">
+      <div className="pt-16">
+        <div className="flex items-center justify-between">
+          <h3 className="text-2xl font-bold">{selectedUser?.name}</h3>
+          <p className="text-sm font-semibold capitalize text-gray-500">
             {selectedUser?.timezone}
           </p>
         </div>
         <p className="text-sm text-gray-700">
-          @{selectedUser?.username + selectedUser?.password}{" "}
+          @{selectedUser?.username + selectedUser?.password}{' '}
           {selectedUser.positionTitle && `- ${selectedUser.positionTitle}`}
         </p>
       </div>
       {/* <h6 className="font-bold py-2"> Profile</h6> */}
-      <div className="flex gap-6 pb-4 items-center mt-4">
+      <div className="mt-4 flex items-center gap-6 pb-4">
         <div className="flex flex-col items-center">
-          <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-gray-300 shadow-lg">
+          <div className="h-16 w-16 overflow-hidden rounded-full border-2 border-gray-300 shadow-lg">
             <img
               src={getUserVerticalImage(selectedUser?.vertical)}
               alt="user-vertical"
-              className="w-full h-full object-cover"
+              className="h-full w-full object-cover"
             />
           </div>
           <div className="mt-2 text-center text-xs font-bold capitalize">
-            {translateUserVertical(selectedUser?.vertical || "")}
+            {translateUserVertical(selectedUser?.vertical || '')}
           </div>
         </div>
         <div className="flex flex-col items-center">
-          <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-gray-300 shadow-lg">
+          <div className="h-16 w-16 overflow-hidden rounded-full border-2 border-gray-300 shadow-lg">
             <img
               src={getUserRoleImage(selectedUser?.role)}
               alt="user-role"
-              className="w-full h-full object-cover"
+              className="h-full w-full object-cover"
             />
           </div>
           <div className="mt-2 text-center text-xs font-bold capitalize">
@@ -499,17 +499,17 @@ const AboutUserSections = ({
           </div>
         </div>
       </div>
-      <div className="flex gap-4 py-2 w-full">
+      <div className="flex w-full gap-4 py-2">
         <Link
           href={`${APP_ROUTES.userWorklogSummary}/${selectedUser?.id}`}
-          className="bg-black text-white px-4 py-2 rounded-lg text-sm flex justify-center gap-2 items-center hover:bg-gray-800 transition duration-300 border border-gray-300 flex-grow shadow-md"
+          className="flex flex-grow items-center justify-center gap-2 rounded-lg border border-gray-300 bg-black px-4 py-2 text-sm text-white shadow-md transition duration-300 hover:bg-gray-800"
           onClick={() => {
             dispatch(closeDrawer());
           }}
         >
           <span
             className="material-symbols-outlined"
-            style={{ fontSize: "20px" }}
+            style={{ fontSize: '20px' }}
           >
             work_history
           </span>
@@ -518,7 +518,7 @@ const AboutUserSections = ({
         <Link
           href={`https://slack.com/app_redirect?channel=${selectedUser?.slackId}`}
           target="_blank"
-          className="text-black px-4 py-2 rounded-lg text-sm flex gap-2 items-center justify-center hover:bg-gray-200 transition duration-300 border border-gray-300 flex-grow shadow-md"
+          className="flex flex-grow items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm text-black shadow-md transition duration-300 hover:bg-gray-200"
         >
           <Image
             src="/images/thirdparty/slack-new.svg"
@@ -531,7 +531,7 @@ const AboutUserSections = ({
         {loggedinUser.user.id === selectedUser?.id && (
           <ToolTip title="Edit Profile">
             <button
-              className="text-black border p-2 rounded-lg border-gray-300 flex items-center justify-center gap-2 hover:bg-gray-200 transition duration-300 flex-grow-0 w-auto shadow-md"
+              className="flex w-auto flex-grow-0 items-center justify-center gap-2 rounded-lg border border-gray-300 p-2 text-black shadow-md transition duration-300 hover:bg-gray-200"
               onClick={() => {
                 dispatch(setEditModalOpen(true));
                 dispatch(closeDrawer());
@@ -539,7 +539,7 @@ const AboutUserSections = ({
             >
               <span
                 className="material-symbols-outlined"
-                style={{ fontSize: "20px" }}
+                style={{ fontSize: '20px' }}
               >
                 edit_square
               </span>
@@ -551,9 +551,9 @@ const AboutUserSections = ({
 
       {selectedUser?.description && (
         <>
-          <h6 className="font-bold py-2 mt-4">About Me</h6>
-          <p className="text-sm pb-4">
-            {selectedUser?.description || "Description not available."}
+          <h6 className="mt-4 py-2 font-bold">About Me</h6>
+          <p className="pb-4 text-sm">
+            {selectedUser?.description || 'Description not available.'}
           </p>
         </>
       )}
