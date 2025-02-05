@@ -71,7 +71,7 @@ const UserRecentlyUsedDirectories = ({
     <div>
       {withTitle && (
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-4">
+          <h1 className="text-3xl font-bold flex items-center gap-4 pb-5 max-sm:text-2xl max-sm:gap-3">
             <span className="material-symbols-outlined border border-neutral-200 rounded-full p-2">
               history
             </span>{" "}
@@ -79,10 +79,12 @@ const UserRecentlyUsedDirectories = ({
           </h1>
         </div>
       )}
-      <ListOfDirectories
-        view={view}
-        directories={filterDirectory(searchQuery)}
-      />
+      <div className="px-5 max-sm:px-2">
+        <ListOfDirectories
+          view={view}
+          directories={filterDirectory(searchQuery)}
+        />
+      </div>
     </div>
   );
 };

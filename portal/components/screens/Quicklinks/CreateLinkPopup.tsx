@@ -158,6 +158,10 @@ export const CreateLinkPopup = () => {
   };
 
   return (
+    <>
+    {isCreateLinkModalOpen && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 z-40"></div>
+    )}
     <Slide
       direction="up"
       in={
@@ -168,13 +172,13 @@ export const CreateLinkPopup = () => {
       mountOnEnter
       unmountOnExit
     >
-      <div className={`fixed bottom-8 right-8 w-fit shadow-md bg-white p-6`}>
+      <div className={`fixed bottom-8 right-8 w-fit shadow-md z-50 bg-white p-6 max-sm:right-4 max-sm:left-4`}>
         <span
           onClick={() => {
             dispatch(setIsCreateLinkModalOpen(false));
             setCopiedURL(null);
           }}
-          className="material-icons-outlined absolute -top-4 -right-4 text-gray-500 rounded-full p-1  border border-gray-100 hover:bg-gray-50 cursor-pointer"
+          className="material-icons-outlined absolute -top-4 -right-4 text-gray-500 rounded-full p-1  border border-gray-100 hover:bg-gray-100 cursor-pointer bg-[#fafafa]"
         >
           close
         </span>
@@ -298,5 +302,6 @@ export const CreateLinkPopup = () => {
         </form>
       </div>
     </Slide>
+    </>
   );
 };

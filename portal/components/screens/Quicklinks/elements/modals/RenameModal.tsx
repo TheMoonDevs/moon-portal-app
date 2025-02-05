@@ -42,11 +42,11 @@ const RenameModal = () => {
       open={modal.type === "rename-folder"}
       className=" text-black p-5 rounded-lg shadow-lg drop-shadow-sm flex items-center justify-center"
     >
-      <div className="bg-white w-fit p-6 rounded-2xl outline-none">
+      <div className="bg-white w-fit p-6 rounded-2xl outline-none max-sm:w-[95%]">
         <h1 className="mb-6 font-semibold text-2xl">Rename</h1>
         <TextField
           onChange={(e) => setNewName(e.target.value)}
-          className="w-[500px]"
+          className="w-[500px] max-sm:w-full"
           required
           value={newName}
           id="outlined-required"
