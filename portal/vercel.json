@@ -9,10 +9,6 @@
       "schedule": "0 12 * * *"
     },
     {
-      "path": "/api/cron-jobs/core-team/worklog-reminder",
-      "schedule": "30 4 * * *"
-    },
-    {
       "path": "/api/cron-jobs/core-team/wallet-notification",
       "schedule": "30 4 * * *"
     },
@@ -30,7 +26,7 @@
     },
     {
       "path": "/api/cron-jobs/core-team/worklog-summary-reminder",
-      "schedule": "0 9 * * *"
+      "schedule": "30 3 * * *"
     }
   ]
 }
