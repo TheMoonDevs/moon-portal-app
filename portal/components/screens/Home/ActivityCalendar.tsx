@@ -119,7 +119,7 @@ const ReactActivityCalendar = () => {
     <div
       className={`flex items-center overflow-x-auto py-4`}
       style={{
-        width: innerWidth,
+        width: innerWidth - 40,
       }}
     >
       {loading ? (
