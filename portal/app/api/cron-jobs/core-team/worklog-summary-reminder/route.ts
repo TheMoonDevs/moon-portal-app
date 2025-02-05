@@ -3,7 +3,7 @@ import { User } from "@prisma/client";
 import { NextResponse, NextRequest } from "next/server";
 import { formatISO, startOfDay, subDays } from "date-fns";
 import { APP_BASE_URL } from "../../../../../utils/constants/appInfo";
-import { SlackBotSdk } from "@/utils/services/slackBotSdk";
+import { SlackBotSdk, SlackChannels } from "@/utils/services/slackBotSdk";
 
 //comments are added for better understanding 
 const generateMessages = (usersWithWorkLogs: any[]) => {
@@ -157,7 +157,7 @@ export async function GET(request: NextRequest) {
 
       await slackBot.sendSlackMessageviaAPI({
         text: messages,
-        channel: 'C07AQ8F3LH2', //change the channel id to Slack channel id where you want to send the message
+        channel: SlackChannels.b_coreteam, //change the channel id to Slack channel id where you want to send the message
       });
     }
 
