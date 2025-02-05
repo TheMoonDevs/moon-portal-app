@@ -277,10 +277,7 @@ export const UserProfileDrawer: React.FC = () => {
             <h6 className="font-bold pb-2">
               Contributions ({dayjs().format("MMM YYYY")})
             </h6>
-            <ReactActivityCalendar
-              worklogSummary={worklogSummary}
-              loading={loading}
-            />
+            <ReactActivityCalendar />
           </div>
           {!loading ? (
             <WorkLogSection
@@ -352,7 +349,7 @@ export const WorkLogSection = ({
     <div className="flex gap-1 flex-col">
       <h6 className="font-bold pb-2">Last worked on</h6>
       <div className="h-[310px] relative overflow-y-hidden">
-        <div className="bottom-8 h-full overflow-y-scroll">
+        <div className="bottom-8 h-full">
           <WorklogSummaryView
             workLogUser={selectedUser}
             worklogSummary={ArrayHelper.reverseSortByDate(

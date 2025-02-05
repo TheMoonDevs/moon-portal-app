@@ -19,9 +19,9 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { title, subTitle, link, date, month, year } = body;
+    const { title, subTitle, link, date, month, year, time } = body;
 
-    if (!title || !subTitle || !link || !date || !month || !year) {
+    if (!title || !subTitle || !link || !date || !month || !year || !time) {
       return new NextResponse(JSON.stringify({ error: "Missing required fields" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
@@ -34,6 +34,7 @@ export async function POST(req: NextRequest) {
         subTitle,
         link,
         date,
+        time,
         month,
         year
       }
@@ -104,9 +105,9 @@ export async function PUT(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { id, title, subTitle, link, date, month, year } = body;
+    const { id, title, subTitle, link, date, month, year, time } = body;
 
-    if (!id || !title || !subTitle || !link || !date || !month || !year) {
+    if (!id || !title || !subTitle || !link || !date || !month || !year || !time) {
       return new NextResponse(JSON.stringify({ error: "Missing required fields" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
@@ -120,6 +121,7 @@ export async function PUT(req: NextRequest) {
         subTitle,
         link,
         date,
+        time,
         month,
         year,
       },

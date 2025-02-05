@@ -68,7 +68,7 @@ export const WorklogSummaryActions = ({
     // Show Breakdown content if view is "Breakdown"
     if (view === "Breakdown") {
       return (
-        <div className="overflow-y-scroll w-full max-h-screen  ">
+        <div className="w-full max-h-screen  no-scrollbar ">
           <WorklogBreakdown
             worklogSummary={worklogSummary}
             isMonthly={isMonthly}
@@ -80,7 +80,7 @@ export const WorklogSummaryActions = ({
 
     // Default case when neither "AI Summary" nor "Breakdown" view is active
     return (
-      <div className="overflow-y-scroll w-full h-screen pb-32 md:pb-8">
+      <div className="overflow-x-hidden overflow-y-hidden w-full no-scrollbar">
         <WorklogBreakdown
           worklogSummary={worklogSummary}
           isMonthly={isMonthly}

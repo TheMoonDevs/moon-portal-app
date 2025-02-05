@@ -10,6 +10,7 @@ import { WorklogEditor } from "./WorklogEditor";
 import dayjs from "dayjs";
 import { WorkLogsHelper } from "./WorklogsHelper";
 import store from "@/utils/redux/store";
+import { current } from "@reduxjs/toolkit";
 
 export const WorklogView = ({
   date,
@@ -32,7 +33,56 @@ export const WorklogView = ({
 }) => {
   const { user } = useUser();
   const [workLog, setWorkLog] = useState<WorkLogs | null>(null);
+  const fetchOptions = Array.from({ length: 7 }, (_, i) => ({
+    label: `Fetch "X" tasks from ${i + 1} day${i === 0 ? "" : "s"} ago`,
+    date: dayjs().subtract(i + 1, "day").format("YYYY-MM-DD"),
+  }));
 
+  const fetchXTasksForDay = async (date: string): Promise<WorkLogs | null> => {
+    setLoading(true);
+    
+    try {
+      refreshWorklogs();
+      const data = await PortalSdk.getData(`/api/user/worklogs?date=${date}&userId=${user?.id}`, null);
+      const xTasks = data?.data?.workLogs?.[0]?.works
+      .filter((work: { content: string | string[]; }) => work.content.includes("❌"))
+      .flatMap((work_1: { content: string; }) => {
+        return work_1.content.split('\n')
+        .filter((line: string | string[]) => line.includes('❌'))
+        .map((line_1: string) => {
+          const taskText = line_1.match(/\*(.*?)❌/)?.[1]?.trim();
+          return taskText ? `* ${taskText}❌` : null;
+        })
+        .filter(Boolean);
+      });
+      setWorkLog((prevLogs) => {
+        if (!prevLogs || !xTasks?.length) return prevLogs;
+        const updatedWorks = [
+          {
+            ...(typeof prevLogs.works[0] === 'object' ? prevLogs.works[0] : {}),
+            content: `${(prevLogs.works[0] as { content: string }).content ?? ''}\n${xTasks.join('\n')}`
+          }
+        ];
+
+        const newWorkLog = {
+          ...prevLogs,
+          works: updatedWorks,
+        };
+        // console.log(newWorkLog);
+        setLoading(false);
+        return newWorkLog as WorkLogs;
+      });
+      return null;
+    } catch (err) {
+      console.error('Error fetching worklogs:', err);
+      setLoading(false);
+      return null;
+    }
+  };
+  
+  
+
+  
   const refreshWorklogs = () => {
     let query = `?id=${id}`;
     let _id = id && id?.length > 5 ? id : null;
@@ -131,6 +181,8 @@ export const WorklogView = ({
       monthTab={monthTab}
       setMonthTab={setMonthTab}
       handleNextMonthClick={handleNextMonthClick}
+      fetchXTasksForDay={fetchXTasksForDay} 
+      fetchOptions={fetchOptions} 
     />
   );
 };
