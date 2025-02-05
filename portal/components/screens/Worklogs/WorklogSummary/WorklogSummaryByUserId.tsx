@@ -35,7 +35,7 @@ export const WorklogSummaryByUserId: React.FC<WorklogSummaryByUserIdProps> = ({
   } ${selectedYear}`;
 
   return (
-    <div className="w-full">
+    <div className="w-full overflow-y-hidden ">
       <WorklogSummaryHeader
         joiningDate={joiningDate}
         setOnlyYearSummary={setOnlyYearSummary}

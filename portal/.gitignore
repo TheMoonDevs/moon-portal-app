@@ -49,3 +49,7 @@ workbox-*
 worker*.js
 swe-worker-*
 certificates
+
+.flaskenv*
+!.env.project
+!.env.vault

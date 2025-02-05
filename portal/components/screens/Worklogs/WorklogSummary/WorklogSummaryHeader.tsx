@@ -1,3 +1,4 @@
+"use client";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
 import useOutsideClick from "@/utils/hooks/useOutsideClick";
 import { Fade } from "@mui/material";
@@ -5,7 +6,11 @@ import dayjs from "dayjs";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useMemo, useRef, useState } from "react";
+import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { User, USERROLE, USERTYPE } from "@prisma/client";
+import { PortalSdk } from "@/utils/services/PortalSdk";
+import { setMembers } from "@/utils/redux/coreTeam/coreTeam.slice";
 
 interface MonthTableProps {
   selectedYear: number;
@@ -28,8 +33,9 @@ const MonthTable: React.FC<MonthTableProps> = ({
   const renderCell = (monthIndex: number, isActive: boolean) => (
     <td
       key={monthIndex}
-      className={`h-8 ${isActive ? "cursor-pointer hover:bg-neutral-100" : "text-neutral-400"
-        }`}
+      className={`h-8 ${
+        isActive ? "cursor-pointer hover:bg-neutral-100" : "text-neutral-400"
+      }`}
     >
       {isActive ? (
         <div onClick={() => handleMonthSelect(monthIndex)}>
@@ -97,8 +103,8 @@ const YearDropdown: React.FC<YearDropdownProps> = ({
               onlyYearSummary
                 ? `${pathName}?year=${year}`
                 : `${pathName}?year=${year}&month=${dayjs()
-                  .month(selectedMonth as number)
-                  .format("MM")}`
+                    .month(selectedMonth as number)
+                    .format("MM")}`
             }
             key={year}
             className="flex gap-2 items-center !text-sm cursor-pointer hover:bg-neutral-100 px-4 py-1"
@@ -109,6 +115,52 @@ const YearDropdown: React.FC<YearDropdownProps> = ({
         ))}
       </div>
     </Fade>
+  );
+};
+
+const SelectUser = ({
+  isSelectOpen,
+  setIsSelectOpen,
+  coreTeam,
+}: {
+  isSelectOpen: boolean;
+  setIsSelectOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  coreTeam: User[];
+}) => {
+  return (
+    <div className="relative">
+      <button
+        className="flex items-center gap-2 cursor-pointer border border-neutral-400 rounded-md py-2 px-4 bg-white shadow-lg text-sm hover:bg-neutral-100 transition-colors duration-300"
+        onClick={() => setIsSelectOpen(!isSelectOpen)}
+      >
+        <span className="font-medium">Select Team Member</span>
+        <span
+          className={`material-symbols-outlined transition-transform duration-300 ${
+            isSelectOpen ? "rotate-180" : "rotate-0"
+          }`}
+        >
+          {isSelectOpen ? "expand_less" : "expand_more"}
+        </span>
+      </button>
+      <div
+        className={`absolute top-full left-0 w-full bg-white border border-neutral-400 rounded-md shadow-lg z-20 transition-all duration-300 ease-in-out ${
+          isSelectOpen ? "max-h-60 opacity-100" : "max-h-0 opacity-0"
+        } overflow-hidden`}
+      >
+        <div className="max-h-60 overflow-y-auto no-scrollbar">
+          {coreTeam.map((user: User) => (
+            <Link
+              href={`${APP_ROUTES.userWorklogSummary}/${user.id}`}
+              key={user.id}
+              onClick={() => setIsSelectOpen(false)}
+              className="block w-full text-left px-4 py-2 hover:bg-neutral-100  focus:bg-neutral-100  text-xs transition-colors duration-300"
+            >
+              {user.name}
+            </Link>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 };
 
@@ -130,6 +182,7 @@ export const WorklogSummaryHeader = ({
   selectedMonth,
   selectedYear,
 }: WorklogSummaryHeaderProps) => {
+  const dispatch = useAppDispatch();
   const pathName = usePathname();
   const [isYearDropdownOpen, setIsYearDropdownOpen] = useState<boolean>(false);
   const [isMonthDropdownOpen, setIsMonthDropdownOpen] =
@@ -141,6 +194,8 @@ export const WorklogSummaryHeader = ({
   const joiningMonth = Number(dayjs(joiningDate).format("M")) - 1;
   const currentYear = Number(dayjs().format("YYYY"));
   const currentMonth = Number(dayjs().format("M"));
+  const coreTeam = useAppSelector((state: RootState) => state.coreTeam.members);
+  const [isSelectOpen, setIsSelectOpen] = useState(false);
 
   useOutsideClick([monthDropdownRef, yearDropdownRef], () => {
     setIsMonthDropdownOpen(false);
@@ -180,8 +235,28 @@ export const WorklogSummaryHeader = ({
     //   month: dayjs().month(month).format("MM"),
     // });
   };
+
+  useEffect(() => {
+    if (coreTeam.length === 0) {
+      PortalSdk.getData(
+        "/api/user?role=" +
+          USERROLE.CORETEAM +
+          "&userType=" +
+          USERTYPE.MEMBER +
+          "&status=ACTIVE",
+        null
+      )
+        .then((data) => {
+          dispatch(setMembers(data?.data?.user));
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    }
+  }, [dispatch, coreTeam.length]);
+
   return (
-    <div className="py-4 bg-white flex flex-row gap-3 px-3 items-center justify-between border-neutral-400">
+    <div className="py-4 bg-white flex flex-row gap-3 px-3 items-center justify-between border-neutral-400 max-sm:flex-col max-sm:gap-4 max-sm:items-start max-sm:w-full ">
       <div className="flex items-center justify-between w-full sm:w-[unset] sm:justify-start">
         <Link href={APP_ROUTES.home} className="flex items-center">
           <h1 className="hidden sm:block md:text-lg text-sm whitespace-nowrap cursor-pointer font-extrabold border-r-2 pr-3 mr-3">
@@ -234,12 +309,13 @@ export const WorklogSummaryHeader = ({
               href={
                 onlyYearSummary && selectedMonth !== null
                   ? `${pathName}?year=${selectedYear}&month=${dayjs()
-                    .month(selectedMonth)
-                    .format("MM")}`
+                      .month(selectedMonth)
+                      .format("MM")}`
                   : ""
               }
-              className={`cursor-pointer ${!onlyYearSummary ? "font-bold" : ""
-                }`}
+              className={`cursor-pointer ${
+                !onlyYearSummary ? "font-bold" : ""
+              }`}
               onClick={() =>
                 onlyYearSummary &&
                 selectedMonth !== null &&
@@ -269,6 +345,13 @@ export const WorklogSummaryHeader = ({
           </div>
         </div>
       </div>
+      {coreTeam.length > 0 && (
+        <SelectUser
+          isSelectOpen={isSelectOpen}
+          setIsSelectOpen={setIsSelectOpen}
+          coreTeam={coreTeam}
+        />
+      )}
     </div>
   );
 };
