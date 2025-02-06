@@ -1,6 +1,7 @@
-export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
 import AWSSesSdk from "@/utils/service/AWSSesSdk";
+
+export const runtime = "edge";
 
 const ses = new AWSSesSdk(
   process.env.AWS_ACCESS_KEY_ID!,
