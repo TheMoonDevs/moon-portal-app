@@ -6,12 +6,10 @@ import { useUser } from '@/utils/hooks/useUser';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 import { WorkLogs } from '@prisma/client';
 import dayjs from 'dayjs';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
-  Dispatch,
-  RefObject,
-  SetStateAction,
   createRef,
+  RefObject,
   useCallback,
   useEffect,
   useMemo,
@@ -20,18 +18,23 @@ import {
 } from 'react';
 import { DEFAULT_MARKDOWN_DATA } from './WorklogsHelper';
 import { useDebouncedEffect } from '@/utils/hooks/useDebouncedHook';
-import { debounce } from 'lodash';
 import store, { useAppDispatch } from '@/utils/redux/store';
-import Link from 'next/link';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
-import { MDXEditorMethods } from '@mdxeditor/editor';
 import {
   setEdiotrSaving,
   updateLogs,
 } from '@/utils/redux/worklogs/worklogs.slice';
-import { Popover, IconButton, Drawer } from '@mui/material';
+import {
+  Popover,
+  IconButton,
+  Drawer,
+  Dialog,
+  DialogContent,
+} from '@mui/material';
 import EmojiLegend from './WorklogTabs/EmojiLegend';
 import TodoTab from './WorklogTabs/TodoTab';
+import { MDXEditorMethods } from '@mdxeditor/editor';
+import { toast } from 'sonner';
 
 export const MARKDOWN_PLACHELODER = `* `;
 
@@ -44,6 +47,42 @@ export const getStatsOfContent = (content: string) => {
   // console.log(content);
   return `${checks} / ${points}`;
 };
+
+const CustomLoader = () => (
+  <div className="mr-2 h-3 w-3 animate-spin rounded-full border-b-2 border-t-2 border-neutral-800"></div>
+);
+
+const SavingDialog = ({
+  open,
+  isSaved,
+}: {
+  open: boolean;
+  isSaved?: boolean;
+}) => (
+  <Dialog
+    className={`!z-50`}
+    open={open}
+    aria-labelledby="alert-dialog-title"
+    aria-describedby="alert-dialog-description"
+  >
+    <DialogContent id="alert-dialog-title" className="flex items-center gap-2">
+      {isSaved ? (
+        <span
+          className={`${isSaved ? 'text-green-500' : ''} material-symbols-outlined`}
+        >
+          {' '}
+          task_alt{' '}
+        </span>
+      ) : (
+        <CustomLoader />
+      )}
+
+      <span className={isSaved ? 'text-green-500' : ''}>
+        {isSaved ? 'Saved!' : 'Saving...'}
+      </span>
+    </DialogContent>
+  </Dialog>
+);
 
 export const WorklogEditor = ({
   loading,
@@ -81,6 +120,13 @@ export const WorklogEditor = ({
   const isAuotSaving = useRef(false);
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
   const [showPopup, setShowPopup] = useState<boolean>(false);
+  const [isSavingModalOpen, setIsSavingModalOpen] = useState<boolean>(false);
+  const router = useRouter();
+  const handleBackButtonClick = () => {
+    if (saving || !isAutoSaved) setIsSavingModalOpen(true);
+    if (!saving && isAutoSaved) router.replace(APP_ROUTES.userWorklogs);
+  };
+
   const handleClick = (event: any) => {
     setAnchorEl(event.currentTarget);
   };
@@ -104,6 +150,16 @@ export const WorklogEditor = ({
       dispatch(setEdiotrSaving(false));
     }
   }, [isAutoSaved, loading, dispatch]);
+
+  useEffect(() => {
+    const setSavedModalState = () => {
+      setIsSavingModalOpen(false);
+      router.replace(APP_ROUTES.userWorklogs);
+    };
+    if (!saving && isAutoSaved && isSavingModalOpen) {
+      setTimeout(() => setSavedModalState(), 1000);
+    }
+  }, [saving, isAutoSaved, isSavingModalOpen]);
 
   useEffect(() => {
     if (!user) return;
@@ -204,6 +260,7 @@ export const WorklogEditor = ({
   };
   useDebouncedEffect(
     () => {
+      if (saving) return;
       if (
         JSON.stringify(serverLog) === JSON.stringify(workLog) ||
         !editWorkLogs ||
@@ -318,28 +375,48 @@ export const WorklogEditor = ({
       {!compactView && (
         <div
           id="header"
-          className="mt-4 flex flex-row items-center justify-between md:mt-0"
+          className="mt-4 flex flex-row items-center justify-between gap-4 md:mt-0 md:justify-end"
         >
-          <div className="ml-2 flex items-center overflow-hidden rounded-full">
-            <IconButton>
-              <Link href={APP_ROUTES.userWorklogs} className="px-1">
-                <span className="material-icons !text-3xl text-neutral-900 hover:text-neutral-700 md:!text-2xl">
-                  arrow_back
-                </span>
-              </Link>
-            </IconButton>
-            {workLog?.date &&
-              dayjs(workLog.date).isSame(lastDateOfSelectedMonth, 'day') && (
-                <IconButton
-                  sx={{ fontSize: '16px' }}
-                  onClick={handleMonthChange}
-                >
-                  <span className="icon_size material-icons text-neutral-900 hover:text-neutral-700">
-                    arrow_forward
+          <div className="flex items-center gap-2">
+            <div className="ml-2 flex items-center overflow-hidden rounded-full md:hidden">
+              <IconButton>
+                <div onClick={handleBackButtonClick} className="px-1">
+                  <span className="material-icons !text-3xl text-neutral-900 hover:text-neutral-700 md:!text-2xl">
+                    arrow_back
                   </span>
-                </IconButton>
+                </div>
+              </IconButton>
+              {workLog?.date &&
+                dayjs(workLog.date).isSame(lastDateOfSelectedMonth, 'day') && (
+                  <IconButton
+                    sx={{ fontSize: '16px' }}
+                    onClick={handleMonthChange}
+                  >
+                    <span className="icon_size material-icons text-neutral-900 hover:text-neutral-700">
+                      arrow_forward
+                    </span>
+                  </IconButton>
+                )}
+            </div>
+            <button
+              disabled={saving || (isAutoSaved as boolean)}
+              onClick={() => saveWorkLog(workLog as any)}
+              className={`flex cursor-pointer items-center gap-2 rounded-lg bg-neutral-100 p-2 px-3 text-sm text-neutral-400 md:ml-3 ${!saving && !isAutoSaved && '!bg-green-100 !text-green-500'}`}
+            >
+              {saving ? (
+                <CustomLoader />
+              ) : !isAutoSaved ? (
+                <span className="icon_size material-icons">save</span>
+              ) : (
+                <span className="icon_size material-icons">done_all</span>
               )}
+
+              <span>
+                {saving ? 'Saving...' : isAutoSaved ? 'Saved' : 'Save'}
+              </span>
+            </button>
           </div>
+
           <div className="flex flex-row gap-1">
             {/* <div
               onClick={() => insertToContent("✅")}
@@ -477,29 +554,29 @@ export const WorklogEditor = ({
                 </div>
               )}
             </div>
-            {!isAutoSaved && !loading && (
-              <button
-                onClick={() => saveWorkLog(workLog as any)}
-                className="cursor-pointer rounded-lg p-2 text-green-500"
-              >
-                <span className="icon_size material-icons">done_all</span>
-              </button>
-            )}
+            {/* {!isAutoSaved && !loading && (
+                <button
+                  onClick={() => saveWorkLog(workLog as any)}
+                  className="cursor-pointer rounded-lg p-2 text-green-500"
+                >
+                  <span className="icon_size material-icons">done_all</span>
+                </button>
+              )} */}
           </div>
         </div>
       )}
       <div className="mb-4 p-4">
-        <input
-          disabled
-          type="text"
-          className="bg-transparent text-2xl outline-none"
-          placeholder="Jotdown a new project/task/goal..."
-          value={workLog?.title || 'March 27 - Sunday'}
-        />
+        <div className="flex w-full items-center justify-between">
+          <input
+            disabled
+            type="text"
+            className="bg-transparent text-2xl outline-none"
+            placeholder="Jotdown a new project/task/goal..."
+            value={workLog?.title || 'March 27 - Sunday'}
+          />
+        </div>
         <div className="item-center mt-3 flex gap-2 text-xs leading-3 text-neutral-500">
-          {saving && (
-            <div className="mr-2 h-3 w-3 animate-spin rounded-full border-b-2 border-t-2 border-neutral-800"></div>
-          )}
+          {saving && <CustomLoader />}
           {workLog?.logType === 'dayLog'
             ? dayjs(workLog?.date).format('DD-MM-YYYY')
             : 'My logs'}{' '}
@@ -637,6 +714,10 @@ export const WorklogEditor = ({
           </div> */}
         </div>
       )}
+      <SavingDialog
+        open={isSavingModalOpen}
+        isSaved={!saving && (isAutoSaved as boolean)}
+      />
     </div>
   );
 };
