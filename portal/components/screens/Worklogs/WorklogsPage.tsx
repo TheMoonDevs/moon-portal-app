@@ -345,6 +345,7 @@ export const WorklogsPage = () => {
         <div className="flex flex-row items-center gap-2 sm:gap-3">
           <SummarizeButton userId={user?.id} />
           <Link
+            className="hidden sm:block"
             href={`${APP_ROUTES.userWorklogSummary}/${
               user?.id
             }?year=${thisYear}&month=${dayjs().month(thisMonth).format('MM')}`}
