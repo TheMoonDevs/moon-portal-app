@@ -351,12 +351,12 @@ export const WorklogEditor = ({
                 onClick={refreshWorklogs}
                 className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700"
               >
-                <span className="text-4xl material-icons">refresh</span>
+                <span className="material-icons text-4xl">refresh</span>
               </div>
             )}
             <div className="hidden cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700 max-sm:block">
               <span
-                className="text-4xl material-icons"
+                className="material-icons text-4xl"
                 onClick={handleClick}
                 aria-describedby={id}
               >
@@ -365,7 +365,7 @@ export const WorklogEditor = ({
             </div>
             <div className="hidden cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700 max-sm:block">
               <span
-                className="text-4xl material-icons"
+                className="material-icons text-4xl"
                 onClick={handleClickTodo}
                 aria-describedby={id}
               >
@@ -411,9 +411,9 @@ export const WorklogEditor = ({
                 },
               }}
             >
-              <div className="hidden absolute right-0 top-4 w-10 cursor-pointer  text-neutral-900 hover:text-neutral-700 max-sm:block">
+              <div className="absolute right-0 top-4 hidden w-10 cursor-pointer text-neutral-900 hover:text-neutral-700 max-sm:block">
                 <span
-                  className="text-4xl material-icons"
+                  className="material-icons text-4xl"
                   onClick={handleCloseTodo}
                 >
                   close_icon
@@ -425,11 +425,11 @@ export const WorklogEditor = ({
               className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700"
               onClick={togglePopup}
             >
-              <span className="text-4xl material-icons">more_vert</span>
+              <span className="material-icons text-4xl">more_vert</span>
               {showPopup && (
                 <div
                   ref={popupRef}
-                  className="popup absolute max-sm:right-0 z-10 mt-3 rounded-lg bg-white p-4 text-lg shadow-lg max-sm:text-base"
+                  className="popup absolute z-10 mt-3 rounded-lg bg-white p-4 text-lg shadow-lg max-sm:right-0 max-sm:text-base"
                 >
                   <ul>
                     {fetchOptions.map((option) => (
@@ -449,12 +449,12 @@ export const WorklogEditor = ({
                       </li>
                     ))}
                   </ul>
-                  <div className="hidden mt-2 max-sm:flex flex-col">
+                  <div className="mt-2 hidden flex-col max-sm:flex">
                     <div
                       className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700"
                       onClick={handleClick}
                     >
-                      <span className="text-4xl material-icons">
+                      <span className="material-icons text-4xl">
                         emoji_objects
                       </span>
                     </div>
@@ -462,7 +462,7 @@ export const WorklogEditor = ({
                       className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700"
                       onClick={handleClickTodo}
                     >
-                      <span className="text-4xl material-icons">
+                      <span className="material-icons text-4xl">
                         format_list_bulleted
                       </span>
                     </div>
@@ -483,21 +483,11 @@ export const WorklogEditor = ({
       )}
       <div className="mb-4 p-4">
         <input
-          disabled={compactView}
+          disabled
           type="text"
           className="bg-transparent text-2xl outline-none"
           placeholder="Jotdown a new project/task/goal..."
           value={workLog?.title || 'March 27 - Sunday'}
-          onChange={(e) => {
-            setWorkLog((wl) =>
-              wl
-                ? {
-                    ...wl,
-                    title: e.target.value,
-                  }
-                : null,
-            );
-          }}
         />
         <div className="item-center mt-3 flex gap-2 text-xs leading-3 text-neutral-500">
           {saving && (
