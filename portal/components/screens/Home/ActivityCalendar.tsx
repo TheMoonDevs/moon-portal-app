@@ -2,10 +2,16 @@ import { WorkLogs } from '@prisma/client';
 import React, { useCallback, useEffect, useState } from 'react';
 import dayjs from 'dayjs';
 import ActivityCalendar, { ThemeInput } from 'react-activity-calendar';
-import { Box, Tooltip as MuiTooltip, Skeleton } from '@mui/material';
+import {
+  Box,
+  Tooltip as MuiTooltip,
+  Skeleton,
+  useMediaQuery,
+} from '@mui/material';
 import useAsyncState from '@/utils/hooks/useAsyncState';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 import { RootState, useAppSelector } from '@/utils/redux/store';
+import media, { breakpoints } from '@/styles/media';
 
 const customTheme: ThemeInput = {
   light: [
@@ -119,7 +125,8 @@ const ReactActivityCalendar = () => {
     <div
       className={`flex items-center overflow-x-auto py-4`}
       style={{
-        width: innerWidth - 40,
+        width:
+          innerWidth > breakpoints.tablet ? '100%' : window.innerWidth - 40,
       }}
     >
       {loading ? (
