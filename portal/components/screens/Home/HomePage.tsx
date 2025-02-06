@@ -33,7 +33,7 @@ const FocusMode = () => (
       className="mx-4 mt-3 self-stretch rounded-md bg-green-500 px-[30px] py-3 text-center text-sm font-bold uppercase tracking-[4px] text-white hover:bg-green-400"
       href={APP_ROUTES.userWorklogs}
     >
-      <span>Enter &nbsp; Focus &nbsp; Mode</span>
+      <span className="select-none">Enter &nbsp; Focus &nbsp; Mode</span>
     </Link>
   </div>
 );

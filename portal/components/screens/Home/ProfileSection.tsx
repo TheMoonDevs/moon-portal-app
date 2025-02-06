@@ -53,7 +53,7 @@ export const ProfileSection = ({ user }: { user: User }) => {
         </div>
       </div>
 
-      <div className="mb-4 grid w-full grid-cols-[1.5fr_1fr] items-center justify-center divide-x-2 overflow-hidden rounded-2xl bg-white">
+      <div className="mb-4 grid w-full select-none grid-cols-[1.5fr_1fr] items-center justify-center divide-x-2 overflow-hidden rounded-2xl bg-white">
         <div className="overflow-hidden hover:bg-neutral-100">
           <PushSubscriptionToggleButton />
         </div>
