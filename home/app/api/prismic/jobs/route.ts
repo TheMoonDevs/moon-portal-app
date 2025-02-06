@@ -1,3 +1,4 @@
+export const runtime = "edge";
 import { createClient } from "@/prismicio";
 import { NextRequest, NextResponse } from "next/server";
 

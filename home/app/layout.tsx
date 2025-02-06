@@ -1,5 +1,6 @@
 /* eslint-disable @next/next/no-page-custom-font */
 /* eslint-disable @next/next/google-font-display */
+export const runtime = "edge";
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 // import "./globals.css";
