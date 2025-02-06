@@ -1,4 +1,5 @@
-import Link from "next/link";
+'use client'
+
 import {
   WorklifeCareersStyled,
   WorklifeJobsCardStyled,
@@ -6,6 +7,7 @@ import {
 import { PrismicNextImage } from "@prismicio/next";
 import { JobapplicationDocument } from "@/prismicio-types";
 import { PrismicRichText } from "@prismicio/react";
+import { Link } from "@/components/App/Global/react-transition-progress/CustomLink";
 
 export const WorklifeCareers = ({
   jobPosts,

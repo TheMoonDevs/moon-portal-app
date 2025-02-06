@@ -1,6 +1,7 @@
+'use client'
 import { useEffect, useRef, useState } from "react";
 import { Error404Styled } from "./Error404.styles";
-import Link from "next/link";
+import { Link } from "@/components/App/Global/react-transition-progress/CustomLink";
 
 const Error404 = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });

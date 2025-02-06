@@ -2,8 +2,8 @@ import Image from "next/image";
 import { TestimonialsStyled } from "./ReferTestimonials.styles";
 import Carousel from "react-multi-carousel";
 import { ReferScrollState } from "../types";
-import Link from "next/link";
 import { Engagement } from "next/font/google";
+import { Link } from "@/components/App/Global/react-transition-progress/CustomLink";
 const Testimonials = [
   {
     name: "Matthew Russell",

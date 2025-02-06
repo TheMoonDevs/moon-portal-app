@@ -1,3 +1,4 @@
+'use client'
 import React from "react";
 import {
   WorklifeDetailsStyled,
@@ -8,8 +9,8 @@ import { useTextBg } from "@/utils/hooks/useTextBg";
 import { PrismicNextImage } from "@prismicio/next";
 import { PrismicRichText } from "@prismicio/react";
 import { BlogPageDocument } from "@/prismicio-types";
-import Link from "next/link";
 import { prettyPrintDateInMMMDD } from "@/helpers/prettyprint";
+import { Link } from "@/components/App/Global/react-transition-progress/CustomLink";
 export const WorklifeDetails = ({ blogs }: { blogs: BlogPageDocument[] }) => {
   const _mappedPosts = {
     small: blogs

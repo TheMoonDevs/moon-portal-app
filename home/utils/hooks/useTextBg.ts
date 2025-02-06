@@ -1,3 +1,4 @@
+'use client'
 import { useState, useEffect } from "react";
 import { luminance } from "@/helpers/functions";
 
