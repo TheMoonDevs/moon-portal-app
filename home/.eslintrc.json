@@ -32,6 +32,7 @@
         "plugin:@typescript-eslint/recommended",
         "plugin:@cspell/recommended",
         "plugin:tailwindcss/recommended",
+        "next/babel",
         "next/core-web-vitals",
         "plugin:prettier/recommended",
         "plugin:eslint-plugin-next-on-pages/recommended"
