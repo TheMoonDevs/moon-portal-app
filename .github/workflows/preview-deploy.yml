@@ -29,7 +29,10 @@ jobs:
         run: |
           git fetch --prune
           git fetch origin +refs/heads/*:refs/remotes/origin/*
-          changed_files=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }})
+          
+          # Get changed files in the PR
+          changed_files=$(git diff --name-only origin/${{ github.base_ref }})
+
           projects=()
           if echo "$changed_files" | grep -q "^portal/"; then
             projects+=("portal")
@@ -37,12 +40,16 @@ jobs:
           if echo "$changed_files" | grep -q "^payzone/"; then
             projects+=("payzone")
           fi
+
           echo "Changed projects: ${projects[@]}"
+
+          # Output projects as JSON
           if [ ${#projects[@]} -eq 0 ]; then
             echo "projects=[]" >> $GITHUB_OUTPUT
           else
             echo "projects=$(jq -c -n --argjson projects "$(printf '%s\n' "${projects[@]}" | jq -R . | jq -s .)" '$projects')" >> $GITHUB_OUTPUT
           fi
+
       - name: Create Initial Comment for first changed project
         if: ${{ steps.set-projects.outputs.projects != 'null' && steps.set-projects.outputs.projects != '[]' }}
         run: |
