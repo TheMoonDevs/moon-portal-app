@@ -53,7 +53,7 @@ class GoogleSheetsAPI {
 
   private async getAccessToken(): Promise<string> {
     const url = "https://oauth2.googleapis.com/token";
-    const jwt = this.createJWT();
+    const jwt = await this.createJWT();
 
     const response = await fetch(url, {
       method: "POST",
@@ -74,7 +74,7 @@ class GoogleSheetsAPI {
     return data.access_token;
   }
 
-  private createJWT(): string {
+  private async createJWT(): Promise<string> {
     const header = {
       alg: "RS256",
       typ: "JWT",
@@ -97,16 +97,44 @@ class GoogleSheetsAPI {
       .replace(/=/g, "");
 
     const signatureInput = `${encodedHeader}.${encodedClaimSet}`;
-    const signature = this.sign(signatureInput, this.privateKey);
+    const signature = await this.sign(signatureInput, this.privateKey);
 
     return `${signatureInput}.${signature}`;
   }
 
-  private sign(input: string, privateKey: string): string {
-    const crypto = require("crypto");
-    const sign = crypto.createSign("RSA-SHA256");
-    sign.update(input);
-    return sign.sign(privateKey, "base64").replace(/=/g, "");
+  private async sign(input: string, privateKeyPem: string): Promise<string> {
+    // Convert PEM format to binary DER format
+    const pemHeader = "-----BEGIN PRIVATE KEY-----";
+    const pemFooter = "-----END PRIVATE KEY-----";
+    const pemContents = privateKeyPem
+      .replace(pemHeader, "")
+      .replace(pemFooter, "")
+      .replace(/\s/g, "");
+    const binaryDer = Uint8Array.from(atob(pemContents), c => c.charCodeAt(0));
+  
+    // Import private key
+    const key = await crypto.subtle.importKey(
+      "pkcs8",
+      binaryDer,
+      { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+      true,
+      ["sign"]
+    );
+  
+    // Create data buffer
+    const encoder = new TextEncoder();
+    const data = encoder.encode(input);
+  
+    // Generate signature
+    const signature = await crypto.subtle.sign(
+      "RSASSA-PKCS1-v1_5",
+      key,
+      data
+    );
+  
+    // Convert to base64 without padding
+    const base64 = btoa(String.fromCharCode(...new Uint8Array(signature)));
+    return base64.replace(/=/g, "");
   }
 
   private async getSheetName(

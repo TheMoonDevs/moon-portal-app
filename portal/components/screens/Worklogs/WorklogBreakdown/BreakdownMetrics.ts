@@ -9,12 +9,20 @@ import {
   endOfYear,
   isToday,
 } from "date-fns";
+import dayjs from 'dayjs';
+import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
+import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+import { getStatsOfContent } from "../WorklogSummary/Pattern";
+import { MissedTask } from "@/utils/redux/worklogsSummary/statsAction.slice";
+
+dayjs.extend(isSameOrAfter);
+dayjs.extend(isSameOrBefore);
 
 interface Metrics {
   completedTasks: number;
   taskCompletionRate: number;
   averageTasksPerDay: number;
-  longestProductiveStreak: number;
+  longestProductiveStreakData: WorkLogs[];
   updateMetrics: { updatedDays: number };
   contributionPercentage: number;
   topProductiveDays: { date: string; completedTasks: number }[];
@@ -33,8 +41,9 @@ interface Metrics {
       inProgress: number;
     };
   };
-  missedLogs: number;
-  updatedLogsLater: number;
+  missedLogsDates: string[];
+  updatedLogsLater: string[];
+  missedTasks: number
 }
 
 enum TaskType {
@@ -60,7 +69,7 @@ export function calculateMetrics(
   const completedTasks = getTaskCountByType(worklogSummary, TaskType.Completed);
   const taskCompletionRate = getTaskCompletionRate(worklogSummary);
   const averageTasksPerDay = getAverageTasksPerDay(worklogSummary);
-  const longestProductiveStreak = getLongestProductiveStreak(worklogSummary);
+  // const longestProductiveStreak = getLongestProductiveStreak(worklogSummary);
   const updateMetrics = getUpdateMetrics(worklogSummary);
   const contributionPercentage = getContributionPercentage(worklogSummary);
   const topProductiveDays = getTopProductiveDays(worklogSummary);
@@ -88,15 +97,27 @@ export function calculateMetrics(
   const tasksByWeekday =
     getCompletedAndInProgressTasksByWeekday(worklogSummary);
 
-    const missedDates = getMissedLogs(worklogSummary, isMonthly, isYearly);
-    const missedLogsCount = missedDates.length; 
-    const updatedLogsLater = getUpdatedLogsLater(worklogSummary);
+  // const missedDates = getMissedLogs(worklogSummary, isMonthly, isYearly);
+  // const missedLogsCount = missedDates.length;
+  const missedDates = getMissedWorklogDates(worklogSummary);
+  // const missedLogsCount = missedDates.length;
+  const updatedLogsLater = getUpdatedLogsLater(worklogSummary);
+
+  const longestProductiveStreakData = getLongestProductiveStreak(worklogSummary);
+
+  const missedTasks = getMissedTasks(worklogSummary);
+
+  const totalRemainingTasks = missedTasks.reduce((acc, taskGroup) => {
+    const taskCount = taskGroup.content.split("\n").filter(task => task.trim() !== "").length;
+    return acc + taskCount;
+  }, 0);
+
 
   return {
     completedTasks,
     taskCompletionRate,
     averageTasksPerDay,
-    longestProductiveStreak,
+    longestProductiveStreakData,
     updateMetrics,
     contributionPercentage,
     topProductiveDays,
@@ -110,8 +131,9 @@ export function calculateMetrics(
     needClarificationTasks,
     highPriorityTasks,
     tasksByWeekday,
-    missedLogs: missedLogsCount,
+    missedLogsDates: missedDates,
     updatedLogsLater,
+    missedTasks: totalRemainingTasks
   };
 }
 
@@ -137,6 +159,9 @@ function getTaskCountByType(
 
 function getTaskCompletionRate(worklogSummary: WorkLogs[]): number {
   const totalTasks = getTotalTasks(worklogSummary);
+  if (totalTasks === 0) {
+    return 0;
+  }
   const completedTasks = getTaskCountByType(worklogSummary, TaskType.Completed);
   return (completedTasks / totalTasks) * 100;
 }
@@ -150,27 +175,37 @@ function getAverageTasksPerDay(worklogSummary: WorkLogs[]): number {
   return totalTasks / uniqueDates.length;
 }
 
-function getLongestProductiveStreak(worklogSummary: WorkLogs[]): number {
+export function getLongestProductiveStreak(worklogSummary: WorkLogs[]): WorkLogs[] {
   const dates = worklogSummary
     .map((worklog) => parseISO(worklog.date || ""))
     .sort((a, b) => a.getTime() - b.getTime());
 
   let longestStreak = 0;
   let currentStreak = 1;
+  let longestStreakData: WorkLogs[] = [];
+  let currentStreakData: WorkLogs[] = [worklogSummary[0]];
 
   for (let i = 1; i < dates.length; i++) {
     const diff = differenceInDays(dates[i], dates[i - 1]);
     if (diff === 1) {
       currentStreak++;
+      currentStreakData.push(worklogSummary[i]);
     } else {
       if (currentStreak > longestStreak) {
         longestStreak = currentStreak;
+        longestStreakData = [...currentStreakData];
       }
       currentStreak = 1;
+      currentStreakData = [worklogSummary[i]];
     }
   }
 
-  return Math.max(longestStreak, currentStreak);
+  if (currentStreak > longestStreak) {
+    longestStreak = currentStreak;
+    longestStreakData = [...currentStreakData];
+  }
+
+  return longestStreakData;
 }
 
 function getTotalTasks(worklogSummary: WorkLogs[]): number {
@@ -332,22 +367,21 @@ export function getMissedLogs(
   return missedDates;
 }
 
-function getUpdatedLogsLater(worklogSummary: WorkLogs[]): number {
-  let updatedLogsLater = 0;
+export function getUpdatedLogsLater(worklogSummary: WorkLogs[]): string[] {
+  const updatedLogsDates: string[] = [];
 
   worklogSummary.forEach((worklog) => {
     const logDate = parseISO(worklog.date || "");
-    const updatedAt = parseISO(worklog.updatedAt.toString());
+    const updatedAt = parseISO(worklog.updatedAt?.toString() || "");
 
     if (differenceInDays(updatedAt, logDate) > 0) {
-      updatedLogsLater++;
+      updatedLogsDates.push(worklog.date || "");
     }
   });
-
-  return updatedLogsLater;
+  return updatedLogsDates;
 }
 
-function getAllDatesInRange(startDate: Date, endDate: Date): Date[] {
+export function getAllDatesInRange(startDate: Date, endDate: Date): Date[] {
   const dates = [];
   let currentDate = startDate;
 
@@ -365,4 +399,81 @@ function isSameDay(date1: Date, date2: Date): boolean {
     date1.getUTCMonth() === date2.getUTCMonth() &&
     date1.getUTCDate() === date2.getUTCDate()
   );
+}
+
+export function getMissedWorklogDates(logs: WorkLogs[]) {
+  if (!logs.length) return [];
+
+  const firstLogDate = dayjs(logs[0].date);
+  const year = firstLogDate.year();
+  const month = firstLogDate.month() + 1;
+
+  const loggedDatesSet = new Set(logs.map(log => dayjs(log.date).format('YYYY-MM-DD')));
+
+  const daysInMonth = firstLogDate.daysInMonth();
+  const missedDates = [];
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    if (!loggedDatesSet.has(date)) {
+      missedDates.push(date);
+    }
+  }
+
+  return missedDates;
+}
+
+export function getMissedTasks(worklogSummary: WorkLogs[]): MissedTask[] {
+  const missedTasksByDate: { [key: string]: { title: string; content: string; date: string } } = {};
+
+  worklogSummary.forEach((worklog) => {
+    const date = format(parseISO(worklog.date || ""), "yyyy-MM-dd");
+
+    worklog.works.forEach((work: any) => {
+      const tasks = work.content.split("\n").map((task: string) => task.trim());
+      tasks.forEach((task: string) => {
+        if (!task.includes("✅")) {
+          if (!missedTasksByDate[date]) {
+            missedTasksByDate[date] = {
+              title: worklog.title || "Untitled",
+              content: task,
+              date: date,
+            };
+          } else {
+            missedTasksByDate[date].content += `\n${task}`;
+          }
+        }
+      });
+    });
+  });
+
+  return Object.values(missedTasksByDate);
+}
+
+
+export function getCompletedTasks(worklogSummary: WorkLogs[]): MissedTask[] {
+  const completedTasksByDate: { [key: string]: { title: string; content: string; date: string } } = {};
+
+  worklogSummary.forEach((worklog) => {
+    const date = format(parseISO(worklog.date || ""), "yyyy-MM-dd");
+
+    worklog.works.forEach((work: any) => {
+      const tasks = work.content.split("\n").map((task: string) => task.trim());
+      tasks.forEach((task: string) => {
+        if (task.includes("✅")) {
+          if (!completedTasksByDate[date]) {
+            completedTasksByDate[date] = {
+              title: worklog.title || "Untitled",
+              content: task,
+              date: date,
+            };
+          } else {
+            completedTasksByDate[date].content += `\n${task}`;
+          }
+        }
+      });
+    });
+  });
+
+  return Object.values(completedTasksByDate);
 }
