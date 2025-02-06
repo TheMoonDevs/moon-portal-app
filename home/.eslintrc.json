@@ -24,7 +24,8 @@
         "prettier",
         "unused-imports",
         "simple-import-sort",
-        "tailwindcss"
+        "tailwindcss",
+        "eslint-plugin-next-on-pages"
       ],
       "extends": [
         "eslint:recommended",
@@ -32,7 +33,8 @@
         "plugin:@cspell/recommended",
         "plugin:tailwindcss/recommended",
         "next/core-web-vitals",
-        "plugin:prettier/recommended"
+        "plugin:prettier/recommended",
+        "plugin:eslint-plugin-next-on-pages/recommended"
       ],
       "parserOptions": {
         "project": "home/tsconfig.json"
