@@ -13,6 +13,7 @@ import { useNotifications } from '@/utils/hooks/useNotifications';
 import { useEffect, useRef, useState } from 'react';
 import NotificationModal from './NotificationModal';
 import Ripples from 'react-ripples';
+import LogoutConfirmationDialog from './LogoutConfirmationDialog';
 
 const NAVIGATION_OPTIONS = [
   {
@@ -93,6 +94,11 @@ export const Bottombar = ({
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [workLogId, setWorkLogId] = useState<string | null>(null);
   const [loadingWorkLog, setLoadingWorkLog] = useState<boolean>(true);
+  const [open, setOpen] = useState(false);
+
+  const handleLogoutDialogOpen = () => {
+    setOpen(true);
+  };
 
   const options =
     user?.userType === USERTYPE.CLIENT
@@ -151,10 +157,10 @@ export const Bottombar = ({
   };
   return (
     <div
-      className={`md:fixed-none bottombar fixed bottom-0 left-0 right-0 z-10 flex flex-row gap-6 bg-neutral-900 px-1 py-2 max-md:mx-1 max-md:my-1 max-md:rounded-2xl md:bottom-auto md:left-0 md:top-0 md:h-full md:w-24 md:flex-col md:px-2 md:py-1`}
+      className={`md:fixed-none bottombar fixed bottom-0 left-0 right-0 z-10 flex flex-row gap-6 bg-neutral-900 px-2 py-2 max-md:mx-1 max-md:my-1 max-md:rounded-2xl md:bottom-auto md:left-0 md:top-0 md:h-full md:w-24 md:flex-col md:px-2 md:py-1`}
       id="home-bottombar"
     >
-      <Link href={APP_ROUTES.home}>
+      <Link href={APP_ROUTES.home} className="hidden md:block">
         <Image
           src="/logo/logo_white.png"
           alt="Moon Portal Logo"
@@ -201,16 +207,19 @@ export const Bottombar = ({
           <p className="text-[0.5em] opacity-75">{option.name}</p>
         </div>
       ))}{' '}
-      <Link href={APP_ROUTES.logout}>
-        <button
-          className={`absolute bottom-5 flex w-[85%] cursor-pointer flex-col items-center justify-center rounded-2xl bg-black py-1 pt-2 text-xl hover:bg-neutral-700 max-md:hidden`}
-        >
-          <span className="material-symbols-outlined text-white">logout</span>
-          <span className="text-[0.5em] text-white opacity-75 max-md:hidden">
-            Logout
-          </span>
-        </button>
-      </Link>
+      <button
+        onClick={handleLogoutDialogOpen}
+        className={`absolute bottom-5 flex w-[85%] cursor-pointer flex-col items-center justify-center rounded-2xl bg-black py-1 pt-2 text-xl hover:bg-neutral-700 max-md:hidden`}
+      >
+        <span className="material-symbols-outlined text-white">logout</span>
+        <span className="text-[0.5em] text-white opacity-75 max-md:hidden">
+          Logout
+        </span>
+      </button>
+      <LogoutConfirmationDialog
+        open={open}
+        handleClose={() => setOpen(false)}
+      />
       <NotificationModal open={isOpen} onClose={() => setIsOpen(false)} />
     </div>
   );

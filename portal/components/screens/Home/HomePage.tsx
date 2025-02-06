@@ -52,7 +52,7 @@ const MemberHomePage = () => {
         <ProfileSection user={user} />
         <DailySection user={user} />
         <ButtonBoard />
-        <div className="flex w-full flex-col pb-8 pt-3">
+        <div className="flex w-full flex-col pb-8 pt-3 md:pb-0 md:pt-0">
           {!isTabletOrMore && <FocusMode />}
         </div>
         <StartSection />
