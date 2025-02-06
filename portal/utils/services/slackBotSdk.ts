@@ -40,6 +40,7 @@ export const SlackChannels = {
   executive_channel: "C066K6FKU1X",
   management_channel: "C06944N1NQ7",
   test_slackbot: "C0747DURBHT",
+  b_coreteam: "C065V7MN0AE"
 };
 
 export const SlackUsers = {
