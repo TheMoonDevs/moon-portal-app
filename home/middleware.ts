@@ -1,9 +1,6 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export const runtime = 'experimental-edge';
-
-export async function middleware(req: NextRequest) {
+export default async function middleware(req: NextRequest) {
   const slug = req.nextUrl.pathname.split("/").pop();
   try {
     const fetchUrlData = await fetch(
