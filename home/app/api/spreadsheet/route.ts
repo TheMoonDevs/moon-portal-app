@@ -1,6 +1,6 @@
+export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
 import GoogleSheetsAPI from "@/utils/service/googleSheetSdk";
-
 const googleSheetsAPI = new GoogleSheetsAPI({
   clientEmail: process.env.GIAM_CLIENT_EMAIL as string,
   privateKey: process.env.GIAM_PRIVATE_KEY as string,

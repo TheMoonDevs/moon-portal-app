@@ -1,3 +1,4 @@
+export const runtime = "edge";
 import { NextRequest } from "next/server";
 import { draftMode } from "next/headers";
 import { redirectToPreviewURL } from "@prismicio/next";

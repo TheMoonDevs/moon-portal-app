@@ -1,4 +1,4 @@
-// app/api/leads/route.ts
+export const runtime = "edge";
 import ClickupApi from "@/utils/service/ClickupApi";
 import { NextRequest, NextResponse } from "next/server";
 
