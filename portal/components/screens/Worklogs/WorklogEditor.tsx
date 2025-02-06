@@ -35,6 +35,7 @@ import EmojiLegend from './WorklogTabs/EmojiLegend';
 import TodoTab from './WorklogTabs/TodoTab';
 import { MDXEditorMethods } from '@mdxeditor/editor';
 import { toast } from 'sonner';
+import CustomDrawer from '@/components/elements/Drawer';
 
 export const MARKDOWN_PLACHELODER = `* `;
 
@@ -107,7 +108,7 @@ export const WorklogEditor = ({
 }) => {
   const dispatch = useAppDispatch();
   const { user } = useUser();
-  const [openTodo, setOpenTodo] = useState<boolean>(false);
+  const [openDrawer, setOpenDrawer] = useState<'emoji_legend' | 'todo'>();
   const [markdownDatas, setMarkdownDatas] = useState<WorkLogPoints[]>(
     DEFAULT_MARKDOWN_DATA,
   );
@@ -126,15 +127,6 @@ export const WorklogEditor = ({
     if (saving || !isAutoSaved) setIsSavingModalOpen(true);
     if (!saving && isAutoSaved) router.replace(APP_ROUTES.userWorklogs);
   };
-
-  const handleClick = (event: any) => {
-    setAnchorEl(event.currentTarget);
-  };
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-  const open = Boolean(anchorEl);
-  const id = open ? 'simple-popover' : undefined;
 
   const isAutoSaved = useMemo(() => {
     return (
@@ -334,10 +326,14 @@ export const WorklogEditor = ({
     }
   };
   const handleClickTodo = () => {
-    setOpenTodo(true);
+    setOpenDrawer('todo');
   };
-  const handleCloseTodo = () => {
-    setOpenTodo(false);
+  const handleCloseDrawer = () => {
+    setOpenDrawer(undefined);
+  };
+
+  const handleClickEmojiLegend = (event: any) => {
+    setOpenDrawer('emoji_legend');
   };
   const togglePopup = () => {
     setShowPopup(!showPopup);
@@ -439,8 +435,7 @@ export const WorklogEditor = ({
             <div className="hidden cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700 max-sm:block">
               <span
                 className="material-icons !text-3xl md:!text-2xl"
-                onClick={handleClick}
-                aria-describedby={id}
+                onClick={handleClickEmojiLegend}
               >
                 emoji_objects
               </span>
@@ -449,60 +444,23 @@ export const WorklogEditor = ({
               <span
                 className="material-icons !text-3xl md:!text-2xl"
                 onClick={handleClickTodo}
-                aria-describedby={id}
               >
                 format_list_bulleted
               </span>
             </div>
-            <Popover
-              id={id}
-              open={open}
-              anchorEl={anchorEl}
-              onClose={handleClose}
-              anchorOrigin={{
-                vertical: 'bottom',
-                horizontal: 'center',
-              }}
-              sx={{
-                '.MuiPopover-paper': {
-                  backgroundColor: '#fff',
-                  color: '#333',
-                  borderRadius: '12px',
-                  boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.2)',
-                  padding: '0px 16px',
-                  maxWidth: '90%',
-                },
-                my: '8px',
-              }}
+            <CustomDrawer
+              open={openDrawer === 'emoji_legend'}
+              onClose={handleCloseDrawer}
             >
-              <div className="px-2 pb-4 pt-0">
-                <EmojiLegend />
-              </div>
-            </Popover>
-            <Drawer
-              anchor="bottom"
-              open={openTodo}
-              onClose={handleCloseTodo}
-              sx={{
-                '.MuiDrawer-paper': {
-                  backgroundColor: '#fff',
-                  padding: '24px',
-                  borderRadius: '16px 16px 0 0',
-                  boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.2)',
-                  height: '90vh',
-                },
-              }}
+              <EmojiLegend />
+            </CustomDrawer>
+            <CustomDrawer
+              open={openDrawer === 'todo'}
+              onClose={handleCloseDrawer}
+              height="50vh"
             >
-              <div className="absolute right-0 top-4 hidden w-10 cursor-pointer text-neutral-900 hover:text-neutral-700 max-sm:block">
-                <span
-                  className="material-icons !text-3xl md:!text-2xl"
-                  onClick={handleCloseTodo}
-                >
-                  close_icon
-                </span>
-              </div>
               <TodoTab userId={user?.id as string} />
-            </Drawer>
+            </CustomDrawer>
             <div
               className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700"
               onClick={togglePopup}
@@ -536,7 +494,7 @@ export const WorklogEditor = ({
                   <div className="mt-2 hidden flex-col max-sm:flex">
                     <div
                       className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700"
-                      onClick={handleClick}
+                      onClick={handleClickEmojiLegend}
                     >
                       <span className="material-icons text-4xl">
                         emoji_objects
