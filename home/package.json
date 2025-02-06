@@ -6,6 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "build:worker": "opennextjs-cloudflare",
+    "dev:worker": "wrangler dev --port 8771",
+    "preview:worker": "npm run build:worker && npm run dev:worker",
+    "deploy:worker": "npm run build:worker && wrangler deploy",
     "slicemachine": "start-slicemachine",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
@@ -44,6 +48,7 @@
     "styled-components": "^6.1.11"
   },
   "devDependencies": {
+    "@cloudflare/next-on-pages": "^1.13.7",
     "@cspell/eslint-plugin": "^8.15.2",
     "@slicemachine/adapter-next": "^0.3.38",
     "@types/jsdom": "^21.1.7",
