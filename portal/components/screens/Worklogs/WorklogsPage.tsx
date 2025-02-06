@@ -361,12 +361,12 @@ export const WorklogsPage = () => {
 
       <div className="scrollable_list">
         <div className="h-14"></div>
-        <div className="custom-scrollbar z-[5] flex flex-row justify-between space-x-2 overflow-x-auto bg-neutral-100 px-2 py-3">
+        <div className="custom-scrollbar z-[5] flex flex-row justify-between space-x-2 overflow-x-auto bg-neutral-100 px-2 py-3 md:p-2">
           {Array.from({ length: 12 }).map((_, month_tab: number) => (
             <div
               key={month_tab}
               onClick={() => setMonthTab(month_tab)}
-              className={`flex-shrink-0 cursor-pointer rounded-3xl px-1 py-1 ${
+              className={`flex-shrink-0 cursor-pointer rounded-3xl px-1 py-1 md:p-0 ${
                 monthTab === month_tab ? 'border border-neutral-600' : ''
               }`}
             >
