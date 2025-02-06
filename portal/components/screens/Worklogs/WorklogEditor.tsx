@@ -316,15 +316,18 @@ export const WorklogEditor = ({
       className="flex min-h-screen flex-col md:max-w-[800px]"
     >
       {!compactView && (
-        <div id="header" className="flex flex-row items-center justify-between">
-          <div className="flex items-center">
-            <Link href={APP_ROUTES.userWorklogs} className="">
-              <IconButton sx={{ fontSize: '16px' }}>
-                <span className="icon_size material-icons text-neutral-900 hover:text-neutral-700">
+        <div
+          id="header"
+          className="mt-4 flex flex-row items-center justify-between md:mt-0"
+        >
+          <div className="ml-2 flex items-center overflow-hidden rounded-full">
+            <IconButton>
+              <Link href={APP_ROUTES.userWorklogs} className="px-1">
+                <span className="material-icons !text-3xl text-neutral-900 hover:text-neutral-700 md:!text-2xl">
                   arrow_back
                 </span>
-              </IconButton>
-            </Link>
+              </Link>
+            </IconButton>
             {workLog?.date &&
               dayjs(workLog.date).isSame(lastDateOfSelectedMonth, 'day') && (
                 <IconButton
@@ -345,18 +348,20 @@ export const WorklogEditor = ({
               <span className="icon_size material-icons">✅</span>
             </div> */}
             {loading ? (
-              <div className="mt-2 h-5 w-5 animate-spin rounded-full border-b-2 border-t-2 border-neutral-700 p-2"></div>
+              <div className="mr-2 mt-4 h-5 w-5 animate-spin rounded-full border-b-2 border-t-2 border-neutral-700 p-2"></div>
             ) : (
               <div
                 onClick={refreshWorklogs}
                 className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700"
               >
-                <span className="material-icons text-4xl">refresh</span>
+                <span className="material-icons !text-3xl md:!text-2xl">
+                  refresh
+                </span>
               </div>
             )}
             <div className="hidden cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700 max-sm:block">
               <span
-                className="material-icons text-4xl"
+                className="material-icons !text-3xl md:!text-2xl"
                 onClick={handleClick}
                 aria-describedby={id}
               >
@@ -365,7 +370,7 @@ export const WorklogEditor = ({
             </div>
             <div className="hidden cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700 max-sm:block">
               <span
-                className="material-icons text-4xl"
+                className="material-icons !text-3xl md:!text-2xl"
                 onClick={handleClickTodo}
                 aria-describedby={id}
               >
@@ -413,7 +418,7 @@ export const WorklogEditor = ({
             >
               <div className="absolute right-0 top-4 hidden w-10 cursor-pointer text-neutral-900 hover:text-neutral-700 max-sm:block">
                 <span
-                  className="material-icons text-4xl"
+                  className="material-icons !text-3xl md:!text-2xl"
                   onClick={handleCloseTodo}
                 >
                   close_icon
@@ -425,7 +430,9 @@ export const WorklogEditor = ({
               className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700"
               onClick={togglePopup}
             >
-              <span className="material-icons text-4xl">more_vert</span>
+              <span className="material-icons !text-3xl md:!text-2xl">
+                more_vert
+              </span>
               {showPopup && (
                 <div
                   ref={popupRef}
