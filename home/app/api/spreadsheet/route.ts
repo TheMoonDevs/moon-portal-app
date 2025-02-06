@@ -1,21 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import GoogleSheetsAPI from "@/utils/service/googleSheetSdk";
 
-const googleSheetsAPI = new GoogleSheetsAPI({
-  clientEmail: process.env.GIAM_CLIENT_EMAIL as string,
-  privateKey: process.env.GIAM_PRIVATE_KEY as string,
-});
+export const runtime = "edge";
 
 export async function GET(req: NextRequest) {
-  const spreadsheetId = req.nextUrl.searchParams.get("spreadsheetId");
-  const range = req.nextUrl.searchParams.get("range") || "A:Z";
-  const targetId = req.nextUrl.searchParams.get("targetId");
+  const googleSheetsAPI = new GoogleSheetsAPI({
+    clientEmail: process.env.GIAM_CLIENT_EMAIL as string,
+    privateKey: process.env.GIAM_PRIVATE_KEY as string,
+  });
+  const spreadsheetId = req.nextUrl.searchParams.get('spreadsheetId');
+  const range = req.nextUrl.searchParams.get('range') || 'A:Z';
+  const targetId = req.nextUrl.searchParams.get('targetId');
 
   try {
     if (!spreadsheetId || !targetId) {
       return NextResponse.json(
-        { error: "spreadsheetId and targetId are required." },
-        { status: 400 }
+        { error: 'spreadsheetId and targetId are required.' },
+        { status: 400 },
       );
     }
 
@@ -26,15 +27,19 @@ export async function GET(req: NextRequest) {
     });
     return NextResponse.json(data);
   } catch (error) {
-    console.error("Error fetching sheet data: ", error);
+    console.error('Error fetching sheet data: ', error);
     return NextResponse.json(
-      { error: "Failed to fetch sheet data." },
-      { status: 500 }
+      { error: 'Failed to fetch sheet data.' },
+      { status: 500 },
     );
   }
 }
 
 export async function POST(req: NextRequest) {
+  const googleSheetsAPI = new GoogleSheetsAPI({
+    clientEmail: process.env.GIAM_CLIENT_EMAIL as string,
+    privateKey: process.env.GIAM_PRIVATE_KEY as string,
+  });
   const spreadsheetId = req.nextUrl.searchParams.get("spreadsheetId");
   const targetId = req.nextUrl.searchParams.get("targetId");
   const { values, range } = await req.json();
@@ -67,6 +72,10 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
+  const googleSheetsAPI = new GoogleSheetsAPI({
+    clientEmail: process.env.GIAM_CLIENT_EMAIL as string,
+    privateKey: process.env.GIAM_PRIVATE_KEY as string,
+  });
   const { spreadsheetId, range, values, targetId } = await req.json();
 
   try {
@@ -97,6 +106,10 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const googleSheetsAPI = new GoogleSheetsAPI({
+    clientEmail: process.env.GIAM_CLIENT_EMAIL as string,
+    privateKey: process.env.GIAM_PRIVATE_KEY as string,
+  });
   const { spreadsheetId, targetId, majorDimension, indexes } = await req.json();
 
   try {

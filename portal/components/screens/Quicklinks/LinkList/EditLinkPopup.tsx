@@ -177,6 +177,7 @@ export const EditLinkPopup = ({
       }}
       aria-labelledby="edit-link-modal"
       aria-describedby="modal-modal-description"
+      className='!max-sm:w-[90%]'
     >
       <div className="relative bg-white rounded-lg shadow-xl max-w-md mx-auto my-12 border border-gray-200 outline-none">
         <button
