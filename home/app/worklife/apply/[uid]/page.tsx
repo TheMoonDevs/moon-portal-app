@@ -8,11 +8,6 @@ type Params = { uid: string };
 
 export const runtime = "edge";
 
-const googleSheetsAPI = new GoogleSheetsAPI({
-  clientEmail: process.env.GIAM_CLIENT_EMAIL as string,
-  privateKey: process.env.GIAM_PRIVATE_KEY as string,
-});
-
 export default async function Page({ params }: { params: Params }) {
   const client = createClient();
   const page = await client.getByUID("jobapplication", params?.uid as string);
@@ -20,6 +15,11 @@ export default async function Page({ params }: { params: Params }) {
   const spreadsheetId = spreadsheetUrl.split("/")[5];
   const sheetId = spreadsheetUrl.split("=")[1].split("#")[0];
 
+  const googleSheetsAPI = new GoogleSheetsAPI({
+    clientEmail: process.env.GIAM_CLIENT_EMAIL as string,
+    privateKey: process.env.GIAM_PRIVATE_KEY as string,
+  });
+  
   const response = await googleSheetsAPI.getSheetData({
     spreadsheetId,
     range: "A1:Z1",
