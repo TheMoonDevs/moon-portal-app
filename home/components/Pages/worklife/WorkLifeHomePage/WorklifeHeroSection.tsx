@@ -1,9 +1,10 @@
+'use client'
 import React from "react";
 import Image from "next/image";
 import { WorklifeHeroStyled } from "./WorklifeHeroSection.styles";
 import { useMediaQuery } from "@mui/material";
 import media from "@/styles/media";
-import Link from "next/link";
+import { Link } from "@/components/App/Global/react-transition-progress/CustomLink";
 export const WorklifeHeroSection = (): JSX.Element => {
   const isMobile = useMediaQuery(media.largeMobile);
   return (

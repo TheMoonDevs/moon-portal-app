@@ -1,11 +1,12 @@
 /* eslint-disable @next/next/no-img-element */
+'use client'
 import Image from "next/image";
 import { FooterSectionStyled } from "./FooterSection.styles";
 import { SectionWithGrids } from "./SectionWithGrids";
 import theme from "@/styles/theme";
-import Link from "next/link";
 import { APP_ROUTES, SOCIAL_ROUTES } from "@/utils/constants/AppInfo";
 import { Tooltip } from "@mui/material";
+import { Link } from "@/components/App/Global/react-transition-progress/CustomLink";
 
 const Company = [
   {
