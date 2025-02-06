@@ -43,6 +43,7 @@ jobs:
             projects+=("payzone")
           fi
 
+
           echo "Changed projects: ${projects[@]}"
 
           # Output projects as JSON
