@@ -104,7 +104,7 @@ export const WorklogEditor = ({
   setMonthTab?: (month: number) => void;
   handleNextMonthClick?: () => void;
   fetchXTasksForDay: (date: string) => Promise<WorkLogs | null>;
-  fetchOptions: { label: string; date: string }[];
+  fetchOptions: { label: string; dateIdx: number }[];
 }) => {
   const dispatch = useAppDispatch();
   const { user } = useUser();
@@ -176,9 +176,12 @@ export const WorklogEditor = ({
   }, [editWorkLogs]);
 
   const saveWorkLog = useCallback(
-    (_workLog: { works: WorkLogPoints[] } | null) => {
+    (
+      _workLog: { works: WorkLogPoints[] } | null,
+      workData?: WorkLogPoints[],
+    ) => {
       const _user = store.getState().auth.user;
-      if (!_user || !_workLog || !_workLog) return;
+      if (!_user) return;
       //   console.log({
       //     ..._workLog,
       //     userId: _user?.id,
@@ -189,7 +192,7 @@ export const WorklogEditor = ({
       PortalSdk.putData(`/api/user/worklogs`, {
         ...workLog,
         userId: user?.id,
-        works: markdownDatas,
+        works: workData ? workData : markdownDatas,
         updatedAt: new Date(),
       })
         .then((data) => {
@@ -198,6 +201,7 @@ export const WorklogEditor = ({
           setWorkLog(data?.data?.workLogs);
           setServerLog(data?.data?.workLogs);
           dispatch(updateLogs(data?.data?.workLogs));
+          refreshWorklogs();
           console.log('saved', data?.data?.workLogs);
         })
         .catch((err) => {
@@ -205,7 +209,7 @@ export const WorklogEditor = ({
           console.log(err);
         });
     },
-    [workLog],
+    [workLog, markdownDatas],
   );
 
   const changeMarkData = (
@@ -295,7 +299,6 @@ export const WorklogEditor = ({
   };
 
   const markdownRefs = useRef<RefObject<MDXEditorMethods>[]>([]);
-
   useEffect(() => {
     if (markdownDatas.length != markdownRefs.current.length) {
       markdownRefs.current = markdownDatas.map((_, i) => {
@@ -377,7 +380,7 @@ export const WorklogEditor = ({
             <div className="ml-2 flex items-center overflow-hidden rounded-full md:hidden">
               <IconButton>
                 <div onClick={handleBackButtonClick} className="px-1">
-                  <span className="material-icons !text-3xl text-neutral-900 hover:text-neutral-700 md:!text-2xl">
+                  <span className="material-icons !text-2xl text-neutral-900 hover:text-neutral-700">
                     arrow_back
                   </span>
                 </div>
@@ -427,14 +430,14 @@ export const WorklogEditor = ({
                 onClick={refreshWorklogs}
                 className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700"
               >
-                <span className="material-icons !text-3xl md:!text-2xl">
+                <span className="material-icons !text-2xl !text-neutral-600">
                   refresh
                 </span>
               </div>
             )}
             <div className="hidden cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700 max-sm:block">
               <span
-                className="material-icons !text-3xl md:!text-2xl"
+                className="material-icons !text-2xl !text-neutral-600"
                 onClick={handleClickEmojiLegend}
               >
                 emoji_objects
@@ -442,7 +445,7 @@ export const WorklogEditor = ({
             </div>
             <div className="hidden cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700 max-sm:block">
               <span
-                className="material-icons !text-3xl md:!text-2xl"
+                className="material-icons !text-2xl !text-neutral-600"
                 onClick={handleClickTodo}
               >
                 format_list_bulleted
@@ -465,7 +468,7 @@ export const WorklogEditor = ({
               className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700"
               onClick={togglePopup}
             >
-              <span className="material-icons !text-3xl md:!text-2xl">
+              <span className="material-icons !text-2xl !text-neutral-600">
                 more_vert
               </span>
               {showPopup && (
@@ -476,39 +479,29 @@ export const WorklogEditor = ({
                   <ul>
                     {fetchOptions.map((option) => (
                       <li
-                        key={option.date}
-                        className="cursor-pointer p-2 hover:bg-neutral-100"
+                        key={option.dateIdx}
+                        className="flex cursor-pointer items-center gap-2 rounded-lg p-2 text-sm hover:bg-neutral-100"
                         onClick={() => {
-                          fetchXTasksForDay(option.date).then(
-                            (updatedWorkLog) => {
-                              setWorkLog(updatedWorkLog);
-                              setShowPopup(false);
-                            },
-                          );
+                          if (saving) toast.warning('Saving... Please Wait!');
+                          fetchXTasksForDay(
+                            dayjs(workLog?.date)
+                              .subtract(option.dateIdx, 'day')
+                              .format('YYYY-MM-DD'),
+                          ).then((updatedWorkLog) => {
+                            const newWorks = updatedWorkLog?.works as any;
+                            saveWorkLog(updatedWorkLog as any, newWorks);
+                            setShowPopup(false);
+                          });
                         }}
                       >
-                        {option.label}
+                        <span className="material-icons-outlined !text-neutral-600">
+                          {' '}
+                          download
+                        </span>
+                        <span>{option.label}</span>
                       </li>
                     ))}
                   </ul>
-                  <div className="mt-2 hidden flex-col max-sm:flex">
-                    <div
-                      className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700"
-                      onClick={handleClickEmojiLegend}
-                    >
-                      <span className="material-icons text-4xl">
-                        emoji_objects
-                      </span>
-                    </div>
-                    <div
-                      className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700"
-                      onClick={handleClickTodo}
-                    >
-                      <span className="material-icons text-4xl">
-                        format_list_bulleted
-                      </span>
-                    </div>
-                  </div>
                 </div>
               )}
             </div>

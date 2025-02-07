@@ -93,7 +93,11 @@ export const WorklogViewPageWrapper = ({ id }: { id: string }) => {
 
   return (
     <>
-      <WorklogView id={id} date={_date} logType={_logType} />
+      <WorklogView
+        id={id}
+        date={dayjs(_date).format('YYYY-MM-DD')}
+        logType={_logType}
+      />
       <Bottombar visible={true} />
     </>
   );

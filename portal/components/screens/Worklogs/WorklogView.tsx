@@ -1,21 +1,21 @@
-"use client";
+'use client';
 
-import { WorkLogPoints } from "@/utils/@types/interfaces";
-import { useUser } from "@/utils/hooks/useUser";
-import { PortalSdk } from "@/utils/services/PortalSdk";
-import { WorkLogs } from "@prisma/client";
-import { useSearchParams } from "next/navigation";
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
-import { WorklogEditor } from "./WorklogEditor";
-import dayjs from "dayjs";
-import { WorkLogsHelper } from "./WorklogsHelper";
-import store from "@/utils/redux/store";
-import { current } from "@reduxjs/toolkit";
+import { WorkLogPoints } from '@/utils/@types/interfaces';
+import { useUser } from '@/utils/hooks/useUser';
+import { PortalSdk } from '@/utils/services/PortalSdk';
+import { WorkLogs } from '@prisma/client';
+import { useSearchParams } from 'next/navigation';
+import { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import { WorklogEditor } from './WorklogEditor';
+import dayjs from 'dayjs';
+import { WorkLogsHelper } from './WorklogsHelper';
+import store from '@/utils/redux/store';
+import { current } from '@reduxjs/toolkit';
 
 export const WorklogView = ({
   date,
   id,
-  logType = "dayLog",
+  logType = 'dayLog',
   compactView,
   visible = true,
   monthTab,
@@ -34,55 +34,55 @@ export const WorklogView = ({
   const { user } = useUser();
   const [workLog, setWorkLog] = useState<WorkLogs | null>(null);
   const fetchOptions = Array.from({ length: 7 }, (_, i) => ({
-    label: `Fetch "X" tasks from ${i + 1} day${i === 0 ? "" : "s"} ago`,
-    date: dayjs().subtract(i + 1, "day").format("YYYY-MM-DD"),
+    label: `Import incomplete tasks from ${i + 1} day${i === 0 ? '' : 's'} ago`,
+    dateIdx: i + 1,
   }));
 
   const fetchXTasksForDay = async (date: string): Promise<WorkLogs | null> => {
     setLoading(true);
-    
-    try {
-      refreshWorklogs();
-      const data = await PortalSdk.getData(`/api/user/worklogs?date=${date}&userId=${user?.id}`, null);
-      const xTasks = data?.data?.workLogs?.[0]?.works
-      .filter((work: { content: string | string[]; }) => work.content.includes("❌"))
-      .flatMap((work_1: { content: string; }) => {
-        return work_1.content.split('\n')
-        .filter((line: string | string[]) => line.includes('❌'))
-        .map((line_1: string) => {
-          const taskText = line_1.match(/\*(.*?)❌/)?.[1]?.trim();
-          return taskText ? `* ${taskText}❌` : null;
-        })
-        .filter(Boolean);
-      });
-      setWorkLog((prevLogs) => {
-        if (!prevLogs || !xTasks?.length) return prevLogs;
-        const updatedWorks = [
-          {
-            ...(typeof prevLogs.works[0] === 'object' ? prevLogs.works[0] : {}),
-            content: `${(prevLogs.works[0] as { content: string }).content ?? ''}\n${xTasks.join('\n')}`
-          }
-        ];
 
-        const newWorkLog = {
-          ...prevLogs,
-          works: updatedWorks,
-        };
-        // console.log(newWorkLog);
-        setLoading(false);
-        return newWorkLog as WorkLogs;
-      });
-      return null;
+    try {
+      // refreshWorklogs();
+      const data = await PortalSdk.getData(
+        `/api/user/worklogs?date=${date}&userId=${user?.id}`,
+        null,
+      );
+      const xTasks = data?.data?.workLogs?.[0]?.works
+        .filter((work: { content: string | string[] }) =>
+          work.content.includes('❌'),
+        )
+        .flatMap((work_1: { content: string }) => {
+          return work_1.content
+            .split('\n')
+            .filter((line: string | string[]) => line.includes('❌'))
+            .map((line_1: string) => {
+              const taskText = line_1.match(/\*(.*?)❌/)?.[1]?.trim();
+              return taskText ? `* ${taskText}❌` : null;
+            })
+            .filter(Boolean);
+        });
+      if (!workLog || !xTasks?.length) return workLog;
+      const updatedWorks = [
+        {
+          ...(typeof workLog.works[0] === 'object' ? workLog.works[0] : {}),
+          content: `${(workLog.works[0] as { content: string }).content ?? ''}\n${xTasks.join('\n')}`,
+        },
+      ];
+
+      const newWorkLog = {
+        ...workLog,
+        works: updatedWorks,
+      };
+      setWorkLog(newWorkLog);
+      console.log(newWorkLog?.works);
+      return newWorkLog;
     } catch (err) {
       console.error('Error fetching worklogs:', err);
       setLoading(false);
       return null;
     }
   };
-  
-  
 
-  
   const refreshWorklogs = () => {
     let query = `?id=${id}`;
     let _id = id && id?.length > 5 ? id : null;
@@ -95,12 +95,12 @@ export const WorklogView = ({
         setLoading(false);
         setWorkLog(
           data?.data?.workLogs?.[0] ||
-            (logType === "privateLog"
+            (logType === 'privateLog'
               ? WorkLogsHelper.defaultPrivateBoard(
-                  dayjs().format("MM-YYYY"),
-                  user
+                  dayjs().format('MM-YYYY'),
+                  user,
                 )
-              : WorkLogsHelper.defaultWorklogs(date, user))
+              : WorkLogsHelper.defaultWorklogs(date, user)),
         );
       })
       .catch((err) => {
@@ -134,14 +134,15 @@ export const WorklogView = ({
           console.log(err);
         });
     } else {
-      let query = "";
-      if (logType === "dayLog" && date)
-        query = `?date=${date || dayjs().format("YYYY-MM-DD")}&userId=${
+      console.log('Anamoly');
+      let query = '';
+      if (logType === 'dayLog' && date)
+        query = `?date=${date || dayjs().format('YYYY-MM-DD')}&userId=${
           _user?.id
         }`;
       else if (logType) query = `?logType=${logType}&userId=${_user?.id}`;
       else if (date)
-        query = `?date=${date || dayjs().format("YYYY-MM-DD")}&userId=${
+        query = `?date=${date || dayjs().format('YYYY-MM-DD')}&userId=${
           _user?.id
         }`;
       // console.log(query);
@@ -151,15 +152,15 @@ export const WorklogView = ({
           // console.log(data);
           setWorkLog(
             data?.data?.workLogs?.[0] ||
-              (logType === "privateLog"
+              (logType === 'privateLog'
                 ? WorkLogsHelper.defaultPrivateBoard(
-                    dayjs().format("MM-YYYY"),
-                    _user
+                    dayjs().format('MM-YYYY'),
+                    _user,
                   )
                 : WorkLogsHelper.defaultWorklogs(
-                    date || dayjs().format("YYYY-MM-DD"),
-                    _user
-                  ))
+                    date || dayjs().format('YYYY-MM-DD'),
+                    _user,
+                  )),
           );
           setLoading(false);
         })
@@ -181,8 +182,8 @@ export const WorklogView = ({
       monthTab={monthTab}
       setMonthTab={setMonthTab}
       handleNextMonthClick={handleNextMonthClick}
-      fetchXTasksForDay={fetchXTasksForDay} 
-      fetchOptions={fetchOptions} 
+      fetchXTasksForDay={fetchXTasksForDay}
+      fetchOptions={fetchOptions}
     />
   );
 };
