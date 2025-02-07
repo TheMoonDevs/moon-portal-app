@@ -1,9 +1,11 @@
+export const dynamic = "force-dynamic"; // static by default, unless reading the request
 import { prisma } from "@/prisma/prisma";
 import { User } from "@prisma/client";
 import { NextResponse, NextRequest } from "next/server";
 import { formatISO, startOfDay, subDays } from "date-fns";
 import { APP_BASE_URL } from "../../../../../utils/constants/appInfo";
 import { SlackBotSdk, SlackChannels } from "@/utils/services/slackBotSdk";
+export const revalidate = 0;
 
 //comments are added for better understanding 
 const generateMessages = (usersWithWorkLogs: any[]) => {
@@ -89,7 +91,6 @@ export async function GET(request: NextRequest) {
         userType: "MEMBER",
         role: "CORETEAM",
         status: "ACTIVE",
-        // id: "6617afcef8b582365497c198", //remove and add your user id for testing
       },
     });
 
