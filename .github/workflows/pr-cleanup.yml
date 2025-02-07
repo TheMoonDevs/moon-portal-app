@@ -24,10 +24,14 @@ jobs:
 
       - name: Cleanup Deployments
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} << EOF
-            # Stop and remove PM2 processes
-            pm2 list | grep -E "portal-${{ github.event.pull_request.number }}" | awk '{print $2}' | xargs -r pm2 delete
-            pm2 list | grep -E "payzone-${{ github.event.pull_request.number }}" | awk '{print $2}' | xargs -r pm2 delete
+          ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} << 'EOF'
+            # Ensure profile is loaded (fix for PM2 in non-interactive shells)
+            source ~/.bashrc || true
+            source ~/.profile || true
+
+            # Stop and remove PM2 processes using jlist and jq for reliability
+            pm2 jlist | jq -r --arg PR "portal-${{ github.event.pull_request.number }}" '.[] | select(.name | test($PR)) | .pm_id' | xargs -r pm2 delete
+            pm2 jlist | jq -r --arg PR "payzone-${{ github.event.pull_request.number }}" '.[] | select(.name | test($PR)) | .pm_id' | xargs -r pm2 delete
             
             # Remove deployment directories
 
