@@ -17,7 +17,7 @@ import { InWorkSection } from './InWorkSection';
 import { InPlanSection } from './InPlanSection';
 import { USERROLE } from '@prisma/client';
 import media from '@/styles/media';
-import { useMediaQuery } from '@mui/material';
+import { Drawer, useMediaQuery } from '@mui/material';
 import { CoreTeamSection } from './CoreTeamSection';
 import { RootState, useAppDispatch, useAppSelector } from '@/utils/redux/store';
 import Link from 'next/link';
@@ -37,6 +37,59 @@ const FocusMode = () => (
     </Link>
   </div>
 );
+const CoreTeamAsSection = ({
+  hasTrialCandidates,
+}: {
+  hasTrialCandidates: boolean;
+}) => (
+  <div className="pt-8">
+    <h4 className="px-4 text-lg font-bold">Core Team Leaderboard</h4>
+    <CoreTeamSection key="coreteam" userRoles={USERROLE.CORETEAM} />
+    {hasTrialCandidates && (
+      <>
+        <h4 className="px-4 text-lg font-bold">In Trial Members Leaderboard</h4>
+        <CoreTeamSection key="trialteam" userRoles={USERROLE.TRIAL_CANDIDATE} />
+      </>
+    )}
+  </div>
+);
+
+export const CoreTeamSectionInDrawer = ({
+  hasTrialCandidates,
+  open,
+  onClose,
+}: {
+  hasTrialCandidates: boolean;
+  open: boolean;
+  onClose: () => void;
+}) => {
+  const isMobile = useMediaQuery(media.largeMobile);
+  return (
+    <Drawer
+      onClose={onClose}
+      open={open}
+      anchor="right"
+      className="!w-full md:!w-1/2"
+      sx={{
+        '& .MuiDrawer-paper': {
+          height: '100%',
+          overflow: 'auto',
+          width: isMobile ? '100%' : '40%',
+        },
+      }}
+    >
+      <div className="absolute right-0 top-4 hidden w-10 cursor-pointer text-neutral-900 hover:text-neutral-700 max-sm:block">
+        <span
+          className="material-icons !text-3xl md:!text-2xl"
+          onClick={onClose}
+        >
+          close_icon
+        </span>
+      </div>
+      <CoreTeamAsSection hasTrialCandidates={hasTrialCandidates} />
+    </Drawer>
+  );
+};
 const MemberHomePage = () => {
   const { user } = useUser();
   const [tab, setTab] = useState(HomeTabs.START);
@@ -45,13 +98,17 @@ const MemberHomePage = () => {
     (state: RootState) => state.coreTeam.trialCandidates,
   );
   const hasTrialCandidates = coreTeam?.length > 0;
+  const [isCoreTeamDrawerOpen, setCoreTeamDrawerOpen] = useState(false);
   if (!user) return <LoaderScreen />;
   return (
     <div className="home_bg flex min-h-screen justify-start scroll-smooth bg-white max-lg:flex-col max-md:flex-col md:pl-4">
       <div className="lg:w-[34%]">
         <ProfileSection user={user} />
         <DailySection user={user} />
-        <ButtonBoard />
+        <ButtonBoard
+          isCoreTeamDrawerOpen={isCoreTeamDrawerOpen}
+          setCoreTeamDrawerOpen={setCoreTeamDrawerOpen}
+        />
         <div className="flex w-full flex-col pb-8 pt-3 md:pb-0 md:pt-0">
           {!isTabletOrMore && <FocusMode />}
         </div>
@@ -72,24 +129,17 @@ const MemberHomePage = () => {
             <Events />
           </div>
         </div>
-        <div className="pt-8">
-          <h4 className="px-4 text-lg font-bold">Core Team Leaderboard</h4>
-          <CoreTeamSection key="coreteam" userRoles={USERROLE.CORETEAM} />
-          {hasTrialCandidates && (
-            <>
-              <h4 className="px-4 text-lg font-bold">
-                In Trial Members Leaderboard
-              </h4>
-              <CoreTeamSection
-                key="trialteam"
-                userRoles={USERROLE.TRIAL_CANDIDATE}
-              />
-            </>
-          )}
+        <div className="hidden pt-8 md:block">
+          <CoreTeamAsSection hasTrialCandidates={hasTrialCandidates} />
         </div>
       </div>
-      <div className="h-[300px]"></div>
+      <div className="h-24 md:h-[300px]"></div>
       <Toaster />
+      <CoreTeamSectionInDrawer
+        onClose={() => setCoreTeamDrawerOpen(false)}
+        hasTrialCandidates={hasTrialCandidates}
+        open={isCoreTeamDrawerOpen}
+      />
     </div>
   );
 };

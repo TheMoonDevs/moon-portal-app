@@ -11,7 +11,13 @@ import DrawerComponent from '@/components/elements/DrawerComponent';
 import BadgeCard from './BadgeCard';
 import { Spinner } from '@/components/elements/Loaders';
 
-export const ButtonBoard = () => {
+export const ButtonBoard = ({
+  isCoreTeamDrawerOpen,
+  setCoreTeamDrawerOpen,
+}: {
+  isCoreTeamDrawerOpen: boolean;
+  setCoreTeamDrawerOpen: (value: boolean) => void;
+}) => {
   const [badges, setBadges] = useState<BadgeTemplate[]>();
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [badgeRewarded, setBadgeRewarded] = useState<BadgeRewarded[]>();
@@ -131,7 +137,8 @@ export const ButtonBoard = () => {
   return (
     <div className="flex w-full select-none flex-row justify-between px-3 py-2">
       <Link
-        href={APP_ROUTES.userZeroTracker}
+        onClick={() => setCoreTeamDrawerOpen(true)}
+        href=""
         className="relative flex h-[5em] w-[5em] flex-col items-center justify-center gap-1 rounded-[1.15em] bg-white text-neutral-900"
       >
         {/* <Image
@@ -143,10 +150,10 @@ export const ButtonBoard = () => {
         /> */}
         <div className="absolute bottom-0 left-0 right-0 top-0 flex flex-col items-center justify-center gap-2 text-2xl">
           <span className="icon_size material-symbols-outlined font-light">
-            calendar_month
+            groups
           </span>
           <span className="text-[0.4em] leading-none tracking-[0.2em]">
-            TRACK
+            TEAMS
           </span>
         </div>
       </Link>
