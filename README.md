@@ -11,7 +11,7 @@ Official website of TheMoonDevs
 
 Deployed on
 
-- Digital Ocean Droplet
+- Cloudflare Pages
 - [themoondevs.com](http://themoondevs.com)
 
 ## Portal App - /portal
@@ -102,6 +102,5 @@ Trigger Frequency: Crons are checked every 30 minutes for any scheduled tasks.
 API Usage Guidelines:
 - Use the full original URL for external APIs.  
 - For internal APIs deployed on the droplet, use:  
-  - **Home:** `http://localhost:3000`  
   - **Portal:** `http://localhost:3001`  
   - **Payzone:** `http://localhost:3002`  
