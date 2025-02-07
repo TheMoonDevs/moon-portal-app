@@ -422,7 +422,7 @@ export const WorklogEditor = ({
       {!compactView && (
         <div
           id="header"
-          className="mt-4 flex flex-row items-center justify-between gap-4 md:mt-0 md:justify-end"
+          className="mt-2 flex flex-row items-center justify-between gap-4 md:mt-0 md:justify-end"
         >
           <div className="flex items-center gap-2">
             <div className="ml-2 flex items-center overflow-hidden rounded-full md:hidden">

@@ -97,9 +97,8 @@ export const WorklogViewPageWrapper = ({ id }: { id: string }) => {
   }
 
   return (
-    <div className="my-4 h-[90vh] overflow-y-scroll bg-white">
-      (
-      <>
+    <>
+      <div className="my-2 mb-24 h-[90vh] overflow-y-scroll bg-white">
         <WorklogView
           id={id}
           date={dayjs(_date).format('YYYY-MM-DD')}
@@ -109,9 +108,8 @@ export const WorklogViewPageWrapper = ({ id }: { id: string }) => {
           date={dayjs(_date)?.format('YYYY-MM-DD')}
           logType={'privateWorklogs'}
         />
-        <Bottombar visible={true} />
-      </>
-      )
-    </div>
+      </div>
+      <Bottombar visible={true} />
+    </>
   );
 };
