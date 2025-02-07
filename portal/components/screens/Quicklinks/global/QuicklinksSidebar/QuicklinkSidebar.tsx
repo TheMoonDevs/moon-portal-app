@@ -1,20 +1,33 @@
-"use client";
-import { QUICKLINK_ROUTES } from "@/utils/constants/appInfo";
-import Link from "next/link";
-import { useQuickLinkDirectory } from "../../hooks/useQuickLinkDirectory";
-import { useState, FC, ReactNode, MouseEvent, useEffect } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import { Divider, Tooltip } from "@mui/material";
-import { useUser } from "@/utils/hooks/useUser";
-import { setModal,setToggleSidebar } from "@/utils/redux/quicklinks/slices/quicklinks.ui.slice";
-import { DirectoryList, ROOTTYPE } from "@prisma/client";
+'use client';
+import { APP_ROUTES, QUICKLINK_ROUTES } from '@/utils/constants/appInfo';
+import Link from 'next/link';
+import { useQuickLinkDirectory } from '../../hooks/useQuickLinkDirectory';
+import { useState, FC, ReactNode, MouseEvent, useEffect } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
+import {
+  Divider,
+  Tooltip,
+  Box,
+  Drawer,
+  Fab,
+  useMediaQuery,
+  IconButton,
+} from '@mui/material';
+import { useUser } from '@/utils/hooks/useUser';
+import {
+  setHamburgerOpen,
+  setModal,
+  setToggleSidebar,
+} from '@/utils/redux/quicklinks/slices/quicklinks.ui.slice';
+import { DirectoryList, ROOTTYPE } from '@prisma/client';
 import {
   deleteDirectory,
   updateDirectory,
-} from "@/utils/redux/quicklinks/slices/quicklinks.directory.slice";
-import { handleDeleteDirectory } from "@/utils/redux/quicklinks/quicklinks.thunks";
+} from '@/utils/redux/quicklinks/slices/quicklinks.directory.slice';
+import { handleDeleteDirectory } from '@/utils/redux/quicklinks/quicklinks.thunks';
 import clsx from 'clsx';
+import media from '@/styles/media';
 
 // Types
 interface NavItem {
@@ -40,6 +53,7 @@ interface SidebarSubNavProps {
   dispatch: ReturnType<typeof useAppDispatch>;
   pathname: string | null;
   isCollapsed?: boolean;
+  isTablet?: boolean;
 }
 
 interface ExpandedState {
@@ -51,57 +65,67 @@ interface ExpandedState {
 const NAV_ITEMS = {
   first: [
     {
-      title: "Departments",
-      icon: "groups",
+      title: 'Departments',
+      icon: 'groups',
       route: QUICKLINK_ROUTES.department,
     },
     {
-      title: "Team Resources",
-      icon: "stack",
+      title: 'Team Resources',
+      icon: 'stack',
       route: QUICKLINK_ROUTES.commonResources,
     },
   ],
   you: [
-    { title: "My List", icon: "list", route: QUICKLINK_ROUTES.userList },
+    { title: 'My List', icon: 'list', route: QUICKLINK_ROUTES.userList },
     {
-      title: "Top Used Links",
-      icon: "link",
+      title: 'Top Used Links',
+      icon: 'link',
       route: QUICKLINK_ROUTES.userTopUsedLinks,
     },
     {
-      title: "Recent Folders",
-      icon: "history",
+      title: 'Recent Folders',
+      icon: 'history',
       route: QUICKLINK_ROUTES.userRecentlyUsedFolders,
     },
     {
-      title: "Top Used Folders",
-      icon: "folder_special",
+      title: 'Top Used Folders',
+      icon: 'folder_special',
       route: QUICKLINK_ROUTES.userTopUsedFolders,
     },
   ],
   explore: [
     {
-      title: "Trending Links",
-      icon: "trending_up",
+      title: 'Trending Links',
+      icon: 'trending_up',
       route: QUICKLINK_ROUTES.trending,
     },
   ],
   bottom: [
-    { title: "Archive", icon: "inventory_2", route: QUICKLINK_ROUTES.archive },
+    { title: 'Archive', icon: 'inventory_2', route: QUICKLINK_ROUTES.archive },
   ],
 };
 
 // Main QuickLink Sidebar Component
 const QuicklinkSidebar: FC = () => {
   const { parentDirs } = useQuickLinkDirectory();
-  const departmentDir = parentDirs.filter((dir) => dir.tabType === "DEPARTMENT");
-  const commonResourcesDir = parentDirs.filter((dir) => dir.tabType === "COMMON_RESOURCES");
-  const [expanded, setExpanded] = useState<ExpandedState>({ id: "", expanded: false });
+  const departmentDir = parentDirs.filter(
+    (dir) => dir.tabType === 'DEPARTMENT',
+  );
+  const commonResourcesDir = parentDirs.filter(
+    (dir) => dir.tabType === 'COMMON_RESOURCES',
+  );
+  const [expanded, setExpanded] = useState<ExpandedState>({
+    id: '',
+    expanded: false,
+  });
   const pathname = usePathname();
   const dispatch = useAppDispatch();
   const { user } = useUser();
   const router = useRouter();
-  const isCollapsed = useAppSelector((state) => state.quicklinksUi.isCollapsed);
+  const { isCollapsed, isHamburgerOpen } = useAppSelector(
+    (state) => state.quicklinksUi,
+  );
+  const isTablet = useMediaQuery(media.tablet);
 
   const handleExpand = (title: string) => {
     if (isCollapsed) {
@@ -126,24 +150,19 @@ const QuicklinkSidebar: FC = () => {
     }
   };
 
-  return (
-    <aside 
-      className={clsx(
-        "px-3 fixed left-0 top-0 flex-1 overflow-y-auto h-screen transition-all duration-300",
-        isCollapsed ? "w-[72px]" : "w-[256px]"
-      )}
-    >
-      <div className="mt-[76px]" />
+  const sidebarContent = () => {
+    return (
       <nav className="flex flex-col gap-2">
         {/* Dashboard */}
         <Link href={QUICKLINK_ROUTES.dashboard}>
           <SidebarNavItem
             nav={{
-              title: "Dashboard",
-              icon: "dashboard",
+              title: 'Dashboard',
+              icon: 'dashboard',
               route: QUICKLINK_ROUTES.dashboard,
             }}
             isActive={pathname?.includes(QUICKLINK_ROUTES.dashboard) || false}
+            onClick={() => isTablet && dispatch(setHamburgerOpen(false))}
             isCollapsed={isCollapsed}
           />
         </Link>
@@ -154,12 +173,16 @@ const QuicklinkSidebar: FC = () => {
             key={index}
             nav={nav}
             isActive={pathname?.includes(nav.route) || false}
-            onClick={() => handleExpand(nav.title)}
+            onClick={() => {
+              handleExpand(nav.title);
+            }}
             endIcon={
               !isCollapsed && (
                 <span
                   className={`material-symbols-outlined transition-all ${
-                    expanded.id === nav.title && expanded.expanded ? "rotate-180" : ""
+                    expanded.id === nav.title && expanded.expanded
+                      ? 'rotate-180'
+                      : ''
                   }`}
                 >
                   keyboard_arrow_down
@@ -179,6 +202,7 @@ const QuicklinkSidebar: FC = () => {
                     dispatch={dispatch}
                     pathname={pathname}
                     isCollapsed={isCollapsed}
+                    isTablet={isTablet}
                   />
                 )}
                 {nav.title === "Team Resources" && (
@@ -190,6 +214,7 @@ const QuicklinkSidebar: FC = () => {
                     dispatch={dispatch}
                     pathname={pathname}
                     isCollapsed={isCollapsed}
+                    isTablet={isTablet}
                   />
                 )}
               </>
@@ -207,6 +232,7 @@ const QuicklinkSidebar: FC = () => {
             items={NAV_ITEMS.you}
             pathname={pathname}
             isCollapsed={isCollapsed}
+            isTablet={isTablet}
           />
         </div>
 
@@ -220,24 +246,103 @@ const QuicklinkSidebar: FC = () => {
             items={NAV_ITEMS.explore}
             pathname={pathname}
             isCollapsed={isCollapsed}
+            isTablet={isTablet}
           />
         </div>
 
         {/* Bottom Navigation */}
-        <nav className="sticky bottom-0 bg-white py-2 w-full border-t mt-6">
+        <nav
+          className={`${!isTablet && 'sticky bottom-0'} max-sm:mt-0 mt-6 w-full border-t bg-white py-2`}
+        >
           <Link href={QUICKLINK_ROUTES.archive}>
-            <div className={clsx(
-              "flex items-center gap-4 py-2 px-3 hover:bg-neutral-100 rounded-2xl",
-              pathname?.includes(QUICKLINK_ROUTES.archive) && "bg-neutral-100",
-              isCollapsed && "justify-center"
-            )}>
+            <div
+              className={clsx(
+                'flex items-center gap-4 rounded-2xl px-3 py-2  hover:bg-neutral-100 text-sm',
+                pathname?.includes(QUICKLINK_ROUTES.archive) &&
+                  'bg-neutral-100',
+                isCollapsed && 'justify-center',
+              )}
+              onClick={() => isTablet && dispatch(setHamburgerOpen(false))}
+            >
               <span className="material-symbols-outlined">inventory_2</span>
               {!isCollapsed && <span>Archive</span>}
             </div>
           </Link>
         </nav>
       </nav>
-    </aside>
+    );
+  };
+
+  const handleClose = () => {
+    dispatch(setHamburgerOpen(false));
+    dispatch(setToggleSidebar(false));
+  };
+
+  return (
+    <>
+      <aside
+        className={clsx(
+          `fixed left-0 top-0 h-screen flex-1 overflow-y-auto px-3 transition-all duration-300 ${isTablet && 'hidden'}`,
+          isCollapsed ? 'w-[72px]' : 'w-[256px]',
+        )}
+      >
+        <div className="mt-[76px]" />
+        {sidebarContent()}
+      </aside>
+      <Drawer
+        anchor="left"
+        open={isHamburgerOpen}
+        onClose={handleClose}
+        sx={{ '& .MuiDrawer-paper': { height: '100vh' } }}
+      >
+        <Box
+          sx={{
+            width: {
+              xs: '100%',
+              sm: '400px',
+            },
+            overflowX: 'hidden',
+            overflowY: 'scroll',
+            px: 1,
+          }}
+          role="presentation"
+        >
+          <div className="sticky top-0 z-10 flex items-center justify-between bg-white py-4">
+            <h6 className="text-xl font-bold">Quicklinks</h6>
+            <IconButton
+              onClick={handleClose}
+              className="itemc-center flex justify-center"
+            >
+              <span
+                className="material-symbols-outlined"
+                style={{ fontSize: '20px' }}
+              >
+                arrow_back_ios
+              </span>
+            </IconButton>
+          </div>
+          <div className="">
+            <Link
+              href={APP_ROUTES.home}
+              className="mb-2 flex cursor-pointer items-center gap-4 rounded-3xl px-3 py-2"
+            >
+              <span className="material-symbols-outlined">home</span>Go To
+              Home
+            </Link>
+            <Divider />
+            {sidebarContent()}
+            <Divider />
+            <Link
+              href={APP_ROUTES.logout}
+              className="mt-2 flex cursor-pointer items-center gap-4 rounded-3xl px-3 py-2"
+            >
+              {' '}
+              <span className="material-symbols-outlined">logout</span>Logout
+            </Link>
+          </div>
+        </Box>
+      </Drawer>
+    </>
   );
 };
 
@@ -252,19 +357,19 @@ const SidebarNavItem: FC<SidebarNavItemProps> = ({
 }) => (
   <li
     className={clsx(
-      children ? "flex flex-col items-start" : "flex items-center",
-      "justify-between cursor-pointer rounded-2xl w-full"
+      children ? 'flex flex-col items-start' : 'flex items-center',
+      'mt-3 w-full cursor-pointer justify-between rounded-2xl',
     )}
   >
     <div
       className={clsx(
-        "flex items-center py-2 px-3 rounded-3xl hover:bg-neutral-100",
-        isActive && "bg-neutral-100",
-        isCollapsed ? "justify-center w-11" : "justify-between w-full"
+        'flex items-center rounded-3xl px-3 py-2 hover:bg-neutral-100 text-sm',
+        isActive && 'bg-neutral-100',
+        isCollapsed ? 'w-11 justify-center' : 'w-full justify-between',
       )}
       onClick={onClick}
     >
-      <div className={clsx("flex gap-4", isCollapsed && "gap-0")}>
+      <div className={clsx('flex gap-4 items-center', isCollapsed && 'gap-0')}>
         <span className="material-symbols-outlined">{nav.icon}</span>
         {!isCollapsed && <span>{nav.title}</span>}
       </div>
@@ -283,19 +388,20 @@ const SidebarSubNav: FC<SidebarSubNavProps> = ({
   dispatch,
   pathname,
   isCollapsed,
+  isTablet,
 }) => (
   <ul
     className={clsx(
-      "flex flex-col gap-2 ml-3 border-l px-2 overflow-hidden transition-all w-full",
-      isActive ? "pt-4 max-h-full" : "max-h-0"
+      'ml-3 flex w-full flex-col gap-2 overflow-hidden border-l px-2 transition-all',
+      isActive ? 'max-h-full pt-4' : 'max-h-0',
     )}
   >
     {user?.isAdmin && (
       <li
-        onClick={() =>
+        onClick={() => {
           dispatch(
             setModal({
-              type: "create-folder",
+              type: 'create-folder',
               data: {
                 selectedDirectory: {
                   parentDirId: null,
@@ -306,22 +412,27 @@ const SidebarSubNav: FC<SidebarSubNavProps> = ({
                   tabType: null,
                 },
               },
-            })
-          )
-        }
-        className="flex gap-2 items-center py-2 px-3 border-2 border-dotted cursor-pointer rounded-2xl"
+            }),
+          );
+          isTablet && dispatch(setHamburgerOpen(false));
+        }}
+        className="flex cursor-pointer items-center gap-2 rounded-2xl border-2 border-dotted px-3 py-2"
       >
         <span className="material-symbols-outlined">add</span>
         <span>Add New Folder</span>
       </li>
     )}
     {dirs.map((dir) => (
-      <Link href={`${route}/${dir.slug}`} key={dir.id}>
+      <Link
+        href={`${route}/${dir.slug}`}
+        key={dir.id}
+        onClick={() => isTablet && dispatch(setHamburgerOpen(false))}
+      >
         <li
           className={clsx(
-            "flex items-center justify-between py-2 px-3 hover:bg-neutral-100 rounded-2xl",
-            dir.isArchive && "hidden",
-            pathname === `${route}/${dir.slug}` && "bg-neutral-100"
+            'flex items-center justify-between rounded-2xl px-3 py-2 hover:bg-neutral-100',
+            dir.isArchive && 'hidden',
+            pathname === `${route}/${dir.slug}` && 'bg-neutral-100',
           )}
         >
           <div className="flex gap-4">
@@ -337,11 +448,11 @@ const SidebarSubNav: FC<SidebarSubNavProps> = ({
                   handleDeleteDirectory({
                     directory: dir,
                     parentId: dir.parentDirId,
-                  })
+                  }),
                 );
               }}
             >
-              <span className="material-symbols-outlined opacity-50 group-hover:!block hidden hover:scale-110">
+              <span className="material-symbols-outlined hidden opacity-50 hover:scale-110 group-hover:!block">
                 archive
               </span>
             </Tooltip>
@@ -359,6 +470,7 @@ interface CollapsedSectionProps {
   items: NavItem[];
   pathname: string | null;
   isCollapsed: boolean;
+  isTablet?: boolean;
 }
 
 const CollapsedSection: FC<CollapsedSectionProps> = ({
@@ -367,17 +479,20 @@ const CollapsedSection: FC<CollapsedSectionProps> = ({
   items,
   pathname,
   isCollapsed,
+  isTablet,
 }) => (
-  <div className={clsx(
-    "cursor-pointer",
-    isCollapsed ? "px-3" : "px-0"
-  )}>
+  <div className={clsx('cursor-pointer', isCollapsed ? 'px-3' : 'px-0')}>
     {isCollapsed ? (
       <div className="flex justify-center py-2">
         <span className="material-symbols-outlined">{icon}</span>
       </div>
     ) : (
-      <NavSection title={title} items={items} pathname={pathname} />
+      <NavSection
+        title={title}
+        items={items}
+        pathname={pathname}
+        isTablet={isTablet}
+      />
     )}
   </div>
 );
@@ -386,27 +501,41 @@ interface NavSectionProps {
   title?: string;
   items: NavItem[];
   pathname: string | null;
+  isTablet?: boolean;
 }
 
-const NavSection: FC<NavSectionProps> = ({ title, items, pathname }) => (
-  <>
-    {title && <h6 className="font-bold ml-3 mb-1">{title}</h6>}
-    <ul className="flex flex-col gap-2">
-      {items.map((nav, index) => (
-        <Link href={nav.route} key={index}>
-          <li
-            className={clsx(
-              "flex items-center gap-4 py-2 px-3 hover:bg-neutral-100 rounded-2xl",
-              pathname?.includes(nav.route) && "bg-neutral-100"
-            )}
+const NavSection: FC<NavSectionProps> = ({
+  title,
+  items,
+  pathname,
+  isTablet,
+}) => {
+  const dispatch = useAppDispatch();
+
+  return (
+    <>
+      {title && <h6 className="mb-1 ml-3 font-bold">{title}</h6>}
+      <ul className="flex flex-col gap-2">
+        {items.map((nav, index) => (
+          <Link
+            href={nav.route}
+            key={index}
+            onClick={() => isTablet && dispatch(setHamburgerOpen(false))}
           >
-            <span className="material-symbols-outlined">{nav.icon}</span>
-            <span>{nav.title}</span>
-          </li>
-        </Link>
-      ))}
-    </ul>
-  </>
-);
+            <li
+              className={clsx(
+                'flex items-center gap-4 rounded-2xl px-3 py-2 hover:bg-neutral-100 !text-sm',
+                pathname?.includes(nav.route) && 'bg-neutral-100',
+              )}
+            >
+              <span className="material-symbols-outlined">{nav.icon}</span>
+              <span>{nav.title}</span>
+            </li>
+          </Link>
+        ))}
+      </ul>
+    </>
+  );
+};
 
 export default QuicklinkSidebar;

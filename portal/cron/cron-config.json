@@ -11,11 +11,6 @@
       "schedule": "0 12 * * *"
     },
     {
-      "name": "Core Team Worklog Reminder",
-      "url": "http://localhost:3001/api/cron-jobs/core-team/worklog-reminder",
-      "schedule": "30 4 * * *"
-    },
-    {
       "name": "Core Team Add Wallet Address Notification",
       "url": "http://localhost:3001/api/cron-jobs/core-team/wallet-notification",
       "schedule": "30 4 * * *"
@@ -34,6 +29,11 @@
       "name": "Sync ClickUp Tasks",
       "url": "http://localhost:3001/api/cron-jobs/sync/clickup-tasks",
       "schedule": "*/30 * * * *"
+    },
+    {
+      "name": "Core Team Worklog Summary Reminder",
+      "url": "http://localhost:3001/api/cron-jobs/core-team/worklog-summary-reminder",
+      "schedule": "30 3 * * *"
     }
   ]
 }

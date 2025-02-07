@@ -17,6 +17,12 @@ const config: Config = {
         fadeInTopDown: "fadeInTopDown 1s ease",
         shine: 'shine 0.85s ease-out',
       },
+      height: {
+        'screen-minus-74': 'calc(100vh - 74px)',
+        'screen-minus-250' : 'calc(100vh - 250px)',
+        'screen-minus-310': 'calc(100vh - 310px)',
+        'screen-minus-340': 'calc(100vh - 340px)',
+      },
       keyframes: {
         fadeInTopDown: {
           "0%": {
