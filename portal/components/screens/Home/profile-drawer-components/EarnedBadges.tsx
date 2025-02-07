@@ -44,21 +44,21 @@ const EarnedBadges = () => {
           </div>
         ) : (badgeRewarded?.length ?? 0 > 0) ? (
           <div className="flex w-full justify-center">
-            <div className="mx-auto flex w-full flex-row flex-wrap items-center justify-start gap-2 max-sm:justify-between">
+            <div className="mx-auto flex w-full flex-row items-center justify-start gap-2 md:gap-4">
               {badgeRewarded?.map((badge: BadgeRewarded) => (
                 <div
-                  className="flex w-20 flex-col items-center justify-center gap-1 max-sm:w-20"
+                  className="grid w-20 grid-rows-[1fr_0.1fr] items-center justify-center gap-2 max-sm:w-20"
                   key={badge.id}
                 >
-                  <div className="hover:before:animate-shine focus:before:animate-shine relative h-full w-24 overflow-hidden rounded-full before:absolute before:left-[-75%] before:top-0 before:z-[2] before:h-full before:w-1/4 before:skew-x-[-25deg] before:transform before:bg-[linear-gradient(to_right,rgba(255,255,255,0.4)_0%,rgba(255,255,255,0.4)_100%)] before:content-[''] max-sm:w-16 flex justify-center items-center">
+                  <div className="hover:before:animate-shine focus:before:animate-shine relative flex h-full min-h-20 w-24 items-center justify-center overflow-hidden rounded-full before:absolute before:left-[-75%] before:top-0 before:z-[2] before:h-full before:w-1/4 before:skew-x-[-25deg] before:transform before:bg-[linear-gradient(to_right,rgba(255,255,255,0.4)_0%,rgba(255,255,255,0.4)_100%)] before:content-[''] max-sm:w-16">
                     <img
                       key={badge.id}
                       src={badge.imageUrl || ''}
                       alt={badge.name}
-                      className="h-20 w-20 rounded-full border-4 border-gray-300 object-cover shadow-lg max-sm:h-16 max-sm:w-16"
+                      className="h-[4.5rem] w-[4.5rem] rounded-full border-4 border-gray-300 object-cover max-sm:h-16 max-sm:w-16"
                     />
                   </div>
-                  <p className="px-1 text-center text-[11px] font-semibold capitalize max-sm:text-[9px]">
+                  <p className="min-h-10 w-16 self-center justify-self-center px-1 text-center text-[11px] font-semibold capitalize max-sm:text-[9px]">
                     {badge.name}
                   </p>
                 </div>
