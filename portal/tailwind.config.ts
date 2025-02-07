@@ -15,6 +15,7 @@ const config: Config = {
       },
       animation: {
         fadeInTopDown: "fadeInTopDown 1s ease",
+        shine: 'shine 0.85s ease-out',
       },
       height: {
         'screen-minus-74': 'calc(100vh - 74px)',
@@ -32,6 +33,9 @@ const config: Config = {
             opacity: "1",
             transform: "translateY(0)",
           },
+        },
+        shine: {
+          '100%': { left: '125%' },
         },
       },
     },
