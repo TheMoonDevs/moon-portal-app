@@ -17,14 +17,11 @@ import Link from 'next/link';
 import { updateAvatarUrl } from '@/utils/redux/onboarding/onboarding.slice';
 import {
   closeDrawer,
-  openDrawer,
-  selectMember,
   updateMember,
   setEditModalOpen,
 } from '@/utils/redux/coreTeam/coreTeam.slice';
 import {
   addFilesToPreview,
-  resetPreview,
   setUploadedFiles,
 } from '@/utils/redux/filesUpload/fileUpload.slice';
 import { FileWithPath } from '@mantine/dropzone';
@@ -45,8 +42,10 @@ import EditUser from './EditUser';
 import { useTasks } from '@/utils/hooks/useTasks';
 import { filterTasksByPerson } from '@/utils/clickup/helper';
 import ClickupTask from '../Worklogs/WorklogTabs/ClickupTasks';
+import EarnedBadges from './profile-drawer-components/EarnedBadges';
+import { PayDataUI } from './profile-drawer-components/PayDataUI';
 
-interface LoggedInUser {
+export interface LoggedInUser {
   user: User;
 }
 
@@ -117,7 +116,6 @@ export const UserProfileDrawer: React.FC = () => {
   const selectedUser = useAppSelector(
     (state: RootState) => state.coreTeam.selectedMember,
   );
-  const isMobile = useMediaQuery(media.largeMobile);
   const [avatarLoading, setAvatarLoading] = useState<boolean>(false);
   const [bannerLoading, setBannerLoading] = useState<boolean>(false);
   const loggedinUser = useUser() as LoggedInUser;
@@ -243,29 +241,7 @@ export const UserProfileDrawer: React.FC = () => {
             selectedUser={selectedUser}
             loggedinUser={loggedinUser}
           />
-          {/* <div className="py-4">
-          <h6 className="font-bold pb-2">Engagements</h6>
-          <ul className="flex flex-col gap-3 pt-2">
-            <li className="flex items-center gap-3 text-sm">
-              <div className="w-10 h-10 border-gray-300 border-2 rounded-xl flex font-bold items-center justify-center">
-                1
-              </div>
-              This is the First Engagement
-            </li>
-            <li className="flex items-center gap-3 text-sm">
-              <div className="w-10 h-10 border-gray-300 border-2 rounded-xl flex items-center justify-center font-bold">
-                2
-              </div>
-              This is the Second Engagement
-            </li>
-            <li className="flex items-center gap-3 text-sm">
-              <div className="w-10 h-10 border-gray-300 border-2 rounded-xl flex items-center justify-center font-bold">
-                3
-              </div>
-              This is the Third Engagement
-            </li>
-          </ul>
-        </div> */}
+          <EarnedBadges />
           <div className="pb-4">
             <h6 className="pb-2 font-bold">Missions/Task</h6>
             <ul className="mt-1 flex list-none flex-col gap-1 rounded-xl border-2 border-gray-300 p-3">
@@ -294,47 +270,6 @@ export const UserProfileDrawer: React.FC = () => {
       </DrawerComponent>
       <EditUser />
     </>
-  );
-};
-
-export const PayDataUI = ({ payData }: { payData: PayData }) => {
-  return (
-    <div className="flex flex-col gap-1 pb-4">
-      <h6 className="pb-2 font-bold">Payment Details</h6>
-      <div className="relative flex flex-col gap-3 overflow-hidden rounded-2xl bg-gray-900 p-4 text-white">
-        <div className="flex items-center justify-between border-b border-neutral-600 pb-3">
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-2xl">
-              account_balance_wallet
-            </span>
-            <p className="text-sm font-bold">UPI ID </p>
-          </div>
-          <span className="font-normal">{payData?.upiId || 'N/A'}</span>
-        </div>
-        <div className="flex items-center justify-between border-b border-neutral-600 pb-3">
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-2xl">
-              account_balance
-            </span>
-            <p className="text-sm font-bold">Wallet Address </p>
-          </div>
-          <span className="font-normal">
-            {truncateAddress(payData?.walletAddress) || 'N/A'}
-          </span>
-        </div>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-2xl">
-              attach_money
-            </span>
-            <p className="text-sm font-bold">Pay Out: </p>
-          </div>
-          <span className="font-normal">
-            {payData?.stipendAmount || 'N/A'} {payData?.stipendCurrency || ''}
-          </span>
-        </div>
-      </div>
-    </div>
   );
 };
 

@@ -229,9 +229,9 @@ export const ButtonBoard = ({
             <div className="flex h-[100vh] items-center justify-center">
               <Spinner className="h-10 w-10" />{' '}
             </div>
-          ) : badgeRewarded ? (
+          ) : badgeRewarded?.length ?? 0 > 0  ? (
             <div className="flex flex-col gap-4">
-              {badgeRewarded.map((badge: BadgeRewarded) => (
+              {badgeRewarded?.map((badge: BadgeRewarded) => (
                 <BadgeCard key={badge.id} badge={badge} />
               ))}
             </div>

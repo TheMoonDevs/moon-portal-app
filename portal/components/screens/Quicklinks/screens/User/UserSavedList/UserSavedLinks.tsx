@@ -46,7 +46,7 @@ const UserSavedLinks = () => {
         </span>
         <span>Saved Items</span>
       </h1> */}
-      <div className="mt-8 flex justify-between items-center">
+      <div className="mt-8 flex justify-between items-center max-sm:mt-0">
         <h1 className="py-[10px] font-bold text-xl">Saved Links</h1>
         <ViewButtonGroup />
       </div>

@@ -1,5 +1,5 @@
 "use client";
-import store, { useAppSelector } from "@/utils/redux/store";
+import store, { useAppDispatch, useAppSelector } from "@/utils/redux/store";
 import { ParentDirectoryLinks } from "../ParentDirectory/ParentDirectoryLinks";
 import { useQuickLinkDirs } from "../../hooks/useQuickLinksDirs";
 import { useRef } from "react";
@@ -10,7 +10,10 @@ import ListOfDirectories from "../../DirectoryList";
 import { setActiveDirectoryId } from "@/utils/redux/quicklinks/slices/quicklinks.directory.slice";
 import Image from "next/image";
 import useFetchQuicklinksByDir from "../../hooks/useFetchQuicklinksByDir";
-import { CircularProgress } from "@mui/material";
+import { CircularProgress, useMediaQuery } from "@mui/material";
+import { ReusableFolderDrawer } from "../User/UserTopUsed/UserTopUsedLinks";
+import { setIsParentDirectoryFoldersOpen } from "@/utils/redux/quicklinks/slices/quicklinks.ui.slice";
+import media from "@/styles/media";
 // import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
 // import { useSearchParams } from "next/navigation";
 // import { useEffect } from "react";
@@ -104,6 +107,9 @@ export const CommonQuicklinks = ({
   );
   const { allQuicklinks } = useAppSelector((state) => state.quicklinksLinks);
   const { loading } = useFetchQuicklinksByDir({ isRootDirectory: true });
+  const { isParentDirectoryFoldersOpen } = useAppSelector((state) => state.quicklinksUi)
+  const dispatch = useAppDispatch();
+  const isTablet = useMediaQuery(media.tablet);
 
   if (loading)
     return (
@@ -122,7 +128,7 @@ export const CommonQuicklinks = ({
         }}
       />
       {allQuicklinks.length === 0 && filteredDirectories.length === 0 ? (
-        <div className="flex flex-col gap-3 items-center justify-center h-[350px] w-full">
+        <div className="flex flex-col gap-3 items-center justify-center h-[350px] w-full max-sm:!mt-16">
           <Image
             className="rounded-full object-cover"
             src="/images/no-data.jpg"
@@ -136,12 +142,12 @@ export const CommonQuicklinks = ({
         </div>
       ) : (
         <div className="flex gap-10">
-          <div className="mt-4 flex justify-stretch gap-6 w-[70%]">
+          <div className={`mt-4 flex justify-stretch gap-6 w-[70%] ${isTablet && 'w-full'}`}>
             <div className="w-full">
               <ParentDirectoryLinks loading={loading} />
             </div>
           </div>
-          <div className="my-8 w-[30%]">
+          <div className={`my-8 w-[30%] ${isTablet && 'hidden'}`}>
             <h1 className="text-xl font-bold">Folders</h1>
             <ListOfDirectories
               view="listView"
@@ -149,6 +155,18 @@ export const CommonQuicklinks = ({
               directories={filteredDirectories}
             />
           </div>
+          {isParentDirectoryFoldersOpen && 
+            <ReusableFolderDrawer open={isParentDirectoryFoldersOpen} handleClose={() => {dispatch(setIsParentDirectoryFoldersOpen(!isParentDirectoryFoldersOpen))}}>
+              <div className='px-4 w-[300px]'>
+                <h1 className="text-xl font-bold">Folders</h1>
+                <ListOfDirectories
+                  view="listView"
+                  pathname={pathname}
+                  directories={filteredDirectories}
+                />
+              </div>
+            </ReusableFolderDrawer>
+          }
         </div>
       )}
     </div>

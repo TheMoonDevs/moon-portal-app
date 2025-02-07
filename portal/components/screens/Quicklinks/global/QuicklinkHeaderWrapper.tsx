@@ -25,8 +25,8 @@ export default function QuicklinkHeaderWrapper({
       {custom && children}
       {!custom &&
         (!withBreadcrumb ? (
-          <div className="flex justify-between items-start w-full">
-            <h1 className="text-3xl font-bold flex items-start gap-4">
+          <div className="flex justify-between items-start w-full max-sm:items-center">
+            <h1 className="text-3xl font-bold flex items-start gap-4 max-sm:text-xl max-sm:items-center">
               {icon && icon !== "" ? (
                 <span className="material-symbols-outlined border border-neutral-200 rounded-full p-2">
                   {icon}
@@ -44,7 +44,7 @@ export default function QuicklinkHeaderWrapper({
           </div>
         ) : (
           <div className="flex flex-col justify-start items-start">
-            <h1 className="text-3xl font-bold flex items-start gap-4">
+            <h1 className="text-3xl font-bold flex items-start gap-4 max-sm:text-2xl">
               {icon && icon !== "" ? (
                 <span className="material-symbols-outlined border border-neutral-200 rounded-full p-2">
                   {icon}

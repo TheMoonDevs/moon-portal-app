@@ -93,7 +93,7 @@ export const MoveModal = () => {
       open={modal.type === "move-folder"}
       className=" text-black p-5 rounded-lg shadow-lg drop-shadow-sm flex items-center justify-center"
     >
-      <div className="bg-white w-2/5 p-6 rounded-2xl outline-none">
+      <div className="bg-white w-2/5 p-6 rounded-2xl outline-none max-sm:w-[95%]">
         <h2 className="text-xl font-bold mb-2">Move Folder</h2>
         <p className="mb-4">
           Move{" "}

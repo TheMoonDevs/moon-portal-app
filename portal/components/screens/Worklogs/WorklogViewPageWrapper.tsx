@@ -11,6 +11,7 @@ import { PortalSdk } from '@/utils/services/PortalSdk';
 import { WorkLogsHelper } from './WorklogsHelper';
 import { WorkLogs } from '@prisma/client';
 import { Bottombar } from '@/components/global/Bottombar';
+import { PrivateWorklogView } from './PrivateWorklogView';
 
 export const WorklogViewPageWrapper = ({ id }: { id: string }) => {
   const queryParams = useSearchParams();
@@ -73,11 +74,15 @@ export const WorklogViewPageWrapper = ({ id }: { id: string }) => {
             logType={_logType}
           />
         </div> */}
-        <div className="my-4 h-[90vh] bg-white">
+        <div className="my-4 h-[90vh] overflow-y-scroll bg-white">
           <WorklogView
             id={id}
             date={centerdate.format('YYYY-MM-DD')}
             logType={_logType}
+          />
+          <PrivateWorklogView
+            date={centerdate.format('YYYY-MM-DD')}
+            logType={'privateWorklogs'}
           />
         </div>
         {/* <div className="my-4 h-[90vh] bg-white">
@@ -92,13 +97,21 @@ export const WorklogViewPageWrapper = ({ id }: { id: string }) => {
   }
 
   return (
-    <>
-      <WorklogView
-        id={id}
-        date={dayjs(_date).format('YYYY-MM-DD')}
-        logType={_logType}
-      />
-      <Bottombar visible={true} />
-    </>
+    <div className="my-4 h-[90vh] overflow-y-scroll bg-white">
+      (
+      <>
+        <WorklogView
+          id={id}
+          date={dayjs(_date).format('YYYY-MM-DD')}
+          logType={_logType}
+        />
+        <PrivateWorklogView
+          date={dayjs(_date)?.format('YYYY-MM-DD')}
+          logType={'privateWorklogs'}
+        />
+        <Bottombar visible={true} />
+      </>
+      )
+    </div>
   );
 };

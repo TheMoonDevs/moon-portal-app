@@ -417,7 +417,7 @@ export const WorklogEditor = ({
           refreshWorklogs();
         }
       }}
-      className="flex min-h-screen flex-col md:max-w-[800px]"
+      className="flex min-h-[50vh] flex-col md:max-w-[800px]"
     >
       {!compactView && (
         <div
