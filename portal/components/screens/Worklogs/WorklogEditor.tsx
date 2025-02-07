@@ -53,6 +53,41 @@ const CustomLoader = () => (
   <div className="mr-2 h-3 w-3 animate-spin rounded-full border-b-2 border-t-2 border-neutral-800"></div>
 );
 
+interface StatusDialogProps {
+  open: boolean;
+  status: boolean;
+  loadingText: string;
+  successText: string;
+}
+
+const StatusDialog = ({
+  open,
+  status,
+  loadingText,
+  successText,
+}: StatusDialogProps) => (
+  <Dialog
+    className="!z-50"
+    open={open}
+    aria-labelledby="status-dialog-title"
+    aria-describedby="status-dialog-description"
+  >
+    <DialogContent id="status-dialog-title" className="flex items-center gap-2">
+      {status ? (
+        <span className="material-symbols-outlined text-green-500">
+          task_alt
+        </span>
+      ) : (
+        <CustomLoader />
+      )}
+
+      <span className={status ? 'text-green-500' : ''}>
+        {status ? successText : loadingText}
+      </span>
+    </DialogContent>
+  </Dialog>
+);
+
 const SavingDialog = ({
   open,
   isSaved,
@@ -60,29 +95,27 @@ const SavingDialog = ({
   open: boolean;
   isSaved?: boolean;
 }) => (
-  <Dialog
-    className={`!z-50`}
+  <StatusDialog
     open={open}
-    aria-labelledby="alert-dialog-title"
-    aria-describedby="alert-dialog-description"
-  >
-    <DialogContent id="alert-dialog-title" className="flex items-center gap-2">
-      {isSaved ? (
-        <span
-          className={`${isSaved ? 'text-green-500' : ''} material-symbols-outlined`}
-        >
-          {' '}
-          task_alt{' '}
-        </span>
-      ) : (
-        <CustomLoader />
-      )}
+    status={isSaved ?? false}
+    loadingText="Saving..."
+    successText="Saved!"
+  />
+);
 
-      <span className={isSaved ? 'text-green-500' : ''}>
-        {isSaved ? 'Saved!' : 'Saving...'}
-      </span>
-    </DialogContent>
-  </Dialog>
+const ImportingDialog = ({
+  open,
+  imported,
+}: {
+  open: boolean;
+  imported?: boolean;
+}) => (
+  <StatusDialog
+    open={open}
+    status={imported ?? false}
+    loadingText="Importing..."
+    successText="Done!"
+  />
 );
 
 export const WorklogEditor = ({
@@ -123,6 +156,21 @@ export const WorklogEditor = ({
   const [showPopup, setShowPopup] = useState<boolean>(false);
   const [isSavingModalOpen, setIsSavingModalOpen] = useState<boolean>(false);
   const router = useRouter();
+  const [importing, setImporting] = useState<{
+    importing: boolean;
+    loader: boolean;
+  }>({
+    importing: false,
+    loader: false,
+  });
+
+  useEffect(() => {
+    if (!importing.importing)
+      setTimeout(
+        () => setImporting((prev) => ({ ...prev, loader: false })),
+        1000,
+      );
+  }, [importing.importing]);
   const handleBackButtonClick = () => {
     if (saving || !isAutoSaved) setIsSavingModalOpen(true);
     if (!saving && isAutoSaved) router.replace(APP_ROUTES.userWorklogs);
@@ -482,7 +530,15 @@ export const WorklogEditor = ({
                         key={option.dateIdx}
                         className="flex cursor-pointer items-center gap-2 rounded-lg p-2 text-sm hover:bg-neutral-100"
                         onClick={() => {
-                          if (saving) toast.warning('Saving... Please Wait!');
+                          setImporting((prev) => ({
+                            ...prev,
+                            importing: true,
+                            loader: true,
+                          }));
+                          if (saving) {
+                            toast.warning('Saving... Please Wait!');
+                            return;
+                          }
                           fetchXTasksForDay(
                             dayjs(workLog?.date)
                               .subtract(option.dateIdx, 'day')
@@ -491,6 +547,10 @@ export const WorklogEditor = ({
                             const newWorks = updatedWorkLog?.works as any;
                             saveWorkLog(updatedWorkLog as any, newWorks);
                             setShowPopup(false);
+                            setImporting((prev) => ({
+                              ...prev,
+                              importing: false,
+                            }));
                           });
                         }}
                       >
@@ -668,6 +728,10 @@ export const WorklogEditor = ({
       <SavingDialog
         open={isSavingModalOpen}
         isSaved={!saving && (isAutoSaved as boolean)}
+      />
+      <ImportingDialog
+        open={importing.loader}
+        imported={!importing.importing}
       />
     </div>
   );
