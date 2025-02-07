@@ -42,7 +42,7 @@ const CoreTeamAsSection = ({
 }: {
   hasTrialCandidates: boolean;
 }) => (
-  <div className="pt-8">
+  <div>
     <h4 className="px-4 text-lg font-bold">Core Team Leaderboard</h4>
     <CoreTeamSection key="coreteam" userRoles={USERROLE.CORETEAM} />
     {hasTrialCandidates && (
@@ -73,14 +73,14 @@ export const CoreTeamSectionInDrawer = ({
       sx={{
         '& .MuiDrawer-paper': {
           height: '100%',
-          overflow: 'auto',
+          overflow: 'hidden',
           width: isMobile ? '100%' : '40%',
         },
       }}
     >
-      <div className="absolute right-0 top-4 hidden w-10 cursor-pointer text-neutral-900 hover:text-neutral-700 max-sm:block">
+      <div className="group absolute right-3 top-4 w-10 cursor-pointer text-neutral-900 hover:text-neutral-700">
         <span
-          className="material-icons !text-3xl md:!text-2xl"
+          className="material-icons !text-3xl group-hover:opacity-20 md:!text-2xl"
           onClick={onClose}
         >
           close_icon
