@@ -5,7 +5,7 @@ Most repos us shared databases, hence when you make a change in prisma, please u
 if you have a git pull issue, try this
 `git config --global core.compression 9`
 
-## Moon Home - /home
+## Moon Home - /home 
 
 Official website of TheMoonDevs
 
