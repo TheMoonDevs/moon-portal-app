@@ -14,7 +14,7 @@ const DrawerComponent = ({
   const isMobile = useMediaQuery(media.largeMobile);
 
   return (
-    <Drawer anchor='right' open={isOpen} onClose={handleClose}>
+    <Drawer anchor="right" open={isOpen} onClose={handleClose}>
       <Box
         sx={{
           width: {
@@ -25,26 +25,16 @@ const DrawerComponent = ({
           overflowX: 'hidden',
           overflowY: 'scroll',
         }}
-        role='presentation'
+        role="presentation"
       >
         {isMobile && (
-          <div className='fixed bottom-0 right-0 z-50 w-full flex justify-center pb-6'>
-            <Fab
-              color='primary'
-              aria-label='close'
-              size='small'
-              onClick={handleClose}
-              sx={{
-                backgroundColor: 'transparent !important',
-                border: '1px solid GrayText !important',
-                backdropFilter: 'blur(10px) !important',
-                zIndex: 1300,
-              }}
-            >
-              <span className='material-symbols-outlined !text-[rgba(0,0,0,0.8)]'>
-                close
-              </span>
-            </Fab>
+          <div
+            className="fixed left-3 top-3 z-50 flex w-full pb-6"
+            onClick={handleClose}
+          >
+            <span className="material-symbols-outlined rounded-full border bg-white p-1 !text-[rgba(0,0,0,0.8)] shadow-md">
+              close
+            </span>
           </div>
         )}
         {children}

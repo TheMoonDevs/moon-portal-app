@@ -47,7 +47,7 @@ const CreateDirectoryModal = () => {
       open={modal.type === "create-folder"}
       className=" text-black p-5 rounded-lg shadow-lg drop-shadow-sm flex items-center justify-center"
     >
-      <div className="bg-white w-fit p-6 rounded-2xl outline-none">
+      <div className="bg-white w-fit p-6 rounded-2xl outline-none max-sm:w-full">
         <h1 className="mb-6 font-semibold text-2xl">
           {selectedDirectory.root === "DEPARTMENT"
             ? "Add New Department"
@@ -57,7 +57,7 @@ const CreateDirectoryModal = () => {
         </h1>
         <TextField
           onChange={(e) => setName(e.target.value)}
-          className="w-[500px]"
+          className="w-[500px] max-sm:w-full"
           required
           value={name}
           id="outlined-required"

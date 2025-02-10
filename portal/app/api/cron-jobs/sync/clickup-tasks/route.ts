@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/prisma/prisma';
 import { filterTasks } from '@/utils/clickup/helper';
 import { Task } from '@prisma/client';
+export const revalidate = 0;
 
 export async function GET(request: NextRequest) {
   const apiUrl =
@@ -32,13 +33,7 @@ export async function GET(request: NextRequest) {
       });
     });
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        noOfTasks: filteredData.length,
-        taskIds: filteredData.map((task) => task.taskId),
-      },
-    });
+    return NextResponse.json({status: "success", message: `Synced ${filteredData.length} Tasks`}, { status: 200 });
   } catch (error) {
     return NextResponse.json({ error: error }, { status: 500 });
   }
