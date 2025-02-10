@@ -7,6 +7,7 @@ import { PortalSdk } from '@/utils/services/PortalSdk';
 import { User } from '@prisma/client';
 import BadgeTemplate from './badge-template/AdminBadges';
 import EventForm from './Events/EventForm';
+import ClientShortcutsManager from './ClientShortcutsManager';
 
 export const AdminPage = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -15,7 +16,6 @@ export const AdminPage = () => {
     setLoading(true);
     PortalSdk.getData('/api/user', null)
       .then((data) => {
-        console.log(data);
         setUsers(data?.data?.user || []);
         setLoading(false);
       })
@@ -25,11 +25,12 @@ export const AdminPage = () => {
       });
   }, []);
   return (
-    <div className='flex flex-row flex-wrap gap-4 items-center justify-center  bg-neutral-700 md:bg-neutral-900 h-screen overflow-y-scroll max-sm:flex-col max-sm:h-full max-sm:overflow-y-auto py-5'>
+    <div className="flex h-screen flex-row flex-wrap items-center justify-center gap-4 overflow-y-scroll bg-neutral-700 py-5 max-sm:h-full max-sm:flex-col max-sm:overflow-y-auto md:bg-neutral-900">
       <AdminUsers users={users} loading={loading} />
       <SendNotifications users={users} loading={loading} />
       <BadgeTemplate />
       <EventForm />
+      <ClientShortcutsManager />
     </div>
   );
 };
