@@ -128,6 +128,30 @@ export const PrivateWorklogView: React.FC<PrivateWorklogViewProps> = ({
 
   if (!visible) return null;
   // if (!localPassphrase) return <PassphraseVerification />;
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.ctrlKey && e.key === 's') {
+      e.preventDefault();
+      saveWorklog(content);
+    }
+    if (e.ctrlKey && e.key === 'r') {
+      e.preventDefault();
+      fetchWorklog();
+    }
+    if (e.ctrlKey && e.key === ' ') {
+      e.preventDefault();
+      if (editorRef.current) {
+        editorRef.current.insertMarkdown('✅');
+      }
+    }
+    if (e.ctrlKey && e.key === 'q') {
+      e.preventDefault();
+      if (editorRef.current) {
+        editorRef.current.insertMarkdown('❌');
+      }
+    }
+  };
+
   return (
     <div className="relative px-4">
       <div className="flex flex-col gap-1">
@@ -147,18 +171,7 @@ export const PrivateWorklogView: React.FC<PrivateWorklogViewProps> = ({
           )}
         </div>
         {localPassphrase && (
-          <div
-            onKeyDown={(e) => {
-              if (e.ctrlKey && e.key === 's') {
-                e.preventDefault();
-                saveWorklog(content);
-              }
-              if (e.ctrlKey && e.key === 'r') {
-                e.preventDefault();
-                fetchWorklog();
-              }
-            }}
-          >
+          <div onKeyDown={handleKeyDown}>
             <MdxAppEditor
               ref={editorRef}
               markdown={content}
