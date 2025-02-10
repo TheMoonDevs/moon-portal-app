@@ -8,8 +8,6 @@ import GoogleSheetsAPI from "@/utils/service/googleSpreadsheetSDk";
 
 type Params = { uid: string };
 
-export const runtime= "experimental-edge";
-
 export default function Page({
   spreadsheetId,
   sheetId,

@@ -11,8 +11,6 @@ import { WorklifePageStyled } from "@/components/Pages/worklife/WorkLifeHomePage
 
 type Params = { uid: string };
 
-export const runtime = "experimental-edge";
-
 export default function Page({
   page,
 }: InferGetStaticPropsType<typeof getStaticProps>) {
