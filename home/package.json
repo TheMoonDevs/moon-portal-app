@@ -37,6 +37,7 @@
     "crypto-js": "^4.2.0",
     "dayjs": "^1.11.11",
     "firebase": "^10.7.1",
+    "googleapis": "^134.0.0",
     "next": "^14.2.13",
     "prismjs": "^1.29.0",
     "quantize": "^1.0.2",
