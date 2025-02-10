@@ -1,53 +1,53 @@
-"use client";
+'use client';
 
-import { MdxAppEditor } from "@/utils/configure/MdxAppEditor";
-import { APP_ROUTES } from "@/utils/constants/appInfo";
-import { useUser } from "@/utils/hooks/useUser";
-import { PortalSdk } from "@/utils/services/PortalSdk";
-import { WorkLogs } from "@prisma/client";
-import Link from "next/link";
-import React, { useEffect, useMemo, useState } from "react";
-import store, { useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import dayjs from "dayjs";
-import { WorkLogsHelper } from "./WorklogsHelper";
-import { Fade, useMediaQuery } from "@mui/material";
-import media from "@/styles/media";
-import { WorklogView } from "./WorklogView";
-import { SummarizeButton } from "./SummarizeButton";
-import { Toaster, toast } from "sonner";
-import { setLogsList } from "@/utils/redux/worklogs/worklogs.slice";
-import SimpleTabs from "@/components/elements/Tabs";
-import WorklogTips from "./WorklogTabs/WorklogTips";
-import TodoTab from "./WorklogTabs/TodoTab";
+import { MdxAppEditor } from '@/utils/configure/MdxAppEditor';
+import { APP_ROUTES } from '@/utils/constants/appInfo';
+import { useUser } from '@/utils/hooks/useUser';
+import { PortalSdk } from '@/utils/services/PortalSdk';
+import { WorkLogs } from '@prisma/client';
+import Link from 'next/link';
+import React, { useEffect, useMemo, useState } from 'react';
+import store, { useAppDispatch, useAppSelector } from '@/utils/redux/store';
+import dayjs from 'dayjs';
+import { WorkLogsHelper } from './WorklogsHelper';
+import { Fade, useMediaQuery } from '@mui/material';
+import media from '@/styles/media';
+import { WorklogView } from './WorklogView';
+import { SummarizeButton } from './SummarizeButton';
+import { Toaster, toast } from 'sonner';
+import { setLogsList } from '@/utils/redux/worklogs/worklogs.slice';
+import SimpleTabs from '@/components/elements/Tabs';
+import WorklogTips from './WorklogTabs/WorklogTips';
+import TodoTab from './WorklogTabs/TodoTab';
 import {
   setCompletedTodos,
   setIncompleteTodos,
   setTodoMarkdown,
-} from "@/utils/redux/worklogs/laterTodos.slice";
-import WorklogBuff from "./WorklogTabs/WorklogBuff";
-import ClickupTasks from "./WorklogTabs/ClickupTasks";
-import { PrivateWorklogView } from "./PrivateWorklogView";
-import { usePassphrase } from "@/utils/hooks/usePassphrase";
+} from '@/utils/redux/worklogs/laterTodos.slice';
+import WorklogBuff from './WorklogTabs/WorklogBuff';
+import ClickupTasks from './WorklogTabs/ClickupTasks';
+import { PrivateWorklogView } from './PrivateWorklogView';
+import { usePassphrase } from '@/utils/hooks/usePassphrase';
 const tempData = [
   {
-    id: "idsdjneslnfrnleskdnelrnv",
-    title: "March 24 - Sunday",
-    date: "2021-03-24",
+    id: 'idsdjneslnfrnleskdnelrnv',
+    title: 'March 24 - Sunday',
+    date: '2021-03-24',
     works: [
       {
-        id: "sdjnvkrbd-2021-03-24", // should be random id - `random_uid+date`
-        text: "Worked on the Moon PWA",
-        status: "none", // none, done, inProgress
+        id: 'sdjnvkrbd-2021-03-24', // should be random id - `random_uid+date`
+        text: 'Worked on the Moon PWA',
+        status: 'none', // none, done, inProgress
       },
       {
-        id: "djncsjnk-2021-03-24", // should be random id - `random_uid+date`
-        text: "Worked on the Moon Homepage",
-        status: "done", // none, done, inProgress
+        id: 'djncsjnk-2021-03-24', // should be random id - `random_uid+date`
+        text: 'Worked on the Moon Homepage',
+        status: 'done', // none, done, inProgress
       },
       {
-        id: "sdvnsjknc-2021-03-24", // should be random id - `random_uid+date`
-        text: "Worked on the Moon PWA",
-        status: "none", // none, done, inProgress
+        id: 'sdvnsjknc-2021-03-24', // should be random id - `random_uid+date`
+        text: 'Worked on the Moon PWA',
+        status: 'none', // none, done, inProgress
       },
     ],
   },
@@ -56,11 +56,11 @@ const tempData = [
 const linkForWorkLog = (data: WorkLogs) => {
   return (
     APP_ROUTES.userWorklogs +
-    "/" +
-    (data.id || "new") +
-    "?logType=" +
+    '/' +
+    (data.id || 'new') +
+    '?logType=' +
     data.logType +
-    (data.logType === "dayLog" ? "&date=" + data.date : "")
+    (data.logType === 'dayLog' ? '&date=' + data.date : '')
   );
 };
 
@@ -77,50 +77,48 @@ export const WorkLogItem = ({
 }) => {
   return (
     <Link
-      href={isTabletOrMore ? "" : linkForWorkLog(data)}
-      className={`flex flex-col  gap-3 rounded-lg border border-neutral-200 p-3 overflow-y-hidden min-h-[150px] ${
-        data.logType === "privateLog" ? " h-full " : ""
-      } ${selected ? " bg-white border-neutral-900 border-2 " : ""}`}
+      href={isTabletOrMore ? '' : linkForWorkLog(data)}
+      className={`flex min-h-[150px] flex-col gap-3 overflow-y-hidden rounded-lg border border-neutral-200 p-3 ${
+        data.logType === 'privateLog' ? 'h-full' : ''
+      } ${selected ? 'border-2 border-neutral-900 bg-white' : ''}`}
       key={JSON.stringify(data.works)}
       onClick={onClick}
     >
       <div
-        className={`flex flex-row justify-between  ${
-          selected ? "font-bold text-black" : "font-regular text-neutral-800"
+        className={`flex flex-row justify-between ${
+          selected ? 'font-bold text-black' : 'font-regular text-neutral-800'
         }`}
       >
-        <h1 className={`text-xs `}>{data.title}</h1>
-        {data.logType === "dayLog" && (
+        <h1 className={`text-xs`}>{data.title}</h1>
+        {data.logType === 'dayLog' && (
           <span
-            className={`icon_size material-symbols-outlined 
-          ${
-            dayjs(data.date).isBefore(dayjs(), "date") && data.id === ""
-              ? "text-red-500"
-              : !selected
-              ? "text-neutral-500"
-              : dayjs(data.date).isSame(dayjs(), "date")
-              ? "text-green-500"
-              : data.id === "" || dayjs(data.date).isAfter(dayjs(), "date")
-              ? "text-neutral-500"
-              : "text-blue-500"
-          }
-          
-          `}
+            className={`icon_size material-symbols-outlined ${
+              dayjs(data.date).isBefore(dayjs(), 'date') && data.id === ''
+                ? 'text-red-500'
+                : !selected
+                  ? 'text-neutral-500'
+                  : dayjs(data.date).isSame(dayjs(), 'date')
+                    ? 'text-green-500'
+                    : data.id === '' ||
+                        dayjs(data.date).isAfter(dayjs(), 'date')
+                      ? 'text-neutral-500'
+                      : 'text-blue-500'
+            } `}
           >
-            {dayjs(data.date).isSame(dayjs(), "date")
-              ? "radio_button_checked"
-              : dayjs(data.date).isAfter(dayjs(), "date")
-              ? data.id === ""
-                ? "add_box"
-                : "checklist"
-              : data.id === ""
-              ? "pending"
-              : "checklist"}
+            {dayjs(data.date).isSame(dayjs(), 'date')
+              ? 'radio_button_checked'
+              : dayjs(data.date).isAfter(dayjs(), 'date')
+                ? data.id === ''
+                  ? 'add_box'
+                  : 'checklist'
+                : data.id === ''
+                  ? 'pending'
+                  : 'checklist'}
           </span>
         )}
       </div>
-      <div className="flex flex-col max-h-[100px] min-h-[100px] p-1">
-        {data.id != "" &&
+      <div className="flex max-h-[100px] min-h-[100px] flex-col p-1">
+        {data.id != '' &&
           data.works //.flatMap((wk) => (wk as any)?.pointInfos)
             //.slice(0, 3)
             .map((point: any, index: number) => (
@@ -145,7 +143,7 @@ export const WorkLogItem = ({
                 </div>
               </div>
             ))}
-        {data.id === "" && (
+        {data.id === '' && (
           <div className="">
             <p className="text-sm text-neutral-300">
               Tap to jot down your logs...
@@ -166,7 +164,7 @@ export const WorklogsPage = () => {
   const thisDate = dayjs().date();
   const dispatch = useAppDispatch();
   const { todoMarkdown, incompleteTodos } = useAppSelector(
-    (state) => state.laterTodos
+    (state) => state.laterTodos,
   );
   const [monthTab, setMonthTab] = useState<number>(thisMonth);
   const logsList = useAppSelector((state) => state.worklogs.logsList);
@@ -174,13 +172,13 @@ export const WorklogsPage = () => {
   const [privateBoard, setPrivateBoard] = useState<WorkLogs | null>(null);
   const isTabletOrMore = useMediaQuery(media.moreTablet);
   const isEditorSaving = useAppSelector(
-    (state) => state.worklogs.isEditorSaving
+    (state) => state.worklogs.isEditorSaving,
   );
 
   const fetchLaterToDo = (userId: string) => {
     PortalSdk.getData(`/api/user/todolater?userId=${userId}`, null)
       .then((data) => {
-        const content = data?.data?.markdown?.content || "";
+        const content = data?.data?.markdown?.content || '';
         dispatch(setTodoMarkdown(content));
       })
       .catch((err) => {
@@ -190,7 +188,7 @@ export const WorklogsPage = () => {
 
   useEffect(() => {
     if (todoMarkdown) {
-      if (todoMarkdown.trim() === "*" || todoMarkdown.trim() === "") {
+      if (todoMarkdown.trim() === '*' || todoMarkdown.trim() === '') {
         dispatch(setIncompleteTodos(0));
       } else {
         const total = (todoMarkdown.match(/\n/g) || []).length + 1;
@@ -241,16 +239,16 @@ export const WorklogsPage = () => {
         monthTab != dayjs().month()
           ? _total_days_in_month
           : _total_days_in_month <= dayjs().date() + 2
-          ? _total_days_in_month
-          : dayjs().date() + 2,
+            ? _total_days_in_month
+            : dayjs().date() + 2,
     })
       .map((_, i) => {
         const _date = dayjs()
           .month(monthTab)
           .date(i + 1)
-          .format("YYYY-MM-DD");
+          .format('YYYY-MM-DD');
         const _worklog = yearLogData?.data?.workLogs.find(
-          (wl: WorkLogs) => wl.date === _date
+          (wl: WorkLogs) => wl.date === _date,
         );
         return _worklog || WorkLogsHelper.defaultWorklogs(_date, _user);
       })
@@ -260,7 +258,7 @@ export const WorklogsPage = () => {
 
   const [selectedID, setSelectedID] = useState<string>();
   const [selectedDate, setSelectedDate] = useState<string | undefined>(
-    dayjs().format("YYYY-MM-DD")
+    dayjs().format('YYYY-MM-DD'),
   );
   const centerdate = useMemo(() => dayjs(selectedDate), [selectedDate]);
 
@@ -269,10 +267,10 @@ export const WorklogsPage = () => {
     if (
       logsList.length > 0 &&
       !selectedID &&
-      centerdate.isSame(dayjs(), "date")
+      centerdate.isSame(dayjs(), 'date')
     ) {
       const _worklog = logsList.find(
-        (wl) => wl.date === centerdate.format("YYYY-MM-DD")
+        (wl) => wl.date === centerdate.format('YYYY-MM-DD'),
       );
       if (_worklog) {
         setSelectedID(_worklog.id);
@@ -282,14 +280,14 @@ export const WorklogsPage = () => {
 
   //if (!user?.workData) return null;
   const tabs = [
-    { label: "Tasks", content: <ClickupTasks email={user?.email as string} /> },
-    { label: "Tips", content: <WorklogTips /> },
+    { label: 'Tasks', content: <ClickupTasks email={user?.email as string} /> },
+    { label: 'Tips', content: <WorklogTips /> },
     {
       label: (
         <div className="flex items-center gap-2 p-3">
           Todos for later
           {incompleteTodos > 0 && (
-            <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse"></div>
+            <div className="h-2 w-2 animate-pulse rounded-full bg-blue-500"></div>
           )}
         </div>
       ),
@@ -299,7 +297,7 @@ export const WorklogsPage = () => {
 
   const handleWorkLogItemClick = (data: WorkLogs, isEditorSaving: boolean) => {
     if (isEditorSaving) {
-      toast.error("Save your Logs! (Ctrl+S)");
+      toast.error('Save your Logs! (Ctrl+S)');
       return;
     }
     if (data.id?.trim().length > 0) {
@@ -324,8 +322,8 @@ export const WorklogsPage = () => {
       const nextMonth = (prevMonth + 1) % 12;
       const newDate = dayjs()
         .month(nextMonth)
-        .startOf("month")
-        .format("YYYY-MM-DD");
+        .startOf('month')
+        .format('YYYY-MM-DD');
       setSelectedDate(newDate);
       return nextMonth;
     });
@@ -333,64 +331,65 @@ export const WorklogsPage = () => {
 
   return (
     <div className="flex flex-col">
-      <div className="fixed left-0 right-0 top-0 z-10 bg-white flex flex-row gap-3 py-2 px-3 items-center justify-between border-b border-neutral-400 md:pl-[6rem]">
+      <div className="fixed left-0 right-0 top-0 z-10 flex h-14 flex-row items-center justify-between gap-3 border-b border-neutral-400 bg-white px-3 py-2 md:left-4 md:pl-[6rem]">
         <div className="flex items-center">
           <Link href={APP_ROUTES.home}>
-            <h1 className="md:text-lg text-sm whitespace-nowrap cursor-pointer font-extrabold border-r-2 pr-3 mr-3">
+            <h1 className="mr-3 cursor-pointer whitespace-nowrap border-r-2 pr-3 text-sm font-extrabold md:text-lg">
               The Moon Devs
             </h1>
           </Link>
-          <h1 className="tracking-widest text-xs sm:text-sm font-regular hidden sm:block">
+          <h1 className="font-regular hidden text-xs tracking-widest sm:block sm:text-sm">
             My Worklogs
           </h1>
         </div>
         <div className="flex flex-row items-center gap-2 sm:gap-3">
           <SummarizeButton userId={user?.id} />
           <Link
+            className="hidden sm:block"
             href={`${APP_ROUTES.userWorklogSummary}/${
               user?.id
-            }?year=${thisYear}&month=${dayjs().month(thisMonth).format("MM")}`}
+            }?year=${thisYear}&month=${dayjs().month(thisMonth).format('MM')}`}
           >
-            <div className="cursor-pointer rounded-md py-1 px-2 sm:py-1 sm:px-3 flex items-center gap-1 sm:gap-2 whitespace-nowrap text-[0.7rem] sm:text-sm text-neutral-100 bg-neutral-800 hover:bg-neutral-700">
+            <div className="flex cursor-pointer items-center gap-1 whitespace-nowrap rounded-md bg-neutral-800 px-2 py-1 text-[0.7rem] text-neutral-100 hover:bg-neutral-700 sm:gap-2 sm:px-3 sm:py-1 sm:text-sm">
               <span className="icon_size material-symbols-outlined">
                 description
               </span>
-              <span>{dayjs().format("MMMM")} Summary</span>
+              <span>{dayjs().format('MMMM')} Summary</span>
             </div>
           </Link>
         </div>
       </div>
 
       <div className="scrollable_list">
-        <div className="h-[3.5rem]"></div>
-        <div className="flex flex-row justify-between bg-neutral-100 z-[5] overflow-x-auto p-2 space-x-2 custom-scrollbar">
+        <div className="h-14"></div>
+        <div className="custom-scrollbar z-[5] flex flex-row justify-between space-x-2 overflow-x-auto bg-neutral-100 px-2 py-3 md:p-2">
           {Array.from({ length: 12 }).map((_, month_tab: number) => (
             <div
               key={month_tab}
               onClick={() => setMonthTab(month_tab)}
-              className={`rounded-3xl cursor-pointer flex-shrink-0 ${
-                monthTab === month_tab ? "border border-neutral-600" : ""
+              className={`flex-shrink-0 cursor-pointer rounded-3xl px-1 py-1 md:p-0 ${
+                monthTab === month_tab ? 'border border-neutral-600' : ''
               }`}
             >
               <h4
                 className={`text-xs md:text-sm lg:text-base ${
                   monthTab === month_tab
-                    ? "font-bold text-neutral-800"
-                    : "text-neutral-400"
+                    ? 'font-bold text-neutral-800'
+                    : 'text-neutral-400'
                 } p-1 md:p-2 lg:px-4`}
               >
-                {dayjs().month(month_tab).format("MMMM")}
+                {dayjs().month(month_tab).format('MMMM')}
               </h4>
             </div>
           ))}
         </div>
 
-        <div className="flex flex-row-reverse max-lg:flex-col w-full">
-          <div className="hidden md:block p-3 invisible md:visible w-[40%] max-lg:w-full max-h-[80vh] overflow-y-scroll">
-            <WorklogBuff filteredLogs={filteredLogs} monthTab={monthTab}/>
+        <div className="flex w-full flex-row-reverse max-lg:flex-col">
+          <div className="invisible hidden max-h-[80vh] w-[40%] overflow-y-scroll p-3 max-lg:w-full md:visible md:block">
+            <WorklogBuff filteredLogs={filteredLogs} monthTab={monthTab} />
             <SimpleTabs tabs={tabs} />
           </div>
-          <div className="hidden md:block p-2 invisible md:visible w-[50%] max-lg:w-full rounded-lg border border-neutral-200 m-3  max-h-[80vh] overflow-y-scroll">
+          <div className="invisible m-3 hidden max-h-[80vh] w-[50%] overflow-y-scroll rounded-lg border border-neutral-200 p-2 max-lg:w-full md:visible md:block">
             {/* {privateBoard && (
               <WorkLogItem
                 key={
@@ -405,28 +404,28 @@ export const WorklogsPage = () => {
             )} */}
             <WorklogView
               id={selectedID}
-              date={centerdate.format("YYYY-MM-DD")}
-              logType={"dayLog"}
+              date={centerdate.format('YYYY-MM-DD')}
+              logType={'dayLog'}
               monthTab={monthTab}
               setMonthTab={setMonthTab}
               handleNextMonthClick={handleNextMonthClick}
             />
             <PrivateWorklogView
-              date={centerdate.format("YYYY-MM-DD")}
-              logType={"privateWorklogs"}
+              date={centerdate.format('YYYY-MM-DD')}
+              logType={'privateWorklogs'}
             />
           </div>
-          <div className="grid grid-cols-2 lg:w-[30%] gap-3 p-2 max-lg:grid-cols-4 max-md:grid-cols-2 max-h-[80vh] overflow-y-scroll m-3">
+          <div className="m-3 grid max-h-[80vh] grid-cols-2 gap-3 overflow-y-scroll p-2 max-lg:grid-cols-4 max-md:grid-cols-2 lg:w-[30%]">
             {filteredLogs.map(
               (data) => (
                 <WorkLogItem
                   isTabletOrMore={isTabletOrMore}
-                  key={data.id + "-" + data.date + "-" + data.userId}
+                  key={data.id + '-' + data.date + '-' + data.userId}
                   data={data}
                   selected={selectedDate === data.date}
                   onClick={() => handleWorkLogItemClick(data, isEditorSaving)}
                 />
-              )
+              ),
               //)
             )}
           </div>

@@ -6,12 +6,10 @@ import { useUser } from '@/utils/hooks/useUser';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 import { WorkLogs } from '@prisma/client';
 import dayjs from 'dayjs';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
-  Dispatch,
-  RefObject,
-  SetStateAction,
   createRef,
+  RefObject,
   useCallback,
   useEffect,
   useMemo,
@@ -20,18 +18,24 @@ import {
 } from 'react';
 import { DEFAULT_MARKDOWN_DATA } from './WorklogsHelper';
 import { useDebouncedEffect } from '@/utils/hooks/useDebouncedHook';
-import { debounce } from 'lodash';
 import store, { useAppDispatch } from '@/utils/redux/store';
-import Link from 'next/link';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
-import { MDXEditorMethods } from '@mdxeditor/editor';
 import {
   setEdiotrSaving,
   updateLogs,
 } from '@/utils/redux/worklogs/worklogs.slice';
-import { Popover, IconButton, Drawer } from '@mui/material';
+import {
+  Popover,
+  IconButton,
+  Drawer,
+  Dialog,
+  DialogContent,
+} from '@mui/material';
 import EmojiLegend from './WorklogTabs/EmojiLegend';
 import TodoTab from './WorklogTabs/TodoTab';
+import { MDXEditorMethods } from '@mdxeditor/editor';
+import { toast } from 'sonner';
+import CustomDrawer from '@/components/elements/Drawer';
 
 export const MARKDOWN_PLACHELODER = `* `;
 
@@ -44,6 +48,75 @@ export const getStatsOfContent = (content: string) => {
   // console.log(content);
   return `${checks} / ${points}`;
 };
+
+const CustomLoader = () => (
+  <div className="mr-2 h-3 w-3 animate-spin rounded-full border-b-2 border-t-2 border-neutral-800"></div>
+);
+
+interface StatusDialogProps {
+  open: boolean;
+  status: boolean;
+  loadingText: string;
+  successText: string;
+}
+
+const StatusDialog = ({
+  open,
+  status,
+  loadingText,
+  successText,
+}: StatusDialogProps) => (
+  <Dialog
+    className="!z-50"
+    open={open}
+    aria-labelledby="status-dialog-title"
+    aria-describedby="status-dialog-description"
+  >
+    <DialogContent id="status-dialog-title" className="flex items-center gap-2">
+      {status ? (
+        <span className="material-symbols-outlined text-green-500">
+          task_alt
+        </span>
+      ) : (
+        <CustomLoader />
+      )}
+
+      <span className={status ? 'text-green-500' : ''}>
+        {status ? successText : loadingText}
+      </span>
+    </DialogContent>
+  </Dialog>
+);
+
+const SavingDialog = ({
+  open,
+  isSaved,
+}: {
+  open: boolean;
+  isSaved?: boolean;
+}) => (
+  <StatusDialog
+    open={open}
+    status={isSaved ?? false}
+    loadingText="Saving..."
+    successText="Saved!"
+  />
+);
+
+const ImportingDialog = ({
+  open,
+  imported,
+}: {
+  open: boolean;
+  imported?: boolean;
+}) => (
+  <StatusDialog
+    open={open}
+    status={imported ?? false}
+    loadingText="Importing..."
+    successText="Done!"
+  />
+);
 
 export const WorklogEditor = ({
   loading,
@@ -64,11 +137,11 @@ export const WorklogEditor = ({
   setMonthTab?: (month: number) => void;
   handleNextMonthClick?: () => void;
   fetchXTasksForDay: (date: string) => Promise<WorkLogs | null>;
-  fetchOptions: { label: string; date: string }[];
+  fetchOptions: { label: string; dateIdx: number }[];
 }) => {
   const dispatch = useAppDispatch();
   const { user } = useUser();
-  const [openTodo, setOpenTodo] = useState<boolean>(false);
+  const [openDrawer, setOpenDrawer] = useState<'emoji_legend' | 'todo'>();
   const [markdownDatas, setMarkdownDatas] = useState<WorkLogPoints[]>(
     DEFAULT_MARKDOWN_DATA,
   );
@@ -81,14 +154,27 @@ export const WorklogEditor = ({
   const isAuotSaving = useRef(false);
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
   const [showPopup, setShowPopup] = useState<boolean>(false);
-  const handleClick = (event: any) => {
-    setAnchorEl(event.currentTarget);
+  const [isSavingModalOpen, setIsSavingModalOpen] = useState<boolean>(false);
+  const router = useRouter();
+  const [importing, setImporting] = useState<{
+    importing: boolean;
+    loader: boolean;
+  }>({
+    importing: false,
+    loader: false,
+  });
+
+  useEffect(() => {
+    if (!importing.importing)
+      setTimeout(
+        () => setImporting((prev) => ({ ...prev, loader: false })),
+        1000,
+      );
+  }, [importing.importing]);
+  const handleBackButtonClick = () => {
+    if (saving || !isAutoSaved) setIsSavingModalOpen(true);
+    if (!saving && isAutoSaved) router.replace(APP_ROUTES.userWorklogs);
   };
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-  const open = Boolean(anchorEl);
-  const id = open ? 'simple-popover' : undefined;
 
   const isAutoSaved = useMemo(() => {
     return (
@@ -104,6 +190,16 @@ export const WorklogEditor = ({
       dispatch(setEdiotrSaving(false));
     }
   }, [isAutoSaved, loading, dispatch]);
+
+  useEffect(() => {
+    const setSavedModalState = () => {
+      setIsSavingModalOpen(false);
+      router.replace(APP_ROUTES.userWorklogs);
+    };
+    if (!saving && isAutoSaved && isSavingModalOpen) {
+      setTimeout(() => setSavedModalState(), 1000);
+    }
+  }, [saving, isAutoSaved, isSavingModalOpen]);
 
   useEffect(() => {
     if (!user) return;
@@ -128,9 +224,12 @@ export const WorklogEditor = ({
   }, [editWorkLogs]);
 
   const saveWorkLog = useCallback(
-    (_workLog: { works: WorkLogPoints[] } | null) => {
+    (
+      _workLog: { works: WorkLogPoints[] } | null,
+      workData?: WorkLogPoints[],
+    ) => {
       const _user = store.getState().auth.user;
-      if (!_user || !_workLog || !_workLog) return;
+      if (!_user) return;
       //   console.log({
       //     ..._workLog,
       //     userId: _user?.id,
@@ -141,7 +240,7 @@ export const WorklogEditor = ({
       PortalSdk.putData(`/api/user/worklogs`, {
         ...workLog,
         userId: user?.id,
-        works: markdownDatas,
+        works: workData ? workData : markdownDatas,
         updatedAt: new Date(),
       })
         .then((data) => {
@@ -150,6 +249,7 @@ export const WorklogEditor = ({
           setWorkLog(data?.data?.workLogs);
           setServerLog(data?.data?.workLogs);
           dispatch(updateLogs(data?.data?.workLogs));
+          refreshWorklogs();
           console.log('saved', data?.data?.workLogs);
         })
         .catch((err) => {
@@ -157,7 +257,7 @@ export const WorklogEditor = ({
           console.log(err);
         });
     },
-    [workLog],
+    [workLog, markdownDatas],
   );
 
   const changeMarkData = (
@@ -204,6 +304,7 @@ export const WorklogEditor = ({
   };
   useDebouncedEffect(
     () => {
+      if (saving) return;
       if (
         JSON.stringify(serverLog) === JSON.stringify(workLog) ||
         !editWorkLogs ||
@@ -246,7 +347,6 @@ export const WorklogEditor = ({
   };
 
   const markdownRefs = useRef<RefObject<MDXEditorMethods>[]>([]);
-
   useEffect(() => {
     if (markdownDatas.length != markdownRefs.current.length) {
       markdownRefs.current = markdownDatas.map((_, i) => {
@@ -277,10 +377,14 @@ export const WorklogEditor = ({
     }
   };
   const handleClickTodo = () => {
-    setOpenTodo(true);
+    setOpenDrawer('todo');
   };
-  const handleCloseTodo = () => {
-    setOpenTodo(false);
+  const handleCloseDrawer = () => {
+    setOpenDrawer(undefined);
+  };
+
+  const handleClickEmojiLegend = (event: any) => {
+    setOpenDrawer('emoji_legend');
   };
   const togglePopup = () => {
     setShowPopup(!showPopup);
@@ -316,27 +420,50 @@ export const WorklogEditor = ({
       className="flex min-h-[50vh] flex-col md:max-w-[800px]"
     >
       {!compactView && (
-        <div id="header" className="flex flex-row items-center justify-between">
-          <div className="flex items-center">
-            <Link href={APP_ROUTES.userWorklogs} className="">
-              <IconButton sx={{ fontSize: '16px' }}>
-                <span className="icon_size material-icons text-neutral-900 hover:text-neutral-700">
-                  arrow_back
-                </span>
-              </IconButton>
-            </Link>
-            {workLog?.date &&
-              dayjs(workLog.date).isSame(lastDateOfSelectedMonth, 'day') && (
-                <IconButton
-                  sx={{ fontSize: '16px' }}
-                  onClick={handleMonthChange}
-                >
-                  <span className="icon_size material-icons text-neutral-900 hover:text-neutral-700">
-                    arrow_forward
+        <div
+          id="header"
+          className="mt-2 flex flex-row items-center justify-between gap-4 md:mt-0 md:justify-end"
+        >
+          <div className="flex items-center gap-2">
+            <div className="ml-2 flex items-center overflow-hidden rounded-full md:hidden">
+              <IconButton>
+                <div onClick={handleBackButtonClick} className="px-1">
+                  <span className="material-icons !text-2xl text-neutral-900 hover:text-neutral-700">
+                    arrow_back
                   </span>
-                </IconButton>
+                </div>
+              </IconButton>
+              {workLog?.date &&
+                dayjs(workLog.date).isSame(lastDateOfSelectedMonth, 'day') && (
+                  <IconButton
+                    sx={{ fontSize: '16px' }}
+                    onClick={handleMonthChange}
+                  >
+                    <span className="icon_size material-icons text-neutral-900 hover:text-neutral-700">
+                      arrow_forward
+                    </span>
+                  </IconButton>
+                )}
+            </div>
+            <button
+              disabled={saving || (isAutoSaved as boolean)}
+              onClick={() => saveWorkLog(workLog as any)}
+              className={`flex cursor-pointer items-center gap-2 rounded-lg bg-neutral-100 p-2 px-3 text-sm text-neutral-400 md:ml-3 ${!saving && !isAutoSaved && '!bg-green-100 !text-green-500'}`}
+            >
+              {saving ? (
+                <CustomLoader />
+              ) : !isAutoSaved ? (
+                <span className="icon_size material-icons">save</span>
+              ) : (
+                <span className="icon_size material-icons">done_all</span>
               )}
+
+              <span>
+                {saving ? 'Saving...' : isAutoSaved ? 'Saved' : 'Save'}
+              </span>
+            </button>
           </div>
+
           <div className="flex flex-row gap-1">
             {/* <div
               onClick={() => insertToContent("✅")}
@@ -345,87 +472,53 @@ export const WorklogEditor = ({
               <span className="icon_size material-icons">✅</span>
             </div> */}
             {loading ? (
-              <div className="mt-2 h-5 w-5 animate-spin rounded-full border-b-2 border-t-2 border-neutral-700 p-2"></div>
+              <div className="mr-2 mt-4 h-5 w-5 animate-spin rounded-full border-b-2 border-t-2 border-neutral-700 p-2"></div>
             ) : (
               <div
                 onClick={refreshWorklogs}
                 className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700"
               >
-                <span className="material-icons text-4xl">refresh</span>
+                <span className="material-icons !text-2xl !text-neutral-600">
+                  refresh
+                </span>
               </div>
             )}
             <div className="hidden cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700 max-sm:block">
               <span
-                className="material-icons text-4xl"
-                onClick={handleClick}
-                aria-describedby={id}
+                className="material-icons !text-2xl !text-neutral-600"
+                onClick={handleClickEmojiLegend}
               >
                 emoji_objects
               </span>
             </div>
             <div className="hidden cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700 max-sm:block">
               <span
-                className="material-icons text-4xl"
+                className="material-icons !text-2xl !text-neutral-600"
                 onClick={handleClickTodo}
-                aria-describedby={id}
               >
                 format_list_bulleted
               </span>
             </div>
-            <Popover
-              id={id}
-              open={open}
-              anchorEl={anchorEl}
-              onClose={handleClose}
-              anchorOrigin={{
-                vertical: 'bottom',
-                horizontal: 'center',
-              }}
-              sx={{
-                '.MuiPopover-paper': {
-                  backgroundColor: '#fff',
-                  color: '#333',
-                  borderRadius: '12px',
-                  boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.2)',
-                  padding: '0px 16px',
-                  maxWidth: '90%',
-                },
-                my: '8px',
-              }}
+            <CustomDrawer
+              open={openDrawer === 'emoji_legend'}
+              onClose={handleCloseDrawer}
             >
-              <div className="px-2 pb-4 pt-0">
-                <EmojiLegend />
-              </div>
-            </Popover>
-            <Drawer
-              anchor="bottom"
-              open={openTodo}
-              onClose={handleCloseTodo}
-              sx={{
-                '.MuiDrawer-paper': {
-                  backgroundColor: '#fff',
-                  padding: '24px',
-                  borderRadius: '16px 16px 0 0',
-                  boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.2)',
-                  height: '90vh',
-                },
-              }}
+              <EmojiLegend />
+            </CustomDrawer>
+            <CustomDrawer
+              open={openDrawer === 'todo'}
+              onClose={handleCloseDrawer}
+              height="50vh"
             >
-              <div className="absolute right-0 top-4 hidden w-10 cursor-pointer text-neutral-900 hover:text-neutral-700 max-sm:block">
-                <span
-                  className="material-icons text-4xl"
-                  onClick={handleCloseTodo}
-                >
-                  close_icon
-                </span>
-              </div>
               <TodoTab userId={user?.id as string} />
-            </Drawer>
+            </CustomDrawer>
             <div
               className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700"
               onClick={togglePopup}
             >
-              <span className="material-icons text-4xl">more_vert</span>
+              <span className="material-icons !text-2xl !text-neutral-600">
+                more_vert
+              </span>
               {showPopup && (
                 <div
                   ref={popupRef}
@@ -434,75 +527,67 @@ export const WorklogEditor = ({
                   <ul>
                     {fetchOptions.map((option) => (
                       <li
-                        key={option.date}
-                        className="cursor-pointer p-2 hover:bg-neutral-100"
+                        key={option.dateIdx}
+                        className="flex cursor-pointer items-center gap-2 rounded-lg p-2 text-sm hover:bg-neutral-100"
                         onClick={() => {
-                          fetchXTasksForDay(option.date).then(
-                            (updatedWorkLog) => {
-                              setWorkLog(updatedWorkLog);
-                              setShowPopup(false);
-                            },
-                          );
+                          setImporting((prev) => ({
+                            ...prev,
+                            importing: true,
+                            loader: true,
+                          }));
+                          if (saving) {
+                            toast.warning('Saving... Please Wait!');
+                            return;
+                          }
+                          fetchXTasksForDay(
+                            dayjs(workLog?.date)
+                              .subtract(option.dateIdx, 'day')
+                              .format('YYYY-MM-DD'),
+                          ).then((updatedWorkLog) => {
+                            const newWorks = updatedWorkLog?.works as any;
+                            saveWorkLog(updatedWorkLog as any, newWorks);
+                            setShowPopup(false);
+                            setImporting((prev) => ({
+                              ...prev,
+                              importing: false,
+                            }));
+                          });
                         }}
                       >
-                        {option.label}
+                        <span className="material-icons-outlined !text-neutral-600">
+                          {' '}
+                          download
+                        </span>
+                        <span>{option.label}</span>
                       </li>
                     ))}
                   </ul>
-                  <div className="mt-2 hidden flex-col max-sm:flex">
-                    <div
-                      className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700"
-                      onClick={handleClick}
-                    >
-                      <span className="material-icons text-4xl">
-                        emoji_objects
-                      </span>
-                    </div>
-                    <div
-                      className="cursor-pointer rounded-lg p-2 text-neutral-900 hover:text-neutral-700"
-                      onClick={handleClickTodo}
-                    >
-                      <span className="material-icons text-4xl">
-                        format_list_bulleted
-                      </span>
-                    </div>
-                  </div>
                 </div>
               )}
             </div>
-            {!isAutoSaved && !loading && (
-              <button
-                onClick={() => saveWorkLog(workLog as any)}
-                className="cursor-pointer rounded-lg p-2 text-green-500"
-              >
-                <span className="icon_size material-icons">done_all</span>
-              </button>
-            )}
+            {/* {!isAutoSaved && !loading && (
+                <button
+                  onClick={() => saveWorkLog(workLog as any)}
+                  className="cursor-pointer rounded-lg p-2 text-green-500"
+                >
+                  <span className="icon_size material-icons">done_all</span>
+                </button>
+              )} */}
           </div>
         </div>
       )}
       <div className="mb-4 p-4">
-        <input
-          disabled={compactView}
-          type="text"
-          className="bg-transparent text-2xl outline-none"
-          placeholder="Jotdown a new project/task/goal..."
-          value={workLog?.title || 'March 27 - Sunday'}
-          onChange={(e) => {
-            setWorkLog((wl) =>
-              wl
-                ? {
-                    ...wl,
-                    title: e.target.value,
-                  }
-                : null,
-            );
-          }}
-        />
+        <div className="flex w-full items-center justify-between">
+          <input
+            disabled
+            type="text"
+            className="bg-transparent text-2xl outline-none"
+            placeholder="Jotdown a new project/task/goal..."
+            value={workLog?.title || 'March 27 - Sunday'}
+          />
+        </div>
         <div className="item-center mt-3 flex gap-2 text-xs leading-3 text-neutral-500">
-          {saving && (
-            <div className="mr-2 h-3 w-3 animate-spin rounded-full border-b-2 border-t-2 border-neutral-800"></div>
-          )}
+          {saving && <CustomLoader />}
           {workLog?.logType === 'dayLog'
             ? dayjs(workLog?.date).format('DD-MM-YYYY')
             : 'My logs'}{' '}
@@ -640,6 +725,14 @@ export const WorklogEditor = ({
           </div> */}
         </div>
       )}
+      <SavingDialog
+        open={isSavingModalOpen}
+        isSaved={!saving && (isAutoSaved as boolean)}
+      />
+      <ImportingDialog
+        open={importing.loader}
+        imported={!importing.importing}
+      />
     </div>
   );
 };

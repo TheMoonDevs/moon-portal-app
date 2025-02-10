@@ -1,13 +1,13 @@
-"use client";
-import { useUser } from "@/utils/hooks/useUser";
+'use client';
+import { useUser } from '@/utils/hooks/useUser';
 import {
   getCurrentPushSubscription,
   registerPushNotification,
   unregisterPushNotification,
-} from "@/utils/services/notifications/pushService";
-import { CircularProgress } from "@mui/material";
-import { useEffect, useState } from "react";
-import { toast, Toaster } from "sonner";
+} from '@/utils/services/notifications/pushService';
+import { CircularProgress } from '@mui/material';
+import { useEffect, useState } from 'react';
+import { toast, Toaster } from 'sonner';
 
 const PushSubscriptionToggleButton = () => {
   const [hasActivePushSubscription, setHasActivePushSubscription] =
@@ -49,18 +49,18 @@ const PushSubscriptionToggleButton = () => {
       }
       setHasActivePushSubscription(enabled);
       if (enabled) {
-        toast.success("Push notifications enabled");
+        toast.success('Push notifications enabled');
       } else {
-        toast.warning("Push notifications disabled");
+        toast.warning('Push notifications disabled');
       }
     } catch (error) {
       console.error(error);
-      if (enabled && Notification.permission === "denied") {
+      if (enabled && Notification.permission === 'denied') {
         toast.error(
-          "Please enable push notifications in your browser settings."
+          'Please enable push notifications in your browser settings.',
         );
       } else {
-        toast.error("Something went wrong. Please try again.");
+        toast.error('Something went wrong. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -70,33 +70,33 @@ const PushSubscriptionToggleButton = () => {
   if (hasActivePushSubscription === undefined) return null;
 
   return (
-    <div className="relative flex items-start justify-center">
+    <div className="relative flex cursor-pointer items-start justify-center">
       {hasActivePushSubscription ? (
-        <span
+        <div
           onClick={() => setPushNotificationsEnabled(false)}
           title="Disable push notifications"
-          className={`icon_size material-symbols-outlined cursor-pointer ${
-            loading ? "opacity-40" : "opacity-100"
-          }`}
+          className="flex w-full flex-row items-center justify-center gap-2 px-2 py-4"
         >
-          notifications_active
-        </span>
+          <span className="material-symbols-outlined">
+            notifications_active
+          </span>
+          <span className="w-fit">Push Notification</span>
+        </div>
       ) : (
-        <span
+        <div
           onClick={() => setPushNotificationsEnabled(true)}
           title="Enable push notifications"
-          className={`icon_size material-symbols-outlined cursor-pointer ${
-            loading ? "opacity-10" : "opacity-100"
-          }`}
+          className="flex w-full flex-row items-center justify-center gap-2 px-2 py-4"
         >
-          notifications_off
-        </span>
+          <span className="material-symbols-outlined">notifications_off</span>
+          <span className="w-fit">Push Notification</span>
+        </div>
       )}
       {loading && (
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+        <div className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2">
           <CircularProgress
             size={12}
-            sx={{ width: "inherit", height: "inherit" }}
+            sx={{ width: 'inherit', height: 'inherit' }}
             color="inherit"
           />
         </div>
