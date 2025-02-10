@@ -23,6 +23,7 @@ export enum APP_ROUTES {
   userWorklogSummary = "/user/worklogs/summary",
   googleCalendar = "/google-calendar",
   badgeEditor = "/admin/badge/editor",
+  invoices = '/invoices'
 }
 
 export enum QUICKLINK_ROUTES {

@@ -60,10 +60,15 @@ const CLIENT_NAVIGATION_OPTIONS = [
     icon: 'task_alt',
   },
   {
-    name: 'Referrals',
-    path: APP_ROUTES.referrals,
-    icon: 'group_add',
+    name: "Invoices",
+    path: APP_ROUTES.invoices,
+    icon: "receipt_long",
   },
+  // {
+  //   name: 'Referrals',
+  //   path: APP_ROUTES.referrals,
+  //   icon: 'group_add',
+  // },
   // {
   //   name: "Growth",
   //   path: APP_ROUTES.growth,
