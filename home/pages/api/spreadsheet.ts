@@ -6,6 +6,8 @@ const googleSheetsAPI = new GoogleSheetsAPI({
   privateKey: process.env.GIAM_PRIVATE_KEY as string,
 });
 
+export const runtime = 'edge';
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   switch (req.method) {
     case 'GET':
