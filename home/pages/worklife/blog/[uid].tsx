@@ -11,6 +11,8 @@ import { WorklifePageStyled } from "@/components/Pages/worklife/WorkLifeHomePage
 
 type Params = { uid: string };
 
+export const runtime = "experimental-edge";
+
 export default function Page({
   page,
 }: InferGetStaticPropsType<typeof getStaticProps>) {
@@ -59,9 +61,9 @@ export async function getStaticPaths() {
   const pages = await client.getAllByType("blog_page");
 
   return {
-    paths: pages.map((page) => {
+    paths: pages ? pages.map((page) => {
       return asLink(page);
-    }),
+    }) : ["undefined"],
     fallback: false,
   };
 }
