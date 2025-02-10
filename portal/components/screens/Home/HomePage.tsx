@@ -25,15 +25,25 @@ import Events from './Events';
 
 import { Toaster } from 'sonner';
 
-const FocusMode = () => (
+const FocusMode = ({ isClient }: { isClient?: boolean }) => (
   <div className="flex w-full flex-col">
     <h4 className="px-4 text-lg font-bold">In Progress Today </h4>
-    <InWorkSection visible={true} />
+    {!isClient ? (
+      <InWorkSection visible={true} />
+    ) : (
+      <div className="m-4 mt-6 h-60 max-h-[50vh] overflow-y-scroll rounded-xl border-neutral-400 bg-white px-0 py-2 shadow-md md:overflow-hidden"></div>
+    )}
     <Link
       className="mx-4 mt-3 self-stretch rounded-md bg-green-500 px-[30px] py-3 text-center text-sm font-bold uppercase tracking-[4px] text-white hover:bg-green-400"
-      href={APP_ROUTES.userWorklogs}
+      href={isClient ? '/' : APP_ROUTES.userWorklogs}
     >
-      <span className="select-none">Enter &nbsp; Focus &nbsp; Mode</span>
+      <span className="select-none">
+        {!isClient ? (
+          <>Enter &nbsp; Focus &nbsp; Mode</>
+        ) : (
+          <>Engagement &nbsp; Details</>
+        )}
+      </span>
     </Link>
   </div>
 );
@@ -146,14 +156,31 @@ const MemberHomePage = () => {
 
 const ClientHomePage = () => {
   const { user } = useUser();
+  const isTabletOrMore = useMediaQuery(media.moreTablet);
 
   if (!user) return <LoaderScreen />;
 
   return (
-    <div className="home_bg min-h-screen">
-      <ProfileSection user={user} />
-      <DailySection user={user} />
-      <div className="h-[300px]"></div>
+    <div className="home_bg flex min-h-screen justify-start scroll-smooth bg-white max-lg:flex-col max-md:flex-col md:pl-4">
+      <div className="w-1/2">
+        <ProfileSection user={user} />
+        <DailySection user={user} />
+        <div className="h-[300px]"></div>
+      </div>
+      <div className="flex w-1/2 flex-col pt-8">
+        <h4 className="px-4 text-lg font-bold">Shortcuts & Utils</h4>
+        <ActionsSection />
+      </div>
+      <div className="flex w-1/2 flex-col pt-8">
+        {isTabletOrMore && <FocusMode isClient={true} />}
+      </div>
+      <div className="flex w-1/2 flex-col pt-8">
+        <p>hdhsjdhs</p>
+        <p>hdhsjdhs</p>
+        <p>hdhsjdhs</p>
+        <p>hdhsjdhs</p>
+        <p>hdhsjdhs</p>
+      </div>
     </div>
   );
 };
