@@ -1,5 +1,8 @@
 import { google } from "googleapis";
 import type { NextApiRequest, NextApiResponse } from "next";
+
+export const runtime = "edge";
+
 async function handler(req: NextApiRequest, res: NextApiResponse<any>) {
   const spreadsheetId = req.query.spreadsheetId;
   const targetSheetId = parseInt(req.query.sheetId as string) || 0;
