@@ -31,6 +31,8 @@ export const PrivateWorklogView: React.FC<PrivateWorklogViewProps> = ({
   const [saving, setSaving] = useState<boolean>(false);
   const editorRef = useRef<MDXEditorMethods>(null);
   const { localPassphrase } = usePassphrase();
+  const editorInstance = useRef<any | null>(null);
+
   const fetchWorklog = useCallback(async () => {
     if (!user?.id || !date) return;
     if (!localPassphrase) return;
@@ -129,6 +131,40 @@ export const PrivateWorklogView: React.FC<PrivateWorklogViewProps> = ({
   if (!visible) return null;
   // if (!localPassphrase) return <PassphraseVerification />;
 
+  const formatText = (formatType: 'bold' | 'italic' | 'underline') => {
+    if (!editorInstance.current) return;
+
+    const selection = editorInstance.current.state.selection;
+
+    if (!selection.empty) {
+      const selectedText = editorInstance.current.state.doc.textBetween(
+        selection.from,
+        selection.to,
+      );
+      let newText = selectedText;
+
+      switch (formatType) {
+        case 'bold':
+          newText = `**${selectedText}**`;
+          break;
+        case 'italic':
+          newText = `*${selectedText}*`;
+          break;
+        case 'underline':
+          newText = `<u>${selectedText}</u>`;
+          break;
+      }
+
+      editorInstance.current.dispatch({
+        changes: {
+          from: selection.from,
+          to: selection.to,
+          insert: newText,
+        },
+      });
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.ctrlKey && e.key === 's') {
       e.preventDefault();
@@ -150,7 +186,25 @@ export const PrivateWorklogView: React.FC<PrivateWorklogViewProps> = ({
         editorRef.current.insertMarkdown('❌');
       }
     }
+    if (e.ctrlKey && e.key === 'b' && editorInstance.current) {
+      e.preventDefault();
+      formatText('bold');
+    }
+    if (e.ctrlKey && e.key === 'i' && editorInstance.current) {
+      e.preventDefault();
+      formatText('italic');
+    }
+    if (e.ctrlKey && e.key === 'u' && editorInstance.current) {
+      e.preventDefault();
+      formatText('underline');
+    }
   };
+
+  useEffect(() => {
+    if (editorRef.current) {
+      editorInstance.current = editorRef.current;
+    }
+  }, [editorRef]);
 
   return (
     <div className="relative px-4">
