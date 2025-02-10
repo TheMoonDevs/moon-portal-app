@@ -5,7 +5,7 @@ import ExperienceForm from './sections/ExperienceForm';
 import ProjectsForm from './sections/ProjectsForm';
 import SkillsForm from './sections/SkillsForm';
 import SocialLinksForm from './sections/SocialLinksForm';
-import { useForm, FormProvider } from 'react-hook-form';
+import { useForm, FormProvider, useFieldArray } from 'react-hook-form';
 import {
   areAllFieldsFilled,
   defaultValues,
@@ -30,8 +30,11 @@ import { DevProfile } from '@prisma/client';
 const DevProfileLayout = () => {
   const methods = useForm({
     defaultValues,
+    shouldUnregister: false,
+    mode: 'onChange',
   });
-  const { getValues, handleSubmit } = methods;
+
+  const { getValues, handleSubmit, trigger } = methods;
   const [activeStep, setActiveStep] = useState(0);
   const [transitioning, setTransitioning] = useState(false);
   const [isProfileFetching, setIsProfileFetching] = useState(false);
@@ -132,6 +135,7 @@ const DevProfileLayout = () => {
       if (newStep !== null) {
         proceedToStep(newStep);
       }
+      setUploading(false);
       return;
     }
 
@@ -170,7 +174,10 @@ const DevProfileLayout = () => {
     }
   }, [activeStep, methods]);
 
-  const handleForm = (data: DevProfile) => {
+  const handleForm = async (data: DevProfile) => {
+    const isValid = await trigger();
+    console.log(isValid);
+    if (!isValid) return;
     activeStep === steps.length - 1
       ? handleSaveAndProceed(null, data)
       : handleSaveAndProceed(activeStep + 1, data);
@@ -183,7 +190,7 @@ const DevProfileLayout = () => {
   ) : (
     <>
       <FormProvider {...methods}>
-        <form onSubmit={handleSubmit(handleForm)}>
+        <form>
           <div className="no-scrollbar flex h-full w-full items-start gap-2 overflow-y-scroll bg-[#F2F4F7] px-6 py-4 max-md:px-3 max-sm:flex-col max-sm:px-2">
             <div className="w-1/5 px-2 py-4 max-md:px-0 max-sm:w-full">
               <StepperCompo
@@ -211,15 +218,9 @@ const DevProfileLayout = () => {
                     </p>
                   </div>
                   <button
-                    onClick={(e) => {
-                      // activeStep === steps.length - 1
-                      //   ? handleSaveAndProceed(null)
-                      //   : handleSaveAndProceed(activeStep + 1)
-                      e.preventDefault();
-                    }}
+                    onClick={handleSubmit(handleForm)}
                     className={`cursor-pointer rounded-lg bg-black px-4 py-2 text-sm text-white transition duration-300 ease-in-out ${transitioning && 'cursor-not-allowed opacity-50'}`}
                     disabled={transitioning}
-                    type="submit"
                   >
                     {uploading ? (
                       <span className="flex items-center justify-center gap-2">

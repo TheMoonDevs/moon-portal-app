@@ -1,6 +1,6 @@
-import { DevProfile } from "@prisma/client";
-import dayjs from "dayjs";
-import { toast } from "sonner";
+import { DevProfile } from '@prisma/client';
+import dayjs from 'dayjs';
+import { toast } from 'sonner';
 
 export const defaultValues: DevProfile = {
   id: '',
@@ -21,8 +21,8 @@ export const defaultValues: DevProfile = {
   projects: [],
   socialLinks: [],
   createdAt: new Date(),
-  updatedAt: new Date()
-}
+  updatedAt: new Date(),
+};
 
 const fieldLabels: Record<string, string> = {
   avatar: 'Avatar',
@@ -36,15 +36,67 @@ const fieldLabels: Record<string, string> = {
   country: 'Country',
   profession: 'Profession',
 };
+export const stepFields = {
+  0: [
+    'firstName',
+    'lastName',
+    'email',
+    'avatar',
+    'bio',
+    'address',
+    'city',
+    'state',
+    'country',
+  ],
+  1: ['workExperience'],
+  2: ['projects'],
+  3: ['expertise'],
+  4: ['socialLinks'],
+};
 
-export const validateStepFields = (step: number, data: DevProfile, suppressToast = false) => {
+export const hasUnfilledFieldsInStep = (
+  formData: DevProfile,
+  stepFields: Record<number, string[]>,
+  activeStep: number,
+) => {
+  const fieldsToCheck = stepFields[activeStep] || [];
+  const hasUnfilledFields = fieldsToCheck.some((field) => {
+    const value = formData[field as keyof DevProfile];
+    console.log(
+      'value',
+      field,
+      value,
+      Array.isArray(value) && value.length === 0,
+    );
+    return (
+      value === null ||
+      value === undefined ||
+      value === '' ||
+      (Array.isArray(value) && value.length === 0) // For arrays like `expertise`, `workExperience`, etc.
+    );
+  });
+
+  return hasUnfilledFields;
+};
+
+export const validateStepFields = (
+  step: number,
+  data: DevProfile,
+  suppressToast = false,
+) => {
   switch (step) {
     case 0:
-      const missingFieldsStep1 = Object.keys(fieldLabels).filter(field => !data[field as keyof DevProfile]);
+      const missingFieldsStep1 = Object.keys(fieldLabels).filter(
+        (field) => !data[field as keyof DevProfile],
+      );
       if (missingFieldsStep1.length > 0) {
-        const missingLabels = missingFieldsStep1.map(field => fieldLabels[field]);
+        const missingLabels = missingFieldsStep1.map(
+          (field) => fieldLabels[field],
+        );
         if (!suppressToast) {
-          toast.error(`Please fill out the missing fields in Personal Details: ${missingLabels.join(', ')}`);
+          toast.error(
+            `Please fill out the missing fields in Personal Details: ${missingLabels.join(', ')}`,
+          );
         }
         return false;
       }
@@ -53,7 +105,9 @@ export const validateStepFields = (step: number, data: DevProfile, suppressToast
     case 1:
       if (data.workExperience.length === 0) {
         if (!suppressToast) {
-          toast.error('Please add at least one work experience in Work Experience.');
+          toast.error(
+            'Please add at least one work experience in Work Experience.',
+          );
         }
         return false;
       }
@@ -80,7 +134,9 @@ export const validateStepFields = (step: number, data: DevProfile, suppressToast
     case 4:
       if (data.socialLinks.length === 0) {
         if (!suppressToast) {
-          toast.error('Please add at least one social link in Social Links section.');
+          toast.error(
+            'Please add at least one social link in Social Links section.',
+          );
         }
         return false;
       }

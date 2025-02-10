@@ -140,7 +140,7 @@ const ProjectsForm = () => {
     <div
       className={`flex h-full w-full ${projectsValues.length === 0 ? 'items-center' : 'items-start'} gap-4 max-sm:flex-col`}
     >
-      <form className="flex w-1/2 flex-col gap-2 max-sm:w-full">
+      <div className="flex w-1/2 flex-col gap-2 max-sm:w-full">
         <Input
           id="name"
           label="Name"
@@ -231,7 +231,7 @@ const ProjectsForm = () => {
             </button>
           )}
         </div>
-      </form>
+      </div>
       <div className="flex h-full w-1/2 flex-col gap-4 max-sm:w-full">
         {projectsValues.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center text-gray-500">

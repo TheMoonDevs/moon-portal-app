@@ -1,10 +1,16 @@
 'use client ';
 import React from 'react';
-import { Step, StepLabel, Stepper, useMediaQuery } from '@mui/material';
+import {
+  Step,
+  StepLabel,
+  Stepper,
+  Tooltip,
+  useMediaQuery,
+} from '@mui/material';
 import { steps } from '@/utils/constants/devProfileConstants';
 import media from '@/styles/media';
 import { useFormContext } from 'react-hook-form';
-import { validateStepFields } from '.';
+import { hasUnfilledFieldsInStep, stepFields, validateStepFields } from '.';
 import { DevProfile } from '@prisma/client';
 
 const StepperCompo = ({
@@ -16,12 +22,7 @@ const StepperCompo = ({
 }) => {
   const isMobile = useMediaQuery(media.largeMobile);
   const { getValues } = useFormContext();
-  const formData = getValues();
-
-  const getStepStatus = (stepIndex: number) => {
-    const isValid = validateStepFields(stepIndex, formData as DevProfile, true);
-    return isValid ? 'completed' : 'incomplete';
-  };
+  const formData = getValues() as DevProfile;
 
   return (
     <div>
@@ -64,14 +65,16 @@ const StepperCompo = ({
                 ) : (
                   <div
                     className={`flex h-10 w-10 items-center justify-center rounded-full text-lg font-semibold ${
-                      getStepStatus(index) === 'completed'
+                      !hasUnfilledFieldsInStep(formData, stepFields, index)
                         ? 'border border-green-600 bg-green-100 text-green-600'
-                        : getStepStatus(index) === 'incomplete'
+                        : hasUnfilledFieldsInStep(formData, stepFields, index)
                           ? 'border border-yellow-600 bg-yellow-100 text-yellow-600'
                           : 'border border-gray-600 bg-gray-100 text-gray-600'
                     } transition-all duration-300 ease-in-out`}
                   >
-                    {getStepStatus(index) === 'completed' ? '✔' : index + 1}
+                    {!hasUnfilledFieldsInStep(formData, stepFields, index)
+                      ? '✔'
+                      : index + 1}
                   </div>
                 )
               }
@@ -84,17 +87,19 @@ const StepperCompo = ({
                 } flex items-center gap-2 max-md:text-base max-sm:hidden`}
               >
                 {step.label}
-                <span
-                  className={`material-symbols-outlined text-lg max-md:text-base ${
-                    getStepStatus(index) === 'completed'
-                      ? 'font-semibold text-green-500'
-                      : 'text-gray-600'
-                  }`}
-                >
-                  {getStepStatus(index) === 'completed'
-                    ? 'check_circle'
-                    : 'error'}
-                </span>
+                <Tooltip title="You have not filled in some fields">
+                  <span
+                    className={`material-symbols-outlined text-lg max-md:text-base ${
+                      !hasUnfilledFieldsInStep(formData, stepFields, index)
+                        ? 'font-semibold text-green-500'
+                        : 'text-yellow-500'
+                    }`}
+                  >
+                    {!hasUnfilledFieldsInStep(formData, stepFields, index)
+                      ? 'check_circle'
+                      : 'error'}
+                  </span>
+                </Tooltip>
               </span>
             </StepLabel>
           </Step>
