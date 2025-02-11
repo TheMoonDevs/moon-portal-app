@@ -290,7 +290,7 @@ export const AdminUserBasicData = ({
                 ))}
               </select>
             </div>
-            <div className="flex flex-row gap-4 items-center justify-start">
+            {/* <div className="flex flex-row gap-4 items-center justify-start">
               <label className="w-40" htmlFor="name">
                 Created At
               </label>
@@ -319,7 +319,7 @@ export const AdminUserBasicData = ({
                   }));
                 }}
               />
-            </div>
+            </div> */}
           </div>
         </div>
       </LocalizationProvider>

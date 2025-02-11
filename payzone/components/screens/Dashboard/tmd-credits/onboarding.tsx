@@ -70,6 +70,7 @@ const OnboardingModal = ({
             ...userPayData,
             walletAddress: isCoinbaseConnection ? address : walletAdd,
           },
+          updatedAt: user?.updatedAt,
         }
       );
       // Update the user in Redux store
