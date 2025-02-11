@@ -10,32 +10,59 @@ export interface GroupedClientUtilityLink {
 
 const ClientShortcuts = ({
   shortcut,
+  isExpanded,
+  handleExpand,
 }: {
   shortcut: GroupedClientUtilityLink;
+  handleExpand: () => void;
+  isExpanded: boolean;
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  console.log(shortcut);
   return (
-    <div
-      className="cursor-poiinter flex w-full items-center justify-between rounded-md border border-neutral-600 p-2 text-white hover:bg-neutral-700"
-      onClick={() => setIsExpanded(!isExpanded)}
-    >
-      <div className="flex items-center">
-        <Image
-          src={shortcut.avatar || '/user-avatar.svg'}
-          alt=""
-          width={40}
-          height={40}
-          className="mr-2 h-10 w-10 rounded-full border-none bg-white object-cover"
-        />
-        <p className="text-sm font-medium text-neutral-300 md:text-base">
-          {shortcut.clientName}
-        </p>
+    <>
+      <div
+        className="cursor-poiinter flex w-full items-center justify-between rounded-md border border-neutral-600 p-2 text-white hover:bg-neutral-700"
+        onClick={handleExpand}
+      >
+        <div className="flex items-center">
+          <Image
+            src={shortcut.avatar || '/user-avatar.svg'}
+            alt=""
+            width={40}
+            height={40}
+            className="mr-2 h-10 w-10 rounded-full border-none bg-white object-cover"
+          />
+          <p className="text-sm font-medium text-neutral-300 md:text-base">
+            {shortcut.clientName}
+          </p>
+        </div>
+        <span className="material-symbols-outlined">
+          {isExpanded ? 'keyboard_arrow_down' : 'keyboard_arrow_up'}
+        </span>
       </div>
-      <span className="material-symbols-outlined">
-        {!isExpanded ? 'keyboard_arrow_down' : 'keyboard_arrow_up'}
-      </span>
-    </div>
+      {isExpanded && (
+        <div className="mt-0 max-h-64 overflow-y-auto overscroll-x-none rounded-md border border-neutral-600 p-3">
+          {shortcut.shortcuts.map((sc) => (
+            <div
+              key={sc.id}
+              className="mb-2 flex items-center justify-between rounded-md bg-neutral-800 p-2 hover:bg-neutral-700"
+            >
+              <div className="flex w-[60%] flex-col items-start">
+                <p className="truncate w-full text-neutral-200">{sc.title}</p>
+                <p className=" w-full truncate text-xs text-neutral-400">{sc.url}</p>
+              </div>
+              <div className="flex space-x-3">
+                <button className="text-gray-400 hover:text-gray-600">
+                  <span className="material-symbols-outlined">edit</span>
+                </button>
+                <button className="text-red-400 hover:text-red-600">
+                  <span className="material-symbols-outlined">delete</span>
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
   );
 };
 

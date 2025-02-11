@@ -27,6 +27,13 @@ const ClientShortcutsManager = () => {
   >([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [suggestions, setSuggestions] = useState<User[]>([]);
+  const [expandedShortcutId, setExpandedShortcutId] = useState<string | null>(
+    null,
+  );
+
+  const handleExpand = (id: string) => {
+    setExpandedShortcutId((prevId) => (prevId === id ? null : id));
+  };
 
   const fetchClientShortcuts = async () => {
     setLoadingState({ ...loadingState, fetching: true });
@@ -225,6 +232,8 @@ const ClientShortcutsManager = () => {
                       <ClientShortcuts
                         shortcut={shortcut}
                         key={`${shortcut.clientName}-${index}-${shortcut.avatar}`}
+                        isExpanded={expandedShortcutId === shortcut.clientName}
+                        handleExpand={() => handleExpand(shortcut.clientName)}
                       />
                     );
                   },
