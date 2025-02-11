@@ -73,7 +73,21 @@ export async function GET(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    return NextResponse.json({ message: "Hello World" });
+    const body = await req.json();
+    const updatedShortcut = await prisma.clientUtilityLink.update({
+      where: {
+        id: body.id,
+      },
+      data: {
+        title: body.title,
+        url: body.link,
+        clientId: body.clientId,
+      }
+    });
+    return NextResponse.json({
+      status: "success",
+      data: updatedShortcut
+    });
   } catch (error) {
     return NextResponse.json(
       { error: "Error Updating Client Shortcuts" },

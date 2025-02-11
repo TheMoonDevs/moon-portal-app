@@ -30,6 +30,7 @@ const ClientShortcutsManager = () => {
   const [expandedShortcutId, setExpandedShortcutId] = useState<string | null>(
     null,
   );
+  const [shortcutId, setShortcutId] = useState<string | null>(null);
 
   const handleExpand = (id: string) => {
     setExpandedShortcutId((prevId) => (prevId === id ? null : id));
@@ -107,6 +108,44 @@ const ClientShortcutsManager = () => {
     setSuggestions([]);
   };
 
+  const handleEditShortcut = (shortcut: ClientUtilityLink) => {
+    setTitle(shortcut.title);
+    setLink(shortcut.url);
+    setShortcutId(shortcut.id);
+    setSelectedClient(
+      clients.find((client) => client.id === shortcut.clientId) || null,
+    );
+    setSearchTerm(selectedClient?.name || '');
+    setLoadingState({ ...loadingState, updating: true });
+  };
+
+  useEffect(() => {
+    if (selectedClient) {
+      setSearchTerm(selectedClient.name || '');
+    }
+  }, [selectedClient]);
+
+  const handleUpdateShortcut = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoadingState({ ...loadingState, updateUploading: true });
+    try {
+      const res = await PortalSdk.putData('/api/client-shortcuts', {
+        title,
+        link,
+        clientId: selectedClient?.id,
+        id: shortcutId,
+      });
+      toast.success('Shortcut updated successfully');
+      fetchClientShortcuts();
+    } catch (error) {
+      console.log(error);
+      toast.error('Error updating shortcut');
+    } finally {
+      setLoadingState({ ...loadingState, updateUploading: false });
+      resetForm();
+    }
+  };
+
   return (
     <>
       <MobileBox>
@@ -137,7 +176,11 @@ const ClientShortcutsManager = () => {
                   </IconButton>
                 </ToolTip>
                 <form
-                  onSubmit={handleFormSubmit}
+                  onSubmit={
+                    loadingState.updating
+                      ? handleUpdateShortcut
+                      : handleFormSubmit
+                  }
                   className="relative my-2 flex h-full w-full flex-grow flex-col"
                 >
                   <div className="flex-grow">
@@ -213,7 +256,11 @@ const ClientShortcutsManager = () => {
                         {loadingState.adding || loadingState.updateUploading ? (
                           <Spinner className="h-4 w-4" />
                         ) : (
-                          <>Add Shortcut</>
+                          <>
+                            {loadingState.updating
+                              ? 'Update Shortcut'
+                              : 'Add Shortcut'}
+                          </>
                         )}
                       </button>
                     </div>
@@ -234,6 +281,7 @@ const ClientShortcutsManager = () => {
                         key={`${shortcut.clientName}-${index}-${shortcut.avatar}`}
                         isExpanded={expandedShortcutId === shortcut.clientName}
                         handleExpand={() => handleExpand(shortcut.clientName)}
+                        handleEditShortcut={handleEditShortcut}
                       />
                     );
                   },

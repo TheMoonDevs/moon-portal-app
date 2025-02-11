@@ -15,10 +15,12 @@ const ClientShortcuts = ({
   shortcut,
   isExpanded,
   handleExpand,
+  handleEditShortcut,
 }: {
   shortcut: GroupedClientUtilityLink;
   handleExpand: () => void;
   isExpanded: boolean;
+  handleEditShortcut: (shortcut: ClientUtilityLink) => void;
 }) => {
   const [deletingShortcutId, setDeletingShortcutId] = useState<string | null>(
     null,
@@ -77,7 +79,10 @@ const ClientShortcuts = ({
                   </p>
                 </div>
                 <div className="flex space-x-3">
-                  <button className="text-gray-400 hover:text-gray-600">
+                  <button
+                    className="text-gray-400 hover:text-gray-600"
+                    onClick={() => handleEditShortcut(sc)}
+                  >
                     <span className="material-symbols-outlined">edit</span>
                   </button>
                   <button
