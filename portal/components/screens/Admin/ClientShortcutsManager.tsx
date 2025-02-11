@@ -10,17 +10,21 @@ import ToolTip from '@/components/elements/ToolTip';
 import { IconButton } from '@mui/material';
 import ClientShortcuts, { GroupedClientUtilityLink } from './ClientShortcuts';
 
+const INITIAL_LOADING_STATE = {
+  addNew: false,
+  fetching: false,
+  adding: false,
+  updating: false,
+  updateUploading: false,
+};
+
 const ClientShortcutsManager = () => {
   const [title, setTitle] = useState('');
   const [link, setLink] = useState('');
   const [clients, setClients] = useState<User[]>([]);
-  const [loadingState, setLoadingState] = useState<loadingState>({
-    addNew: false,
-    fetching: false,
-    adding: false,
-    updating: false,
-    updateUploading: false,
-  });
+  const [loadingState, setLoadingState] = useState<loadingState>(
+    INITIAL_LOADING_STATE,
+  );
   const [selectedClient, setSelectedClient] = useState<User | null>(null);
   const [clientShortcuts, setClientShortcuts] = useState<
     GroupedClientUtilityLink[]
@@ -36,33 +40,29 @@ const ClientShortcutsManager = () => {
     setExpandedShortcutId((prevId) => (prevId === id ? null : id));
   };
 
-  const fetchClientShortcuts = async () => {
-    setLoadingState({ ...loadingState, fetching: true });
+  const fetchData = async (isOnlyShortcuts?: boolean) => {
+    setLoadingState((prev) => ({ ...prev, fetching: true }));
     try {
-      const res = await PortalSdk.getData('/api/client-shortcuts', null);
-      setClientShortcuts(res.data);
+      if (isOnlyShortcuts) {
+        const res = await PortalSdk.getData('/api/client-shortcuts', null);
+        setClientShortcuts(res.data);
+      } else {
+        const [clientRes, shortcutRes] = await Promise.all([
+          PortalSdk.getData('/api/clients', null),
+          PortalSdk.getData('/api/client-shortcuts', null),
+        ]);
+        setClients(clientRes.data.clients);
+        setClientShortcuts(shortcutRes.data);
+      }
     } catch (error) {
-      console.log(error);
+      console.error(error);
     } finally {
-      setLoadingState({ ...loadingState, fetching: false });
-    }
-  };
-
-  const fetchClients = async () => {
-    setLoadingState({ ...loadingState, fetching: true });
-    try {
-      const res = await PortalSdk.getData('/api/clients', null);
-      setClients(res.data.clients);
-    } catch (error) {
-      console.log(error);
-    } finally {
-      setLoadingState({ ...loadingState, fetching: false });
+      setLoadingState((prev) => ({ ...prev, fetching: false }));
     }
   };
 
   useEffect(() => {
-    fetchClients();
-    fetchClientShortcuts();
+    fetchData();
   }, []);
 
   const handleUserChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -85,7 +85,7 @@ const ClientShortcutsManager = () => {
         clientId: selectedClient?.id,
       });
       toast.success('Shortcut added successfully');
-      fetchClientShortcuts();
+      fetchData(true);
     } catch (error) {
       console.log(error);
       toast.error('Error adding shortcut');
@@ -136,7 +136,7 @@ const ClientShortcutsManager = () => {
         id: shortcutId,
       });
       toast.success('Shortcut updated successfully');
-      fetchClientShortcuts();
+      fetchData(true);
     } catch (error) {
       console.log(error);
       toast.error('Error updating shortcut');
@@ -267,7 +267,8 @@ const ClientShortcutsManager = () => {
                   </div>
                 </form>
               </>
-            ) : clientShortcuts?.length === 0 ? (
+            ) : clientShortcuts.length === 0 ||
+              clientShortcuts.every((group) => group.shortcuts.length === 0) ? (
               <div className="flex h-full flex-col items-center justify-center">
                 <p className="text-neutral-400">No Shortcuts found.</p>
               </div>

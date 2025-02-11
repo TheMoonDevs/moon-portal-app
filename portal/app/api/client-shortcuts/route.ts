@@ -37,9 +37,6 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
-  const clientId = req.nextUrl.searchParams.get("clientId");
-  let error_response: any;
-
   try {
 
     const clients = await prisma.user.findMany({
