@@ -84,7 +84,16 @@ export async function PUT(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    return NextResponse.json({ message: "Hello World" });
+    const body = await req.json();
+    const deletedShortcut = await prisma.clientUtilityLink.delete({
+      where: {
+        id: body.id,
+      },
+    });
+    return NextResponse.json({
+      status: "success",
+      data: deletedShortcut,
+    });
   } catch (error) {
     return NextResponse.json(
       { error: "Error Deleting Client Shortcuts" },
