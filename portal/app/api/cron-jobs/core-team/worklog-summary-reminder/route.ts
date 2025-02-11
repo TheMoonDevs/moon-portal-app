@@ -15,7 +15,18 @@ const formatDate = (date: Date) => format(date, 'EEEE, MMMM dd, yyyy');
 
 const generateMessages = async (usersWithWorkLogs: any[]) => {
   const today = formatDate(new Date());
-  let messages = `Good morning team! ☀️ Today is ${today}\n`;
+  let blocks: any[] = [
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: `Good morning team! ☀️ Today is ${today}`,
+      },
+    },
+    {
+      type: 'divider',
+    },
+  ];
 
   let combinedWorklogsContent = '';
 
@@ -31,33 +42,64 @@ const generateMessages = async (usersWithWorkLogs: any[]) => {
       yesterdayWorklogsContent,
     } = user;
 
-    const userSummaryLink = `- <${APP_BASE_URL}/user/worklogs/summary/${userId}|logs>`;
+    // const userSummaryLink = `- <${APP_BASE_URL}/user/worklogs/summary/${userId}|logs>`;
 
-    let message = `• ${slackId ? `<@${slackId}>` : userName}`;
+    let message = `${slackId ? `<@${slackId}>` : userName}`;
 
     if (totalTasksYesterday === 0 && totalTasksToday === 0) {
-      message += ` has no tasks logged for yesterday and today.🙅‍♂️ ${userSummaryLink}`;
+      message += ` has no tasks logged for yesterday and today.🙅‍♂️`;
     } else if (
       incompleteTasksYesterday === totalTasksYesterday &&
       totalTasksToday === 0
     ) {
-      message += ` had ${incompleteTasksYesterday} unfinished tasks since yesterday 🙅‍♂️ ${userSummaryLink}`;
+      message += ` had ${incompleteTasksYesterday} unfinished tasks since yesterday 🙅‍♂️`;
     } else if (
       totalTasksYesterday > 0 &&
       completedTasksYesterday === totalTasksYesterday &&
       totalTasksToday === 0
     ) {
-      message += ` finished all tasks (${totalTasksYesterday}) yesterday 🚀 ${userSummaryLink}`;
+      message += ` finished all tasks (${totalTasksYesterday}) yesterday 🚀`;
     } else {
-      message += ` completed ${completedTasksYesterday} tasks ✅, left ${incompleteTasksYesterday} unfinished 😢, and planned ${totalTasksToday} tasks for today 🎯 ${userSummaryLink}`;
+      message += ` completed ${completedTasksYesterday} tasks ✅, left ${incompleteTasksYesterday} unfinished ${incompleteTasksYesterday === 0 ? '😀' : '🥲'}, and planned ${totalTasksToday} tasks for today 🎯`;
     }
 
     combinedWorklogsContent += `${userName}'s Worklogs\n${yesterdayWorklogsContent}\n\n`;
-    messages += `\n${message}`;
+
+    blocks.push(
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: message,
+        },
+        accessory: {
+          type: 'button',
+          text: {
+            type: 'plain_text',
+            text: 'Logs',
+            emoji: true,
+          },
+          value: 'click_me_123',
+          url: `${APP_BASE_URL}/user/worklogs/summary/${userId}`,
+          action_id: 'button-action',
+        },
+      },
+      {
+        type: 'divider',
+      },
+    );
   }
+
   const aiSummary = await GenAiSdk.generateAISummary(combinedWorklogsContent);
-  messages += `\n\n📢 *AI Summary:* ${aiSummary}`;
-  return messages;
+  blocks.push({
+    type: 'section',
+    text: {
+      type: 'mrkdwn',
+      text: `📢 *AI Summary:* ${aiSummary}`,
+    },
+  });
+
+  return blocks;
 };
 
 export async function GET(request: NextRequest) {
@@ -123,12 +165,15 @@ export async function GET(request: NextRequest) {
       }),
     );
 
-    const messages = await generateMessages(usersWithWorkLogs);
+    const blocks = await generateMessages(usersWithWorkLogs);
 
     await slackBot.sendSlackMessageviaAPI({
-      text: messages,
+      blocks,
       channel: SlackChannels.b_coreteam,
       unfurl_links: false,
+      unfurl_media: false,
+      username: 'Worklogs Summary Bot',
+      icon_emoji: ':spiral_note_pad:',
     });
 
     return NextResponse.json({ status: 'success', message: 'Reminders Sent!' });
