@@ -10,7 +10,7 @@ import ToolTip from '@/components/elements/ToolTip';
 import { IconButton } from '@mui/material';
 import ClientShortcuts, { GroupedClientUtilityLink } from './ClientShortcuts';
 
-const INITIAL_LOADING_STATE = {
+export const INITIAL_LOADING_STATE = {
   addNew: false,
   fetching: false,
   adding: false,

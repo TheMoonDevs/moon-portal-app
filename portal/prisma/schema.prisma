@@ -569,3 +569,17 @@ model ClientUtilityLink {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+
+// -------------------------------------Engagements-------------------------------------------
+
+model Engagement {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  client_id String
+  developer_ids String[]
+  title     String
+  startDate DateTime?
+  endDate DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
