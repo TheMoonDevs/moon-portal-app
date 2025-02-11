@@ -194,6 +194,7 @@ export const UserProfileDrawer: React.FC = () => {
         const userResponse = await PortalSdk.putData('/api/user', {
           id: loggedinUser.user.id,
           [fileType]: data.fileInfo[0].fileUrl,
+          updatedAt: loggedinUser?.user?.updatedAt,
         });
 
         console.log(userResponse);

@@ -126,6 +126,7 @@ const EditUser = () => {
         ...personalData,
         dateOfBirth: personalData.dateOfBirth ? personalData.dateOfBirth : null,
       },
+      updatedAt: user?.updatedAt,
     };
 
     try {
