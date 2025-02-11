@@ -15,16 +15,9 @@ const formatDate = (date: Date) => format(date, 'EEEE, MMMM dd, yyyy');
 
 const generateMessages = async (usersWithWorkLogs: any[]) => {
   const today = formatDate(new Date());
-  const blocks: any[] = [
-    {
-      type: 'section',
-      text: {
-        type: 'mrkdwn',
-        text: `*Good morning team! ☀️ Today is ${today}*`,
-      },
-    },
-    { type: 'divider' },
-  ];
+  let messages = `Good morning team! ☀️ Today is ${today}\n`;
+
+  let combinedWorklogsContent = '';
 
   for (const user of usersWithWorkLogs) {
     const {
@@ -38,20 +31,17 @@ const generateMessages = async (usersWithWorkLogs: any[]) => {
       yesterdayWorklogsContent,
     } = user;
 
-    const userSummaryLink =
-      totalTasksYesterday > 0 || totalTasksToday > 0
-        ? ` - <${APP_BASE_URL}/user/worklogs/summary/${userId}|View Worklogs>`
-        : '';
+    const userSummaryLink = `- <${APP_BASE_URL}/user/worklogs/summary/${userId}|logs>`;
 
     let message = `• ${slackId ? `<@${slackId}>` : userName}`;
 
     if (totalTasksYesterday === 0 && totalTasksToday === 0) {
-      message += ' has no tasks logged for yesterday and today.🙅‍♂️';
+      message += ` has no tasks logged for yesterday and today.🙅‍♂️ ${userSummaryLink}`;
     } else if (
       incompleteTasksYesterday === totalTasksYesterday &&
       totalTasksToday === 0
     ) {
-      message += ` had ${incompleteTasksYesterday} unfinished tasks since yesterday 🙅‍♂️`;
+      message += ` had ${incompleteTasksYesterday} unfinished tasks since yesterday 🙅‍♂️ ${userSummaryLink}`;
     } else if (
       totalTasksYesterday > 0 &&
       completedTasksYesterday === totalTasksYesterday &&
@@ -59,33 +49,15 @@ const generateMessages = async (usersWithWorkLogs: any[]) => {
     ) {
       message += ` finished all tasks (${totalTasksYesterday}) yesterday 🚀 ${userSummaryLink}`;
     } else {
-      message += ` completed ${completedTasksYesterday} tasks ✅, left ${incompleteTasksYesterday} unfinished 😢, and planned ${totalTasksToday} tasks for today 🎯${userSummaryLink}`;
+      message += ` completed ${completedTasksYesterday} tasks ✅, left ${incompleteTasksYesterday} unfinished 😢, and planned ${totalTasksToday} tasks for today 🎯 ${userSummaryLink}`;
     }
 
-    const worklogBlock = {
-      type: 'section',
-      text: {
-        type: 'mrkdwn',
-        text: `${message}\n\n*Yesterday's Worklogs:*\n\`\`\`${yesterdayWorklogsContent}\`\`\``,
-      },
-    };
-    blocks.push(worklogBlock);
-
-    if (totalTasksYesterday > 2) {
-      const aiSummary = await GenAiSdk.generateAISummary(
-        userName,
-        yesterdayWorklogsContent,
-      );
-      blocks.push({
-        type: 'section',
-        text: { type: 'mrkdwn', text: `📢 *AI Summary:* ${aiSummary}` },
-      });
-    }
-
-    blocks.push({ type: 'divider' });
+    combinedWorklogsContent += `${userName}'s Worklogs\n${yesterdayWorklogsContent}\n\n`;
+    messages += `\n${message}`;
   }
-
-  return blocks;
+  const aiSummary = await GenAiSdk.generateAISummary(combinedWorklogsContent);
+  messages += `\n\n📢 *AI Summary:* ${aiSummary}`;
+  return messages;
 };
 
 export async function GET(request: NextRequest) {
@@ -119,26 +91,24 @@ export async function GET(request: NextRequest) {
 
         let totalTasksYesterday = 0;
         let completedTasksYesterday = 0;
+        let incompleteTasksYesterday = 0;
         let totalTasksToday = 0;
         let yesterdayWorklogsContent = 'No worklogs available.';
 
         workLogs.forEach((log: any) => {
           const content = log?.works[0]?.content as string;
           if (content?.trim()) {
-            const checks = (content.match(/✅/g) || []).length;
-            const points = (content.match(/\n/g) || []).length + 1;
-            if (log.date === formattedYesterday) {
-              totalTasksYesterday += points;
-              completedTasksYesterday += checks;
+            if (log?.date === formattedYesterday) {
               yesterdayWorklogsContent = content;
+              totalTasksYesterday = (content.match(/\n/g) || []).length + 1;
+              completedTasksYesterday = (content.match(/✅/g) || []).length;
+              incompleteTasksYesterday =
+                totalTasksYesterday - completedTasksYesterday;
             } else if (log.date === formattedToday) {
-              totalTasksToday += points;
+              totalTasksToday = (content.match(/\n/g) || []).length + 1;
             }
           }
         });
-
-        let incompleteTasksYesterday =
-          totalTasksYesterday - completedTasksYesterday;
 
         return {
           userName: user.name,
@@ -153,11 +123,12 @@ export async function GET(request: NextRequest) {
       }),
     );
 
-    const blocks = await generateMessages(usersWithWorkLogs);
+    const messages = await generateMessages(usersWithWorkLogs);
 
     await slackBot.sendSlackMessageviaAPI({
-      blocks,
+      text: messages,
       channel: SlackChannels.b_coreteam,
+      unfurl_links: false,
     });
 
     return NextResponse.json({ status: 'success', message: 'Reminders Sent!' });
