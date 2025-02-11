@@ -21,7 +21,8 @@ import { AdminUserWorkData } from "./AdminUserWorkData";
 import { AdminUserBasicData } from "./AdimUserBasicData";
 import { AdminUserPayData } from "./AdminUserPayData";
 import { AdminUserPersonalData } from "./AdminUserPersonalData";
-import { TMD_PORTAL_API_KEY } from "@/utils/constants/appInfo";
+import { APP_ROUTES, TMD_PORTAL_API_KEY } from "@/utils/constants/appInfo";
+import Link from "next/link";
 const initialUserState: User = {
   id: "",
   name: "",
@@ -53,6 +54,18 @@ const initialUserState: User = {
   description: "",
   positionTitle: "",
 };
+
+const sidebarItems = [
+  { name: "AdminUserBasicData", label: "Basic Details", icon: "group" },
+  {
+    name: "AdminUserWorkData",
+    label: "Work Details",
+    icon: "notifications",
+  },
+  { name: "AdminUserPayData", label: "Payment Details", icon: "badge" },
+  { name: "AdminUserPersonalData", label: "Personal Details", icon: "event" },
+];
+
 export const AdminUserEditor = () => {
   const query = useSearchParams();
   const [loading, setLoading] = useState(false);
@@ -60,6 +73,69 @@ export const AdminUserEditor = () => {
   const { showToast } = useToast();
   const router = useRouter();
   const [user, setUser] = useState<User>(initialUserState);
+  const [activeComponent, setActiveComponent] = useState("AdminUserBasicData");
+
+  const renderComponent = () => {
+    switch (activeComponent) {
+      case "AdminUserBasicData":
+        return (
+          <AdminUserBasicData
+            user={user}
+            setUser={setUser}
+            saveUser={saveUser}
+            updateField={updateField}
+            loading={loading}
+            updateOverlap={updateOverlap}
+            updateTextareaField={updateTextareaField}
+          />
+        );
+      case "AdminUserWorkData":
+        return (
+          <AdminUserWorkData
+            user={user}
+            setUser={setUser}
+            saveUser={saveUser}
+            loading={loading}
+            updateOverlap={updateOverlap}
+            updateField={updateField}
+          />
+        );
+      case "AdminUserPayData":
+        return (
+          <AdminUserPayData
+            user={user}
+            saveUser={saveUser}
+            loading={loading}
+            setUser={setUser}
+            updateOverlap={updateOverlap}
+            updateField={updateField}
+          />
+        );
+      case "AdminUserPersonalData":
+        return (
+          <AdminUserPersonalData
+            user={user}
+            setUser={setUser}
+            saveUser={saveUser}
+            loading={loading}
+            updateOverlap={updateOverlap}
+            updateField={updateField}
+          />
+        );
+      default:
+        return (
+          <AdminUserBasicData
+            user={user}
+            setUser={setUser}
+            saveUser={saveUser}
+            updateField={updateField}
+            loading={loading}
+            updateOverlap={updateOverlap}
+            updateTextareaField={updateTextareaField}
+          />
+        );
+    }
+  };
 
   useEffect(() => {
     const id = query?.get("id");
@@ -97,14 +173,14 @@ export const AdminUserEditor = () => {
                 };
               }
               return overlap;
-            }
+            },
           ) || [],
       },
     }));
   };
 
   const updateField = (
-    e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     let id: string | string[] = e.target.id;
     id = id.indexOf(".") > -1 ? id.split(".") : id;
@@ -113,11 +189,11 @@ export const AdminUserEditor = () => {
         ? e.target.type == "checkbox"
           ? e.target.checked
           : e.target.type == "date"
-          ? new Date(e.target.value).toISOString()
-          : e.target.value
+            ? new Date(e.target.value).toISOString()
+            : e.target.value
         : e.target instanceof HTMLSelectElement
-        ? e.target.value
-        : "";
+          ? e.target.value
+          : "";
 
     if (id instanceof Array) {
       setUser((u) => ({
@@ -181,41 +257,50 @@ export const AdminUserEditor = () => {
   if (showLoader) return <LoaderScreen text="Loading User Data" />;
 
   return (
-    <div className="flex flex-row flex-wrap gap-4 items-center justify-center py-10 bg-neutral-100">
-      <AdminHeader />
-      <AdminUserBasicData
-        user={user}
-        setUser={setUser}
-        saveUser={saveUser}
-        updateField={updateField}
-        loading={loading}
-        updateOverlap={updateOverlap}
-        updateTextareaField={updateTextareaField}
-      />
-      <AdminUserWorkData
-        user={user}
-        setUser={setUser}
-        saveUser={saveUser}
-        loading={loading}
-        updateOverlap={updateOverlap}
-        updateField={updateField}
-      />
-      <AdminUserPayData
-        user={user}
-        saveUser={saveUser}
-        loading={loading}
-        setUser={setUser}
-        updateOverlap={updateOverlap}
-        updateField={updateField}
-      />
-      <AdminUserPersonalData
-        user={user}
-        setUser={setUser}
-        saveUser={saveUser}
-        loading={loading}
-        updateOverlap={updateOverlap}
-        updateField={updateField}
-      />
+    <div className="flex h-screen bg-neutral-700">
+      <div className="flex w-64 flex-col justify-between bg-neutral-900 p-5">
+        <Link href={APP_ROUTES.home}>
+          <img
+            src="/logo/logo_white.png"
+            alt="Company Logo"
+            className="mx-auto w-32 cursor-pointer"
+          />
+        </Link>
+        <div className="mt-10 flex flex-col gap-4">
+          <Link
+            href={APP_ROUTES.admin}
+            className={`} flex items-center gap-2 rounded-lg p-2 text-white hover:bg-neutral-800`}
+          >
+            <span className="material-symbols-outlined">dashboard</span>
+            Go to Dashboard
+          </Link>
+          <Link
+            href={APP_ROUTES.userEditor}
+            className={`} flex items-center gap-2 rounded-lg p-2 text-white hover:bg-neutral-800`}
+          >
+            <span className="material-symbols-outlined">person_add</span>
+            Add new User
+          </Link>
+          {sidebarItems.map((item) => (
+            <button
+              key={item.name}
+              className={`flex items-center gap-2 rounded-lg p-2 text-white hover:bg-neutral-800 ${
+                activeComponent === item.name ? "bg-neutral-800" : ""
+              }`}
+              onClick={() => setActiveComponent(item.name)}
+            >
+              <span className="material-symbols-outlined">{item.icon}</span>
+              {item.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="flex flex-col gap-4 p-5">
+        {/* <AdminHeader /> */}
+        <div className="flex flex-1 justify-center overflow-y-auto">
+          {renderComponent()}
+        </div>
+      </div>
     </div>
   );
 };
