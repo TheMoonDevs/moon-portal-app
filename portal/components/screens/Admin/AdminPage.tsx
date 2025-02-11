@@ -7,10 +7,41 @@ import { PortalSdk } from '@/utils/services/PortalSdk';
 import { User } from '@prisma/client';
 import BadgeTemplate from './badge-template/AdminBadges';
 import EventForm from './Events/EventForm';
+import Link from 'next/link';
+import { APP_ROUTES } from '@/utils/constants/appInfo';
+
+const menuItems = [
+  { name: 'AdminUsers', label: 'Admin Users', icon: 'group' },
+  {
+    name: 'SendNotifications',
+    label: 'Send Notifications',
+    icon: 'notifications',
+  },
+  { name: 'BadgeTemplate', label: 'Badge Template', icon: 'badge' },
+  { name: 'EventForm', label: 'Event Form', icon: 'event' },
+];
 
 export const AdminPage = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const [activeComponent, setActiveComponent] = useState('AdminUsers');
+
+  const renderComponent = () => {
+    switch (activeComponent) {
+      case 'AdminUsers':
+        return <AdminUsers users={users} loading={loading} />;
+      case 'SendNotifications':
+        return <SendNotifications users={users} loading={loading} />;
+      case 'BadgeTemplate':
+        return <BadgeTemplate />;
+      case 'EventForm':
+        return <EventForm />;
+      default:
+        return <AdminUsers users={users} loading={loading} />;
+    }
+  };
+
   useEffect(() => {
     setLoading(true);
     PortalSdk.getData('/api/user', null)
@@ -25,11 +56,34 @@ export const AdminPage = () => {
       });
   }, []);
   return (
-    <div className='flex flex-row flex-wrap gap-4 items-center justify-center  bg-neutral-700 md:bg-neutral-900 h-screen overflow-y-scroll max-sm:flex-col max-sm:h-full max-sm:overflow-y-auto py-5'>
-      <AdminUsers users={users} loading={loading} />
-      <SendNotifications users={users} loading={loading} />
-      <BadgeTemplate />
-      <EventForm />
+    <div className="flex h-screen bg-neutral-700">
+      <div className="flex w-64 flex-col justify-between bg-neutral-900 p-5">
+        <Link href={APP_ROUTES.home}>
+          <img
+            src="/logo/logo_white.png"
+            alt="Company Logo"
+            className="mx-auto w-32 cursor-pointer"
+          />
+        </Link>
+        <div className="mt-10 flex flex-col gap-4">
+          {menuItems.map((item) => (
+            <button
+              key={item.name}
+              className={`flex items-center gap-2 rounded-lg p-2 text-white hover:bg-neutral-800 ${
+                activeComponent === item.name ? 'bg-neutral-800' : ''
+              }`}
+              onClick={() => setActiveComponent(item.name)}
+            >
+              <span className="material-symbols-outlined">{item.icon}</span>
+              {item.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex flex-1 items-center justify-center overflow-y-auto p-5">
+        {renderComponent()}
+      </div>
     </div>
   );
 };
