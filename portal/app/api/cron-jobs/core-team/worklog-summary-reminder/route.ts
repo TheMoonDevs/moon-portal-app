@@ -15,18 +15,7 @@ const formatDate = (date: Date) => format(date, 'EEEE, MMMM dd, yyyy');
 
 const generateMessages = async (usersWithWorkLogs: any[]) => {
   const today = formatDate(new Date());
-  let blocks: any[] = [
-    {
-      type: 'section',
-      text: {
-        type: 'mrkdwn',
-        text: `Good morning team! ☀️ Today is ${today}`,
-      },
-    },
-    {
-      type: 'divider',
-    },
-  ];
+  let messages = `Good morning team! ☀️ Today is ${today}\n\n`;
 
   let combinedWorklogsContent = '';
 
@@ -42,9 +31,9 @@ const generateMessages = async (usersWithWorkLogs: any[]) => {
       yesterdayWorklogsContent,
     } = user;
 
-    // const userSummaryLink = `- <${APP_BASE_URL}/user/worklogs/summary/${userId}|logs>`;
+    const userSummaryLink = `- <${APP_BASE_URL}/user/worklogs/summary/${userId}|logs>`;
 
-    let message = `${slackId ? `<@${slackId}>` : userName}`;
+    let message = ` • ${slackId ? `<@${slackId}>` : userName}`;
 
     if (totalTasksYesterday === 0 && totalTasksToday === 0) {
       message += ` has no tasks logged for yesterday and today.🙅‍♂️`;
@@ -64,42 +53,14 @@ const generateMessages = async (usersWithWorkLogs: any[]) => {
     }
 
     combinedWorklogsContent += `${userName}'s Worklogs\n${yesterdayWorklogsContent}\n\n`;
-
-    blocks.push(
-      {
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          text: message,
-        },
-        accessory: {
-          type: 'button',
-          text: {
-            type: 'plain_text',
-            text: 'Logs',
-            emoji: true,
-          },
-          value: 'click_me_123',
-          url: `${APP_BASE_URL}/user/worklogs/summary/${userId}`,
-          action_id: 'button-action',
-        },
-      },
-      {
-        type: 'divider',
-      },
-    );
+    
+    messages += `${message} ${userSummaryLink}\n\n`;
   }
 
   const aiSummary = await GenAiSdk.generateAISummary(combinedWorklogsContent);
-  blocks.push({
-    type: 'section',
-    text: {
-      type: 'mrkdwn',
-      text: `📢 *AI Summary:* ${aiSummary}`,
-    },
-  });
+  messages += `📢 *AI Summary:* ${aiSummary}`;
 
-  return blocks;
+  return messages;
 };
 
 export async function GET(request: NextRequest) {
@@ -165,10 +126,10 @@ export async function GET(request: NextRequest) {
       }),
     );
 
-    const blocks = await generateMessages(usersWithWorkLogs);
+    const message = await generateMessages(usersWithWorkLogs);
 
     await slackBot.sendSlackMessageviaAPI({
-      blocks,
+      text: message,
       channel: SlackChannels.b_coreteam,
       unfurl_links: false,
       unfurl_media: false,
