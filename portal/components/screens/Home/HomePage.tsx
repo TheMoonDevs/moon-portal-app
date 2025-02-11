@@ -4,7 +4,7 @@ import { useUser } from '@/utils/hooks/useUser';
 import { ActionsSection } from './ActionsSection';
 import { DailySection } from './DailySection';
 import { ProfileSection } from './ProfileSection';
-import { ClientUtilityLink, USERTYPE } from '@prisma/client';
+import { ClientUtilityLink, User, USERTYPE } from '@prisma/client';
 import { LoaderScreen, Spinner } from '@/components/elements/Loaders';
 import { MoodTabs } from './MoodTabs';
 import { useEffect, useState } from 'react';
@@ -159,6 +159,24 @@ const ClientHomePage = () => {
   const isTabletOrMore = useMediaQuery(media.moreTablet);
   const [shortcuts, setShortcuts] = useState<ClientUtilityLink[]>([]);
   const [loading, setLoading] = useState(true);
+  const [engagementDevelopers, setEngagementDevelopers] = useState<User[]>([]);
+  const [isDevTeamLoading, setIsDevTeamLoading] = useState(true);
+
+  const fetchEngagementDevelopers = async () => {
+    setIsDevTeamLoading(true);
+    try {
+      const res = await PortalSdk.getData(
+        `/api/engagement/developers?clientId=${user?.id}`,
+        null,
+      );
+      setEngagementDevelopers(res.data);
+    } catch (error) {
+      console.error('Error fetching developers:', error);
+    } finally {
+      setIsDevTeamLoading(false);
+    }
+  };
+
   const fetchShortcuts = async () => {
     try {
       const res = await PortalSdk.getData(
@@ -175,6 +193,7 @@ const ClientHomePage = () => {
 
   useEffect(() => {
     fetchShortcuts();
+    fetchEngagementDevelopers();
   }, []);
 
   if (!user) return <LoaderScreen />;
@@ -244,11 +263,55 @@ const ClientHomePage = () => {
         {isTabletOrMore && <FocusMode isClient={true} />}
       </div>
       <div className="flex w-1/2 flex-col pt-8">
-        <p>hdhsjdhs</p>
-        <p>hdhsjdhs</p>
-        <p>hdhsjdhs</p>
-        <p>hdhsjdhs</p>
-        <p>hdhsjdhs</p>
+        <h4 className="text-lg font-bold">Your Team</h4>
+
+        {isDevTeamLoading ? (
+          <div className="mt-6 flex w-full items-center justify-center rounded-[1.15em] border border-neutral-200">
+            <Spinner />
+          </div>
+        ) : (
+          <div className="flex w-full flex-col">
+            <section className="m-4 mt-6 overflow-hidden rounded-xl border-neutral-400 bg-white px-0 shadow-md">
+              <div className="flex flex-col items-stretch justify-center">
+                {engagementDevelopers.map((dev) => {
+                  return (
+                    <div
+                      key={dev.id}
+                      className="flex cursor-pointer flex-row items-center justify-between gap-1 border-b border-neutral-200 px-2 py-3 hover:bg-black/5"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="rounded-full bg-neutral-400">
+                          <img
+                            src={
+                              dev?.avatar ||
+                              `https://via.placeholder.com/150?text=${
+                                dev?.name?.charAt(0) || 'U'
+                              }`
+                            }
+                            alt={dev?.name?.charAt(0) || ''}
+                            className="h-8 w-8 rounded-full object-cover object-center"
+                          />
+                        </div>
+                        <div className="text-left">
+                          <p className="line-clamp-1 text-sm font-semibold text-neutral-900">
+                            {dev.name}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-end gap-2">
+                        <span className="rounded-lg border p-2 text-[8px]">
+                          {dev.vertical && dev.vertical?.length > 2
+                            ? dev.vertical?.substring(0, 3).toUpperCase()
+                            : dev.vertical}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}{' '}
+              </div>
+            </section>
+          </div>
+        )}
       </div>
     </div>
   );
