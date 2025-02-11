@@ -1,95 +1,112 @@
-import { google } from "googleapis";
-import type { NextApiRequest, NextApiResponse } from "next";
-async function handler(req: NextApiRequest, res: NextApiResponse<any>) {
-  const spreadsheetId = req.query.spreadsheetId;
-  const targetSheetId = parseInt(req.query.sheetId as string) || 0;
-  const sheets = google.sheets("v4");
-  const jwtClient = new google.auth.JWT(
-    process.env.GIAM_CLIENT_EMAIL,
-    process.env.GIAM_CLIENT_ID,
-    Buffer.from(
-      process.env.GIAM_PRIVATE_KEY as string,
-      "base64"
-    ).toString("ascii"),
-    [
-      "https://www.googleapis.com/auth/spreadsheets",
-      "https://www.googleapis.com/auth/drive",
-      "https://www.googleapis.com/auth/calendar",
-    ]
-  );
+import { NextApiRequest, NextApiResponse } from 'next';
+import GoogleSheetsAPI from '@/utils/service/googleSpreadsheetSDk';
 
-  sheets.spreadsheets.get(
-    {
-      auth: jwtClient,
-      spreadsheetId: spreadsheetId as string,
-    },
-    (err: any, response: any) => {
-      if (err) {
-        return console.log("The API returned an error: " + err);
-      }
+const googleSheetsAPI = new GoogleSheetsAPI({
+  clientEmail: process.env.GIAM_CLIENT_EMAIL as string,
+  privateKey: process.env.GIAM_PRIVATE_KEY as string,
+});
 
-      const targetSheet = response.data.sheets.find(
-        (sheet: any) => sheet?.properties?.sheetId === targetSheetId
-      );
+export const runtime = 'edge';
 
-      if (!targetSheet) {
-        return res
-          .status(404)
-          .json({ error: `No sheet found with gid = ${targetSheetId}` });
-      }
-
-      const sheetName = `${
-        targetSheet?.properties?.title || "Sheet1"
-      }!A:A`;
-
-      if (req.method === "GET") {
-        sheets.spreadsheets.values.get(
-          {
-            auth: jwtClient,
-            spreadsheetId: spreadsheetId as string,
-            range: sheetName,
-          },
-          (err: any, response: any) => {
-            if (err) {
-              console.log("The API returned an error: " + err);
-              return res
-                .status(500)
-                .json({ error: "Failed to retrieve sheet values." });
-            } else {
-              return res.status(200).json(response.data);
-            }
-          }
-        );
-      } else if (req.method === "POST") {
-        const { rowData }: { rowData: string[] } = req.body;
-        sheets.spreadsheets.values.append(
-          {
-            auth: jwtClient,
-            spreadsheetId: spreadsheetId as string,
-            range: sheetName,
-            valueInputOption: "USER_ENTERED",
-            requestBody: {
-              values: [rowData],
-            },
-          },
-          (err: any, response: any) => {
-            if (err) {
-              console.log(
-                `Error submitting response to Google Sheets. API Error: ${err.message}`
-              );
-              return res
-                .status(500)
-                .json({ error: "Failed to submit response to Google Sheets." });
-            } else {
-              return res
-                .status(201)
-                .json({ message: "Response Submitted Successfully", response });
-            }
-          }
-        );
-      }
-    }
-  );
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  switch (req.method) {
+    case 'GET':
+      return handleGet(req, res);
+    case 'POST':
+      return handlePost(req, res);
+    case 'PUT':
+      return handlePut(req, res);
+    case 'DELETE':
+      return handleDelete(req, res);
+    default:
+      res.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE']);
+      return res.status(405).end(`Method ${req.method} Not Allowed`);
+  }
 }
 
-export default handler;
+async function handleGet(req: NextApiRequest, res: NextApiResponse) {
+  const spreadsheetId = req.query.spreadsheetId as string;
+  const range = (req.query.range as string) || 'A:Z';
+  const targetId = req.query.targetId as string;
+
+  try {
+    if (!spreadsheetId || !targetId) {
+      return res.status(400).json({ error: 'spreadsheetId and targetId are required.' });
+    }
+
+    const data = await googleSheetsAPI.getSheetData({
+      spreadsheetId,
+      range,
+      targetId,
+    });
+    return res.status(200).json(data);
+  } catch (error) {
+    console.error('Error fetching sheet data: ', error);
+    return res.status(500).json({ error: 'Failed to fetch sheet data.' });
+  }
+}
+
+async function handlePost(req: NextApiRequest, res: NextApiResponse) {
+  const spreadsheetId = req.query.spreadsheetId as string;
+  const targetId = req.query.targetId as string;
+  const { values, range } = req.body;
+
+  try {
+    if (!spreadsheetId || !targetId || !values) {
+      return res.status(400).json({ error: 'spreadsheetId, targetId, and values are required.' });
+    }
+
+    const response = await googleSheetsAPI.appendSheetData({
+      spreadsheetId,
+      values,
+      targetId,
+      range: range || 'A:A',
+    });
+    return res.status(201).json({ message: 'Data appended successfully', response });
+  } catch (error) {
+    console.error('Error appending data: ', error);
+    return res.status(500).json({ error: 'Failed to append data.' });
+  }
+}
+
+async function handlePut(req: NextApiRequest, res: NextApiResponse) {
+  const { spreadsheetId, range, values, targetId } = req.body;
+
+  try {
+    if (!spreadsheetId || !targetId || !values || !range) {
+      return res.status(400).json({ error: 'spreadsheetId, targetId, values, and range are required.' });
+    }
+
+    const response = await googleSheetsAPI.updateSheetData({
+      spreadsheetId,
+      range,
+      values,
+      targetId,
+    });
+    return res.status(200).json({ message: 'Data updated successfully', response });
+  } catch (error) {
+    console.error('Error updating data: ', error);
+    return res.status(500).json({ error: 'Failed to update data.' });
+  }
+}
+
+async function handleDelete(req: NextApiRequest, res: NextApiResponse) {
+  const { spreadsheetId, targetId, majorDimension, indexes } = req.body;
+
+  try {
+    if (!spreadsheetId || !targetId || !majorDimension || !indexes) {
+      return res.status(400).json({ error: 'spreadsheetId, targetId, majorDimension, and indexes are required.' });
+    }
+
+    const response = await googleSheetsAPI.deleteRowOrColumn({
+      spreadsheetId,
+      targetId,
+      majorDimension,
+      indexes,
+    });
+    return res.status(200).json({ message: 'Rows or columns deleted successfully', response });
+  } catch (error) {
+    console.error('Error deleting rows/columns: ', error);
+    return res.status(500).json({ error: 'Failed to delete rows or columns.' });
+  }
+}

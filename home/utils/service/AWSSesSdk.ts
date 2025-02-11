@@ -1,4 +1,4 @@
-import crypto from "crypto";
+import CryptoJS from 'crypto-js';
 
 export interface SendEmailParams {
   sender: string;
@@ -25,23 +25,11 @@ class AWSSesSdk {
     dateStamp: string,
     regionName: string,
     serviceName: string
-  ): Buffer {
-    const kDate = crypto
-      .createHmac("sha256", `AWS4${key}`)
-      .update(dateStamp)
-      .digest();
-    const kRegion = crypto
-      .createHmac("sha256", kDate)
-      .update(regionName)
-      .digest();
-    const kService = crypto
-      .createHmac("sha256", kRegion)
-      .update(serviceName)
-      .digest();
-    const kSigning = crypto
-      .createHmac("sha256", kService)
-      .update("aws4_request")
-      .digest();
+  ): CryptoJS.lib.WordArray {
+    const kDate = CryptoJS.HmacSHA256(dateStamp, CryptoJS.enc.Utf8.parse(`AWS4${key}`));
+    const kRegion = CryptoJS.HmacSHA256(regionName, kDate);
+    const kService = CryptoJS.HmacSHA256(serviceName, kRegion);
+    const kSigning = CryptoJS.HmacSHA256("aws4_request", kService);
     return kSigning;
   }
 
@@ -62,7 +50,8 @@ class AWSSesSdk {
     credentialScope: string,
     canonicalRequest: string
   ): string {
-    return `${algorithm}\n${requestDate}\n${credentialScope}\n${crypto.createHash("sha256").update(canonicalRequest).digest("hex")}`;
+    const hash = CryptoJS.SHA256(canonicalRequest).toString(CryptoJS.enc.Hex);
+    return `${algorithm}\n${requestDate}\n${credentialScope}\n${hash}`;
   }
 
   private getFormattedDate(date: Date): { amzDate: string; dateStamp: string } {
@@ -136,10 +125,7 @@ class AWSSesSdk {
     const endpoint = `https://${host}/`;
     const { amzDate, dateStamp } = this.getFormattedDate(new Date());
     const payload = new URLSearchParams(params).toString();
-    const payloadHash = crypto
-      .createHash("sha256")
-      .update(payload)
-      .digest("hex");
+    const payloadHash = CryptoJS.SHA256(payload).toString()
 
     const canonicalUri = "/";
     const canonicalQuerystring = "";
@@ -171,10 +157,7 @@ class AWSSesSdk {
       this.region,
       serviceName
     );
-    const signature = crypto
-      .createHmac("sha256", signingKey)
-      .update(stringToSign)
-      .digest("hex");
+    const signature = CryptoJS.HmacSHA256(stringToSign, signingKey);
     const authorizationHeader = `${algorithm} Credential=${this.accessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
     // console.log("Authorization Header:", authorizationHeader);
 

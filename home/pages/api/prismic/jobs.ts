@@ -1,6 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { createClient } from "@/prismicio";
 
+export const runtime = "edge";
+
 async function handler(req: NextApiRequest, res: NextApiResponse<any>) {
   if (req.method === "GET") {
     try {

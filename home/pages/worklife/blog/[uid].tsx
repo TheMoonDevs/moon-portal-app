@@ -59,9 +59,9 @@ export async function getStaticPaths() {
   const pages = await client.getAllByType("blog_page");
 
   return {
-    paths: pages.map((page) => {
+    paths: pages ? pages.map((page) => {
       return asLink(page);
-    }),
+    }) : ["undefined"],
     fallback: false,
   };
 }

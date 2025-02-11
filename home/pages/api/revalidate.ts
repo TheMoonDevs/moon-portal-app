@@ -3,8 +3,10 @@
 import * as prismicH from "@prismicio/helpers";
 
 // Import your app's Link Resolver (if your app uses one)
-import { createClient, linkResolver } from "../../prismicio";
+import { createClient, linkResolver } from "@/prismicio";
 import { NextApiRequest, NextApiResponse } from "next";
+
+export const runtime = "edge";
 
 /**
  * This API endpoint will be called by a Prismic webhook. The webhook

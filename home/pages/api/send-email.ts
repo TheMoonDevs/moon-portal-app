@@ -1,6 +1,8 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import AWSSesSdk from "@/utils/service/AWSSesSdk";
 
+export const runtime = "edge";
+
 const ses = new AWSSesSdk(
   process.env.AWS_ACCESS_KEY_ID!,
   process.env.AWS_SECRET_ACCESS_KEY!,

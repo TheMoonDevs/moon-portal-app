@@ -2,6 +2,8 @@
 import ClickupApi from "@/utils/service/ClickupApi";
 import { NextApiRequest, NextApiResponse } from "next";
 
+export const runtime = "edge";
+
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   // if (req.method !== "POST") {
   //   return res.status(405).json({ error: "Method not allowed" });
