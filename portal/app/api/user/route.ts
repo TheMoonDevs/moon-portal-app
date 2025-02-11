@@ -162,13 +162,20 @@ export async function PUT(request: Request) {
         id,
       },
     });
+
+    if (rest.updatedAt && oldUser?.updatedAt && new Date(rest.updatedAt) < new Date(oldUser.updatedAt)) {
+      return new NextResponse(JSON.stringify({ error: "User Data is outdated", latestUser: oldUser }), {
+        status: 409,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
     // console.log("old user", oldUser);
     // console.log("rest ", rest);
     const user = await prisma.user.update({
       where: {
         id,
       },
-      data: { ...rest },
+      data: { ...rest, updatedAt: new Date() },
     });
     // const currentDate = new Date()
     //   .toLocaleDateString("en-GB")
