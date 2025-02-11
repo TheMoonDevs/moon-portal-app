@@ -4,10 +4,11 @@ import { MobileBox } from '../Login/Login';
 import { AdminUsers } from './AdminUsers';
 import SendNotifications from './SendNotifications';
 import { PortalSdk } from '@/utils/services/PortalSdk';
-import { User } from '@prisma/client';
+import { User, USERTYPE } from '@prisma/client';
 import BadgeTemplate from './badge-template/AdminBadges';
 import EventForm from './Events/EventForm';
 import ClientShortcutsManager from './ClientShortcutsManager';
+import Engagements from './Engagements';
 
 export const AdminPage = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -24,6 +25,7 @@ export const AdminPage = () => {
         setLoading(false);
       });
   }, []);
+
   return (
     <div className="flex h-screen flex-row flex-wrap items-center justify-center gap-4 overflow-y-scroll bg-neutral-700 py-5 max-sm:h-full max-sm:flex-col max-sm:overflow-y-auto md:bg-neutral-900">
       <AdminUsers users={users} loading={loading} />
@@ -31,6 +33,7 @@ export const AdminPage = () => {
       <BadgeTemplate />
       <EventForm />
       <ClientShortcutsManager />
+      <Engagements users={users} />
     </div>
   );
 };
