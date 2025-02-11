@@ -4,8 +4,8 @@ import { useUser } from '@/utils/hooks/useUser';
 import { ActionsSection } from './ActionsSection';
 import { DailySection } from './DailySection';
 import { ProfileSection } from './ProfileSection';
-import { USERTYPE } from '@prisma/client';
-import { LoaderScreen } from '@/components/elements/Loaders';
+import { ClientUtilityLink, USERTYPE } from '@prisma/client';
+import { LoaderScreen, Spinner } from '@/components/elements/Loaders';
 import { MoodTabs } from './MoodTabs';
 import { useEffect, useState } from 'react';
 import { StartSection } from './StartSection';
@@ -22,8 +22,8 @@ import { CoreTeamSection } from './CoreTeamSection';
 import { RootState, useAppDispatch, useAppSelector } from '@/utils/redux/store';
 import Link from 'next/link';
 import Events from './Events';
-
 import { Toaster } from 'sonner';
+import { PortalSdk } from '@/utils/services/PortalSdk';
 
 const FocusMode = ({ isClient }: { isClient?: boolean }) => (
   <div className="flex w-full flex-col">
@@ -157,6 +157,25 @@ const MemberHomePage = () => {
 const ClientHomePage = () => {
   const { user } = useUser();
   const isTabletOrMore = useMediaQuery(media.moreTablet);
+  const [shortcuts, setShortcuts] = useState<ClientUtilityLink[]>([]);
+  const [loading, setLoading] = useState(true);
+  const fetchShortcuts = async () => {
+    try {
+      const res = await PortalSdk.getData(
+        `/api/client-shortcuts/${user?.id}`,
+        null,
+      );
+      setShortcuts(res.data);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchShortcuts();
+  }, []);
 
   if (!user) return <LoaderScreen />;
 
@@ -169,7 +188,57 @@ const ClientHomePage = () => {
       </div>
       <div className="flex w-1/2 flex-col pt-8">
         <h4 className="px-4 text-lg font-bold">Shortcuts & Utils</h4>
-        <ActionsSection />
+        <div className="">
+          {loading ? (
+            <div className="mt-6 flex h-full w-full items-center justify-center rounded-[1.15em] border border-neutral-200">
+              <Spinner />
+            </div>
+          ) : (
+            <div className="mx-3 mt-6 flex flex-col gap-3 overflow-hidden rounded-[1.15em] border border-neutral-400">
+              <div className="flex flex-col">
+                {/* Hardcoded links */}
+                <Link
+                  href="https://www.example.com"
+                  target="_blank"
+                  className=""
+                >
+                  <div className="flex flex-row items-center gap-4 border-b border-neutral-200 bg-white px-5 py-3 text-xl hover:bg-white/70">
+                    <span className="material-symbols-outlined ml-[-5px] mr-[-5px] rounded-full object-contain object-center">
+                      link
+                    </span>
+                    <p className="font-regular mb-0 text-[0.75em]">
+                      Example Hardcoded Link
+                    </p>
+                    <span className="icon_size material-symbols-outlined ml-auto text-neutral-800">
+                      chevron_right
+                    </span>
+                  </div>
+                </Link>
+
+                {/* fetched links */}
+                {shortcuts.map((shortcut) => {
+                  return (
+                    <Link key={shortcut.id} href={shortcut.url} target="_blank">
+                      <div className="flex flex-row items-center gap-4 border-b border-neutral-200 bg-white px-5 py-3 text-xl hover:bg-white/70">
+                        <span className="material-symbols-outlined ml-[-5px] mr-[-5px] rounded-full object-contain object-center">
+                          link
+                        </span>
+                        <p className="font-regular mb-0 text-[0.75em]">
+                          {shortcut.title}
+                        </p>
+                        <span className="icon_size material-symbols-outlined ml-auto text-neutral-800">
+                          {shortcut.url
+                            ? 'chevron_right'
+                            : 'history_toggle_off'}
+                        </span>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
       <div className="flex w-1/2 flex-col pt-8">
         {isTabletOrMore && <FocusMode isClient={true} />}
