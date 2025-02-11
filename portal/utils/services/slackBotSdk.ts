@@ -262,6 +262,26 @@ export class SlackBotSdk {
         data.append("ts", message?.ts);
       }
 
+      if (message?.unfurl_links) {
+        data.append("unfurl_links", message?.unfurl_links.toString());
+      }
+
+      if (message?.unfurl_media) {
+        data.append("unfurl_media", message?.unfurl_media.toString());
+      }
+
+      if (message?.username) {
+        data.append("username", message?.username);
+      }
+
+      if (message?.icon_emoji) {
+        data.append("icon_emoji", message?.icon_emoji);
+      }
+
+      if (message?.icon_url) {
+        data.append("icon_url", message?.icon_url);
+      }
+
       const response = await fetch(url, {
         method: "POST",
         headers: {
