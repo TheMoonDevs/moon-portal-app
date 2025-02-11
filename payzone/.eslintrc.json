@@ -1,6 +1,7 @@
 {
   // configuration for javascript files
   "extends": [
+    "next/babel",
     "next/core-web-vitals", // needed to avoid warning in next.js build: 'The Next.js plugin was not detected in your ESLint configuration'
     "plugin:prettier/recommended"
   ],
