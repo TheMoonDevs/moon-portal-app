@@ -64,11 +64,18 @@ export async function PUT(request: NextRequest) {
       });
     }
 
+    if (updatedData?.updatedAt && user?.updatedAt && new Date(updatedData.updatedAt) < new Date(user.updatedAt)) {
+      return new NextResponse(JSON.stringify({ error: "User Data is outdated" }), {
+        status: 409,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     const updatedUser = await prisma.user.update({
       where: {
         id: userId,
       },
-      data: updatedData,
+      data: {...updatedData, updatedAt: new Date()},
     });
 
     const jsonResponse = {
