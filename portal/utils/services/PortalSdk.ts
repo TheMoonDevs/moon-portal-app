@@ -1,11 +1,11 @@
-import { TMD_PORTAL_API_KEY } from "../constants/appInfo";
+import { LOCAL_STORAGE, TMD_PORTAL_API_KEY } from '../constants/appInfo';
 
 export const PortalSdk = {
   getData: (url: string, body: any) => {
     return new Promise<any>(async (resolve, reject) => {
       try {
         const options: any = {
-          method: "GET",
+          method: 'GET',
         };
         if (body && Object.keys(body).length > 0)
           options.body = JSON.stringify(body);
@@ -27,9 +27,9 @@ export const PortalSdk = {
     return new Promise<any>(async (resolve, reject) => {
       try {
         const res = await fetch(url, {
-          method: "POST",
+          method: 'POST',
           headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
             tmd_portal_api_key: TMD_PORTAL_API_KEY,
           },
           body: JSON.stringify(data),
@@ -50,9 +50,9 @@ export const PortalSdk = {
     return new Promise<any>(async (resolve, reject) => {
       try {
         const res = await fetch(url, {
-          method: "PUT",
+          method: 'PUT',
           headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
             tmd_portal_api_key: TMD_PORTAL_API_KEY,
           },
           body: JSON.stringify(data),
@@ -60,7 +60,22 @@ export const PortalSdk = {
         // console.log(await res.json());
         if (res.ok) {
           const result = await res.json();
+          if (result?.data?.user) {
+            localStorage.setItem(
+              LOCAL_STORAGE.user,
+              JSON.stringify(result?.latestUser),
+            );
+          }
           return resolve(result);
+        } else if (res.status === 409) {
+          const result = await res.json();
+          if (result?.latestUser) {
+            localStorage.setItem(
+              LOCAL_STORAGE.user,
+              JSON.stringify(result?.latestUser),
+            );
+          }
+          throw result.error;
         } else {
           return reject(res.status as any);
         }
@@ -74,9 +89,9 @@ export const PortalSdk = {
     return new Promise<any>(async (resolve, reject) => {
       try {
         const res = await fetch(url, {
-          method: "DELETE",
+          method: 'DELETE',
           headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
             tmd_portal_api_key: TMD_PORTAL_API_KEY,
           },
           body: JSON.stringify(data),
