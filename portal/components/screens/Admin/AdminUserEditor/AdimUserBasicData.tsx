@@ -309,9 +309,10 @@ export const AdminUserBasicData = ({
                 ))}
               </select>
             </div>
-
-            <div className="flex flex-col">
-              <label className="mb-1 text-sm text-gray-300">Created At</label>
+            {/* <div className="flex flex-row gap-4 items-center justify-start">
+              <label className="w-40" htmlFor="name">
+                Created At
+              </label>
               <DatePicker
                 className="w-full rounded-lg border border-neutral-600 bg-gray-800 p-2 text-gray-200 focus:ring-2 focus:ring-blue-500"
                 value={user.createdAt ? dayjs(user.createdAt) : null}
@@ -380,7 +381,7 @@ export const AdminUserBasicData = ({
                   },
                 }}
               />
-            </div>
+            </div> */}
           </div>
         </div>
       </LocalizationProvider>

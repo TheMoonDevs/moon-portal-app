@@ -85,6 +85,7 @@ const CreateWallet = () => {
     const response = await PortalSdk.putData("/api/user", {
       id: user?.id,
       payData: { ...userPayData, walletAddress },
+      updatedAt: user?.updatedAt,
     });
     // console.log("API response:", response.data.user);
     return response.data.user;

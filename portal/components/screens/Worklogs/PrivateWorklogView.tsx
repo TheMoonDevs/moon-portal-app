@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { PassphraseVerification } from './PassphraseVerification';
 import { usePassphrase } from '@/utils/hooks/usePassphrase';
 import { cn } from '@/app/lib/utils';
+import WorklogMdxEditor from './WorklogMdxEditor';
 
 const MARKDOWN_PLACEHOLDER = '*';
 
@@ -31,6 +32,7 @@ export const PrivateWorklogView: React.FC<PrivateWorklogViewProps> = ({
   const [saving, setSaving] = useState<boolean>(false);
   const editorRef = useRef<MDXEditorMethods>(null);
   const { localPassphrase } = usePassphrase();
+
   const fetchWorklog = useCallback(async () => {
     if (!user?.id || !date) return;
     if (!localPassphrase) return;
@@ -128,6 +130,7 @@ export const PrivateWorklogView: React.FC<PrivateWorklogViewProps> = ({
 
   if (!visible) return null;
   // if (!localPassphrase) return <PassphraseVerification />;
+
   return (
     <div className="relative px-4">
       <div className="flex flex-col gap-1">
@@ -147,29 +150,13 @@ export const PrivateWorklogView: React.FC<PrivateWorklogViewProps> = ({
           )}
         </div>
         {localPassphrase && (
-          <div
-            onKeyDown={(e) => {
-              if (e.ctrlKey && e.key === 's') {
-                e.preventDefault();
-                saveWorklog(content);
-              }
-              if (e.ctrlKey && e.key === 'r') {
-                e.preventDefault();
-                fetchWorklog();
-              }
-            }}
-          >
-            <MdxAppEditor
-              ref={editorRef}
-              markdown={content}
-              className="h-full flex-grow"
-              placeholder="* Write your private logs here ..."
-              contentEditableClassName={`mdx_ce ${content.trim() === MARKDOWN_PLACEHOLDER ? 'mdx_uninit' : ''} leading-1 imp-p-0 grow w-full h-full`}
-              onChange={handleContentChange}
-              key={user?.id + date}
-              editorKey={''}
-            />
-          </div>
+          <WorklogMdxEditor
+            content={content}
+            onChange={handleContentChange}
+            editorRef={editorRef}
+            saveWorklog={saveWorklog}
+            fetchWorklog={fetchWorklog}
+          />
         )}
       </div>
 

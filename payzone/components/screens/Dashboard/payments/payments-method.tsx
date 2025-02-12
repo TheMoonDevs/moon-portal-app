@@ -42,6 +42,7 @@ export const PaymentMethod = () => {
 
     MyServerApi.updateData(`${SERVER_API_ENDPOINTS.updateUser}${user?.id}`, {
       payData,
+      updatedAt: user?.updatedAt,
     })
       .then((data: unknown) => {
         const userData = (data as UserData).data.user;
