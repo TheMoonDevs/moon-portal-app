@@ -72,11 +72,16 @@ const ClientShortcuts = ({
                 key={sc.id}
                 className="mb-2 flex items-center justify-between rounded-md bg-neutral-800 p-2 hover:bg-neutral-700"
               >
-                <div className="flex w-[60%] flex-col items-start">
-                  <p className="w-full truncate text-neutral-200">{sc.title}</p>
-                  <p className="w-full truncate text-xs text-neutral-400">
-                    {sc.url}
-                  </p>
+                <div className="flex items-center gap-2">
+                  <p className='text-2xl'>{sc.icon}</p>
+                  <div className="flex w-[60%] flex-col items-start">
+                    <p className="w-full truncate text-neutral-200">
+                      {sc.title}
+                    </p>
+                    <p className="w-full truncate text-xs text-neutral-400">
+                      {sc.url}
+                    </p>
+                  </div>
                 </div>
                 <div className="flex space-x-3">
                   <button

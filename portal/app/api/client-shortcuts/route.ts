@@ -15,6 +15,7 @@ export async function POST(req: NextRequest) {
         title: body.title,
         url: body.link,
         clientId: body.clientId,
+        icon: body.icon
       },
     });
 
@@ -61,6 +62,7 @@ export async function GET(req: NextRequest) {
       data: groupedData,
     });
   } catch (error) {
+    console.log(error)
     return NextResponse.json(
       { error: "Error Getting Client Shortcuts" },
       { status: 500 }
@@ -79,6 +81,7 @@ export async function PUT(req: NextRequest) {
         title: body.title,
         url: body.link,
         clientId: body.clientId,
+        icon: body.icon
       }
     });
     return NextResponse.json({

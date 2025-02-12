@@ -9,6 +9,8 @@ import { loadingState } from './Events/EventForm';
 import ToolTip from '@/components/elements/ToolTip';
 import { IconButton } from '@mui/material';
 import ClientShortcuts, { GroupedClientUtilityLink } from './ClientShortcuts';
+import { EmojiPopOver } from '../Worklogs/WorklogSummary/ChatCard';
+import { Theme } from 'emoji-picker-react';
 
 export const INITIAL_LOADING_STATE = {
   addNew: false,
@@ -35,6 +37,8 @@ const ClientShortcutsManager = () => {
     null,
   );
   const [shortcutId, setShortcutId] = useState<string | null>(null);
+  const [isOpenEmoji, setIsOpenEmoji] = useState(false);
+  const [icon, setIcon] = useState<string>('');
 
   const handleExpand = (id: string) => {
     setExpandedShortcutId((prevId) => (prevId === id ? null : id));
@@ -83,6 +87,7 @@ const ClientShortcutsManager = () => {
         title,
         link,
         clientId: selectedClient?.id,
+        icon,
       });
       toast.success('Shortcut added successfully');
       fetchData(true);
@@ -100,6 +105,7 @@ const ClientShortcutsManager = () => {
     setSelectedClient(null);
     setTitle('');
     setLink('');
+    setIcon('');
   };
 
   const handleClientSelect = (selectedUser: User) => {
@@ -115,6 +121,7 @@ const ClientShortcutsManager = () => {
     setSelectedClient(
       clients.find((client) => client.id === shortcut.clientId) || null,
     );
+    setIcon(shortcut.icon);
     setSearchTerm(selectedClient?.name || '');
     setLoadingState({ ...loadingState, updating: true });
   };
@@ -134,6 +141,7 @@ const ClientShortcutsManager = () => {
         link,
         clientId: selectedClient?.id,
         id: shortcutId,
+        icon,
       });
       toast.success('Shortcut updated successfully');
       fetchData(true);
@@ -195,29 +203,27 @@ const ClientShortcutsManager = () => {
                         >
                           Select Client
                         </label>
-                        <input
-                          type="text"
+                        <select
                           id="user"
-                          value={searchTerm || ''}
-                          onChange={handleUserChange}
+                          value={selectedClient?.id || ''}
+                          onChange={(e) =>
+                            setSelectedClient(
+                              clients.find(
+                                (client) => client.id === e.target.value,
+                              ) || null,
+                            )
+                          }
                           className="w-full rounded border border-neutral-500 bg-neutral-800 p-2 text-neutral-200"
-                          placeholder="Search users..."
-                        />
-                        {searchTerm && suggestions.length > 0 && (
-                          <div className="suggestions-container absolute w-full">
-                            <ul className="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded border border-neutral-500 bg-neutral-900 text-neutral-200">
-                              {suggestions.map((suggestion) => (
-                                <li
-                                  key={suggestion.id}
-                                  className="cursor-pointer p-2 hover:bg-neutral-700"
-                                  onClick={() => handleClientSelect(suggestion)}
-                                >
-                                  {suggestion.name}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
+                        >
+                          <option value="" disabled>
+                            Select a client...
+                          </option>
+                          {clients.map((client) => (
+                            <option key={client.id} value={client.id}>
+                              {client.name}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                       <div className="mb-5">
                         <label
@@ -250,6 +256,32 @@ const ClientShortcutsManager = () => {
                           className="w-full rounded border border-neutral-500 bg-neutral-800 p-2 text-neutral-200"
                           placeholder="Enter shortcut link..."
                         />
+                      </div>
+                      <div className="relative mb-5">
+                        <label
+                          htmlFor="Emoji"
+                          className="mb-1 block text-sm font-medium text-neutral-300"
+                        >
+                          Select icon for link
+                        </label>
+                        <div
+                          className="flex w-full cursor-pointer items-center justify-between rounded border border-neutral-500 bg-neutral-800 p-2 text-neutral-200"
+                          onClick={() => setIsOpenEmoji(true)}
+                        >
+                          <span>{icon || 'Select an emoji...'}</span>
+                          <button className="text-lg">😊</button>{' '}
+                        </div>
+                        <div className="absolute z-50">
+                          <EmojiPopOver
+                            open={isOpenEmoji}
+                            handleClose={() => setIsOpenEmoji(false)}
+                            onEmojiSelect={(emoji: string) => {
+                              setIcon(emoji);
+                              setIsOpenEmoji(false);
+                            }}
+                            theme={Theme.DARK}
+                          />
+                        </div>
                       </div>
                       <div className="mt-auto">
                         <button

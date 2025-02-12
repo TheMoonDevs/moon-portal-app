@@ -239,9 +239,15 @@ const ClientHomePage = () => {
                   return (
                     <Link key={shortcut.id} href={shortcut.url} target="_blank">
                       <div className="flex flex-row items-center gap-4 border-b border-neutral-200 bg-white px-5 py-3 text-xl hover:bg-white/70">
-                        <span className="material-symbols-outlined ml-[-5px] mr-[-5px] rounded-full object-contain object-center">
-                          link
-                        </span>
+                        {!shortcut.icon ? (
+                          <span className="material-symbols-outlined ml-[-5px] mr-[-5px] rounded-full object-contain object-center">
+                            link
+                          </span>
+                        ) : (
+                          <p className="ml-[-5px] mr-[-5px] rounded-full object-contain object-center text-2xl">
+                            {shortcut.icon}
+                          </p>
+                        )}
                         <p className="font-regular mb-0 text-[0.75em]">
                           {shortcut.title}
                         </p>
