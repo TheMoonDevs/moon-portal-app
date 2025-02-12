@@ -376,7 +376,9 @@ const Engagements = ({ users }: { users: User[] }) => {
           <Spinner />
         </div>
       ) : (
-        <div className="relative h-full w-full">
+        <div
+          className={`relative h-full w-full ${loadingState.addNew || loadingState.updating ? '' : 'flex justify-center'}`}
+        >
           {loadingState.addNew || loadingState.updating ? (
             <div className="flex flex-col items-center justify-center">
               <div className="ml-4 self-start">
@@ -396,7 +398,7 @@ const Engagements = ({ users }: { users: User[] }) => {
                   </IconButton>
                 </ToolTip>
               </div>
-              <div className="flex w-[90%] items-center justify-center">
+              <div className="flex !w-[90%] items-center justify-center">
                 {renderForm()}
               </div>
             </div>
@@ -405,7 +407,7 @@ const Engagements = ({ users }: { users: User[] }) => {
               <p className="text-neutral-400">No Engament found.</p>
             </div>
           ) : (
-            <div className="no-scrollbar flex h-[80%] flex-col gap-2 overflow-y-scroll">
+            <div className="no-scrollbar flex h-[80%] w-[90%] flex-col  gap-2 overflow-y-scroll">
               {engagements?.map((engagement: Engagement, index) => {
                 const client = clients.find(
                   (client) => client.id === engagement.client_id,
@@ -417,7 +419,7 @@ const Engagements = ({ users }: { users: User[] }) => {
                   >
                     {client && (
                       <div className="flex w-full items-center justify-between gap-2">
-                        <div className="flex items-center gap-1 w-[80%] truncate">
+                        <div className="flex w-[80%] items-center gap-1 truncate">
                           <Image
                             src={client.avatar || '/user.png'}
                             alt="U"

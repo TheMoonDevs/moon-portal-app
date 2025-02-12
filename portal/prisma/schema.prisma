@@ -617,6 +617,7 @@ model ClientUtilityLink {
   url       String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  icon      String
 }
 
 
