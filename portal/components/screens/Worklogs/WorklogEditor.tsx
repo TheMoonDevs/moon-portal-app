@@ -183,6 +183,7 @@ export const WorklogEditor = ({
       workLog
     );
   }, [serverLog, workLog]);
+  
   useEffect(() => {
     if (!isAutoSaved && !loading) {
       dispatch(setEdiotrSaving(true));
