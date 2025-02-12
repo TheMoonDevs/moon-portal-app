@@ -148,160 +148,170 @@ const ClientShortcutsManager = () => {
 
   return (
     <>
-      <MobileBox>
+      <MobileBox customClass="!w-[50%]">
         <p className="mb-6 text-center text-xs uppercase tracking-[0.5em] text-neutral-400">
           Add Shortcuts for Client
         </p>
-        {loadingState.fetching ? (
-          <div className="flex h-full items-center justify-center">
-            <Spinner />
-          </div>
-        ) : (
-          <div className="relative h-full w-full">
-            {loadingState.addNew || loadingState.updating ? (
-              <>
-                <ToolTip title="Back to Previous Slide">
-                  <IconButton
-                    onClick={() => {
+        <div className="my-2 flex max-h-full w-[90%] grow flex-col justify-start gap-4">
+          {loadingState.fetching ? (
+            <div className="flex h-full items-center justify-center">
+              <Spinner />
+            </div>
+          ) : (
+            <div className="relative h-full w-full">
+              {loadingState.addNew || loadingState.updating ? (
+                <>
+                  <ToolTip title="Back to Previous Slide">
+                    <IconButton
+                      onClick={() => {
+                        loadingState.updating
+                          ? setLoadingState({
+                              ...loadingState,
+                              updating: false,
+                            })
+                          : setLoadingState({ ...loadingState, addNew: false });
+                        resetForm();
+                      }}
+                      sx={{ backgroundColor: '#1b1b1b', mb: 2 }}
+                    >
+                      <span className="material-symbols-outlined !text-white">
+                        arrow_back
+                      </span>
+                    </IconButton>
+                  </ToolTip>
+                  <form
+                    onSubmit={
                       loadingState.updating
-                        ? setLoadingState({ ...loadingState, updating: false })
-                        : setLoadingState({ ...loadingState, addNew: false });
-                      resetForm();
-                    }}
-                    sx={{ backgroundColor: '#1b1b1b', mb: 2 }}
+                        ? handleUpdateShortcut
+                        : handleFormSubmit
+                    }
+                    className="relative my-2 flex h-full w-full flex-grow flex-col"
                   >
-                    <span className="material-symbols-outlined !text-white">
-                      arrow_back
-                    </span>
-                  </IconButton>
-                </ToolTip>
-                <form
-                  onSubmit={
-                    loadingState.updating
-                      ? handleUpdateShortcut
-                      : handleFormSubmit
-                  }
-                  className="relative my-2 flex h-full w-full flex-grow flex-col"
-                >
-                  <div className="flex-grow">
-                    <div className="mb-5">
-                      <label
-                        htmlFor="user"
-                        className="mb-1 block text-sm font-medium text-neutral-300"
-                      >
-                        Select Client
-                      </label>
-                      <input
-                        type="text"
-                        id="user"
-                        value={searchTerm || ''}
-                        onChange={handleUserChange}
-                        className="w-full rounded border border-neutral-500 bg-neutral-800 p-2 text-neutral-200"
-                        placeholder="Search users..."
-                      />
-                      {searchTerm && suggestions.length > 0 && (
-                        <div className="suggestions-container absolute w-full">
-                          <ul className="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded border border-neutral-500 bg-neutral-900 text-neutral-200">
-                            {suggestions.map((suggestion) => (
-                              <li
-                                key={suggestion.id}
-                                className="cursor-pointer p-2 hover:bg-neutral-700"
-                                onClick={() => handleClientSelect(suggestion)}
-                              >
-                                {suggestion.name}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                    <div className="mb-5">
-                      <label
-                        htmlFor="linkTitle"
-                        className="mb-1 block text-sm font-medium text-neutral-300"
-                      >
-                        Shortcut Title
-                      </label>
-                      <input
-                        type="text"
-                        id="linkTitle"
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        className="w-full rounded border border-neutral-500 bg-neutral-800 p-2 text-neutral-200"
-                        placeholder="Enter shortcut title..."
-                      />
-                    </div>
-                    <div className="mb-5">
-                      <label
-                        htmlFor="link"
-                        className="mb-1 block text-sm font-medium text-neutral-300"
-                      >
-                        Link for shortcut
-                      </label>
-                      <input
-                        type="url"
-                        id="link"
-                        value={link}
-                        onChange={(e) => setLink(e.target.value)}
-                        className="w-full rounded border border-neutral-500 bg-neutral-800 p-2 text-neutral-200"
-                        placeholder="Enter shortcut link..."
-                      />
-                    </div>
-                    <div className="mt-auto">
-                      <button
-                        type="submit"
-                        className="mb-5 flex w-full items-center justify-center rounded-lg bg-neutral-800 px-5 py-2 text-white shadow-md hover:bg-neutral-700"
-                        disabled={!title || !link || !selectedClient}
-                      >
-                        {loadingState.adding || loadingState.updateUploading ? (
-                          <Spinner className="h-4 w-4" />
-                        ) : (
-                          <>
-                            {loadingState.updating
-                              ? 'Update Shortcut'
-                              : 'Add Shortcut'}
-                          </>
+                    <div className="flex-grow">
+                      <div className="mb-5">
+                        <label
+                          htmlFor="user"
+                          className="mb-1 block text-sm font-medium text-neutral-300"
+                        >
+                          Select Client
+                        </label>
+                        <input
+                          type="text"
+                          id="user"
+                          value={searchTerm || ''}
+                          onChange={handleUserChange}
+                          className="w-full rounded border border-neutral-500 bg-neutral-800 p-2 text-neutral-200"
+                          placeholder="Search users..."
+                        />
+                        {searchTerm && suggestions.length > 0 && (
+                          <div className="suggestions-container absolute w-full">
+                            <ul className="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded border border-neutral-500 bg-neutral-900 text-neutral-200">
+                              {suggestions.map((suggestion) => (
+                                <li
+                                  key={suggestion.id}
+                                  className="cursor-pointer p-2 hover:bg-neutral-700"
+                                  onClick={() => handleClientSelect(suggestion)}
+                                >
+                                  {suggestion.name}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
                         )}
-                      </button>
+                      </div>
+                      <div className="mb-5">
+                        <label
+                          htmlFor="linkTitle"
+                          className="mb-1 block text-sm font-medium text-neutral-300"
+                        >
+                          Shortcut Title
+                        </label>
+                        <input
+                          type="text"
+                          id="linkTitle"
+                          value={title}
+                          onChange={(e) => setTitle(e.target.value)}
+                          className="w-full rounded border border-neutral-500 bg-neutral-800 p-2 text-neutral-200"
+                          placeholder="Enter shortcut title..."
+                        />
+                      </div>
+                      <div className="mb-5">
+                        <label
+                          htmlFor="link"
+                          className="mb-1 block text-sm font-medium text-neutral-300"
+                        >
+                          Link for shortcut
+                        </label>
+                        <input
+                          type="url"
+                          id="link"
+                          value={link}
+                          onChange={(e) => setLink(e.target.value)}
+                          className="w-full rounded border border-neutral-500 bg-neutral-800 p-2 text-neutral-200"
+                          placeholder="Enter shortcut link..."
+                        />
+                      </div>
+                      <div className="mt-auto">
+                        <button
+                          type="submit"
+                          className="mb-5 flex w-full items-center justify-center rounded-lg bg-neutral-800 px-5 py-2 text-white shadow-md hover:bg-neutral-700"
+                          disabled={!title || !link || !selectedClient}
+                        >
+                          {loadingState.adding ||
+                          loadingState.updateUploading ? (
+                            <Spinner className="h-4 w-4" />
+                          ) : (
+                            <>
+                              {loadingState.updating
+                                ? 'Update Shortcut'
+                                : 'Add Shortcut'}
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                </form>
-              </>
-            ) : clientShortcuts.length === 0 ||
-              clientShortcuts.every((group) => group.shortcuts.length === 0) ? (
-              <div className="flex h-full flex-col items-center justify-center">
-                <p className="text-neutral-400">No Shortcuts found.</p>
-              </div>
-            ) : (
-              <div className="no-scrollbar flex h-[80%] flex-col gap-2 overflow-y-scroll">
-                {clientShortcuts?.map(
-                  (shortcut: GroupedClientUtilityLink, index) => {
-                    return (
-                      <ClientShortcuts
-                        shortcut={shortcut}
-                        key={`${shortcut.clientName}-${index}-${shortcut.avatar}`}
-                        isExpanded={expandedShortcutId === shortcut.clientName}
-                        handleExpand={() => handleExpand(shortcut.clientName)}
-                        handleEditShortcut={handleEditShortcut}
-                      />
-                    );
-                  },
-                )}
-              </div>
-            )}
-            {!loadingState.addNew && !loadingState.updating && (
-              <button
-                className="absolute bottom-0 flex w-full items-center justify-center gap-2 rounded-lg bg-neutral-800 px-5 py-2 text-white shadow-md hover:bg-neutral-700"
-                onClick={() =>
-                  setLoadingState({ ...loadingState, addNew: true })
-                }
-              >
-                <span className="material-symbols-outlined">add_link</span>
-                Add New Shortcut
-              </button>
-            )}
-          </div>
-        )}
+                  </form>
+                </>
+              ) : clientShortcuts.length === 0 ||
+                clientShortcuts.every(
+                  (group) => group.shortcuts.length === 0,
+                ) ? (
+                <div className="flex h-full flex-col items-center justify-center">
+                  <p className="text-neutral-400">No Shortcuts found.</p>
+                </div>
+              ) : (
+                <div className="no-scrollbar flex h-[80%] flex-col gap-2 overflow-y-scroll">
+                  {clientShortcuts?.map(
+                    (shortcut: GroupedClientUtilityLink, index) => {
+                      return (
+                        <ClientShortcuts
+                          shortcut={shortcut}
+                          key={`${shortcut.clientName}-${index}-${shortcut.avatar}`}
+                          isExpanded={
+                            expandedShortcutId === shortcut.clientName
+                          }
+                          handleExpand={() => handleExpand(shortcut.clientName)}
+                          handleEditShortcut={handleEditShortcut}
+                        />
+                      );
+                    },
+                  )}
+                </div>
+              )}
+              {!loadingState.addNew && !loadingState.updating && (
+                <button
+                  className="absolute bottom-0 flex w-full items-center justify-center gap-2 rounded-lg bg-neutral-800 px-5 py-2 text-white shadow-md hover:bg-neutral-700"
+                  onClick={() =>
+                    setLoadingState({ ...loadingState, addNew: true })
+                  }
+                >
+                  <span className="material-symbols-outlined">add_link</span>
+                  Add New Shortcut
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </MobileBox>
       <Toaster richColors duration={3000} closeButton position="bottom-right" />
     </>

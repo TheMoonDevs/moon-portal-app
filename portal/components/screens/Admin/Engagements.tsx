@@ -14,6 +14,7 @@ import { Autocomplete, Chip, TextField } from '@mui/material';
 import { toast } from 'sonner';
 import Image from 'next/image';
 import dayjs, { Dayjs } from 'dayjs';
+import { cn } from '@/app/lib/utils';
 
 type EngagementFormState = {
   client_id: string;
@@ -394,7 +395,7 @@ const Engagements = ({ users }: { users: User[] }) => {
   return (
     <MobileBox
       customClass={
-        loadingState.addNew || loadingState.updating ? 'overflow-y-scroll' : ''
+        cn(loadingState.addNew || loadingState.updating ? 'overflow-y-scroll' : '', '!w-[50%]')
       }
     >
       <p className="mb-6 text-center text-xs uppercase tracking-[0.5em] text-neutral-400">

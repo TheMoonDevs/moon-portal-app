@@ -1,9 +1,9 @@
 import { Spinner } from '@/components/elements/Loaders';
 import { PortalSdk } from '@/utils/services/PortalSdk';
-import { ClientUtilityLink } from '@prisma/client';
 import Image from 'next/image';
 import React, { useState } from 'react';
 import { toast } from 'sonner';
+import { ClientUtilityLink } from '@prisma/client';
 
 export interface GroupedClientUtilityLink {
   clientName: string;
