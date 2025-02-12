@@ -23,6 +23,7 @@ import { AdminUserPayData } from "./AdminUserPayData";
 import { AdminUserPersonalData } from "./AdminUserPersonalData";
 import { APP_ROUTES, TMD_PORTAL_API_KEY } from "@/utils/constants/appInfo";
 import Link from "next/link";
+import { toast, Toaster } from "sonner";
 const initialUserState: User = {
   id: "",
   name: "",
@@ -229,22 +230,24 @@ export const AdminUserEditor = () => {
       .then((data) => {
         setLoading(false);
         if (data.status === "success")
-          showToast({
-            id: "user-saved",
-            message: "User Succesfully Saved",
-            icon: "done_all",
-            color: "green",
-          });
+          // showToast({
+          //   id: "user-saved",
+          //   message: "User Succesfully Saved",
+          //   icon: "done_all",
+          //   color: "green",
+          // });
+          toast.success("User Succesfully Saved");
         console.log(data);
       })
       .catch((err) => {
         setLoading(false);
-        showToast({
-          id: "user-not-saved",
-          message: "Error saving user",
-          icon: "close",
-          color: "red",
-        });
+        // showToast({
+        //   id: "user-not-saved",
+        //   message: "Error saving user",
+        //   icon: "close",
+        //   color: "red",
+        // });
+        toast.error("Error saving user");
         console.log(err);
       });
   };
@@ -298,6 +301,7 @@ export const AdminUserEditor = () => {
           {renderComponent()}
         </div>
       </div>
+      <Toaster richColors position="top-right" duration={2000} closeButton theme="dark" />
     </div>
   );
 };
