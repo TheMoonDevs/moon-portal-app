@@ -257,7 +257,7 @@ export const AdminUserEditor = () => {
   if (showLoader) return <LoaderScreen text="Loading User Data" />;
 
   return (
-    <div className="flex h-screen bg-neutral-700">
+    <div className="flex h-screen bg-neutral-700 w-full">
       <div className="flex w-64 flex-col justify-between bg-neutral-900 p-5">
         <Link href={APP_ROUTES.home}>
           <img
@@ -295,9 +295,9 @@ export const AdminUserEditor = () => {
           ))}
         </div>
       </div>
-      <div className="flex flex-col gap-4 p-5">
+      <div className="flex flex-col justify-center items-center gap-4 p-5 w-full">
         {/* <AdminHeader /> */}
-        <div className="flex flex-1 justify-center overflow-y-auto">
+        <div className="flex flex-1 justify-center items-center w-[90%] ">
           {renderComponent()}
         </div>
       </div>
