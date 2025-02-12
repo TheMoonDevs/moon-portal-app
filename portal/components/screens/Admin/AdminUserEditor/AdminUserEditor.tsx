@@ -56,15 +56,12 @@ const initialUserState: User = {
 };
 
 const sidebarItems = [
-  { name: "AdminUserBasicData", label: "Basic Details", icon: "group" },
-  {
-    name: "AdminUserWorkData",
-    label: "Work Details",
-    icon: "notifications",
-  },
-  { name: "AdminUserPayData", label: "Payment Details", icon: "badge" },
-  { name: "AdminUserPersonalData", label: "Personal Details", icon: "event" },
+  { name: "AdminUserBasicData", label: "Basic Details", icon: "person" }, 
+  { name: "AdminUserWorkData", label: "Work Details", icon: "work" }, 
+  { name: "AdminUserPayData", label: "Payment Details", icon: "payments" }, 
+  { name: "AdminUserPersonalData", label: "Personal Details", icon: "badge" }, 
 ];
+
 
 export const AdminUserEditor = () => {
   const query = useSearchParams();
