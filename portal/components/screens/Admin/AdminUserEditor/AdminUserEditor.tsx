@@ -252,8 +252,8 @@ export const AdminUserEditor = () => {
   if (showLoader) return <LoaderScreen text="Loading User Data" />;
 
   return (
-    <div className="flex h-screen bg-neutral-700 w-full">
-      <div className="flex w-64 flex-col justify-between bg-neutral-900 p-5">
+    <div className="flex h-full bg-neutral-700 w-full">
+      <div className="flex w-64 flex-col justify-start bg-neutral-900 p-5">
         <Link href={APP_ROUTES.home}>
           <img
             src="/logo/logo_white.png"
@@ -267,14 +267,7 @@ export const AdminUserEditor = () => {
             className={`} flex items-center gap-2 rounded-lg p-2 text-white hover:bg-neutral-800`}
           >
             <span className="material-symbols-outlined">dashboard</span>
-            Go to Dashboard
-          </Link>
-          <Link
-            href={APP_ROUTES.userEditor}
-            className={`} flex items-center gap-2 rounded-lg p-2 text-white hover:bg-neutral-800`}
-          >
-            <span className="material-symbols-outlined">person_add</span>
-            Add new User
+            Dashboard
           </Link>
           {sidebarItems.map((item) => (
             <button
@@ -290,9 +283,9 @@ export const AdminUserEditor = () => {
           ))}
         </div>
       </div>
-      <div className="flex flex-col justify-center items-center gap-4 p-5 w-full">
-        {/* <AdminHeader /> */}
-        <div className="flex flex-1 justify-center items-center w-[90%] ">
+      <div className="flex flex-col justify-center items-center gap-2  w-full">
+        <AdminHeader user={user} />
+        <div className="flex flex-1 justify-center p-5 items-center w-[90%]">
           {renderComponent()}
         </div>
       </div>

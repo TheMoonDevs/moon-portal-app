@@ -9,9 +9,10 @@ import BadgeTemplate from './badge-template/AdminBadges';
 import EventForm from './Events/EventForm';
 import Link from 'next/link';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
+import { useRouter } from 'next/navigation';
 
 const menuItems = [
-  { name: 'AdminUsers', label: 'Admin Users', icon: 'group' },
+  { name: 'AdminUsers', label: 'Manage Users', icon: 'group' },
   {
     name: 'SendNotifications',
     label: 'Send Notifications',
@@ -24,6 +25,7 @@ const menuItems = [
 export const AdminPage = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   const [activeComponent, setActiveComponent] = useState('AdminUsers');
 
@@ -55,17 +57,23 @@ export const AdminPage = () => {
         setLoading(false);
       });
   }, []);
+
   return (
     <div className="flex h-screen bg-neutral-700">
-      <div className="flex w-64 flex-col justify-between bg-neutral-900 p-5">
-        <Link href={APP_ROUTES.home}>
-          <img
-            src="/logo/logo_white.png"
-            alt="Company Logo"
-            className="mx-auto w-32 cursor-pointer"
-          />
-        </Link>
+      <div className="flex w-64 flex-col justify-start bg-neutral-900 p-5">
+        <img
+          src="/logo/logo_white.png"
+          alt="Company Logo"
+          className="mx-auto w-32 cursor-pointer"
+        />
         <div className="mt-10 flex flex-col gap-4">
+          <button
+            onClick={() => router.push(APP_ROUTES.home)}
+            className="flex items-center gap-2 rounded-lg p-2 text-white hover:bg-neutral-800"
+          >
+            <span className="material-symbols-outlined">home</span>
+            Go Back to Portal
+          </button>
           {menuItems.map((item) => (
             <button
               key={item.name}
@@ -81,7 +89,7 @@ export const AdminPage = () => {
         </div>
       </div>
 
-      <div className="flex flex-1 items-center justify-center overflow-y-auto p-5">
+      <div className="flex flex-1 items-center justify-center overflow-y-auto px-5">
         {renderComponent()}
       </div>
     </div>
