@@ -1,27 +1,22 @@
-import { APP_ROUTES } from "@/utils/constants/appInfo";
-import Link from "next/link";
+import Image from 'next/image';
+import { User } from '@prisma/client';
 
-const AdminLinks = [
-  {
-    path: APP_ROUTES.admin,
-    name: "Dashboard",
-  },
-  {
-    path: APP_ROUTES.userEditor,
-    name: "New User",
-  },
-];
-
-export const AdminHeader = () => {
+export const AdminHeader = ({ user }: { user: User }) => {
   return (
-    <div className="flex flex-row mb-8 w-4/5 gap-4 items-center justify-start">
-      {AdminLinks.map((link) => (
-        <Link key={link.path} href={link.path}>
-          <div className="flex flex-row gap-2 items-center justify-center text-black hover:text-neutral-500 px-4 py-2 rounded-lg cursor-pointer">
-            <p className="">{link?.name}</p>
-          </div>
-        </Link>
-      ))}
+    <div className="flex w-full items-center gap-4  bg-neutral-800 p-4 shadow-md">
+      <div className="h-12 w-12 overflow-hidden rounded-full border-2 border-neutral-600">
+        <Image
+          src={user.avatar || ''}
+          alt={user.name || 'User Avatar'}
+          width={60}
+          height={60}
+          className="h-full w-full object-cover"
+        />
+      </div>
+      <div className="text-left">
+        <p className="font-medium text-white text-lg">{user.name}</p>
+        <p className="text-xs text-neutral-400">{user.userType}</p>
+      </div>
     </div>
   );
 };

@@ -20,8 +20,9 @@ import { AdminUserWorkData } from './AdminUserWorkData';
 import { AdminUserBasicData } from './AdimUserBasicData';
 import { AdminUserPayData } from './AdminUserPayData';
 import { AdminUserPersonalData } from './AdminUserPersonalData';
-import { TMD_PORTAL_API_KEY } from '@/utils/constants/appInfo';
+import { APP_ROUTES, TMD_PORTAL_API_KEY } from '@/utils/constants/appInfo';
 import { toast, Toaster } from 'sonner';
+import Link from 'next/link';
 const initialUserState: User = {
   id: '',
   name: '',
@@ -53,12 +54,84 @@ const initialUserState: User = {
   description: '',
   positionTitle: '',
 };
+
+const sidebarItems = [
+  { name: "AdminUserBasicData", label: "Basic Details", icon: "person" }, 
+  { name: "AdminUserWorkData", label: "Work Details", icon: "work" }, 
+  { name: "AdminUserPayData", label: "Payment Details", icon: "payments" }, 
+  { name: "AdminUserPersonalData", label: "Personal Details", icon: "badge" }, 
+];
+
+
 export const AdminUserEditor = () => {
   const query = useSearchParams();
   const [loading, setLoading] = useState(false);
 
   const router = useRouter();
   const [user, setUser] = useState<User>(initialUserState);
+  const [activeComponent, setActiveComponent] = useState("AdminUserBasicData");
+
+  const renderComponent = () => {
+    switch (activeComponent) {
+      case "AdminUserBasicData":
+        return (
+          <AdminUserBasicData
+            user={user}
+            setUser={setUser}
+            saveUser={saveUser}
+            updateField={updateField}
+            loading={loading}
+            updateOverlap={updateOverlap}
+            updateTextareaField={updateTextareaField}
+          />
+        );
+      case "AdminUserWorkData":
+        return (
+          <AdminUserWorkData
+            user={user}
+            setUser={setUser}
+            saveUser={saveUser}
+            loading={loading}
+            updateOverlap={updateOverlap}
+            updateField={updateField}
+          />
+        );
+      case "AdminUserPayData":
+        return (
+          <AdminUserPayData
+            user={user}
+            saveUser={saveUser}
+            loading={loading}
+            setUser={setUser}
+            updateOverlap={updateOverlap}
+            updateField={updateField}
+          />
+        );
+      case "AdminUserPersonalData":
+        return (
+          <AdminUserPersonalData
+            user={user}
+            setUser={setUser}
+            saveUser={saveUser}
+            loading={loading}
+            updateOverlap={updateOverlap}
+            updateField={updateField}
+          />
+        );
+      default:
+        return (
+          <AdminUserBasicData
+            user={user}
+            setUser={setUser}
+            saveUser={saveUser}
+            updateField={updateField}
+            loading={loading}
+            updateOverlap={updateOverlap}
+            updateTextareaField={updateTextareaField}
+          />
+        );
+    }
+  };
 
   useEffect(() => {
     const id = query?.get('id');
@@ -179,42 +252,44 @@ export const AdminUserEditor = () => {
   if (showLoader) return <LoaderScreen text="Loading User Data" />;
 
   return (
-    <div className="flex flex-row flex-wrap items-center justify-center gap-4 bg-neutral-100 py-10">
-      <AdminHeader />
-      <Toaster position="bottom-right" richColors duration={3000} />
-      <AdminUserBasicData
-        user={user}
-        setUser={setUser}
-        saveUser={saveUser}
-        updateField={updateField}
-        loading={loading}
-        updateOverlap={updateOverlap}
-        updateTextareaField={updateTextareaField}
-      />
-      <AdminUserWorkData
-        user={user}
-        setUser={setUser}
-        saveUser={saveUser}
-        loading={loading}
-        updateOverlap={updateOverlap}
-        updateField={updateField}
-      />
-      <AdminUserPayData
-        user={user}
-        saveUser={saveUser}
-        loading={loading}
-        setUser={setUser}
-        updateOverlap={updateOverlap}
-        updateField={updateField}
-      />
-      <AdminUserPersonalData
-        user={user}
-        setUser={setUser}
-        saveUser={saveUser}
-        loading={loading}
-        updateOverlap={updateOverlap}
-        updateField={updateField}
-      />
+    <div className={`flex ${query?.get('id') ? 'h-full' : 'h-screen'} bg-neutral-700 w-full`}>
+      <div className="flex w-64 flex-col justify-start bg-neutral-900 p-5">
+        <Link href={APP_ROUTES.home}>
+          <img
+            src="/logo/logo_white.png"
+            alt="Company Logo"
+            className="mx-auto w-32 cursor-pointer"
+          />
+        </Link>
+        <div className="mt-10 flex flex-col gap-4">
+          <Link
+            href={APP_ROUTES.admin}
+            className={`} flex items-center gap-2 rounded-lg p-2 text-white hover:bg-neutral-800`}
+          >
+            <span className="material-symbols-outlined">dashboard</span>
+            Dashboard
+          </Link>
+          {sidebarItems.map((item) => (
+            <button
+              key={item.name}
+              className={`flex items-center gap-2 rounded-lg p-2 text-white hover:bg-neutral-800 ${
+                activeComponent === item.name ? "bg-neutral-800 opacity-100 font-semibold" : "opacity-60"
+              }`}
+              onClick={() => setActiveComponent(item.name)}
+            >
+              <span className="material-symbols-outlined">{item.icon}</span>
+              {item.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="flex flex-col justify-center items-center gap-2  w-full">
+        {query?.get('id') && <AdminHeader user={user} />}
+        <div className="flex flex-1 justify-center p-5 items-center w-[90%]">
+          {renderComponent()}
+        </div>
+      </div>
+      <Toaster richColors position="top-right" duration={2000} closeButton theme="dark" />
     </div>
   );
 };
