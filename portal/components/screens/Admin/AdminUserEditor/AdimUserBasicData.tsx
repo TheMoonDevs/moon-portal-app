@@ -50,19 +50,19 @@ export const AdminUserBasicData = ({
           </p>
           <button
             onClick={saveUser}
-            className="flex items-center rounded-lg bg-green-600 px-4 py-2 text-white shadow-md transition hover:bg-green-700"
+            className="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-white shadow-md transition hover:bg-green-700"
           >
             {loading ? (
               <Spinner className="h-5 w-5 animate-spin text-white" />
             ) : (
               <span className="material-icons">done_all</span>
             )}
-            <span className="ml-2">Save User</span>
+            <span className="">Save User</span>
           </button>
         </div>
         <div className="grid w-full grid-cols-2 gap-8">
           {/* Left Column */}
-          <div className="flex flex-col gap-6 text-white shadow-lg">
+          <div className="flex flex-col gap-4 text-white shadow-lg">
             <div className="flex flex-col gap-2">
               <label htmlFor="passcode" className="text-sm font-medium">
                 Passcode

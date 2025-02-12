@@ -34,17 +34,19 @@ export const AdminUserWorkData = ({
         </p>
         <button
           onClick={saveUser}
-          className="flex items-center rounded-lg bg-green-600 px-4 py-2 text-white shadow-md transition hover:bg-green-700"
+          className="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-white shadow-md transition hover:bg-green-700"
         >
-          {loading && <Spinner className="h-6 w-6 text-green-600" />}
-          {!loading && <span className="material-icons">done_all</span>}
+          <>
+            {loading && <Spinner className="h-5 w-5 text-green-600" />}
+            {!loading && <span className="material-icons">done_all</span>}
+          </>
           Save User
         </button>
       </div>
       <LocalizationProvider dateAdapter={AdapterDayjs}>
         <div className="grid w-full grid-cols-2 gap-8">
           {/* Left Column */}
-          <div className="flex flex-col gap-6 text-white shadow-lg">
+          <div className="flex flex-col gap-4 text-white shadow-lg">
             <div className="flex flex-col gap-2">
               {" "}
               <p className="text-sm font-medium">Work Hours Per Week</p>
@@ -107,7 +109,7 @@ export const AdminUserWorkData = ({
             </div>
           </div>
           {/* Right Column */}
-          <div className="flex flex-col gap-6 text-white shadow-lg">
+          <div className="flex flex-col gap-4 text-white shadow-lg">
             <div className="flex flex-col gap-2">
               {" "}
               <p className="text-sm font-medium">Position Internal</p>
