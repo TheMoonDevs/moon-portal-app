@@ -4,10 +4,9 @@ import { isFilled, asLink } from "@prismicio/client";
 import { SliceZone } from "@prismicio/react";
 import { createClient } from "@/prismicio";
 import { JobApplicationPage } from "@/components/Pages/worklife/JobApply/JobApplicationPage";
-import getSpreadsheetData from "@/utils/service/getSpreadsheetData";
+import GoogleSheetsAPI from "@/utils/service/googleSpreadsheetSDk";
 
 type Params = { uid: string };
-
 
 export default function Page({
   spreadsheetId,
@@ -47,13 +46,20 @@ export async function getStaticProps({
   const page = await client.getByUID("jobapplication", params?.uid as string);
   const spreadsheetUrl = page?.data?.slices[0]?.primary?.spreadsheet_url || "";
   const spreadsheetId = spreadsheetUrl.split("/")[5];
-  const sheetId = spreadsheetUrl.split("=")[1];
-  const response = await getSpreadsheetData({
-    spreadsheetId: spreadsheetId,
-    targetSheetId: parseInt(sheetId),
-    range: "A1:Z1",
+  const sheetId = spreadsheetUrl.split("=")[1].split("#")[0];
+
+  const googleSheetsAPI = new GoogleSheetsAPI({
+    clientEmail: process.env.GIAM_CLIENT_EMAIL as string,
+    privateKey: process.env.GIAM_PRIVATE_KEY as string,
   });
-  console.log("Spreadsheet data:", response);
+  
+  const response = await googleSheetsAPI.getSheetData({
+    spreadsheetId,
+    range: "A1:Z1",
+    targetId: sheetId,
+  });
+
+  // console.log("Spreadsheet data:", response);
   if (!response?.values || response?.values?.length <= 0) {
     const rowHeaders = [""];
     return {
@@ -87,9 +93,9 @@ export async function getStaticPaths() {
   const pages = await client.getAllByType("jobapplication");
 
   return {
-    paths: pages.map((page) => {
+    paths: pages? pages.map((page) => {
       return asLink(page);
-    }),
-    fallback: "blocking",
+    }) : ["undefined"],
+    fallback: false,
   };
 }

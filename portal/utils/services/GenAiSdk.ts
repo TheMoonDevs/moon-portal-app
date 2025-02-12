@@ -28,11 +28,10 @@ export const GenAiSdk = {
     }
   },
   generateAISummary: async (
-    name: string | null | undefined,
     data: any
   ) => {
     const prompt = `
-      Summarize the key points from ${name}'s work logs from yesterday.
+      Summarize the key points from our teams work logs from yesterday.
       ${JSON.stringify(data)}
       
       Provide a **single concise passage** (no bullet points).

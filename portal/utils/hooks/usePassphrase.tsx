@@ -37,6 +37,7 @@ export const usePassphrase = () => {
       await PortalSdk.putData("/api/user", {
         id: userId,
         passphrase: hashedPassphrase,
+        updatedAt: user?.updatedAt,
       });
       // console.log("Passphrase updated successfully in the database");
       refetchUser();

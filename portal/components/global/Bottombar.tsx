@@ -46,6 +46,11 @@ const NAVIGATION_OPTIONS = [
     path: APP_ROUTES.notifications,
     icon: 'notifications',
   },
+  {
+    name: 'Admin',
+    path: APP_ROUTES.admin,
+    icon: 'admin_panel_settings',
+  },
 ];
 
 const CLIENT_NAVIGATION_OPTIONS = [
@@ -95,6 +100,8 @@ export const Bottombar = ({
     visibleOnlyOn ? visibleOnlyOn : media.default,
   );
   const isMobile = useMediaQuery(media.largeMobile);
+  const isTablet = useMediaQuery(media.tablet);
+  const isMobileOrTablet = isMobile || isTablet;
   const { unreadNotificationsCount } = useNotifications();
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [workLogId, setWorkLogId] = useState<string | null>(null);
@@ -108,7 +115,13 @@ export const Bottombar = ({
   const options =
     user?.userType === USERTYPE.CLIENT
       ? CLIENT_NAVIGATION_OPTIONS
-      : NAVIGATION_OPTIONS;
+      : NAVIGATION_OPTIONS.filter(
+          (option) =>
+            !(
+              option.name === 'Admin' &&
+              (!user?.isAdmin || isMobile || isTablet)
+            ),
+        );
   if (!visible && !visibleOnlyOn) return null;
   if (visibleOnlyOn && !visibleOnlyOnResponsiveSizes) return null;
   //if (!AppRoutesHelper.bottomBarShown(path)) return null;

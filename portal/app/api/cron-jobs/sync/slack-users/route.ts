@@ -37,6 +37,7 @@ export async function GET(request: NextRequest) {
               data: {
                 thirdPartyData: newThirdPartyData,
                 slackId: slackUser.id,
+                updatedAt: new Date(),
               },
             });
           }

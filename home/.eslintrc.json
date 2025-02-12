@@ -24,18 +24,21 @@
         "prettier",
         "unused-imports",
         "simple-import-sort",
-        "tailwindcss"
+        "tailwindcss",
+        "eslint-plugin-next-on-pages"
       ],
       "extends": [
         "eslint:recommended",
         "plugin:@typescript-eslint/recommended",
         "plugin:@cspell/recommended",
         "plugin:tailwindcss/recommended",
+        "next/babel",
         "next/core-web-vitals",
-        "plugin:prettier/recommended"
+        "plugin:prettier/recommended",
+        "plugin:eslint-plugin-next-on-pages/recommended"
       ],
       "parserOptions": {
-        "project":  ["tsconfig.json", "home/tsconfig.json"]
+        "project": "home/tsconfig.json"
       },
       "rules": {
         "@cspell/spellchecker": [

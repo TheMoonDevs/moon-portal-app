@@ -9,10 +9,49 @@ import BadgeTemplate from './badge-template/AdminBadges';
 import EventForm from './Events/EventForm';
 import ClientShortcutsManager from './ClientShortcutsManager';
 import Engagements from './Engagements';
+import Link from 'next/link';
+import { APP_ROUTES } from '@/utils/constants/appInfo';
+import { useRouter } from 'next/navigation';
+
+const menuItems = [
+  { name: 'AdminUsers', label: 'Manage Users', icon: 'group' },
+  {
+    name: 'SendNotifications',
+    label: 'Send Notifications',
+    icon: 'notifications',
+  },
+  { name: 'BadgeTemplate', label: 'Badge Template', icon: 'badge' },
+  { name: 'EventForm', label: 'Event Form', icon: 'event' },
+  { name: 'Shortcuts', label: 'Client Shortcuts', icon: 'bolt' },
+  { name: 'Engagements', label: 'Engagements', icon: 'handshake' },
+];
 
 export const AdminPage = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  const [activeComponent, setActiveComponent] = useState('AdminUsers');
+
+  const renderComponent = () => {
+    switch (activeComponent) {
+      case 'AdminUsers':
+        return <AdminUsers users={users} loading={loading} />;
+      case 'SendNotifications':
+        return <SendNotifications users={users} loading={loading} />;
+      case 'BadgeTemplate':
+        return <BadgeTemplate />;
+      case 'EventForm':
+        return <EventForm />;
+      case 'Shortcuts':
+        return <ClientShortcutsManager />;
+      case 'Engagements':
+        return <Engagements users={users} />;
+      default:
+        return <AdminUsers users={users} loading={loading} />;
+    }
+  };
+
   useEffect(() => {
     setLoading(true);
     PortalSdk.getData('/api/user', null)
@@ -27,13 +66,47 @@ export const AdminPage = () => {
   }, []);
 
   return (
-    <div className="flex h-screen flex-row flex-wrap items-center justify-center gap-4 overflow-y-scroll bg-neutral-700 py-5 max-sm:h-full max-sm:flex-col max-sm:overflow-y-auto md:bg-neutral-900">
-      <AdminUsers users={users} loading={loading} />
-      <SendNotifications users={users} loading={loading} />
-      <BadgeTemplate />
-      <EventForm />
-      <ClientShortcutsManager />
-      <Engagements users={users} />
+    <div className="flex h-screen bg-neutral-700">
+      <div className="flex w-64 flex-col justify-start bg-neutral-900 p-5">
+        <button
+          onClick={() => router.push(APP_ROUTES.home)}
+          className="mb-4 flex items-center gap-2 rounded-lg p-2 text-white hover:bg-neutral-800"
+        >
+          <span className="material-symbols-outlined">arrow_back</span>
+          Back to Home
+        </button>
+        <div className="flex flex-col items-center">
+          <img
+            src="/logo/logo_white.png"
+            alt="Company Logo"
+            className="w-24 cursor-pointer"
+          />
+          <p className="mt-2 text-xl font-bold tracking-[0.25em] text-white">
+            TheMoonDevs
+          </p>
+        </div>
+
+        <div className="mt-10 flex flex-col gap-4">
+          {menuItems.map((item) => (
+            <button
+              key={item.name}
+              className={`flex items-center gap-2 rounded-lg p-2 text-white transition-opacity hover:bg-neutral-800 ${
+                activeComponent === item.name
+                  ? 'bg-neutral-800 font-semibold opacity-100'
+                  : 'opacity-60'
+              }`}
+              onClick={() => setActiveComponent(item.name)}
+            >
+              <span className="material-symbols-outlined">{item.icon}</span>
+              {item.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex flex-1 items-center justify-center overflow-y-auto px-5">
+        {renderComponent()}
+      </div>
     </div>
   );
 };

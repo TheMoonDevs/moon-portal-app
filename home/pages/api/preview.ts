@@ -3,6 +3,8 @@ import { setPreviewData, redirectToPreviewURL } from "@prismicio/next";
 
 import { createClient } from "../../prismicio";
 
+export const runtime = "edge";
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,

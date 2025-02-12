@@ -40,7 +40,7 @@ export const EventCard = ({
 
   return (
     <div
-      className='flex py-2 text-white items-center justify-between cursor-pointer'
+      className='flex py-2 text-white items-center justify-between cursor-pointer border-b border-neutral-800'
       onClick={(e) => {
         e.stopPropagation();
         setSelectedEvent(event);

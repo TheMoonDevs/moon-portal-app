@@ -13,13 +13,13 @@ export async function POST(request: NextRequest) {
     });
 
     if (user) {
-      if (name === null || user.avatar === null) {
+      if (user.name === null || user.avatar === null) {
         user = await prisma.user.update({
           where: {
             id: user.id,
           },
           data: {
-            ...(name === null && { name }),
+            ...(user.name === null && { name }),
             ...(user.avatar === null && { avatar }),
           },
         });

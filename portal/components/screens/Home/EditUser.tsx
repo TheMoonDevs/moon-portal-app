@@ -37,7 +37,7 @@ const EditUser = () => {
   const isEditModalOpen = useAppSelector(
     (state: RootState) => state.coreTeam.isEditModalOpen
   );
-  console.log("user:", user);
+  // console.log("user:", user);
 
   const personalData = (user?.personalData as unknown as IPersonalData) || {};
   const payData = (user?.payData as unknown as IPayData) || {};
@@ -126,6 +126,7 @@ const EditUser = () => {
         ...personalData,
         dateOfBirth: personalData.dateOfBirth ? personalData.dateOfBirth : null,
       },
+      updatedAt: user?.updatedAt,
     };
 
     try {
