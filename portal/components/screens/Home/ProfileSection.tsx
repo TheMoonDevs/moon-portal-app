@@ -7,6 +7,8 @@ import { useState } from 'react';
 import LogoutConfirmationDialog from '@/components/global/LogoutConfirmationDialog';
 import { useAppDispatch } from '@/utils/redux/store';
 import { selectMember } from '@/utils/redux/coreTeam/coreTeam.slice';
+import Link from 'next/link';
+import { APP_ROUTES } from '@/utils/constants/appInfo';
 export const ProfileSection = ({ user }: { user: User }) => {
   const [open, setOpen] = useState(false);
   const dispatch = useAppDispatch();
@@ -49,7 +51,16 @@ export const ProfileSection = ({ user }: { user: User }) => {
         <div className="text-left">
           <p className="text-md font-bold text-black">Hello, </p>
           <h4 className="text-xl text-neutral-900">{user?.name}</h4>
-          <p className="text-xs text-neutral-500">{user?.email}</p>
+          <p className="text-neutral-500 text-xs">{user?.email}</p>
+          <Link
+            href={APP_ROUTES.devProfile}
+            className="mt-2 flex items-center justify-center text-xs text-white transition px-2 py-2 bg-black rounded-lg hover:bg-neutral-700 gap-1"
+          >
+            Dev Profile{' '}
+            <span className="material-symbols-outlined !text-xs">
+              open_in_new
+            </span>
+          </Link>
         </div>
       </div>
 
