@@ -61,24 +61,32 @@ export const AdminPage = () => {
   return (
     <div className="flex h-screen bg-neutral-700">
       <div className="flex w-64 flex-col justify-start bg-neutral-900 p-5">
-        <img
-          src="/logo/logo_white.png"
-          alt="Company Logo"
-          className="mx-auto w-32 cursor-pointer"
-        />
+        <button
+          onClick={() => router.push(APP_ROUTES.home)}
+          className="mb-4 flex items-center gap-2 rounded-lg p-2 text-white hover:bg-neutral-800"
+        >
+          <span className="material-symbols-outlined">arrow_back</span>
+          Back to Home
+        </button>
+        <div className="flex flex-col items-center">
+          <img
+            src="/logo/logo_white.png"
+            alt="Company Logo"
+            className="w-24 cursor-pointer"
+          />
+          <p className="mt-2 text-xl font-bold tracking-[0.25em] text-white">
+            TheMoonDevs
+          </p>
+        </div>
+
         <div className="mt-10 flex flex-col gap-4">
-          <button
-            onClick={() => router.push(APP_ROUTES.home)}
-            className="flex items-center gap-2 rounded-lg p-2 text-white hover:bg-neutral-800"
-          >
-            <span className="material-symbols-outlined">home</span>
-            Go Back to Portal
-          </button>
           {menuItems.map((item) => (
             <button
               key={item.name}
-              className={`flex items-center gap-2 rounded-lg p-2 text-white hover:bg-neutral-800 ${
-                activeComponent === item.name ? 'bg-neutral-800' : ''
+              className={`flex items-center gap-2 rounded-lg p-2 text-white transition-opacity hover:bg-neutral-800 ${
+                activeComponent === item.name
+                  ? 'bg-neutral-800 opacity-100 font-semibold'
+                  : 'opacity-60'
               }`}
               onClick={() => setActiveComponent(item.name)}
             >

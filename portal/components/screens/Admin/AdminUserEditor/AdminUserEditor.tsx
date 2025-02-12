@@ -252,7 +252,7 @@ export const AdminUserEditor = () => {
   if (showLoader) return <LoaderScreen text="Loading User Data" />;
 
   return (
-    <div className="flex h-full bg-neutral-700 w-full">
+    <div className={`flex ${query?.get('id') ? 'h-full' : 'h-screen'} bg-neutral-700 w-full`}>
       <div className="flex w-64 flex-col justify-start bg-neutral-900 p-5">
         <Link href={APP_ROUTES.home}>
           <img
@@ -273,7 +273,7 @@ export const AdminUserEditor = () => {
             <button
               key={item.name}
               className={`flex items-center gap-2 rounded-lg p-2 text-white hover:bg-neutral-800 ${
-                activeComponent === item.name ? "bg-neutral-800" : ""
+                activeComponent === item.name ? "bg-neutral-800 opacity-100 font-semibold" : "opacity-60"
               }`}
               onClick={() => setActiveComponent(item.name)}
             >
@@ -284,7 +284,7 @@ export const AdminUserEditor = () => {
         </div>
       </div>
       <div className="flex flex-col justify-center items-center gap-2  w-full">
-        <AdminHeader user={user} />
+        {query?.get('id') && <AdminHeader user={user} />}
         <div className="flex flex-1 justify-center p-5 items-center w-[90%]">
           {renderComponent()}
         </div>

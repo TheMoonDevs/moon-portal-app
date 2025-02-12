@@ -44,11 +44,11 @@ export const AdminUsers = ({
               if (filteredUsers.length === 0) return null;
 
               return (
-                <MobileBox key={type} customClass="!w-full mt-6 ">
+                <MobileBox key={type} customClass="!w-full mt-6 custom-scrollbar ">
                   <p className="mb-4 text-center text-xs uppercase tracking-[0.5em] text-neutral-400">
                     {type === "CLIENT" ? "CLIENTS" : "MEMBERS"}
                   </p>
-                  <div className="custom-scrollbar my-2 flex max-h-full w-[90%] grow flex-col justify-start gap-4 overflow-y-auto">
+                  <div className=" my-2 flex max-h-full w-[90%] grow flex-col justify-start gap-4 ">
                     {filteredUsers.map((user) => (
                       <Link
                         key={user.id}
@@ -66,7 +66,8 @@ export const AdminUsers = ({
                           <div>
                             <p className="text-neutral-300">{user.name}</p>
                             <p className="text-sm text-neutral-600">
-                              {user.userType} | {user.username}-{user.password}
+                              {/* {user.userType}| */}
+                              {user.username}-{user.password}
                             </p>
                           </div>
                         </div>

@@ -8,7 +8,7 @@ export enum LoginState {
 
 export const MobileBox = ({ children, customClass }: { children: React.ReactNode, customClass?: string }) => {
   return (
-    <div className={`flex flex-col items-center justify-start p-[20px] md:p-[40px] bg-black w-[95%] md:w-[350px] lg:w-1/4 h-[98%] md:h-[85%] shadow-md rounded-lg ${customClass}`}>
+    <div className={`flex flex-col items-center justify-start p-[20px] md:px-[12px] md:py-8 bg-black w-[95%] md:w-[350px] lg:w-1/4 h-[98%] md:h-[85%] shadow-md rounded-lg ${customClass}`}>
       {children}
     </div>
   );
