@@ -27,8 +27,6 @@ type EngagementFormState = {
 const Engagements = ({ users }: { users: User[] }) => {
   const [clients, setClients] = useState<User[]>([]);
   const [engagements, setEngagements] = useState<Engagement[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [suggestions, setSuggestions] = useState<User[]>([]);
   const [formData, setFormData] = useState<EngagementFormState>({
     client_id: '',
     developer_ids: [],
@@ -107,9 +105,6 @@ const Engagements = ({ users }: { users: User[] }) => {
       endDate: engagement.endDate ? dayjs(new Date(engagement.endDate)) : null,
     });
     setEngagementId(engagement.id);
-    setSearchTerm(
-      clients.find((client) => client.id === engagement.client_id)?.name || '',
-    );
     setLoadingState({ ...loadingState, updating: true });
   };
 
@@ -133,24 +128,6 @@ const Engagements = ({ users }: { users: User[] }) => {
     }
   };
 
-  const handleClientSelect = (selectedUser: User) => {
-    setFormData((prev) => ({
-      ...prev,
-      client_id: selectedUser.id,
-    }));
-    setSearchTerm(selectedUser.name || '');
-    setSuggestions([]);
-  };
-
-  const handleUserChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.toLowerCase();
-    setSearchTerm(e.target.value);
-    const filteredClients = clients.filter((client) =>
-      client.name?.toLowerCase().includes(value),
-    );
-    setSuggestions(filteredClients);
-  };
-
   const resetForm = () => {
     setFormData({
       client_id: '',
@@ -159,16 +136,14 @@ const Engagements = ({ users }: { users: User[] }) => {
       startDate: null,
       endDate: null,
     });
-    setSearchTerm('');
     setEngagementId(null);
-    setSuggestions([]);
   };
 
   const renderForm = () => {
     return (
       <form
         onSubmit={loadingState.updating ? handleUpdate : handleFormSubmit}
-        className="relative my-2 flex h-full w-full flex-grow flex-col"
+        className="relative my-2 flex h-full w-[90%] flex-grow flex-col"
       >
         <div className="flex-grow">
           <div className="mb-5">
@@ -178,29 +153,23 @@ const Engagements = ({ users }: { users: User[] }) => {
             >
               Select Client
             </label>
-            <input
-              type="text"
+            <select
               id="user"
-              value={searchTerm || ''}
-              onChange={handleUserChange}
-              className="w-full rounded border border-neutral-500 bg-neutral-800 p-2 text-neutral-200"
-              placeholder="Search users..."
-            />
-            {searchTerm && suggestions.length > 0 && (
-              <div className="suggestions-container absolute w-full">
-                <ul className="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded border border-neutral-500 bg-neutral-900 text-neutral-200">
-                  {suggestions.map((suggestion) => (
-                    <li
-                      key={suggestion.id}
-                      className="cursor-pointer p-2 hover:bg-neutral-700"
-                      onClick={() => handleClientSelect(suggestion)}
-                    >
-                      {suggestion.name}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+              value={formData.client_id || ''}
+              onChange={(e) =>
+                setFormData({ ...formData, client_id: e.target.value })
+              }
+              className="w-full rounded border border-neutral-500 bg-neutral-800 p-3 text-neutral-200"
+            >
+              <option value="" disabled>
+                Select a client...
+              </option>
+              {clients.map((client) => (
+                <option key={client.id} value={client.id}>
+                  {client.name}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="mb-5">
             <label
@@ -310,7 +279,7 @@ const Engagements = ({ users }: { users: User[] }) => {
               </label>
               <Autocomplete
                 multiple
-                options={users}
+                options={users.filter((user) => user.userType === 'MEMBER')}
                 getOptionLabel={(option) => option.name || ''}
                 value={users.filter((user) =>
                   formData.developer_ids.includes(user.id),
@@ -394,9 +363,10 @@ const Engagements = ({ users }: { users: User[] }) => {
 
   return (
     <MobileBox
-      customClass={
-        cn(loadingState.addNew || loadingState.updating ? 'overflow-y-scroll' : '', '!w-[50%]')
-      }
+      customClass={cn(
+        loadingState.addNew || loadingState.updating ? 'overflow-y-scroll' : '',
+        '!w-[50%]',
+      )}
     >
       <p className="mb-6 text-center text-xs uppercase tracking-[0.5em] text-neutral-400">
         Engagements
@@ -408,24 +378,28 @@ const Engagements = ({ users }: { users: User[] }) => {
       ) : (
         <div className="relative h-full w-full">
           {loadingState.addNew || loadingState.updating ? (
-            <>
-              <ToolTip title="Back to Previous Slide">
-                <IconButton
-                  onClick={() => {
-                    loadingState.updating
-                      ? setLoadingState({ ...loadingState, updating: false })
-                      : setLoadingState({ ...loadingState, addNew: false });
-                    resetForm();
-                  }}
-                  sx={{ backgroundColor: '#1b1b1b', mb: 2 }}
-                >
-                  <span className="material-symbols-outlined !text-white">
-                    arrow_back
-                  </span>
-                </IconButton>
-              </ToolTip>
-              {renderForm()}
-            </>
+            <div className="flex flex-col items-center justify-center">
+              <div className="ml-4 self-start">
+                <ToolTip title="Back to Previous Slide">
+                  <IconButton
+                    onClick={() => {
+                      loadingState.updating
+                        ? setLoadingState({ ...loadingState, updating: false })
+                        : setLoadingState({ ...loadingState, addNew: false });
+                      resetForm();
+                    }}
+                    sx={{ backgroundColor: '#1b1b1b', mb: 2 }}
+                  >
+                    <span className="material-symbols-outlined !text-white">
+                      arrow_back
+                    </span>
+                  </IconButton>
+                </ToolTip>
+              </div>
+              <div className="flex w-[90%] items-center justify-center">
+                {renderForm()}
+              </div>
+            </div>
           ) : engagements.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center">
               <p className="text-neutral-400">No Engament found.</p>
@@ -439,19 +413,30 @@ const Engagements = ({ users }: { users: User[] }) => {
                 return (
                   <div
                     key={engagement.id}
-                    className="flex items-center rounded border border-neutral-700 p-2"
+                    className="flex items-center rounded border border-neutral-700 px-2 py-3"
                   >
                     {client && (
                       <div className="flex w-full items-center justify-between gap-2">
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 w-[80%] truncate">
                           <Image
-                            src={client.avatar || '/user-avatar.svg'}
+                            src={client.avatar || '/user.png'}
                             alt="U"
-                            className="mr-2 h-8 w-8 rounded-full"
+                            className="mr-2 h-8 w-8 rounded-full !bg-white"
                             width={32}
                             height={32}
                           />
-                          <p className="text-white">{client.name}</p>
+                          <div className="flex flex-col gap-1">
+                            <p className="text-white">{client.name}</p>
+                            <p className="text-xs capitalize text-neutral-400">
+                              {engagement.title} -{' '}
+                              {users
+                                .filter((user) =>
+                                  engagement.developer_ids.includes(user.id),
+                                )
+                                .map((dev) => dev.name)
+                                .join(', ')}
+                            </p>
+                          </div>
                         </div>
                         <div className="flex space-x-3">
                           <button
