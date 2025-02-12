@@ -4,9 +4,9 @@ import { LOGLINKTYPE, WorkLogPoints } from '@/utils/@types/interfaces';
 import { MdxAppEditor } from '@/utils/configure/MdxAppEditor';
 import { useUser } from '@/utils/hooks/useUser';
 import { PortalSdk } from '@/utils/services/PortalSdk';
-import { WorkLogs } from '@prisma/client';
+import { Engagement, WorkLogs } from '@prisma/client';
 import dayjs from 'dayjs';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
   createRef,
   RefObject,
@@ -163,7 +163,10 @@ export const WorklogEditor = ({
     importing: false,
     loader: false,
   });
+  const [isSelectOpen, setIsSelectOpen] = useState(false);
+  const [engagements, setEngagements] = useState<Engagement[]>([]);
 
+  const path = usePathname();
   useEffect(() => {
     if (!importing.importing)
       setTimeout(
@@ -183,7 +186,7 @@ export const WorklogEditor = ({
       workLog
     );
   }, [serverLog, workLog]);
-  
+
   useEffect(() => {
     if (!isAutoSaved && !loading) {
       dispatch(setEdiotrSaving(true));
@@ -404,6 +407,22 @@ export const WorklogEditor = ({
     };
   }, []);
 
+  const fetchEngagements = async () => {
+    try {
+      const res = await PortalSdk.getData(
+        `/api/engagement/user/${user?.id}`,
+        null,
+      );
+      setEngagements(res.data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    if (path?.includes('user/worklogs')) fetchEngagements();
+  }, []);
+
   return (
     <div
       onKeyDown={(e) => {
@@ -577,7 +596,7 @@ export const WorklogEditor = ({
           </div>
         </div>
       )}
-      <div className="mb-4 p-4">
+      <div className="p-4">
         <div className="flex w-full items-center justify-between">
           <input
             disabled
@@ -587,22 +606,61 @@ export const WorklogEditor = ({
             value={workLog?.title || 'March 27 - Sunday'}
           />
         </div>
-        <div className="item-center mt-3 flex gap-2 text-xs leading-3 text-neutral-500">
-          {saving && <CustomLoader />}
-          {workLog?.logType === 'dayLog'
-            ? dayjs(workLog?.date).format('DD-MM-YYYY')
-            : 'My logs'}{' '}
-          {/* | {workLog?.logType}  */}|{' '}
-          {saving
-            ? 'saving...'
-            : loading
-              ? 'fetching..'
-              : !isAutoSaved
-                ? 'In-Edit'
-                : 'Saved'}
-          <span className="icon_size material-symbols-outlined text-neutral-500">
-            {!isAutoSaved ? 'edit' : 'done'}
-          </span>
+        <div className="relative flex items-start justify-between">
+          <div className="item-center mt-3 flex gap-2 text-xs leading-3 text-neutral-500">
+            {saving && <CustomLoader />}
+            {workLog?.logType === 'dayLog'
+              ? dayjs(workLog?.date).format('DD-MM-YYYY')
+              : 'My logs'}{' '}
+            {/* | {workLog?.logType}  */}|{' '}
+            {saving
+              ? 'saving...'
+              : loading
+                ? 'fetching..'
+                : !isAutoSaved
+                  ? 'In-Edit'
+                  : 'Saved'}
+            <span className="icon_size material-symbols-outlined text-neutral-500">
+              {!isAutoSaved ? 'edit' : 'done'}
+            </span>
+          </div>
+          {path?.includes('user/worklogs') && engagements.length > 0 && (
+            <>
+              <button
+                className="flex w-1/3 cursor-pointer items-center justify-between gap-2 rounded-md border border-neutral-400 bg-white px-3 py-1 text-sm shadow-lg transition-colors duration-300 hover:bg-neutral-100"
+                onClick={() => setIsSelectOpen(!isSelectOpen)}
+              >
+                <span className="flex items-center gap-2 font-medium">
+                  {/* <span class="material-symbols-outlined">add</span> */}
+                  Engagement
+                </span>
+                <span
+                  className={`material-symbols-outlined transition-transform duration-300 ${
+                    isSelectOpen ? 'rotate-180' : 'rotate-0'
+                  }`}
+                >
+                  {isSelectOpen ? 'expand_less' : 'expand_more'}
+                </span>
+              </button>
+              <div
+                className={`absolute right-0 top-full z-20 mt-0 w-1/3 rounded-md border border-neutral-400 bg-white shadow-lg transition-all duration-300 ease-in-out ${
+                  isSelectOpen ? 'max-h-60 opacity-100' : 'max-h-0 opacity-0'
+                } overflow-hidden`}
+              >
+                <div className="no-scrollbar max-h-60 overflow-y-auto">
+                  {engagements.map((eng: Engagement) => (
+                    <div
+                      key={eng.id}
+                      onClick={() => setIsSelectOpen(false)}
+                      className="block w-full px-4 py-2 text-left text-xs transition-colors duration-300 hover:bg-neutral-100 focus:bg-neutral-100"
+                    >
+                      {eng.title}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
         </div>
         <div className={`h-[${compactView ? '1em' : '3em'}]`}></div>
       </div>
