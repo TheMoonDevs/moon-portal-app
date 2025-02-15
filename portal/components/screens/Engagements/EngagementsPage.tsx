@@ -137,7 +137,7 @@ const EngagementsPage = () => {
             </div>
           )}
         </div>
-        <div className="h-[90vh] w-1/2">
+        <div className="max-h-[90vh] w-1/2">
           {!loading &&
             (workLogsLoading ? (
               <div className="flex h-screen w-full items-center justify-center">

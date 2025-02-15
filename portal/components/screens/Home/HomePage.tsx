@@ -4,7 +4,13 @@ import { useUser } from '@/utils/hooks/useUser';
 import { ActionsSection } from './ActionsSection';
 import { DailySection } from './DailySection';
 import { ProfileSection } from './ProfileSection';
-import { ClientUtilityLink, User, USERTYPE } from '@prisma/client';
+import {
+  ClientUtilityLink,
+  Engagement,
+  User,
+  USERTYPE,
+  WorkLogs,
+} from '@prisma/client';
 import { LoaderScreen, Spinner } from '@/components/elements/Loaders';
 import { MoodTabs } from './MoodTabs';
 import { useEffect, useState } from 'react';
@@ -24,26 +30,19 @@ import Link from 'next/link';
 import Events from './Events';
 import { Toaster } from 'sonner';
 import { PortalSdk } from '@/utils/services/PortalSdk';
+import dayjs from 'dayjs';
+import { MdxAppEditor } from '@/utils/configure/MdxAppEditor';
+import ToolTip from '@/components/elements/ToolTip';
 
-const FocusMode = ({ isClient }: { isClient?: boolean }) => (
+const FocusMode = () => (
   <div className="flex w-full flex-col">
     <h4 className="px-4 text-lg font-bold">In Progress Today </h4>
-    {!isClient ? (
-      <InWorkSection visible={true} />
-    ) : (
-      <div className="m-4 mt-6 h-60 max-h-[50vh] overflow-y-scroll rounded-xl border-neutral-400 bg-white px-0 py-2 shadow-md md:overflow-hidden"></div>
-    )}
+    <InWorkSection visible={true} />
     <Link
       className="mx-4 mt-3 self-stretch rounded-md bg-green-500 px-[30px] py-3 text-center text-sm font-bold uppercase tracking-[4px] text-white hover:bg-green-400"
-      href={isClient ? '/' : APP_ROUTES.userWorklogs}
+      href={APP_ROUTES.userWorklogs}
     >
-      <span className="select-none">
-        {!isClient ? (
-          <>Enter &nbsp; Focus &nbsp; Mode</>
-        ) : (
-          <>Engagement &nbsp; Details</>
-        )}
-      </span>
+      <span className="select-none">Enter &nbsp; Focus &nbsp; Mode</span>
     </Link>
   </div>
 );
@@ -156,11 +155,56 @@ const MemberHomePage = () => {
 
 const ClientHomePage = () => {
   const { user } = useUser();
-  const isTabletOrMore = useMediaQuery(media.moreTablet);
   const [shortcuts, setShortcuts] = useState<ClientUtilityLink[]>([]);
   const [loading, setLoading] = useState(true);
   const [engagementDevelopers, setEngagementDevelopers] = useState<User[]>([]);
   const [isDevTeamLoading, setIsDevTeamLoading] = useState(true);
+  const [isEngagementLoading, setIsEngagementLoading] = useState(true);
+  const [engagements, setEngagements] = useState<Engagement[]>([]);
+  const [expandedEngagement, setExpandedEngagement] = useState<Engagement>();
+  const [worklogs, setWorklogs] = useState<WorkLogs[]>([]);
+  const [isWorklogsLoading, setIsWorklogsLoading] = useState(true);
+  const date = dayjs().format('YYYY-MM-DD');
+
+  const fetchWorklogs = async () => {
+    setIsWorklogsLoading(true);
+    try {
+      const res = await PortalSdk.getData(
+        `/api/engagement/worklogs?engagementId=${expandedEngagement?.id}&date=${date}`,
+        null,
+      );
+      setWorklogs(res.data.workLogs);
+    } catch (error) {
+      console.log(error);
+    }
+    setIsWorklogsLoading(false);
+  };
+  useEffect(() => {
+    if (engagements.length !== 0) {
+      setExpandedEngagement(engagements[0]);
+    }
+  }, [engagements]);
+
+  useEffect(() => {
+    if (expandedEngagement) {
+      fetchWorklogs();
+    }
+  }, [expandedEngagement]);
+
+  const fetchActiveEngageements = async () => {
+    setIsEngagementLoading(true);
+    try {
+      const res = await PortalSdk.getData(
+        `/api/engagement?clientId=${user?.id}&isActive=true`,
+        null,
+      );
+      setEngagements(res.data);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setIsEngagementLoading(false);
+    }
+  };
 
   const fetchEngagementDevelopers = async () => {
     setIsDevTeamLoading(true);
@@ -194,6 +238,7 @@ const ClientHomePage = () => {
   useEffect(() => {
     fetchShortcuts();
     fetchEngagementDevelopers();
+    fetchActiveEngageements();
   }, []);
 
   if (!user) return <LoaderScreen />;
@@ -209,7 +254,7 @@ const ClientHomePage = () => {
         <h4 className="px-4 text-lg font-bold">Shortcuts & Utils</h4>
         <div className="">
           {loading ? (
-            <div className="mt-6 flex h-full w-full items-center justify-center rounded-[1.15em] border border-neutral-200">
+            <div className="mt-6 flex h-[350px] w-full items-center justify-center rounded-[1.15em] border border-neutral-200">
               <Spinner />
             </div>
           ) : (
@@ -266,13 +311,138 @@ const ClientHomePage = () => {
         </div>
       </div>
       <div className="flex w-1/2 flex-col pt-8">
-        {isTabletOrMore && <FocusMode isClient={true} />}
+        <div className="flex w-full flex-col">
+          <h4 className="px-4 text-lg font-bold">In Progress Today </h4>
+          {isEngagementLoading ? (
+            <div className="flex h-[350px] items-center justify-center">
+              <Spinner />
+            </div>
+          ) : (
+            <>
+              <div className="m-4 mt-6 flex max-h-[90vh] flex-col gap-1 rounded-xl">
+                {engagements.map((eng) => {
+                  return (
+                    <>
+                      <div
+                        onClick={() => setExpandedEngagement(eng)}
+                        key={eng.id}
+                        className={`flex cursor-pointer flex-row items-center justify-between rounded-lg border border-neutral-300 p-4 shadow-sm ${
+                          expandedEngagement?.id === eng.id
+                            ? 'bg-gray-200'
+                            : 'bg-white'
+                        }`}
+                      >
+                        <p className="text-sm font-medium text-neutral-900">
+                          {eng.title}
+                        </p>
+                        <span className="material-symbols-outlined">
+                          {expandedEngagement?.id === eng.id
+                            ? 'keyboard_arrow_up'
+                            : 'keyboard_arrow_down'}
+                        </span>
+                      </div>
+                      {expandedEngagement?.id === eng.id && (
+                        <div className="max-h-[300px] overflow-y-auto rounded-lg border border-neutral-300 bg-white p-4 shadow-sm">
+                          <div className="flex flex-col">
+                            <h5 className="text-md font-semibold">
+                              {expandedEngagement.title} Worklogs
+                            </h5>
+                            {isWorklogsLoading ? (
+                              <div className="mt-2 text-sm font-normal text-neutral-400">
+                                Loading Worklogs...
+                              </div>
+                            ) : worklogs.length > 0 ? (
+                              <div className="mt-2 text-sm font-normal text-neutral-400">
+                                {worklogs.map((workLog) => {
+                                  return (
+                                    <div key={workLog.id}>
+                                      {workLog.works?.map((work) => {
+                                        return (
+                                          <div
+                                            key={workLog.id}
+                                            className="my-2 rounded-lg bg-white px-0"
+                                          >
+                                            <h1 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[1.5px] text-gray-800">
+                                              {engagementDevelopers
+                                                .filter(
+                                                  (user) =>
+                                                    user.id === workLog.userId,
+                                                )
+                                                .map((user) => (
+                                                  <ToolTip
+                                                    key={user.id}
+                                                    title={`${user.name} | ${user.vertical}`}
+                                                  >
+                                                    <img
+                                                      key={user.id}
+                                                      src={
+                                                        user.avatar ||
+                                                        '/images/avatar.png'
+                                                      }
+                                                      alt={user.name || ''}
+                                                      className="h-7 w-7 cursor-pointer rounded-full object-cover"
+                                                    />
+                                                  </ToolTip>
+                                                ))}
+                                              {workLog.title}
+                                            </h1>
+
+                                            <MdxAppEditor
+                                              readOnly
+                                              markdown={
+                                                typeof work === 'object' &&
+                                                work !== null &&
+                                                'content' in work
+                                                  ? ((work.content as string) ??
+                                                    '')
+                                                  : ''
+                                              }
+                                              contentEditableClassName="summary_mdx flex flex-col gap-4 z-1"
+                                              editorKey={'engagement-mdx'}
+                                              className="z-1"
+                                            />
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <div className="flex h-full items-center justify-center py-6">
+                                <p className="text-neutral-500">
+                                  {isWorklogsLoading
+                                    ? 'Loading work logs...'
+                                    : loading
+                                      ? 'Loading engagements...'
+                                      : worklogs.length === 0 &&
+                                        'No work logs found'}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                          <div className=""></div>
+                        </div>
+                      )}
+                    </>
+                  );
+                })}
+              </div>
+              <Link
+                className="mx-4 mt-3 self-stretch rounded-md bg-green-500 px-[30px] py-3 text-center text-sm font-bold uppercase tracking-[4px] text-white hover:bg-green-400"
+                href={'/'}
+              >
+                <span className="select-none">Engagement &nbsp; Details</span>
+              </Link>
+            </>
+          )}
+        </div>
       </div>
       <div className="flex w-1/2 flex-col pt-8">
         <h4 className="text-lg font-bold">Your Team</h4>
 
         {isDevTeamLoading ? (
-          <div className="mt-6 flex w-full items-center justify-center rounded-[1.15em] border border-neutral-200">
+          <div className="mt-6 flex h-[350px] w-full items-center justify-center rounded-[1.15em] border border-neutral-200">
             <Spinner />
           </div>
         ) : (
