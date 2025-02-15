@@ -478,17 +478,18 @@ const Engagements = ({ users }: { users: User[] }) => {
               type="submit"
               className="mb-5 flex w-full items-center justify-center rounded-lg bg-neutral-800 px-5 py-2 text-white shadow-md hover:bg-neutral-700"
               disabled={
-                !loadingState.adding &&
-                !loadingState.updating &&
-                !formData.title &&
-                !formData.startDate &&
-                !formData.endDate &&
-                formData.client_id.length === 0 &&
-                formData.developer_ids.length === 0 &&
-                !formData.isActive &&
-                !formData.engagementType &&
-                !formData.progressPercentage &&
-                !formData.numberOfHours
+                !formData.title.trim() ||
+                formData.client_id.length === 0 ||
+                !formData.startDate ||
+                !formData.endDate ||
+                formData.developer_ids.length === 0 ||
+                !formData.engagementType ||
+                (['PART_TIME', 'FULL_TIME', 'HOURLY'].includes(
+                  formData.engagementType,
+                ) &&
+                  formData.numberOfHours == null) ||
+                (formData.engagementType === 'FIXED' &&
+                  formData.progressPercentage == null)
               }
             >
               {loadingState.adding || loadingState.updateUploading ? (
