@@ -17,6 +17,10 @@ export async function POST(req: NextRequest) {
         title: body.title,
         startDate: body.startDate,
         endDate: body.endDate,
+        isActive: body.isActive,
+        engagementType: body.engagementType,
+        numberOfHours: body.numberOfHours,
+        progressPercentage: body.progressPercentage
       },
     });
 
@@ -31,7 +35,11 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    const engagements = await prisma.engagement.findMany();
+    const engagements = await prisma.engagement.findMany({
+      where: {
+        isActive: true,
+      }
+    });
     return NextResponse.json({
       status: "success",
       data: engagements,
@@ -54,6 +62,10 @@ export async function PUT(req: NextRequest) {
         title: body.title,
         startDate: body.startDate,
         endDate: body.endDate,
+        isActive: body.isActive,
+        engagementType: body.engagementType,
+        numberOfHours: body.numberOfHours,
+        progressPercentage: body.progressPercentage
       },
     });
     return NextResponse.json({

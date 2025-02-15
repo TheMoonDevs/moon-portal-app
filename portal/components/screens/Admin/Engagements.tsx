@@ -3,7 +3,7 @@ import React, { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 import { INITIAL_LOADING_STATE } from './ClientShortcutsManager';
 import { loadingState } from './Events/EventForm';
 import { PortalSdk } from '@/utils/services/PortalSdk';
-import { Engagement, User } from '@prisma/client';
+import { Engagement, ENGAGEMENTTYPE, User } from '@prisma/client';
 import { MobileBox } from '../Login/Login';
 import { Spinner } from '@/components/elements/Loaders';
 import ToolTip from '@/components/elements/ToolTip';
@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import Image from 'next/image';
 import dayjs, { Dayjs } from 'dayjs';
 import { cn } from '@/app/lib/utils';
+import { differenceInBusinessDays, isWeekend } from 'date-fns';
 
 type EngagementFormState = {
   client_id: string;
@@ -22,6 +23,10 @@ type EngagementFormState = {
   title: string;
   startDate: string | null | Dayjs;
   endDate: string | null | Dayjs;
+  isActive: boolean;
+  engagementType: ENGAGEMENTTYPE | null;
+  numberOfHours: number | null;
+  progressPercentage: number | null;
 };
 
 const Engagements = ({ users }: { users: User[] }) => {
@@ -33,6 +38,10 @@ const Engagements = ({ users }: { users: User[] }) => {
     title: '',
     startDate: null,
     endDate: null,
+    isActive: true,
+    engagementType: null,
+    numberOfHours: null,
+    progressPercentage: null,
   });
   const [loadingState, setLoadingState] = useState<loadingState>(
     INITIAL_LOADING_STATE,
@@ -79,7 +88,7 @@ const Engagements = ({ users }: { users: User[] }) => {
 
   const handleFormSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    console.log(formData);
+    // console.log(formData);
     setLoadingState({ ...loadingState, adding: true });
     try {
       const res = await PortalSdk.postData('/api/engagement', formData);
@@ -103,6 +112,10 @@ const Engagements = ({ users }: { users: User[] }) => {
         ? dayjs(new Date(engagement.startDate))
         : null,
       endDate: engagement.endDate ? dayjs(new Date(engagement.endDate)) : null,
+      isActive: engagement.isActive,
+      engagementType: engagement.engagementType,
+      numberOfHours: engagement.numberOfHours,
+      progressPercentage: engagement.progressPercentage,
     });
     setEngagementId(engagement.id);
     setLoadingState({ ...loadingState, updating: true });
@@ -135,8 +148,53 @@ const Engagements = ({ users }: { users: User[] }) => {
       title: '',
       startDate: null,
       endDate: null,
+      isActive: true,
+      engagementType: null,
+      numberOfHours: null,
+      progressPercentage: null,
     });
     setEngagementId(null);
+  };
+
+  useEffect(() => {
+    if (
+      formData.startDate &&
+      formData.endDate &&
+      (formData.engagementType === ENGAGEMENTTYPE.FULL_TIME ||
+        formData.engagementType === ENGAGEMENTTYPE.PART_TIME)
+    ) {
+      const startDate = dayjs(formData.startDate).toDate();
+      const endDate = dayjs(formData.endDate).toDate();
+
+      if (startDate > endDate) return;
+
+      let workingDays = differenceInBusinessDays(endDate, startDate) + 1;
+
+      if (startDate.getTime() === endDate.getTime() && isWeekend(startDate)) {
+        workingDays = 0;
+      }
+
+      const hoursPerDay =
+        formData.engagementType === ENGAGEMENTTYPE.FULL_TIME ? 8 : 4;
+
+      const newNumberOfHours = workingDays * hoursPerDay;
+
+      if (formData.numberOfHours !== newNumberOfHours) {
+        setFormData((prev) => ({
+          ...prev,
+          numberOfHours: newNumberOfHours,
+        }));
+      }
+    }
+  }, [formData.engagementType, formData.startDate, formData.endDate]);
+
+  const handleNoOfHoursChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (formData.engagementType === ENGAGEMENTTYPE.HOURLY) {
+      setFormData((prev) => ({
+        ...prev,
+        numberOfHours: parseInt(e.target.value) || 0,
+      }));
+    }
   };
 
   const renderForm = () => {
@@ -331,6 +389,90 @@ const Engagements = ({ users }: { users: User[] }) => {
               />
             </div>
           </LocalizationProvider>
+          <div className="mb-5">
+            <label
+              htmlFor="isActive"
+              className="mb-1 block text-sm font-medium text-neutral-300"
+            >
+              Is Engagement Active
+            </label>
+            <select
+              id="isActive"
+              name="isActive"
+              value={formData.isActive.toString()}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  isActive: e.target.value === 'true',
+                })
+              }
+              className="block w-full rounded-md border border-neutral-300 bg-neutral-800 p-2 text-neutral-300 focus:border-neutral-500 focus:outline-none focus:ring focus:ring-neutral-500"
+            >
+              <option value="true">Yes</option>
+              <option value="false">No</option>
+            </select>
+          </div>
+          <div className="mb-5">
+            <label
+              htmlFor="engagementType"
+              className="mb-1 block text-sm font-medium text-neutral-300"
+            >
+              Engagement Type
+            </label>
+            <select
+              id="engagementType"
+              name="engagementType"
+              value={formData.engagementType || ''}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  engagementType: e.target.value as ENGAGEMENTTYPE,
+                })
+              }
+              className="block w-full rounded-md border border-neutral-300 bg-neutral-800 p-2 text-neutral-300 focus:border-neutral-500 focus:outline-none focus:ring focus:ring-neutral-500"
+            >
+              <option value={''}>Select Engagement Type</option>
+              <option value={ENGAGEMENTTYPE.HOURLY}>Hourly</option>
+              <option value={ENGAGEMENTTYPE.PART_TIME}>Part Time</option>
+              <option value={ENGAGEMENTTYPE.FULL_TIME}>Full Time</option>
+              <option value={ENGAGEMENTTYPE.FIXED}>Fixed</option>
+            </select>
+          </div>
+          {formData.engagementType &&
+            (formData.engagementType === 'FIXED' ? (
+              <div className="mb-5">
+                <label
+                  htmlFor="fixed"
+                  className="mb-1 block text-sm font-medium text-neutral-300"
+                >
+                  Enter Progress Percentage
+                </label>
+                <input
+                  type="text"
+                  value={formData.progressPercentage || ''}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      progressPercentage: Number(e.target.value),
+                    })
+                  }
+                  className="w-full rounded border border-neutral-500 bg-neutral-800 p-2 text-neutral-200"
+                />
+              </div>
+            ) : (
+              <div className="mb-5">
+                <label className="mb-1 block text-sm font-medium text-neutral-300">
+                  Enter Number of Hours
+                </label>
+                <input
+                  type="text"
+                  readOnly={formData.engagementType !== 'HOURLY'}
+                  value={formData.numberOfHours || ''}
+                  onChange={handleNoOfHoursChange}
+                  className="w-full rounded border border-neutral-500 bg-neutral-800 p-2 text-neutral-200"
+                />
+              </div>
+            ))}
           <div className="mt-auto">
             <button
               type="submit"
@@ -342,7 +484,11 @@ const Engagements = ({ users }: { users: User[] }) => {
                 !formData.startDate &&
                 !formData.endDate &&
                 formData.client_id.length === 0 &&
-                formData.developer_ids.length === 0
+                formData.developer_ids.length === 0 &&
+                !formData.isActive &&
+                !formData.engagementType &&
+                !formData.progressPercentage &&
+                !formData.numberOfHours
               }
             >
               {loadingState.adding || loadingState.updateUploading ? (
@@ -407,7 +553,7 @@ const Engagements = ({ users }: { users: User[] }) => {
               <p className="text-neutral-400">No Engament found.</p>
             </div>
           ) : (
-            <div className="no-scrollbar flex h-[80%] w-[90%] flex-col  gap-2 overflow-y-scroll">
+            <div className="no-scrollbar flex h-[80%] w-[90%] flex-col gap-2 overflow-y-scroll">
               {engagements?.map((engagement: Engagement, index) => {
                 const client = clients.find(
                   (client) => client.id === engagement.client_id,

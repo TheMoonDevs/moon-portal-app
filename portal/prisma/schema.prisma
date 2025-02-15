@@ -630,4 +630,15 @@ model Engagement {
   title     String
   startDate DateTime?
   endDate DateTime?
+  isActive Boolean
+  engagementType ENGAGEMENTTYPE
+  numberOfHours     Int?    
+  progressPercentage Float?  
+}
+
+enum ENGAGEMENTTYPE {
+  HOURLY
+  PART_TIME
+  FULL_TIME
+  FIXED
 }

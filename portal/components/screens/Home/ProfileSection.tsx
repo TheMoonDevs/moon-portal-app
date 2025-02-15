@@ -51,16 +51,18 @@ export const ProfileSection = ({ user }: { user: User }) => {
         <div className="text-left">
           <p className="text-md font-bold text-black">Hello, </p>
           <h4 className="text-xl text-neutral-900">{user?.name}</h4>
-          <p className="text-neutral-500 text-xs">{user?.email}</p>
-          <Link
-            href={APP_ROUTES.devProfile}
-            className="mt-2 flex items-center justify-center text-xs text-white transition px-2 py-2 bg-black rounded-lg hover:bg-neutral-700 gap-1"
-          >
-            Dev Profile{' '}
-            <span className="material-symbols-outlined !text-xs">
-              open_in_new
-            </span>
-          </Link>
+          <p className="text-xs text-neutral-500">{user?.email}</p>
+          {user?.userType !== 'CLIENT' && (
+            <Link
+              href={APP_ROUTES.devProfile}
+              className="mt-2 flex items-center justify-center gap-1 rounded-lg bg-black px-2 py-2 text-xs text-white transition hover:bg-neutral-700"
+            >
+              Dev Profile{' '}
+              <span className="material-symbols-outlined !text-xs">
+                open_in_new
+              </span>
+            </Link>
+          )}
         </div>
       </div>
 
