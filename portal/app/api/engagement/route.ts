@@ -34,8 +34,13 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
+  const isActive = req.nextUrl.searchParams.get("isActive") === "true";
   try {
-    const engagements = await prisma.engagement.findMany();
+    const engagements = await prisma.engagement.findMany({
+      where: {
+        ...(isActive && { isActive }),
+      },
+    });
     return NextResponse.json({
       status: "success",
       data: engagements,
