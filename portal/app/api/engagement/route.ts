@@ -35,11 +35,7 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    const engagements = await prisma.engagement.findMany({
-      where: {
-        isActive: true,
-      }
-    });
+    const engagements = await prisma.engagement.findMany();
     return NextResponse.json({
       status: "success",
       data: engagements,
