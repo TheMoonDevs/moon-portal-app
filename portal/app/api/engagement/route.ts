@@ -35,10 +35,12 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   const isActive = req.nextUrl.searchParams.get("isActive") === "true";
+  const clientId = req.nextUrl.searchParams.get("clientId");
   try {
     const engagements = await prisma.engagement.findMany({
       where: {
         ...(isActive && { isActive }),
+        ...(clientId && { client_id: clientId }),
       },
     });
     return NextResponse.json({

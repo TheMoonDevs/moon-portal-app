@@ -1,5 +1,4 @@
 import { prisma } from "@/prisma/prisma";
-import { WorkLogPoints } from "@/utils/@types/interfaces";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -20,7 +19,11 @@ export async function GET(request: NextRequest) {
         ...(date && { date }),
         ...(startDate && { date: { gte: startDate } }),
         ...(endDate && { date: { lte: endDate } }),
+        ...(startDate && endDate ? { date: { gte: startDate, lte: endDate } } : {}),
       },
+      orderBy: {
+        date: "desc",
+      }
     });
 
     let filteredLogs = [];
@@ -28,7 +31,7 @@ export async function GET(request: NextRequest) {
       const worklog = _workLogs[i];
       const works = [];
       for (let j = 0; j < worklog.works.length; j++) {
-        const work: any = worklog.works[j] ;
+        const work: any = worklog.works[j];
         if (work && work?.link_type === "engagement" && work?.link_id === engagementId) {
           works.push(work);
         }
