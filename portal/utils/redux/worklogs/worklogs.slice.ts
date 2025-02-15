@@ -1,4 +1,4 @@
-import { User, WorkLogs, ZeroRecords } from "@prisma/client";
+import { User, WorkLogs, ZeroRecords,Engagement } from "@prisma/client";
 import { createSlice } from "@reduxjs/toolkit";
 
 export const worklogsSlice = createSlice({
@@ -6,6 +6,7 @@ export const worklogsSlice = createSlice({
   initialState: {
     isEditorSaving: false,
     logsList: [] as WorkLogs[],
+    selectedEngagement: null as Engagement | null
   },
   reducers: {
     setEdiotrSaving: (state, action) => {
@@ -25,10 +26,13 @@ export const worklogsSlice = createSlice({
         return log;
       });
     },
+    setSelectedEngagement: (state, action) => {
+      state.selectedEngagement = action.payload;
+    }
   },
 });
 
-export const { setEdiotrSaving, setLogsList, updateLogs } =
+export const { setEdiotrSaving, setLogsList, updateLogs, setSelectedEngagement } =
   worklogsSlice.actions;
 
 export default worklogsSlice.reducer;

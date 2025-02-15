@@ -15,7 +15,10 @@ import media from '@/styles/media';
 import { WorklogView } from './WorklogView';
 import { SummarizeButton } from './SummarizeButton';
 import { Toaster, toast } from 'sonner';
-import { setLogsList } from '@/utils/redux/worklogs/worklogs.slice';
+import {
+  setLogsList,
+  setSelectedEngagement,
+} from '@/utils/redux/worklogs/worklogs.slice';
 import SimpleTabs from '@/components/elements/Tabs';
 import WorklogTips from './WorklogTabs/WorklogTips';
 import TodoTab from './WorklogTabs/TodoTab';
@@ -423,7 +426,10 @@ export const WorklogsPage = () => {
                   key={data.id + '-' + data.date + '-' + data.userId}
                   data={data}
                   selected={selectedDate === data.date}
-                  onClick={() => handleWorkLogItemClick(data, isEditorSaving)}
+                  onClick={() => {
+                    handleWorkLogItemClick(data, isEditorSaving);
+                    dispatch(setSelectedEngagement(null));
+                  }}
                 />
               ),
               //)

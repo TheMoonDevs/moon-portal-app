@@ -3,8 +3,8 @@
 import { WorkLogPoints } from '@/utils/@types/interfaces';
 import { useUser } from '@/utils/hooks/useUser';
 import { PortalSdk } from '@/utils/services/PortalSdk';
-import { WorkLogs } from '@prisma/client';
-import { useSearchParams } from 'next/navigation';
+import { Engagement, WorkLogs } from '@prisma/client';
+import { usePathname } from 'next/navigation';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { WorklogEditor } from './WorklogEditor';
 import dayjs from 'dayjs';
@@ -37,6 +37,25 @@ export const WorklogView = ({
     label: `Import incomplete tasks from ${i + 1} day${i === 0 ? '' : 's'} ago`,
     dateIdx: i + 1,
   }));
+  const [loading, setLoading] = useState(false);
+  const path = usePathname();
+  const [engagements, setEngagements] = useState<Engagement[]>([]);
+
+  const fetchEngagements = async () => {
+    try {
+      const res = await PortalSdk.getData(
+        `/api/engagement/user/${user?.id}`,
+        null,
+      );
+      setEngagements(res.data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    if (path?.includes('user/worklogs')) fetchEngagements();
+  }, []);
 
   const fetchXTasksForDay = async (date: string): Promise<WorkLogs | null> => {
     setLoading(true);
@@ -109,7 +128,6 @@ export const WorklogView = ({
       });
   };
 
-  const [loading, setLoading] = useState(false);
   useEffect(() => {
     const _user = store.getState().auth.user;
     if (
@@ -134,7 +152,6 @@ export const WorklogView = ({
           console.log(err);
         });
     } else {
-      console.log('Anamoly');
       let query = '';
       if (logType === 'dayLog' && date)
         query = `?date=${date || dayjs().format('YYYY-MM-DD')}&userId=${
@@ -184,6 +201,7 @@ export const WorklogView = ({
       handleNextMonthClick={handleNextMonthClick}
       fetchXTasksForDay={fetchXTasksForDay}
       fetchOptions={fetchOptions}
+      engagements={engagements}
     />
   );
 };

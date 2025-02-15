@@ -18,10 +18,11 @@ import {
 } from 'react';
 import { DEFAULT_MARKDOWN_DATA } from './WorklogsHelper';
 import { useDebouncedEffect } from '@/utils/hooks/useDebouncedHook';
-import store, { useAppDispatch } from '@/utils/redux/store';
+import store, { useAppDispatch, useAppSelector } from '@/utils/redux/store';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
 import {
   setEdiotrSaving,
+  setSelectedEngagement,
   updateLogs,
 } from '@/utils/redux/worklogs/worklogs.slice';
 import {
@@ -128,6 +129,7 @@ export const WorklogEditor = ({
   handleNextMonthClick,
   fetchXTasksForDay,
   fetchOptions,
+  engagements,
 }: {
   loading: boolean;
   editWorkLogs: WorkLogs | null;
@@ -138,6 +140,7 @@ export const WorklogEditor = ({
   handleNextMonthClick?: () => void;
   fetchXTasksForDay: (date: string) => Promise<WorkLogs | null>;
   fetchOptions: { label: string; dateIdx: number }[];
+  engagements: Engagement[];
 }) => {
   const dispatch = useAppDispatch();
   const { user } = useUser();
@@ -145,7 +148,6 @@ export const WorklogEditor = ({
   const [markdownDatas, setMarkdownDatas] = useState<WorkLogPoints[]>(
     DEFAULT_MARKDOWN_DATA,
   );
-  const [newProjectText, setNewProjectText] = useState<string>('');
   const queryParams = useSearchParams();
   const [serverLog, setServerLog] = useState<WorkLogs | null>(null);
   const [workLog, setWorkLog] = useState<WorkLogs | null>(null);
@@ -164,7 +166,7 @@ export const WorklogEditor = ({
     loader: false,
   });
   const [isSelectOpen, setIsSelectOpen] = useState(false);
-  const [engagements, setEngagements] = useState<Engagement[]>([]);
+  const { selectedEngagement } = useAppSelector((state) => state.worklogs);
 
   const path = usePathname();
   useEffect(() => {
@@ -306,6 +308,7 @@ export const WorklogEditor = ({
     }));
     markdownRefs.current[bd_index]?.current?.setMarkdown(new_content);
   };
+
   useDebouncedEffect(
     () => {
       if (saving) return;
@@ -324,30 +327,37 @@ export const WorklogEditor = ({
     3000,
   );
 
-  const addNewProject = () => {
+  const addNewProject = ({
+    type,
+    projectTitle,
+    id,
+  }: {
+    type: LOGLINKTYPE;
+    projectTitle: string;
+    id: string;
+  }) => {
     if (
-      !newProjectText ||
+      !projectTitle ||
       markdownDatas.find(
-        (md) => md.title?.toLowerCase() === newProjectText?.toLowerCase(),
+        (md) => md.title?.toLowerCase() === projectTitle?.toLowerCase(),
       ) ||
-      newProjectText.trim().length <= 0
+      projectTitle.trim().length <= 0
     )
       return;
     setMarkdownDatas((md) => {
       const new_md = [
         ...md,
         {
-          link_id: newProjectText.toLowerCase().replace(/\s/g, '-'),
-          link_type: LOGLINKTYPE.ABSTRACT,
+          link_id: id, //projectTitle.toLowerCase().replace(/\s/g, '-')
+          link_type: type,
           icon: 'work',
-          title: newProjectText,
+          title: projectTitle,
           content: MARKDOWN_PLACHELODER,
         },
       ];
       setWorkLog((wl: any) => ({ ...wl, works: new_md }));
       return new_md;
     });
-    setNewProjectText('');
   };
 
   const markdownRefs = useRef<RefObject<MDXEditorMethods>[]>([]);
@@ -405,22 +415,6 @@ export const WorklogEditor = ({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
-
-  const fetchEngagements = async () => {
-    try {
-      const res = await PortalSdk.getData(
-        `/api/engagement/user/${user?.id}`,
-        null,
-      );
-      setEngagements(res.data);
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
-  useEffect(() => {
-    if (path?.includes('user/worklogs')) fetchEngagements();
   }, []);
 
   return (
@@ -624,43 +618,6 @@ export const WorklogEditor = ({
               {!isAutoSaved ? 'edit' : 'done'}
             </span>
           </div>
-          {path?.includes('user/worklogs') && engagements.length > 0 && (
-            <>
-              <button
-                className="flex w-1/3 cursor-pointer items-center justify-between gap-2 rounded-md border border-neutral-400 bg-white px-3 py-1 text-sm shadow-lg transition-colors duration-300 hover:bg-neutral-100"
-                onClick={() => setIsSelectOpen(!isSelectOpen)}
-              >
-                <span className="flex items-center gap-2 font-medium">
-                  {/* <span class="material-symbols-outlined">add</span> */}
-                  Engagement
-                </span>
-                <span
-                  className={`material-symbols-outlined transition-transform duration-300 ${
-                    isSelectOpen ? 'rotate-180' : 'rotate-0'
-                  }`}
-                >
-                  {isSelectOpen ? 'expand_less' : 'expand_more'}
-                </span>
-              </button>
-              <div
-                className={`absolute right-0 top-full z-20 mt-0 w-1/3 rounded-md border border-neutral-400 bg-white shadow-lg transition-all duration-300 ease-in-out ${
-                  isSelectOpen ? 'max-h-60 opacity-100' : 'max-h-0 opacity-0'
-                } overflow-hidden`}
-              >
-                <div className="no-scrollbar max-h-60 overflow-y-auto">
-                  {engagements.map((eng: Engagement) => (
-                    <div
-                      key={eng.id}
-                      onClick={() => setIsSelectOpen(false)}
-                      className="block w-full px-4 py-2 text-left text-xs transition-colors duration-300 hover:bg-neutral-100 focus:bg-neutral-100"
-                    >
-                      {eng.title}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </>
-          )}
         </div>
         <div className={`h-[${compactView ? '1em' : '3em'}]`}></div>
       </div>
@@ -784,6 +741,54 @@ export const WorklogEditor = ({
           </div> */}
         </div>
       )}
+      <div className="relative  py-3">
+        {path?.includes('user/worklogs') && engagements.length > 0 && (
+          <>
+            <button
+              className="flex w-full cursor-pointer items-center justify-center rounded-md border border-neutral-400 bg-white px-3 py-1 text-sm shadow-lg transition-colors duration-300 hover:bg-neutral-100"
+              onClick={() => setIsSelectOpen(!isSelectOpen)}
+            >
+              <p className="flex items-center gap-2 font-medium">
+                <span
+                  className={`material-symbols-outlined transition-transform duration-300 ${
+                    isSelectOpen ? 'rotate-180' : 'rotate-0'
+                  }`}
+                >
+                  {!isSelectOpen ? 'add' : 'remove'}
+                </span>
+                Engagement
+              </p>
+            </button>
+            <div
+              className={`absolute left-0 top-full z-20 mt-0 w-full rounded-md border border-neutral-400 bg-white shadow-lg transition-all duration-300 ease-in-out ${
+                isSelectOpen ? 'max-h-60 opacity-100' : 'max-h-0 opacity-0'
+              } overflow-hidden`}
+            >
+              <div className="no-scrollbar max-h-60 overflow-y-auto">
+                {engagements.map((eng: Engagement) => (
+                  <div
+                    key={eng.id}
+                    onClick={() => {
+                      dispatch(setSelectedEngagement(eng));
+                      if (selectedEngagement)
+                        addNewProject({
+                          type: LOGLINKTYPE.ENGAGEMENT,
+                          projectTitle: eng.title,
+                          id: selectedEngagement?.id,
+                        });
+                      setIsSelectOpen(false);
+                    }}
+                    className="block w-full cursor-pointer px-4 py-2 text-left text-xs transition-colors duration-300 hover:bg-neutral-100 focus:bg-neutral-100"
+                  >
+                    {eng.title}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
       <SavingDialog
         open={isSavingModalOpen}
         isSaved={!saving && (isAutoSaved as boolean)}
