@@ -243,6 +243,10 @@ const ClientHomePage = () => {
 
   if (!user) return <LoaderScreen />;
 
+  const handleEngagementClick = (eng: Engagement) => {
+    setExpandedEngagement((prev) => (prev?.id === eng.id ? undefined : eng));
+  };
+
   return (
     <div className="home_bg flex min-h-screen justify-start scroll-smooth bg-white max-lg:flex-col max-md:flex-col md:pl-4">
       <div className="w-1/2">
@@ -322,109 +326,116 @@ const ClientHomePage = () => {
               <div className="m-4 mt-6 flex max-h-[90vh] flex-col gap-1 rounded-xl">
                 {engagements.map((eng) => {
                   return (
-                    <>
+                    <div>
                       <div
-                        onClick={() => setExpandedEngagement(eng)}
+                        onClick={() => handleEngagementClick(eng)}
                         key={eng.id}
-                        className={`flex cursor-pointer flex-row items-center justify-between rounded-lg border border-neutral-300 p-4 shadow-sm ${
+                        className={`flex cursor-pointer flex-col items-center justify-between rounded-lg shadow-sm ${
                           expandedEngagement?.id === eng.id
-                            ? 'bg-gray-200'
+                            ? 'bg-gray-50'
                             : 'bg-white'
                         }`}
                       >
-                        <p className="text-sm font-medium text-neutral-900">
-                          {eng.title}
-                        </p>
-                        <span className="material-symbols-outlined">
-                          {expandedEngagement?.id === eng.id
-                            ? 'keyboard_arrow_up'
-                            : 'keyboard_arrow_down'}
-                        </span>
-                      </div>
-                      {expandedEngagement?.id === eng.id && (
-                        <div className="max-h-[300px] overflow-y-auto rounded-lg border border-neutral-300 bg-white p-4 shadow-sm">
-                          <div className="flex flex-col">
-                            <h5 className="text-md font-semibold">
-                              {expandedEngagement.title} Worklogs
-                            </h5>
-                            {isWorklogsLoading ? (
-                              <div className="mt-2 text-sm font-normal text-neutral-400">
-                                Loading Worklogs...
-                              </div>
-                            ) : worklogs.length > 0 ? (
-                              <div className="mt-2 text-sm font-normal text-neutral-400">
-                                {worklogs.map((workLog) => {
-                                  return (
-                                    <div key={workLog.id}>
-                                      {workLog.works?.map((work) => {
-                                        return (
-                                          <div
-                                            key={workLog.id}
-                                            className="my-2 rounded-lg bg-white px-0"
-                                          >
-                                            <h1 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[1.5px] text-gray-800">
-                                              {engagementDevelopers
-                                                .filter(
-                                                  (user) =>
-                                                    user.id === workLog.userId,
-                                                )
-                                                .map((user) => (
-                                                  <ToolTip
-                                                    key={user.id}
-                                                    title={`${user.name} | ${user.vertical}`}
-                                                  >
-                                                    <img
-                                                      key={user.id}
-                                                      src={
-                                                        user.avatar ||
-                                                        '/images/avatar.png'
-                                                      }
-                                                      alt={user.name || ''}
-                                                      className="h-7 w-7 cursor-pointer rounded-full object-cover"
-                                                    />
-                                                  </ToolTip>
-                                                ))}
-                                              {workLog.title}
-                                            </h1>
-
-                                            <MdxAppEditor
-                                              readOnly
-                                              markdown={
-                                                typeof work === 'object' &&
-                                                work !== null &&
-                                                'content' in work
-                                                  ? ((work.content as string) ??
-                                                    '')
-                                                  : ''
-                                              }
-                                              contentEditableClassName="summary_mdx flex flex-col gap-4 z-1"
-                                              editorKey={'engagement-mdx'}
-                                              className="z-1"
-                                            />
-                                          </div>
-                                        );
-                                      })}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            ) : (
-                              <div className="flex h-full items-center justify-center py-6">
-                                <p className="text-neutral-500">
-                                  {isWorklogsLoading
-                                    ? 'Loading work logs...'
-                                    : loading
-                                      ? 'Loading engagements...'
-                                      : worklogs.length === 0 &&
-                                        'No work logs found'}
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                          <div className=""></div>
+                        <div
+                          className={`flex w-full cursor-pointer flex-row items-center justify-between rounded-lg ${expandedEngagement ? 'border-t' : 'border'} border-neutral-300 p-4 shadow-sm`}
+                        >
+                          <p className="text-sm font-medium text-neutral-900">
+                            {eng.title}
+                          </p>
+                          <span className="material-symbols-outlined">
+                            {expandedEngagement?.id === eng.id
+                              ? 'keyboard_arrow_up'
+                              : 'keyboard_arrow_down'}
+                          </span>
                         </div>
-                      )}
-                    </>
+                        {expandedEngagement?.id === eng.id && (
+                          <div
+                            className={`max-h-[300px] w-full overflow-y-auto rounded-lg p-4 shadow-sm transition-all duration-300 ease-in-out ${
+                              expandedEngagement?.id === eng.id
+                                ? 'max-h-[300px] opacity-100'
+                                : 'max-h-0 opacity-0'
+                            }`}
+                          >
+                            <div className="flex flex-col">
+                              <h5 className="text-md font-semibold my-1">
+                                {expandedEngagement.title} Worklogs
+                              </h5>
+                              {isWorklogsLoading ? (
+                                <div className="mt-2 text-sm font-normal text-neutral-400">
+                                  Loading Worklogs...
+                                </div>
+                              ) : worklogs.length > 0 ? (
+                                <div className="mt-2 text-sm font-normal text-neutral-400">
+                                  {worklogs.map((workLog) => {
+                                    return (
+                                      <div key={workLog.id}>
+                                        {workLog.works?.map((work) => {
+                                          return (
+                                            <div
+                                              key={workLog.id}
+                                              className="rounded-lg bg-transparent px-0"
+                                            >
+                                              <h1 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[1.5px] text-gray-800">
+                                                {engagementDevelopers
+                                                  .filter(
+                                                    (user) =>
+                                                      user.id ===
+                                                      workLog.userId,
+                                                  )
+                                                  .map((user) => (
+                                                    <div key={user.id} className='flex items-center gap-2'>
+                                                      <img
+                                                        src={
+                                                          user.avatar ||
+                                                          '/images/avatar.png'
+                                                        }
+                                                        alt={user.name || ''}
+                                                        className="h-7 w-7 cursor-pointer rounded-full object-cover"
+                                                      />
+                                                      <span>{user.name}</span>
+                                                    </div>
+                                                  ))}
+                                              </h1>
+
+                                              <MdxAppEditor
+                                                readOnly
+                                                markdown={
+                                                  typeof work === 'object' &&
+                                                  work !== null &&
+                                                  'content' in work
+                                                    ? ((work.content as string) ??
+                                                      '')
+                                                    : ''
+                                                }
+                                                contentEditableClassName="summary_mdx flex flex-col gap-4 z-1 mb-[-20px] !py-0 ml-3"
+                                                editorKey={'engagement-mdx'}
+                                                className="z-1 "
+                                              />
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              ) : (
+                                <div className="flex h-full items-center justify-center py-6">
+                                  <p className="text-neutral-500">
+                                    {isWorklogsLoading
+                                      ? 'Loading work logs...'
+                                      : loading
+                                        ? 'Loading engagements...'
+                                        : worklogs.length === 0 &&
+                                          'No work logs found'}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                            <div className=""></div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   );
                 })}
               </div>

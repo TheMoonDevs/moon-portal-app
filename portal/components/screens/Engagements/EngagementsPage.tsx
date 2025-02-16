@@ -112,39 +112,47 @@ const EngagementsPage = () => {
                   onClick={() => setActiveEngagement(engagement)}
                 >
                   <div className="flex items-center justify-between border-b border-neutral-200 pb-2">
-                    <h3 className="text-base font-medium text-neutral-800">
+                    <h3 className="text-base font-semibold text-neutral-800">
                       {engagement.title}
                     </h3>
                     <span className="material-symbols-outlined text-neutral-500">
                       chevron_right
                     </span>
                   </div>
-                  <div className="flex items-center justify-between px-1 pt-3 text-neutral-700">
-                    <p className="text-md font-semibold">
-                      {engagement.engagementType === 'FIXED'
-                        ? `${engagement.progressPercentage}%`
-                        : `${engagement.numberOfHours}Hrs`}
-                    </p>
-                    <p className="text-xs">
-                      {dayjs(engagement.startDate).format('DD MMM YYYY')} to{' '}
-                      {engagement.endDate
-                        ? dayjs(engagement.endDate).format('DD MMM YYYY')
-                        : '---'}
-                    </p>
+                  <div className="flex flex-col items-start gap-2 px-1 pt-3 text-neutral-700">
+                    <div className="flex w-full flex-row items-center justify-between gap-2">
+                      <p className="text-lg font-bold">
+                        {engagement.engagementType === 'FIXED'
+                          ? `${engagement.progressPercentage}%`
+                          : `${engagement.numberOfHours}Hrs`}
+                      </p>
+                      <p className="text-xs">
+                        {dayjs(engagement.startDate).format('DD MMM YYYY')} to{' '}
+                        {engagement.endDate
+                          ? dayjs(engagement.endDate).format('DD MMM YYYY')
+                          : '---'}
+                      </p>
+                    </div>
+
+                    <EngagementTeam
+                      activeEngagement={engagement}
+                      team={team}
+                      isCompact={true}
+                    />
                   </div>
                 </div>
               ))}
             </div>
           )}
         </div>
-        <div className="max-h-[90vh] w-1/2">
+        <div className="max-h-[90vh] w-1/2" >
           {!loading &&
             (workLogsLoading ? (
               <div className="flex h-screen w-full items-center justify-center">
                 <Spinner />
               </div>
             ) : (
-              <div className="max-h-[90vh] overflow-y-scroll">
+              <div className="max-h-[90vh] overflow-y-scroll" ref={pdfTargetRef}>
                 <div className="sticky top-0 z-10 flex items-center justify-start gap-4 bg-white p-8 py-4 shadow-md max-sm:px-2 max-sm:py-4">
                   <div>
                     <p className="text-xl font-bold max-sm:text-lg">
@@ -161,7 +169,7 @@ const EngagementsPage = () => {
                           onClick={() =>
                             generatePDF(pdfTargetRef, {
                               method: 'open',
-                              filename: `worklog_summary_${activeEngagement?.title}.pdf`,
+                              filename: `worklog_${activeEngagement?.title}.pdf`,
                               page: { margin: Margin.LARGE },
                             })
                           }
@@ -169,29 +177,19 @@ const EngagementsPage = () => {
                           <span className="material-symbols-outlined !text-sm">
                             download
                           </span>
-                          <span>Download Summary as PDF</span>
+                          <span>Download Worklog as PDF</span>
                         </button>
                       </ToolTip>
                     </div>
                   </div>
                   <div className="ml-auto">
-                    <AvatarGroup max={4}>
-                      {team
-                        .filter((user) =>
-                          activeEngagement?.developer_ids?.includes(user.id),
-                        )
-                        .map((user) => (
-                          <ToolTip key={user.id} title={user.name || ''}>
-                            <Avatar
-                              src={user.avatar || '/images/avatar.png'}
-                              alt={user.name || ''}
-                            />
-                          </ToolTip>
-                        ))}
-                    </AvatarGroup>
+                    <EngagementTeam
+                      activeEngagement={activeEngagement}
+                      team={team}
+                    />
                   </div>
                 </div>
-                <div className="py-6">
+                <div className="py-6" >
                   {workLogs.length > 0 ? (
                     workLogs.map((workLog) => {
                       return (
@@ -234,7 +232,7 @@ const EngagementsPage = () => {
                                       ? ((work.content as string) ?? '')
                                       : ''
                                   }
-                                  contentEditableClassName="summary_mdx flex flex-col gap-4 z-1"
+                                  contentEditableClassName="summary_mdx flex flex-col gap-4 z-1 mb-[-20px] ml-3"
                                   editorKey={'engagement-mdx'}
                                   className="z-1"
                                 />
@@ -266,3 +264,38 @@ const EngagementsPage = () => {
 };
 
 export default EngagementsPage;
+
+const EngagementTeam = ({
+  team,
+  activeEngagement,
+  isCompact,
+}: {
+  team: User[];
+  isCompact?: boolean;
+  activeEngagement: Engagement | null;
+}) => {
+  return (
+    <AvatarGroup
+      max={isCompact ? 3 : 4}
+      sx={{
+        '& .MuiAvatar-root': {
+          width: isCompact ? 24 : 32,
+          height: isCompact ? 24 : 32,
+          fontSize: isCompact ? 12 : 14,
+        },
+      }}
+    >
+      {team
+        .filter((user) => activeEngagement?.developer_ids?.includes(user.id))
+        .map((user) => (
+          <ToolTip key={user.id} title={user.name || ''}>
+            <Avatar
+              src={user.avatar || '/images/avatar.png'}
+              alt={user.name || ''}
+              sx={{ width: isCompact ? 24 : 32, height: isCompact ? 24 : 32 }}
+            />
+          </ToolTip>
+        ))}
+    </AvatarGroup>
+  );
+};
