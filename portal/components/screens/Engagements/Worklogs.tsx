@@ -38,7 +38,7 @@ const EngagementWorklogs = ({
             {formattedDate}
           </h1>
           {workLogsForDate.map((workLog) => (
-            <div key={workLog.id} className="my-2 rounded-lg bg-white px-6">
+            <div key={workLog.id} className="my-2 rounded-lg bg-white px-8">
               {workLog.works?.map((work) => {
                 const user = team.find((u) => u.id === workLog.userId);
                 const markdownData = workLog?.works[0];
@@ -76,7 +76,7 @@ const EngagementWorklogs = ({
                           </span>
                         </div>
                       ))}
-                    <div className="ml-4 flex-grow">
+                    <div className="ml-6 flex-grow">
                       <MdxAppEditor
                         readOnly
                         markdown={(work as { content: string }).content || ''}
