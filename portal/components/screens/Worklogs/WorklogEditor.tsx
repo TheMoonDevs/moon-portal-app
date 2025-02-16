@@ -404,9 +404,20 @@ export const WorklogEditor = ({
     setShowPopup(!showPopup);
   };
   const popupRef = useRef<HTMLDivElement | null>(null);
+  const selectRef = useRef<HTMLDivElement | null>(null);
+
   const handleClickOutside = (event: MouseEvent) => {
     if (popupRef.current && !popupRef.current.contains(event.target as Node)) {
       setShowPopup(false);
+    }
+  };
+
+  const handleClickOutsideSelect = (event: MouseEvent) => {
+    if (
+      selectRef.current &&
+      !selectRef.current.contains(event.target as Node)
+    ) {
+      setIsSelectOpen(false);
     }
   };
 
@@ -416,6 +427,19 @@ export const WorklogEditor = ({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  useEffect(() => {
+    document.addEventListener('mousedown', handleClickOutsideSelect);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutsideSelect);
+    };
+  }, []);
+
+  const filteredEngagements = engagements.filter(
+    (engagement) =>
+      // engagement.title !== selectedEngagement?.title ||
+      !markdownDatas.some((data) => data.title === engagement.title),
+  );
 
   return (
     <div
@@ -741,11 +765,11 @@ export const WorklogEditor = ({
           </div> */}
         </div>
       )}
-      <div className="relative  py-3">
+      <div className="relative px-2 pb-1">
         {path?.includes('user/worklogs') && engagements.length > 0 && (
           <>
             <button
-              className="flex w-full cursor-pointer items-center justify-center rounded-md border border-neutral-400 bg-white px-3 py-1 text-sm shadow-lg transition-colors duration-300 hover:bg-neutral-100"
+              className="flex w-fit cursor-pointer items-start justify-center rounded-md bg-white px-3 py-1 text-[0.8em] uppercase tracking-widest text-neutral-500 transition-all duration-300 hover:border hover:border-neutral-400 hover:shadow-lg"
               onClick={() => setIsSelectOpen(!isSelectOpen)}
             >
               <p className="flex items-center gap-2 font-medium">
@@ -760,29 +784,39 @@ export const WorklogEditor = ({
               </p>
             </button>
             <div
-              className={`absolute left-0 top-full z-20 mt-0 w-full rounded-md border border-neutral-400 bg-white shadow-lg transition-all duration-300 ease-in-out ${
+              ref={selectRef}
+              className={`absolute left-2 top-full z-20 mt-0 w-fit rounded-md border border-neutral-400 bg-white shadow-lg transition-all duration-300 ease-in-out ${
                 isSelectOpen ? 'max-h-60 opacity-100' : 'max-h-0 opacity-0'
               } overflow-hidden`}
             >
               <div className="no-scrollbar max-h-60 overflow-y-auto">
-                {engagements.map((eng: Engagement) => (
+                {filteredEngagements.length > 0 ? (
+                  filteredEngagements.map((eng: Engagement) => (
+                    <div
+                      key={eng.id}
+                      onClick={() => {
+                        dispatch(setSelectedEngagement(eng));
+                        if (selectedEngagement)
+                          addNewProject({
+                            type: LOGLINKTYPE.ENGAGEMENT,
+                            projectTitle: eng.title,
+                            id: selectedEngagement?.id,
+                          });
+                        setIsSelectOpen(false);
+                      }}
+                      className="block w-full cursor-pointer px-4 py-2 text-left text-xs transition-colors duration-300 hover:bg-neutral-100 focus:bg-neutral-100"
+                    >
+                      {eng.title}
+                    </div>
+                  ))
+                ) : (
                   <div
-                    key={eng.id}
-                    onClick={() => {
-                      dispatch(setSelectedEngagement(eng));
-                      if (selectedEngagement)
-                        addNewProject({
-                          type: LOGLINKTYPE.ENGAGEMENT,
-                          projectTitle: eng.title,
-                          id: selectedEngagement?.id,
-                        });
-                      setIsSelectOpen(false);
-                    }}
                     className="block w-full cursor-pointer px-4 py-2 text-left text-xs transition-colors duration-300 hover:bg-neutral-100 focus:bg-neutral-100"
+                    onClick={() => setIsSelectOpen(false)}
                   >
-                    {eng.title}
+                    No Engagements
                   </div>
-                ))}
+                )}
               </div>
             </div>
           </>

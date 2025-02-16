@@ -413,10 +413,13 @@ export const WorklogsPage = () => {
               setMonthTab={setMonthTab}
               handleNextMonthClick={handleNextMonthClick}
             />
+            <div className='pt-3'>
+
             <PrivateWorklogView
               date={centerdate.format('YYYY-MM-DD')}
               logType={'privateWorklogs'}
             />
+            </div>
           </div>
           <div className="m-3 grid max-h-[80vh] grid-cols-2 gap-3 overflow-y-scroll p-2 max-lg:grid-cols-4 max-md:grid-cols-2 lg:w-[30%]">
             {filteredLogs.map(
