@@ -1,7 +1,10 @@
-import ToolTip from '@/components/elements/ToolTip';
 import { MdxAppEditor } from '@/utils/configure/MdxAppEditor';
 import { User, WorkLogs } from '@prisma/client';
-import React from 'react';
+import dayjs from 'dayjs';
+
+interface WorkLogsByDate {
+  [date: string]: WorkLogs[];
+}
 
 const EngagementWorklogs = ({
   workLogs,
@@ -14,51 +17,60 @@ const EngagementWorklogs = ({
   workLogsLoading: boolean;
   loading: boolean;
 }) => {
-  return workLogs.length > 0 ? (
-    workLogs.map((workLog) => {
+  const workLogsByDate = workLogs.reduce<WorkLogsByDate>((acc, workLog) => {
+    const date = workLog.date;
+    if (date !== null && !acc[date]) {
+      acc[date] = [];
+    }
+    if (date !== null) {
+      acc[date].push(workLog);
+    }
+    return acc;
+  }, {} as WorkLogsByDate);
+
+  return Object.keys(workLogsByDate).length > 0 ? (
+    Object.entries(workLogsByDate).map(([date, workLogsForDate]) => {
+      const formattedDate = dayjs(date).format('MMMM DD - dddd');
       return (
-        <div key={workLog.id}>
-          {workLog.works?.map((work) => {
-            return (
-              <div
-                key={workLog.id}
-                className="mx-4 my-2 rounded-lg bg-white px-4"
-              >
-                <h1 className="flex items-center gap-2 text-base font-semibold uppercase tracking-[1.5px] text-gray-800">
+        <div key={date} className="mb-4 px-6">
+          <h1 className="mb-4 px-4 text-lg font-semibold uppercase tracking-widest text-neutral-500">
+            {formattedDate}
+          </h1>
+          {workLogsForDate.map((workLog) => (
+            <div key={workLog.id} className="my-2 rounded-lg bg-white px-6">
+              {workLog.works?.map((work) => (
+                <div
+                  key={`${workLog.createdAt}-index-${workLog.id}`}
+                  className="flex flex-col items-start gap-0"
+                >
                   {team
                     .filter((user) => user.id === workLog.userId)
                     .map((user) => (
-                      <ToolTip
+                      <div
                         key={user.id}
-                        title={`${user.name} | ${user.vertical}`}
+                        className="flex flex-row items-center gap-2"
                       >
                         <img
-                          key={user.id}
                           src={user.avatar || '/images/avatar.png'}
                           alt={user.name || ''}
-                          className="h-8 w-8 cursor-pointer rounded-full object-cover"
+                          className="mt-1 h-8 w-8 rounded-full object-cover"
                         />
-                      </ToolTip>
+                        <span className="text-sm">{user.name}</span>
+                      </div>
                     ))}
-                  {workLog.title}
-                </h1>
-
-                <MdxAppEditor
-                  readOnly
-                  markdown={
-                    typeof work === 'object' &&
-                    work !== null &&
-                    'content' in work
-                      ? ((work.content as string) ?? '')
-                      : ''
-                  }
-                  contentEditableClassName="summary_mdx flex flex-col gap-4 z-1 mb-[-20px] ml-3"
-                  editorKey={'engagement-mdx'}
-                  className="z-1"
-                />
-              </div>
-            );
-          })}
+                  <div className="ml-4 flex-grow">
+                    <MdxAppEditor
+                      readOnly
+                      markdown={(work as { content: string }).content || ''}
+                      contentEditableClassName="summary_mdx flex flex-col gap-4 z-1 mb-[-20px] ml-3"
+                      editorKey={'engagement-mdx'}
+                      className="z-1"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
         </div>
       );
     })

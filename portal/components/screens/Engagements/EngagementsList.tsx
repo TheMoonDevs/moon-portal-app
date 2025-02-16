@@ -15,7 +15,7 @@ const EngagementsList = ({
   team: User[];
 }) => {
   return (
-    <div>
+    <div className='flex flex-col gap-2'>
       {engagements.map((engagement) => (
         <div
           key={engagement.id}
