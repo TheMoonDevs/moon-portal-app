@@ -35,7 +35,7 @@ import { MdxAppEditor } from '@/utils/configure/MdxAppEditor';
 import ToolTip from '@/components/elements/ToolTip';
 
 const FocusMode = () => (
-  <div className="mt-4 flex w-full flex-col-reverse gap-6 md:flex-col">
+  <div className="mt-4 flex w-full flex-col-reverse gap-6 md:mt-0 md:flex-col">
     <div>
       <h4 className="px-4 text-lg font-bold">In Progress Today </h4>
       <InWorkSection visible={true} />
