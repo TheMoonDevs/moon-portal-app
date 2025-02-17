@@ -26,11 +26,11 @@ const NAVIGATION_OPTIONS = [
     path: APP_ROUTES.userWorklogs,
     icon: 'task_alt',
   },
-  {
-    name: 'Houses',
-    path: APP_ROUTES.houses,
-    icon: 'category',
-  },
+  // {
+  //   name: 'Houses',
+  //   path: APP_ROUTES.houses,
+  //   icon: 'category',
+  // },
   // {
   //   name: "Teams",
   //   path: APP_ROUTES.teams,
@@ -51,6 +51,11 @@ const NAVIGATION_OPTIONS = [
     path: APP_ROUTES.admin,
     icon: 'admin_panel_settings',
   },
+  {
+    name: 'Settings',
+    path: APP_ROUTES.settings,
+    icon: 'settings',
+  },
 ];
 
 const CLIENT_NAVIGATION_OPTIONS = [
@@ -65,9 +70,9 @@ const CLIENT_NAVIGATION_OPTIONS = [
     icon: 'task_alt',
   },
   {
-    name: "Invoices",
+    name: 'Invoices',
     path: APP_ROUTES.invoices,
-    icon: "receipt_long",
+    icon: 'receipt_long',
   },
   // {
   //   name: 'Referrals',
