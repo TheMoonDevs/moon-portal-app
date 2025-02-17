@@ -15,7 +15,10 @@ import media from '@/styles/media';
 import { WorklogView } from './WorklogView';
 import { SummarizeButton } from './SummarizeButton';
 import { Toaster, toast } from 'sonner';
-import { setLogsList } from '@/utils/redux/worklogs/worklogs.slice';
+import {
+  setLogsList,
+  setSelectedEngagement,
+} from '@/utils/redux/worklogs/worklogs.slice';
 import SimpleTabs from '@/components/elements/Tabs';
 import WorklogTips from './WorklogTabs/WorklogTips';
 import TodoTab from './WorklogTabs/TodoTab';
@@ -410,10 +413,13 @@ export const WorklogsPage = () => {
               setMonthTab={setMonthTab}
               handleNextMonthClick={handleNextMonthClick}
             />
+            <div className=''>
+
             <PrivateWorklogView
               date={centerdate.format('YYYY-MM-DD')}
               logType={'privateWorklogs'}
             />
+            </div>
           </div>
           <div className="m-3 grid max-h-[80vh] grid-cols-2 gap-3 overflow-y-scroll p-2 max-lg:grid-cols-4 max-md:grid-cols-2 lg:w-[30%]">
             {filteredLogs.map(
@@ -423,7 +429,10 @@ export const WorklogsPage = () => {
                   key={data.id + '-' + data.date + '-' + data.userId}
                   data={data}
                   selected={selectedDate === data.date}
-                  onClick={() => handleWorkLogItemClick(data, isEditorSaving)}
+                  onClick={() => {
+                    handleWorkLogItemClick(data, isEditorSaving);
+                    dispatch(setSelectedEngagement(null));
+                  }}
                 />
               ),
               //)

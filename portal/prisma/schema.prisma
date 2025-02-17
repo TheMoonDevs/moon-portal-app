@@ -607,3 +607,38 @@ model DevProfile {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+// -------------------------------------Client Shortcuts and utils--------------------------------- 
+
+model ClientUtilityLink {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  clientId  String   
+  title     String
+  url       String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  icon      String
+}
+
+
+// -------------------------------------Engagements-------------------------------------------
+
+model Engagement {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  client_id String
+  developer_ids String[]
+  title     String
+  startDate DateTime?
+  endDate DateTime?
+  isActive Boolean
+  engagementType ENGAGEMENTTYPE
+  numberOfHours     Int?    
+  progressPercentage Float?  
+}
+
+enum ENGAGEMENTTYPE {
+  HOURLY
+  PART_TIME
+  FULL_TIME
+  FIXED
+}

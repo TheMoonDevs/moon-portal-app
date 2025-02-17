@@ -4,9 +4,11 @@ import { MobileBox } from '../Login/Login';
 import { AdminUsers } from './AdminUsers';
 import SendNotifications from './SendNotifications';
 import { PortalSdk } from '@/utils/services/PortalSdk';
-import { User } from '@prisma/client';
+import { User, USERTYPE } from '@prisma/client';
 import BadgeTemplate from './badge-template/AdminBadges';
 import EventForm from './Events/EventForm';
+import ClientShortcutsManager from './ClientShortcutsManager';
+import Engagements from './Engagements';
 import Link from 'next/link';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
 import { useRouter } from 'next/navigation';
@@ -20,6 +22,8 @@ const menuItems = [
   },
   { name: 'BadgeTemplate', label: 'Badge Template', icon: 'badge' },
   { name: 'EventForm', label: 'Event Form', icon: 'event' },
+  { name: 'Shortcuts', label: 'Client Shortcuts', icon: 'bolt' },
+  { name: 'Engagements', label: 'Engagements', icon: 'handshake' },
 ];
 
 export const AdminPage = () => {
@@ -39,6 +43,10 @@ export const AdminPage = () => {
         return <BadgeTemplate />;
       case 'EventForm':
         return <EventForm />;
+      case 'Shortcuts':
+        return <ClientShortcutsManager />;
+      case 'Engagements':
+        return <Engagements users={users} />;
       default:
         return <AdminUsers users={users} loading={loading} />;
     }
@@ -48,7 +56,6 @@ export const AdminPage = () => {
     setLoading(true);
     PortalSdk.getData('/api/user', null)
       .then((data) => {
-        console.log(data);
         setUsers(data?.data?.user || []);
         setLoading(false);
       })
@@ -85,7 +92,7 @@ export const AdminPage = () => {
               key={item.name}
               className={`flex items-center gap-2 rounded-lg p-2 text-white transition-opacity hover:bg-neutral-800 ${
                 activeComponent === item.name
-                  ? 'bg-neutral-800 opacity-100 font-semibold'
+                  ? 'bg-neutral-800 font-semibold opacity-100'
                   : 'opacity-60'
               }`}
               onClick={() => setActiveComponent(item.name)}
