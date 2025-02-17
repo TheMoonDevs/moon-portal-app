@@ -255,7 +255,6 @@ export const WorklogEditor = ({
           setWorkLog(data?.data?.workLogs);
           setServerLog(data?.data?.workLogs);
           dispatch(updateLogs(data?.data?.workLogs));
-          refreshWorklogs();
           console.log('saved', data?.data?.workLogs);
         })
         .catch((err) => {
@@ -589,6 +588,7 @@ export const WorklogEditor = ({
                               ...prev,
                               importing: false,
                             }));
+                            refreshWorklogs();
                           });
                         }}
                       >
