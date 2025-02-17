@@ -769,7 +769,7 @@ export const WorklogEditor = ({
         {path?.includes('user/worklogs') && engagements.length > 0 && (
           <>
             <button
-              className="flex w-fit cursor-pointer items-start justify-center rounded-md bg-white px-3 py-1 text-[0.8em] uppercase tracking-widest text-neutral-500 transition-all duration-300 hover:border hover:border-neutral-400 hover:shadow-lg"
+              className={`flex w-fit cursor-pointer items-start justify-start rounded-md bg-transparent px-3 py-1 text-[0.8em] uppercase tracking-widest text-neutral-300 transition-all duration-300 hover:border hover:border-neutral-400 hover:text-neutral-500 ${isSelectOpen && 'border border-neutral-400 text-neutral-500'}`}
               onClick={() => setIsSelectOpen(!isSelectOpen)}
             >
               <p className="flex items-center gap-2 font-medium">
@@ -783,6 +783,7 @@ export const WorklogEditor = ({
                 Engagement
               </p>
             </button>
+
             <div
               ref={selectRef}
               className={`absolute left-2 top-full z-20 mt-0 w-fit rounded-md border border-neutral-400 bg-white shadow-lg transition-all duration-300 ease-in-out ${

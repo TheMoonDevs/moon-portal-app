@@ -413,7 +413,7 @@ export const WorklogsPage = () => {
               setMonthTab={setMonthTab}
               handleNextMonthClick={handleNextMonthClick}
             />
-            <div className='pt-3'>
+            <div className=''>
 
             <PrivateWorklogView
               date={centerdate.format('YYYY-MM-DD')}
