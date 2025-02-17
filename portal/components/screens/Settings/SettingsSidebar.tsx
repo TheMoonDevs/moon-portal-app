@@ -1,5 +1,6 @@
 'use client';
 
+import LogoutConfirmationDialog from '@/components/global/LogoutConfirmationDialog';
 import media from '@/styles/media';
 import { useMediaQuery } from '@mui/material';
 import { useState } from 'react';
@@ -23,6 +24,10 @@ const SettingsSidebar = ({
 }) => {
   const [activeTab, setActiveTab] = useState(NestedSidebarElements[0].items[0]);
   const isSmallerTablets = useMediaQuery(media.custom(640));
+  const [open, setOpen] = useState(false);
+  const handleLogoutDialogOpen = () => {
+    setOpen(true);
+  };
 
   return (
     <>
@@ -72,15 +77,19 @@ const SettingsSidebar = ({
               </div>
             </div>
           ))}
-          <a
-            href="#"
+          <div
+            onClick={handleLogoutDialogOpen}
             className="flex items-center justify-between rounded-md px-2 py-1 text-base hover:bg-neutral-300"
           >
             <span>Logout</span>
             <span className="material-symbols-outlined !text-base">logout</span>
-          </a>
+          </div>
         </div>
       </aside>
+      <LogoutConfirmationDialog
+        open={open}
+        handleClose={() => setOpen(false)}
+      />
     </>
   );
 };
