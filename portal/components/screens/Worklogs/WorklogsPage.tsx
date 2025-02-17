@@ -74,90 +74,90 @@ export const WorkLogItem = ({
   isTabletOrMore,
 }: {
   data: WorkLogs;
-  onClick: any;
-  selected?: boolean;
+  onClick: () => void;
+  selected: boolean;
   isTabletOrMore: boolean;
 }) => {
+  const isToday = dayjs(data.date).isSame(dayjs(), 'date');
+  const isPast = dayjs(data.date).isBefore(dayjs(), 'date');
+  const isFuture = dayjs(data.date).isAfter(dayjs(), 'date');
+  const isEmpty = data.id === '';
+
+  const borderClass = selected
+    ? 'border-2 border-neutral-900 bg-white'
+    : isToday
+      ? 'border-2 border-blue-400'
+      : isPast
+        ? isEmpty
+          ? 'border-2 border-red-400'
+          : 'border-2 border-green-500'
+        : 'border-neutral-200';
+
+  const iconClass = isToday
+    ? 'text-blue-500 animate-pulse'
+    : isFuture
+      ? isEmpty
+        ? 'text-neutral-500'
+        : 'text-green-500'
+      : isEmpty
+        ? 'text-red-500'
+        : 'text-green-500';
+
+  const iconType = isToday
+    ? 'radio_button_checked'
+    : isFuture
+      ? isEmpty
+        ? 'add_box'
+        : 'checklist'
+      : isEmpty
+        ? 'pending'
+        : 'checklist';
+
   return (
     <Link
       href={isTabletOrMore ? '' : linkForWorkLog(data)}
-      className={`flex min-h-[150px] flex-col gap-3 overflow-y-hidden rounded-lg border border-neutral-200 p-3 ${
-        data.logType === 'privateLog' ? 'h-full' : ''
-      } ${selected ? 'border-2 border-neutral-900 bg-white' : ''}`}
-      key={JSON.stringify(data.works)}
+      className={`flex min-h-[150px] flex-col gap-3 overflow-y-hidden rounded-lg border p-3 ${borderClass}`}
       onClick={onClick}
     >
       <div
-        className={`flex flex-row justify-between ${
-          selected ? 'font-bold text-black' : 'font-regular text-neutral-800'
-        }`}
+        className={`flex justify-between ${selected ? 'font-bold text-black' : 'font-regular text-neutral-800'}`}
       >
-        <h1 className={`text-xs`}>{data.title}</h1>
+        <h1 className="text-xs">{data.title}</h1>
         {data.logType === 'dayLog' && (
-          <span
-            className={`icon_size material-symbols-outlined ${
-              dayjs(data.date).isBefore(dayjs(), 'date') && data.id === ''
-                ? 'text-red-500'
-                : !selected
-                  ? 'text-neutral-500'
-                  : dayjs(data.date).isSame(dayjs(), 'date')
-                    ? 'text-green-500'
-                    : data.id === '' ||
-                        dayjs(data.date).isAfter(dayjs(), 'date')
-                      ? 'text-neutral-500'
-                      : 'text-blue-500'
-            } `}
-          >
-            {dayjs(data.date).isSame(dayjs(), 'date')
-              ? 'radio_button_checked'
-              : dayjs(data.date).isAfter(dayjs(), 'date')
-                ? data.id === ''
-                  ? 'add_box'
-                  : 'checklist'
-                : data.id === ''
-                  ? 'pending'
-                  : 'checklist'}
+          <span className={`icon_size material-symbols-outlined ${iconClass}`}>
+            {iconType}
           </span>
         )}
       </div>
+
       <div className="flex max-h-[100px] min-h-[100px] flex-col p-1">
-        {data.id != '' &&
-          data.works //.flatMap((wk) => (wk as any)?.pointInfos)
-            //.slice(0, 3)
-            .map((point: any, index: number) => (
+        {!isEmpty ? (
+          data.works.map((point: any, index) => {
+            if (!point) return null;
+            return (
               <div
                 key={`${point.link_id}-${index}`}
                 className="flex flex-row items-center"
               >
-                <div className="text-sm font-light">
-                  <MdxAppEditor
-                    key={point?.id}
-                    editorKey={point?.id}
-                    markdown={point?.content}
-                    readOnly={true}
-                    contentEditableClassName="mdx_ce_min leading-0 imp-p-0 grow w-full h-full line-clamp-4"
-                    // plugins={[
-                    //   diffSourcePlugin({
-                    //     diffMarkdown: "An older version",
-                    //     viewMode: "diff",
-                    //   }),
-                    // ]}
-                  />
-                </div>
+                <MdxAppEditor
+                  key={point.id}
+                  editorKey={point.id}
+                  markdown={point.content}
+                  readOnly
+                  contentEditableClassName="mdx_ce_min leading-0 imp-p-0 grow w-full h-full line-clamp-4"
+                />
               </div>
-            ))}
-        {data.id === '' && (
-          <div className="">
-            <p className="text-sm text-neutral-300">
-              Tap to jot down your logs...
-            </p>
-          </div>
+            );
+          })
+        ) : (
+          <p className="text-sm text-neutral-300">
+            Tap to jot down your logs...
+          </p>
         )}
       </div>
     </Link>
   );
 };
-
 export const WorklogsPage = () => {
   const { localPassphrase } = usePassphrase();
   const { user } = useUser();
@@ -413,12 +413,11 @@ export const WorklogsPage = () => {
               setMonthTab={setMonthTab}
               handleNextMonthClick={handleNextMonthClick}
             />
-            <div className=''>
-
-            <PrivateWorklogView
-              date={centerdate.format('YYYY-MM-DD')}
-              logType={'privateWorklogs'}
-            />
+            <div className="">
+              <PrivateWorklogView
+                date={centerdate.format('YYYY-MM-DD')}
+                logType={'privateWorklogs'}
+              />
             </div>
           </div>
           <div className="m-3 grid max-h-[80vh] grid-cols-2 gap-3 overflow-y-scroll p-2 max-lg:grid-cols-4 max-md:grid-cols-2 lg:w-[30%]">
