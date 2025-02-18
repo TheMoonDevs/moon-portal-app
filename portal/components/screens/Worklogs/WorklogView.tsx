@@ -186,7 +186,7 @@ export const WorklogView = ({
           setLoading(false);
         });
     }
-  }, [id, date, workLog, logType]);
+  }, [id, date, logType]);
 
   if (!visible) return;
 
