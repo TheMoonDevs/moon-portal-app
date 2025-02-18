@@ -2,6 +2,7 @@
 
 import { APP_ROUTES, AppRoutesHelper } from '@/utils/constants/appInfo';
 import { useUser } from '@/utils/hooks/useUser';
+import { useAppSelector } from '@/utils/redux/store';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -19,14 +20,14 @@ export const PageAccess = ({
   const router = useRouter();
   const path = usePathname();
   const [bottomBarShown, setBottomBarShown] = useState(false);
-
+  const { redirectUri } = useAppSelector((state) => state.auth);
   useEffect(() => {
     if (status === 'unauthenticated' && isAuthRequired) {
       router.push(APP_ROUTES.login);
       return;
     }
     if (status === 'authenticated' && isAdminRequired && !user?.isAdmin) {
-      router.push(APP_ROUTES.home);
+      router.push(redirectUri || APP_ROUTES.home);
       return;
     }
 
