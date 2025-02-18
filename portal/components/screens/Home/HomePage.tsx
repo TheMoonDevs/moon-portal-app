@@ -35,14 +35,18 @@ import { MdxAppEditor } from '@/utils/configure/MdxAppEditor';
 import ToolTip from '@/components/elements/ToolTip';
 
 const FocusMode = () => (
-  <div className="flex w-full flex-col">
-    <h4 className="px-4 text-lg font-bold">In Progress Today </h4>
-    <InWorkSection visible={true} />
+  <div className="mt-4 flex w-full flex-col-reverse gap-6 md:mt-0 md:flex-col">
+    <div>
+      <h4 className="px-4 text-lg font-bold">In Progress Today </h4>
+      <InWorkSection visible={true} />
+    </div>
     <Link
-      className="mx-4 mt-3 self-stretch rounded-md bg-green-500 px-[30px] py-3 text-center text-sm font-bold uppercase tracking-[4px] text-white hover:bg-green-400"
+      className="mx-4 self-stretch rounded-md bg-green-500 px-[30px] py-3 text-center text-sm font-bold uppercase tracking-[4px] text-white hover:bg-green-400"
       href={APP_ROUTES.userWorklogs}
     >
-      <span className="select-none">Enter &nbsp; Focus &nbsp; Mode</span>
+      <span className="select-none md:mb-0">
+        Enter &nbsp; Focus &nbsp; Mode
+      </span>
     </Link>
   </div>
 );
@@ -118,7 +122,7 @@ const MemberHomePage = () => {
           isCoreTeamDrawerOpen={isCoreTeamDrawerOpen}
           setCoreTeamDrawerOpen={setCoreTeamDrawerOpen}
         />
-        <div className="flex w-full flex-col pb-8 pt-3 md:pb-0 md:pt-0">
+        <div className="flex w-full flex-col pb-2 pt-3 md:pb-0 md:pt-0">
           {!isTabletOrMore && <FocusMode />}
         </div>
         <StartSection />
@@ -357,7 +361,7 @@ const ClientHomePage = () => {
                             }`}
                           >
                             <div className="flex flex-col">
-                              <h5 className="text-md font-semibold my-1">
+                              <h5 className="text-md my-1 font-semibold">
                                 {expandedEngagement.title} Worklogs
                               </h5>
                               {isWorklogsLoading ? (
@@ -383,7 +387,10 @@ const ClientHomePage = () => {
                                                       workLog.userId,
                                                   )
                                                   .map((user) => (
-                                                    <div key={user.id} className='flex items-center gap-2'>
+                                                    <div
+                                                      key={user.id}
+                                                      className="flex items-center gap-2"
+                                                    >
                                                       <img
                                                         src={
                                                           user.avatar ||
@@ -409,7 +416,7 @@ const ClientHomePage = () => {
                                                 }
                                                 contentEditableClassName="summary_mdx flex flex-col gap-4 z-1 mb-[-20px] !py-0 ml-3"
                                                 editorKey={'engagement-mdx'}
-                                                className="z-1 "
+                                                className="z-1"
                                               />
                                             </div>
                                           );

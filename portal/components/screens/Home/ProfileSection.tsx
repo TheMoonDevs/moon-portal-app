@@ -10,11 +10,7 @@ import { selectMember } from '@/utils/redux/coreTeam/coreTeam.slice';
 import Link from 'next/link';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
 export const ProfileSection = ({ user }: { user: User }) => {
-  const [open, setOpen] = useState(false);
   const dispatch = useAppDispatch();
-  const handleLogoutDialogOpen = () => {
-    setOpen(true);
-  };
 
   const handleOpenSlideIn = (user: User) => {
     dispatch(selectMember(user));
@@ -66,7 +62,7 @@ export const ProfileSection = ({ user }: { user: User }) => {
         </div>
       </div>
 
-      <div className="mb-4 grid w-full select-none grid-cols-[1.5fr_1fr] items-center justify-center divide-x-2 overflow-hidden rounded-2xl bg-white">
+      {/* <div className="mb-4 grid w-full select-none grid-cols-[1.5fr_1fr] items-center justify-center divide-x-2 overflow-hidden rounded-2xl bg-white">
         <div className="overflow-hidden hover:bg-neutral-100">
           <PushSubscriptionToggleButton />
         </div>
@@ -77,11 +73,7 @@ export const ProfileSection = ({ user }: { user: User }) => {
           <CirclePower className="text-red-400" />
           <span>Logout</span>
         </div>
-      </div>
-      <LogoutConfirmationDialog
-        open={open}
-        handleClose={() => setOpen(false)}
-      />
+      </div> */}
     </div>
   );
 };

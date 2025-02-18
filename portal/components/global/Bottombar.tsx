@@ -26,11 +26,11 @@ const NAVIGATION_OPTIONS = [
     path: APP_ROUTES.userWorklogs,
     icon: 'task_alt',
   },
-  {
-    name: 'Houses',
-    path: APP_ROUTES.houses,
-    icon: 'category',
-  },
+  // {
+  //   name: 'Houses',
+  //   path: APP_ROUTES.houses,
+  //   icon: 'category',
+  // },
   // {
   //   name: "Teams",
   //   path: APP_ROUTES.teams,
@@ -51,6 +51,11 @@ const NAVIGATION_OPTIONS = [
     path: APP_ROUTES.admin,
     icon: 'admin_panel_settings',
   },
+  {
+    name: 'Settings',
+    path: APP_ROUTES.settings,
+    icon: 'settings',
+  },
 ];
 
 const CLIENT_NAVIGATION_OPTIONS = [
@@ -65,9 +70,9 @@ const CLIENT_NAVIGATION_OPTIONS = [
     icon: 'task_alt',
   },
   {
-    name: "Invoices",
+    name: 'Invoices',
     path: APP_ROUTES.invoices,
-    icon: "receipt_long",
+    icon: 'receipt_long',
   },
   // {
   //   name: 'Referrals',
@@ -187,44 +192,49 @@ export const Bottombar = ({
           className="mx-auto my-4 h-12 w-12 rounded max-md:hidden"
         />
       </Link>
-      {options.map((option) => (
-        <div
-          onClick={() => handleTabClick(option)}
-          key={option.path}
-          className={` ${
-            option.path === path ? 'bg-white text-black' : 'bg-black text-white'
-          } relative flex w-1/3 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-2xl px-2 py-1 pt-2 text-xl transition-all duration-300 ${option.path !== path && 'hover:bg-neutral-700'} md:w-full`}
-        >
-          {option.path !== path && (
-            <Ripples
-              placeholder={undefined}
-              onClick={() => handleTabClick(option)}
-              onPointerEnterCapture={() => handleTabClick(option)}
-              onPointerLeaveCapture={() => handleTabClick(option)}
-              color="white"
-              className="!absolute top-0 z-50 h-full w-full"
-            ></Ripples>
-          )}
-
-          <Badge
-            badgeContent={
-              option.name === 'Notifications' ? unreadNotificationsCount : 0
-            }
-            color="error"
-            max={20}
-            invisible={!unreadNotificationsCount}
+      {options.map((option) => {
+        const isActive =
+          path === option.path ||
+          (option.path !== '/' && path?.startsWith(option.path));
+        return (
+          <div
+            onClick={() => handleTabClick(option)}
+            key={option.path}
+            className={` ${
+              isActive ? 'bg-white text-black' : 'bg-black text-white'
+            } relative flex w-1/3 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-2xl px-2 py-1 pt-2 text-xl transition-all duration-300 ${option.path !== path && 'hover:bg-neutral-700'} md:w-full`}
           >
-            <span
-              className={` ${
-                option.path === path ? 'text-black' : 'text-white'
-              } material-icons-outlined text-md font-thin`}
+            {option.path !== path && (
+              <Ripples
+                placeholder={undefined}
+                onClick={() => handleTabClick(option)}
+                onPointerEnterCapture={() => handleTabClick(option)}
+                onPointerLeaveCapture={() => handleTabClick(option)}
+                color="white"
+                className="!absolute top-0 z-50 h-full w-full"
+              ></Ripples>
+            )}
+
+            <Badge
+              badgeContent={
+                option.name === 'Notifications' ? unreadNotificationsCount : 0
+              }
+              color="error"
+              max={20}
+              invisible={!unreadNotificationsCount}
             >
-              {option.icon}
-            </span>
-          </Badge>
-          <p className="text-[0.5em] opacity-75">{option.name}</p>
-        </div>
-      ))}{' '}
+              <span
+                className={` ${
+                  isActive ? 'text-black' : 'text-white'
+                } material-icons-outlined text-md font-thin`}
+              >
+                {option.icon}
+              </span>
+            </Badge>
+            <p className="text-[0.5em] opacity-75">{option.name}</p>
+          </div>
+        );
+      })}{' '}
       <button
         onClick={handleLogoutDialogOpen}
         className={`absolute bottom-5 flex w-[85%] cursor-pointer flex-col items-center justify-center rounded-2xl bg-black py-1 pt-2 text-xl hover:bg-neutral-700 max-md:hidden`}
