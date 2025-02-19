@@ -5,6 +5,7 @@ import {
 } from 'next/server';
 
 import { CustomMiddleware } from './chain';
+import { getToken } from 'next-auth/jwt';
 
 export function withRedirectMiddleware(middleware: CustomMiddleware) {
   return async (
@@ -12,33 +13,37 @@ export function withRedirectMiddleware(middleware: CustomMiddleware) {
     event: NextFetchEvent,
     response: NextResponse,
   ) => {
-    const cookieResponse = await fetch(
-      `${request.nextUrl.origin}/api/auth/session`,
-      {
-        headers: {
-          Cookie: request.headers.get('cookie') || '',
-        },
-      },
-    );
+    try {
+      const fetchedSession = await getToken({
+        req: request,
+        secret: process.env.NEXTAUTH_SECRET,
+      });
+      // const cookieResponse = await fetch(
+      //   `${request.nextUrl.origin}/api/auth/session`,
+      // );
 
-    const fetchedSession = await cookieResponse.json();
-    const sessionToken =
-      request.cookies.get('next-auth.session-token') ||
-      request.cookies.get('__Secure-next-auth.session-token');
-    const pathname = request.nextUrl.pathname;
-    const nextUrl = request.nextUrl;
+      // const fetchedSession = await cookieResponse.json();
 
-    if (
-      (!sessionToken || !fetchedSession.user) &&
-      pathname !== '/' &&
-      !pathname.startsWith('/login') &&
-      !pathname.startsWith('/api/auth') &&
-      !pathname.startsWith('/api')
-    ) {
-      const loginUrl = new URL('/login', nextUrl.origin);
-      loginUrl.searchParams.set('uri', request.url);
+      const sessionToken =
+        request.cookies.get('next-auth.session-token') ||
+        request.cookies.get('__Secure-next-auth.session-token');
+      const pathname = request.nextUrl.pathname;
+      const nextUrl = request.nextUrl;
 
-      return NextResponse.redirect(loginUrl.toString());
+      if (
+        (!sessionToken || !fetchedSession) &&
+        pathname !== '/' &&
+        !pathname.startsWith('/login') &&
+        !pathname.startsWith('/api/auth') &&
+        !pathname.startsWith('/api')
+      ) {
+        const loginUrl = new URL('/login', nextUrl.origin);
+        loginUrl.searchParams.set('uri', request.url);
+        console.log('loginUrl', loginUrl);
+        return NextResponse.redirect(loginUrl.toString());
+      }
+    } catch (e) {
+      console.log(e);
     }
 
     // Call the next middleware and pass the request and response

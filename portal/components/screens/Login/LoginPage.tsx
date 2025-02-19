@@ -144,8 +144,9 @@ export const LoginPage = () => {
           verifiedUserEmail === user?.email &&
           user && (
             <GreyButton
-              onClick={() => {
-                if (uri) router.push(uri);
+              onClick={(e: React.MouseEvent) => {
+                e.preventDefault();
+                if (uri) router.replace(uri);
                 else router.push(APP_ROUTES.home);
               }}
             >
