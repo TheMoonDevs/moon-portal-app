@@ -12,6 +12,17 @@ export function withRedirectMiddleware(middleware: CustomMiddleware) {
     event: NextFetchEvent,
     response: NextResponse,
   ) => {
+    const cookieResponse = await fetch(
+      `${request.nextUrl.origin}/api/auth/session`,
+      {
+        headers: {
+          Cookie: request.headers.get('cookie') || '',
+        },
+      },
+    );
+
+    const fetchedSession = await cookieResponse.json();
+    console.log('fetchedSession', fetchedSession);
     const sessionToken =
       request.cookies.get('next-auth.session-token') ||
       request.cookies.get('__Secure-next-auth.session-token');
@@ -20,6 +31,8 @@ export function withRedirectMiddleware(middleware: CustomMiddleware) {
 
     if (
       !sessionToken &&
+      !fetchedSession &&
+      !fetchedSession.user &&
       pathname !== '/' &&
       !pathname.startsWith('/login') &&
       !pathname.startsWith('/api/auth') &&
