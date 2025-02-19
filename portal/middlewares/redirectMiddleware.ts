@@ -27,7 +27,6 @@ export function withRedirectMiddleware(middleware: CustomMiddleware) {
       request.cookies.get('__Secure-next-auth.session-token');
     const pathname = request.nextUrl.pathname;
     const nextUrl = request.nextUrl;
-    console.log('fetchedSession', fetchedSession, 'nexturl', nextUrl);
 
     if (
       (!sessionToken || !fetchedSession.user) &&
@@ -37,7 +36,7 @@ export function withRedirectMiddleware(middleware: CustomMiddleware) {
       !pathname.startsWith('/api')
     ) {
       const loginUrl = new URL('/login', nextUrl.origin);
-      loginUrl.searchParams.set('uri', nextUrl.href);
+      loginUrl.searchParams.set('uri', request.url);
 
       return NextResponse.redirect(loginUrl.toString());
     }
