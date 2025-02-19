@@ -191,9 +191,12 @@ const InvoicesTab = ({
       const res = await PortalSdk.postData('/api/client-invoice', formData);
       toast.success('Invoice added successfully');
       setLoadingState({ ...loadingState, adding: false });
+      resetForm();
     } catch (error) {
       console.error(error);
       setLoadingState({ ...loadingState, adding: false });
+      toast.error('Error adding invoice');
+      resetForm();
     }
   };
   const handleDelete = async (id: string) => {
@@ -201,8 +204,8 @@ const InvoicesTab = ({
       const res = await PortalSdk.deleteData('/api/client-invoice', {
         id,
       });
-      const responseJson = await res.json();
-      const deletedInvoice = responseJson.data;
+
+      const deletedInvoice = res.data;
       setInvoices(
         invoices.filter((invoice) => invoice.id !== deletedInvoice.id),
       );
