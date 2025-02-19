@@ -47,6 +47,7 @@ const InvoicesTab = ({
   const [loadingState, setLoadingState] = useState<loadingState>(
     INITIAL_LOADING_STATE,
   );
+  const [invoiceId, setInvoiceId] = useState<string | null>(null);
 
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [formData, setFormData] = useState<InvoiceFormState>({
@@ -175,9 +176,9 @@ const InvoicesTab = ({
       invoicePdf: '', // Store file URL or path
       workInfo: {},
     });
+    setInvoiceId(null);
   };
 
-  const handleUpdate = async (e: FormEvent) => {};
   const handleFormSubmit = async (e: FormEvent) => {
     e.preventDefault();
     try {
@@ -195,8 +196,60 @@ const InvoicesTab = ({
       setLoadingState({ ...loadingState, adding: false });
     }
   };
-  const handleDelete = async (id: string) => {};
-  const handleEditInvoice = (invoice: Invoice) => {};
+  const handleDelete = async (id: string) => {
+    try {
+      const res = await PortalSdk.deleteData('/api/client-invoice', {
+        id,
+      });
+      const responseJson = await res.json();
+      const deletedInvoice = responseJson.data;
+      setInvoices(
+        invoices.filter((invoice) => invoice.id !== deletedInvoice.id),
+      );
+      toast.success('Invoice deleted successfully');
+    } catch (error) {
+      console.error(error);
+      toast.error('Error deleting invoice');
+    }
+  };
+  const handleEditInvoice = (invoice: Invoice) => {
+    setFormData({
+      clientId: invoice.clientId || '',
+      startDate: dayjs(invoice.startDate),
+      endDate: dayjs(invoice.endDate),
+      dueDate: dayjs(invoice.dueDate),
+      title: invoice.title,
+      description: invoice.description || '',
+      devIds: invoice.devIds || [],
+      amountTotal: invoice.amountTotal,
+      amountToPay: invoice.amountToPay,
+      amountDiscount: invoice.amountDiscount,
+      isInvoicePaid: invoice.isInvoicePaid,
+      payType: invoice.payType,
+      invoicePdf: invoice.invoicePdf || '', // Store file URL or path
+      workInfo: invoice.workInfo,
+    });
+    setInvoiceId(invoice.id);
+    setLoadingState({ ...loadingState, updating: true });
+  };
+
+  const handleUpdate = async (e: FormEvent) => {
+    e.preventDefault();
+    try {
+      setLoadingState({ ...loadingState, updating: true });
+      const res = await PortalSdk.putData('/api/client-invoice', {
+        formData,
+        id: invoiceId,
+      });
+      toast.success('Invoice updated successfully');
+      setLoadingState({ ...loadingState, updating: false });
+    } catch (error) {
+      console.error(error);
+      setLoadingState({ ...loadingState, updating: false });
+    } finally {
+      resetForm();
+    }
+  };
 
   const renderForm = () => {
     return (
@@ -603,11 +656,7 @@ const InvoicesTab = ({
               {loadingState.adding || loadingState.updateUploading ? (
                 <Spinner className="h-4 w-4" />
               ) : (
-                <>
-                  {loadingState.updating
-                    ? 'Update Engagement'
-                    : 'Add Engagement'}
-                </>
+                <>{loadingState.updating ? 'Update Invoice' : 'Add Invoice'}</>
               )}
             </button>
           </div>
@@ -729,12 +778,32 @@ const InvoicesTab = ({
                         </div>
                         <div className="flex flex-row items-center gap-4">
                           <p className="text-sm font-bold text-neutral-300">
-                            {dayjs(invoice.createdAt).format('DD MMM YYYY')}
-                          </p>
-                          <p className="text-sm font-bold text-neutral-300">
                             {dayjs(invoice.updatedAt).format('DD MMM YYYY')}
                           </p>
                         </div>
+                      </div>
+                      <div className="flex space-x-3">
+                        <button
+                          className="text-gray-400 hover:text-gray-600"
+                          onClick={() => handleEditInvoice(invoice)}
+                        >
+                          <span className="material-symbols-outlined">
+                            edit
+                          </span>
+                        </button>
+                        <button
+                          className="text-red-400 hover:text-red-600"
+                          onClick={() => handleDelete(invoice.id)}
+                          disabled={invoiceId === invoice.id}
+                        >
+                          {invoiceId === invoice.id ? (
+                            <Spinner className="h-4 w-4" />
+                          ) : (
+                            <span className="material-symbols-outlined">
+                              delete
+                            </span>
+                          )}
+                        </button>
                       </div>
                     </div>
                   );
@@ -744,7 +813,9 @@ const InvoicesTab = ({
             {!loadingState.addNew && !loadingState.updating && (
               <button
                 className="absolute bottom-0 flex w-full items-center justify-center gap-2 rounded-lg bg-neutral-800 px-5 py-2 text-white shadow-md hover:bg-neutral-700"
-                onClick={handleFormSubmit}
+                onClick={() =>
+                  setLoadingState({ ...loadingState, addNew: true })
+                }
               >
                 <span className="material-symbols-outlined">group_add</span>
                 Add New Invoice
