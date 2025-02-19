@@ -642,3 +642,50 @@ enum ENGAGEMENTTYPE {
   FULL_TIME
   FIXED
 }
+
+
+// -------------------------------------Custom Bots-------------------------------------------
+
+model Organization {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  clientId   String   
+  name       String  @unique
+  githubName     String
+  githubUrl      String
+  description String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  bots       Bot[]
+}
+
+model Bot {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  organizationId String   @db.ObjectId
+  clientId       String   // Identifier for who created this bot
+  assigneeId     String?
+  title          String  @unique
+  description    String?
+  prUrl          String?
+  prNumber       Int?
+  botStatus      BOTSTATUS @default(UN_ASSIGNED)
+  botType        BOTTYPE @default(COMMUNICATION)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+}
+
+enum BOTSTATUS {
+  UN_ASSIGNED
+  IN_DEVELOPMENT
+  IN_QUEUE
+  IN_REVIEW
+  IN_TESTING
+  COMPLETED
+}
+
+enum BOTTYPE {
+  COMMUNICATION
+  COMPUTATIONAL
+  CRONJOB
+}
