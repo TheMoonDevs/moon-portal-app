@@ -1,0 +1,49 @@
+import { NextResponse } from 'next/server';
+import { prisma } from '@/prisma/prisma';
+
+export async function POST(request: Request) {
+  const body = await request.json();
+  const { userId, name, description } = body;
+
+  if (!name || !userId) {
+    return NextResponse.json(
+      { error: 'Missing required fields' },
+      { status: 400 },
+    );
+  }
+
+  try {
+    const newRepoName = `CustomBots-${name}`;
+    const result = await fetch(
+      'https://r72jktvfamkooemrvnle4quyoq0slfam.lambda-url.ap-southeast-2.on.aws/create-repo',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newRepoName, description }),
+      },
+    );
+
+    if (!result.ok) {
+      throw new Error('Failed to create repository');
+    }
+
+    const repoData = await result.json();
+    const organization = await prisma.organization.create({
+      data: {
+        clientId: userId,
+        name: name,
+        githubName: newRepoName,
+        githubUrl: repoData?.html_url,
+        description,
+      },
+    });
+
+    return NextResponse.json({ repoData, organization });
+  } catch (error) {
+    console.error('Error creating organization:', error);
+    return NextResponse.json(
+      { error: 'Failed to create organization' },
+      { status: 500 },
+    );
+  }
+}
