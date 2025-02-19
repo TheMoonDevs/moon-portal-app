@@ -22,17 +22,15 @@ export function withRedirectMiddleware(middleware: CustomMiddleware) {
     );
 
     const fetchedSession = await cookieResponse.json();
-    console.log('fetchedSession', fetchedSession);
     const sessionToken =
       request.cookies.get('next-auth.session-token') ||
       request.cookies.get('__Secure-next-auth.session-token');
     const pathname = request.nextUrl.pathname;
     const nextUrl = request.nextUrl;
+    console.log('fetchedSession', fetchedSession, 'nexturl', nextUrl);
 
     if (
-      !sessionToken &&
-      !fetchedSession &&
-      !fetchedSession.user &&
+      (!sessionToken || !fetchedSession.user) &&
       pathname !== '/' &&
       !pathname.startsWith('/login') &&
       !pathname.startsWith('/api/auth') &&
