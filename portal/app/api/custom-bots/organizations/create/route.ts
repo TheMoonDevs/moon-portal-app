@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/prisma/prisma';
+import { CustomBotKickstarter } from '@/utils/constants/customBots';
 
 export async function POST(request: Request) {
   const body = await request.json();
@@ -15,7 +16,7 @@ export async function POST(request: Request) {
   try {
     const newRepoName = `CustomBots-${name}`;
     const result = await fetch(
-      'https://r72jktvfamkooemrvnle4quyoq0slfam.lambda-url.ap-southeast-2.on.aws/create-repo',
+      CustomBotKickstarter.createRepo,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
