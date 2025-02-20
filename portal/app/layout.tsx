@@ -58,16 +58,16 @@ export default function RootLayout({
         <NextAuthProvider session={session}>
           <MUIThemeRegistry options={{ key: 'mui' }}>
             <MantineProvider>
-              <RedirectWrapperProvider>
-                <ReduxProvider>
+              <ReduxProvider>
+                <RedirectWrapperProvider>
                   <PushServiceRegistration>
                     <UpdatePWA>
                       <AppLayout>{children}</AppLayout>
                     </UpdatePWA>
                   </PushServiceRegistration>
                   <ToastsContainer />
-                </ReduxProvider>
-              </RedirectWrapperProvider>
+                </RedirectWrapperProvider>
+              </ReduxProvider>
             </MantineProvider>
           </MUIThemeRegistry>
         </NextAuthProvider>
