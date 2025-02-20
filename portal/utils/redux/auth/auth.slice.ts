@@ -23,16 +23,12 @@ export const uiSlice = createSlice({
         localStorage.setItem('verifiedUserEmail', action.payload);
       state.verifiedUserEmail = action.payload;
     },
-    setRedirectUri: (state, action) => {
-      state.redirectUri = action.payload;
-    },
   },
 });
 
 const { actions, reducer } = uiSlice;
 
 // Only Slice Actions are generated here, refer sharedActions for others.
-export const { setReduxUser, setGoogleVerificationEmail, setRedirectUri } =
-  actions;
+export const { setReduxUser, setGoogleVerificationEmail } = actions;
 
 export default reducer;
