@@ -20,6 +20,7 @@ import { AppLayout } from '@/components/global/AppLayout';
 import { MantineProvider } from '@mantine/core';
 import { UpdatePWA } from '@/components/global/UpdatePWA';
 import PushServiceRegistration from '@/components/global/PushServiceRegistration';
+import RedirectWrapperProvider from '@/components/global/RedirectWrapperProvider';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -57,14 +58,16 @@ export default function RootLayout({
         <NextAuthProvider session={session}>
           <MUIThemeRegistry options={{ key: 'mui' }}>
             <MantineProvider>
-              <ReduxProvider>
-                <PushServiceRegistration>
-                  <UpdatePWA>
-                    <AppLayout>{children}</AppLayout>
-                  </UpdatePWA>
-                </PushServiceRegistration>
-                <ToastsContainer />
-              </ReduxProvider>
+              <RedirectWrapperProvider>
+                <ReduxProvider>
+                  <PushServiceRegistration>
+                    <UpdatePWA>
+                      <AppLayout>{children}</AppLayout>
+                    </UpdatePWA>
+                  </PushServiceRegistration>
+                  <ToastsContainer />
+                </ReduxProvider>
+              </RedirectWrapperProvider>
             </MantineProvider>
           </MUIThemeRegistry>
         </NextAuthProvider>

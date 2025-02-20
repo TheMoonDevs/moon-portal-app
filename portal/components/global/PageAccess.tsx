@@ -20,14 +20,13 @@ export const PageAccess = ({
   const router = useRouter();
   const path = usePathname();
   const [bottomBarShown, setBottomBarShown] = useState(false);
-  const { redirectUri } = useAppSelector((state) => state.auth);
   useEffect(() => {
     if (status === 'unauthenticated' && isAuthRequired) {
       router.push(APP_ROUTES.login);
       return;
     }
     if (status === 'authenticated' && isAdminRequired && !user?.isAdmin) {
-      router.push(redirectUri || APP_ROUTES.home);
+      router.push(APP_ROUTES.home);
       return;
     }
 
