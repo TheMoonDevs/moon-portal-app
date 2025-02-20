@@ -59,7 +59,7 @@ export async function PUT(req: NextRequest) {
         id: body.id,
       },
       data: {
-        ...body,
+        ...body.formData,
       },
     });
     return NextResponse.json({
@@ -67,6 +67,7 @@ export async function PUT(req: NextRequest) {
       data: updatedInvoice,
     });
   } catch (error) {
+    console.log(error);
     return NextResponse.json(
       { error: 'Error updating invoice' },
       { status: 500 },
