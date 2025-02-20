@@ -39,7 +39,7 @@ export const LoginPage = () => {
     signIn('credentials', {
       username: passCode.substring(0, 3).toUpperCase(),
       password: passCode.substring(3).toUpperCase(),
-      redirect: false,
+      redirect: true,
       // callbackUrl: (redirectUri as string) || APP_ROUTES.home,
       // redirect: true,
     })
