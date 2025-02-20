@@ -20,6 +20,7 @@ export const PageAccess = ({
   const router = useRouter();
   const path = usePathname();
   const [bottomBarShown, setBottomBarShown] = useState(false);
+  const { redirectUri } = useAppSelector((state) => state.auth);
   useEffect(() => {
     if (status === 'unauthenticated' && isAuthRequired) {
       router.push(APP_ROUTES.login);
@@ -31,7 +32,7 @@ export const PageAccess = ({
     }
 
     if (status === 'authenticated' && verifiedUserEmail !== user?.email) {
-      router.push(APP_ROUTES.login);
+      router.push(redirectUri || APP_ROUTES.login);
       return;
     }
 
