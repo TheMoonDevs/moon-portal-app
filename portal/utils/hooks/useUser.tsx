@@ -83,7 +83,7 @@ export const useUser = (newfetch?: boolean) => {
     data,
     signOutUser: () => {
       signOut({
-        callbackUrl: `${window.location.origin}${APP_ROUTES.login}`,
+        callbackUrl: APP_ROUTES.login,
       })
         .then(() => {
           localStorage.removeItem(LOCAL_STORAGE.user);
