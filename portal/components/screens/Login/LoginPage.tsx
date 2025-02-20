@@ -32,6 +32,15 @@ export const LoginPage = () => {
     }
   }, [user, status, router]);
 
+  useEffect(() => {
+    const passkey = searchParams?.get('passkey');
+    if (passkey) {
+      setTab(LoginState.LOGIN_CODE);
+      setEnteredPasscode(passkey);
+      loginWithPassCode(passkey);
+    }
+  }, [searchParams]);
+
   const loginWithPassCode = (passCode: string) => {
     setLoading(true);
     setError(null);
