@@ -14,7 +14,11 @@ import { useUser } from '@/utils/hooks/useUser';
 import { FileWithPath } from '@mantine/dropzone';
 import { TMD_PORTAL_API_KEY } from '@/utils/constants/appInfo';
 import Link from 'next/link';
-import { toast } from 'sonner';
+import { toast, Toaster } from 'sonner';
+import { fileProxy } from '@/action/file-action';
+import { Span } from 'next/dist/trace';
+import DeleteConfirmationDialog from '@/components/elements/Dialogs';
+import { Delete } from 'lucide-react';
 type InvoiceFormState = {
   clientId: string;
   startDate: string | null | Dayjs;
@@ -50,6 +54,8 @@ const InvoicesTab = ({
   const [invoiceId, setInvoiceId] = useState<string | null>(null);
 
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+
   const [formData, setFormData] = useState<InvoiceFormState>({
     clientId: selectedClientId || '',
     startDate: null,
@@ -67,14 +73,38 @@ const InvoicesTab = ({
     workInfo: {},
   });
 
-  const [files, setFiles] = useState<File | FileList | FileWithPath>();
+  const [files, setFiles] = useState<File | FileList | FileWithPath | Blob>();
   const [isFileUploading, setIsFileUploading] = useState<boolean>(false);
+  const [isFileChanged, setIsFileChanged] = useState<boolean>(false);
   const { user } = useUser();
 
+  function base64ToFile(
+    base64: string | undefined,
+    name: string | undefined,
+    contentType = 'application/pdf',
+  ): File | null {
+    if (!base64 || !name) return null;
+    const byteCharacters = atob(base64.split(',')[1]); // Remove `data:...;base64,`
+    const byteNumbers = new Array(byteCharacters.length)
+      .fill(null)
+      .map((_, i) => byteCharacters.charCodeAt(i));
+    const byteArray = new Uint8Array(byteNumbers);
+
+    const blob = new Blob([byteArray], { type: contentType });
+
+    return new File([blob], name, { type: contentType });
+  }
+
+  useEffect(() => {
+    if (files) setFiles(undefined);
+  }, []);
+
   const handleFileDrop = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files.length > 0) {
+      setIsFileChanged(true); // Mark that file has changed
+    }
     if (files) setFiles(undefined);
     const droppedFiles = event.target.files?.item(0);
-    console.log(droppedFiles);
     if (droppedFiles) setFiles(droppedFiles);
   };
 
@@ -101,20 +131,19 @@ const InvoicesTab = ({
           const responseData = await response.json();
           const fileUrl = responseData.fileInfo[0].fileUrl;
 
-          setFormData((prevFormData) => ({
-            ...prevFormData,
-            invoicePdf: fileUrl, // Store file URL or path
-          }));
           console.log('File uploaded successfully!');
           setIsFileUploading(false);
+          return fileUrl;
         } else {
           // Handle error
           setIsFileUploading(false);
           console.error('Failed to upload file:', response.statusText);
+          return null;
         }
       } catch (error) {
         setIsFileUploading(false);
         console.error('Error uploading file:', error);
+        return null;
         // Handle error
       }
     }
@@ -141,8 +170,8 @@ const InvoicesTab = ({
   }, [selectedClientId]);
 
   const filePreview = () => {
-    const pdf = files as File;
-    const fileUrl = URL.createObjectURL(pdf);
+    const pdf = files;
+    const fileUrl = URL.createObjectURL(pdf as File);
     return (
       <Link
         href={fileUrl}
@@ -150,7 +179,7 @@ const InvoicesTab = ({
         className="mt-2 flex items-center gap-2 text-sm text-blue-500"
       >
         <span className="icon_size material-icons">picture_as_pdf</span>
-        <p className="underline">{pdf.name}</p>
+        <p className="underline">{(pdf as any)?.name}</p>
         <span className="icon_size material-symbols-outlined">
           {' '}
           open_in_new
@@ -176,6 +205,7 @@ const InvoicesTab = ({
       invoicePdf: '', // Store file URL or path
       workInfo: {},
     });
+    setFiles(undefined);
     setInvoiceId(null);
   };
 
@@ -185,10 +215,18 @@ const InvoicesTab = ({
       setLoadingState({ ...loadingState, adding: true });
 
       // upload the pdf file to the server
-      await handleUpload();
-      console.log(formData.invoicePdf);
+      const fileUrl = await handleUpload();
+      setFormData((prevData) => ({
+        ...prevData,
+        invoicePdf: fileUrl,
+      }));
 
-      const res = await PortalSdk.postData('/api/client-invoice', formData);
+      const res = await PortalSdk.postData('/api/client-invoice', {
+        ...formData,
+        invoicePdf: fileUrl,
+      });
+
+      setInvoices([...invoices, res.data]);
       toast.success('Invoice added successfully');
       setLoadingState({ ...loadingState, adding: false });
       resetForm();
@@ -199,23 +237,28 @@ const InvoicesTab = ({
       resetForm();
     }
   };
-  const handleDelete = async (id: string) => {
+  const handleDelete = async () => {
     try {
+      setLoadingState({ ...loadingState, deleting: true });
       const res = await PortalSdk.deleteData('/api/client-invoice', {
-        id,
+        id: invoiceId,
       });
 
       const deletedInvoice = res.data;
       setInvoices(
         invoices.filter((invoice) => invoice.id !== deletedInvoice.id),
       );
+      setLoadingState({ ...loadingState, deleting: false });
+      setOpenDeleteDialog(false);
       toast.success('Invoice deleted successfully');
     } catch (error) {
       console.error(error);
+      setLoadingState({ ...loadingState, deleting: false });
+      setOpenDeleteDialog(false);
       toast.error('Error deleting invoice');
     }
   };
-  const handleEditInvoice = (invoice: Invoice) => {
+  const handleEditInvoice = async (invoice: Invoice) => {
     setFormData({
       clientId: invoice.clientId || '',
       startDate: dayjs(invoice.startDate),
@@ -234,21 +277,45 @@ const InvoicesTab = ({
     });
     setInvoiceId(invoice.id);
     setLoadingState({ ...loadingState, updating: true });
+    if (invoice.invoicePdf !== '') {
+      try {
+        const file = await fileProxy(invoice.invoicePdf);
+        const pdfFile = base64ToFile(file?.src, file?.name, 'application/pdf');
+        pdfFile && setFiles(pdfFile);
+      } catch (error) {
+        console.error(error);
+      }
+    }
   };
 
   const handleUpdate = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      setLoadingState({ ...loadingState, updating: true });
+      setLoadingState({ ...loadingState, updateUploading: true });
+      let form;
+      if (isFileChanged) {
+        form = {
+          ...formData,
+          invoicePdf: await handleUpload(),
+        };
+      } else {
+        form = formData;
+      }
+
       const res = await PortalSdk.putData('/api/client-invoice', {
-        formData,
+        formData: form,
         id: invoiceId,
       });
+      setInvoices(
+        invoices.map((invoice) =>
+          invoice.id === invoiceId ? res.data : invoice,
+        ),
+      );
       toast.success('Invoice updated successfully');
-      setLoadingState({ ...loadingState, updating: false });
+      setLoadingState({ ...loadingState, updateUploading: false });
     } catch (error) {
       console.error(error);
-      setLoadingState({ ...loadingState, updating: false });
+      setLoadingState({ ...loadingState, updateUploading: false });
     } finally {
       resetForm();
     }
@@ -565,6 +632,10 @@ const InvoicesTab = ({
               onChange={(e) =>
                 setFormData({
                   ...formData,
+                  amountToPay: Number(formData.amountDiscount)
+                    ? Number(formData.amountTotal) -
+                      Number(formData.amountDiscount)
+                    : Number(e.target.value),
                   amountTotal: Number(e.target.value),
                 })
               }
@@ -583,12 +654,15 @@ const InvoicesTab = ({
               type="text"
               id="amountDiscount"
               value={formData.amountDiscount || 0}
-              onChange={(e) =>
+              onChange={(e) => {
                 setFormData({
                   ...formData,
+                  amountToPay: Number(formData.amountTotal)
+                    ? Number(formData.amountTotal) - Number(e.target.value)
+                    : 0,
                   amountDiscount: Number(e.target.value),
-                })
-              }
+                });
+              }}
               className="w-full rounded border border-neutral-500 bg-neutral-800 p-2 text-neutral-200"
               placeholder="Enter discount amount..."
             />
@@ -627,10 +701,27 @@ const InvoicesTab = ({
             >
               Upload Invoice PDF
             </label>
+            <label
+              htmlFor="fileUpload"
+              className="flex w-full cursor-pointer items-center justify-center gap-2 rounded border border-neutral-500 bg-neutral-800 p-2 text-center text-neutral-200"
+            >
+              {files ? (
+                <span>Choose another file </span>
+              ) : (
+                <span>Choose file</span>
+              )}
+              <span className="icon_size material-symbols-outlined">
+                picture_as_pdf
+              </span>
+            </label>
             <input
+              accept="application/pdf"
+              name="fileUpload"
               type="file"
               multiple={false}
+              hidden
               id="fileUpload"
+              placeholder="Upload Invoice PDF"
               onChange={handleFileDrop}
               className="w-full rounded border border-neutral-500 bg-neutral-800 p-2 text-neutral-200"
             />
@@ -696,9 +787,15 @@ const InvoicesTab = ({
                 }));
               }}
               key={user.id}
-              className="flex flex-row items-center justify-between rounded-lg border border-neutral-700 px-4 py-2 hover:bg-neutral-800"
+              className={`flex flex-row items-center justify-between rounded-lg border border-neutral-700 px-4 py-2 hover:bg-neutral-800 ${
+                user.id === selectedClientId && 'bg-neutral-800'
+              }`}
             >
-              <div className="flex cursor-pointer flex-row items-center justify-center gap-4 rounded-lg px-4 py-2 hover:bg-neutral-800">
+              <div
+                className={`flex cursor-pointer flex-row items-center justify-center gap-4 rounded-lg px-4 py-2 hover:bg-neutral-800 ${
+                  user.id === selectedClientId && 'bg-neutral-800'
+                }`}
+              >
                 <div className="rounded-full p-1">
                   <img
                     src={user?.avatar || undefined}
@@ -745,7 +842,7 @@ const InvoicesTab = ({
                               updating: false,
                             })
                           : setLoadingState({ ...loadingState, addNew: false });
-                        // resetForm();
+                        resetForm();
                       }}
                       sx={{ backgroundColor: '#1b1b1b', mb: 2 }}
                     >
@@ -785,7 +882,7 @@ const InvoicesTab = ({
                           </p>
                         </div>
                       </div>
-                      <div className="flex space-x-3">
+                      <div className="ml-2 flex space-x-3">
                         <button
                           className="text-gray-400 hover:text-gray-600"
                           onClick={() => handleEditInvoice(invoice)}
@@ -796,10 +893,13 @@ const InvoicesTab = ({
                         </button>
                         <button
                           className="text-red-400 hover:text-red-600"
-                          onClick={() => handleDelete(invoice.id)}
+                          onClick={() => {
+                            setOpenDeleteDialog(true);
+                            setInvoiceId(invoice.id);
+                          }}
                           disabled={invoiceId === invoice.id}
                         >
-                          {invoiceId === invoice.id ? (
+                          {openDeleteDialog ? (
                             <Spinner className="h-4 w-4" />
                           ) : (
                             <span className="material-symbols-outlined">
@@ -827,6 +927,16 @@ const InvoicesTab = ({
           </div>
         )}
       </MobileBox>
+      <Toaster position="bottom-left" richColors duration={3000} />
+      <DeleteConfirmationDialog
+        isDeleting={loadingState.deleting || false}
+        open={openDeleteDialog}
+        handleClose={() => {
+          setOpenDeleteDialog(false);
+          setInvoiceId(null);
+        }}
+        handleDelete={handleDelete}
+      />
     </div>
   );
 };

@@ -19,6 +19,7 @@ export type loadingState = {
   adding: boolean;
   updating: boolean;
   updateUploading: boolean;
+  deleting?: boolean;
 };
 
 const EventForm = () => {
@@ -319,8 +320,8 @@ const EventForm = () => {
                 <p className="text-neutral-400">No Events found.</p>
               </div>
             ) : (
-              <div className="flex items-center justify-center w-full">
-                <div className="scrollbar flex h-[80%] flex-col gap-2 overflow-y-scroll no-scrollbar w-full">
+              <div className="flex w-full items-center justify-center">
+                <div className="scrollbar no-scrollbar flex h-[80%] w-full flex-col gap-2 overflow-y-scroll">
                   {events.map((event: Event) => {
                     return (
                       <EventCard

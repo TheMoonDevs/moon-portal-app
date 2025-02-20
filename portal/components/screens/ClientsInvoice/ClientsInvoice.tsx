@@ -5,7 +5,6 @@ import { Cancel } from '@mui/icons-material';
 import { Box, Paper, Tooltip } from '@mui/material';
 import { DataGrid, GridCheckCircleIcon, GridColDef } from '@mui/x-data-grid';
 import { Invoice, User } from '@prisma/client';
-import { CheckCircleIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 const ClientsInvoice = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -44,7 +43,6 @@ const ClientsInvoice = () => {
     { field: 'id', headerName: 'ID', width: 90 },
     { field: 'title', headerName: 'Title', width: 150 },
     { field: 'description', headerName: 'Description', width: 200 },
-    { field: 'clientId', headerName: 'Client ID', width: 150 },
     {
       field: 'devIds',
       headerName: 'Developers',
@@ -96,21 +94,36 @@ const ClientsInvoice = () => {
       field: 'invoicePdf',
       headerName: 'Invoice PDF',
       width: 180,
-      renderCell: (params) =>
-        params.value ? (
-          <a href={params.value} target="_blank" rel="noopener noreferrer">
-            View PDF
-          </a>
+      renderCell: (params) => {
+        return params.value ? (
+          <div className="flex items-center gap-4">
+            {/* <Tooltip title="View PDF">
+              <a href={params.value} target="_blank" rel="noopener noreferrer">
+                <span className="material-symbols-outlined">visibility</span>
+              </a>
+            </Tooltip> */}
+            <Tooltip title="Download PDF">
+              <a
+                href={params.value}
+                download
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <span className="material-symbols-outlined">download</span>
+              </a>
+            </Tooltip>
+          </div>
         ) : (
           'N/A'
-        ),
+        );
+      },
     },
-    {
-      field: 'workInfo',
-      headerName: 'Work Info',
-      width: 200,
-      valueGetter: (value, row) => JSON.stringify(row.workInfo) || 'N/A',
-    },
+    // {
+    //   field: 'workInfo',
+    //   headerName: 'Work Info',
+    //   width: 200,
+    //   valueGetter: (value, row) => JSON.stringify(row.workInfo) || 'N/A',
+    // },
     {
       field: 'startDate',
       headerName: 'Start Date',
@@ -130,14 +143,8 @@ const ClientsInvoice = () => {
       type: 'date',
     },
     {
-      field: 'createdAt',
-      headerName: 'Created At',
-      width: 150,
-      type: 'date',
-    },
-    {
       field: 'updatedAt',
-      headerName: 'Updated At',
+      headerName: 'Last Updated',
       width: 150,
       type: 'date',
     },
@@ -147,19 +154,17 @@ const ClientsInvoice = () => {
     id: invoice.id,
     title: invoice.title,
     description: invoice.description || 'N/A',
-    clientId: invoice.clientId,
     devIds: invoice.devIds || 'N/A',
     amountTotal: invoice.amountTotal.toFixed(2),
     amountToPay: invoice.amountToPay.toFixed(2),
     amountDiscount: invoice.amountDiscount.toFixed(2),
-    isInvoicePaid: invoice.isInvoicePaid ? 'Yes' : 'No', // Convert boolean
+    isInvoicePaid: invoice.isInvoicePaid,
     payType: invoice.payType,
-    invoicePdf: invoice.invoicePdf || 'N/A',
-    workInfo: invoice.workInfo ? JSON.stringify(invoice.workInfo) : 'N/A', // Convert JSON to string
+    invoicePdf: invoice.invoicePdf,
+    // workInfo: invoice.workInfo ? JSON.stringify(invoice.workInfo) : 'N/A', // Convert JSON to string
     startDate: new Date(invoice.startDate),
     endDate: new Date(invoice.endDate),
     dueDate: new Date(invoice.dueDate),
-    createdAt: new Date(invoice.createdAt),
     updatedAt: new Date(invoice.updatedAt),
   }));
 
