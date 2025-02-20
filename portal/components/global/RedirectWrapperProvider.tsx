@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, usePathname } from 'next/navigation';
 
-const PUBLIC_ROUTES = ['/', '/login', '/api/auth', '/api'];
+const PUBLIC_ROUTES = ['/', '/login', '/logout', '/api/auth', '/api'];
 
 export default function RedirectWrapperProvider({
   children,
