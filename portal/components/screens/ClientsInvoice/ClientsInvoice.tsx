@@ -1,8 +1,8 @@
 'use client';
-import { prettyPrintDateAndTime, prettyPrintDateInMMMDD } from '@/utils/helpers/prettyprint';
+import { prettyPrintDateInMMMDD } from '@/utils/helpers/prettyprint';
 import { useUser } from '@/utils/hooks/useUser';
 import { PortalSdk } from '@/utils/services/PortalSdk';
-import { Cancel, Height } from '@mui/icons-material';
+import { Cancel, DoNotDisturbOn } from '@mui/icons-material';
 import { Avatar, Box, Paper, Tooltip } from '@mui/material';
 import { DataGrid, GridCheckCircleIcon, GridColDef } from '@mui/x-data-grid';
 import { Invoice, User } from '@prisma/client';
@@ -42,28 +42,41 @@ const ClientsInvoice = () => {
 
   const columns: GridColDef[] = [
     {
-      field: 'title', headerName: 'ID', width: 120, renderCell: (params) =>
-        (<p className='text-neutral-900 text-sm py-2 uppercase tracking-wide'>{params.row.title}</p>)
+      field: 'title',
+      headerName: 'ID',
+      width: 120,
+      renderCell: (params) => (
+        <p className="py-2 text-sm uppercase tracking-wide text-neutral-900">
+          {params.row.title}
+        </p>
+      ),
     },
     {
-      field: 'info', headerName: 'Info',
-      flex: 1, renderCell: (params) => (
-        <div className='flex flex-col p-1'>
-          <p className='text-xl text-neutral-700'>{params.row.description}</p>
-          <span className='text-xs'>{prettyPrintDateInMMMDD((params.row.startDate as Date))} - {prettyPrintDateInMMMDD(params.row.endDate)}</span>
+      field: 'info',
+      headerName: 'Info',
+      flex: 1,
+      renderCell: (params) => (
+        <div className="flex flex-col p-1">
+          <p className="text-xl text-neutral-700">{params.row.description}</p>
+          <span className="text-xs">
+            {prettyPrintDateInMMMDD(params.row.startDate as Date)} -{' '}
+            {prettyPrintDateInMMMDD(params.row.endDate)}
+          </span>
         </div>
-      )
+      ),
     },
     {
       field: 'devIds',
       headerName: 'Developers',
       width: 200,
       renderCell: (params) => {
-        const developers = users.filter((user) => params.row.devIds.includes(user.id));
+        const developers = users.filter((user) =>
+          params.row.devIds.includes(user.id),
+        );
         return (
-          <div className='flex flex-col py-3 justify-start gap-2'>
+          <div className="flex flex-col justify-start gap-2 py-3">
             {developers.map((dev) => (
-              <div className='flex items-center gap-2'>
+              <div className="flex items-center gap-2">
                 <Avatar
                   src={dev.avatar || '/images/avatar.png'}
                   alt={dev.name || ''}
@@ -73,7 +86,7 @@ const ClientsInvoice = () => {
               </div>
             ))}
           </div>
-        )
+        );
       },
     },
     {
@@ -81,40 +94,57 @@ const ClientsInvoice = () => {
       headerName: 'Payment Info',
       width: 250,
       renderCell: (params) => (
-        <div className='flex flex-col p-2'>
-          <div className='flex items-center justify-between gap-2 p-1'>
-            <span className='text-neutral-500'>Total</span>
+        <div className="flex flex-col p-2">
+          <div className="flex items-center justify-between gap-2 p-1">
+            <span className="text-neutral-500">Total</span>
             <span>${params.row.amountTotal}</span>
           </div>
-          <div className='flex items-center justify-between gap-2 p-1'>
-            <span className='text-neutral-500'>Markdown</span>
+          <div className="flex items-center justify-between gap-2 p-1">
+            <span className="text-neutral-500">Markdown</span>
             <span>- ${params.row.amountDiscount}</span>
           </div>
-          <div className='flex items-center justify-between gap-2 p-1'>
-            <span className='text-neutral-500'>Amount to Pay</span>
-            <span className='font-bold text-lg'
-            >${params.row.amountToPay}</span>
+          <div className="flex items-center justify-between gap-2 p-1">
+            <span className="text-neutral-500">Amount to Pay</span>
+            <span className="text-lg font-bold">${params.row.amountToPay}</span>
           </div>
         </div>
-      )
+      ),
     },
     {
       field: 'isInvoicePaid',
       headerName: 'Payment Status',
       width: 180,
-      renderCell: (params) => (
-        <div className='flex flex-col p-2 gap-2'>
-          <div className='flex items-center gap-2'>
-            {params.row.isInvoicePaid ? (
-              <GridCheckCircleIcon sx={{ color: 'green' }} />
-            ) : (
-              <Cancel sx={{ color: 'red' }} />
-            )}
-            <p className='text-xs'>{params.row.isInvoicePaid ? `Paid via ${params.row.payType}` : 'Outstanding'}</p>
+      renderCell: (params) => {
+        const dueDate = new Date(params.row.dueDate);
+        const today = new Date();
+        const isOverdue = today > dueDate;
+
+        return (
+          <div className="flex flex-col gap-2 p-2">
+            <div className="flex items-center gap-2">
+              {params.row.isInvoicePaid ? (
+                <>
+                  <GridCheckCircleIcon sx={{ color: 'green' }} />
+                  <p className="text-xs">Paid via {params.row.payType}</p>
+                </>
+              ) : isOverdue ? (
+                <>
+                  <Cancel sx={{ color: 'red' }} />
+                  <p className="text-xs">Outstanding</p>
+                </>
+              ) : (
+                <>
+                  <DoNotDisturbOn sx={{ color: 'orange' }} />
+                  <p className="text-xs">Pending</p>
+                </>
+              )}
+            </div>
+            <span className="text-xs text-gray-500">
+              Due on {dueDate.toDateString()}
+            </span>
           </div>
-          <span className='text-xs text-gray-500'>Due on {params.row.dueDate.toDateString()}</span>
-        </div>
-      )
+        );
+      },
     },
     {
       field: 'invoicePdf',
@@ -172,7 +202,7 @@ const ClientsInvoice = () => {
 
   return (
     <div className="w-full p-6">
-      <h2 className="mb-4 text-2xl font-bold h-full">Invoices</h2>
+      <h2 className="mb-4 h-full text-2xl font-bold">Invoices</h2>
       <Box sx={{ height: 400, width: '100%', margin: '0 auto' }}>
         <DataGrid
           getRowHeight={() => 'auto'}
