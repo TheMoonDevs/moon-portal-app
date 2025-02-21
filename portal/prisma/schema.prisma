@@ -646,46 +646,43 @@ enum ENGAGEMENTTYPE {
 
 // -------------------------------------Custom Bots-------------------------------------------
 
-model Organization {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  clientId   String   
-  name       String  @unique
-  githubName     String
-  githubUrl      String
-  description String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  bots       Bot[]
-}
-
-model Bot {
-  id             String   @id @default(auto()) @map("_id") @db.ObjectId
-  organizationId String   @db.ObjectId
-  clientId       String   // Identifier for who created this bot
-  assigneeId     String?
-  title          String  @unique
-  description    String?
+model BotProject {
+  id             String           @id @default(auto()) @map("_id") @db.ObjectId
+  clientId       String
+  name           String           @unique
+  githubRepoName String
+  githubRepoUrl  String
+  githubRepoBranch String?     @default("main")
   prUrl          String?
   prNumber       Int?
-  botStatus      BOTSTATUS @default(UN_ASSIGNED)
-  botType        BOTTYPE @default(COMMUNICATION)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  organization Organization @relation(fields: [organizationId], references: [id])
+  description    String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  clientRequests ClientRequests[]
+  projectConfiguration Json?
 }
 
-enum BOTSTATUS {
+model ClientRequests {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  botProjectId  String   @db.ObjectId
+  clientId      String // Identifier for who created this bot
+  assigneeId    String?
+  title         String
+  description   String?
+  prUrl         String?
+  prNumber      Int?
+  requestStatus PRSTATUS @default(UN_ASSIGNED)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  botProject BotProject @relation(fields: [botProjectId], references: [id])
+}
+
+enum PRSTATUS {
   UN_ASSIGNED
   IN_DEVELOPMENT
   IN_QUEUE
   IN_REVIEW
   IN_TESTING
   COMPLETED
-}
-
-enum BOTTYPE {
-  COMMUNICATION
-  COMPUTATIONAL
-  CRONJOB
 }
