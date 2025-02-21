@@ -85,7 +85,7 @@ Edit `.env.ci` or `.env.prod`, then update:
 
 ```sh
 npx dotenv-vault@latest build
-npx dotenv-vault@latest push
+npx dotenv-vault@latest push <ci/production>
 ```
 
 Ensure `.env.vault` is updated, commit the changes, and push to GitHub.  

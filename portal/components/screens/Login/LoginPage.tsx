@@ -1,30 +1,32 @@
 /* eslint-disable @next/next/no-img-element */
-"use client";
+'use client';
 
-import { APP_ROUTES, LOCAL_STORAGE } from "@/utils/constants/appInfo";
-import { useUser } from "@/utils/hooks/useUser";
-import { signIn } from "next-auth/react";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { InstallButton, InstallState } from "./Install";
-import { LoginButtons, LoginState, MobileBox } from "./Login";
-import { LoginPassCode } from "./LoginPassCode";
-import { GreyButton } from "@/components/elements/Button";
-import GoogleVerifyPage from "./GoogleVerifyPage";
+import { APP_ROUTES } from '@/utils/constants/appInfo';
+import { useUser } from '@/utils/hooks/useUser';
+import { signIn } from 'next-auth/react';
+import Image from 'next/image';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { InstallButton, InstallState } from './Install';
+import { LoginButtons, LoginState, MobileBox } from './Login';
+import { LoginPassCode } from './LoginPassCode';
+import { GreyButton } from '@/components/elements/Button';
+import GoogleVerifyPage from './GoogleVerifyPage';
 
 export const LoginPage = () => {
   const [tab, setTab] = useState<InstallState | LoginState>(
-    LoginState.SELECT_USER_TYPE
+    LoginState.SELECT_USER_TYPE,
   );
+  const searchParams = useSearchParams();
+  const uri = searchParams?.get('uri');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const { data, status, user, verifiedUserEmail, signOutUser } = useUser(false);
-  const [enteredPasscode, setEnteredPasscode] = useState<string | null>("");
+  const [enteredPasscode, setEnteredPasscode] = useState<string | null>('');
 
   useEffect(() => {
-    if (status === "authenticated") {
+    if (status === 'authenticated') {
       setTab(InstallState.SPLASH);
       //router.push(APP_ROUTES.home);
     }
@@ -33,39 +35,41 @@ export const LoginPage = () => {
   const loginWithPassCode = (passCode: string) => {
     setLoading(true);
     setError(null);
-    console.log("Logging in with passcode", passCode);
-    signIn("credentials", {
+    console.log('Logging in with passcode', passCode);
+    signIn('credentials', {
       username: passCode.substring(0, 3).toUpperCase(),
       password: passCode.substring(3).toUpperCase(),
       redirect: false,
+      callbackUrl: uri || APP_ROUTES.home,
+      // callbackUrl: (redirectUri as string) || APP_ROUTES.home,
+      // redirect: true,
     })
       .then((data) => {
         setLoading(false);
-        console.log("signIn callback", data);
+        console.log('signIn callback', data);
         if (data?.ok) {
-          console.log("Logged in!", data);
-          localStorage.setItem("passcode", passCode);
-          // router.push(APP_ROUTES.home);
+          console.log('Logged in!', data);
+          localStorage.setItem('passcode', passCode);
         } else {
-          console.log("Failed to login!", data);
-          setError("Invalid passcode!");
+          console.log('Failed to login!', data);
+          setError('Invalid passcode!');
           setTab(LoginState.SELECT_USER_TYPE);
         }
       })
       .catch((err) => {
         console.log(err);
         setLoading(false);
-        console.log("Failed to login!");
-        setError("Network Error!");
+        console.log('Failed to login!');
+        setError('Network Error!');
         setTab(LoginState.SELECT_USER_TYPE);
       });
   };
 
   return (
-    <div className="flex flex-col items-center justify-center py-2 bg-neutral-700 md:bg-neutral-900 h-screen">
+    <div className="flex h-screen flex-col items-center justify-center bg-neutral-700 py-2 md:bg-neutral-900">
       <MobileBox>
-        <div className="flex flex-col grow gap-4 items-center justify-center">
-          <div className="  p-4 rounded-full">
+        <div className="flex grow flex-col items-center justify-center gap-4">
+          <div className="rounded-full p-4">
             <Image
               src="/logo/logo_white.png"
               alt="The Moon Devs"
@@ -73,32 +77,32 @@ export const LoginPage = () => {
               height={80}
             />
           </div>
-          <p className="text-neutral-400 tracking-[0.5em] uppercase text-xs text-center">
+          <p className="text-center text-xs uppercase tracking-[0.5em] text-neutral-400">
             Welcome to
           </p>
           <h4 className="text-3xl font-bold text-neutral-100">TheMoonDevs</h4>
           {loading && (
             <div className="flex flex-row items-center justify-center gap-2">
-              <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-neutral-100"></div>
+              <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-t-2 border-neutral-100"></div>
               <p className="text-neutral-100">Logging in...</p>
             </div>
           )}
-          {status === "authenticated" &&
+          {status === 'authenticated' &&
             (!user ? (
               <div className="flex flex-row items-center justify-center gap-2">
-                <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-neutral-100"></div>
+                <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-t-2 border-neutral-100"></div>
                 <p className="text-neutral-100">Verifying...</p>
               </div>
             ) : (
               verifiedUserEmail !== user?.email && (
                 <div>
-                  <p className="text-neutral-400   text-xs text-center">
-                    Are you{" "}
-                    <span className="font-medium text-neutral-100 ">
+                  <p className="text-center text-xs text-neutral-400">
+                    Are you{' '}
+                    <span className="font-medium text-neutral-100">
                       {user?.email}?
-                    </span>{" "}
+                    </span>{' '}
                     Please verify by signing in via google.
-                  </p>{" "}
+                  </p>{' '}
                 </div>
               )
             ))}
@@ -124,7 +128,7 @@ export const LoginPage = () => {
             }}
           />
         )}
-        {status === "authenticated" &&
+        {status === 'authenticated' &&
           user &&
           verifiedUserEmail !== user?.email && (
             <GoogleVerifyPage
@@ -133,12 +137,14 @@ export const LoginPage = () => {
               passcode={enteredPasscode}
             />
           )}
-        {status === "authenticated" &&
+        {status === 'authenticated' &&
           verifiedUserEmail === user?.email &&
           user && (
             <GreyButton
-              onClick={() => {
-                router.push(APP_ROUTES.home);
+              onClick={(e: React.MouseEvent) => {
+                e.preventDefault();
+                if (uri) router.replace(uri);
+                else router.push(APP_ROUTES.home);
               }}
             >
               Enter App
@@ -146,7 +152,7 @@ export const LoginPage = () => {
           )}
         {/* {status === "authenticated" && <Logout user={user} signOut={signOut} />} */}
         {error && (
-          <p className="text-red-500 text-xs text-center mt-4">{error}</p>
+          <p className="mt-4 text-center text-xs text-red-500">{error}</p>
         )}
       </MobileBox>
     </div>
