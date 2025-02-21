@@ -686,3 +686,33 @@ enum PRSTATUS {
   IN_TESTING
   COMPLETED
 }
+
+
+//-------------------------------------INVOICE---------------------------------
+
+model Invoice {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  startDate      DateTime
+  endDate        DateTime
+  dueDate        DateTime
+  title          String
+  description    String?
+  clientId       String
+  devIds         String[] // Store user IDs as an array instead of a relation
+  amountTotal    Float
+  amountToPay    Float
+  amountDiscount Float
+  isInvoicePaid  Boolean
+  paidDate       DateTime?
+  payType        PayType
+  invoicePdf     String?  // Store file URL or path
+  workInfo       Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+enum PayType {
+  BANK
+  CRYPTO
+}
+

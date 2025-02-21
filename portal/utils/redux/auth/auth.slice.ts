@@ -1,7 +1,6 @@
 import { LOCAL_STORAGE } from '@/utils/constants/appInfo';
 import { User } from '@prisma/client';
 import { createSlice } from '@reduxjs/toolkit';
-import { redirect } from 'next/dist/server/api-utils';
 
 export const uiSlice = createSlice({
   name: 'ui',
@@ -14,6 +13,10 @@ export const uiSlice = createSlice({
     redirectUri: null,
   },
   reducers: {
+    setRedirectUri: (state, action) => {
+      state.redirectUri = action.payload;
+    },
+
     setReduxUser: (state, action) => {
       state.user = action.payload;
       localStorage.setItem(LOCAL_STORAGE.user, JSON.stringify(action.payload));
@@ -22,9 +25,6 @@ export const uiSlice = createSlice({
       if (typeof window !== 'undefined')
         localStorage.setItem('verifiedUserEmail', action.payload);
       state.verifiedUserEmail = action.payload;
-    },
-    setRedirectUri: (state, action) => {
-      state.redirectUri = action.payload;
     },
   },
 });

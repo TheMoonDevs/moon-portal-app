@@ -12,6 +12,7 @@ import Engagements from './Engagements';
 import Link from 'next/link';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
 import { useRouter } from 'next/navigation';
+import InvoicesTab from './InvoicesTab';
 
 const menuItems = [
   { name: 'AdminUsers', label: 'Manage Users', icon: 'group' },
@@ -24,6 +25,7 @@ const menuItems = [
   { name: 'EventForm', label: 'Event Form', icon: 'event' },
   { name: 'Shortcuts', label: 'Client Shortcuts', icon: 'bolt' },
   { name: 'Engagements', label: 'Engagements', icon: 'handshake' },
+  { name: 'Invoices', label: 'Invoices', icon: 'receipt_long' },
 ];
 
 export const AdminPage = () => {
@@ -47,6 +49,8 @@ export const AdminPage = () => {
         return <ClientShortcutsManager />;
       case 'Engagements':
         return <Engagements users={users} />;
+      case 'Invoices':
+        return <InvoicesTab users={users} loading={loading} />;
       default:
         return <AdminUsers users={users} loading={loading} />;
     }

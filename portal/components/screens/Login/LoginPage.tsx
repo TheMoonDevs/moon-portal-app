@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
 
-import { APP_ROUTES, LOCAL_STORAGE } from '@/utils/constants/appInfo';
+import { APP_ROUTES } from '@/utils/constants/appInfo';
 import { useUser } from '@/utils/hooks/useUser';
 import { signIn } from 'next-auth/react';
 import Image from 'next/image';
@@ -12,8 +12,6 @@ import { LoginButtons, LoginState, MobileBox } from './Login';
 import { LoginPassCode } from './LoginPassCode';
 import { GreyButton } from '@/components/elements/Button';
 import GoogleVerifyPage from './GoogleVerifyPage';
-import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
-import { setRedirectUri } from '@/utils/redux/auth/auth.slice';
 
 export const LoginPage = () => {
   const [tab, setTab] = useState<InstallState | LoginState>(
@@ -26,7 +24,6 @@ export const LoginPage = () => {
   const router = useRouter();
   const { data, status, user, verifiedUserEmail, signOutUser } = useUser(false);
   const [enteredPasscode, setEnteredPasscode] = useState<string | null>('');
-  const dispatch = useAppDispatch();
 
   useEffect(() => {
     if (status === 'authenticated') {
@@ -34,6 +31,15 @@ export const LoginPage = () => {
       //router.push(APP_ROUTES.home);
     }
   }, [user, status, router]);
+
+  useEffect(() => {
+    const passkey = searchParams?.get('passkey');
+    if (passkey) {
+      setTab(LoginState.LOGIN_CODE);
+      setEnteredPasscode(passkey);
+      loginWithPassCode(passkey);
+    }
+  }, [searchParams]);
 
   const loginWithPassCode = (passCode: string) => {
     setLoading(true);
@@ -43,6 +49,7 @@ export const LoginPage = () => {
       username: passCode.substring(0, 3).toUpperCase(),
       password: passCode.substring(3).toUpperCase(),
       redirect: false,
+      callbackUrl: uri || APP_ROUTES.home,
       // callbackUrl: (redirectUri as string) || APP_ROUTES.home,
       // redirect: true,
     })
@@ -52,7 +59,6 @@ export const LoginPage = () => {
         if (data?.ok) {
           console.log('Logged in!', data);
           localStorage.setItem('passcode', passCode);
-          if (data.url) dispatch(setRedirectUri(data.url));
         } else {
           console.log('Failed to login!', data);
           setError('Invalid passcode!');
@@ -144,8 +150,9 @@ export const LoginPage = () => {
           verifiedUserEmail === user?.email &&
           user && (
             <GreyButton
-              onClick={() => {
-                if (uri) router.push(uri);
+              onClick={(e: React.MouseEvent) => {
+                e.preventDefault();
+                if (uri) router.replace(uri);
                 else router.push(APP_ROUTES.home);
               }}
             >

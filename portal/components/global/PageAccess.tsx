@@ -27,12 +27,12 @@ export const PageAccess = ({
       return;
     }
     if (status === 'authenticated' && isAdminRequired && !user?.isAdmin) {
-      router.push(redirectUri || APP_ROUTES.home);
+      router.push(APP_ROUTES.home);
       return;
     }
 
     if (status === 'authenticated' && verifiedUserEmail !== user?.email) {
-      router.push(APP_ROUTES.login);
+      router.push(redirectUri || APP_ROUTES.login);
       return;
     }
 
