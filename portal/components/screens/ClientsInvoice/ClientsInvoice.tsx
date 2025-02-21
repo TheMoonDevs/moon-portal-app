@@ -147,6 +147,15 @@ const ClientsInvoice = () => {
       },
     },
     {
+      field: 'paidDate',
+      headerName: 'Paid On',
+      width: 180,
+      renderCell: (params) => {
+        if (!params.row.isInvoicePaid) return 'N/A';
+        return new Date(params.row.updatedAt).toDateString(); // Use updatedAt as fallback
+      },
+    },
+    {
       field: 'invoicePdf',
       headerName: 'Invoice PDF',
       width: 180,
@@ -193,6 +202,7 @@ const ClientsInvoice = () => {
     isInvoicePaid: invoice.isInvoicePaid,
     payType: invoice.payType,
     invoicePdf: invoice.invoicePdf,
+    paidDate: invoice.paidDate || 'N/A',
     // workInfo: invoice.workInfo ? JSON.stringify(invoice.workInfo) : 'N/A', // Convert JSON to string
     startDate: new Date(invoice.startDate),
     endDate: new Date(invoice.endDate),

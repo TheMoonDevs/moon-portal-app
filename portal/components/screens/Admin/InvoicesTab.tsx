@@ -15,10 +15,7 @@ import { FileWithPath } from '@mantine/dropzone';
 import { TMD_PORTAL_API_KEY } from '@/utils/constants/appInfo';
 import Link from 'next/link';
 import { toast, Toaster } from 'sonner';
-import { fileProxy } from '@/action/file-action';
-import { Span } from 'next/dist/trace';
 import DeleteConfirmationDialog from '@/components/elements/Dialogs';
-import { Delete } from 'lucide-react';
 type InvoiceFormState = {
   clientId: string;
   startDate: string | null | Dayjs;
@@ -35,6 +32,24 @@ type InvoiceFormState = {
   invoicePdf: string; // Store file URL or path
   workInfo: any;
 };
+
+function base64ToFile(
+  base64: string | undefined,
+  name: string | undefined,
+  contentType = 'application/pdf',
+): File | null {
+  if (!base64 || !name) return null;
+  const byteCharacters = atob(base64.split(',')[1]); // Remove `data:...;base64,`
+  const byteNumbers = new Array(byteCharacters.length)
+    .fill(null)
+    .map((_, i) => byteCharacters.charCodeAt(i));
+  const byteArray = new Uint8Array(byteNumbers);
+
+  const blob = new Blob([byteArray], { type: contentType });
+
+  return new File([blob], name, { type: contentType });
+}
+
 const InvoicesTab = ({
   loading,
   users,
@@ -77,23 +92,6 @@ const InvoicesTab = ({
   const [isFileUploading, setIsFileUploading] = useState<boolean>(false);
   const [isFileChanged, setIsFileChanged] = useState<boolean>(false);
   const { user } = useUser();
-
-  function base64ToFile(
-    base64: string | undefined,
-    name: string | undefined,
-    contentType = 'application/pdf',
-  ): File | null {
-    if (!base64 || !name) return null;
-    const byteCharacters = atob(base64.split(',')[1]); // Remove `data:...;base64,`
-    const byteNumbers = new Array(byteCharacters.length)
-      .fill(null)
-      .map((_, i) => byteCharacters.charCodeAt(i));
-    const byteArray = new Uint8Array(byteNumbers);
-
-    const blob = new Blob([byteArray], { type: contentType });
-
-    return new File([blob], name, { type: contentType });
-  }
 
   useEffect(() => {
     if (files) setFiles(undefined);
@@ -278,8 +276,13 @@ const InvoicesTab = ({
     setInvoiceId(invoice.id);
     setLoadingState({ ...loadingState, updating: true });
     if (invoice.invoicePdf !== '') {
+      const fileUrl = invoice.invoicePdf?.trim();
       try {
-        const file = await fileProxy(invoice.invoicePdf);
+        const response = await fetch(
+          `/api/file/link-to-blob?fileUrl=${fileUrl}`,
+        );
+        const responseJson = await response.json();
+        const file = responseJson.data;
         const pdfFile = base64ToFile(file?.src, file?.name, 'application/pdf');
         pdfFile && setFiles(pdfFile);
       } catch (error) {
@@ -312,12 +315,12 @@ const InvoicesTab = ({
         ),
       );
       toast.success('Invoice updated successfully');
-      setLoadingState({ ...loadingState, updateUploading: false });
     } catch (error) {
       console.error(error);
-      setLoadingState({ ...loadingState, updateUploading: false });
     } finally {
       resetForm();
+      setLoadingState({ ...loadingState, updateUploading: false });
+      setLoadingState({ ...loadingState, updating: false });
     }
   };
 

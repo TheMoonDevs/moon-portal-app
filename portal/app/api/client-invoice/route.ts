@@ -11,6 +11,11 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
+    if (body.isInvoicePaid) {
+      body.paidDate = new Date();
+    } else {
+      body.paidDate = null;
+    }
     const newInvoice = await prisma.invoice.create({
       data: {
         ...body,
@@ -54,12 +59,24 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();
+    const isInvoicePaid = body.formData.isInvoicePaid;
+    const currentInvoice = await prisma.invoice.findUnique({
+      where: {
+        id: body.id,
+      },
+    });
     const updatedInvoice = await prisma.invoice.update({
       where: {
         id: body.id,
       },
       data: {
         ...body.formData,
+        paidDate:
+          !currentInvoice?.paidDate &&
+          isInvoicePaid &&
+          isInvoicePaid !== currentInvoice?.isInvoicePaid
+            ? new Date()
+            : null,
       },
     });
     return NextResponse.json({

@@ -658,6 +658,7 @@ model Invoice {
   amountToPay    Float
   amountDiscount Float
   isInvoicePaid  Boolean
+  paidDate       DateTime?
   payType        PayType
   invoicePdf     String?  // Store file URL or path
   workInfo       Json?
