@@ -18,6 +18,7 @@ export const INITIAL_LOADING_STATE = {
   adding: false,
   updating: false,
   updateUploading: false,
+  deleting: false,
 };
 
 const ClientShortcutsManager = () => {
