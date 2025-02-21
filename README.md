@@ -78,14 +78,14 @@ If you have dotenv-vault access, follow these steps:
 ```sh
 cd <project-folder>
 npx dotenv-vault@latest login
-npx dotenv-vault@latest pull
+npx dotenv-vault@latest pull <ci/production>
 ```
 
 Edit `.env.ci` or `.env.prod`, then update:  
 
 ```sh
 npx dotenv-vault@latest build
-npx dotenv-vault@latest push
+npx dotenv-vault@latest push <ci/production>
 ```
 
 Ensure `.env.vault` is updated, commit the changes, and push to GitHub.  
