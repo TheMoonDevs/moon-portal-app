@@ -47,6 +47,9 @@ const SimpleTabs: React.FC<SimpleTabsProps> = ({ tabs }) => {
             key={index}
             label={tab.label}
             id={`simple-tab-${index}`}
+            sx={{
+              padding: 0,
+            }}
             aria-controls={`simple-tabpanel-${index}`}
           />
         ))}

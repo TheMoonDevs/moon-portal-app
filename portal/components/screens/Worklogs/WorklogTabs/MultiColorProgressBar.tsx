@@ -17,7 +17,7 @@ const CustomLinearProgress = styled(LinearProgress)<CustomLinearProgressProps>(
   ({ colors, height }) => ({
     height: height || 20,
     borderRadius: 10,
-    backgroundColor: '#e0e0e0',
+    backgroundColor: '#363636',
     '& .MuiLinearProgress-bar': {
       borderRadius: 10,
       backgroundImage: `linear-gradient(90deg, ${colors.join(', ')})`,
@@ -38,8 +38,8 @@ const MultiColorProgressBar: React.FC<MultiColorProgressBarProps> = ({
   const pointsRemaining = nextLevelPoints - currentPoints;
 
   return (
-    <Box sx={{ width: '100%', marginTop: '20px' }}>
-      <Typography
+    <Box sx={{ width: '100%' }}>
+      {/* <Typography
         sx={{
           textAlign: 'center',
           color: 'white',
@@ -51,7 +51,7 @@ const MultiColorProgressBar: React.FC<MultiColorProgressBarProps> = ({
         ) : (
           <> 🌕 Max Level Unlocked! 🚀</>
         )}
-      </Typography>
+      </Typography> */}
       <CustomLinearProgress
         variant='determinate'
         value={progressPercentage}

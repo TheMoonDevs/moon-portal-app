@@ -283,8 +283,6 @@ export const WorklogsPage = () => {
 
   //if (!user?.workData) return null;
   const tabs = [
-    { label: 'Tasks', content: <ClickupTasks email={user?.email as string} /> },
-    { label: 'Tips', content: <WorklogTips /> },
     {
       label: (
         <div className="flex items-center gap-2 p-3">
@@ -296,6 +294,8 @@ export const WorklogsPage = () => {
       ),
       content: <TodoTab userId={user?.id as string} />,
     },
+    // { label: 'Tasks', content: <ClickupTasks email={user?.email as string} /> },
+    { label: 'Tips', content: <WorklogTips /> },
   ];
 
   const handleWorkLogItemClick = (data: WorkLogs, isEditorSaving: boolean) => {
@@ -349,9 +349,8 @@ export const WorklogsPage = () => {
           <SummarizeButton userId={user?.id} />
           <Link
             className="hidden sm:block"
-            href={`${APP_ROUTES.userWorklogSummary}/${
-              user?.id
-            }?year=${thisYear}&month=${dayjs().month(thisMonth).format('MM')}`}
+            href={`${APP_ROUTES.userWorklogSummary}/${user?.id
+              }?year=${thisYear}&month=${dayjs().month(thisMonth).format('MM')}`}
           >
             <div className="flex cursor-pointer items-center gap-1 whitespace-nowrap rounded-md bg-neutral-800 px-2 py-1 text-[0.7rem] text-neutral-100 hover:bg-neutral-700 sm:gap-2 sm:px-3 sm:py-1 sm:text-sm">
               <span className="icon_size material-symbols-outlined">
@@ -370,16 +369,14 @@ export const WorklogsPage = () => {
             <div
               key={month_tab}
               onClick={() => setMonthTab(month_tab)}
-              className={`flex-shrink-0 cursor-pointer rounded-3xl px-1 py-1 md:p-0 ${
-                monthTab === month_tab ? 'border border-neutral-600' : ''
-              }`}
+              className={`flex-shrink-0 cursor-pointer rounded-3xl px-1 py-1 md:p-0 ${monthTab === month_tab ? 'border border-neutral-600' : ''
+                }`}
             >
               <h4
-                className={`text-xs md:text-sm lg:text-base ${
-                  monthTab === month_tab
-                    ? 'font-bold text-neutral-800'
-                    : 'text-neutral-400'
-                } p-1 md:p-2 lg:px-4`}
+                className={`text-xs md:text-sm lg:text-base ${monthTab === month_tab
+                  ? 'font-bold text-neutral-800'
+                  : 'text-neutral-400'
+                  } p-1 md:p-2 lg:px-4`}
               >
                 {dayjs().month(month_tab).format('MMMM')}
               </h4>
