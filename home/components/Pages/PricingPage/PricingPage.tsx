@@ -65,7 +65,7 @@ interface IPlan {
 const PricingPage = () => {
   return (
     <main className="flex flex-col items-center justify-center bg-white">
-      <div className="mt-40 w-11/12 border border-gray-200 md:w-9/12">
+      <div className="mt-20 w-11/12 border border-gray-200 md:mt-40 md:w-9/12">
         <Header />
         <PricingTabs />
         <Testimonial />
