@@ -22,7 +22,7 @@ export const BaseCard: React.FC<BaseCardProps> = ({
   return (
     <div
       className={cn(
-        `relative flex flex-col overflow-hidden rounded-xl bg-white p-0 shadow-md`,
+        `relative flex flex-col justify-between overflow-hidden rounded-xl bg-white p-0 shadow-md`,
         className,
       )}
       {...props}

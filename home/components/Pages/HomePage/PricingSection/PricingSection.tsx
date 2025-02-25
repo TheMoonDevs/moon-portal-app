@@ -82,7 +82,7 @@ export const PricingSectionCards = {
 
 const PricingSection = () => {
   return (
-    <section className="bg-white p-6 pt-20 text-black md:p-28">
+    <section className="bg-white p-6 pt-20 text-black md:p-16 xl:p-28">
       <div>
         <h1 className="flex flex-col text-center text-4xl font-bold md:gap-6 md:text-left md:text-5xl">
           <span>Bring Your Startup Idea to Life</span>{' '}
@@ -119,11 +119,11 @@ const PricingCards = () => {
     <div className="mt-16 grid max-h-min gap-6 xl:grid-cols-[1.5fr,1fr,1fr,1fr] xl:grid-rows-2">
       <SimpleMvpCard
         data={PricingSectionCards.simpleMvp}
-        className="col-span-4 h-[inherit] bg-gray-100 shadow-none xl:col-span-1 xl:row-span-2"
+        className="col-span-4 h-[inherit] bg-gray-100 shadow-none md:col-span-2 xl:col-span-1 xl:row-span-2"
       />
       <SimpleMvpCard
         data={PricingSectionCards.premiumMVPs}
-        className="col-span-4 block h-[inherit] bg-gray-100 shadow-none xl:hidden"
+        className="col-span-4 flex h-[inherit] bg-gray-100 shadow-none md:col-span-2 xl:hidden"
       />
       <PremiumMvpCardDesktop
         data={PricingSectionCards.premiumMVPs}
