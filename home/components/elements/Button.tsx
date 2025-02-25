@@ -7,6 +7,7 @@ interface ButtonProps {
   variant?: 'contained' | 'outlined' | 'text' | 'background';
   onClick?: () => void;
   className?: string;
+  textClassName?: string;
   bgUrl?: string;
   startIcon?: string;
   endIcon?: string | boolean | 'default';
@@ -21,6 +22,7 @@ const Button: React.FC<ButtonProps> = ({
   bgUrl,
   startIcon,
   endIcon = 'default',
+  textClassName,
   href,
 }) => {
   const baseStyles =
@@ -34,17 +36,17 @@ const Button: React.FC<ButtonProps> = ({
   const buttonContent = (
     <>
       {startIcon && (
-        <span className="material-symbols-outlined">{startIcon}</span>
+        <span className={`material-symbols-outlined ${textClassName}`}>{startIcon}</span>
       )}
       {text && (
-        <div className={`${endIcon ? 'w-max' : 'text-center'} text-left`}>
+        <div className={`${endIcon ? 'w-max' : 'text-center'} text-left ${textClassName}`}>
           {text}
         </div>
       )}
       {endIcon && endIcon !== 'default' && (
         <span className="material-symbols-outlined">{endIcon}</span>
       )}
-      {endIcon === 'default' ? <span>→</span> : null}
+      {endIcon === 'default' ? <span className={`${textClassName}`}>→</span> : null}
     </>
   );
 

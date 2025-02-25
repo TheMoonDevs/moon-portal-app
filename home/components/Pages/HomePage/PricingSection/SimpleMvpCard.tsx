@@ -5,13 +5,13 @@ import Button from '@/components/elements/Button';
 
 interface SimpleMvpDataProps extends React.HTMLAttributes<HTMLDivElement> {
   data:
-    | typeof PricingSectionCards.simpleMvp
-    | typeof PricingSectionCards.premiumMVPs;
+  | typeof PricingSectionCards.simpleMvp
+  | typeof PricingSectionCards.premiumMVPs;
 }
 const SimpleMvpCardMedia = ({ image }: { image: string }) => (
   <Image
     src={image}
-    className="aspect-video h-[revert-layer] w-full object-cover md:h-44"
+    className="md:aspect-video h-40 w-full object-cover md:h-44"
     alt=""
     width={300}
     height={300}
@@ -22,8 +22,8 @@ const SimpleMvpCardHeader = ({ title }: { title: string }) => {
   const [firstWord, secondWord] = title.split(' ');
   return (
     <div className="flex flex-col gap-1 pl-6 pt-12 text-2xl font-bold text-white">
-      <span className="lowercase">{firstWord}</span>
-      <span className="text-5xl">{secondWord}</span>
+      <span className="text-sm md:text-md lowercase">{firstWord}</span>
+      <span className="text-4xl md:text-5xl">{secondWord}</span>
     </div>
   );
 };
@@ -42,19 +42,19 @@ const SimpleMvpCardContent = ({
   };
 }) => {
   return (
-    <div className="w-full p-8">
+    <div className="w-full pt-4 px-4 md:p-8">
       <ul className="flex flex-col gap-3">
         {data.content.map((item) => (
           <li>
-            <div className="flex items-center gap-2 text-sm xl:text-sm 2xl:text-lg">
-              <span className="material-symbols-outlined">{item.icon}</span>
+            <div className="flex items-center gap-2 text-xs xl:text-sm 2xl:text-lg">
+              <span className="material-symbols-outlined inherit">{item.icon}</span>
               <span className="text-neutral-600">{item.title}</span>
             </div>
           </li>
         ))}
       </ul>
-      <div className="mt-3 flex flex-col gap-3">
-        <p className="text-right font-bold">{data.priceDuration}</p>
+      <div className="mt-1 md:mt-3 flex flex-col gap-1 md:gap-3">
+        <p className="text-right font-bold text-sm md:text-md">{data.priceDuration}</p>
         <div className="flex items-center gap-4">
           {/* <div className="w-full border-t-2 border-dashed border-neutral-500"></div> */}
           <div className="w-full">
@@ -66,7 +66,7 @@ const SimpleMvpCardContent = ({
               height={200}
             />
           </div>
-          <p className="text-5xl font-bold">{data.price}</p>
+          <p className="text-4xl font-bold">{data.price}</p>
         </div>
         <p className="text-right text-xs">{data.note}</p>
       </div>
@@ -76,10 +76,10 @@ const SimpleMvpCardContent = ({
 
 const SimpleMvpCardActions = ({ cta }: { cta: string }) => {
   return (
-    <div className="w-full p-4">
+    <div className="w-full p-2 md:p-4">
       <Button
         text={cta}
-        className="flex w-full items-center justify-between rounded-full bg-red-500 px-8 text-xl hover:bg-red-600 hover:text-white xl:w-full"
+        className="flex w-full text-sm items-center justify-between rounded-full bg-red-500 px-8 md:text-xl hover:bg-red-600 hover:text-white xl:w-full"
       />
     </div>
   );

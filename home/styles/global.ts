@@ -1,7 +1,7 @@
-import { css } from "@emotion/react";
-import theme from "./theme";
-import media from "./media";
-import { VerticalScrollBar, rotationAnime } from "./snippets";
+import { css } from '@emotion/react';
+import theme from './theme';
+import media from './media';
+import { VerticalScrollBar, rotationAnime } from './snippets';
 
 const globalStyles = css`
   * {
@@ -12,7 +12,7 @@ const globalStyles = css`
   html,
   body {
     position: static !important;
-    font-family: "DM Sans", Arial, sans-serif;
+    font-family: 'DM Sans', Arial, sans-serif;
   }
 
   .MuiPopover-root {
@@ -59,8 +59,8 @@ const globalStyles = css`
   }
 
   textarea,
-  input[type="text"],
-  input[type="email"] {
+  input[type='text'],
+  input[type='email'] {
     -webkit-appearance: none;
   }
 
@@ -114,7 +114,7 @@ const globalStyles = css`
   }
 
   .rotating {
-    ${rotationAnime("2s")}
+    ${rotationAnime('2s')}
   }
 
   .onlylap {
@@ -144,15 +144,28 @@ const globalStyles = css`
   }
 
   .material-symbols-outlined {
-    font-variation-settings: "FILL" 0, "wght" 300, "GRAD" 0, "opsz" 24;
+    font-variation-settings:
+      'FILL' 0,
+      'wght' 300,
+      'GRAD' 0,
+      'opsz' 24;
+    font-size: inherit;
   }
 
   .ms-thin {
-    font-variation-settings: "FILL" 0, "wght" 100, "GRAD" 0, "opsz" 24;
+    font-variation-settings:
+      'FILL' 0,
+      'wght' 100,
+      'GRAD' 0,
+      'opsz' 24;
   }
 
   .ms-thick {
-    font-variation-settings: "FILL" 0, "wght" 600, "GRAD" 0, "opsz" 24;
+    font-variation-settings:
+      'FILL' 0,
+      'wght' 600,
+      'GRAD' 0,
+      'opsz' 24;
   }
 
   :root {
