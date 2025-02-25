@@ -10,7 +10,9 @@ import { WorklifePageStyled } from '@/components/Pages/worklife/WorkLifeHomePage
 
 type Params = { uid: string };
 
-export default async function Page({ params }: { params: { uid: string } }) {
+export const runtime = "edge";
+
+export default async function Page({ params }: { params: Params }) {
   const client = createClient();
 
   const page = await client.getByUID('blog_page', params!.uid);

@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import AWSSesSdk from "@/utils/service/AWSSesSdk";
 
-const ses = new AWSSesSdk(
-  process.env.AWS_ACCESS_KEY_ID!,
-  process.env.AWS_SECRET_ACCESS_KEY!,
-  process.env.AMAZON_SES_REGION!
-);
+export const runtime = "edge";
 
 export async function POST(req: NextRequest) {
+  const ses = new AWSSesSdk(
+    process.env.AWS_ACCESS_KEY_ID!,
+    process.env.AWS_SECRET_ACCESS_KEY!,
+    process.env.AMAZON_SES_REGION!
+  );
+  
   if (req.method !== "POST") {
     return NextResponse.json(
       { message: "Method not allowed" },

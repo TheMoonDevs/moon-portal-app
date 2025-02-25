@@ -1,20 +1,22 @@
 "use client";
 
-import { Button, Menu, MenuItem } from "@mui/material";
+import { Button, Menu, MenuItem, useMediaQuery } from "@mui/material";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
 import Link from "next/link";
 import QuicklinkSearchBar from "./QuicklinkSearchBar";
 import Avatar from "boring-avatars";
 import { useUser } from "@/utils/hooks/useUser";
 import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import { setIsCreateLinkModalOpen } from "@/utils/redux/quicklinks/slices/quicklinks.ui.slice";
+import { setHamburgerOpen, setIsCreateLinkModalOpen } from "@/utils/redux/quicklinks/slices/quicklinks.ui.slice";
 import { setToggleSidebar } from "@/utils/redux/quicklinks/slices/quicklinks.ui.slice"; 
 import { useState } from "react";
+import media from "@/styles/media";
 
 const QuicklinksGlobalHeader = () => {
   const dispatch = useAppDispatch();
   const { user } = useUser();
-  const isCollapsed = useAppSelector((state) => state.quicklinksUi.isCollapsed);
+  const {isCollapsed, isHamburgerOpen} = useAppSelector((state) => state.quicklinksUi);
+  const isTablet = useMediaQuery(media.tablet);
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
@@ -27,19 +29,27 @@ const QuicklinksGlobalHeader = () => {
     setAnchorEl(null);
   };
 
+  const isSidebar = isCollapsed || isHamburgerOpen 
+
   return (
-    <div className="flex flex-col w-full fixed top-0 z-[1]">
-      <div className="grid grid-cols-[1fr_1.5fr_1fr] items-center justify-between px-4 w-full bg-white h-[56px]">
-        <h1 className="flex items-center gap-4">
-          <span 
-            className="material-symbols-outlined cursor-pointer hover:bg-neutral-100 p-2 rounded-full transition-colors"
-            onClick={() => dispatch(setToggleSidebar(!isCollapsed))}
+    <div className="fixed top-0 z-[1] flex w-full flex-col">
+      <div className={`grid h-[56px] w-full grid-cols-[1fr_1.5fr_1fr] items-center justify-between bg-white px-4 ${isTablet && 'grid-cols-[1fr_1fr] max-sm:px-2'}`}>
+        <h1 className="flex items-center gap-4 max-sm:gap-2">
+          <span
+            className="material-symbols-outlined cursor-pointer rounded-full p-2 transition-colors hover:bg-neutral-100"
+            onClick={() => {
+              !isTablet
+                ? dispatch(setToggleSidebar(!isCollapsed))
+                : dispatch(setHamburgerOpen(!isHamburgerOpen));
+            }}
           >
-            {isCollapsed ? "menu" : "menu_open"}
+            {isSidebar ? 'menu' : 'menu_open'}
           </span>
-          <span className="text-2xl font-semibold">QUICKLINKS</span>
+          <span className="text-2xl font-semibold max-sm:text-xl">QUICKLINKS</span>
         </h1>
-        <QuicklinkSearchBar />
+        <div className={`${isTablet && 'hidden'}`}>
+          <QuicklinkSearchBar />
+        </div>
         <div className="flex justify-end">
           <div className="flex gap-4 items-center">
             <Button
@@ -54,7 +64,7 @@ const QuicklinksGlobalHeader = () => {
             >
               Quicklink
             </Button>
-            <div onClick={handleClick} className="cursor-pointer">
+            <div onClick={handleClick} className={`cursor-pointer ${isTablet && 'hidden'}`}>
               {user?.avatar ? (
                 <img
                   src={user?.avatar}

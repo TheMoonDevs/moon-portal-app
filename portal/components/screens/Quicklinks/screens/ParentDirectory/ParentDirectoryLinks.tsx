@@ -47,6 +47,7 @@ export const ParentDirectoryLinks = ({ loading }: { loading: boolean }) => {
               `All in ${thisDirectory?.title}`,
               `Top Used in ${thisDirectory?.title}`,
             ]}
+            isParentDir={true}
           >
             {(value, searchQuery) => {
               return (
