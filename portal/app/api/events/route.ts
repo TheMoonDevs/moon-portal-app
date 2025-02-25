@@ -1,19 +1,19 @@
-import { prisma } from "@/prisma/prisma";
-import { NextRequest, NextResponse } from "next/server";
-import { startOfToday } from "date-fns";
+import { prisma } from '@/prisma/prisma';
+import { NextRequest, NextResponse } from 'next/server';
+import { startOfToday } from 'date-fns';
 
 const formatDate = (date: any) => {
   const day = String(date.getDate()).padStart(2, '0');
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const year = date.getFullYear();
-  return `${day}-${month}-${year}`;
+  return `${year}-${month}-${day}`;
 };
 
 export async function POST(req: NextRequest) {
   if (!req.body) {
-    return new NextResponse(JSON.stringify({ error: "Body not found" }), {
+    return new NextResponse(JSON.stringify({ error: 'Body not found' }), {
       status: 400,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 
@@ -22,10 +22,13 @@ export async function POST(req: NextRequest) {
     const { title, subTitle, link, date, month, year, time } = body;
 
     if (!title || !subTitle || !link || !date || !month || !year || !time) {
-      return new NextResponse(JSON.stringify({ error: "Missing required fields" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return new NextResponse(
+        JSON.stringify({ error: 'Missing required fields' }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      );
     }
 
     const newEvent = await prisma.event.create({
@@ -36,19 +39,19 @@ export async function POST(req: NextRequest) {
         date,
         time,
         month,
-        year
-      }
-    })
+        year,
+      },
+    });
 
     return new NextResponse(JSON.stringify(newEvent), {
       status: 200,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   } catch (error: any) {
-    console.error("Error creating badge details:", error);
+    console.error('Error creating badge details:', error);
     return new NextResponse(JSON.stringify({ error: error.message }), {
       status: 500,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }
@@ -71,35 +74,35 @@ export async function GET(req: NextRequest) {
         },
       },
       orderBy: {
-        date: 'asc'
+        date: 'asc',
       },
       ...(limit && { take: Number(limit) }),
     });
 
     return new NextResponse(
       JSON.stringify({
-        status: "success",
+        status: 'success',
         data: events,
       }),
       {
         status: 200,
-        headers: { "Content-Type": "application/json" },
-      }
+        headers: { 'Content-Type': 'application/json' },
+      },
     );
   } catch (error: any) {
-    console.error("Error fetching badges:", error);
+    console.error('Error fetching badges:', error);
     return new NextResponse(JSON.stringify({ error: error.message }), {
       status: 500,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }
 
 export async function PUT(req: NextRequest) {
   if (!req.body) {
-    return new NextResponse(JSON.stringify({ error: "Body not found" }), {
+    return new NextResponse(JSON.stringify({ error: 'Body not found' }), {
       status: 400,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 
@@ -107,11 +110,23 @@ export async function PUT(req: NextRequest) {
     const body = await req.json();
     const { id, title, subTitle, link, date, month, year, time } = body;
 
-    if (!id || !title || !subTitle || !link || !date || !month || !year || !time) {
-      return new NextResponse(JSON.stringify({ error: "Missing required fields" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+    if (
+      !id ||
+      !title ||
+      !subTitle ||
+      !link ||
+      !date ||
+      !month ||
+      !year ||
+      !time
+    ) {
+      return new NextResponse(
+        JSON.stringify({ error: 'Missing required fields' }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      );
     }
 
     const updatedEvent = await prisma.event.update({
@@ -129,13 +144,13 @@ export async function PUT(req: NextRequest) {
 
     return new NextResponse(JSON.stringify(updatedEvent), {
       status: 200,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   } catch (error: any) {
-    console.error("Error updating event details:", error);
+    console.error('Error updating event details:', error);
     return new NextResponse(JSON.stringify({ error: error.message }), {
       status: 500,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }
@@ -149,7 +164,7 @@ export async function DELETE(request: Request) {
     });
 
     let json_response = {
-      status: "success",
+      status: 'success',
       data: {
         deletedEvent,
       },
@@ -157,10 +172,10 @@ export async function DELETE(request: Request) {
 
     return NextResponse.json(json_response);
   } catch (error: any) {
-    console.error("Error deleting event:", error);
+    console.error('Error deleting event:', error);
     return new NextResponse(JSON.stringify({ error: error.message }), {
       status: 500,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }

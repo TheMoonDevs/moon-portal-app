@@ -61,7 +61,7 @@ const EventForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!date || !title || !subTitle || !link || !time) return;
-    const formattedDate = date.format('DD-MM-YYYY');
+    const formattedDate = date.format('YYYY-MM-DD');
     const formattedTime = time.format('HH:mm');
     const year = date.year();
     const month = Number(date.format('M'));
@@ -79,6 +79,7 @@ const EventForm = () => {
 
     try {
       await PortalSdk.postData('api/events', eventData);
+      getEvents();
       toast.success('Event added successfully!');
       resetForm();
     } catch (error) {
@@ -93,7 +94,7 @@ const EventForm = () => {
     e.preventDefault();
     setLoadingState((prev) => ({ ...prev, updateUploading: true }));
     if (!date || !title || !subTitle || !link || !time) return;
-    const formattedDate = date.format('DD-MM-YYYY');
+    const formattedDate = date.format('YYYY-MM-DD');
     const formattedTime = time.format('HH:mm');
     const year = date.year();
     const month = Number(date.format('M'));
@@ -135,10 +136,8 @@ const EventForm = () => {
       setTitle(selectedEvent.name || '');
       setSubTitle(selectedEvent.subTitle || '');
       setLink(selectedEvent.link || '');
-      setDate(dayjs(selectedEvent.date, 'DD-MM-YYYY') || null);
+      setDate(dayjs(selectedEvent.date) || null);
       setTime(dayjs(selectedEvent.time, 'HH:mm') || null);
-    } else {
-      resetForm();
     }
   }, [selectedEvent]);
 
