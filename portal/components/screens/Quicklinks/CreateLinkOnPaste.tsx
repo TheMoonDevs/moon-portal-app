@@ -208,7 +208,7 @@ const CreateLinkOnPaste = () => {
       >
         <Box
           sx={modalStyle}
-          className="relative mx-auto max-w-lg rounded-lg bg-white p-6 shadow-lg sm:w-[36rem]"
+          className="relative mx-auto max-w-lg rounded-lg bg-white p-6 shadow-lg sm:w-[36rem] max-sm:w-[90%]"
         >
           <span className="absolute right-1 top-1">
             <IconButton

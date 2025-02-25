@@ -42,7 +42,7 @@ const TrendingLinks = () => {
   };
 
   return (
-    <div className="px-6">
+    <div className="px-6 max-sm:px-2">
       <PaginationWrapper
         page={page}
         setPage={setPage}
@@ -52,13 +52,13 @@ const TrendingLinks = () => {
         items={allQuicklinks}
       >
         {(items, loadMore, loading, hasMore, displayCount, showLess) => (
-          <div className="flex flex-col gap-5 w-full mt-4 transition-all">
+          <div className="flex flex-col gap-5 w-full mt-4 transition-all max-sm:mt-0">
             <QuicklinkHeaderWrapper
               title="Trending"
               icon="trending_up"
               type="link"
             />
-            <div className="pl-4 mb-10">
+            <div className="pl-4 mb-10 max-sm:pl-0">
               <LinkList allQuicklinks={items} isLoading={loading} />
               {loading && page !== 0 && (
                 <div className="w-full items-center justify-center flex">
