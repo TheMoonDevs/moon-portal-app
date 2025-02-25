@@ -44,8 +44,8 @@ const PremiumCardDivider = () => (
       x2="10"
       y2="250"
       stroke="white"
-      stroke-width="1"
-      stroke-dasharray="10,10"
+      strokeWidth="1"
+      strokeDasharray="10,10"
     />
   </svg>
 );

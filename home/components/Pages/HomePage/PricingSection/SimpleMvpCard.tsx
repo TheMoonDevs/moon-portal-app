@@ -11,7 +11,7 @@ interface SimpleMvpDataProps extends React.HTMLAttributes<HTMLDivElement> {
 const SimpleMvpCardMedia = ({ image }: { image: string }) => (
   <Image
     src={image}
-    className="h-[revert-layer] w-full object-cover md:h-fit"
+    className="aspect-video h-[revert-layer] w-full object-cover md:h-44"
     alt=""
     width={300}
     height={300}
@@ -79,7 +79,7 @@ const SimpleMvpCardActions = ({ cta }: { cta: string }) => {
     <div className="w-full p-4">
       <Button
         text={cta}
-        className="flex w-full items-center justify-between rounded-full bg-red-500 px-8 text-xl hover:bg-red-600 hover:text-white md:float-right md:w-fit xl:w-full"
+        className="flex w-full items-center justify-between rounded-full bg-red-500 px-8 text-xl hover:bg-red-600 hover:text-white xl:w-full"
       />
     </div>
   );
