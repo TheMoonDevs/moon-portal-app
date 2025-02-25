@@ -84,25 +84,23 @@ const PricingSection = () => {
   return (
     <section className="bg-white p-6 pt-20 text-black md:p-16 xl:p-28">
       <div>
-        <h1 className="flex flex-col text-center text-4xl font-bold md:gap-6 md:text-left md:text-5xl">
-          <span>Bring Your Startup Idea to Life</span>{' '}
-          <span>— Faster and More Affordable Than You Think.</span>
+        <h1 className="flex flex-col text-center text-2xl font-bold md:gap-6 md:text-left md:text-4xl md:max-w-[60%]">
+          <span>Bring your startup idea to life
+            — Faster and more affordable than you think.</span>
         </h1>
-        <div className="flex flex-col justify-between gap-6 md:flex-row md:gap-0">
-          <p className="mx-auto mt-6 flex w-3/4 flex-col gap-1 text-center text-2xl text-neutral-600 md:w-full md:text-left">
+        <div className="flex flex-col justify-between gap-6 md:flex-row md:gap-0 md:w-full">
+          <p className="mx-auto mt-6 flex flex-col gap-1 text-center text-xs md:text-md text-neutral-600 md:text-left md:mx-0  md:max-w-[30%]">
             <span>
               Rapid development, user-centric design, and investor-ready
               products.{' '}
-            </span>
-            <span>
-              — We specialize in building lean, scalable MVPs that get you
+              We specialize in building lean, scalable MVPs that get you
               noticed.
             </span>
           </p>
           <Button
-            variant="contained"
-            className="mx-auto flex w-1/2 justify-center gap-4 self-end rounded-full border-2 border-black md:w-fit"
-            text="Pricing"
+            variant="outlined"
+            className="flex justify-center gap-4 self-end rounded-full border-2 border-black md:w-fit md:ml-auto py-2 text-sm"
+            text="See All Plans"
             startIcon="shoppingmode"
             endIcon={false}
             href="/pricing"
@@ -133,11 +131,11 @@ const PricingCards = () => {
         className="col-span-4 hidden h-[inherit] !bg-cover shadow-none xl:col-span-3 xl:block"
       />
       <FeatureCard
-        className="col-span-2 flex h-[inherit] flex-col justify-between bg-gray-100 p-6 shadow-none xl:col-span-1"
+        className="col-span-4 md:col-span-2 flex h-[inherit] flex-col justify-between bg-gray-100 p-6 shadow-none xl:col-span-1"
         data={PricingSectionCards.complexityScale}
       />
       <FeatureCard
-        className="col-span-2 flex h-[inherit] flex-col justify-between bg-gray-100 p-6 shadow-none xl:col-span-1"
+        className="col-span-4 md:col-span-2 flex h-[inherit] flex-col justify-between bg-gray-100 p-6 shadow-none xl:col-span-1"
         data={PricingSectionCards.roastMyProject}
       />
       <CtaCard className="col-span-4 flex h-[inherit] flex-col justify-between bg-black p-3 shadow-none xl:col-span-1" />

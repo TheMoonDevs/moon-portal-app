@@ -54,7 +54,7 @@ const PremiumMvpCardContent = ({ data }: PremiumMvpDataProps) => (
   <div className="mt-6 flex w-1/2 flex-col justify-end gap-3 p-4 text-white">
     <p className="text-right">
       <span className="text-base font-semibold">
-        <span className="text-5xl font-bold">{data.price}</span>{' '}
+        <span className="text-4xl font-bold">{data.price}</span>{' '}
         {data.priceDuration}
       </span>
     </p>
