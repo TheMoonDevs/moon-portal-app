@@ -57,7 +57,7 @@ const NewHeader = () => {
   };
 
   return (
-    <div className="fixed top-0 z-[100] w-full bg-transparent">
+    <div className="fixed top-0 z-[100] w-full backdrop-blur-sm">
       <div
         className={`relative mx-6 my-6 flex items-center justify-between bg-transparent ${open && 'mb-0 rounded-t-lg rounded-tr-lg !bg-black'} max-lg:mx-2 max-lg:my-2`}
       >
