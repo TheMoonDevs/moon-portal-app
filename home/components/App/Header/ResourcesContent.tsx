@@ -54,7 +54,7 @@ export const ResourcesContent = ({
   orientation = 'desktop',
 }: {
   className?: string;
-  orientation?: 'desktop' | 'mobile';
+  orientation?: 'desktop' | 'mobile' | 'tablet';
 }) => {
   const midIndex = Math.ceil(ResourcesMenuItems.length / 2);
   const firstHalf = ResourcesMenuItems.slice(0, midIndex);
@@ -69,7 +69,7 @@ export const ResourcesContent = ({
       <ul
         className={cn(
           'grid w-full grid-flow-row p-4',
-          orientation === 'mobile' &&
+          orientation === 'tablet' &&
             'grid grid-cols-2 space-y-0 divide-x divide-gray-200',
         )}
       >
@@ -108,7 +108,7 @@ export const ResourcesContent = ({
         <ul
           className={cn(
             'flex flex-col items-center justify-between',
-            orientation === 'mobile' && 'flex-row',
+            orientation === 'tablet' && 'flex-row',
           )}
         >
           {FeaturedMenuItems.map((item, index) => (
