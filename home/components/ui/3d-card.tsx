@@ -1,6 +1,8 @@
 'use client';
 
 import { cn } from '@/lib/utils';
+import media from '@/styles/media';
+import { useMediaQuery } from '@mui/material';
 import Image from 'next/image';
 import React, {
   createContext,
@@ -11,7 +13,12 @@ import React, {
 } from 'react';
 
 const MouseEnterContext = createContext<
-  [boolean, React.Dispatch<React.SetStateAction<boolean>>] | undefined
+  | {
+      isMouseEntered: boolean;
+      setIsMouseEntered: React.Dispatch<React.SetStateAction<boolean>>;
+      isTabletOrLess: boolean;
+    }
+  | undefined
 >(undefined);
 
 export const CardContainer = ({
@@ -25,8 +32,10 @@ export const CardContainer = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isMouseEntered, setIsMouseEntered] = useState(false);
+  const isTabletOrLess = useMediaQuery(media.tablet);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isTabletOrLess) return;
     if (!containerRef.current) return;
     const { left, top, width, height } =
       containerRef.current.getBoundingClientRect();
@@ -36,17 +45,21 @@ export const CardContainer = ({
   };
 
   const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isTabletOrLess) return;
     setIsMouseEntered(true);
     if (!containerRef.current) return;
   };
 
   const handleMouseLeave = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isTabletOrLess) return;
     if (!containerRef.current) return;
     setIsMouseEntered(false);
     containerRef.current.style.transform = `rotateY(0deg) rotateX(0deg)`;
   };
   return (
-    <MouseEnterContext.Provider value={[isMouseEntered, setIsMouseEntered]}>
+    <MouseEnterContext.Provider
+      value={{ isMouseEntered, setIsMouseEntered, isTabletOrLess }}
+    >
       <div
         className={cn('flex items-center justify-center', containerClassName)}
         style={{
@@ -116,11 +129,12 @@ export const CardItem = ({
   [key: string]: any;
 }) => {
   const ref = useRef<HTMLDivElement>(null);
-  const [isMouseEntered] = useMouseEnter();
+  const { isMouseEntered, isTabletOrLess } = useMouseEnter();
 
   useEffect(() => {
+    if (isTabletOrLess) return;
     handleAnimations();
-  }, [isMouseEntered]);
+  }, [isMouseEntered, isTabletOrLess]);
 
   const handleAnimations = () => {
     if (!ref.current) return;
