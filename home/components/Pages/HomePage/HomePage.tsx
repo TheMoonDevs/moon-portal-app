@@ -14,6 +14,7 @@ import useCampaignAnalytics from '@/utils/hooks/useCampaignAnalytics';
 import { MediumBlogsWithGrids } from './MediumBlogsSection';
 import NewHeroSection from './NewHeroSection';
 import PricingSection from './PricingSection/PricingSection';
+import DevCohortSection from './DevCohortSection/DevCohortSection';
 
 export const HomePage = () => {
   const { logEventsFromQuery } = useCampaignAnalytics();
@@ -36,6 +37,7 @@ export const HomePage = () => {
     // </HomePageStyled>
     <div>
       <NewHeroSection />
+      <DevCohortSection />
       <PricingSection />
     </div>
   );
