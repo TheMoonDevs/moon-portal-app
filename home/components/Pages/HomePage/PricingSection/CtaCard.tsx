@@ -24,8 +24,8 @@ const CtaCardActions = () => {
     <Button
       variant="outlined"
       bgUrl="/images/abstract-golden.png"
-      text={<span className="max-w-44 text-left">{cta}</span>}
-      className="mt-4 md:mt-10 flex w-full items-center justify-between gap-10 rounded-lg border-2 border-yellow-400 text-white xl:mt-0"
+      text={<span className="w-full text-left md:max-w-44">{cta}</span>}
+      className="mt-4 flex w-full items-center justify-between rounded-lg border-2 border-yellow-400 text-white md:mt-10 md:gap-10 xl:mt-0"
     />
   );
 };
