@@ -44,6 +44,7 @@ import { filterTasksByPerson } from '@/utils/clickup/helper';
 import ClickupTask from '../Worklogs/WorklogTabs/ClickupTasks';
 import EarnedBadges from './profile-drawer-components/EarnedBadges';
 import { PayDataUI } from './profile-drawer-components/PayDataUI';
+import { getBuffLevelAndTitle } from '@/utils/helpers/badges';
 
 export interface LoggedInUser {
   user: User;
@@ -130,8 +131,7 @@ export const UserProfileDrawer: React.FC = () => {
     setLoading(true);
     try {
       const response = await PortalSdk.getData(
-        `/api/user/worklogs/summary?userId=${
-          selectedUser?.id
+        `/api/user/worklogs/summary?userId=${selectedUser?.id
         }&year=${dayjs().year()}&month=${dayjs()
           .month(dayjs().month())
           .format('MM')}`,
@@ -242,20 +242,10 @@ export const UserProfileDrawer: React.FC = () => {
             selectedUser={selectedUser}
             loggedinUser={loggedinUser}
           />
-          <EarnedBadges />
-          <div className="pb-4">
-            <h6 className="pb-2 font-bold">Missions/Task</h6>
-            <ul className="mt-1 flex list-none flex-col gap-1 rounded-xl border-2 border-gray-300 p-3">
-              {<ClickupTask email={selectedUser?.email as string} />}
-            </ul>
-          </div>
-
           <div className="w-full">
-            <h6 className="pb-2 font-bold">
-              Contributions ({dayjs().format('MMM YYYY')})
-            </h6>
             <ReactActivityCalendar />
           </div>
+          <EarnedBadges logBadges={(selectedUser as any)?.buffBadge} />
           {!loading ? (
             <WorkLogSection
               worklogSummary={worklogSummary}
@@ -264,9 +254,17 @@ export const UserProfileDrawer: React.FC = () => {
           ) : (
             <LoadingSkeleton />
           )}
+          {/* TODO: replace with Notion Tasks API or soemthing similar
+          <div className="pb-4">
+            <h6 className="pb-2 font-bold">Missions/Task</h6>
+            <ul className="mt-1 flex list-none flex-col gap-1 rounded-xl border-2 border-gray-300 p-3">
+              {<ClickupTask email={selectedUser?.email as string} />}
+            </ul>
+          </div> */}
+          {/* TODO: replace with proper payments & earnign section
           {loggedinUser.user.id === selectedUser?.id && (
             <PayDataUI payData={payData} />
-          )}
+          )} */}
         </div>
       </DrawerComponent>
       <EditUser />
@@ -324,6 +322,9 @@ const ProfileImagesSection = ({
   handleAvatarChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   avatarLoading: boolean;
 }) => {
+  const badges = (selectedUser as any).buffBadge;
+  const badge = badges.length > 0 ? badges[0] : [{ points: 1, title: 'Newbie' }];
+
   return (
     <div className="relative h-[120px]">
       {bannerLoading ? (
@@ -334,22 +335,6 @@ const ProfileImagesSection = ({
           className="absolute h-full w-full object-cover"
           alt="Profile Banner"
         />
-      )}
-      {loggedinUser.user.id === selectedUser?.id && (
-        <label className="absolute -right-2 top-2 flex cursor-pointer items-center justify-center rounded-full bg-white">
-          <span
-            className="material-symbols-outlined absolute right-2 top-0 cursor-pointer rounded-full bg-white p-[6px]"
-            style={{ fontSize: '16px' }}
-          >
-            add_a_photo
-          </span>
-          <input
-            type="file"
-            accept="image/jpeg,image/png"
-            onChange={handleBannerChange}
-            className="hidden"
-          />
-        </label>
       )}
       <div className="absolute -bottom-[3.25rem] left-5 h-24 w-24 rounded-full border-4 border-white">
         {avatarLoading ? (
@@ -380,6 +365,58 @@ const ProfileImagesSection = ({
             />
           </label>
         )}
+
+      </div>
+
+      <div className='absolute top-0 right-0 left-0'>
+        {selectedUser?.timezone && (
+          <div className='h-[120px] w-[50%] ml-auto bg-gradient-to-l from-black to-transparent [rgba(0,0,0,0.1)]'>
+            <div className='p-2 pr-4'>
+              <p className='text-white text-2xl font-bold text-right'>{new Date().toLocaleString(`en-US`, {
+                timeZone: selectedUser?.timezone,
+                hour: 'numeric',
+                minute: 'numeric',
+              })}</p>
+              <p className='text-white text-xs text-right'>{selectedUser?.timezone}</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {loggedinUser.user.id === selectedUser?.id && (
+        <label className="absolute right-0 left-0 -bottom-2 flex cursor-pointer items-center justify-center rounded-full bg-white">
+          <span
+            className="material-symbols-outlined absolute -bottom-2 cursor-pointer rounded-full bg-neutral-100 p-[6px]"
+            style={{ fontSize: '16px' }}
+          >
+            add_a_photo
+          </span>
+          <input
+            type="file"
+            accept="image/jpeg,image/png"
+            onChange={handleBannerChange}
+            className="hidden"
+          />
+        </label>
+      )}
+
+      <div className="absolute -bottom-[2.5rem] flex items-center w-full justify-end gap-4 pr-4">
+        <div className="flex items-center gap-2">
+          <div className="h-8 w-8 overflow-hidden rounded-full">
+            <img
+              src={getBuffLevelAndTitle(badge.points).src}
+              alt="user-vertical"
+              className="h-full w-full object-cover"
+            />
+          </div>
+          <div className='flex flex-col items-start'>
+            <h4 className="text-center text-xs font-bold capitalize">
+              {getBuffLevelAndTitle(badge.points).title}
+            </h4>
+            <p className='text-center text-xs text-gray-500'>{badge.points} Pts</p>
+
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -399,43 +436,18 @@ const AboutUserSections = ({
       <div className="pt-16">
         <div className="flex items-center justify-between">
           <h3 className="text-2xl font-bold">{selectedUser?.name}</h3>
-          <p className="text-sm font-semibold capitalize text-gray-500">
+          {/* <p className="text-sm font-semibold capitalize text-gray-500">
             {selectedUser?.timezone}
-          </p>
+          </p> */}
         </div>
         <p className="text-sm text-gray-700">
-          @{selectedUser?.username + selectedUser?.password}{' '}
-          {selectedUser.positionTitle && `- ${selectedUser.positionTitle}`}
+          {/* @{selectedUser?.username + selectedUser?.password}{' '} */}
+          {selectedUser.positionTitle ? `${selectedUser.positionTitle} ` : `${translateUserVertical(selectedUser?.vertical || '')}`}
+          - {selectedUser?.role?.toLowerCase()}
         </p>
       </div>
       {/* <h6 className="font-bold py-2"> Profile</h6> */}
-      <div className="mt-4 flex items-center gap-6 pb-4">
-        <div className="flex flex-col items-center">
-          <div className="h-16 w-16 overflow-hidden rounded-full border-2 border-gray-300 shadow-lg">
-            <img
-              src={getUserVerticalImage(selectedUser?.vertical)}
-              alt="user-vertical"
-              className="h-full w-full object-cover"
-            />
-          </div>
-          <div className="mt-2 text-center text-xs font-bold capitalize">
-            {translateUserVertical(selectedUser?.vertical || '')}
-          </div>
-        </div>
-        <div className="flex flex-col items-center">
-          <div className="h-16 w-16 overflow-hidden rounded-full border-2 border-gray-300 shadow-lg">
-            <img
-              src={getUserRoleImage(selectedUser?.role)}
-              alt="user-role"
-              className="h-full w-full object-cover"
-            />
-          </div>
-          <div className="mt-2 text-center text-xs font-bold capitalize">
-            {selectedUser?.role?.toLowerCase()}
-          </div>
-        </div>
-      </div>
-      <div className="flex w-full gap-4 py-2">
+      <div className="flex w-full gap-4 py-2 mt-3">
         <Link
           href={`${APP_ROUTES.userWorklogSummary}/${selectedUser?.id}`}
           className="flex flex-grow items-center justify-center gap-2 rounded-lg border border-gray-300 bg-black px-4 py-2 text-sm text-white shadow-md transition duration-300 hover:bg-gray-800"
@@ -487,8 +499,7 @@ const AboutUserSections = ({
 
       {selectedUser?.description && (
         <>
-          <h6 className="mt-4 py-2 font-bold">About Me</h6>
-          <p className="pb-4 text-sm">
+          <p className="mt-4 text-sm line-clamp-3">
             {selectedUser?.description || 'Description not available.'}
           </p>
         </>

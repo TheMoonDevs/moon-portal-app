@@ -79,8 +79,7 @@ const ReactActivityCalendar = () => {
     setLoading(true);
     try {
       const response = await PortalSdk.getData(
-        `/api/user/worklogs/summary?userId=${
-          selectedUser?.id
+        `/api/user/worklogs/summary?userId=${selectedUser?.id
         }&year=${dayjs().year()}`,
         null,
       );
@@ -149,7 +148,15 @@ const ReactActivityCalendar = () => {
           maxLevel={9}
           hideColorLegend
           hideTotalCount
-          showWeekdayLabels
+          showWeekdayLabels={[
+            // 'sun',
+            // 'mon',
+            // 'tue',
+            // 'wed',
+            // 'thu',
+            // 'fri',
+            // 'sat',
+          ]}
           blockSize={12}
           theme={customTheme}
           weekStart={0}
