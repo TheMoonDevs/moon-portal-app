@@ -9,7 +9,7 @@ export const PricingSectionCards = {
     title: 'simpleton MVPs',
     highlights: [
       {
-        icon: 'check_circle',
+        icon: 'all_inclusive',
         title: 'End-to-End solution',
       },
       {
@@ -84,22 +84,23 @@ const PricingSection = () => {
   return (
     <section className="bg-white p-6 pt-20 text-black md:p-16 xl:p-28">
       <div>
-        <h1 className="flex flex-col text-center text-2xl font-bold md:gap-6 md:text-left md:text-4xl md:max-w-[60%]">
-          <span>Bring your startup idea to life
-            — Faster and more affordable than you think.</span>
+        <h1 className="flex flex-col text-center text-2xl font-bold md:max-w-[60%] md:gap-6 md:text-left md:text-4xl">
+          <span>
+            Bring your startup idea to life — Faster and more affordable than
+            you think.
+          </span>
         </h1>
-        <div className="flex flex-col justify-between gap-6 md:flex-row md:gap-0 md:w-full">
-          <p className="mx-auto mt-6 flex flex-col gap-1 text-center text-xs md:text-md text-neutral-600 md:text-left md:mx-0  md:max-w-[30%]">
+        <div className="flex flex-col justify-between gap-6 md:w-full md:flex-row md:gap-0">
+          <p className="md:text-md mx-auto mt-6 flex flex-col gap-1 text-center text-xs text-neutral-600 md:mx-0 md:max-w-[30%] md:text-left">
             <span>
               Rapid development, user-centric design, and investor-ready
-              products.{' '}
-              We specialize in building lean, scalable MVPs that get you
-              noticed.
+              products. We specialize in building lean, scalable MVPs that get
+              you noticed.
             </span>
           </p>
           <Button
             variant="outlined"
-            className="flex justify-center gap-4 self-end rounded-full border-2 border-black md:w-fit md:ml-auto py-2 text-sm"
+            className="flex justify-center gap-4 self-end rounded-full border-2 border-black py-2 text-sm md:ml-auto md:w-fit"
             text="See All Plans"
             startIcon="shoppingmode"
             endIcon={false}
@@ -120,6 +121,7 @@ const PricingCards = () => {
         className="col-span-4 h-[inherit] bg-gray-100 shadow-none md:col-span-2 xl:col-span-1 xl:row-span-2"
       />
       <SimpleMvpCard
+        type="premiumMVPs"
         data={PricingSectionCards.premiumMVPs}
         className="col-span-4 flex h-[inherit] bg-gray-100 shadow-none md:col-span-2 xl:hidden"
       />
@@ -131,11 +133,11 @@ const PricingCards = () => {
         className="col-span-4 hidden h-[inherit] !bg-cover shadow-none xl:col-span-3 xl:block"
       />
       <FeatureCard
-        className="col-span-4 md:col-span-2 flex h-[inherit] flex-col justify-between bg-gray-100 p-6 shadow-none xl:col-span-1"
+        className="col-span-4 flex h-[inherit] flex-col justify-between bg-gray-100 p-6 shadow-none md:col-span-2 xl:col-span-1"
         data={PricingSectionCards.complexityScale}
       />
       <FeatureCard
-        className="col-span-4 md:col-span-2 flex h-[inherit] flex-col justify-between bg-gray-100 p-6 shadow-none xl:col-span-1"
+        className="col-span-4 flex h-[inherit] flex-col justify-between bg-gray-100 p-6 shadow-none md:col-span-2 xl:col-span-1"
         data={PricingSectionCards.roastMyProject}
       />
       <CtaCard className="col-span-4 flex h-[inherit] flex-col justify-between bg-black p-3 shadow-none xl:col-span-1" />
