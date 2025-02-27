@@ -1,7 +1,6 @@
 import Button from '@/components/elements/Button';
 import { BaseCard } from '@/components/elements/Card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { highlight } from 'prismjs';
 import { Testimonial } from './Testimonial';
 import Faqs from './Faqs';
 
@@ -104,7 +103,7 @@ const PricingTabs = () => (
         return <PlanCards plan={plan} index={index} key={plan.name} />;
       })}
     </TabsContent>
-    <TabsContent value="unit">Change your password here.</TabsContent>
+    <TabsContent value="unit"></TabsContent>
   </Tabs>
 );
 

@@ -51,15 +51,11 @@ const Faqs = () => {
             </div>
           </div>
           <div className="w-full border-l border-gray-200">
-            <div className="hidden w-full grid-cols-2 grid-rows-1 divide-x divide-gray-200 md:grid">
+            <div className="hidden w-full grid-cols-2 grid-rows-1 divide-x divide-gray-200 border-b md:grid">
               <div className="h-28 w-full"></div>
               <div className="h-28 w-full"></div>
             </div>
-            <Accordion
-              type="single"
-              defaultValue="question-0"
-              className="w-full border-t"
-            >
+            <Accordion type="single" className="w-full">
               {faq.map(({ question, answer }, index) => (
                 <AccordionItem
                   key={question}
