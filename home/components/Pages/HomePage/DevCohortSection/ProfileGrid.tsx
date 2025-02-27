@@ -318,7 +318,7 @@ const PublicationDialog = ({
         setTimeout(() => setPublication(undefined), 500);
         // setTimeout(() => setPublication(undefined), 500);
       }}
-      sx={{ zIndex: 9999, backdropFilter: 'blur(4px)' }}
+      sx={{ zIndex: 9999, backdropFilter: 'blur(8px)' }}
       PaperProps={{
         sx: {
           width: 'fit-content',
@@ -365,7 +365,7 @@ const PublicationDialog = ({
                 as={Link}
                 href="https://twitter.com/mannupaaji"
                 target="__blank"
-                className="flex items-center rounded-xl py-2 text-xs font-normal"
+                className="flex items-center rounded-xl py-2 text-xs font-normal dark:text-white"
               >
                 <Image
                   src={data?.avatar || ''}
@@ -379,7 +379,7 @@ const PublicationDialog = ({
               <CardItem
                 translateZ={20}
                 as="button"
-                className="rounded-xl bg-gray-50 px-4 py-1 text-sm font-bold text-black"
+                className="rounded-xl bg-gray-50 px-4 py-2 text-xs font-bold text-black dark:bg-white dark:text-black"
               >
                 {data?.link && (
                   <Link href={data?.link} className="flex items-center gap-2">
