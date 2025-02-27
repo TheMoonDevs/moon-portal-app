@@ -20,9 +20,9 @@ const DevCohortSection = () => {
 
 const CohortFooter = () => {
   return (
-    <div className="mt-20 flex flex-col items-center justify-center gap-2 md:mt-10 md:flex-row md:items-start md:gap-2">
+    <div className="my-[100px] flex flex-col items-center justify-center gap-2 md:mt-10 md:mb-0 md:flex-row md:items-start md:gap-2">
       <div className="flex items-end justify-center gap-1 text-xs font-bold md:items-start md:text-base">
-        <div className="flex flex-col items-center gap-1 text-xs font-bold md:text-base">
+        <div className="flex flex-col items-center gap-2 text-xs font-bold md:text-base">
           <Image
             alt="a selective"
             src="/icons/diamond-yellow.svg"
@@ -31,7 +31,7 @@ const CohortFooter = () => {
           />
           <span>a selective,</span>
         </div>
-        <div className="flex flex-col items-center gap-1 text-xs font-bold md:text-base">
+        <div className="flex flex-col items-center gap-2 text-xs font-bold md:text-base">
           <Image
             alt="vetted"
             src="/icons/verified.svg"
@@ -40,16 +40,16 @@ const CohortFooter = () => {
           />
           <span>vetted,</span>
         </div>
-        <div className="flex flex-col items-center gap-1 text-xs font-bold md:text-base">
+        <div className="flex flex-col items-center gap-2 text-xs font-bold md:text-base">
           <Image alt="growing" src="/icons/fire.svg" width={20} height={20} />
           <span>growing,</span>
         </div>
-        <div className="flex flex-col items-center gap-1 text-xs font-bold md:text-base">
+        <div className="flex flex-col items-center gap-2 text-xs font-bold md:text-base">
           <Image alt="global" src="/icons/globe.svg" width={20} height={20} />
           <span>global</span>
         </div>
       </div>
-      <div className="flex flex-row items-center justify-start gap-2 md:mt-1 md:gap-4">
+      <div className="flex flex-row items-center justify-start gap-2 md:mt-2 md:gap-4">
         <div className="text-xs font-bold md:text-base">
           <span>community </span>
           <span>of</span>
@@ -78,8 +78,8 @@ const CohortFooter = () => {
 
 const CohortHeader = () => {
   return (
-    <div className="flex items-center justify-center gap-10 md:mb-0 md:flex-col md:items-start md:justify-start">
-      <div className="flex flex-col text-3xl md:text-5xl">
+    <div className="flex items-center justify-center gap-5 my-[100px] md:gap-10 md:mt-0 md:mb-0 md:flex-col md:items-start md:justify-start">
+      <div className="flex flex-col text-2xl md:text-5xl">
         <span>Work </span>
         <span>with </span>
         <span>devs </span>
