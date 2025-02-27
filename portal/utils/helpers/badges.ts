@@ -1,4 +1,4 @@
-import { BUFF_LEVEL } from "@prisma/client";
+import { BUFF_LEVEL } from '@prisma/client';
 
 export const getPoints = (content: string) => {
   const points = (content?.match(/\n/g) || []).length + 1;
@@ -8,17 +8,17 @@ export const getPoints = (content: string) => {
 export const getColorsForBuffLevel = (level: BUFF_LEVEL) => {
   switch (level) {
     case BUFF_LEVEL.TRUTH_SEEKER:
-      return ['#4caf50', '#81c784'];
+      return ['#FF8041', '#FF8041'];
     case BUFF_LEVEL.BABY_GROOT:
-      return ['#8bc34a', '#c5e1a5'];
+      return ['#4caf50', '#81c784'];
     case BUFF_LEVEL.WORK_HULK:
       return ['#f44336', '#ef5350'];
     case BUFF_LEVEL.VAMPIRE_LORD:
-      return ['#9c27b0', '#d81b60'];
-    case BUFF_LEVEL.ALIEN_PREDATOR:
-      return ['#ff5722', '#ff8a65'];
-    case BUFF_LEVEL.DEVIL:
       return ['#f44336', '#d50000'];
+    case BUFF_LEVEL.ALIEN_PREDATOR:
+      return ['#f44336', '#FFAB36'];
+    case BUFF_LEVEL.DEVIL:
+      return ['#C677FF', '#D69CFF'];
     default:
       return ['#e0e0e0', '#9e9e9e'];
   }
@@ -33,36 +33,36 @@ export const getBuffLevelAndTitle = (points: number) => {
   if (points < 10)
     return {
       level: BUFF_LEVEL.TRUTH_SEEKER,
-      title: 'Truth Seeker',
-      src: '/images/buff/truthSeeker.jpeg',
+      title: 'Tiny Chirp',
+      src: '/images/buff/tinyChirp.png',
     };
   if (points < 25)
     return {
       level: BUFF_LEVEL.BABY_GROOT,
       title: 'Baby Groot',
-      src: '/images/buff/babyGroot.jpeg',
+      src: '/images/buff/babyGroot.png',
     };
   if (points < 100)
     return {
       level: BUFF_LEVEL.WORK_HULK,
       title: 'Work Hulk',
-      src: '/images/buff/workHulk.jpeg',
+      src: '/images/buff/workHulk.png',
     };
   if (points < 150)
     return {
       level: BUFF_LEVEL.VAMPIRE_LORD,
-      title: 'Vampire Lord',
-      src: '/images/buff/vampire.jpeg',
+      title: 'Vampire Streak',
+      src: '/images/buff/vampireLord.png',
     };
   if (points < 200)
     return {
       level: BUFF_LEVEL.ALIEN_PREDATOR,
-      title: 'Alien Predator',
-      src: '/images/buff/alien.jpeg',
+      title: 'Dragon Force',
+      src: '/images/buff/dragonForce.png',
     };
   return {
     level: BUFF_LEVEL.DEVIL,
-    title: 'Devil',
-    src: '/images/buff/devil.jpeg',
+    title: 'Moon Devil',
+    src: '/images/buff/moonDevil.png',
   };
 };

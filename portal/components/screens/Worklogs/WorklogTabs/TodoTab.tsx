@@ -114,7 +114,7 @@ const TodoTabs: React.FC<TodoTabsProps> = ({ userId }) => {
   }, [todoMarkdown]);
 
   return (
-    <div>
+    <div className="mt-4">
       <div className="text-sm flex item-center gap-2 leading-3 mb-2 text-neutral-500">
         {(saving || loading) && (
           <div className="animate-spin rounded-full h-3 w-3 border-t-2 border-b-2 border-neutral-800"></div>
@@ -151,11 +151,10 @@ const TodoTabs: React.FC<TodoTabsProps> = ({ userId }) => {
               : todoMarkdown
           }
           className="flex-grow h-full"
-          contentEditableClassName={`mdx_ce ${
-            todoMarkdown.trim() == MARKDOWN_PLACEHOLDER.trim()
-              ? " mdx_uninit "
-              : ""
-          } leading-1 imp-p-0 grow w-full h-full`}
+          contentEditableClassName={`mdx_ce ${todoMarkdown.trim() == MARKDOWN_PLACEHOLDER.trim()
+            ? " mdx_uninit "
+            : ""
+            } leading-1 imp-p-0 grow w-full h-full`}
           onChange={handleMarkdownChange}
         />
       </div>
