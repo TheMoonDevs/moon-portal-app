@@ -20,7 +20,7 @@ const DevCohortSection = () => {
 
 const CohortFooter = () => {
   return (
-    <div className="mt-20 flex flex-col items-center justify-center gap-2 md:flex-row md:items-start md:gap-2">
+    <div className="mt-20 flex flex-col items-center justify-center gap-2 md:mt-10 md:flex-row md:items-start md:gap-2">
       <div className="flex items-end justify-center gap-1 text-xs font-bold md:items-start md:text-base">
         <div className="flex flex-col items-center gap-1 text-xs font-bold md:text-base">
           <Image
