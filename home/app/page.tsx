@@ -1,17 +1,17 @@
-import { Metadata } from "next";
-import { HomePage } from "@/components/Pages/HomePage/HomePage";
-import dynamic from 'next/dynamic'
+import { HomePage } from '@/components/Pages/HomePage/HomePage';
+import fs from 'node:fs/promises';
+import { getPlaiceholder } from 'plaiceholder';
+import { Suspense } from 'react';
 
-const DynamicHome = dynamic(
-  () => import('@/components/Pages/HomePage/HomePage').then(mod => mod.HomePage),
-  {ssr: false}
-)
+export default async function Home() {
+  const src = '/images/hero.png';
 
-export const metadata: Metadata = {
-  title: "Home",
-  robots: "index,follow",
-};
+  const buffer = await fs.readFile(`./public${src}`);
 
-export default function Home() {
-  return <DynamicHome />;
+  const { base64 } = await getPlaiceholder(buffer);
+  return (
+    <Suspense fallback={null}>
+      <HomePage base64Placeholder={base64} />;
+    </Suspense>
+  );
 }

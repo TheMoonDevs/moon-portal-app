@@ -17,7 +17,11 @@ import PricingSection from './PricingSection/PricingSection';
 import StackSection from './StacksSection/StackSection';
 import Image from 'next/image';
 
-export const HomePage = () => {
+export const HomePage = ({
+  base64Placeholder,
+}: {
+  base64Placeholder: string;
+}) => {
   const { logEventsFromQuery } = useCampaignAnalytics();
 
   useEffect(() => {
@@ -45,7 +49,8 @@ export const HomePage = () => {
             alt="hero"
             className="h-full w-full object-cover"
             fill
-            loading="lazy"
+            placeholder="blur"
+            blurDataURL={base64Placeholder}
           />
         </div>
         <NewHeroSection />
