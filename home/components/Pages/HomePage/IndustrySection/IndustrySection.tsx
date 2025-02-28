@@ -1,11 +1,12 @@
-import { BaseCard } from '@/components/elements/Card';
+import { PublicationDialog } from '@/components/App/PublicationDialog';
 import Image from 'next/image';
-import Link from 'next/link';
+import { useState } from 'react';
+import { IProjects, projectsData } from './IndustryData';
 
 const IndustrySection = () => {
   return (
     <section>
-      <div className="bg-linear-to-bottom-black-blue xs:p-10 grid grid-cols-1 p-8 pt-20 md:p-16 md:pt-20 xl:grid-cols-2 xl:bg-linear-to-right-black-blue xl:p-28">
+      <div className="xs:p-10 grid grid-cols-1 bg-linear-to-bottom-black-blue p-8 pt-20 md:p-16 md:pt-20 xl:grid-cols-2 xl:bg-linear-to-right-black-blue xl:p-28">
         <div>
           <IndustrySectionHeading />
           <ProjectList />
@@ -58,127 +59,9 @@ const DownloadGuide = () => {
   );
 };
 
-interface IIndustryAndProjects {
-  industry: string;
-  projects: { title: string; link: string; isHot: boolean }[];
-}
-
-const projectsData: IIndustryAndProjects[] = [
-  {
-    industry: 'Crypto',
-    projects: [
-      { title: 'BoB based gaming web3 competitions', link: '', isHot: false },
-      { title: 'VRF based randomness', link: '', isHot: false },
-      {
-        title: 'Pre IPO based ERC-20 Tokens (CryptoCoin)',
-        link: '',
-        isHot: false,
-      },
-      { title: 'bitcoin fork chain (EVM based)', link: '', isHot: false },
-      { title: 'NFT & ERC-20 Platforms', link: '', isHot: false },
-      { title: 'Wallet Plugins for Browsers', link: '', isHot: false },
-      { title: 'Base Chain Platforms', link: '', isHot: false },
-      {
-        title: 'Smart Wallet Integration (Zero Gas Fees)',
-        link: '',
-        isHot: true,
-      },
-      { title: 'Embedded Wallet Setup', link: '', isHot: false },
-      {
-        title: 'Ramp Integrations for Onboarding Users',
-        link: '',
-        isHot: false,
-      },
-    ],
-  },
-  {
-    industry: 'Ai',
-    projects: [
-      {
-        title: 'Gen AI integrations (image, video, audio)',
-        link: '',
-        isHot: false,
-      },
-      {
-        title: 'Dynamic SEO & link previews based on AI',
-        link: '',
-        isHot: false,
-      },
-    ],
-  },
-  {
-    industry: 'SaaS',
-    projects: [
-      {
-        title: 'AR 3d model placements in React Native App',
-        link: '',
-        isHot: false,
-      },
-      {
-        title: 'Integrating live collaboration (like figma)',
-        link: '',
-        isHot: true,
-      },
-      {
-        title: 'Slack, Discord, Twitter Bots for Internal updates',
-        link: '',
-        isHot: false,
-      },
-      {
-        title: 'Predictive analytics & AI-powered dashboards',
-        link: '',
-        isHot: false,
-      },
-      { title: 'Ecommerce RAG based Framework', link: '', isHot: false },
-      { title: 'Workplace tools for enterprises', link: '', isHot: false },
-      { title: 'webRTC based live streaming meets', link: '', isHot: false },
-    ],
-  },
-  {
-    industry: 'App',
-    projects: [
-      {
-        title: 'AR 3d model placements in React Native App',
-        link: '',
-        isHot: false,
-      },
-      {
-        title: 'NFC card Authorization / Registrations',
-        link: '',
-        isHot: false,
-      },
-      { title: 'Social Tracking App for mariners', link: '', isHot: false },
-      { title: 'React Web Apps deployed hybrid', link: '', isHot: true },
-      {
-        title: 'Interactive Gesture Experiences for App',
-        link: '',
-        isHot: false,
-      },
-      {
-        title: 'Contact based syncing for a Social App',
-        link: '',
-        isHot: false,
-      },
-      { title: 'Biometric & Passkey Authentications', link: '', isHot: true },
-    ],
-  },
-  {
-    industry: 'Misc',
-    projects: [
-      { title: 'Threejs based virtual product view', link: '', isHot: false },
-      {
-        title: 'DevOps setup for private repos deployed on VPS',
-        link: '',
-        isHot: false,
-      },
-      { title: 'Telegram Mini Apps', link: '', isHot: false },
-      { title: 'Unity + Photon Multiplayer Games', link: '', isHot: false },
-      { title: 'Unity + Photon Multiplayer Games', link: '', isHot: false },
-    ],
-  },
-];
-
 const ProjectList = () => {
+  const [selectedPublication, setSelectedPublication] = useState<IProjects>();
+  const [openDialog, setOpenDialog] = useState(false);
   // Separate "Misc" from other industries
   const miscIndustry = projectsData.find((i) => i.industry === 'Misc');
   const filteredIndustries = projectsData.filter((i) => i.industry !== 'Misc');
@@ -200,67 +83,93 @@ const ProjectList = () => {
   }
 
   return (
-    <div className="mt-14 grid w-full grid-cols-1 justify-items-start gap-6 sm:grid-cols-2 sm:justify-items-center xl:w-fit xl:justify-items-start">
-      {/* Column 1 - Two big projects */}
-      <div className="flex flex-col gap-6">
-        {leftColumnIndustries.map((industry) => (
-          <div key={industry.industry}>
-            <h2 className="mb-4 text-3xl font-semibold">{industry.industry}</h2>
-            {industry.projects.map((project) => (
-              <Link
-                href={project.link}
-                key={project.title}
-                className={`group flex items-start gap-2 rounded-xl py-2 text-gray-300`}
-              >
-                <span className="relative w-fit after:absolute after:bottom-0 after:left-0 after:h-[1px] after:w-0 after:bg-white after:transition-all after:duration-200 after:content-[''] group-hover:text-white after:group-hover:w-full">
-                  {project.title}
-                </span>
-                {project.isHot && (
-                  <div className="flex items-end">
-                    <span className="material-symbols-outlined text-orange-500">
-                      local_fire_department
-                    </span>
-                    <span className="text-sm font-bold text-neutral-500">
-                      Hot
-                    </span>
-                  </div>
-                )}
-              </Link>
-            ))}
-          </div>
-        ))}
-      </div>
+    <>
+      <div className="mt-14 grid w-full grid-cols-1 justify-items-start gap-6 sm:grid-cols-2 sm:justify-items-center xl:w-fit xl:justify-items-start">
+        {/* Column 1 - Two big projects */}
+        <div className="flex flex-col gap-6">
+          {leftColumnIndustries.map((industry) => (
+            <div key={industry.industry}>
+              <h2 className="mb-4 text-3xl font-semibold">
+                {industry.industry}
+              </h2>
+              {industry.projects.map((project) => (
+                <div
+                  onClick={() => {
+                    setSelectedPublication({
+                      ...project,
+                      name: '',
+                      avatar: '',
+                    });
+                    setOpenDialog(true);
+                  }}
+                  key={project.title}
+                  className={`group flex cursor-pointer items-start gap-2 rounded-xl py-2 text-gray-300`}
+                >
+                  <span className="relative w-fit after:absolute after:bottom-0 after:left-0 after:h-[1px] after:w-0 after:bg-white after:transition-all after:duration-200 after:content-[''] group-hover:text-white after:group-hover:w-full">
+                    {project.title}
+                  </span>
+                  {project.isHot && (
+                    <div className="flex items-end">
+                      <span className="material-symbols-outlined text-orange-500">
+                        local_fire_department
+                      </span>
+                      <span className="text-sm font-bold text-neutral-500">
+                        Hot
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
 
-      {/* Column 2 - Three varied-height projects */}
-      <div className="flex flex-col gap-6">
-        {rightColumnIndustries.map((industry) => (
-          <div key={industry.industry}>
-            <h2 className="mb-4 text-3xl font-semibold">{industry.industry}</h2>
-            {industry.projects.map((project) => (
-              <Link
-                href={project.link}
-                key={project.title}
-                className={`group flex items-start gap-2 rounded-xl py-2 text-gray-300`}
-              >
-                <span className="relative w-fit after:absolute after:bottom-0 after:left-0 after:h-[1px] after:w-0 after:bg-white after:transition-all after:duration-200 after:content-[''] group-hover:text-white after:group-hover:w-full">
-                  {project.title}
-                </span>
-                {project.isHot && (
-                  <div className="flex items-end">
-                    <span className="material-symbols-outlined text-orange-500">
-                      local_fire_department
-                    </span>
-                    <span className="text-sm font-bold text-neutral-500">
-                      Hot
-                    </span>
-                  </div>
-                )}
-              </Link>
-            ))}
-          </div>
-        ))}
+        {/* Column 2 - Three varied-height projects */}
+        <div className="flex flex-col gap-6">
+          {rightColumnIndustries.map((industry) => (
+            <div key={industry.industry}>
+              <h2 className="mb-4 text-3xl font-semibold">
+                {industry.industry}
+              </h2>
+              {industry.projects.map((project) => (
+                <div
+                  onClick={() => {
+                    setSelectedPublication({
+                      ...project,
+                      name: '',
+                      avatar: '',
+                    });
+                    setOpenDialog(true);
+                  }}
+                  key={project.title}
+                  className={`group flex cursor-pointer items-start gap-2 rounded-xl py-2 text-gray-300`}
+                >
+                  <span className="relative w-fit after:absolute after:bottom-0 after:left-0 after:h-[1px] after:w-0 after:bg-white after:transition-all after:duration-200 after:content-[''] group-hover:text-white after:group-hover:w-full">
+                    {project.title}
+                  </span>
+                  {project.isHot && (
+                    <div className="flex items-end">
+                      <span className="material-symbols-outlined text-orange-500">
+                        local_fire_department
+                      </span>
+                      <span className="text-sm font-bold text-neutral-500">
+                        Hot
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
+      <PublicationDialog
+        data={selectedPublication}
+        open={openDialog}
+        setOpenDialog={setOpenDialog}
+        setPublication={setSelectedPublication}
+      />
+    </>
   );
 };
 
