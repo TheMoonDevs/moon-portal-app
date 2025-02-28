@@ -1,5 +1,6 @@
 import { BaseCard } from '@/components/elements/Card';
 import Image from 'next/image';
+import Link from 'next/link';
 
 const IndustrySection = () => {
   return (
@@ -59,84 +60,145 @@ const DownloadGuide = () => {
 
 interface IIndustryAndProjects {
   industry: string;
-  projects: { title: string; isHot: boolean }[];
+  projects: { title: string; link: string; isHot: boolean }[];
 }
 
 const projectsData: IIndustryAndProjects[] = [
   {
     industry: 'Crypto',
     projects: [
-      { title: 'BoB based gaming web3 competitions', isHot: false },
-      { title: 'VRF based randomness', isHot: false },
-      { title: 'Pre IPO based ERC-20 Tokens (CryptoCoin)', isHot: false },
-      { title: 'bitcoin fork chain (EVM based)', isHot: false },
-      { title: 'NFT & ERC-20 Platforms', isHot: false },
-      { title: 'Wallet Plugins for Browsers', isHot: false },
-      { title: 'Base Chain Platforms', isHot: false },
-      { title: 'Smart Wallet Integration (Zero Gas Fees)', isHot: true },
-      { title: 'Embedded Wallet Setup', isHot: false },
-      { title: 'Ramp Integrations for Onboarding Users', isHot: false },
+      { title: 'BoB based gaming web3 competitions', link: '', isHot: false },
+      { title: 'VRF based randomness', link: '', isHot: false },
+      {
+        title: 'Pre IPO based ERC-20 Tokens (CryptoCoin)',
+        link: '',
+        isHot: false,
+      },
+      { title: 'bitcoin fork chain (EVM based)', link: '', isHot: false },
+      { title: 'NFT & ERC-20 Platforms', link: '', isHot: false },
+      { title: 'Wallet Plugins for Browsers', link: '', isHot: false },
+      { title: 'Base Chain Platforms', link: '', isHot: false },
+      {
+        title: 'Smart Wallet Integration (Zero Gas Fees)',
+        link: '',
+        isHot: true,
+      },
+      { title: 'Embedded Wallet Setup', link: '', isHot: false },
+      {
+        title: 'Ramp Integrations for Onboarding Users',
+        link: '',
+        isHot: false,
+      },
     ],
   },
   {
     industry: 'Ai',
     projects: [
-      { title: 'Gen AI integrations (image, video, audio)', isHot: false },
-      { title: 'Dynamic SEO & link previews based on AI', isHot: false },
+      {
+        title: 'Gen AI integrations (image, video, audio)',
+        link: '',
+        isHot: false,
+      },
+      {
+        title: 'Dynamic SEO & link previews based on AI',
+        link: '',
+        isHot: false,
+      },
     ],
   },
   {
     industry: 'SaaS',
     projects: [
-      { title: 'AR 3d model placements in React Native App', isHot: false },
-      { title: 'Integrating live collaboration (like figma)', isHot: true },
       {
-        title: 'Slack, Discord, Twitter Bots for Internal updates',
+        title: 'AR 3d model placements in React Native App',
+        link: '',
         isHot: false,
       },
-      { title: 'Predictive analytics & AI-powered dashboards', isHot: false },
-      { title: 'Ecommerce RAG based Framework', isHot: false },
-      { title: 'Workplace tools for enterprises', isHot: false },
-      { title: 'webRTC based live streaming meets', isHot: false },
+      {
+        title: 'Integrating live collaboration (like figma)',
+        link: '',
+        isHot: true,
+      },
+      {
+        title: 'Slack, Discord, Twitter Bots for Internal updates',
+        link: '',
+        isHot: false,
+      },
+      {
+        title: 'Predictive analytics & AI-powered dashboards',
+        link: '',
+        isHot: false,
+      },
+      { title: 'Ecommerce RAG based Framework', link: '', isHot: false },
+      { title: 'Workplace tools for enterprises', link: '', isHot: false },
+      { title: 'webRTC based live streaming meets', link: '', isHot: false },
     ],
   },
   {
     industry: 'App',
     projects: [
-      { title: 'AR 3d model placements in React Native App', isHot: false },
-      { title: 'NFC card Authorization / Registrations', isHot: false },
-      { title: 'Social Tracking App for mariners', isHot: false },
-      { title: 'React Web Apps deployed hybrid', isHot: true },
-      { title: 'Interactive Gesture Experiences for App', isHot: false },
-      { title: 'Contact based syncing for a Social App', isHot: false },
-      { title: 'Biometric & Passkey Authentications', isHot: true },
+      {
+        title: 'AR 3d model placements in React Native App',
+        link: '',
+        isHot: false,
+      },
+      {
+        title: 'NFC card Authorization / Registrations',
+        link: '',
+        isHot: false,
+      },
+      { title: 'Social Tracking App for mariners', link: '', isHot: false },
+      { title: 'React Web Apps deployed hybrid', link: '', isHot: true },
+      {
+        title: 'Interactive Gesture Experiences for App',
+        link: '',
+        isHot: false,
+      },
+      {
+        title: 'Contact based syncing for a Social App',
+        link: '',
+        isHot: false,
+      },
+      { title: 'Biometric & Passkey Authentications', link: '', isHot: true },
     ],
   },
   {
     industry: 'Misc',
     projects: [
-      { title: 'Threejs based virtual product view', isHot: false },
-      { title: 'DevOps setup for private repos deployed on VPS', isHot: false },
-      { title: 'Telegram Mini Apps', isHot: false },
-      { title: 'Unity + Photon Multiplayer Games', isHot: false },
-      { title: 'Unity + Photon Multiplayer Games', isHot: false },
+      { title: 'Threejs based virtual product view', link: '', isHot: false },
+      {
+        title: 'DevOps setup for private repos deployed on VPS',
+        link: '',
+        isHot: false,
+      },
+      { title: 'Telegram Mini Apps', link: '', isHot: false },
+      { title: 'Unity + Photon Multiplayer Games', link: '', isHot: false },
+      { title: 'Unity + Photon Multiplayer Games', link: '', isHot: false },
     ],
   },
 ];
 
 const ProjectList = () => {
+  // Separate "Misc" from other industries
+  const miscIndustry = projectsData.find((i) => i.industry === 'Misc');
+  const filteredIndustries = projectsData.filter((i) => i.industry !== 'Misc');
+
   // Sort industries by project count (descending)
-  const sortedIndustries = projectsData.sort(
+  const sortedIndustries = [...filteredIndustries].sort(
     (a, b) => b.projects.length - a.projects.length,
   );
 
-  // Select two biggest industries for the left column
+  // Select the two biggest industries for the left column
   const leftColumnIndustries = sortedIndustries.slice(0, 2);
 
-  // Place the rest in the right column
-  const rightColumnIndustries = sortedIndustries
-    .slice(2)
-    .sort((a, b) => a.projects.length - b.projects.length);
+  // Select industries for the right column (excluding "Misc")
+  const rightColumnIndustries = sortedIndustries.slice(2, projectsData.length);
+
+  // Ensure "Misc" is always the last entry in the right column
+  if (miscIndustry) {
+    rightColumnIndustries.push(miscIndustry);
+  }
+
   return (
     <div className="mt-14 grid w-full grid-cols-1 justify-items-start gap-6 sm:grid-cols-2 sm:justify-items-center xl:w-fit xl:justify-items-start">
       {/* Column 1 - Two big projects */}
@@ -145,11 +207,14 @@ const ProjectList = () => {
           <div key={industry.industry}>
             <h2 className="mb-4 text-3xl font-semibold">{industry.industry}</h2>
             {industry.projects.map((project) => (
-              <div
+              <Link
+                href={project.link}
                 key={project.title}
-                className={`flex items-start gap-2 rounded-xl py-2 text-gray-300`}
+                className={`group flex items-start gap-2 rounded-xl py-2 text-gray-300`}
               >
-                <span className="w-fit">{project.title}</span>
+                <span className="relative w-fit after:absolute after:bottom-0 after:left-0 after:h-[1px] after:w-0 after:bg-white after:transition-all after:duration-200 after:content-[''] group-hover:text-white after:group-hover:w-full">
+                  {project.title}
+                </span>
                 {project.isHot && (
                   <div className="flex items-end">
                     <span className="material-symbols-outlined text-orange-500">
@@ -160,7 +225,7 @@ const ProjectList = () => {
                     </span>
                   </div>
                 )}
-              </div>
+              </Link>
             ))}
           </div>
         ))}
@@ -172,11 +237,14 @@ const ProjectList = () => {
           <div key={industry.industry}>
             <h2 className="mb-4 text-3xl font-semibold">{industry.industry}</h2>
             {industry.projects.map((project) => (
-              <div
+              <Link
+                href={project.link}
                 key={project.title}
-                className={`flex items-start gap-2 rounded-xl py-2 text-gray-300`}
+                className={`group flex items-start gap-2 rounded-xl py-2 text-gray-300`}
               >
-                <span className="w-fit">{project.title}</span>
+                <span className="relative w-fit after:absolute after:bottom-0 after:left-0 after:h-[1px] after:w-0 after:bg-white after:transition-all after:duration-200 after:content-[''] group-hover:text-white after:group-hover:w-full">
+                  {project.title}
+                </span>
                 {project.isHot && (
                   <div className="flex items-end">
                     <span className="material-symbols-outlined text-orange-500">
@@ -187,7 +255,7 @@ const ProjectList = () => {
                     </span>
                   </div>
                 )}
-              </div>
+              </Link>
             ))}
           </div>
         ))}
