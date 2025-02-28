@@ -152,12 +152,12 @@ const NewHeader = () => {
           {path !== '/products/custom-bots' && (
             <>
               <div className="flex items-center">
-                <MenuItem label="Products" to="/products/custom-bots" />
-                <MenuItem label="Services" />
+                <MenuItem label="Pricing" to="/pricing" />
+                <MenuItem label="Roast" to="/roast" />
                 <Link
                   href={'https://portal.themoondevs.com'}
                   className="cursor-pointer rounded-md border-2 border-transparent px-2 py-2 text-sm font-semibold transition-colors duration-300 ease-in-out hover:bg-[#414a4c] max-lg:hidden"
-                  onClick={() => handleGoogleSignIn('/')}
+                  // onClick={() => handleGoogleSignIn('/')}
                 >
                   Sign In
                 </Link>
