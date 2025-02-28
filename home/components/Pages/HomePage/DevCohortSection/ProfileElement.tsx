@@ -1,7 +1,8 @@
 import React from 'react';
-import { IProfileData, IPublication } from './ProfileGrid';
+import { IProfileData } from './ProfileGrid';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import { IPublication } from '@/components/App/PublicationDialog';
 interface ProfileElementProps {
   data: IProfileData;
   borderColor?: string;
@@ -10,9 +11,7 @@ interface ProfileElementProps {
   position?: 'top' | 'center' | 'bottom';
   size?: 'small' | 'medium' | 'large';
   setPublications: React.Dispatch<
-    React.SetStateAction<
-      (IPublication & { name: string; avatar: string }) | undefined
-    >
+    React.SetStateAction<IPublication | undefined>
   >;
   setOpenDialog: React.Dispatch<React.SetStateAction<boolean>>;
 }
