@@ -3,6 +3,7 @@ import { BaseCard } from '@/components/elements/Card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Testimonial } from './Testimonial';
 import Faqs from './Faqs';
+import { cn } from '@/lib/utils';
 
 const Plans = [
   {
@@ -61,10 +62,49 @@ interface IPlan {
   buttonText: string;
   extraButton?: string;
 }
+
+export const StickyBoundary = ({
+  className,
+  isAtBottom,
+}: {
+  className?: string;
+  isAtBottom?: boolean;
+}) => {
+  return (
+    <div
+      className={cn('top-24 z-20 flex items-center justify-center', className)}
+    >
+      <span
+        className={cn(
+          'absolute -left-[0.5rem] -top-[1rem] z-20 text-xl font-bold text-gray-400',
+
+          isAtBottom && '-bottom-[0.8rem] top-[unset]',
+        )}
+      >
+        +
+      </span>
+      <div
+        className={cn(
+          'absolute left-0 right-0 top-0 h-[1px] bg-gray-100',
+          isAtBottom && 'bottom-0 top-[unset]',
+        )}
+      ></div>
+      <span
+        className={cn(
+          'absolute -right-[0.5rem] -top-[1rem] text-xl font-bold text-gray-400',
+          isAtBottom && '-bottom-[0.8rem] top-[unset]',
+        )}
+      >
+        +
+      </span>
+    </div>
+  );
+};
 const PricingPage = () => {
   return (
     <main className="flex flex-col items-center justify-center bg-white">
       <div className="mt-20 w-11/12 border border-gray-200 md:mt-40 md:w-9/12">
+        <StickyBoundary className="sticky" />
         <Header />
         <PricingTabs />
         <Testimonial />

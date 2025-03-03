@@ -7,6 +7,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from '@/components/ui/carousel';
+import { StickyBoundary } from './PricingPage';
 
 const testimonials = [
   {
@@ -59,7 +60,12 @@ interface Testimonial {
 
 export function Testimonial() {
   return (
-    <div className="mx-full-bleed flex h-screen flex-col items-center justify-center bg-black p-6 px-8">
+    <div className="mx-full-bleed relative z-40 flex h-screen flex-col items-center justify-center bg-black p-6 px-8">
+      <StickyBoundary className="absolute left-0 right-0 top-0 z-50 mx-auto w-[74%]" />
+      <StickyBoundary
+        className="absolute bottom-0 left-0 right-0 z-50 mx-auto w-[74%]"
+        isAtBottom
+      />
       <Header />
       <CarouselContainer />
     </div>
