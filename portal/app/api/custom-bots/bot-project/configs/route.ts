@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/prisma/prisma';
 import { JsonObject } from '@prisma/client/runtime/library';
-import { configureStore } from '@reduxjs/toolkit';
 
 export async function GET(
   req: Request,
