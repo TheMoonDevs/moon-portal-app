@@ -60,7 +60,7 @@ interface Testimonial {
 
 export function Testimonial() {
   return (
-    <div className="mx-full-bleed relative z-40 flex h-screen flex-col items-center justify-center bg-black p-6 px-8">
+    <div className="mx-full-bleed relative z-40 flex h-screen flex-col items-center justify-center bg-black p-6 px-8 xl:px-[12rem]">
       <Header />
       <CarouselContainer />
     </div>
