@@ -20,7 +20,7 @@ const NavigationMenu = React.forwardRef<
       <NavigationMenuPrimitive.Root
         ref={ref}
         className={cn(
-          'relative z-10 flex max-w-max flex-1 items-center justify-center',
+          'z-10 flex max-w-max flex-1 items-center justify-center',
           className,
         )}
         {...props}
@@ -81,7 +81,7 @@ const NavigationMenuContent = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <NavigationMenuPrimitive.Content
     ref={ref}
-    className={cn('left-0 top-0 w-full md:absolute md:w-auto', className)}
+    className={cn('left-0 top-0 w-full md:w-auto', className)}
     {...props}
   />
 ));
@@ -96,7 +96,7 @@ const NavigationMenuViewport = React.forwardRef<
   <div className={cn('absolute left-0 top-full flex justify-center')}>
     <NavigationMenuPrimitive.Viewport
       className={cn(
-        'origin-top-center data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out relative mt-3 h-[var(--radix-navigation-menu-viewport-height)] w-full overflow-hidden rounded-md bg-popover text-popover-foreground shadow data-[state=closed]:fade-out data-[state=open]:fade-in md:w-[var(--radix-navigation-menu-viewport-width)]',
+        'origin-top-center data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out relative mt-3 h-fit w-full overflow-hidden rounded-md bg-popover text-popover-foreground shadow data-[state=closed]:fade-out data-[state=open]:fade-in md:w-[var(--radix-navigation-menu-viewport-width)]',
         className,
       )}
       ref={ref}
