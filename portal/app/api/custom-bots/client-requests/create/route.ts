@@ -8,13 +8,19 @@ import {
 import { GithubSdk } from '@/utils/services/githubSdk';
 
 export async function POST(request: Request) {
+  const TMD_GITHUB_TOKEN = process.env.TMD_GITHUB_TOKEN;
+
+  if (!TMD_GITHUB_TOKEN) {
+    console.error('No Github token provided');
+  }
   const body = await request.json();
-  let { requestTite, requestDescription, clientId, botProjectId, assigneeId } =
+  let { requestTitle, requestDescription, clientId, botProjectId, assigneeId } =
     body;
 
-  requestTite = requestTite.toLowerCase().replace(/ /g, '-');
+  requestTitle = requestTitle.toLowerCase().replace(/ /g, '-');
+  requestDescription = `REQUEST: ${requestDescription}`;
 
-  if (!requestTite || !requestDescription || !clientId || !botProjectId) {
+  if (!requestTitle || !requestDescription || !clientId || !botProjectId) {
     return NextResponse.json(
       { error: 'Missing required fields' },
       { status: 400 },
@@ -22,20 +28,6 @@ export async function POST(request: Request) {
   }
 
   try {
-    const TMD_GITHUB_TOKEN = process.env.TMD_GITHUB_TOKEN;
-
-    if (!TMD_GITHUB_TOKEN) {
-      console.error('No Github token provided');
-    }
-
-    // Create an instance for the template repository.
-    const appRepoSdk = new GithubSdk({
-      owner: TEMPLATE_REPO_OWNER,
-      repo: TEMPLATE_REPO,
-      token: TMD_GITHUB_TOKEN as string,
-    });
-    const newBranch = `request/${requestTite}-${Date.now()}`;
-
     const botProject = await prisma.botProject.findUnique({
       where: { id: botProjectId },
     });
@@ -46,8 +38,15 @@ export async function POST(request: Request) {
       );
     }
 
-    const targetbranch = botProject?.githubRepoBranch || 'main';
+    // Create an instance for the template repository.
+    const appRepoSdk = new GithubSdk({
+      owner: TEMPLATE_REPO_OWNER,
+      repo: botProject?.githubRepoName as string,
+      token: TMD_GITHUB_TOKEN as string,
+    });
+    const newBranch = `request/${requestTitle}`;
 
+    const targetbranch = botProject?.githubRepoBranch || 'main';
 
     // 1. Create a new branch from "main"
     await appRepoSdk.createBranch({
@@ -55,24 +54,22 @@ export async function POST(request: Request) {
       baseBranch: targetbranch,
     });
 
-    const filePath = `botProject/${botProject?.name?.toLowerCase().replace(/ /g, '-')}/requests/${requestTite}-${Date.now()}/README.md`;
+    const filePath = `ProjectInfo/${requestTitle.toLowerCase().replace(/ /g, '-')}/README.md`;
 
     // 2. Construct the file path and update the README.md file on the new branch.
     await appRepoSdk.updateFile({
       path: filePath,
-      content: `REQUEST: ${requestDescription}`,
-      commitMessage: `Add README for ${requestTite}`,
+      content: requestDescription,
+      commitMessage: `Add README for ${requestTitle}`,
       branch: newBranch,
     });
 
     // 3. Create a pull request from the new branch to "main"
-    const prTitle = `New Request: ${requestTite}`;
-    const prBody = `REQUEST: ${requestDescription}`;
-    const prResult:any = await appRepoSdk.createPullRequest({
-      title: prTitle,
+    const prResult: any = await appRepoSdk.createPullRequest({
+      title: `New Request: ${requestTitle}`,
       head: newBranch,
       base: targetbranch,
-      body: prBody,
+      body: requestDescription,
     });
 
     const bot = await prisma.clientRequests.create({
@@ -80,10 +77,10 @@ export async function POST(request: Request) {
         botProjectId,
         clientId,
         assigneeId,
-        title: requestTite,
+        title: requestTitle,
         description: requestDescription,
-        prUrl: prResult?.html_url as string || '',
-        prNumber: prResult?.number as number || null,
+        prUrl: (prResult?.html_url as string) || '',
+        prNumber: (prResult?.number as number) || null,
         requestStatus: PRSTATUS.UN_ASSIGNED,
       },
     });

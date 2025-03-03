@@ -31,18 +31,40 @@ export async function POST(request: Request) {
       token: TOKEN as string,
     });
 
-    const newBranch = `botProject/${projectName.toLowerCase().replace(/ /g, '-')}`;
+    const newRepoName = `CustomBots-${projectName.toLowerCase().replace(/ /g, '-')}`;
+
+    const result: any = await templateRepoSdk.createRepositoryFromTemplate({
+      newRepoName,
+    });
+
+    if (!result) {
+      return NextResponse.json(
+        { error: 'Failed to create bot project' },
+        { status: 500 },
+      );
+    }
+
+    // Create an instance for the new repository.
+    const newRepoSdk = new GithubSdk({
+      owner: TEMPLATE_REPO_OWNER,
+      repo: result?.name || newRepoName,
+      token: TOKEN as string,
+    });
+
+    const newBranch = `project/${projectName.toLowerCase().replace(/ /g, '-')}`;
+
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // 1. Create a new branch from "main"
-    await templateRepoSdk.createBranch({
+    await newRepoSdk.createBranch({
       branchName: newBranch,
       baseBranch: 'main',
     });
 
-    const filePath = `botProject/${projectName.toLowerCase().replace(/ /g, '-')}/README.md`;
+    const filePath = `ProjectInfo/README.md`;
 
     // 2. Construct the file path and update the README.md file on the new branch.
-    await templateRepoSdk.updateFile({
+    await newRepoSdk.updateFile({
       path: filePath,
       content: `DESCRIPTION: ${projectDescription}`,
       commitMessage: `Add README for ${projectName}`,
@@ -52,7 +74,7 @@ export async function POST(request: Request) {
     // 3. Create a pull request from the new branch to "main"
     const prTitle = `Project: ${projectName}`;
     const prBody = `DESCRIPTION: ${projectDescription}`;
-    const prResult:any = await templateRepoSdk.createPullRequest({
+    const prResult: any = await newRepoSdk.createPullRequest({
       title: prTitle,
       head: newBranch,
       base: 'main',
@@ -63,12 +85,15 @@ export async function POST(request: Request) {
       data: {
         clientId: userId,
         name: projectName,
-        githubRepoName: TEMPLATE_REPO,
-        githubRepoUrl: prResult?.head?.repo?.html_url as string || `https://github.com/${TEMPLATE_REPO_OWNER}/${TEMPLATE_REPO}`,
+        githubRepoName: newRepoName,
+        githubRepoUrl:
+          (prResult?.head?.repo?.html_url as string) ||
+          `https://github.com/${TEMPLATE_REPO_OWNER}/${newRepoName}`,
         githubRepoBranch: newBranch,
-        prUrl: prResult?.html_url as string || '',
-        prNumber: prResult?.number as number || null,
+        prUrl: (prResult?.html_url as string) || '',
+        prNumber: (prResult?.number as number) || null,
         description: projectDescription,
+        projectConfiguration: {}
       },
     });
 
