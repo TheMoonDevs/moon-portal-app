@@ -643,6 +643,51 @@ enum ENGAGEMENTTYPE {
   FIXED
 }
 
+
+// -------------------------------------Custom Bots-------------------------------------------
+
+model BotProject {
+  id             String           @id @default(auto()) @map("_id") @db.ObjectId
+  clientId       String
+  name           String           @unique
+  githubRepoName String
+  githubRepoUrl  String
+  githubRepoBranch String?     @default("main")
+  prUrl          String?
+  prNumber       Int?
+  description    String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  clientRequests ClientRequests[]
+  projectConfiguration Json?
+}
+
+model ClientRequests {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  botProjectId  String   @db.ObjectId
+  clientId      String // Identifier for who created this bot
+  assigneeId    String?
+  title         String
+  description   String?
+  prUrl         String?
+  prNumber      Int?
+  requestStatus PRSTATUS @default(UN_ASSIGNED)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  botProject BotProject @relation(fields: [botProjectId], references: [id])
+}
+
+enum PRSTATUS {
+  UN_ASSIGNED
+  IN_DEVELOPMENT
+  IN_QUEUE
+  IN_REVIEW
+  IN_TESTING
+  COMPLETED
+}
+
+
 //-------------------------------------INVOICE---------------------------------
 
 model Invoice {
@@ -670,3 +715,4 @@ enum PayType {
   BANK
   CRYPTO
 }
+

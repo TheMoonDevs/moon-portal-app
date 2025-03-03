@@ -78,7 +78,7 @@ If you have dotenv-vault access, follow these steps:
 ```sh
 cd <project-folder>
 npx dotenv-vault@latest login
-npx dotenv-vault@latest pull
+npx dotenv-vault@latest pull <ci/production>
 ```
 
 Edit `.env.ci` or `.env.prod`, then update:  

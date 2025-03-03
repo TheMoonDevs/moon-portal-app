@@ -11,6 +11,7 @@ interface TextareaProps {
   customClass?: string;
   value?: string;
   onChange?: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  rows?: number;
 }
 
 const Textarea: React.FC<TextareaProps> = ({
@@ -22,6 +23,7 @@ const Textarea: React.FC<TextareaProps> = ({
   customClass,
   value,
   onChange,
+  rows
 }) => {
   return (
     <div className="mb-4 flex flex-col">
@@ -32,6 +34,7 @@ const Textarea: React.FC<TextareaProps> = ({
         className={`mt-1 h-48 resize-none rounded-lg border border-gray-300 p-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-gray-500 ${customClass}`}
         value={value}
         onChange={onChange}
+        rows={rows}
       />
       {errors && errors[id] && (
         <p className="mt-1 text-xs text-red-500">{errors[id].message}</p>
