@@ -33,7 +33,7 @@ export async function POST(request: Request) {
 
     const newRepoName = `CustomBots-${projectName.toLowerCase().replace(/ /g, '-')}`;
 
-    const result = await templateRepoSdk.createRepositoryFromTemplate({
+    const result: any = await templateRepoSdk.createRepositoryFromTemplate({
       newRepoName,
     });
 
@@ -47,11 +47,13 @@ export async function POST(request: Request) {
     // Create an instance for the new repository.
     const newRepoSdk = new GithubSdk({
       owner: TEMPLATE_REPO_OWNER,
-      repo: newRepoName,
+      repo: result?.name || newRepoName,
       token: TOKEN as string,
     });
 
     const newBranch = `project/${projectName.toLowerCase().replace(/ /g, '-')}`;
+
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // 1. Create a new branch from "main"
     await newRepoSdk.createBranch({
@@ -91,6 +93,7 @@ export async function POST(request: Request) {
         prUrl: (prResult?.html_url as string) || '',
         prNumber: (prResult?.number as number) || null,
         description: projectDescription,
+        projectConfiguration: {}
       },
     });
 
