@@ -7,6 +7,11 @@ import { PortalSdk } from "@/utils/services/PortalSdk";
 import { useUser } from "@/utils/hooks/useUser";
 import { LOCAL_STORAGE } from "../constants/appInfo";
 import { toast } from "sonner";
+import {
+  passphraseEmailTemplate,
+  POST_EMAIL_API,
+  ADMIN_EMAIL
+} from "../helpers/emailTemplates";
 
 export const usePassphrase = () => {
   const { user, refetchUser } = useUser();
@@ -53,6 +58,34 @@ export const usePassphrase = () => {
     try {
       const newPassphrase = generateRandomPassphrase(16);
       localStorage.setItem(LOCAL_STORAGE.passphrase, newPassphrase);
+      if (!user?.email) {
+        toast.dismiss();
+        toast.error('User email is not available.');
+        return;
+      }
+      if (!user?.name) {
+        toast.dismiss();
+        toast.error('User name is not available.');
+        return;
+      }
+      const response = await fetch(POST_EMAIL_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: user?.email,
+          sender: ADMIN_EMAIL,
+          subject: 'Your New Passphare to Access Private Logs',
+          body: passphraseEmailTemplate(user?.name, newPassphrase),
+          displayName: 'The Moon Devs',
+        }),
+      });
+
+      if (!response.ok) {
+        toast.dismiss();
+        toast.error('Failed to send passphrase email. Please try again.');
+        return;
+      }
+
       setLocalPassphrase(newPassphrase);
 
       const { hash: dbHash } = hashPassphrase(newPassphrase);

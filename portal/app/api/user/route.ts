@@ -1,5 +1,10 @@
 import { prisma } from "@/prisma/prisma";
 import { sheetMap, spreadsheetId } from "@/utils/constants/spreadsheetData";
+import {
+  ADMIN_EMAIL,
+  passcodeEmailTemplate,
+  POST_EMAIL_API,
+} from '@/utils/helpers/emailTemplates';
 // import GoogleSheetsAPI from "@/utils/services/googleSheetSdk";
 import { HOUSEID, USERROLE, USERSTATUS, USERTYPE } from "@prisma/client";
 import dayjs from "dayjs";
@@ -86,6 +91,31 @@ export async function POST(request: Request) {
         ...rest,
       },
     });
+
+    const response = await fetch(POST_EMAIL_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        to: rest.email,
+        sender: ADMIN_EMAIL,
+        subject: 'Your Passcode for The Moon Devs Portal',
+        body: passcodeEmailTemplate(
+          rest.name,
+          `${rest.username} - ${rest.password}`,
+        ),
+        displayName: 'The Moon Devs',
+      }),
+    });
+    console.log('Email sent successfully:', await response.json());
+    if (!response.ok) {
+      return new NextResponse(
+        JSON.stringify({ error: 'Failed to send Passcode email' }),
+        {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      );
+    }
     // const currentDate = new Date()
     //   .toLocaleDateString("en-GB")
     //   .split("/")
