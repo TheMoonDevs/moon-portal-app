@@ -31,7 +31,9 @@ export async function POST(request: Request) {
       token: TOKEN as string,
     });
 
-    const newRepoName = `CustomBots-${projectName.toLowerCase().replace(/ /g, '-')}`;
+    const randomString = Math.random().toString(36).substring(2, 8);
+
+    const newRepoName = `CustomBots-${projectName.toLowerCase().replace(/ /g, '-')}-${randomString}`;
 
     const result: any = await templateRepoSdk.createRepositoryFromTemplate({
       newRepoName,
