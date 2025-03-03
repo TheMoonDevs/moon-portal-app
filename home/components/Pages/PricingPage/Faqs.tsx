@@ -55,7 +55,7 @@ const Faqs = () => {
               <div className="h-28 w-full"></div>
               <div className="h-28 w-full"></div>
             </div>
-            <Accordion type="single" className="w-full">
+            <Accordion className="w-full border-t">
               {faq.map(({ question, answer }, index) => (
                 <AccordionItem
                   key={question}
