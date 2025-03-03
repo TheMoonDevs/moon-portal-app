@@ -16,6 +16,8 @@ import NewHeroSection from './HeroSection/NewHeroSection';
 import PricingSection from './PricingSection/PricingSection';
 import StackSection from './StacksSection/StackSection';
 import Image from 'next/image';
+import IndustrySection from './IndustrySection/IndustrySection';
+import DevCohortSection from './DevCohortSection/DevCohortSection';
 
 export const HomePage = ({
   base64Placeholder,
@@ -56,6 +58,8 @@ export const HomePage = ({
         <NewHeroSection />
         <StackSection />
       </div>
+      <IndustrySection />
+      <DevCohortSection />
       <PricingSection />
     </div>
   );

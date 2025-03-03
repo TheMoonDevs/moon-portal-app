@@ -39,6 +39,10 @@ module.exports = {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
         'gradient-conic':
           'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
+        'linear-to-right-black-blue':
+          'linear-gradient(90deg, rgba(0,0,0,1) 43%, rgba(0,41,118,1) 100%)',
+        'linear-to-bottom-black-blue':
+          'linear-gradient(180deg, rgba(0,0,0,1) 20%, rgba(0,41,118,1) 100%)',
       },
       borderRadius: {
         lg: 'var(--radius)',
@@ -136,6 +140,7 @@ module.exports = {
       },
     },
   },
+
   plugins: [require('tailwindcss-animate'), addVariablesForColors],
 };
 
