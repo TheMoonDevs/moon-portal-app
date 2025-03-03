@@ -50,7 +50,7 @@ export const ProductsContent = ({
   return (
     <div
       className={cn(
-        'grid w-[800px] grid-cols-[4fr_4fr] divide-x p-4 px-1',
+        'grid w-[800px] p-2 px-1 md:grid-cols-[4fr_4fr] md:divide-x md:p-1',
         className,
       )}
     >
@@ -61,7 +61,7 @@ export const ProductsContent = ({
               type="card"
               headerTitle={item.category}
               cardHeaderStyle={index === 0 ? `bg-orange-500` : `bg-green-500`}
-              cardStyle={`w-full group-hover:bg-neutral-200  ${orientation === 'mobile' ? '!justify-[unset] h-fit' : 'h-52 justify-between'}`}
+              cardStyle={`w-full group-hover:bg-neutral-200  ${orientation === 'mobile' ? '!justify-[unset] h-fit' : 'aspect-video justify-between'}`}
               contentStyle="text-black"
               imageUrl={item.image_url}
               className="w-full"
@@ -71,7 +71,7 @@ export const ProductsContent = ({
           </ul>
 
           <div className="flex items-center justify-center">
-            <ul className="grid w-full space-y-3 p-4">
+            <ul className="my-2 ml-4 grid w-full grid-flow-row space-y-1 border-l border-gray-300 md:m-0 md:space-y-3 md:border-none md:p-4 md:pt-0">
               {item.items.map((item, index) => (
                 <ListItem className="w-full" key={index} title={item.name}>
                   {item.description}

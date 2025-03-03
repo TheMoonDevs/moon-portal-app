@@ -68,9 +68,8 @@ export const ResourcesContent = ({
     >
       <ul
         className={cn(
-          'grid w-full grid-flow-row p-4',
-          orientation === 'tablet' &&
-            'grid grid-cols-2 space-y-0 divide-x divide-gray-200',
+          'grid w-full grid-flow-row p-2 md:grid-cols-2 md:space-y-0 md:divide-x md:divide-gray-200 md:p-4 lg:grid-cols-1 lg:divide-none',
+          orientation === 'tablet' && '',
         )}
       >
         <div className="grid w-full grid-flow-row">
@@ -103,12 +102,12 @@ export const ResourcesContent = ({
         </div>
       </ul>
       {/* </div> */}
-      <div className="bg-black p-0 pb-4">
+      <div className="bg-black p-0 md:pb-4">
         <div className="p-5 pb-2 text-xl font-bold text-white">Featured</div>
         <ul
           className={cn(
-            'flex flex-col items-center justify-between',
-            orientation === 'tablet' && 'flex-row',
+            'flex flex-col items-center justify-between md:flex-row lg:flex-col',
+            // orientation === 'tablet' && 'flex-row',
           )}
         >
           {FeaturedMenuItems.map((item, index) => (

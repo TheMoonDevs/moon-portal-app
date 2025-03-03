@@ -34,20 +34,20 @@ export const ListItem = React.forwardRef<
   ) => {
     if (type === 'card') {
       return (
-        <li>
+        <li className="w-full">
           <div className="w-full">
             <a
               ref={ref}
               href={link || '#'}
               className={cn(
-                'group flex cursor-pointer select-none items-start justify-between rounded-md p-3 py-0 leading-none no-underline outline-none transition-colors hover:text-accent-foreground focus:text-accent-foreground',
+                'group flex w-full cursor-pointer select-none items-start justify-between rounded-md p-1 py-0 leading-none no-underline outline-none transition-colors hover:text-accent-foreground focus:text-accent-foreground md:p-3',
                 className,
               )}
               {...props}
             >
               <BaseCard
                 className={cn(
-                  'group w-fit bg-transparent p-3 shadow-none transition-all duration-300 group-hover:bg-neutral-700',
+                  'group w-full bg-transparent p-3 shadow-none transition-all duration-300 group-hover:bg-neutral-700',
                   cardStyle,
                 )}
                 cardHeader={
@@ -75,7 +75,7 @@ export const ListItem = React.forwardRef<
                       width={500}
                       height={500}
                       className={cn(
-                        'aspect-video object-cover transition-transform duration-500 ease-in-out group-hover:scale-105',
+                        'aspect-video w-full object-cover transition-transform duration-500 ease-in-out group-hover:scale-105',
                         imageStyle,
                       )}
                     />
@@ -85,7 +85,9 @@ export const ListItem = React.forwardRef<
                   <div
                     className={cn('mt-4 space-y-2 text-white', contentStyle)}
                   >
-                    <div className="font-bold leading-none">{title}</div>
+                    <div className="text-sm font-bold leading-none md:text-base">
+                      {title}
+                    </div>
                     {children && (
                       <p className="line-clamp-2 text-sm leading-snug text-neutral-400">
                         {children}
@@ -112,7 +114,9 @@ export const ListItem = React.forwardRef<
             {...props}
           >
             <div className="space-y-2">
-              <div className="font-bold leading-none">{title}</div>
+              <div className="text-sm font-bold leading-none text-black md:text-base">
+                {title}
+              </div>
               <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
                 {children}
               </p>

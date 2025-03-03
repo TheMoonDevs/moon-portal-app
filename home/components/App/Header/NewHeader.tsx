@@ -39,12 +39,16 @@ const NewHeader = () => {
     setShowDropdown({ publicBots: false, pricing: false });
   };
 
-  const isMobile = useMediaQuery(media.largeMobile);
+  const isLaptopOrLess = useMediaQuery(media.laptop);
+
   useEffect(() => {
-    if (!isMobile && open) {
+    if (isLaptopOrLess && open) {
       setOpen(false);
+    } else if (isLaptopOrLess && !open) {
+      setOpen(true);
     }
-  }, [isMobile]);
+  }, [isLaptopOrLess]);
+
   const handleGoogleSignIn = async (redirectUrl?: string) => {
     try {
       const user = await signInWithSocial();
@@ -57,9 +61,9 @@ const NewHeader = () => {
   };
 
   return (
-    <div className="fixed top-0 z-[100] w-full backdrop-blur-sm">
+    <div className="fixed top-0 z-[100] w-full lg:backdrop-blur-sm">
       <div
-        className={`relative mx-6 my-6 flex items-center justify-between bg-transparent ${open && 'mb-0 rounded-t-lg rounded-tr-lg !bg-black'} max-lg:mx-2 max-lg:my-2`}
+        className={`relative mx-2 my-0 mt-2 flex items-center justify-between lg:mx-6 lg:my-6 lg:bg-transparent ${open && isLaptopOrLess && 'mb-0 rounded-t-lg rounded-tr-lg !bg-black'}`}
       >
         <div className="flex h-12 max-w-fit items-center justify-between rounded-lg bg-black px-2 text-white">
           <Link
@@ -177,7 +181,7 @@ const NewHeader = () => {
           </button>
         </div>
       </div>
-      {open && isMobile && (
+      {open && isLaptopOrLess && (
         <HamBurger handleGoogleSignIn={handleGoogleSignIn} />
       )}
     </div>
@@ -194,87 +198,94 @@ const HamBurger = ({
   const path = usePathname();
 
   return (
-    <div className="mx-6 rounded-bl-lg rounded-br-lg bg-black px-5 py-4 text-white max-lg:mx-2 max-lg:my-[-10px]">
-      {path === '/' && (
-        <>
-          <Accordion className="w-full" defaultValue={'resources'}>
-            <AccordionItem value="resources" className="w-full border-none">
-              <AccordionTrigger
-                className="text-left text-2xl font-bold"
-                arrowStyle="text-white h-6 w-6"
-              >
-                Resources
-              </AccordionTrigger>
-              <AccordionContent className="w-full bg-white text-base text-neutral-600">
-                <ResourcesContent orientation="mobile" className="bg-white" />
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="products" className="w-full border-none">
-              <AccordionTrigger
-                className="text-left text-2xl font-bold"
-                arrowStyle="text-white h-6 w-6"
-              >
-                Products
-              </AccordionTrigger>
-              <AccordionContent className="w-full bg-white text-base text-neutral-600">
-                <ProductsContent className="w-full p-2" orientation="mobile" />
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
+    <div className="h-dvh overflow-y-scroll rounded-bl-lg rounded-br-lg bg-black/50 pb-16">
+      <div className="mx-2 my-[-10px] bg-black px-5 py-4 text-white lg:mx-6 lg:my-0">
+        {path === '/' && (
+          <>
+            <Accordion className="w-full" defaultValue={'resources'}>
+              <AccordionItem value="resources" className="w-full border-none">
+                <AccordionTrigger
+                  className="text-left text-2xl font-bold"
+                  arrowStyle="text-white h-6 w-6"
+                >
+                  Resources
+                </AccordionTrigger>
+                <AccordionContent className="w-full bg-white text-base text-neutral-600">
+                  <ResourcesContent orientation="mobile" className="bg-white" />
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="products" className="w-full border-none">
+                <AccordionTrigger
+                  className="text-left text-2xl font-bold"
+                  arrowStyle="text-white h-6 w-6"
+                >
+                  Products
+                </AccordionTrigger>
+                <AccordionContent className="w-full bg-white text-base text-neutral-600">
+                  <ProductsContent
+                    className="w-full p-2"
+                    orientation="mobile"
+                  />
+                </AccordionContent>
+              </AccordionItem>
 
-          <Link
-            href={'https://portal.themoondevs.com'}
-            className="py-2 text-2xl font-bold max-sm:text-lg"
-            onClick={() => handleGoogleSignIn && handleGoogleSignIn('/')}
-          >
-            Sign In
-          </Link>
-          <div className="mt-6 flex items-center gap-4 border-t-[1px] border-gray-300 py-4 max-sm:flex-col max-sm:gap-2 max-sm:py-2">
-            <button
-              className="w-full rounded-md bg-white py-2 text-sm font-semibold text-black transition-all duration-300 hover:bg-black hover:text-white max-sm:w-full"
-              style={{ border: '2px solid white' }}
-            >
-              Book a Call
-            </button>
-          </div>
-        </>
-      )}
-      {path === '/products/custom-bots' && (
-        <>
-          <p className="flex items-center justify-between py-2 text-2xl font-bold max-sm:text-lg">
-            Public Bots{' '}
-            <span className="material-symbols-outlined">
-              keyboard_arrow_down
-            </span>
-          </p>
-          <p className="flex items-center justify-between py-2 text-2xl font-bold max-sm:text-lg">
-            Resources
-            <span className="material-symbols-outlined">
-              keyboard_arrow_down
-            </span>
-          </p>
-          <p className="py-2 text-2xl font-bold max-sm:text-lg">Pricing</p>
-          <div className="mt-6 flex items-center gap-4 border-t-[1px] border-gray-300 py-4 max-sm:flex-col max-sm:gap-2 max-sm:py-2">
-            <button
-              className="w-1/2 rounded-md bg-white py-2 text-sm font-semibold text-black max-sm:w-full"
-              style={{ border: '2px solid white' }}
-            >
-              View Demo
-            </button>
-            <Link
-              href={'https://portal.themoondevs.com'}
-              className="w-1/2 rounded-md bg-black py-2 text-sm font-semibold text-white max-sm:w-full"
-              style={{ border: '2px solid white' }}
-              // onClick={() =>
-              //   handleGoogleSignIn &&
-              //   handleGoogleSignIn('/products/custom-bots')
-              // }
-            >
-              Sign In
-            </Link>
-          </div>
-        </>
-      )}
+              <div className="mt-8">
+                <Link
+                  href={'https://portal.themoondevs.com'}
+                  className="text-2xl font-bold max-sm:text-lg"
+                  onClick={() => handleGoogleSignIn && handleGoogleSignIn('/')}
+                >
+                  Sign In
+                </Link>
+              </div>
+              <div className="mt-6 flex items-center gap-4 border-t-[1px] border-gray-300 py-4 max-sm:flex-col max-sm:gap-2 max-sm:py-2">
+                <button
+                  className="w-full rounded-md bg-white py-2 text-sm font-semibold text-black transition-all duration-300 hover:bg-black hover:text-white max-sm:w-full"
+                  style={{ border: '2px solid white' }}
+                >
+                  Book a Call
+                </button>
+              </div>
+            </Accordion>
+          </>
+        )}
+        {path === '/products/custom-bots' && (
+          <>
+            <p className="flex items-center justify-between py-2 text-2xl font-bold max-sm:text-lg">
+              Public Bots{' '}
+              <span className="material-symbols-outlined">
+                keyboard_arrow_down
+              </span>
+            </p>
+            <p className="flex items-center justify-between py-2 text-2xl font-bold max-sm:text-lg">
+              Resources
+              <span className="material-symbols-outlined">
+                keyboard_arrow_down
+              </span>
+            </p>
+            <p className="py-2 text-2xl font-bold max-sm:text-lg">Pricing</p>
+            <div className="mt-6 flex items-center gap-4 border-t-[1px] border-gray-300 py-4 max-sm:flex-col max-sm:gap-2 max-sm:py-2">
+              <button
+                className="w-1/2 rounded-md bg-white py-2 text-sm font-semibold text-black max-sm:w-full"
+                style={{ border: '2px solid white' }}
+              >
+                View Demo
+              </button>
+              <Link
+                href={'https://portal.themoondevs.com'}
+                className="w-1/2 rounded-md bg-black py-2 text-sm font-semibold text-white max-sm:w-full"
+                style={{ border: '2px solid white' }}
+                // onClick={() =>
+                //   handleGoogleSignIn &&
+                //   handleGoogleSignIn('/products/custom-bots')
+                // }
+              >
+                Sign In
+              </Link>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 };
