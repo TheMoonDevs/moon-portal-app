@@ -716,3 +716,91 @@ enum PayType {
   CRYPTO
 }
 
+// -----------------------------EMAIL SUBSCRIPTIONS-----------------------------
+
+model EmailSubscriber {
+  id                 String              @id @default(auto()) @map("_id") @db.ObjectId
+  email              String              @unique
+  name               String?
+  userType           UserType?           @default(developer)
+  source             String?             
+  subscriptionStatus SubscriptionStatus? @default(active)
+  timeZone           String?
+  preferences        Preferences?
+  contactDetails     ContactDetails?
+  context            String? // for what the user is signing up for
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+type Preferences {
+  frequency               Frequency     @default(bi_weekly)
+  categories              Category[]    @default([])
+  contentLength           ContentLength @default(short)
+  contentFormat           ContentFormat @default(summary)
+  receiveImportantUpdates Boolean       @default(true)
+  preferredLanguage       String?       @default("en")
+}
+
+type ContactDetails {
+  phone              String? // Optional phone number
+  address            String? // Free-text address field
+  socialMediaHandles Json?
+}
+
+enum UserType {
+  client
+  developer
+  other
+}
+
+enum Source {
+  home_signup
+  sense
+  connect
+  tally_form
+  linkedin
+  other
+}
+
+enum SubscriptionStatus {
+  active
+  paused
+  unsubscribed
+}
+
+enum Frequency {
+  daily
+  weekly
+  bi_weekly
+}
+
+enum ContentLength {
+  short
+  medium
+  long
+}
+
+enum ContentFormat {
+  summary
+  detailed
+  mixed
+}
+
+enum EmailStatus {
+  sent
+  bounced
+  delivered
+}
+
+enum Category {
+  frontend
+  backend
+  fullstack
+  cloud
+  devops
+  security
+  blockchain
+  mobile
+  other
+}
