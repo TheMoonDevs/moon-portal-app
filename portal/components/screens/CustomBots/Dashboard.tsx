@@ -135,7 +135,7 @@ export default function BotProjectPage() {
     
     try {
       const data = await PortalSdk.postData("/api/custom-bots/client-requests/create", {
-        requestTite: newRequest.requestTitle,
+        requestTitle: newRequest.requestTitle,
         requestDescription: newRequest.requestDescription,
         clientId,
         botProjectId: selectedProject.id,
