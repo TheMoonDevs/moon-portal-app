@@ -1,20 +1,15 @@
 'use client';
 
-import { Dialog, Grid, useMediaQuery } from '@mui/material';
+import { Grid, useMediaQuery } from '@mui/material';
 import ProfileElement from './ProfileElement';
-import { CardBody, CardContainer, CardItem } from '@/components/ui/3d-card';
-import Image from 'next/image';
-import Link from 'next/link';
+
 import { useState } from 'react';
 import media from '@/styles/media';
+import {
+  IPublication,
+  PublicationDialog,
+} from '@/components/App/PublicationDialog';
 
-export interface IPublication {
-  title: string;
-  description: string;
-  link: string;
-  image_url: string;
-  type: string;
-}
 export interface IProfileData {
   name: string;
   avatar: string;
@@ -167,12 +162,8 @@ const ProfileData: IProfileData[] = [
   },
 ];
 const ProfileGrid = () => {
-  const [selectedPublication, setSelectedPublication] = useState<
-    IPublication & {
-      name: string;
-      avatar: string;
-    }
-  >();
+  const [selectedPublication, setSelectedPublication] =
+    useState<IPublication>();
   const [openDialog, setOpenDialog] = useState(false);
   const isTabletOrLess = useMediaQuery(media.tablet);
 
@@ -292,111 +283,6 @@ const ProfileGrid = () => {
         data={selectedPublication}
       />
     </>
-  );
-};
-
-const PublicationDialog = ({
-  open,
-  data,
-  setPublication,
-  setOpenDialog,
-}: {
-  open: boolean;
-  setOpenDialog: React.Dispatch<React.SetStateAction<boolean>>;
-  setPublication: React.Dispatch<
-    React.SetStateAction<
-      (IPublication & { name: string; avatar: string }) | undefined
-    >
-  >;
-  data: (IPublication & { name: string; avatar: string }) | undefined;
-}) => {
-  return (
-    <Dialog
-      open={open}
-      onClose={() => {
-        setOpenDialog(false);
-        setTimeout(() => setPublication(undefined), 500);
-        // setTimeout(() => setPublication(undefined), 500);
-      }}
-      sx={{ zIndex: 9999, backdropFilter: 'blur(8px)' }}
-      PaperProps={{
-        sx: {
-          width: 'fit-content',
-          height: 'fit-content',
-          shadow: 'none',
-          boxShadow: 'none',
-          borderRadius: '1.5rem',
-          background: 'transparent',
-          overflow: 'visible',
-        },
-      }}
-    >
-      <CardContainer className="inter-var">
-        <CardBody className="group/card group relative h-auto w-auto overflow-hidden rounded-3xl border-2 border-gray-50 bg-[rgba(43,43,43,0.5)] dark:border-white/[0.2] dark:bg-black dark:hover:shadow-2xl dark:hover:shadow-emerald-500/[0.1] sm:w-[30rem] md:hover:overflow-visible">
-          <CardItem
-            translateZ="100"
-            className="w-full !overflow-hidden rounded-tl-xl rounded-tr-xl md:group-hover:rounded-bl-xl md:group-hover:rounded-br-xl"
-          >
-            <Image
-              src={data?.image_url || ''}
-              height="1000"
-              width="1000"
-              className="h-60 w-full object-cover group-hover/card:shadow-xl"
-              alt="thumbnail"
-            />
-          </CardItem>
-          <div className="p-4">
-            <CardItem
-              translateZ="50"
-              className="mt-2 text-xl font-bold text-gray-50 dark:text-white"
-            >
-              {data?.title}
-            </CardItem>
-            <CardItem
-              as="p"
-              translateZ="60"
-              className="mt-2 max-w-sm text-sm text-neutral-400 dark:text-neutral-300"
-            >
-              {data?.description}
-            </CardItem>
-            <div className="mt-4 flex items-center justify-between">
-              <CardItem
-                translateZ={20}
-                as={Link}
-                href="https://twitter.com/mannupaaji"
-                target="__blank"
-                className="flex items-center rounded-xl py-2 text-xs font-normal dark:text-white"
-              >
-                <Image
-                  src={data?.avatar || ''}
-                  height={20}
-                  width={20}
-                  className="mr-2 inline-block rounded-full"
-                  alt={data?.name || 'Author Photo'}
-                />
-                <span>{data?.name}</span>
-              </CardItem>
-              <CardItem
-                translateZ={20}
-                as="button"
-                className="rounded-xl bg-gray-50 px-4 py-2 text-xs font-bold text-black dark:bg-white dark:text-black"
-              >
-                {data?.link && (
-                  <Link href={data?.link} className="flex items-center gap-2">
-                    <div>
-                      {data.type === 'article' ? 'Read Full Article' : 'Watch'}
-                    </div>
-                    <span className="material-symbols-outlined !text-lg">
-                      arrow_right_alt
-                    </span>
-                  </Link>
-                )}
-              </CardItem>
-            </div>
-          </div>
-        </CardBody>
-      </CardContainer>
-    </Dialog>
   );
 };
 
