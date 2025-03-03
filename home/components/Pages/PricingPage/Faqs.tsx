@@ -39,6 +39,8 @@ const Faqs = () => {
   return (
     <>
       <div className="relative w-full">
+        <StickyBoundary className="absolute left-0 right-0 top-0 z-50" />
+
         <StickyBoundary
           className="absolute bottom-0 left-0 right-0 z-50"
           isAtBottom
