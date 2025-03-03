@@ -649,7 +649,7 @@ enum ENGAGEMENTTYPE {
 model BotProject {
   id             String           @id @default(auto()) @map("_id") @db.ObjectId
   clientId       String
-  name           String           @unique
+  name           String
   githubRepoName String
   githubRepoUrl  String
   githubRepoBranch String?     @default("main")
