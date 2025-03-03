@@ -106,10 +106,10 @@ const PricingPage = () => {
       <div className="mt-20 w-11/12 border border-gray-200 md:mt-40 md:w-9/12">
         <StickyBoundary className="sticky top-16 md:top-24" />
         <div className="relative">
-          <StickyBoundary
+          {/* <StickyBoundary
             className="absolute bottom-0 left-0 right-0 z-50"
             isAtBottom
-          />
+          /> */}
           <Header />
           <PricingTabs />
         </div>
