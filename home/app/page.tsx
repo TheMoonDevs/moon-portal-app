@@ -10,8 +10,6 @@ export default async function Home() {
 
   const { base64 } = await getPlaiceholder(buffer);
   return (
-    <Suspense fallback={null}>
-      <HomePage base64Placeholder={base64} />;
-    </Suspense>
+    <HomePage base64Placeholder={base64} />
   );
 }

@@ -2,12 +2,13 @@ import { PublicationDialog } from '@/components/App/PublicationDialog';
 import Image from 'next/image';
 import { useState } from 'react';
 import { IProjects, projectsData } from './IndustryData';
+import DevFolioCard from '@/components/App/Global/FolioCard';
 
 const IndustrySection = () => {
   return (
     <section>
-      <div className="xs:p-10 grid grid-cols-1 bg-linear-to-bottom-black-blue p-8 pt-20 md:p-8 md:pt-20 md:grid-cols-3 xl:bg-linear-to-right-black-blue xl:p-28">
-        <div className='md:col-span-2'>
+      <div className="xs:p-10 grid grid-cols-1 bg-linear-to-bottom-black-blue p-8 pt-20 md:grid-cols-3 md:p-8 md:pt-20 xl:bg-linear-to-right-black-blue xl:p-28">
+        <div className="md:col-span-2">
           <IndustrySectionHeading />
           <ProjectList />
         </div>
@@ -20,7 +21,7 @@ const IndustrySection = () => {
 const DownloadGuide = () => {
   return (
     <div className="mt-14 flex items-start justify-center md:mt-0 md:justify-end">
-      <div className="flex w-full flex-col items-start justify-stretch rounded-2xl rounded-tl-[4rem] xl:rounded-tl-[6rem] bg-gray-300/50 p-4 pt-10 md:w-fit md:max-w-lg md:flex-col md:items-start">
+      <div className="flex w-full flex-col items-start justify-stretch rounded-2xl rounded-tl-[4rem] bg-gray-300/50 p-4 pt-10 md:w-fit md:max-w-lg md:flex-col md:items-start xl:rounded-tl-[6rem]">
         <div className="relative w-full">
           <Image
             src="/images/project-images.png"
@@ -29,30 +30,13 @@ const DownloadGuide = () => {
             width={500}
             height={400}
           />
-          <div className="absolute -bottom-8 right-[5%] z-10 flex flex-col text-6xl font-bold leading-[8rem] md:text-[5rem] xl:text-[6rem] sm:leading-normal">
+          <div className="absolute -bottom-8 right-[5%] z-10 flex flex-col text-6xl font-bold leading-[8rem] sm:leading-normal md:text-[5rem] xl:text-[6rem]">
             <span>20</span>
             <span className="-mt-[3.5rem]">25</span>
           </div>
         </div>
         <div className="mt-6 rounded-2xl bg-black p-6 pt-8">
-          <div className="flex w-fit flex-col gap-4">
-            <h1 className="text-xl font-bold xl:text-3xl">MoonDev-Folio</h1>
-            <p className='text-neutral-500 text-sm'>
-              Our teams have helped more than 56 startups, 132 Feature requests
-              for many innovations across the globe. Get an informative guide
-            </p>
-            <div className="mt-2 flex w-full flex-col items-center rounded-full border-transparent bg-black md:mt-4 xl:flex-row xl:border-[1px] xl:border-gray-500 xl:p-1.5 xl:gap-0">
-              <input
-                type="email"
-                onChange={(e) => { }}
-                placeholder="@ - Enter your Mail"
-                className="w-full text-sm flex-1 rounded-full border border-gray-500 bg-transparent px-3 py-1 text-white placeholder-gray-400 outline-none xl:w-auto xl:rounded-none xl:border-none"
-              />
-              <button className="mt-4 text-sm w-full rounded-full border border-white bg-white px-4 py-2 font-medium text-black transition hover:bg-gray-200 xl:mt-0 xl:w-auto">
-                Download
-              </button>
-            </div>
-          </div>
+          <DevFolioCard />
         </div>
       </div>
     </div>
@@ -84,7 +68,7 @@ const ProjectList = () => {
 
   return (
     <>
-      <div className="mt-14 grid w-full grid-cols-1 justify-items-start gap-6 xl:gap-8 sm:grid-cols-2 sm:justify-items-center md:w-fit md:justify-items-start">
+      <div className="mt-14 grid w-full grid-cols-1 justify-items-start gap-6 sm:grid-cols-2 sm:justify-items-center md:w-fit md:justify-items-start xl:gap-8">
         {/* Column 1 - Two big projects */}
         <div className="flex flex-col gap-6">
           {leftColumnIndustries.map((industry) => (
@@ -105,7 +89,7 @@ const ProjectList = () => {
                   key={project.title}
                   className={`group flex cursor-pointer items-start gap-2 rounded-xl py-1 text-gray-400`}
                 >
-                  <span className="text-sm relative w-fit after:absolute after:bottom-0 after:left-0 after:h-[1px] after:w-0 after:bg-white after:transition-all after:duration-200 after:content-[''] group-hover:text-white after:group-hover:w-full">
+                  <span className="relative w-fit text-sm after:absolute after:bottom-0 after:left-0 after:h-[1px] after:w-0 after:bg-white after:transition-all after:duration-200 after:content-[''] group-hover:text-white after:group-hover:w-full">
                     {project.title}
                   </span>
                   {project.isHot && (
@@ -144,7 +128,7 @@ const ProjectList = () => {
                   key={project.title}
                   className={`group flex cursor-pointer items-start gap-2 rounded-xl py-1 text-gray-400`}
                 >
-                  <span className="text-sm relative w-fit after:absolute after:bottom-0 after:left-0 after:h-[1px] after:w-0 after:bg-white after:transition-all after:duration-200 after:content-[''] group-hover:text-white after:group-hover:w-full">
+                  <span className="relative w-fit text-sm after:absolute after:bottom-0 after:left-0 after:h-[1px] after:w-0 after:bg-white after:transition-all after:duration-200 after:content-[''] group-hover:text-white after:group-hover:w-full">
                     {project.title}
                   </span>
                   {project.isHot && (

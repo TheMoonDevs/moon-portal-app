@@ -48,6 +48,17 @@ body {
   transition: opacity 300ms;
 }
 
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+input:-internal-autofill-selected {
+  transition:
+    background-color 0s 60000s,
+    color 0s 60000s !important ;
+  -webkit-box-shadow: 0 0 0px 1000px black inset !important;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

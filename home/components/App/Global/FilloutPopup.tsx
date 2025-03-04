@@ -4,7 +4,8 @@ import { createContext, useContext, useState } from 'react';
 import { FilloutSliderEmbed } from '@fillout/react';
 
 export const FilloutFormIds = {
-    BookCall: `iNbFWaZ8Xzus`
+    BookCall: `iNbFWaZ8Xzus`,
+    SimpletonGetStarted: `oXdihN68Kbus`,
 };
 
 const FilloutPopupContext = createContext<ReturnType<

@@ -120,7 +120,7 @@ const PricingCards = () => {
       <SimpleMvpCard
         data={PricingSectionCards.simpleMvp}
         className="col-span-4 h-[inherit] bg-gray-100 shadow-none md:col-span-2 xl:col-span-1 xl:row-span-2"
-        onActionClick={() => openForm(FilloutFormIds.BookCall)}
+        onActionClick={() => openForm(FilloutFormIds.SimpletonGetStarted)}
       />
       <SimpleMvpCard
         data={PricingSectionCards.premiumMVPs}
