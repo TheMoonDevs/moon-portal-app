@@ -10,14 +10,22 @@ const DevFolioCard = React.forwardRef<
   const [subscriptionStatus, setSubscriptionStatus] = useState<
     'PENDING' | 'SUCCESS' | 'ERROR' | 'IDLE'
   >('IDLE');
+  const [statusMessage, setStatusMessage] = useState<{
+    message: string;
+    type: 'SUCCESS' | 'ERROR' | null;
+  }>({
+    message: '',
+    type: null,
+  });
   const handleDownloadFolio = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSubscriptionStatus('PENDING');
     try {
       const formData = new FormData(e.currentTarget);
       const email = formData.get('email') || '';
+
       //1. call a subscription api
-      const response = await fetch('http://localhost:3000/api/subscribe', {
+      await fetch(`${APP_INFO.serverApiUrl}/subscribe`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -30,9 +38,6 @@ const DevFolioCard = React.forwardRef<
         }),
       });
 
-      const data = await response.json();
-
-      setSubscriptionStatus('SUCCESS');
       // 3. send an email to the user
       await fetch(
         'https://7vhx1xtjc1.execute-api.ap-southeast-2.amazonaws.com/latest/send-email',
@@ -55,9 +60,18 @@ const DevFolioCard = React.forwardRef<
           }),
         },
       );
+      setSubscriptionStatus('SUCCESS');
+      setStatusMessage({
+        message: 'Your Dev Folio has been emailed to you. 🎉 Check your inbox.',
+        type: 'SUCCESS',
+      });
     } catch (e) {
       console.log(e);
       setSubscriptionStatus('ERROR');
+      setStatusMessage({
+        message: 'Hmm... something went wrong. Give it another try! 🚀',
+        type: 'ERROR',
+      });
     } finally {
       setTimeout(() => setSubscriptionStatus('IDLE'), 3000);
     }
@@ -88,11 +102,23 @@ const DevFolioCard = React.forwardRef<
           {subscriptionStatus === 'PENDING' ? (
             <Loader2 className="animate-spin" size={16} />
           ) : subscriptionStatus === 'SUCCESS' ? (
-            <Check />
+            <Check size={16} className="text-green-500" />
           ) : null}
           <span>Download</span>
         </button>
       </form>
+      {statusMessage.message && (
+        <div className="flex w-full items-center justify-center">
+          {statusMessage.type === 'SUCCESS' && (
+            <p className="text-xs text-green-500 transition-all">
+              {statusMessage.message}
+            </p>
+          )}
+          {statusMessage.type === 'ERROR' && (
+            <p className="text-xs text-red-500">{statusMessage.message}</p>
+          )}
+        </div>
+      )}
     </div>
   );
 });
