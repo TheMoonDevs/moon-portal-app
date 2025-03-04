@@ -109,12 +109,13 @@ export const projectsData: IIndustryAndProjects[] = [
     projects: [
       {
         title: 'Gen AI integrations (image, video, audio)',
-        link: '',
+        link: 'https://portal.themoondevs.com/user/worklogs',
         isHot: false,
-        image_url: '/images/abstract-red.png',
+        image_url: '/images/assets/gen-ai-image.png',
         type: 'article',
         description:
           'A high-performance dashboard built for managing token holdings.',
+        cta_text: 'Try Demo',
       },
       {
         title: 'Dynamic SEO & link previews based on AI',
@@ -124,6 +125,50 @@ export const projectsData: IIndustryAndProjects[] = [
         type: 'article',
         description:
           'A high-performance dashboard built for managing token holdings.',
+      },{
+        title: 'Real-Time Sentiment Analysis for Customer Support Calls',
+        link: '',
+        isHot: false,
+        image_url: '/images/assets/Call-Sentiment-Analysis-Score.png',
+        type: 'article',
+        description:
+          'Developed a novel audio preprocessing pipeline that maintains accuracy even with poor connection quality. Created an intervention alert system that reduced negative call outcomes by 42%  ',
+      },{
+        title: 'RAG-Based Voice Assistant for Industrial Equipment Manuals',
+        link: 'https://www.cloudtalk.io/blog/ai-performance-evaluation/',
+        isHot: false,
+        image_url: '/images/assets/rag-based-image.png',
+        type: 'article',
+        description:
+          'Engineered a custom vector database architecture that reduced query time by 78% for complex technical information.\n  Integrated with proprietary hardware interfaces that traditional LLM frameworks can not support',
+        cta_text: 'View Case Study',
+      },{
+        title: 'Multimodal Content Moderation for UGC Platform',
+        link: '',
+        isHot: false,
+        image_url: '/images/assets/architecture.png',
+        type: 'article',
+        description:
+          'Solved cross-lingual evasion tactics by implementing a semantic understanding layer that works across 14 languages. Accelerated processing time from 2.1s to 0.3s by optimizing the inference pipeline',
+      },
+      {
+        title: 'LLM-Powered Contract Generation & Analysis',
+        link: '',
+        isHot: false,
+        image_url: '/images/assets/65a7b6e7380ad549731faa31_analyze.gif',
+        type: 'article',
+        description:
+          'Created a custom diff visualization system that highlights risk factors in legal documents that even the clients legal team had overlooked. Reduced integration complexity by building a middleware layer that works with legacy document management systems',
+        cta_text: 'See Demo',
+      },
+      {
+        title: 'Predictive Inventory Management for Perishable Goods',
+        link: '',
+        isHot: false,
+        image_url: '/images/assets/inventory-managment.png',
+        type: 'article',
+        description:
+          'Engineered a feature extraction system that identifies seasonal demand patterns 4x more accurately than traditional forecasting',
       },
     ],
   },
@@ -134,7 +179,7 @@ export const projectsData: IIndustryAndProjects[] = [
         title: 'AR 3d model placements in React Native App',
         link: '',
         isHot: false,
-        image_url: '/images/abstract-red.png',
+        image_url: '/images/assets/0_wU7J4l4ewkW2KRzB.png',
         type: 'article',
         description:
           'A high-performance dashboard built for managing token holdings.',

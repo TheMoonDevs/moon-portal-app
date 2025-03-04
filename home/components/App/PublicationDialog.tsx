@@ -9,6 +9,7 @@ export interface IPublication {
   link: string;
   image_url?: string | null;
   type: 'article' | 'website' | 'video';
+  cta_text?: string;
   video_url?: string;
   name?: string;
   avatar?: string;
@@ -124,9 +125,12 @@ export const PublicationDialog = ({
                 >
                   <Link href={data?.link} className="flex items-center gap-2">
                     <div>
-                      {data.type === 'article' && 'Read Full Article'}
-                      {data.type === 'website' && 'Visit Website'}
-                      {data.type === 'video' && 'Watch Video'}
+                      {data.type === 'article' && !data.cta_text && 
+                      'Read Full Article'}
+                      {data.type === 'website' && !data.cta_text && 
+                      'Visit Website'}
+                      {data.type === 'video' && !data.cta_text && 'Watch Video'}
+                      {data.cta_text && data.cta_text}
                     </div>
                     <span className="material-symbols-outlined !text-lg">
                       arrow_right_alt
