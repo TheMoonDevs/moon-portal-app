@@ -1,6 +1,7 @@
 import { BaseCard } from '@/components/elements/Card';
 import { PricingSectionCards } from './PricingSection';
 import Button from '@/components/elements/Button';
+import { FilloutFormIds, useFilloutPopup } from '@/components/App/Global/FilloutPopup';
 
 const CtaCardContent = () => {
   const highlights = PricingSectionCards.bookCall.highlights;
@@ -18,24 +19,27 @@ const CtaCardContent = () => {
   );
 };
 
-const CtaCardActions = () => {
+const CtaCardActions = ({ onClick }: {
+  onClick?: () => void
+}) => {
   const cta = PricingSectionCards.bookCall.cta;
   return (
     <Button
       variant="outlined"
       bgUrl="/images/abstract-golden.png"
+      onClick={onClick}
       text={<span className="max-w-44 text-left">{cta}</span>}
       className="mt-4 md:mt-10 flex w-full items-center justify-between gap-10 rounded-lg border-2 border-yellow-400 text-white xl:mt-0"
     />
   );
 };
 
-const CtaCard = ({ className }: { className?: string }) => {
+const CtaCard = ({ className, onActionClick }: { className?: string, onActionClick?: () => void }) => {
   return (
     <BaseCard
       className={className}
       cardContent={<CtaCardContent />}
-      cardActions={<CtaCardActions />}
+      cardActions={<CtaCardActions onClick={onActionClick} />}
     />
   );
 };

@@ -70,9 +70,12 @@ const PremiumCardHorizontal = ({ data }: PremiumMvpDataProps) => (
   </div>
 );
 
-const PremiumMvpCardActions = ({ data }: PremiumMvpDataProps) => (
+const PremiumMvpCardActions = ({ data, onClick }: PremiumMvpDataProps & {
+  onClick?: () => void;
+}) => (
   <div className="absolute right-0 top-0 p-4">
     <Button
+      onClick={onClick}
       variant="outlined"
       text={data.cta}
       className="flex w-full items-center justify-between gap-4 rounded-full border-gray-200 px-3 py-1 text-sm font-normal text-white hover:text-black"
@@ -83,11 +86,13 @@ const PremiumMvpCardActions = ({ data }: PremiumMvpDataProps) => (
 interface PremiumMvpCardProps extends React.HTMLAttributes<HTMLDivElement> {
   className?: string;
   data: typeof PricingSectionCards.premiumMVPs;
+  onActionClick?: () => void;
 }
 
 const PremiumMvpCardDesktop: React.FC<PremiumMvpCardProps> = ({
   className,
   data,
+  onActionClick,
   ...props
 }) => {
   return (
@@ -95,7 +100,7 @@ const PremiumMvpCardDesktop: React.FC<PremiumMvpCardProps> = ({
       {...props}
       className={`relative ${className || ''}`}
       cardContent={<PremiumCardHorizontal data={data} />}
-      cardActions={<PremiumMvpCardActions data={data} />}
+      cardActions={<PremiumMvpCardActions data={data} onClick={onActionClick} />}
     />
   );
 };

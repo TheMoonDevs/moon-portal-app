@@ -23,6 +23,9 @@ import { ResourcesContent } from './ResourcesContent';
 import { ProductsContent } from './ProductsContent';
 import media from '@/styles/media';
 import { useMediaQuery } from '@mui/material';
+import { FilloutSliderEmbed } from "@fillout/react";
+import { FilloutFormIds, useFilloutPopup } from '../Global/FilloutPopup';
+
 
 const NewHeader = () => {
   const [showDropdown, setShowDropdown] = useState({
@@ -32,7 +35,7 @@ const NewHeader = () => {
   const [open, setOpen] = useState(false);
   const path = usePathname();
   const router = useRouter();
-
+  const { openForm } = useFilloutPopup();
   const { signInWithSocial } = useAuthSession();
 
   const closeDropdowns = () => {
@@ -144,7 +147,7 @@ const NewHeader = () => {
                 <Link
                   href={'https://portal.themoondevs.com'}
                   className="cursor-pointer rounded-md border-2 border-transparent px-2 py-2 text-sm font-semibold transition-colors duration-300 ease-in-out hover:bg-[#414a4c] max-lg:hidden"
-                  // onClick={() => handleGoogleSignIn('/products/custom-bots')}
+                // onClick={() => handleGoogleSignIn('/products/custom-bots')}
                 >
                   Sign In
                 </Link>
@@ -161,12 +164,12 @@ const NewHeader = () => {
                 <Link
                   href={'https://portal.themoondevs.com'}
                   className="cursor-pointer rounded-md border-2 border-transparent px-2 py-2 text-sm font-semibold transition-colors duration-300 ease-in-out hover:bg-[#414a4c] max-lg:hidden"
-                  // onClick={() => handleGoogleSignIn('/')}
+                // onClick={() => handleGoogleSignIn('/')}
                 >
                   Sign In
                 </Link>
               </div>
-              <CustomButton label="Book a Call" />
+              <CustomButton label="Book a Call" onClick={() => openForm(FilloutFormIds.BookCall)} />
             </>
           )}
 
@@ -196,6 +199,7 @@ const HamBurger = ({
   handleGoogleSignIn?: (path: string) => void;
 }) => {
   const path = usePathname();
+  const { openForm } = useFilloutPopup();
 
   return (
     <div className="h-dvh overflow-y-scroll rounded-bl-lg rounded-br-lg bg-black/50 pb-16">
@@ -240,6 +244,7 @@ const HamBurger = ({
               </div>
               <div className="mt-6 flex items-center gap-4 border-t-[1px] border-gray-300 py-4 max-sm:flex-col max-sm:gap-2 max-sm:py-2">
                 <button
+                  onClick={() => openForm(FilloutFormIds.BookCall)}
                   className="w-full rounded-md bg-white py-2 text-sm font-semibold text-black transition-all duration-300 hover:bg-black hover:text-white max-sm:w-full"
                   style={{ border: '2px solid white' }}
                 >
@@ -275,10 +280,10 @@ const HamBurger = ({
                 href={'https://portal.themoondevs.com'}
                 className="w-1/2 rounded-md bg-black py-2 text-sm font-semibold text-white max-sm:w-full"
                 style={{ border: '2px solid white' }}
-                // onClick={() =>
-                //   handleGoogleSignIn &&
-                //   handleGoogleSignIn('/products/custom-bots')
-                // }
+              // onClick={() =>
+              //   handleGoogleSignIn &&
+              //   handleGoogleSignIn('/products/custom-bots')
+              // }
               >
                 Sign In
               </Link>
@@ -286,13 +291,16 @@ const HamBurger = ({
           </>
         )}
       </div>
+
     </div>
   );
 };
 
-const CustomButton = ({ label }: { label: string }) => {
+const CustomButton = ({ label, onClick }: { label: string, onClick?: () => void }) => {
   return (
-    <button className="hover:shadow-hover:shadow-gray-400 flex transform items-center justify-center rounded-lg !bg-white px-4 py-2 text-sm font-medium text-black transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:translate-x-0.5 max-lg:hidden">
+    <button
+      onClick={onClick}
+      className="hover:shadow-hover:shadow-gray-400 flex transform items-center justify-center rounded-lg !bg-white px-4 py-2 text-sm font-medium text-black transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:translate-x-0.5 max-lg:hidden">
       {label}
     </button>
   );

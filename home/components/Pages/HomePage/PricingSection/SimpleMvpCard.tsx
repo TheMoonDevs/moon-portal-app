@@ -7,6 +7,7 @@ interface SimpleMvpDataProps extends React.HTMLAttributes<HTMLDivElement> {
   data:
   | typeof PricingSectionCards.simpleMvp
   | typeof PricingSectionCards.premiumMVPs;
+  onActionClick?: () => void;
 }
 const SimpleMvpCardMedia = ({ image }: { image: string }) => (
   <Image
@@ -74,18 +75,21 @@ const SimpleMvpCardContent = ({
   );
 };
 
-const SimpleMvpCardActions = ({ cta }: { cta: string }) => {
+const SimpleMvpCardActions = ({ cta, onClick }: {
+  cta: string, onClick?: () => void
+}) => {
   return (
     <div className="w-full p-2 md:p-4">
       <Button
         text={cta}
+        onClick={onClick}
         className="flex w-full text-sm items-center justify-between rounded-full bg-red-500 px-8 md:text-xl hover:bg-red-600 hover:text-white xl:w-full"
       />
     </div>
   );
 };
 
-const SimpleMvpCard = ({ className, data }: SimpleMvpDataProps) => {
+const SimpleMvpCard = ({ className, data, onActionClick }: SimpleMvpDataProps) => {
   const { title, image, cta, highlights } = data;
   return (
     <BaseCard
@@ -103,7 +107,7 @@ const SimpleMvpCard = ({ className, data }: SimpleMvpDataProps) => {
           }}
         />
       }
-      cardActions={<SimpleMvpCardActions cta={cta} />}
+      cardActions={<SimpleMvpCardActions cta={cta} onClick={onActionClick} />}
     />
   );
 };
