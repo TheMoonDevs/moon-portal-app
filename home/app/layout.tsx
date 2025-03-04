@@ -20,6 +20,7 @@ import {
 import { TallyPopupProvider } from '@/components/App/Global/TallyPopup';
 import Script from 'next/script';
 // import Footer from "@/components/Global/Footer";
+import '@fillout/react/style.css';
 
 const inter = Inter({ subsets: ['latin'] });
 
