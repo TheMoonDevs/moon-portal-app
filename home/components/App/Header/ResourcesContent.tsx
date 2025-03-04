@@ -1,33 +1,40 @@
 import { cn } from '@/lib/utils';
 import { ListItem } from './NavigationListItem';
+import { useTallyPopup } from '../Global/TallyPopup';
 
 const ResourcesMenuItems = [
   {
+    id: 'why-themoondevs',
     title: 'Why TheMoonDevs?',
     description: 'Six reasons to choose TheMoonDevs',
     link: '/why-choose-us',
   },
   {
+    id: 'customers-latest-innovations',
     title: 'Customers & Latest Innovations',
     description: 'Browse latest real-world case studies',
     link: '/case-studies',
   },
   {
+    id: 'themoondevs-cohort',
     title: 'TheMoonDevs Cohort',
     description: 'Apply to join the elites of the startup builders',
     link: '/dev-cohort',
   },
   {
+    id: 'help-center',
     title: 'Help Center',
     description: 'FAQs, Quick Consultation, Raise Issues',
     link: '/help-center',
   },
   {
+    id: 'builder-community',
     title: 'Builder Community',
     description: 'Find expert answers & inspiration for your projects',
     link: '/community',
   },
   {
+    id: 'partnerships-proposals',
     title: 'Partnerships & Proposals',
     description: 'Co-operate with us in achieving dreams together',
     link: '/partnership-proposals',
@@ -56,9 +63,7 @@ export const ResourcesContent = ({
   className?: string;
   orientation?: 'desktop' | 'mobile' | 'tablet';
 }) => {
-  const midIndex = Math.ceil(ResourcesMenuItems.length / 2);
-  const firstHalf = ResourcesMenuItems.slice(0, midIndex);
-  const secondHalf = ResourcesMenuItems.slice(midIndex);
+  const { openPopup } = useTallyPopup();
   return (
     <div
       className={cn(
@@ -72,34 +77,24 @@ export const ResourcesContent = ({
           orientation === 'tablet' && '',
         )}
       >
-        <div className="grid w-full grid-flow-row">
-          {firstHalf.map((item, index) => {
-            return (
-              <ListItem
-                className="w-full"
-                key={index}
-                title={item.title}
-                link={item.link}
-              >
-                {item.description}
-              </ListItem>
-            );
-          })}
-        </div>
-        <div className="grid w-full grid-flow-row">
-          {secondHalf.map((item, index) => {
-            return (
-              <ListItem
-                className="w-full"
-                key={index}
-                title={item.title}
-                link={item.link}
-              >
-                {item.description}
-              </ListItem>
-            );
-          })}
-        </div>
+        {ResourcesMenuItems.map((item, index) => {
+          return (
+            <ListItem
+              className="w-full"
+              key={item.id}
+              title={item.title}
+              link={item.link}
+              onClick={(e) => {
+                if (item.id === 'themoondevs-cohort') {
+                  e.preventDefault();
+                  openPopup();
+                }
+              }}
+            >
+              {item.description}
+            </ListItem>
+          );
+        })}
       </ul>
       {/* </div> */}
       <div className="bg-black p-0 md:pb-4">
