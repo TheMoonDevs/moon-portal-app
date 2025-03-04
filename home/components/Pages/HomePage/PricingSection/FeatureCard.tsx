@@ -4,12 +4,13 @@ import Button from '@/components/elements/Button';
 
 interface FeatureCardProps {
   data:
-    | typeof PricingSectionCards.complexityScale
-    | typeof PricingSectionCards.roastMyProject;
+  | typeof PricingSectionCards.complexityScale
+  | typeof PricingSectionCards.roastMyProject;
   className?: string;
+  onActionClick?: () => void;
 }
 
-const FeatureCard = ({ data, className }: FeatureCardProps) => {
+const FeatureCard = ({ data, className, onActionClick }: FeatureCardProps) => {
   return (
     <BaseCard
       className={className}
@@ -23,6 +24,7 @@ const FeatureCard = ({ data, className }: FeatureCardProps) => {
       }
       cardActions={
         <Button
+          onClick={onActionClick}
           variant="outlined"
           className="flex w-fit items-center justify-between gap-4 self-end justify-self-end rounded-full border-black px-6 py-0 hover:bg-gray-200"
         />
