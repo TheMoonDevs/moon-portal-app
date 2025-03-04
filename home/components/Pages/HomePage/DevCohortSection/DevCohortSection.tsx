@@ -2,6 +2,7 @@ import { Mrs_Sheppards } from 'next/font/google';
 import ProfileGrid from './ProfileGrid';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useTallyPopup } from '@/components/App/Global/TallyPopup';
 
 const mrsSheppard = Mrs_Sheppards({ weight: '400', subsets: ['latin'] });
 const DevCohortSection = () => {
@@ -19,8 +20,9 @@ const DevCohortSection = () => {
 };
 
 const CohortFooter = () => {
+  const { openPopup } = useTallyPopup();
   return (
-    <div className="my-[100px] flex flex-col items-center justify-center gap-2 md:mt-10 md:mb-0 md:flex-row md:items-start md:gap-2">
+    <div className="my-[100px] flex flex-col items-center justify-center gap-2 md:mb-0 md:mt-10 md:flex-row md:items-start md:gap-2">
       <div className="flex items-end justify-center gap-1 text-xs font-bold md:items-start md:text-base">
         <div className="flex flex-col items-center gap-2 text-xs font-bold md:text-base">
           <Image
@@ -54,9 +56,9 @@ const CohortFooter = () => {
           <span>community </span>
           <span>of</span>
         </div>
-        <Link
-          href={'/dev-cohort'}
-          className="group flex items-center gap-1 md:flex-col"
+        <div
+          onClick={openPopup}
+          className="group flex cursor-pointer items-center gap-1 md:flex-col"
         >
           <span className={`${mrsSheppard.className} text-xl md:text-4xl`}>
             300 +
@@ -69,7 +71,7 @@ const CohortFooter = () => {
               open_in_new
             </span>
           </span>
-        </Link>
+        </div>
         <span className="text-xs font-bold md:text-base">devs</span>
       </div>
     </div>
@@ -78,7 +80,7 @@ const CohortFooter = () => {
 
 const CohortHeader = () => {
   return (
-    <div className="flex items-center justify-center gap-5 my-[100px] md:gap-10 md:mt-0 md:mb-0 md:flex-col md:items-start md:justify-start">
+    <div className="my-[100px] flex items-center justify-center gap-5 md:mb-0 md:mt-0 md:flex-col md:items-start md:justify-start md:gap-10">
       <div className="flex flex-col text-2xl md:text-5xl">
         <span>Work </span>
         <span>with </span>

@@ -17,6 +17,8 @@ import {
   ProgressBar,
   ProgressBarProvider,
 } from '@/components/App/Global/react-transition-progress/CustomProgress';
+import { TallyPopupProvider } from '@/components/App/Global/TallyPopup';
+import Script from 'next/script';
 // import Footer from "@/components/Global/Footer";
 
 const inter = Inter({ subsets: ['latin'] });
@@ -59,6 +61,11 @@ export default function RootLayout({
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
         ></link>
+        <Script
+          src="https://tally.so/widgets/embed.js"
+          strategy="afterInteractive"
+          defer
+        />
       </head>
       <body className={inter.className}>
         <MUIThemeRegistry options={{ key: 'mui' }}>
@@ -66,9 +73,11 @@ export default function RootLayout({
           <ReduxProvider>
             <ProgressBarProvider>
               <ProgressBar className="fixed top-0 z-[9999] h-1 bg-black shadow-lg shadow-sky-500/20" />
-              <NewHeader />
-              <main>{children}</main>
-              <FooterSection />
+              <TallyPopupProvider>
+                <NewHeader />
+                <main>{children}</main>
+                <FooterSection />
+              </TallyPopupProvider>
               {/* <AppPageLoader /> */}
             </ProgressBarProvider>
           </ReduxProvider>

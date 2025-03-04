@@ -39,6 +39,7 @@ export const ListItem = React.forwardRef<
             <a
               ref={ref}
               href={link || '#'}
+              onClick={props.onClick}
               className={cn(
                 'group flex w-full cursor-pointer select-none items-start justify-between rounded-md p-1 py-0 leading-none no-underline outline-none transition-colors hover:text-accent-foreground focus:text-accent-foreground md:p-3',
                 className,
