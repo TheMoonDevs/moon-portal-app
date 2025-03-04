@@ -91,6 +91,10 @@ const DevFolioCard = React.forwardRef<
           type="email"
           name="email"
           required
+          onChange={(e) =>
+            statusMessage.message &&
+            setStatusMessage({ message: '', type: null })
+          }
           placeholder="@ - Enter your Mail"
           className="w-full flex-1 rounded-full border border-gray-500 bg-transparent px-3 py-1 text-sm text-white placeholder-gray-400 outline-none xl:w-auto xl:rounded-none xl:border-none"
         />
