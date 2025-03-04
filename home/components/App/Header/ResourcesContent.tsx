@@ -43,7 +43,7 @@ const ResourcesMenuItems = [
 
 const FeaturedMenuItems = [
   {
-    image_url: '/images/abstract-red.png',
+    image_url: '/images/folio-2025-article.png',
     title: 'DevFolio-2025',
     description: 'TheMoonDevs Cohort 2025',
     link: '/folios',
