@@ -21,6 +21,7 @@ import { TallyPopupProvider } from '@/components/App/Global/TallyPopup';
 import Script from 'next/script';
 // import Footer from "@/components/Global/Footer";
 import '@fillout/react/style.css';
+import { FilloutPopupProvider } from '@/components/App/Global/FilloutPopup';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -75,9 +76,13 @@ export default function RootLayout({
             <ProgressBarProvider>
               <ProgressBar className="fixed top-0 z-[9999] h-1 bg-black shadow-lg shadow-sky-500/20" />
               <TallyPopupProvider>
-                <NewHeader />
-                <main>{children}</main>
-                <FooterSection />
+                <FilloutPopupProvider formParams={{
+                  formId: ``,
+                }}>
+                  <NewHeader />
+                  <main>{children}</main>
+                  <FooterSection />
+                </FilloutPopupProvider>
               </TallyPopupProvider>
               {/* <AppPageLoader /> */}
             </ProgressBarProvider>
