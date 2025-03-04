@@ -6,16 +6,20 @@ import { format } from 'date-fns';
 import { APP_BASE_URL } from '../../../../../utils/constants/appInfo';
 import { SlackBotSdk, SlackChannels } from '@/utils/services/slackBotSdk';
 import { GenAiSdk } from '@/utils/services/GenAiSdk';
+import dayjs from 'dayjs';
 
 export const revalidate = 0;
 
 const slackBot = new SlackBotSdk();
+const doomsDay = dayjs('2025-04-30');
 
-const formatDate = (date: Date) => format(date, 'EEEE, MMMM dd, yyyy');
+const formatDate = (date: Date) => format(date, 'EEEE -- MMMM dd, yyyy');
 
 const generateMessages = async (usersWithWorkLogs: any[]) => {
   const today = formatDate(new Date());
-  let messages = `Good morning team! ☀️ Today is ${today}\n\n`;
+  let messages = `Good morning team! ☀️ Today is ${today} --- We're *${
+    doomsDay.diff(dayjs(), 'days') + 1
+  } days* away from Doomsday! 🌍🔥\n\n`;
 
   let combinedWorklogsContent = '';
 
@@ -47,18 +51,24 @@ const generateMessages = async (usersWithWorkLogs: any[]) => {
       completedTasksYesterday === totalTasksYesterday &&
       totalTasksToday === 0
     ) {
-      message += ` finished all tasks (${totalTasksYesterday}) yesterday 🚀`;
+      message += ` finished all *tasks (${totalTasksYesterday})* yesterday 🚀`;
+    } else if (
+      totalTasksYesterday > 0 &&
+      completedTasksYesterday === totalTasksYesterday &&
+      totalTasksToday > 0
+    ) {
+      message += ` finished *all tasks (${totalTasksYesterday})* yesterday 🚀, & planned ${totalTasksToday} tasks for today 🎯`;
     } else {
-      message += ` completed ${completedTasksYesterday} tasks ✅, left ${incompleteTasksYesterday} unfinished ${incompleteTasksYesterday === 0 ? '😀' : '🥲'}, and planned ${totalTasksToday} tasks for today 🎯`;
+      message += ` completed *${completedTasksYesterday} tasks* ✅, left ${incompleteTasksYesterday} unfinished ${incompleteTasksYesterday === 0 ? '😀' : '🥲'}, and planned ${totalTasksToday} tasks for today 🎯`;
     }
 
     combinedWorklogsContent += `${userName}'s Worklogs\n${yesterdayWorklogsContent}\n\n`;
-    
-    messages += `${message} ${userSummaryLink}\n\n`;
+
+    messages += `${message} ${userSummaryLink}\n`;
   }
 
   const aiSummary = await GenAiSdk.generateAISummary(combinedWorklogsContent);
-  messages += `📢 *AI Summary:* ${aiSummary}`;
+  messages += `\n\n📢 *AI Summary:* ${aiSummary}`;
 
   return messages;
 };
@@ -130,10 +140,10 @@ export async function GET(request: NextRequest) {
 
     await slackBot.sendSlackMessageviaAPI({
       text: message,
-      channel: SlackChannels.b_coreteam,
+      channel: SlackChannels.y_moon_reminders,
       unfurl_links: false,
       unfurl_media: false,
-      username: 'Worklogs Summary Bot',
+      username: 'Worklog Summary Bot',
       icon_emoji: ':spiral_note_pad:',
     });
 

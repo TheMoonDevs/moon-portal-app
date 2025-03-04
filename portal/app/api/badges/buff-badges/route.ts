@@ -177,7 +177,7 @@ export async function PUT(req: NextRequest) {
       });
       if (user?.slackId) {
         await slackBotSdk.sendSlackMessageviaAPI({
-          text: `Achievement unlocked: <@${user?.slackId}> is the first to unlock **${getBuffLevelAndTitle(points).title}** with **${updatedBuffBadge.points} points**`,
+          text: `Achievement unlocked: <@${user?.slackId}> is the first to unlock *${getBuffLevelAndTitle(points).title}* with *${updatedBuffBadge.points} points*`,
           channel: SlackChannels.b_coreteam,
           unfurl_links: false,
           unfurl_media: false,
