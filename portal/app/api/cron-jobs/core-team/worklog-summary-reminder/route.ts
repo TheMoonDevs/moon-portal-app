@@ -140,7 +140,7 @@ export async function GET(request: NextRequest) {
 
     await slackBot.sendSlackMessageviaAPI({
       text: message,
-      channel: SlackChannels.y_moon_reminders,
+      channel: SlackChannels.b_coreteam,
       unfurl_links: false,
       unfurl_media: false,
       username: 'Worklog Summary Bot',
