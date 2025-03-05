@@ -1,3 +1,5 @@
+'use client'
+
 import Button from '@/components/elements/Button';
 import { BaseCard } from '@/components/elements/Card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -87,41 +89,46 @@ const Header = () => (
   </div>
 );
 
-const { openForm } = useFilloutPopup();
 
-const PricingTabs = () => (
-  <Tabs defaultValue="mvp" className="mt-10 flex w-full flex-col">
-    <TabsList className="mx-auto w-80 md:w-96">
-      <TabsTrigger className="w-full" value="mvp">
-        MVP Plans
-      </TabsTrigger>
-      <TabsTrigger className="w-full" value="unit">
-        Unit Plans
-      </TabsTrigger>
-    </TabsList>
-    <TabsContent
-      value="mvp"
-      className="mx-auto mt-16 grid grid-rows-3 justify-center divide-y-[1px] divide-gray-200 border-b border-t border-gray-200 md:grid-cols-3 md:grid-rows-1 md:divide-x-[1px] md:divide-y-0"
-    >
-      {Plans.map((plan, index) => {
-        return <PlanCards plan={plan} index={index} key={plan.name} onActionClick={(
-          _plan
-        ) => {
-          if (_plan.name === 'Simpleton MVP') {
-            openForm(FilloutFormIds.SimpletonGetStarted);
-          }
-          else if (_plan.name === 'Premium MVP') {
-            openForm(FilloutFormIds.BookCall);
-          }
-          else if (_plan.name === 'Complex MVP') {
-            openForm(FilloutFormIds.BookCall);
-          }
-        }} />;
-      })}
-    </TabsContent>
-    <TabsContent value="unit">Change your password here.</TabsContent>
-  </Tabs>
-);
+const PricingTabs = () => {
+
+
+  const { openForm } = useFilloutPopup();
+
+  return (
+    <Tabs defaultValue="mvp" className="mt-10 flex w-full flex-col">
+      <TabsList className="mx-auto w-80 md:w-96">
+        <TabsTrigger className="w-full" value="mvp">
+          MVP Plans
+        </TabsTrigger>
+        <TabsTrigger className="w-full" value="unit">
+          Unit Plans
+        </TabsTrigger>
+      </TabsList>
+      <TabsContent
+        value="mvp"
+        className="mx-auto mt-16 grid grid-rows-3 justify-center divide-y-[1px] divide-gray-200 border-b border-t border-gray-200 md:grid-cols-3 md:grid-rows-1 md:divide-x-[1px] md:divide-y-0"
+      >
+        {Plans.map((plan, index) => {
+          return <PlanCards plan={plan} index={index} key={plan.name} onActionClick={(
+            _plan
+          ) => {
+            if (_plan.name === 'Simpleton MVP') {
+              openForm(FilloutFormIds.SimpletonGetStarted);
+            }
+            else if (_plan.name === 'Premium MVP') {
+              openForm(FilloutFormIds.BookCall);
+            }
+            else if (_plan.name === 'Complex MVP') {
+              openForm(FilloutFormIds.BookCall);
+            }
+          }} />;
+        })}
+      </TabsContent>
+      <TabsContent value="unit">Change your password here.</TabsContent>
+    </Tabs>
+  )
+};
 
 const PlanCards = ({ plan, index, onActionClick }: { plan: IPlan; index: number, onActionClick: (plan: IPlan) => void }) => (
   <div className="relative">
