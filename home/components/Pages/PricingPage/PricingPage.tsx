@@ -1,13 +1,19 @@
+'use client';
+
 import Button from '@/components/elements/Button';
 import { BaseCard } from '@/components/elements/Card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Testimonial } from './Testimonial';
 import Faqs from './Faqs';
+import {
+  FilloutFormIds,
+  useFilloutPopup,
+} from '@/components/App/Global/FilloutPopup';
 import { cn } from '@/lib/utils';
 
 const Plans = [
   {
-    name: 'Simple MVP',
+    name: 'Simpleton MVP',
     description:
       'The perfect starting place for your web app or personal project. Free forever.',
     features: [
@@ -131,29 +137,56 @@ const Header = () => (
   </div>
 );
 
-const PricingTabs = () => (
-  <Tabs defaultValue="mvp" className="mt-10 flex w-full flex-col">
-    <TabsList className="mx-auto w-80 md:w-96">
-      <TabsTrigger className="w-full" value="mvp">
-        MVP Plans
-      </TabsTrigger>
-      <TabsTrigger className="w-full" value="unit">
-        Unit Plans
-      </TabsTrigger>
-    </TabsList>
-    <TabsContent
-      value="mvp"
-      className="mx-auto mt-16 grid grid-rows-3 justify-center divide-y-[1px] divide-gray-200 border-b border-t border-gray-200 md:grid-cols-3 md:grid-rows-1 md:divide-x-[1px] md:divide-y-0"
-    >
-      {Plans.map((plan, index) => {
-        return <PlanCards plan={plan} index={index} key={plan.name} />;
-      })}
-    </TabsContent>
-    <TabsContent value="unit"></TabsContent>
-  </Tabs>
-);
+const PricingTabs = () => {
+  const { openForm } = useFilloutPopup();
 
-const PlanCards = ({ plan, index }: { plan: IPlan; index: number }) => (
+  return (
+    <Tabs defaultValue="mvp" className="mt-10 flex w-full flex-col">
+      <TabsList className="mx-auto w-80 md:w-96">
+        <TabsTrigger className="w-full" value="mvp">
+          MVP Plans
+        </TabsTrigger>
+        <TabsTrigger className="w-full" value="unit">
+          Unit Plans
+        </TabsTrigger>
+      </TabsList>
+      <TabsContent
+        value="mvp"
+        className="mx-auto mt-16 grid grid-rows-3 justify-center divide-y-[1px] divide-gray-200 border-b border-t border-gray-200 md:grid-cols-3 md:grid-rows-1 md:divide-x-[1px] md:divide-y-0"
+      >
+        {Plans.map((plan, index) => {
+          return (
+            <PlanCards
+              plan={plan}
+              index={index}
+              key={plan.name}
+              onActionClick={(_plan) => {
+                if (_plan.name === 'Simpleton MVP') {
+                  openForm(FilloutFormIds.SimpletonGetStarted);
+                } else if (_plan.name === 'Premium MVP') {
+                  openForm(FilloutFormIds.BookCall);
+                } else if (_plan.name === 'Complex MVP') {
+                  openForm(FilloutFormIds.BookCall);
+                }
+              }}
+            />
+          );
+        })}
+      </TabsContent>
+      <TabsContent value="unit"></TabsContent>
+    </Tabs>
+  );
+};
+
+const PlanCards = ({
+  plan,
+  index,
+  onActionClick,
+}: {
+  plan: IPlan;
+  index: number;
+  onActionClick: (plan: IPlan) => void;
+}) => (
   <div className="relative">
     <BaseCard
       className={`${plan.highlight ? 'bg-white' : 'bg-gray-50'} w-full rounded-none p-6 shadow-none`}
@@ -161,7 +194,7 @@ const PlanCards = ({ plan, index }: { plan: IPlan; index: number }) => (
       cardHeader={
         <h1 className="mb-4 mt-8 text-2xl font-bold text-black">{plan.name}</h1>
       }
-      cardActions={<PlanCardActions plan={plan} />}
+      cardActions={<PlanCardActions plan={plan} onClick={onActionClick} />}
       cardContent={<PlanCardContent plan={plan} index={index} />}
     />
     {index === 0 && (
@@ -172,7 +205,13 @@ const PlanCards = ({ plan, index }: { plan: IPlan; index: number }) => (
   </div>
 );
 
-const PlanCardActions = ({ plan }: { plan: IPlan }) => {
+const PlanCardActions = ({
+  plan,
+  onClick,
+}: {
+  plan: IPlan;
+  onClick: (plan: IPlan) => void;
+}) => {
   return (
     <>
       {!plan.extraButton && (
@@ -181,6 +220,7 @@ const PlanCardActions = ({ plan }: { plan: IPlan }) => {
           className={`mb-8 mt-8 w-full gap-8 rounded-full border border-gray-300 px-4 py-2 text-sm ${plan.highlight ? 'border-none bg-blue-500 text-white hover:bg-blue-600' : ''}`}
           endIcon={'arrow_forward'}
           text={plan.buttonText}
+          onClick={() => onClick(plan)}
         />
       )}
 

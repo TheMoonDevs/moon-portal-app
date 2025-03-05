@@ -8,6 +8,7 @@ interface SimpleMvpDataProps extends React.HTMLAttributes<HTMLDivElement> {
   data:
     | typeof PricingSectionCards.simpleMvp
     | typeof PricingSectionCards.premiumMVPs;
+  onActionClick?: () => void;
   type?: 'simpleMvp' | 'premiumMVPs';
 }
 const SimpleMvpCardMedia = ({ image }: { image: string }) => (
@@ -83,9 +84,11 @@ const SimpleMvpCardContent = ({
 const SimpleMvpCardActions = ({
   cta,
   type = 'simpleMvp',
+  onClick,
 }: {
   cta: string;
   type?: 'simpleMvp' | 'premiumMVPs';
+  onClick?: () => void;
 }) => {
   const buttonVariant = type === 'simpleMvp' ? 'contained' : 'outlined';
   const buttonStyle =
@@ -98,6 +101,7 @@ const SimpleMvpCardActions = ({
       <Button
         variant={buttonVariant}
         text={cta}
+        onClick={onClick}
         className={cn(
           'flex w-full items-center justify-between rounded-full px-8 text-sm md:text-xl xl:w-full',
           buttonStyle,
@@ -110,6 +114,7 @@ const SimpleMvpCardActions = ({
 const SimpleMvpCard = ({
   className,
   data,
+  onActionClick,
   type = 'simpleMvp',
 }: SimpleMvpDataProps) => {
   const { title, image, cta, highlights } = data;
@@ -129,7 +134,9 @@ const SimpleMvpCard = ({
           }}
         />
       }
-      cardActions={<SimpleMvpCardActions type={type} cta={cta} />}
+      cardActions={
+        <SimpleMvpCardActions type={type} cta={cta} onClick={onActionClick} />
+      }
     />
   );
 };

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { BenefitsSectionWithGrids } from './BenefitsSection';
 import { CompareSectionWithGrids } from './CompareSection';
 import { ExpertiseSectionWithGrids } from './ExpertiseSection';
@@ -19,30 +19,28 @@ import Image from 'next/image';
 import IndustrySection from './IndustrySection/IndustrySection';
 import DevCohortSection from './DevCohortSection/DevCohortSection';
 
-export const HomePage = ({
-  base64Placeholder,
-}: {
-  base64Placeholder: string;
-}) => {
+
+const CampaignAnalytics = () => {
   const { logEventsFromQuery } = useCampaignAnalytics();
 
   useEffect(() => {
     logEventsFromQuery();
   }, [logEventsFromQuery]);
+  return <></>;
+}
+
+export const HomePage = ({
+  base64Placeholder,
+}: {
+  base64Placeholder: string;
+}) => {
+
 
   return (
-    // <HomePageStyled>
-    //   <HeroSectionWithGrids />
-    //   <SocialProofSectionWithGrids />
-    //   <BenefitsSectionWithGrids />
-    //   <CompareSectionWithGrids />
-    //   <ExpertiseSectionWithGrids />
-    //   <HowItWorksSectionWithGrids />
-    //   <MediumBlogsWithGrids />
-    //   <FAQSectionWithGrids />
-    //   <FooterSectionWithGrids />
-    // </HomePageStyled>
     <div>
+      <Suspense fallback={null}>
+        <CampaignAnalytics />
+      </Suspense>
       {/* Image section */}
       <div className="relative overflow-hidden">
         <div className="absolute left-0 top-0 -z-20 h-full w-full">

@@ -3,6 +3,7 @@ import FeatureCard from './FeatureCard';
 import CtaCard from './CtaCard';
 import Button from '@/components/elements/Button';
 import PremiumMvpCardDesktop from './PremiumMvpCard';
+import { FilloutFormIds, useFilloutPopup } from '@/components/App/Global/FilloutPopup';
 
 export const PricingSectionCards = {
   simpleMvp: {
@@ -114,16 +115,19 @@ const PricingSection = () => {
 };
 
 const PricingCards = () => {
+  const { openForm } = useFilloutPopup();
   return (
     <div className="mt-16 grid max-h-min gap-6 xl:grid-cols-[1.5fr,1fr,1fr,1fr] xl:grid-rows-2">
       <SimpleMvpCard
         data={PricingSectionCards.simpleMvp}
         className="col-span-4 h-[inherit] bg-gray-100 shadow-none md:col-span-2 xl:col-span-1 xl:row-span-2"
+        onActionClick={() => openForm(FilloutFormIds.SimpletonGetStarted)}
       />
       <SimpleMvpCard
         type="premiumMVPs"
         data={PricingSectionCards.premiumMVPs}
         className="col-span-4 flex h-[inherit] bg-gray-100 shadow-none md:col-span-2 xl:hidden"
+        onActionClick={() => openForm(FilloutFormIds.BookCall)}
       />
       <PremiumMvpCardDesktop
         data={PricingSectionCards.premiumMVPs}
@@ -131,6 +135,7 @@ const PricingCards = () => {
           background: 'url("/images/abstract-purple.png") no-repeat',
         }}
         className="col-span-4 hidden h-[inherit] !bg-cover shadow-none xl:col-span-3 xl:block"
+        onActionClick={() => openForm(FilloutFormIds.BookCall)}
       />
       <FeatureCard
         className="col-span-4 flex h-[inherit] flex-col justify-between bg-gray-100 p-6 shadow-none md:col-span-2 xl:col-span-1"
@@ -140,7 +145,9 @@ const PricingCards = () => {
         className="col-span-4 flex h-[inherit] flex-col justify-between bg-gray-100 p-6 shadow-none md:col-span-2 xl:col-span-1"
         data={PricingSectionCards.roastMyProject}
       />
-      <CtaCard className="col-span-4 flex h-[inherit] flex-col justify-between bg-black p-3 shadow-none xl:col-span-1" />
+      <CtaCard
+        onActionClick={() => openForm(FilloutFormIds.BookCall)}
+        className="col-span-4 flex h-[inherit] flex-col justify-between bg-black p-3 shadow-none xl:col-span-1" />
     </div>
   );
 };
