@@ -122,7 +122,7 @@ export const PublicationDialog = ({
                   as="button"
                   className="rounded-xl bg-gray-50 px-4 py-2 text-xs font-bold text-black dark:bg-white dark:text-black"
                 >
-                  <Link href={data?.link} className="flex items-center gap-2">
+                  <Link href={data?.link} target='_blank' className="flex items-center gap-2">
                     <div>
                       {data.type === 'article' && 'Read Full Article'}
                       {data.type === 'website' && 'Visit Website'}
