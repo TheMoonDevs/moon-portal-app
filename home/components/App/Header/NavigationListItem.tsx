@@ -86,11 +86,11 @@ export const ListItem = React.forwardRef<
                   <div
                     className={cn('mt-4 space-y-2 text-white', contentStyle)}
                   >
-                    <div className="text-sm font-bold leading-none md:text-base">
+                    <p className="text-sm font-bold md:text-base">
                       {title}
-                    </div>
+                    </p>
                     {children && (
-                      <p className="line-clamp-2 text-sm leading-snug text-neutral-400">
+                      <p className="line-clamp-1 mt-0 text-sm text-neutral-400">
                         {children}
                       </p>
                     )}

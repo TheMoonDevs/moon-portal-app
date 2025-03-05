@@ -15,7 +15,7 @@ const FooterCtaSection: React.FC = () => {
                     className="h-full w-full object-cover"
                     fill
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
             </div>
 
             {/* Content Container */}
