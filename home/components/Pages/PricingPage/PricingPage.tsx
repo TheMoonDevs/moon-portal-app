@@ -188,6 +188,8 @@ const PlanCards = ({
   onActionClick: (plan: IPlan) => void;
 }) => (
   <div className="relative">
+    {index === 0 && <StickyBoundary className="block md:hidden" />}
+    <StickyBoundary isAtBottom className="block md:hidden" />
     <BaseCard
       className={`${plan.highlight ? 'bg-white' : 'bg-gray-50'} w-full rounded-none p-6 shadow-none`}
       key={plan.name}
