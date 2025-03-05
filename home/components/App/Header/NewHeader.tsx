@@ -42,10 +42,8 @@ const NewHeader = () => {
   const isLaptopOrLess = useMediaQuery(media.laptop);
 
   useEffect(() => {
-    if (isLaptopOrLess && open) {
+    if (open) {
       setOpen(false);
-    } else if (isLaptopOrLess && !open) {
-      setOpen(true);
     }
   }, [isLaptopOrLess]);
 
@@ -61,7 +59,9 @@ const NewHeader = () => {
   };
 
   return (
-    <div className="fixed top-0 z-[100] w-full lg:backdrop-blur-sm">
+    <div
+      className={`fixed top-0 z-[100] w-full ${open && 'bg-black/60'} lg:backdrop-blur-sm`}
+    >
       <div
         className={`relative mx-2 my-0 mt-2 flex items-center justify-between lg:mx-6 lg:my-6 lg:bg-transparent ${open && isLaptopOrLess && 'mb-0 rounded-t-lg rounded-tr-lg !bg-black'}`}
       >
@@ -198,9 +198,9 @@ const HamBurger = ({
   const path = usePathname();
 
   return (
-    <div className="h-dvh overflow-y-scroll rounded-bl-lg rounded-br-lg bg-black/50 pb-16">
+    <div className="h-dvh overflow-y-scroll rounded-bl-lg rounded-br-lg pb-16">
       <div className="mx-2 my-[-10px] bg-black px-5 py-4 text-white lg:mx-6 lg:my-0">
-        {path === '/' && (
+        {path !== '/products/custom-bots' && (
           <>
             <Accordion className="w-full" defaultValue={'resources'}>
               <AccordionItem value="resources" className="w-full border-none">
