@@ -138,6 +138,9 @@ module.exports = {
         scroll:
           'scroll var(--animation-duration, 40s) var(--animation-direction, forwards) linear infinite',
       },
+      margin: {
+        'full-bleed': 'calc(50% - 50vw)',
+      },
     },
   },
 

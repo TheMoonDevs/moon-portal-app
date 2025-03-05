@@ -1,12 +1,15 @@
-'use client'
+'use client';
 
 import Button from '@/components/elements/Button';
 import { BaseCard } from '@/components/elements/Card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { highlight } from 'prismjs';
 import { Testimonial } from './Testimonial';
 import Faqs from './Faqs';
-import { FilloutFormIds, useFilloutPopup } from '@/components/App/Global/FilloutPopup';
+import {
+  FilloutFormIds,
+  useFilloutPopup,
+} from '@/components/App/Global/FilloutPopup';
+import { cn } from '@/lib/utils';
 
 const Plans = [
   {
@@ -65,12 +68,57 @@ interface IPlan {
   buttonText: string;
   extraButton?: string;
 }
+
+export const StickyBoundary = ({
+  className,
+  isAtBottom,
+}: {
+  className?: string;
+  isAtBottom?: boolean;
+}) => {
+  return (
+    <div
+      className={cn('top-24 z-20 flex items-center justify-center', className)}
+    >
+      <span
+        className={cn(
+          'absolute -left-[0.5rem] -top-[1rem] z-20 text-xl font-bold text-gray-400',
+
+          isAtBottom && '-bottom-[0.8rem] top-[unset]',
+        )}
+      >
+        +
+      </span>
+      <div
+        className={cn(
+          'absolute left-0 right-0 top-0 h-[1px] bg-gray-100',
+          isAtBottom && 'bottom-0 top-[unset]',
+        )}
+      ></div>
+      <span
+        className={cn(
+          'absolute -right-[0.5rem] -top-[1rem] text-xl font-bold text-gray-400',
+          isAtBottom && '-bottom-[0.8rem] top-[unset]',
+        )}
+      >
+        +
+      </span>
+    </div>
+  );
+};
 const PricingPage = () => {
   return (
     <main className="flex flex-col items-center justify-center bg-white">
       <div className="mt-20 w-11/12 border border-gray-200 md:mt-40 md:w-9/12">
-        <Header />
-        <PricingTabs />
+        <StickyBoundary className="sticky top-16 md:top-24" />
+        <div className="relative">
+          {/* <StickyBoundary
+            className="absolute bottom-0 left-0 right-0 z-50"
+            isAtBottom
+          /> */}
+          <Header />
+          <PricingTabs />
+        </div>
         <Testimonial />
         <Faqs />
       </div>
@@ -89,10 +137,7 @@ const Header = () => (
   </div>
 );
 
-
 const PricingTabs = () => {
-
-
   const { openForm } = useFilloutPopup();
 
   return (
@@ -110,27 +155,38 @@ const PricingTabs = () => {
         className="mx-auto mt-16 grid grid-rows-3 justify-center divide-y-[1px] divide-gray-200 border-b border-t border-gray-200 md:grid-cols-3 md:grid-rows-1 md:divide-x-[1px] md:divide-y-0"
       >
         {Plans.map((plan, index) => {
-          return <PlanCards plan={plan} index={index} key={plan.name} onActionClick={(
-            _plan
-          ) => {
-            if (_plan.name === 'Simpleton MVP') {
-              openForm(FilloutFormIds.SimpletonGetStarted);
-            }
-            else if (_plan.name === 'Premium MVP') {
-              openForm(FilloutFormIds.BookCall);
-            }
-            else if (_plan.name === 'Complex MVP') {
-              openForm(FilloutFormIds.BookCall);
-            }
-          }} />;
+          return (
+            <PlanCards
+              plan={plan}
+              index={index}
+              key={plan.name}
+              onActionClick={(_plan) => {
+                if (_plan.name === 'Simpleton MVP') {
+                  openForm(FilloutFormIds.SimpletonGetStarted);
+                } else if (_plan.name === 'Premium MVP') {
+                  openForm(FilloutFormIds.BookCall);
+                } else if (_plan.name === 'Complex MVP') {
+                  openForm(FilloutFormIds.BookCall);
+                }
+              }}
+            />
+          );
         })}
       </TabsContent>
-      <TabsContent value="unit">Change your password here.</TabsContent>
+      <TabsContent value="unit"></TabsContent>
     </Tabs>
-  )
+  );
 };
 
-const PlanCards = ({ plan, index, onActionClick }: { plan: IPlan; index: number, onActionClick: (plan: IPlan) => void }) => (
+const PlanCards = ({
+  plan,
+  index,
+  onActionClick,
+}: {
+  plan: IPlan;
+  index: number;
+  onActionClick: (plan: IPlan) => void;
+}) => (
   <div className="relative">
     <BaseCard
       className={`${plan.highlight ? 'bg-white' : 'bg-gray-50'} w-full rounded-none p-6 shadow-none`}
@@ -149,7 +205,13 @@ const PlanCards = ({ plan, index, onActionClick }: { plan: IPlan; index: number,
   </div>
 );
 
-const PlanCardActions = ({ plan, onClick }: { plan: IPlan, onClick: (plan: IPlan) => void }) => {
+const PlanCardActions = ({
+  plan,
+  onClick,
+}: {
+  plan: IPlan;
+  onClick: (plan: IPlan) => void;
+}) => {
   return (
     <>
       {!plan.extraButton && (

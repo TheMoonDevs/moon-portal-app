@@ -5,6 +5,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import * as AccordionPrimitive from '@radix-ui/react-accordion';
+import { StickyBoundary } from './PricingPage';
 
 const faq = [
   {
@@ -37,7 +38,13 @@ const faq = [
 const Faqs = () => {
   return (
     <>
-      <div className="w-full">
+      <div className="relative w-full">
+        <StickyBoundary className="absolute left-0 right-0 top-0 z-50" />
+
+        <StickyBoundary
+          className="absolute bottom-0 left-0 right-0 z-50"
+          isAtBottom
+        />
         <div className="flex flex-col items-start gap-y-6 text-black md:flex-row">
           <div>
             <div className="hidden h-28 border-gray-200 md:block"></div>
@@ -51,7 +58,7 @@ const Faqs = () => {
             </div>
           </div>
           <div className="w-full border-l border-gray-200">
-            <div className="hidden w-full grid-cols-2 grid-rows-1 divide-x divide-gray-200 md:grid">
+            <div className="hidden w-full grid-cols-2 grid-rows-1 divide-x divide-gray-200 border-b md:grid">
               <div className="h-28 w-full"></div>
               <div className="h-28 w-full"></div>
             </div>

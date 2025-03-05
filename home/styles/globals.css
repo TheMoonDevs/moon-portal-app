@@ -23,6 +23,7 @@
 }
 
 body {
+  overflow-x: hidden;
   /* color: rgb(var(--foreground-rgb));
   background: linear-gradient(
       to bottom,
@@ -88,6 +89,7 @@ input:-internal-autofill-selected {
     --radius: 0.5rem;
     --_animation-duration: 10s;
   }
+
   .dark {
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
@@ -113,6 +115,10 @@ input:-internal-autofill-selected {
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+  }
+
+  .full-bleed-section {
+    margin-inline: calc(50% - 50vw);
   }
 }
 

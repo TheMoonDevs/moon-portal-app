@@ -2,17 +2,19 @@ import { BaseCard } from '@/components/elements/Card';
 import Image from 'next/image';
 import { PricingSectionCards } from './PricingSection';
 import Button from '@/components/elements/Button';
+import { cn } from '@/lib/utils';
 
 interface SimpleMvpDataProps extends React.HTMLAttributes<HTMLDivElement> {
   data:
-  | typeof PricingSectionCards.simpleMvp
-  | typeof PricingSectionCards.premiumMVPs;
+    | typeof PricingSectionCards.simpleMvp
+    | typeof PricingSectionCards.premiumMVPs;
   onActionClick?: () => void;
+  type?: 'simpleMvp' | 'premiumMVPs';
 }
 const SimpleMvpCardMedia = ({ image }: { image: string }) => (
   <Image
     src={image}
-    className="md:aspect-video h-40 w-full object-cover md:h-44"
+    className="h-40 w-full object-cover md:aspect-video md:h-44"
     alt=""
     width={300}
     height={300}
@@ -23,7 +25,7 @@ const SimpleMvpCardHeader = ({ title }: { title: string }) => {
   const [firstWord, secondWord] = title.split(' ');
   return (
     <div className="flex flex-col gap-1 pl-6 pt-12 text-2xl font-bold text-white">
-      <span className="text-sm md:text-md lowercase">{firstWord}</span>
+      <span className="md:text-md text-sm lowercase">{firstWord}</span>
       <span className="text-4xl md:text-5xl">{secondWord}</span>
     </div>
   );
@@ -43,19 +45,23 @@ const SimpleMvpCardContent = ({
   };
 }) => {
   return (
-    <div className="w-full pt-4 px-4 md:p-8">
+    <div className="w-full px-4 pt-4 md:p-8">
       <ul className="flex flex-col gap-3">
         {data.content.map((item) => (
           <li>
             <div className="flex items-center gap-2 text-xs xl:text-sm 2xl:text-lg">
-              <span className="material-symbols-outlined inherit">{item.icon}</span>
+              <span className="material-symbols-outlined inherit">
+                {item.icon}
+              </span>
               <span className="text-neutral-600">{item.title}</span>
             </div>
           </li>
         ))}
       </ul>
-      <div className="mt-1 md:mt-3 flex flex-col gap-1 md:gap-3">
-        <p className="text-right font-bold text-sm md:text-md">{data.priceDuration}</p>
+      <div className="mt-1 flex flex-col gap-1 md:mt-3 md:gap-3">
+        <p className="md:text-md text-right text-sm font-bold">
+          {data.priceDuration}
+        </p>
         <div className="flex items-center gap-4">
           {/* <div className="w-full border-t-2 border-dashed border-neutral-500"></div> */}
           <div className="w-full">
@@ -75,21 +81,42 @@ const SimpleMvpCardContent = ({
   );
 };
 
-const SimpleMvpCardActions = ({ cta, onClick }: {
-  cta: string, onClick?: () => void
+const SimpleMvpCardActions = ({
+  cta,
+  type = 'simpleMvp',
+  onClick,
+}: {
+  cta: string;
+  type?: 'simpleMvp' | 'premiumMVPs';
+  onClick?: () => void;
 }) => {
+  const buttonVariant = type === 'simpleMvp' ? 'contained' : 'outlined';
+  const buttonStyle =
+    type === 'simpleMvp'
+      ? 'bg-red-500 hover:bg-red-600 hover:text-white hover:bg-red-600 '
+      : 'hover:bg-gray-200';
+
   return (
     <div className="w-full p-2 md:p-4">
       <Button
+        variant={buttonVariant}
         text={cta}
         onClick={onClick}
-        className="flex w-full text-sm items-center justify-between rounded-full bg-red-500 px-8 md:text-xl hover:bg-red-600 hover:text-white xl:w-full"
+        className={cn(
+          'flex w-full items-center justify-between rounded-full px-8 text-sm md:text-xl xl:w-full',
+          buttonStyle,
+        )}
       />
     </div>
   );
 };
 
-const SimpleMvpCard = ({ className, data, onActionClick }: SimpleMvpDataProps) => {
+const SimpleMvpCard = ({
+  className,
+  data,
+  onActionClick,
+  type = 'simpleMvp',
+}: SimpleMvpDataProps) => {
   const { title, image, cta, highlights } = data;
   return (
     <BaseCard
@@ -107,7 +134,9 @@ const SimpleMvpCard = ({ className, data, onActionClick }: SimpleMvpDataProps) =
           }}
         />
       }
-      cardActions={<SimpleMvpCardActions cta={cta} onClick={onActionClick} />}
+      cardActions={
+        <SimpleMvpCardActions type={type} cta={cta} onClick={onActionClick} />
+      }
     />
   );
 };
