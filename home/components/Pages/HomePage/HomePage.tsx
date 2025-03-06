@@ -18,6 +18,7 @@ import StackSection from './StacksSection/StackSection';
 import Image from 'next/image';
 import IndustrySection from './IndustrySection/IndustrySection';
 import DevCohortSection from './DevCohortSection/DevCohortSection';
+import FooterCtaSection from './FooterCTASection/FooterCtaSection';
 
 
 const CampaignAnalytics = () => {
@@ -59,6 +60,7 @@ export const HomePage = ({
       <IndustrySection />
       <DevCohortSection />
       <PricingSection />
+      <FooterCtaSection />
     </div>
   );
 };
