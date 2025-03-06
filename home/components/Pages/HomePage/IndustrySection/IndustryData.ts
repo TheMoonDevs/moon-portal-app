@@ -121,7 +121,7 @@ export const projectsData: IIndustryAndProjects[] = [
         title: 'Ecommerce Chatbot',
         link: '',
         isHot: false,
-        image_url: '/images/assets/ecomChatBot.gif',
+        image_url: '',
         type: 'article',
         description:
           'Developed a conversational AI platform that guides customers through product discovery, handles order inquiries, and provides personalized recommendations resulting in a 42% reduction in support ticket volume.',
@@ -155,7 +155,7 @@ export const projectsData: IIndustryAndProjects[] = [
         title: 'LLM-Powered Contract Generation & Analysis',
         link: '',
         isHot: false,
-        image_url: '/images/assets/65a7b6e7380ad549731faa31_analyze.gif',
+        image_url: '',
         type: 'article',
         description:
           'Created a custom diff visualization system that highlights risk factors in legal documents that even the clients legal team had overlooked. Reduced integration complexity by building a middleware layer that works with legacy document management systems',
