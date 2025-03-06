@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/prisma/prisma';
-import { updateClientRequest } from '../update/route';
 import { PRSTATUS } from '@prisma/client';
+import { updateClientRequest } from '@/utils/services/customBots/clientRequests/updateClientRequest';
 
 export async function POST() {
   try {

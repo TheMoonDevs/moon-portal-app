@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/prisma/prisma';
-import { updateClientRequest } from '../update/route';
 import { GithubSdk } from '@/utils/services/githubSdk';
 import { TEMPLATE_REPO_OWNER } from '@/utils/constants/customBots';
+import { updateClientRequest } from '@/utils/services/customBots/clientRequests/updateClientRequest';
 
 export async function POST(req: Request) {
   try {
