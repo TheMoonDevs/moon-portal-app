@@ -8,9 +8,9 @@ import { GithubSdk } from '@/utils/services/githubSdk';
 
 export async function POST(request: Request) {
   const body = await request.json();
-  let { userId, projectName, projectDescription } = body;
+  let { clientId, projectName, projectDescription } = body;
 
-  if (!projectName || !userId) {
+  if (!projectName || !clientId) {
     return NextResponse.json(
       { error: 'Missing required fields' },
       { status: 400 },
@@ -85,7 +85,7 @@ export async function POST(request: Request) {
 
     const botProject = await prisma.botProject.create({
       data: {
-        clientId: userId,
+        clientId,
         name: projectName,
         githubRepoName: newRepoName,
         githubRepoUrl:
@@ -95,7 +95,7 @@ export async function POST(request: Request) {
         prUrl: (prResult?.html_url as string) || '',
         prNumber: (prResult?.number as number) || null,
         description: projectDescription,
-        projectConfiguration: {}
+        projectConfiguration: {},
       },
     });
 
