@@ -2,12 +2,17 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/prisma/prisma';
 import { JsonObject } from '@prisma/client/runtime/library';
 
-export async function GET(
-  req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function GET(req: Request) {
   try {
-    const { id } = params;
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Missing project ID' },
+        { status: 400 },
+      );
+    }
+
     const project = await prisma.botProject.findUnique({
       where: { id },
       select: { projectConfiguration: true },
