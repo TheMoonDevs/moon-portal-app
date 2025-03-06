@@ -672,6 +672,8 @@ model ClientRequests {
   prUrl         String?
   prNumber      Int?
   requestStatus PRSTATUS @default(UN_ASSIGNED)
+  requestUpdates RequestUpdate[]
+  lastUpdatedAt DateTime?   @default(now())
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -681,12 +683,38 @@ model ClientRequests {
 enum PRSTATUS {
   UN_ASSIGNED
   IN_DEVELOPMENT
-  IN_QUEUE
   IN_REVIEW
-  IN_TESTING
+  CLOSED
   COMPLETED
 }
 
+model RequestUpdate {
+  id                String          @id @default(auto()) @map("_id") @db.ObjectId
+  clientRequestId   String          @db.ObjectId
+  clientId          String          @db.ObjectId
+  message           String
+  githubUrl         String?
+  updateType        UPDATETYPE
+  updateFrom        UPDATEFROM
+  metadata          Json?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  clientRequest     ClientRequests  @relation(fields: [clientRequestId], references: [id])
+}
+
+enum UPDATETYPE {
+  CLIENT_MSG
+  BOT_MSG
+  COMMENT
+  PR_UPDATE
+}
+
+enum UPDATEFROM {
+  CLIENT
+  BOT
+  SYSTEM
+}
 
 //-------------------------------------INVOICE---------------------------------
 
