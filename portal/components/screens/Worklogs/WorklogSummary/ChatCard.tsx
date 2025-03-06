@@ -12,6 +12,7 @@ import ToolTip from '@/components/elements/ToolTip';
 import EmojiPicker, {
   EmojiClickData,
   SuggestionMode,
+  Theme,
 } from 'emoji-picker-react';
 
 const ChatCard = ({
@@ -177,14 +178,16 @@ const ChatCard = ({
 
 export default ChatCard;
 
-const EmojiPopOver = ({
+export const EmojiPopOver = ({
   open,
   handleClose,
   onEmojiSelect,
+  theme
 }: {
   open: boolean;
   handleClose: () => void;
   onEmojiSelect: (emoji: string) => void;
+  theme?: Theme;
 }) => {
   return (
     <EmojiPicker
@@ -200,6 +203,7 @@ const EmojiPopOver = ({
         onEmojiSelect(emojiData.emoji);
         handleClose();
       }}
+      theme={theme}
     />
   );
 };

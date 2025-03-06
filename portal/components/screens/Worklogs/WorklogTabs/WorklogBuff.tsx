@@ -14,6 +14,7 @@ import {
   getPoints,
   isValidContent,
 } from '@/utils/helpers/badges';
+import { Summarize, SummarizeOutlined } from '@mui/icons-material';
 
 const WorklogBuff = ({
   filteredLogs,
@@ -44,6 +45,12 @@ const WorklogBuff = ({
       return total + logPoints;
     }, 0);
   }, [filteredLogs]);
+
+  const loggedDays = useMemo(() => {
+    return filteredLogs.filter((wl) => wl.works.length > 0 ? (wl.works[0] as any)?.content?.length > 3 : false).length;
+  }, [filteredLogs]);
+
+  console.log('loggedDays:', filteredLogs.filter((wl) => wl.works.length > 0 ? (wl.works[0] as any)?.content?.length > 3 : false));
 
   const getBuffBadges = async () => {
     if (!user?.id) return;
@@ -128,57 +135,65 @@ const WorklogBuff = ({
     level === BUFF_LEVEL.TRUTH_SEEKER
       ? 10
       : level === BUFF_LEVEL.BABY_GROOT
-      ? 25
-      : level === BUFF_LEVEL.WORK_HULK
-      ? 100
-      : level === BUFF_LEVEL.VAMPIRE_LORD
-      ? 150
-      : level === BUFF_LEVEL.ALIEN_PREDATOR
-      ? 200
-      : 250;
+        ? 25
+        : level === BUFF_LEVEL.WORK_HULK
+          ? 100
+          : level === BUFF_LEVEL.VAMPIRE_LORD
+            ? 150
+            : level === BUFF_LEVEL.ALIEN_PREDATOR
+              ? 200
+              : 250;
 
   return (
     <>
       {loading ? (
-        <Skeleton
-          variant='rectangular'
-          animation='wave'
-          sx={{
-            borderRadius: '6px',
-            boxShadow: '0 0 10px 0 rgba(0, 0, 0, 0.1)',
-          }}
-          height={224}
-        />
+        <Box sx={{
+          bgcolor: '#121212',
+        }} className=' rounded-xl'>
+          <Skeleton
+            variant='rectangular'
+            animation='pulse'
+            sx={{
+              borderRadius: 2,
+              bgcolor: 'grey.800',
+            }}
+            height={150}
+          />
+        </Box>
       ) : filteredLogs && buffBadge.length > 0 && buffBadge[0].points > 0 ? (
         <>
           {
-            <div className='p-6 border border-neutral-700 rounded-xl shadow-xl bg-gradient-to-br from-neutral-800 to-neutral-900 text-white w-full max-w-lg mx-auto'> 
-              <h2 className='text-center text-2xl font-bold mb-4'>
-                {selectedMonth} Badge
-              </h2>
-              <div className='flex flex-row items-center justify-center gap-4'>
+            <div className=' border border-neutral-700 rounded-xl shadow-xl bg-black text-white w-full max-w-lg mx-auto'>
+              <div className=' px-6 py-3 text-xs flex flex-row items-center justify-between border-b-2 border-neutral-700'>
+                <h2 className='text-center uppercase tracking-[1em] text-xs'>
+                  {selectedMonth}
+                </h2>
+                <h2 className='text-center uppercase tracking-[0.1em] text-xs'>
+                  {loggedDays} <span className='text-neutral-500'> / {dayjs().daysInMonth()} days </span>
+                </h2>
+              </div>
+              <div className='p-6 pt-4 flex flex-row items-center justify-start gap-4'>
                 <img
                   src={getBuffLevelAndTitle(buffBadge[0].points).src}
                   alt={buffBadge[0].title.charAt(0)}
-                  className='w-24 h-24 rounded-full mb-2 border-4 border-neutral-600 shadow-md'
+                  className='w-24 rounded-full border p-1 border-white shadow-md'
                 />
-                <div className='flex flex-col gap-2'>
-                  <h3 className='text-xl font-semibold'>
-                    {buffBadge[0].title}
-                  </h3>
-                  <p className='text-base text-neutral-400'>
-                    {selectedMonth} Work Points -{' '}
-                    <span className='font-bold'>{buffBadge[0].points} pts</span>
-                  </p>
+                <div className='flex flex-col flex-grow'>
+                  <div className='flex flex-row items-center justify-between'>
+                    <h3 className='text-xl'>
+                      {getBuffLevelAndTitle(buffBadge[0].points).title}
+                    </h3>
+                    <p className='text-base text-xs text-neutral-400'>
+                      <span className='font-bold'>{nextLevelPoints - totalPoints} pts till `{getBuffLevelAndTitle(nextLevelPoints).title}` </span>
+                    </p>
+                  </div>
+                  <MultiColorProgressBar
+                    currentPoints={totalPoints}
+                    nextLevelPoints={nextLevelPoints}
+                    colors={getColorsForBuffLevel(getBuffLevelAndTitle(buffBadge[0]?.points).level)}
+                    height={8}
+                  />
                 </div>
-              </div>
-              <div className='mt-6'>
-                <MultiColorProgressBar
-                  currentPoints={totalPoints}
-                  nextLevelPoints={nextLevelPoints}
-                  colors={getColorsForBuffLevel(buffBadge[0]?.buffLevel)}
-                  height={15}
-                />
               </div>
             </div>
           }

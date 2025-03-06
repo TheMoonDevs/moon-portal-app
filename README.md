@@ -11,7 +11,7 @@ Official website of TheMoonDevs
 
 Deployed on
 
-- Digital Ocean Droplet
+- Cloudflare Pages
 - [themoondevs.com](http://themoondevs.com)
 
 ## Portal App - /portal
@@ -78,14 +78,14 @@ If you have dotenv-vault access, follow these steps:
 ```sh
 cd <project-folder>
 npx dotenv-vault@latest login
-npx dotenv-vault@latest pull
+npx dotenv-vault@latest pull <ci/production>
 ```
 
 Edit `.env.ci` or `.env.prod`, then update:  
 
 ```sh
 npx dotenv-vault@latest build
-npx dotenv-vault@latest push
+npx dotenv-vault@latest push <ci/production>
 ```
 
 Ensure `.env.vault` is updated, commit the changes, and push to GitHub.  
@@ -102,6 +102,5 @@ Trigger Frequency: Crons are checked every 30 minutes for any scheduled tasks.
 API Usage Guidelines:
 - Use the full original URL for external APIs.  
 - For internal APIs deployed on the droplet, use:  
-  - **Home:** `http://localhost:3000`  
   - **Portal:** `http://localhost:3001`  
   - **Payzone:** `http://localhost:3002`  

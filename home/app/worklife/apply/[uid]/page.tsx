@@ -19,7 +19,7 @@ export default async function Page({ params }: { params: Params }) {
     clientEmail: process.env.GIAM_CLIENT_EMAIL as string,
     privateKey: process.env.GIAM_PRIVATE_KEY as string,
   });
-  
+
   const response = await googleSheetsAPI.getSheetData({
     spreadsheetId,
     range: "A1:Z1",

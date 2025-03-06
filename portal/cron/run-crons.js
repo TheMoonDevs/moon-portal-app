@@ -32,7 +32,7 @@ async function runCronJobs() {
       // Get the most recent execution time before or equal to `now`
       const prevExecutionTime = dayjs(interval.prev().toDate());
 
-      console.log(`${new Date()}: Checking job: ${job.name}`);
+      // console.log(`${new Date()}: Checking job: ${job.name}`);
       // console.log(`Previous Execution Time: ${prevExecutionTime.format()}, Interval Start: ${lastInterval.format()}, Now: ${now.format()}`);
 
       // Check if the previous execution time is within the last 30-minute interval

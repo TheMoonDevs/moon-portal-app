@@ -23,86 +23,98 @@ export const AdminUserPayData = ({
   loading: boolean;
 }) => {
   return (
-    <LandscapeCard className="items-start justify-start">
-      <div className="flex mb-8 w-full gap-4 items-center justify-between">
-        <p className="text-neutral-400 tracking-[0.5em] uppercase text-xs text-center">
+    <LandscapeCard className="@shadow-lg !h-[90vh] !w-full items-start justify-start !rounded-xl !bg-gray-900 !p-6">
+      {" "}
+      <div className="mb-6 flex w-full items-center justify-between border-b border-gray-700 pb-4">
+        {" "}
+        <p className="text-sm font-semibold uppercase tracking-widest text-neutral-400">
           PAY DATA
         </p>
         <button
           onClick={saveUser}
-          className="flex flex-row items-center py-1 gap-3 bg-green-100 text-green-800 rounded-lg px-2"
+          className="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-white shadow-md transition hover:bg-green-700"
         >
-          {loading && <Spinner className="w-6 h-6  text-green-600" />}
+          {loading && <Spinner className="h-5 w-5 text-green-600" />}
           {!loading && <span className="material-icons">done_all</span>}
           Save User
         </button>
       </div>
       <LocalizationProvider dateAdapter={AdapterDayjs}>
-        <div className="flex flex-row items-start justify-start gap-8">
+        <div className="grid w-full grid-cols-2 gap-8">
+          {" "}
           {/* Left Column */}
-          <div className="flex flex-col grow gap-4 items-start justify-start">
-            <div className="flex flex-row gap-4 items-center justify-start">
-              <p className="w-40">UPI ID</p>
+          <div className="flex flex-col gap-4 text-white shadow-lg">
+            {" "}
+            <div className="flex flex-col gap-2">
+              {" "}
+              <p className="mb-1 text-sm text-gray-300">UPI ID</p>
               <input
                 id="payData.upiId"
                 type="text"
                 value={(user?.payData as any)?.upiId}
                 onChange={updateField}
-                className="border border-neutral-400 rounded-lg p-2"
+                className="w-full rounded-md border border-gray-600 bg-neutral-800 p-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
             </div>
-            <div className="flex flex-row gap-4 items-center justify-start">
-              <p className="w-40">Pay Method</p>
+            <div className="flex flex-col gap-2">
+              {" "}
+              <p className="mb-1 text-sm text-gray-300">Pay Method</p>
               <input
                 id="payData.payMethod"
                 type="text"
                 value={(user?.payData as any)?.payMethod}
                 onChange={updateField}
-                className="border border-neutral-400 rounded-lg p-2"
+                className="w-full rounded-md border border-gray-600 bg-neutral-800 p-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
             </div>
-            <div className="flex flex-row gap-4 items-center justify-start">
-              <p className="w-40">Wallet Address</p>
+            <div className="flex flex-col gap-2">
+              {" "}
+              <p className="mb-1 text-sm text-gray-300">Wallet Address</p>
               <input
                 id="payData.walletAddress"
                 type="text"
                 value={(user?.payData as any)?.walletAddress}
                 onChange={updateField}
-                className="border border-neutral-400 rounded-lg p-2"
+                className="w-full rounded-md border border-gray-600 bg-neutral-800 p-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
             </div>
           </div>
           {/* Right Column */}
-          <div className="flex flex-col grow gap-4 items-start justify-start ml-12">
-            <div className="flex flex-row gap-4 items-center justify-start">
-              <p className="w-40">Stipend Wallet Address</p>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              {" "}
+              <p className="mb-1 text-sm text-gray-300">
+                Stipend Wallet Address
+              </p>
               <input
                 id="payData.stipendWalletAddress"
                 type="text"
                 value={(user?.payData as any)?.stipendWalletAddress}
                 onChange={updateField}
-                className="border border-neutral-400 rounded-lg p-2"
+                className="w-full rounded-md border border-gray-600 bg-neutral-800 p-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
             </div>
-            <div className="flex flex-row gap-4 items-center justify-start">
-              <p className="w-40">Stipend Amount</p>
+            <div className="flex flex-col gap-2">
+              {" "}
+              <p className="mb-1 text-sm text-gray-300">Stipend Amount</p>
               <input
                 id="payData.stipendAmount"
                 type="text"
                 value={(user?.payData as any)?.stipendAmount}
                 onChange={updateField}
-                className="border border-neutral-400 rounded-lg p-2"
+                className="w-full rounded-md border border-gray-600 bg-neutral-800 p-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
             </div>
-            <div className="flex flex-row gap-4 items-center justify-start">
-              <p className="w-40">Stipend Currency</p>
+            <div className="flex flex-col gap-2">
+              {" "}
+              <p className="mb-1 text-sm text-gray-300">Stipend Currency</p>
               <input
                 id="payData.stipendCurrency"
                 type="text"
                 defaultValue="INR"
                 value={(user?.payData as any)?.stipendCurrency}
                 onChange={updateField}
-                className="border border-neutral-400 rounded-lg p-2"
+                className="w-full rounded-md border border-gray-600 bg-neutral-800 p-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
             </div>
           </div>

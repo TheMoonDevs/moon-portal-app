@@ -64,7 +64,7 @@ const SendNotifications = ({
   };
 
   return (
-    <MobileBox>
+    <MobileBox customClass="!w-[50%]">
       <p className='text-neutral-400 tracking-[0.5em] uppercase text-xs text-center mb-6'>
         Send Notifications
       </p>
@@ -76,7 +76,7 @@ const SendNotifications = ({
         <>
           <form
             onSubmit={handleSubmit}
-            className='w-full flex flex-col flex-grow my-2 relative'
+            className='w-[90%] flex flex-col flex-grow my-2 relative'
           >
             <div className='flex-grow'>
               <div className='mb-6'>

@@ -26,28 +26,57 @@ export const AdminUserPersonalData = ({
   updateOverlap: (index: number, field: string, value: any) => void;
   saveUser: () => void;
 }) => {
-  console.log(user.personalData);
   return (
-    <LandscapeCard className="items-start justify-start">
-      <div className="flex mb-8 w-full gap-4 items-center justify-between">
-        <p className="text-neutral-400 tracking-[0.5em] uppercase text-xs text-center">
+    <LandscapeCard className="@shadow-lg !h-[90vh] !w-full items-start justify-start !rounded-xl !bg-gray-900 !p-6">
+      <div className="mb-6 flex w-full items-center justify-between border-b border-gray-700 pb-4">
+        <p className="text-sm font-semibold uppercase tracking-widest text-neutral-400">
           Personal DATA
         </p>
         <button
           onClick={saveUser}
-          className="flex flex-row items-center py-1 gap-3 bg-green-100 text-green-800 rounded-lg px-2"
+          className="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-white shadow-md transition hover:bg-green-700"
         >
-          {loading && <Spinner className="w-6 h-6  text-green-600" />}
-          {!loading && <span className="material-icons">done_all</span>}
+          <>
+            {loading && <Spinner className="h-5 w-5 text-green-600" />}
+            {!loading && <span className="material-icons">done_all</span>}
+          </>
           Save User
         </button>
       </div>
       <LocalizationProvider dateAdapter={AdapterDayjs}>
-        <div className="flex flex-row items-start justify-start gap-4">
+        <div className="grid w-full grid-cols-2 gap-8">
           {/* Left Column */}
-          <div className="flex flex-col grow gap-4 items-start justify-start">
-            <div className="flex flex-row gap-4 items-center justify-start">
-              <p className="w-40">Date of Birth</p>
+          <div className="flex flex-col gap-4 text-white shadow-lg">
+            <div className="flex flex-col gap-2">
+              <p className="text-sm font-medium">Phone</p>
+              <input
+                id="personalData.phone"
+                type="text"
+                value={
+                  user.personalData
+                    ? (user?.personalData as personalData)?.phone
+                    : ""
+                }
+                onChange={updateField}
+                className="w-full rounded-md border border-gray-600 bg-neutral-800 p-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <p className="text-sm font-medium">Address</p>
+              <input
+                id="personalData.address"
+                type="text"
+                value={
+                  user.personalData
+                    ? (user?.personalData as personalData)?.address
+                    : ""
+                }
+                onChange={updateField}
+                className="w-full rounded-md border border-gray-600 bg-neutral-800 p-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <p className="text-sm font-medium">Date of Birth</p>
               <DatePicker
                 value={dayjs((user?.personalData as any)?.dateOfBirth)}
                 onChange={(newValue) =>
@@ -59,41 +88,35 @@ export const AdminUserPersonalData = ({
                     },
                   }))
                 }
-              />
-            </div>
-            <div className="flex flex-row gap-4 items-center justify-start">
-              <p className="w-40">Phone</p>
-              <input
-                id="personalData.phone"
-                type="text"
-                value={
-                  user.personalData
-                    ? (user?.personalData as personalData)?.phone
-                    : ""
-                }
-                onChange={updateField}
-                className="border border-neutral-400 rounded-lg p-2"
-              />
-            </div>
-            <div className="flex flex-row gap-4 items-center justify-start">
-              <p className="w-40">Address</p>
-              <input
-                id="personalData.address"
-                type="text"
-                value={
-                  user.personalData
-                    ? (user?.personalData as personalData)?.address
-                    : ""
-                }
-                onChange={updateField}
-                className="border border-neutral-400 rounded-lg p-2"
+                sx={{
+                  border: "1px solid #737373",
+                  borderRadius: "4px",
+                  width: "100%",
+                  backgroundColor: "#262626",
+                  "& .MuiPaper-root": {
+                    "& .MuiPickersLayout-root": {
+                      "& MuiDateCalendar-root": {
+                        backgroundColor: "#1f1f1f !important",
+                      },
+                    },
+                  },
+                  "& .MuiDateCalendar-root": {
+                    backgroundColor: "#1f1f1f !important",
+                  },
+                  "& .MuiInputBase-input": {
+                    color: "white !important",
+                  },
+                  "& .MuiButtonBase-root": {
+                    color: "white !important",
+                  },
+                }}
               />
             </div>
           </div>
           {/* Right Column */}
-          <div className="flex flex-col grow gap-4 items-start justify-start ml-12">
-            <div className="flex flex-row gap-4 items-center justify-start">
-              <p className="w-40">City</p>
+          <div className="flex flex-col gap-4 text-white shadow-lg">
+            <div className="flex flex-col gap-2">
+              <p className="text-sm font-medium">City</p>
               <input
                 id="personalData.city"
                 type="text"
@@ -103,11 +126,11 @@ export const AdminUserPersonalData = ({
                     : ""
                 }
                 onChange={updateField}
-                className="border border-neutral-400 rounded-lg p-2"
+                className="w-full rounded-md border border-gray-600 bg-neutral-800 p-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
             </div>
-            <div className="flex flex-row gap-4 items-center justify-start">
-              <p className="w-40">Work Hour Overlap</p>
+            <div className="flex flex-col gap-2">
+              <p className="text-sm font-medium">Work Hour Overlap</p>
               <input
                 id="personalData.workHourOverlap"
                 type="text"
@@ -117,11 +140,11 @@ export const AdminUserPersonalData = ({
                     : ""
                 }
                 onChange={updateField}
-                className="border border-neutral-400 rounded-lg p-2"
+                className="w-full rounded-md border border-gray-600 bg-neutral-800 p-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
             </div>
-            <div className="flex flex-row gap-4 items-center justify-start">
-              <p className="w-40">Government Id</p>
+            <div className="flex flex-col gap-2">
+              <p className="text-sm font-medium">Government Id</p>
               <input
                 id="personalData.govtId"
                 type="url"
@@ -131,7 +154,7 @@ export const AdminUserPersonalData = ({
                     : ""
                 }
                 onChange={updateField}
-                className="border border-neutral-400 rounded-lg p-2"
+                className="w-full rounded-md border border-gray-600 bg-neutral-800 p-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
             </div>
           </div>

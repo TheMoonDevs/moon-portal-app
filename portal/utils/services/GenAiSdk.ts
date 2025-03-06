@@ -27,4 +27,24 @@ export const GenAiSdk = {
       return e.message;
     }
   },
+  generateAISummary: async (
+    data: any
+  ) => {
+    const prompt = `
+      Summarize the key points from our teams work logs from yesterday.
+      ${JSON.stringify(data)}
+      
+      Provide a **single concise passage** (no bullet points).
+    `;
+  
+    try {
+      const result = await model.generateContent(prompt);
+      const text = result.response.text().trim();
+      
+      return text || "No significant updates.";
+    } catch (e: any) {
+      console.error("AI Summary Generation Error:", e);
+      return "Summary unavailable.";
+    }
+  }
 };

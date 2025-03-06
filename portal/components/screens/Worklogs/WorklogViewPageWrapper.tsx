@@ -10,6 +10,7 @@ import store from '@/utils/redux/store';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 import { WorkLogsHelper } from './WorklogsHelper';
 import { WorkLogs } from '@prisma/client';
+import { Bottombar } from '@/components/global/Bottombar';
 import { PrivateWorklogView } from './PrivateWorklogView';
 
 export const WorklogViewPageWrapper = ({ id }: { id: string }) => {
@@ -96,12 +97,19 @@ export const WorklogViewPageWrapper = ({ id }: { id: string }) => {
   }
 
   return (
-    <div className="my-4 h-[90vh] overflow-y-scroll bg-white">
-      <WorklogView id={id} date={_date} logType={_logType} />
-      <PrivateWorklogView
-        date={dayjs(_date)?.format('YYYY-MM-DD')}
-        logType={'privateWorklogs'}
-      />
-    </div>
+    <>
+      <div className="my-2 mb-24 h-[90vh] overflow-y-scroll bg-white">
+        <WorklogView
+          id={id}
+          date={dayjs(_date).format('YYYY-MM-DD')}
+          logType={_logType}
+        />
+        <PrivateWorklogView
+          date={dayjs(_date)?.format('YYYY-MM-DD')}
+          logType={'privateWorklogs'}
+        />
+      </div>
+      <Bottombar visible={true} />
+    </>
   );
 };
