@@ -44,9 +44,16 @@ export async function POST(request: Request) {
     const generatedTitle = await GenAiSdk.generateShortTitle(
       `client's request: "${requestDescription}"`,
     );
-    console.log('Generated Title:', generatedTitle);
+
+    if (!generatedTitle) {
+      return NextResponse.json(
+        { error: 'Failed to generate title' },
+        { status: 500 },
+      );
+    }
+
     const requestTitle = generatedTitle
-      .toLowerCase()
+      ?.toLowerCase()
       .replace(/ /g, '-')
       .substring(0, 50);
 
