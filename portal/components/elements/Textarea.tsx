@@ -12,6 +12,8 @@ interface TextareaProps {
   value?: string;
   onChange?: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
   rows?: number;
+  disabled?: boolean;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
 }
 
 const Textarea: React.FC<TextareaProps> = ({
@@ -23,7 +25,9 @@ const Textarea: React.FC<TextareaProps> = ({
   customClass,
   value,
   onChange,
-  rows
+  rows,
+  disabled,
+  onKeyDown,
 }) => {
   return (
     <div className="mb-4 flex flex-col">
@@ -35,6 +39,8 @@ const Textarea: React.FC<TextareaProps> = ({
         value={value}
         onChange={onChange}
         rows={rows}
+        disabled={disabled}
+        onKeyDown={onKeyDown}
       />
       {errors && errors[id] && (
         <p className="mt-1 text-xs text-red-500">{errors[id].message}</p>
