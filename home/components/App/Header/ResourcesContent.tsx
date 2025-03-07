@@ -13,7 +13,7 @@ const ResourcesMenuItems = [
     id: 'customers-latest-innovations',
     title: 'Customers & Latest Innovations',
     description: 'Browse latest real-world case studies',
-    link: '/case-studies',
+    link: '/industries',
   },
   {
     id: 'themoondevs-cohort',

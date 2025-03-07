@@ -3,7 +3,7 @@ import { IPublication } from '@/components/App/PublicationDialog';
 export interface IProjects extends IPublication {
   isHot?: boolean;
 }
-interface IIndustryAndProjects {
+export interface IIndustryAndProjects {
   industry: string;
   projects: IProjects[];
 }
@@ -18,15 +18,37 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
+
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
       {
         title: 'VRF based randomness',
         link: '',
-        isHot: false,
-        image_url: '/images/abstract-red.png',
+        isHot: true,
+        image_url: '/images/abstract-golden.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
+
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
@@ -36,6 +58,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
@@ -45,6 +77,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
@@ -54,6 +96,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
@@ -63,6 +115,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
@@ -72,6 +134,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
@@ -81,6 +153,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: true,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
@@ -90,6 +172,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
@@ -99,6 +191,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
@@ -123,6 +225,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'Developed a conversational AI platform that guides customers through product discovery, handles order inquiries, and provides personalized recommendations resulting in a 42% reduction in support ticket volume.',
       },{
@@ -157,6 +269,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'Created a custom diff visualization system that highlights risk factors in legal documents that even the clients legal team had overlooked. Reduced integration complexity by building a middleware layer that works with legacy document management systems',
         cta_text: 'See Demo',
@@ -190,6 +312,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/assets/1_5N3_Wq8LX9pyebiAtJdT4g.gif',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A cross-platform 3D model rendering system for React Native that enables photorealistic AR product previews with 85% reduced load times through progressive mesh loading.',
         cta_text: 'View Case Study',
@@ -200,6 +332,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: true,
         image_url: '/images/assets/Innovative-AI-Projects-to-Showcase-on-Your-Website.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'Engineered a conflict-free replicated data structure (CRDT) backend that enables sub-20ms collaborative editing with intelligent merge resolution even in high-latency environments.',
       },
@@ -209,6 +351,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/assets/TheMoonDevs-bot-DM-TheMoonDevs-Slack-03-06-2025_02_32_PM.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'Engineered a custom Discord-based workflow automation system that streamlines meeting scheduling, payment tracking, and timesheet management through a unified interface.',
       },
@@ -218,6 +370,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/assets/Example-Output-Ask-AI.webp',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing team and projects.',
       },
@@ -227,6 +389,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/assets/ragForEcommerce.webp',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'Engineered a RAG-based product discovery system that combines visual recognition with contextual understanding to deliver hyper-personalized recommendations, increasing conversion rates by 47%.',
       },
@@ -236,6 +408,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/assets/internalTools.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'Built an integrated team productivity platform that reduces context-switching by 63% through AI-powered workflow orchestration and cross-tool data synchronization.',
       },
@@ -245,6 +427,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/assets/webRTC.webp',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A WebRTC-based communication system with AI-powered real-time language translation that maintains sub-100ms latency even on congested networks.',
         cta_text: 'View Case Study',
@@ -260,6 +452,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
@@ -269,6 +471,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
@@ -278,6 +490,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
@@ -287,6 +509,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: true,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
@@ -296,6 +528,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
@@ -305,6 +547,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/assets/contactSync.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
         cta_text: 'View Case Study',
@@ -315,6 +567,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: true,
         image_url: '/images/assets/67520d8cdf764efa88b871e6_biometric-authentication-optimize-user-experience-p-800.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'Reimagined user authentication with a frictionless system that leverages device-native biometrics and passkeys, eliminating password vulnerabilities while reducing authentication time by 74% and boosting conversion rates across mobile and desktop platforms.',
         cta_text: 'Visit Website',
@@ -328,6 +590,16 @@ export const projectsData: IIndustryAndProjects[] = [
         title: 'Threejs based virtual product view',
         link: 'https://cobalt-act-e19.notion.site/Beyond-Static-Images-Creating-Immersive-3D-Product-Experiences-with-Three-js-1adbcad0aeeb80178ce6e72657e876ba?pvs=4',
         isHot: false,
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         image_url: '/images/assets/clockThreeD.jpg',
         type: 'article', 
         description:
@@ -340,6 +612,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/assets/devOPSAutomations.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'Slashed deployment time by 90% while achieving zero failures, reclaiming 60+ developer hours monthly, maintaining perfect deployment reliability, and cutting infrastructure costs by 40% compared to managed cloud services.',
       },
@@ -349,6 +631,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/assets/telegramMiniApps.jpg',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A telegram mini app that allows users to play a game and earn rewards.',
         cta_text: 'View Case Study',
@@ -359,6 +651,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/assets/unityPhoton.gif',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
         cta_text: 'View Case Study',
@@ -368,6 +670,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/assets/IotDevices-framework.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'Our engineering team developed a custom WebGL rendering pipeline that optimizes for memory constraints on IoT gateways. We solved the challenge of handling heterogeneous sensor data by creating an adaptive schema system that normalizes inputs in real-time. The solution reduced bandwidth requirements by 86% while improving visual responsiveness for critical monitoring applications.',
         cta_text: 'View Case Study',
