@@ -73,7 +73,7 @@ const IndustryCarousel = ({
         {/* HOT SECTION */}
         {top3HotArticles.length > 0 && (
           <>
-            <Header
+            {/* <Header
               title={
                 <span
                   className={`${theme === 'dark' ? 'text-white' : 'text-black'} block !text-xs uppercase tracking-[0.075rem]`}
@@ -81,7 +81,7 @@ const IndustryCarousel = ({
                   {industryName} / <span className="text-orange-500">Hot</span>
                 </span>
               }
-            />
+            /> */}
             <HotSection theme={theme} top3HotArticles={top3HotArticles} />
           </>
         )}
