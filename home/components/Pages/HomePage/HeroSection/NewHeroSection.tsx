@@ -3,23 +3,22 @@ import { Mrs_Sheppards } from 'next/font/google';
 import Image from 'next/image';
 import React from 'react';
 
-const words = ['Live', 'Think', 'Build', 'Unleash'];
+const words = ['Scale', 'Think', 'Build'];
 const mrsSheppard = Mrs_Sheppards({ weight: '400', subsets: ['latin'] });
 const NewHeroSection = () => {
   return (
     <div className="relative w-full">
       {/* Hero text */}
       <div className="relative z-10 flex h-[100vh] flex-col items-center justify-center gap-8 text-center">
-        <h1 className="text-5xl font-extrabold text-white max-sm:px-10">
-          <FlipWords words={words} /> your Tech Dream
+        <h1 className="text-5xl xl:text-6xl font-extrabold text-white max-sm:px-10">
+          <FlipWords words={words} /> your vision
         </h1>
 
-        <p className="w-1/2 text-2xl font-medium text-white max-sm:w-full max-sm:px-8">
-          Get world class developers & software engineers help you build your
-          difficult-to-execute Idea/aspirations.
+        <p className="w-1/2 text-2xl xl:text-2xl font-bold text-white max-sm:w-full max-sm:px-8">
+          We're a dev house, building <i>difficult-to-execute</i>, edge-tech projects for innovators across the globe.
         </p>
 
-        <p className="absolute bottom-6 left-1/2 w-4/5 -translate-x-1/2 text-lg font-normal md:w-full md:text-xl">
+        <p className="absolute bottom-6 left-1/2 w-4/5 -translate-x-1/2 text-lg font-medium md:w-full md:text-xl">
           The
           <span
             className={`${mrsSheppard.className} black mx-3 mt-6 text-2xl text-white md:text-4xl`}
