@@ -52,7 +52,7 @@ const IndustryCarousel = ({
               {industryArticles.map((article, index) => (
                 <CarouselItem
                   className={cn(
-                    'group pl-0 md:basis-[calc(50%-0.5rem)] lg:basis-[calc(50%-0.5rem)]',
+                    'group h-fit pl-0 md:basis-[calc(50%-0.5rem)] lg:basis-[calc(50%-0.5rem)]',
                     theme === 'dark'
                       ? 'bg-[#17100E] text-white'
                       : 'bg-gray-100 text-black',
@@ -140,14 +140,15 @@ const HotSection = ({
             “{description}”
           </p>
           <div className="mt-6 flex justify-start gap-2 text-6xl font-semibold">
-            {stats.map((stat: any, index: number) => (
-              <div className="flex w-full flex-col">
-                <span className="">{stat.value}</span>
-                <span className="text-sm text-gray-400">
-                  {stat.description}
-                </span>
-              </div>
-            ))}
+            {stats &&
+              stats.map((stat: any, index: number) => (
+                <div className="flex w-full flex-col">
+                  <span className="">{stat.value}</span>
+                  <span className="text-sm text-gray-400">
+                    {stat.description}
+                  </span>
+                </div>
+              ))}
           </div>
         </div>
         {/* Pagination */}
@@ -211,7 +212,7 @@ const HotSection = ({
             theme === 'dark' ? 'bg-black' : 'bg-white',
           )}
         >
-          <CardContent className="p-0">
+          <CardContent className="w-full p-0">
             <div className="h-[500px] w-full">
               {image_url && (
                 <Image
@@ -219,7 +220,7 @@ const HotSection = ({
                   alt=""
                   width={300}
                   height={300}
-                  className="h-full w-full object-cover duration-1000"
+                  className="h-full w-full object-cover object-center duration-1000"
                 />
               )}
               {video_url && (
