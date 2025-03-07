@@ -39,6 +39,7 @@ export const useToast = () => {
     isHidable?: boolean;
     color?: string;
     position?: string;
+    bgColor?: string;
   }) => {
     dispatch(pushToast(toastParams));
     setTimeout(() => {

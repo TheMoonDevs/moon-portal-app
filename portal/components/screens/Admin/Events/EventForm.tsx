@@ -19,6 +19,7 @@ export type loadingState = {
   adding: boolean;
   updating: boolean;
   updateUploading: boolean;
+  deleting?: boolean;
 };
 
 const EventForm = () => {
@@ -60,7 +61,7 @@ const EventForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!date || !title || !subTitle || !link || !time) return;
-    const formattedDate = date.format('DD-MM-YYYY');
+    const formattedDate = date.format('YYYY-MM-DD');
     const formattedTime = time.format('HH:mm');
     const year = date.year();
     const month = Number(date.format('M'));
@@ -78,6 +79,7 @@ const EventForm = () => {
 
     try {
       await PortalSdk.postData('api/events', eventData);
+      getEvents();
       toast.success('Event added successfully!');
       resetForm();
     } catch (error) {
@@ -92,7 +94,7 @@ const EventForm = () => {
     e.preventDefault();
     setLoadingState((prev) => ({ ...prev, updateUploading: true }));
     if (!date || !title || !subTitle || !link || !time) return;
-    const formattedDate = date.format('DD-MM-YYYY');
+    const formattedDate = date.format('YYYY-MM-DD');
     const formattedTime = time.format('HH:mm');
     const year = date.year();
     const month = Number(date.format('M'));
@@ -134,10 +136,8 @@ const EventForm = () => {
       setTitle(selectedEvent.name || '');
       setSubTitle(selectedEvent.subTitle || '');
       setLink(selectedEvent.link || '');
-      setDate(dayjs(selectedEvent.date, 'DD-MM-YYYY') || null);
+      setDate(dayjs(selectedEvent.date) || null);
       setTime(dayjs(selectedEvent.time, 'HH:mm') || null);
-    } else {
-      resetForm();
     }
   }, [selectedEvent]);
 
@@ -147,19 +147,21 @@ const EventForm = () => {
 
   return (
     <>
-      <MobileBox customClass='overflow-y-scroll'>
-        <p className='text-neutral-400 tracking-[0.5em] uppercase text-xs text-center mb-6'>
+      <MobileBox
+        customClass={`${loadingState.addNew || loadingState.updating ? 'overflow-y-scroll' : 'overflow-hidden'} !w-[50%]`}
+      >
+        <p className="mb-6 text-center text-xs uppercase tracking-[0.5em] text-neutral-400">
           Add Event
         </p>
         {loadingState.fetching ? (
-          <div className='flex h-full items-center justify-center'>
+          <div className="flex h-full items-center justify-center">
             <Spinner />
           </div>
         ) : (
-          <div className='relative h-full w-full'>
+          <div className="relative h-full w-full">
             {loadingState.addNew || loadingState.updating ? (
               <>
-                <ToolTip title='Back to Previous Slide'>
+                <ToolTip title="Back to Previous Slide">
                   <IconButton
                     onClick={() => {
                       loadingState.updating
@@ -169,53 +171,53 @@ const EventForm = () => {
                     }}
                     sx={{ backgroundColor: '#1b1b1b', mb: 2 }}
                   >
-                    <span className='material-symbols-outlined !text-white'>
+                    <span className="material-symbols-outlined !text-white">
                       arrow_back
                     </span>
                   </IconButton>
                 </ToolTip>
                 <form
                   onSubmit={handleFormSubmit}
-                  className='w-full flex flex-col flex-grow my-2 relative h-full'
+                  className="relative my-2 flex h-full w-full flex-grow flex-col"
                 >
-                  <div className='flex-grow'>
-                    <div className='mb-5'>
+                  <div className="flex-grow">
+                    <div className="mb-5">
                       <label
-                        htmlFor='eventTitle'
-                        className='block text-sm font-medium text-neutral-300 mb-1'
+                        htmlFor="eventTitle"
+                        className="mb-1 block text-sm font-medium text-neutral-300"
                       >
                         Event Title
                       </label>
                       <input
-                        type='text'
-                        id='eventTitle'
+                        type="text"
+                        id="eventTitle"
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
-                        className='w-full p-2 bg-neutral-800 text-neutral-200 border border-neutral-500 rounded'
-                        placeholder='Enter event title...'
+                        className="w-full rounded border border-neutral-500 bg-neutral-800 p-2 text-neutral-200"
+                        placeholder="Enter event title..."
                       />
                     </div>
-                    <div className='mb-5'>
+                    <div className="mb-5">
                       <label
-                        htmlFor='subTitle'
-                        className='block text-sm font-medium text-neutral-300 mb-1'
+                        htmlFor="subTitle"
+                        className="mb-1 block text-sm font-medium text-neutral-300"
                       >
                         Add Subtitle
                       </label>
                       <textarea
-                        id='subTitle'
+                        id="subTitle"
                         value={subTitle}
                         onChange={(e) => setSubTitle(e.target.value)}
-                        className='w-full p-2 bg-neutral-800 text-neutral-200 border border-neutral-500 rounded'
-                        placeholder='Enter Subtitle...'
+                        className="w-full rounded border border-neutral-500 bg-neutral-800 p-2 text-neutral-200"
+                        placeholder="Enter Subtitle..."
                         style={{ resize: 'none' }}
                       />
                     </div>
                     <LocalizationProvider dateAdapter={AdapterDayjs}>
-                      <div className='mb-5'>
+                      <div className="mb-5">
                         <label
-                          htmlFor='date'
-                          className='block text-sm font-medium text-neutral-300 mb-1'
+                          htmlFor="date"
+                          className="mb-1 block text-sm font-medium text-neutral-300"
                         >
                           Add Event Date
                         </label>
@@ -273,34 +275,34 @@ const EventForm = () => {
                         />
                       </div>
                     </LocalizationProvider>
-                    <div className='mb-5'>
+                    <div className="mb-5">
                       <label
-                        htmlFor='link'
-                        className='block text-sm font-medium text-neutral-300 mb-1'
+                        htmlFor="link"
+                        className="mb-1 block text-sm font-medium text-neutral-300"
                       >
                         Link for event
                       </label>
                       <input
-                        type='url'
-                        id='link'
+                        type="url"
+                        id="link"
                         value={link}
                         onChange={(e) => setLink(e.target.value)}
-                        className='w-full p-2 bg-neutral-800 text-neutral-200 border border-neutral-500 rounded'
-                        placeholder='Enter event link...'
+                        className="w-full rounded border border-neutral-500 bg-neutral-800 p-2 text-neutral-200"
+                        placeholder="Enter event link..."
                       />
                     </div>
-                    <div className='mt-auto'>
+                    <div className="mt-auto">
                       <button
-                        type='submit'
-                        className='py-2 px-5 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg flex items-center justify-center shadow-md w-full mb-5'
+                        type="submit"
+                        className="mb-5 flex w-full items-center justify-center rounded-lg bg-neutral-800 px-5 py-2 text-white shadow-md hover:bg-neutral-700"
                         disabled={!title || !subTitle || !date || !link}
                       >
                         {loadingState.adding || loadingState.updateUploading ? (
-                          <Spinner className='w-4 h-4'/>
+                          <Spinner className="h-4 w-4" />
                         ) : (
                           <>
                             {selectedEvent ? 'Update Event' : 'Add Event'}
-                            <span className='material-symbols-outlined ml-2'>
+                            <span className="material-symbols-outlined ml-2">
                               {selectedEvent
                                 ? 'edit_calendar'
                                 : 'calendar_add_on'}
@@ -313,33 +315,35 @@ const EventForm = () => {
                 </form>
               </>
             ) : events.length === 0 ? (
-              <div className='flex flex-col items-center justify-center h-full'>
-                <p className='text-neutral-400'>No Events found.</p>
+              <div className="flex h-full flex-col items-center justify-center">
+                <p className="text-neutral-400">No Events found.</p>
               </div>
             ) : (
-              <div className='flex flex-col gap-2 h-[80%] overflow-y-scroll scrollbar'>
-                {events.map((event: Event) => {
-                  return (
-                    <EventCard
-                      event={event}
-                      key={event.id}
-                      setEvents={setEvents}
-                      setSelectedEvent={setSelectedEvent}
-                      setLoadingState={setLoadingState}
-                      loadingState={loadingState}
-                    />
-                  );
-                })}
+              <div className="flex w-full items-center justify-center">
+                <div className="scrollbar no-scrollbar flex h-[80%] w-full flex-col gap-2 overflow-y-scroll">
+                  {events.map((event: Event) => {
+                    return (
+                      <EventCard
+                        event={event}
+                        key={event.id}
+                        setEvents={setEvents}
+                        setSelectedEvent={setSelectedEvent}
+                        setLoadingState={setLoadingState}
+                        loadingState={loadingState}
+                      />
+                    );
+                  })}
+                </div>
               </div>
             )}
             {!loadingState.addNew && !loadingState.updating && (
               <button
-                className='absolute bottom-0 py-2 px-5 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg flex items-center justify-center gap-2 shadow-md w-full'
+                className="absolute bottom-0 flex w-full items-center justify-center gap-2 rounded-lg bg-neutral-800 px-5 py-2 text-white shadow-md hover:bg-neutral-700"
                 onClick={() =>
                   setLoadingState({ ...loadingState, addNew: true })
                 }
               >
-                <span className='material-symbols-outlined'>
+                <span className="material-symbols-outlined">
                   calendar_add_on
                 </span>
                 Add New Event
@@ -348,7 +352,7 @@ const EventForm = () => {
           </div>
         )}
       </MobileBox>
-      <Toaster richColors duration={3000} closeButton position='bottom-right' />
+      <Toaster richColors duration={3000} closeButton position="bottom-right" />
     </>
   );
 };

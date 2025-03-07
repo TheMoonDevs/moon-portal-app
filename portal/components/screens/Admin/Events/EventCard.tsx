@@ -1,11 +1,11 @@
-import { useState } from "react";
-import { loadingState } from "./EventForm";
-import { PortalSdk } from "@/utils/services/PortalSdk";
-import { toast } from "sonner";
-import { Event } from "@prisma/client";
-import { Spinner } from "@/components/elements/Loaders";
-import { IconButton } from "@mui/material";
-import dayjs from "dayjs";
+import { useState } from 'react';
+import { loadingState } from './EventForm';
+import { PortalSdk } from '@/utils/services/PortalSdk';
+import { toast } from 'sonner';
+import { Event } from '@prisma/client';
+import { Spinner } from '@/components/elements/Loaders';
+import { IconButton } from '@mui/material';
+import dayjs from 'dayjs';
 
 export const EventCard = ({
   event,
@@ -40,22 +40,24 @@ export const EventCard = ({
 
   return (
     <div
-      className='flex py-2 text-white items-center justify-between cursor-pointer'
+      className="flex cursor-pointer items-center justify-between border-b border-neutral-800 py-2 text-white"
       onClick={(e) => {
         e.stopPropagation();
         setSelectedEvent(event);
         setLoadingState({ ...loadingState, updating: true });
       }}
     >
-      <div className='flex flex-col gap-1 items-start'>
-        <p className='text-neutral-300 text-sm'>{event.name}</p>
-        <p className='text-neutral-500 text-xs'>{event.date} - {time}</p>
+      <div className="flex flex-col items-start gap-1">
+        <p className="text-sm text-neutral-300">{event.name}</p>
+        <p className="text-xs text-neutral-500">
+          {dayjs(event.date).format('MMMM D, YYYY')} - {time}
+        </p>
       </div>
       {deleting ? (
-        <Spinner className='h-5 w-5 mr-2' />
+        <Spinner className="mr-2 h-5 w-5" />
       ) : (
         <IconButton sx={{ backgroundColor: '#1b1b1b' }} onClick={deleteEvent}>
-          <span className='material-symbols-outlined text-red-600'>delete</span>
+          <span className="material-symbols-outlined text-red-600">delete</span>
         </IconButton>
       )}
     </div>

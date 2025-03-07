@@ -58,10 +58,10 @@ const Events = () => {
 
   const isEventToday =
     selectedEvent &&
-    dayjs(selectedEvent.date, 'DD-MM-YYYY').isSame(dayjs(), 'day');
+    dayjs(selectedEvent.date, 'YYYY-MM-DD').isSame(dayjs(), 'day');
   const isEventPast =
     selectedEvent &&
-    dayjs(`${selectedEvent.date} ${selectedEvent.time}`, 'DD-MM-YYYY HH:mm')
+    dayjs(`${selectedEvent.date} ${selectedEvent.time}`, 'YYYY-MM-DD HH:mm')
       .add(60, 'minute')
       .isBefore(dayjs());
 
@@ -86,9 +86,8 @@ const Events = () => {
               Upcoming events
             </div>
             <div
-              className={`flex justify-between items-start ${
-                (isEventToday || isEventPast) && 'items-center'
-              }`}
+              className={`flex justify-between items-start ${(isEventToday || isEventPast) && 'items-center'
+                }`}
             >
               <div className='flex gap-4 items-start'>
                 <div
@@ -103,11 +102,11 @@ const Events = () => {
                       </div>
                       <div className='text-lg font-bold text-white max-w-1/2'>
                         {selectedEvent.name} -{' '}
-                        {dayjs(selectedEvent.date, 'DD-MM-YYYY').format(
+                        {dayjs(selectedEvent.date, 'YYYY-MM-DD').format(
                           'MMM D'
                         )}
                         {getDaySuffix(
-                          dayjs(selectedEvent.date, 'DD-MM-YYYY').date()
+                          dayjs(selectedEvent.date, 'YYYY-MM-DD').date()
                         )}
                       </div>
                     </div>
@@ -119,9 +118,9 @@ const Events = () => {
                       ?.map((event: Event, index: number) => {
                         const formattedDate = dayjs(
                           event.date,
-                          'DD-MM-YYYY'
+                          'YYYY-MM-DD'
                         ).format('MMM D');
-                        const day = dayjs(event.date, 'DD-MM-YYYY').date();
+                        const day = dayjs(event.date, 'YYYY-MM-DD').date();
                         return (
                           <div
                             key={event.id}
@@ -158,7 +157,7 @@ const Events = () => {
                     if (!selectedEvent) return null;
                     const eventDateTime = dayjs(
                       `${selectedEvent.date} ${selectedEvent.time}`,
-                      'DD-MM-YYYY HH:mm',
+                      'YYYY-MM-DD HH:mm',
                     );
                     const diffInMinutes = eventDateTime.diff(dayjs(), 'minute');
                     const diffInHours = Math.floor(diffInMinutes / 60);

@@ -29,8 +29,11 @@ jobs:
           git fetch --prune
           git fetch origin main
 
-          # Get changed files from the last push on main
-          changed_files=$(git diff --name-only origin/main@{1} origin/main)
+          # Get the previous commit before the last push
+          previous_commit=$(git rev-parse HEAD^)
+
+          # Get changed files between the previous commit and the latest state of main
+          changed_files=$(git diff --name-only $previous_commit HEAD)
 
           projects=()
           if echo "$changed_files" | grep -q "^portal/"; then
@@ -39,6 +42,7 @@ jobs:
           if echo "$changed_files" | grep -q "^payzone/"; then
             projects+=("payzone")
           fi
+
 
           echo "Changed projects: ${projects[@]}"
 

@@ -558,3 +558,249 @@ model Subscription {
   userId    String  @db.ObjectId  @unique
   subscriptions PUSHNOTIFICATION[]
 }
+
+
+//-------------------------------------DEV PROFILES-------------------------------------------
+
+
+type WORKEXPERIENCE {
+  company String
+  position String
+  startDate String
+  endDate String
+  technologies String[]
+  description String
+}
+
+type PROJECTS {
+  name String
+  link String
+  startDate String
+  endDate String
+  technologies String[]
+  description String
+}
+
+type SOCIALLINK {
+  platform  String
+  link      String
+}
+
+model DevProfile {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String  @db.ObjectId  @unique
+  firstName String
+  lastName String
+  email String @unique
+  avatar String
+  bio String
+  address String
+  city String
+  state String
+  country String
+  profession String
+  availability String?
+  expertise String[]
+  workExperience WORKEXPERIENCE[]
+  projects PROJECTS[]
+  socialLinks SOCIALLINK[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// -------------------------------------Client Shortcuts and utils--------------------------------- 
+
+model ClientUtilityLink {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  clientId  String   
+  title     String
+  url       String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  icon      String
+}
+
+
+// -------------------------------------Engagements-------------------------------------------
+
+model Engagement {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  client_id String
+  developer_ids String[]
+  title     String
+  startDate DateTime?
+  endDate DateTime?
+  isActive Boolean
+  engagementType ENGAGEMENTTYPE
+  numberOfHours     Int?    
+  progressPercentage Float?  
+}
+
+enum ENGAGEMENTTYPE {
+  HOURLY
+  PART_TIME
+  FULL_TIME
+  FIXED
+}
+
+
+// -------------------------------------Custom Bots-------------------------------------------
+
+model BotProject {
+  id             String           @id @default(auto()) @map("_id") @db.ObjectId
+  clientId       String
+  name           String           @unique
+  githubRepoName String
+  githubRepoUrl  String
+  githubRepoBranch String?     @default("main")
+  prUrl          String?
+  prNumber       Int?
+  description    String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  clientRequests ClientRequests[]
+  projectConfiguration Json?
+}
+
+model ClientRequests {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  botProjectId  String   @db.ObjectId
+  clientId      String // Identifier for who created this bot
+  assigneeId    String?
+  title         String
+  description   String?
+  prUrl         String?
+  prNumber      Int?
+  requestStatus PRSTATUS @default(UN_ASSIGNED)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  botProject BotProject @relation(fields: [botProjectId], references: [id])
+}
+
+enum PRSTATUS {
+  UN_ASSIGNED
+  IN_DEVELOPMENT
+  IN_QUEUE
+  IN_REVIEW
+  IN_TESTING
+  COMPLETED
+}
+
+
+//-------------------------------------INVOICE---------------------------------
+
+model Invoice {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  startDate      DateTime
+  endDate        DateTime
+  dueDate        DateTime
+  title          String
+  description    String?
+  clientId       String
+  devIds         String[] // Store user IDs as an array instead of a relation
+  amountTotal    Float
+  amountToPay    Float
+  amountDiscount Float
+  isInvoicePaid  Boolean
+  paidDate       DateTime?
+  payType        PayType
+  invoicePdf     String?  // Store file URL or path
+  workInfo       Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+enum PayType {
+  BANK
+  CRYPTO
+}
+
+// -----------------------------EMAIL SUBSCRIPTIONS-----------------------------
+
+model EmailSubscriber {
+  id                 String              @id @default(auto()) @map("_id") @db.ObjectId
+  email              String              @unique
+  name               String?
+  userType           UserType?           @default(developer)
+  source             String?             
+  subscriptionStatus SubscriptionStatus? @default(active)
+  timeZone           String?
+  preferences        Preferences?
+  contactDetails     ContactDetails?
+  context            String? // for what the user is signing up for
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+type Preferences {
+  frequency               Frequency     @default(bi_weekly)
+  categories              Category[]    @default([])
+  contentLength           ContentLength @default(short)
+  contentFormat           ContentFormat @default(summary)
+  receiveImportantUpdates Boolean       @default(true)
+  preferredLanguage       String?       @default("en")
+}
+
+type ContactDetails {
+  phone              String? // Optional phone number
+  address            String? // Free-text address field
+  socialMediaHandles Json?
+}
+
+enum UserType {
+  client
+  developer
+  other
+}
+
+enum Source {
+  home_signup
+  sense
+  connect
+  tally_form
+  linkedin
+  other
+}
+
+enum SubscriptionStatus {
+  active
+  paused
+  unsubscribed
+}
+
+enum Frequency {
+  daily
+  weekly
+  bi_weekly
+}
+
+enum ContentLength {
+  short
+  medium
+  long
+}
+
+enum ContentFormat {
+  summary
+  detailed
+  mixed
+}
+
+enum EmailStatus {
+  sent
+  bounced
+  delivered
+}
+
+enum Category {
+  frontend
+  backend
+  fullstack
+  cloud
+  devops
+  security
+  blockchain
+  mobile
+  other
+}

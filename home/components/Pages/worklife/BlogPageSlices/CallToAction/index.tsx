@@ -1,3 +1,5 @@
+'use client'
+
 import styled from "@emotion/styled";
 import { type Content, isFilled } from "@prismicio/client";
 import { PrismicNextLink, PrismicNextImage } from "@prismicio/next";
