@@ -128,6 +128,11 @@ module.exports = {
           '0%': { width: '0%' },
           '100%': { width: '50%' },
         },
+        pump: {
+          '0%': { transform: 'translateX(-100%)' },
+          '50%': { transform: 'translateX(0%)' },
+          '100%': { transform: 'translateX(100%)' },
+        },
         scroll: {
           to: {
             transform: 'translate(calc(-50% - 3rem))',
@@ -140,6 +145,7 @@ module.exports = {
         'fade-in': 'fade-in 0.3s',
         'fade-out': 'fade-out 0.3s',
         'border-line': 'border-line 0.3s ease-out forwards',
+        pump: 'pump 0.75s ease-in infinite',
         scroll:
           'scroll var(--animation-duration, 40s) var(--animation-direction, forwards) linear infinite',
       },

@@ -60,8 +60,8 @@ const NewHeroSection = () => {
             </div>
           </div>
 
-          <div className="flex items-center backdrop-blur-xl bg-white/20 px-6 py-3 rounded-[3em] gap-8 sm:gap-20 max-md:gap-12 max-sm:gap-8">
-            <div className="flex flex-col gap-2">
+          <div className="flex items-center backdrop-blur-xl px-6 py-3 rounded-[3em] gap-8 sm:gap-20 max-md:gap-12 max-sm:gap-8 relative overflow-hidden before:absolute before:inset-0 before:bg-gradient-to-r before:from-white/0 before:via-white/20 before:to-white/0 before:animate-pump">
+            <div className="flex flex-col gap-2 relative z-10">
               <span className="text-[10px] sm:text-lg text-white font-semibold">MVPs built</span>
             </div>
 
