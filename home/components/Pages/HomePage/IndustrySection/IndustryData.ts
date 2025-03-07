@@ -3,7 +3,7 @@ import { IPublication } from '@/components/App/PublicationDialog';
 export interface IProjects extends IPublication {
   isHot?: boolean;
 }
-interface IIndustryAndProjects {
+export interface IIndustryAndProjects {
   industry: string;
   projects: IProjects[];
 }
@@ -18,15 +18,37 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
+
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
       {
         title: 'VRF based randomness',
         link: '',
-        isHot: false,
-        image_url: '/images/abstract-red.png',
+        isHot: true,
+        image_url: '/images/abstract-golden.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
+
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
@@ -36,6 +58,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
@@ -45,6 +77,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
@@ -54,6 +96,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
@@ -63,6 +115,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
@@ -72,6 +134,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
@@ -81,6 +153,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: true,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
@@ -90,6 +172,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
@@ -99,6 +191,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
@@ -113,6 +215,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
@@ -122,6 +234,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
@@ -136,6 +258,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
@@ -145,6 +277,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: true,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
@@ -154,6 +296,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
@@ -163,6 +315,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
@@ -172,6 +334,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
@@ -181,6 +353,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
@@ -190,6 +372,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
@@ -204,6 +396,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
@@ -213,6 +415,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
@@ -222,6 +434,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
@@ -231,6 +453,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: true,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
@@ -240,6 +472,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
@@ -249,6 +491,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
@@ -258,6 +510,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: true,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
@@ -272,6 +534,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
@@ -281,6 +553,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
@@ -290,6 +572,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
@@ -299,6 +591,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
@@ -308,6 +610,16 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         image_url: '/images/abstract-red.png',
         type: 'article',
+        stats: [
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+          {
+            value: '100k',
+            description: 'Active users',
+          },
+        ],
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
