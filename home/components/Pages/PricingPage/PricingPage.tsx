@@ -15,29 +15,31 @@ const Plans = [
   {
     name: 'Simpleton MVP',
     description:
-      'The perfect starting place for your web app or personal project. Free forever.',
+      'The perfect starting place for your project. fixed price of 3,999$.',
     features: [
-      { icon: '✔', title: 'Import your repo, deploy in seconds' },
-      { icon: '✔', title: 'Automatic CI/CD' },
-      { icon: '✔', title: 'Fluid compute' },
-      { icon: '✔', title: 'Traffic & performance insights' },
-      { icon: '✔', title: 'DDoS Mitigation' },
-      { icon: '✔', title: 'Web Application Firewall' },
-      { icon: '✔', title: 'Community Support' },
+      { icon: '✔', title: 'Upto 2x complexity' },
+      { icon: '✔', title: 'End to End solution (design + build + deploy)' },
+      { icon: '✔', title: '2 free consults  <-> fractional CTOs' },
+      { icon: '✔', title: 'Email / Slack / Telgram support' },
+      { icon: '✔', title: '100% on-time delivery' },
+      { icon: '✔', title: 'Portal Dashboard to track progress' },
+      { icon: '✔', title: 'Weekly sync with project lead' },
+      { icon: '✔', title: 'Long term support for bug-fixes' },
     ],
-    buttonText: 'Start Deploying',
+    buttonText: 'Start a New Project',
     highlight: true,
   },
   {
     name: 'Premium MVP',
     description:
-      'Everything you need to build and scale your web app, from $20/month.',
+      'Everything you need to build and scale your web app, from $2,999/week.',
     features: [
-      { icon: '✔', title: '10x more included infrastructure usage' },
-      { icon: '✔', title: 'Observability tools' },
-      { icon: '✔', title: 'Faster builds' },
-      { icon: '✔', title: 'Cold start prevention' },
-      { icon: '✔', title: 'Advanced WAF Protection' },
+      { icon: '✔', title: 'Upto 4x complexity' },
+      { icon: '✔', title: 'Double Speed & Efficiency' },
+      { icon: '✔', title: 'Daily worklogs Sync' },
+      { icon: '✔', title: '4+ hrs of Timezone Overlap' },
+      { icon: '✔', title: 'Direct Team communication access' },
+      { icon: '✔', title: 'Investor Network Access' },
       { icon: '✔', title: 'Email support' },
     ],
     buttonText: 'Start a free trial',
@@ -250,6 +252,11 @@ const PlanCardContent = ({ plan, index }: { plan: IPlan; index: number }) => {
     <div className="text-black">
       <p className="my-4 mb-8 text-base text-neutral-600">{plan.description}</p>
       <ul className="flex flex-col gap-3">
+        {index === 0 && (
+          <li className="text-sm text-neutral-500">
+            <span>Turnaround in <b>3-4 weeks</b></span>
+          </li>
+        )}
         {index === 1 && (
           <li className="text-sm text-neutral-500">
             <span>Everyting in Simple MVP, plus:</span>
