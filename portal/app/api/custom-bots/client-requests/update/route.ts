@@ -12,8 +12,9 @@ export async function GET(req: Request) {
         { status: 400 },
       );
 
-    const clientRequest = await prisma.clientRequests.findUnique({
+    const clientRequest = await prisma.clientRequest.findUnique({
       where: { id: clientRequestId },
+      include: { requestUpdates: true },
     });
     if (!clientRequest)
       return NextResponse.json(
@@ -23,14 +24,14 @@ export async function GET(req: Request) {
 
     await updateClientRequest(clientRequest);
 
-    const updatedRequestUpdates = await prisma.requestUpdate.findMany({
-      where: { clientRequestId },
+    const updatedrequestMessages = await prisma.requestMessage.findMany({
+      where: { originClientRequestId: clientRequestId },
       orderBy: { createdAt: 'asc' },
     });
 
     return NextResponse.json(
       {
-        requestUpdates: updatedRequestUpdates,
+        requestMessages: updatedrequestMessages,
         requestStatus: clientRequest?.requestStatus,
       },
       { status: 200 },
