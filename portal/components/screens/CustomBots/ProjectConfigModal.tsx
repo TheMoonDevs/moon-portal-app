@@ -39,7 +39,7 @@ export default function ProjectConfigModal({
       if (data.error) {
         toast.error(data.error);
       } else {
-        setConfigs(data?.configs?.prodConfigs || {});
+        setConfigs(data?.prodConfigs || {});
       }
     } catch (error: any) {
       toast.error('Failed to fetch configurations.');

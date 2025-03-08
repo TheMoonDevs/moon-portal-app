@@ -29,11 +29,9 @@ export async function GET(req: Request) {
 
     return NextResponse.json({
       message: 'Project configuration fetched successfully',
-      configs: {
-        preview: project.previewConfigs,
-        staging: project.stagingConfigs,
-        prod: project.prodConfigs,
-      },
+      previewConfigs: project?.previewConfigs,
+      stagingConfigs: project?.stagingConfigs,
+      prodConfigs: project?.prodConfigs,
     });
   } catch (error: any) {
     return NextResponse.json({ error: error?.message }, { status: 500 });
