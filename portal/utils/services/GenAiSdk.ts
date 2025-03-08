@@ -47,7 +47,8 @@ export const GenAiSdk = {
   },
   generateShortTitle: async (data: any) => {
     const prompt = `
-    Generate a single short title text string for ${JSON.stringify(data)}
+    Generate a single short title/preview string for ${JSON.stringify(data)}.
+    use alphabetical characters, numbers and hyphens only if needed and keep it under 60 characters.
     `;
 
     try {
