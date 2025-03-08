@@ -2,7 +2,7 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
@@ -20,7 +20,7 @@ model User {
   name           String?
   avatar         String?
   banner         String?
-  description     String?
+  description    String?
   userType       USERTYPE?     @default(MEMBER)
   role           USERROLE?     @default(CORETEAM)
   vertical       USERVERTICAL? @default(DEV)
@@ -104,18 +104,18 @@ model ClientLeadForm {
 
 // ---------------------------------------QUICKLINKS---------------------------
 
-model DirectoryList  {
-  id          String     @id @default(auto()) @map("_id") @db.ObjectId
-  title       String
-  logo        String
-  slug        String
-  parentDirId String?    @db.ObjectId
-  timestamp   DateTime?  @default(now())
-  position    Float      @default(1)
-  isArchive   Boolean    @default(false)
-  clickCount  Int        @default(0)
-  tabType     ROOTTYPE?
-  type        DIRECTORYTYPE?
+model DirectoryList {
+  id            String          @id @default(auto()) @map("_id") @db.ObjectId
+  title         String
+  logo          String
+  slug          String
+  parentDirId   String?         @db.ObjectId
+  timestamp     DateTime?       @default(now())
+  position      Float           @default(1)
+  isArchive     Boolean         @default(false)
+  clickCount    Int             @default(0)
+  tabType       ROOTTYPE?
+  type          DIRECTORYTYPE?
   userDirectory UserDirectory[]
 
   @@index([parentDirId, position])
@@ -124,15 +124,15 @@ model DirectoryList  {
 }
 
 model UserDirectory {
-  id          String     @id @default(auto()) @map("_id") @db.ObjectId
-  userId      String     @db.ObjectId
-  directoryId String     @db.ObjectId
-  directoryData DirectoryList @relation(fields: [directoryId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  id            String            @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String            @db.ObjectId
+  directoryId   String            @db.ObjectId
+  directoryData DirectoryList     @relation(fields: [directoryId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   directoryType USERDIRECTORYTYPE
-  clickCount  Int        @default(0)
-  timestamp   DateTime   @default(now())
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @default(now())
+  clickCount    Int               @default(0)
+  timestamp     DateTime          @default(now())
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @default(now())
 }
 
 model UserLink {
@@ -149,7 +149,7 @@ model UserLink {
 }
 
 model Link {
-  id              String           @id @default(auto()) @map("_id") @db.ObjectId
+  id              String     @id @default(auto()) @map("_id") @db.ObjectId
   title           String
   description     String
   logo            String?
@@ -157,14 +157,14 @@ model Link {
   linkType        String?
   url             String
   clickCount      Int
-  isFavorite      Boolean          @default(false)
-  rootParentDirId String?          @db.ObjectId
-  author          User?            @relation(name: "CreatedLinks", fields: [authorId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  isFavorite      Boolean    @default(false)
+  rootParentDirId String?    @db.ObjectId
+  author          User?      @relation(name: "CreatedLinks", fields: [authorId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   userLink        UserLink[]
-  authorId        String?          @db.ObjectId
-  directoryId     String?          @db.ObjectId
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @default(now())
+  authorId        String?    @db.ObjectId
+  directoryId     String?    @db.ObjectId
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @default(now())
 
   @@index([rootParentDirId])
   @@index([authorId])
@@ -177,7 +177,7 @@ enum ROOTTYPE {
 }
 
 enum DIRECTORYTYPE {
- PARENT
+  PARENT
 }
 
 enum USERDIRECTORYTYPE {
@@ -249,15 +249,15 @@ model ConfigData {
 }
 
 model Article {
-  id              String      @id @default(auto()) @map("_id") @db.ObjectId
-  title           String
-  image           String?  
-  content         String
-  articleUrl      String
-  articleType     String
-  author          String
-  publishDate     DateTime
-  categories      String[]
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  image       String?
+  content     String
+  articleUrl  String
+  articleType String
+  author      String
+  publishDate DateTime
+  categories  String[]
 
   @@index([title], name: "title_idx")
   @@index([author], name: "author_idx")
@@ -335,7 +335,7 @@ model DocMarkdown {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   docId     String   @unique
   logType   String
-  userId    String   
+  userId    String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   date      String?
@@ -345,17 +345,17 @@ model DocMarkdown {
 //-------------------------------------Notifications-----------------------------------------
 
 model Notification {
-  id                String            @id @default(auto()) @map("_id") @db.ObjectId
-  userId            String            @db.ObjectId
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  title             String
-  description       String
-  matchId           String?           @unique
-  matchType         String?
-  notificationType  NotificationType
-  notificationData  Json?
-  isRead            Boolean?          @default(false)
+  id               String           @id @default(auto()) @map("_id") @db.ObjectId
+  userId           String           @db.ObjectId
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  title            String
+  description      String
+  matchId          String?          @unique
+  matchType        String?
+  notificationType NotificationType
+  notificationData Json?
+  isRead           Boolean?         @default(false)
 }
 
 enum NotificationType {
@@ -378,59 +378,58 @@ type PRIORITY {
   color String
 }
 
-
 model Mission {
-  id  String   @id @default(auto()) @map("_id") @db.ObjectId
-  house  HOUSEID
-  vertical USERVERTICAL?
-  month        String
-  completed    Boolean?
-  status STATUS?
-  priority PRIORITY?
-  housePoints  Int
-  indiePoints  Int  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  house       HOUSEID
+  vertical    USERVERTICAL?
+  month       String
+  completed   Boolean?
+  status      STATUS?
+  priority    PRIORITY?
+  housePoints Int
+  indiePoints Int
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
   completedAt DateTime?
-  expirable    Boolean?
-  expiresAt DateTime?
+  expirable   Boolean?
+  expiresAt   DateTime?
   title       String
   description String?
 }
 
 model MissionTask {
-  id           String   @id @default(auto()) @map("_id") @db.ObjectId
-  missionId    String   
-  userId       String?  
-  assignees    String[]  @db.ObjectId
-  title        String?
-  description  String?
-  status       STATUS? 
-  priority     PRIORITY?
-  indiePoints  Int
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  completedAt  DateTime?
-  completed    Boolean? @default(false)
-  expirable    Boolean? @default(false)
-  expiresAt    DateTime?
-  avatar       String?
-  name         String?
-  email        String?
-  userInfoId   String?
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  missionId   String
+  userId      String?
+  assignees   String[]  @db.ObjectId
+  title       String?
+  description String?
+  status      STATUS?
+  priority    PRIORITY?
+  indiePoints Int
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  completedAt DateTime?
+  completed   Boolean?  @default(false)
+  expirable   Boolean?  @default(false)
+  expiresAt   DateTime?
+  avatar      String?
+  name        String?
+  email       String?
+  userInfoId  String?
 }
 
 //-------------------------------------Badges-------------------------------------------
 
 model BadgeTemplate {
-  id  String   @id @default(auto()) @map("_id") @db.ObjectId
-  name String 
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
   description String
-  badgeType BadgeType
-  imageurl String
-  criteria Json
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  badgeType   BadgeType
+  imageurl    String
+  criteria    Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 enum BadgeType {
@@ -449,17 +448,17 @@ enum StreakType {
 //-------------------------------------Badges-Rewarded-------------------------------------------
 
 model BadgeRewarded {
-  id             String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId         String  
-  badgeTemplateId String       @db.ObjectId
-  name           String   
-  sequence       String   
-  date           String?
-  status         BadgeStatus @default(INACTIVE) 
-  imageUrl       String?  
-  showsCounter   Boolean  @default(false) 
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id              String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String
+  badgeTemplateId String      @db.ObjectId
+  name            String
+  sequence        String
+  date            String?
+  status          BadgeStatus @default(INACTIVE)
+  imageUrl        String?
+  showsCounter    Boolean     @default(false)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 }
 
 enum BadgeStatus {
@@ -473,22 +472,22 @@ enum BadgeStatus {
 
 model Pointer {
   id           String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId       String   @db.ObjectId 
-  targetUserId String   @db.ObjectId 
-  content      String   
+  userId       String   @db.ObjectId
+  targetUserId String   @db.ObjectId
+  content      String
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   replies      Reply[]  @relation("PointerReplies")
 }
 
 model Reply {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  pointerId  String   @db.ObjectId
-  pointer    Pointer  @relation(fields: [pointerId], references: [id], name: "PointerReplies")
-  userId     String   @db.ObjectId
-  content    String   
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  pointerId String   @db.ObjectId
+  pointer   Pointer  @relation(fields: [pointerId], references: [id], name: "PointerReplies")
+  userId    String   @db.ObjectId
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // -------------------------------------Events-------------------------------------------
@@ -498,38 +497,38 @@ model Event {
   subTitle  String
   link      String   @unique
   date      String
-  month     Int      
-  year      Int      
+  month     Int
+  year      Int
   time      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model Task {
-  taskId    String   @id @map("_id")
+  taskId    String    @id @map("_id")
   name      String
   status    String
-  priority  String?   
-  assignees String[]  
+  priority  String?
+  assignees String[]
   url       String
-  startDate DateTime? 
-  dueDate   DateTime? 
+  startDate DateTime?
+  dueDate   DateTime?
 }
 
 //-------------------------------------Worklog-Buff-Badge-----------------------------------------
 
 model BuffBadge {
-  id             String      @id @default(auto()) @map("_id") @db.ObjectId
-  userId         String      @db.ObjectId
-  title          String
-  points         Int
-  buffLevel      BUFF_LEVEL 
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
-  month          String
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  id        String     @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String     @db.ObjectId
+  title     String
+  points    Int
+  buffLevel BUFF_LEVEL
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  month     String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
-  @@unique([userId, month]) 
+  @@unique([userId, month])
 }
 
 enum BUFF_LEVEL {
@@ -547,72 +546,71 @@ type KEYS {
   p256dh String
   auth   String
 }
+
 type PUSHNOTIFICATION {
-  endpoint String
+  endpoint       String
   expirationTime String?
-  keys     KEYS
+  keys           KEYS
 }
 
 model Subscription {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId    String  @db.ObjectId  @unique
+  id            String             @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String             @unique @db.ObjectId
   subscriptions PUSHNOTIFICATION[]
 }
 
-
 //-------------------------------------DEV PROFILES-------------------------------------------
 
-
 type WORKEXPERIENCE {
-  company String
-  position String
-  startDate String
-  endDate String
+  company      String
+  position     String
+  startDate    String
+  endDate      String
   technologies String[]
-  description String
+  description  String
 }
 
 type PROJECTS {
-  name String
-  link String
-  startDate String
-  endDate String
+  name         String
+  link         String
+  startDate    String
+  endDate      String
   technologies String[]
-  description String
+  description  String
 }
 
 type SOCIALLINK {
-  platform  String
-  link      String
+  platform String
+  link     String
 }
 
 model DevProfile {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId    String  @db.ObjectId  @unique
-  firstName String
-  lastName String
-  email String @unique
-  avatar String
-  bio String
-  address String
-  city String
-  state String
-  country String
-  profession String
-  availability String?
-  expertise String[]
+  id             String           @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String           @unique @db.ObjectId
+  firstName      String
+  lastName       String
+  email          String           @unique
+  avatar         String
+  bio            String
+  address        String
+  city           String
+  state          String
+  country        String
+  profession     String
+  availability   String?
+  expertise      String[]
   workExperience WORKEXPERIENCE[]
-  projects PROJECTS[]
-  socialLinks SOCIALLINK[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  projects       PROJECTS[]
+  socialLinks    SOCIALLINK[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 }
 
 // -------------------------------------Client Shortcuts and utils--------------------------------- 
 
 model ClientUtilityLink {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  clientId  String   
+  clientId  String
   title     String
   url       String
   createdAt DateTime @default(now())
@@ -620,20 +618,19 @@ model ClientUtilityLink {
   icon      String
 }
 
-
 // -------------------------------------Engagements-------------------------------------------
 
 model Engagement {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  client_id String
-  developer_ids String[]
-  title     String
-  startDate DateTime?
-  endDate DateTime?
-  isActive Boolean
-  engagementType ENGAGEMENTTYPE
-  numberOfHours     Int?    
-  progressPercentage Float?  
+  id                 String         @id @default(auto()) @map("_id") @db.ObjectId
+  client_id          String
+  developer_ids      String[]
+  title              String
+  startDate          DateTime?
+  endDate            DateTime?
+  isActive           Boolean
+  engagementType     ENGAGEMENTTYPE
+  numberOfHours      Int?
+  progressPercentage Float?
 }
 
 enum ENGAGEMENTTYPE {
@@ -643,44 +640,51 @@ enum ENGAGEMENTTYPE {
   FIXED
 }
 
-
 // -------------------------------------Custom Bots-------------------------------------------
 
 model BotProject {
-  id             String           @id @default(auto()) @map("_id") @db.ObjectId
-  clientId       String
-  name           String
-  githubRepoName String
-  githubRepoUrl  String
-  githubRepoBranch String?     @default("main")
-  prUrl          String?
-  prNumber       Int?
-  description    String?
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
-  clientRequests ClientRequests[]
-  projectConfiguration Json?
+  id               String          @id @default(auto()) @map("_id") @db.ObjectId
+  clientId         String
+  name             String
+  githubRepoName   String
+  githubRepoUrl    String
+  githubRepoBranch String?         @default("main")
+  prUrl            String?
+  prNumber         Int?
+  description      String?
+  projectDir       String
+  clientRequests   ClientRequest[]
+  previewConfigs   Json?
+  prodConfigs      Json?
+  stagingConfigs   Json?
+  metadata         Json?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 }
 
-model ClientRequests {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
-  botProjectId  String   @db.ObjectId
-  clientId      String // Identifier for who created this bot
-  assigneeId    String?
-  title         String
-  description   String?
-  prUrl         String?
-  prNumber      Int?
-  requestStatus PRSTATUS @default(UN_ASSIGNED)
-  requestUpdates RequestUpdate[]
-  lastUpdatedAt DateTime?   @default(now())
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+model ClientRequest {
+  id              String           @id @default(auto()) @map("_id") @db.ObjectId
+  botProjectId    String           @db.ObjectId
+  clientId        String // Identifier for who created this bot
+  title           String
+  description     String
+  prUrl           String
+  prNumber        Int
+  prBranch        String
+  prTargetBranch  String
+  requestDir      String
+  requestStatus   REQUESTSTATUS    @default(UN_ASSIGNED)
+  requestUpdates  RequestUpdate[]
+  requestMessages RequestMessage[]
+  metadata        Json?
+  lastUpdatedAt   DateTime?        @default(now())
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 
   botProject BotProject @relation(fields: [botProjectId], references: [id])
 }
 
-enum PRSTATUS {
+enum REQUESTSTATUS {
   UN_ASSIGNED
   IN_DEVELOPMENT
   IN_REVIEW
@@ -689,37 +693,53 @@ enum PRSTATUS {
 }
 
 model RequestUpdate {
-  id                String          @id @default(auto()) @map("_id") @db.ObjectId
-  clientRequestId   String          @db.ObjectId
-  clientId          String          @db.ObjectId
-  message           String
-  githubUrl         String?
-  updateType        UPDATETYPE
-  updateFrom        UPDATEFROM
-  metadata          Json?
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
+  originClientRequestId String   @db.ObjectId
+  botProjectId          String   @db.ObjectId
+  clientId              String // Identifier for who created this bot
+  prUrl                 String
+  prNumber              Int
+  prBranch              String
+  prTargetBranch        String
+  metadata              Json?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
-  clientRequest     ClientRequests  @relation(fields: [clientRequestId], references: [id])
+  originClientRequest ClientRequest @relation(fields: [originClientRequestId], references: [id])
+}
+
+model RequestMessage {
+  id                    String     @id @default(auto()) @map("_id") @db.ObjectId
+  originClientRequestId String     @db.ObjectId
+  clientId              String     @db.ObjectId
+  message               String
+  githubUrl             String?
+  updateType            UPDATETYPE
+  updateFrom            UPDATEFROM
+  metadata              Json?
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+
+  originClientRequest ClientRequest @relation(fields: [originClientRequestId], references: [id])
 }
 
 enum UPDATETYPE {
-  CLIENT_MSG
-  BOT_MSG
-  COMMENT
-  PR_UPDATE
+  MESSAGE
+  STATUS
 }
 
 enum UPDATEFROM {
   CLIENT
   BOT
+  COMMENT
   SYSTEM
+  SERVER
 }
 
 //-------------------------------------INVOICE---------------------------------
 
 model Invoice {
-  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
   startDate      DateTime
   endDate        DateTime
   dueDate        DateTime
@@ -733,14 +753,13 @@ model Invoice {
   isInvoicePaid  Boolean
   paidDate       DateTime?
   payType        PayType
-  invoicePdf     String?  // Store file URL or path
+  invoicePdf     String? // Store file URL or path
   workInfo       Json?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 }
 
 enum PayType {
   BANK
   CRYPTO
 }
-
