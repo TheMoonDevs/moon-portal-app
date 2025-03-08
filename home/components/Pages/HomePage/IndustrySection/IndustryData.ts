@@ -121,7 +121,7 @@ export const projectsData: IIndustryAndProjects[] = [
         title: 'Ecommerce Chatbot',
         link: '',
         isHot: false,
-        image_url: '',
+        image_url: '/images/assets/ecomChatBot.mp4',
         type: 'article',
         description:
           'Developed a conversational AI platform that guides customers through product discovery, handles order inquiries, and provides personalized recommendations resulting in a 42% reduction in support ticket volume.',
@@ -248,6 +248,24 @@ export const projectsData: IIndustryAndProjects[] = [
         description:
           'A WebRTC-based communication system with AI-powered real-time language translation that maintains sub-100ms latency even on congested networks.',
         cta_text: 'View Case Study',
+      },{
+        title: 'FlowForge: Workflow Automation for the Modern Business',
+        link: '',
+        isHot: false,
+        image_url: '/images/assets/flowForge.webp',
+        type: 'article',
+        description:
+          'Automation without the engineering team. Our visual builder turns complex business processes into drag-and-drop simplicity. Users create sophisticated workflows connecting their existing tools while you watch adoption metrics climb.',
+        cta_text: 'View Case Study',
+      },{
+        title: 'DocUSense',
+        link: '',
+        isHot: false,
+        image_url: '/images/assets/documentReader.png',
+        type: 'article',
+        description:
+          'Transform unstructured documents into structured gold. Our platform not just read text—it understands context, extracts relationships, and turns messy PDFs into actionable data. Perfect for startups drowning in documents but starving for insights.',
+        cta_text: 'View Case Study',
       },
     ],
   },
@@ -255,49 +273,41 @@ export const projectsData: IIndustryAndProjects[] = [
     industry: 'App',
     projects: [
       {
-        title: 'AR 3d model placements in React Native App',
-        link: '',
-        isHot: false,
-        image_url: '/images/abstract-red.png',
-        type: 'article',
-        description:
-          'A high-performance dashboard built for managing token holdings.',
-      },
-      {
         title: 'NFC card Authorization / Registrations',
         link: '',
         isHot: false,
-        image_url: '/images/abstract-red.png',
+        image_url: '/images/assets/nfcApp.webp',
         type: 'article',
         description:
           'A high-performance dashboard built for managing token holdings.',
       },
       {
-        title: 'Social Tracking App for mariners',
-        link: '',
+        title: 'WaveConnect: Social Tracking Platform for Mariners',
+        link: 'https://cobalt-act-e19.notion.site/The-Social-Navigation-Revolution-Why-Mariners-Need-Their-Own-Platform-1b0bcad0aeeb809eb7c3f066a9c25e42?pvs=4',
         isHot: false,
-        image_url: '/images/abstract-red.png',
+        image_url: '/images/assets/marineSocialApp.jpeg',
         type: 'article',
         description:
-          'A high-performance dashboard built for managing token holdings.',
+          'WaveConnect is a specialized social platform designed exclusively for the maritime community, combining vessel tracking technology with social networking features to create a unified experience for professional mariners, recreational boaters, and maritime enthusiasts.',
       },
       {
-        title: 'React Web Apps deployed hybrid',
-        link: '',
+        title: 'HybridFlow: React Web Apps with Native Performance',
+        link: 'https://cobalt-act-e19.notion.site/Beyond-PWAs-How-React-Hybrid-Apps-Are-Changing-the-Startup-Playbook-1b0bcad0aeeb80f9bde7e66945664a13?pvs=4',
         isHot: true,
-        image_url: '/images/abstract-red.png',
+        image_url: '/images/assets/reactNativeApp.png',
         type: 'article',
         description:
-          'A high-performance dashboard built for managing token holdings.',
+          'React-based framework that enables startups to deploy web applications as native apps with near-native performance, eliminating the traditional tradeoffs between development speed and user experience.',
       },
       {
         title: 'Interactive Gesture Experiences for App',
-        link: '',
+        link: 'https://cobalt-act-e19.notion.site/Interactive-Design-Case-Study-1b0bcad0aeeb80cabdc3db12cd24a367?pvs=4',
         isHot: false,
-        image_url: '/images/abstract-red.png',
+        image_url: '/images/assets/interactiveDesign.avif',
         type: 'article',
         description:
-          'A high-performance dashboard built for managing token holdings.',
+          'Interactive gesture experiences transform app UIs from static interfaces into dynamic playgrounds where intuitive movements unlock delightful interactions, creating emotional connections that transform functional tasks into memorable brand moments.',
+        cta_text: 'View Case Study',
       },
       {
         title: 'Contact based syncing for a Social App',
