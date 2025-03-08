@@ -11,6 +11,8 @@ interface InputProps {
   value?: string;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   required?: boolean;
+  disabled?: boolean;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
 }
 
 const Input: React.FC<InputProps> = ({
@@ -21,7 +23,9 @@ const Input: React.FC<InputProps> = ({
   errors,
   value,
   onChange,
-  required
+  required,
+  disabled,
+  onKeyDown,
 }) => {
   return (
     <div className="mb-4 flex w-full flex-col">
@@ -31,8 +35,10 @@ const Input: React.FC<InputProps> = ({
         {...(register && id ? register(id, { required: requiredMessage }) : {})}
         className="mt-1 w-full rounded-lg border border-gray-300 p-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-gray-500"
         value={value}
-        onChange={onChange} 
+        onChange={onChange}
         required={required}
+        disabled={disabled}
+        onKeyDown={onKeyDown}
       />
       {errors && errors[id] && (
         <p className="mt-1 text-xs text-red-500">{errors[id].message}</p>
