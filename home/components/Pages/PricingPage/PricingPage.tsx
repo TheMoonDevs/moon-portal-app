@@ -277,7 +277,7 @@ const PricingTabs = () => {
           );
         })}
       </TabsContent>
-      <TabsContent value="unit" className='grid grid-cols-4  divide-y-[1px] divide-gray-200  border-b border-t border-gray-200 md:grid-cols-4 md:divide-x-[1px] md:divide-y-[1px]'>
+      <TabsContent value="unit" className='grid grid-cols-1 sm:grid-cols-2  divide-y-[1px] divide-gray-200  border-b border-t border-gray-200 lg:grid-cols-4 md:divide-x-[1px] md:divide-y-[1px]'>
         {UnitPlans.map((plan, index) => (
           <PlanCards
             plan={plan}
@@ -357,7 +357,7 @@ const PlanCardActions = ({
           />
           <Button
             variant="outlined"
-            className={`mb-8 mt-8 w-full rounded-full border border-gray-300 bg-white px-4 py-2 text-sm ${plan.highlight && !plan.expandeble ? 'border-none bg-blue-500 text-white hover:bg-blue-600' : ''}`}
+            className={`hidden sm:block mb-8 mt-8 w-full rounded-full border border-gray-300 bg-white px-4 py-2 text-sm ${plan.highlight && !plan.expandeble ? 'border-none bg-blue-500 text-white hover:bg-blue-600' : ''}`}
             endIcon={false}
             text={plan.buttonText}
           />
