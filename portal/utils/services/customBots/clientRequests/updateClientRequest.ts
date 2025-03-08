@@ -80,7 +80,10 @@ export const updateClientRequest = async (
     prNumber = lastUpdate?.prNumber || prNumber;
     prUrl = lastUpdate?.prUrl || prUrl;
 
-    if (!prNumber || !prUrl) return;
+    if (!prNumber || !prUrl) {
+      console.error('PR Number or PR URL is missing');
+      throw new Error('PR Number or PR URL is missing');
+    }
 
     const [owner, repo] = prUrl
       .replace('https://github.com/', '')
@@ -159,10 +162,18 @@ export const updateClientRequest = async (
       }
 
       const newStatus = determinePrStatus(events);
-      await prisma.clientRequest.update({
+      const updatedClientRequest = await prisma.clientRequest.update({
         where: { id: clientRequest.id },
         data: { lastUpdatedAt: new Date(), requestStatus: newStatus },
+        include: { requestMessages: true },
       });
+      return updatedClientRequest;
+    } else {
+      const requestMessages = await prisma.requestMessage.findMany({
+        where: { originClientRequestId: clientRequest.id },
+        orderBy: { createdAt: 'asc' },
+      });
+      return { ...clientRequest, requestMessages };
     }
   } catch (error: any) {
     console.error('Error updating PR events:', error);

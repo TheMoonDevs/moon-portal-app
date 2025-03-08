@@ -22,17 +22,12 @@ export async function GET(req: Request) {
         { status: 404 },
       );
 
-    await updateClientRequest(clientRequest);
-
-    const updatedrequestMessages = await prisma.requestMessage.findMany({
-      where: { originClientRequestId: clientRequestId },
-      orderBy: { createdAt: 'asc' },
-    });
+    const updatedClientRequest = await updateClientRequest(clientRequest);
 
     return NextResponse.json(
       {
-        requestMessages: updatedrequestMessages,
-        requestStatus: clientRequest?.requestStatus,
+        requestMessages: updatedClientRequest?.requestMessages,
+        requestStatus: updatedClientRequest?.requestStatus,
       },
       { status: 200 },
     );
