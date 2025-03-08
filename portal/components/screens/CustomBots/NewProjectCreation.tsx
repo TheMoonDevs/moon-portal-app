@@ -38,7 +38,6 @@ export default function NewProjectCreation({
       setProjectTitle('');
       setDescription('');
       onProjectCreated(newProject);
-      router.replace(`?project=${newProject.id}&view=project`);
     } catch (error) {
       toast.error('Failed to create project.');
       console.error('Error creating project:', error);
