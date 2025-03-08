@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useUser } from '@/utils/hooks/useUser';
-import { PlusCircle } from 'lucide-react';
+import { PanelRight, PanelRightClose, PlusCircle } from 'lucide-react';
 import { ButtonSCN } from '@/components/elements/Button';
 import Sidebar from './Sidebar';
 import ChatWindow from './ChatWindow';
@@ -13,6 +13,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import useSWR from 'swr';
 import { toast, Toaster } from 'sonner';
 import { REQUESTSTATUS } from '@prisma/client';
+import { Skeleton } from '@mui/material';
 
 export default function Dashboard() {
   const { user } = useUser();
@@ -21,6 +22,7 @@ export default function Dashboard() {
   const requestParam = searchParams.get('request');
   const projectParam = searchParams.get('project');
   const viewParam = searchParams.get('view'); // expected values: "request", "newRequest", "newProject", "project"
+  const showPreviewParam = searchParams.get('showPreview') === 'true';
 
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const [selectedProject, setSelectedProject] = useState<any>(null);
@@ -78,6 +80,27 @@ export default function Dashboard() {
     }
   }, [requestParam, latestRequest]);
 
+  const {
+    data: projects,
+    error,
+    isLoading,
+  } = useSWR(
+    `/api/custom-bots/bot-project?clientId=${user?.id}`,
+    async (url) => await fetch(url).then((res) => res.json()),
+  );
+
+  useEffect(() => {
+    if (projectParam) {
+      const project = projects?.find((p: any) => p.id === projectParam);
+      setSelectedProject(project);
+    }
+  }, [projectParam, projects]);
+
+  if (error) {
+    toast.error('Failed to load projects.');
+    console.error(error);
+  }
+
   if (!user) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -89,8 +112,21 @@ export default function Dashboard() {
   return (
     <div className="flex h-screen bg-background">
       <Toaster position="top-right" richColors duration={3000} />
+      {showPreviewParam && (
+        <div className="fixed right-10 top-10">
+          <ButtonSCN
+            onClick={() =>
+              updateSearchParams({ showPreview: `${!showPreviewParam}` })
+            }
+          >
+            {showPreviewParam ? <PanelRightClose /> : <PanelRight />}
+          </ButtonSCN>
+        </div>
+      )}
       {/* Sidebar with increased width */}
-      <div className="flex w-80 flex-col border-r border-border">
+      <div
+        className={`flex ${showPreviewParam ? 'w-[15vw]' : 'w-80'} flex-col border-r border-border`}
+      >
         <div className="flex items-center justify-between border-b p-4">
           <h2 className="text-lg font-semibold">Bot Projects</h2>
           <div className="flex gap-2">
@@ -110,41 +146,49 @@ export default function Dashboard() {
             </ButtonSCN>
           </div>
         </div>
-        <Sidebar
-          clientId={user.id}
-          onSelectRequest={(request) => {
-            setSelectedRequest(request);
-            updateSearchParams({
-              request: request.id,
-              view: 'request',
-              project: request.botProjectId,
-            });
-          }}
-          onNewRequest={(project) => {
-            setSelectedProject(project);
-            const openRequests = project?.clientRequests?.filter(
-              (request) =>
-                request?.requestStatus !== REQUESTSTATUS.COMPLETED &&
-                request?.requestStatus !== REQUESTSTATUS.CLOSED,
-            );
-            if (openRequests?.length < 3) {
+        {isLoading ? (
+          <div className="space-y-4 p-4">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-6 w-full" />
+            ))}
+          </div>
+        ) : (
+          <Sidebar
+            projects={projects}
+            onSelectRequest={(request) => {
+              setSelectedRequest(request);
               updateSearchParams({
-                request: 'new',
-                view: 'newRequest',
-                project: project.id,
+                request: request.id,
+                view: 'request',
+                project: request.botProjectId,
               });
-            } else {
-              toast.warning(
-                'At the moment we only support 3 concurrent requests. You can create new requests once your open requests are resolved.',
+            }}
+            onNewRequest={(project) => {
+              setSelectedProject(project);
+              const openRequests = project?.clientRequests?.filter(
+                (request) =>
+                  request?.requestStatus !== REQUESTSTATUS.COMPLETED &&
+                  request?.requestStatus !== REQUESTSTATUS.CLOSED,
               );
-            }
-          }}
-          onOpenConfig={(project) => {
-            setSelectedProject(project);
-            updateSearchParams({ project: project.id, view: 'project' });
-            setIsConfigModalOpen(true);
-          }}
-        />
+              if (openRequests?.length < 3) {
+                updateSearchParams({
+                  request: 'new',
+                  view: 'newRequest',
+                  project: project?.id,
+                });
+              } else {
+                toast.warning(
+                  'At the moment we only support 3 concurrent requests. You can create new requests once your open requests are resolved.',
+                );
+              }
+            }}
+            onOpenConfig={(project) => {
+              setSelectedProject(project);
+              updateSearchParams({ project: project?.id, view: 'project' });
+              setIsConfigModalOpen(true);
+            }}
+          />
+        )}
       </div>
 
       {/* Main Content */}
@@ -182,6 +226,11 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+      {showPreviewParam && (
+        <div className="h-screen w-[50vw] overflow-y-auto border-l border-border p-4">
+          {JSON.stringify(selectedProject)}
+        </div>
+      )}
 
       <ProjectConfigModal
         isOpen={isConfigModalOpen}
