@@ -166,9 +166,9 @@ export default function ChatWindow({
 
   return (
     <div className="flex h-full max-h-screen min-h-screen flex-col overflow-y-auto">
-      <div className="flex items-center justify-between border-b p-4">
-        <div>
-          <h2 className="flex items-center gap-2 font-semibold">
+      <div className="flex items-center gap-2 justify-between border-b p-4">
+        <div className='w-fit'>
+          <h2 className="flex flex-wrap justify-start items-center gap-2 font-semibold">
             {clientRequest.title}
             <Badge
               variant={
@@ -177,7 +177,6 @@ export default function ChatWindow({
               }
               style={{
                 backgroundColor: statusVariantMapping[requestStatus]?.color,
-                marginLeft: '0.5rem',
                 fontSize: '0.75rem',
               }}
             >
