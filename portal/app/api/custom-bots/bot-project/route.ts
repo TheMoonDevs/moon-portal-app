@@ -13,11 +13,22 @@ export async function GET(request: Request) {
   }
 
   try {
-    const botProjects = await prisma.botProject.findMany({
+    let botProjects = await prisma.botProject.findMany({
       where: { clientId },
       include: { clientRequests: true },
     });
-    return NextResponse.json(botProjects);
+
+    const filteredBotProjects = botProjects.map((project) => {
+      const { prodConfigs, previewConfigs, stagingConfigs, metadata, ...rest } =
+        project;
+      const filteredClientRequests = rest.clientRequests.map((request) => {
+        const { metadata, ...rest } = request;
+        return rest;
+      });
+      return { ...rest, clientRequests: filteredClientRequests };
+    });
+
+    return NextResponse.json(filteredBotProjects);
   } catch (error) {
     console.error('Error fetching organizations:', error);
     return NextResponse.json(
