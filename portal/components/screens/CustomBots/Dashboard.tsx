@@ -11,7 +11,8 @@ import NewProjectCreation from './NewProjectCreation';
 import ProjectConfigModal from './ProjectConfigModal';
 import { useRouter, useSearchParams } from 'next/navigation';
 import useSWR from 'swr';
-import { toast } from 'sonner';
+import { toast, Toaster } from 'sonner';
+import { REQUESTSTATUS } from '@prisma/client';
 
 export default function Dashboard() {
   const { user } = useUser();
@@ -23,8 +24,7 @@ export default function Dashboard() {
 
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const [selectedProject, setSelectedProject] = useState<any>(null);
-  const [isConfigModalOpen, setIsConfigModalOpen] =
-    useState(false);
+  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
 
   // Helper function to update search params using URLSearchParams API.
   const updateSearchParams = (params: Record<string, string | null>) => {
@@ -88,6 +88,7 @@ export default function Dashboard() {
 
   return (
     <div className="flex h-screen bg-background">
+      <Toaster position="top-right" richColors duration={3000} />
       {/* Sidebar with increased width */}
       <div className="flex w-80 flex-col border-r border-border">
         <div className="flex items-center justify-between border-b p-4">
@@ -121,11 +122,22 @@ export default function Dashboard() {
           }}
           onNewRequest={(project) => {
             setSelectedProject(project);
-            updateSearchParams({
-              request: 'new',
-              view: 'newRequest',
-              project: project.id,
-            });
+            const openRequests = project?.clientRequests?.filter(
+              (request) =>
+                request?.requestStatus !== REQUESTSTATUS.COMPLETED &&
+                request?.requestStatus !== REQUESTSTATUS.CLOSED,
+            );
+            if (openRequests?.length < 3) {
+              updateSearchParams({
+                request: 'new',
+                view: 'newRequest',
+                project: project.id,
+              });
+            } else {
+              toast.warning(
+                'At the moment we only support 3 concurrent requests. You can create new requests once your open requests are resolved.',
+              );
+            }
           }}
           onOpenConfig={(project) => {
             setSelectedProject(project);
@@ -151,7 +163,11 @@ export default function Dashboard() {
             clientId={user.id}
             onProjectCreated={(newProject) => {
               setSelectedProject(newProject);
-              updateSearchParams({ project: newProject?.id, view: 'newRequest', request: 'new' });
+              updateSearchParams({
+                project: newProject?.id,
+                view: 'newRequest',
+                request: 'new',
+              });
             }}
           />
         ) : selectedRequest ? (
