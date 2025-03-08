@@ -49,7 +49,7 @@ export default function ChatWindow({
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const {
-    data: requestMessages,
+    data: requestMessagesUpdate,
     error,
     isValidating,
     isLoading,
@@ -67,9 +67,9 @@ export default function ChatWindow({
   );
 
   useEffect(() => {
-    if (requestMessages) {
-      setUpdates(requestMessages.requestMessages);
-      setRequestStatus(requestMessages.requestStatus);
+    if (requestMessagesUpdate) {
+      setUpdates(requestMessagesUpdate?.requestMessages);
+      setRequestStatus(requestMessagesUpdate?.requestStatus);
     }
   }, [isValidating]);
 
