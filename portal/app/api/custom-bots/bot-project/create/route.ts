@@ -35,11 +35,11 @@ export async function POST(request: Request) {
 
     const newRepoName = `CustomBots-${projectName.toLowerCase().replace(/ /g, '-')}-${randomString}`;
 
-    const result: any = await templateRepoSdk.createRepositoryFromTemplate({
+    const repoResult: any = await templateRepoSdk.createRepositoryFromTemplate({
       newRepoName,
     });
 
-    if (!result) {
+    if (!repoResult) {
       return NextResponse.json(
         { error: 'Failed to create bot project' },
         { status: 500 },
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     // Create an instance for the new repository.
     const newRepoSdk = new GithubSdk({
       owner: TEMPLATE_REPO_OWNER,
-      repo: result?.name || newRepoName,
+      repo: repoResult?.name || newRepoName,
       token: TOKEN as string,
     });
 
@@ -63,11 +63,12 @@ export async function POST(request: Request) {
       baseBranch: 'main',
     });
 
-    const filePath = `ProjectInfo/README.md`;
+    const projectDir = `ProjectInfo`;
+    const readmeFilePath = `${projectDir}/README.md`;
 
     // 2. Construct the file path and update the README.md file on the new branch.
     await newRepoSdk.updateFile({
-      path: filePath,
+      path: readmeFilePath,
       content: `DESCRIPTION: ${projectDescription}`,
       commitMessage: `Add README for ${projectName}`,
       branch: newBranch,
@@ -87,6 +88,7 @@ export async function POST(request: Request) {
       data: {
         clientId,
         name: projectName,
+        projectDir,
         githubRepoName: newRepoName,
         githubRepoUrl:
           (prResult?.head?.repo?.html_url as string) ||
@@ -95,11 +97,41 @@ export async function POST(request: Request) {
         prUrl: (prResult?.html_url as string) || '',
         prNumber: (prResult?.number as number) || null,
         description: projectDescription,
-        projectConfiguration: {},
+        metadata: {
+          repo: repoResult,
+          pr: prResult,
+        },
+        previewConfigs: {},
+        prodConfigs: {},
+        stagingConfigs: {},
       },
     });
 
-    return NextResponse.json({ prResult, botProject });
+    const botProjectFilePath = `${projectDir}/botProject.json`;
+    // 4. Create the botProject.json file on the new branch with the updated ID.
+    const botProjectData = {
+      id: botProject.id,
+      clientId: botProject.clientId,
+      name: botProject.name,
+      projectDir: botProject.projectDir,
+      githubRepoName: botProject.githubRepoName,
+      githubRepoUrl: botProject.githubRepoUrl,
+      githubRepoBranch: botProject.githubRepoBranch,
+      prUrl: botProject.prUrl,
+      prNumber: botProject.prNumber,
+      description: botProject.description,
+      metadata: botProject.metadata,
+      createdAt: botProject.createdAt,
+    };
+
+    await newRepoSdk.updateFile({
+      path: botProjectFilePath,
+      content: JSON.stringify(botProjectData, null, 2),
+      commitMessage: `Add botProject.json for ${projectName}`,
+      branch: newBranch,
+    });
+
+    return NextResponse.json(botProject);
   } catch (error) {
     console.error('Error creating bot project:', error);
     return NextResponse.json(
