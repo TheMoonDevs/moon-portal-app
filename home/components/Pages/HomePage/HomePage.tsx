@@ -46,7 +46,7 @@ export const HomePage = ({
       <div className="relative overflow-hidden">
         <div className="absolute left-0 top-0 -z-20 h-full w-full">
           <Image
-            src="/images/hero.png"
+            src="/images/hero.webp"
             alt="hero"
             className="h-full w-full object-cover"
             fill
