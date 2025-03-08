@@ -33,35 +33,41 @@ export const getBuffLevelAndTitle = (points: number) => {
   if (points < 10)
     return {
       level: BUFF_LEVEL.TRUTH_SEEKER,
+      marker: 1,
       title: 'Tiny Chirp',
       src: '/images/buff/tinyChirp.png',
     };
   if (points < 25)
     return {
       level: BUFF_LEVEL.BABY_GROOT,
+      marker: 10,
       title: 'Baby Groot',
       src: '/images/buff/babyGroot.png',
     };
   if (points < 100)
     return {
       level: BUFF_LEVEL.WORK_HULK,
+      marker: 25,
       title: 'Work Hulk',
       src: '/images/buff/workHulk.png',
     };
   if (points < 150)
     return {
       level: BUFF_LEVEL.VAMPIRE_LORD,
+      marker: 100,
       title: 'Vampire Streak',
       src: '/images/buff/vampireLord.png',
     };
   if (points < 200)
     return {
       level: BUFF_LEVEL.ALIEN_PREDATOR,
+      marker: 150,
       title: 'Dragon Force',
       src: '/images/buff/dragonForce.png',
     };
   return {
     level: BUFF_LEVEL.DEVIL,
+    marker: 200,
     title: 'Moon Devil',
     src: '/images/buff/moonDevil.png',
   };
