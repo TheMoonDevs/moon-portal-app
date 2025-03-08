@@ -9,10 +9,7 @@ import {
   PlusCircle,
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Skeleton } from '@mui/material';
 import { ButtonSCN } from '@/components/elements/Button';
-import useSWR from 'swr';
-import { toast } from 'sonner';
 import { BotProject, ClientRequest } from '@prisma/client';
 import { usePathname } from 'next/navigation';
 
@@ -21,12 +18,12 @@ interface BotProjectWithRequests extends BotProject {
 }
 
 export default function Sidebar({
-  clientId,
+  projects,
   onSelectRequest,
   onNewRequest,
   onOpenConfig,
 }: {
-  clientId: string;
+  projects: BotProjectWithRequests[];
   onSelectRequest: (request: ClientRequest) => void;
   onNewRequest: (project: BotProjectWithRequests) => void;
   onOpenConfig: (project: BotProject) => void;
@@ -62,30 +59,6 @@ export default function Sidebar({
   const [expandedProjects, setExpandedProjects] = useState<
     Record<string, boolean>
   >({});
-
-  const {
-    data: projects,
-    error,
-    isLoading,
-  } = useSWR(
-    `/api/custom-bots/bot-project?clientId=${clientId}`,
-    async (url) => await fetch(url).then((res) => res.json()),
-  );
-
-  if (error) {
-    toast.error('Failed to load projects.');
-    console.error(error);
-  }
-
-  if (isLoading) {
-    return (
-      <div className="space-y-4 p-4">
-        {[1, 2, 3].map((i) => (
-          <Skeleton key={i} className="h-6 w-full" />
-        ))}
-      </div>
-    );
-  }
 
   const toggleProject = (projectId: string) => {
     // toggle the search param of the project id
