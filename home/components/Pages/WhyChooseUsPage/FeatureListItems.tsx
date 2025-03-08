@@ -26,7 +26,9 @@ const FeatureListItems = () => {
                 >
                   {index + 1}
                 </span>
-                <span className="text-lg font-semibold">{feature.title}</span>
+                <span className="text-center text-lg font-semibold">
+                  {feature.title}
+                </span>
               </div>
               <div className="hidden md:block">
                 <AnimatedText
