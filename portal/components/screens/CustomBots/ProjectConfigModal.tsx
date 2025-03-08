@@ -39,7 +39,7 @@ export default function ProjectConfigModal({
       if (data.error) {
         toast.error(data.error);
       } else {
-        setConfigs(data.configs || {});
+        setConfigs(data?.configs?.prodConfigs || {});
       }
     } catch (error: any) {
       toast.error('Failed to fetch configurations.');
@@ -63,14 +63,15 @@ export default function ProjectConfigModal({
         '/api/custom-bots/bot-project/configs',
         {
           id: projectId,
-          projectConfiguration: newConfig,
+          configs: newConfig,
+          type: 'prod',
         },
       );
       if (data.error) {
         toast.error(data.error);
       } else {
         toast.success('Configuration updated!');
-        setConfigs(data.updatedProject.projectConfiguration);
+        setConfigs(data?.updatedProject?.prodConfigs || {});
         setEditingKey('');
         setEditingValue('');
       }
@@ -87,13 +88,14 @@ export default function ProjectConfigModal({
         {
           id: projectId,
           keysToDelete: [key],
+          type: 'prod',
         },
       );
       if (data.error) {
         toast.error(data.error);
       } else {
         toast.success('Configuration deleted!');
-        setConfigs(data.updatedProject.projectConfiguration);
+        setConfigs(data?.updatedProject?.prodConfigs || {});
       }
     } catch (error: any) {
       toast.error('Failed to delete configuration.');
