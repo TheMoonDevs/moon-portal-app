@@ -6,7 +6,6 @@ export default function DashboardPage() {
   return (
     <PageAccess isAuthRequired={true}>
       <Dashboard />
-      <Bottombar visible={true} />
     </PageAccess>
   );
 }
