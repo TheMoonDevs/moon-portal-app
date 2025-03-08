@@ -6,10 +6,10 @@ import { Send, Loader2 } from 'lucide-react';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
-import { BotProject, ClientRequests } from '@prisma/client';
+import { BotProject, ClientRequest } from '@prisma/client';
 
 interface BotProjectWithRequests extends BotProject {
-  clientRequests: ClientRequests[];
+  clientRequests: ClientRequest[];
 }
 
 export default function NewRequestCreation({
@@ -19,7 +19,7 @@ export default function NewRequestCreation({
 }: {
   clientId: string;
   project: BotProjectWithRequests;
-  onRequestCreated: (newRequest: ClientRequests) => void;
+  onRequestCreated: (newRequest: ClientRequest) => void;
 }) {
   const [description, setDescription] = useState('');
   const [sending, setSending] = useState(false);
@@ -37,7 +37,7 @@ export default function NewRequestCreation({
         {
           clientId,
           requestDescription: description.trim(),
-          botProjectId: project.id,
+          botProjectId: project?.id,
         },
       );
       toast.success('Request created successfully!');
