@@ -11,25 +11,25 @@ import { StickyBoundary } from './PricingPage';
 
 const testimonials = [
   {
-    company: 'SHARESIES',
-    stat: '70%',
-    description: 'Resolution rate with Fin',
+    company: 'SMART WALLETS (0 GAS FESS)',
+    stat: '7x',
+    description: 'User growth seen in record time due to quick implementation of Smart Wallets.',
     author: {
-      name: 'RUBY PICTON',
-      role: 'Investor Care Lead',
+      name: 'NEIL SKALLI',
+      role: 'Founder of Minimatch',
     },
   },
   {
-    company: 'ROBIN',
+    company: 'CRYPTO <-> GEN AI',
     description:
-      "The numbers speak for themselves. We're seeing a 50% resolution rate with Fin, which is pretty amazing!",
+      "One word - Technical Debt! TheMoonDevs proves again you need developers who have the actual knowledge in the domain to scale your project effectively.",
     author: {
-      name: 'BEN PEAK',
-      role: 'Director, Technical Support',
+      name: 'ASAD BANGASH',
+      role: 'Founder of StellaryAI',
     },
   },
   {
-    company: 'DENTAL INTELLIGENCE',
+    company: 'GenAI Quiz App',
     stat: '97%',
     description: 'Fin CSAT Score',
     author: {
@@ -71,7 +71,7 @@ function Header() {
   return (
     <div className="mb-8 py-6">
       <h1 className="w-full text-3xl md:w-10/12 md:text-5xl">
-        Thousands of businesses have already seen transformational results.
+        Hundreds of businesses have already seen transformational results.
       </h1>
     </div>
   );
