@@ -17,7 +17,7 @@ import { toast } from 'sonner';
 import dayjs from 'dayjs';
 import { Badge } from '@/components/elements/badge';
 
-type RequestUpdate = {
+type RequestMessage = {
   id: string;
   message: string;
   updateType: string;
@@ -39,7 +39,7 @@ export default function ChatWindow({
   clientId: string;
   clientRequest: ClientRequest;
 }) {
-  const [updates, setUpdates] = useState<RequestUpdate[]>([]);
+  const [updates, setUpdates] = useState<RequestMessage[]>([]);
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [activeTab, setActiveTab] = useState('chat');
@@ -49,7 +49,7 @@ export default function ChatWindow({
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const {
-    data: requestUpdates,
+    data: requestMessages,
     error,
     isValidating,
     isLoading,
@@ -67,9 +67,9 @@ export default function ChatWindow({
   );
 
   useEffect(() => {
-    if (requestUpdates) {
-      setUpdates(requestUpdates.requestUpdates);
-      setRequestStatus(requestUpdates.requestStatus);
+    if (requestMessages) {
+      setUpdates(requestMessages.requestMessages);
+      setRequestStatus(requestMessages.requestStatus);
     }
   }, [isValidating]);
 
@@ -80,7 +80,7 @@ export default function ChatWindow({
   const sendMessage = async () => {
     if (!message.trim()) return;
 
-    const newMessage: RequestUpdate = {
+    const newMessage: RequestMessage = {
       id: crypto.randomUUID(),
       message: message.trim(),
       updateType: 'text',
@@ -96,7 +96,7 @@ export default function ChatWindow({
     setSending(true);
     try {
       await PortalSdk.postData('/api/custom-bots/client-requests/chat', {
-        clientRequestId: clientRequest.id,
+        originClientRequestId: clientRequest.id,
         clientId: clientId,
         message: newMessage.message,
       });
@@ -140,7 +140,7 @@ export default function ChatWindow({
     }
   };
 
-  // Mapping of PRSTATUS to badge variant and color
+  // Mapping of REQUESTSTATUS to badge variant and color
   const statusVariantMapping: Record<
     string,
     { variant: string; color: string }
