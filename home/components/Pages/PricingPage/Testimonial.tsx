@@ -71,7 +71,7 @@ function Header() {
   return (
     <div className="mb-8 py-6">
       <h1 className="w-full text-3xl md:w-10/12 md:text-5xl">
-        Thousands of businesses have already seen transformational results.
+        Hundreds of businesses have already seen transformational results.
       </h1>
     </div>
   );
