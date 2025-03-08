@@ -11,14 +11,13 @@ import {
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Skeleton } from '@mui/material';
 import { ButtonSCN } from '@/components/elements/Button';
-import { PortalSdk } from '@/utils/services/PortalSdk';
 import useSWR from 'swr';
 import { toast } from 'sonner';
-import { BotProject, ClientRequests } from '@prisma/client';
+import { BotProject, ClientRequest } from '@prisma/client';
 import { usePathname } from 'next/navigation';
 
 interface BotProjectWithRequests extends BotProject {
-  clientRequests: ClientRequests[];
+  clientRequests: ClientRequest[];
 }
 
 export default function Sidebar({
@@ -28,14 +27,26 @@ export default function Sidebar({
   onOpenConfig,
 }: {
   clientId: string;
-  onSelectRequest: (request: ClientRequests) => void;
+  onSelectRequest: (request: ClientRequest) => void;
   onNewRequest: (project: BotProjectWithRequests) => void;
   onOpenConfig: (project: BotProject) => void;
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const searchParams: any = useSearchParams();
 
+  // Helper function to update search params using URLSearchParams API.
+  const updateSearchParams = (params: Record<string, string | null>) => {
+    const currentParams = new URLSearchParams(searchParams.toString());
+    Object.entries(params).forEach(([key, value]) => {
+      if (value === null) {
+        currentParams.delete(key);
+      } else {
+        currentParams.set(key, value);
+      }
+    });
+    router.replace(`?${currentParams.toString()}`);
+  };
   // Get a new searchParams string by merging the current
   // searchParams with a provided key/value pair
   const createQueryString = useCallback(
@@ -58,7 +69,7 @@ export default function Sidebar({
     isLoading,
   } = useSWR(
     `/api/custom-bots/bot-project?clientId=${clientId}`,
-    async (url) => await PortalSdk.getData(url, {}),
+    async (url) => await fetch(url).then((res) => res.json()),
   );
 
   if (error) {
@@ -80,20 +91,21 @@ export default function Sidebar({
     // toggle the search param of the project id
     router.push(pathname + '?' + createQueryString('project', projectId));
     setExpandedProjects((prev) => ({ ...prev, [projectId]: !prev[projectId] }));
+    updateSearchParams({ project: projectId, request: null });
   };
 
   return (
     <div className="h-screen max-h-screen flex-1 overflow-y-auto">
       {projects?.length > 0 ? (
         projects.map((project: BotProjectWithRequests | any) => (
-          <div key={project.id} className="mb-2">
+          <div key={project?.id} className="mb-2">
             <div
               className={`flex cursor-pointer items-center justify-between px-4 py-2 ${
                 project.id === searchParams?.get('project')
                   ? 'bg-gray-200'
                   : 'hover:bg-gray-100'
               }`}
-              onClick={() => toggleProject(project.id)}
+              onClick={() => toggleProject(project?.id)}
             >
               <div className="flex items-center">
                 {expandedProjects[project.id] ? (
@@ -146,11 +158,11 @@ export default function Sidebar({
 
             {expandedProjects[project.id] && (
               <div className="mb-2 ml-3 mt-1 space-y-1">
-                {project.clientRequests.length > 0 ? (
-                  project.clientRequests.map((request: ClientRequests) => (
+                {project?.clientRequests?.length > 0 ? (
+                  project?.clientRequests?.map((request: ClientRequest) => (
                     <div
-                      key={request.id}
-                      className={`flex cursor-pointer items-center rounded-sm px-4 py-2 text-sm ${request.id === searchParams?.get('request') ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
+                      key={request?.id}
+                      className={`flex cursor-pointer items-center rounded-sm px-4 py-2 text-sm ${request?.id === searchParams?.get('request') ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
                       onClick={() => onSelectRequest(request)}
                     >
                       <MessageSquare
@@ -176,18 +188,6 @@ export default function Sidebar({
       ) : (
         <div className="p-4 text-center text-muted-foreground">
           <p>No bot projects found</p>
-          <ButtonSCN
-            style={{ marginTop: '0.5rem' }}
-            onClick={() =>
-              onNewRequest({
-                id: '',
-                name: 'New Project',
-                clientRequests: [],
-              } as any)
-            }
-          >
-            Create First Request
-          </ButtonSCN>
         </div>
       )}
     </div>
