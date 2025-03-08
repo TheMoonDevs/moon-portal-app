@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useUser } from '@/utils/hooks/useUser';
-import { PlusCircle, MessageSquare } from 'lucide-react';
+import { PlusCircle } from 'lucide-react';
 import { ButtonSCN } from '@/components/elements/Button';
 import Sidebar from './Sidebar';
 import ChatWindow from './ChatWindow';
@@ -23,7 +23,7 @@ export default function Dashboard() {
 
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const [selectedProject, setSelectedProject] = useState<any>(null);
-  const [isProjectConfigModalOpen, setIsProjectConfigModalOpen] =
+  const [isConfigModalOpen, setIsConfigModalOpen] =
     useState(false);
 
   // Helper function to update search params using URLSearchParams API.
@@ -49,7 +49,6 @@ export default function Dashboard() {
       if (!res.ok) throw new Error('Failed to fetch latest request');
       return res.json();
     },
-    { revalidateOnFocus: false },
   );
 
   useEffect(() => {
@@ -131,7 +130,7 @@ export default function Dashboard() {
           onOpenConfig={(project) => {
             setSelectedProject(project);
             updateSearchParams({ project: project.id, view: 'project' });
-            setIsProjectConfigModalOpen(true);
+            setIsConfigModalOpen(true);
           }}
         />
       </div>
@@ -152,7 +151,7 @@ export default function Dashboard() {
             clientId={user.id}
             onProjectCreated={(newProject) => {
               setSelectedProject(newProject);
-              updateSearchParams({ project: newProject.id, view: 'project' });
+              updateSearchParams({ project: newProject?.id, view: 'newRequest', request: 'new' });
             }}
           />
         ) : selectedRequest ? (
@@ -169,8 +168,8 @@ export default function Dashboard() {
       </div>
 
       <ProjectConfigModal
-        isOpen={isProjectConfigModalOpen}
-        onClose={() => setIsProjectConfigModalOpen(false)}
+        isOpen={isConfigModalOpen}
+        onClose={() => setIsConfigModalOpen(false)}
         projectId={selectedProject?.id || ''}
       />
     </div>
