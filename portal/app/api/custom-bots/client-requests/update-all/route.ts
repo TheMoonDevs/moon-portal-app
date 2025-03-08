@@ -1,14 +1,15 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/prisma/prisma';
-import { PRSTATUS } from '@prisma/client';
+import { REQUESTSTATUS } from '@prisma/client';
 import { updateClientRequest } from '@/utils/services/customBots/clientRequests/updateClientRequest';
 
 export async function POST() {
   try {
-    const clientRequests = await prisma.clientRequests.findMany({
+    const clientRequests = await prisma.clientRequest.findMany({
       where: {
-        requestStatus: { notIn: [PRSTATUS.CLOSED, PRSTATUS.COMPLETED] },
+        requestStatus: { notIn: [REQUESTSTATUS.CLOSED, REQUESTSTATUS.COMPLETED] },
       },
+      include: { requestUpdates: true },
     });
 
     // use promise.all to update all client requests in parallel

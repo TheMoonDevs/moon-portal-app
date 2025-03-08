@@ -13,7 +13,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const clientRequest = await prisma.clientRequests.findFirst({
+    const clientRequest = await prisma.clientRequest.findFirst({
       where: { clientId },
       orderBy: { updatedAt: 'desc' },
     });

@@ -15,7 +15,7 @@ export async function GET(
   }
 
   try {
-    const clientRequest = await prisma.clientRequests.findUnique({
+    const clientRequest = await prisma.clientRequest.findUnique({
       where: { id },
     });
     return NextResponse.json(clientRequest);
