@@ -16,14 +16,14 @@ const AIEmpoweredDevelopmentData = [
     id: 'progress',
     color: 'orange',
     data: [
-      { x: '2018', y: 1.2 },
-      { x: '2019', y: 5.8 },
-      { x: '2020', y: 4.9 },
-      { x: '2021', y: 4 },
-      { x: '2022', y: 5 },
-      { x: '2023', y: 5.1 },
-      { x: '2024', y: 5.9 },
-      { x: '2025', y: 4.8 },
+      { x: '2018', y: 0.12 },
+      { x: '2019', y: 0.23 },
+      { x: '2020', y: 0.56 },
+      { x: '2021', y: 0.89 },
+      { x: '2022', y: 0.95 },
+      { x: '2023', y: 2.35 },
+      { x: '2024', y: 4.5 },
+      { x: '2025', y: 5.9 },
     ],
   },
 ];
@@ -32,14 +32,14 @@ export const AIEmpoweredDevelopment = () => {
   return (
     <div>
       <div className="afte:content-[''] relative mx-6 mb-8 py-4 text-xs font-bold uppercase tracking-widest text-neutral-400 after:absolute after:bottom-0 after:left-0 after:h-[0.5px] after:w-full after:bg-neutral-700">
-        AI-Driven Performance Over Time
+        AI-Driven Developer Performance Over Time
       </div>
       <div className="h-[400px] w-full">
         <LineChart
           data={[AIEmpoweredDevelopmentData[0]]}
           gridValues={[0, 1, 2, 3, 4, 5, 6]}
           tickValuesLeft={[0, 1, 2, 3, 4, 5, 6]}
-          tickValuesBottom={['2018', '2025']}
+          tickValuesBottom={['2018', '2023', '2024', '2025']}
         />
       </div>
     </div>
@@ -281,13 +281,13 @@ export const Testimonial = ({
 const ProjectSupportData = [
   {
     id: 'slide1',
-    title: 'abc',
-    image_url: '/images/abstract-red.png',
+    title: '28+ Months',
+    image_url: '/images/assets/timeline-minimatch.png',
   },
   {
     id: 'slide2',
-    title: '',
-    image_url: '/images/abstract-red.png',
+    title: '16+ Months',
+    image_url: '/images/assets/timeline-betswapgg.png',
   },
 ];
 export const ProjectSupport = () => {
@@ -311,10 +311,10 @@ export const ProjectSupport = () => {
               <div className="relative w-full">
                 <Image
                   src={slide.image_url}
-                  className="aspect-video w-full object-cover"
+                  className="aspect-video w-full h-[300px] object-contain"
                   alt={slide.title}
-                  width={500}
-                  height={500}
+                  width={1500}
+                  height={400}
                 />
                 <span className="absolute left-3 top-3 block rounded-full bg-black px-2 py-2 text-white">
                   {slide.title}
@@ -332,7 +332,7 @@ export const BuildersNetwork = () => {
   return (
     <div className="col-span-full border border-neutral-700 bg-[#1A1A1A] md:col-span-6">
       <div className="afte:content-[''] relative mx-6 mb-2 py-4 text-xs font-bold uppercase tracking-widest text-neutral-400 after:absolute after:bottom-0 after:left-0 after:h-[0.5px] after:w-full after:bg-neutral-700">
-        Tech Builder Distribution Across Industries
+        Our Clients & Partners across Industries
       </div>
       <div className="h-[350px] w-full">
         <BarChart />

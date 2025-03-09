@@ -5,11 +5,11 @@ import { useMediaQuery } from '@mui/material';
 import { ResponsiveBar } from '@nivo/bar';
 
 const data = [
-  { name: 'CRYPTO', value: 89 },
-  { name: 'AI', value: 83 },
-  { name: 'FINTECH', value: 77 },
-  { name: 'GAMING', value: 54 },
-  { name: 'HEALTHCARE', value: 37 },
+  { name: 'CRYPTO', value: 32 },
+  { name: 'AI', value: 28 },
+  { name: 'FINTECH', value: 19 },
+  { name: 'GAMING', value: 15 },
+  { name: 'AR/VR', value: 7 },
 ];
 
 const BarChart = () => {
@@ -26,6 +26,11 @@ const BarChart = () => {
       colors={({ index, data }) => (index === 0 ? '#FF6200' : '#1A1A1A')}
       borderColor={'#FF5600'}
       borderWidth={2}
+      tooltip={(props) => (
+        <div className="bg-black p-2 text-white text-xs">
+          {props.data.name}: {props.data.value} projects
+        </div>
+      )}
       enableLabel={false}
       defs={[
         {
@@ -110,7 +115,7 @@ const BarChart = () => {
           line: { stroke: '#333', strokeWidth: 0.5, strokeDasharray: '2 2' },
         },
         background: '#1A1A1A',
-        // labels: { text: { fill: '#aaa' } },
+        //labels: { text: { fill: '#aaa' } },
       }}
       enableGridX={false}
       enableGridY={false}

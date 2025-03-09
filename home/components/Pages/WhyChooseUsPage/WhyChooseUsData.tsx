@@ -40,7 +40,7 @@ export const features: IFeature[] = [
     sectionTitle: 'Transparent Progress Tracking',
     sectionHeading: 'Top-Notch tools to keep you updated at every step',
     sectionDescription:
-      'Our portal gives you complete realtime progress updates on team & devs - Quality that can be measured',
+      'Our portal platform gives you complete realtime progress updates on team & devs - Quality that can be measured',
     content: <RealtimeProgressTracking />,
     titleIconColor: 'bg-blue-400',
     orientation: 'vertical',
@@ -86,9 +86,9 @@ export const features: IFeature[] = [
     title: 'Builders Network',
     traits: 'scale',
     sectionTitle: 'ascess to builder network',
-    sectionHeading: 'Reach out/network with next tech product leaders',
+    sectionHeading: 'Reach out & network with tech leaders',
     sectionDescription:
-      'product leaders who can accelerate your success with insights, collaboration, and hands-on support',
+      'Our network of builders & devs are some of the best edge-tech innovators / visionaries across the globe',
     content: <BuildersNetwork />,
     titleIconColor: 'bg-purple-500',
     orientation: 'horizontal',

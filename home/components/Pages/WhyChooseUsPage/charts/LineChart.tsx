@@ -17,20 +17,20 @@ const LineChart = ({
   return (
     <ResponsiveLine
       data={data}
-      margin={{ top: 20, right: 30, bottom: 40, left: 40 }}
+      margin={{ top: 40, right: 30, bottom: 40, left: 40 }}
       xScale={{ type: 'point' }}
       yScale={{ type: 'linear', min: 0, max: 6 }}
       curve="linear"
       axisBottom={{
         tickValues: tickValuesBottom,
-        tickPadding: 10,
-        tickSize: 5,
+        tickPadding: 3,
+        tickSize: 1,
       }}
       axisLeft={{
         format: (value) => `${value}x`,
         tickValues: tickValuesLeft,
-        tickPadding: 10,
-        tickSize: 5,
+        tickPadding: 3,
+        tickSize: 1,
       }}
       key={'progress'}
       enableArea={true}

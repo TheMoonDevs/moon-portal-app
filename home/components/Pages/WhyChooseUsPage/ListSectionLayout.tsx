@@ -58,14 +58,14 @@ const ListSectionLayout = ({
             feature.orientation === 'horizontal' ? 'w-full md:col-span-6' : '',
           )}
         >
-          <div className="flex gap-4">
+          <div className="flex gap-4 w-2/3">
             <span className="text-5xl font-extrabold">{index + 1} </span>
             <div>
-              <h1 className={cn('flex gap-4 text-3xl font-bold text-white')}>
+              <h1 className={cn('flex gap-4 text-3xl lg:text-6xl font-bold text-white')}>
                 <span>{sectionHeading}</span>
               </h1>
 
-              <p className="mt-2 text-sm uppercase text-neutral-400">
+              <p className="mt-2 lg:mt-8 text-sm lg:text-xl text-neutral-500">
                 {sectionDescription}
               </p>
             </div>
