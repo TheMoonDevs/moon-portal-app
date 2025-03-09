@@ -49,10 +49,10 @@ const FeaturedMenuItems = [
     link: '/folios',
   },
   {
-    image_url: '/images/abstract-purple.png',
+    image_url: '/images/complexity-calculator.png',
     title: 'Complexity Calculator',
     description: ' Estimate the complexity of your project',
-    link: '/complexity-calculator',
+    link: '/complexity',
   },
 ];
 

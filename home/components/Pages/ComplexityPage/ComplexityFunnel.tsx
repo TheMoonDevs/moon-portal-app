@@ -13,13 +13,37 @@ const COMPLEXITY_DATA = [
     id: '1x',
     tags: [
       {
-        icon: 'all_inclusive',
+        icon: '/images/complexity/producthunt.png',
+        title: 'Product Hunt',
+        description:
+          'At a 1x complexity factor, All ProductHunt capabilities are traditional web app features. Most of its complexity is in complex search, leaderboard sorting & email notifications to users.',
+      },
+      {
+        icon: '/images/complexity/complexity.png',
+        title: '2x Complexity Scale',
+        description:
+          'lorem ipsum dolor sit amet consectetur  adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
+      },
+      {
+        icon: '/images/complexity/complexity.png',
         title: 'End-to-End solution',
         description:
           'lorem ipsum dolor sit amet consectetur  adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
       },
       {
-        icon: 'trending_up',
+        icon: '/images/complexity/complexity.png',
+        title: '2x Complexity Scale',
+        description:
+          'lorem ipsum dolor sit amet consectetur  adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
+      },
+      {
+        icon: '/images/complexity/complexity.png',
+        title: 'End-to-End solution',
+        description:
+          'lorem ipsum dolor sit amet consectetur  adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
+      },
+      {
+        icon: '/images/complexity/complexity.png',
         title: '2x Complexity Scale',
         description:
           'lorem ipsum dolor sit amet consectetur  adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
@@ -30,25 +54,25 @@ const COMPLEXITY_DATA = [
     id: '2x',
     tags: [
       {
-        icon: 'all_inclusive',
+        icon: '/images/complexity/complexity.png',
         title: 'End-to-End solution',
         description:
           'lorem ipsum dolor sit amet consectetur  adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
       },
       {
-        icon: 'trending_up',
+        icon: '/images/complexity/complexity.png',
         title: '2x Complexity Scale',
         description:
           'lorem ipsum dolor sit amet consectetur  adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
       },
       {
-        icon: 'schedule',
+        icon: '/images/complexity/complexity.png',
         title: 'Turnaround in 3-4 weeks',
         description:
           'lorem ipsum dolor sit amet consectetur  adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
       },
       {
-        icon: 'auto_graph',
+        icon: '/images/complexity/complexity.png',
         title: 'Upto 10x Complexity Scale',
         description:
           'lorem ipsum dolor sit amet consectetur  adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
@@ -59,25 +83,25 @@ const COMPLEXITY_DATA = [
     id: '3x',
     tags: [
       {
-        icon: 'all_inclusive',
+        icon: '/images/complexity/complexity.png',
         title: 'End-to-End solution',
         description:
           'lorem ipsum dolor sit amet consectetur  adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
       },
       {
-        icon: 'trending_up',
+        icon: '/images/complexity/complexity.png',
         title: '2x Complexity Scale',
         description:
           'lorem ipsum dolor sit amet consectetur  adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
       },
       {
-        icon: 'schedule',
+        icon: '/images/complexity/complexity.png',
         title: 'Turnaround in 3-4 weeks',
         description:
           'lorem ipsum dolor sit amet consectetur  adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
       },
       {
-        icon: 'auto_graph',
+        icon: '/images/complexity/complexity.png',
         title: 'Upto 10x Complexity Scale',
         description:
           'lorem ipsum dolor sit amet consectetur  adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
@@ -88,25 +112,25 @@ const COMPLEXITY_DATA = [
     id: '4x',
     tags: [
       {
-        icon: 'all_inclusive',
+        icon: '/images/complexity/complexity.png',
         title: 'End-to-End solution',
         description:
           'lorem ipsum dolor sit amet consectetur  adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
       },
       {
-        icon: 'trending_up',
+        icon: '/images/complexity/complexity.png',
         title: '2x Complexity Scale',
         description:
           'lorem ipsum dolor sit amet consectetur  adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
       },
       {
-        icon: 'schedule',
+        icon: '/images/complexity/complexity.png',
         title: 'Turnaround in 3-4 weeks',
         description:
           'lorem ipsum dolor sit amet consectetur  adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
       },
       {
-        icon: 'auto_graph',
+        icon: '/images/complexity/complexity.png',
         title: 'Upto 10x Complexity Scale',
         description:
           'lorem ipsum dolor sit amet consectetur  adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
@@ -114,28 +138,28 @@ const COMPLEXITY_DATA = [
     ],
   },
   {
-    id: '5x - 10x',
+    id: '5x+',
     tags: [
       {
-        icon: 'all_inclusive',
+        icon: '/images/complexity/complexity.png',
         title: 'End-to-End solution',
         description:
           'lorem ipsum dolor sit amet consectetur  adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
       },
       {
-        icon: 'trending_up',
+        icon: '/images/complexity/complexity.png',
         title: '2x Complexity Scale',
         description:
           'lorem ipsum dolor sit amet consectetur  adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
       },
       {
-        icon: 'schedule',
+        icon: '/images/complexity/complexity.png',
         title: 'Turnaround in 3-4 weeks',
         description:
           'lorem ipsum dolor sit amet consectetur  adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
       },
       {
-        icon: 'auto_graph',
+        icon: '/images/complexity/complexity.png',
         title: 'Upto 10x Complexity Scale',
         description:
           'lorem ipsum dolor sit amet consectetur  adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
@@ -167,14 +191,18 @@ const ComplexityFunnel = () => {
               className={cn(
                 'absolute left-[5%] top-1/2 -translate-y-1/2 transform text-xs font-bold text-neutral-400 transition-all duration-300 ease-in-out group-hover:text-lg group-hover:text-[#6100FF] group-hover:md:text-xl lg:text-2xl group-hover:lg:text-5xl',
                 index !== 0 &&
-                  '-left-[5%] group-hover:-left-[8%] group-hover:top-1/2',
+                '-left-[5%] group-hover:-left-[8%] group-hover:top-1/2',
                 index === COMPLEXITY_DATA.length - 1 &&
-                  'top-6 group-hover:-left-[20%] group-hover:top-1/2 lg:top-24',
+                'top-6 group-hover:-left-[20%] group-hover:top-1/2 lg:top-24',
               )}
             >
               {item.id}
             </div>
-            <div className="group-hover:lg:scale-80 absolute left-1/2 top-1/2 grid w-full -translate-x-1/2 -translate-y-1/2 scale-0 transform grid-cols-2 place-items-center justify-center gap-0 text-2xl font-bold transition-all duration-300 ease-in-out group-hover:scale-75 group-hover:md:scale-[0.8] lg:w-fit lg:gap-2 group-hover:xl:scale-100">
+            <div className={
+              cn("group-hover:lg:scale-80 absolute left-1/2 top-1/2 grid w-full -translate-x-1/2 -translate-y-1/2 scale-0 transform place-items-center justify-center gap-0 text-2xl font-bold transition-all duration-300 ease-in-out group-hover:scale-75 group-hover:md:scale-[0.8] lg:w-fit lg:gap-2 group-hover:xl:scale-100",
+                index === 0 ? `grid-cols-4` : index === 1 ? `grid-cols-3` :
+                  index === 2 ? `grid-cols-3` : `grid-cols-2`
+              )}>
               {item.tags.map((tag, index) => (
                 <HoveringCard key={index} tag={tag} />
               ))}
@@ -198,25 +226,29 @@ const HoveringCard = ({
   };
 }) => {
   return (
-    <HoverCard>
+    <HoverCard openDelay={300} closeDelay={0}>
       <HoverCardTrigger asChild>
-        <div className="group-hover:lg:scale-80 flex w-full scale-0 cursor-pointer grid-cols-[0.5fr,1fr] items-center justify-center gap-2 rounded-full bg-[#6100FF] py-1 pr-2 text-sm transition-all duration-300 ease-in-out group-hover:scale-75 group-hover:md:scale-[0.8] group-hover:xl:scale-100">
-          <div className="ml-1 rounded-full border-2 border-[#6100FF] bg-white px-2 py-1">
-            <span className="material-symbols-outlined w-fit bg-white !text-xs text-black lg:!text-xl">
-              {tag.icon}
-            </span>
+        <div className="group-hover:lg:scale-80 flex w-full scale-0 cursor-pointer  items-center justify-center gap-2 rounded-full bg-[#6100FF] py-1 pr-2 text-sm transition-all duration-300 ease-in-out group-hover:scale-75 group-hover:md:scale-[0.8] group-hover:xl:scale-100">
+          <div className="ml-1 w-16 rounded-full border-2 border-[#6100FF] bg-white px-1 overflow-hidden py-1">
+            <Image
+              src={tag.icon}
+              alt={"s"}
+              width={24}
+              height={24}
+              className="w-full object-contain"
+            />
           </div>
           <span className="w-full text-xs text-white">{tag.title}</span>
         </div>
       </HoverCardTrigger>
       <HoverCardContent className="w-80 rounded-none border border-neutral-300 shadow-none">
         <div className="mb-2 flex items-center gap-2">
-          <div className="h-2 w-2 bg-orange-500"></div>
+          {/* <div className="h-2 w-2 bg-orange-500"></div> */}
           <h4 className="text-xs font-semibold uppercase tracking-widest">
             {tag.title}
           </h4>
         </div>
-        <p className="text-xs font-light text-neutral-500">{tag.description}</p>
+        <p className="text-sm font-light text-neutral-500">{tag.description}</p>
       </HoverCardContent>
     </HoverCard>
   );

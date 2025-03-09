@@ -14,13 +14,11 @@ const ComplexityPage = () => {
       <div className="mt-20 flex w-full items-center justify-start">
         <div className="mx-auto mt-20 w-responsive max-w-responsive md:mx-32 lg:mx-56">
           <h1 className="mb-6 flex flex-col gap-2 text-4xl font-bold md:text-6xl lg:text-7xl">
-            We make the complex simple. Know your project factor & choose an
-            effective plan.
+            A tech project's worth is measured by it's complexity.
           </h1>
-          <p className="mb-6 flex flex-col text-lg text-neutral-600">
+          <p className="mb-6 flex flex-col text-lg text-neutral-600 w-1/2">
             TheMoonDevs is a digital startup studio specialising in pioneering
-            edge tech solutions & integrating trending technologies into your
-            projects.
+            edge tech solutions & integrating difficult-to-execute trending technologies into your projects.
           </p>
         </div>
       </div>
@@ -28,28 +26,31 @@ const ComplexityPage = () => {
       <div className="mx-auto h-[2px] w-[90%] bg-neutral-700"></div>
       <PlanListing />
       <SimplePriceSection />
+
     </main>
   );
 };
+
+// That which no one can do, is what we're most interested in doing.
 
 const PLAN_DATA = [
   {
     id: 1,
     title: 'Simpleton MVP',
     description:
-      'The perfect starting place for your web app or personal project. Free forever.',
+      'The perfect starting place for your idea. Turn around in 3-4 weeks. No lags, jump right into development',
   },
   {
     id: 2,
     title: 'Premium MVP',
     description:
-      'Everything you need to build and scale your web app, from $20/month.',
+      'Everything you need to scale your project. Pay per week, Pause/cancel anytime. Scale with 2x speed.',
   },
   {
     id: 3,
     title: 'Complex MVP',
     description:
-      'Critical security, performance, observability and support. From $50/month.',
+      'Our cohort of devs will make your impossible project pssible. On-site team support.',
   },
 ];
 
@@ -95,8 +96,7 @@ const SimplePriceSection = () => {
                 Simple, transparent pricing to get you started
               </h2>
               <p className="mt-2 text-center text-gray-600 md:text-left">
-                The best of AI-first customer service. <br /> Free for 14 days.
-                No credit card required.
+                Start with a simpler version of your complex idea. <br /> No Hidden fees, No extra costs. Any project under 2x complexity.
               </p>
             </div>
           </div>
@@ -110,10 +110,10 @@ const SimplePriceSection = () => {
                 <p
                   className={`${risque.className} text-6xl font-extralight text-black md:self-end md:text-7xl lg:text-8xl`}
                 >
-                  $29
+                  $3,999
                 </p>
                 <span className="self-end text-sm text-gray-500">
-                  per month
+                  per project
                 </span>
               </div>
             </div>
