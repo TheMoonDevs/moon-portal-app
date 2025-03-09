@@ -45,18 +45,18 @@ const DevFolioCard = React.forwardRef<
           method: 'POST',
           body: JSON.stringify({
             to: email,
-            subject: 'Find your Dev Folio attached to this email!',
+            subject: 'Hello from Team MoonDevs!',
             body: `<div style="font-family: Arial, sans-serif; color: #333; padding: 20px;">
-          <h2 style="color: #2D89FF;">Get Your Informative Guide 🚀</h2>
+            <h2 style="color: #2D89FF;">Dev Folio 2025 is on the way!</h2>
           <p>Hey ${email},</p>
           <p>Our teams have helped more than <strong>56 startups</strong> and worked on <strong>132 feature requests</strong> to drive innovation across the globe.</p>
           <p>Now, we’re bringing you an exclusive guide packed with insights and strategies for success.</p>
-          <p><strong>Your Dev Folio is attached in this email.</strong></p>
+          <p><strong>The Dev Folio of 2025 is a work in progress, & you will receive it by end of April.</strong></p>
           <p>If you have any questions or need further insights, feel free to reach out!</p>
           <p>Best,<br>The Moon Devs Team</p>
         </div>`, // renders HTML as well
             sender: '', // optional, default as 'no-reply@themoondevs.com'
-            displayName: '', // optional, default as 'The Moon Devs'
+            displayName: '', // optional, default as 'The Moon Devs' // <h2 style="color: #2D89FF;">Get Your Informative Guide 🚀</h2>
           }),
         },
       );
