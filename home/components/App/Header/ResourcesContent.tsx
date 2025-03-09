@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils';
 import { ListItem } from './NavigationListItem';
 import { useTallyPopup } from '../Global/TallyPopup';
+import { FilloutFormIds, useFilloutPopup } from '../Global/FilloutPopup';
 
 const ResourcesMenuItems = [
   {
@@ -64,6 +65,7 @@ export const ResourcesContent = ({
   orientation?: 'desktop' | 'mobile' | 'tablet';
 }) => {
   const { openPopup } = useTallyPopup();
+  const { openForm } = useFilloutPopup();
   return (
     <div
       className={cn(
@@ -88,6 +90,10 @@ export const ResourcesContent = ({
                 if (item.id === 'themoondevs-cohort') {
                   e.preventDefault();
                   openPopup();
+                }
+                if (item.id === 'partnerships-proposals') {
+                  e.preventDefault();
+                  openForm(FilloutFormIds.Partnerships);
                 }
               }}
             >
