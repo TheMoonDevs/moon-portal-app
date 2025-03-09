@@ -6,6 +6,7 @@ import { FilloutSliderEmbed } from '@fillout/react';
 export const FilloutFormIds = {
     BookCall: `iNbFWaZ8Xzus`,
     SimpletonGetStarted: `oXdihN68Kbus`,
+    Partnerships: `v6xbNmfxoTus`,
 };
 
 const FilloutPopupContext = createContext<ReturnType<
