@@ -5,6 +5,9 @@ import { GithubSdk } from '@/utils/services/githubSdk';
 import { TEMPLATE_REPO_OWNER } from '@/utils/constants/customBots';
 import { updateClientRequest } from '@/utils/services/customBots/clientRequests/updateClientRequest';
 import { REQUESTSTATUS, UPDATEFROM, UPDATETYPE } from '@prisma/client';
+import { SlackBotSdk, SlackChannels } from '@/utils/services/slackBotSdk';
+
+const slackBotSdk = new SlackBotSdk();
 
 export async function POST(req: NextRequest) {
   try {
@@ -69,7 +72,7 @@ export async function POST(req: NextRequest) {
       const folderName =
         formData.get('folderName')?.toString() || 'customBots/clientMessages';
       const filePromises = files.map(async (file) => {
-        const uniqueName = `${crypto.randomUUID()}-${file.name}`;
+        const uniqueName = `${Date.now()}-${file.name}`;
         const newFile = new File([file], uniqueName, { type: file.type });
         const s3Response = await s3FileUploadSdk.uploadFile({
           file: newFile,
@@ -230,6 +233,16 @@ export async function POST(req: NextRequest) {
           updateType: UPDATETYPE.MESSAGE,
           updateFrom: UPDATEFROM.BOT,
         },
+      });
+
+      const slackMsg = `A request with title: *${clientRequest.title}* has been reopened with message: ${message}. [View PR](${prResult.html_url})`;
+
+      await slackBotSdk.sendSlackMessageviaAPI({
+        text: slackMsg,
+        channel:
+          process.env.NODE_ENV === 'production'
+            ? SlackChannels.p_3_custombots
+            : SlackChannels.test_slackbot,
       });
     } else {
       // Normal case: add a comment to the PR with media preview.

@@ -4,6 +4,9 @@ import { REQUESTSTATUS, UPDATETYPE, UPDATEFROM } from '@prisma/client';
 import { TEMPLATE_REPO_OWNER } from '@/utils/constants/customBots';
 import { GithubSdk } from '@/utils/services/githubSdk';
 import { GenAiSdk } from '@/utils/services/GenAiSdk';
+import { SlackBotSdk, SlackChannels } from '@/utils/services/slackBotSdk';
+
+const slackBotSdk = new SlackBotSdk();
 
 export async function POST(request: Request) {
   const TMD_GITHUB_TOKEN = process.env.TMD_GITHUB_TOKEN;
@@ -161,6 +164,15 @@ export async function POST(request: Request) {
       },
     });
 
+    const slackMsg = `A new request has been created for the project: *${botProject.name}*\n\n*Title*: ${generatedTitle}\n*Description*: ${requestDescription}\n*PR Link*: ${prResult.html_url}`;
+
+    await slackBotSdk.sendSlackMessageviaAPI({
+      text: slackMsg,
+      channel:
+        process.env.NODE_ENV === 'production'
+          ? SlackChannels.p_3_custombots
+          : SlackChannels.test_slackbot,
+    });
     return NextResponse.json({ prResult, clientRequest });
   } catch (error) {
     console.error('Error creating client request:', error);
