@@ -50,7 +50,7 @@ const WorklogBuff = ({
     return filteredLogs.filter((wl) => wl.works.length > 0 ? (wl.works[0] as any)?.content?.length > 3 : false).length;
   }, [filteredLogs]);
 
-  console.log('loggedDays:', filteredLogs.filter((wl) => wl.works.length > 0 ? (wl.works[0] as any)?.content?.length > 3 : false));
+  //console.log('loggedDays:', filteredLogs.filter((wl) => wl.works.length > 0 ? (wl.works[0] as any)?.content?.length > 3 : false));
 
   const getBuffBadges = async () => {
     if (!user?.id) return;
