@@ -21,20 +21,20 @@ const ArticleCard = ({
         >
           <p
             className={cn(
-              'p-4',
+              'relative z-20 p-0 pl-6 md:p-4 md:pl-6',
               theme === 'dark' ? 'text-white' : 'text-black',
             )}
           >
-            <QuoteIcon className="rotate-180 transform" />
-            <span className="block px-4 leading-tight">
+            <QuoteIcon className="absolute -left-1 rotate-180 transform opacity-30" />
+            <span className="block w-full pt-2 leading-tight">
               <span
                 title={article.description}
-                className={`${(article.description as string).length > 50 ? 'text-xl' : ''}`}
+                className={`${(article.description as string).length > 50 ? 'text-base' : 'text-lg'}`}
               >
                 {article.description}
               </span>
             </span>
-            <QuoteIcon className="float-right" />
+            <QuoteIcon className="absolute right-10 -z-10 opacity-30" />
           </p>
         </div>
         <div
@@ -81,6 +81,8 @@ const ArticleCard = ({
     <Link href={article.link} className="flex flex-col justify-between gap-2">
       <div className="h-full w-full">
         <Image
+          quality={80}
+          sizes="100vw"
           src={article.image_url || '/images/abstract-red.png'}
           alt={article.title}
           width={300}
