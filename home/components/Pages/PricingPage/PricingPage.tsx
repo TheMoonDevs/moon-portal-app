@@ -52,13 +52,15 @@ const Plans = [
     name: 'Complex MVP',
     description: 'Critical security, performance, observability and support.',
     features: [
-      { icon: '✔', title: 'Guest & Team access controls' },
-      { icon: '✔', title: 'SCIM & Directory Sync' },
-      { icon: '✔', title: 'Managed WAF Rulesets' },
-      { icon: 'explore', title: 'Multi-region compute & failover' },
-      { icon: 'rocket_launch', title: '99.99% SLA' },
-      { icon: '✔', title: 'Advanced Support' },
+      { icon: 'psychology', title: 'Upto 10x complexity' },
+      { icon: 'rocket_launch', title: '99.99% On-time Sprints' },
+      { icon: 'editor_choice', title: 'Dedicated fractional CTO <-> lifecycle' },
+      { icon: 'explore', title: 'Multi-region On-site Dev team support' },
+      { icon: 'security', title: 'Zero-trust in-house Ai models for security' },
       { icon: 'category', title: 'Scale up & Team building support' },
+      { icon: 'whatshot', title: 'Bi-weekly core penetration sprints' },
+      { icon: 'policy', title: 'SLA & any customized legal support' },
+      // { icon: 'app_badging', title: 'Cross-platform compatibility across 8+ environments' },
     ],
     buttonText: 'Request Trial',
     extraButton: 'Contact Sales',
@@ -354,12 +356,14 @@ const PlanCardActions = ({
             className={`mb-8 mt-8 gap-8 rounded-full border border-gray-300 bg-black px-4 py-2 text-sm text-white hover:bg-neutral-800 `}
             endIcon={'arrow_forward'}
             text={plan.extraButton}
+            onClick={() => onClick(plan)}
           />
           <Button
             variant="outlined"
             className={`hidden sm:block mb-8 mt-8 w-full rounded-full border border-gray-300 bg-white px-4 py-2 text-sm ${plan.highlight && !plan.expandeble ? 'border-none bg-blue-500 text-white hover:bg-blue-600' : ''}`}
             endIcon={false}
             text={plan.buttonText}
+            onClick={() => onClick(plan)}
           />
         </div>
       )}
