@@ -99,7 +99,7 @@ export function AIChat() {
                       part.toolInvocation.toolName === 'limit-reached' && (
                         <div>
                           <div className="bg- flex items-center gap-2">
-                            <span>🤖: &nbsp;</span>
+                            <span>🤖: </span>
                             <div
                               onClick={() => openForm(FilloutFormIds.BookCall)}
                               className="cursor-pointer rounded-lg bg-white p-2 font-semibold text-black hover:bg-gray-200"
