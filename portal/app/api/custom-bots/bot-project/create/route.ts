@@ -53,7 +53,7 @@ export async function POST(request: Request) {
       token: TOKEN as string,
     });
 
-    const newBranch = `project/${projectName.toLowerCase().replace(/ /g, '-')}`;
+    const newBranch = `project/master`;
 
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
