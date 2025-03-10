@@ -7,7 +7,7 @@ const FeatureListItems = () => {
   const [hovered, setHovered] = useState<string | null>(null);
   return (
     <div className="lg:px-8 lg:py-6">
-      <div className="grid gap-6 border-t border-neutral-600 lg:grid-cols-2 lg:py-6 lg:pb-24">
+      <div className="grid gap-6 items-center border-t border-neutral-600 lg:grid-cols-2 lg:py-6 lg:py-8">
         {/* Left Side - List */}
         <div className="w-full divide-y-[1px] lg:w-9/12">
           {features.map((feature, index) => (
@@ -45,7 +45,7 @@ const FeatureListItems = () => {
         {/* Right Side - Image */}
         <div>
           <img
-            src="/path-to-your-image.jpg" // Change to the actual image path
+            src="/images/dove.png" // Change to the actual image path
             alt="Futuristic Scene"
             className="h-auto w-full"
           />
@@ -87,8 +87,8 @@ const AnimatedText = ({
           ? 'translate-x-12 transform delay-100 duration-300 ease-in-out'
           : '',
       )}
-      // onMouseEnter={() => setHovered(true)}
-      // onMouseLeave={() => setHovered(false)}
+    // onMouseEnter={() => setHovered(true)}
+    // onMouseLeave={() => setHovered(false)}
     >
       {/* Left "<" */}
       <span
@@ -111,9 +111,8 @@ const AnimatedText = ({
 
       {/* Speed Text (Appears Smoothly) */}
       <span
-        className={`absolute transition-all duration-300 ease-in ${
-          hovered === hoveredId ? 'scale-100 opacity-100' : 'scale-50 opacity-0'
-        }`}
+        className={`absolute transition-all duration-300 ease-in ${hovered === hoveredId ? 'scale-100 opacity-100' : 'scale-50 opacity-0'
+          }`}
       >
         {text}
       </span>
