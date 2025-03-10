@@ -1,14 +1,12 @@
-import { Button } from '@/components/ui/button';
 import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
 } from '@/components/ui/hover-card';
 import { cn } from '@/lib/utils';
-import { HoverCardArrow } from '@radix-ui/react-hover-card';
 import Image from 'next/image';
 
-const COMPLEXITY_DATA = [
+export const COMPLEXITY_DATA = [
   {
     id: '1x',
     tags: [
@@ -169,42 +167,52 @@ const COMPLEXITY_DATA = [
 ];
 const ComplexityFunnel = () => {
   return (
-    <div className="flex w-[91%] flex-col items-center justify-center pb-32 pt-10">
-      {COMPLEXITY_DATA.map((item, index) => (
+    <div className="mx-auto flex w-[91%] flex-col items-center justify-center pb-32 pt-10">
+      {COMPLEXITY_DATA.map((item, complexityIndex) => (
         <div
-          style={{ zIndex: COMPLEXITY_DATA.length - index }}
-          className={cn('group relative', index === 0 ? '' : 'lg:-mt-16')}
+          style={{ zIndex: COMPLEXITY_DATA.length - complexityIndex }}
+          className={cn(
+            'group relative',
+            complexityIndex === 0 ? '' : 'lg:-mt-16',
+          )}
         >
           <div
             className={cn(
               '',
-              index === 0
+              complexityIndex === 0
                 ? ''
                 : 'funnel-container group relative mx-auto transform duration-300 ease-in-out group-hover:translate-y-4 group-hover:lg:translate-y-10',
             )}
             style={{
-              width: `calc(100% - ${index} * 10%)`,
+              width: `calc(100% - ${complexityIndex} * 10%)`,
             }}
           >
             <FunnelSvg />
             <div
               className={cn(
                 'absolute left-[5%] top-1/2 -translate-y-1/2 transform text-xs font-bold text-neutral-400 transition-all duration-300 ease-in-out group-hover:text-lg group-hover:text-[#6100FF] group-hover:md:text-xl lg:text-2xl group-hover:lg:text-5xl',
-                index !== 0 &&
-                '-left-[5%] group-hover:-left-[8%] group-hover:top-1/2',
-                index === COMPLEXITY_DATA.length - 1 &&
-                'top-6 group-hover:-left-[20%] group-hover:top-1/2 lg:top-24',
+                complexityIndex !== 0 &&
+                  '-left-[5%] group-hover:-left-[8%] group-hover:top-1/2',
+                complexityIndex === COMPLEXITY_DATA.length - 1 &&
+                  'top-6 group-hover:-left-[20%] group-hover:top-1/2 lg:top-24',
               )}
             >
               {item.id}
             </div>
-            <div className={
-              cn("group-hover:lg:scale-80 absolute left-1/2 top-1/2 grid w-full -translate-x-1/2 -translate-y-1/2 scale-0 transform place-items-center justify-center gap-0 text-2xl font-bold transition-all duration-300 ease-in-out group-hover:scale-75 group-hover:md:scale-[0.8] lg:w-fit lg:gap-2 group-hover:xl:scale-100",
-                index === 0 ? `grid-cols-4` : index === 1 ? `grid-cols-3` :
-                  index === 2 ? `grid-cols-3` : `grid-cols-2`
-              )}>
+            <div
+              className={cn(
+                'group-hover:lg:scale-80 absolute left-1/2 top-1/2 grid w-full -translate-x-1/2 -translate-y-1/2 scale-0 transform place-items-center justify-center gap-0 text-2xl font-bold transition-all duration-300 ease-in-out group-hover:scale-75 group-hover:md:scale-[0.8] lg:w-fit lg:gap-2 group-hover:xl:scale-100',
+                complexityIndex === 0
+                  ? `grid-cols-4`
+                  : complexityIndex === 1
+                    ? `grid-cols-3`
+                    : complexityIndex === 2
+                      ? `grid-cols-3`
+                      : `grid-cols-2`,
+              )}
+            >
               {item.tags.map((tag, index) => (
-                <HoveringCard key={index} tag={tag} />
+                <HoveringCard index={complexityIndex} key={index} tag={tag} />
               ))}
             </div>
           </div>
@@ -217,8 +225,10 @@ const ComplexityFunnel = () => {
 export default ComplexityFunnel;
 
 const HoveringCard = ({
+  index,
   tag,
 }: {
+  index: number;
   tag: {
     icon: string;
     title: string;
@@ -228,11 +238,13 @@ const HoveringCard = ({
   return (
     <HoverCard openDelay={300} closeDelay={0}>
       <HoverCardTrigger asChild>
-        <div className="group-hover:lg:scale-80 flex w-full scale-0 cursor-pointer  items-center justify-center gap-2 rounded-full bg-[#6100FF] py-1 pr-2 text-sm transition-all duration-300 ease-in-out group-hover:scale-75 group-hover:md:scale-[0.8] group-hover:xl:scale-100">
-          <div className="ml-1 w-16 rounded-full border-2 border-[#6100FF] bg-white px-1 overflow-hidden py-1">
+        <div
+          className={`group-hover:lg:scale-80 flex w-full scale-0 cursor-pointer items-center justify-center gap-2 rounded-full bg-[#6100FF] py-1 pr-2 text-sm transition-all duration-300 ease-in-out group-hover:scale-75 group-hover:md:scale-[0.8] ${index === COMPLEXITY_DATA.length - 1 ? 'group-hover:xl:scale-75' : 'group-hover:xl:scale-90'}`}
+        >
+          <div className="ml-1 w-16 overflow-hidden rounded-full border-2 border-[#6100FF] bg-white px-1 py-1">
             <Image
               src={tag.icon}
-              alt={"s"}
+              alt={'s'}
               width={24}
               height={24}
               className="w-full object-contain"

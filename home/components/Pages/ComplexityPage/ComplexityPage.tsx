@@ -6,27 +6,38 @@ import {
   useFilloutPopup,
 } from '@/components/App/Global/FilloutPopup';
 import { Risque } from 'next/font/google';
+import { useMediaQuery } from '@mui/material';
+import media from '@/styles/media';
+import ComplexityTags from './ComplexityTags';
 
 const risque = Risque({ weight: ['400'], subsets: ['latin'] });
 const ComplexityPage = () => {
+  const isMobile = useMediaQuery(media.tablet);
   return (
     <main className="flex flex-col items-center justify-center bg-white text-black">
-      <div className="mt-20 flex w-full items-center justify-start">
+      <div className="mt-6 flex w-full items-center justify-start md:mt-20">
         <div className="mx-auto mt-20 w-responsive max-w-responsive md:mx-32 lg:mx-56">
           <h1 className="mb-6 flex flex-col gap-2 text-4xl font-bold md:text-6xl lg:text-7xl">
             A tech project's worth is measured by it's complexity.
           </h1>
-          <p className="mb-6 flex flex-col text-lg text-neutral-600 w-1/2">
+          <p className="mb-6 flex w-full flex-col text-lg text-neutral-600 lg:w-1/2">
             TheMoonDevs is a digital startup studio specialising in pioneering
-            edge tech solutions & integrating difficult-to-execute trending technologies into your projects.
+            edge tech solutions & integrating difficult-to-execute trending
+            technologies into your projects.
           </p>
         </div>
       </div>
-      <ComplexityFunnel />
+
+      <div className="w-full md:hidden">
+        <ComplexityTags />
+      </div>
+
+      <div className="hidden md:block">
+        <ComplexityFunnel />
+      </div>
       <div className="mx-auto h-[2px] w-[90%] bg-neutral-700"></div>
       <PlanListing />
       <SimplePriceSection />
-
     </main>
   );
 };
@@ -96,7 +107,8 @@ const SimplePriceSection = () => {
                 Simple, transparent pricing to get you started
               </h2>
               <p className="mt-2 text-center text-gray-600 md:text-left">
-                Start with a simpler version of your complex idea. <br /> No Hidden fees, No extra costs. Any project under 2x complexity.
+                Start with a simpler version of your complex idea. <br /> No
+                Hidden fees, No extra costs. Any project under 2x complexity.
               </p>
             </div>
           </div>

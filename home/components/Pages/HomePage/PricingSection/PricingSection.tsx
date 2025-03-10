@@ -3,7 +3,10 @@ import FeatureCard from './FeatureCard';
 import CtaCard from './CtaCard';
 import Button from '@/components/elements/Button';
 import PremiumMvpCardDesktop from './PremiumMvpCard';
-import { FilloutFormIds, useFilloutPopup } from '@/components/App/Global/FilloutPopup';
+import {
+  FilloutFormIds,
+  useFilloutPopup,
+} from '@/components/App/Global/FilloutPopup';
 import { useRouter } from 'next/navigation';
 
 export const PricingSectionCards = {
@@ -57,8 +60,7 @@ export const PricingSectionCards = {
   },
   complexityScale: {
     title: "What's my Complexity Scale?",
-    description:
-      `In today's AI scaped world, a tech project's worth is measured by it's complexity. Measure yours with references.`,
+    description: `In today's AI scaped world, a tech project's worth is measured by it's complexity. Measure yours with references.`,
     cta: '→',
   },
   roastMyProject: {
@@ -150,7 +152,8 @@ const PricingCards = () => {
       />
       <CtaCard
         onActionClick={() => openForm(FilloutFormIds.BookCall)}
-        className="col-span-4 flex h-[inherit] flex-col justify-between bg-black p-3 shadow-none xl:col-span-1" />
+        className="col-span-4 flex h-[inherit] flex-col justify-between bg-black p-3 shadow-none xl:col-span-1"
+      />
     </div>
   );
 };

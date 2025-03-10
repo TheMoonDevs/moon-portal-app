@@ -4,8 +4,8 @@ import React from 'react';
 
 const IndustryHeroSection = () => {
   return (
-    <div className="mx-4 mt-10 sm:-mt-20">
-      <div className="relative z-0 mx-auto mb-5 mt-20 md:mt-0 lg:mt-20 flex h-[1400px] max-h-[1400px] w-full max-w-[550px] items-start sm:h-[120vh] sm:max-h-[1200px] sm:max-w-full sm:items-center md:w-full lg:mb-6 xl:mb-8">
+    <div className="mx-4 mt-10 sm:-mt-10 md:-mt-0 lg:-mt-20">
+      <div className="relative z-0 mx-auto mb-5 mt-20 flex h-[1400px] max-h-[1400px] w-full max-w-[550px] items-start sm:h-[120vh] sm:max-h-[1200px] sm:max-w-full sm:items-center md:mt-0 md:w-full lg:mb-6 lg:mt-20 xl:mb-8">
         <IndustriesPageHeading />
         <FloatingElement />
       </div>
@@ -214,8 +214,8 @@ const FloatingTexts = React.forwardRef<
 const IndustriesPageHeading = () => {
   return (
     <div className="relative z-[12] mx-auto w-full max-w-[1920px] px-3">
-      <div className="mx-auto w-full bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#F5F2F0] via-transparent to-transparent lg:py-[10%] sm:w-8/12 md:w-1/2 lg:w-3/4 xl:w-[50%]">
-        <h2 className="text-center font-bold text-4xl sm:text-3xl lg:text-4xl xl:text-5xl">
+      <div className="mx-auto w-full bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#F5F2F0] via-transparent to-transparent sm:w-8/12 md:w-1/2 lg:w-3/4 lg:py-[10%] xl:w-[50%]">
+        <h2 className="text-center text-4xl font-bold sm:text-3xl lg:text-4xl xl:text-5xl">
           Hundreds of businesses have already seen transformational results
         </h2>
       </div>

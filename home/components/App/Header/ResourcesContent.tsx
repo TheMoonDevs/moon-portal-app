@@ -107,7 +107,7 @@ export const ResourcesContent = ({
         <div className="p-5 pb-2 text-xl font-bold text-white">Featured</div>
         <ul
           className={cn(
-            'flex flex-col items-center justify-between md:flex-row lg:flex-col',
+            'flex flex-col items-center justify-between pb-6 md:flex-row md:pb-0 lg:flex-col',
             // orientation === 'tablet' && 'flex-row',
           )}
         >
