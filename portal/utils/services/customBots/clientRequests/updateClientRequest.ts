@@ -39,7 +39,7 @@ const eventMessage = (event: any) => {
     case 'committed':
       return `${event?.committer?.name || event?.actor?.login || 'Bot'} added a commit: ${event?.message || event?.body}`;
     case 'commented':
-      return `Msg from ${event?.actor?.login || 'Developer'}: ${event?.body}`;
+      return `${event?.body}`;
     case 'review_requested':
       return `${event?.review_requester?.login || event?.actor?.login || 'Bot'} requested a review from ${event?.requested_reviewer?.login || 'Developer'}`;
     case 'assigned':
