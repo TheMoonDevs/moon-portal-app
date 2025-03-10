@@ -34,22 +34,57 @@ import dayjs from 'dayjs';
 import { MdxAppEditor } from '@/utils/configure/MdxAppEditor';
 import ToolTip from '@/components/elements/ToolTip';
 
-const FocusMode = () => (
-  <div className="mt-4 flex w-full flex-col-reverse gap-6 md:mt-0 md:flex-col">
+const FocusMode = () => {
+  const { user } = useUser();
+  const isMobile = useMediaQuery(media.largeMobile);
+  const [workLogId, setWorkLogId] = useState<string | null>(null);
+  const [loadingWorkLog, setLoadingWorkLog] = useState<boolean>(true);
+  const [currentDate, setCurrentDate] = useState<string>(
+    new Date().toISOString().split('T')[0],
+  );
+
+  // TODO: instead of fetching worklogs here, just make the link independent of worklogId and let the user fetch it on page, or setup some redirectign mechanism from a date route-page to a id route.
+  useEffect(() => {
+    const fetchWorkLogs = async () => {
+      if (isMobile && user?.id && !workLogId) {
+        setCurrentDate(new Date().toISOString().split('T')[0]);
+        try {
+          const data = await PortalSdk.getData(
+            `/api/user/worklogs?date=${new Date().toISOString().split('T')[0]}&userId=${user?.id}`,
+            null,
+          );
+          const id = data?.data?.workLogs?.[0]?.id || null;
+          setWorkLogId(id);
+        } catch (error) {
+          console.error('Error fetching worklogs:', error);
+        } finally {
+          setLoadingWorkLog(false); // Set loading to false after fetching
+        }
+      }
+    };
+
+    fetchWorkLogs();
+  }, [user, isMobile, workLogId]);
+
+  const link = isMobile && workLogId && !loadingWorkLog ? `${APP_ROUTES.userWorklogs}/${workLogId}?logType=dayLog&date=${currentDate}`
+    : APP_ROUTES.userWorklogs;
+
+  return (<div className="mt-4 flex w-full flex-col-reverse gap-6 md:mt-0 md:flex-col">
     <div>
       <h4 className="px-4 text-lg font-bold">In Progress Today </h4>
       <InWorkSection visible={true} />
     </div>
     <Link
       className="mx-4 self-stretch rounded-md bg-green-500 px-[30px] py-3 text-center text-sm font-bold uppercase tracking-[4px] text-white hover:bg-green-400"
-      href={APP_ROUTES.userWorklogs}
+      href={link}
     >
       <span className="select-none md:mb-0">
         Enter &nbsp; Focus &nbsp; Mode
       </span>
     </Link>
   </div>
-);
+  )
+};
 const CoreTeamAsSection = ({
   hasTrialCandidates,
 }: {
@@ -334,11 +369,10 @@ const ClientHomePage = () => {
                       <div
                         onClick={() => handleEngagementClick(eng)}
                         key={eng.id}
-                        className={`flex cursor-pointer flex-col items-center justify-between rounded-lg shadow-sm ${
-                          expandedEngagement?.id === eng.id
-                            ? 'bg-gray-50'
-                            : 'bg-white'
-                        }`}
+                        className={`flex cursor-pointer flex-col items-center justify-between rounded-lg shadow-sm ${expandedEngagement?.id === eng.id
+                          ? 'bg-gray-50'
+                          : 'bg-white'
+                          }`}
                       >
                         <div
                           className={`flex w-full cursor-pointer flex-row items-center justify-between rounded-lg ${expandedEngagement ? 'border-t' : 'border'} border-neutral-300 p-4 shadow-sm`}
@@ -354,11 +388,10 @@ const ClientHomePage = () => {
                         </div>
                         {expandedEngagement?.id === eng.id && (
                           <div
-                            className={`max-h-[300px] w-full overflow-y-auto rounded-lg p-4 shadow-sm transition-all duration-300 ease-in-out ${
-                              expandedEngagement?.id === eng.id
-                                ? 'max-h-[300px] opacity-100'
-                                : 'max-h-0 opacity-0'
-                            }`}
+                            className={`max-h-[300px] w-full overflow-y-auto rounded-lg p-4 shadow-sm transition-all duration-300 ease-in-out ${expandedEngagement?.id === eng.id
+                              ? 'max-h-[300px] opacity-100'
+                              : 'max-h-0 opacity-0'
+                              }`}
                           >
                             <div className="flex flex-col">
                               <h5 className="text-md my-1 font-semibold">
@@ -408,8 +441,8 @@ const ClientHomePage = () => {
                                                 readOnly
                                                 markdown={
                                                   typeof work === 'object' &&
-                                                  work !== null &&
-                                                  'content' in work
+                                                    work !== null &&
+                                                    'content' in work
                                                     ? ((work.content as string) ??
                                                       '')
                                                     : ''
@@ -433,7 +466,7 @@ const ClientHomePage = () => {
                                       : loading
                                         ? 'Loading engagements...'
                                         : worklogs.length === 0 &&
-                                          'No work logs found'}
+                                        'No work logs found'}
                                   </p>
                                 </div>
                               )}
@@ -478,8 +511,7 @@ const ClientHomePage = () => {
                           <img
                             src={
                               dev?.avatar ||
-                              `https://via.placeholder.com/150?text=${
-                                dev?.name?.charAt(0) || 'U'
+                              `https://via.placeholder.com/150?text=${dev?.name?.charAt(0) || 'U'
                               }`
                             }
                             alt={dev?.name?.charAt(0) || ''}

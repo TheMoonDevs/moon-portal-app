@@ -197,7 +197,7 @@ export const UserProfileDrawer: React.FC = () => {
           updatedAt: loggedinUser?.user?.updatedAt,
         });
 
-        console.log(userResponse);
+        //console.log(userResponse);
         dispatch(setReduxUser(userResponse?.data?.user));
         dispatch(
           updateMember({

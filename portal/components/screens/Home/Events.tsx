@@ -35,7 +35,7 @@ const Events = () => {
     setLoading(true);
     try {
       const res = await PortalSdk.getData(
-        `/api/events?year=${year}&month=${month}&limit=3`,
+        `/api/events?year=${year}&limit=3`,
         null
       );
       setEvents(res.data);

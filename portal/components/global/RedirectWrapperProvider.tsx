@@ -18,14 +18,19 @@ export default function RedirectWrapperProvider({
   const router = useRouter();
   const pathname = usePathname();
   useEffect(() => {
+
     if (status === 'loading') return;
+    if (status === 'authenticated') return;
+    if (session === null) return;
+
+    console.log('RedirectWrapperProvider.tsx', 'session:', session, 'status:', status, 'pathname:', pathname, 'url', window.location.href);
 
     let requestedRoute;
 
     if (pathname && !PUBLIC_ROUTES.includes(pathname))
       requestedRoute = pathname;
 
-    const callbackurl = `${window.location.origin}${requestedRoute}`;
+    const callbackurl = `${window.location.href}`;
     const uri = `${window.location.origin}/login?uri=${callbackurl}`;
     dispatch(setRedirectUri(uri));
 

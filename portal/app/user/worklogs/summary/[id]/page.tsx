@@ -8,13 +8,11 @@ import { USERROLE } from "@prisma/client";
 
 export const revalidate = 0;
 async function getUserDetailsFromUserId(userId: string) {
-  console.log(userId);
   try {
     const user = await PortalSdk.getData(
       `${APP_BASE_URL}/api/user?id=${userId}`,
       null
     );
-    console.log(user);
     return user.data.user[0];
   } catch (e) {
     console.log(e);

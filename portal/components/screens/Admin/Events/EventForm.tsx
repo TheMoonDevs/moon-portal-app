@@ -51,6 +51,7 @@ const EventForm = () => {
     try {
       const res = await PortalSdk.getData('/api/events', null);
       setEvents(res.data);
+      console.log('Events:', res.data);
     } catch (error) {
       console.log(error);
     } finally {
