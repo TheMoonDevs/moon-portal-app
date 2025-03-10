@@ -16,98 +16,98 @@ export const projectsData: IIndustryAndProjects[] = [
         title: 'BoB based gaming web3 competitions',
         link: '',
         isHot: false,
-        image_url: '/images/abstract-red.png',
+        image_url: '/images/assets/web3Game-n.png',
         type: 'article',
         stats: [
           {
-            value: '100k',
-            description: 'Active users',
+            value: '500k+',
+            description: 'Monthly Active Users',
           },
           {
-            value: '100k',
-            description: 'Active users',
+            value: '$2.5M',
+            description: 'Trading Volume',
           },
         ],
 
         description:
-          'A high-performance dashboard built for managing token holdings.',
+          'Architected from the ground up with battle-tested smart contracts and a gamer-first UX, we sculpted BoB competitions through rapid prototyping, community-driven iterations, and blockchain innovation that prioritizes transparency without sacrificing performance.',
       },
       {
-        title: 'VRF based randomness',
-        link: '',
+        title: 'Drakula | VRF based Social App',
+        link: 'http://drakula.app/',
         isHot: true,
-        image_url: '/images/abstract-golden.png',
+        image_url: '/images/assets/vrfBasedApp-n.webp',
         type: 'article',
         stats: [
           {
-            value: '100k',
-            description: 'Active users',
+            value: '99.9%',
+            description: 'Uptime',
           },
           {
-            value: '100k',
-            description: 'Active users',
+            value: '2M+',
+            description: 'Verifiable Transactions',
           },
         ],
 
         description:
-          'A high-performance dashboard built for managing token holdings.',
+          '"Engineered Drakula.app through lean methodology, building a tokenized creator economy where our dev team iteratively refined the staking mechanisms, implemented viral engagement loops, and optimized the recommendation algorithm to ensure equitable value distribution between creators and their investor communities.',
       },
       {
         title: 'Pre IPO based ERC-20 Tokens (CryptoCoin)',
         link: '',
         isHot: false,
-        image_url: '/images/abstract-red.png',
+        image_url: '/images/assets/web3ERC20.webp',
         type: 'article',
         stats: [
           {
-            value: '100k',
-            description: 'Active users',
+            value: '$50M',
+            description: 'Total Value Locked',
           },
           {
-            value: '100k',
-            description: 'Active users',
+            value: '45k',
+            description: 'Token Holders',
           },
         ],
         description:
-          'A high-performance dashboard built for managing token holdings.',
+          'Meticulously crafted through agile development sprints, our Pre-IPO tokenization platform emerged as we stress-tested smart contract security, refined the equity-to-token conversion protocols, and sculpted an institutional-grade UI that bridges traditional finance familiarity with web3 innovation.',
       },
       {
-        title: 'bitcoin fork chain (EVM based)',
+        title: 'EVM-compatible Bitcoin fork',
         link: '',
         isHot: false,
-        image_url: '/images/abstract-red.png',
+        image_url: '/images/assets/evmBitcoinFork.png',
         type: 'article',
         stats: [
           {
-            value: '100k',
-            description: 'Active users',
+            value: '120k',
+            description: 'Daily Transactions',
           },
           {
-            value: '100k',
-            description: 'Active users',
+            value: '15s',
+            description: 'Block Time',
           },
         ],
         description:
-          'A high-performance dashboard built for managing token holdings.',
+          'A lightning-fast EVM-compatible Bitcoin fork that preserves Bitcoin security model while unlocking Ethereums programmability, creating the perfect foundation for next-generation DeFi applications.',
       },
       {
         title: 'NFT & ERC-20 Platforms',
         link: '',
         isHot: false,
-        image_url: '/images/abstract-red.png',
+        image_url: '/images/assets/nftApp.webp',
         type: 'article',
         stats: [
           {
-            value: '100k',
-            description: 'Active users',
+            value: '250k',
+            description: 'NFTs Minted',
           },
           {
-            value: '100k',
-            description: 'Active users',
+            value: '$8M',
+            description: 'Trading Volume',
           },
         ],
         description:
-          'A high-performance dashboard built for managing token holdings.',
+          'Engineered NFTether through intensive development cycles, where our team pioneered a cross-standard bridge protocol that seamlessly converts between NFT and ERC-20 assets, allowing fluid value exchange while preserving the unique properties of both token frameworks.',
       },
       {
         title: 'Wallet Plugins for Browsers',
@@ -117,12 +117,12 @@ export const projectsData: IIndustryAndProjects[] = [
         type: 'article',
         stats: [
           {
-            value: '100k',
-            description: 'Active users',
+            value: '180k',
+            description: 'Downloads',
           },
           {
-            value: '100k',
-            description: 'Active users',
+            value: '4.8',
+            description: 'User Rating',
           },
         ],
         description:
@@ -136,12 +136,12 @@ export const projectsData: IIndustryAndProjects[] = [
         type: 'article',
         stats: [
           {
-            value: '100k',
-            description: 'Active users',
+            value: '850k',
+            description: 'Network Users',
           },
           {
-            value: '100k',
-            description: 'Active users',
+            value: '5000+',
+            description: 'Smart Contracts',
           },
         ],
         description:
@@ -155,12 +155,12 @@ export const projectsData: IIndustryAndProjects[] = [
         type: 'article',
         stats: [
           {
-            value: '100k',
-            description: 'Active users',
+            value: '$2.5M',
+            description: 'Gas Saved',
           },
           {
-            value: '100k',
-            description: 'Active users',
+            value: '95k',
+            description: 'Active Wallets',
           },
         ],
         description:
@@ -174,12 +174,12 @@ export const projectsData: IIndustryAndProjects[] = [
         type: 'article',
         stats: [
           {
-            value: '100k',
-            description: 'Active users',
+            value: '150k',
+            description: 'Integrations',
           },
           {
-            value: '100k',
-            description: 'Active users',
+            value: '3min',
+            description: 'Setup Time',
           },
         ],
         description:
@@ -193,12 +193,12 @@ export const projectsData: IIndustryAndProjects[] = [
         type: 'article',
         stats: [
           {
-            value: '100k',
-            description: 'Active users',
+            value: '$15M',
+            description: 'Monthly Volume',
           },
           {
-            value: '100k',
-            description: 'Active users',
+            value: '92%',
+            description: 'Success Rate',
           },
         ],
         description:
@@ -218,6 +218,16 @@ export const projectsData: IIndustryAndProjects[] = [
         description:
           'A text-to-image generation platform that allows users to create images from text prompts.',
         cta_text: 'Try Demo',
+        stats: [
+          {
+            value: '2.5M',
+            description: 'Images Generated',
+          },
+          {
+            value: '98%',
+            description: 'Accuracy Rate',
+          },
+        ],
       },
       {
         title: 'Ecommerce Chatbot',
@@ -227,17 +237,18 @@ export const projectsData: IIndustryAndProjects[] = [
         type: 'article',
         stats: [
           {
-            value: '100k',
-            description: 'Active users',
+            value: '42%',
+            description: 'Ticket Reduction',
           },
           {
-            value: '100k',
-            description: 'Active users',
+            value: '85%',
+            description: 'Customer Satisfaction',
           },
         ],
         description:
           'Developed a conversational AI platform that guides customers through product discovery, handles order inquiries, and provides personalized recommendations resulting in a 42% reduction in support ticket volume.',
-      },{
+      },
+      {
         title: 'Real-Time Sentiment Analysis for Customer Support Calls',
         link: '',
         isHot: false,
@@ -245,7 +256,18 @@ export const projectsData: IIndustryAndProjects[] = [
         type: 'article',
         description:
           'Developed a novel audio preprocessing pipeline that maintains accuracy even with poor connection quality. Created an intervention alert system that reduced negative call outcomes by 42%  ',
-      },{
+        stats: [
+          {
+            value: '42%',
+            description: 'Negative Call Reduction',
+          },
+          {
+            value: '95%',
+            description: 'Analysis Accuracy',
+          },
+        ],
+      },
+      {
         title: 'RAG-Based Voice Assistant for Industrial Equipment Manuals',
         link: 'https://www.cloudtalk.io/blog/ai-performance-evaluation/',
         isHot: false,
@@ -254,7 +276,18 @@ export const projectsData: IIndustryAndProjects[] = [
         description:
           'Engineered a custom vector database architecture that reduced query time by 78% for complex technical information.\n  Integrated with proprietary hardware interfaces that traditional LLM frameworks can not support',
         cta_text: 'View Case Study',
-      },{
+        stats: [
+          {
+            value: '78%',
+            description: 'Query Time Reduction',
+          },
+          {
+            value: '25k+',
+            description: 'Daily Queries',
+          },
+        ],
+      },
+      {
         title: 'Multimodal Content Moderation for UGC Platform',
         link: '',
         isHot: false,
@@ -262,6 +295,16 @@ export const projectsData: IIndustryAndProjects[] = [
         type: 'article',
         description:
           'Solved cross-lingual evasion tactics by implementing a semantic understanding layer that works across 14 languages. Accelerated processing time from 2.1s to 0.3s by optimizing the inference pipeline',
+        stats: [
+          {
+            value: '14',
+            description: 'Languages Supported',
+          },
+          {
+            value: '0.3s',
+            description: 'Processing Time',
+          },
+        ],
       },
       {
         title: 'LLM-Powered Contract Generation & Analysis',
@@ -271,12 +314,12 @@ export const projectsData: IIndustryAndProjects[] = [
         type: 'article',
         stats: [
           {
-            value: '100k',
-            description: 'Active users',
+            value: '95%',
+            description: 'Risk Detection Rate',
           },
           {
-            value: '100k',
-            description: 'Active users',
+            value: '75%',
+            description: 'Time Saved',
           },
         ],
         description:
@@ -291,7 +334,18 @@ export const projectsData: IIndustryAndProjects[] = [
         type: 'article',
         description:
           'Engineered a feature extraction system that identifies seasonal demand patterns 4x more accurately than traditional forecasting',
-      },{
+        stats: [
+          {
+            value: '4x',
+            description: 'Forecast Accuracy',
+          },
+          {
+            value: '32%',
+            description: 'Waste Reduction',
+          },
+        ],
+      },
+      {
         title: 'AI Based Language Learning Platform',
         link: 'https://www.kann.app/',
         isHot: true,
@@ -300,6 +354,16 @@ export const projectsData: IIndustryAndProjects[] = [
         description:
           'Created a goal-oriented learning engine that dynamically adjusts content difficulty based on individual performance metrics, reducing time-to-fluency by 32%.',
         cta_text: 'Visit Website',
+        stats: [
+          {
+            value: '32%',
+            description: 'Learning Speed Boost',
+          },
+          {
+            value: '250k+',
+            description: 'Active Learners',
+          },
+        ],
       },
     ],
   },
@@ -314,12 +378,12 @@ export const projectsData: IIndustryAndProjects[] = [
         type: 'article',
         stats: [
           {
-            value: '100k',
-            description: 'Active users',
+            value: '85%',
+            description: 'Load Time Reduction',
           },
           {
-            value: '100k',
-            description: 'Active users',
+            value: '3M+',
+            description: 'Model Renders',
           },
         ],
         description:
@@ -334,12 +398,12 @@ export const projectsData: IIndustryAndProjects[] = [
         type: 'article',
         stats: [
           {
-            value: '100k',
-            description: 'Active users',
+            value: '20ms',
+            description: 'Latency',
           },
           {
-            value: '100k',
-            description: 'Active users',
+            value: '99.9%',
+            description: 'Sync Accuracy',
           },
         ],
         description:
@@ -353,12 +417,12 @@ export const projectsData: IIndustryAndProjects[] = [
         type: 'article',
         stats: [
           {
-            value: '100k',
-            description: 'Active users',
+            value: '65%',
+            description: 'Task Automation',
           },
           {
-            value: '100k',
-            description: 'Active users',
+            value: '15k+',
+            description: 'Daily Commands',
           },
         ],
         description:
@@ -372,12 +436,12 @@ export const projectsData: IIndustryAndProjects[] = [
         type: 'article',
         stats: [
           {
-            value: '100k',
-            description: 'Active users',
+            value: '12k+',
+            description: 'Active Users',
           },
           {
-            value: '100k',
-            description: 'Active users',
+            value: '47%',
+            description: 'Forecast Accuracy',
           },
         ],
         description:
@@ -391,12 +455,12 @@ export const projectsData: IIndustryAndProjects[] = [
         type: 'article',
         stats: [
           {
-            value: '100k',
-            description: 'Active users',
+            value: '47%',
+            description: 'Conversion Increase',
           },
           {
-            value: '100k',
-            description: 'Active users',
+            value: '2.5s',
+            description: 'Response Time',
           },
         ],
         description:
@@ -410,12 +474,12 @@ export const projectsData: IIndustryAndProjects[] = [
         type: 'article',
         stats: [
           {
-            value: '100k',
-            description: 'Active users',
+            value: '35k+',
+            description: 'Enterprise Users',
           },
           {
-            value: '100k',
-            description: 'Active users',
+            value: '63%',
+            description: 'Productivity Gain',
           },
         ],
         description:
@@ -429,18 +493,19 @@ export const projectsData: IIndustryAndProjects[] = [
         type: 'article',
         stats: [
           {
-            value: '100k',
-            description: 'Active users',
+            value: '100ms',
+            description: 'Max Latency',
           },
           {
-            value: '100k',
-            description: 'Active users',
+            value: '99.9%',
+            description: 'Uptime',
           },
         ],
         description:
           'A WebRTC-based communication system with AI-powered real-time language translation that maintains sub-100ms latency even on congested networks.',
         cta_text: 'View Case Study',
-      },{
+      },
+      {
         title: 'FlowForge: Workflow Automation for the Modern Business',
         link: '',
         isHot: false,
@@ -449,7 +514,18 @@ export const projectsData: IIndustryAndProjects[] = [
         description:
           'Automation without the engineering team. Our visual builder turns complex business processes into drag-and-drop simplicity. Users create sophisticated workflows connecting their existing tools while you watch adoption metrics climb.',
         cta_text: 'View Case Study',
-      },{
+        stats: [
+          {
+            value: '75%',
+            description: 'Dev Time Saved',
+          },
+          {
+            value: '500+',
+            description: 'Active Workflows',
+          },
+        ],
+      },
+      {
         title: 'DocUSense',
         link: '',
         isHot: false,
@@ -458,6 +534,16 @@ export const projectsData: IIndustryAndProjects[] = [
         description:
           'Transform unstructured documents into structured gold. Our platform not just read text—it understands context, extracts relationships, and turns messy PDFs into actionable data. Perfect for startups drowning in documents but starving for insights.',
         cta_text: 'View Case Study',
+        stats: [
+          {
+            value: '92%',
+            description: 'Extraction Accuracy',
+          },
+          {
+            value: '1M+',
+            description: 'Docs Processed',
+          },
+        ],
       },
     ],
   },
@@ -472,12 +558,12 @@ export const projectsData: IIndustryAndProjects[] = [
         type: 'article',
         stats: [
           {
-            value: '100k',
-            description: 'Active users',
+            value: '90%',
+            description: 'Load Time Reduction',
           },
           {
-            value: '100k',
-            description: 'Active users',
+            value: '4.8',
+            description: 'App Store Rating',
           },
         ],
         description:
@@ -491,12 +577,12 @@ export const projectsData: IIndustryAndProjects[] = [
         type: 'article',
         stats: [
           {
-            value: '100k',
-            description: 'Active users',
+            value: '0.5s',
+            description: 'Auth Speed',
           },
           {
-            value: '100k',
-            description: 'Active users',
+            value: '99.99%',
+            description: 'Security Score',
           },
         ],
         description:
@@ -510,12 +596,12 @@ export const projectsData: IIndustryAndProjects[] = [
         type: 'article',
         stats: [
           {
-            value: '100k',
-            description: 'Active users',
+            value: '50k+',
+            description: 'Active Mariners',
           },
           {
-            value: '100k',
-            description: 'Active users',
+            value: '15k',
+            description: 'Vessels Tracked',
           },
         ],
         description:
@@ -529,12 +615,12 @@ export const projectsData: IIndustryAndProjects[] = [
         type: 'article',
         stats: [
           {
-            value: '100k',
-            description: 'Active users',
+            value: '95%',
+            description: 'Native Performance',
           },
           {
-            value: '100k',
-            description: 'Active users',
+            value: '60%',
+            description: 'Dev Time Saved',
           },
         ],
         description:
@@ -548,12 +634,12 @@ export const projectsData: IIndustryAndProjects[] = [
         type: 'article',
         stats: [
           {
-            value: '100k',
-            description: 'Active users',
+            value: '45%',
+            description: 'Engagement Boost',
           },
           {
-            value: '100k',
-            description: 'Active users',
+            value: '120fps',
+            description: 'Animation Speed',
           },
         ],
         description:
@@ -568,12 +654,12 @@ export const projectsData: IIndustryAndProjects[] = [
         type: 'article',
         stats: [
           {
-            value: '100k',
-            description: 'Active users',
+            value: '98%',
+            description: 'Match Accuracy',
           },
           {
-            value: '100k',
-            description: 'Active users',
+            value: '250ms',
+            description: 'Sync Speed',
           },
         ],
         description:
@@ -588,12 +674,12 @@ export const projectsData: IIndustryAndProjects[] = [
         type: 'article',
         stats: [
           {
-            value: '100k',
-            description: 'Active users',
+            value: '74%',
+            description: 'Faster Login',
           },
           {
-            value: '100k',
-            description: 'Active users',
+            value: '99.9%',
+            description: 'Security Score',
           },
         ],
         description:
@@ -611,12 +697,12 @@ export const projectsData: IIndustryAndProjects[] = [
         isHot: false,
         stats: [
           {
-            value: '100k',
-            description: 'Active users',
+            value: '2.5M',
+            description: '3D Renders',
           },
           {
-            value: '100k',
-            description: 'Active users',
+            value: '60fps',
+            description: 'Performance',
           },
         ],
         image_url: '/images/assets/clockThreeD.jpg',
@@ -633,12 +719,12 @@ export const projectsData: IIndustryAndProjects[] = [
         type: 'article',
         stats: [
           {
-            value: '100k',
-            description: 'Active users',
+            value: '90%',
+            description: 'Deploy Time Cut',
           },
           {
-            value: '100k',
-            description: 'Active users',
+            value: '40%',
+            description: 'Cost Reduction',
           },
         ],
         description:
@@ -652,12 +738,12 @@ export const projectsData: IIndustryAndProjects[] = [
         type: 'article',
         stats: [
           {
-            value: '100k',
-            description: 'Active users',
+            value: '250k',
+            description: 'Daily Users',
           },
           {
-            value: '100k',
-            description: 'Active users',
+            value: '4.9',
+            description: 'User Rating',
           },
         ],
         description:
@@ -672,18 +758,19 @@ export const projectsData: IIndustryAndProjects[] = [
         type: 'article',
         stats: [
           {
-            value: '100k',
-            description: 'Active users',
+            value: '50ms',
+            description: 'Network Latency',
           },
           {
-            value: '100k',
-            description: 'Active users',
+            value: '100k+',
+            description: 'Active Players',
           },
         ],
         description:
           'A high-performance dashboard built for managing token holdings.',
         cta_text: 'View Case Study',
-      },{
+      },
+      {
         title: 'Real-Time Data Visualization Framework for IoT Sensors',
         link: 'https://cobalt-act-e19.notion.site/Real-Time-Visualization-Framework-for-Resource-Constrained-IoT-Devices-1adbcad0aeeb8005b9a7f6eee61ec803?pvs=4',
         isHot: false,
@@ -691,18 +778,19 @@ export const projectsData: IIndustryAndProjects[] = [
         type: 'article',
         stats: [
           {
-            value: '100k',
-            description: 'Active users',
+            value: '86%',
+            description: 'Bandwidth Saved',
           },
           {
-            value: '100k',
-            description: 'Active users',
+            value: '10ms',
+            description: 'Update Speed',
           },
         ],
         description:
           'Our engineering team developed a custom WebGL rendering pipeline that optimizes for memory constraints on IoT gateways. We solved the challenge of handling heterogeneous sensor data by creating an adaptive schema system that normalizes inputs in real-time. The solution reduced bandwidth requirements by 86% while improving visual responsiveness for critical monitoring applications.',
         cta_text: 'View Case Study',
-      },{
+      },
+      {
         title: 'Threejs-Based AR Product Configurator',
         link: 'https://cobalt-act-e19.notion.site/High-Performance-3D-Product-Configurator-with-Three-js-1adbcad0aeeb80d9a11cd58c71aea9cd?pvs=4',
         isHot: false,
@@ -711,6 +799,16 @@ export const projectsData: IIndustryAndProjects[] = [
         description:
           'Our frontend team developed a WebGL rendering system that displays photorealistic 3D models with dynamic material and component swapping. We solved the challenge of mobile performance by implementing a progressive mesh loading system that adapts detail levels based on device capabilities. The solution increased product customization engagement by 218% and reduced 3D model loading times from 12 seconds to under 2 seconds.',
         cta_text: 'View Case Study', 
+        stats: [
+          {
+            value: '218%',
+            description: 'Engagement Increase',
+          },
+          {
+            value: '2s',
+            description: 'Load Time',
+          },
+        ],
       },
     ],
   },

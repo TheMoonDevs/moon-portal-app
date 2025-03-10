@@ -187,8 +187,1280 @@ let ProfileData: IProfileData[] = [
         link: 'https://example.com/gen-ai-skillups',
       },
     ],
-  },
-];
+  },{
+      name: 'Aisha R.',
+      avatar: '/images/profiles/aisha-n.png',
+      experience: '14+ years, 32+ Startups',
+      domain: 'Fullstack',
+      position: 'AI Systems Architect',
+      publications: [
+        {
+          image_url: '/images/assets/mlAutonomousPipeline.png',
+          type: 'article',
+          title: 'Autonomous ML Pipeline Creator',
+          description:
+            'Designed a system that analyzes dataset characteristics and automatically constructs optimal machine learning pipelines, reducing model development time by 78%.',
+          link: 'https://towardsdatascience.com/autonomous-ml-pipeline-creation-5d7b3f497e56',
+        },
+        {
+          image_url: '/images/assets/blockchainIdentityVerificationFramework.png',
+          type: 'article',
+          title: 'Blockchain Identity Verification Framework',
+          description:
+            'A zero-knowledge proof system that verifies identity credentials without exposing personal data, now used by three financial institutions.',
+          link: 'https://medium.com/@aisha/zero-knowledge-identity-8a72c4e9b231',
+          cta: 'View Implementation',
+        },
+        {
+          image_url: '/images/assets/web3GovernanceDash.webp',
+          type: 'article',
+          title: 'Web3 Governance Dashboard',
+          description:
+            'Real-time visualization of DAO proposals with sentiment analysis and voting pattern recognition.',
+          link: 'https://github.com/aishar/governance-dashboard',
+        },
+        {
+          image_url: '/images/assets/neuralSearch.png',
+          type: 'article',
+          title: 'Neural Search for Enterprise Knowledge',
+          description:
+            'Implemented semantic search across previously siloed enterprise data, achieving 98% accuracy in retrieving relevant information compared to keyword search.',
+          cta: 'See Case Study',
+          link: 'https://aishar.dev/projects/neural-search',
+        },
+      ],
+    },
+    {
+      name: 'Marcus L.',
+      avatar: '/images/profiles/marcus.png',
+      experience: '9+ years, 22+ Startups',
+      domain: 'Web3',
+      position: '- Smart Contract Specialist',
+      publications: [
+        {
+          image_url: '/images/assets/defiRiskManagment.png',
+          type: 'article',
+          title: 'DeFi Risk Assessment Protocol',
+          description:
+            'Created an on-chain system that quantifies risk exposure across lending platforms, preventing $4.2M in potential losses during the 2023 market downturn.',
+          link: 'https://defirisk.marcus.dev/research/risk-protocol',
+        },
+        {
+          image_url: '/images/assets/58fc7692-dbb2-4ef6-ac55-8fe3faff571e_2647x1584.webp',
+          type: 'article',
+          title: 'NFT Royalty Distribution System',
+          description:
+            'Built a gas-efficient solution for automatic royalty payments to multiple creators with transparent revenue splitting.',
+          link: 'https://ethereum.org/showcase/royalty-system',
+          cta: 'View Demo',
+        },
+        {
+          image_url: '/images/assets/crossChain.webp',
+          type: 'article',
+          title: 'Cross-Chain Asset Bridge',
+          description:
+            'Designed a secure bridge using atomic swaps to transfer assets between major blockchains without centralized intermediaries.',
+          link: 'https://github.com/marcusl/cross-chain-bridge',
+        },
+        {
+          image_url: '/images/assets/daoTreasury.webp',
+          type: 'article',
+          title: 'DAO Treasury Management Suite',
+          description:
+            'Developed tools for decentralized budget allocation with quadratic voting, now used by 6 DAOs with combined treasuries of over $40M.',
+          cta: 'Read Documentation',
+          link: 'https://dao-treasury.marcus.dev',
+        },
+      ],
+    },
+    {
+      name: 'Elena V.',
+      avatar: '/images/profiles/elenaV.jpeg',
+      experience: '12+ years, 19+ Startups',
+      domain: 'AI/ML',
+      position: '- Neural Architecture Design',
+      publications: [
+        {
+          image_url: '/images/assets/medicalDash-n.png',
+          type: 'article',
+          title: 'Computer Vision for Medical Diagnostics',
+          description:
+            'Trained custom neural network architectures achieving 94% accuracy in early-stage disease detection, currently in clinical trials at three major hospitals.',
+          link: 'https://arxiv.org/abs/2304.12785',
+        },
+        {
+          image_url: '/images/assets/aiInEcom.png',
+          type: 'article',
+          title: 'Reinforcement Learning for Supply Chain',
+          description:
+            'Built an adaptive system for e-commerce inventory management that reduced costs by 23% while maintaining optimal stock levels.',
+          link: 'https://elena-v.com/projects/rl-supply-chain',
+          cta: 'View Research',
+        },
+        {
+          image_url: '/images/assets/genAIManufacturing.png',
+          type: 'article',
+          title: 'Generative Design for Manufacturing',
+          description:
+            'Created an AI system that produces optimized industrial component designs, reducing material usage by 31% while maintaining structural integrity.',
+          link: 'https://medium.com/@elena/generative-manufacturing-7d8b4e92a1',
+        },
+        {
+          video_url: '/images/profiles/sentiment-analysis.mp4',
+          type: 'article',
+          title: 'Multi-modal Sentiment Analysis',
+          description:
+            'Developed a system that simultaneously analyzes text, voice, and facial expressions for accurate emotion recognition in customer service applications.',
+          cta: 'Technical Deep Dive',
+          link: 'https://github.com/elenav/multimodal-sentiment',
+        },
+      ],
+    },
+    {
+      name: 'Jamal K.',
+      avatar: '/images/profiles/jamalK.png',
+      experience: '8+ years, 15+ Startups',
+      domain: 'Mobile',
+      position: 'AR/VR Experience Developer',
+      publications: [
+        {
+          image_url: '/images/assets/spatialComputing.webp',
+          type: 'article',
+          title: 'Spatial Computing for Retail',
+          description:
+            'Developed a virtual try-on system deployed in 12 retail locations, increasing conversion rates by 34% and reducing returns by 27%.',
+          link: 'https://devpost.com/software/spatial-retail',
+        },
+        {
+          image_url: '/images/assets/arVrApp.png',
+          type: 'article',
+          title: 'AR Navigation for Indoor Spaces',
+          description:
+            'Created a mapping system using visual SLAM that works without GPS, achieving 98.5% accurate positioning in complex buildings.',
+          link: 'https://jamalk.dev/projects/ar-navigation',
+          cta: 'See It In Action',
+        },
+      ],
+    },
+    {
+      name: 'Sarah T.',
+      avatar: '/images/profiles/sarah.jpeg',
+      experience: '10+ years, 24+ Startups',
+      domain: 'Fullstack',
+      position: 'Scalable Systems Engineer',
+      publications: [
+        {
+          image_url: '',
+          type: 'article',
+          title: 'Event-Driven Microservices Framework',
+          description:
+            'Architected a system handling 15,000+ transactions per second with automatic scaling, deployed across three unicorn startups.',
+          link: 'https://github.com/saraht/event-microservices',
+        },
+        {
+          image_url: '/images/assets/analyticsPipeline.jpg',
+          type: 'article',
+          title: 'Real-time Analytics Pipeline',
+          description:
+            'Built a streaming data platform that reduced insight latency from hours to seconds for a fintech with 2M+ daily users.',
+          link: 'https://saraht.dev/projects/realtime-analytics',
+          cta: 'Architecture Walkthrough',
+        },
+        {
+          image_url: '/images/assets/edgeTech.webp',
+          type: 'article',
+          title: 'Edge Computing Network',
+          description:
+            'Developed a distributed system that processes IoT data at the source, reducing bandwidth requirements by 94% while increasing response times.',
+          link: 'https://medium.com/@saraht/edge-computing-iot-76d2e5a1b3',
+        },
+        {
+          image_url: '/images/assets/multiRegionDB.jpg',
+          type: 'article',
+          title: 'Multi-region Database Synchronization',
+          description:
+            'Created a solution maintaining ACID compliance across global data centers with sub-100ms synchronization, powering a SaaS with users in 43 countries.',
+          cta: 'Technical Deep Dive',
+          link: 'https://github.com/saraht/global-db-sync',
+        },
+      ],
+    },
+    {
+      name: 'Raj P.',
+      avatar: '/images/profiles/rajP.png',
+      experience: '11+ years, 18+ Startups',
+      domain: 'Blockchain',
+      position: 'Protocol Developer',
+      publications: [
+        {
+          image_url: '',
+          type: 'article',
+          title: 'Layer 2 Scaling Solution',
+          description:
+            'Built a system increasing Ethereum transaction throughput by 200x while maintaining full security guarantees through innovative rollup technology.',
+          link: 'https://ethereum.org/showcase/rajp-layer2',
+        },
+        {
+          video_url: '',
+          type: 'article',
+          title: 'Zero-Knowledge Proof Implementation',
+          description:
+            'Created privacy-preserving verification for sensitive transactions with proof generation optimized for mobile devices.',
+          link: 'https://github.com/rajp/zk-privacy',
+          cta: 'View Implementation',
+        },
+        {
+          image_url: '',
+          type: 'article',
+          title: 'Consensus Algorithm Optimization',
+          description:
+            'Developed a hybrid consensus mechanism reducing energy use by 92% while maintaining Byzantine fault tolerance in high-value environments.',
+          link: 'https://rajp.dev/research/hybrid-consensus',
+        },
+        {
+          video_url: '',
+          type: 'article',
+          title: 'Cross-Protocol Interoperability Layer',
+          description:
+            'Engineered a translation layer allowing 7 different blockchains to communicate securely, now processing $12M in daily cross-chain volume.',
+          cta: 'Protocol Documentation',
+          link: 'https://medium.com/@rajp/cross-chain-interop-8e4d9a1b27',
+        },
+      ],
+    },
+    {
+      name: 'Mei L.',
+      avatar: '/images/profiles/mei.png',
+      experience: '9+ years, 21+ Startups',
+      domain: 'AI',
+      position: 'Natural Language Processing Expert',
+      publications: [
+        {
+          image_url: '/images/profiles/chatbot.webp',
+          type: 'article',
+          title: 'Context-Aware Chatbot Framework',
+          description:
+            'Developed an AI system that maintains conversation history with 89% relevance over extended interactions, powering customer service for 3 Fortune 500 companies.',
+          link: 'https://github.com/meil/context-chat',
+        },
+        {
+          video_url: '/images/profiles/multilingual.mp4',
+          type: 'article',
+          title: 'Multilingual Content Generation',
+          description:
+            'Created a system producing native-quality content in 14 languages, now generating 30,000+ product descriptions daily for an e-commerce platform.',
+          link: 'https://meil.dev/projects/multilingual-generation',
+          cta: 'Research Paper',
+        },
+        {
+          image_url: '/images/profiles/document-intelligence.avif',
+          type: 'article',
+          title: 'Document Intelligence Platform',
+          description:
+            'Built an AI that extracts structured data from unstructured documents with 96% accuracy, processing 1.2M pages daily for a legal tech startup.',
+          link: 'https://medium.com/@meil/document-intelligence-42a7e903b5',
+        },
+        {
+          video_url: '/images/profiles/voice-interface.mp4',
+          type: 'article',
+          title: 'Voice Interface Design System',
+          description:
+            'Engineered conversational patterns that increased user retention by 42% for a health coaching app, with 78% of users preferring voice to text input.',
+          cta: 'Design Guidelines',
+          link: 'https://github.com/meil/voice-design-system',
+        },
+      ],
+    },
+    {
+      name: 'Xavier B.',
+      avatar: '/images/profiles/xavier.png',
+      experience: '13+ years, 27+ Startups',
+      domain: 'DevOps',
+      position: '- Infrastructure Automation',
+      publications: [
+        {
+          image_url: '/images/profiles/self-healing.webp',
+          type: 'article',
+          title: 'Self-Healing Cloud Architecture',
+          description:
+            'Designed systems with 99.99% uptime that automatically remediate failures, reducing critical incidents by 86% for a fintech processing $2B annually.',
+          link: 'https://xavierb.dev/research/self-healing-infrastructure',
+        },
+        {
+          video_url: '/images/profiles/gitops.mp4',
+          type: 'article',
+          title: 'GitOps Deployment Pipeline',
+          description:
+            'Built a zero-touch continuous deployment system with automatic rollbacks, enabling 200+ production deployments weekly with zero downtime.',
+          link: 'https://github.com/xavierb/gitops-pipeline',
+          cta: 'Implementation Guide',
+        },
+        {
+          image_url: '/images/profiles/immutable-infra.avif',
+          type: 'article',
+          title: 'Immutable Infrastructure Framework',
+          description:
+            'Created a system that rebuilds environments from scratch on every update, eliminating configuration drift and reducing security vulnerabilities by 73%.',
+          link: 'https://medium.com/@xavierb/immutable-infrastructure-94d7e5b2c7',
+        },
+        {
+          video_url: '/images/profiles/cost-optimization.mp4',
+          type: 'article',
+          title: 'Cost Optimization Engine',
+          description:
+            'Developed an AI that reduced cloud spending by 37% without performance degradation by dynamically adjusting resources based on usage patterns.',
+          cta: 'Case Study',
+          link: 'https://xavierb.dev/projects/cloud-cost-optimization',
+        },
+      ],
+    },
+    {
+      name: 'Zara H.',
+      avatar: '/images/profiles/zara.png',
+      experience: '10+ years, 16+ Startups',
+      domain: 'Web3',
+      position: '- Tokenomics Designer',
+      publications: [
+        {
+          image_url: '/images/profiles/incentive-protocol.webp',
+          type: 'article',
+          title: 'Incentive Alignment Protocol',
+          description:
+            'Designed economic models that aligned stakeholder interests across platforms, increasing protocol retention by 46% and reducing exploitative behaviors.',
+          link: 'https://github.com/zarah/incentive-protocol',
+        },
+        {
+          video_url: '/images/profiles/token-distribution.mp4',
+          type: 'article',
+          title: 'Token Distribution Mechanism',
+          description:
+            'Created fair launch systems preventing whale accumulation, resulting in a Gini coefficient of 0.37 compared to the industry average of 0.84.',
+          link: 'https://zarah.dev/research/token-distribution',
+          cta: 'Economic Analysis',
+        },
+        {
+          image_url: '/images/profiles/staking-rewards.avif',
+          type: 'article',
+          title: 'Staking Reward Optimization',
+          description:
+            'Developed models balancing network security with sustainable inflation, now implemented by 4 major DeFi protocols with $1.2B in TVL.',
+          link: 'https://medium.com/@zarah/sustainable-staking-8a47d9e2b1',
+        },
+        {
+          video_url: '/images/profiles/treasury-diversification.mp4',
+          type: 'article',
+          title: 'DAO Treasury Diversification',
+          description:
+            'Built algorithms for optimal portfolio management of protocol reserves, maintaining operational runway through multiple market cycles.',
+          cta: 'Implementation Guide',
+          link: 'https://github.com/zarah/dao-treasury',
+        },
+      ],
+    },
+    {
+      name: 'Theo M.',
+      avatar: '/images/profiles/theo.png',
+      experience: '11+ years, 22+ Startups',
+      domain: 'Frontend',
+      position: '- UI/UX Engineering Lead',
+      publications: [
+        {
+          image_url: '/images/profiles/micro-interactions.webp',
+          type: 'article',
+          title: 'Micro-Interaction Design System',
+          description:
+            'Created component libraries that increased user engagement metrics by 28% across multiple SaaS products through subtle, meaningful feedback animations.',
+          link: 'https://theom.dev/projects/micro-interactions',
+        },
+        {
+          video_url: '/images/profiles/accessibility.mp4',
+          type: 'article',
+          title: 'Accessibility-First Framework',
+          description:
+            'Developed interfaces achieving WCAG AAA compliance without design compromises, now used by government agencies serving 30M+ citizens.',
+          link: 'https://github.com/theom/a11y-framework',
+          cta: 'Framework Documentation',
+        },
+        {
+          image_url: '/images/profiles/performance-toolkit.avif',
+          type: 'article',
+          title: 'Performance Optimization Toolkit',
+          description:
+            'Created techniques reducing load times by 76% on mobile networks, resulting in 23% conversion rate improvement for an e-commerce platform.',
+          link: 'https://medium.com/@theom/frontend-performance-8e7d46a1c2',
+        },
+        {
+          video_url: '/images/profiles/state-management.mp4',
+          type: 'article',
+          title: 'State Management Architecture',
+          description:
+            'Engineered a reactive system simplifying complex UI data flows, reducing lines of code by 42% while improving runtime performance.',
+          cta: 'Architecture Walkthrough',
+          link: 'https://theom.dev/research/state-management',
+        },
+      ],
+    },
+    {
+      name: 'Priya S.',
+      avatar: '/images/profiles/priya.png',
+      experience: '9+ years, 20+ Startups',
+      domain: 'AI',
+      position: '- Computer Vision Specialist',
+      publications: [
+        {
+          image_url: '/images/profiles/retail-analytics.webp',
+          type: 'article',
+          title: 'Retail Analytics Platform',
+          description:
+            'Developed camera-based systems that analyze customer behavior patterns, increasing store layout efficiency by 34% for a major retail chain.',
+          link: 'https://priyas.dev/projects/retail-vision',
+        },
+        {
+          video_url: '/images/profiles/quality-control.mp4',
+          type: 'article',
+          title: 'Quality Control Automation',
+          description:
+            'Built visual inspection systems detecting manufacturing defects with 99.7% accuracy, replacing manual inspection for critical aerospace components.',
+          link: 'https://github.com/priyas/quality-vision',
+          cta: 'Technical Overview',
+        },
+        {
+          image_url: '/images/profiles/ar-interface.avif',
+          type: 'article',
+          title: 'Augmented Reality Interface',
+          description:
+            'Created a system overlaying real-time information on physical objects, deployed in warehouse operations to improve picking accuracy by 47%.',
+          link: 'https://medium.com/@priyas/ar-warehouse-vision-5f3d7e2a9c',
+        },
+        {
+          video_url: '/images/profiles/gesture-recognition.mp4',
+          type: 'article',
+          title: 'Gesture Recognition Framework',
+          description:
+            'Designed a touchless control system for medical environments, now used in 17 operating rooms to maintain sterility while accessing critical information.',
+          cta: 'Case Study',
+          link: 'https://priyas.dev/research/medical-gesture-control',
+        },
+      ],
+    },
+    {
+      name: 'Julian R.',
+      avatar: '/images/profiles/julian.png',
+      experience: '12+ years, 19+ Startups',
+      domain: 'Fullstack',
+      position: '- Real-time Systems Architect',
+      publications: [
+        {
+          image_url: '/images/profiles/collaborative-editing.webp',
+          type: 'article',
+          title: 'Collaborative Editing Platform',
+          description:
+            'Engineered a system supporting 200+ simultaneous editors with conflict resolution, now powering document collaboration for 3 major productivity suites.',
+          link: 'https://github.com/julianr/collab-edit',
+        },
+        {
+          video_url: '/images/profiles/trading-engine.mp4',
+          type: 'article',
+          title: 'Low-Latency Trading Engine',
+          description:
+            'Built infrastructure processing transactions in under 5ms, handling $780M in daily volume for a cryptocurrency exchange.',
+          link: 'https://julianr.dev/projects/trading-engine',
+          cta: 'Architecture Deep Dive',
+        },
+        {
+          image_url: '/images/profiles/multiplayer-backend.avif',
+          type: 'article',
+          title: 'Multiplayer Game Backend',
+          description:
+            'Created synchronization systems handling 100,000+ concurrent users for a massively multiplayer online game, maintaining sub-50ms latency globally.',
+          link: 'https://medium.com/@julianr/multiplayer-architecture-7d9e4a1b32',
+        },
+        {
+          video_url: '/images/profiles/iot-command.mp4',
+          type: 'article',
+          title: 'IoT Command Center',
+          description:
+            'Designed a hub managing millions of devices with millisecond responsiveness, deployed across smart city infrastructure in 3 metropolitan areas.',
+          cta: 'System Overview',
+          link: 'https://julianr.dev/research/iot-command-architecture',
+        },
+      ],
+    },
+    {
+      name: 'Nadia K.',
+      avatar: '/images/profiles/nadia.png',
+      experience: '10+ years, 23+ Startups',
+      domain: 'Web3',
+      position: '- Security Researcher',
+      publications: [
+        {
+          image_url: '/images/profiles/contract-audit.webp',
+          type: 'article',
+          title: 'Smart Contract Audit Framework',
+          description:
+            'Developed automated tools identifying 94% of common vulnerabilities, preventing potential exploits worth $47M across 16 major protocols.',
+          link: 'https://github.com/nadiak/smart-contract-auditor',
+        },
+        {
+          video_url: '/images/profiles/wallet-security.mp4',
+          type: 'article',
+          title: 'Crypto Wallet Security Enhancement',
+          description:
+            'Built multi-layer protection against emerging attack vectors, now integrated into 3 widely-used wallet implementations with 2M+ users.',
+          link: 'https://nadiak.dev/research/wallet-security',
+          cta: 'Security Analysis',
+        },
+        {
+          image_url: '/images/profiles/privacy-transaction.avif',
+          type: 'article',
+          title: 'Privacy-Preserving Transaction Protocol',
+          description:
+            'Created a system enabling confidential transfers without sacrificing auditability, now processing $4.5M daily in sensitive business transactions.',
+          link: 'https://medium.com/@nadiak/private-auditable-transactions-9d7e5a2c1',
+        },
+        {
+          video_url: '/images/profiles/security-token.mp4',
+          type: 'article',
+          title: 'Security Token Compliance Engine',
+          description:
+            'Designed systems enforcing regulatory requirements on-chain for tokenized securities, enabling compliant issuance in 17 jurisdictions.',
+          cta: 'Compliance Framework',
+          link: 'https://github.com/nadiak/security-token-compliance',
+        },
+      ],
+    },
+    {
+      name: 'Leo C.',
+      avatar: '/images/profiles/leo.png',
+      experience: '13+ years, 18+ Startups',
+      domain: 'AI',
+      position: '- Reinforcement Learning Expert',
+      publications: [
+        {
+          image_url: '/images/profiles/resource-allocation.webp',
+          type: 'article',
+          title: 'Autonomous Resource Allocation',
+          description:
+            'Created systems optimizing cloud resources saving 42% on infrastructure costs while maintaining performance for a SaaS with 1.5M users.',
+          link: 'https://leoc.dev/projects/resource-optimization',
+        },
+        {
+          video_url: '/images/profiles/content-recommendation.mp4',
+          type: 'article',
+          title: 'Adaptive Content Recommendation',
+          description:
+            'Built algorithms increasing user engagement by 36% across platforms by balancing exploration and exploitation in content discovery.',
+          link: 'https://github.com/leoc/adaptive-recommendation',
+          cta: 'Algorithm Breakdown',
+        },
+        {
+          image_url: '/images/profiles/trading-strategy.avif',
+          type: 'article',
+          title: 'Trading Strategy Optimization',
+          description:
+            'Developed AI systems outperforming traditional algorithms by 28% in volatile market conditions for a quantitative trading firm.',
+          link: 'https://medium.com/@leoc/reinforcement-trading-a9c72e51b8',
+        },
+        {
+          video_url: '/images/profiles/dynamic-pricing.mp4',
+          type: 'article',
+          title: 'Dynamic Pricing Engine',
+          description:
+            'Created models maximizing revenue while maintaining customer satisfaction, increasing marketplace GMV by 23% for an e-commerce platform.',
+          cta: 'Research Paper',
+          link: 'https://leoc.dev/research/dynamic-pricing-rl',
+        },
+      ],
+    },
+    {
+      name: 'Anya P.',
+      avatar: '/images/profiles/anya.png',
+      experience: '9+ years, 21+ Startups',
+      domain: 'Mobile',
+      position: '- Native Performance Specialist',
+      publications: [
+        {
+          image_url: '/images/profiles/battery-optimization.webp',
+          type: 'article',
+          title: 'Battery Optimization Framework',
+          description:
+            'Developed systems reducing power consumption by 47% in background operations for a fitness app with 4M daily active users.',
+          link: 'https://github.com/anyap/battery-framework',
+        },
+        {
+          video_url: '/images/profiles/offline-first.mp4',
+          type: 'article',
+          title: 'Offline-First Architecture',
+          description:
+            'Built applications maintaining full functionality without connectivity, increasing user retention by 31% in regions with intermittent internet.',
+          link: 'https://anyap.dev/projects/offline-architecture',
+          cta: 'Technical Deep Dive',
+        },
+        {
+          image_url: '/images/profiles/memory-management.avif',
+          type: 'article',
+          title: 'Memory Management Toolkit',
+          description:
+            'Created techniques reducing app crashes by 92% on low-end devices, expanding market reach for a photo editing app by 27M users.',
+          link: 'https://medium.com/@anyap/mobile-memory-management-c47d9e2a85',
+        },
+        {
+          video_url: '/images/profiles/animation-library.mp4',
+          type: 'article',
+          title: 'Animation Performance Library',
+          description:
+            'Designed smooth 60fps transitions even on 5-year-old hardware, now integrated into 14 apps with combined downloads of 38M.',
+          cta: 'Animation Techniques',
+          link: 'https://anyap.dev/research/animation-performance',
+        },
+      ],
+    },
+    {
+      name: 'Omar J.',
+      avatar: '/images/profiles/omar.png',
+      experience: '11+ years, 25+ Startups',
+      domain: 'Fullstack',
+      position: '- API Design Architect',
+      publications: [
+        {
+          image_url: '/images/profiles/graphql-federation.webp',
+          type: 'article',
+          title: 'GraphQL Federation System',
+          description:
+            'Created a unified data graph across microservices with automated schema stitching, powering a marketplace with 8M monthly users.',
+          link: 'https://github.com/omarj/graphql-federation',
+        },
+        {
+          video_url: '/images/profiles/api-versioning.mp4',
+          type: 'article',
+          title: 'Versioning Strategy Framework',
+          description:
+            'Designed systems for non-breaking API evolution across client versions, enabling seamless updates for a fintech with 1.2M mobile users.',
+          link: 'https://omarj.dev/projects/api-versioning',
+          cta: 'Strategy Guide',
+        },
+        {
+          image_url: '/images/profiles/rate-limiting.avif',
+          type: 'article',
+          title: 'Rate Limiting Intelligence',
+          description:
+            'Built adaptive throttling based on client behavior patterns, reducing API abuse by 96% while maintaining service quality for legitimate users.',
+          link: 'https://medium.com/@omarj/intelligent-rate-limiting-7d8e4a2c9b',
+        },
+        {
+          video_url: '/images/profiles/api-monitoring.mp4',
+          type: 'article',
+          title: 'API Monitoring Dashboard',
+          description:
+            'Developed real-time performance visualization with predictive alerts, reducing incident response time from 42 minutes to 3 minutes.',
+          cta: 'Dashboard Demo',
+          link: 'https://github.com/omarj/api-monitor',
+        },
+      ],
+    },
+    {
+      name: 'Maya D.',
+      avatar: '/images/profiles/maya.png',
+      experience: '10+ years, 17+ Startups',
+      domain: 'Web3',
+      position: '- DeFi Protocol Engineer',
+      publications: [
+        {
+          image_url: '/images/profiles/stablecoin-system.webp',
+          type: 'article',
+          title: 'Algorithmic Stablecoin System',
+          description:
+            'Designed mechanisms maintaining price stability through market fluctuations, achieving 99.2% peg reliability during 40% market drawdowns.',
+          link: 'https://github.com/mayad/algorithmic-stable',
+        },
+        {
+          video_url: '/images/profiles/yield-optimization.mp4',
+          type: 'article',
+          title: 'Yield Optimization Protocol',
+          description:
+            'Built automated strategies maximizing returns across lending platforms, generating 28% higher APY than manual management for over $42M in deposits.',
+          link: 'https://mayad.dev/projects/yield-optimizer',
+          cta: 'Protocol Documentation',
+        },
+        {
+          image_url: '/images/profiles/liquidation-protection.avif',
+          type: 'article',
+          title: 'Liquidation Protection Engine',
+          description:
+            'Created systems preventing unnecessary liquidations during volatility, saving users over $13M during the 2023 market downturn.',
+          link: 'https://medium.com/@mayad/liquidation-protection-5a72e4d9c3',
+        },
+        {
+          video_url: '/images/profiles/credit-scoring.mp4',
+          type: 'article',
+          title: 'Decentralized Credit Scoring',
+          description:
+            'Developed on-chain reputation systems without compromising privacy, enabling undercollateralized lending for 12,000+ wallet addresses.',
+          cta: 'Research Paper',
+          link: 'https://mayad.dev/research/onchain-credit',
+        },
+      ],
+    },
+    {
+      name: 'Victor L.',
+      avatar: '/images/profiles/victor.png',
+      experience: '12+ years, 24+ Startups',
+      domain: 'AI',
+      position: '- MLOps Architect',
+      publications: [
+        {
+          image_url: '/images/profiles/model-deployment.webp',
+          type: 'article',
+          title: 'Model Deployment Automation',
+          description:
+            'Built pipelines reducing time-to-production from weeks to hours, now handling 400+ model deployments monthly across 7 AI-first startups.',
+          link: 'https://github.com/victorl/model-deployment',
+        },
+        {
+          video_url: '/images/profiles/experiment-tracking.mp4',
+          type: 'article',
+          title: 'Experiment Tracking Framework',
+          description:
+            'Created systems for reproducible ML research with version control, increasing team productivity by 42% for an NLP-focused startup.',
+          link: 'https://victorl.dev/projects/experiment-tracking',
+          cta: 'Framework Overview',
+        },
+        {
+          image_url: '/images/profiles/distributed-training.avif',
+          type: 'article',
+          title: 'Distributed Training Orchestration',
+          description:
+            'Developed infrastructure scaling to thousands of GPUs efficiently, reducing training time for large language models by 78%.',
+          link: 'https://medium.com/@victorl/distributed-ml-training-8a72e5a09b',
+        },
+        {
+          video_url: '/images/profiles/model-monitoring.mp4',
+          type: 'article',
+          title: 'Model Monitoring Dashboard',
+          description:
+            'Engineered early-warning systems for ML performance degradation, preventing 94% of potential model failures before user impact.',
+          cta: 'System Architecture',
+          link: 'https://victorl.dev/research/model-monitoring',
+        },
+      ],
+    },
+    {
+      name: 'Isabella M.',
+      avatar: '/images/profiles/isabella.png',
+      experience: '9+ years, 19+ Startups',
+      domain: 'Frontend',
+      position: '- WebGL/3D Specialist',
+      publications: [
+        {
+          image_url: '/images/profiles/3d-configurator.webp',
+          type: 'article',
+          title: 'Browser-Based 3D Configurator',
+          description:
+            'Developed product customization tools increasing conversion by 27% for an e-commerce platform selling custom furniture.',
+          link: 'https://github.com/isabellam/webgl-configurator',
+        },
+        {
+          video_url: '/images/profiles/data-visualization.mp4',
+          type: 'article',
+          title: 'Data Visualization Framework',
+          description:
+            'Built interactive explorations of complex datasets, making financial information accessible to 230,000+ non-expert users.',
+          link: 'https://isabellam.dev/projects/data-viz-framework',
+          cta: 'Interactive Demo',
+        },
+        {
+          image_url: '/images/profiles/virtual-showroom.avif',
+          type: 'article',
+          title: 'Virtual Showroom Experience',
+          description:
+            'Created photorealistic product previews running smoothly on mobile, increasing engagement by 42% for a luxury retail brand.',
+          link: 'https://medium.com/@isabellam/virtual-showroom-webgl-5f3d7e2a9c',
+        },
+        {
+          video_url: '/images/profiles/motion-design.mp4',
+          type: 'article',
+          title: 'Motion Design System',
+          description:
+            'Designed physics-based animations conveying product functionality, reducing support requests by 31% by improving usability.',
+          cta: 'Design System Walkthrough',
+          link: 'https://isabellam.dev/research/motion-design',
+        },
+      ],
+    },
+    {
+      name: 'Kenji T.',
+      avatar: '/images/profiles/kenji.png',
+      experience: '13+ years, 26+ Startups',
+      domain: 'Blockchain',
+      position: '- Cryptography Specialist',
+      publications: [
+        {
+          image_url: '/images/profiles/threshold-signatures.webp',
+          type: 'article',
+          title: 'Threshold Signature Scheme',
+          description:
+            'Created multi-party signing protocols eliminating single points of failure, securing over $350M in digital assets across multiple protocols.',
+          link: 'https://github.com/kenjit/threshold-signatures',
+        },
+        {
+          video_url: '/images/profiles/post-quantum.mp4',
+          type: 'article',
+          title: 'Post-Quantum Blockchain Security',
+          description:
+            'Developed cryptographic systems resistant to quantum computing attacks, future-proofing a blockchain handling $12B in assets.',
+          link: 'https://kenjit.dev/projects/post-quantum-security',
+          cta: 'Research Paper',
+        },
+        {
+          image_url: '/images/profiles/zk-authentication.avif',
+          type: 'article',
+          title: 'Zero-Knowledge Authentication',
+          description:
+            'Built passwordless login without exposing identifiable information, now used by 3 financial institutions for sensitive client access.',
+          link: 'https://medium.com/@kenjit/zero-knowledge-auth-9d7e5a2c9b',
+        },
+        {
+          video_url: '/images/profiles/secure-computation.mp4',
+          type: 'article',
+          title: 'Secure Multi-Party Computation',
+          description:
+            'Engineered systems processing sensitive data without revealing inputs, enabling collaborative fraud detection across competing banks.',
+          cta: 'Protocol Documentation',
+          link: 'https://kenjit.dev/research/secure-mpc',
+        },
+      ],
+    },
+    {
+      name: 'Leila H.',
+      avatar: '/images/profiles/leila.png',
+      experience: '10+ years, 22+ Startups',
+      domain: 'AI',
+      position: '- Edge AI Specialist',
+      publications: [
+        {
+          image_url: '/images/profiles/ondevice-nlp.webp',
+          type: 'article',
+          title: 'On-Device NLP Processing',
+          description:
+            'Built language understanding systems running offline on mobile devices, enabling functionality in areas with limited connectivity.',
+          link: 'https://github.com/leilah/edge-nlp',
+        },
+        {
+          video_url: '/images/profiles/tiny-ml.mp4',
+          type: 'article',
+          title: 'Tiny Machine Learning Framework',
+          description:
+            'Created ML models optimized for microcontrollers and IoT devices, reducing power consumption by 84% while maintaining 92% accuracy.',
+          link: 'https://leilah.dev/projects/tiny-ml',
+          cta: 'Framework Documentation',
+        },
+        {
+          image_url: '/images/profiles/federated-learning.avif',
+          type: 'article',
+          title: 'Privacy-Preserving AI',
+          description:
+            'Developed federated learning systems keeping data on user devices, now deployed across medical applications with 400,000+ users.',
+          link: 'https://medium.com/@leilah/federated-learning-privacy-8e4d9a1b27',
+        },
+        {
+          video_url: '/images/profiles/realtime-vision.mp4',
+          type: 'article',
+          title: 'Real-time Computer Vision',
+          description:
+            'Engineered visual recognition achieving 30fps on low-power hardware, enabling augmented reality applications on 5-year-old smartphones.',
+          cta: 'Performance Optimization Guide',
+          link: 'https://leilah.dev/research/edge-vision',
+        },
+      ],
+    },
+    {
+      name: 'Dominic F.',
+      avatar: '/images/profiles/dominic.png',
+      experience: '11+ years, 18+ Startups',
+      domain: 'Web3',
+      position: '- NFT Infrastructure Developer',
+      publications: [
+        {
+          image_url: '/images/profiles/programmable-nft.webp',
+          type: 'article',
+          title: 'Programmable Digital Asset Framework',
+          description:
+            'Designed systems enabling interactive and evolving NFT experiences, powering digital collectibles with over $28M in trading volume.',
+          link: 'https://github.com/dominicf/programmable-nft',
+        },
+        {
+          video_url: '/images/profiles/decentralized-storage.mp4',
+          type: 'article',
+          title: 'Decentralized Storage Integration',
+          description:
+            'Created persistent metadata solutions for digital collectibles, ensuring asset longevity for collections valued at over $150M.',
+          link: 'https://dominicf.dev/projects/decentralized-storage',
+          cta: 'Integration Guide',
+        },
+        {
+          image_url: '/images/profiles/royalty-enforcement.avif',
+          type: 'article',
+          title: 'Royalty Enforcement Protocol',
+          description:
+            'Developed mechanisms ensuring creator compensation across marketplaces, generating $3.2M in sustainable royalties for artists.',
+          link: 'https://medium.com/@dominicf/nft-royalties-8a72e5a09b',
+        },
+        {
+          video_url: '/images/profiles/generative-art.mp4',
+          type: 'article',
+          title: 'On-Chain Generative Art Engine',
+          description:
+            'Built systems producing unique assets through deterministic algorithms, creating 10,000+ unique artworks for a prominent NFT collection.',
+          cta: 'Technical Overview',
+          link: 'https://dominicf.dev/research/onchain-generative',
+        },
+      ],
+    },
+    {
+      name: 'Sophia W.',
+      avatar: '/images/profiles/sophia.png',
+      experience: '9+ years, 20+ Startups',
+      domain: 'Mobile',
+      position: '- Cross-Platform Architecture',
+      publications: [
+        {
+          image_url: '/images/profiles/shared-logic.webp',
+          type: 'article',
+          title: 'Shared Business Logic Framework',
+          description:
+            'Developed systems reusing 85% of code across iOS, Android, and Web, reducing development time by 62% for a fintech with 700,000+ users.',
+          link: 'https://github.com/sophiaw/shared-business-logic',
+        },
+        {
+          video_url: '/images/profiles/native-bridge.mp4',
+          type: 'article',
+          title: 'Native Feature Bridge',
+          description:
+            'Created interfaces accessing platform capabilities from shared codebase, maintaining native performance while unifying development.',
+          link: 'https://sophiaw.dev/projects/native-bridge',
+          cta: 'Bridge Documentation',
+        },
+        {
+          image_url: '/images/profiles/unified-testing.avif',
+          type: 'article',
+          title: 'Unified Testing Strategy',
+          description:
+            'Built automation covering all platforms from a single test suite, increasing test coverage by 47% while reducing QA time by 58%.',
+          link: 'https://medium.com/@sophiaw/unified-testing-cross-platform-7d8b4e92a1',
+        },
+        {
+          video_url: '/images/profiles/design-system.mp4',
+          type: 'article',
+          title: 'Design System Implementation',
+          description:
+            'Engineered component libraries maintaining brand consistency across devices, enabling a team of 14 developers to ship features 3x faster.',
+          cta: 'System Architecture',
+          link: 'https://sophiaw.dev/research/cross-platform-design-system',
+        },
+      ],
+    },
+    {
+      name: 'Ibrahim A.',
+      avatar: '/images/profiles/ibrahim.png',
+      experience: '12+ years, 23+ Startups',
+      domain: 'Fullstack',
+      position: '- Data Engineering Lead',
+      publications: [
+        {
+          image_url: '/images/profiles/event-streaming.webp',
+          type: 'article',
+          title: 'Event Streaming Architecture',
+          description:
+            'Built systems processing billions of events daily with sub-second latency, powering real-time analytics for a social platform with 12M DAU.',
+          link: 'https://github.com/ibrahima/event-streaming',
+        },
+        {
+          video_url: '/images/profiles/data-lake.mp4',
+          type: 'article',
+          title: 'Data Lake Optimization',
+          description:
+            'Created storage structures reducing query times from minutes to milliseconds, enabling interactive analytics on 12PB of historical data.',
+          link: 'https://ibrahima.dev/projects/data-lake-optimization',
+          cta: 'Architecture Overview',
+        },
+        {
+          image_url: '/images/profiles/etl-pipeline.avif',
+          type: 'article',
+          title: 'ETL Pipeline Automation',
+          description:
+            'Developed self-maintaining data flows with automatic schema evolution, reducing data engineering overhead by 76% for a growing startup.',
+          link: 'https://medium.com/@ibrahima/automated-etl-schema-5f3d7e2a9c',
+        },
+        {
+          video_url: '/images/profiles/analytical-database.mp4',
+          type: 'article',
+          title: 'Analytical Database Design',
+          description:
+            'Engineered data models enabling real-time business intelligence, reducing report generation time from hours to seconds for an e-commerce platform.',
+          cta: 'Design Patterns',
+          link: 'https://ibrahima.dev/research/analytical-db-patterns',
+        },
+      ],
+    },
+    {
+      name: 'Rina S.',
+      avatar: '/images/profiles/rina.png',
+      experience: '10+ years, 19+ Startups',
+      domain: 'AI',
+      position: '- Generative AI Specialist',
+      publications: [
+        {
+          image_url: '/images/profiles/creative-assistance.webp',
+          type: 'article',
+          title: 'Creative Assistance Platform',
+          description:
+            'Developed AI systems enhancing human creativity in design workflows, reducing production time by 47% for a major creative agency.',
+          link: 'https://github.com/rinas/creative-ai-assistant',
+        },
+        {
+          video_url: '/images/profiles/synthetic-data.mp4',
+          type: 'article',
+          title: 'Synthetic Data Generation',
+          description:
+            'Created realistic training datasets for sensitive domains like healthcare, enabling ML development while maintaining patient privacy.',
+          link: 'https://rinas.dev/projects/synthetic-medical-data',
+          cta: 'Research Paper',
+        },
+        {
+          image_url: '/images/profiles/text-to-image.avif',
+          type: 'article',
+          title: 'Text-to-Image Optimization',
+          description:
+            'Built fine-tuning techniques for domain-specific visual generation, achieving 94% user preference over generic models for e-commerce.',
+          link: 'https://medium.com/@rinas/domain-specific-image-generation-8e7d46a1c2',
+        },
+        {
+          video_url: '/images/profiles/architecture-search.mp4',
+          type: 'article',
+          title: 'Neural Network Architecture Search',
+          description:
+            'Engineered systems automatically discovering optimal model structures, reducing compute costs by 68% while improving accuracy by 7%.',
+          cta: 'Algorithm Walkthrough',
+          link: 'https://rinas.dev/research/neural-architecture-search',
+        },
+      ],
+    },
+    {
+      name: 'Gabriel O.',
+      avatar: '/images/profiles/gabriel.png',
+      experience: '11+ years, 21+ Startups',
+      domain: 'Web3',
+      position: '- Layer 1 Protocol Engineer',
+      publications: [
+        {
+          image_url: '/images/profiles/consensus-algorithm.webp',
+          type: 'article',
+          title: 'Consensus Algorithm Design',
+          description:
+            'Created novel approaches balancing security, decentralization, and scalability, enabling 3,800 transactions per second on a public blockchain.',
+          link: 'https://github.com/gabrielo/consensus-protocol',
+        },
+        {
+          video_url: '/images/profiles/vm-optimization.mp4',
+          type: 'article',
+          title: 'Blockchain Virtual Machine Optimization',
+          description:
+            'Built execution environments reducing computational overhead by 67%, decreasing gas costs for complex operations by 42%.',
+          link: 'https://gabrielo.dev/projects/vm-optimization',
+          cta: 'Technical Deep Dive',
+        },
+        {
+          image_url: '/images/profiles/sharding.avif',
+          type: 'article',
+          title: 'Sharding Implementation',
+          description:
+            'Developed horizontal scaling techniques increasing throughput by 150x while maintaining security guarantees and decentralization.',
+          link: 'https://medium.com/@gabrielo/blockchain-sharding-9d7e5a2c9b',
+        },
+        {
+          video_url: '/images/profiles/validator-economics.mp4',
+          type: 'article',
+          title: 'Validator Economics Framework',
+          description:
+            'Designed incentive systems preventing centralization of network power, achieving Nakamoto Coefficient of 42 compared to industry average of 5.',
+          cta: 'Economic Analysis',
+          link: 'https://gabrielo.dev/research/validator-economics',
+        },
+      ],
+    },
+    {
+      name: 'Zoe L.',
+      avatar: '/images/profiles/zoe.png',
+      experience: '9+ years, 17+ Startups',
+      domain: 'Frontend',
+      position: '- Accessibility Specialist',
+      publications: [
+        {
+          image_url: '/images/profiles/screen-reader.webp',
+          type: 'article',
+          title: 'Screen Reader Optimization',
+          description:
+            'Created interfaces providing rich experiences for visually impaired users, increasing accessibility score from 64% to 100% for a government service.',
+          link: 'https://github.com/zoel/screen-reader-optimization',
+        },
+        {
+          video_url: '/images/profiles/keyboard-navigation.mp4',
+          type: 'article',
+          title: 'Keyboard Navigation Framework',
+          description:
+            'Developed systems enabling complete product usage without a mouse, implemented across a SaaS platform serving 230,000+ users.',
+          link: 'https://zoel.dev/projects/keyboard-framework',
+          cta: 'Framework Documentation',
+        },
+        {
+          image_url: '/images/profiles/cognitive-load.avif',
+          type: 'article',
+          title: 'Cognitive Load Reduction',
+          description:
+            'Built interfaces simplifying complex workflows for neurodivergent users, increasing task completion rates by 46% for an educational platform.',
+          link: 'https://medium.com/@zoel/cognitive-design-patterns-a9c72e51b8',
+        },
+        {
+          video_url: '/images/profiles/inclusive-design.mp4',
+          type: 'article',
+          title: 'Inclusive Design System',
+          description:
+            'Created components exceeding accessibility requirements by default, adopted by 7 startups serving combined 3.2M users.',
+          cta: 'Design System Tour',
+          link: 'https://zoel.dev/research/inclusive-design-system',
+        },
+      ],
+    },
+    {
+      name: 'Mateo R.',
+      avatar: '/images/profiles/mateo.png',
+      experience: '13+ years, 24+ Startups',
+      domain: 'Fullstack',
+      position: '- Security Architecture',
+      publications: [
+        {
+          image_url: '/images/profiles/zero-trust.webp',
+          type: 'article',
+          title: 'Zero-Trust Implementation',
+          description:
+            'Designed authentication systems verifying every request regardless of source, reducing security incidents by 97% for a healthcare platform.',
+          link: 'https://github.com/mateor/zero-trust-architecture',
+        },
+        {
+          video_url: '/images/profiles/secrets-management.mp4',
+          type: 'article',
+          title: 'Secrets Management Framework',
+          description:
+            'Built infrastructure eliminating hardcoded credentials throughout systems, now securing sensitive information for 14 financial startups.',
+          link: 'https://mateor.dev/projects/secrets-management',
+          cta: 'Framework Documentation',
+        },
+        {
+          image_url: '/images/profiles/pentesting-automation.avif',
+          type: 'article',
+          title: 'Penetration Testing Automation',
+          description:
+            'Created continuous security validation integrated into development pipeline, identifying 231 potential vulnerabilities before deployment.',
+          link: 'https://medium.com/@mateor/automated-pentesting-7d8e4a2c9b',
+        },
+        {
+          video_url: '/images/profiles/incident-response.mp4',
+          type: 'article',
+          title: 'Security Incident Response',
+          description:
+            'Engineered systems detecting and mitigating attacks in real-time, reducing breach impact window from hours to minutes for critical infrastructure.',
+          cta: 'Architecture Overview',
+          link: 'https://mateor.dev/research/incident-response-system',
+        },
+      ],
+    },
+    {
+      name: 'Hana K.',
+      avatar: '/images/profiles/hana.png',
+      experience: '10+ years, 20+ Startups',
+      domain: 'AI',
+      position: '- Ethical AI Governance',
+      publications: [
+        {
+          image_url: '/images/profiles/bias-detection.webp',
+          type: 'article',
+          title: 'Bias Detection Framework',
+          description:
+            'Created systems identifying and mitigating unwanted patterns in AI outputs, implemented by 3 major financial institutions for fair lending decisions.',
+          link: 'https://github.com/hanak/bias-detection',
+        },
+        {
+          video_url: '/images/profiles/model-explainability.mp4',
+          type: 'article',
+          title: 'Model Explainability Tools',
+          description:
+            'Built interfaces making AI decision-making transparent to users, increasing trust metrics by 42% for a healthcare diagnostic tool.',
+          link: 'https://hanak.dev/projects/ai-explainability',
+          cta: 'Explainability Framework',
+        },
+        {
+          image_url: '/images/profiles/data-collection.avif',
+          type: 'article',
+          title: 'Responsible Data Collection',
+          description:
+            'Developed protocols ensuring consent and privacy in training datasets, now adopted as standard by an AI consortium representing 28 companies.',
+          link: 'https://medium.com/@hanak/ethical-data-collection-5f3d7e2a9c',
+        },
+        {
+          video_url: '/images/profiles/impact-assessment.mp4',
+          type: 'article',
+          title: 'AI Impact Assessment',
+          description:
+            'Designed frameworks evaluating potential consequences of AI deployments, preventing negative outcomes for systems affecting 2M+ people.',
+          cta: 'Assessment Methodology',
+          link: 'https://hanak.dev/research/ai-impact-framework',
+        },
+      ],
+    },
+    {
+      name: 'Niklas B.',
+      avatar: '/images/profiles/niklas.png',
+      experience: '11+ years, 22+ Startups',
+      domain: 'Web3',
+      position: '- Oracle Infrastructure',
+      publications: [
+        {
+          image_url: '/images/profiles/data-feeds.webp',
+          type: 'article',
+          title: 'Decentralized Data Feeds',
+          description:
+            'Built systems bringing off-chain information on-chain with cryptographic proofs, now securing $1.7B in DeFi positions with reliable price data.',
+          link: 'https://github.com/niklasb/decentralized-oracle',
+        },
+        {
+          video_url: '/images/profiles/verifiable-random.mp4',
+          type: 'article',
+          title: 'Verifiable Random Function',
+          description:
+            'Created provably fair randomness for games and selection processes, powering transparent lotteries with combined prize pools of $28M.',
+          link: 'https://niklasb.dev/projects/verifiable-randomness',
+          cta: 'Technical Documentation',
+        },
+        {
+          image_url: '/images/profiles/cross-chain-data.avif',
+          type: 'article',
+          title: 'Cross-Chain Data Bridge',
+          description:
+            'Developed mechanisms synchronizing state across independent blockchains, enabling composable applications across 6 major ecosystems.',
+          link: 'https://medium.com/@niklasb/cross-chain-data-8a72e5a09b',
+        },
+        {
+          video_url: '/images/profiles/asset-tokenization.mp4',
+          type: 'article',
+          title: 'Real-World Asset Tokenization',
+          description:
+            'Built systems connecting physical assets to on-chain representations, enabling fractional ownership of $42M in commercial real estate.',
+          cta: 'Implementation Guide',
+          link: 'https://niklasb.dev/research/rwa-tokenization',
+        },
+      ],
+    }
+  ]
 const ProfileGrid = () => {
   const [selectedPublication, setSelectedPublication] =
     useState<IPublication>();

@@ -63,7 +63,7 @@ export const PricingSectionCards = {
   roastMyProject: {
     title: 'Roast my Project.',
     description:
-      'Need some quick wins for improving your app or website? Or understand the feasibility of your idea?',
+      'Your brilliant idea deserves some tough love. Our AI analyzes your startup concept or MVP and tells you what actually works—and what desperately needs fixing.',
     cta: '→',
   },
   bookCall: {
