@@ -713,6 +713,7 @@ model RequestMessage {
   originClientRequestId String     @db.ObjectId
   clientId              String     @db.ObjectId
   message               String
+  media                 Json[]
   githubUrl             String?
   updateType            UPDATETYPE
   updateFrom            UPDATEFROM
@@ -771,14 +772,14 @@ model EmailSubscriber {
   email              String              @unique
   name               String?
   userType           UserType?           @default(developer)
-  source             String?             
+  source             String?
   subscriptionStatus SubscriptionStatus? @default(active)
   timeZone           String?
   preferences        Preferences?
   contactDetails     ContactDetails?
   context            String? // for what the user is signing up for
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
 }
 
 type Preferences {
