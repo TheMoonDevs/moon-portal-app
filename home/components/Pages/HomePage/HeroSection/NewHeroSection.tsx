@@ -1,6 +1,7 @@
 import { FlipWords } from '@/components/ui/flip-words';
 import { Mrs_Sheppards } from 'next/font/google';
 import Image from 'next/image';
+import Link from 'next/link';
 import React from 'react';
 
 const words = ['Scale', 'Think', 'Build'];
@@ -73,13 +74,13 @@ const NewHeroSection = () => {
             </div>
           </div>
 
-          <a href="#reasons" className="group relative flex ml-auto mt-3 items-center gap-2 text-md text-white font-bold hover:text-white transition-colors">
+          <Link href="/why-choose-us" className="group relative flex ml-auto mt-3 items-center gap-2 text-md text-white font-bold hover:text-white transition-colors">
             Six Reasons on why choose us
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
             </svg>
             <span className="absolute -bottom-2 left-[50%] h-[3px] bg-white opacity-0 group-hover:opacity-100 group-hover:animate-border-line"></span>
-          </a>
+          </Link>
         </div>
       </div>
     </div>

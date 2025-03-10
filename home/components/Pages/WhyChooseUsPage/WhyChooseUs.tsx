@@ -5,6 +5,7 @@ import ListSectionLayout from './ListSectionLayout';
 import FeatureListItems from './FeatureListItems';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
+import { FilloutFormIds, useFilloutPopup } from '@/components/App/Global/FilloutPopup';
 
 const WhyChooseUs = () => {
   return (
@@ -38,6 +39,7 @@ const WhyChooseUs = () => {
 };
 
 const Footer = () => {
+  const { openForm } = useFilloutPopup()
   return (
     <div className="relative">
       <Image
@@ -55,7 +57,9 @@ const Footer = () => {
             <span className="w-full">who truly care</span>
             <span className="w-full">for your idea</span>
           </h1>
-          <button className="mx-auto w-fit rounded-lg bg-white px-5 py-2 text-lg font-bold text-black md:text-xl lg:ml-auto lg:mr-0 lg:self-end lg:text-2xl">
+          <button
+            onClick={() => openForm(FilloutFormIds.BookCall)}
+            className="mx-auto w-fit rounded-lg bg-white px-5 py-2 text-lg font-bold text-black md:text-xl lg:ml-auto lg:mr-0 lg:self-end lg:text-2xl">
             Start your journey with us &nbsp; &rarr;
           </button>
         </div>
@@ -82,7 +86,7 @@ const Hero = () => {
   return (
     <div className="relative flex flex-col items-center justify-center py-6 md:py-12">
       <h1 className="mx-auto py-2 text-center text-4xl font-extrabold sm:block sm:w-10/12 md:w-full md:py-3 md:text-6xl lg:text-7xl">
-        6 reasons why TheMoonDevs is the best choice for customer service
+        6 reasons why TheMoonDevs is the best choice for your project
       </h1>
     </div>
   );

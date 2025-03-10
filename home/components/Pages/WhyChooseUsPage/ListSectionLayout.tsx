@@ -65,7 +65,7 @@ const ListSectionLayout = ({
                 <span>{sectionHeading}</span>
               </h1>
 
-              <p className="mt-2 lg:mt-8 text-sm lg:text-xl text-neutral-500">
+              <p className="mt-2 lg:mt-8 text-sm lg:text-3xl text-neutral-500">
                 {sectionDescription}
               </p>
             </div>
