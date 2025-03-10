@@ -31,30 +31,7 @@ import WorklogBuff from './WorklogTabs/WorklogBuff';
 import ClickupTasks from './WorklogTabs/ClickupTasks';
 import { PrivateWorklogView } from './PrivateWorklogView';
 import { usePassphrase } from '@/utils/hooks/usePassphrase';
-const tempData = [
-  {
-    id: 'idsdjneslnfrnleskdnelrnv',
-    title: 'March 24 - Sunday',
-    date: '2021-03-24',
-    works: [
-      {
-        id: 'sdjnvkrbd-2021-03-24', // should be random id - `random_uid+date`
-        text: 'Worked on the Moon PWA',
-        status: 'none', // none, done, inProgress
-      },
-      {
-        id: 'djncsjnk-2021-03-24', // should be random id - `random_uid+date`
-        text: 'Worked on the Moon Homepage',
-        status: 'done', // none, done, inProgress
-      },
-      {
-        id: 'sdvnsjknc-2021-03-24', // should be random id - `random_uid+date`
-        text: 'Worked on the Moon PWA',
-        status: 'none', // none, done, inProgress
-      },
-    ],
-  },
-];
+
 
 const linkForWorkLog = (data: WorkLogs) => {
   return (
@@ -390,18 +367,6 @@ export const WorklogsPage = () => {
             <SimpleTabs tabs={tabs} />
           </div>
           <div className="invisible m-3 hidden max-h-[80vh] w-[50%] overflow-y-scroll rounded-lg border border-neutral-200 p-2 max-lg:w-full md:visible md:block">
-            {/* {privateBoard && (
-              <WorkLogItem
-                key={
-                  privateBoard.id +
-                  "-" +
-                  privateBoard.date +
-                  "-" +
-                  privateBoard.userId
-                }
-                data={privateBoard}
-              />
-            )} */}
             <WorklogView
               id={selectedID}
               date={centerdate.format('YYYY-MM-DD')}
@@ -435,7 +400,6 @@ export const WorklogsPage = () => {
             )}
           </div>
         </div>
-        {/* <div className="flex flex-col gap-3 h-[5rem]"></div> */}
       </div>
       <Toaster />
     </div>

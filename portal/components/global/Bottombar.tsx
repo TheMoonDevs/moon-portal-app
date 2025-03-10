@@ -109,8 +109,6 @@ export const Bottombar = ({
   const isMobileOrTablet = isMobile || isTablet;
   const { unreadNotificationsCount } = useNotifications();
   const [isOpen, setIsOpen] = useState<boolean>(false);
-  const [workLogId, setWorkLogId] = useState<string | null>(null);
-  const [loadingWorkLog, setLoadingWorkLog] = useState<boolean>(true);
   const [open, setOpen] = useState(false);
 
   const handleLogoutDialogOpen = () => {
@@ -121,12 +119,12 @@ export const Bottombar = ({
     user?.userType === USERTYPE.CLIENT
       ? CLIENT_NAVIGATION_OPTIONS
       : NAVIGATION_OPTIONS.filter(
-          (option) =>
-            !(
-              option.name === 'Admin' &&
-              (!user?.isAdmin || isMobile || isTablet)
-            ),
-        );
+        (option) =>
+          !(
+            option.name === 'Admin' &&
+            (!user?.isAdmin || isMobile || isTablet)
+          ),
+      );
   if (!visible && !visibleOnlyOn) return null;
   if (visibleOnlyOn && !visibleOnlyOnResponsiveSizes) return null;
   //if (!AppRoutesHelper.bottomBarShown(path)) return null;
@@ -138,35 +136,16 @@ export const Bottombar = ({
       setIsOpen(!isOpen);
     }
   };
-  useEffect(() => {
-    const fetchWorkLogs = async () => {
-      if (isMobile && user?.id) {
-        const currentDate = new Date().toISOString().split('T')[0];
-        try {
-          const data = await PortalSdk.getData(
-            `/api/user/worklogs?date=${currentDate}&userId=${user?.id}`,
-            null,
-          );
-          const id = data?.data?.workLogs?.[0]?.id || null;
-          setWorkLogId(id);
-        } catch (error) {
-          console.error('Error fetching worklogs:', error);
-        } finally {
-          setLoadingWorkLog(false); // Set loading to false after fetching
-        }
-      }
-    };
 
-    fetchWorkLogs();
-  });
   const workLogClick = (path: string) => {
-    if (isMobile && workLogId && !loadingWorkLog) {
-      // Check for loading state
-      const currentDate = new Date().toISOString().split('T')[0];
-      router.push(`${path}/${workLogId}?logType=dayLog&date=${currentDate}`);
-    } else {
-      router.push(APP_ROUTES.userWorklogs);
-    }
+    router.push(APP_ROUTES.userWorklogs);
+    // if (isMobile && workLogId && !loadingWorkLog) {
+    //   // Check for loading state
+    //   const currentDate = new Date().toISOString().split('T')[0];
+    //   router.push(`${path}/${workLogId}?logType=dayLog&date=${currentDate}`);
+    // } else {
+    //   router.push(APP_ROUTES.userWorklogs);
+    // }
   };
 
   const handleTabClick = (option: { name: string; path: string }) => {
@@ -200,9 +179,8 @@ export const Bottombar = ({
           <div
             onClick={() => handleTabClick(option)}
             key={option.path}
-            className={` ${
-              isActive ? 'bg-white text-black' : 'bg-black text-white'
-            } relative flex w-1/3 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-2xl px-2 py-1 pt-2 text-xl transition-all duration-300 ${option.path !== path && 'hover:bg-neutral-700'} md:w-full`}
+            className={` ${isActive ? 'bg-white text-black' : 'bg-black text-white'
+              } relative flex w-1/3 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-2xl px-2 py-1 pt-2 text-xl transition-all duration-300 ${option.path !== path && 'hover:bg-neutral-700'} md:w-full`}
           >
             {option.path !== path && (
               <Ripples
@@ -224,9 +202,8 @@ export const Bottombar = ({
               invisible={!unreadNotificationsCount}
             >
               <span
-                className={` ${
-                  isActive ? 'text-black' : 'text-white'
-                } material-icons-outlined text-md font-thin`}
+                className={` ${isActive ? 'text-black' : 'text-white'
+                  } material-icons-outlined text-md font-thin`}
               >
                 {option.icon}
               </span>

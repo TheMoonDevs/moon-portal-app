@@ -1,14 +1,14 @@
-import { prisma } from "@/prisma/prisma";
-import { sheetMap, spreadsheetId } from "@/utils/constants/spreadsheetData";
+import { prisma } from '@/prisma/prisma';
+import { sheetMap, spreadsheetId } from '@/utils/constants/spreadsheetData';
 import {
   ADMIN_EMAIL,
   passcodeEmailTemplate,
   POST_EMAIL_API,
 } from '@/utils/helpers/emailTemplates';
 // import GoogleSheetsAPI from "@/utils/services/googleSheetSdk";
-import { HOUSEID, USERROLE, USERSTATUS, USERTYPE } from "@prisma/client";
-import dayjs from "dayjs";
-import { NextResponse, NextRequest } from "next/server";
+import { HOUSEID, USERROLE, USERSTATUS, USERTYPE } from '@prisma/client';
+import dayjs from 'dayjs';
+import { NextResponse, NextRequest } from 'next/server';
 
 // const sheetConfig = {
 //   clientEmail: process.env.GIAM_CLIENT_EMAIL || "",
@@ -18,14 +18,14 @@ import { NextResponse, NextRequest } from "next/server";
 // const sheetSDK = new GoogleSheetsAPI(sheetConfig);
 
 export async function GET(request: NextRequest) {
-  const id = request.nextUrl.searchParams.get("id") as string;
-  const userType = request.nextUrl.searchParams.get("userType") as USERTYPE;
-  const role = request.nextUrl.searchParams.get("role") as USERROLE;
-  const house = request.nextUrl.searchParams.get("house") as HOUSEID;
-  const status = request.nextUrl.searchParams.get("status");
-  const month = request.nextUrl.searchParams.get("month");
-  const currentMonth = month ?? dayjs().format("MMMM");
-  const cache = request.nextUrl.searchParams.get("cache");
+  const id = request.nextUrl.searchParams.get('id') as string;
+  const userType = request.nextUrl.searchParams.get('userType') as USERTYPE;
+  const role = request.nextUrl.searchParams.get('role') as USERROLE;
+  const house = request.nextUrl.searchParams.get('house') as HOUSEID;
+  const status = request.nextUrl.searchParams.get('status');
+  const month = request.nextUrl.searchParams.get('month');
+  const currentMonth = month ?? dayjs().format('MMMM');
+  const cache = request.nextUrl.searchParams.get('cache');
 
   let error_response: any;
 
@@ -53,12 +53,12 @@ export async function GET(request: NextRequest) {
     if (error_response) {
       return new NextResponse(JSON.stringify(error_response), {
         status: 404,
-        headers: { "Content-Type": "application/json" },
+        headers: { 'Content-Type': 'application/json' },
       });
     }
 
     let json_response = {
-      status: "success",
+      status: 'success',
       data: {
         user,
       },
@@ -68,8 +68,8 @@ export async function GET(request: NextRequest) {
 
     if (cache) {
       response.headers.set(
-        "Cache-Control",
-        "public, max-age=600, stale-while-revalidate=59"
+        'Cache-Control',
+        'public, max-age=600, stale-while-revalidate=59',
       );
     }
 
@@ -78,11 +78,12 @@ export async function GET(request: NextRequest) {
     console.log(e);
     return new NextResponse(JSON.stringify(e), {
       status: 404,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }
 
+// DATA is restricted to created from onboarding page or admin page (ONLY)
 export async function POST(request: Request) {
   try {
     const { id, ...rest } = await request.json();
@@ -168,7 +169,7 @@ export async function POST(request: Request) {
     //   majorDimension: "ROWS",
     // });
     let json_response = {
-      status: "success",
+      status: 'success',
       data: {
         user,
       },
@@ -179,7 +180,7 @@ export async function POST(request: Request) {
     return new NextResponse(JSON.stringify(e), {
       status: 500,
       statusText: JSON.stringify(e),
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }
@@ -193,11 +194,18 @@ export async function PUT(request: Request) {
       },
     });
 
-    if (rest.updatedAt && oldUser?.updatedAt && new Date(rest.updatedAt) < new Date(oldUser.updatedAt)) {
-      return new NextResponse(JSON.stringify({ error: "User Data is outdated", latestUser: oldUser }), {
-        status: 409,
-        headers: { "Content-Type": "application/json" },
-      });
+    if (
+      rest.updatedAt &&
+      oldUser?.updatedAt &&
+      new Date(rest.updatedAt) < new Date(oldUser.updatedAt)
+    ) {
+      return new NextResponse(
+        JSON.stringify({ error: 'User Data is outdated', latestUser: oldUser }),
+        {
+          status: 409,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      );
     }
     // console.log("old user", oldUser);
     // console.log("rest ", rest);
@@ -395,7 +403,7 @@ export async function PUT(request: Request) {
     //   );
     // }
     let json_response = {
-      status: "success",
+      status: 'success',
       data: {
         user,
       },
@@ -403,11 +411,11 @@ export async function PUT(request: Request) {
 
     return NextResponse.json(json_response);
   } catch (e) {
-    console.log("error", e);
+    console.log('error', e);
     return new NextResponse(JSON.stringify(e), {
       status: 500,
       statusText: JSON.stringify(e),
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }
