@@ -14,7 +14,7 @@ export const projectsData: IIndustryAndProjects[] = [
     projects: [
       {
         title: 'BoB based gaming web3 competitions',
-        link: '',
+        link: 'https://play.google.com/store/apps/details?id=com.earnalliance.app&hl=en_IN&pli=1',
         isHot: false,
         image_url: '/images/assets/web3Game-n.png',
         type: 'article',
@@ -31,7 +31,7 @@ export const projectsData: IIndustryAndProjects[] = [
 
         description:
           'Architected from the ground up with battle-tested smart contracts and a gamer-first UX, we sculpted BoB competitions through rapid prototyping, community-driven iterations, and blockchain innovation that prioritizes transparency without sacrificing performance.',
-      },
+       cta_text: "View App"},
       {
         title: 'Drakula | VRF based Social App',
         link: 'http://drakula.app/',
@@ -54,7 +54,7 @@ export const projectsData: IIndustryAndProjects[] = [
       },
       {
         title: 'Pre IPO based ERC-20 Tokens (CryptoCoin)',
-        link: '',
+        link: 'https://cobalt-act-e19.notion.site/Breaking-New-Ground-How-We-Built-Our-Pre-IPO-Tokenization-Platform-1b2bcad0aeeb803fbaade07e2d462568?pvs=4',
         isHot: false,
         image_url: '/images/assets/web3ERC20.webp',
         type: 'article',
@@ -70,6 +70,7 @@ export const projectsData: IIndustryAndProjects[] = [
         ],
         description:
           'Meticulously crafted through agile development sprints, our Pre-IPO tokenization platform emerged as we stress-tested smart contract security, refined the equity-to-token conversion protocols, and sculpted an institutional-grade UI that bridges traditional finance familiarity with web3 innovation.',
+        cta_text: 'View Case Study'
       },
       {
         title: 'EVM-compatible Bitcoin fork',
@@ -111,9 +112,9 @@ export const projectsData: IIndustryAndProjects[] = [
       },
       {
         title: 'Wallet Plugins for Browsers',
-        link: '',
+        link: 'https://cobalt-act-e19.notion.site/1b2bcad0aeeb808e9b9cea0d4199c337?pvs=4',
         isHot: false,
-        image_url: '/images/abstract-red.png',
+        image_url: '/images/assets/web3extension.png',
         type: 'article',
         stats: [
           {
@@ -126,13 +127,14 @@ export const projectsData: IIndustryAndProjects[] = [
           },
         ],
         description:
-          'A high-performance dashboard built for managing token holdings.',
+          'We crafted, a sleek Web3 wallet extension that showcases our ability to blend complex blockchain functionality with intuitive UX. This isnt just another portfolio piece—its living proof of our technical depth in the decentralized space.',
+        cta_text: "View Case Study"
       },
       {
-        title: 'Base Chain Platforms',
-        link: '',
+        title: 'Zypto | Base Chain Wallets',
+        link: 'https://zypto.com/wallet/base-chain/',
         isHot: false,
-        image_url: '/images/abstract-red.png',
+        image_url: '/images/assets/wallet-base-chain.png',
         type: 'article',
         stats: [
           {
@@ -145,13 +147,14 @@ export const projectsData: IIndustryAndProjects[] = [
           },
         ],
         description:
-          'A high-performance dashboard built for managing token holdings.',
+          'With Zypto’s decentralised, non-custodial Crypto App you can securely hold, send and receive many cryptocurrencies, including Base Chain. Also, discover ways to buy and spend Base Chain using integrated onramps, plus our range of Base Chain crypto cards, Base Chain gift cards, Base Chain bill payments, and more',
+        cta_text: 'View App'
       },
       {
         title: 'Smart Wallet Integration (Zero Gas Fees)',
         link: '',
         isHot: true,
-        image_url: '/images/abstract-red.png',
+        image_url: '/images/assets/web3Wallet.webp',
         type: 'article',
         stats: [
           {
@@ -164,45 +167,61 @@ export const projectsData: IIndustryAndProjects[] = [
           },
         ],
         description:
-          'A high-performance dashboard built for managing token holdings.',
+          'Zero-G Smart Wallet integration eliminates the primary barrier to Web3 adoption—gas fees. We haveve implemented account abstraction that lets users transact on-chain without ever touching ETH, making dApp interactions as frictionless as Web2.',
       },
       {
-        title: 'Embedded Wallet Setup',
-        link: '',
-        isHot: false,
-        image_url: '/images/abstract-red.png',
-        type: 'article',
-        stats: [
+        "title": "NFT Loyalty Ecosystem",
+        "link": "",
+        "isHot": true,
+        "image_url": "/images/assets/nftLoyaltyProgram.png",
+        "type": "article",
+        "stats": [
           {
-            value: '150k',
-            description: 'Integrations',
+            "value": "14x",
+            "description": "Engagement Boost"
           },
           {
-            value: '3min',
-            description: 'Setup Time',
-          },
+            "value": "86%",
+            "description": "Retention Rate"
+          }
         ],
-        description:
-          'A high-performance dashboard built for managing token holdings.',
+        "description": "Dynamic NFT-based loyalty platform that evolves with user engagement, creating digital collectibles with real utility and tradable value."
       },
       {
-        title: 'Ramp Integrations for Onboarding Users',
-        link: '',
-        isHot: false,
-        image_url: '/images/abstract-red.png',
-        type: 'article',
-        stats: [
+        "title": "zkKYC Protocol",
+        "link": "",
+        "isHot": true,
+        "image_url": "/images/assets/zkKYC-web3.webp",
+        "type": "article",
+        "stats": [
           {
-            value: '$15M',
-            description: 'Monthly Volume',
+            "value": "8sec",
+            "description": "Verification Time"
           },
           {
-            value: '92%',
-            description: 'Success Rate',
-          },
+            "value": "100%",
+            "description": "Privacy Preserved"
+          }
         ],
-        description:
-          'A high-performance dashboard built for managing token holdings.',
+        "description": "Zero-knowledge identity verification allowing compliant DeFi access without exposing personal data, bridging TradFi requirements with Web3 privacy."
+      },
+      {
+        "title": "Social Recovery Wallet Framework",
+        "link": "",
+        "isHot": true,
+        "image_url": "/images/assets/web3walletRecovery.jpg",
+        "type": "article",
+        "stats": [
+          {
+            "value": "99.8%",
+            "description": "Recovery Success"
+          },
+          {
+            "value": "0",
+            "description": "Seed Phrases"
+          }
+        ],
+        "description": "Next-gen wallet security using trusted contacts for recovery instead of seed phrases, eliminating the #1 cause of lost assets."
       },
     ],
   },
