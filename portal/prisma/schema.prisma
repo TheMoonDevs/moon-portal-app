@@ -653,6 +653,7 @@ model BotProject {
   prNumber         Int?
   description      String?
   projectDir       String
+  clientBots       ClientBot[]
   clientRequests   ClientRequest[]
   previewConfigs   Json?
   prodConfigs      Json?
@@ -662,26 +663,71 @@ model BotProject {
   updatedAt        DateTime        @updatedAt
 }
 
-model ClientRequest {
-  id              String           @id @default(auto()) @map("_id") @db.ObjectId
-  botProjectId    String           @db.ObjectId
-  clientId        String // Identifier for who created this bot
-  title           String
-  description     String
-  prUrl           String
-  prNumber        Int
-  prBranch        String
-  prTargetBranch  String
-  requestDir      String
-  requestStatus   REQUESTSTATUS    @default(UN_ASSIGNED)
-  requestUpdates  RequestUpdate[]
-  requestMessages RequestMessage[]
-  metadata        Json?
-  lastUpdatedAt   DateTime?        @default(now())
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+model ClientBotTemplate {
+  id           String  @id @default(auto()) @map("_id") @db.ObjectId
+  clientId     String? // Nullable: Only set if it's a custom template
+  name         String // Template name
+  type         String // Bot types supported by this template
+  requiredKeys Json[] // Keys required for this bot template (mode: BOTMODE[], isOptional: Boolean, key: String, placeholder: String?)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ClientBot {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  botProjectId     String   @db.ObjectId
+  clientRequestIds String[] @db.ObjectId
+  clientId         String
+  name             String
+  type             String // Bot types supported by this template, e.g. "X", "SLACK", "WHATSAPP", "TELEGRAM", "DISCORD", "GITHUB", "EMAIL", "INSTAGRAM", "YOUTUBE", "WEB_APP"
+  variables        Json[] // Stores environment variables required for the bot (mode: BOTMODE[], isOptional: Boolean, key: String, value?: String)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   botProject BotProject @relation(fields: [botProjectId], references: [id])
+}
+
+model ClientRequestFunction {
+  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
+  mentionedClientBotIds String[]
+  name                  String // Function name (e.g., "Create Post", "Read Posts")
+  service               String // Service name (e.g., "Twitter/X")
+  baseUrl               String // Base URL for the deployed function
+  endpoints             Json[] // Multiple endpoints mapped to this function (will have method, headers, bodySchema, responseSchema)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ClientRequest {
+  id                    String           @id @default(auto()) @map("_id") @db.ObjectId
+  botProjectId          String           @db.ObjectId
+  clientId              String
+  mentionedClientBotIds String[]
+  title                 String
+  description           String
+  prUrl                 String
+  prNumber              Int
+  prBranch              String
+  prTargetBranch        String
+  requestDir            String
+  requestStatus         REQUESTSTATUS    @default(UN_ASSIGNED)
+  requestUpdates        RequestUpdate[]
+  requestMessages       RequestMessage[]
+  metadata              Json?
+  lastUpdatedAt         DateTime?        @default(now())
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  botProject BotProject @relation(fields: [botProjectId], references: [id])
+}
+
+enum BOTMODE {
+  DEV
+  PROD
+  STAGING
 }
 
 enum REQUESTSTATUS {
