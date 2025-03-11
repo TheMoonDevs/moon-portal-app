@@ -50,7 +50,7 @@ export const projectsData: IIndustryAndProjects[] = [
         ],
 
         description:
-          '"Engineered Drakula.app through lean methodology, building a tokenized creator economy where our dev team iteratively refined the staking mechanisms, implemented viral engagement loops, and optimized the recommendation algorithm to ensure equitable value distribution between creators and their investor communities.',
+          'Engineered Drakula.app through lean methodology, building a tokenized creator economy where our dev team iteratively refined the staking mechanisms, implemented viral engagement loops, and optimized the recommendation algorithm to ensure equitable value distribution between creators and their investor communities.',
       },
       {
         title: 'Pre IPO based ERC-20 Tokens (CryptoCoin)',
@@ -232,7 +232,7 @@ export const projectsData: IIndustryAndProjects[] = [
         title: 'Gen AI integrations (image, video, audio)',
         link: 'https://aiflux.cc/',
         isHot: false,
-        image_url: '/images/assets/gen-ai-image.png',
+        image_url: '/images/assets/aiImageGenApp.webp',
         type: 'article',
         description:
           'A text-to-image generation platform that allows users to create images from text prompts.',
@@ -252,7 +252,7 @@ export const projectsData: IIndustryAndProjects[] = [
         title: 'Ecommerce Chatbot',
         link: '',
         isHot: false,
-        image_url: '/images/assets/ecomChatBot.mp4',
+        video_url: '/images/assets/ecomChatBot.mp4',
         type: 'article',
         stats: [
           {
@@ -329,7 +329,7 @@ export const projectsData: IIndustryAndProjects[] = [
         title: 'LLM-Powered Contract Generation & Analysis',
         link: '',
         isHot: false,
-        image_url: '',
+        video_url: '/images/assets/contractAnalysisLLM.mp4',
         type: 'article',
         stats: [
           {
@@ -393,7 +393,7 @@ export const projectsData: IIndustryAndProjects[] = [
         title: 'AR 3d model placements in React Native App',
         link: 'https://cobalt-act-e19.notion.site/AR-Apps-with-React-Native-1aebcad0aeeb80688c00c64655820f2c?pvs=4',
         isHot: false,
-        image_url: '/images/assets/1_5N3_Wq8LX9pyebiAtJdT4g.gif',
+        image_url: '/images/assets/arVR-n.gif',
         type: 'article',
         stats: [
           {
@@ -569,25 +569,6 @@ export const projectsData: IIndustryAndProjects[] = [
   {
     industry: 'App',
     projects: [
-      {
-        title: 'AR 3d model placements in React Native App',
-        link: '',
-        isHot: false,
-        image_url: '/images/abstract-red.png',
-        type: 'article',
-        stats: [
-          {
-            value: '90%',
-            description: 'Load Time Reduction',
-          },
-          {
-            value: '4.8',
-            description: 'App Store Rating',
-          },
-        ],
-        description:
-          'A high-performance dashboard built for managing token holdings.',
-      },
       {
         title: 'NFC card Authorization / Registrations',
         link: '',

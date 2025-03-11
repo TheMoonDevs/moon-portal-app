@@ -27,122 +27,111 @@ const floatingAvatars = [
 
 const floatingTexts = [
   {
-    text: 'Xero',
-    className:
-      'left-[0%] top-[34%] w-[90px] sm:left-auto sm:right-[5%] sm:top-[3%] sm:w-[105px]',
+    text: 'StellaryAI',
+    className: 'left-[0%] top-[34%] w-[90px] sm:left-auto sm:right-[5%] sm:top-[3%] sm:w-[105px]',
   },
   {
-    text: 'Atlassian',
-    className:
-      'left-[0%] top-[34%] hidden w-[80px] sm:left-[20%] sm:top-[2%] sm:flex sm:w-[115px] xl:top-[1%]',
+    text: 'BlockVerify',
+    className: 'left-[0%] top-[34%] hidden w-[80px] sm:left-[20%] sm:top-[2%] sm:flex sm:w-[115px] xl:top-[1%]',
   },
   {
-    text: 'Monday',
-    className:
-      'bottom-[37%] left-[36%] w-[90px] sm:bottom-[50%] sm:left-[5%] sm:w-[105px] lg:bottom-[4%] xl:left-[3%]',
+    text: 'YieldForge',
+    className: 'bottom-[37%] left-[36%] w-[90px] sm:bottom-[50%] sm:left-[5%] sm:w-[105px] lg:bottom-[4%] xl:left-[3%]',
   },
   {
-    text: 'Amplitude',
-    className:
-      'bottom-[13.5%] left-[65%] w-[95px] sm:bottom-[5%] sm:left-[50%] sm:w-[105px] xl:left-[29%]',
+    text: 'AlgoTrade',
+    className: 'bottom-[13.5%] left-[65%] w-[95px] sm:bottom-[5%] sm:left-[50%] sm:w-[105px] xl:left-[29%]',
   },
   {
-    text: 'Coda',
-    className:
-      'w-[80px] sm:w-[105px] absolute bottom-[43%] right-[2%] xl:right-[12%]',
+    text: 'DigiCollect',
+    className: 'w-[80px] sm:w-[105px] absolute bottom-[43%] right-[2%] xl:right-[12%]',
   },
 ];
 
 const floatingTestimonialCards = [
   {
-    company: 'Atlassian',
-    role: 'CEO',
-    stats: { value: '10', description: 'Years of experience' },
-    user: 'John Doe',
-    className:
-      'left-[0%] top-[42%] w-[280px] sm:left-[1%] sm:top-[85%] sm:w-[290px] lg:top-[19%] xl:w-[300px]',
+    company: 'SMART WALLETS',
+    role: 'Founder of Minimatch',
+    stats: { value: '7x', description: 'User growth' },
+    user: 'NEIL SKALLI',
+    className: 'left-[0%] top-[42%] w-[280px] sm:left-[1%] sm:top-[85%] sm:w-[290px] lg:top-[19%] xl:w-[300px]',
   },
   {
-    company: 'Synthesia',
-    quote:
-      'Within six months, Fin had resolved over 6,000 conversations, saved the team over 1,300 hours and pushed self-serve support rates as high as 87%.',
-    className:
-      'bottom-[0%] left-[0%] hidden w-[330px] sm:bottom-auto sm:left-[10%] sm:top-[15%] sm:block sm:w-[330px] lg:left-[34%] lg:top-[18%] lg:w-[360px] xl:left-[40%]',
+    company: 'CRYPTO & GEN AI',
+    quote: 'Reduction in technical debt while accelerating our AI trading algorithm deployment.',
+    stats: { value: '84%', description: 'Performance Boost' },
+    user: 'ASAD BANGASH',
+    role: 'Founder of StellaryAI',
+    className: 'bottom-[0%] left-[0%] hidden w-[330px] sm:bottom-auto sm:left-[10%] sm:top-[15%] sm:block sm:w-[330px] lg:left-[34%] lg:top-[18%] lg:w-[360px] xl:left-[40%]',
   },
   {
-    company: 'Dental Intellegence',
-    role: 'Operations Lead',
-    stats: { value: '97%', description: 'Fin CSAT Score' },
-    user: 'John Doe',
-    className:
-      'bottom-[3%] left-[0%] w-[340px] sm:bottom-auto sm:left-auto sm:right-[0%] sm:top-[25%] sm:w-[300px] lg:w-[380px] xl:right-[2%] xl:top-[18%]',
+    company: 'DeFi Protocol',
+    role: 'Smart Contract Specialist',
+    stats: { value: '42%', description: 'Gas Cost Reduction' },
+    user: 'Marcus L.',
+    className: 'bottom-[3%] left-[0%] w-[340px] sm:bottom-auto sm:left-auto sm:right-[0%] sm:top-[25%] sm:w-[300px] lg:w-[380px] xl:right-[2%] xl:top-[18%]',
   },
   {
-    company: 'Dental Intellegence',
-    role: 'Operations Lead',
-    stats: { value: '97%', description: 'Fin CSAT Score' },
-    user: 'John Doe',
-    className:
-      'absolute bottom-[17%] right-[0%] hidden w-[330px] sm:right-[1%] sm:w-[360px] xl:flex',
-  },
-
-  {
-    company: 'Robin',
-    role: 'Operations Lead',
-    quote:
-      "The numbers speak for themselves. We're seeing a 50% resolution rate with Fin, which is pretty amazing!",
-    user: 'John Doe',
-    className:
-      'bottom-[22%] right-[0%] w-[330px] sm:left-[4%] sm:right-auto sm:w-[350px] lg:bottom-[19%] lg:left-[7%] lg:w-[400px]',
+    company: 'ML Solutions',
+    role: 'Neural Architecture Design',
+    stats: { value: '94%', description: 'Accuracy Rate' },
+    user: 'Elena V.',
+    className: 'absolute bottom-[17%] right-[0%] hidden w-[330px] sm:right-[1%] sm:w-[360px] xl:flex',
   },
   {
-    company: 'Linktree',
-    role: 'Operations Lead',
-    quote:
-      "The numbers speak for themselves. We're seeing a 50% resolution rate with Fin, which is pretty amazing!",
-    user: 'John Doe',
-    className:
-      'right-[0%] top-[20%] w-[330px] sm:bottom-[20%] sm:top-auto sm:w-[350px] lg:left-[50%] lg:right-auto lg:w-[420px] xl:bottom-[12%] xl:left-[39%]',
+    company: 'Edge AI Systems',
+    role: 'Edge AI Specialist',
+    quote: 'Created ML models optimized for microcontrollers and IoT devices, reducing power consumption by 84% while maintaining 92% accuracy.',
+    user: 'Leila H.',
+    className: 'bottom-[22%] right-[0%] w-[330px] sm:left-[4%] sm:right-auto sm:w-[350px] lg:bottom-[19%] lg:left-[7%] lg:w-[400px]',
   },
   {
-    role: 'Operations Lead',
-    quote:
-      "The numbers speak for themselves. We're seeing a 50% resolution rate with Fin, which is pretty amazing!",
-    user: 'John Doe',
-    className:
-      'left-[10%] top-[28%] z-[1] w-[160px] border blur-[8px] backdrop-blur-[1px] sm:left-[15%] sm:w-[180px]',
+    company: 'LINKTREE',
+    role: 'Customer Support Director',
+    quote: 'Increase in automated support resolution within just six days of implementation.',
+    user: 'DANE BURGESS',
+    stats: { value: '42%', description: 'Resolution Rate' },
+    className: 'right-[0%] top-[20%] w-[330px] sm:bottom-[20%] sm:top-auto sm:w-[350px] lg:left-[50%] lg:right-auto lg:w-[420px] xl:bottom-[12%] xl:left-[39%]',
   },
   {
-    role: 'Operations Lead',
-    quote:
-      "The numbers speak for themselves. We're seeing a 50% resolution rate with Fin, which is pretty amazing!",
-    user: 'John Doe',
-    className:
-      'bottom-[22%] left-[2%] z-[1] w-[160px] border blur-[8px] backdrop-blur-[1px] sm:left-[65%] sm:w-[300px] xl:bottom-[10%] xl:left-[4%]',
+    company: 'DAO Governance',
+    role: 'Founder of CommunityDAO',
+    quote: 'Higher voting participation after implementing our decentralized governance framework.',
+    user: 'SOPHIA CHEN',
+    stats: { value: '5.3x', description: 'Participation' },
+    className: 'left-[10%] top-[28%] z-[1] w-[160px] border blur-[8px] backdrop-blur-[1px] sm:left-[15%] sm:w-[180px]',
   },
   {
-    role: 'Operations Lead',
-    quote:
-      "The numbers speak for themselves. We're seeing a 50% resolution rate with Fin, which is pretty amazing!",
-    user: 'John Doe',
-    className:
-      'right-[10%] top-[12%] z-[1] aspect-video w-[340px] blur-[8px] backdrop-blur-[1px] sm:right-[3%] sm:w-[300px]',
+    company: 'NFT Marketplace',
+    role: 'CTO of DigiCollect',
+    quote: 'Decrease in transaction failures with optimized smart contract implementation.',
+    user: 'MARCUS LEE',
+    stats: { value: '68%', description: 'Success Rate' },
+    className: 'bottom-[22%] left-[2%] z-[1] w-[160px] border blur-[8px] backdrop-blur-[1px] sm:left-[65%] sm:w-[300px] xl:bottom-[10%] xl:left-[4%]',
   },
   {
-    role: 'Operations Lead',
-    quote:
-      "The numbers speak for themselves. We're seeing a 50% resolution rate with Fin, which is pretty amazing!",
-    user: 'John Doe',
-    className:
-      'bottom-[8%] right-[10%] z-[1] w-[160px] blur-[8px] backdrop-blur-[1px] sm:right-[15%] sm:w-[180px]',
+    company: 'DeFi Analytics',
+    role: 'CEO of YieldForge',
+    quote: 'Average time to deploy advanced liquidity pool strategies, down from 4 hours.',
+    user: 'RACHEL PETERSON',
+    stats: { value: '10min', description: 'Deploy Time' },
+    className: 'right-[10%] top-[12%] z-[1] aspect-video w-[340px] blur-[8px] backdrop-blur-[1px] sm:right-[3%] sm:w-[300px]',
   },
   {
-    role: 'Operations Lead',
-    quote:
-      "The numbers speak for themselves. We're seeing a 50% resolution rate with Fin, which is pretty amazing!",
-    user: 'John Doe',
-    className:
-      'bottom-[22%] right-[10%] z-[1] w-[160px] blur-[8px] backdrop-blur-[1px] sm:right-[40%] sm:w-[300px]',
+    company: 'ML Trading',
+    role: 'Founder of AlgoTrade',
+    quote: 'Improvement in prediction accuracy through novel transformer architecture.',
+    user: 'JAMES WONG',
+    stats: { value: '31%', description: 'Accuracy Boost' },
+    className: 'bottom-[8%] right-[10%] z-[1] w-[160px] blur-[8px] backdrop-blur-[1px] sm:right-[15%] sm:w-[180px]',
+  },
+  {
+    company: 'Web3 Identity',
+    role: 'CISO of BlockVerify',
+    quote: 'Authentication success rate with zero compromised accounts since implementation.',
+    user: 'ELIZA JOHNSON',
+    stats: { value: '99.9%', description: 'Success Rate' },
+    className: 'bottom-[22%] right-[10%] z-[1] w-[160px] blur-[8px] backdrop-blur-[1px] sm:right-[40%] sm:w-[300px]',
   },
 ];
 
@@ -183,7 +172,7 @@ const FloatingAvatars = React.forwardRef<
       )}
     >
       <Image
-        src={props.imageUrl || '/images/abstract-red.png'}
+        src={props.imageUrl || '/images/assets/web3Game-n.png'}
         alt="avatar"
         width={100}
         height={100}
