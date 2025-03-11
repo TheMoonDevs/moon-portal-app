@@ -247,8 +247,8 @@ const HotSection = ({
 };
 
 function CarouselControls() {
-  const isMobile = useMediaQuery(media.largeMobile);
-  if (isMobile)
+  const isTabletOrLess = useMediaQuery(media.tablet);
+  if (isTabletOrLess)
     return (
       <div className="mt-8 flex gap-3">
         <CarouselPrevious className="static" />

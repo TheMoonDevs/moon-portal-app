@@ -152,6 +152,12 @@ module.exports = {
       margin: {
         'full-bleed': 'calc(50% - 50vw)',
       },
+      width: {
+        responsive: 'calc((100%/12)*10)',
+      },
+      maxWidth: {
+        responsive: 'calc(1492px + (1.5rem*2))',
+      },
     },
   },
 

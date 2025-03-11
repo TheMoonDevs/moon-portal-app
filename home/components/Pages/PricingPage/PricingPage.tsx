@@ -52,13 +52,18 @@ const Plans = [
     name: 'Complex MVP',
     description: 'Critical security, performance, observability and support.',
     features: [
-      { icon: '✔', title: 'Guest & Team access controls' },
-      { icon: '✔', title: 'SCIM & Directory Sync' },
-      { icon: '✔', title: 'Managed WAF Rulesets' },
-      { icon: 'explore', title: 'Multi-region compute & failover' },
-      { icon: 'rocket_launch', title: '99.99% SLA' },
-      { icon: '✔', title: 'Advanced Support' },
+      { icon: 'psychology', title: 'Upto 10x complexity' },
+      { icon: 'rocket_launch', title: '99.99% On-time Sprints' },
+      {
+        icon: 'editor_choice',
+        title: 'Dedicated fractional CTO <-> lifecycle',
+      },
+      { icon: 'explore', title: 'Multi-region On-site Dev team support' },
+      { icon: 'security', title: 'Zero-trust in-house Ai models for security' },
       { icon: 'category', title: 'Scale up & Team building support' },
+      { icon: 'whatshot', title: 'Bi-weekly core penetration sprints' },
+      { icon: 'policy', title: 'SLA & any customized legal support' },
+      // { icon: 'app_badging', title: 'Cross-platform compatibility across 8+ environments' },
     ],
     buttonText: 'Request Trial',
     extraButton: 'Contact Sales',
@@ -70,13 +75,13 @@ const UnitPlans = [
   {
     icon: 'all_inclusive',
     name: 'Fullstack Dev',
-    description: 'Engage Sr.Developers with 6+ years in all industries & stacks',
+    description:
+      'Engage Sr.Developers with 6+ years in all industries & stacks',
     buttonText: 'Start Engagement',
     price: '32 - 52$ per hour',
     highlight: false,
     unitPlan: true,
-    features: [
-    ],
+    features: [],
   },
   {
     icon: 'verified',
@@ -86,8 +91,7 @@ const UnitPlans = [
     price: '150 - 400$ per hour',
     highlight: true,
     unitPlan: true,
-    features: [
-    ],
+    features: [],
   },
   {
     icon: 'desktop_cloud',
@@ -97,8 +101,7 @@ const UnitPlans = [
     price: '38 - 92$ per hour',
     highlight: false,
     unitPlan: true,
-    features: [
-    ],
+    features: [],
   },
   {
     icon: 'draw',
@@ -108,8 +111,7 @@ const UnitPlans = [
     price: '36 - 85$ per hour',
     highlight: false,
     unitPlan: true,
-    features: [
-    ],
+    features: [],
   },
   {
     icon: 'content_cut',
@@ -119,8 +121,7 @@ const UnitPlans = [
     price: '25$ per ~3k codelines',
     highlight: false,
     unitPlan: true,
-    features: [
-    ],
+    features: [],
   },
   {
     icon: 'shape_line',
@@ -130,13 +131,13 @@ const UnitPlans = [
     price: '8k - 16k$ per month',
     highlight: false,
     unitPlan: true,
-    features: [
-    ],
+    features: [],
   },
   {
     name: 'Not sure what to pick ?',
     expandeble: true,
-    description: 'TheMoonDevs is a cohort of passionate devs, who are always interested in challenging projects & discuss exciting ideas.',
+    description:
+      'TheMoonDevs is a cohort of passionate devs, who are always interested in challenging projects & discuss exciting ideas.',
     extraButton: 'Book a call to discuss',
     buttonText: 'Ask Chatbot for help',
     highlight: true,
@@ -158,7 +159,7 @@ const UnitPlans = [
   //   features: [
   //   ],
   // },
-]
+];
 
 interface IPlan {
   name: string;
@@ -167,7 +168,7 @@ interface IPlan {
   features: { icon: string; title: string }[];
   buttonText: string;
   price?: string;
-  icon?: string
+  icon?: string;
   extraButton?: string;
   unitPlan?: boolean;
   expandeble?: boolean;
@@ -201,7 +202,7 @@ export const StickyBoundary = ({
       ></div>
       <span
         className={cn(
-          'absolute -right-[0.5rem] -top-[1rem] text-xl font-bold text-gray-400',
+          'absolute -right-[0.5rem] -top-[1rem] z-20 text-xl font-bold text-gray-400',
           isAtBottom && '-bottom-[0.8rem] top-[unset]',
         )}
       >
@@ -256,7 +257,7 @@ const PricingTabs = () => {
       </TabsList>
       <TabsContent
         value="mvp"
-        className="mx-auto mt-16 grid grid-rows-3 justify-center divide-y-[1px] divide-gray-200 border-b border-t border-gray-200 md:grid-cols-3 md:grid-rows-1 md:divide-x-[1px] md:divide-y-0"
+        className="mx-auto mt-16 grid h-full grid-cols-1 justify-center divide-y-[1px] divide-gray-200 border-b border-t border-gray-200 md:grid-cols-3 md:grid-rows-1 md:divide-x-[1px] md:divide-y-0"
       >
         {Plans.map((plan, index) => {
           return (
@@ -277,15 +278,16 @@ const PricingTabs = () => {
           );
         })}
       </TabsContent>
-      <TabsContent value="unit" className='grid grid-cols-1 sm:grid-cols-2  divide-y-[1px] divide-gray-200  border-b border-t border-gray-200 lg:grid-cols-4 md:divide-x-[1px] md:divide-y-[1px]'>
+      <TabsContent
+        value="unit"
+        className="grid h-full grid-cols-1 divide-y-[1px] divide-gray-200 border-b border-t border-gray-200 sm:grid-cols-2 md:divide-x-[1px] md:divide-y-[1px] lg:grid-cols-4"
+      >
         {UnitPlans.map((plan, index) => (
           <PlanCards
             plan={plan}
             index={index}
             key={plan.name}
-            onActionClick={(_plan) => {
-
-            }}
+            onActionClick={(_plan) => {}}
           />
         ))}
       </TabsContent>
@@ -302,18 +304,25 @@ const PlanCards = ({
   index: number;
   onActionClick: (plan: IPlan) => void;
 }) => (
-  <div className={`relative ${plan.expandeble ? 'md:col-span-2' : 'md:col-span-1'
-    }`}>
+  <div
+    className={`relative h-full ${
+      plan.expandeble ? 'md:col-span-2' : 'md:col-span-1'
+    }`}
+  >
     {index === 0 && <StickyBoundary className="block md:hidden" />}
     <StickyBoundary isAtBottom className="block md:hidden" />
     <BaseCard
-      className={`${plan.highlight ? 'bg-white' : 'bg-gray-50'} w-full rounded-none p-6 shadow-none`}
+      className={`${plan.highlight ? 'bg-white' : 'bg-gray-50'} z-10 h-full w-full rounded-none p-6 shadow-none`}
       key={plan.name}
       cardHeader={
-        <h1 className={`${plan.unitPlan ? "mb-0" : "mb-4"} mt-8 text-2xl font-bold text-black flex flex-col items-start gap-2`}>
-          {plan.icon &&
-            <span className='material-symbols-outlined inherit h-[1.2em]'>{plan.icon}</span>
-          }
+        <h1
+          className={`${plan.unitPlan ? 'mb-0' : 'mb-4'} mt-8 flex flex-col items-start gap-2 text-2xl font-bold text-black`}
+        >
+          {plan.icon && (
+            <span className="material-symbols-outlined inherit h-[1.2em]">
+              {plan.icon}
+            </span>
+          )}
           {plan.name}
         </h1>
       }
@@ -351,15 +360,17 @@ const PlanCardActions = ({
         <div className="flex gap-4">
           <Button
             variant="outlined"
-            className={`mb-8 mt-8 gap-8 rounded-full border border-gray-300 bg-black px-4 py-2 text-sm text-white hover:bg-neutral-800 `}
+            className={`mb-8 mt-8 gap-8 rounded-full border border-gray-300 bg-black px-4 py-2 text-sm text-white hover:bg-neutral-800`}
             endIcon={'arrow_forward'}
             text={plan.extraButton}
+            onClick={() => onClick(plan)}
           />
           <Button
             variant="outlined"
-            className={`hidden sm:block mb-8 mt-8 w-full rounded-full border border-gray-300 bg-white px-4 py-2 text-sm ${plan.highlight && !plan.expandeble ? 'border-none bg-blue-500 text-white hover:bg-blue-600' : ''}`}
+            className={`mb-8 mt-8 hidden w-full rounded-full border border-gray-300 bg-white px-4 py-2 text-sm sm:block ${plan.highlight && !plan.expandeble ? 'border-none bg-blue-500 text-white hover:bg-blue-600' : ''}`}
             endIcon={false}
             text={plan.buttonText}
+            onClick={() => onClick(plan)}
           />
         </div>
       )}
@@ -373,7 +384,9 @@ const PlanCardContent = ({ plan, index }: { plan: IPlan; index: number }) => {
       <ul className="flex flex-col gap-3">
         {plan.name === Plans[0].name && (
           <li className="text-sm text-neutral-500">
-            <span>Turnaround in <b>3-4 weeks</b></span>
+            <span>
+              Turnaround in <b>3-4 weeks</b>
+            </span>
           </li>
         )}
         {plan.name === Plans[1].name && (

@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils';
 import { ListItem } from './NavigationListItem';
 import { useTallyPopup } from '../Global/TallyPopup';
+import { FilloutFormIds, useFilloutPopup } from '../Global/FilloutPopup';
 
 const ResourcesMenuItems = [
   {
@@ -49,10 +50,10 @@ const FeaturedMenuItems = [
     link: '/folios',
   },
   {
-    image_url: '/images/abstract-purple.png',
+    image_url: '/images/complexity-calculator.png',
     title: 'Complexity Calculator',
     description: ' Estimate the complexity of your project',
-    link: '/complexity-calculator',
+    link: '/complexity',
   },
 ];
 
@@ -64,6 +65,7 @@ export const ResourcesContent = ({
   orientation?: 'desktop' | 'mobile' | 'tablet';
 }) => {
   const { openPopup } = useTallyPopup();
+  const { openForm } = useFilloutPopup();
   return (
     <div
       className={cn(
@@ -89,6 +91,10 @@ export const ResourcesContent = ({
                   e.preventDefault();
                   openPopup();
                 }
+                if (item.id === 'partnerships-proposals') {
+                  e.preventDefault();
+                  openForm(FilloutFormIds.Partnerships);
+                }
               }}
             >
               {item.description}
@@ -101,7 +107,7 @@ export const ResourcesContent = ({
         <div className="p-5 pb-2 text-xl font-bold text-white">Featured</div>
         <ul
           className={cn(
-            'flex flex-col items-center justify-between md:flex-row lg:flex-col',
+            'flex flex-col items-center justify-between pb-6 md:flex-row md:pb-0 lg:flex-col',
             // orientation === 'tablet' && 'flex-row',
           )}
         >

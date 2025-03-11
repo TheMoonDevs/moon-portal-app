@@ -3,7 +3,11 @@ import FeatureCard from './FeatureCard';
 import CtaCard from './CtaCard';
 import Button from '@/components/elements/Button';
 import PremiumMvpCardDesktop from './PremiumMvpCard';
-import { FilloutFormIds, useFilloutPopup } from '@/components/App/Global/FilloutPopup';
+import {
+  FilloutFormIds,
+  useFilloutPopup,
+} from '@/components/App/Global/FilloutPopup';
+import { useRouter } from 'next/navigation';
 
 export const PricingSectionCards = {
   simpleMvp: {
@@ -56,8 +60,7 @@ export const PricingSectionCards = {
   },
   complexityScale: {
     title: "What's my Complexity Scale?",
-    description:
-      'Need some quick wins for improving your app or website? Or understand the feasibility of your idea?',
+    description: `In today's AI scaped world, a tech project's worth is measured by it's complexity. Measure yours with references.`,
     cta: '→',
   },
   roastMyProject: {
@@ -116,6 +119,7 @@ const PricingSection = () => {
 
 const PricingCards = () => {
   const { openForm } = useFilloutPopup();
+  const router = useRouter();
   return (
     <div className="mt-16 grid max-h-min gap-6 xl:grid-cols-[1.5fr,1fr,1fr,1fr] xl:grid-rows-2">
       <SimpleMvpCard
@@ -140,6 +144,7 @@ const PricingCards = () => {
       <FeatureCard
         className="col-span-4 flex h-[inherit] flex-col justify-between bg-gray-100 p-6 shadow-none md:col-span-2 xl:col-span-1"
         data={PricingSectionCards.complexityScale}
+        onActionClick={() => router.push('/complexity')}
       />
       <FeatureCard
         className="col-span-4 flex h-[inherit] flex-col justify-between bg-gray-100 p-6 shadow-none md:col-span-2 xl:col-span-1"
@@ -147,7 +152,8 @@ const PricingCards = () => {
       />
       <CtaCard
         onActionClick={() => openForm(FilloutFormIds.BookCall)}
-        className="col-span-4 flex h-[inherit] flex-col justify-between bg-black p-3 shadow-none xl:col-span-1" />
+        className="col-span-4 flex h-[inherit] flex-col justify-between bg-black p-3 shadow-none xl:col-span-1"
+      />
     </div>
   );
 };
