@@ -51,17 +51,20 @@ const RealtimeProgressTrackingData = [
     id: 'slide1',
     items: [
       {
-        title: 'Founders Cockpit: Everything you need at a glance',
-        image_url: '/images/portal-image/portal-1.1.png',
+        title: 'Client Cockpit: Everything you need at a glance',
+        image_url: '/images/portal-image/portal-worksync.png',
       },
-      { title: '', image_url: '/images/portal-image/portal-1.2.png' },
+      {
+        title: 'Analyze sprints in real-time',
+        image_url: '/images/portal-image/portal-livetrack.png'
+      },
     ],
   },
   {
     id: 'slide2',
     items: [
-      { title: 'Understand what has been accomplished', image_url: '/images/portal-image/portal-2.1.png' },
-      { title: 'Real-time Team Workspace: See changes as they happen', image_url: '/images/portal-image/portal-2.2.png' },
+      { title: 'timezone-free scheduler', image_url: '/images/portal-image/schedule-meets.png' },
+      { title: 'get-work-done on the go.', image_url: '/images/portal-image/mobile-app.png' },
     ],
   },
   // {
@@ -152,39 +155,46 @@ const INDUSTRY_EXPERTS_DATA = [
 
 export const INNOVATORS_DATA = [
   {
-    company: 'SHARESIES',
-    stat: '70%',
-    description: 'Resolution rate with Fin',
+    company: 'CTO of 28+ Startups',
+    description: `The challenge of building an edge-tech project is what drove me to initiate TheMoonDevs, we are a growing collective of similar builder-mindset developers across industries & countries. We build new stuff from scratch, and we love it.`,
     author: {
-      name: 'RUBY PICTON',
-      role: 'Investor Care Lead',
+      name: 'Subhakar T.',
+      role: 'Founder of TheMoonDevs',
     },
   },
   {
-    company: 'ROBIN',
+    company: 'Data Engineer',
+    description: `Data tells stories if you build the right systems to listen. When building from zero, I can ask 'what patterns exist that no one has looked for?' That question leads to insight, not just efficiency.`,
+    author: {
+      name: 'Ibrahim A.',
+      role: 'Sr. from TheMoonDev Cohort',
+      profile: `/images/profiles/ibrahim-n.png`,
+    },
+  },
+  {
+    company: 'UX/UI Engineer',
     description:
-      "The numbers speak for themselves. We're seeing a 50% resolution rate with Fin, which is pretty amazing!",
+      'I love the challenge of building User interfaces from scratch with complex interaction patterns & user flows. Making complex things seem simple is the crux of my role. and It’s a great feeling to see a messed-up interface slowly healing.',
     author: {
-      name: 'BEN PEAK',
-      role: 'Director, Technical Support',
+      name: 'Kshitij S.',
+      role: 'TheMoonDevs Core-Team',
     },
   },
   {
-    company: 'DENTAL INTELLIGENCE',
-    stat: '97%',
-    description: 'Fin CSAT Score',
+    company: 'ML/AI Engineer',
+    description: `When someone creates something they never thought possible because of my tool, that's worth more than any optimization metric. AI/ML research is slow-burn science that unravels into cascaading innovation results.`,
     author: {
-      name: 'SAM MILLER',
-      role: 'Customer Support Operations Manager',
+      name: 'Pramod G.',
+      role: 'Ex-Sony AI Researcher',
     },
   },
   {
-    company: 'LINKTREE',
+    company: 'DEVOPs Engineer',
     description:
-      'Within six days, Fin started resolving 42% of conversations and surpassed my expectations.',
+      `The challenge of building automated systems that take away the burden of manual developer or client tasks is what drives me. with the advent of AI, & blockchain, the future of DevOps is more exciting & secure than ever.`,
     author: {
-      name: 'DANE BURGESS',
-      role: 'Customer Support Director',
+      name: 'Vishwajeet Y.',
+      role: 'TheMoonDevs Core-Team',
     },
   },
 ];

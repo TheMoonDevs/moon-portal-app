@@ -28,7 +28,7 @@ export const features: IFeature[] = [
     sectionTitle: 'Ai Empowered Development',
     sectionHeading: "Speed & Performance beyond what's humanly possible.",
     sectionDescription:
-      'Work with teams & devs who know how to take advantage of AI',
+      'Work with teams & devs who know how to take advantage of AI in a secure way.',
     content: <AIEmpoweredDevelopment />,
     titleIconColor: 'bg-orange-500',
     orientation: 'vertical',
@@ -64,7 +64,7 @@ export const features: IFeature[] = [
     sectionTitle: 'Long term & RESPONSIVE support',
     sectionHeading: 'Teams that care to solve you out of your fix',
     sectionDescription:
-      'Bug fixes or Feature Requests - we will never say no when you need us.',
+      'From Idea to Launch: We help startups validate, iterate, and grow. Bug fixes or Feature Requests - we will never say no when you need us.',
     content: <ProjectSupport />,
     titleIconColor: 'bg-green-500',
     orientation: 'vertical',
@@ -74,9 +74,9 @@ export const features: IFeature[] = [
     title: 'Devs with Builder Mindset',
     traits: 'passion',
     sectionTitle: 'problem solvers that love challenges',
-    sectionHeading: 'Innovators Who Build & Scale',
+    sectionHeading: 'Our Devs are innovators with a builder mindset',
     sectionDescription:
-      'From Idea to Launch: We help startups validate, iterate, and grow with powerful MVPs.',
+      '',
     content: <Testimonial data={INNOVATORS_DATA} />,
     titleIconColor: 'bg-orange-500',
     orientation: 'vertical',
