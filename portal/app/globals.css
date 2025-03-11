@@ -39,7 +39,7 @@ body {
 }
 
 .material-symbols-outlined {
-  font-family: "Material Symbols Outlined";
+  font-family: 'Material Symbols Outlined';
   font-weight: normal;
   font-style: normal;
   font-size: inherit;
@@ -50,13 +50,17 @@ body {
   white-space: nowrap;
   word-wrap: normal;
   direction: ltr;
-  -webkit-font-feature-settings: "liga";
+  -webkit-font-feature-settings: 'liga';
   -webkit-font-smoothing: antialiased;
+}
+
+.material-symbols-outlined.inherit {
+  font-size: inherit !important;
 }
 
 .mdx_placeholder {
   font-size: small;
-  content: "Jotdown your thougts...";
+  content: 'Jotdown your thougts...';
   opacity: 0.5;
   position: absolute;
   top: 0.5em;
@@ -78,7 +82,7 @@ body {
 }
 
 .mdx_ce li:before {
-  content: "•";
+  content: '•';
   margin-right: 0.5em;
   color: rgb(var(--foreground-rgb));
 }
@@ -162,7 +166,7 @@ h2 {
 
   .animated-border-box:before,
   .animated-border-box-glow:before {
-    content: "";
+    content: '';
     z-index: -2;
     text-align: center;
     top: 50%;
@@ -182,7 +186,7 @@ h2 {
   }
 
   .animated-border-box:after {
-    content: "";
+    content: '';
     position: absolute;
     z-index: -1;
     left: 2px;
@@ -253,7 +257,7 @@ h2 {
 }
 
 /* This CSS removes the default clock icon from the time input */
-input[type="time"]::-webkit-calendar-picker-indicator {
+input[type='time']::-webkit-calendar-picker-indicator {
   display: none;
   -webkit-appearance: none;
 }
@@ -270,13 +274,17 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 
 /* Hide scrollbar for IE, Edge and Firefox */
 .no-scrollbar {
-  -ms-overflow-style: none;  
-  scrollbar-width: none; 
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 @keyframes growProgressBar {
-  0% { --pgPercentage: calc(var(--value) - 33.33); }
-  100% { --pgPercentage: var(--value); }
+  0% {
+    --pgPercentage: calc(var(--value) - 33.33);
+  }
+  100% {
+    --pgPercentage: var(--value);
+  }
 }
 
 @property --pgPercentage {
@@ -286,14 +294,18 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 
 .circular-progress-button {
-  --size: 4rem; 
-  --fg: #1E90FF;
-  --bg: #ddd; 
+  --size: 4rem;
+  --fg: #1e90ff;
+  --bg: #ddd;
   --pgPercentage: 0;
   animation: growProgressBar 1s forwards;
   border-radius: 50%;
-  background: 
-    radial-gradient(closest-side, white 80%, transparent 0 99.9%, white 0),
+  background: radial-gradient(
+      closest-side,
+      white 80%,
+      transparent 0 99.9%,
+      white 0
+    ),
     conic-gradient(var(--fg) calc(var(--pgPercentage) * 1%), var(--bg) 0);
 }
 
@@ -367,21 +379,19 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 
 .scrollable-container-summaryView {
   position: relative;
-  max-height: 100%; 
+  max-height: 100%;
   overflow-y: auto;
 }
 
-.react-activity-calendar__calendar{
+.react-activity-calendar__calendar {
   padding-bottom: 4px;
 }
 
-.react-activity-calendar__scroll-container{
-  overflow-x: auto; 
-  scrollbar-width: thin; 
-  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track); 
+.react-activity-calendar__scroll-container {
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 }
-
-
 
 @layer base {
   :root {
@@ -438,8 +448,6 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     --chart-5: 340 75% 55%;
   }
 }
-
-
 
 @layer base {
   * {
