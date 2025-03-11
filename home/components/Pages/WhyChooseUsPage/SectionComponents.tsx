@@ -51,26 +51,26 @@ const RealtimeProgressTrackingData = [
     id: 'slide1',
     items: [
       {
-        title: 'abc',
-        image_url: '/images/abstract-red.png',
+        title: 'Founders Cockpit: Everything you need at a glance',
+        image_url: '/images/portal-image/portal-1.1.png',
       },
-      { title: 'bac', image_url: '/images/abstract-red.png' },
+      { title: '', image_url: '/images/portal-image/portal-1.2.png' },
     ],
   },
   {
     id: 'slide2',
     items: [
-      { title: '', image_url: '/images/abstract-red.png' },
-      { title: '', image_url: '/images/abstract-red.png' },
+      { title: 'Understand what has been accomplished', image_url: '/images/portal-image/portal-2.1.png' },
+      { title: 'Real-time Team Workspace: See changes as they happen', image_url: '/images/portal-image/portal-2.2.png' },
     ],
   },
-  {
-    id: 'slide3',
-    items: [
-      { title: '', image_url: '/images/abstract-red.png' },
-      { title: '', image_url: '/images/abstract-red.png' },
-    ],
-  },
+  // {
+  //   id: 'slide3',
+  //   items: [
+  //     { title: '', image_url: '/images/abstract-red.png' },
+  //     { title: '', image_url: '/images/abstract-red.png' },
+  //   ],
+  // },
 ];
 
 export const RealtimeProgressTracking = () => {
