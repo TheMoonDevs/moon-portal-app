@@ -52,6 +52,7 @@ type RequestMessage = {
 
 type ClientRequest = {
   id: string;
+  botProjectId: string;
   title: string;
   requestStatus: string;
   mentionedClientBotIds: string[];
@@ -439,7 +440,7 @@ export default function ChatWindow({
 
     try {
       await PortalSdk.postData('/api/custom-bots/client-bots', {
-        botProjectId: clientRequest.id,
+        botProjectId: clientRequest.botProjectId,
         clientId,
         type: selectedTemplate.type,
         variables: allVariables,
