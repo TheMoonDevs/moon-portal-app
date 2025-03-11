@@ -3,6 +3,7 @@ import {
   AIEmpoweredDevelopment,
   BuildersNetwork,
   INNOVATORS_DATA,
+  IndustryExperts,
   ProjectSupport,
   RealtimeProgressTracking,
   Testimonial,
@@ -53,7 +54,7 @@ export const features: IFeature[] = [
     sectionHeading: 'Industry experts that you can consult/work with',
     sectionDescription:
       'Fractional CTO’s & CXO’s available at demand to lead / advice on your project',
-    content: <Testimonial />,
+    content: <IndustryExperts />,
     titleIconColor: 'bg-yellow-500',
     orientation: 'vertical',
   },
