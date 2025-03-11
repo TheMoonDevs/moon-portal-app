@@ -82,9 +82,9 @@ export async function POST(req: NextRequest) {
         .join('\n');
 
       const commentBody = `<Not for Client> **Client has added a new bot to their request:**  
-          **Bot Name:** ${clientBot.name}  
-          **Environment Variables:**  
-          ${modeMapString}`;
+**Bot Name:** ${clientBot.name}  
+**Environment Variables:**  
+${modeMapString}`;
 
       await appRepoSdk.createCommentOnPr(
         lastRequestPrNumber || clientRequest.prNumber,
@@ -390,9 +390,9 @@ export async function DELETE(req: NextRequest) {
             .join('\n');
 
           const commentBody = `<Not for Client> **Client has removed the following bot from their request:**  
-              **Bot Name:** ${clientBot.name}  
-              **Environment Variables:**  
-              ${modeMapString}`;
+**Bot Name:** ${clientBot.name}  
+**Environment Variables:**  
+${modeMapString}`;
 
           await appRepoSdk.createCommentOnPr(
             lastRequestPrNumber || clientRequest.prNumber,
