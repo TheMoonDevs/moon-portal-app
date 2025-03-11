@@ -27,7 +27,7 @@ import { AIChat } from '@/components/App/Global/AiChatBot';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  manifest: '/manifest.json',
+  //manifest: '/manifest.json',
   title: 'The Moon Devs',
   description:
     'A community of developers and designers building the future of the web',

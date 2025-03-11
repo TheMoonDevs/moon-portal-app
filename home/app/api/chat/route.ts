@@ -1,21 +1,47 @@
 import { streamText } from 'ai';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { prisma } from '@/prisma/prisma';
 
 export const runtime = 'edge';
 
 const google = createGoogleGenerativeAI({
   apiKey: process.env.GEMINI_API_KEY!,
 });
+
+const TOTAL_TOKEN_LIMIT = 1000;
+
 export async function POST(req: Request) {
-  const { messages } = await req.json();
+  const request = await req.json();
+  // const prevConfigData = await prisma.configData.findFirst({
+  //   where: { configId: `chatbot-${request.id}` },
+  // });
+
+  //console.log(request);
+
+  // if ((prevConfigData?.configData as any).tokenUsage > TOTAL_TOKEN_LIMIT) {
+  //   return new Response(
+  //     JSON.stringify({
+  //       error: 'Token limit exceeded',
+  //       action: 'book_call',
+  //       totalTokens: (prevConfigData?.configData as any).tokenUsage,
+  //     }),
+  //     {
+  //       status: 400,
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //     },
+  //   );
+  // }
 
   const result = streamText({
     model: google('gemini-2.0-flash-exp'),
-    system: `You're a tech advisor for our platform. Analyze the user's project idea and recommend:
+    system: `You're a tech advisor for our platform. first chat & get users requirements in 2-3 questions, 
+    at the end, analyze the user's project idea and recommend:
   
-    1. Recommended Tech Stack - Choose technologies based on scalability, security, and speed.
-    2. Team Recommendations - Suggest key developer roles and required skills.
-    3. Best MVP Plan or Unit-Based Hiring - Select the most suitable option with a clear explanation.
+    1. Tech Stack - Choose technologies based on scalability, security, and speed.
+    2. Best Plan - Select the most suitable MVP/Unit-Based option with a clear explanation.
+    3. Team - Suggest key developer roles and required skills that our platform offers included in the plan.
   
     Available MVP Plans:
     - Simpleton MVP ($3,999, 3-4 weeks): Fixed-price package with a simple end-to-end solution (design, build, deploy), up to 2x complexity, and 2 free consults with fractional CTOs. Includes weekly syncs, progress tracking, and long-term bug-fix support.
@@ -33,7 +59,24 @@ export async function POST(req: Request) {
     If unsure, users can book a free consultation.
   
     Keep responses concise (under 200 tokens) and provide a directly actionable recommendation.`,
-    messages,
+    messages: request.messages,
+    maxTokens: 125,
+    onStepFinish: async (step) => {
+      console.log('Step finished:', step);
+      // const updatedUsage = {
+      //   tokenUsage:
+      //     ((prevConfigData?.configData as any)?.tokenUsage ?? 0) +
+      //     step.usage.totalTokens,
+      // };
+      // prisma.configData.upsert({
+      //   where: { configId: `chatbot-${request.id}` },
+      //   update: { configData: updatedUsage },
+      //   create: { configId: 'chatbot-step', configData: updatedUsage },
+      // });
+    },
+    onError: (error) => {
+      console.error('An error occurred:', error);
+    },
   });
 
   return result.toDataStreamResponse();
