@@ -30,6 +30,16 @@ model User {
   workData  Json?
 }
 
+
+model ConfigData {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  configId   String   @unique
+  configType String   @default("")
+  configApp  String?  @default("home")
+  configData Json?
+  timestamp  DateTime @updatedAt
+}
+
 model Candidate {
   id                     String  @id @default(auto()) @map("_id") @db.ObjectId
   name                   String

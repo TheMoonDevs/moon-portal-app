@@ -14,7 +14,7 @@ export const COMPLEXITY_DATA = [
         icon: '/images/complexity/producthunt.png',
         title: 'Product Hunt',
         description:
-          'At a 1x complexity factor, All ProductHunt capabilities are traditional web app features. Most of its complexity is in complex search, leaderboard sorting & email notifications to users.',
+          `ProductHunt is a 1x complexity factor, as all it's capabilities are traditional web app features. Most of its complexity is in complex search, leaderboard sorting & email notifications to users.`,
       },
       {
         icon: '/images/complexity/complexity.png',
@@ -192,9 +192,9 @@ const ComplexityFunnel = () => {
               className={cn(
                 'absolute left-[5%] top-1/2 -translate-y-1/2 transform text-xs font-bold text-neutral-400 transition-all duration-300 ease-in-out group-hover:text-lg group-hover:text-[#6100FF] group-hover:md:text-xl lg:text-2xl group-hover:lg:text-5xl',
                 complexityIndex !== 0 &&
-                  '-left-[5%] group-hover:-left-[8%] group-hover:top-1/2',
+                '-left-[5%] group-hover:-left-[8%] group-hover:top-1/2',
                 complexityIndex === COMPLEXITY_DATA.length - 1 &&
-                  'top-6 group-hover:-left-[20%] group-hover:top-1/2 lg:top-24',
+                'top-6 group-hover:-left-[20%] group-hover:top-1/2 lg:top-24',
               )}
             >
               {item.id}
