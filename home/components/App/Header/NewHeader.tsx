@@ -90,7 +90,7 @@ const NewHeader = () => {
                   <NavigationMenuItem className="">
                     <NavigationMenuTrigger className="bg-black hover:!bg-[#414a4c] hover:text-white">
                       <div className="text-sm">Resources</div>
-                      <NavigationMenuContent className="m-0 w-full border-none p-0">
+                      <NavigationMenuContent className=" w-full border-none p-0">
                         <ResourcesContent />
                       </NavigationMenuContent>
                     </NavigationMenuTrigger>
@@ -98,7 +98,7 @@ const NewHeader = () => {
                   <NavigationMenuItem>
                     <NavigationMenuTrigger className="bg-black hover:!bg-[#414a4c] hover:text-white">
                       <div className="text-sm">Products</div>
-                      <NavigationMenuContent className="m-0 w-full border-none p-0">
+                      <NavigationMenuContent className=" w-full border-none p-0">
                         <ProductsContent />
                       </NavigationMenuContent>
                     </NavigationMenuTrigger>

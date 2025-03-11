@@ -23,7 +23,7 @@ const NavigationMenu = React.forwardRef<
     <>
       {/* Backdrop */}
       {isOpen && !isLaptopOrLess && (
-        <div className="fixed inset-0 bottom-0 top-0 -z-20 h-screen bg-black bg-opacity-50 transition-opacity duration-300" />
+        <div className="fixed inset-0 bottom-0 top-0 -z-20 h-screen bg-black bg-opacity-50 transition-opacity duration-500" />
       )}
 
       <NavigationMenuPrimitive.Root
@@ -102,10 +102,10 @@ const NavigationMenuViewport = React.forwardRef<
   React.ElementRef<typeof NavigationMenuPrimitive.Viewport>,
   React.ComponentPropsWithoutRef<typeof NavigationMenuPrimitive.Viewport>
 >(({ className, ...props }, ref) => (
-  <div className={cn('absolute left-0 top-full flex justify-center')}>
+  <div className={cn('absolute left-0 top-full flex justify-center pt-1')}>
     <NavigationMenuPrimitive.Viewport
       className={cn(
-        'origin-top-center relative mt-3 h-fit w-full overflow-hidden rounded-md bg-popover text-popover-foreground shadow data-[state=closed]:animate-fade-out data-[state=open]:animate-fade-in data-[state=closed]:fade-out data-[state=open]:fade-in md:w-[var(--radix-navigation-menu-viewport-width)]',
+        'origin-top-center relative mt-0 h-fit w-full overflow-hidden rounded-md bg-popover text-popover-foreground shadow data-[state=closed]:animate-fade-out data-[state=open]:animate-fade-in data-[state=closed]:fade-out data-[state=open]:fade-in md:w-[var(--radix-navigation-menu-viewport-width)]',
         className,
       )}
       ref={ref}
