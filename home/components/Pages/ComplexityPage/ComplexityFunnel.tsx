@@ -13,38 +13,22 @@ export const COMPLEXITY_DATA = [
       {
         icon: '/images/complexity/producthunt.png',
         title: 'Product Hunt',
-        description:
-          `ProductHunt is a 1x complexity factor, as all it's capabilities are traditional web app features. Most of its complexity is in complex search, leaderboard sorting & email notifications to users.`,
+        description: 'ProductHunt is a 1x complexity factor, as all its capabilities are traditional web app features. Most of its complexity is in search functionality, leaderboard sorting & email notifications to users.',
       },
       {
-        icon: '/images/complexity/complexity.png',
-        title: '2x Complexity Scale',
-        description:
-          'lorem ipsum dolor sit amet consectetur  adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
+        icon: '/images/complexity/tinder.png',
+        title: 'Tinder',
+        description: 'Building a dating app MVP is surprisingly straightforward. The core swipe mechanics, basic matching algorithms, and messaging functionality use well-established patterns that can be implemented with modern frameworks in weeks, not months.',
       },
       {
-        icon: '/images/complexity/complexity.png',
-        title: 'End-to-End solution',
-        description:
-          'lorem ipsum dolor sit amet consectetur  adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
+        icon: '/images/complexity/reddit.png',
+        title: 'Reddit',
+        description: 'Social platforms like Reddit have become significantly easier to build with AI-powered development tools. Core features like content feeds, voting systems, and basic comment threads are standard implementations that follow established patterns.',
       },
       {
-        icon: '/images/complexity/complexity.png',
-        title: '2x Complexity Scale',
-        description:
-          'lorem ipsum dolor sit amet consectetur  adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
-      },
-      {
-        icon: '/images/complexity/complexity.png',
-        title: 'End-to-End solution',
-        description:
-          'lorem ipsum dolor sit amet consectetur  adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
-      },
-      {
-        icon: '/images/complexity/complexity.png',
-        title: '2x Complexity Scale',
-        description:
-          'lorem ipsum dolor sit amet consectetur  adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
+        icon: '/images/complexity/groupon.png',
+        title: 'Groupon',
+        description: 'A deals platform MVP focuses on limited but essential features: merchant listings, payment processing, and email distribution. The streamlined version can be built rapidly while maintaining scalability for future feature expansion.',
       },
     ],
   },
@@ -52,28 +36,24 @@ export const COMPLEXITY_DATA = [
     id: '2x',
     tags: [
       {
-        icon: '/images/complexity/complexity.png',
-        title: 'End-to-End solution',
-        description:
-          'lorem ipsum dolor sit amet consectetur  adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
+        icon: '/images/complexity/airbnb.png',
+        title: 'Airbnb',
+        description: 'An MVP version of a booking platform focuses on core listing, search, and payment functionality. Our expertise in booking systems means we can set up your platform with the right architecture for future scale without overbuilding initially.',
       },
       {
-        icon: '/images/complexity/complexity.png',
-        title: '2x Complexity Scale',
-        description:
-          'lorem ipsum dolor sit amet consectetur  adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
+        icon: '/images/complexity/opensea.svg',
+        title: 'OpenSea',
+        description: 'An NFT marketplace MVP requires blockchain integration, wallet connections, and transaction handling, but remains achievable with our Web3 expertise. The initial version can support basic minting and trading while setting the foundation for expanded features.',
       },
       {
-        icon: '/images/complexity/complexity.png',
-        title: 'Turnaround in 3-4 weeks',
-        description:
-          'lorem ipsum dolor sit amet consectetur  adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
+        icon: '/images/complexity/zoom.png',
+        title: 'Zoom',
+        description: 'With WebRTC technology now mature, building a video conferencing MVP has become significantly more accessible. The core real-time communication features can be implemented quickly, while still allowing for future enhancements like breakout rooms or recording.',
       },
       {
-        icon: '/images/complexity/complexity.png',
-        title: 'Upto 10x Complexity Scale',
-        description:
-          'lorem ipsum dolor sit amet consectetur  adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
+        icon: '/images/complexity/notion.png',
+        title: 'Notion',
+        description: 'While Notion appears simple, it combines document editing, project management, and team collaboration. The 2x complexity comes from building flexible content blocks and sharing permissions that maintain performance as user content grows.',
       },
     ],
   },
@@ -81,28 +61,24 @@ export const COMPLEXITY_DATA = [
     id: '3x',
     tags: [
       {
-        icon: '/images/complexity/complexity.png',
-        title: 'End-to-End solution',
-        description:
-          'lorem ipsum dolor sit amet consectetur  adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
+        icon: '/images/complexity/udemy.png',
+        title: 'Udemy',
+        description: 'An e-learning platform requires video content delivery, course management, progress tracking, and payment processing. The 3x complexity stems from building systems that handle different content types while maintaining a seamless user experience.',
       },
       {
-        icon: '/images/complexity/complexity.png',
-        title: '2x Complexity Scale',
-        description:
-          'lorem ipsum dolor sit amet consectetur  adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
+        icon: '/images/complexity/netflix.png',
+        title: 'Netflix',
+        description: 'Building an MVP version of a streaming platform is achievable at 3x complexity. The fundamental content delivery, user accounts, and recommendation engine can be implemented efficiently, with architecture that supports future scaling and content expansion.',
       },
       {
-        icon: '/images/complexity/complexity.png',
-        title: 'Turnaround in 3-4 weeks',
-        description:
-          'lorem ipsum dolor sit amet consectetur  adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
+        icon: '/images/complexity/dappradar.png',
+        title: 'DappRadar',
+        description: 'DappRadar complexity comes from integrating multiple blockchain networks, real-time data analytics, and market tracking. The platform requires sophisticated indexing systems and API integrations across various decentralized protocols.',
       },
       {
-        icon: '/images/complexity/complexity.png',
-        title: 'Upto 10x Complexity Scale',
-        description:
-          'lorem ipsum dolor sit amet consectetur  adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
+        icon: '/images/complexity/slack.webp',
+        title: 'Slack',
+        description: 'The complexity in messaging platforms like Slack lies in real-time sync across devices, message threading, and integrations. We can build a solid foundation with the right architecture to handle millions of messages while remaining responsive.',
       },
     ],
   },
@@ -110,57 +86,48 @@ export const COMPLEXITY_DATA = [
     id: '4x',
     tags: [
       {
-        icon: '/images/complexity/complexity.png',
-        title: 'End-to-End solution',
-        description:
-          'lorem ipsum dolor sit amet consectetur  adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
+        icon: '/images/complexity/youtube.png',
+        title: 'YouTube',
+        description: 'YouTubes complexity exceeds Netflix with its combination of content delivery, live streaming, creator tools, and community features. The platform requires sophisticated video processing pipelines and recommendation systems that operate at massive scale.',
       },
       {
-        icon: '/images/complexity/complexity.png',
-        title: '2x Complexity Scale',
-        description:
-          'lorem ipsum dolor sit amet consectetur  adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
+        icon: '/images/complexity/uniswap.png',
+        title: 'Uniswap',
+        description: 'Uniswaps complexity stems from its automated market maker algorithms, liquidity pools, and cross-chain interactions. Building a decentralized exchange requires deep blockchain expertise and rigorous security practices to safeguard user funds.',
       },
       {
-        icon: '/images/complexity/complexity.png',
-        title: 'Turnaround in 3-4 weeks',
-        description:
-          'lorem ipsum dolor sit amet consectetur  adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
+        icon: '/images/complexity/stripe.png',
+        title: 'Stripe',
+        description: 'Payment platforms like Stripe require extensive financial integrations, fraud detection systems, and compliance with various regulatory frameworks. The complexity lies in building secure systems that handle financial transactions with near-perfect reliability.',
       },
       {
-        icon: '/images/complexity/complexity.png',
-        title: 'Upto 10x Complexity Scale',
-        description:
-          'lorem ipsum dolor sit amet consectetur  adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
+        icon: '/images/complexity/gpay.png',
+        title: 'GPay',
+        description: 'Digital wallets like GPay combine secure payment processing with NFC technology for contactless transactions. The 4x complexity comes from implementing bank integrations, security protocols, and seamless device communication across platforms.',
       },
     ],
-  },
-  {
+  },{
     id: '5x+',
     tags: [
       {
-        icon: '/images/complexity/complexity.png',
-        title: 'End-to-End solution',
-        description:
-          'lorem ipsum dolor sit amet consectetur  adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
+        icon: '/images/complexity/perplexity.png',
+        title: 'Perplexity (AI)',
+        description: 'AI platforms like Perplexity require sophisticated natural language processing, real-time data retrieval, and knowledge graph integration. The 5x complexity stems from building systems that continuously learn while providing accurate, contextual responses.',
       },
       {
-        icon: '/images/complexity/complexity.png',
-        title: '2x Complexity Scale',
-        description:
-          'lorem ipsum dolor sit amet consectetur  adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
+        icon: '/images/complexity/figma.png',
+        title: 'Figma (6x)',
+        description: 'Design platforms like Figma reach 6x complexity due to their real-time collaboration features, vector rendering engines, and plugin ecosystems. Building high-performance creative tools demands specialized expertise in graphics processing and data synchronization.',
       },
       {
-        icon: '/images/complexity/complexity.png',
-        title: 'Turnaround in 3-4 weeks',
-        description:
-          'lorem ipsum dolor sit amet consectetur  adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
+        icon: '/images/complexity/chainlink.png',
+        title: 'Chainlink (8x)',
+        description: 'Chainlink represents 8x complexity as its not just a product but a critical Web3 infrastructure with decentralized oracles, verifiable random functions, and proof-of-reserve systems. These frameworks require mathematical precision and bulletproof security.',
       },
       {
-        icon: '/images/complexity/complexity.png',
-        title: 'Upto 10x Complexity Scale',
-        description:
-          'lorem ipsum dolor sit amet consectetur  adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
+        icon: '/images/complexity/duckduck.png',
+        title: 'DuckDuckGo (10x)',
+        description: 'Google products represent the pinnacle of complexity at 10x. Services like Google Maps combine satellite imagery, real-time traffic data, and route optimization at global scale. These systems require massive infrastructure and specialized engineering teams to develop and maintain.',
       },
     ],
   },
