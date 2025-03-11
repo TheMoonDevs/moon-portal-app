@@ -32,17 +32,17 @@ const Header: React.FC = () => {
             </div>
             <div className='flex items-center gap-4 text-2xl'>
                 <div className='flex items-center gap-4 text-xl'>
-                    <Link
+                    {/* <Link
                         href={APP_ROUTES.customBots + "/idea"}
                         className='text-sm cursor-pointer font-medium text-gray-500 hover:text-black flex items-center gap-1'>
                         <span className='material-symbols-outlined inherit'>lightbulb</span>
-                        The Idea</Link>
+                        The Idea</Link> */}
                     <Link href={APP_ROUTES.customBots + "/whitepaper"} className='text-sm cursor-pointer font-medium text-gray-500 hover:text-black flex items-center gap-1'>
                         <span className='material-symbols-outlined inherit'>task</span>
                         Whitepaper</Link>
-                    <button className='text-sm cursor-pointer font-medium text-gray-500 hover:text-black flex items-center gap-1'>
+                    {/* <button className='text-sm cursor-pointer font-medium text-gray-500 hover:text-black flex items-center gap-1'>
                         <span className='material-symbols-outlined inherit'>update</span>
-                        Updates</button>
+                        Updates</button> */}
                 </div>
                 <span className='material-symbols-outlined inherit'>settings</span>
                 <span className='material-symbols-outlined inherit'>notifications</span>
