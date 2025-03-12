@@ -95,14 +95,14 @@ const NewHeader = () => {
                       </NavigationMenuContent>
                     </NavigationMenuTrigger>
                   </NavigationMenuItem>
-                  <NavigationMenuItem>
+                  {/* <NavigationMenuItem>
                     <NavigationMenuTrigger className="bg-black hover:!bg-[#414a4c] hover:text-white">
                       <div className="text-sm">Products</div>
                       <NavigationMenuContent className=" w-full border-none p-0">
                         <ProductsContent />
                       </NavigationMenuContent>
                     </NavigationMenuTrigger>
-                  </NavigationMenuItem>
+                  </NavigationMenuItem> */}
                 </>
               )}
             </NavigationMenuList>
@@ -160,7 +160,7 @@ const NewHeader = () => {
             <>
               <div className="flex items-center">
                 <MenuItem label="Pricing" to="/pricing" />
-                <MenuItem label="Roast" to="/roast" />
+                <MenuItem label="Why us" to="/why-choose-us" />
                 <Link
                   href={'https://portal.themoondevs.com'}
                   className="cursor-pointer rounded-md border-2 border-transparent px-2 py-2 text-sm font-semibold transition-colors duration-300 ease-in-out hover:bg-[#414a4c] max-lg:hidden"
@@ -218,7 +218,7 @@ const HamBurger = ({
                   <ResourcesContent orientation="mobile" className="bg-white" />
                 </AccordionContent>
               </AccordionItem>
-              <AccordionItem value="products" className="w-full border-none">
+              {/* <AccordionItem value="products" className="w-full border-none">
                 <AccordionTrigger
                   className="text-left text-2xl font-bold"
                   arrowStyle="text-white h-6 w-6"
@@ -231,7 +231,7 @@ const HamBurger = ({
                     orientation="mobile"
                   />
                 </AccordionContent>
-              </AccordionItem>
+              </AccordionItem> */}
 
               <div className="mt-8">
                 <Link

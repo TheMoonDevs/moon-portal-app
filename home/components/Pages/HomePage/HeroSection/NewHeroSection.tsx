@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import React from 'react';
 
-const words = ['Scale', 'Think', 'Build'];
+const words = ['Kickstart with an MVP', 'work with edge-tech devs', 'scale-up your start-up'];
 const mrsSheppard = Mrs_Sheppards({ weight: '400', subsets: ['latin'] });
 const NewHeroSection = () => {
   return (
@@ -12,10 +12,10 @@ const NewHeroSection = () => {
       {/* Hero text */}
       <div className="relative z-10 flex h-[100vh] flex-col items-center justify-center gap-8 text-center">
         <h1 className="text-5xl font-extrabold text-white max-sm:px-10 xl:text-6xl">
-          <FlipWords words={words} /> your vision
+          <FlipWords words={words} />
         </h1>
 
-        <p className="w-1/2 text-2xl font-bold text-white max-sm:w-full max-sm:px-8 xl:text-2xl">
+        <p className="w-1/2 text-3xl font-bold text-white max-sm:w-full max-sm:px-8 xl:text-2xl">
           We're a dev house, building <i>difficult-to-execute</i>, edge-tech
           projects for innovators across the globe.
         </p>

@@ -69,7 +69,7 @@ const ArticleCard = ({
                 theme === 'dark' ? 'after:bg-white' : 'after:bg-black',
               )}
             >
-              <span className="block">Read →</span>
+              <span className="block">{article.cta} →</span>
             </p>
           </div>
         </div>
@@ -78,7 +78,7 @@ const ArticleCard = ({
   }
 
   return (
-    <Link href={article.link} className="flex flex-col justify-between gap-2">
+    <div className="flex flex-col justify-between gap-2">
       <div className="h-full w-full">
         {article.image_url ? (
           <Image
@@ -112,11 +112,13 @@ const ArticleCard = ({
               'url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiI+PHBhdGggZmlsbD0idHJhbnNwYXJlbnQiIGQ9Ik0wIDBoMTJ2MTJIMHoiLz48Y2lyY2xlIGN4PSI2IiBjeT0iNiIgcj0iMS41IiBmaWxsPSJ3aGl0ZSIvPjwvc3ZnPg==)',
           }}
         ></div>
-        <div
+        <Link
+          href={article.link}
           className={cn(
             'flex justify-between',
             theme === 'dark' ? 'text-white' : 'text-black',
           )}
+          target='_blank'
         >
           <p className="line-clamp-2 w-2/3 text-neutral-400">
             {article.description}
@@ -127,11 +129,11 @@ const ArticleCard = ({
               theme === 'dark' ? 'after:bg-white' : 'after:bg-black',
             )}
           >
-            <span className="block">Read →</span>
+            <span className="block">{article.cta ?? "Read"} →</span>
           </p>
-        </div>
+        </Link>
       </div>
-    </Link>
+    </div>
   );
 };
 
