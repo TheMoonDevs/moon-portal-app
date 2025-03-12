@@ -237,10 +237,10 @@ export class GithubSdk {
   // Pull Request Events
   // -------------------------
 
-  public async getPrEvents(prNumber: number) {
+  public async getPrEvents(prNumber: number, per_page: number = 30, page: number = 1) {
     // Fetch events that include merged/closed events with timestamps
     let events: any = await this.githubApiRequest(
-      `/repos/${this.owner}/${this.repo}/issues/${prNumber}/events`,
+      `/repos/${this.owner}/${this.repo}/issues/${prNumber}/events?per_page=${per_page}&page=${page}`,
     );
 
     events = events.filter((event: any) =>
@@ -249,7 +249,7 @@ export class GithubSdk {
 
     // Fetch timeline events (which include other activity)
     let timeline: any = await this.githubApiRequest(
-      `/repos/${this.owner}/${this.repo}/issues/${prNumber}/timeline`,
+      `/repos/${this.owner}/${this.repo}/issues/${prNumber}/timeline?per_page=${per_page}&page=${page}`,
     );
 
     timeline = timeline.map((event: any) => {

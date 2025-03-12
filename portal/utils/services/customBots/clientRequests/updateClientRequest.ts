@@ -95,7 +95,8 @@ export const updateClientRequest = async (
       token: process.env.TMD_GITHUB_TOKEN!,
     });
 
-    let events: any = await github.getPrEvents(prNumber);
+    let events: any = await github.getPrEvents(prNumber, 100);
+    const initTime = new Date();
     // console.log(events);
     let newEvents = lastUpdatedAt
       ? events.filter(
@@ -127,7 +128,7 @@ export const updateClientRequest = async (
       return (
         index ===
         self.findIndex((t: any) => {
-          return t.id === event.id;
+          return t.node_id === event.node_id;
         })
       );
     });
@@ -164,7 +165,7 @@ export const updateClientRequest = async (
       const newStatus = determinePrStatus(events);
       const updatedClientRequest = await prisma.clientRequest.update({
         where: { id: clientRequest.id },
-        data: { lastUpdatedAt: new Date(), requestStatus: newStatus },
+        data: { lastUpdatedAt: initTime, requestStatus: newStatus },
         include: { requestMessages: true },
       });
       return updatedClientRequest;
