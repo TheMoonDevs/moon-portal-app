@@ -26,6 +26,7 @@ export enum APP_ROUTES {
   invoices = '/invoices',
   devProfile = '/dev-profile',
   settings = '/settings',
+  customBots = '/custom-bots',
 }
 
 export enum QUICKLINK_ROUTES {

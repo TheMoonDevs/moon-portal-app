@@ -3,10 +3,11 @@
 import { APP_ROUTES, AppRoutesHelper } from '@/utils/constants/appInfo';
 import { useUser } from '@/utils/hooks/useUser';
 import { useAppSelector } from '@/utils/redux/store';
+import { el } from 'date-fns/locale';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-export const usePageAccess = () => {};
+export const usePageAccess = () => { };
 export const PageAccess = ({
   isAuthRequired,
   isAdminRequired,
@@ -87,7 +88,9 @@ export const PageAccess = ({
     );
   }
 
-  return (
-    <div className={`${bottomBarShown ? 'md:pl-24' : ''}`}>{children}</div>
-  );
+  if (bottomBarShown)
+    return (
+      <div className={`${bottomBarShown ? 'md:pl-24' : ''}`}>{children}</div>
+    );
+  else return <>{children}</>;
 };

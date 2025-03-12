@@ -1,14 +1,24 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/prisma/prisma';
+import { s3FileUploadSdk } from '@/utils/services/s3FileUploadSdk';
 import { GithubSdk } from '@/utils/services/githubSdk';
 import { TEMPLATE_REPO_OWNER } from '@/utils/constants/customBots';
 import { updateClientRequest } from '@/utils/services/customBots/clientRequests/updateClientRequest';
 import { REQUESTSTATUS, UPDATEFROM, UPDATETYPE } from '@prisma/client';
+import { SlackBotSdk, SlackChannels } from '@/utils/services/slackBotSdk';
 
-export async function POST(req: Request) {
+const slackBotSdk = new SlackBotSdk();
+
+export async function POST(req: NextRequest) {
   try {
-    const { originClientRequestId, clientId, message } = await req.json();
-    const initTime = new Date();
+    const formData = await req.formData();
+    const originClientRequestId = formData
+      .get('originClientRequestId')
+      ?.toString();
+    const clientId = formData.get('clientId')?.toString();
+    const message = formData.get('message')?.toString();
+    // Files are sent under key "file" (can be multiple)
+    const files = formData.getAll('file') as unknown as File[];
 
     if (!originClientRequestId || !clientId || !message) {
       return NextResponse.json(
@@ -16,6 +26,7 @@ export async function POST(req: Request) {
         { status: 400 },
       );
     }
+    const initTime = new Date();
 
     const clientRequest = await prisma.clientRequest.findUnique({
       where: { id: originClientRequestId },
@@ -39,7 +50,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const repoName = clientRequest?.prUrl?.split('/')[4] as string;
+    const repoName = clientRequest?.prUrl?.split('/')[4];
 
     if (!repoName) {
       console.error('No repo name found in PR URL');
@@ -49,46 +60,101 @@ export async function POST(req: Request) {
       );
     }
 
-    // 🔹 GitHub SDK Instance
+    // Process file uploads via S3 if files are provided.
+    let mediaPayload: {
+      mediaName: string;
+      mediaType: string;
+      mediaFormat: string;
+      mediaUrl: string;
+    }[] = [];
+
+    if (files && files.length > 0) {
+      const folderName =
+        formData.get('folderName')?.toString() || 'customBots/clientMessages';
+      const filePromises = files.map(async (file) => {
+        const uniqueName = `${Date.now()}-${file.name}`;
+        const newFile = new File([file], uniqueName, { type: file.type });
+        const s3Response = await s3FileUploadSdk.uploadFile({
+          file: newFile,
+          userId: clientId,
+          folder: folderName,
+        });
+        if (!s3Response || s3Response.$metadata.httpStatusCode !== 200) {
+          throw new Error('Failed to upload file');
+        }
+        const fileUrl = s3FileUploadSdk.getPublicFileUrl({
+          userId: clientId,
+          file: newFile,
+          folder: folderName,
+        });
+        return {
+          mediaName: file.name,
+          mediaType: file.type,
+          mediaFormat: file.name.split('.').pop() || 'file',
+          mediaUrl: fileUrl,
+        };
+      });
+      mediaPayload = await Promise.all(filePromises);
+    }
+
+    // Build Markdown for GitHub preview of attached media.
+    const mediaMarkdown =
+      mediaPayload.length > 0
+        ? '\n\n**Attached Media:**\n\n' +
+          mediaPayload
+            .map((m) =>
+              m.mediaType.startsWith('image')
+                ? `![${m.mediaName}](${m.mediaUrl})`
+                : `[${m.mediaName}](${m.mediaUrl})`,
+            )
+            .join('\n')
+        : '';
+
     const appRepoSdk = new GithubSdk({
       owner: TEMPLATE_REPO_OWNER,
       repo: repoName,
-      token: TMD_GITHUB_TOKEN as string,
+      token: TMD_GITHUB_TOKEN,
     });
 
-    if (
-      clientRequest.requestStatus === REQUESTSTATUS.CLOSED ||
-      clientRequest.requestStatus === REQUESTSTATUS.COMPLETED
-    ) {
-      const newBranch = `reopen-${clientRequest?.requestUpdates?.length + 1}-${clientRequest?.prBranch}`;
-      const requestUpdates = clientRequest?.requestUpdates;
+    const requestUpdates = clientRequest.requestUpdates;
 
-      // find request update with largest prNumber
-      const lastRequestPrNumber =
-        requestUpdates.length > 0
-          ? requestUpdates?.reduce((acc, curr) => {
-              return acc?.prNumber > curr?.prNumber ? acc : curr;
-            })?.prNumber
-          : null;
+    // Find the update with the largest prNumber.
+    const lastRequestPrNumber =
+      requestUpdates.length > 0
+        ? requestUpdates.reduce((acc, curr) =>
+            acc.prNumber > curr.prNumber ? acc : curr,
+          ).prNumber
+        : null;
+
+    // If the request has been completed (pr merged), perform reopening logic.
+    if (clientRequest.requestStatus === REQUESTSTATUS.COMPLETED) {
+      const newBranch = `reopen-${clientRequest.requestUpdates.length + 1}-${clientRequest.prBranch}`;
 
       await appRepoSdk.createBranch({
         branchName: newBranch,
         baseBranch: clientRequest.prTargetBranch,
       });
 
+      const prBody = `Reopen PR for Client Request #${
+        lastRequestPrNumber || clientRequest.prNumber
+      }: ${message}${mediaMarkdown}`;
+
       // 2️⃣ Add a README file in the new branch
       await appRepoSdk.updateFile({
-        path: `${clientRequest.requestDir}/reopen-${clientRequest?.requestUpdates?.length + 1}.md`,
-        content: `Reopen PR for Client Request #${lastRequestPrNumber || clientRequest?.prNumber}: ${message}`,
+        path: `${clientRequest.requestDir}/reopen-${clientRequest.requestUpdates.length + 1}.md`,
+        content: prBody,
         commitMessage: `Add README for ${newBranch}`,
         branch: newBranch,
       });
 
+      // Create a new pull request.
       const prResult: any = await appRepoSdk.createPullRequest({
-        title: `Reopen PR for Client Request #${lastRequestPrNumber || clientRequest.prNumber}: ${clientRequest?.title}`,
+        title: `Reopen PR for Client Request #${
+          lastRequestPrNumber || clientRequest.prNumber
+        }: ${clientRequest.title}`,
         head: newBranch,
         base: clientRequest.prTargetBranch,
-        body: `Reopen PR for Client Request #${lastRequestPrNumber || clientRequest.prNumber}: ${message}`,
+        body: prBody,
       });
 
       if (!prResult) {
@@ -98,6 +164,7 @@ export async function POST(req: Request) {
         );
       }
 
+      // Save the PR update.
       await prisma.requestUpdate.create({
         data: {
           originClientRequestId,
@@ -115,14 +182,11 @@ export async function POST(req: Request) {
 
       const updatedClientRequest = await prisma.clientRequest.update({
         where: { id: originClientRequestId },
-        data: {
-          requestStatus: REQUESTSTATUS.UN_ASSIGNED,
-        },
+        data: { requestStatus: REQUESTSTATUS.UN_ASSIGNED },
         include: { requestUpdates: true },
       });
 
-      const clientRequestFilePath = `${updatedClientRequest?.requestDir}/clientRequest.json`;
-      // 5️⃣ Create the clientRequest.json file on the new branch with the updated ID.
+      const clientRequestFilePath = `${updatedClientRequest.requestDir}/clientRequest.json`;
       const updatedClientRequestData = {
         id: updatedClientRequest.id,
         botProjectId: updatedClientRequest.botProjectId,
@@ -146,7 +210,7 @@ export async function POST(req: Request) {
         branch: newBranch,
       });
 
-      // Fetch latest PR updates before saving message
+      // Refresh client request updates.
       await updateClientRequest(clientRequest);
 
       await prisma.requestMessage.create({
@@ -154,13 +218,13 @@ export async function POST(req: Request) {
           originClientRequestId,
           clientId,
           message,
+          media: mediaPayload,
           updateType: UPDATETYPE.MESSAGE,
           updateFrom: UPDATEFROM.CLIENT,
           createdAt: initTime,
           updatedAt: initTime,
         },
       });
-
       await prisma.requestMessage.create({
         data: {
           originClientRequestId,
@@ -170,13 +234,23 @@ export async function POST(req: Request) {
           updateFrom: UPDATEFROM.BOT,
         },
       });
-    } else {
-      await appRepoSdk.createCommentOnPr(
-        clientRequest?.prNumber as number,
-        `<Not for Client> Msg from Client: ${message}`,
-      );
 
-      // Fetch latest PR updates before saving message
+      const slackMsg = `A request with title: *${clientRequest.title}* has been reopened with message: ${message}. [View PR](${prResult.html_url})`;
+
+      await slackBotSdk.sendSlackMessageviaAPI({
+        text: slackMsg,
+        channel:
+          process.env.NODE_ENV === 'production'
+            ? SlackChannels.p_3_custombots
+            : SlackChannels.test_slackbot,
+      });
+    } else {
+      // Normal case: add a comment to the PR with media preview.
+      const commentBody = `<Not for Client> Msg from Client: ${message}${mediaMarkdown}`;
+      await appRepoSdk.createCommentOnPr(
+        lastRequestPrNumber || clientRequest.prNumber,
+        commentBody,
+      );
       await updateClientRequest(clientRequest);
 
       await prisma.requestMessage.create({
@@ -184,6 +258,7 @@ export async function POST(req: Request) {
           originClientRequestId,
           clientId,
           message,
+          media: mediaPayload,
           updateType: UPDATETYPE.MESSAGE,
           updateFrom: UPDATEFROM.CLIENT,
           createdAt: initTime,

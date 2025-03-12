@@ -7,6 +7,7 @@ import { setGoogleVerificationEmail } from "../../../utils/redux/auth/auth.slice
 import { useAppDispatch } from "../../../utils/redux/store";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
 import { useState } from "react";
+import { PortalSdk } from "@/utils/services/PortalSdk";
 
 const GoogleVerifyPage = ({ signOutUser, setError, passcode }: any) => {
   const { user } = useUser();
@@ -56,6 +57,11 @@ const GoogleVerifyPage = ({ signOutUser, setError, passcode }: any) => {
 
   const handleSuccessfulVerification = (verifiedEmail: string) => {
     dispatch(setGoogleVerificationEmail(verifiedEmail));
+
+    // TODO: Update the googleData in the backend
+    // PortalSdk.putData("/api/user", {
+
+    // })
     // localStorage.setItem("isGoogleVerified", "true");
     // localStorage.setItem("passcode", passcode);
     router.push(APP_ROUTES.home);
