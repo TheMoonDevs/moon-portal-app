@@ -56,7 +56,6 @@ let ProfileData: IProfileData[] = [
         title: 'A Spotify like Podcast Studio & Player',
         description:
           'The audio stream from the podcast is captured in a blob format and analysed using AudioAnalyzer and the waveform is drawn...',
-        cta: 'Read Full Case-study',
         link: 'https://karcreativeworks.com/jingle-fm-webapp',
       },
     ],
@@ -104,7 +103,6 @@ let ProfileData: IProfileData[] = [
       {
         image_url: '/images/profiles/sense-ai.png',
         type: 'article',
-        cta: 'View Product',
         title: 'Gen AI based duolingo app for skillups',
         description:
           'Sense Ai is a gen AI based quiz application that generates quizzes to learn based on user interest & taste profiles.',
@@ -209,7 +207,6 @@ let ProfileData: IProfileData[] = [
         description:
           'A zero-knowledge proof system that verifies identity credentials without exposing personal data, now used by three financial institutions.',
         link: '',
-        cta: 'View Implementation',
       },
       {
         image_url: '/images/assets/web3GovernanceDash.webp',
@@ -225,7 +222,6 @@ let ProfileData: IProfileData[] = [
         title: 'Neural Search for Enterprise Knowledge',
         description:
           'Implemented semantic search across previously siloed enterprise data, achieving 98% accuracy in retrieving relevant information compared to keyword search.',
-        cta: 'See Case Study',
         link: '',
       },
     ],
@@ -252,7 +248,6 @@ let ProfileData: IProfileData[] = [
         description:
           'Built a gas-efficient solution for automatic royalty payments to multiple creators with transparent revenue splitting.',
         link: '',
-        cta: 'View Demo',
       },
       {
         image_url: '/images/assets/crossChain.webp',
@@ -268,7 +263,6 @@ let ProfileData: IProfileData[] = [
         title: 'DAO Treasury Management Suite',
         description:
           'Developed tools for decentralized budget allocation with quadratic voting, now used by 6 DAOs with combined treasuries of over $40M.',
-        cta: 'Read Documentation',
         link: '',
       },
     ],
@@ -295,7 +289,6 @@ let ProfileData: IProfileData[] = [
         description:
           'Built an adaptive system for e-commerce inventory management that reduced costs by 23% while maintaining optimal stock levels.',
         link: '',
-        cta: 'View Research',
       },
       {
         image_url: '/images/assets/genAIManufacturing.png',
@@ -311,7 +304,6 @@ let ProfileData: IProfileData[] = [
         title: 'Multi-modal Sentiment Analysis',
         description:
           'Developed a system that simultaneously analyzes text, voice, and facial expressions for accurate emotion recognition in customer service applications.',
-        cta: 'Technical Deep Dive',
         link: '',
       },
     ],
@@ -338,7 +330,6 @@ let ProfileData: IProfileData[] = [
         description:
           'Created a mapping system using visual SLAM that works without GPS, achieving 98.5% accurate positioning in complex buildings.',
         link: '',
-        cta: 'See It In Action',
       },
     ],
   },
@@ -364,7 +355,6 @@ let ProfileData: IProfileData[] = [
         description:
           'Built a streaming data platform that reduced insight latency from hours to seconds for a fintech with 2M+ daily users.',
         link: '',
-        cta: 'Architecture Walkthrough',
       },
       {
         image_url: '/images/assets/edgeTech.webp',
@@ -380,7 +370,6 @@ let ProfileData: IProfileData[] = [
         title: 'Multi-region Database Synchronization',
         description:
           'Created a solution maintaining ACID compliance across global data centers with sub-100ms synchronization, powering a SaaS with users in 43 countries.',
-        cta: 'Technical Deep Dive',
         link: '',
       },
     ],
@@ -407,7 +396,6 @@ let ProfileData: IProfileData[] = [
         description:
           'Created privacy-preserving verification for sensitive transactions with proof generation optimized for mobile devices.',
         link: '',
-        cta: 'View Implementation',
       },
       {
         image_url: '',
@@ -423,7 +411,6 @@ let ProfileData: IProfileData[] = [
         title: 'Cross-Protocol Interoperability Layer',
         description:
           'Engineered a translation layer allowing 7 different blockchains to communicate securely, now processing $12M in daily cross-chain volume.',
-        cta: 'Protocol Documentation',
         link: '',
       },
     ],
@@ -450,7 +437,6 @@ let ProfileData: IProfileData[] = [
         description:
           'Created a system producing native-quality content in 14 languages, now generating 30,000+ product descriptions daily for an e-commerce platform.',
         link: '',
-        cta: 'Research Paper',
       },
       {
         image_url: '/images/profiles/document-intelligence.avif',
@@ -466,7 +452,6 @@ let ProfileData: IProfileData[] = [
         title: 'Voice Interface Design System',
         description:
           'Engineered conversational patterns that increased user retention by 42% for a health coaching app, with 78% of users preferring voice to text input.',
-        cta: 'Design Guidelines',
         link: '',
       },
     ],
@@ -493,7 +478,6 @@ let ProfileData: IProfileData[] = [
         description:
           'Built a zero-touch continuous deployment system with automatic rollbacks, enabling 200+ production deployments weekly with zero downtime.',
         link: '',
-        cta: 'Implementation Guide',
       },
       {
         image_url: '/images/profiles/immutable-infra.avif',
@@ -508,8 +492,7 @@ let ProfileData: IProfileData[] = [
         type: 'article',
         title: 'Cost Optimization Engine',
         description:
-          'Developed an AI that reduced cloud spending by 37% without performance degradation by dynamically adjusting resources based on usage patterns.',
-        cta: 'Case Study',
+          'Engineered systems automatically discovering optimal model structures, reducing compute costs by 68% while improving accuracy by 7%.',
         link: '',
       },
     ],
@@ -536,7 +519,6 @@ let ProfileData: IProfileData[] = [
         description:
           'Created fair launch systems preventing whale accumulation, resulting in a Gini coefficient of 0.37 compared to the industry average of 0.84.',
         link: '',
-        cta: 'Economic Analysis',
       },
       {
         image_url: '/images/profiles/staking-rewards.avif',
@@ -552,7 +534,6 @@ let ProfileData: IProfileData[] = [
         title: 'DAO Treasury Diversification',
         description:
           'Built algorithms for optimal portfolio management of protocol reserves, maintaining operational runway through multiple market cycles.',
-        cta: 'Implementation Guide',
         link: '',
       },
     ],
@@ -579,7 +560,6 @@ let ProfileData: IProfileData[] = [
         description:
           'Developed interfaces achieving WCAG AAA compliance without design compromises, now used by government agencies serving 30M+ citizens.',
         link: '',
-        cta: 'Framework Documentation',
       },
       {
         image_url: '/images/profiles/performance-toolkit.avif',
@@ -595,7 +575,6 @@ let ProfileData: IProfileData[] = [
         title: 'State Management Architecture',
         description:
           'Engineered a reactive system simplifying complex UI data flows, reducing lines of code by 42% while improving runtime performance.',
-        cta: 'Architecture Walkthrough',
         link: '',
       },
     ],
@@ -622,7 +601,6 @@ let ProfileData: IProfileData[] = [
         description:
           'Developed cryptographic systems resistant to quantum computing attacks, future-proofing a blockchain handling $12B in assets.',
         link: '',
-        cta: 'Research Paper',
       },
       {
         image_url: '/images/profiles/zk-authentication.avif',
@@ -638,7 +616,6 @@ let ProfileData: IProfileData[] = [
         title: 'Secure Multi-Party Computation',
         description:
           'Engineered systems processing sensitive data without revealing inputs, enabling collaborative fraud detection across competing banks.',
-        cta: 'Protocol Documentation',
         link: '',
       },
     ],
@@ -665,7 +642,6 @@ let ProfileData: IProfileData[] = [
         description:
           'Created ML models optimized for microcontrollers and IoT devices, reducing power consumption by 84% while maintaining 92% accuracy.',
         link: '',
-        cta: 'Framework Documentation',
       },
       {
         image_url: '/images/profiles/federated-learning.avif',
@@ -681,7 +657,6 @@ let ProfileData: IProfileData[] = [
         title: 'Real-time Computer Vision',
         description:
           'Engineered visual recognition achieving 30fps on low-power hardware, enabling augmented reality applications on 5-year-old smartphones.',
-        cta: 'Performance Optimization Guide',
         link: '',
       },
     ],
@@ -708,7 +683,6 @@ let ProfileData: IProfileData[] = [
         description:
           'Created persistent metadata solutions for digital collectibles, ensuring asset longevity for collections valued at over $150M.',
         link: '',
-        cta: 'Integration Guide',
       },
       {
         image_url: '/images/profiles/royalty-enforcement.avif',
@@ -724,7 +698,6 @@ let ProfileData: IProfileData[] = [
         title: 'On-Chain Generative Art Engine',
         description:
           'Built systems producing unique assets through deterministic algorithms, creating 10,000+ unique artworks for a prominent NFT collection.',
-        cta: 'Technical Overview',
         link: '',
       },
     ],
@@ -751,7 +724,6 @@ let ProfileData: IProfileData[] = [
         description:
           'Created interfaces accessing platform capabilities from shared codebase, maintaining native performance while unifying development.',
         link: '',
-        cta: 'Bridge Documentation',
       },
       {
         image_url: '/images/profiles/unified-testing.avif',
@@ -767,7 +739,6 @@ let ProfileData: IProfileData[] = [
         title: 'Design System Implementation',
         description:
           'Engineered component libraries maintaining brand consistency across devices, enabling a team of 14 developers to ship features 3x faster.',
-        cta: 'System Architecture',
         link: '',
       },
     ],
@@ -794,7 +765,6 @@ let ProfileData: IProfileData[] = [
         description:
           'Created storage structures reducing query times from minutes to milliseconds, enabling interactive analytics on 12PB of historical data.',
         link: '',
-        cta: 'Architecture Overview',
       },
       {
         image_url: '/images/profiles/etl-pipeline.avif',
@@ -810,7 +780,6 @@ let ProfileData: IProfileData[] = [
         title: 'Analytical Database Design',
         description:
           'Engineered data models enabling real-time business intelligence, reducing report generation time from hours to seconds for an e-commerce platform.',
-        cta: 'Design Patterns',
         link: '',
       },
     ],
@@ -837,7 +806,6 @@ let ProfileData: IProfileData[] = [
         description:
           'Created realistic training datasets for sensitive domains like healthcare, enabling ML development while maintaining patient privacy.',
         link: '',
-        cta: 'Research Paper',
       },
       {
         image_url: '/images/profiles/text-to-image.avif',
@@ -853,7 +821,6 @@ let ProfileData: IProfileData[] = [
         title: 'Neural Network Architecture Search',
         description:
           'Engineered systems automatically discovering optimal model structures, reducing compute costs by 68% while improving accuracy by 7%.',
-        cta: 'Algorithm Walkthrough',
         link: '',
       },
     ],
@@ -880,7 +847,6 @@ let ProfileData: IProfileData[] = [
         description:
           'Built execution environments reducing computational overhead by 67%, decreasing gas costs for complex operations by 42%.',
         link: '',
-        cta: 'Technical Deep Dive',
       },
       {
         image_url: '/images/profiles/sharding.avif',
@@ -896,7 +862,6 @@ let ProfileData: IProfileData[] = [
         title: 'Validator Economics Framework',
         description:
           'Designed incentive systems preventing centralization of network power, achieving Nakamoto Coefficient of 42 compared to industry average of 5.',
-        cta: 'Economic Analysis',
         link: '',
       },
     ],
@@ -923,7 +888,6 @@ let ProfileData: IProfileData[] = [
         description:
           'Developed systems enabling complete product usage without a mouse, implemented across a SaaS platform serving 230,000+ users.',
         link: '',
-        cta: 'Framework Documentation',
       },
       {
         image_url: '/images/profiles/cognitive-load.avif',
@@ -939,7 +903,6 @@ let ProfileData: IProfileData[] = [
         title: 'Inclusive Design System',
         description:
           'Created components exceeding accessibility requirements by default, adopted by 7 startups serving combined 3.2M users.',
-        cta: 'Design System Tour',
         link: '',
       },
     ],
@@ -966,7 +929,6 @@ let ProfileData: IProfileData[] = [
         description:
           'Built infrastructure eliminating hardcoded credentials throughout systems, now securing sensitive information for 14 financial startups.',
         link: '',
-        cta: 'Framework Documentation',
       },
       {
         image_url: '/images/profiles/pentesting-automation.avif',
@@ -982,7 +944,6 @@ let ProfileData: IProfileData[] = [
         title: 'Security Incident Response',
         description:
           'Engineered systems detecting and mitigating attacks in real-time, reducing breach impact window from hours to minutes for critical infrastructure.',
-        cta: 'Architecture Overview',
         link: '',
       },
     ],
@@ -1009,7 +970,6 @@ let ProfileData: IProfileData[] = [
         description:
           'Built interfaces making AI decision-making transparent to users, increasing trust metrics by 42% for a healthcare diagnostic tool.',
         link: '',
-        cta: 'Explainability Framework',
       },
       {
         image_url: '/images/profiles/data-collection.avif',
@@ -1025,7 +985,6 @@ let ProfileData: IProfileData[] = [
         title: 'AI Impact Assessment',
         description:
           'Designed frameworks evaluating potential consequences of AI deployments, preventing negative outcomes for systems affecting 2M+ people.',
-        cta: 'Assessment Methodology',
         link: '',
       },
     ],
@@ -1052,7 +1011,6 @@ let ProfileData: IProfileData[] = [
         description:
           'Created provably fair randomness for games and selection processes, powering transparent lotteries with combined prize pools of $28M.',
         link: '',
-        cta: 'Technical Documentation',
       },
       {
         image_url: '/images/profiles/cross-chain-data.avif',
@@ -1068,7 +1026,6 @@ let ProfileData: IProfileData[] = [
         title: 'Real-World Asset Tokenization',
         description:
           'Built systems connecting physical assets to on-chain representations, enabling fractional ownership of $42M in commercial real estate.',
-        cta: 'Implementation Guide',
         link: '',
       },
     ],
