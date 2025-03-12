@@ -1,14 +1,26 @@
-"use client";
-import React from "react";
-import { USERTYPE } from "@prisma/client";
+'use client';
+import React from 'react';
+import { USERTYPE } from '@prisma/client';
+import { cn } from '@/lib/utils';
 export enum LoginState {
-  SELECT_USER_TYPE = "SELECT_USER_TYPE",
-  LOGIN_CODE = "LOGIN_CODE",
+  SELECT_USER_TYPE = 'SELECT_USER_TYPE',
+  LOGIN_CODE = 'LOGIN_CODE',
 }
 
-export const MobileBox = ({ children, customClass }: { children: React.ReactNode, customClass?: string }) => {
+export const MobileBox = ({
+  children,
+  customClass,
+}: {
+  children: React.ReactNode;
+  customClass?: string;
+}) => {
   return (
-    <div className={`flex flex-col items-center justify-start p-[20px] md:px-[12px] md:py-8 bg-black w-[95%] md:w-[350px] lg:w-1/4 h-[98%] md:h-[85%] shadow-md rounded-lg ${customClass}`}>
+    <div
+      className={cn(
+        'relative flex w-[95%] flex-col items-center justify-start rounded-lg bg-black shadow-md md:w-[350px] lg:w-1/4',
+        customClass,
+      )}
+    >
       {children}
     </div>
   );
@@ -20,28 +32,33 @@ export const LoginButtons = ({
   onSelectUserType: (type: USERTYPE) => void;
 }) => {
   return (
-    <div className="mt-auto">
-      <p className="text-neutral-400 tracking-[0.5em] uppercase text-xs text-center">
+    <div className="mt-auto w-3/4">
+      <p className="text-center text-xs uppercase tracking-[0.5em] text-neutral-400">
         Sign in as
       </p>
-      <div className="flex flex-row mt-1 gap-4 x">
+      <div className="x mt-1 flex w-full flex-col gap-4">
         <button
           onClick={() => onSelectUserType(USERTYPE.MEMBER)}
-          className="font-bold group flex flex-row gap-3 mt-4 bg-neutral-800 hover:bg-neutral-700 text-white py-2 px-5 rounded-lg shadow-md"
+          className="group mt-4 flex flex-row justify-center gap-3 rounded-lg bg-neutral-800 px-5 py-2 font-bold text-white shadow-md hover:bg-neutral-700"
         >
-          <span className="material-icons font-bold text-neutral-500 group-hover:text-white">
+          {/* <span className="material-icons font-bold text-neutral-500 group-hover:text-white">
             chevron_left
-          </span>
+          </span> */}
           Member
         </button>
+        <div className="flex items-center gap-4">
+          <div className="h-px w-full bg-neutral-700"></div>
+          <div className="text-gray-400">or</div>
+          <div className="h-px w-full bg-neutral-700"></div>
+        </div>
         <button
           onClick={() => onSelectUserType(USERTYPE.CLIENT)}
-          className="font-bold group flex flex-row gap-3 mt-4 bg-blue-600 hover:bg-blue-700 text-white py-2 px-5 rounded-lg shadow-md"
+          className="group flex flex-row justify-center gap-3 rounded-lg bg-blue-600 px-5 py-2 font-bold text-white shadow-md hover:bg-blue-700"
         >
           Client
-          <span className="material-icons font-bold text-blue-300 group-hover:text-white">
+          {/* <span className="material-icons font-bold text-blue-300 group-hover:text-white">
             chevron_right
-          </span>
+          </span> */}
         </button>
       </div>
     </div>
