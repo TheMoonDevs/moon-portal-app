@@ -255,7 +255,7 @@ export const projectsData: IIndustryAndProjects[] = [
         title: 'Ecommerce Chatbot',
         link: '',
         isHot: false,
-        video_url: '/images/assets/eCom_Chatbot.mp4',
+        video_url: '/images/assets/ecomChatBots.mp4',
         type: 'article',
         stats: [
           {

@@ -63,7 +63,7 @@ const ProfileElement = React.forwardRef(
             <div className="relative z-50 w-fit rounded-full bg-neutral-700/50 p-3 backdrop-blur-sm">
               <div className="rounded-full">
                 <Image
-                  className="aspect-square rounded-full object-cover"
+                  className="aspect-square rounded-full object-cover saturate-0"
                   src={data.avatar}
                   alt={data.name}
                   width={size === 'small' ? 100 : size === 'medium' ? 150 : 200}

@@ -64,9 +64,9 @@ export const PricingSectionCards = {
     cta: '→',
   },
   roastMyProject: {
-    title: 'Roast my Project.',
+    title: 'Why Choose us ?',
     description:
-      'Your brilliant idea deserves some tough love. Our AI analyzes your startup concept or MVP and tells you what actually works—and what desperately needs fixing.',
+      `If you're building a new innovative project, Here are 6 reasons why TheMoonDevs is the best choice for you. `,
     cta: '→',
   },
   bookCall: {
@@ -97,7 +97,7 @@ const PricingSection = () => {
         <div className="flex flex-col justify-between gap-6 md:w-full md:flex-row md:gap-0">
           <p className="md:text-md mx-auto mt-6 flex flex-col gap-1 text-center text-xs text-neutral-600 md:mx-0 md:max-w-[30%] md:text-left">
             <span>
-              Rapid development, user-centric design, and investor-ready
+              Rapid Ai-empowered development, user-centric design, and investor-ready
               products. We specialize in building lean, scalable MVPs that get
               you noticed.
             </span>
@@ -149,6 +149,7 @@ const PricingCards = () => {
       <FeatureCard
         className="col-span-4 flex h-[inherit] flex-col justify-between bg-gray-100 p-6 shadow-none md:col-span-2 xl:col-span-1"
         data={PricingSectionCards.roastMyProject}
+        onActionClick={() => router.push('/why-choose-us')}
       />
       <CtaCard
         onActionClick={() => openForm(FilloutFormIds.BookCall)}

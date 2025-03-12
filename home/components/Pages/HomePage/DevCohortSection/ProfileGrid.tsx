@@ -18,7 +18,7 @@ export interface IProfileData {
   position: string;
   publications: IPublication[];
 }
-let ProfileData: IProfileData[] = [
+export let ProfileData: IProfileData[] = [
   {
     name: 'Subhakar T.',
     avatar: '/images/profiles/subhakar.png',
@@ -61,31 +61,6 @@ let ProfileData: IProfileData[] = [
     ],
   },
   {
-    name: 'Jane Smith',
-    avatar: '/images/profiles/jane.png',
-    experience: '25+ FinTech Products',
-    domain: 'Fullstack',
-    position: 'Backend Dev',
-    publications: [
-      {
-        image_url: '',
-        type: 'article',
-        title: 'Master React Custom Hooks',
-        description:
-          'Deep dive into building optimized and reusable React hooks.',
-        link: 'https://example.com/react-custom-hooks',
-      },
-      {
-        image_url: '',
-        type: 'article',
-        title: 'Gen AI based duolingo app for skillups',
-        description:
-          'An AI-powered learning platform that enhances skill acquisition.',
-        link: 'https://example.com/gen-ai-skillups',
-      },
-    ],
-  },
-  {
     name: 'Kshitij S.',
     avatar: '/images/profiles/kshitij.png',
     experience: '15+ Digital Products',
@@ -110,31 +85,31 @@ let ProfileData: IProfileData[] = [
       },
     ],
   },
-  {
-    name: 'Jaden V.',
-    avatar: '/images/profiles/jaden.png',
-    experience: '18+ Immersive Apps',
-    domain: '3js Expert',
-    position: 'Hybrid App Developer',
-    publications: [
-      {
-        image_url: '',
-        type: 'article',
-        title: 'Master React Custom Hooks',
-        description:
-          'Deep dive into building optimized and reusable React hooks.',
-        link: 'https://example.com/react-custom-hooks',
-      },
-      {
-        image_url: '',
-        type: 'article',
-        title: 'Gen AI based duolingo app for skillups',
-        description:
-          'An AI-powered learning platform that enhances skill acquisition.',
-        link: 'https://example.com/gen-ai-skillups',
-      },
-    ],
-  },
+  // {
+  //   name: 'Jaden V.',
+  //   avatar: '/images/profiles/jaden.png',
+  //   experience: '18+ Immersive Apps',
+  //   domain: '3js Expert',
+  //   position: 'Hybrid App Developer',
+  //   publications: [
+  //     {
+  //       image_url: '',
+  //       type: 'article',
+  //       title: 'Master React Custom Hooks',
+  //       description:
+  //         'Deep dive into building optimized and reusable React hooks.',
+  //       link: 'https://example.com/react-custom-hooks',
+  //     },
+  //     {
+  //       image_url: '',
+  //       type: 'article',
+  //       title: 'Gen AI based duolingo app for skillups',
+  //       description:
+  //         'An AI-powered learning platform that enhances skill acquisition.',
+  //       link: 'https://example.com/gen-ai-skillups',
+  //     },
+  //   ],
+  // },
   {
     name: 'Pramod G.',
     avatar: '/images/profiles/pramod.png',
