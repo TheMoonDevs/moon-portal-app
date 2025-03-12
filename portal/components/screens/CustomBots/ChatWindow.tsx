@@ -460,26 +460,14 @@ export default function ChatWindow({
   };
 
   return (
-    <div className="relative flex h-full max-h-screen min-h-screen flex-col overflow-y-auto">
+    <div className="relative flex h-full w-full flex-col overflow-y-auto">
       {/* Header */}
-      <div className="flex items-center justify-between gap-2 border-b p-4">
+      <div className="flex items-center justify-between gap-2 p-4">
         <div className="w-fit">
-          <h2 className="flex flex-wrap items-center justify-start gap-2 font-semibold">
+          <h2 className="flex flex-wrap text-sm line-clamp-1 items-center justify-start gap-2 font-semibold">
             {clientRequest.title}
-            <Badge
-              variant={
-                (statusVariantMapping[requestStatus]?.variant as any) ||
-                'default'
-              }
-              style={{
-                backgroundColor: statusVariantMapping[requestStatus]?.color,
-                fontSize: '0.75rem',
-              }}
-            >
-              {requestStatus}
-            </Badge>
           </h2>
-          <p className="text-sm text-gray-500">
+          <p className="text-xs text-gray-500">
             Request ID: {clientRequest.id}
           </p>
         </div>
@@ -492,7 +480,7 @@ export default function ChatWindow({
           <RefreshCw
             className={`my-auto h-4 w-4 ${isValidating ? 'animate-spin' : ''}`}
           />
-          {isValidating ? 'Refreshing...' : 'Refresh'}
+          {/* {isValidating ? 'Refreshing...' : 'Refresh'} */}
         </ButtonSCN>
       </div>
 
@@ -507,10 +495,10 @@ export default function ChatWindow({
       <Tabs
         value={activeTab}
         onValueChange={setActiveTab}
-        className="relative flex max-h-screen flex-1 flex-col overflow-y-auto"
+        className="relative flex h-full max-h-[75vh] flex-1 flex-col overflow-y-auto"
       >
-        <div className="w-full border-b px-4">
-          <TabsList className="flex w-full justify-evenly gap-4">
+        <div className="w-full px-4">
+          <TabsList className="flex w-full justify-evenly text-md gap-4">
             <TabsTrigger className="w-full" value="chat">
               Chat
             </TabsTrigger>
@@ -522,7 +510,7 @@ export default function ChatWindow({
 
         <TabsContent
           value="chat"
-          className="h-full max-h-[70vh] flex-1 space-y-4 overflow-y-auto p-4"
+          className="h-full max-h-[75vh] flex-1 space-y-4 overflow-y-auto p-4 pb-[100px]"
         >
           {isLoading ? (
             <Skeleton variant="rectangular" width="100%" height={200} />
@@ -542,21 +530,21 @@ export default function ChatWindow({
                   <div
                     className={`flex items-start gap-3 ${update.updateFrom === UPDATEFROM.CLIENT ? 'justify-end' : 'justify-start'}`}
                   >
-                    {update.updateFrom !== UPDATEFROM.CLIENT && (
+                    {/* {update.updateFrom !== UPDATEFROM.CLIENT && (
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-300">
                         {getMessageIcon(update.updateFrom)}
                       </div>
-                    )}
+                    )} */}
                     <div
                       className={`relative max-w-xs rounded-lg p-3 pb-4 sm:max-w-md ${getMessageClass(update.updateFrom)}`}
                     >
-                      <p className="text-sm font-bold">
+                      {/* <p className="text-xs font-medium ld tracking-widest">
                         {update.updateFrom === UPDATEFROM.CLIENT
-                          ? 'You'
+                          ? 'YOU'
                           : update.updateFrom === UPDATEFROM.COMMENT
                             ? 'Developer'
                             : update.updateFrom}
-                      </p>
+                      </p> */}
                       <p>{update.message}</p>
                       {update.media && (
                         <div className="mt-2 flex flex-wrap justify-evenly gap-2">
@@ -585,11 +573,11 @@ export default function ChatWindow({
                         {dayjs(update.createdAt).format('h:mm A')}
                       </span>
                     </div>
-                    {update.updateFrom === UPDATEFROM.CLIENT && (
+                    {/* {update.updateFrom === UPDATEFROM.CLIENT && (
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500 text-white">
                         {getMessageIcon(update.updateFrom)}
                       </div>
-                    )}
+                    )} */}
                   </div>
                 )}
               </div>
@@ -609,8 +597,8 @@ export default function ChatWindow({
           {isLoading ? (
             <Skeleton variant="rectangular" width="100%" height={200} />
           ) : updates.filter(
-              (update) => update.updateFrom === UPDATEFROM.SYSTEM,
-            ).length > 0 ? (
+            (update) => update.updateFrom === UPDATEFROM.SYSTEM,
+          ).length > 0 ? (
             updates
               .filter((update) => update.updateFrom === UPDATEFROM.SYSTEM)
               .map((update) => (
@@ -633,7 +621,7 @@ export default function ChatWindow({
         </TabsContent>
 
         {activeTab === 'chat' && (
-          <div className="absolute bottom-0 right-0 w-full border-t bg-white p-4">
+          <div className="absolute bottom-0 right-0 w-full bg-white px-4 py-1">
             {attachedMedia.length > 0 && (
               <div className="mb-2 flex flex-wrap gap-2">
                 {attachedMedia.map((media, index) => (
@@ -659,10 +647,10 @@ export default function ChatWindow({
                 ))}
               </div>
             )}
-            <div className="flex h-fit items-end gap-2">
+            <div className="flex  items-end gap-2">
               <textarea
                 placeholder="Type your message... (start with '/' to choose a ClientBot)"
-                className="w-full resize-none rounded-lg border p-2 outline-none"
+                className="w-full resize-none rounded-lg border p-3 outline-none"
                 value={message}
                 onChange={handleTextAreaChange}
                 onKeyDown={(e) => {
@@ -672,21 +660,25 @@ export default function ChatWindow({
                 }}
                 disabled={sending}
               />
-              <ButtonSCN
-                onClick={sendMessage}
-                disabled={
-                  (!message.trim() && attachedMedia.length === 0) || sending
-                }
-              >
-                {!sending ? (
-                  <Send className="my-auto h-4 w-4" />
-                ) : (
-                  <RefreshCw className="my-auto h-4 w-4 animate-spin" />
-                )}
-              </ButtonSCN>
-              <ButtonSCN onClick={() => fileInputRef.current?.click()}>
-                <FilePlus className="my-auto h-4 w-4" />
-              </ButtonSCN>
+              <div className='flex flex-col-reverse gap-1'>
+                <ButtonSCN
+                  onClick={sendMessage}
+                  disabled={
+                    (!message.trim() && attachedMedia.length === 0) || sending
+                  }
+                  className='py-1'
+                >
+                  {!sending ? (
+                    <Send className="my-auto h-4 w-4" />
+                  ) : (
+                    <RefreshCw className="my-auto h-4 w-4 animate-spin" />
+                  )}
+                </ButtonSCN>
+                <ButtonSCN onClick={() => fileInputRef.current?.click()}
+                  className='py-1'>
+                  <FilePlus className="my-auto h-4 w-4" />
+                </ButtonSCN>
+              </div>
               <input
                 type="file"
                 ref={fileInputRef}

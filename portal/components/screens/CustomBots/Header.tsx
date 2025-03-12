@@ -6,6 +6,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import React from 'react';
+import { ProjectDropdown } from './ProjectDropdown';
 
 const Header: React.FC = () => {
     const { user } = useUser();
@@ -14,18 +15,22 @@ const Header: React.FC = () => {
     console.log(user);
     return (
         <header
-            className='fixed left-0 right-0 backdrop-blur flex justify-between items-center px-4 font-bold py-2 text-black border-b border-gray-200'
+            className='fixed z-9 left-0 right-0 backdrop-blur flex justify-between items-center px-4 font-bold py-2 text-black border-b border-gray-200'
         >
             <div
-                onClick={() => {
-                    router.push(APP_ROUTES.customBots);
-                }}
                 className='flex items-center gap-2 text-2xl cursor-pointer'>
-                <span className='material-symbols-outlined inherit'>app_badging</span>
-                <div>
-                    <h1 className='font-bold'>Bot base</h1>
-                    {/* <p className='text-[8px] font-medium text-gray-500'>Alpha - version 1.0.1</p> */}
+                <div
+                    onClick={() => {
+                        router.push(APP_ROUTES.customBots);
+                    }}
+                    className='flex items-center gap-2 text-2xl cursor-pointer'>
+                    <span className='material-symbols-outlined inherit'>app_badging</span>
+                    <div>
+                        <h1 className='font-bold'>Bot base</h1>
+                        {/* <p className='text-[8px] font-medium text-gray-500'>Alpha - version 1.0.1</p> */}
+                    </div>
                 </div>
+                <ProjectDropdown />
             </div>
             <div className='flex items-center gap-4 text-xl'>
 

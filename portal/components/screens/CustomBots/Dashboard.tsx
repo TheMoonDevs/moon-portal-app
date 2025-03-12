@@ -16,6 +16,7 @@ import { REQUESTSTATUS } from '@prisma/client';
 import { Skeleton } from '@mui/material';
 import { ClientBotProvider } from './ClientBotProvider';
 
+/** DEPRECATED - copied all functionality except config modal */
 export default function Dashboard() {
   const { user } = useUser();
   const router = useRouter();
@@ -112,8 +113,7 @@ export default function Dashboard() {
 
   return (
     <ClientBotProvider botProjectId={selectedProject?.id} clientId={user?.id}>
-      <div className="flex h-screen bg-background">
-        <Toaster position="top-right" richColors duration={3000} />
+      <div className="flex h-full bg-background">
         {showPreviewParam && (
           <div className="fixed right-10 top-10">
             <ButtonSCN
@@ -156,7 +156,7 @@ export default function Dashboard() {
             </div>
           ) : (
             <Sidebar
-              projects={projects}
+              selectedProject={selectedProject}
               onSelectRequest={(request) => {
                 setSelectedRequest(request);
                 updateSearchParams({
