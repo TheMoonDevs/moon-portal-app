@@ -10,7 +10,7 @@ const ArticleCard = ({
   article: any;
   theme: 'dark' | 'light';
 }) => {
-  if (!article.image_url) {
+  if (!article.image_url && !article.video_url) {
     return (
       <Link href={article.link} className="flex flex-col justify-between gap-2">
         <div
@@ -80,15 +80,23 @@ const ArticleCard = ({
   return (
     <Link href={article.link} className="flex flex-col justify-between gap-2">
       <div className="h-full w-full">
-        <Image
-          quality={80}
-          sizes="100vw"
-          src={article.image_url || '/images/abstract-red.png'}
-          alt={article.title}
-          width={300}
-          height={500}
-          className="aspect-video h-[250px] w-full object-cover"
-        />
+        {article.image_url ? (
+          <Image
+            quality={80}
+            sizes="100vw"
+            src={article.image_url || '/images/abstract-red.png'}
+            alt={article.title}
+            width={300}
+            height={500}
+            className="aspect-video h-[250px] w-full object-cover"
+          />) :
+          (<video
+            src={article?.video_url || ''}
+            className="aspect-video h-[250px] w-full object-cover"
+            autoPlay
+            loop
+            muted
+          />)}
       </div>
       <div
         className={cn('p-4', theme === 'dark' ? 'text-white' : 'text-black')}
