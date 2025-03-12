@@ -43,7 +43,8 @@ export async function GET(req: NextRequest) {
                         variable.mode.includes(mode);
                 }).map(variable => ({
                     key: variable.key,
-                    value: variable.value
+                    value: variable.value,
+                    isOptional: variable.isOptional
                 }));
             });
 
