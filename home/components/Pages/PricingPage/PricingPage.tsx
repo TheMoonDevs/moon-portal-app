@@ -237,7 +237,7 @@ const Header = () => (
       Find a plan to power your projects.
     </h1>
     <p className="text-center text-neutral-600 md:text-xl">
-      From early-stage startups to growing enterprises, Vercel has you covered.
+      From early-stage startups to growing tech projects, TheMoonDevs has you covered.
     </p>
   </div>
 );
@@ -287,7 +287,7 @@ const PricingTabs = () => {
             plan={plan}
             index={index}
             key={plan.name}
-            onActionClick={(_plan) => {}}
+            onActionClick={(_plan) => { }}
           />
         ))}
       </TabsContent>
@@ -305,9 +305,8 @@ const PlanCards = ({
   onActionClick: (plan: IPlan) => void;
 }) => (
   <div
-    className={`relative h-full ${
-      plan.expandeble ? 'md:col-span-2' : 'md:col-span-1'
-    }`}
+    className={`relative h-full ${plan.expandeble ? 'md:col-span-2' : 'md:col-span-1'
+      }`}
   >
     {index === 0 && <StickyBoundary className="block md:hidden" />}
     <StickyBoundary isAtBottom className="block md:hidden" />

@@ -61,7 +61,7 @@ const CohortFooter = () => {
           className="group flex cursor-pointer items-center gap-1 md:flex-col"
         >
           <span className={`${mrsSheppard.className} text-xl md:text-4xl`}>
-            300 +
+            30+
           </span>
           <span className="after:contents-[''] relative flex items-center gap-2 text-xs font-light text-neutral-400 transition-all duration-200 after:absolute after:bottom-0 after:left-0 after:mt-2 after:h-[1px] after:w-0 after:bg-white after:transition-all after:duration-300 hover:text-white group-hover:text-white group-hover:after:w-full">
             <span className="hidden md:block md:text-sm">

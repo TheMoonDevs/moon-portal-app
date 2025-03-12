@@ -436,8 +436,7 @@ export const projectsData: IIndustryAndProjects[] = [
         title: 'Slack, Discord, Twitter Bots for Internal updates',
         link: '',
         isHot: false,
-        image_url:
-          '/images/assets/TheMoonDevs-bot-DM-TheMoonDevs-Slack-03-06-2025_02_32_PM.png',
+        image_url: '/images/assets/TheMoonDevs-bots.png',
         type: 'article',
         stats: [
           {
@@ -550,7 +549,7 @@ export const projectsData: IIndustryAndProjects[] = [
         ],
       },
       {
-        title: 'DocUSense',
+        title: 'AI based Doc-reader & analyzer Mobile app',
         link: '',
         isHot: false,
         image_url: '/images/assets/documentReader.png',
@@ -597,7 +596,7 @@ export const projectsData: IIndustryAndProjects[] = [
         title: 'WaveConnect: Social Tracking Platform for Mariners',
         link: 'https://cobalt-act-e19.notion.site/The-Social-Navigation-Revolution-Why-Mariners-Need-Their-Own-Platform-1b0bcad0aeeb809eb7c3f066a9c25e42?pvs=4',
         isHot: false,
-        image_url: '/images/assets/marineSocialApp.jpeg',
+        image_url: '/images/assets/marinefy_ports.jpeg',
         type: 'article',
         stats: [
           {

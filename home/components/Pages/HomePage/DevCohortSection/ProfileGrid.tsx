@@ -110,31 +110,31 @@ export let ProfileData: IProfileData[] = [
   //     },
   //   ],
   // },
-  {
-    name: 'Pramod G.',
-    avatar: '/images/profiles/pramod.png',
-    experience: '7+ AI Solutions',
-    domain: 'LLM & Generative AI',
-    position: 'AI Systems Architect',
-    publications: [
-      {
-        image_url: '',
-        type: 'article',
-        title: 'Master React Custom Hooks',
-        description:
-          'Deep dive into building optimized and reusable React hooks.',
-        link: 'https://example.com/react-custom-hooks',
-      },
-      {
-        image_url: '',
-        type: 'article',
-        title: 'Gen AI based duolingo app for skillups',
-        description:
-          'An AI-powered learning platform that enhances skill acquisition.',
-        link: 'https://example.com/gen-ai-skillups',
-      },
-    ],
-  },
+  // {
+  //   name: 'Pramod G.',
+  //   avatar: '/images/profiles/pramod.png',
+  //   experience: '7+ AI Solutions',
+  //   domain: 'LLM & Generative AI',
+  //   position: 'AI Systems Architect',
+  //   publications: [
+  //     {
+  //       image_url: '',
+  //       type: 'article',
+  //       title: 'Master React Custom Hooks',
+  //       description:
+  //         'Deep dive into building optimized and reusable React hooks.',
+  //       link: 'https://example.com/react-custom-hooks',
+  //     },
+  //     {
+  //       image_url: '',
+  //       type: 'article',
+  //       title: 'Gen AI based duolingo app for skillups',
+  //       description:
+  //         'An AI-powered learning platform that enhances skill acquisition.',
+  //       link: 'https://example.com/gen-ai-skillups',
+  //     },
+  //   ],
+  // },
   {
     name: 'Vishwajeet Y.',
     avatar: '/images/profiles/vishwajeet.png',
@@ -153,10 +153,10 @@ export let ProfileData: IProfileData[] = [
       {
         image_url: '/images/abstract-red.png',
         type: 'article',
-        title: 'Gen AI based duolingo app for skillups',
+        title: 'DIY Vercel - ci/cd & server in your control',
         description:
-          'An AI-powered learning platform that enhances skill acquisition.',
-        link: 'https://example.com/gen-ai-skillups',
+          'Let’s dive into building a deployment platform that works exactly how you want, scales when you need it, and doesn’t surprise you with mystery charges when your project goes viral.',
+        link: 'https://medium.com/themoondevs/diy-vercel-building-your-own-deployment-platform-b8a0f4157115',
       },
     ],
   },
@@ -1012,7 +1012,7 @@ const ProfileGrid = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const isTabletOrLess = useMediaQuery(media.tablet);
   const [currentProfielData, setCUrrentProfileData] = useState<IProfileData[]>(
-    ProfileData.slice(2).sort(() => Math.random() - 0.5),
+    ProfileData.slice(4, 11).sort(() => Math.random() - 0.5),
   );
 
 
@@ -1070,7 +1070,7 @@ const ProfileGrid = () => {
             position="bottom"
             direction="rtl"
             className={isTabletOrLess ? '' : 'mt-20'}
-            data={ProfileData[1]}
+            data={currentProfielData[0]}
             borderColor="border-green-500"
           />
         </Grid>
@@ -1084,7 +1084,7 @@ const ProfileGrid = () => {
             setOpenDialog={setOpenDialog}
             setPublications={setSelectedPublication}
             size={isTabletOrLess ? 'medium' : 'small'}
-            data={currentProfielData[0]}
+            data={ProfileData[Math.random() > 0.5 ? 1 : 2]}
             borderColor="border-yellow-500"
             layout={isTabletOrLess ? undefined : 'distant'}
             direction={isTabletOrLess ? undefined : 'rtl'}
