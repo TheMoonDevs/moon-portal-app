@@ -7,7 +7,7 @@ const LoginPage = () => {
   const [showWelcome, setShowWelcome] = useState(true);
 
   return showWelcome ? (
-    <WelcomeScreen onComplete={() => setShowWelcome(true)} />
+    <WelcomeScreen onComplete={() => setShowWelcome(false)} />
   ) : (
     <LoginScreen />
   );
