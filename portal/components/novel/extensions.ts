@@ -62,12 +62,12 @@ const updatedImage = UpdatedImage.configure({
 
 const taskList = TaskList.configure({
   HTMLAttributes: {
-    class: cx('not-prose pl-2 '),
+    class: cx('not-prose pl-2 my-2'),
   },
 });
 const taskItem = TaskItem.configure({
   HTMLAttributes: {
-    class: cx('flex gap-2 items-start my-4'),
+    class: cx('flex gap-1 items-start'),
   },
   nested: true,
 });
@@ -92,6 +92,11 @@ const starterKit = StarterKit.configure({
   listItem: {
     HTMLAttributes: {
       class: cx('leading-normal -mb-2'),
+    },
+  },
+  paragraph: {
+    HTMLAttributes: {
+      class: cx('my-4'),
     },
   },
   blockquote: {
@@ -153,16 +158,16 @@ const textAlign = TextAlign.configure({ types: ['heading', 'paragraph'] });
 
 const characterCount = CharacterCount.configure();
 
-//   const markdownExtension = MarkdownExtension.configure({
-//     html: true,
-//     tightLists: true,
-//     tightListClass: "tight",
-//     bulletListMarker: "-",
-//     linkify: false,
-//     breaks: false,
-//     transformPastedText: false,
-//     transformCopiedText: false,
-//   });
+// const markdownExtension = MarkdownExtension.configure({
+//   html: true,
+//   tightLists: true,
+//   tightListClass: "tight",
+//   bulletListMarker: "-",
+//   linkify: false,
+//   breaks: false,
+//   transformPastedText: false,
+//   transformCopiedText: false,
+// });
 
 export const defaultExtensions = [
   starterKit,

@@ -63,6 +63,7 @@ export enum LOCAL_STORAGE {
   passphrase = 'local_passphrase',
 }
 export const IN_DEV = process.env.NODE_ENV === 'development';
+export const APP_BASE_FOR_SITES = 'https://www.themoondevs.com';
 export const APP_BASE_URL = IN_DEV
   ? 'http://localhost:3000'
   : process.env.NEXT_PUBLIC_APP_BASE_URL || 'http://localhost:3000';

@@ -811,6 +811,86 @@ enum PayType {
   CRYPTO
 }
 
+// -------------------------------------Sites & Blog-------------------------------------------
+
+model Site {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  siteName    String   
+  description String?
+  bannerPic   String?  // URL to banner image
+  profilePic  String?  // URL to profile/logo image 
+  tagline     String?
+  customDomain String?   @unique
+  subDomain   String?  @unique
+  socialLinks Json?    // Store social media links
+  metadata    Json?    // For additional SEO metadata
+  themeColor  String?  // Primary brand/theme color
+  favicon     String?  // URL to favicon
+  footerText  String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Post {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  siteId      String   @db.ObjectId
+  slug        String   @unique
+  title       String
+  subtitle    String?
+  content     String   // Main article content
+  jsonContent Json?
+  excerpt     String?  // Short preview/summary
+  coverImage  String?  // URL to cover image
+  author      String?  // Author name or ID
+  publishedAt DateTime?
+  status      PostStatus @default(DRAFT)
+  
+  // SEO metadata
+  seoMeta     SEOMetadata?
+  
+  // AI metadata for content understanding
+  aiMeta      AIMetadata?
+  
+  // Standard fields
+  tags        String[]
+  categories  String[]
+  isPublic    Boolean   @default(false)
+  viewCount   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+type SEOMetadata {
+  metaTitle       String?
+  metaDescription String?
+  ogTitle         String?
+  ogDescription   String?
+  ogImage         String?
+  keywords        String[]
+  canonicalUrl    String?
+  structuredData  Json?
+}
+
+type AIMetadata {
+  contentType     String?    // Article, Tutorial, News etc
+  topicTags      String[]   // AI-generated topic classifications
+  readingTime    Int?       // Estimated reading time in minutes
+  complexity     String?    // Basic, Intermediate, Advanced
+  mainConcepts   String[]   // Key concepts covered
+  targetAudience String[]   // Intended reader personas
+  sentiment      String?    // Overall tone/sentiment
+  summary        String?    // AI-generated summary
+  references     Json?      // Related content/citations
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+
 // -----------------------------EMAIL SUBSCRIPTIONS-----------------------------
 
 model EmailSubscriber {

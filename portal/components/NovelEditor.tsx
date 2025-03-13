@@ -72,6 +72,13 @@ const TailwindAdvancedEditor = () => {
   const debouncedUpdates = useDebouncedCallback(
     async (editor: EditorInstance) => {
       const json = editor.getJSON();
+      const titleNode = json.content?.find((node: any) => node.type === 'heading' && node.attrs?.level === 1)
+      const title = titleNode?.content?.[0]?.text || '';
+      const paraNode = json.content?.find((node: any) => node.type === 'paragraph')
+      const para = paraNode?.content?.[0]?.text || '';
+      const imageNode = json.content?.find((node: any) => node.type === 'image')
+      const image = imageNode?.attrs?.src || '';
+      console.log(title, para, image);
       setCharsCount(editor.storage.characterCount.words());
       window.localStorage.setItem(
         'html-content',
@@ -95,26 +102,25 @@ const TailwindAdvancedEditor = () => {
   if (!initialContent) return null;
 
   return (
-    <div className="relative flex w-full flex-col items-center justify-center p-20">
-      <div className="absolute right-5 top-5 z-10 mb-5 flex gap-2">
-        <div className="rounded-lg bg-accent px-2 py-1 text-sm text-muted-foreground">
-          {saveStatus}
-        </div>
-        <div
-          className={
-            charsCount
-              ? 'rounded-lg bg-accent px-2 py-1 text-sm text-muted-foreground'
-              : 'hidden'
-          }
-        >
-          {charsCount} Words
+    <div className="relative flex w-full flex-col items-center justify-center bg-white">
+      <div className="w-full my-3 px-6 flex justify-between items-center gap-2 border-b border-neutral-200 pb-3">
+        <div className='flex gap-2 items-center'>
+          <div className="rounded-lg bg-accent px-2 py-1 text-sm text-muted-foreground">
+            {saveStatus}
+          </div>
+          <div
+            className={' px-2 py-1 text-xs text-muted-foreground'
+            }
+          >
+            {charsCount} Words
+          </div>
         </div>
       </div>
       <EditorRoot>
         <EditorContent
           initialContent={initialContent}
           extensions={extensions}
-          className="relative min-h-[500px] w-full border-muted bg-background p-6 sm:mb-[calc(20vh)] sm:rounded-lg sm:border sm:shadow-lg"
+          className="relative w-full bg-background px-6 pb-6 min-h-[80vh] sm:rounded-lg  "
           editorProps={{
             handleDOMEvents: {
               keydown: (_view, event) => handleCommandNavigation(event),
@@ -125,7 +131,7 @@ const TailwindAdvancedEditor = () => {
               handleImageDrop(view, event, moved, uploadFn),
             attributes: {
               class:
-                'novel-editor-content prose prose-lg dark:prose-invert prose-headings:font-title font-default focus:outline-none max-w-full min-h-[500px]',
+                'novel-editor-content prose prose-lg dark:prose-invert prose-headings:font-title font-default focus:outline-none max-w-full ',
             },
           }}
           onUpdate={({ editor }) => {
