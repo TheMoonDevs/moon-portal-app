@@ -2,6 +2,7 @@
 import React from 'react';
 import { USERTYPE } from '@prisma/client';
 import { cn } from '@/lib/utils';
+import { useSearchParams } from 'next/navigation';
 export enum LoginState {
   SELECT_USER_TYPE = 'SELECT_USER_TYPE',
   LOGIN_CODE = 'LOGIN_CODE',
@@ -31,6 +32,29 @@ export const LoginButtons = ({
 }: {
   onSelectUserType: (type: USERTYPE) => void;
 }) => {
+  const searchParams = useSearchParams();
+  const url = searchParams?.get('uri');
+
+  if (url?.includes('/custom-bots')) {
+    return (
+      <div className="mt-auto w-3/4">
+        <p className="text-center text-xs text-neutral-400">
+          Thank you for your interest in <b>BotBase</b>. Make sure you have your passcode ready.
+        </p>
+        <div className="x mt-1 flex w-full flex-col gap-4">
+          <button
+            onClick={() => onSelectUserType(USERTYPE.MEMBER)}
+            className="group mt-4 flex flex-row justify-center gap-3 rounded-lg bg-neutral-800 px-5 py-2 font-bold text-white shadow-md hover:bg-neutral-700"
+          >
+            {/* <span className="material-icons font-bold text-neutral-500 group-hover:text-white">
+            chevron_left
+          </span> */}
+            Access BotBase
+          </button>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="mt-auto w-3/4">
       <p className="text-center text-xs uppercase tracking-[0.5em] text-neutral-400">
@@ -44,7 +68,7 @@ export const LoginButtons = ({
           {/* <span className="material-icons font-bold text-neutral-500 group-hover:text-white">
             chevron_left
           </span> */}
-          Member
+          Member / Cohort
         </button>
         <div className="flex items-center gap-4">
           <div className="h-px w-full bg-neutral-700"></div>
@@ -55,7 +79,7 @@ export const LoginButtons = ({
           onClick={() => onSelectUserType(USERTYPE.CLIENT)}
           className="group flex flex-row justify-center gap-3 rounded-lg bg-blue-600 px-5 py-2 font-bold text-white shadow-md hover:bg-blue-700"
         >
-          Client
+          Client / Tester
           {/* <span className="material-icons font-bold text-blue-300 group-hover:text-white">
             chevron_right
           </span> */}
