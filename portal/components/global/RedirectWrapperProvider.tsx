@@ -21,7 +21,7 @@ export default function RedirectWrapperProvider({
 
     if (status === 'loading') return;
     if (status === 'authenticated') return;
-    if (session === null) return;
+    //if (session === null) return;
 
     console.log('RedirectWrapperProvider.tsx', 'session:', session, 'status:', status, 'pathname:', pathname, 'url', window.location.href);
 
@@ -34,7 +34,7 @@ export default function RedirectWrapperProvider({
     const uri = `${window.location.origin}/login?uri=${callbackurl}`;
     dispatch(setRedirectUri(uri));
 
-    if (!session && requestedRoute) {
+    if (requestedRoute) {
       router.replace(`/login?uri=${callbackurl}`);
       console.log('Redirecting to login page');
     }
