@@ -1,0 +1,54 @@
+import { BaseCard } from '@/components/elements/Card';
+import { PricingSectionCards } from './PricingSection';
+import Button from '@/components/elements/Button';
+import {
+  FilloutFormIds,
+  useFilloutPopup,
+} from '@/components/App/Global/FilloutPopup';
+
+const CtaCardContent = () => {
+  const highlights = PricingSectionCards.bookCall.highlights;
+  return (
+    <ul className="flex flex-col gap-3 p-4">
+      {highlights.map((item) => (
+        <li>
+          <div className="flex items-center gap-2 text-sm text-white">
+            <span className="material-symbols-outlined">{item.icon}</span>
+            <span className="text-gray-300">{item.title}</span>
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+};
+
+const CtaCardActions = ({ onClick }: { onClick?: () => void }) => {
+  const cta = PricingSectionCards.bookCall.cta;
+  return (
+    <Button
+      variant="outlined"
+      bgUrl="/images/abstract-golden.png"
+      onClick={onClick}
+      text={<span className="w-full text-left md:max-w-44">{cta}</span>}
+      className="mt-4 flex w-full items-center justify-between rounded-lg border-2 border-yellow-400 text-white md:mt-10 md:gap-10 xl:mt-0"
+    />
+  );
+};
+
+const CtaCard = ({
+  className,
+  onActionClick,
+}: {
+  className?: string;
+  onActionClick?: () => void;
+}) => {
+  return (
+    <BaseCard
+      className={className}
+      cardContent={<CtaCardContent />}
+      cardActions={<CtaCardActions onClick={onActionClick} />}
+    />
+  );
+};
+
+export default CtaCard;

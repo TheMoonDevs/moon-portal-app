@@ -1,3 +1,4 @@
+'use client'
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ReferHeroSection } from "./Sections/ReferHero";
 import { ReferPageStyled } from "./ReferPage.style";

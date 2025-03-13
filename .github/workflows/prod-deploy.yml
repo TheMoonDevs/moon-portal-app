@@ -52,7 +52,7 @@ jobs:
           else
             echo "projects=$(jq -c -n --argjson projects "$(printf '%s\n' "${projects[@]}" | jq -R . | jq -s .)" '$projects')" >> $GITHUB_OUTPUT
           fi
-          
+
       - name: Debug Changed Projects Output
         run: |
           echo "Projects output: ${{ steps.set-projects.outputs.projects }}"

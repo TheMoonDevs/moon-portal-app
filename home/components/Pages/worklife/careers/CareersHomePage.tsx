@@ -1,3 +1,4 @@
+'use client'
 import { CareersHomeStyled } from './CareersHomePage.styles';
 import { WorklifeFooter } from '../WorkLifeHomePage/WorklifeFooter';
 import CareersHeader from './CareersHeader';

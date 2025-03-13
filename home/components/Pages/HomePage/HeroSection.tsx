@@ -1,24 +1,30 @@
 import { Button, Skeleton } from "@mui/material";
 import { HeroSectionStyled } from "./HomePage.styles";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { SectionWithGrids } from "./SectionWithGrids";
 import { FirebaseEvents, FirebaseSDK } from "@/utils/service/firebase";
 import { APP_INFO, APP_ROUTES } from "@/utils/constants/AppInfo";
-import Link from "next/link";
 import theme from "@/styles/theme";
 import useOnScreen from "@/utils/hooks/useOnScreen";
-import { useRouter } from "next/router";
 import {
   SlackBotSdk,
   SlackChannelWebhooks,
   SlackMessageType,
 } from "@/utils/service/slackBotSdk";
 import { TMDSlackbot } from "@/utils/service/TMDSlackbotSdk";
+import { useSearchParams } from "next/navigation";
+import { Link } from "@/components/App/Global/react-transition-progress/CustomLink";
 
 export const HeroSection = () => {
   const [hovered, setHovered] = useState<string>("");
   const [logged, setLogged] = useState<boolean>(false);
-  const { query } = useRouter();
+  const searchParams = useSearchParams();
+  const query = useMemo(() => {
+    if (searchParams) {
+      return Object.fromEntries(searchParams);
+    }
+    return {};
+  }, [searchParams]);
 
   // console.log(asPath);
 

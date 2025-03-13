@@ -42,4 +42,14 @@ export const APP_INFO = {
   mail_refer:
     'mailto:contact@themoondevs.com?subject=Referral%20Program%20-%20TheMoonDevs',
   no_reply_mail: 'no-reply@themoondevs.com',
+  serverApiUrl: IN_DEV
+    ? 'http://localhost:3000/api'
+    : process.env.NEXT_PUBLIC_SERVER_API_URL,
 };
+
+export enum DocumentPageType {
+  PRIVACY = 'privacy',
+  TERMS = 'terms',
+  SENSE_PRIVACY = 'sense-privacy',
+  SENSE_TERMS = 'sense-terms',
+}

@@ -1,3 +1,5 @@
+'use client';
+
 import { PrismicNextImage } from "@prismicio/next";
 import { type Content, isFilled } from "@prismicio/client";
 import { SliceComponentProps, PrismicRichText } from "@prismicio/react";
@@ -26,10 +28,9 @@ const AlternateGrid = ({ slice }: AlternateGridProps): JSX.Element => {
       <div
         className={`
 					es-alternate-grid__content
-					${
-            isFilled.image(slice.primary.image)
-              ? "es-alternate-grid__content--with-image"
-              : ""
+					${isFilled.image(slice.primary.image)
+            ? "es-alternate-grid__content--with-image"
+            : ""
           }
         `}
       >
@@ -38,10 +39,9 @@ const AlternateGrid = ({ slice }: AlternateGridProps): JSX.Element => {
             field={slice.primary.image}
             className={`
               				es-alternate-grid__image
-							${
-                slice.variation === "imageRight"
-                  ? "es-alternate-grid__image--right"
-                  : "es-alternate-grid__image--left"
+							${slice.variation === "imageRight"
+                ? "es-alternate-grid__image--right"
+                : "es-alternate-grid__image--left"
               }
             			`}
           />
