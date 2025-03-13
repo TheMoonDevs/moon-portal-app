@@ -7,19 +7,29 @@ import theme from "@/styles/theme";
 import { APP_ROUTES, SOCIAL_ROUTES } from "@/utils/constants/AppInfo";
 import { Tooltip } from "@mui/material";
 import { Link } from "@/components/App/Global/react-transition-progress/CustomLink";
+import { FilloutFormIds, useFilloutPopup } from "@/components/App/Global/FilloutPopup";
+import { useTallyPopup } from "@/components/App/Global/TallyPopup";
 
 const Company = [
   {
-    name: "Our Story",
+    name: "Home",
     link: APP_ROUTES.index,
   },
   {
-    name: "Worklife",
-    link: APP_ROUTES.workLife,
+    name: "Why Choose Us ?",
+    link: "/why-choose-us",
   },
   {
     name: "Testimonials",
-    link: "/",
+    link: "/industries",
+  },
+  {
+    name: "Pricing",
+    link: "/pricing",
+  },
+  {
+    name: "What's Complexity",
+    link: "/complexity",
   },
 ];
 
@@ -34,16 +44,16 @@ const Legal = [
   },
 ];
 
-const JoinUs = [
-  {
-    name: "Become a Moon Dev",
-    link: APP_ROUTES.careers,
-  },
-  {
-    name: "Refer and Earn",
-    link: APP_ROUTES.refer_earn,
-  },
-];
+// const JoinUs = [
+//   // {
+//   //   name: "Become a Moon Dev",
+//   //   link: APP_ROUTES.careers,
+//   // },
+//   // {
+//   //   name: "Refer and Earn",
+//   //   link: APP_ROUTES.refer_earn,
+//   // },
+// ];
 
 const SocialLinks = [
   {
@@ -79,6 +89,8 @@ const SocialLinks = [
 ];
 
 export const FooterSection = () => {
+  const { openForm } = useFilloutPopup();
+  const { openPopup } = useTallyPopup();
   return (
     <FooterSectionStyled>
       <div className="logobar">
@@ -113,18 +125,30 @@ export const FooterSection = () => {
           <div className="product_link">
             <span className="title">Join Us!</span>
             <ul>
-              {JoinUs.map((item, index) => (
-                <li key={index} className="link">
-                  <Link href={item.link}>{item.name}</Link>
-                </li>
-              ))}
+              <li
+                onClick={() => openForm(FilloutFormIds.Partnerships)}
+                className="link">
+                <div>Partnerships / Proposals</div>
+              </li>
+              <li
+                onClick={() => openPopup()}
+                className="link">
+                <div>Apply 4 Cohort</div>
+              </li>
+              <li
+                onClick={() => openForm(FilloutFormIds.Partnerships)}
+                className="link">
+                <Link href={"https://wellfound.com/company/themoondevs"}>Careers</Link>
+              </li>
             </ul>
           </div>
         </div>
         <div className="social_links">
-          <Link className="sign_up" href={APP_ROUTES.getStarted}>
+          <div className="sign_up" onClick={() => {
+            openForm(FilloutFormIds.BookCall);
+          }}>
             Sign up for free trial
-          </Link>
+          </div>
           <div className="social_icons">
             {SocialLinks.map((item, index) => (
               <Link href={item.link} key={index}>
