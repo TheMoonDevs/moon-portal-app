@@ -695,12 +695,12 @@ model ClientRequestFunction {
   botProjectId          String       @db.ObjectId
   originClientRequestId String       @db.ObjectId
   name                  String // Function name (e.g., "Create Post", "Read Posts")
-  service               String // Service name (e.g., "Twitter/X")
-  type                  FUNCTIONTYPE // Function type (e.g., "webhook", "api", "scheduled")
-  mode                  BOTMODE // Mode of the function (e.g., "PROD", "STAGING")
   baseUrl               String // Base URL for the deployed function
+  mode                  BOTMODE // Mode of the function (e.g., "PROD", "STAGING")
+  type                  FUNCTIONTYPE // Function type (e.g., "webhook", "api", "scheduled")
   endpoints             Json[] // Multiple endpoints mapped to this function (will have method, headers, bodySchema, responseSchema)
-  metadata              Json?
+  schedule              Json? // Schedule for the function
+  metadata              Json? // Metadata about the function
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
