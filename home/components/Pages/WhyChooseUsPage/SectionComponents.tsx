@@ -158,7 +158,7 @@ const INDUSTRY_EXPERTS_DATA = [
 
 export const INNOVATORS_DATA = [
   {
-    company: 'CTO of 28+ Startups',
+    company: 'Tech Lead for 7+ Startups',
     description: `The challenge of building an edge-tech project is what inspired me to initiate TheMoonDevs, we are a growing collective of similar builder-mindset developers across industries & countries.`,
     author: {
       name: 'Subhakar T.',
@@ -396,7 +396,7 @@ const HoveringCard = ({
           </h4>
         </div>
         {tag.publications
-          .filter((publication) => publication?.link)
+          //.filter((publication) => publication?.link)
           .map((publication, index) => (
             <button
               key={index + publication.title}
