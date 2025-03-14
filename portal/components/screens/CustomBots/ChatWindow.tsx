@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import {
   Send,
   RefreshCw,
@@ -27,30 +27,18 @@ import {
 } from '@/components/elements/Tab';
 import { toast } from 'sonner';
 import dayjs from 'dayjs';
-import { Badge } from '@/components/elements/badge';
-import useSWR from 'swr';
 import { UPDATEFROM } from '@prisma/client';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 import { ButtonSCN } from '@/components/elements/Button';
 import { useClientBots } from './ClientBotProvider';
-import { TMD_PORTAL_API_KEY } from '@/utils/constants/appInfo';
+import ChatHeader from './Chat/ChatHeader';
+import useVercelChat, { IAdditionalData } from '@/utils/hooks/useVercelChat';
+import {
+  BotTemplate,
+  useBotTemplateContext,
+} from './providers/BotTemplateProvider';
 
-type RequestMessage = {
-  id: string;
-  message: string;
-  updateType: string;
-  updateFrom: UPDATEFROM;
-  createdAt: string;
-  githubUrl?: string;
-  media?: {
-    mediaName: string;
-    mediaType: string;
-    mediaFormat: string;
-    mediaUrl: string;
-  }[];
-};
-
-type ClientRequest = {
+export type ClientRequest = {
   id: string;
   botProjectId: string;
   title: string;
@@ -58,22 +46,9 @@ type ClientRequest = {
   mentionedClientBotIds: string[];
 };
 
-type AttachedMedia = {
+export type AttachedMedia = {
   file: File;
   preview: string;
-};
-
-type BotTemplate = {
-  id: string;
-  clientId?: string;
-  type: string;
-  name: string;
-  requiredKeys: Array<{
-    mode: Array<'DEV' | 'PROD' | 'STAGING'>;
-    isOptional: boolean;
-    key: string;
-    placeholder: string;
-  }>;
 };
 
 type BotVariable = {
@@ -91,19 +66,13 @@ export default function ChatWindow({
   clientRequest: ClientRequest;
 }) {
   // Chat state
-  const [updates, setUpdates] = useState<RequestMessage[]>([]);
-  const [message, setMessage] = useState('');
-  const [sending, setSending] = useState(false);
   const [activeTab, setActiveTab] = useState('chat');
-  const [requestStatus, setRequestStatus] = useState(
-    clientRequest?.requestStatus,
-  );
-  const [attachedMedia, setAttachedMedia] = useState<AttachedMedia[]>([]);
+  // const [requestStatus, setRequestStatus] = useState(
+  //   clientRequest?.requestStatus,
+  // );
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Modal states
-  const [showSlashModal, setShowSlashModal] = useState(false);
   const [showAddBotModal, setShowAddBotModal] = useState(false);
   const [customVariables, setCustomVariables] = useState<BotVariable[]>([]);
 
@@ -113,45 +82,33 @@ export default function ChatWindow({
   );
   const [newClientBotName, setNewClientBotName] = useState('');
   const [botVariables, setBotVariables] = useState<BotVariable[]>([]);
-
-  // Fetch client bot templates for the current client.
-  const { data: templates } = useSWR<BotTemplate[]>(
-    `/api/custom-bots/client-bots/template?clientId=${clientId}`,
-    (url: string) => fetch(url).then((res) => res.json()),
-  );
-
-  // Fetch updates for this client request.
+  const { templates } = useBotTemplateContext();
   const {
-    data: requestMessagesUpdate,
-    isValidating,
-    isLoading,
+    input,
     mutate,
-  } = useSWR(
-    `/api/custom-bots/client-requests/update?requestId=${clientRequest.id}`,
-    (url) =>
-      fetch(url)
-        .then((res) => res.json())
-        .catch((err) => {
-          toast.error('Failed to fetch updates.');
-          console.error('Fetch error:', err);
-          return null;
-        }),
-  );
+    dupAppend,
+    messages,
+    isLoading,
+    isValidating,
+    handleFileChange,
+    removeMedia,
+    attachedMedia,
+    sending,
+    messagesEndRef,
+    setShowSlashModal,
+    showSlashModal,
+    handleCustomInputChange,
+  } = useVercelChat({
+    clientId,
+    clientRequest,
+  });
 
   // Get client bots from our global provider.
-  const { clientBots, refreshClientBots, isLoading: clientBotsLoading } = useClientBots();
-
-  // Update messages when new updates are fetched.
-  useEffect(() => {
-    if (!sending && requestMessagesUpdate && !isValidating) {
-      setUpdates(requestMessagesUpdate.requestMessages);
-      setRequestStatus(requestMessagesUpdate.requestStatus);
-    }
-  }, [isValidating, requestMessagesUpdate, sending]);
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [updates]);
+  const {
+    clientBots,
+    refreshClientBots,
+    isLoading: clientBotsLoading,
+  } = useClientBots();
 
   // Reload client data when specific operations are completed
   const reloadClientData = async () => {
@@ -163,98 +120,8 @@ export default function ChatWindow({
     }
   };
 
-  // When the message input starts with '/', show the slash modal.
-  const handleTextAreaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setMessage(e.target.value);
-    if (e.target.value.startsWith('/')) {
-      setShowSlashModal(true);
-    } else {
-      setShowSlashModal(false);
-    }
-  };
-
   const sendMessage = async () => {
-    if (sending) {
-      toast.error('Last message is being sent. Please wait.');
-      return;
-    }
-    if (!message.trim() && attachedMedia.length === 0) return;
-
-    const tempId = crypto.randomUUID();
-    const newMessage: RequestMessage = {
-      id: tempId,
-      message: message.trim() || 'Attached media',
-      media: attachedMedia.map((m) => ({
-        mediaName: m.file.name,
-        mediaType: m.file.type,
-        mediaFormat: m.file.name.split('.').pop() || 'file',
-        mediaUrl: m.preview,
-      })),
-      updateType: 'text',
-      updateFrom: UPDATEFROM.CLIENT,
-      createdAt: new Date().toISOString(),
-    };
-
-    setUpdates((prev) => [...prev, newMessage]);
-    setMessage('');
-    attachedMedia.forEach((media) => URL.revokeObjectURL(media.preview));
-    setAttachedMedia([]);
-    scrollToBottom();
-
-    setSending(true);
-    try {
-      const formData = new FormData();
-      formData.append('originClientRequestId', clientRequest.id);
-      formData.append('clientId', clientId);
-      formData.append('message', newMessage.message);
-      attachedMedia.forEach((mediaObj) => {
-        formData.append('file', mediaObj.file);
-      });
-      formData.append('userId', clientId);
-      formData.append('uploadedByUserId', clientId);
-
-      const res = await fetch('/api/custom-bots/client-requests/chat', {
-        method: 'POST',
-        body: formData,
-        headers: {
-          tmd_portal_api_key: TMD_PORTAL_API_KEY,
-        },
-      });
-      if (!res.ok) throw new Error('Failed to send message');
-      await res.json();
-      mutate();
-    } catch (error) {
-      setUpdates((prev) => prev.filter((msg) => msg.id !== tempId));
-      toast.error('Failed to send message.');
-      console.error('Error sending message:', error);
-    } finally {
-      setSending(false);
-    }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const files = Array.from(e.target.files);
-      const newMedia = files.map((file) => ({
-        file,
-        preview: URL.createObjectURL(file),
-      }));
-      setAttachedMedia((prev) => [...prev, ...newMedia]);
-      e.target.value = '';
-    }
-  };
-
-  const removeMedia = (index: number) => {
-    setAttachedMedia((prev) => {
-      const updated = [...prev];
-      URL.revokeObjectURL(updated[index].preview);
-      updated.splice(index, 1);
-      return updated;
-    });
-  };
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    dupAppend();
   };
 
   const getMessageIcon = (updateFrom: UPDATEFROM) => {
@@ -461,36 +328,12 @@ export default function ChatWindow({
 
   return (
     <div className="relative flex h-full w-full flex-col overflow-y-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-2 p-4">
-        <div className="w-fit">
-          <h2 className="flex flex-wrap text-sm line-clamp-1 items-center justify-start gap-2 font-semibold">
-            {clientRequest.title}
-          </h2>
-          <p className="text-xs text-gray-500">
-            Request ID: {clientRequest.id}
-          </p>
-        </div>
-        <ButtonSCN
-          variant="outline"
-          size="sm"
-          onClick={() => mutate()}
-          disabled={isLoading}
-        >
-          <RefreshCw
-            className={`my-auto h-4 w-4 ${isValidating ? 'animate-spin' : ''}`}
-          />
-          {/* {isValidating ? 'Refreshing...' : 'Refresh'} */}
-        </ButtonSCN>
-      </div>
-
-      {/* Button to open Add ClientBot modal manually (if not using slash) */}
-      {/* <div className="border-b px-4 py-2">
-        <ButtonSCN onClick={() => setShowAddBotModal(true)}>
-          + Add New ClientBot
-        </ButtonSCN>
-      </div> */}
-
+      <ChatHeader
+        clientRequest={clientRequest}
+        mutate={mutate}
+        isLoading={isLoading}
+        isValidating={isValidating}
+      />
       {/* Chat Tabs */}
       <Tabs
         value={activeTab}
@@ -498,7 +341,7 @@ export default function ChatWindow({
         className="relative flex h-full max-h-[75vh] flex-1 flex-col overflow-y-auto"
       >
         <div className="w-full px-4">
-          <TabsList className="flex w-full justify-evenly text-md gap-4">
+          <TabsList className="text-md flex w-full justify-evenly gap-4">
             <TabsTrigger className="w-full" value="chat">
               Chat
             </TabsTrigger>
@@ -514,74 +357,80 @@ export default function ChatWindow({
         >
           {isLoading ? (
             <Skeleton variant="rectangular" width="100%" height={200} />
-          ) : updates?.length > 0 ? (
-            updates.map((update, index) => (
-              <div key={update.id}>
-                {renderDateSeparator(
-                  update.createdAt,
-                  updates[index - 1]?.createdAt,
-                )}
-                {update.updateFrom === UPDATEFROM.SYSTEM ? (
-                  <div className="my-2 text-center text-xs text-gray-600">
-                    {update.message} •{' '}
-                    {dayjs(update.createdAt).format('h:mm A')}
-                  </div>
-                ) : (
-                  <div
-                    className={`flex items-start gap-3 ${update.updateFrom === UPDATEFROM.CLIENT ? 'justify-end' : 'justify-start'}`}
-                  >
-                    {/* {update.updateFrom !== UPDATEFROM.CLIENT && (
+          ) : messages?.length > 0 ? (
+            messages.map((update, index) => {
+              const additionalData = update
+                .annotations![0] as unknown as IAdditionalData;
+              return (
+                <div key={update.id}>
+                  {renderDateSeparator(
+                    new Date(update.createdAt!).toISOString()!,
+                    index > 0
+                      ? new Date(messages[index - 1].createdAt!).toISOString()!
+                      : '',
+                  )}
+                  {(update.role as any) === UPDATEFROM.SYSTEM ? (
+                    <div className="my-2 text-center text-xs text-gray-600">
+                      {update.content} •{' '}
+                      {dayjs(update.createdAt).format('h:mm A')}
+                    </div>
+                  ) : (
+                    <div
+                      className={`flex items-start gap-3 ${(update.role as any) === UPDATEFROM.CLIENT ? 'justify-end' : 'justify-start'}`}
+                    >
+                      {/* {update.updateFrom !== UPDATEFROM.CLIENT && (
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-300">
                         {getMessageIcon(update.updateFrom)}
                       </div>
                     )} */}
-                    <div
-                      className={`relative max-w-xs rounded-lg p-3 pb-4 sm:max-w-md ${getMessageClass(update.updateFrom)}`}
-                    >
-                      {/* <p className="text-xs font-medium ld tracking-widest">
+                      <div
+                        className={`relative max-w-xs rounded-lg p-3 pb-4 sm:max-w-md ${getMessageClass(update.role as any)}`}
+                      >
+                        {/* <p className="text-xs font-medium ld tracking-widest">
                         {update.updateFrom === UPDATEFROM.CLIENT
                           ? 'YOU'
                           : update.updateFrom === UPDATEFROM.COMMENT
                             ? 'Developer'
                             : update.updateFrom}
                       </p> */}
-                      <p>{update.message}</p>
-                      {update.media && (
-                        <div className="mt-2 flex flex-wrap justify-evenly gap-2">
-                          {update.media.map((m, idx) =>
-                            m?.mediaType?.startsWith('image') ? (
-                              <img
-                                key={idx}
-                                src={m.mediaUrl}
-                                alt={m.mediaName}
-                                className={`rounded object-cover ${update.updateFrom === UPDATEFROM.CLIENT ? 'max-h-60' : 'max-h-20'}`}
-                              />
-                            ) : (
-                              <a key={idx} href={m.mediaUrl} target="_blank">
-                                <span className="flex items-center gap-1">
-                                  <FileText className="h-12 w-12 text-gray-600" />
-                                  {m.mediaName}
-                                </span>
-                              </a>
-                            ),
-                          )}
-                        </div>
-                      )}
-                      <span
-                        className={`absolute bottom-0 right-2 text-[10px] ${update.updateFrom === UPDATEFROM.CLIENT ? 'text-white' : 'text-gray-500'}`}
-                      >
-                        {dayjs(update.createdAt).format('h:mm A')}
-                      </span>
-                    </div>
-                    {/* {update.updateFrom === UPDATEFROM.CLIENT && (
+                        <p>{update.content}</p>
+                        {additionalData.media && (
+                          <div className="mt-2 flex flex-wrap justify-evenly gap-2">
+                            {additionalData.media.map((m: any, idx: number) =>
+                              m?.mediaType?.startsWith('image') ? (
+                                <img
+                                  key={idx}
+                                  src={m.mediaUrl}
+                                  alt={m.mediaName}
+                                  className={`rounded object-cover ${(update.role as any) === UPDATEFROM.CLIENT ? 'max-h-60' : 'max-h-20'}`}
+                                />
+                              ) : (
+                                <a key={idx} href={m.mediaUrl} target="_blank">
+                                  <span className="flex items-center gap-1">
+                                    <FileText className="h-12 w-12 text-gray-600" />
+                                    {m.mediaName}
+                                  </span>
+                                </a>
+                              ),
+                            )}
+                          </div>
+                        )}
+                        <span
+                          className={`absolute bottom-0 right-2 text-[10px] ${(update.role as any) === UPDATEFROM.CLIENT ? 'text-white' : 'text-gray-500'}`}
+                        >
+                          {dayjs(update.createdAt).format('h:mm A')}
+                        </span>
+                      </div>
+                      {/* {update.updateFrom === UPDATEFROM.CLIENT && (
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500 text-white">
                         {getMessageIcon(update.updateFrom)}
                       </div>
                     )} */}
-                  </div>
-                )}
-              </div>
-            ))
+                    </div>
+                  )}
+                </div>
+              );
+            })
           ) : (
             <div className="text-center text-gray-500">
               No messages yet. Start the conversation!
@@ -596,21 +445,24 @@ export default function ChatWindow({
         >
           {isLoading ? (
             <Skeleton variant="rectangular" width="100%" height={200} />
-          ) : updates.filter(
-            (update) => update.updateFrom === UPDATEFROM.SYSTEM,
-          ).length > 0 ? (
-            updates
-              .filter((update) => update.updateFrom === UPDATEFROM.SYSTEM)
+          ) : messages.filter(
+              (update) => (update.role as any) === UPDATEFROM.SYSTEM,
+            ).length > 0 ? (
+            messages
+              .filter((update) => (update.role as any) === UPDATEFROM.SYSTEM)
               .map((update) => (
                 <a
                   key={update.id}
-                  href={update.githubUrl}
+                  href={
+                    (update.annotations![0] as unknown as IAdditionalData)
+                      ?.githubUrl
+                  }
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block w-full rounded-lg bg-gray-100 p-4 hover:bg-gray-200"
                 >
                   <p className="font-semibold">System Update</p>
-                  <p>{update.message}</p>
+                  <p>{update.content}</p>
                 </a>
               ))
           ) : (
@@ -647,12 +499,12 @@ export default function ChatWindow({
                 ))}
               </div>
             )}
-            <div className="flex  items-end gap-2">
+            <div className="flex items-end gap-2">
               <textarea
                 placeholder="Type your message... (start with '/' to choose a ClientBot)"
                 className="w-full resize-none rounded-lg border p-3 outline-none"
-                value={message}
-                onChange={handleTextAreaChange}
+                value={input}
+                onChange={handleCustomInputChange}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     sendMessage();
@@ -660,13 +512,13 @@ export default function ChatWindow({
                 }}
                 disabled={sending}
               />
-              <div className='flex flex-col-reverse gap-1'>
+              <div className="flex flex-col-reverse gap-1">
                 <ButtonSCN
                   onClick={sendMessage}
                   disabled={
-                    (!message.trim() && attachedMedia.length === 0) || sending
+                    (!input.trim() && attachedMedia.length === 0) || sending
                   }
-                  className='py-1'
+                  className="py-1"
                 >
                   {!sending ? (
                     <Send className="my-auto h-4 w-4" />
@@ -674,8 +526,10 @@ export default function ChatWindow({
                     <RefreshCw className="my-auto h-4 w-4 animate-spin" />
                   )}
                 </ButtonSCN>
-                <ButtonSCN onClick={() => fileInputRef.current?.click()}
-                  className='py-1'>
+                <ButtonSCN
+                  onClick={() => fileInputRef.current?.click()}
+                  className="py-1"
+                >
                   <FilePlus className="my-auto h-4 w-4" />
                 </ButtonSCN>
               </div>
@@ -742,8 +596,7 @@ export default function ChatWindow({
                 <h2 className="text-sm">Add your Bots to this request</h2>
                 {clientBots
                   .filter(
-                    (bot) =>
-                      !bot.clientRequestIds.includes(clientRequest?.id),
+                    (bot) => !bot.clientRequestIds.includes(clientRequest?.id),
                   )
                   .map((bot) => (
                     <div
