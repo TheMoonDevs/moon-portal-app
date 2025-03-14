@@ -16,6 +16,16 @@ export const COMPLEXITY_DATA = [
         description: 'ProductHunt is a 1x complexity factor, as all its capabilities are traditional web app features. Most of its complexity is in search functionality, leaderboard sorting & email notifications to users.',
       },
       {
+        icon: '/images/complexity/Pinterest-Logo-2011-2016.png',
+        title: 'Pinterest',
+        description: 'A visual discovery platform like Pinterest focuses on image collection, categorization, and sharing. The core pinboard functionality uses standard database relationships and content delivery patterns that are well-established in modern web development.',
+      },
+      {
+        icon: '/images/complexity/Fitbit-Logo.png',
+        title: 'Fitbit',
+        description: 'A fitness tracking MVP focuses on basic activity logging, goal setting, and progress visualization. The app side of tracking platforms can be built with standard mobile development frameworks and simple data visualization tools.',
+      },
+      {
         icon: '/images/complexity/tinder.png',
         title: 'Tinder',
         description: 'Building a dating app MVP is surprisingly straightforward. The core swipe mechanics, basic matching algorithms, and messaging functionality use well-established patterns that can be implemented with modern frameworks in weeks, not months.',
@@ -29,6 +39,16 @@ export const COMPLEXITY_DATA = [
         icon: '/images/complexity/groupon.png',
         title: 'Groupon',
         description: 'A deals platform MVP focuses on limited but essential features: merchant listings, payment processing, and email distribution. The streamlined version can be built rapidly while maintaining scalability for future feature expansion.',
+      },
+      {
+        icon: '/images/complexity/trello.png',
+        title: 'Trello',
+        description: 'Task management platforms like Trello use straightforward card-based systems with drag-and-drop functionality. The core features rely on proven UI patterns and simple data synchronization that can be implemented with modern frontend frameworks.',
+      },
+      {
+        icon: '/images/complexity/medium.png',
+        title: 'Medium',
+        description: 'Content publishing platforms like Medium focus on clean article creation, basic engagement metrics, and user profiles. The foundational features use established content management patterns that are quick to implement with web technologies.',
       },
     ],
   },
@@ -55,6 +75,21 @@ export const COMPLEXITY_DATA = [
         title: 'Notion',
         description: 'While Notion appears simple, it combines document editing, project management, and team collaboration. The 2x complexity comes from building flexible content blocks and sharing permissions that maintain performance as user content grows.',
       },
+      {
+        icon: '/images/complexity/uber.png',
+        title: 'Uber',
+        description: 'A ride-sharing MVP at 2x complexity focuses on location tracking, driver-rider matching, and basic payment processing. The foundation can be built efficiently while establishing the architecture needed for future features like surge pricing or multiple service tiers.',
+      },
+      {
+        icon: '/images/complexity/spotify.png',
+        title: 'Spotify',
+        description: 'A music streaming MVP requires audio content delivery, playlist management, and basic recommendation features. At 2x complexity, the core streaming functionality and user library can be established while setting the stage for more advanced discovery features.',
+      },
+      {
+        icon: '/images/complexity/discord.png',
+        title: 'Discord',
+        description: 'A community platform like Discord combines real-time messaging with voice channels and role-based permissions. At 2x complexity, the core communication features can be established while maintaining the flexibility needed for future feature expansion.',
+      },
     ],
   },
   {
@@ -71,6 +106,16 @@ export const COMPLEXITY_DATA = [
         description: 'Building an MVP version of a streaming platform is achievable at 3x complexity. The fundamental content delivery, user accounts, and recommendation engine can be implemented efficiently, with architecture that supports future scaling and content expansion.',
       },
       {
+        icon: '/images/complexity/pokemon.jpg',
+        title: 'Pokémon Go',
+        description: 'AR gaming applications like Pokémon Go combine geolocation, augmented reality, and user progression systems. The 3x complexity comes from integrating these technologies while maintaining performance across different mobile devices and environments.',
+      },
+      {
+        icon: '/images/complexity/zapier.png',
+        title: 'Zapier',
+        description: 'Automation platforms like Zapier require flexible integration frameworks, workflow builders, and task scheduling systems. The 3x complexity lies in creating reliable connections across hundreds of third-party services while maintaining intuitive user interfaces.',
+      },
+      {
         icon: '/images/complexity/dappradar.png',
         title: 'DappRadar',
         description: 'DappRadar complexity comes from integrating multiple blockchain networks, real-time data analytics, and market tracking. The platform requires sophisticated indexing systems and API integrations across various decentralized protocols.',
@@ -79,6 +124,16 @@ export const COMPLEXITY_DATA = [
         icon: '/images/complexity/slack.webp',
         title: 'Slack',
         description: 'The complexity in messaging platforms like Slack lies in real-time sync across devices, message threading, and integrations. We can build a solid foundation with the right architecture to handle millions of messages while remaining responsive.',
+      },
+      {
+        icon: '/images/complexity/asana.png',
+        title: 'Asana',
+        description: 'Project management platforms like Asana combine task dependencies, timeline visualizations, and team collaboration features. The 3x complexity comes from building systems that maintain data consistency across different project views and user permissions.',
+      },
+      {
+        icon: '/images/complexity/tableau.png',
+        title: 'Tableau',
+        description: 'Data visualization platforms require sophisticated data processing, interactive charting, and customizable dashboards. The 3x complexity stems from creating systems that can handle large datasets while providing responsive user interfaces for analysis.',
       },
     ],
   },
@@ -110,11 +165,6 @@ export const COMPLEXITY_DATA = [
     id: '5x+',
     tags: [
       {
-        icon: '/images/complexity/perplexity.png',
-        title: 'Perplexity (AI)',
-        description: 'AI platforms like Perplexity require sophisticated natural language processing, real-time data retrieval, and knowledge graph integration. The 5x complexity stems from building systems that continuously learn while providing accurate, contextual responses.',
-      },
-      {
         icon: '/images/complexity/figma.png',
         title: 'Figma (6x)',
         description: 'Design platforms like Figma reach 6x complexity due to their real-time collaboration features, vector rendering engines, and plugin ecosystems. Building high-performance creative tools demands specialized expertise in graphics processing and data synchronization.',
@@ -125,9 +175,14 @@ export const COMPLEXITY_DATA = [
         description: 'Chainlink represents 8x complexity as its not just a product but a critical Web3 infrastructure with decentralized oracles, verifiable random functions, and proof-of-reserve systems. These frameworks require mathematical precision and bulletproof security.',
       },
       {
-        icon: '/images/complexity/duckduck.png',
-        title: 'DuckDuckGo (10x)',
-        description: 'Google products represent the pinnacle of complexity at 10x. Services like Google Maps combine satellite imagery, real-time traffic data, and route optimization at global scale. These systems require massive infrastructure and specialized engineering teams to develop and maintain.',
+        icon: '/images/complexity/googlemaps.png',
+        title: 'Google Maps (10x)',
+        description: 'Google Maps represents the pinnacle of complexity with its combination of satellite imagery, street-level photography, real-time traffic data, and global routing algorithms. The system processes petabytes of geospatial data while maintaining millisecond response times.',
+      },
+      {
+        icon: '/images/complexity/claude.png',
+        title: 'Claude (10x)',
+        description: 'Large language models like Claude represent 10x complexity, requiring massive neural networks, training on billions of parameters, and sophisticated safety systems. These AI systems demand specialized expertise in machine learning and distributed computing infrastructure.',
       },
     ],
   },

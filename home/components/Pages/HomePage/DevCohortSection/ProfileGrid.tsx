@@ -126,12 +126,13 @@ let ProfileData: IProfileData[] = [
         link: 'https://example.com/react-custom-hooks',
       },
       {
-        image_url: '',
+        image_url: '/images/assets/languageLearningApp.avif',
         type: 'article',
-        title: 'Gen AI based duolingo app for skillups',
+        title: 'AI Based Language Learning Platform',
         description:
           'An AI-powered learning platform that enhances skill acquisition.',
-        link: 'https://example.com/gen-ai-skillups',
+        link: 'https://www.kann.app/',
+        cta_text: 'Visit Website',
       },
     ],
   },
