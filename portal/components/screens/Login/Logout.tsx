@@ -31,7 +31,7 @@ export const Logout = ({ user, signOut, passphrase }: any) => {
           </div>
         </div>
       )}
-      <GreyButton onClick={handleLogout}>Sign out</GreyButton>
+      <GreyButton onClick={confirmLogout}>Sign out</GreyButton>
 
       {showWarning && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
