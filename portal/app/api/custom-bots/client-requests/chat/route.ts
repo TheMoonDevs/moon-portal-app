@@ -12,6 +12,7 @@ const slackBotSdk = new SlackBotSdk();
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
+    const storeBotResponse = formData.get('storeBotResponse');
     const originClientRequestId = formData
       .get('originClientRequestId')
       ?.toString();
@@ -26,6 +27,24 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
+
+    if (storeBotResponse) {
+      const storedBotMessage = await prisma.requestMessage.create({
+        data: {
+          originClientRequestId,
+          clientId,
+          message: message,
+          updateType: UPDATETYPE.MESSAGE,
+          updateFrom: UPDATEFROM.BOT,
+        },
+      });
+
+      return NextResponse.json({
+        storedBotMessage: storedBotMessage,
+        status: 200,
+      });
+    }
+
     const initTime = new Date();
 
     const clientRequest = await prisma.clientRequest.findUnique({
