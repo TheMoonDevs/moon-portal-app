@@ -30,8 +30,7 @@ const testimonials = [
   },
   {
     company: 'GenAI Quiz App',
-    stat: '97%',
-    description: 'Customer satisfaction score after integrating personalized learning paths.',
+    description: 'Our Customer satisfaction scores are through the chart after integrating personalized learning paths. The customised SLM models on client-side has been a game changer.',
     author: {
       name: 'SAM MILLER',
       role: 'CPO of EdTech Innovators',
@@ -39,8 +38,8 @@ const testimonials = [
   },
   {
     company: 'LINKTREE',
-    stat: '42%',
-    description: 'Increase in automated support resolution within just six days of implementation.',
+    stat: '4x',
+    description: 'Increase in automated support resolution within just six days of implementation. TheMoonDevs team are real experts when it comes to integrating AI into existing frameworks and systems.',
     author: {
       name: 'DANE BURGESS',
       role: 'Customer Support Director',
@@ -48,26 +47,16 @@ const testimonials = [
   },
   {
     company: 'DAO <-> GOVERNANCE',
-    stat: '5.3x',
-    description: 'Higher voting participation after implementing our decentralized governance framework.',
+    description: 'Higher voting participation after implementing our decentralized governance framework. Their use of VRF for in-contract randomisation & secure voting has been a smooth effort.',
     author: {
       name: 'SOPHIA CHEN',
       role: 'Founder of CommunityDAO',
     },
   },
   {
-    company: 'NFT MARKETPLACE REBORN',
-    stat: '68%',
-    description: 'Decrease in transaction failures with optimized smart contract implementation.',
-    author: {
-      name: 'MARCUS LEE',
-      role: 'CTO of DigiCollect',
-    },
-  },
-  {
-    company: 'DeFi <-> ANALYTICS',
-    stat: '10min',
-    description: 'Average time to deploy advanced liquidity pool strategies, down from 4 hours.',
+    company: 'DeFi <-> AI',
+    stat: '10.08',
+    description: 'Minutes - Average time to deploy advanced liquidity pool strategies, down from 4 hours.',
     author: {
       name: 'RACHEL PETERSON',
       role: 'CEO of YieldForge',
@@ -75,22 +64,21 @@ const testimonials = [
   },
   {
     company: 'ML TRADING BOT',
-    stat: '31%',
-    description: 'Improvement in prediction accuracy through novel transformer architecture.',
+    description: `A simple yet pwerful trading bot is all I wanted, and TheMoonDevs team delivered above & beyond by first connecting me with a CTO who had done this before, helping my tech plan & innovating what's not out there yet`,
     author: {
       name: 'JAMES WONG',
       role: 'Founder of AlgoTrade',
     },
   },
-  {
-    company: 'WEB3 <-> IDENTITY',
-    stat: '99.9%',
-    description: 'Authentication success rate with zero compromised accounts since implementation.',
-    author: {
-      name: 'ELIZA JOHNSON',
-      role: 'CISO of BlockVerify',
-    },
-  },
+  // {
+  //   company: 'WEB3 <-> IDENTITY',
+  //   stat: '99.9%',
+  //   description: 'Authentication success rate with zero compromised accounts since implementation.',
+  //   author: {
+  //     name: 'ELIZA JOHNSON',
+  //     role: 'CISO of BlockVerify',
+  //   },
+  // },
   {
     company: 'METAVERSE STUDIO',
     stat: '74%',
@@ -102,26 +90,25 @@ const testimonials = [
   },
   {
     company: 'AI <-> CONTENT MODERATION',
-    stat: '67%',
+    stat: '6x',
     description: 'Decrease in false positive flags while improving actual violation detection.',
     author: {
       name: 'SAMIR PATEL',
       role: 'CEO of TrustGuard',
     },
   },
-  {
-    company: 'TOKEN GATING PRO',
-    stat: '5x',
-    description: 'Increase in premium content engagement after implementing seamless verification.',
-    author: {
-      name: 'OLIVIA MARTINEZ',
-      role: 'Founder of AccessChain',
-    },
-  },
+  // {
+  //   company: 'TOKEN GATING PRO',
+  //   stat: '5x',
+  //   description: 'Increase in premium content engagement after implementing seamless verification.',
+  //   author: {
+  //     name: 'OLIVIA MARTINEZ',
+  //     role: 'Founder of AccessChain',
+  //   },
+  // },
   {
     company: 'DAPP DASHBOARD',
-    stat: '91%',
-    description: 'Engineering time saved through automated analytics and monitoring solutions.',
+    description: 'Ninety Percent Engineering time saved through automated analytics and monitoring solutions using vercel AI SDK & it tool calling cpaapbilities to build generative UI.',
     author: {
       name: 'WILLIAM TAYLOR',
       role: 'CTO of BlockMonitor',
@@ -136,96 +123,96 @@ const testimonials = [
       role: 'Founder of SecureChain',
     },
   },
-  {
-    company: 'IndustrialPulse',
-    stat: '78%',
-    description: 'Reduction in equipment downtime since implementing their AI solution.',
-    author: {
-      name: 'ELEANOR CHEN',
-      role: 'CTO of IndustrialEdge',
-    },
-  },
-  {
-    company: 'CROSS-CHAIN <-> NFT',
-    stat: '3.2x',
-    description: 'Trading volume increase within first month due to seamless cross-chain functionality.',
-    author: {
-      name: 'MARCUS JOHNSON',
-      role: 'Founder of OmniCollect',
-    },
-  },
+  // {
+  //   company: 'IndustrialPulse',
+  //   stat: '78%',
+  //   description: 'Reduction in equipment downtime since implementing their AI solution.',
+  //   author: {
+  //     name: 'ELEANOR CHEN',
+  //     role: 'CTO of IndustrialEdge',
+  //   },
+  // },
+  // {
+  //   company: 'CROSS-CHAIN <-> NFT',
+  //   stat: '3.2x',
+  //   description: 'Trading volume increase within first month due to seamless cross-chain functionality.',
+  //   author: {
+  //     name: 'MARCUS JOHNSON',
+  //     role: 'Founder of OmniCollect',
+  //   },
+  // },
   {
     company: 'DesignSync Pro',
-    stat: '67%',
-    description: 'Reduced our design iteration cycles while improving team coordination.',
+    description: 'Massively Reduced our design iteration cycles while improving team coordination.',
     author: {
       name: 'SOPHIA MARTINEZ',
       role: 'CPO of DesignSphere',
     },
   },
-  {
-    company: 'MediSync Offline',
-    stat: '91%',
-    description: 'Fewer documentation errors in rural healthcare initiatives.',
-    author: {
-      name: 'DR. JAMES WILSON',
-      role: 'Founder of MedConnect',
-    },
-  },
-  {
-    company: 'LLM <-> LEGAL DOCS',
-    stat: '30x',
-    description: 'Faster contract analysis with higher accuracy than our previous manual process.',
-    author: {
-      name: 'VICTORIA ROBERTS',
-      role: 'COO of LegalStream',
-    },
-  },
-  {
-    company: 'StreamRT',
-    stat: '200ms',
-    description: 'Sub-200ms latency achieved across global participants, revolutionizing our virtual events.',
-    author: {
-      name: 'ALEXANDER HUGHES',
-      role: 'CEO of LiveConnect',
-    },
-  },
-  {
-    company: 'ZERO-GAS <-> COMPLIANCE',
-    stat: '86%',
-    description: 'Reduction in transaction costs while maintaining full regulatory compliance.',
-    author: {
-      name: 'SARAH NAKAMOTO',
-      role: 'Founder of PrivacyFinance',
-    },
-  },
-  {
-    company: 'AccessTix',
-    stat: '26%',
-    description: 'Increase in conversion rates among users with accessibility needs.',
-    author: {
-      name: 'MICHAEL THOMPSON',
-      role: 'CEO of InclusiveEvents',
-    },
-  },
-  {
-    company: 'KANJI <-> AI LEARNING',
-    stat: '47%',
-    description: 'Higher vocabulary retention compared to traditional learning methods.',
-    author: {
-      name: 'YUKI TANAKA',
-      role: 'Founder of LinguaVerse',
-    },
-  },
-  {
-    company: 'VisualEdge IoT',
-    stat: '60fps',
-    description: 'Smooth visualization performance even on legacy industrial hardware.',
-    author: {
-      name: 'OMAR PATEL',
-      role: 'CTO of SensorSync',
-    },
-  }
+  // TODO: Review below testimonials
+  // {
+  //   company: 'MediSync Offline',
+  //   stat: '91%',
+  //   description: 'Fewer documentation errors in rural healthcare initiatives.',
+  //   author: {
+  //     name: 'DR. JAMES WILSON',
+  //     role: 'Founder of MedConnect',
+  //   },
+  // },
+  // {
+  //   company: 'LLM <-> LEGAL DOCS',
+  //   stat: '30x',
+  //   description: 'Faster contract analysis with higher accuracy than our previous manual process.',
+  //   author: {
+  //     name: 'VICTORIA ROBERTS',
+  //     role: 'COO of LegalStream',
+  //   },
+  // },
+  // {
+  //   company: 'StreamRT',
+  //   stat: '200ms',
+  //   description: 'Sub-200ms latency achieved across global participants, revolutionizing our virtual events.',
+  //   author: {
+  //     name: 'ALEXANDER HUGHES',
+  //     role: 'CEO of LiveConnect',
+  //   },
+  // },
+  // {
+  //   company: 'ZERO-GAS <-> COMPLIANCE',
+  //   stat: '86%',
+  //   description: 'Reduction in transaction costs while maintaining full regulatory compliance.',
+  //   author: {
+  //     name: 'SARAH NAKAMOTO',
+  //     role: 'Founder of PrivacyFinance',
+  //   },
+  // },
+  // {
+  //   company: 'AccessTix',
+  //   stat: '26%',
+  //   description: 'Increase in conversion rates among users with accessibility needs.',
+  //   author: {
+  //     name: 'MICHAEL THOMPSON',
+  //     role: 'CEO of InclusiveEvents',
+  //   },
+  // },
+  // {
+  //   company: 'KANJI <-> AI LEARNING',
+  //   stat: '47%',
+  //   description: 'Higher vocabulary retention compared to traditional learning methods.',
+  //   author: {
+  //     name: 'YUKI TANAKA',
+  //     role: 'Founder of LinguaVerse',
+  //   },
+  // },
+  // {
+  //   company: 'VisualEdge IoT',
+  //   stat: '60fps',
+  //   description: 'Smooth visualization performance even on legacy industrial hardware.',
+  //   author: {
+  //     name: 'OMAR PATEL',
+  //     role: 'CTO of SensorSync',
+  //   },
+  // }
 ];
 
 interface Testimonial {

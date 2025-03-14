@@ -14,12 +14,17 @@ const IndustryHeroSection = () => {
 };
 
 const floatingAvatars = [
-  { className: 'right-[3%] top-1/3 sm:right-[35%] sm:top-[5%] xl:top-[0%]' },
   {
+    imageUrl: '/images/assets/nftApp.webp',
+    className: 'right-[3%] top-1/3 sm:right-[35%] sm:top-[5%] xl:top-[0%]'
+  },
+  {
+    imageUrl: '/images/assets/crossChain.webp',
     className:
       'left-0 top-[56.5%] sm:bottom-[60%] sm:left-[22%] sm:top-auto lg:bottom-[39%] lg:-left-[2%] xl:left-[16%] xl:bottom-[40.5%] xl:left-[12%]',
   },
   {
+    imageUrl: '/images/assets/web3Wallet.webp',
     className:
       'bottom-[12%] left-[3%] hidden sm:bottom-[0%] sm:left-auto sm:right-[9%] sm:block',
   },
@@ -59,7 +64,7 @@ const floatingTestimonialCards = [
   {
     company: 'CRYPTO & GEN AI',
     quote: 'Reduction in technical debt while accelerating our AI trading algorithm deployment.',
-    stats: { value: '84%', description: 'Performance Boost' },
+    stats: { description: 'Performance Boost' },
     user: 'ASAD BANGASH',
     role: 'Founder of StellaryAI',
     className: 'bottom-[0%] left-[0%] hidden w-[330px] sm:bottom-auto sm:left-[10%] sm:top-[15%] sm:block sm:w-[330px] lg:left-[34%] lg:top-[18%] lg:w-[360px] xl:left-[40%]',
@@ -67,7 +72,7 @@ const floatingTestimonialCards = [
   {
     company: 'DeFi Protocol',
     role: 'Smart Contract Specialist',
-    stats: { value: '42%', description: 'Gas Cost Reduction' },
+    stats: { description: 'Gas Cost Reduction by 72% for end users by optimizing smart contracts.' },
     user: 'Marcus L.',
     className: 'bottom-[3%] left-[0%] w-[340px] sm:bottom-auto sm:left-auto sm:right-[0%] sm:top-[25%] sm:w-[300px] lg:w-[380px] xl:right-[2%] xl:top-[18%]',
   },
@@ -90,7 +95,7 @@ const floatingTestimonialCards = [
     role: 'Customer Support Director',
     quote: 'Increase in automated support resolution within just six days of implementation.',
     user: 'DANE BURGESS',
-    stats: { value: '42%', description: 'Resolution Rate' },
+    stats: { description: '42% Resolution Rate' },
     className: 'right-[0%] top-[20%] w-[330px] sm:bottom-[20%] sm:top-auto sm:w-[350px] lg:left-[50%] lg:right-auto lg:w-[420px] xl:bottom-[12%] xl:left-[39%]',
   },
   {
@@ -142,7 +147,7 @@ const FloatingElement = React.forwardRef<
   return (
     <div className="absolute inset-0 overflow-hidden">
       {floatingAvatars.map((avatar, index) => (
-        <FloatingAvatars key={index} className={avatar.className} />
+        <FloatingAvatars key={index} className={avatar.className} imageUrl={avatar.imageUrl} />
       ))}
       {floatingTexts.map((text, index) => (
         <FloatingTexts
@@ -172,7 +177,7 @@ const FloatingAvatars = React.forwardRef<
       )}
     >
       <Image
-        src={props.imageUrl || '/images/assets/web3Game-n.png'}
+        src={props.imageUrl ?? "/images/assets/nftApp.webp"}
         alt="avatar"
         width={100}
         height={100}
@@ -261,7 +266,7 @@ const CardFooter: React.FC<CardFooterProps> = ({ user, role }) => {
 
 type TestimonialCardProps = {
   company?: string;
-  stats?: { value: string; description: string };
+  stats?: { value?: string; description: string };
   quote?: string;
   user?: string;
   role?: string;
@@ -281,7 +286,7 @@ const FloatingTestimonialCard = React.forwardRef<
       <blockquote>
         <CardHeader company={company} />
         {stats && (
-          <CardStats value={stats.value} description={stats.description} />
+          <CardStats value={stats.value ?? ""} description={stats.description} />
         )}
         {quote && <CardQuote text={quote} />}
         <CardFooter user={user} role={role} />

@@ -13,7 +13,7 @@ export const projectsData: IIndustryAndProjects[] = [
     industry: 'Crypto',
     projects: [
       {
-        title: 'BoB based gaming web3 competitions',
+        title: 'PvP based gaming web3 competitions',
         link: 'https://play.google.com/store/apps/details?id=com.earnalliance.app&hl=en_IN&pli=1',
         isHot: false,
         image_url: '/images/assets/web3Game-n.png',
@@ -28,10 +28,10 @@ export const projectsData: IIndustryAndProjects[] = [
             description: 'Trading Volume',
           },
         ],
-
         description:
-          'Architected from the ground up with battle-tested smart contracts and a gamer-first UX, we sculpted BoB competitions through rapid prototyping, community-driven iterations, and blockchain innovation that prioritizes transparency without sacrificing performance.',
-       cta_text: "View App"},
+          'Architected from the ground up with battle-tested smart contracts and a gamer-first UX, we sculpted PvP competitions through rapid prototyping, community-driven iterations, and blockchain innovation that prioritizes transparency without sacrificing performance.',
+        cta_text: 'View App',
+      },
       {
         title: 'Drakula | VRF based Social App',
         link: 'http://drakula.app/',
@@ -70,7 +70,7 @@ export const projectsData: IIndustryAndProjects[] = [
         ],
         description:
           'Meticulously crafted through agile development sprints, our Pre-IPO tokenization platform emerged as we stress-tested smart contract security, refined the equity-to-token conversion protocols, and sculpted an institutional-grade UI that bridges traditional finance familiarity with web3 innovation.',
-        cta_text: 'View Case Study'
+        cta_text: 'View Case Study',
       },
       {
         title: 'EVM-compatible Bitcoin fork',
@@ -128,7 +128,7 @@ export const projectsData: IIndustryAndProjects[] = [
         ],
         description:
           'We crafted, a sleek Web3 wallet extension that showcases our ability to blend complex blockchain functionality with intuitive UX. This isnt just another portfolio piece—its living proof of our technical depth in the decentralized space.',
-        cta_text: "View Case Study"
+        cta_text: 'View Case Study',
       },
       {
         title: 'Zypto | Base Chain Wallets',
@@ -148,7 +148,7 @@ export const projectsData: IIndustryAndProjects[] = [
         ],
         description:
           'With Zypto’s decentralised, non-custodial Crypto App you can securely hold, send and receive many cryptocurrencies, including Base Chain. Also, discover ways to buy and spend Base Chain using integrated onramps, plus our range of Base Chain crypto cards, Base Chain gift cards, Base Chain bill payments, and more',
-        cta_text: 'View App'
+        cta_text: 'View App',
       },
       {
         title: 'Smart Wallet Integration (Zero Gas Fees)',
@@ -170,58 +170,61 @@ export const projectsData: IIndustryAndProjects[] = [
           'Zero-G Smart Wallet integration eliminates the primary barrier to Web3 adoption—gas fees. We haveve implemented account abstraction that lets users transact on-chain without ever touching ETH, making dApp interactions as frictionless as Web2.',
       },
       {
-        "title": "NFT Loyalty Ecosystem",
-        "link": "",
-        "isHot": true,
-        "image_url": "/images/assets/nftLoyaltyProgram.png",
-        "type": "article",
-        "stats": [
+        title: 'NFT Loyalty Ecosystem',
+        link: '',
+        isHot: true,
+        image_url: '/images/assets/nftLoyaltyProgram.png',
+        type: 'article',
+        stats: [
           {
-            "value": "14x",
-            "description": "Engagement Boost"
+            value: '14x',
+            description: 'Engagement Boost',
           },
           {
-            "value": "86%",
-            "description": "Retention Rate"
-          }
+            value: '86%',
+            description: 'Retention Rate',
+          },
         ],
-        "description": "Dynamic NFT-based loyalty platform that evolves with user engagement, creating digital collectibles with real utility and tradable value."
+        description:
+          'Dynamic NFT-based loyalty platform that evolves with user engagement, creating digital collectibles with real utility and tradable value.',
       },
       {
-        "title": "zkKYC Protocol",
-        "link": "",
-        "isHot": true,
-        "image_url": "/images/assets/zkKYC-web3.webp",
-        "type": "article",
-        "stats": [
+        title: 'zkKYC Protocol',
+        link: '',
+        isHot: true,
+        image_url: '/images/assets/zkKYC-web3.webp',
+        type: 'article',
+        stats: [
           {
-            "value": "8sec",
-            "description": "Verification Time"
+            value: '8sec',
+            description: 'Verification Time',
           },
           {
-            "value": "100%",
-            "description": "Privacy Preserved"
-          }
+            value: '100%',
+            description: 'Privacy Preserved',
+          },
         ],
-        "description": "Zero-knowledge identity verification allowing compliant DeFi access without exposing personal data, bridging TradFi requirements with Web3 privacy."
+        description:
+          'Zero-knowledge identity verification allowing compliant DeFi access without exposing personal data, bridging TradFi requirements with Web3 privacy.',
       },
       {
-        "title": "Social Recovery Wallet Framework",
-        "link": "",
-        "isHot": true,
-        "image_url": "/images/assets/web3walletRecovery.jpg",
-        "type": "article",
-        "stats": [
+        title: 'Social Recovery Wallet Framework',
+        link: '',
+        isHot: true,
+        image_url: '/images/assets/web3walletRecovery.jpg',
+        type: 'article',
+        stats: [
           {
-            "value": "99.8%",
-            "description": "Recovery Success"
+            value: '99.8%',
+            description: 'Recovery Success',
           },
           {
-            "value": "0",
-            "description": "Seed Phrases"
-          }
+            value: '0',
+            description: 'Seed Phrases',
+          },
         ],
-        "description": "Next-gen wallet security using trusted contacts for recovery instead of seed phrases, eliminating the #1 cause of lost assets."
+        description:
+          'Next-gen wallet security using trusted contacts for recovery instead of seed phrases, eliminating the #1 cause of lost assets.',
       },
     ],
   },
@@ -252,7 +255,7 @@ export const projectsData: IIndustryAndProjects[] = [
         title: 'Ecommerce Chatbot',
         link: '',
         isHot: false,
-        video_url: '/images/assets/ecomChatBot.mp4',
+        video_url: '/images/assets/ecomChatBots.mp4',
         type: 'article',
         stats: [
           {
@@ -413,7 +416,8 @@ export const projectsData: IIndustryAndProjects[] = [
         title: 'Integrating live collaboration (like figma)',
         link: 'https://cobalt-act-e19.notion.site/Building-a-Real-Time-Collaborative-Design-System-Lessons-from-the-Trenches-1aebcad0aeeb803f8578d20311033ce8?pvs=4',
         isHot: true,
-        image_url: '/images/assets/Innovative-AI-Projects-to-Showcase-on-Your-Website.png',
+        image_url:
+          '/images/assets/Innovative-AI-Projects-to-Showcase-on-Your-Website.png',
         type: 'article',
         stats: [
           {
@@ -432,7 +436,7 @@ export const projectsData: IIndustryAndProjects[] = [
         title: 'Slack, Discord, Twitter Bots for Internal updates',
         link: '',
         isHot: false,
-        image_url: '/images/assets/TheMoonDevs-bot-DM-TheMoonDevs-Slack-03-06-2025_02_32_PM.png',
+        image_url: '/images/assets/TheMoonDevs-bots.png',
         type: 'article',
         stats: [
           {
@@ -545,7 +549,7 @@ export const projectsData: IIndustryAndProjects[] = [
         ],
       },
       {
-        title: 'DocUSense',
+        title: 'AI based Doc-reader & analyzer Mobile app',
         link: '',
         isHot: false,
         image_url: '/images/assets/documentReader.png',
@@ -592,7 +596,7 @@ export const projectsData: IIndustryAndProjects[] = [
         title: 'WaveConnect: Social Tracking Platform for Mariners',
         link: 'https://cobalt-act-e19.notion.site/The-Social-Navigation-Revolution-Why-Mariners-Need-Their-Own-Platform-1b0bcad0aeeb809eb7c3f066a9c25e42?pvs=4',
         isHot: false,
-        image_url: '/images/assets/marineSocialApp.jpeg',
+        image_url: '/images/assets/marinefy_ports.jpeg',
         type: 'article',
         stats: [
           {
@@ -670,7 +674,8 @@ export const projectsData: IIndustryAndProjects[] = [
         title: 'Biometric & Passkey Authentications',
         link: 'https://www.authsignal.com/features/biometric-authentication',
         isHot: true,
-        image_url: '/images/assets/67520d8cdf764efa88b871e6_biometric-authentication-optimize-user-experience-p-800.png',
+        image_url:
+          '/images/assets/67520d8cdf764efa88b871e6_biometric-authentication-optimize-user-experience-p-800.png',
         type: 'article',
         stats: [
           {
@@ -706,13 +711,14 @@ export const projectsData: IIndustryAndProjects[] = [
           },
         ],
         image_url: '/images/assets/clockThreeD.jpg',
-        type: 'article', 
+        type: 'article',
         description:
           'Transformed complex CAD files into web-optimized 3D experiences with realistic materials, intuitive interactions, cross-device performance optimization, and seamless integration into existing digital platforms.',
         cta_text: 'View Case Study',
       },
       {
-        title: 'DevOps Automation for Startups: Secure Private Repo Deployment on VPS',
+        title:
+          'DevOps Automation for Startups: Secure Private Repo Deployment on VPS',
         link: 'https://cobalt-act-e19.notion.site/Breaking-the-DevOps-Bottleneck-Automating-Private-Repo-Deployments-on-VPS-1adbcad0aeeb80a4b049d34d846f621a?pvs=4',
         isHot: false,
         image_url: '/images/assets/devOPSAutomations.png',
@@ -798,7 +804,7 @@ export const projectsData: IIndustryAndProjects[] = [
         type: 'article',
         description:
           'Our frontend team developed a WebGL rendering system that displays photorealistic 3D models with dynamic material and component swapping. We solved the challenge of mobile performance by implementing a progressive mesh loading system that adapts detail levels based on device capabilities. The solution increased product customization engagement by 218% and reduced 3D model loading times from 12 seconds to under 2 seconds.',
-        cta_text: 'View Case Study', 
+        cta_text: 'View Case Study',
         stats: [
           {
             value: '218%',

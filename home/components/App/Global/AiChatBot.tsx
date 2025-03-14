@@ -11,7 +11,7 @@ import { prettySinceTimeFromMillis } from '@/helpers/prettyprint';
 const MAX_TOKENS = 5000;
 
 export function AIChat() {
-  const [showChat, setShowChat] = useState(true);
+  const [showChat, setShowChat] = useState(false);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const { openForm } = useFilloutPopup();
 
