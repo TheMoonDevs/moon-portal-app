@@ -70,16 +70,11 @@ export const COMPLEXITY_DATA = [
         title: 'Zoom',
         description: 'With WebRTC technology now mature, building a video conferencing MVP has become significantly more accessible. The core real-time communication features can be implemented quickly, while still allowing for future enhancements like breakout rooms or recording.',
       },
-      {
-        icon: '/images/complexity/notion.png',
-        title: 'Notion',
-        description: 'While Notion appears simple, it combines document editing, project management, and team collaboration. The 2x complexity comes from building flexible content blocks and sharing permissions that maintain performance as user content grows.',
-      },
-      {
-        icon: '/images/complexity/uber.png',
-        title: 'Uber',
-        description: 'A ride-sharing MVP at 2x complexity focuses on location tracking, driver-rider matching, and basic payment processing. The foundation can be built efficiently while establishing the architecture needed for future features like surge pricing or multiple service tiers.',
-      },
+      // {
+      //   icon: '/images/complexity/notion.png',
+      //   title: 'Notion',
+      //   description: 'While Notion appears simple, it combines document editing, project management, and team collaboration. The 2x complexity comes from building flexible content blocks and sharing permissions that maintain performance as user content grows.',
+      // },
       {
         icon: '/images/complexity/spotify.png',
         title: 'Spotify',
@@ -89,6 +84,11 @@ export const COMPLEXITY_DATA = [
         icon: '/images/complexity/discord.png',
         title: 'Discord',
         description: 'A community platform like Discord combines real-time messaging with voice channels and role-based permissions. At 2x complexity, the core communication features can be established while maintaining the flexibility needed for future feature expansion.',
+      },
+      {
+        icon: '/images/complexity/zapier.png',
+        title: 'Zapier',
+        description: 'Automation platforms like Zapier require flexible integration frameworks, workflow builders, and task scheduling systems. The 3x complexity lies in creating reliable connections across hundreds of third-party services while maintaining intuitive user interfaces.',
       },
     ],
   },
@@ -106,14 +106,14 @@ export const COMPLEXITY_DATA = [
         description: 'Building an MVP version of a streaming platform is achievable at 3x complexity. The fundamental content delivery, user accounts, and recommendation engine can be implemented efficiently, with architecture that supports future scaling and content expansion.',
       },
       {
+        icon: '/images/complexity/uber.png',
+        title: 'Uber',
+        description: 'A ride-sharing MVP at 2x complexity focuses on location tracking, driver-rider matching, and basic payment processing. The foundation can be built efficiently while establishing the architecture needed for future features like surge pricing or multiple service tiers.',
+      },
+      {
         icon: '/images/complexity/pokemon.jpg',
         title: 'Pokémon Go',
         description: 'AR gaming applications like Pokémon Go combine geolocation, augmented reality, and user progression systems. The 3x complexity comes from integrating these technologies while maintaining performance across different mobile devices and environments.',
-      },
-      {
-        icon: '/images/complexity/zapier.png',
-        title: 'Zapier',
-        description: 'Automation platforms like Zapier require flexible integration frameworks, workflow builders, and task scheduling systems. The 3x complexity lies in creating reliable connections across hundreds of third-party services while maintaining intuitive user interfaces.',
       },
       {
         icon: '/images/complexity/dappradar.png',
@@ -125,25 +125,30 @@ export const COMPLEXITY_DATA = [
         title: 'Slack',
         description: 'The complexity in messaging platforms like Slack lies in real-time sync across devices, message threading, and integrations. We can build a solid foundation with the right architecture to handle millions of messages while remaining responsive.',
       },
-      {
-        icon: '/images/complexity/asana.png',
-        title: 'Asana',
-        description: 'Project management platforms like Asana combine task dependencies, timeline visualizations, and team collaboration features. The 3x complexity comes from building systems that maintain data consistency across different project views and user permissions.',
-      },
-      {
-        icon: '/images/complexity/tableau.png',
-        title: 'Tableau',
-        description: 'Data visualization platforms require sophisticated data processing, interactive charting, and customizable dashboards. The 3x complexity stems from creating systems that can handle large datasets while providing responsive user interfaces for analysis.',
-      },
+      // {
+      //   icon: '/images/complexity/asana.png',
+      //   title: 'Asana',
+      //   description: 'Project management platforms like Asana combine task dependencies, timeline visualizations, and team collaboration features. The 3x complexity comes from building systems that maintain data consistency across different project views and user permissions.',
+      // },
+      // {
+      //   icon: '/images/complexity/tableau.png',
+      //   title: 'Tableau',
+      //   description: 'Data visualization platforms require sophisticated data processing, interactive charting, and customizable dashboards. The 3x complexity stems from creating systems that can handle large datasets while providing responsive user interfaces for analysis.',
+      // },
     ],
   },
   {
     id: '4x',
     tags: [
+      // {
+      //   icon: '/images/complexity/youtube.png',
+      //   title: 'YouTube',
+      //   description: 'YouTubes complexity exceeds Netflix with its combination of content delivery, live streaming, creator tools, and community features. The platform requires sophisticated video processing pipelines and recommendation systems that operate at massive scale.',
+      // },
       {
-        icon: '/images/complexity/youtube.png',
-        title: 'YouTube',
-        description: 'YouTubes complexity exceeds Netflix with its combination of content delivery, live streaming, creator tools, and community features. The platform requires sophisticated video processing pipelines and recommendation systems that operate at massive scale.',
+        icon: '/images/complexity/asana.png',
+        title: 'Asana',
+        description: 'Project management platforms like Asana combine task dependencies, timeline visualizations, and team collaboration features. The 4x complexity comes from building systems that maintain data consistency across different project views and user permissions.',
       },
       {
         icon: '/images/complexity/uniswap.png',
@@ -161,7 +166,7 @@ export const COMPLEXITY_DATA = [
         description: 'Digital wallets like GPay combine secure payment processing with NFC technology for contactless transactions. The 4x complexity comes from implementing bank integrations, security protocols, and seamless device communication across platforms.',
       },
     ],
-  },{
+  }, {
     id: '5x+',
     tags: [
       {
@@ -263,13 +268,13 @@ const HoveringCard = ({
         <div
           className={`group-hover:lg:scale-80 flex w-full scale-0 cursor-pointer items-center justify-center gap-2 rounded-full bg-[#6100FF] py-1 pr-2 text-sm transition-all duration-300 ease-in-out group-hover:scale-75 group-hover:md:scale-[0.8] ${index === COMPLEXITY_DATA.length - 1 ? 'group-hover:xl:scale-75' : 'group-hover:xl:scale-90'}`}
         >
-          <div className="ml-1 w-16 overflow-hidden rounded-full border-2 border-[#6100FF] bg-white px-1 py-1">
+          <div className="ml-1 flex min-h-12 min-w-12 items-center justify-center overflow-hidden rounded-full border-2 border-[#6100FF] bg-white">
             <Image
               src={tag.icon}
               alt={'s'}
               width={24}
               height={24}
-              className="w-full object-contain"
+              className="min-w-8 min-h-8 object-cover rounded-full"
             />
           </div>
           <span className="w-full text-xs text-white">{tag.title}</span>
