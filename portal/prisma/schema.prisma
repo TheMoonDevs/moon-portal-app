@@ -838,7 +838,7 @@ model Post {
   slug        String   @unique
   title       String
   subtitle    String?
-  content     String   // Main article content
+  content     String?   // Main article content
   jsonContent Json?
   excerpt     String?  // Short preview/summary
   coverImage  String?  // URL to cover image
@@ -847,10 +847,10 @@ model Post {
   status      PostStatus @default(DRAFT)
   
   // SEO metadata
-  seoMeta     SEOMetadata?
-  
+  seoMeta     Json?
   // AI metadata for content understanding
-  aiMeta      AIMetadata?
+  aiMeta      Json?
+  variants     PostVariant[]
   
   // Standard fields
   tags        String[]
@@ -861,27 +861,24 @@ model Post {
   updatedAt   DateTime  @updatedAt
 }
 
-type SEOMetadata {
-  metaTitle       String?
-  metaDescription String?
-  ogTitle         String?
-  ogDescription   String?
-  ogImage         String?
-  keywords        String[]
-  canonicalUrl    String?
-  structuredData  Json?
-}
+model PostVariant {
+  variantId   String  @id @default(auto()) @map("_id") @db.ObjectId
+  siteId      String   @db.ObjectId
+  postId      String   @db.ObjectId
+  slug        String   @unique
+  name        String?
+  title       String
+  subtitle    String?
+  content     String?   // Main article content
+  jsonContent Json?
+  // AI rewrite prompt
+  prompt      String?
+  // SEO metadata
+  seoMeta     Json?
+  // AI metadata for content understanding
+  aiMeta      Json?
 
-type AIMetadata {
-  contentType     String?    // Article, Tutorial, News etc
-  topicTags      String[]   // AI-generated topic classifications
-  readingTime    Int?       // Estimated reading time in minutes
-  complexity     String?    // Basic, Intermediate, Advanced
-  mainConcepts   String[]   // Key concepts covered
-  targetAudience String[]   // Intended reader personas
-  sentiment      String?    // Overall tone/sentiment
-  summary        String?    // AI-generated summary
-  references     Json?      // Related content/citations
+  originPost Post @relation(fields: [postId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
 enum PostStatus {

@@ -1,6 +1,6 @@
 'use client';
 
-import { Command, CommandInput } from '../../ui/command';
+import { Command, CommandInput } from '../../../../ui/command';
 
 import { useCompletion } from '@ai-sdk/react';
 import { ArrowUp } from 'lucide-react';
@@ -9,10 +9,10 @@ import { addAIHighlight } from 'novel';
 import { useState } from 'react';
 import Markdown from 'react-markdown';
 import { toast } from 'sonner';
-import { Button } from '../../ui/button';
-import CrazySpinner from '../../ui/icons/crazy-spinner';
-import Magic from '../../ui/icons/magic';
-import { ScrollArea } from '../../ui/scroll-area';
+import { Button } from '../../../../ui/button';
+import CrazySpinner from '../../../../ui/icons/crazy-spinner';
+import Magic from '../../../../ui/icons/magic';
+import { ScrollArea } from '../../../../ui/scroll-area';
 import AICompletionCommands from './ai-completion-command';
 import AISelectorCommands from './ai-selector-commands';
 //TODO: I think it makes more sense to create a custom Tiptap extension for this functionality https://tiptap.dev/docs/editor/ai/introduction

@@ -1,4 +1,4 @@
-import TailwindAdvancedEditor from '@/components/NovelEditor';
+import TailwindAdvancedEditor from '@/components/screens/Sites/novel/NovelEditor';
 
 const NovelEditorPage = () => {
   return (

@@ -1,7 +1,7 @@
 import { EditorBubble, removeAIHighlight, useEditor } from 'novel';
 import { Fragment, type ReactNode, useEffect } from 'react';
-import { Button } from '../../ui/button';
-import Magic from '../../ui/icons/magic';
+import { Button } from '../../../../ui/button';
+import Magic from '../../../../ui/icons/magic';
 import { AISelector } from './ai-selector';
 
 interface GenerativeMenuSwitchProps {

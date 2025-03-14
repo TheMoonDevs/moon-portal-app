@@ -13,8 +13,8 @@ import {
 } from 'lucide-react';
 import { EditorBubbleItem, useEditor } from 'novel';
 
-import { Button } from '../../ui/button';
-import { PopoverContent, PopoverTrigger } from '../../ui/popover';
+import { Button } from '../../../../ui/button';
+import { PopoverContent, PopoverTrigger } from '../../../../ui/popover';
 import { Popover } from '@radix-ui/react-popover';
 
 export type SelectorItem = {

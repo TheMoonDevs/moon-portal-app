@@ -27,31 +27,7 @@ const SitesPage: NextPage = () => {
         }
     };
 
-    const handleAddSite = async () => {
-        try {
-            const response = await PortalSdk.postData('/api/sites', newSite);
-            if (response) {
-                fetchSites();
-                setNewSite({ siteName: '', description: '', subDomain: '' });
-            }
-        } catch (error) {
-            console.error('Failed to add site', error);
-        }
-    };
 
-    const handleDeleteSite = async () => {
-        if (!siteToDelete) return;
-        try {
-            const response = await PortalSdk.deleteData('/api/sites', { id: siteToDelete });
-            if (response) {
-                fetchSites();
-                setShowDialog(false);
-                setSiteToDelete(null);
-            }
-        } catch (error) {
-            console.error('Failed to delete site', error);
-        }
-    };
 
     return (
         <div className="p-6">
@@ -78,9 +54,6 @@ const SitesPage: NextPage = () => {
                     onChange={(e) => setNewSite({ ...newSite, subDomain: e.target.value.replaceAll(' ', '-').replaceAll('.', '-').replaceAll('/', '-') })}
                     className="border p-2 mr-2"
                 />
-                <button onClick={handleAddSite} className="bg-blue-500 text-white p-2">
-                    Add Site
-                </button>
             </div>
             <div className="grid grid-cols-1 gap-4">
                 {sites.map((site) => (
@@ -116,9 +89,6 @@ const SitesPage: NextPage = () => {
                     <div className="bg-white p-6 rounded shadow">
                         <p>Are you sure you want to delete this site?</p>
                         <div className="mt-4">
-                            <button onClick={handleDeleteSite} className="bg-red-500 text-white p-2 mr-2">
-                                Yes, Delete
-                            </button>
                             <button onClick={() => setShowDialog(false)} className="bg-gray-300 p-2">
                                 Cancel
                             </button>

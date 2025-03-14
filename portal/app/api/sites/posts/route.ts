@@ -6,6 +6,7 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
     const siteId = searchParams.get('siteId');
+    console.log(siteId, id, req.url);
     const post = await prisma.post.findMany({
       where: {
         ...(id && { id }),

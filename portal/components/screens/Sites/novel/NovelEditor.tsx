@@ -13,21 +13,21 @@ import {
   handleImageDrop,
   handleImagePaste,
 } from 'novel';
-import { use, useEffect, useState } from 'react';
+import { memo, use, useEffect, useState } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
-import { defaultExtensions } from './novel/extensions';
-import { ColorSelector } from './novel/selectors/color-selector';
-import { LinkSelector } from './novel/selectors/link-selector';
-import { MathSelector } from './novel/selectors/math-selector';
-import { NodeSelector } from './novel/selectors/node-selector';
-import { Separator } from './ui/separator';
+import { defaultExtensions } from './extensions';
+import { ColorSelector } from './selectors/color-selector';
+import { LinkSelector } from './selectors/link-selector';
+import { MathSelector } from './selectors/math-selector';
+import { NodeSelector } from './selectors/node-selector';
+import { Separator } from '../../../ui/separator';
 
-import GenerativeMenuSwitch from './novel/generative/generative-menu-switch';
-import { TextButtons } from './novel/selectors/text-buttons';
-import { slashCommand, suggestionItems } from './novel/slash-command';
+import GenerativeMenuSwitch from './generative/generative-menu-switch';
+import { TextButtons } from './selectors/text-buttons';
+import { slashCommand, suggestionItems } from './slash-command';
 import TurndownService from 'turndown';
-import { useNovelImageUpload } from './novel/image-upload';
-import { AlignSelector } from './novel/selectors/text-align-selector';
+import { useNovelImageUpload } from './image-upload';
+import { AlignSelector } from './selectors/text-align-selector';
 
 const hljs = require('highlight.js');
 
@@ -38,14 +38,32 @@ export const defaultEditorContent = {
   type: 'doc',
   content: [
     {
+      type: 'heading',
+      attrs: {
+        level: 1,
+      },
+      content: [
+        { type: 'text', text: 'New Blog Title' },
+      ],
+    },
+    {
       type: 'paragraph',
+      content: [
+        { type: 'text', text: 'New Blog Content' },
+      ],
     },
   ],
 };
 
-const TailwindAdvancedEditor = () => {
+const TailwindAdvancedEditor = memo(({
+  content: initContent,
+  onUpdate
+}: {
+  content?: JSONContent,
+  onUpdate?: (content: JSONContent, title?: string, para?: string, image?: string, markdown?: string) => Promise<boolean>
+}) => {
   const [initialContent, setInitialContent] = useState<null | JSONContent>(
-    null,
+    initContent ?? null,
   );
   const [saveStatus, setSaveStatus] = useState('Saved');
   const [charsCount, setCharsCount] = useState();
@@ -84,20 +102,20 @@ const TailwindAdvancedEditor = () => {
         'html-content',
         highlightCodeblocks(editor.getHTML()),
       );
-      window.localStorage.setItem('novel-content', JSON.stringify(json));
+      //window.localStorage.setItem('novel-content', JSON.stringify(json));
       const markdown = turndownService.turndown(editor.getHTML());
+      onUpdate?.(json, title, para, image, markdown);
 
-      window.localStorage.setItem('markdown', markdown);
+      //window.localStorage.setItem('markdown', markdown);
       setSaveStatus('Saved');
     },
     500,
   );
 
   useEffect(() => {
-    const content = window.localStorage.getItem('novel-content');
-    if (content) setInitialContent(JSON.parse(content));
-    else setInitialContent(defaultEditorContent);
-  }, []);
+    if (initContent) setInitialContent(initContent);
+    else setInitialContent(null);
+  }, [initContent]);
 
   if (!initialContent) return null;
 
@@ -106,7 +124,7 @@ const TailwindAdvancedEditor = () => {
       <div className="w-full my-3 px-6 flex justify-between items-center gap-2 border-b border-neutral-200 pb-3">
         <div className='flex gap-2 items-center'>
           <div className="rounded-lg bg-accent px-2 py-1 text-sm text-muted-foreground">
-            {saveStatus}
+            Local Changes:{saveStatus}
           </div>
           <div
             className={' px-2 py-1 text-xs text-muted-foreground'
@@ -185,6 +203,8 @@ const TailwindAdvancedEditor = () => {
       </EditorRoot>
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  return prevProps.content === nextProps.content;
+});
 
 export default TailwindAdvancedEditor;
