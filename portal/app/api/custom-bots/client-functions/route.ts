@@ -1,29 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/prisma/prisma';
-import { UPDATEFROM, UPDATETYPE } from '@prisma/client';
+import { UPDATEFROM, UPDATETYPE, BOTMODE, FUNCTIONTYPE } from '@prisma/client';
 
 // Create ClientRequestFunction
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
         const {
+            originClientRequestId,
             name,
-            type,
-            mode,
-            service,
             baseUrl,
+            mode,
+            type,
             endpoints,
-            clientRequestId,
-            claudiaJson,
+            schedule,
+            metadata,
         } = body;
 
-        if (!name || !service || !baseUrl || !endpoints || !clientRequestId || !type || !mode) {
+        if (!originClientRequestId || !name || !baseUrl || !type || !mode) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
         // Get clientId and botProjectId from ClientRequest
         const clientRequest = await prisma.clientRequest.findUnique({
-            where: { id: clientRequestId },
+            where: { id: originClientRequestId },
         });
 
         if (!clientRequest) {
@@ -35,27 +35,25 @@ export async function POST(req: NextRequest) {
         // Create the ClientRequestFunction
         const clientFunction = await prisma.clientRequestFunction.create({
             data: {
-                name,
-                type,
-                mode,
-                service,
-                baseUrl,
-                endpoints,
                 clientId,
                 botProjectId,
-                originClientRequestId: clientRequestId,
-                metadata: {
-                    claudiaJson,
-                },
+                originClientRequestId,
+                name,
+                baseUrl,
+                mode: mode as BOTMODE,
+                type: type as FUNCTIONTYPE,
+                endpoints,
+                schedule,
+                metadata,
             },
         });
 
         // Add notification in chat if needed
         await prisma.requestMessage.create({
             data: {
-                originClientRequestId: clientRequestId,
+                originClientRequestId,
                 clientId,
-                message: `A new ${type.toLowerCase()} function "${name}" for ${service} service has been deployed to ${mode} mode`,
+                message: `A new ${type.toLowerCase()} function "${name}" has been deployed to ${mode} mode`,
                 updateType: UPDATETYPE.MESSAGE,
                 updateFrom: UPDATEFROM.BOT,
             },
@@ -91,6 +89,9 @@ export async function GET(req: NextRequest) {
                 ...(botProjectId && { botProjectId }),
                 ...(clientRequestId && { originClientRequestId: clientRequestId }),
             },
+            include: {
+                originClientRequest: true,
+            },
         });
 
         return NextResponse.json({ clientFunctions }, { status: 200 });
@@ -107,7 +108,16 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
     try {
         const body = await req.json();
-        const { id, name, service, baseUrl, endpoints, type, mode, claudiaJson } = body;
+        const {
+            id,
+            name,
+            type,
+            mode,
+            baseUrl,
+            endpoints,
+            schedule,
+            metadata
+        } = body;
 
         if (!id) {
             return NextResponse.json({ error: 'Missing function ID' }, { status: 400 });
@@ -125,12 +135,12 @@ export async function PUT(req: NextRequest) {
         const updateData: any = {};
 
         if (name !== undefined) updateData.name = name;
-        if (service !== undefined) updateData.service = service;
+        if (type !== undefined) updateData.type = type as FUNCTIONTYPE;
+        if (mode !== undefined) updateData.mode = mode as BOTMODE;
         if (baseUrl !== undefined) updateData.baseUrl = baseUrl;
         if (endpoints !== undefined) updateData.endpoints = endpoints;
-        if (type !== undefined) updateData.type = type;
-        if (mode !== undefined) updateData.mode = mode;
-        if (claudiaJson !== undefined) updateData.metadata.claudiaJson = claudiaJson;
+        if (schedule !== undefined) updateData.schedule = schedule;
+        if (metadata !== undefined) updateData.metadata = metadata;
 
         const updatedFunction = await prisma.clientRequestFunction.update({
             where: { id },
