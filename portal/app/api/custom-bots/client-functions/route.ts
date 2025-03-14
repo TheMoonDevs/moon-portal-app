@@ -80,8 +80,8 @@ export async function GET(req: NextRequest) {
         const botProjectId = searchParams.get('botProjectId');
         const clientRequestId = searchParams.get('clientRequestId');
 
-        if (!id && !clientId && !botProjectId && !clientRequestId) {
-            return NextResponse.json({ error: 'Missing id, clientId, botProjectId, or clientRequestId parameter' }, { status: 400 });
+        if (!id && !clientId && !botProjectId && !clientRequestId && !name) {
+            return NextResponse.json({ error: 'Missing id, name, clientId, botProjectId, or clientRequestId parameter' }, { status: 400 });
         }
 
         const clientFunctions = await prisma.clientRequestFunction.findMany({
