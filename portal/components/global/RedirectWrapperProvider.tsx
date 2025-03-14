@@ -34,7 +34,7 @@ export default function RedirectWrapperProvider({
     const uri = `${window.location.origin}/login?uri=${callbackurl}`;
     dispatch(setRedirectUri(uri));
 
-    if (requestedRoute) {
+    if (!session && requestedRoute) {
       router.replace(`/login?uri=${callbackurl}`);
       console.log('Redirecting to login page');
     }
