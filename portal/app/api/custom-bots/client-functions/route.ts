@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
             mode,
             type,
             endpoints,
-            schedule,
+            schedules,
             metadata,
         } = body;
 
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
                 mode: mode as BOTMODE,
                 type: type as FUNCTIONTYPE,
                 endpoints,
-                schedule,
+                schedules,
                 metadata,
             },
         });
@@ -74,6 +74,8 @@ export async function GET(req: NextRequest) {
     try {
         const { searchParams } = new URL(req.url);
         const id = searchParams.get('id');
+        const mode = searchParams.get('mode');
+        const name = searchParams.get('name');
         const clientId = searchParams.get('clientId');
         const botProjectId = searchParams.get('botProjectId');
         const clientRequestId = searchParams.get('clientRequestId');
@@ -85,6 +87,7 @@ export async function GET(req: NextRequest) {
         const clientFunctions = await prisma.clientRequestFunction.findMany({
             where: {
                 ...(id && { id }),
+                ...(name && { name }),
                 ...(clientId && { clientId }),
                 ...(botProjectId && { botProjectId }),
                 ...(clientRequestId && { originClientRequestId: clientRequestId }),
@@ -115,7 +118,7 @@ export async function PUT(req: NextRequest) {
             mode,
             baseUrl,
             endpoints,
-            schedule,
+            schedules,
             metadata
         } = body;
 
@@ -139,7 +142,7 @@ export async function PUT(req: NextRequest) {
         if (mode !== undefined) updateData.mode = mode as BOTMODE;
         if (baseUrl !== undefined) updateData.baseUrl = baseUrl;
         if (endpoints !== undefined) updateData.endpoints = endpoints;
-        if (schedule !== undefined) updateData.schedule = schedule;
+        if (schedules !== undefined) updateData.schedules = schedules;
         if (metadata !== undefined) updateData.metadata = metadata;
 
         const updatedFunction = await prisma.clientRequestFunction.update({
