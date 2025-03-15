@@ -1,25 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/prisma/prisma';
-import { s3FileUploadSdk } from '@/utils/services/s3FileUploadSdk';
 import { GithubSdk } from '@/utils/services/githubSdk';
 import { TEMPLATE_REPO_OWNER } from '@/utils/constants/customBots';
-import { updateClientRequest } from '@/utils/services/customBots/clientRequests/updateClientRequest';
+// import { updateClientRequest } from '@/utils/services/customBots/clientRequests/updateClientRequest';
 import { REQUESTSTATUS, UPDATEFROM, UPDATETYPE } from '@prisma/client';
 import { SlackBotSdk, SlackChannels } from '@/utils/services/slackBotSdk';
+import { InputJsonValue } from '@prisma/client/runtime/library';
 
 const slackBotSdk = new SlackBotSdk();
 
+interface IMediaPayloadType {
+  mediaName: string;
+  mediaType: string;
+  mediaFormat: string;
+  mediaUrl: string;
+}
+[];
+
 export async function POST(req: NextRequest) {
   try {
-    const formData = await req.formData();
-    const storeBotResponse = formData.get('storeBotResponse');
-    const originClientRequestId = formData
-      .get('originClientRequestId')
-      ?.toString();
-    const clientId = formData.get('clientId')?.toString();
-    const message = formData.get('message')?.toString();
+    const messageType = req.nextUrl.searchParams.get('messageType');
+    const body = await req.json();
+    const mediaPayload: IMediaPayloadType[] = body.mediaPayload || [];
+    const { originClientRequestId, clientId, message } = body;
+    // const formData = await req.formData();
+    // const originClientRequestId = formData
+    //   .get('originClientRequestId')
+    //   ?.toString();
+    // const clientId = formData.get('clientId')?.toString();
+    // const message = formData.get('message')?.toString();
     // Files are sent under key "file" (can be multiple)
-    const files = formData.getAll('file') as unknown as File[];
+    // const files = formData.getAll('file') as unknown as File[];
 
     if (!originClientRequestId || !clientId || !message) {
       return NextResponse.json(
@@ -28,7 +39,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (storeBotResponse) {
+    if (messageType === 'chatbot') {
       const storedBotMessage = await prisma.requestMessage.create({
         data: {
           originClientRequestId,
@@ -79,42 +90,42 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Process file uploads via S3 if files are provided.
-    let mediaPayload: {
-      mediaName: string;
-      mediaType: string;
-      mediaFormat: string;
-      mediaUrl: string;
-    }[] = [];
+    // // Process file uploads via S3 if files are provided.
+    // let mediaPayload: {
+    //   mediaName: string;
+    //   mediaType: string;
+    //   mediaFormat: string;
+    //   mediaUrl: string;
+    // }[] = [];
 
-    if (files && files.length > 0) {
-      const folderName =
-        formData.get('folderName')?.toString() || 'customBots/clientMessages';
-      const filePromises = files.map(async (file) => {
-        const uniqueName = `${Date.now()}-${file.name}`;
-        const newFile = new File([file], uniqueName, { type: file.type });
-        const s3Response = await s3FileUploadSdk.uploadFile({
-          file: newFile,
-          userId: clientId,
-          folder: folderName,
-        });
-        if (!s3Response || s3Response.$metadata.httpStatusCode !== 200) {
-          throw new Error('Failed to upload file');
-        }
-        const fileUrl = s3FileUploadSdk.getPublicFileUrl({
-          userId: clientId,
-          file: newFile,
-          folder: folderName,
-        });
-        return {
-          mediaName: file.name,
-          mediaType: file.type,
-          mediaFormat: file.name.split('.').pop() || 'file',
-          mediaUrl: fileUrl,
-        };
-      });
-      mediaPayload = await Promise.all(filePromises);
-    }
+    // if (files && files.length > 0) {
+    //   const folderName =
+    //     formData.get('folderName')?.toString() || 'customBots/clientMessages';
+    //   const filePromises = files.map(async (file) => {
+    //     const uniqueName = `${Date.now()}-${file.name}`;
+    //     const newFile = new File([file], uniqueName, { type: file.type });
+    //     const s3Response = await s3FileUploadSdk.uploadFile({
+    //       file: newFile,
+    //       userId: clientId,
+    //       folder: folderName,
+    //     });
+    //     if (!s3Response || s3Response.$metadata.httpStatusCode !== 200) {
+    //       throw new Error('Failed to upload file');
+    //     }
+    //     const fileUrl = s3FileUploadSdk.getPublicFileUrl({
+    //       userId: clientId,
+    //       file: newFile,
+    //       folder: folderName,
+    //     });
+    //     return {
+    //       mediaName: file.name,
+    //       mediaType: file.type,
+    //       mediaFormat: file.name.split('.').pop() || 'file',
+    //       mediaUrl: fileUrl,
+    //     };
+    //   });
+    //   mediaPayload = await Promise.all(filePromises);
+    // }
 
     // Build Markdown for GitHub preview of attached media.
     const mediaMarkdown =
@@ -229,15 +240,15 @@ export async function POST(req: NextRequest) {
         branch: newBranch,
       });
 
-      // Refresh client request updates.
-      await updateClientRequest(clientRequest);
+      // // Refresh client request updates.
+      // await updateClientRequest(clientRequest);
 
       await prisma.requestMessage.create({
         data: {
           originClientRequestId,
           clientId,
           message,
-          media: mediaPayload,
+          media: mediaPayload as unknown as InputJsonValue[],
           updateType: UPDATETYPE.MESSAGE,
           updateFrom: UPDATEFROM.CLIENT,
           createdAt: initTime,
@@ -270,14 +281,14 @@ export async function POST(req: NextRequest) {
         lastRequestPrNumber || clientRequest.prNumber,
         commentBody,
       );
-      await updateClientRequest(clientRequest);
+      // await updateClientRequest(clientRequest);
 
       await prisma.requestMessage.create({
         data: {
           originClientRequestId,
           clientId,
           message,
-          media: mediaPayload,
+          media: mediaPayload as unknown as InputJsonValue[],
           updateType: UPDATETYPE.MESSAGE,
           updateFrom: UPDATEFROM.CLIENT,
           createdAt: initTime,

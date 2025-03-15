@@ -14,7 +14,7 @@ export async function GET(req: Request) {
 
     const clientRequest = await prisma.clientRequest.findUnique({
       where: { id: clientRequestId },
-      include: { requestUpdates: true },
+      include: { requestMessages: true },
     });
     if (!clientRequest)
       return NextResponse.json(
@@ -22,12 +22,12 @@ export async function GET(req: Request) {
         { status: 404 },
       );
 
-    const updatedClientRequest = await updateClientRequest(clientRequest);
+    // const updatedClientRequest = await updateClientRequest(clientRequest);
 
     return NextResponse.json(
       {
-        requestMessages: updatedClientRequest?.requestMessages,
-        requestStatus: updatedClientRequest?.requestStatus,
+        requestMessages: clientRequest.requestMessages,
+        requestStatus: clientRequest?.requestStatus,
       },
       { status: 200 },
     );

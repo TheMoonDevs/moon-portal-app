@@ -759,6 +759,7 @@ model RequestMessage {
   originClientRequestId String     @db.ObjectId
   clientId              String     @db.ObjectId
   message               String
+  agentType             AGENTTYPE?
   media                 Json[]
   githubUrl             String?
   updateType            UPDATETYPE
@@ -768,6 +769,11 @@ model RequestMessage {
   updatedAt             DateTime   @updatedAt
 
   originClientRequest ClientRequest @relation(fields: [originClientRequestId], references: [id])
+}
+
+enum AGENTTYPE {
+  BUILDBOT
+  MICROFOX
 }
 
 enum UPDATETYPE {
