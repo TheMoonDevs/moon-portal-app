@@ -1,31 +1,37 @@
 import { Message, useChat } from '@ai-sdk/react';
-import { TMD_PORTAL_API_KEY } from '../constants/appInfo';
 import { RequestMessage, UPDATEFROM } from '@prisma/client';
 import useSWR from 'swr';
 import { toast } from 'sonner';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AttachedMedia,
   ClientRequest,
 } from '@/components/screens/CustomBots/ChatWindow';
 import { JsonValue } from '@prisma/client/runtime/library';
+import { PortalSdk } from '../services/PortalSdk';
 
 interface UseVercelChatProps {
   clientId: string;
   clientRequest: ClientRequest;
 }
 
+export interface IMediaPayloadType {
+  mediaName: string;
+  mediaType: string;
+  mediaFormat: string;
+  mediaUrl: string;
+}
+
 export interface IAdditionalData {
   clientId: string;
-  media: Array<{
-    mediaName: string;
-    mediaType: string;
-    mediaFormat: string;
-    mediaUrl: string;
-  }>;
+  media: IMediaPayloadType[];
   metadata?: JsonValue | null;
   githubUrl?: string;
 }
+
+type AgentType = 'BUILDBOT' | 'MICROFOX';
+type ContextType = 'chatbot' | 'server';
+type ServerStatusType = 'pending' | 'success' | 'error' | 'idle';
 
 const useVercelChat = ({ clientId, clientRequest }: UseVercelChatProps) => {
   const {
@@ -35,79 +41,77 @@ const useVercelChat = ({ clientId, clientRequest }: UseVercelChatProps) => {
     setMessages,
     setInput,
     input,
+    status,
     handleInputChange,
   } = useChat({
     api: '/api/chat',
-    onResponse: async (response) =>
-      console.log('response', await response.json()),
+    onResponse: async (response) => {
+      try {
+        // NOTE: THIS STORING OF BOT MESSAGES CAN ALSO BE
+        // DONE ON THE BACKEND /API/CHAT INSIDE onFinish()
+        const botResponse = await response.json();
+
+        // Save bot response to database
+        await PortalSdk.postData(
+          '/api/custom-bots/client-requests/chat?messageType=chatbot',
+          {
+            originClientRequestId: clientRequest.id,
+            clientId,
+            message: botResponse.content,
+            // CHANGE THIS: AGENT TYPE SHOULD COME FROM SERVER WITH BOT RESPONSE
+            // This could be either in data or annotations
+            agentType: botResponse.data[0].agentType,
+          },
+        );
+      } catch (error) {
+        console.log('error', error);
+      }
+    },
     onError: (error) => console.log('error', error),
   });
-  const [requestStatus, setRequestStatus] = useState(
-    clientRequest?.requestStatus,
-  );
+
   const [attachedMedia, setAttachedMedia] = useState<AttachedMedia[]>([]);
-  const [sending, setSending] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [showSlashModal, setShowSlashModal] = useState(false);
+  const [context, setContext] = useState<ContextType>('server');
+  const [agentType, setAgentType] = useState<AgentType>();
+  const [serverMessageStatus, setServerMessageStatus] =
+    useState<ServerStatusType>('idle');
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const files = Array.from(e.target.files);
-      const newMedia = files.map((file) => ({
-        file,
-        preview: URL.createObjectURL(file),
-      }));
-      setAttachedMedia((prev) => [...prev, ...newMedia]);
-      e.target.value = '';
-    }
-  };
+  const messageStatus = useMemo(
+    () => (context === 'chatbot' ? status : serverMessageStatus),
+    [context, status, serverMessageStatus],
+  );
 
-  const removeMedia = (index: number) => {
-    setAttachedMedia((prev) => {
-      const updated = [...prev];
-      URL.revokeObjectURL(updated[index].preview);
-      updated.splice(index, 1);
-      return updated;
-    });
-  };
-
-  const handleCustomInputChange = (
-    e:
-      | React.ChangeEvent<HTMLInputElement>
-      | React.ChangeEvent<HTMLTextAreaElement>,
-  ) => {
-    handleInputChange(e);
-    if (e.target.value.startsWith('/')) {
-      setShowSlashModal(true);
-    } else {
-      setShowSlashModal(false);
-    }
-  };
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  // Map API response to bot response format
-  const mapApiResponseToBotResponse = (apiResponse: RequestMessage) => {
-    const { id, message, createdAt, media, updateType, updateFrom, metadata } =
-      apiResponse;
-    return {
-      id,
-      role: updateFrom as any,
-      content: message,
-      createdAt: createdAt,
-      annotations: [
-        {
-          media,
-          clientId,
-          metadata,
-          updateType,
-          githubUrl: apiResponse.githubUrl,
-        },
-      ],
-    } as Message;
-  };
+  // Mapper function to convert API response to bot response format
+  const mapApiResponseToBotResponse = useCallback(
+    (apiResponse: RequestMessage) => {
+      const {
+        id,
+        message,
+        createdAt,
+        media,
+        updateType,
+        updateFrom,
+        metadata,
+      } = apiResponse;
+      return {
+        id,
+        role: updateFrom as any,
+        content: message,
+        createdAt: createdAt,
+        annotations: [
+          {
+            media,
+            clientId,
+            metadata,
+            updateType,
+            githubUrl: apiResponse.githubUrl,
+            agentType: apiResponse.agentType,
+          },
+        ],
+      } as Message;
+    },
+    [],
+  );
 
   // Fetch updates for this client request
   const {
@@ -116,7 +120,7 @@ const useVercelChat = ({ clientId, clientRequest }: UseVercelChatProps) => {
     isLoading,
     isValidating,
   } = useSWR(
-    `/api/custom-bots/client-requests/update?requestId=${clientRequest.id}`,
+    `/api/custom-bots/client-requests/chat/update?requestId=${clientRequest.id}`,
     async (url) => {
       try {
         const res = await fetch(url);
@@ -131,162 +135,152 @@ const useVercelChat = ({ clientId, clientRequest }: UseVercelChatProps) => {
 
   // Initialize messages when updates are fetched
   useEffect(() => {
-    if (!sending && requestMessagesUpdate && !isValidating) {
+    if (
+      !(messageStatus === 'pending' || messageStatus === 'streaming') &&
+      requestMessagesUpdate &&
+      !isValidating
+    ) {
       setMessages(
         requestMessagesUpdate.requestMessages.map(mapApiResponseToBotResponse),
       );
-      setRequestStatus(requestMessagesUpdate.requestStatus);
+      // setRequestStatus(requestMessagesUpdate.requestStatus);
     }
   }, [requestMessagesUpdate]);
 
+  const { data: prUpdates } = useSWR(
+    `/api/custom-bots/client-requests/chat/pr-updates?requestId=${clientRequest.id}`,
+    async (url) => {
+      try {
+        const res = await fetch(url);
+        return res.json();
+      } catch (err) {
+        toast.error('Failed to fetch updates.');
+        console.error('Fetch error:', err);
+        return null;
+      }
+    },
+    { refreshInterval: 1000 },
+  );
+
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  // Helper function to save messages to the database
-  const saveMessageToDB = async (endpoint: string, formData: FormData) => {
-    await fetch(endpoint, {
-      method: 'POST',
-      body: formData,
-      headers: { tmd_portal_api_key: TMD_PORTAL_API_KEY },
-    });
-  };
-
-  // Helper function to save CLIENT message to the database
-  const saveClientMessageToDB = async () => {
-    console.log('saveClientMessageToDB', input);
-    const formData = new FormData();
-    formData.append('originClientRequestId', clientRequest.id);
-    formData.append('clientId', clientId);
-    formData.append('message', input);
-    // Append media files
-    attachedMedia?.forEach((mediaObj) =>
-      formData.append('file', mediaObj.file),
-    );
-    formData.append('userId', clientId);
-    formData.append('uploadedByUserId', clientId);
-    // Save user message to database
-    await saveMessageToDB('/api/custom-bots/client-requests/chat', formData);
-  };
+    if (prUpdates) {
+      setMessages(prUpdates.requestMessages.map(mapApiResponseToBotResponse));
+    }
+  }, [prUpdates]);
 
   // Append user message and handle bot response
-  const dupAppend = async (options?: { context?: string }) => {
-    console.log('dupAppend', options);
-    const isChatbot = options?.context === 'chatbot';
-    if (sending) {
-      toast.error('Last message is being sent. Please wait.');
-      return;
-    }
+  const customAppend = useCallback(
+    async (options: {
+      context?: ContextType;
+      agentType?: AgentType;
+      data?: {
+        mediaPayload?: Array<{
+          mediaName: string;
+          mediaType: string;
+          mediaFormat: string;
+          mediaUrl: string;
+        }>;
+      };
+    }) => {
+      const messageContext = options?.context || context;
+      const requestedAgentType = agentType || options?.agentType;
+      const mediaPayload = options?.data?.mediaPayload;
 
-    if (isChatbot) {
-      try {
-        const res = await append({
-          id: crypto.randomUUID(),
-          role: UPDATEFROM.CLIENT as any,
-          content: input,
-          createdAt: new Date(),
-          annotations: [
-            {
-              clientId,
-              media:
-                attachedMedia?.map((m) => ({
-                  mediaName: m.file.name,
-                  mediaType: m.file.type,
-                  mediaFormat: m.file.name.split('.').pop() || 'file',
-                  mediaUrl: m.preview,
-                })) || [],
-            },
-          ],
-        });
+      // if (sending) {
+      //   toast.error('Last message is being sent. Please wait.');
+      //   return;
+      // }
 
-        //reset
-        setInput('');
-        // attachedMedia.forEach((media) => URL.revokeObjectURL(media.preview));
-        setAttachedMedia([]);
-
-        if (!res) return;
-
-        setSending(true);
-
-        // save client message to db
-        await saveClientMessageToDB();
-
-        // Save bot response to database
-        const vercelBotFormData = new FormData();
-        vercelBotFormData.append('originClientRequestId', clientRequest.id);
-        vercelBotFormData.append('clientId', clientId);
-        vercelBotFormData.append('message', res);
-        vercelBotFormData.append('storeBotResponse', 'true');
-        await saveMessageToDB(
-          '/api/custom-bots/client-requests/chat',
-          vercelBotFormData,
-        );
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setSending(false);
-      }
-    } else {
-      const tempId = crypto.randomUUID();
-      try {
-        // Append user message locally
-        setMessages((ms) => [
-          ...ms,
-          {
-            id: tempId,
+      if (messageContext === 'chatbot') {
+        try {
+          append({
+            id: crypto.randomUUID(),
             role: UPDATEFROM.CLIENT as any,
             content: input,
             createdAt: new Date(),
             annotations: [
               {
-                media:
-                  attachedMedia?.map((m) => ({
-                    mediaName: m.file.name,
-                    mediaType: m.file.type,
-                    mediaFormat: m.file.name.split('.').pop() || 'file',
-                    mediaUrl: m.preview,
-                  })) || [],
                 clientId,
+                media: mediaPayload || [],
+                ...(requestedAgentType && { requestedAgentType }),
               },
             ],
-          },
-        ]);
-        setInput('');
-        attachedMedia.forEach((media) => URL.revokeObjectURL(media.preview));
-        setAttachedMedia([]);
+          });
 
-        setSending(true);
+          // save client message to db
+          await PortalSdk.postData('/api/custom-bots/client-requests/chat', {
+            originClientRequestId: clientRequest.id,
+            clientId,
+            message: input,
+            mediaPayload,
+          });
 
-        // save client message to db
-        await saveClientMessageToDB();
-      } catch (error) {
-        console.error(error);
-        // Remove message if an error occurs
-        setMessages((ms) => ms.filter((m) => m.id !== tempId));
-      } finally {
-        setSending(false);
+          //reset
+          setInput('');
+          // attachedMedia.forEach((media) => URL.revokeObjectURL(media.preview));
+          setAttachedMedia([]);
+        } catch (error) {
+          console.error(error);
+        }
+      } else {
+        const tempId = crypto.randomUUID();
+        try {
+          setServerMessageStatus('pending');
+          // Append user message locally
+          setMessages((ms) => [
+            ...ms,
+            {
+              id: tempId,
+              role: UPDATEFROM.CLIENT as any,
+              content: input,
+              createdAt: new Date(),
+              annotations: [
+                {
+                  media: mediaPayload || [],
+                  clientId,
+                },
+              ],
+            },
+          ]);
+          setInput('');
+          attachedMedia.forEach((media) => URL.revokeObjectURL(media.preview));
+          setAttachedMedia([]);
+          // save client message to db
+          await PortalSdk.postData('/api/custom-bots/client-requests/chat', {
+            originClientRequestId: clientRequest.id,
+            clientId,
+            message: input,
+            mediaPayload,
+          });
+          setServerMessageStatus('success');
+        } catch (error) {
+          console.error(error);
+          setServerMessageStatus('error');
+          // Remove message if an error occurs
+          setMessages((ms) => ms.filter((m) => m.id !== tempId));
+        } finally {
+          setServerMessageStatus('idle');
+        }
       }
-    }
-  };
+    },
+    [input, context, agentType],
+  );
 
   return {
-    handleInputChange,
     input,
-    dupAppend,
+    customAppend,
     mutate,
-    requestStatus,
-    setRequestStatus,
     messages,
+    messageStatus,
     isLoading,
-    sending,
     isValidating,
-    handleFileChange,
-    removeMedia,
+    setAttachedMedia,
     attachedMedia,
-    messagesEndRef,
-    setShowSlashModal,
-    showSlashModal,
-    handleCustomInputChange,
+    handleInputChange,
+    context,
+    setContext,
+    agentType,
+    setAgentType,
   };
 };
 
