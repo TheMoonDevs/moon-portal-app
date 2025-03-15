@@ -1012,7 +1012,7 @@ const ProfileGrid = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const isTabletOrLess = useMediaQuery(media.tablet);
   const [currentProfielData, setCUrrentProfileData] = useState<IProfileData[]>(
-    ProfileData.slice(4, 11).sort(() => Math.random() - 0.5),
+    ProfileData.slice(3, 7).sort(() => Math.random() - 0.5),
   );
 
 
