@@ -1,0 +1,148 @@
+{
+  "info": {
+    "title": "My API Documentation",
+    "version": "1.0.1",
+    "description": "Documentation for endpoints with methods, headers, body schema, query parameters, and responses."
+  },
+  "endpoints": [
+    {
+      "path": "/",
+      "method": "GET",
+      "description": "Fetch a random anime quote",
+      "requestHeaders": {},
+      "requestQuery": {},
+      "responses": {
+        "200": {
+          "description": "Successful response with a random quote",
+          "schema": {
+            "content": {
+              "type": "string"
+            },
+            "anime": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "number"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "altName": {
+                  "type": "string"
+                }
+              }
+            },
+            "character": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "number"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "altName": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "Error response",
+          "schema": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    {
+      "path": "/users/:id",
+      "method": "GET",
+      "description": "Fetch a user by ID",
+      "requestHeaders": {},
+      "requestQuery": {},
+      "responses": {
+        "200": {
+          "description": "Successful response with user data",
+          "schema": {
+            "id": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "email": {
+              "type": "string"
+            }
+          }
+        },
+        "404": {
+          "description": "User not found",
+          "schema": {
+            "error": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    {
+      "path": "/users",
+      "method": "POST",
+      "description": "Create a new user",
+      "requestHeaders": {
+        "Content-Type": {
+          "type": "string",
+          "description": "MIME type of the body",
+          "example": "application/json"
+        }
+      },
+      "requestBody": {
+        "description": "User data for creation",
+        "schema": {
+          "name": {
+            "description": "Name of the user",
+            "type": "string",
+            "required": true
+          },
+          "email": {
+            "description": "Email of the user",
+            "type": "string",
+            "required": true
+          }
+        }
+      },
+      "requestQuery": {},
+      "responses": {
+        "201": {
+          "description": "User successfully created",
+          "schema": {
+            "id": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "email": {
+              "type": "string"
+            }
+          }
+        },
+        "400": {
+          "description": "Invalid input data",
+          "schema": {
+            "error": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  ]
+}
