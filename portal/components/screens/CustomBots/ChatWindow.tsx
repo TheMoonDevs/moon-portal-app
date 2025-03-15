@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Send,
   RefreshCw,
@@ -37,6 +37,7 @@ import {
   BotTemplate,
   useBotTemplateContext,
 } from './providers/BotTemplateProvider';
+import { TMD_PORTAL_API_KEY } from '@/utils/constants/appInfo';
 
 export type ClientRequest = {
   id: string;
@@ -80,28 +81,47 @@ export default function ChatWindow({
   const [selectedTemplate, setSelectedTemplate] = useState<BotTemplate | null>(
     null,
   );
+  const [showSlashModal, setShowSlashModal] = useState(false);
   const [newClientBotName, setNewClientBotName] = useState('');
   const [botVariables, setBotVariables] = useState<BotVariable[]>([]);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [mediaPayload, setMediaPayload] = useState<
+    Array<{
+      mediaName: string;
+      mediaType: string;
+      mediaFormat: string;
+      mediaUrl: string;
+    }>
+  >([]);
+
+  const [mediaUploadStatus, setMediaUploadStatus] = useState<
+    'IDLE' | 'UPLOADING' | 'SUCCESS' | 'ERROR'
+  >('IDLE');
   const { templates } = useBotTemplateContext();
+
   const {
     input,
     mutate,
-    dupAppend,
+    customAppend,
     messages,
     isLoading,
     isValidating,
-    handleFileChange,
-    removeMedia,
+    setAttachedMedia,
     attachedMedia,
-    sending,
-    messagesEndRef,
-    setShowSlashModal,
-    showSlashModal,
-    handleCustomInputChange,
+    messageStatus,
+    handleInputChange,
   } = useVercelChat({
     clientId,
     clientRequest,
   });
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   // Get client bots from our global provider.
   const {
@@ -120,8 +140,89 @@ export default function ChatWindow({
     }
   };
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const files = Array.from(e.target.files);
+      const newMedia = files.map((file) => ({
+        file,
+        preview: URL.createObjectURL(file),
+      }));
+      setAttachedMedia((prev) => [...prev, ...newMedia]);
+
+      // Make upload media call
+
+      const formData = new FormData();
+      files.forEach((file) => {
+        formData.append('file', file);
+      });
+      formData.append('clientId', clientId);
+      formData.append('folderName', 'customBots/clientMessages');
+
+      setMediaUploadStatus('UPLOADING');
+      try {
+        const response = await fetch(
+          '/api/custom-bots/client-requests/chat/upload-media',
+          {
+            method: 'POST',
+            body: formData,
+            headers: {
+              tmd_portal_api_key: TMD_PORTAL_API_KEY,
+            },
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error('Failed to upload media');
+        }
+
+        const data = await response.json();
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to upload media');
+        }
+
+        // Store the media payload for later use with the message
+        setMediaPayload((prev) => [...prev, ...data.media]);
+        setMediaUploadStatus('SUCCESS');
+      } catch (error) {
+        toast.error('Failed to upload media');
+        console.error('Error uploading media:', error);
+        setMediaUploadStatus('ERROR');
+      }
+
+      e.target.value = '';
+    }
+  };
+
+  const removeMedia = (index: number) => {
+    setMediaPayload((prev) => prev.filter((_, i) => i !== index));
+    setAttachedMedia((prev) => {
+      const updated = [...prev];
+      URL.revokeObjectURL(updated[index].preview);
+      updated.splice(index, 1);
+      return updated;
+    });
+    //TODO: delete file from backend
+  };
+
+  const handleCustomInputChange = (
+    e:
+      | React.ChangeEvent<HTMLInputElement>
+      | React.ChangeEvent<HTMLTextAreaElement>,
+  ) => {
+    handleInputChange(e);
+    if (e.target.value.startsWith('/')) {
+      setShowSlashModal(true);
+    } else {
+      setShowSlashModal(false);
+    }
+  };
+
   const sendMessage = async () => {
-    dupAppend();
+    customAppend({
+      data: {
+        mediaPayload: mediaPayload,
+      },
+    });
   };
 
   const getMessageIcon = (updateFrom: UPDATEFROM) => {
@@ -510,17 +611,30 @@ export default function ChatWindow({
                     sendMessage();
                   }
                 }}
-                disabled={sending}
+                disabled={
+                  messageStatus === 'pending' ||
+                  messageStatus === 'streaming' ||
+                  mediaUploadStatus === 'UPLOADING' ||
+                  mediaUploadStatus === 'ERROR'
+                }
               />
               <div className="flex flex-col-reverse gap-1">
                 <ButtonSCN
                   onClick={sendMessage}
                   disabled={
-                    (!input.trim() && attachedMedia.length === 0) || sending
+                    (!input.trim() && attachedMedia.length === 0) ||
+                    messageStatus === 'pending' ||
+                    messageStatus === 'streaming' ||
+                    mediaUploadStatus === 'UPLOADING' ||
+                    mediaUploadStatus === 'ERROR'
                   }
                   className="py-1"
                 >
-                  {!sending ? (
+                  {!(
+                    messageStatus === 'streaming' ||
+                    messageStatus === 'pending' ||
+                    mediaUploadStatus === 'UPLOADING'
+                  ) ? (
                     <Send className="my-auto h-4 w-4" />
                   ) : (
                     <RefreshCw className="my-auto h-4 w-4 animate-spin" />
