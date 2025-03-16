@@ -1,13 +1,17 @@
-export type SEOMetadata = {
-  metaTitle?: string;
-  metaDescription?: string;
-  ogTitle?: string;
-  ogDescription?: string;
-  ogImage?: string;
-  keywords?: string[];
-  canonicalUrl?: string;
-  structuredData?: any;
-};
+import { z } from 'zod';
+
+export const seoMetaDataModel = z.object({
+  metaTitle: z.string().optional(),
+  metaDescription: z.string().optional(),
+  ogTitle: z.string().optional(),
+  ogDescription: z.string().optional(),
+  ogImage: z.string().optional(),
+  keywords: z.array(z.string()).optional(),
+  ogSiteName: z.string().optional(),
+  //canonicalUrl: z.string().optional(),
+});
+
+export type SEOMetadata = z.infer<typeof seoMetaDataModel>;
 
 export const exampleSeoMetadata: SEOMetadata = {
   metaTitle: 'Example Meta Title',
@@ -16,7 +20,8 @@ export const exampleSeoMetadata: SEOMetadata = {
   ogDescription: 'Example Open Graph Description',
   ogImage: 'https://example.com/og-image.jpg',
   keywords: ['example', 'keyword', 'keyword2'],
-  canonicalUrl: 'https://example.com',
+  ogSiteName: 'Example Site Name',
+  //canonicalUrl: 'https://example.com',
   //   structuredData: {
   //     '@context': 'https://schema.org',
   //     '@type': 'Organization',
@@ -24,18 +29,31 @@ export const exampleSeoMetadata: SEOMetadata = {
   //   },
 };
 
-export type AIMetadata = {
-  contentType?: string; // Article, Tutorial, News etc
-  topicTags?: string[]; // AI-generated topic classifications
-  readingTime?: number; // Estimated reading time in minutes
-  complexity?: string; // Basic, Intermediate, Advanced
-  mainConcepts?: string[]; // Key concepts covered
-  targetAudience?: string[]; // Intended reader personas
-  sentiment?: string; // Overall tone/sentiment
-  summary?: string; // AI-generated summary
-  references?: any; // Related content/citations
-};
+export const aiMetaDataModel = z.object({
+  contentType: z.string().describe('Article, Tutorial, News etc').optional(),
+  topicTags: z
+    .array(z.string())
+    .describe('AI-generated topic classifications')
+    .optional(),
+  readingTime: z
+    .number()
+    .describe('Reading time by Human in milliseconds')
+    .optional(),
+  complexity: z.string().describe('Basic / Intermediate / Advanced').optional(),
+  mainConcepts: z.array(z.string()).describe('Key concepts covered').optional(),
+  targetAudience: z
+    .array(z.string())
+    .describe('Intended reader personas')
+    .optional(),
+  sentiment: z.string().describe('Overall tone/sentiment').optional(),
+  summary: z.string().describe('AI-generated summary').optional(),
+  references: z
+    .array(z.string())
+    .describe('Related content/citations')
+    .optional(),
+});
 
+export type AIMetadata = z.infer<typeof aiMetaDataModel>;
 export const exampleAIMetadata: AIMetadata = {
   contentType: 'Article',
   topicTags: ['example', 'keyword', 'keyword2'],

@@ -13,26 +13,38 @@ import {
   handleImageDrop,
   handleImagePaste,
 } from 'novel';
-import { memo, use, useEffect, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
+import { Separator } from '../../../ui/separator';
 import { defaultExtensions } from './extensions';
 import { ColorSelector } from './selectors/color-selector';
 import { LinkSelector } from './selectors/link-selector';
 import { MathSelector } from './selectors/math-selector';
 import { NodeSelector } from './selectors/node-selector';
-import { Separator } from '../../../ui/separator';
 
+import showdown from 'showdown';
 import GenerativeMenuSwitch from './generative/generative-menu-switch';
-import { TextButtons } from './selectors/text-buttons';
-import { slashCommand, suggestionItems } from './slash-command';
-import TurndownService from 'turndown';
+import { GenerativeStreamer } from './generative/streamer';
 import { useNovelImageUpload } from './image-upload';
 import { AlignSelector } from './selectors/text-align-selector';
+import { TextButtons } from './selectors/text-buttons';
+import { slashCommand, suggestionItems } from './slash-command';
+import { Button } from '@/components/ui/button';
+import { generateHTML } from '@tiptap/html';
 
 const hljs = require('highlight.js');
 
 const extensions = [...defaultExtensions, slashCommand];
-const turndownService = new TurndownService();
+
+const showdownService = new showdown.Converter({
+  parseImgDimensions: true,
+  tasklists: true,
+  simpleLineBreaks: true,
+  openLinksInNewWindow: true,
+  emoji: true,
+});
+
+showdownService.setFlavor('github');
 
 export const defaultEditorContent = {
   type: 'doc',
@@ -55,13 +67,27 @@ export const defaultEditorContent = {
   ],
 };
 
+export const defaultVariantContent = {
+  type: 'doc',
+  content: [
+    { type: 'text', text: 'Press Space to start generating variations' },
+  ],
+};
+
 const TailwindAdvancedEditor = memo(({
+  isStreaming,
+  streamingContent,
   content: initContent,
-  onUpdate
+  onUpdate,
+  onSpaceKeyPress
 }: {
+  isStreaming: boolean,
+  streamingContent: string,
   content?: JSONContent,
-  onUpdate?: (content: JSONContent, title?: string, para?: string, image?: string, markdown?: string) => Promise<boolean>
+  onUpdate?: (content: JSONContent, title?: string, para?: string, image?: string, markdown?: string) => Promise<boolean>,
+  onSpaceKeyPress?: () => void
 }) => {
+  const editorRef = useRef<EditorInstance>(null);
   const [initialContent, setInitialContent] = useState<null | JSONContent>(
     initContent ?? null,
   );
@@ -96,14 +122,15 @@ const TailwindAdvancedEditor = memo(({
       const para = paraNode?.content?.[0]?.text || '';
       const imageNode = json.content?.find((node: any) => node.type === 'image')
       const image = imageNode?.attrs?.src || '';
-      console.log(title, para, image);
+      console.log(json);
       setCharsCount(editor.storage.characterCount.words());
       window.localStorage.setItem(
         'html-content',
         highlightCodeblocks(editor.getHTML()),
       );
       //window.localStorage.setItem('novel-content', JSON.stringify(json));
-      const markdown = turndownService.turndown(editor.getHTML());
+      const markdown = showdownService.makeMarkdown(generateHTML(json, defaultExtensions));
+      console.log('markdown', markdown);
       onUpdate?.(json, title, para, image, markdown);
 
       //window.localStorage.setItem('markdown', markdown);
@@ -117,15 +144,21 @@ const TailwindAdvancedEditor = memo(({
     else setInitialContent(null);
   }, [initContent]);
 
-  if (!initialContent) return null;
+  //console.log('initialContent', initialContent);
+  //console.log('isStreaming', isStreaming);
+
+  //if (!initialContent && !isStreaming) return null;
 
   return (
     <div className="relative flex w-full flex-col items-center justify-center bg-white">
       <div className="w-full my-3 px-6 flex justify-between items-center gap-2 border-b border-neutral-200 pb-3">
+        <p className='text-xs text-muted-foreground'>
+          {isStreaming ? 'Generating...' : ''}
+        </p>
         <div className='flex gap-2 items-center'>
-          <div className="rounded-lg bg-accent px-2 py-1 text-sm text-muted-foreground">
+          {/* <div className="rounded-lg bg-accent px-2 py-1 text-sm text-muted-foreground">
             Local Changes:{saveStatus}
-          </div>
+          </div> */}
           <div
             className={' px-2 py-1 text-xs text-muted-foreground'
             }
@@ -136,12 +169,21 @@ const TailwindAdvancedEditor = memo(({
       </div>
       <EditorRoot>
         <EditorContent
-          initialContent={initialContent}
+          ref={editorRef as any}
+          initialContent={initialContent ?? { type: 'doc', content: [] }}
           extensions={extensions}
+          enableCoreExtensions
           className="relative w-full bg-background px-6 pb-6 min-h-[80vh] sm:rounded-lg  "
           editorProps={{
+            //editable: () => initialContent != null,
             handleDOMEvents: {
-              keydown: (_view, event) => handleCommandNavigation(event),
+              keydown: (_view, event) => {
+                if (event.key === ' ' && onSpaceKeyPress) {
+                  console.log('space', _view.state.toJSON());
+                  onSpaceKeyPress();
+                }
+                handleCommandNavigation(event);
+              },
             },
             handlePaste: (view, event) =>
               handleImagePaste(view, event, uploadFn),
@@ -153,10 +195,26 @@ const TailwindAdvancedEditor = memo(({
             },
           }}
           onUpdate={({ editor }) => {
+            //if (!isStreaming) {
             debouncedUpdates(editor);
             setSaveStatus('Unsaved');
+            if (initialContent == null && streamingContent) {
+              setInitialContent(editor.getJSON());
+            }
+            //}
           }}
-          slotAfter={<ImageResizer />}
+          slotBefore={(
+            <>
+              <GenerativeStreamer
+                isStreaming={isStreaming} streamingContent={streamingContent} />
+            </>
+          )}
+          immediatelyRender={false}
+          slotAfter={(
+            <>
+              <ImageResizer />
+            </>
+          )}
         >
           <EditorCommand className="z-50 h-auto max-h-[330px] overflow-y-auto rounded-md border border-muted bg-background px-1 py-2 shadow-md transition-all">
             <EditorCommandEmpty className="px-2 text-muted-foreground">
@@ -188,7 +246,6 @@ const TailwindAdvancedEditor = memo(({
             <Separator orientation="vertical" />
             <NodeSelector open={openNode} onOpenChange={setOpenNode} />
             <Separator orientation="vertical" />
-
             <LinkSelector open={openLink} onOpenChange={setOpenLink} />
             <Separator orientation="vertical" />
             <AlignSelector open={openAlign} onOpenChange={setOpenAlign} />
@@ -204,7 +261,8 @@ const TailwindAdvancedEditor = memo(({
     </div>
   );
 }, (prevProps, nextProps) => {
-  return prevProps.content === nextProps.content;
+  return prevProps.content === nextProps.content && prevProps.isStreaming === nextProps.isStreaming
+    && prevProps.streamingContent === nextProps.streamingContent;
 });
 
 export default TailwindAdvancedEditor;

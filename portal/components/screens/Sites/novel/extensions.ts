@@ -15,7 +15,7 @@ import {
   TaskItem,
   TaskList,
   TextStyle,
-  TiptapImage,
+  //TiptapImage,
   TiptapLink,
   TiptapUnderline,
   Twitter,
@@ -23,6 +23,7 @@ import {
   UploadImagesPlugin,
   Youtube,
 } from 'novel';
+import { Image } from '@tiptap/extension-image';
 import TextAlign from '@tiptap/extension-text-align';
 import { cx } from 'class-variance-authority';
 import { common, createLowlight } from 'lowlight';
@@ -39,7 +40,7 @@ const tiptapLink = TiptapLink.configure({
   },
 });
 
-const tiptapImage = TiptapImage.extend({
+const tiptapImage = Image.extend({
   addProseMirrorPlugins() {
     return [
       UploadImagesPlugin({
@@ -52,12 +53,14 @@ const tiptapImage = TiptapImage.extend({
   HTMLAttributes: {
     class: cx('rounded-lg border border-muted'),
   },
+  inline: true,
 });
 
 const updatedImage = UpdatedImage.configure({
   HTMLAttributes: {
     class: cx('rounded-lg border border-muted'),
   },
+  inline: true,
 });
 
 const taskList = TaskList.configure({
@@ -173,8 +176,6 @@ export const defaultExtensions = [
   starterKit,
   placeholder,
   tiptapLink,
-  tiptapImage,
-  updatedImage,
   taskList,
   taskItem,
   horizontalRule,
@@ -186,10 +187,34 @@ export const defaultExtensions = [
   mathematics,
   characterCount,
   TiptapUnderline,
-  // markdownExtension,
   HighlightExtension,
   TextStyle,
   Color,
   CustomKeymap,
   GlobalDragHandle,
+  Image,
+  updatedImage,
+];
+
+export const plainExtensions = [
+  starterKit,
+  placeholder,
+  tiptapLink,
+  taskList,
+  taskItem,
+  horizontalRule,
+  aiHighlight,
+  codeBlockLowlight,
+  youtube,
+  twitter,
+  textAlign,
+  mathematics,
+  characterCount,
+  TiptapUnderline,
+  HighlightExtension,
+  TextStyle,
+  Color,
+  CustomKeymap,
+  GlobalDragHandle,
+  Image,
 ];

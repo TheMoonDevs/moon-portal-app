@@ -44,7 +44,7 @@ export async function POST(req: Request) {
 
 export async function PUT(req: Request) {
   try {
-    const { variantId, ...updates } = await req.json();
+    const { id, variantId, postId, ...updates } = await req.json();
     const updatedVariant = await prisma.postVariant.update({
       where: { variantId },
       data: updates,

@@ -1,19 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { Post, PostStatus, PostVariant } from '@prisma/client';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { PortalSdk } from '@/utils/services/PortalSdk';
+import { DialogFooter } from '@/components/elements/dialog';
+import TailwindAdvancedEditor, { defaultEditorContent, defaultVariantContent } from '@/components/screens/Sites/novel/NovelEditor';
 import { Button } from '@/components/ui/button';
-import {
-    ArrowLeftIcon,
-    ArrowRightIcon,
-    DeleteIcon,
-    Loader2,
-    PlusIcon,
-    TrashIcon,
-} from 'lucide-react';
-import TailwindAdvancedEditor, { defaultEditorContent } from '@/components/screens/Sites/novel/NovelEditor';
 import {
     Dialog,
     DialogContent,
@@ -22,22 +11,40 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
-import Link from 'next/link';
-import { TabsContent, TabsList } from '@/components/ui/tabs';
-import { TabsTrigger, Tabs } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PortalSdk } from '@/utils/services/PortalSdk';
+import { Post, PostStatus, PostVariant } from '@prisma/client';
+import {
+    ArrowLeftIcon,
+    ArrowRightIcon,
+    CircleArrowLeftIcon,
+    Loader2,
+    PlusIcon,
+    TrashIcon
+} from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import React, { useEffect, useMemo, useState } from 'react';
+import { toast, Toaster } from 'sonner';
+import useSWR from 'swr';
+import TabAiMetaContent from './TabAiMetaContent';
+import TabSeoContent from './TabSeoContent';
 import {
     AIMetadata,
-    exampleAIMetadata,
-    exampleSeoMetadata,
-    SEOMetadata,
+    SEOMetadata
 } from './types';
-import dayjs from 'dayjs';
-import TabSeoContent from './TabSeoContent';
-import TabAiMetaContent from './TabAiMetaContent';
-import { toast, Toaster } from 'sonner';
-import { DialogFooter } from '@/components/elements/dialog';
-import useSWR from 'swr';
+import { useChat, useCompletion } from '@ai-sdk/react';
+import { TMD_PORTAL_API_KEY } from '@/utils/constants/appInfo';
+import showdown from 'showdown';
+import { generateJSON } from '@tiptap/html';
+import { defaultExtensions } from './novel/extensions';
+import { NewVariationDialog } from './NewVariationDialog';
+import TabPostGeneralContent from './TabPostGeneralContent';
+import VariantPromptContent from './VariantPromptContent';
+import PostPageHeader from './PostPageHeader';
+
+const showdownService = new showdown.Converter();
 
 const PostPage: React.FC = () => {
     const [post, setPost] = useState<Post | null>(null);
@@ -52,7 +59,7 @@ const PostPage: React.FC = () => {
     const searchParams = useSearchParams();
     const postId = params?.post_id as string;
     const siteId = params?.site_id as string;
-    const variantId = searchParams?.get('variant_id') as string;
+    //const variantId = searchParams?.get('variant_id') as string;
 
     const [showNewVariationDialog, setShowNewVariationDialog] = useState(false);
 
@@ -85,14 +92,16 @@ const PostPage: React.FC = () => {
 
 
     // TODO: change to useSWR
-    const { data, isLoading: isPostLoading, mutate: mutatePost } = useSWR(`/api/sites/posts?id=${postId}`, (url: string) => {
+    const { data: postData, isLoading: isPostLoading, mutate: mutatePost } = useSWR(`/api/sites/posts?id=${postId}`, (url: string) => {
         return PortalSdk.getData(url, {});
-    }, {
-        onSuccess(data, key, config) {
-            setPost(data[0]);
-            setEditedPost(data[0]);
-        },
     });
+
+    useEffect(() => {
+        if (postData) {
+            setPost(postData[0]);
+            setEditedPost(postData[0]);
+        }
+    }, [postData]);
 
     const { data: postVariants, isLoading: isPostVariantsLoading, mutate: mutatePostVariants } = useSWR(`/api/sites/posts/variants?postId=${postId}`, (url: string) => {
         return PortalSdk.getData(url, {});
@@ -128,34 +137,68 @@ const PostPage: React.FC = () => {
         return true;
     };
 
-    const handleUpdatePost = async (_post: any) => {
-        try {
-            setIsSaving(true);
-            const updatedPost = await PortalSdk.putData(`/api/sites/posts`, {
-                id: postId,
-                ...(_post ?? editedPost),
+    const handleUpdatePost = (_post: any) => {
+        toast.promise(async () => {
+            try {
+                setIsSaving(true);
+                const updatedPost = await PortalSdk.putData(`/api/sites/posts`, {
+                    id: postId,
+                    ...(_post ?? editedPost),
+                });
+                setPost(updatedPost);
+            } catch (error) {
+                console.error('Failed to update post', error);
+                toast.error('Failed to update post!');
+            } finally {
+                setIsSaving(false);
+            }
+        },
+            {
+                loading: 'Saving...',
+                success: 'Saved!',
+                error: 'Failed to save!',
             });
-            setPost(updatedPost);
-        } catch (error) {
-            console.error('Failed to update post', error);
-            toast.error('Failed to update post!');
-        } finally {
-            setIsSaving(false);
-        }
+    };
+
+    const handleUpdateVariant = (_variant: any) => {
+        toast.promise(async () => {
+            try {
+                setIsSavingVariation(true);
+                //console.log(_variant, editedVariant);
+                let variantToUpdate = _variant ?? editedVariant;
+                let { originPost, postId, excerpt, ...updates } = variantToUpdate;
+                const updatedVariant = await PortalSdk.putData(`/api/sites/posts/variants`, {
+                    id: variant?.variantId,
+                    ...updates,
+                });
+                setVariant(updatedVariant);
+                setEditedVariant(updatedVariant);
+                mutatePostVariants();
+            } catch (error) {
+                console.error('Failed to update variant', error);
+                toast.error('Failed to update variant!');
+            } finally {
+                setIsSavingVariation(false);
+            }
+        }, {
+            loading: 'Saving...',
+            success: 'Saved!',
+            error: 'Failed to save!',
+        });
     };
 
     const handleCreateVariation = (_variation: any) => {
         toast.promise(async () => {
             try {
                 setIsSavingVariation(true);
-                const updatedPost = await PortalSdk.postData(`/api/sites/posts/variants`, {
+                const updatedVariant = await PortalSdk.postData(`/api/sites/posts/variants`, {
                     postId: postId,
                     ...(_variation ?? editedVariant),
                 });
-                mutatePostVariants([...postVariants, updatedPost]);
-                setVariant(updatedPost);
-                setEditedVariant(updatedPost);
-                router.replace(`/sites/${siteId}/posts/${postId}?variant_id=${updatedPost.variantId}`, {
+                mutatePostVariants([...postVariants, updatedVariant]);
+                setVariant(updatedVariant);
+                setEditedVariant(updatedVariant);
+                router.replace(`/sites/${siteId}/post/${postId}?variant_id=${updatedVariant.variantId}`, {
                 });
             } catch (error) {
                 console.error('Failed to create variation', error);
@@ -170,33 +213,35 @@ const PostPage: React.FC = () => {
         });
     };
 
-    const handleDeletePost = async () => {
-        try {
-            await PortalSdk.deleteData(`/api/sites/posts`, {
-                id: postId,
-            });
-            router.push(`/sites/${siteId}`);
-        } catch (error) {
-            console.error('Failed to delete post', error);
-            toast.error('Failed to delete post!');
-        }
-    };
 
-    const handlePublishToggle = async () => {
-        try {
-            const updatedPost = await PortalSdk.putData(`/api/sites/posts`, {
-                id: postId,
-                status:
-                    post?.status === PostStatus.PUBLISHED
-                        ? PostStatus.DRAFT
-                        : PostStatus.PUBLISHED,
-            });
-            setPost(updatedPost);
-        } catch (error) {
-            console.error('Failed to toggle publish status', error);
-            toast.error('Failed to toggle publish status!');
+
+    const { messages, input, handleInputChange, append, status, setMessages } = useChat({
+        api: '/api/sites/generate/stream',
+    });
+    const handleSubmit = () => {
+        setMessages([]);
+        //console.log(editedPost?.content, editedVariant?.prompt, (editedVariant?.aiMeta as AIMetadata)?.targetAudience);
+        append({
+            role: 'user',
+            content: editedPost?.content ?? "",
+        }, {
+            headers: {
+                tmd_portal_api_key: TMD_PORTAL_API_KEY,
+            },
+            body: {
+                markdown: editedPost?.content ?? '',
+                variancePrompt: editedVariant?.prompt ?? '',
+                varianceTags: (editedVariant?.aiMeta as AIMetadata)?.targetAudience ?? '',
+            },
+        });
+    }
+    const streamingMarkdown = useMemo(() => {
+        if (messages.length > 0) {
+            console.log(messages[1]?.content);
+            return messages[1]?.content;
         }
-    };
+        return '';
+    }, [messages, editedVariant]);
 
     if (!post)
         return (<div className='flex justify-center items-center h-screen'>
@@ -207,77 +252,20 @@ const PostPage: React.FC = () => {
         <div className="min-h-screen">
             <Toaster />
             <div className="flex flex-col p-4">
-                <div className="mb-6 flex items-center justify-between">
-                    <div className="flex flex-col items-start justify-start">
-                        <Link
-                            href={`/sites/${siteId}`}
-                            className="flex items-center gap-2 text-xs text-neutral-500 hover:text-neutral-700"
-                        >
-                            <ArrowLeftIcon size={16} />
-                            Back to Dashboard
-                        </Link>
-                        <p className="text-md mb-2 text-neutral-900">/{post?.slug}</p>
-                    </div>
 
-                    {variantId && (
-                        <div className="flex gap-2">
-                            {isVariantUnsaved && (
-                                <Button
-                                    variant="ghost"
-                                    className="flex items-center gap-2"
-                                    onClick={handleUpdatePost}
-                                >
-                                    {isSavingVariation && <Loader2 className="animate-spin" />}
-                                    {isSavingVariation ? 'Saving...' : 'Save'}
-                                </Button>
-                            )}
-                            <Button
-                                disabled={isSavingVariation}
-                                variant={post?.status === PostStatus.PUBLISHED ? 'link' : 'link'}
-                                onClick={handlePublishToggle}
-                                className={`flex items-center gap-2 ${post?.status === PostStatus.DRAFT ? 'text-green-500' : 'text-red-500'}`}
-                            >
-                                {post?.status === PostStatus.PUBLISHED ? 'Unpublish' : 'Publish'}
-                            </Button>
-                            <Button
-                                disabled={isSavingVariation}
-                                variant="ghost"
-                                onClick={() => setShowDeleteDialog(true)}
-                            >
-                                <TrashIcon size={16} />
-                            </Button>
-                        </div>
-                    )}
-                    {!variantId && (
-                        <div className="flex gap-2">
-                            {isUnsaved && (
-                                <Button
-                                    variant="ghost"
-                                    className="flex items-center gap-2"
-                                    onClick={handleUpdatePost}
-                                >
-                                    {isSaving && <Loader2 className="animate-spin" />}
-                                    {isSaving ? 'Saving...' : 'Save'}
-                                </Button>
-                            )}
-                            <Button
-                                disabled={isSaving}
-                                variant={post?.status === PostStatus.PUBLISHED ? 'link' : 'link'}
-                                onClick={handlePublishToggle}
-                                className={`flex items-center gap-2 ${post?.status === PostStatus.DRAFT ? 'text-green-500' : 'text-red-500'}`}
-                            >
-                                {post?.status === PostStatus.PUBLISHED ? 'Unpublish' : 'Publish'}
-                            </Button>
-                            <Button
-                                disabled={isSaving}
-                                variant="ghost"
-                                onClick={() => setShowDeleteDialog(true)}
-                            >
-                                <TrashIcon size={16} />
-                            </Button>
-                        </div>)}
-                </div>
-
+                <PostPageHeader
+                    post={post}
+                    setPost={setPost}
+                    siteId={siteId}
+                    variant={variant}
+                    isVariantUnsaved={isVariantUnsaved}
+                    isUnsaved={isUnsaved}
+                    isSavingVariation={isSavingVariation}
+                    isSaving={isSaving}
+                    handleUpdateVariant={handleUpdateVariant}
+                    handleUpdatePost={handleUpdatePost}
+                    editedVariant={editedVariant}
+                />
                 <div className="rounded-lg bg-white p-6 shadow-sm">
                     <div className="flex grid h-screen w-full grid-cols-8 backdrop-blur-xl">
                         <div className="col-span-1">
@@ -296,9 +284,12 @@ const PostPage: React.FC = () => {
                                     <li
                                         onClick={() => {
                                             if (isVariantUnsaved) toast.info('Changes not saved yet');
-                                            else setVariant(_variant);
+                                            else {
+                                                setVariant(_variant);
+                                                setEditedVariant(_variant);
+                                            }
                                         }}
-                                        key={_variant.postId}
+                                        key={_variant.variantId + _variant.slug}
                                         className={`flex cursor-pointer items-center justify-end gap-2 text-neutral-500 hover:text-neutral-700 ${_variant?.variantId === variant?.variantId ? 'text-md font-bold text-black' : 'font-regular text-sm text-neutral-500'}`}
                                     >
                                         {_variant?.slug}
@@ -307,105 +298,14 @@ const PostPage: React.FC = () => {
                                         )}
                                     </li>
                                 ))}
-
-                                <Dialog>
-                                    <DialogTrigger>
-                                        {' '}
-                                        <li
-                                            className={`flex cursor-pointer items-center justify-end gap-2 text-sm text-neutral-500 hover:text-neutral-700`}
-                                            onClick={() => {
-                                                if (isVariantUnsaved)
-                                                    return toast.info('Changes not saved yet');
-                                                if (!post) return toast.error('Post not found');
-                                                if (!post?.jsonContent) return toast.error('Original Post content not found');
-                                                if (!post?.title) return toast.error('Original Post title not found');
-                                                setShowNewVariationDialog(true);
-                                                let _variant = {
-                                                    postId: postId,
-                                                    slug: '',
-                                                    jsonContent: post?.jsonContent as any,
-                                                    title: post?.title ?? '',
-                                                    subtitle: post?.subtitle ?? '',
-                                                    seoMeta: post?.seoMeta as SEOMetadata,
-                                                    aiMeta: post?.aiMeta as AIMetadata,
-                                                    variantId: '',
-                                                    siteId: siteId,
-                                                    content: post?.content ?? '',
-                                                    name: '',
-                                                    prompt: '',
-                                                };
-                                                setEditedVariant(_variant);
-                                                setVariant(_variant);
-                                            }}
-                                        >
-                                            <PlusIcon size={12} />
-                                            New Variation
-                                        </li>
-                                    </DialogTrigger>
-                                    <DialogContent>
-                                        <DialogHeader>
-                                            <DialogTitle className='text-2xl font-bold mb-4'>New Variation</DialogTitle>
-                                            <DialogDescription>
-                                                {editedVariant && (
-                                                    <div className='flex flex-col gap-2 text-black'>
-                                                        <div className='flex flex-col gap-1'>
-                                                            <label htmlFor="variantName">Name</label>
-                                                            <input
-                                                                id="variantName"
-                                                                type="text"
-                                                                className='w-full rounded rounded-lg border p-2 outline-none text-md'
-                                                                placeholder='Long story short'
-                                                                value={editedVariant?.name ?? ''}
-                                                                onChange={(e) => setEditedVariant((prev) => ({
-                                                                    ...prev!,
-                                                                    name: e.target.value,
-                                                                    slug: e.target.value?.toLowerCase().replaceAll(' ', '-') ?? '',
-                                                                }))}
-                                                                autoComplete='off'
-                                                            />
-                                                        </div>
-                                                        <div className='flex flex-col gap-1'>
-                                                            <label htmlFor="variantPrompt">Prompt</label>
-                                                            <input
-                                                                id="variantPrompt"
-                                                                type="text"
-                                                                placeholder='Read this like an entreprenuer with no time to read'
-                                                                className='w-full rounded rounded-lg border p-2 outline-none text-md'
-                                                                value={editedVariant?.prompt ?? ''}
-                                                                onChange={(e) => setEditedVariant((prev) => ({ ...prev!, prompt: e.target.value }))}
-                                                                autoComplete='off'
-                                                            />
-                                                        </div>
-                                                        <div className='flex flex-col gap-1'>
-                                                            <label htmlFor="variantSlug">Slug</label>
-                                                            <input
-                                                                id="variantSlug"
-                                                                type="text"
-                                                                className='w-full rounded rounded-lg border p-2 outline-none text-md'
-                                                                placeholder='long-story-short'
-                                                                value={editedVariant?.slug ?? ''}
-                                                                onChange={(e) => setEditedVariant((prev) => ({ ...prev!, slug: e.target.value }))}
-                                                                autoComplete='off'
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </DialogDescription>
-                                            <DialogFooter className='pt-4'>
-                                                <Button variant="outline" onClick={() => {
-                                                    //setShowNewVariationDialog(false)
-                                                    toast.info('Feature in development');
-                                                }}>
-                                                    Add for all posts
-                                                </Button>
-                                                <Button variant="default" onClick={() => {
-                                                    handleCreateVariation(editedVariant);
-                                                    setShowNewVariationDialog(false);
-                                                }}>Add For this Post</Button>
-                                            </DialogFooter>
-                                        </DialogHeader>
-                                    </DialogContent>
-                                </Dialog>
+                                <NewVariationDialog
+                                    post={post}
+                                    postId={postId}
+                                    siteId={siteId}
+                                    isVariantUnsaved={isVariantUnsaved}
+                                    onCreateVariation={handleCreateVariation}
+                                    onSubmit={handleSubmit}
+                                />
                             </ul>
                         </div>
                         <div className="col-span-5 m-4 w-[50vw] flex-1 rounded-lg border-neutral-200">
@@ -413,26 +313,32 @@ const PostPage: React.FC = () => {
                                 <TailwindAdvancedEditor
                                     content={editedPost?.jsonContent as any ?? defaultEditorContent}
                                     onUpdate={handleUpdateLocalPost}
+                                    isStreaming={false}
+                                    streamingContent={''}
                                 />
                             )}
                             {variant && (
-                                <TailwindAdvancedEditor
-                                    content={editedPost?.jsonContent as any ?? defaultEditorContent}
-                                    onUpdate={async (content, title, para, image, markdown) => {
-                                        setEditedVariant((prev) => {
-                                            //slug = slug + '-' + dayjs().format('DDYY');
-                                            return {
-                                                ...prev!,
-                                                jsonContent: content,
-                                                ...(title && { title }),
-                                                ...(para && { excerpt: para }),
-                                                ...(image && { coverImage: image }),
-                                                ...(markdown && { content: markdown }),
-                                            };
-                                        });
-                                        return true;
-                                    }}
-                                />
+                                <div className='w-full h-full relative'>
+                                    <TailwindAdvancedEditor
+                                        content={editedVariant?.jsonContent as any}
+                                        isStreaming={status === 'streaming'}
+                                        streamingContent={streamingMarkdown}
+                                        onUpdate={async (content, title, para, image, markdown) => {
+                                            setEditedVariant((prev) => {
+                                                //slug = slug + '-' + dayjs().format('DDYY');
+                                                return {
+                                                    ...prev!,
+                                                    jsonContent: content ?? defaultVariantContent,
+                                                    ...(title && { title }),
+                                                    ...(para && { subtitle: para }),
+                                                    ...(image && { coverImage: image }),
+                                                    ...(markdown && { content: markdown }),
+                                                };
+                                            });
+                                            return true;
+                                        }}
+                                    />
+                                </div>
                             )}
                         </div>
                         <div className="col-span-2 m-4 rounded-lg border-neutral-200">
@@ -444,102 +350,28 @@ const PostPage: React.FC = () => {
                                         <TabsTrigger value="ai">AI-Meta</TabsTrigger>
                                     </TabsList>
                                     <TabsContent value="variant">
-                                        <div className="mt-4 flex flex-col gap-2">
-                                            <div>
-                                                <label
-                                                    htmlFor="title"
-                                                    className="text-xs text-neutral-500"
-                                                >
-                                                    Title
-                                                </label>
-                                                <input
-                                                    id="title"
-                                                    type="text"
-                                                    value={editedVariant?.title}
-                                                    onChange={(e) =>
-                                                        setEditedVariant((prev) => ({
-                                                            ...prev!,
-                                                            title: e.target.value,
-                                                        }))
-                                                    }
-                                                    className="w-full rounded rounded-lg border p-2 text-sm outline-none"
-                                                    placeholder="Post title"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label
-                                                    htmlFor="slug"
-                                                    className="text-xs text-neutral-500"
-                                                >
-                                                    Slug
-                                                </label>
-                                                <input
-                                                    id="slug"
-                                                    type="text"
-                                                    value={editedVariant?.slug}
-                                                    onChange={(e) =>
-                                                        setEditedVariant((prev) => ({
-                                                            ...prev!,
-                                                            slug: e.target.value,
-                                                        }))
-                                                    }
-                                                    className="w-full rounded rounded-lg border p-2 text-sm outline-none"
-                                                    placeholder="Post slug"
-                                                />
-                                            </div>
-                                            {/* <div>
-                                                <label
-                                                    htmlFor="image_cover"
-                                                    className="text-xs text-neutral-500"
-                                                >
-                                                    Cover Image (put in the editor)
-                                                </label>
-                                                <Image
-                                                    src={
-                                                        editedVariant.coverImage ??
-                                                        '/images/gradientBanner.jpg'
-                                                    }
-                                                    className="h-40 w-full rounded-lg object-cover"
-                                                    alt="Cover Image"
-                                                    width={100}
-                                                    height={100}
-                                                />
-                                            </div> */}
-                                            <div>
-                                                <label
-                                                    htmlFor="excerpt"
-                                                    className="text-xs text-neutral-500"
-                                                >
-                                                    Prompt
-                                                </label>
-                                                <input
-                                                    id="prompt"
-                                                    type="text"
-                                                    value={editedVariant?.prompt ?? ''}
-                                                    onChange={(e) =>
-                                                        setEditedVariant((prev) => ({
-                                                            ...prev!,
-                                                            prompt: e.target.value,
-                                                        }))
-                                                    }
-                                                    className="w-full rounded rounded-lg border p-2 text-sm outline-none"
-                                                    placeholder="Post Variation Prompt"
-                                                />
-                                            </div>
-                                        </div>
+                                        <VariantPromptContent
+                                            editedVariant={editedVariant}
+                                            setEditedVariant={setEditedVariant}
+                                            onSubmit={handleSubmit}
+                                        />
                                     </TabsContent>
                                     <TabsContent value="seo">
                                         <TabSeoContent
                                             seoMeta={editedVariant?.seoMeta as SEOMetadata}
                                             setEditedPost={setEditedVariant}
-                                            exampleSeoMetadata={exampleSeoMetadata}
+                                            markdownContent={editedVariant?.content ?? ''}
+                                            extras={{
+                                                //siteName: 'Example Site Name',
+                                                imageUrl: editedPost?.coverImage ?? ''
+                                            }}
                                         />
                                     </TabsContent>
                                     <TabsContent value="ai">
                                         <TabAiMetaContent
                                             aiMeta={editedVariant?.aiMeta as AIMetadata}
                                             setEditedPost={setEditedVariant}
-                                            exampleAIMetadata={exampleAIMetadata}
+                                            markdownContent={editedVariant?.content ?? ''}
                                         />
                                     </TabsContent>
                                 </Tabs>
@@ -555,148 +387,27 @@ const PostPage: React.FC = () => {
                                         <TabsTrigger value="ai">AI-Meta</TabsTrigger>
                                     </TabsList>
                                     <TabsContent value="general">
-                                        <div className="mt-4 flex flex-col gap-2">
-                                            <div>
-                                                <label
-                                                    htmlFor="title"
-                                                    className="text-xs text-neutral-500"
-                                                >
-                                                    Title
-                                                </label>
-                                                <input
-                                                    id="title"
-                                                    type="text"
-                                                    value={editedPost?.title}
-                                                    onChange={(e) =>
-                                                        setEditedPost((prev) => ({
-                                                            ...prev!,
-                                                            title: e.target.value,
-                                                        }))
-                                                    }
-                                                    className="w-full rounded rounded-lg border p-2 text-sm outline-none"
-                                                    placeholder="Post title"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label
-                                                    htmlFor="slug"
-                                                    className="text-xs text-neutral-500"
-                                                >
-                                                    Slug
-                                                </label>
-                                                <input
-                                                    id="slug"
-                                                    type="text"
-                                                    value={editedPost?.slug}
-                                                    onChange={(e) =>
-                                                        setEditedPost((prev) => ({
-                                                            ...prev!,
-                                                            slug: e.target.value,
-                                                        }))
-                                                    }
-                                                    className="w-full rounded rounded-lg border p-2 text-sm outline-none"
-                                                    placeholder="Post slug"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label
-                                                    htmlFor="image_cover"
-                                                    className="text-xs text-neutral-500"
-                                                >
-                                                    Cover Image (put in the editor)
-                                                </label>
-                                                <Image
-                                                    src={
-                                                        editedPost?.coverImage ??
-                                                        '/images/gradientBanner.jpg'
-                                                    }
-                                                    className="h-40 w-full rounded-lg object-cover"
-                                                    alt="Cover Image"
-                                                    width={100}
-                                                    height={100}
-                                                />
-                                            </div>
-                                            <div>
-                                                <label
-                                                    htmlFor="excerpt"
-                                                    className="text-xs text-neutral-500"
-                                                >
-                                                    Excerpt
-                                                </label>
-                                                <input
-                                                    id="excerpt"
-                                                    type="text"
-                                                    value={editedPost?.excerpt ?? ''}
-                                                    onChange={(e) =>
-                                                        setEditedPost((prev) => ({
-                                                            ...prev!,
-                                                            excerpt: e.target.value,
-                                                        }))
-                                                    }
-                                                    className="w-full rounded rounded-lg border p-2 text-sm outline-none"
-                                                    placeholder="Post excerpt"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label
-                                                    htmlFor="tags"
-                                                    className="text-xs text-neutral-500"
-                                                >
-                                                    Tags
-                                                </label>
-                                                <input
-                                                    id="tags"
-                                                    type="text"
-                                                    value={editedPost?.tags?.join(', ') ?? ''}
-                                                    onChange={(e) =>
-                                                        setEditedPost((prev) => ({
-                                                            ...prev!,
-                                                            tags: e.target.value
-                                                                .split(',')
-                                                                .map((tag) => tag.trim()),
-                                                        }))
-                                                    }
-                                                    className="w-full rounded rounded-lg border p-2 text-sm outline-none"
-                                                    placeholder="Seperate tags with commas"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label
-                                                    htmlFor="category"
-                                                    className="text-xs text-neutral-500"
-                                                >
-                                                    Category
-                                                </label>
-                                                <input
-                                                    id="category"
-                                                    type="text"
-                                                    value={editedPost?.categories?.join(', ') ?? ''}
-                                                    onChange={(e) =>
-                                                        setEditedPost((prev) => ({
-                                                            ...prev!,
-                                                            categories: e.target.value
-                                                                .split(',')
-                                                                .map((tag) => tag.trim()),
-                                                        }))
-                                                    }
-                                                    className="w-full rounded rounded-lg border p-2 text-sm outline-none"
-                                                    placeholder="Seperate categories with commas"
-                                                />
-                                            </div>
-                                        </div>
+                                        <TabPostGeneralContent
+                                            editedPost={editedPost}
+                                            setEditedPost={setEditedPost}
+                                        />
                                     </TabsContent>
                                     <TabsContent value="seo">
                                         <TabSeoContent
                                             seoMeta={editedPost?.seoMeta as SEOMetadata}
                                             setEditedPost={setEditedPost}
-                                            exampleSeoMetadata={exampleSeoMetadata}
+                                            markdownContent={editedPost?.content ?? ''}
+                                            extras={{
+                                                //siteName: post.site.name,
+                                                imageUrl: editedPost?.coverImage ?? ''
+                                            }}
                                         />
                                     </TabsContent>
                                     <TabsContent value="ai">
                                         <TabAiMetaContent
                                             aiMeta={editedPost?.aiMeta as AIMetadata}
                                             setEditedPost={setEditedPost}
-                                            exampleAIMetadata={exampleAIMetadata}
+                                            markdownContent={editedPost?.content ?? ''}
                                         />
                                     </TabsContent>
                                 </Tabs>
@@ -705,30 +416,7 @@ const PostPage: React.FC = () => {
                     </div>
                 </div>
 
-                {showDeleteDialog && (
-                    <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-                        <DialogContent>
-                            <div className="p-4">
-                                <h3 className="mb-4 text-lg font-semibold">Confirm Delete</h3>
-                                <p>
-                                    Are you sure you want to delete this post? This action cannot
-                                    be undone.
-                                </p>
-                                <div className="mt-4 flex justify-end space-x-2">
-                                    <Button
-                                        variant="ghost"
-                                        onClick={() => setShowDeleteDialog(false)}
-                                    >
-                                        Cancel
-                                    </Button>
-                                    <Button variant="destructive" onClick={handleDeletePost}>
-                                        Delete
-                                    </Button>
-                                </div>
-                            </div>
-                        </DialogContent>
-                    </Dialog>
-                )}
+
             </div>
         </div>
     );
