@@ -690,20 +690,27 @@ model ClientBot {
 }
 
 model ClientRequestFunction {
-  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
-  mentionedClientBotIds String[]
-  name                  String // Function name (e.g., "Create Post", "Read Posts")
-  service               String // Service name (e.g., "Twitter/X")
+  id                    String       @id @default(auto()) @map("_id") @db.ObjectId
+  clientId              String
+  botProjectId          String       @db.ObjectId
+  originClientRequestId String       @db.ObjectId
+  name                  String       @unique // Function name (e.g., "Create Post", "Read Posts")
   baseUrl               String // Base URL for the deployed function
+  mode                  BOTMODE // Mode of the function (e.g., "PROD", "STAGING")
+  type                  FUNCTIONTYPE // Function type (e.g., "webhook", "api", "scheduled")
   endpoints             Json[] // Multiple endpoints mapped to this function (will have method, headers, bodySchema, responseSchema)
+  schedules             Json[] // Schedule for the function
+  metadata              Json? // Metadata about the function
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  originClientRequest ClientRequest @relation(fields: [originClientRequestId], references: [id])
 }
 
 model ClientRequest {
-  id                    String           @id @default(auto()) @map("_id") @db.ObjectId
-  botProjectId          String           @db.ObjectId
+  id                    String                  @id @default(auto()) @map("_id") @db.ObjectId
+  botProjectId          String                  @db.ObjectId
   clientId              String
   mentionedClientBotIds String[]
   title                 String
@@ -713,13 +720,14 @@ model ClientRequest {
   prBranch              String
   prTargetBranch        String
   requestDir            String
-  requestStatus         REQUESTSTATUS    @default(UN_ASSIGNED)
+  requestStatus         REQUESTSTATUS           @default(UN_ASSIGNED)
   requestUpdates        RequestUpdate[]
   requestMessages       RequestMessage[]
+  deployedFunctions     ClientRequestFunction[]
   metadata              Json?
-  lastUpdatedAt         DateTime?        @default(now())
-  createdAt             DateTime         @default(now())
-  updatedAt             DateTime         @updatedAt
+  lastUpdatedAt         DateTime?               @default(now())
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
 
   botProject BotProject @relation(fields: [botProjectId], references: [id])
 }
@@ -728,6 +736,7 @@ enum BOTMODE {
   DEV
   PROD
   STAGING
+  PREVIEW
 }
 
 enum REQUESTSTATUS {
@@ -736,6 +745,12 @@ enum REQUESTSTATUS {
   IN_REVIEW
   CLOSED
   COMPLETED
+}
+
+enum FUNCTIONTYPE {
+  WEBHOOK
+  API
+  SCHEDULED
 }
 
 model RequestUpdate {
