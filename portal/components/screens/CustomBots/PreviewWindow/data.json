@@ -22,13 +22,22 @@
               "type": "object",
               "properties": {
                 "id": {
-                  "type": "number"
+                  "type": "number",
+                  "isRequired": true,
+                  "description": "The ID of the anime",
+                  "example": 1
                 },
                 "name": {
-                  "type": "string"
+                  "type": "string",
+                  "isRequired": true,
+                  "description": "The name of the anime",
+                  "example": "Naruto"
                 },
                 "altName": {
-                  "type": "string"
+                  "type": "string",
+                  "isRequired": true,
+                  "description": "The alternative name of the anime",
+                  "example": "Naruto: Shippuden"
                 }
               }
             },
@@ -36,13 +45,22 @@
               "type": "object",
               "properties": {
                 "id": {
-                  "type": "number"
+                  "type": "number",
+                  "isRequired": true,
+                  "description": "The ID of the character",
+                  "example": 1
                 },
                 "name": {
-                  "type": "string"
+                  "type": "string",
+                  "isRequired": true,
+                  "description": "The name of the character",
+                  "example": "Naruto"
                 },
                 "altName": {
-                  "type": "string"
+                  "type": "string",
+                  "isRequired": true,
+                  "description": "The alternative name of the character",
+                  "example": "Naruto: Shippuden"
                 }
               }
             }
@@ -72,13 +90,22 @@
           "description": "Successful response with user data",
           "schema": {
             "id": {
-              "type": "string"
+              "type": "string",
+              "isRequired": true,
+              "description": "The ID of the user",
+              "example": "1"
             },
             "name": {
-              "type": "string"
+              "type": "string",
+              "isRequired": true,
+              "description": "The name of the user",
+              "example": "John Doe"
             },
             "email": {
-              "type": "string"
+              "type": "string",
+              "isRequired": true,
+              "description": "The email of the user",
+              "example": "john@example.com"
             }
           }
         },
@@ -107,14 +134,16 @@
         "description": "User data for creation",
         "schema": {
           "name": {
-            "description": "Name of the user",
             "type": "string",
-            "required": true
+            "isRequired": true,
+            "description": "The name of the user",
+            "example": "John Doe"
           },
           "email": {
-            "description": "Email of the user",
             "type": "string",
-            "required": true
+            "isRequired": true,
+            "description": "The email of the user",
+            "example": "john@example.com"
           }
         }
       },
@@ -124,13 +153,22 @@
           "description": "User successfully created",
           "schema": {
             "id": {
-              "type": "string"
+              "type": "string",
+              "isRequired": true,
+              "description": "The ID of the user",
+              "example": "1"
             },
             "name": {
-              "type": "string"
+              "type": "string",
+              "isRequired": true,
+              "description": "The name of the user",
+              "example": "John Doe"
             },
             "email": {
-              "type": "string"
+              "type": "string",
+              "isRequired": true,
+              "description": "The email of the user",
+              "example": "john@example.com"
             }
           }
         },
