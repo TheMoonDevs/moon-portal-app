@@ -30,12 +30,16 @@ showdownService.useExtension('myext');
 interface GenerativeStreamerProps {
     isStreaming: boolean;
     streamingContent: string;
+    initialContent?: any;
+    disabled?: boolean;
 }
 
 
 export const GenerativeStreamer = ({
     isStreaming,
-    streamingContent
+    streamingContent,
+    initialContent,
+    disabled = false
 }: GenerativeStreamerProps) => {
     const { editor } = useEditor();
 
@@ -58,6 +62,16 @@ export const GenerativeStreamer = ({
             editor?.setEditable(true, false)
         }
     }, [isStreaming, streamingContent]);
+
+    useEffect(() => {
+        if (initialContent && !editor?.isFocused && !isStreaming) {
+            editor?.commands.setContent(initialContent)
+        }
+    }, [initialContent, isStreaming])
+
+    // useEffect(() => {
+    //     editor?.setEditable(!disabled, false)
+    // }, [disabled])
 
     return <>
 

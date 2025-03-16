@@ -20,6 +20,7 @@ import {
     CircleArrowLeftIcon,
     Loader2,
     PlusIcon,
+    RefreshCcw,
     TrashIcon
 } from 'lucide-react';
 import Image from 'next/image';
@@ -43,6 +44,9 @@ import { NewVariationDialog } from './NewVariationDialog';
 import TabPostGeneralContent from './TabPostGeneralContent';
 import VariantPromptContent from './VariantPromptContent';
 import PostPageHeader from './PostPageHeader';
+import { useDebouncedEffect } from '@/utils/hooks/useDebouncedHook';
+import { prettyPrintDateAndTime } from '@/utils/helpers/prettyprint';
+import dayjs from 'dayjs';
 
 const showdownService = new showdown.Converter();
 
@@ -72,14 +76,22 @@ const PostPage: React.FC = () => {
     const [isSaving, setIsSaving] = useState(false);
 
     // sync & save every 500milliseconds if isUnsaved is true
-    useEffect(() => {
-        const interval = setInterval(() => {
-            if (isUnsaved) {
-                handleUpdatePost(editedPost);
+    useDebouncedEffect(
+        () => {
+            if (isSaving) return;
+            if (
+                JSON.stringify(post) === JSON.stringify(editedPost) ||
+                !post ||
+                !editedPost
+            ) {
+                return;
             }
-        }, 2000);
-        return () => clearInterval(interval);
-    }, [isUnsaved, editedPost]);
+            // console.log("saving... ", workLog);
+            handleUpdatePost(editedPost);
+        },
+        [editedPost, post],
+        3000,
+    );
 
     const isVariantUnsaved = useMemo(() => {
         return (
@@ -89,6 +101,24 @@ const PostPage: React.FC = () => {
         );
     }, [editedVariant, variant]);
     const [isSavingVariation, setIsSavingVariation] = useState(false);
+
+
+    useDebouncedEffect(
+        () => {
+            if (isSavingVariation) return;
+            if (
+                JSON.stringify(variant) === JSON.stringify(editedVariant) ||
+                !variant ||
+                !editedVariant
+            ) {
+                return;
+            }
+            // console.log("saving... ", workLog);
+            handleUpdateVariant(editedVariant);
+        },
+        [editedVariant, variant],
+        3000,
+    );
 
 
     // TODO: change to useSWR
@@ -137,54 +167,55 @@ const PostPage: React.FC = () => {
         return true;
     };
 
-    const handleUpdatePost = (_post: any) => {
-        toast.promise(async () => {
-            try {
-                setIsSaving(true);
-                const updatedPost = await PortalSdk.putData(`/api/sites/posts`, {
-                    id: postId,
-                    ...(_post ?? editedPost),
-                });
-                setPost(updatedPost);
-            } catch (error) {
-                console.error('Failed to update post', error);
-                toast.error('Failed to update post!');
-            } finally {
-                setIsSaving(false);
-            }
-        },
-            {
-                loading: 'Saving...',
-                success: 'Saved!',
-                error: 'Failed to save!',
+    const handleUpdatePost = async (_post: any) => {
+        //toast.promise(async () => {
+        try {
+            setIsSaving(true);
+            const updatedPost = await PortalSdk.putData(`/api/sites/posts`, {
+                id: postId,
+                ...(_post ?? editedPost),
             });
+            setPost(updatedPost);
+        } catch (error) {
+            console.error('Failed to update post', error);
+            toast.error('Failed to update post!');
+        } finally {
+            setIsSaving(false);
+        }
+        // },
+        //     {
+        //         loading: 'Saving...',
+        //         success: 'Saved!',
+        //         error: 'Failed to save!',
+        //     });
     };
 
-    const handleUpdateVariant = (_variant: any) => {
-        toast.promise(async () => {
-            try {
-                setIsSavingVariation(true);
-                //console.log(_variant, editedVariant);
-                let variantToUpdate = _variant ?? editedVariant;
-                let { originPost, postId, excerpt, ...updates } = variantToUpdate;
-                const updatedVariant = await PortalSdk.putData(`/api/sites/posts/variants`, {
-                    id: variant?.variantId,
-                    ...updates,
-                });
-                setVariant(updatedVariant);
-                setEditedVariant(updatedVariant);
-                mutatePostVariants();
-            } catch (error) {
-                console.error('Failed to update variant', error);
-                toast.error('Failed to update variant!');
-            } finally {
-                setIsSavingVariation(false);
-            }
-        }, {
-            loading: 'Saving...',
-            success: 'Saved!',
-            error: 'Failed to save!',
-        });
+    const handleUpdateVariant = async (_variant: any) => {
+        //toast.promise(async () => {
+        try {
+            setIsSavingVariation(true);
+            //console.log(_variant, editedVariant);
+            let variantToUpdate = _variant ?? editedVariant;
+            let { originPost, postId, excerpt, ...updates } = variantToUpdate;
+            const updatedVariant = await PortalSdk.putData(`/api/sites/posts/variants`, {
+                id: variant?.variantId,
+                ...updates,
+            });
+            setIsSavingVariation(false);
+            setVariant(updatedVariant);
+            setEditedVariant(updatedVariant);
+            mutatePostVariants();
+        } catch (error) {
+            console.error('Failed to update variant', error);
+            toast.error('Failed to update variant!');
+        } finally {
+            setIsSavingVariation(false);
+        }
+        // }, {
+        //     loading: 'Saving...',
+        //     success: 'Saved!',
+        //     error: 'Failed to save!',
+        // });
     };
 
     const handleCreateVariation = (_variation: any) => {
@@ -274,6 +305,7 @@ const PostPage: React.FC = () => {
                                     className={`flex cursor-pointer items-center justify-end gap-2 hover:text-neutral-700 ${variant === null ? 'text-md font-bold text-black' : 'font-regular text-sm text-neutral-500'}`}
                                     onClick={() => {
                                         if (isVariantUnsaved) toast.info('Changes not saved yet');
+                                        else if (isSavingVariation) toast.info('Saving Variations...');
                                         else setVariant(null);
                                     }}
                                 >
@@ -283,7 +315,9 @@ const PostPage: React.FC = () => {
                                 {(postVariants as PostVariant[])?.map((_variant) => (
                                     <li
                                         onClick={() => {
-                                            if (isVariantUnsaved) toast.info('Changes not saved yet');
+                                            if (isSaving) toast.info('Saving...');
+                                            else if (isSavingVariation) toast.info('Saving Variations...');
+                                            else if (isVariantUnsaved) toast.info('Changes not saved yet');
                                             else {
                                                 setVariant(_variant);
                                                 setEditedVariant(_variant);
@@ -302,15 +336,46 @@ const PostPage: React.FC = () => {
                                     post={post}
                                     postId={postId}
                                     siteId={siteId}
+                                    isSaving={isSaving}
+                                    isUnsaved={isUnsaved}
                                     isVariantUnsaved={isVariantUnsaved}
+                                    isSavingVariation={isSavingVariation}
                                     onCreateVariation={handleCreateVariation}
                                     onSubmit={handleSubmit}
                                 />
                             </ul>
                         </div>
                         <div className="col-span-5 m-4 w-[50vw] flex-1 rounded-lg border-neutral-200">
+                            <div className="w-full my-3 px-6 flex justify-between items-center gap-2 border-b border-neutral-200 pb-3">
+                                {variant ?
+                                    (<div className='text-xs text-muted-foreground'>
+                                        {status === 'streaming' ? 'Generating...' :
+                                            <Button
+                                                onClick={handleSubmit}
+                                                variant='link'
+                                                className='flex justify-start items-center mr-auto gap-2 px-1 text-black bg-white hover:text-purple-500 text-sm font-bold text-left'
+                                            >
+                                                <RefreshCcw size={48} />
+                                                Re-Generate {editedVariant?.name} Variation
+                                            </Button>
+                                        }
+                                    </div>) : (
+                                        <div className='text-xs text-muted-foreground'>
+                                            Last Updated: {dayjs(post?.updatedAt)?.format(`DD-MM-YYYY HH:mm`)}
+                                        </div>
+                                    )}
+                                <div className='flex gap-2 items-center'>
+                                    <div
+                                        className={' px-2 py-1 text-xs text-muted-foreground'
+                                        }
+                                    >
+                                        {variant ? variant.content?.length : editedPost?.content?.length ?? "0"} Words
+                                    </div>
+                                </div>
+                            </div>
                             {!variant && (
                                 <TailwindAdvancedEditor
+                                    disabled={isSaving}
                                     content={editedPost?.jsonContent as any ?? defaultEditorContent}
                                     onUpdate={handleUpdateLocalPost}
                                     isStreaming={false}
@@ -320,6 +385,7 @@ const PostPage: React.FC = () => {
                             {variant && (
                                 <div className='w-full h-full relative'>
                                     <TailwindAdvancedEditor
+                                        disabled={isSavingVariation}
                                         content={editedVariant?.jsonContent as any}
                                         isStreaming={status === 'streaming'}
                                         streamingContent={streamingMarkdown}
@@ -346,14 +412,15 @@ const PostPage: React.FC = () => {
                                 <Tabs defaultValue="variant" className="w-full">
                                     <TabsList className="ml-auto">
                                         <TabsTrigger value="variant">Variant</TabsTrigger>
-                                        <TabsTrigger value="seo">SEO-Meta</TabsTrigger>
-                                        <TabsTrigger value="ai">AI-Meta</TabsTrigger>
+                                        {/* <TabsTrigger value="seo">SEO-Meta</TabsTrigger>
+                                        <TabsTrigger value="ai">AI-Meta</TabsTrigger> */}
                                     </TabsList>
                                     <TabsContent value="variant">
                                         <VariantPromptContent
                                             editedVariant={editedVariant}
                                             setEditedVariant={setEditedVariant}
                                             onSubmit={handleSubmit}
+                                            originPost={post}
                                         />
                                     </TabsContent>
                                     <TabsContent value="seo">

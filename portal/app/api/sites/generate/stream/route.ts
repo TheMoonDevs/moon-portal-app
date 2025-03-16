@@ -18,6 +18,7 @@ export async function POST(req: Request) {
     You need to generate in markdown format in message stream that is a variation of the original markdown file here.
     strip the \`\`\`markdown tags from the generated markdown.
     images should follow this syntax = ![alt_text](image_url)
+    if user asks to keep it short or summarize, do not include any images.
     `,
     prompt: `
     Variance prompt:

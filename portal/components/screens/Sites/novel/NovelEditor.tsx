@@ -79,13 +79,15 @@ const TailwindAdvancedEditor = memo(({
   streamingContent,
   content: initContent,
   onUpdate,
-  onSpaceKeyPress
+  onSpaceKeyPress,
+  disabled = false
 }: {
   isStreaming: boolean,
   streamingContent: string,
   content?: JSONContent,
   onUpdate?: (content: JSONContent, title?: string, para?: string, image?: string, markdown?: string) => Promise<boolean>,
-  onSpaceKeyPress?: () => void
+  onSpaceKeyPress?: () => void,
+  disabled?: boolean
 }) => {
   const editorRef = useRef<EditorInstance>(null);
   const [initialContent, setInitialContent] = useState<null | JSONContent>(
@@ -115,14 +117,31 @@ const TailwindAdvancedEditor = memo(({
 
   const debouncedUpdates = useDebouncedCallback(
     async (editor: EditorInstance) => {
+      const findNode = (tree: JSONContent, type: string, attrs?: number) => {
+        if (tree.type === type && (!attrs || tree.attrs?.level === attrs)) {
+          return tree;
+        }
+        let result: any = null;
+        if (tree.content && tree.content?.length > 0) {
+          for (const node of tree.content) {
+            result = findNode(node, type, attrs);
+            if (result) break;
+          }
+        }
+        return result;
+      }
       const json = editor.getJSON();
-      const titleNode = json.content?.find((node: any) => node.type === 'heading' && node.attrs?.level === 1)
+      const titleNode = findNode(json, 'heading', 1)
       const title = titleNode?.content?.[0]?.text || '';
-      const paraNode = json.content?.find((node: any) => node.type === 'paragraph')
+      const paraNode = findNode(json, 'paragraph')
       const para = paraNode?.content?.[0]?.text || '';
-      const imageNode = json.content?.find((node: any) => node.type === 'image')
+      const imageNode = findNode(json, 'image')
       const image = imageNode?.attrs?.src || '';
-      console.log(json);
+      console.log('title', title);
+      console.log('para', para);
+      console.log('image', image);
+      console.log('json', json);
+      //console.log(json);
       setCharsCount(editor.storage.characterCount.words());
       window.localStorage.setItem(
         'html-content',
@@ -130,16 +149,18 @@ const TailwindAdvancedEditor = memo(({
       );
       //window.localStorage.setItem('novel-content', JSON.stringify(json));
       const markdown = showdownService.makeMarkdown(generateHTML(json, defaultExtensions));
-      console.log('markdown', markdown);
+      //console.log('markdown', markdown);
       onUpdate?.(json, title, para, image, markdown);
 
       //window.localStorage.setItem('markdown', markdown);
       setSaveStatus('Saved');
     },
-    500,
+    0,
   );
 
+  //TODO: change & set initCOntent whenever the contentId changes
   useEffect(() => {
+    //console.log('initContent', initContent);
     if (initContent) setInitialContent(initContent);
     else setInitialContent(null);
   }, [initContent]);
@@ -147,26 +168,10 @@ const TailwindAdvancedEditor = memo(({
   //console.log('initialContent', initialContent);
   //console.log('isStreaming', isStreaming);
 
-  //if (!initialContent && !isStreaming) return null;
+  if (!initialContent && !isStreaming) return null;
 
   return (
     <div className="relative flex w-full flex-col items-center justify-center bg-white">
-      <div className="w-full my-3 px-6 flex justify-between items-center gap-2 border-b border-neutral-200 pb-3">
-        <p className='text-xs text-muted-foreground'>
-          {isStreaming ? 'Generating...' : ''}
-        </p>
-        <div className='flex gap-2 items-center'>
-          {/* <div className="rounded-lg bg-accent px-2 py-1 text-sm text-muted-foreground">
-            Local Changes:{saveStatus}
-          </div> */}
-          <div
-            className={' px-2 py-1 text-xs text-muted-foreground'
-            }
-          >
-            {charsCount} Words
-          </div>
-        </div>
-      </div>
       <EditorRoot>
         <EditorContent
           ref={editorRef as any}
@@ -198,7 +203,7 @@ const TailwindAdvancedEditor = memo(({
             //if (!isStreaming) {
             debouncedUpdates(editor);
             setSaveStatus('Unsaved');
-            if (initialContent == null && streamingContent) {
+            if (initialContent == null && streamingContent != null) {
               setInitialContent(editor.getJSON());
             }
             //}
@@ -206,7 +211,11 @@ const TailwindAdvancedEditor = memo(({
           slotBefore={(
             <>
               <GenerativeStreamer
-                isStreaming={isStreaming} streamingContent={streamingContent} />
+                isStreaming={isStreaming}
+                streamingContent={streamingContent}
+                initialContent={initialContent}
+                disabled={disabled}
+              />
             </>
           )}
           immediatelyRender={false}
@@ -262,7 +271,7 @@ const TailwindAdvancedEditor = memo(({
   );
 }, (prevProps, nextProps) => {
   return prevProps.content === nextProps.content && prevProps.isStreaming === nextProps.isStreaming
-    && prevProps.streamingContent === nextProps.streamingContent;
+    && prevProps.streamingContent === nextProps.streamingContent && prevProps.disabled === nextProps.disabled;
 });
 
 export default TailwindAdvancedEditor;

@@ -869,6 +869,7 @@ model PostVariant {
   name        String?
   title       String
   subtitle    String?
+  summary     String?
   content     String?   // Main article content
   jsonContent Json?
   // AI rewrite prompt

@@ -10,6 +10,9 @@ interface NewVariationDialogProps {
     postId: string;
     siteId: string;
     isVariantUnsaved: boolean | null;
+    isSaving: boolean;
+    isSavingVariation: boolean;
+    isUnsaved: boolean | null;
     onCreateVariation: (variant: any) => void;
     onSubmit: () => void;
 }
@@ -19,6 +22,9 @@ export function NewVariationDialog({
     postId,
     siteId,
     isVariantUnsaved,
+    isSaving,
+    isSavingVariation,
+    isUnsaved,
     onCreateVariation,
     onSubmit
 }: NewVariationDialogProps) {
@@ -27,7 +33,19 @@ export function NewVariationDialog({
 
     const handleClick = () => {
         if (isVariantUnsaved) {
-            toast.info('Changes not saved yet');
+            toast.info('Variation Changes not saved yet');
+            return;
+        }
+        if (isSaving) {
+            toast.info('Saving post...');
+            return;
+        }
+        if (isSavingVariation) {
+            toast.info('Saving Variations...');
+            return;
+        }
+        if (isUnsaved) {
+            toast.info('Post Changes not saved yet');
             return;
         }
         if (!post) return toast.error('Post not found');

@@ -3,7 +3,7 @@ import { DialogContent } from '@/components/ui/dialog';
 import { Dialog } from '@/components/ui/dialog';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 import { Post, PostStatus, PostVariant } from '@prisma/client';
-import { ArrowLeftIcon, Loader2, TrashIcon } from 'lucide-react';
+import { ArrowLeftIcon, Loader2, ShareIcon, TrashIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -88,6 +88,7 @@ const PostPageHeader: React.FC<PostPageHeaderProps> = ({
                             variant="ghost"
                             className="flex items-center gap-2"
                             onClick={() => handleUpdateVariant(editedVariant)}
+                            disabled={isSavingVariation ?? false}
                         >
                             {isSavingVariation && <Loader2 className="animate-spin" />}
                             {isSavingVariation ? 'Saving...' : 'Save'}
@@ -100,6 +101,12 @@ const PostPageHeader: React.FC<PostPageHeaderProps> = ({
                         className={`flex items-center gap-2 ${post?.status === PostStatus.DRAFT ? 'text-green-500' : 'text-red-500'}`}
                     >
                         {post?.status === PostStatus.PUBLISHED ? 'Unpublish' : 'Publish'}
+                    </Button>
+                    <Button
+                        disabled={isSavingVariation ?? false}
+                        variant="ghost"
+                    >
+                        <ShareIcon size={16} />
                     </Button>
                     <Button
                         disabled={isSavingVariation ?? false}
@@ -128,6 +135,12 @@ const PostPageHeader: React.FC<PostPageHeaderProps> = ({
                         className={`flex items-center gap-2 ${post?.status === PostStatus.DRAFT ? 'text-green-500' : 'text-red-500'}`}
                     >
                         {post?.status === PostStatus.PUBLISHED ? 'Unpublish' : 'Publish'}
+                    </Button>
+                    <Button
+                        disabled={isSavingVariation ?? false}
+                        variant="ghost"
+                    >
+                        <ShareIcon size={16} />
                     </Button>
                     <Button
                         disabled={isSaving ?? false}
