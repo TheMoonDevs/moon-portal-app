@@ -1,12 +1,6 @@
-import {
-  ClientRequest,
-  REQUESTSTATUS,
-  RequestUpdate,
-  UPDATEFROM,
-  UPDATETYPE,
-} from '@prisma/client';
-import { GithubSdk } from '@/utils/services/githubSdk';
 import { prisma } from '@/prisma/prisma';
+import { GithubSdk } from '@/utils/services/githubSdk';
+import { ClientRequest, REQUESTSTATUS, RequestUpdate } from '@prisma/client';
 
 // Determine new PR status based on GitHub events
 export const determinePrStatus = (events: any[]): REQUESTSTATUS => {
@@ -137,15 +131,16 @@ export const updateClientRequest = async (
         data: newEvents.map((event: any) => ({
           originClientRequestId: clientRequest.id,
           userId: clientRequest.userId,
-          message: eventMessage(event),
-          githubUrl: event.html_url,
-          updateType:
-            event.event === 'commented' ? 'MESSAGE' : UPDATETYPE.STATUS,
-          updateFrom:
-            event.event === 'commented'
-              ? UPDATEFROM.COMMENT
-              : UPDATEFROM.SYSTEM,
-          metadata: event,
+          content: eventMessage(event),
+          context: 'server',
+          role: 'git',
+          minion: 'gitsync',
+          metadata: {
+            isGitComment: event.event === 'commented',
+            isGitStatus: event.event === 'status',
+            gitHubUrl: event.html_url,
+            gitMeta: event,
+          },
           createdAt: new Date(
             event?.author?.date || event?.updated_at || event?.created_at,
           ),

@@ -610,7 +610,7 @@ model DevProfile {
 
 model ClientUtilityLink {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId  String
+  clientId  String
   title     String
   url       String
   createdAt DateTime @default(now())
@@ -658,7 +658,7 @@ model FoxTemplate {
 model ChatUIMessage {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   context   String // 'chat' | 'server'
-  role      String   // 'user' | 'assistant' | 'system' | 'function' | 'gitComment' | 'sysUpdate'
+  role      String   // 'user' | 'assistant' | 'system' | 'function' | 'git' | 'sysUpdate'
   content   String
   parts       Json[]  // 'text' | 'toolCall' | 'source' 
   attachments Json[]
@@ -815,7 +815,7 @@ model Invoice {
   dueDate        DateTime
   title          String
   description    String?
-  userId       String
+  clientId       String
   devIds         String[] // Store user IDs as an array instead of a relation
   amountTotal    Float
   amountToPay    Float
