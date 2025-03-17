@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/prisma/prisma';
-import { GithubSdk } from '@/utils/services/githubSdk';
 import { TEMPLATE_REPO_OWNER } from '@/utils/constants/customBots';
+import { GithubSdk } from '@/utils/services/githubSdk';
+import { NextRequest, NextResponse } from 'next/server';
 // import { updateClientRequest } from '@/utils/services/customBots/clientRequests/updateClientRequest';
-import { REQUESTSTATUS, UPDATEFROM, UPDATETYPE } from '@prisma/client';
 import { SlackBotSdk, SlackChannels } from '@/utils/services/slackBotSdk';
+import { ChatUIMessage, REQUESTSTATUS } from '@prisma/client';
 import { InputJsonValue } from '@prisma/client/runtime/library';
 
 const slackBotSdk = new SlackBotSdk();
@@ -17,36 +17,33 @@ interface IMediaPayloadType {
 }
 [];
 
+// 1. if context is chat, save the message to the database.
+// 2. if context is server, save the message to the database and send a slack message.
+// 3. if context is server and media is provided, save the message to the database and send a slack message.
+// 4. if context is server and media is not provided, save the message to the database.
+
 export async function POST(req: NextRequest) {
   try {
-    const messageType = req.nextUrl.searchParams.get('messageType');
     const body = await req.json();
-    const mediaPayload: IMediaPayloadType[] = body.mediaPayload || [];
-    const { originClientRequestId, clientId, message } = body;
-    // const formData = await req.formData();
-    // const originClientRequestId = formData
-    //   .get('originClientRequestId')
-    //   ?.toString();
-    // const clientId = formData.get('clientId')?.toString();
-    // const message = formData.get('message')?.toString();
-    // Files are sent under key "file" (can be multiple)
-    // const files = formData.getAll('file') as unknown as File[];
+    //console.log('body', body);
+    const { originClientRequestId, userId, content, context, metadata } = body;
+    const mediaPayload: IMediaPayloadType[] = metadata.media || [];
 
-    if (!originClientRequestId || !clientId || !message) {
+    if (!originClientRequestId || !userId || !content) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 },
       );
     }
 
-    if (messageType === 'chatbot') {
-      const storedBotMessage = await prisma.requestMessage.create({
+    if (context === 'chat') {
+      const storedBotMessage = await prisma.chatUIMessage.create({
         data: {
           originClientRequestId,
-          clientId,
-          message: message,
-          updateType: UPDATETYPE.MESSAGE,
-          updateFrom: UPDATEFROM.BOT,
+          userId,
+          content: content,
+          context: context,
+          role: 'assistant',
         },
       });
 
@@ -90,43 +87,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // // Process file uploads via S3 if files are provided.
-    // let mediaPayload: {
-    //   mediaName: string;
-    //   mediaType: string;
-    //   mediaFormat: string;
-    //   mediaUrl: string;
-    // }[] = [];
-
-    // if (files && files.length > 0) {
-    //   const folderName =
-    //     formData.get('folderName')?.toString() || 'customBots/clientMessages';
-    //   const filePromises = files.map(async (file) => {
-    //     const uniqueName = `${Date.now()}-${file.name}`;
-    //     const newFile = new File([file], uniqueName, { type: file.type });
-    //     const s3Response = await s3FileUploadSdk.uploadFile({
-    //       file: newFile,
-    //       userId: clientId,
-    //       folder: folderName,
-    //     });
-    //     if (!s3Response || s3Response.$metadata.httpStatusCode !== 200) {
-    //       throw new Error('Failed to upload file');
-    //     }
-    //     const fileUrl = s3FileUploadSdk.getPublicFileUrl({
-    //       userId: clientId,
-    //       file: newFile,
-    //       folder: folderName,
-    //     });
-    //     return {
-    //       mediaName: file.name,
-    //       mediaType: file.type,
-    //       mediaFormat: file.name.split('.').pop() || 'file',
-    //       mediaUrl: fileUrl,
-    //     };
-    //   });
-    //   mediaPayload = await Promise.all(filePromises);
-    // }
-
     // Build Markdown for GitHub preview of attached media.
     const mediaMarkdown =
       mediaPayload.length > 0
@@ -167,7 +127,7 @@ export async function POST(req: NextRequest) {
 
       const prBody = `Reopen PR for Client Request #${
         lastRequestPrNumber || clientRequest.prNumber
-      }: ${message}${mediaMarkdown}`;
+      }: ${content}${mediaMarkdown}`;
 
       // 2️⃣ Add a README file in the new branch
       await appRepoSdk.updateFile({
@@ -199,7 +159,7 @@ export async function POST(req: NextRequest) {
         data: {
           originClientRequestId,
           botProjectId: clientRequest.botProjectId,
-          clientId,
+          userId,
           prNumber: prResult.number,
           prUrl: prResult.html_url,
           prBranch: newBranch,
@@ -220,7 +180,7 @@ export async function POST(req: NextRequest) {
       const updatedClientRequestData = {
         id: updatedClientRequest.id,
         botProjectId: updatedClientRequest.botProjectId,
-        clientId: updatedClientRequest.clientId,
+        userId: updatedClientRequest.userId,
         title: updatedClientRequest.title,
         description: updatedClientRequest.description,
         requestDir: updatedClientRequest.requestDir,
@@ -243,29 +203,35 @@ export async function POST(req: NextRequest) {
       // // Refresh client request updates.
       // await updateClientRequest(clientRequest);
 
-      await prisma.requestMessage.create({
+      await prisma.chatUIMessage.create({
         data: {
           originClientRequestId,
-          clientId,
-          message,
-          media: mediaPayload as unknown as InputJsonValue[],
-          updateType: UPDATETYPE.MESSAGE,
-          updateFrom: UPDATEFROM.CLIENT,
+          userId,
+          content: content,
+          metadata: {
+            media: mediaPayload as unknown as InputJsonValue[],
+          },
+          context: 'chat',
+          role: 'user',
+          minionType: 'other',
           createdAt: initTime,
           updatedAt: initTime,
         },
       });
-      await prisma.requestMessage.create({
+      await prisma.chatUIMessage.create({
         data: {
           originClientRequestId,
-          clientId,
-          message: `Your request has been reopened. We'll get back to you soon.`,
-          updateType: UPDATETYPE.MESSAGE,
-          updateFrom: UPDATEFROM.BOT,
+          userId,
+          content: `Your request has been reopened. We'll get back to you soon.`,
+          context: 'server',
+          role: 'assistant',
+          minionType: 'other',
+          createdAt: initTime,
+          updatedAt: initTime,
         },
       });
 
-      const slackMsg = `A request with title: *${clientRequest.title}* has been reopened with message: ${message}. [View PR](${prResult.html_url})`;
+      const slackMsg = `A request with title: *${clientRequest.title}* has been reopened with message: ${content}. [View PR](${prResult.html_url})`;
 
       await slackBotSdk.sendSlackMessageviaAPI({
         text: slackMsg,
@@ -276,34 +242,37 @@ export async function POST(req: NextRequest) {
       });
     } else {
       // Normal case: add a comment to the PR with media preview.
-      const commentBody = `<Not for Client> Msg from Client: ${message}${mediaMarkdown}`;
+      const commentBody = `<Not for Client> Msg from Client: ${content}${mediaMarkdown}`;
       await appRepoSdk.createCommentOnPr(
         lastRequestPrNumber || clientRequest.prNumber,
         commentBody,
       );
       // await updateClientRequest(clientRequest);
 
-      await prisma.requestMessage.create({
+      await prisma.chatUIMessage.create({
         data: {
           originClientRequestId,
-          clientId,
-          message,
-          media: mediaPayload as unknown as InputJsonValue[],
-          updateType: UPDATETYPE.MESSAGE,
-          updateFrom: UPDATEFROM.CLIENT,
+          userId,
+          content: content,
+          metadata: {
+            media: mediaPayload as unknown as InputJsonValue[],
+          },
+          context: 'chat',
+          role: 'user',
+          minionType: 'other',
           createdAt: initTime,
           updatedAt: initTime,
         },
       });
     }
 
-    const updatedRequestMessages = await prisma.requestMessage.findMany({
+    const updatedRequestMessages = await prisma.chatUIMessage.findMany({
       where: { originClientRequestId },
       orderBy: { createdAt: 'asc' },
     });
 
     return NextResponse.json(
-      { requestMessages: updatedRequestMessages },
+      { chatUIMessages: updatedRequestMessages },
       { status: 200 },
     );
   } catch (error) {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useUser } from "@/utils/hooks/useUser";
-import NewProjectCreation from "./NewProjectCreation";
+import NewProjectCreation from "./global/NewProjectCreation";
 import { useRouter } from "next/navigation";
 import useSWR from "swr";
 import { useEffect } from "react";
@@ -17,7 +17,7 @@ export const CustomBotsHomePage = () => {
         error,
         isLoading,
     } = useSWR(
-        `/api/custom-bots/bot-project?clientId=${user?.id}`,
+        `/api/custom-bots/bot-project?userId=${user?.id}`,
         async (url) => await fetch(url).then((res) => res.json()),
     );
 
@@ -42,7 +42,7 @@ export const CustomBotsHomePage = () => {
             {/* <h1 className="text-4xl font-bold text-neutral-900">Welcome to Custom Bots</h1>
             <p className="text-lg text-neutral-600">Enter the new age of Ai-first, custom made, branded bots</p> */}
             <NewProjectCreation
-                clientId={user?.id}
+                userId={user?.id}
                 onProjectCreated={(newProject) => {
                     router.push(`/custom-bots/project/${newProject.id}`);
                 }}

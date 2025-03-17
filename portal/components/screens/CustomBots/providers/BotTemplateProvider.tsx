@@ -1,7 +1,7 @@
 'use client';
 
 import { useUser } from '@/utils/hooks/useUser';
-import { createContext, useContext } from 'react';
+import { createContext, useContext, useState } from 'react';
 import useSWR from 'swr';
 
 export const BotTemplateContext = createContext<
@@ -28,7 +28,7 @@ export const BotTemplateProvider = ({
 };
 export type BotTemplate = {
   id: string;
-  clientId?: string;
+  userId?: string;
   type: string;
   name: string;
   requiredKeys: Array<{
@@ -40,13 +40,14 @@ export type BotTemplate = {
 };
 const useBotTemplateInit = () => {
   const { user } = useUser();
+  const [showAddBotModal, setShowAddBotModal] = useState(false);
   // Fetch client bot templates for the current client.
   const { data: templates } = useSWR<BotTemplate[]>(
     user?.id
-      ? `/api/custom-bots/client-bots/template?clientId=${user.id}`
+      ? `/api/custom-bots/client-bots/template?userId=${user.id}`
       : null, //Prevents fetch when user is not available
     (url: string) => fetch(url).then((res) => res.json()),
   );
 
-  return { templates };
+  return { templates, showAddBotModal, setShowAddBotModal };
 };

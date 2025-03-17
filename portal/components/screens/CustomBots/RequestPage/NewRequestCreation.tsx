@@ -13,11 +13,11 @@ interface BotProjectWithRequests extends BotProject {
 }
 
 export default function NewRequestCreation({
-  clientId,
+  userId,
   project,
   onRequestCreated,
 }: {
-  clientId: string;
+  userId: string;
   project: BotProjectWithRequests;
   onRequestCreated: (newRequest: ClientRequest) => void;
 }) {
@@ -35,7 +35,7 @@ export default function NewRequestCreation({
       const newRequest = await PortalSdk.postData(
         '/api/custom-bots/client-requests/create',
         {
-          clientId,
+          userId,
           requestDescription: description.trim(),
           botProjectId: project?.id,
         },

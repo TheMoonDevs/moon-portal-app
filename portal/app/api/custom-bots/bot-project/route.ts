@@ -3,9 +3,9 @@ import { prisma } from '@/prisma/prisma';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const clientId = searchParams.get('clientId');
+  const userId = searchParams.get('userId');
 
-  if (!clientId) {
+  if (!userId) {
     return NextResponse.json(
       { error: 'Client ID is required' },
       { status: 400 },
@@ -14,7 +14,7 @@ export async function GET(request: Request) {
 
   try {
     let botProjects = await prisma.botProject.findMany({
-      where: { clientId },
+      where: { userId },
       include: { clientRequests: true },
     });
 

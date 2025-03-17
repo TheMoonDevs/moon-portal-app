@@ -610,7 +610,7 @@ model DevProfile {
 
 model ClientUtilityLink {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  clientId  String
+  userId  String
   title     String
   url       String
   createdAt DateTime @default(now())
@@ -642,9 +642,45 @@ enum ENGAGEMENTTYPE {
 
 // -------------------------------------Custom Bots-------------------------------------------
 
+model FoxTemplate {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  foxType   String // 'hello' | 'convert' | 'build' | 'package'
+  foxDescription  String
+  focCapabilities String[]
+  messageCount  Int @default(0)
+  tokenCount    Int @default(0)
+  updatedAt DateTime  @updatedAt
+  createdAt DateTime  @default(now())
+  messages   ChatUIMessage[]
+}
+
+model ChatUIMessage {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  context   String // 'chat' | 'server'
+  role      String   // 'user' | 'assistant' | 'system' | 'function' | 'gitComment' | 'sysUpdate'
+  content   String
+  parts       Json[]  // 'text' | 'toolCall' | 'source' 
+  attachments Json[]
+  annotations Json[]
+  metadata              Json?
+  minionId     String? @db.ObjectId
+  minionType   String? // 'hello' | 'convert' | 'build' | 'package'
+  userId       String @db.ObjectId
+
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  originClientRequestId String   @db.ObjectId
+  originClientRequest ClientRequest @relation(fields: [originClientRequestId], references: [id])
+
+  minion       FoxTemplate?  @relation(fields: [minionId], references: [id])
+}
+
 model BotProject {
   id               String          @id @default(auto()) @map("_id") @db.ObjectId
-  clientId         String
+  userId         String
   name             String
   githubRepoName   String
   githubRepoUrl    String
@@ -653,7 +689,7 @@ model BotProject {
   prNumber         Int?
   description      String?
   projectDir       String
-  clientBots       ClientBot[]
+  clientSecrets       ClientSecret[]
   clientRequests   ClientRequest[]
   previewConfigs   Json?
   prodConfigs      Json?
@@ -663,25 +699,25 @@ model BotProject {
   updatedAt        DateTime        @updatedAt
 }
 
-model ClientBotTemplate {
+model ClientSecretTemplate {
   id           String  @id @default(auto()) @map("_id") @db.ObjectId
-  clientId     String? // Nullable: Only set if it's a custom template
+  userId     String? // Nullable: Only set if it's a custom template
   name         String // Template name
   type         String // Bot types supported by this template
-  requiredKeys Json[] // Keys required for this bot template (mode: BOTMODE[], isOptional: Boolean, key: String, placeholder: String?)
+  requiredKeys Json[] // Keys required for this bot template (mode: SECRETMODE[], isOptional: Boolean, key: String, placeholder: String?)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-model ClientBot {
+model ClientSecret {
   id               String   @id @default(auto()) @map("_id") @db.ObjectId
   botProjectId     String   @db.ObjectId
   clientRequestIds String[] @db.ObjectId
-  clientId         String
+  userId         String
   name             String
   type             String // Bot types supported by this template, e.g. "X", "SLACK", "WHATSAPP", "TELEGRAM", "DISCORD", "GITHUB", "EMAIL", "INSTAGRAM", "YOUTUBE", "WEB_APP"
-  variables        Json[] // Stores environment variables required for the bot (mode: BOTMODE[], isOptional: Boolean, key: String, value?: String)
+  variables        Json[] // Stores environment variables required for the bot (mode: SECRETMODE[], isOptional: Boolean, key: String, value?: String)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -691,12 +727,12 @@ model ClientBot {
 
 model ClientRequestFunction {
   id                    String       @id @default(auto()) @map("_id") @db.ObjectId
-  clientId              String
+  userId              String
   botProjectId          String       @db.ObjectId
   originClientRequestId String       @db.ObjectId
   name                  String       @unique // Function name (e.g., "Create Post", "Read Posts")
   baseUrl               String // Base URL for the deployed function
-  mode                  BOTMODE // Mode of the function (e.g., "PROD", "STAGING")
+  mode                  SECRETMODE // Mode of the function (e.g., "PROD", "STAGING")
   type                  FUNCTIONTYPE // Function type (e.g., "webhook", "api", "scheduled")
   endpoints             Json[] // Multiple endpoints mapped to this function (will have method, headers, bodySchema, responseSchema)
   schedules             Json[] // Schedule for the function
@@ -711,8 +747,8 @@ model ClientRequestFunction {
 model ClientRequest {
   id                    String                  @id @default(auto()) @map("_id") @db.ObjectId
   botProjectId          String                  @db.ObjectId
-  clientId              String
-  mentionedClientBotIds String[]
+  userId              String
+  mentionedClientSecretIds String[]
   title                 String
   description           String
   prUrl                 String
@@ -722,7 +758,7 @@ model ClientRequest {
   requestDir            String
   requestStatus         REQUESTSTATUS           @default(UN_ASSIGNED)
   requestUpdates        RequestUpdate[]
-  requestMessages       RequestMessage[]
+  chatUIMessages       ChatUIMessage[]
   deployedFunctions     ClientRequestFunction[]
   metadata              Json?
   lastUpdatedAt         DateTime?               @default(now())
@@ -732,7 +768,7 @@ model ClientRequest {
   botProject BotProject @relation(fields: [botProjectId], references: [id])
 }
 
-enum BOTMODE {
+enum SECRETMODE {
   DEV
   PROD
   STAGING
@@ -757,7 +793,7 @@ model RequestUpdate {
   id                    String   @id @default(auto()) @map("_id") @db.ObjectId
   originClientRequestId String   @db.ObjectId
   botProjectId          String   @db.ObjectId
-  clientId              String // Identifier for who created this bot
+  userId              String // Identifier for who created this bot
   prUrl                 String
   prNumber              Int
   prBranch              String
@@ -769,40 +805,6 @@ model RequestUpdate {
   originClientRequest ClientRequest @relation(fields: [originClientRequestId], references: [id])
 }
 
-model RequestMessage {
-  id                    String     @id @default(auto()) @map("_id") @db.ObjectId
-  originClientRequestId String     @db.ObjectId
-  clientId              String     @db.ObjectId
-  message               String
-  agentType             AGENTTYPE?
-  media                 Json[]
-  githubUrl             String?
-  updateType            UPDATETYPE
-  updateFrom            UPDATEFROM
-  metadata              Json?
-  createdAt             DateTime   @default(now())
-  updatedAt             DateTime   @updatedAt
-
-  originClientRequest ClientRequest @relation(fields: [originClientRequestId], references: [id])
-}
-
-enum AGENTTYPE {
-  BUILDBOT
-  MICROFOX
-}
-
-enum UPDATETYPE {
-  MESSAGE
-  STATUS
-}
-
-enum UPDATEFROM {
-  CLIENT
-  BOT
-  COMMENT
-  SYSTEM
-  SERVER
-}
 
 //-------------------------------------INVOICE---------------------------------
 
@@ -813,7 +815,7 @@ model Invoice {
   dueDate        DateTime
   title          String
   description    String?
-  clientId       String
+  userId       String
   devIds         String[] // Store user IDs as an array instead of a relation
   amountTotal    Float
   amountToPay    Float

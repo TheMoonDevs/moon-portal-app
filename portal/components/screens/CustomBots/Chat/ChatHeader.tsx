@@ -1,6 +1,6 @@
 import { ButtonSCN } from '@/components/elements/Button';
+import { ClientRequest } from '@prisma/client';
 import { RefreshCw } from 'lucide-react';
-import { ClientRequest } from '../ChatWindow';
 
 interface IChatHeaderProps {
   clientRequest: ClientRequest;
@@ -37,12 +37,12 @@ const ChatHeader = ({
   );
 
   {
-    /* Button to open Add ClientBot modal manually (if not using slash) */
+    /* Button to open Add ClientSecret modal manually (if not using slash) */
   }
   {
     /* <div className="border-b px-4 py-2">
     <ButtonSCN onClick={() => setShowAddBotModal(true)}>
-      + Add New ClientBot
+      + Add New ClientSecret
     </ButtonSCN>
   </div> */
   }

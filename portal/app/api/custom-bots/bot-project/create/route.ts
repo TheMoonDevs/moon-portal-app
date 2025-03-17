@@ -8,9 +8,9 @@ import { GithubSdk } from '@/utils/services/githubSdk';
 
 export async function POST(request: Request) {
   const body = await request.json();
-  let { clientId, projectName, projectDescription } = body;
+  let { userId, projectName, projectDescription } = body;
 
-  if (!projectName || !clientId) {
+  if (!projectName || !userId) {
     return NextResponse.json(
       { error: 'Missing required fields' },
       { status: 400 },
@@ -86,7 +86,7 @@ export async function POST(request: Request) {
 
     const botProject = await prisma.botProject.create({
       data: {
-        clientId,
+        userId,
         name: projectName,
         projectDir,
         githubRepoName: newRepoName,
@@ -111,7 +111,7 @@ export async function POST(request: Request) {
     // 4. Create the botProject.json file on the new branch with the updated ID.
     const botProjectData = {
       id: botProject.id,
-      clientId: botProject.clientId,
+      userId: botProject.userId,
       name: botProject.name,
       projectDir: botProject.projectDir,
       githubRepoName: botProject.githubRepoName,

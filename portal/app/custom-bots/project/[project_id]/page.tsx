@@ -1,5 +1,5 @@
 import { PageAccess } from '@/components/global/PageAccess';
-import { ProjectPage } from '@/components/screens/CustomBots/ProjectPage';
+import { ProjectPage } from '@/components/screens/CustomBots/ProjectPage/ProjectPage';
 
 export default function ProjectDashbaordPage({
     params,

@@ -8,10 +8,10 @@ import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 
 export default function NewProjectCreation({
-  clientId,
+  userId,
   onProjectCreated,
 }: {
-  clientId: string;
+  userId: string;
   onProjectCreated: (newProject: any) => void;
 }) {
   const [projectTitle, setProjectTitle] = useState('');
@@ -29,7 +29,7 @@ export default function NewProjectCreation({
       const newProject = await PortalSdk.postData(
         '/api/custom-bots/bot-project/create',
         {
-          clientId,
+          userId,
           projectName: projectTitle.trim(),
           projectDescription: description.trim(),
         },

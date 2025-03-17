@@ -14,7 +14,7 @@ export async function GET(req: Request) {
 
     const clientRequest = await prisma.clientRequest.findUnique({
       where: { id: clientRequestId },
-      include: { requestMessages: true },
+      include: { chatUIMessages: true },
     });
     if (!clientRequest)
       return NextResponse.json(
@@ -26,7 +26,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json(
       {
-        requestMessages: clientRequest.requestMessages,
+        chatUIMessages: clientRequest.chatUIMessages,
         requestStatus: clientRequest?.requestStatus,
       },
       { status: 200 },

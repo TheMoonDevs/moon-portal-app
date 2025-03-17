@@ -133,16 +133,14 @@ export const updateClientRequest = async (
       );
     });
     if (newEvents.length > 0) {
-      await prisma.requestMessage.createMany({
+      await prisma.chatUIMessage.createMany({
         data: newEvents.map((event: any) => ({
           originClientRequestId: clientRequest.id,
-          clientId: clientRequest.clientId,
+          userId: clientRequest.userId,
           message: eventMessage(event),
           githubUrl: event.html_url,
           updateType:
-            event.event === 'commented'
-              ? UPDATETYPE.MESSAGE
-              : UPDATETYPE.STATUS,
+            event.event === 'commented' ? 'MESSAGE' : UPDATETYPE.STATUS,
           updateFrom:
             event.event === 'commented'
               ? UPDATEFROM.COMMENT
@@ -166,15 +164,15 @@ export const updateClientRequest = async (
       const updatedClientRequest = await prisma.clientRequest.update({
         where: { id: clientRequest.id },
         data: { lastUpdatedAt: initTime, requestStatus: newStatus },
-        include: { requestMessages: true },
+        include: { chatUIMessages: true },
       });
       return updatedClientRequest;
     } else {
-      const requestMessages = await prisma.requestMessage.findMany({
+      const chatUIMessages = await prisma.chatUIMessage.findMany({
         where: { originClientRequestId: clientRequest.id },
         orderBy: { createdAt: 'asc' },
       });
-      return { ...clientRequest, requestMessages };
+      return { ...clientRequest, chatUIMessages };
     }
   } catch (error: any) {
     console.error('Error updating PR events:', error);

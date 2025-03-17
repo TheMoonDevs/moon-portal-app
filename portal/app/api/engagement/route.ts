@@ -1,11 +1,11 @@
-import { prisma } from "@/prisma/prisma";
-import { NextRequest, NextResponse } from "next/server";
+import { prisma } from '@/prisma/prisma';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
   if (!req.body) {
-    return new NextResponse(JSON.stringify({ error: "Body not found" }), {
+    return new NextResponse(JSON.stringify({ error: 'Body not found' }), {
       status: 400,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
   try {
@@ -20,22 +20,28 @@ export async function POST(req: NextRequest) {
         isActive: body.isActive,
         engagementType: body.engagementType,
         numberOfHours: body.numberOfHours,
-        progressPercentage: body.progressPercentage
+        progressPercentage: body.progressPercentage,
       },
     });
 
-    return NextResponse.json({
-      status: "success",
-      data: newEngagement,
-    }, { status: 200 });
+    return NextResponse.json(
+      {
+        status: 'success',
+        data: newEngagement,
+      },
+      { status: 200 },
+    );
   } catch (error) {
-    return NextResponse.json({ error: "Error creating engagement" }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Error creating engagement' },
+      { status: 500 },
+    );
   }
 }
 
 export async function GET(req: NextRequest) {
-  const isActive = req.nextUrl.searchParams.get("isActive") === "true";
-  const clientId = req.nextUrl.searchParams.get("clientId");
+  const isActive = req.nextUrl.searchParams.get('isActive') === 'true';
+  const userId = req.nextUrl.searchParams.get('clientId');
   try {
     const engagements = await prisma.engagement.findMany({
       where: {
@@ -44,11 +50,14 @@ export async function GET(req: NextRequest) {
       },
     });
     return NextResponse.json({
-      status: "success",
+      status: 'success',
       data: engagements,
     });
   } catch (error) {
-    return NextResponse.json({ error: "Error retrieving engagements" }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Error retrieving engagements' },
+      { status: 500 },
+    );
   }
 }
 
@@ -68,15 +77,18 @@ export async function PUT(req: NextRequest) {
         isActive: body.isActive,
         engagementType: body.engagementType,
         numberOfHours: body.numberOfHours,
-        progressPercentage: body.progressPercentage
+        progressPercentage: body.progressPercentage,
       },
     });
     return NextResponse.json({
-      status: "success",
+      status: 'success',
       data: updatedEngagement,
     });
   } catch (error) {
-    return NextResponse.json({ error: "Error updating engagement" }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Error updating engagement' },
+      { status: 500 },
+    );
   }
 }
 
@@ -89,10 +101,13 @@ export async function DELETE(req: NextRequest) {
       },
     });
     return NextResponse.json({
-      status: "success",
+      status: 'success',
       data: deletedEngagement,
     });
   } catch (error) {
-    return NextResponse.json({ error: "Error deleting engagement" }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Error deleting engagement' },
+      { status: 500 },
+    );
   }
 }

@@ -26,7 +26,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json(
       {
-        requestMessages: updatedClientRequest.requestMessages,
+        chatUIMessages: updatedClientRequest.chatUIMessages,
         requestStatus: updatedClientRequest?.requestStatus,
       },
       { status: 200 },

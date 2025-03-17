@@ -6,11 +6,11 @@ import { prisma } from '@/prisma/prisma';
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const clientId = searchParams.get('clientId');
+    const userId = searchParams.get('userId');
 
-    // If a clientId is provided, include templates with a null clientId (predefined) or matching clientId.
-    const filters = clientId ? { OR: [{ clientId: null }, { clientId }] } : {};
-    const templates = await prisma.clientBotTemplate.findMany({
+    // If a userId is provided, include templates with a null userId (predefined) or matching userId.
+    const filters = userId ? { OR: [{ userId: null }, { userId }] } : {};
+    const templates = await prisma.clientSecretTemplate.findMany({
       where: filters,
     });
     return NextResponse.json(templates, { status: 200 });
@@ -27,10 +27,10 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { clientId, type, name, requiredKeys } = body;
+    const { userId, type, name, requiredKeys } = body;
 
-    const newTemplate = await prisma.clientBotTemplate.create({
-      data: { clientId, type, name, requiredKeys },
+    const newTemplate = await prisma.clientSecretTemplate.create({
+      data: { userId, type, name, requiredKeys },
     });
     return NextResponse.json(newTemplate, { status: 201 });
   } catch (error) {
@@ -49,7 +49,7 @@ export async function PUT(req: NextRequest) {
 
     if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
 
-    const updatedTemplate = await prisma.clientBotTemplate.update({
+    const updatedTemplate = await prisma.clientSecretTemplate.update({
       where: { id },
       data: { requiredKeys },
     });
@@ -69,7 +69,7 @@ export async function DELETE(req: NextRequest) {
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
 
-    await prisma.clientBotTemplate.delete({ where: { id } });
+    await prisma.clientSecretTemplate.delete({ where: { id } });
     return NextResponse.json(
       { message: 'Deleted successfully' },
       { status: 200 },

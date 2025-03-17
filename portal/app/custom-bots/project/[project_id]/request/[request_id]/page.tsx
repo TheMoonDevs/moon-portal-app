@@ -1,5 +1,6 @@
 import { PageAccess } from '@/components/global/PageAccess';
-import { RequestPage } from '@/components/screens/CustomBots/RequestPage';
+import { RequestPage } from '@/components/screens/CustomBots/RequestPage/RequestPage';
+
 
 export default function RequestWindow({
     params,

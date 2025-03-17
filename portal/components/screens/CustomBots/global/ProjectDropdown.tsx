@@ -37,7 +37,7 @@ export const ProjectDropdown = () => {
         error,
         isLoading,
     } = useSWR<BotProject[], any, string>(
-        `/api/custom-bots/bot-project?clientId=${user?.id}`,
+        `/api/custom-bots/bot-project?userId=${user?.id}`,
         async (url) => await fetch(url).then((res) => res.json()),
     );
 
@@ -127,7 +127,7 @@ export const ProjectDropdown = () => {
             </div>
             <DialogContent>
                 <NewProjectCreation
-                    clientId={user?.id}
+                    userId={user?.id}
                     onProjectCreated={(newProject) => {
                         setSelectedProject(newProject);
                         router.push(`/custom-bots/project/${newProject.id}`);

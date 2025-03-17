@@ -1,20 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useUser } from '@/utils/hooks/useUser';
-import { PanelRight, PanelRightClose, PlusCircle } from 'lucide-react';
 import { ButtonSCN } from '@/components/elements/Button';
-import Sidebar from './Sidebar';
-import ChatWindow from './ChatWindow';
-import NewRequestCreation from './NewRequestCreation';
-import NewProjectCreation from './NewProjectCreation';
-import ProjectConfigModal from './ProjectConfigModal';
-import { useRouter, useSearchParams } from 'next/navigation';
-import useSWR from 'swr';
-import { toast, Toaster } from 'sonner';
-import { REQUESTSTATUS } from '@prisma/client';
+import { useUser } from '@/utils/hooks/useUser';
 import { Skeleton } from '@mui/material';
-import { ClientBotProvider } from './ClientBotProvider';
+import { REQUESTSTATUS } from '@prisma/client';
+import { PanelRight, PanelRightClose, PlusCircle } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import useSWR from 'swr';
+import ChatWindow from '../Chat/ChatWindow';
+import NewRequestCreation from '../RequestPage/NewRequestCreation';
+import NewProjectCreation from '../global/NewProjectCreation';
+import ProjectConfigModal from '../global/ProjectConfigModal';
+import Sidebar from '../global/Sidebar';
+import { ClientSecretProvider } from '../providers/ClientSecretProvider';
 
 /** DEPRECATED - copied all functionality except config modal */
 export default function Dashboard() {
@@ -46,7 +46,7 @@ export default function Dashboard() {
   // SWR to fetch the latest updated request if none is specified.
   const { data: latestRequest } = useSWR(
     user && !requestParam
-      ? `/api/custom-bots/client-requests/latest-request?clientId=${user.id}`
+      ? `/api/custom-bots/client-requests/latest-request?userId=${user.id}`
       : null,
     async (url) => {
       const res = await fetch(url, {});
@@ -87,7 +87,7 @@ export default function Dashboard() {
     error,
     isLoading,
   } = useSWR(
-    `/api/custom-bots/bot-project?clientId=${user?.id}`,
+    `/api/custom-bots/bot-project?userId=${user?.id}`,
     async (url) => await fetch(url).then((res) => res.json()),
   );
 
@@ -112,7 +112,7 @@ export default function Dashboard() {
   }
 
   return (
-    <ClientBotProvider botProjectId={selectedProject?.id} clientId={user?.id}>
+    <ClientSecretProvider botProjectId={selectedProject?.id} userId={user?.id}>
       <div className="flex h-full bg-background">
         {showPreviewParam && (
           <div className="fixed right-10 top-10">
@@ -197,7 +197,7 @@ export default function Dashboard() {
         <div className="flex flex-1 flex-col">
           {viewParam === 'newRequest' ? (
             <NewRequestCreation
-              clientId={user.id}
+              userId={user.id}
               project={selectedProject}
               onRequestCreated={(newRequest) => {
                 setSelectedRequest(newRequest);
@@ -206,7 +206,7 @@ export default function Dashboard() {
             />
           ) : viewParam === 'newProject' ? (
             <NewProjectCreation
-              clientId={user.id}
+              userId={user.id}
               onProjectCreated={(newProject) => {
                 setSelectedProject(newProject);
                 updateSearchParams({
@@ -217,7 +217,7 @@ export default function Dashboard() {
               }}
             />
           ) : selectedRequest ? (
-            <ChatWindow clientId={user.id} clientRequest={selectedRequest} />
+            <ChatWindow userId={user.id} clientRequest={selectedRequest} />
           ) : (
             <div className="flex h-full items-center justify-center text-muted-foreground">
               <p>
@@ -240,6 +240,6 @@ export default function Dashboard() {
           projectId={selectedProject?.id || ''}
         />
       </div>
-    </ClientBotProvider>
+    </ClientSecretProvider>
   );
 }

@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import CustomBotsHeader from '@/components/screens/CustomBots/Header';
+import CustomBotsHeader from '@/components/screens/CustomBots/global/Header';
 import { Toaster } from 'sonner';
 import { BotTemplateProvider } from '@/components/screens/CustomBots/providers/BotTemplateProvider';
 export const metadata: Metadata = {

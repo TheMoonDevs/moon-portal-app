@@ -1,12 +1,22 @@
-import { NextResponse } from 'next/server';
 import { prisma } from '@/prisma/prisma';
-import { REQUESTSTATUS, UPDATETYPE, UPDATEFROM } from '@prisma/client';
 import { TEMPLATE_REPO_OWNER } from '@/utils/constants/customBots';
-import { GithubSdk } from '@/utils/services/githubSdk';
 import { GenAiSdk } from '@/utils/services/GenAiSdk';
+import { GithubSdk } from '@/utils/services/githubSdk';
 import { SlackBotSdk, SlackChannels } from '@/utils/services/slackBotSdk';
+import { REQUESTSTATUS } from '@prisma/client';
+import { NextResponse } from 'next/server';
 
 const slackBotSdk = new SlackBotSdk();
+
+// 🔹 Create a new client request
+// 🔹 Create a new branch
+// 🔹 Add a README file
+// 🔹 Create a Pull Request
+// 🔹 Create a `ClientRequest`
+// 🔹 Create a `chatUIMessage` for the first message
+
+// 🔹 Send a slack message
+// 🔹 Return the PR result and client request
 
 export async function POST(request: Request) {
   const TMD_GITHUB_TOKEN = process.env.TMD_GITHUB_TOKEN;
@@ -20,10 +30,10 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  let { requestDescription, clientId, botProjectId } = body;
+  let { requestDescription, userId, botProjectId } = body;
   const initTime = new Date();
 
-  if (!requestDescription || !clientId || !botProjectId) {
+  if (!requestDescription || !userId || !botProjectId) {
     return NextResponse.json(
       { error: 'Missing required fields' },
       { status: 400 },
@@ -100,7 +110,7 @@ export async function POST(request: Request) {
     const clientRequest = await prisma.clientRequest.create({
       data: {
         botProjectId,
-        clientId,
+        userId,
         title: generatedTitle,
         description: requestDescription, // First message stored here
         requestDir,
@@ -121,7 +131,7 @@ export async function POST(request: Request) {
     const clientRequestData = {
       id: clientRequest.id,
       botProjectId: clientRequest.botProjectId,
-      clientId: clientRequest.clientId,
+      userId: clientRequest.userId,
       title: clientRequest.title,
       description: clientRequest.description,
       requestDir: clientRequest.requestDir,
@@ -140,27 +150,31 @@ export async function POST(request: Request) {
       branch: newBranch,
     });
 
-    // 6️⃣ Create a `requestMessage` for the first message
-    await prisma.requestMessage.create({
+    // 6️⃣ Create a `chatUIMessage` for the first message
+    await prisma.chatUIMessage.create({
       data: {
         originClientRequestId: clientRequest.id,
-        clientId,
-        message: requestDescription,
-        updateType: UPDATETYPE.MESSAGE,
-        updateFrom: UPDATEFROM.CLIENT,
+        userId,
+        content: requestDescription,
+        context: 'server',
+        role: 'user',
+        minionType: 'other',
         createdAt: initTime,
         updatedAt: initTime,
       },
     });
 
-    await prisma.requestMessage.create({
+    await prisma.chatUIMessage.create({
       data: {
         originClientRequestId: clientRequest.id,
-        clientId,
-        message:
+        userId,
+        content:
           'Your request has been received. We will get back to you shortly.',
-        updateType: UPDATETYPE.MESSAGE,
-        updateFrom: UPDATEFROM.BOT,
+        context: 'server',
+        role: 'assistant',
+        minionType: 'other',
+        createdAt: initTime,
+        updatedAt: initTime,
       },
     });
 

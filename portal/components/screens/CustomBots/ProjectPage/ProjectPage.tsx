@@ -10,8 +10,8 @@ import { BotProject, ClientRequest } from "@prisma/client";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import useSWR from "swr";
-import NewRequestCreation from "./NewRequestCreation";
 import { CirclePlusIcon } from "lucide-react";
+import NewRequestCreation from "../RequestPage/NewRequestCreation";
 
 export const ProjectPage = () => {
 
@@ -30,7 +30,7 @@ export const ProjectPage = () => {
         error,
         isLoading,
     } = useSWR(
-        `/api/custom-bots/bot-project?clientId=${user?.id}`,
+        `/api/custom-bots/bot-project?userId=${user?.id}`,
         async (url) => await fetch(url).then((res) => res.json()),
     );
 
@@ -77,7 +77,7 @@ export const ProjectPage = () => {
                             </DialogTrigger>
                             <DialogContent>
                                 <NewRequestCreation
-                                    clientId={user.id}
+                                    userId={user.id}
                                     project={selectedProject}
                                     onRequestCreated={(newRequest) => {
                                         router.push(`/custom-bots/project/${selectedProject.id}/request/${newRequest.id}`);

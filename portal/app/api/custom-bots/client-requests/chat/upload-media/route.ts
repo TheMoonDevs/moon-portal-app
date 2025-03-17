@@ -5,11 +5,11 @@ export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
     const files = formData.getAll('file') as File[];
-    const clientId = formData.get('clientId')?.toString();
+    const userId = formData.get('userId')?.toString();
     const folderName =
       formData.get('folderName')?.toString() || 'customBots/clientMessages';
 
-    if (!clientId) {
+    if (!userId) {
       return NextResponse.json(
         { error: 'Client ID is required' },
         { status: 400 },
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
 
           const s3Response = await s3FileUploadSdk.uploadFile({
             file: newFile,
-            userId: clientId,
+            userId: userId,
             folder: folderName,
           });
 
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
           }
 
           const fileUrl = s3FileUploadSdk.getPublicFileUrl({
-            userId: clientId,
+            userId: userId,
             file: newFile,
             folder: folderName,
           });

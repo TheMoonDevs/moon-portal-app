@@ -1,26 +1,35 @@
 // api/custom-bots/client-bots/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/prisma/prisma';
-import { UPDATEFROM, UPDATETYPE } from '@prisma/client';
 import { TEMPLATE_REPO_OWNER } from '@/utils/constants/customBots';
 import { GithubSdk } from '@/utils/services/githubSdk';
 
-// Create ClientBot
+// Create ClientSecret
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { botProjectId, clientId, type, variables, clientRequestId, name } =
+    const { botProjectId, userId, type, variables, clientRequestId, name } =
       body;
 
     console.log('body', body);
 
-    if (!botProjectId || !clientId || !type || !variables || !name) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    if (!botProjectId || !userId || !type || !variables || !name) {
+      return NextResponse.json(
+        { error: 'Missing required fields' },
+        { status: 400 },
+      );
     }
 
-    // Create the ClientBot without a mode field (since it's not part of the schema)
-    const clientBot = await prisma.clientBot.create({
-      data: { botProjectId, clientId, type, variables, name, clientRequestIds: [clientRequestId] },
+    // Create the ClientSecret without a mode field (since it's not part of the schema)
+    const clientSecret = await prisma.clientSecret.create({
+      data: {
+        botProjectId,
+        userId,
+        type,
+        variables,
+        name,
+        clientRequestIds: [clientRequestId],
+      },
     });
 
     // If an originClientRequestId is provided, update that ClientRequest to add the new bot's id
@@ -28,8 +37,8 @@ export async function POST(req: NextRequest) {
       const clientRequest = await prisma.clientRequest.update({
         where: { id: clientRequestId },
         data: {
-          mentionedClientBotIds: {
-            push: clientBot.id,
+          mentionedClientSecretIds: {
+            push: clientSecret.id,
           },
         },
         include: {
@@ -61,20 +70,26 @@ export async function POST(req: NextRequest) {
       const lastRequestPrNumber =
         requestUpdates.length > 0
           ? requestUpdates.reduce((acc, curr) =>
-            acc.prNumber > curr.prNumber ? acc : curr,
-          ).prNumber
+              acc.prNumber > curr.prNumber ? acc : curr,
+            ).prNumber
           : null;
 
-
-      const modeMap = clientBot.variables.reduce((acc: Record<string, string[]>, variable: any) => {
-        if (variable.mode && Array.isArray(variable.mode) && variable.mode.length > 0) {
-          variable.mode.forEach((mode: string) => {
-            acc[mode] = acc[mode] || [];
-            acc[mode].push(variable.key);
-          });
-        }
-        return acc;
-      }, {});
+      const modeMap = clientSecret.variables.reduce(
+        (acc: Record<string, string[]>, variable: any) => {
+          if (
+            variable.mode &&
+            Array.isArray(variable.mode) &&
+            variable.mode.length > 0
+          ) {
+            variable.mode.forEach((mode: string) => {
+              acc[mode] = acc[mode] || [];
+              acc[mode].push(variable.key);
+            });
+          }
+          return acc;
+        },
+        {},
+      );
 
       // Format as markdown for GitHub PR comment
       const modeMapString = Object.entries(modeMap)
@@ -82,7 +97,7 @@ export async function POST(req: NextRequest) {
         .join('\n');
 
       const commentBody = `<Not for Client> **Client has added a new bot to their request:**  
-**Bot Name:** ${clientBot.name}  
+**Bot Name:** ${clientSecret.name}  
 **Environment Variables:**  
 ${modeMapString}`;
 
@@ -91,86 +106,110 @@ ${modeMapString}`;
         commentBody,
       );
 
-      const variablesKeyString = variables.map((variable: any) => variable.key).join(', ');
+      const variablesKeyString = variables
+        .map((variable: any) => variable.key)
+        .join(', ');
 
-      await prisma.requestMessage.create({
+      await prisma.chatUIMessage.create({
         data: {
           originClientRequestId: clientRequest.id,
-          clientId,
-          message: `${name} bot has been added to your request with the following variables: ${variablesKeyString}.`,
-          updateType: UPDATETYPE.MESSAGE,
-          updateFrom: UPDATEFROM.BOT,
+          userId,
+          content: `${name} bot has been added to your request with the following variables: ${variablesKeyString}.`,
+          context: 'chat',
+          role: 'sysUpdate',
+          minionType: 'other',
         },
       });
     }
-    return NextResponse.json(clientBot, { status: 201 });
+    return NextResponse.json(clientSecret, { status: 201 });
   } catch (error) {
     return NextResponse.json(
-      { error: 'Error creating ClientBot' },
+      { error: 'Error creating ClientSecret' },
       { status: 500 },
     );
   }
 }
 
-// Get ClientBot
+// Get ClientSecret
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
-    const clientId = searchParams.get('clientId');
+    const userId = searchParams.get('userId');
     const botProjectId = searchParams.get('botProjectId');
     const clientRequestId = searchParams.get('clientRequestId');
-    console.log(id, clientId, clientRequestId)
+    console.log(id, userId, clientRequestId);
 
     if (clientRequestId) {
-      const clientRequest = await prisma.clientRequest.findUnique({ where: { id: clientRequestId } })
+      const clientRequest = await prisma.clientRequest.findUnique({
+        where: { id: clientRequestId },
+      });
       if (!clientRequest)
-        return NextResponse.json({ error: 'ClientRequest not found' }, { status: 404 });
+        return NextResponse.json(
+          { error: 'ClientRequest not found' },
+          { status: 404 },
+        );
 
-      if (!clientRequest.mentionedClientBotIds) {
+      if (!clientRequest.mentionedClientSecretIds) {
         await prisma.clientRequest.update({
           where: { id: clientRequestId },
           data: {
-            mentionedClientBotIds: {
+            mentionedClientSecretIds: {
               set: [],
             },
           },
-        })
-        return NextResponse.json({ clientBots: [] }, { status: 200 });
+        });
+        return NextResponse.json({ clientSecrets: [] }, { status: 200 });
       }
 
-      const mentionedClientBots = await Promise.all(clientRequest.mentionedClientBotIds.map(async (id) => {
-        const clientBot = prisma.clientBot.findUnique({ where: { id } })
-        return clientBot
-      }))
-      return NextResponse.json({ clientBots: mentionedClientBots }, { status: 200 })
+      const mentionedClientSecrets = await Promise.all(
+        clientRequest.mentionedClientSecretIds.map(async (id) => {
+          const clientSecret = prisma.clientSecret.findUnique({
+            where: { id },
+          });
+          return clientSecret;
+        }),
+      );
+      return NextResponse.json(
+        { clientSecrets: mentionedClientSecrets },
+        { status: 200 },
+      );
     }
     if (botProjectId) {
-      const clientBots = await prisma.clientBot.findMany({ where: { botProjectId } });
-      return NextResponse.json({ clientBots }, { status: 200 });
+      const clientSecrets = await prisma.clientSecret.findMany({
+        where: { botProjectId },
+      });
+      return NextResponse.json({ clientSecrets }, { status: 200 });
     }
-    if (clientId) {
-      const clientBots = await prisma.clientBot.findMany({ where: { clientId } });
-      return NextResponse.json({ clientBots }, { status: 200 });
+    if (userId) {
+      const clientSecrets = await prisma.clientSecret.findMany({
+        where: { userId },
+      });
+      return NextResponse.json({ clientSecrets }, { status: 200 });
     }
     if (id) {
-      const clientBot = await prisma.clientBot.findUnique({ where: { id } });
-      return NextResponse.json({ clientBots: [clientBot] }, { status: 200 });
+      const clientSecret = await prisma.clientSecret.findUnique({
+        where: { id },
+      });
+      return NextResponse.json(
+        { clientSecrets: [clientSecret] },
+        { status: 200 },
+      );
+    } else {
+      return NextResponse.json(
+        { error: 'Missing id or userId or clientRequestId' },
+        { status: 400 },
+      );
     }
-
-    else {
-      return NextResponse.json({ error: 'Missing id or clientId or clientRequestId' }, { status: 400 });
-    }
-
   } catch (error) {
     return NextResponse.json(
-      { error: 'Error fetching ClientBot' },
+      { error: 'Error fetching ClientSecret' },
       { status: 500 },
     );
   }
 }
 
-// Update ClientBot
+// Update ClientSecret
 export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();
@@ -178,20 +217,29 @@ export async function PUT(req: NextRequest) {
 
     if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
 
-    const clientBot = await prisma.clientBot.findUnique({ where: { id } });
-    if (!clientBot) return NextResponse.json({ error: 'ClientBot not found' }, { status: 404 });
+    const clientSecret = await prisma.clientSecret.findUnique({
+      where: { id },
+    });
+    if (!clientSecret)
+      return NextResponse.json(
+        { error: 'ClientSecret not found' },
+        { status: 404 },
+      );
 
     let updatedBot;
 
     // If clientRequestId is provided and not already in the array, add it
-    if (clientRequestId && !clientBot.clientRequestIds.includes(clientRequestId)) {
+    if (
+      clientRequestId &&
+      !clientSecret.clientRequestIds.includes(clientRequestId)
+    ) {
       // Add bot to client request
       const clientRequest = await prisma.clientRequest.update({
         where: { id: clientRequestId },
         data: {
-          mentionedClientBotIds: {
-            push: id
-          }
+          mentionedClientSecretIds: {
+            push: id,
+          },
         },
         include: {
           requestUpdates: true,
@@ -199,13 +247,13 @@ export async function PUT(req: NextRequest) {
       });
 
       // Add client request to bot
-      updatedBot = await prisma.clientBot.update({
+      updatedBot = await prisma.clientSecret.update({
         where: { id },
         data: {
           clientRequestIds: {
-            push: clientRequestId
+            push: clientRequestId,
           },
-          ...(variables ? { variables } : {})
+          ...(variables ? { variables } : {}),
         },
       });
 
@@ -216,10 +264,14 @@ export async function PUT(req: NextRequest) {
         // Group variables by mode
         const modeMap: Record<string, string[]> = {};
 
-        clientBot.variables.forEach((variable: any) => {
+        clientSecret.variables.forEach((variable: any) => {
           const key = variable.key;
 
-          if (variable.mode && Array.isArray(variable.mode) && variable.mode.length > 0) {
+          if (
+            variable.mode &&
+            Array.isArray(variable.mode) &&
+            variable.mode.length > 0
+          ) {
             // Add the key to each mode's array
             variable.mode.forEach((mode: string) => {
               if (!modeMap[mode]) {
@@ -250,8 +302,8 @@ export async function PUT(req: NextRequest) {
         const lastRequestPrNumber =
           requestUpdates.length > 0
             ? requestUpdates.reduce((acc, curr) =>
-              acc.prNumber > curr.prNumber ? acc : curr,
-            ).prNumber
+                acc.prNumber > curr.prNumber ? acc : curr,
+              ).prNumber
             : null;
 
         const modeMapString = Object.entries(modeMap)
@@ -259,7 +311,7 @@ export async function PUT(req: NextRequest) {
           .join('\n');
 
         const commentBody = `<Not for Client> **Client has added their bot in this request:**  
-**Bot Name:** ${clientBot.name}  
+**Bot Name:** ${clientSecret.name}  
 **Updated Environment Variables:**  
 ${modeMapString}`;
 
@@ -269,37 +321,40 @@ ${modeMapString}`;
         );
 
         // Create a simple key string without modes for client-facing message
-        const variablesKeyString = clientBot.variables.map((variable: any) => variable.key).join(', ');
+        const variablesKeyString = clientSecret.variables
+          .map((variable: any) => variable.key)
+          .join(', ');
 
-        await prisma.requestMessage.create({
+        await prisma.chatUIMessage.create({
           data: {
             originClientRequestId: clientRequest.id,
-            clientId: clientBot.clientId,
-            message: `${clientBot.name} bot has been added to this request with the following variables: ${variablesKeyString}.`,
-            updateType: UPDATETYPE.MESSAGE,
-            updateFrom: UPDATEFROM.BOT,
+            userId: clientSecret.userId,
+            content: `${clientSecret.name} bot has been added to this request with the following variables: ${variablesKeyString}.`,
+            context: 'chat',
+            role: 'sysUpdate',
+            minionType: 'other',
           },
         });
       }
     } else {
       // Just update variables if clientRequestId not provided or already exists
-      updatedBot = await prisma.clientBot.update({
+      updatedBot = await prisma.clientSecret.update({
         where: { id },
-        data: { variables: variables || clientBot.variables },
+        data: { variables: variables || clientSecret.variables },
       });
     }
 
     return NextResponse.json(updatedBot, { status: 200 });
   } catch (error) {
-    console.error('Error updating ClientBot:', error);
+    console.error('Error updating ClientSecret:', error);
     return NextResponse.json(
-      { error: 'Error updating ClientBot' },
+      { error: 'Error updating ClientSecret' },
       { status: 500 },
     );
   }
 }
 
-// Delete ClientBot or remove bot from client request
+// Delete ClientSecret or remove bot from client request
 export async function DELETE(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -309,22 +364,30 @@ export async function DELETE(req: NextRequest) {
 
     if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
 
-    const clientBot = await prisma.clientBot.findUnique({ where: { id } });
-    if (!clientBot) return NextResponse.json({ error: 'ClientBot not found' }, { status: 404 });
+    const clientSecret = await prisma.clientSecret.findUnique({
+      where: { id },
+    });
+    if (!clientSecret)
+      return NextResponse.json(
+        { error: 'ClientSecret not found' },
+        { status: 404 },
+      );
 
     // If clientRequestId is provided and removeOnly is true, just remove the association
     if (clientRequestId && removeOnly) {
       // Remove clientRequestId from the bot's clientRequestIds array
-      await prisma.clientBot.update({
+      await prisma.clientSecret.update({
         where: { id },
         data: {
           clientRequestIds: {
-            set: clientBot.clientRequestIds.filter(reqId => reqId !== clientRequestId)
-          }
+            set: clientSecret.clientRequestIds.filter(
+              (reqId) => reqId !== clientRequestId,
+            ),
+          },
         },
       });
 
-      // Remove botId from the clientRequest's mentionedClientBotIds array
+      // Remove botId from the clientRequest's mentionedClientSecretIds array
       const clientRequest = await prisma.clientRequest.findUnique({
         where: { id: clientRequestId },
         include: {
@@ -336,20 +399,23 @@ export async function DELETE(req: NextRequest) {
         await prisma.clientRequest.update({
           where: { id: clientRequestId },
           data: {
-            mentionedClientBotIds: {
-              set: clientRequest.mentionedClientBotIds.filter(botId => botId !== id)
-            }
+            mentionedClientSecretIds: {
+              set: clientRequest.mentionedClientSecretIds.filter(
+                (botId) => botId !== id,
+              ),
+            },
           },
         });
 
-        // Add a message to notify that the bot was removed
-        await prisma.requestMessage.create({
+        // Add a message to notify that the key was removed
+        await prisma.chatUIMessage.create({
           data: {
             originClientRequestId: clientRequestId,
-            clientId: clientBot.clientId,
-            message: `${clientBot.name} with keys ${clientBot.variables.map((variable: any) => variable.key).join(', ')} has been removed from this request.`,
-            updateType: UPDATETYPE.MESSAGE,
-            updateFrom: UPDATEFROM.BOT,
+            userId: clientSecret.userId,
+            content: `${clientSecret.name} with keys ${clientSecret.variables.map((variable: any) => variable.key).join(', ')} has been removed from this request.`,
+            context: 'chat',
+            role: 'sysUpdate',
+            minionType: 'other',
           },
         });
 
@@ -370,19 +436,26 @@ export async function DELETE(req: NextRequest) {
           const lastRequestPrNumber =
             requestUpdates.length > 0
               ? requestUpdates.reduce((acc, curr) =>
-                acc.prNumber > curr.prNumber ? acc : curr,
-              ).prNumber
+                  acc.prNumber > curr.prNumber ? acc : curr,
+                ).prNumber
               : null;
 
-          const modeMap = clientBot.variables.reduce((acc: Record<string, string[]>, variable: any) => {
-            if (variable.mode && Array.isArray(variable.mode) && variable.mode.length > 0) {
-              variable.mode.forEach((mode: string) => {
-                acc[mode] = acc[mode] || [];
-                acc[mode].push(variable.key);
-              });
-            }
-            return acc;
-          }, {});
+          const modeMap = clientSecret.variables.reduce(
+            (acc: Record<string, string[]>, variable: any) => {
+              if (
+                variable.mode &&
+                Array.isArray(variable.mode) &&
+                variable.mode.length > 0
+              ) {
+                variable.mode.forEach((mode: string) => {
+                  acc[mode] = acc[mode] || [];
+                  acc[mode].push(variable.key);
+                });
+              }
+              return acc;
+            },
+            {},
+          );
 
           // Format the modeMap into a markdown-friendly string for GitHub comment
           const modeMapString = Object.entries(modeMap)
@@ -390,7 +463,7 @@ export async function DELETE(req: NextRequest) {
             .join('\n');
 
           const commentBody = `<Not for Client> **Client has removed the following bot from their request:**  
-**Bot Name:** ${clientBot.name}  
+**Bot Name:** ${clientSecret.name}  
 **Environment Variables:**  
 ${modeMapString}`;
 
@@ -409,22 +482,28 @@ ${modeMapString}`;
     // Otherwise, delete the bot entirely
     else {
       // First remove the bot from all client requests it's associated with
-      await Promise.all(clientBot.clientRequestIds.map(async (reqId) => {
-        const clientRequest = await prisma.clientRequest.findUnique({ where: { id: reqId } });
-        if (clientRequest) {
-          await prisma.clientRequest.update({
+      await Promise.all(
+        clientSecret.clientRequestIds.map(async (reqId) => {
+          const clientRequest = await prisma.clientRequest.findUnique({
             where: { id: reqId },
-            data: {
-              mentionedClientBotIds: {
-                set: clientRequest.mentionedClientBotIds.filter(botId => botId !== id)
-              }
-            },
           });
-        }
-      }));
+          if (clientRequest) {
+            await prisma.clientRequest.update({
+              where: { id: reqId },
+              data: {
+                mentionedClientSecretIds: {
+                  set: clientRequest.mentionedClientSecretIds.filter(
+                    (botId) => botId !== id,
+                  ),
+                },
+              },
+            });
+          }
+        }),
+      );
 
       // Then delete the bot
-      await prisma.clientBot.delete({ where: { id } });
+      await prisma.clientSecret.delete({ where: { id } });
 
       return NextResponse.json(
         { message: 'Bot deleted successfully' },
@@ -432,7 +511,7 @@ ${modeMapString}`;
       );
     }
   } catch (error) {
-    console.error('Error handling ClientBot deletion:', error);
+    console.error('Error handling ClientSecret deletion:', error);
     return NextResponse.json(
       { error: 'Error processing delete operation' },
       { status: 500 },
