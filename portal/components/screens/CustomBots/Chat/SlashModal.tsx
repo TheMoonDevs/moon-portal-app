@@ -29,7 +29,7 @@ export function SlashModal({
 
     const handleSelectClientSecret = async (botId: string) => {
         try {
-            await PortalSdk.putData('/api/custom-bots/client-bots', {
+            await PortalSdk.putData('/api/custom-bots/client-secrets', {
                 id: botId,
                 clientRequestId: clientRequest.id,
             });
@@ -49,7 +49,7 @@ export function SlashModal({
     const handleRemoveClientSecret = async (botId: string) => {
         try {
             await PortalSdk.deleteData(
-                `/api/custom-bots/client-bots?id=${botId}&clientRequestId=${clientRequest.id}&removeOnly=true`,
+                `/api/custom-bots/client-secrets?id=${botId}&clientRequestId=${clientRequest.id}&removeOnly=true`,
                 {},
             );
             toast.success('Bot removed from this request successfully!');

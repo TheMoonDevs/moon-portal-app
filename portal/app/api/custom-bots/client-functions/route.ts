@@ -1,11 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/prisma/prisma';
-import {
-  UPDATEFROM,
-  UPDATETYPE,
-  SECRETMODE,
-  FUNCTIONTYPE,
-} from '@prisma/client';
+import { FUNCTIONTYPE, SECRETMODE } from '@prisma/client';
+import { NextRequest, NextResponse } from 'next/server';
 
 // Create ClientRequestFunction
 export async function POST(req: NextRequest) {
@@ -64,9 +59,11 @@ export async function POST(req: NextRequest) {
       data: {
         originClientRequestId,
         userId,
-        message: `A new ${type.toLowerCase()} function "${name}" has been deployed to ${mode} mode`,
-        updateType: 'MESSAGE',
-        updateFrom: 'BOT',
+        content: `A new ${type.toLowerCase()} function "${name}" has been deployed to ${mode} mode`,
+        context: `server`,
+        role: `assistant`,
+        minionType: `other`,
+        createdAt: new Date(),
       },
     });
 
@@ -171,9 +168,11 @@ export async function PUT(req: NextRequest) {
         data: {
           originClientRequestId: clientFunction.originClientRequestId,
           userId: clientFunction.userId,
-          message: `Function "${updatedFunction.name}" has been updated.`,
-          updateType: 'MESSAGE',
-          updateFrom: 'BOT',
+          content: `Function "${updatedFunction.name}" has been updated.`,
+          context: `server`,
+          role: `assistant`,
+          minionType: `other`,
+          createdAt: new Date(),
         },
       });
     }
@@ -225,9 +224,11 @@ export async function DELETE(req: NextRequest) {
       data: {
         originClientRequestId,
         userId,
-        message: `Function "${name}" has been removed from ${mode} mode`,
-        updateType: 'MESSAGE',
-        updateFrom: 'BOT',
+        content: `Function "${name}" has been removed from ${mode} mode`,
+        context: `server`,
+        role: `assistant`,
+        minionType: `other`,
+        createdAt: new Date(),
       },
     });
 

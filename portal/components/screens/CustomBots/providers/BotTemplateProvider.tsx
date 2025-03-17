@@ -44,7 +44,7 @@ const useBotTemplateInit = () => {
   // Fetch client bot templates for the current client.
   const { data: templates } = useSWR<BotTemplate[]>(
     user?.id
-      ? `/api/custom-bots/client-bots/template?userId=${user.id}`
+      ? `/api/custom-bots/client-secrets/template?userId=${user.id}`
       : null, //Prevents fetch when user is not available
     (url: string) => fetch(url).then((res) => res.json()),
   );

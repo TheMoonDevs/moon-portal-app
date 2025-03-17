@@ -1,4 +1,4 @@
-// api/custom-bots/client-bots/template/route.ts
+// api/custom-bots/client-secrets/template/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/prisma/prisma';
 

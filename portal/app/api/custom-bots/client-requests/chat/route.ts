@@ -1,11 +1,10 @@
 import { prisma } from '@/prisma/prisma';
 import { TEMPLATE_REPO_OWNER } from '@/utils/constants/customBots';
 import { GithubSdk } from '@/utils/services/githubSdk';
-import { NextRequest, NextResponse } from 'next/server';
-// import { updateClientRequest } from '@/utils/services/customBots/clientRequests/updateClientRequest';
 import { SlackBotSdk, SlackChannels } from '@/utils/services/slackBotSdk';
-import { ChatUIMessage, REQUESTSTATUS } from '@prisma/client';
+import { REQUESTSTATUS } from '@prisma/client';
 import { InputJsonValue } from '@prisma/client/runtime/library';
+import { NextRequest, NextResponse } from 'next/server';
 
 const slackBotSdk = new SlackBotSdk();
 
@@ -17,11 +16,8 @@ interface IMediaPayloadType {
 }
 [];
 
-// 1. if context is chat, save the message to the database.
-// 2. if context is server, save the message to the database and send a slack message.
-// 3. if context is server and media is provided, save the message to the database and send a slack message.
-// 4. if context is server and media is not provided, save the message to the database.
-
+// if the request has been completed, reopen the PR.
+// if the request has not been completed, add a comment to the PR.
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -36,6 +32,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    /**deprecated */
     if (context === 'chat') {
       const storedBotMessage = await prisma.chatUIMessage.create({
         data: {
@@ -55,6 +52,7 @@ export async function POST(req: NextRequest) {
 
     const initTime = new Date();
 
+    /** fetch client request */
     const clientRequest = await prisma.clientRequest.findUnique({
       where: { id: originClientRequestId },
       include: { requestUpdates: true },
@@ -67,6 +65,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    /** get github token */
     const TMD_GITHUB_TOKEN = process.env.TMD_GITHUB_TOKEN;
 
     if (!TMD_GITHUB_TOKEN) {
@@ -77,6 +76,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    /** get repo name */
     const repoName = clientRequest?.prUrl?.split('/')[4];
 
     if (!repoName) {
@@ -87,19 +87,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Build Markdown for GitHub preview of attached media.
-    const mediaMarkdown =
-      mediaPayload.length > 0
-        ? '\n\n**Attached Media:**\n\n' +
-          mediaPayload
-            .map((m) =>
-              m.mediaType.startsWith('image')
-                ? `![${m.mediaName}](${m.mediaUrl})`
-                : `[${m.mediaName}](${m.mediaUrl})`,
-            )
-            .join('\n')
-        : '';
-
+    /** create github sdk */
     const appRepoSdk = new GithubSdk({
       owner: TEMPLATE_REPO_OWNER,
       repo: repoName,
@@ -115,6 +103,19 @@ export async function POST(req: NextRequest) {
             acc.prNumber > curr.prNumber ? acc : curr,
           ).prNumber
         : null;
+
+    // Build Markdown for GitHub preview of attached media.
+    const mediaMarkdown =
+      mediaPayload.length > 0
+        ? '\n\n**Attached Media:**\n\n' +
+          mediaPayload
+            .map((m) =>
+              m.mediaType.startsWith('image')
+                ? `![${m.mediaName}](${m.mediaUrl})`
+                : `[${m.mediaName}](${m.mediaUrl})`,
+            )
+            .join('\n')
+        : '';
 
     // If the request has been completed (pr merged), perform reopening logic.
     if (clientRequest.requestStatus === REQUESTSTATUS.COMPLETED) {
@@ -211,7 +212,7 @@ export async function POST(req: NextRequest) {
           metadata: {
             media: mediaPayload as unknown as InputJsonValue[],
           },
-          context: 'chat',
+          context: context,
           role: 'user',
           minionType: 'other',
           createdAt: initTime,

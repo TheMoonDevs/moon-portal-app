@@ -109,7 +109,7 @@ export function AddClientSecretModal({
         }
 
         try {
-            await PortalSdk.postData('/api/custom-bots/client-bots', {
+            await PortalSdk.postData('/api/custom-bots/client-secrets', {
                 botProjectId: clientRequest.botProjectId,
                 userId,
                 type: selectedTemplate.type,

@@ -36,7 +36,7 @@ export const ClientSecretProvider: React.FC<{
   // searchParams.append('clientRequestId', clientRequestId);
 
   const { data, error, mutate, isLoading } = useSWR(
-    `/api/custom-bots/client-bots?${searchParams.toString()}`,
+    `/api/custom-bots/client-secrets?${searchParams.toString()}`,
     (url) => fetch(url).then((res) => res.json()),
   );
 
