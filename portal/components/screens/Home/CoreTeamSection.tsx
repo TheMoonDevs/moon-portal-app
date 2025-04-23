@@ -27,7 +27,7 @@ export const CoreTeamSection = ({ userRoles }: CoreTeamSectionProps) => {
   );
   useEffect(() => {
     PortalSdk.getData(
-      "/api/user?role=" + userRoles  + "&userType=" + USERTYPE.MEMBER + "&status=ACTIVE&cache=true" + `&month=${currentMonth}`,
+      "/api/user?role=" + userRoles + "&userType=" + USERTYPE.MEMBER + "&status=ACTIVE&cache=true" + `&month=${currentMonth}`,
       null
     )
       .then((data) => {
@@ -40,7 +40,7 @@ export const CoreTeamSection = ({ userRoles }: CoreTeamSectionProps) => {
       .catch((err) => {
         console.log(err);
       });
-  }, [dispatch,userRoles]);
+  }, [dispatch, userRoles]);
 
   const handleOpenSlideIn = (user: User) => {
     dispatch(selectMember(user));
@@ -62,8 +62,7 @@ export const CoreTeamSection = ({ userRoles }: CoreTeamSectionProps) => {
                   <img
                     src={
                       user?.avatar ||
-                      `https://via.placeholder.com/150?text=${
-                        user?.name?.charAt(0) || "U"
+                      `https://via.placeholder.com/150?text=${user?.name?.charAt(0) || "U"
                       }`
                     }
                     alt={user?.name?.charAt(0) || ""}

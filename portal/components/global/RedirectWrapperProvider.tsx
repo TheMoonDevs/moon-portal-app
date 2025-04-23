@@ -21,7 +21,7 @@ export default function RedirectWrapperProvider({
 
     if (status === 'loading') return;
     if (status === 'authenticated') return;
-    //if (session === null) return;
+    if (session === null) return;
 
     console.log('RedirectWrapperProvider.tsx', 'session:', session, 'status:', status, 'pathname:', pathname, 'url', window.location.href);
 

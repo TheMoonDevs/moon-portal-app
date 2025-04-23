@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
     const users = await prisma.user.findMany({
       where: {
         userType: 'MEMBER',
-        role: 'CORETEAM',
+        //role: 'CORETEAM',
         status: 'ACTIVE',
       },
     });
