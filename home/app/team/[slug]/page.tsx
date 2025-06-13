@@ -5,6 +5,8 @@ type Props = {
     params: { slug: string }
 }
 
+export const runtime = 'edge';
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     if (params.slug === 'founder') {
