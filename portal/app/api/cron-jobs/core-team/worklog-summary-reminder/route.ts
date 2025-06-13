@@ -11,7 +11,7 @@ import dayjs from 'dayjs';
 export const revalidate = 0;
 
 const slackBot = new SlackBotSdk();
-const doomsDay = dayjs('2025-04-30');
+const doomsDay = dayjs('2025-07-01');
 
 const formatDate = (date: Date) => format(date, 'EEEE -- MMMM dd, yyyy');
 
@@ -19,7 +19,7 @@ const generateMessages = async (usersWithWorkLogs: any[]) => {
   const today = formatDate(new Date());
   let messages = `Good morning team! ☀️ Today is ${today} --- We're *${
     doomsDay.diff(dayjs(), 'days') + 1
-  } days* away from Doomsday! 🌍🔥\n\n`;
+  } days* away from Public Launch! 🌍🔥\n\n`;
 
   let combinedWorklogsContent = '';
 

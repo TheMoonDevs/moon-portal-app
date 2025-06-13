@@ -16,6 +16,7 @@ export interface IProfileData {
   experience: string;
   domain: string;
   position: string;
+  slug?: string;
   publications: IPublication[];
 }
 export let ProfileData: IProfileData[] = [
@@ -24,6 +25,7 @@ export let ProfileData: IProfileData[] = [
     avatar: '/images/profiles/subhakar.png',
     experience: '30+ Enterprise Solutions',
     domain: 'Fullstack',
+    slug: 'founder',
     position: 'Fractional CTO',
     publications: [
       {

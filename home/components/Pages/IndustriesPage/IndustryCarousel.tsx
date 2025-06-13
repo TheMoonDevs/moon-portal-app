@@ -49,7 +49,7 @@ const IndustryCarousel = ({
             className="my-8 overflow-visible"
           >
             <CarouselContent className="-ml-1 flex gap-4">
-              {industryArticles.map((article, index) => (
+              {industryArticles?.filter((article) => !article.isHot).map((article, index) => (
                 <CarouselItem
                   className={cn(
                     'group h-fit pl-0 md:basis-[calc(50%-0.5rem)] lg:basis-[calc(50%-0.5rem)]',
