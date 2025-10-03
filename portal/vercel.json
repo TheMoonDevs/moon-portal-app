@@ -1,27 +1,7 @@
 {
   "crons": [
     {
-      "path": "/api/cron-jobs/core-team/pay-reminder",
-      "schedule": "30 3 * * *"
-    },
-    {
-      "path": "/api/cron-jobs/core-team/birthday-reminder",
-      "schedule": "30 3 * * *"
-    },
-    {
-      "path": "/api/cron-jobs/core-team/wallet-notification",
-      "schedule": "30 3 * * *"
-    },
-    {
       "path": "/api/cron-jobs/sync/slack-users",
-      "schedule": "30 3 * * *"
-    },
-    {
-      "path": "/api/cron-jobs/sync/medium-articles",
-      "schedule": "30 3 * * *"
-    },
-    {
-      "path": "/api/cron-jobs/sync/clickup-tasks",
       "schedule": "30 3 * * *"
     },
     {
