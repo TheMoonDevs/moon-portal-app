@@ -22,11 +22,17 @@ import {
 import SimpleTabs from '@/components/elements/Tabs';
 import WorklogTips from './WorklogTabs/WorklogTips';
 import TodoTab from './WorklogTabs/TodoTab';
+import MonthlyTargetsTab from './WorklogTabs/MonthlyTargetsTab';
 import {
   setCompletedTodos,
   setIncompleteTodos,
   setTodoMarkdown,
 } from '@/utils/redux/worklogs/laterTodos.slice';
+import {
+  setCompletedTargets,
+  setIncompleteTargets,
+  setTargetsMarkdown,
+} from '@/utils/redux/worklogs/monthlyTargets.slice';
 import WorklogBuff from './WorklogTabs/WorklogBuff';
 import ClickupTasks from './WorklogTabs/ClickupTasks';
 import { PrivateWorklogView } from './PrivateWorklogView';
@@ -146,6 +152,9 @@ export const WorklogsPage = () => {
   const { todoMarkdown, incompleteTodos } = useAppSelector(
     (state) => state.laterTodos,
   );
+  const { targetsMarkdown, incompleteTargets } = useAppSelector(
+    (state) => state.monthlyTargets,
+  );
   const [monthTab, setMonthTab] = useState<number>(thisMonth);
   const logsList = useAppSelector((state) => state.worklogs.logsList);
   const [yearLogData, setYearLogData] = useState<any>();
@@ -166,6 +175,7 @@ export const WorklogsPage = () => {
       });
   };
 
+
   useEffect(() => {
     if (todoMarkdown) {
       if (todoMarkdown.trim() === '*' || todoMarkdown.trim() === '') {
@@ -178,6 +188,19 @@ export const WorklogsPage = () => {
       }
     }
   }, [todoMarkdown]);
+
+  useEffect(() => {
+    if (targetsMarkdown) {
+      if (targetsMarkdown.trim() === '*' || targetsMarkdown.trim() === '') {
+        dispatch(setIncompleteTargets(0));
+      } else {
+        const total = (targetsMarkdown.match(/\n/g) || []).length + 1;
+        const completed = (targetsMarkdown.match(/✅/g) || []).length;
+        dispatch(setIncompleteTargets(total - completed));
+        dispatch(setCompletedTargets(completed));
+      }
+    }
+  }, [targetsMarkdown]);
 
   useEffect(() => {
     if (user?.id) {
@@ -270,6 +293,17 @@ export const WorklogsPage = () => {
         </div>
       ),
       content: <TodoTab userId={user?.id as string} />,
+    },
+    {
+      label: (
+        <div className="flex items-center gap-2 p-3">
+          Monthly targets
+          {incompleteTargets > 0 && (
+            <div className="h-2 w-2 animate-pulse rounded-full bg-blue-500"></div>
+          )}
+        </div>
+      ),
+      content: <MonthlyTargetsTab userId={user?.id as string} month={monthTab} year={thisYear} />,
     },
     // { label: 'Tasks', content: <ClickupTasks email={user?.email as string} /> },
     { label: 'Tips', content: <WorklogTips /> },
