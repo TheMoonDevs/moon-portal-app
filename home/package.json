@@ -59,7 +59,7 @@
     "framer-motion": "^11.11.9",
     "googleapis": "^134.0.0",
     "lucide-react": "^0.475.0",
-    "next": "^14.2.13",
+    "next": "14.2.35",
     "plaiceholder": "^3.0.0",
     "prismjs": "^1.29.0",
     "quantize": "^1.0.2",
