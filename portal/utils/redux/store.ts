@@ -16,6 +16,7 @@ import missionTasksReducer from './missions/missionsTasks.slice';
 import missionUiSlice from './missions/mission.ui.slice';
 import laterTodosReducer from './worklogs/laterTodos.slice';
 import monthlyTargetsReducer from './worklogs/monthlyTargets.slice';
+import adminTasksReducer from './worklogs/adminTasks.slice';
 //import suggestionsReducer from './suggestions/suggestions.slice';
 import notificationsReducer from './notification/notification.slice';
 import coreTeamSlice from './coreTeam/coreTeam.slice';
@@ -37,6 +38,7 @@ const store = configureStore({
     worklogs: worklogsReducer,
     laterTodos: laterTodosReducer,
     monthlyTargets: monthlyTargetsReducer,
+    adminTasks: adminTasksReducer,
     searchTerm: searchTermReducer,
     onboardingForm: onboardingFormReducer,
     mission: missionReducer,

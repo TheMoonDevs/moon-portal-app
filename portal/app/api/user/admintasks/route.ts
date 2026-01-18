@@ -1,0 +1,93 @@
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/prisma/prisma";
+
+export async function GET(request: NextRequest) {
+  try {
+    const logType = request.nextUrl.searchParams.get("logType") as string;
+
+    // Admin tasks are global, not user-specific
+    const docId = "adminTasks";
+
+    const docMarkdown = await prisma.docMarkdown.findUnique({
+      where: {
+        docId: docId,
+        ...(logType && { logType }),
+      },
+    });
+
+    // Return empty document structure if not found (instead of 404)
+    if (!docMarkdown) {
+      return NextResponse.json(
+        {
+          success: true,
+          data: {
+            docId: docId,
+            userId: "admin",
+            logType: logType || "adminTasks",
+            markdown: { content: "*" },
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        },
+        { status: 200 }
+      );
+    }
+
+    return NextResponse.json(
+      { success: true, data: docMarkdown },
+      { status: 200 }
+    );
+  } catch (e) {
+    return new NextResponse(JSON.stringify(e), {
+      status: 404,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { logType, markdown } = body;
+
+    if (!logType || !markdown) {
+      return NextResponse.json(
+        { success: false, error: "Missing required fields: logType and markdown" },
+        { status: 400 }
+      );
+    }
+
+    // Admin tasks are global, not user-specific
+    const docId = "adminTasks";
+
+    const newDocMarkdown = await prisma.docMarkdown.upsert({
+      where: {
+        docId: docId,
+      },
+      update: {
+        markdown: markdown,
+        updatedAt: new Date(),
+      },
+      create: {
+        docId: docId,
+        logType: logType,
+        userId: "admin", // Global admin tasks
+        markdown: markdown,
+      },
+    });
+
+    return NextResponse.json(
+      { success: true, data: newDocMarkdown },
+      { status: 201 }
+    );
+  } catch (e) {
+    return new NextResponse(JSON.stringify(e), {
+      status: 404,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+  }
+}

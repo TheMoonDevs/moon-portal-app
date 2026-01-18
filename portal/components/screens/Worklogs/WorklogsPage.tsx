@@ -23,6 +23,7 @@ import SimpleTabs from '@/components/elements/Tabs';
 import WorklogTips from './WorklogTabs/WorklogTips';
 import TodoTab from './WorklogTabs/TodoTab';
 import MonthlyTargetsTab from './WorklogTabs/MonthlyTargetsTab';
+import AdminTasksTab from './WorklogTabs/AdminTasksTab';
 import {
   setCompletedTodos,
   setIncompleteTodos,
@@ -33,6 +34,11 @@ import {
   setIncompleteTargets,
   setTargetsMarkdown,
 } from '@/utils/redux/worklogs/monthlyTargets.slice';
+import {
+  setCompletedTasks,
+  setIncompleteTasks,
+  setAdminTasksMarkdown,
+} from '@/utils/redux/worklogs/adminTasks.slice';
 import WorklogBuff from './WorklogTabs/WorklogBuff';
 import ClickupTasks from './WorklogTabs/ClickupTasks';
 import { PrivateWorklogView } from './PrivateWorklogView';
@@ -155,6 +161,9 @@ export const WorklogsPage = () => {
   const { targetsMarkdown, incompleteTargets } = useAppSelector(
     (state) => state.monthlyTargets,
   );
+  const { adminTasksMarkdown, incompleteTasks } = useAppSelector(
+    (state) => state.adminTasks,
+  );
   const [monthTab, setMonthTab] = useState<number>(thisMonth);
   const logsList = useAppSelector((state) => state.worklogs.logsList);
   const [yearLogData, setYearLogData] = useState<any>();
@@ -169,6 +178,17 @@ export const WorklogsPage = () => {
       .then((data) => {
         const content = data?.data?.markdown?.content || '';
         dispatch(setTodoMarkdown(content));
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
+
+  const fetchAdminTasks = () => {
+    PortalSdk.getData(`/api/user/admintasks`, null)
+      .then((data) => {
+        const content = data?.data?.markdown?.content || '';
+        dispatch(setAdminTasksMarkdown(content));
       })
       .catch((err) => {
         console.log(err);
@@ -203,9 +223,24 @@ export const WorklogsPage = () => {
   }, [targetsMarkdown]);
 
   useEffect(() => {
+    if (adminTasksMarkdown) {
+      if (adminTasksMarkdown.trim() === '*' || adminTasksMarkdown.trim() === '') {
+        dispatch(setIncompleteTasks(0));
+      } else {
+        const total = (adminTasksMarkdown.match(/\n/g) || []).length + 1;
+        const completed = (adminTasksMarkdown.match(/✅/g) || []).length;
+        dispatch(setIncompleteTasks(total - completed));
+        dispatch(setCompletedTasks(completed));
+      }
+    }
+  }, [adminTasksMarkdown, dispatch]);
+
+  useEffect(() => {
     if (user?.id) {
       fetchLaterToDo(user?.id);
     }
+    // Fetch admin tasks for all users (they're global)
+    fetchAdminTasks();
   }, [user?.id]);
 
   useEffect(() => {
@@ -286,7 +321,7 @@ export const WorklogsPage = () => {
     {
       label: (
         <div className="flex items-center gap-2 p-3">
-          Todos for later
+          Todos
           {incompleteTodos > 0 && (
             <div className="h-2 w-2 animate-pulse rounded-full bg-blue-500"></div>
           )}
@@ -305,6 +340,21 @@ export const WorklogsPage = () => {
       ),
       content: <MonthlyTargetsTab userId={user?.id as string} month={monthTab} year={thisYear} />,
     },
+    ...(user?.isAdmin
+      ? [
+        {
+          label: (
+            <div className="flex items-center gap-2 p-3">
+              Admin Tasks
+              {incompleteTasks > 0 && (
+                <div className="h-2 w-2 animate-pulse rounded-full bg-blue-500"></div>
+              )}
+            </div>
+          ),
+          content: <AdminTasksTab />,
+        },
+      ]
+      : []),
     // { label: 'Tasks', content: <ClickupTasks email={user?.email as string} /> },
     { label: 'Tips', content: <WorklogTips /> },
   ];
