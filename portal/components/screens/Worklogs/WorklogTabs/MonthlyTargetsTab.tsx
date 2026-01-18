@@ -52,15 +52,21 @@ const MonthlyTargetsTab: React.FC<MonthlyTargetsTabProps> = ({ userId, month, ye
 
     const saveMarkdownContent = useCallback(
         (content: string) => {
+            if (!userId || month === undefined || year === undefined) {
+                console.error("Cannot save: missing userId, month, or year", { userId, month, year });
+                return;
+            }
             setSaving(true);
             const contentToSave = content || MARKDOWN_PLACEHOLDER;
-            PortalSdk.putData(`/api/user/monthlytargets`, {
+            const payload = {
                 userId: userId,
                 logType: "monthlyTargets",
                 markdown: { content: contentToSave },
-                month: month,
-                year: year,
-            })
+                month: Number(month), // Ensure it's a number
+                year: Number(year), // Ensure it's a number
+            };
+            console.log("Saving monthly targets with payload:", payload);
+            PortalSdk.putData(`/api/user/monthlytargets`, payload)
                 .then((response) => {
                     console.log("Markdown saved successfully", response);
                     // Update Redux state with the saved content to ensure consistency
@@ -70,7 +76,10 @@ const MonthlyTargetsTab: React.FC<MonthlyTargetsTabProps> = ({ userId, month, ye
                 })
                 .catch((error) => {
                     console.error("Error saving markdown", error);
-                    // Optionally show a toast or error message to user
+                    // Log the full error for debugging
+                    if (error?.response || error?.data) {
+                        console.error("Error details:", error.response || error.data);
+                    }
                 })
                 .finally(() => {
                     setSaving(false);

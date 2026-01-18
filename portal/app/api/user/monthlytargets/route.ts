@@ -62,18 +62,52 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const { userId, logType, markdown, month, year } = body;
 
-    if (!userId || !logType || !markdown || !month || !year) {
+    // Better validation with detailed error messages
+    const errors: string[] = [];
+    
+    if (!userId || typeof userId !== 'string') {
+      errors.push('userId is required and must be a string');
+    }
+    if (!logType || typeof logType !== 'string') {
+      errors.push('logType is required and must be a string');
+    }
+    if (!markdown || typeof markdown !== 'object' || !markdown.content) {
+      errors.push('markdown.content is required');
+    }
+    // Month can be 0 (January), so check for null/undefined specifically
+    if (month === undefined || month === null) {
+      errors.push('month is required');
+    }
+    // Year must be a valid number
+    if (year === undefined || year === null || (typeof year !== 'number' && typeof year !== 'string')) {
+      errors.push('year is required and must be a number');
+    }
+
+    if (errors.length > 0) {
       return NextResponse.json(
         {
           success: false,
-          error:
-            'Missing required fields: userId, logType, markdown, month, and year',
+          error: 'Validation failed',
+          errors: errors,
+          received: { 
+            userId: userId ? 'present' : 'missing', 
+            logType: logType ? 'present' : 'missing', 
+            hasMarkdown: !!markdown,
+            hasMarkdownContent: !!(markdown?.content),
+            month: month,
+            monthType: typeof month,
+            year: year,
+            yearType: typeof year,
+          },
         },
         { status: 400 },
       );
     }
 
-    const docId = `${userId}-${year}-${month}-monthlyTargets`;
+    // Ensure month and year are numbers for consistent docId format
+    const monthNum = typeof month === 'string' ? parseInt(month, 10) : Number(month);
+    const yearNum = typeof year === 'string' ? parseInt(year, 10) : Number(year);
+    const docId = `${userId}-${yearNum}-${monthNum}-monthlyTargets`;
 
     const newDocMarkdown = await prisma.docMarkdown.upsert({
       where: {
