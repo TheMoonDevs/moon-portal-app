@@ -3,10 +3,18 @@ import { prisma } from "@/prisma/prisma";
 
 export async function GET(request: NextRequest) {
   try {
+    const userId = request.nextUrl.searchParams.get("userId") as string;
     const logType = request.nextUrl.searchParams.get("logType") as string;
 
-    // Admin tasks are global, not user-specific
-    const docId = "adminTasks";
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: "userId is required" },
+        { status: 400 }
+      );
+    }
+
+    // Admin tasks are user-specific
+    const docId = `${userId}-adminTasks`;
 
     const docMarkdown = await prisma.docMarkdown.findUnique({
       where: {
@@ -22,7 +30,7 @@ export async function GET(request: NextRequest) {
           success: true,
           data: {
             docId: docId,
-            userId: "admin",
+            userId: userId,
             logType: logType || "adminTasks",
             markdown: { content: "*" },
             createdAt: new Date(),
@@ -50,17 +58,20 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { logType, markdown } = body;
+    const { userId, logType, markdown } = body;
 
-    if (!logType || !markdown) {
+    if (!userId || !logType || !markdown) {
       return NextResponse.json(
-        { success: false, error: "Missing required fields: logType and markdown" },
+        { 
+          success: false, 
+          error: "Missing required fields: userId, logType, and markdown" 
+        },
         { status: 400 }
       );
     }
 
-    // Admin tasks are global, not user-specific
-    const docId = "adminTasks";
+    // Admin tasks are user-specific
+    const docId = `${userId}-adminTasks`;
 
     const newDocMarkdown = await prisma.docMarkdown.upsert({
       where: {
@@ -73,7 +84,7 @@ export async function PUT(request: NextRequest) {
       create: {
         docId: docId,
         logType: logType,
-        userId: "admin", // Global admin tasks
+        userId: userId, // User-specific admin tasks
         markdown: markdown,
       },
     });

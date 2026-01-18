@@ -184,8 +184,9 @@ export const WorklogsPage = () => {
       });
   };
 
-  const fetchAdminTasks = () => {
-    PortalSdk.getData(`/api/user/admintasks`, null)
+  const fetchAdminTasks = (userId: string) => {
+    if (!userId) return;
+    PortalSdk.getData(`/api/user/admintasks?userId=${userId}`, null)
       .then((data) => {
         const content = data?.data?.markdown?.content || '';
         dispatch(setAdminTasksMarkdown(content));
@@ -238,9 +239,9 @@ export const WorklogsPage = () => {
   useEffect(() => {
     if (user?.id) {
       fetchLaterToDo(user?.id);
+      // Fetch admin tasks for the current user (they're user-specific)
+      fetchAdminTasks(user.id);
     }
-    // Fetch admin tasks for all users (they're global)
-    fetchAdminTasks();
   }, [user?.id]);
 
   useEffect(() => {
@@ -332,7 +333,7 @@ export const WorklogsPage = () => {
     {
       label: (
         <div className="flex items-center gap-2 p-3">
-          Monthly targets
+          Monthly
           {incompleteTargets > 0 && (
             <div className="h-2 w-2 animate-pulse rounded-full bg-blue-500"></div>
           )}
@@ -340,21 +341,17 @@ export const WorklogsPage = () => {
       ),
       content: <MonthlyTargetsTab userId={user?.id as string} month={monthTab} year={thisYear} />,
     },
-    ...(user?.isAdmin
-      ? [
-        {
-          label: (
-            <div className="flex items-center gap-2 p-3">
-              Admin Tasks
-              {incompleteTasks > 0 && (
-                <div className="h-2 w-2 animate-pulse rounded-full bg-blue-500"></div>
-              )}
-            </div>
-          ),
-          content: <AdminTasksTab />,
-        },
-      ]
-      : []),
+    {
+      label: (
+        <div className="flex items-center gap-2 p-3">
+          Assigned
+          {incompleteTasks > 0 && (
+            <div className="h-2 w-2 animate-pulse rounded-full bg-blue-500"></div>
+          )}
+        </div>
+      ),
+      content: <AdminTasksTab userId={user?.id as string} />,
+    },
     // { label: 'Tasks', content: <ClickupTasks email={user?.email as string} /> },
     { label: 'Tips', content: <WorklogTips /> },
   ];

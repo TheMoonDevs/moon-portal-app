@@ -247,6 +247,9 @@ export const UserProfileDrawer: React.FC = () => {
             <ReactActivityCalendar />
           </div>
           <EarnedBadges logBadges={(selectedUser as any)?.buffBadge} />
+          {loggedinUser.user.isAdmin && (
+            <AdminTasksSection userId={selectedUser.id} />
+          )}
           {!loading ? (
             <WorkLogSection
               worklogSummary={worklogSummary}
@@ -254,9 +257,6 @@ export const UserProfileDrawer: React.FC = () => {
             />
           ) : (
             <LoadingSkeleton />
-          )}
-          {loggedinUser.user.isAdmin && (
-            <AdminTasksSection />
           )}
           {/* TODO: replace with Notion Tasks API or soemthing similar
           <div className="pb-4">
@@ -512,12 +512,12 @@ const AboutUserSections = ({
   );
 };
 
-const AdminTasksSection = () => {
+const AdminTasksSection = ({ userId }: { userId: string }) => {
   return (
     <div className="flex flex-col gap-1 pb-4">
       <h6 className="pb-2 font-bold">Admin Tasks</h6>
       <div className="rounded-xl border-2 border-gray-300 p-3">
-        <AdminTasksTab />
+        <AdminTasksTab userId={userId} />
       </div>
     </div>
   );

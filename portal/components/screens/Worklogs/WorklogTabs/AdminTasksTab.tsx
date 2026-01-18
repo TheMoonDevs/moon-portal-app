@@ -12,7 +12,11 @@ import {
 
 export const MARKDOWN_PLACEHOLDER = `*`;
 
-const AdminTasksTab: React.FC = () => {
+interface AdminTasksTabProps {
+  userId: string;
+}
+
+const AdminTasksTab: React.FC<AdminTasksTabProps> = ({ userId }) => {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
@@ -21,9 +25,10 @@ const AdminTasksTab: React.FC = () => {
   );
   const mdRef = useRef<MDXEditorMethods | null>(null);
 
-  const fetchAdminTasks = () => {
+  const fetchAdminTasks = (userId: string) => {
+    if (!userId) return;
     setLoading(true);
-    PortalSdk.getData(`/api/user/admintasks`, null)
+    PortalSdk.getData(`/api/user/admintasks?userId=${userId}`, null)
       .then((data) => {
         const content = data?.data?.markdown?.content || "";
         const finalContent = content || MARKDOWN_PLACEHOLDER;
@@ -43,9 +48,14 @@ const AdminTasksTab: React.FC = () => {
 
   const saveMarkdownContent = useCallback(
     (content: string) => {
+      if (!userId) {
+        console.error("Cannot save: userId is missing");
+        return;
+      }
       setSaving(true);
       const contentToSave = content || MARKDOWN_PLACEHOLDER;
       PortalSdk.putData(`/api/user/admintasks`, {
+        userId: userId,
         logType: "adminTasks",
         markdown: { content: contentToSave },
       })
@@ -62,7 +72,7 @@ const AdminTasksTab: React.FC = () => {
           setSaving(false);
         });
     },
-    [dispatch]
+    [userId, dispatch]
   );
 
   const debouncedSaveRef = useRef(
@@ -105,11 +115,13 @@ const AdminTasksTab: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchAdminTasks();
+    if (userId) {
+      fetchAdminTasks(userId);
+    }
     return () => {
       debouncedSaveRef.current.cancel();
     };
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
     if (adminTasksMarkdown) {
@@ -144,7 +156,7 @@ const AdminTasksTab: React.FC = () => {
           if (e.ctrlKey && e.key === "r") {
             e.preventDefault();
             console.log("Refreshing Admin Tasks");
-            fetchAdminTasks();
+            fetchAdminTasks(userId);
           }
           if (e.ctrlKey && e.key === " ") {
             e.preventDefault();
@@ -154,8 +166,8 @@ const AdminTasksTab: React.FC = () => {
       >
         <MdxAppEditor
           ref={mdRef}
-          key="admin-tasks"
-          editorKey="admin-tasks"
+          key={`${userId}-admin-tasks`}
+          editorKey={`${userId}-admin-tasks`}
           markdown={
             adminTasksMarkdown.trim().length === 0
               ? MARKDOWN_PLACEHOLDER
