@@ -24,10 +24,22 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    // Return empty document structure if not found (instead of 404)
+    // This allows the frontend to handle new months gracefully
     if (!docMarkdown) {
       return NextResponse.json(
-        { success: false, error: 'Document not found' },
-        { status: 404 },
+        {
+          success: true,
+          data: {
+            docId: docId,
+            userId: userId,
+            logType: logType || 'monthlyTargets',
+            markdown: { content: '*' },
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        },
+        { status: 200 },
       );
     }
 

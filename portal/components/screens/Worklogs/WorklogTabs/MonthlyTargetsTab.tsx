@@ -33,11 +33,17 @@ const MonthlyTargetsTab: React.FC<MonthlyTargetsTabProps> = ({ userId, month, ye
         PortalSdk.getData(`/api/user/monthlytargets?userId=${userId}&month=${month}&year=${year}`, null)
             .then((data) => {
                 const content = data?.data?.markdown?.content || "";
-                dispatch(setTargetsMarkdown(content));
-                mdRef?.current?.setMarkdown(content);
+                const finalContent = content || MARKDOWN_PLACEHOLDER;
+                dispatch(setTargetsMarkdown(finalContent));
+                mdRef?.current?.setMarkdown(finalContent);
             })
             .catch((err) => {
-                console.log(err);
+                // Handle network errors or other unexpected errors
+                // Note: 404s are now handled by the API returning empty document
+                console.error("Error fetching monthly targets:", err);
+                const placeholder = MARKDOWN_PLACEHOLDER;
+                dispatch(setTargetsMarkdown(placeholder));
+                mdRef?.current?.setMarkdown(placeholder);
             })
             .finally(() => {
                 setLoading(false);
@@ -47,30 +53,46 @@ const MonthlyTargetsTab: React.FC<MonthlyTargetsTabProps> = ({ userId, month, ye
     const saveMarkdownContent = useCallback(
         (content: string) => {
             setSaving(true);
+            const contentToSave = content || MARKDOWN_PLACEHOLDER;
             PortalSdk.putData(`/api/user/monthlytargets`, {
                 userId: userId,
                 logType: "monthlyTargets",
-                markdown: { content: content },
+                markdown: { content: contentToSave },
                 month: month,
                 year: year,
             })
                 .then((response) => {
                     console.log("Markdown saved successfully", response);
+                    // Update Redux state with the saved content to ensure consistency
+                    if (response?.data?.markdown?.content) {
+                        dispatch(setTargetsMarkdown(response.data.markdown.content));
+                    }
                 })
                 .catch((error) => {
                     console.error("Error saving markdown", error);
+                    // Optionally show a toast or error message to user
                 })
                 .finally(() => {
                     setSaving(false);
                 });
         },
-        [userId, month, year]
+        [userId, month, year, dispatch]
     );
 
-    const debouncedSave = useCallback(
-        debounce((content: string) => saveMarkdownContent(content), 3000),
-        [saveMarkdownContent]
+    const debouncedSaveRef = useRef(
+        debounce((content: string) => saveMarkdownContent(content), 3000)
     );
+
+    // Update the debounced function when saveMarkdownContent changes
+    useEffect(() => {
+        debouncedSaveRef.current = debounce(
+            (content: string) => saveMarkdownContent(content),
+            3000
+        );
+        return () => {
+            debouncedSaveRef.current.cancel();
+        };
+    }, [saveMarkdownContent]);
 
     const handleMarkdownChange = (content: string) => {
         const emojiMap: { [key: string]: string } = {
@@ -93,15 +115,21 @@ const MonthlyTargetsTab: React.FC<MonthlyTargetsTabProps> = ({ userId, month, ye
         if (new_content.length === 0) {
             new_content = MARKDOWN_PLACEHOLDER;
         }
-        mdRef?.current?.setMarkdown(new_content);
-        dispatch(setTargetsMarkdown(content));
-        debouncedSave(new_content);
+        // Update Redux with the emoji-replaced content (what we actually save)
+        dispatch(setTargetsMarkdown(new_content));
+        debouncedSaveRef.current(new_content);
     };
 
     useEffect(() => {
         if (userId) {
+            // Cancel any pending debounced saves when month/year changes
+            debouncedSaveRef.current.cancel();
             fetchMonthlyTargets(userId, month, year);
         }
+        // Cleanup: cancel any pending saves when component unmounts or dependencies change
+        return () => {
+            debouncedSaveRef.current.cancel();
+        };
     }, [userId, month, year]);
 
     useEffect(() => {
@@ -115,7 +143,7 @@ const MonthlyTargetsTab: React.FC<MonthlyTargetsTabProps> = ({ userId, month, ye
                 dispatch(setCompletedTargets(completed));
             }
         }
-    }, [targetsMarkdown]);
+    }, [targetsMarkdown, dispatch]);
 
     return (
         <div className="mt-4">
