@@ -339,7 +339,13 @@ export const WorklogsPage = () => {
           )}
         </div>
       ),
-      content: <MonthlyTargetsTab userId={user?.id as string} month={monthTab} year={thisYear} />,
+      content: (
+        <MonthlyTargetsTab
+          userId={user?.id as string}
+          month={selectedDate ? centerdate.month() : monthTab}
+          year={selectedDate ? centerdate.year() : thisYear}
+        />
+      ),
     },
     {
       label: (
@@ -363,11 +369,17 @@ export const WorklogsPage = () => {
     }
     if (data.id?.trim().length > 0) {
       setSelectedID(data.id);
-      if (data.date) setSelectedDate(data.date);
+      if (data.date) {
+        setSelectedDate(data.date);
+        setMonthTab(dayjs(data.date).month());
+      }
     } else if (data.date) {
       // console.log(data);
       setSelectedID(undefined);
-      if (data.date) setSelectedDate(data.date);
+      if (data.date) {
+        setSelectedDate(data.date);
+        setMonthTab(dayjs(data.date).month());
+      }
     }
   };
 
