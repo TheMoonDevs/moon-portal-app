@@ -74,12 +74,13 @@ export function withAuthMiddleware(middleware: CustomMiddleware) {
     // Check API key for methods that modify the database
     const method = request.method.toUpperCase();
     const modifyingMethods = ['POST', 'PUT', 'PATCH', 'DELETE'];
-
+    
     if (
       modifyingMethods.includes(method) &&
       !request.url.includes('/api/auth') &&
       !request.url.includes('/api/slack') &&
-      !request.url.includes('/api/client-survey')
+      !request.url.includes('/api/client-survey') &&
+      !request.url.includes('/api/worksheets/webhook')
     ) {
       const apiKey = request.headers.get('tmd_portal_api_key');
       const expectedApiKey = process.env.NEXT_PUBLIC_TMD_PORTAL_API_KEY;
