@@ -47,6 +47,11 @@ const NAVIGATION_OPTIONS = [
     icon: 'notifications',
   },
   {
+    name: 'Worksheets',
+    path: APP_ROUTES.worksheets,
+    icon: 'description',
+  },
+  {
     name: 'Admin',
     path: APP_ROUTES.admin,
     icon: 'admin_panel_settings',
@@ -88,6 +93,11 @@ const CLIENT_NAVIGATION_OPTIONS = [
     name: 'Notifications',
     path: APP_ROUTES.notifications,
     icon: 'notifications',
+  },
+  {
+    name: 'Worksheets',
+    path: APP_ROUTES.worksheets,
+    icon: 'description',
   },
 ];
 

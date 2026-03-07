@@ -27,6 +27,7 @@ export enum APP_ROUTES {
   devProfile = '/dev-profile',
   settings = '/settings',
   customBots = '/custom-bots',
+  worksheets = '/worksheets',
 }
 
 export enum QUICKLINK_ROUTES {
