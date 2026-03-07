@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function sendEmailAction(row: Record<string, any>) {
+async function sendEmailAction(row: Record<string, any>) {
   console.log(`Sending email to ${row.email} for row ${row.id}...`);
   // Simulate email sending
   await new Promise(resolve => setTimeout(resolve, 1000));
