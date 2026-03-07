@@ -4,7 +4,7 @@ import {
   fetchTimezoneOptions,
 } from '@/lib/worksheets/actions-lib/global-options';
 
-export async function fetchCompanyOptions(query: string) {
+async function fetchCompanyOptions(query: string) {
   // Simulate fetching options from a DB or API
   await new Promise(resolve => setTimeout(resolve, 500));
   const companies = ["Apple", "Google", "Microsoft", "Amazon", "Facebook", "Tesla", "Netflix"];
