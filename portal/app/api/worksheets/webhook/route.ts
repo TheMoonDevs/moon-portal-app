@@ -1,7 +1,43 @@
-import { prisma } from '@/prisma/prisma';
 import { NextRequest, NextResponse } from 'next/server';
-import { getWorksheetConfig } from '@/lib/worksheets/registry';
+import { getWorksheetConfig } from '@/lib/worksheets';
+import { createRowLenient } from '@/lib/worksheets/core/db/worksheet-repository';
+import type { WorksheetFieldMeta } from '@/lib/worksheets/core/db/zod-meta';
 import { z } from 'zod';
+
+function mapGoogleFormAnswersToPayload(
+  worksheetConfig: NonNullable<ReturnType<typeof getWorksheetConfig>>,
+  answers: Record<string, unknown>
+) {
+  const payload: Record<string, unknown> = {};
+  const schema = worksheetConfig.rowSchema as z.ZodObject<any>;
+  const shape = (schema as any).shape as Record<string, z.ZodTypeAny>;
+
+  for (const [field, fieldSchema] of Object.entries(shape)) {
+    const meta = (fieldSchema as unknown as { meta?: () => unknown }).meta?.() as
+      | WorksheetFieldMeta
+      | undefined;
+    const title = meta?.googleForm?.questionTitle?.trim();
+    if (!title) continue;
+    if (!(title in answers)) continue;
+    payload[field] = answers[title];
+  }
+
+  return payload;
+}
+
+function coerceCommonWebhookValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(coerceCommonWebhookValue);
+  if (typeof value !== 'string') return value;
+  const trimmed = value.trim();
+  if (!trimmed) return value;
+
+  if (/^(true|false)$/i.test(trimmed)) return trimmed.toLowerCase() === 'true';
+  if (/^-?\d+(\.\d+)?$/.test(trimmed)) {
+    const n = Number(trimmed);
+    if (Number.isFinite(n)) return n;
+  }
+  return value;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,66 +68,44 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid webhook secret' }, { status: 401 });
     }
 
-    // Build zod schema dynamically
-    const shape: z.ZodRawShape = {};
-    worksheetConfig.columns.forEach(col => {
-      // Skip computed and action columns for validation
-      if (col.type === 'computed' || col.type === 'actions') return;
+    const answers = body?.answers;
+    const rawPayload =
+      answers && typeof answers === 'object' && !Array.isArray(answers)
+        ? mapGoogleFormAnswersToPayload(
+            worksheetConfig,
+            answers as Record<string, unknown>
+          )
+        : (() => {
+            const out = { ...body };
+            delete out.worksheetId;
+            delete out.worksheetSlug;
+            delete out.answers;
+            return out;
+          })();
 
-      let fieldSchema: z.ZodTypeAny;
-      if (col.zodSchema) {
-        fieldSchema = col.zodSchema;
-      } else {
-        // Fallback simple validation if not explicitly defined
-        switch (col.type) {
-          case 'number': fieldSchema = z.coerce.number(); break;
-          case 'boolean': fieldSchema = z.union([z.boolean(), z.coerce.boolean()]); break;
-          case 'email': fieldSchema = z.string().email(); break;
-          default: fieldSchema = z.unknown();
-        }
-      }
-
-      if (!col.required) {
-        fieldSchema = fieldSchema.optional();
-      }
-      shape[col.field] = fieldSchema;
-    });
-
-    const schema = z.object(shape).passthrough();
-    const parsed = schema.safeParse(body);
-
-    let rawPayload: Record<string, unknown> = body as Record<string, unknown>;
-    let validationErrors: Record<string, string[]> | null = null;
-
-    if (!parsed.success) {
-      validationErrors = parsed.error.flatten().fieldErrors as Record<string, string[]>;
-      if (typeof body === 'object' && body !== null) {
-        rawPayload = body as Record<string, unknown>;
-      }
-    } else {
-      rawPayload = parsed.data as Record<string, unknown>;
+    let payload: Record<string, unknown>;
+    payload = {};
+    for (const [k, v] of Object.entries(rawPayload)) {
+      payload[k] = coerceCommonWebhookValue(v);
     }
 
-    const indexValue = worksheetConfig.indexKey ? String(rawPayload[worksheetConfig.indexKey] || '') : undefined;
-
-    const row = await prisma.worksheetRow.create({
-      data: {
-        worksheetId: worksheetConfig.id,
-        indexValue: indexValue || undefined,
-        validationErrors: validationErrors ?? undefined,
-        data: rawPayload as any,
-      },
-    });
+    const row = await createRowLenient(worksheetConfig.id, payload);
 
     return NextResponse.json(
-      { status: 'success', data: { id: row.id, worksheetId: worksheetConfig.id } },
+      {
+        status: 'success',
+        data: {
+          id: row.id,
+          worksheetId: worksheetConfig.id,
+          validationErrors: row.validationErrors,
+        },
+      },
       { status: 200 }
     );
   } catch (e) {
     console.error('Worksheet webhook error:', e);
-    return NextResponse.json(
-      { error: e instanceof Error ? e.message : 'Webhook failed' },
-      { status: 500 }
-    );
+    const message = e instanceof Error ? e.message : 'Webhook failed';
+    const status = message.startsWith('Validation failed') ? 400 : 500;
+    return NextResponse.json({ error: message }, { status });
   }
 }
