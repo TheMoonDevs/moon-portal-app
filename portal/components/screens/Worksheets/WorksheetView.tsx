@@ -6,14 +6,14 @@ import { WorksheetGrid } from './WorksheetGrid';
 import { WorksheetSidebar } from './WorksheetSidebar';
 import { useWorksheetRows } from './useWorksheetRows';
 import { useWorksheetStore, WorksheetUIState } from './useWorksheetStore';
-import { Button } from '@/components/ui/button';
-import { FileSpreadsheet, Plus, Save } from 'lucide-react';
-import { worksheetRegistry } from '@/lib/worksheets/registry';
-import type { WorksheetConfig } from '@/lib/worksheets/types';
+import { FileSpreadsheet, Save } from 'lucide-react';
+import { getAllWorksheetConfigs } from '@/lib/worksheets';
+import type { WorksheetConfig } from '@/lib/worksheets/core/types';
 import { TMD_PORTAL_API_KEY } from '@/utils/constants/appInfo';
+import { z } from 'zod';
 
 export default function WorksheetView() {
-  const worksheets: WorksheetConfig[] = Object.values(worksheetRegistry);
+  const worksheets: WorksheetConfig[] = getAllWorksheetConfigs();
   const [selectedWorksheetId, setSelectedWorksheetId] = useState<string | null>(worksheets[0]?.id || null);
   const gridRef = useRef<AgGridReact>(null);
   
@@ -38,6 +38,8 @@ export default function WorksheetView() {
   const {
     data: rows,
     loading,
+    error: rowsError,
+    dbUnavailable,
     fetchRows,
     addRow,
     updateRow,
@@ -64,6 +66,16 @@ export default function WorksheetView() {
   }, [selectedWorksheetId, fetchRows]); // purposely excluding store.setServerUIState to avoid loops
 
   const selectedWorksheet = worksheets.find((f) => f.id === selectedWorksheetId);
+
+  useEffect(() => {
+    if (!worksheets.length) {
+      setSelectedWorksheetId(null);
+      return;
+    }
+    if (!selectedWorksheetId || !worksheets.some((w) => w.id === selectedWorksheetId)) {
+      setSelectedWorksheetId(worksheets[0].id);
+    }
+  }, [selectedWorksheetId, worksheets]);
   const hiddenRowsCount =
     selectedWorksheetId && store.uiStateByWorksheet[selectedWorksheetId]?.hiddenRows
       ? store.uiStateByWorksheet[selectedWorksheetId]!.hiddenRows!.length
@@ -130,15 +142,50 @@ export default function WorksheetView() {
     !!sidebarSelection ||
     (!!sidebarRange && sidebarRange.rowIds.length > 0);
 
+  const buildDraftPayloadFromSchema = useCallback((worksheet: WorksheetConfig): Record<string, unknown> => {
+    const payload: Record<string, unknown> = {};
+    const shape = ((worksheet.rowSchema as unknown as { shape?: Record<string, z.ZodTypeAny> }).shape) ?? {};
+
+    const candidatesFor = (field: string) => [
+      `new ${field}`,
+      `new-${Date.now()}@example.com`,
+      '',
+      0,
+      false,
+      new Date().toISOString(),
+      [],
+      {},
+      null,
+    ];
+
+    Object.entries(shape).forEach(([field, schema]) => {
+      const acceptsUndefined = schema.safeParse(undefined).success;
+      if (acceptsUndefined) return;
+      for (const candidate of candidatesFor(field)) {
+        if (schema.safeParse(candidate).success) {
+          payload[field] = candidate;
+          return;
+        }
+      }
+    });
+
+    return payload;
+  }, []);
+
   const handleAddRow = useCallback(async () => {
-    if (!selectedWorksheetId) return;
+    if (!selectedWorksheetId || !selectedWorksheet) return;
     setAddingRow(true);
     try {
-      await addRow(selectedWorksheetId, {});
+      const draftPayload = buildDraftPayloadFromSchema(selectedWorksheet);
+      await addRow(selectedWorksheetId, draftPayload);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Failed to add row';
+      console.error('Add row failed', e);
+      alert(msg);
     } finally {
       setAddingRow(false);
     }
-  }, [selectedWorksheetId, addRow]);
+  }, [selectedWorksheetId, selectedWorksheet, addRow, buildDraftPayloadFromSchema]);
 
   const handleSaveState = useCallback(async () => {
     if (!selectedWorksheetId) return;
@@ -177,7 +224,7 @@ export default function WorksheetView() {
                 <>
                   <button 
                     onClick={handleAddRow}
-                    disabled={addingRow}
+                    disabled={addingRow || dbUnavailable}
                     className="px-3 py-1 border border-transparent hover:border-black text-xs font-medium uppercase transition-colors disabled:opacity-50"
                   >
                     {addingRow ? 'Adding...' : 'Add Row'}
@@ -230,6 +277,11 @@ export default function WorksheetView() {
 
       {/* Main Content */}
       <main className="flex flex-1 overflow-hidden min-h-0 bg-gray-100">
+        {rowsError && (
+          <div className="mx-4 mt-3 rounded border border-red-700 bg-red-50 px-3 py-2 text-xs text-red-900">
+            {rowsError}
+          </div>
+        )}
         {!selectedWorksheet ? (
           <div className="flex-1 flex flex-col items-center justify-center bg-white m-4 border border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
             <FileSpreadsheet className="h-12 w-12 text-black mb-4" strokeWidth={1} />
@@ -255,7 +307,7 @@ export default function WorksheetView() {
                       rowNode.updateData({ ...rowNode.data, ...payload });
                     }
                   }
-                  return updateRow(id, payload);
+                  return selectedWorksheetId ? updateRow(id, payload, selectedWorksheetId) : Promise.resolve();
                 }}
               />
             </div>
@@ -270,7 +322,7 @@ export default function WorksheetView() {
                   selectedRowIds={uniqueRowIds}
                   allRowIds={rows.map((r) => r.id)}
                   onDeleteRows={async (ids) => {
-                    await deleteRows(ids);
+                    if (selectedWorksheetId) await deleteRows(ids, selectedWorksheetId);
                     clearSelection();
                   }}
                   onCellValueChange={(rowId, field, value) => {
@@ -282,7 +334,7 @@ export default function WorksheetView() {
                       }
                       api.refreshCells({ force: true });
                     }
-                    return updateRow(rowId, { [field]: value });
+                    return selectedWorksheetId ? updateRow(rowId, { [field]: value }, selectedWorksheetId) : Promise.resolve();
                   }}
                   onBulkValueChange={(updates) => {
                     if (gridRef.current?.api) {
@@ -317,7 +369,7 @@ export default function WorksheetView() {
                   }}
                   onRunActions={async (field, actionId, rowIds) => {
                     if (!selectedWorksheet) return;
-                    const col = selectedWorksheet.columns.find(
+                    const col = (selectedWorksheet.columns ?? []).find(
                       (c) => c.field === field && c.type === 'actions',
                     ) as any;
                     if (!col || !col.actions) return;
@@ -335,7 +387,23 @@ export default function WorksheetView() {
                           updatedAt: r.updatedAt,
                           ...(r.rawPayload || {}),
                         };
-                        await actionDef.action(payload);
+                        const result = await actionDef.action(payload, {
+                          worksheetId: selectedWorksheet.id,
+                          selection: { rowIds },
+                        });
+                        if (
+                          result &&
+                          typeof result === 'object' &&
+                          (result as any).type === 'patchRow' &&
+                          (result as any).patch &&
+                          selectedWorksheetId
+                        ) {
+                          await updateRow(
+                            r.id,
+                            (result as { patch: Record<string, unknown> }).patch,
+                            selectedWorksheetId,
+                          );
+                        }
                       } catch (err) {
                         console.error('Action failed', err);
                         alert(
