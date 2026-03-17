@@ -1,5 +1,5 @@
-import { prisma } from '@/prisma/prisma';
 import { NextRequest, NextResponse } from 'next/server';
+import { getUiState, setUiState } from '@/lib/worksheets/core/db/ui-state-repository';
 
 export async function GET(
   request: NextRequest,
@@ -7,13 +7,11 @@ export async function GET(
 ) {
   try {
     const { worksheetId } = await params;
-    const worksheet = await prisma.worksheet.findUnique({
-      where: { id: worksheetId },
-    });
+    const uiState = await getUiState(worksheetId);
 
     return NextResponse.json({
       status: 'success',
-      data: worksheet?.uiState || null,
+      data: uiState || null,
     });
   } catch (e) {
     console.error('Get UI state error:', e);
@@ -31,16 +29,11 @@ export async function PATCH(
   try {
     const { worksheetId } = await params;
     const body = await request.json() as { uiState: Record<string, unknown> };
-
-    const worksheet = await prisma.worksheet.upsert({
-      where: { id: worksheetId },
-      update: { uiState: body.uiState as any },
-      create: { id: worksheetId, uiState: body.uiState as any },
-    });
+    const uiState = await setUiState(worksheetId, body.uiState);
 
     return NextResponse.json({
       status: 'success',
-      data: worksheet.uiState,
+      data: uiState,
     });
   } catch (e) {
     console.error('Update UI state error:', e);
