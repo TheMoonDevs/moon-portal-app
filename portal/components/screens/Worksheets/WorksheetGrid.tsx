@@ -3,9 +3,11 @@
 import { useMemo, useRef, useCallback, useState, useEffect } from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import { AllCommunityModule, ModuleRegistry, ColDef, CellClickedEvent, GridReadyEvent, CellValueChangedEvent } from 'ag-grid-community';
-import type { WorksheetConfig, ColumnConfig } from '@/lib/worksheets/types';
+import type { WorksheetConfig, ColumnConfig } from '@/lib/worksheets/core/types';
 import type { WorksheetRowData } from './useWorksheetRows';
 import { useWorksheetStore } from './useWorksheetStore';
+import { z } from 'zod';
+import type { WorksheetFieldMeta } from '@/lib/worksheets/core/db/zod-meta';
 
 // Register AG Grid Community modules
 ModuleRegistry.registerModules([AllCommunityModule]);
@@ -60,24 +62,74 @@ export function WorksheetGrid({
   const selectionRef = useRef(selection);
   selectionRef.current = selection;
   const [anchorCell, setAnchorCell] = useState<{ rowIndex: number, colId: string, rowId: string, field: string } | null>(null);
+  const [asyncSelectOptionsByField, setAsyncSelectOptionsByField] = useState<
+    Record<string, { label: string; value: string | number }[]>
+  >({});
+
+  useEffect(() => {
+    const asyncCols = (worksheetConfig.columns ?? []).filter(
+      (c) => c.type === 'asyncSelect',
+    );
+    if (!asyncCols.length) {
+      setAsyncSelectOptionsByField({});
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      const entries = await Promise.all(
+        asyncCols.map(async (col) => {
+          try {
+            const url = new URL('/api/worksheets/options', window.location.origin);
+            url.searchParams.set('worksheetId', worksheetConfig.id);
+            url.searchParams.set('field', col.field);
+            url.searchParams.set('query', '');
+            const res = await fetch(url.toString());
+            if (!res.ok) return [col.field, []] as const;
+            const data = (await res.json()) as {
+              options?: { label: string; value: string | number }[];
+            };
+            return [col.field, data.options ?? []] as const;
+          } catch {
+            return [col.field, []] as const;
+          }
+        }),
+      );
+      if (cancelled) return;
+      setAsyncSelectOptionsByField(Object.fromEntries(entries));
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [worksheetConfig.id, worksheetConfig.columns]);
 
   const columnConfigToAgGrid = useCallback((col: ColumnConfig): ColDef => {
     const hiddenCols = uiState.hiddenCols || [];
-    const isPinned = uiState.pinnedCols.includes(col.field) ? 'left' : undefined;
+    const zodSchema = 'zodSchema' in col ? (col as { zodSchema?: z.ZodTypeAny }).zodSchema : undefined;
+    const meta = (zodSchema as unknown as { meta?: () => unknown } | undefined)?.meta?.() as
+      | WorksheetFieldMeta
+      | undefined;
+    const uiMeta = meta?.ui;
+
+    const defaultPinned = uiMeta?.pinned;
+    const isPinned = uiState.pinnedCols.includes(col.field)
+      ? 'left'
+      : defaultPinned;
     const customWidth = uiState.columnWidths[col.field];
 
     const baseColDef: ColDef = {
       field: col.field,
       headerName: col.label,
-      width: customWidth ?? col.width ?? 150,
-      minWidth: col.minWidth,
-      maxWidth: col.maxWidth,
+      width: customWidth ?? col.width ?? uiMeta?.width ?? 150,
       pinned: isPinned,
-      hide: col.hidden || hiddenCols.includes(col.field),
+      hide: !!col.hidden || !!uiMeta?.hidden || hiddenCols.includes(col.field),
       editable: col.type !== 'computed' && col.type !== 'actions', // Inline editing enabled
       sortable: col.type !== 'actions',
       filter: col.type !== 'actions',
-      headerClass: col.align ? `ag-${col.align}-aligned-header text-${col.align}` : undefined,
+      headerClass: (col.align ?? uiMeta?.align)
+        ? `ag-${col.align ?? uiMeta?.align}-aligned-header text-${col.align ?? uiMeta?.align}`
+        : undefined,
       cellClassRules: {
         'bg-blue-100/30 outline outline-1 outline-blue-500/50 z-10 relative': (params) => {
           const rowId = params.data?.id;
@@ -105,8 +157,8 @@ export function WorksheetGrid({
               );
 
         let style: any = {};
-        if (col.align) {
-          style.textAlign = col.align;
+        if (col.align ?? uiMeta?.align) {
+          style.textAlign = col.align ?? uiMeta?.align;
         }
 
         if (isSelected) {
@@ -153,7 +205,7 @@ export function WorksheetGrid({
       baseColDef.cellEditor = 'agDateCellEditor';
     } else if (col.type === 'enum') {
       baseColDef.cellEditor = 'agSelectCellEditor';
-      const options = (col as import('@/lib/worksheets/types').EnumColumnConfig).options;
+      const options = (col as import('@/lib/worksheets/core/types').EnumColumnConfig).options;
       if (options) {
         baseColDef.cellEditorParams = {
           values: options.map((o: any) => typeof o === 'object' ? o.value : o),
@@ -161,13 +213,39 @@ export function WorksheetGrid({
       }
     } else if (col.type === 'text' || col.type === 'email') {
       baseColDef.cellEditor = 'agTextCellEditor';
+    } else if (col.type === 'asyncSelect') {
+      baseColDef.cellEditor = 'agSelectCellEditor';
+      const options = asyncSelectOptionsByField[col.field] ?? [];
+      baseColDef.cellEditorParams = {
+        values: options.map((o) => String(o.value)),
+      };
+      baseColDef.valueFormatter = (p) => {
+        const value = p.value == null ? '' : String(p.value);
+        const match = options.find((o) => String(o.value) === value);
+        return match?.label ?? value;
+      };
     }
 
     if (col.type === 'computed') {
       baseColDef.valueGetter = (params) => {
         if (!params.data) return undefined;
         try {
-          return (col as import('@/lib/worksheets/types').ComputedColumnConfig).valueGetter(params.data);
+          const rowIndex = typeof params.node?.rowIndex === 'number' ? params.node.rowIndex : -1;
+          const allRows: Record<string, unknown>[] = [];
+          const rowCount = params.api.getDisplayedRowCount();
+          for (let i = 0; i < rowCount; i += 1) {
+            const node = params.api.getDisplayedRowAtIndex(i);
+            if (node?.data) allRows.push(node.data as Record<string, unknown>);
+          }
+          return (col as import('@/lib/worksheets/core/types').ComputedColumnConfig).valueGetter(
+            params.data,
+            {
+              window: {
+                allRows,
+                rowIndex: Math.max(0, rowIndex),
+              },
+            },
+          );
         } catch (e) {
           console.error('Computed column error', e);
           return null;
@@ -181,7 +259,7 @@ export function WorksheetGrid({
         if (!params.data) return null;
         return (
           <div className="flex items-center h-full gap-2 px-1">
-            {(col as import('@/lib/worksheets/types').ActionsColumnConfig).actions.map(
+            {(col as import('@/lib/worksheets/core/types').ActionsColumnConfig).actions.map(
               (actionDef) => (
                 <button
                   key={actionDef.id}
@@ -219,7 +297,7 @@ export function WorksheetGrid({
     if (col.valueFormatter) {
       baseColDef.valueFormatter = (p) => col.valueFormatter!(p.value);
     } else if (col.type === 'number') {
-      const numCol = col as import('@/lib/worksheets/types').NumberColumnConfig;
+      const numCol = col as import('@/lib/worksheets/core/types').NumberColumnConfig;
       if (numCol.numberFormat) {
         baseColDef.valueFormatter = (p) => {
           if (p.value == null || p.value === '') return '';
@@ -242,7 +320,7 @@ export function WorksheetGrid({
         };
       }
     } else if (col.type === 'date') {
-      const dateCol = col as import('@/lib/worksheets/types').DateColumnConfig;
+      const dateCol = col as import('@/lib/worksheets/core/types').DateColumnConfig;
       if (dateCol.dateFormat) {
         baseColDef.valueFormatter = (p) => {
           if (!p.value) return '';
@@ -261,28 +339,11 @@ export function WorksheetGrid({
     }
 
     return baseColDef;
-  }, [uiState]);
+  }, [uiState, asyncSelectOptionsByField]);
 
   const columnDefs = useMemo<ColDef[]>(() => {
     const pinnedCols = uiState.pinnedCols || [];
     const hiddenCols = uiState.hiddenCols || [];
-
-    const serialCol: ColDef | null = worksheetConfig.serialColumn
-      ? {
-          field: '__srno__',
-          headerName: worksheetConfig.serialColumn.label ?? 'Sr. No',
-          width: worksheetConfig.serialColumn.width ?? 70,
-          pinned: pinnedCols.includes('__srno__') ? 'left' : undefined,
-          hide: hiddenCols.includes('__srno__'),
-          editable: false,
-          sortable: false,
-          filter: false,
-          valueGetter: (params) =>
-            typeof params.node?.rowIndex === 'number'
-              ? params.node.rowIndex + 1
-              : '',
-        }
-      : null;
 
     const idCol: ColDef | null =
       worksheetConfig.idColumn !== false
@@ -344,11 +405,10 @@ export function WorksheetGrid({
           }
         : null;
 
-    const dataCols = worksheetConfig.columns.map(columnConfigToAgGrid);
+    const dataCols = (worksheetConfig.columns ?? []).map(columnConfigToAgGrid);
     const cols: ColDef[] = [];
-    if (serialCol) cols.push(serialCol);
-    if (idCol) cols.push(idCol);
     cols.push(...dataCols);
+    if (idCol) cols.push(idCol);
     if (createdAtCol) cols.push(createdAtCol);
     if (updatedAtCol) cols.push(updatedAtCol);
     return cols;
