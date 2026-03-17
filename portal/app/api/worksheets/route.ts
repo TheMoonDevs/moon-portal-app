@@ -1,25 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { worksheetRegistry } from '@/lib/worksheets/registry';
+import { getAllWorksheetConfigs } from '@/lib/worksheets';
+import type { WorksheetConfig, ColumnConfig } from '@/lib/worksheets/core/types';
 
 export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url);
     const slug = url.searchParams.get('slug') ?? undefined;
 
-    let worksheets = Object.values(worksheetRegistry);
+    let worksheets: WorksheetConfig[] = getAllWorksheetConfigs();
 
     if (slug) {
-      worksheets = worksheets.filter(f => f.slug === slug);
+      worksheets = worksheets.filter((f) => f.slug === slug);
     }
 
     // Strip out functions (valueGetter, action, getOptions, zodSchema) for safe JSON serialization
-    const safeWorksheets = worksheets.map(f => {
-      const safeColumns = f.columns.map(col => {
+    const safeWorksheets = worksheets.map((f) => {
+      const safeColumns = (f.columns ?? []).map((col: ColumnConfig) => {
         const { zodSchema, ...rest } = col as any;
         if (rest.type === 'computed') {
           delete rest.valueGetter;
         } else if (rest.type === 'actions') {
-          rest.actions = rest.actions?.map((a: any) => ({
+          rest.actions = (rest.actions ?? []).map((a: any) => ({
             id: a.id,
             label: a.label,
             variant: a.variant,
@@ -35,7 +36,6 @@ export async function GET(request: NextRequest) {
         id: f.id,
         name: f.name,
         slug: f.slug,
-        indexKey: f.indexKey,
         columnDefinitions: safeColumns,
         // userFunctions stripped for now, we only use 'actions' on columns
       };
