@@ -1,17 +1,46 @@
-import { WorksheetConfig } from "./types";
-import { leadGenerationWorksheet } from "./lead-generation-worksheet";
-import { globalCrmWorksheet } from "./global-crm-worksheet";
-import { contactFormWorksheet } from "./contact-form-worksheet";
+import contactFormWorksheet from "@/lib/worksheets/contact-form";
+import globalCrmWorksheet from "@/lib/worksheets/global-crm";
+import leadGenerationWorksheet from "@/lib/worksheets/lead-generation";
+import { globalActions } from "@/lib/worksheets/global/actions";
+import { globalComputes } from "@/lib/worksheets/global/compute";
+import { globalOptionsByType } from "@/lib/worksheets/global/options";
+import {
+  contactFormActions,
+  contactFormComputes,
+  contactFormOptions,
+} from "@/lib/worksheets/contact-form/functions";
+import {
+  globalCrmActions,
+  globalCrmComputes,
+  globalCrmOptions,
+} from "@/lib/worksheets/global-crm/functions";
+import {
+  leadGenerationActions,
+  leadGenerationComputes,
+  leadGenerationOptions,
+} from "@/lib/worksheets/lead-generation/functions";
 
-export const worksheetRegistry: Record<string, WorksheetConfig> = {
-  [contactFormWorksheet.id]: contactFormWorksheet,
-  [leadGenerationWorksheet.id]: leadGenerationWorksheet,
-  [globalCrmWorksheet.id]: globalCrmWorksheet,
-};
+export const worksheets = {
+  contactForm: contactFormWorksheet,
+  leadGeneration: leadGenerationWorksheet,
+  globalCrm: globalCrmWorksheet,
+} as const;
 
-export function getWorksheetConfig(idOrSlug: string): WorksheetConfig | undefined {
-  const byId = worksheetRegistry[idOrSlug];
-  if (byId) return byId;
+export type ActionKey =
+  | keyof typeof globalActions
+  | keyof typeof contactFormActions
+  | keyof typeof globalCrmActions
+  | keyof typeof leadGenerationActions;
 
-  return Object.values(worksheetRegistry).find((f) => f.slug === idOrSlug);
-}
+export type ComputeKey =
+  | keyof typeof globalComputes
+  | keyof typeof contactFormComputes
+  | keyof typeof globalCrmComputes
+  | keyof typeof leadGenerationComputes;
+
+export type OptionsFnKey =
+  | keyof typeof contactFormOptions
+  | keyof typeof globalCrmOptions
+  | keyof typeof leadGenerationOptions;
+
+export type OptionsTypeKey = keyof typeof globalOptionsByType;
