@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { z } from 'zod';
 import { useWorksheetStore } from './useWorksheetStore';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,7 @@ import {
   PinOff,
 } from 'lucide-react';
 import { ColorPicker } from '@/components/ui/color-picker';
+import { TMD_PORTAL_API_KEY } from '@/utils/constants/appInfo';
 import {
   Select as SelectUI,
   SelectContent,
@@ -27,9 +28,9 @@ import {
 import type {
   WorksheetConfig,
   ColumnConfig,
-  AsyncSelectColumnConfig,
   ComputedColumnConfig,
-} from '@/lib/worksheets/types';
+} from '@/lib/worksheets/core/types';
+import type { WorksheetFieldMeta } from '@/lib/worksheets/core/db/zod-meta';
 
 interface WorksheetSidebarProps {
   worksheetConfig: WorksheetConfig;
@@ -108,16 +109,24 @@ export function WorksheetSidebar({
     (selectedRange && selectedRange.rowIds.length > 0) ||
     (selection.selectedCells && selection.selectedCells.length > 1);
 
-  const selectedCells =
+  const selectedCells: { rowId: string; field: string }[] =
     selection.selectedCells || (selectedCell ? [selectedCell] : []);
 
   const uniqueFields = Array.from(new Set(selectedCells.map((c) => c.field)));
 
   const columns = uniqueFields
-    .map((f) => worksheetConfig.columns.find((c) => c.field === f))
+    .map((f) => (worksheetConfig.columns ?? []).find((c) => c.field === f))
     .filter(Boolean) as ColumnConfig[];
 
   const column = columns.length === 1 ? columns[0] : null;
+
+  const getColumnMeta = useCallback((col?: ColumnConfig | null): WorksheetFieldMeta | undefined => {
+    if (!col || !('zodSchema' in col)) return undefined;
+    const zodSchema = (col as { zodSchema?: z.ZodTypeAny }).zodSchema;
+    return (zodSchema as unknown as { meta?: () => unknown } | undefined)?.meta?.() as
+      | WorksheetFieldMeta
+      | undefined;
+  }, []);
 
   const isComputedOnly =
     columns.length > 0 && columns.every((c) => c.type === 'computed');
@@ -135,14 +144,18 @@ export function WorksheetSidebar({
     const result = schema.safeParse(rowData[column.field]);
     if (result.success) return { error: null, hasSchema: true };
     const err = result.error;
-    const messages = err.errors?.length
-      ? err.errors.map((e) => e.message).filter(Boolean)
+    const messages = err.issues?.length
+      ? err.issues.map((e: { message: string }) => e.message).filter(Boolean)
       : [err.message || 'Validation failed'];
     return { error: messages.join(' • '), hasSchema: true };
   }, [column, rowData]);
 
-  const validationHint =
-    (column && 'validationHint' in column && (column as { validationHint?: string }).validationHint) || null;
+  const columnMeta = useMemo(
+    () => getColumnMeta(column),
+    [column, getColumnMeta],
+  );
+
+  const validationHint: string | null = columnMeta?.ui?.validationHint ?? null;
 
   const computedCellValue = useMemo(() => {
     if (column?.type !== 'computed' || !fullRowData) return undefined;
@@ -168,7 +181,7 @@ export function WorksheetSidebar({
   }, [rawVal, column]);
 
   const [editValue, setEditValue] = useState<string>('');
-
+  
   const selectionKey = selectedCells
     .map((c) => `${c.rowId}-${c.field}`)
     .join('|');
@@ -187,8 +200,17 @@ export function WorksheetSidebar({
       const fetchOpts = async () => {
         setAsyncLoading(true);
         try {
-          const opts = await (column as AsyncSelectColumnConfig).getOptions('');
-          setAsyncOptions(opts || []);
+          const res = await fetch(
+            `/api/worksheets/options?worksheetId=${encodeURIComponent(
+              worksheetConfig.id,
+            )}&field=${encodeURIComponent(column.field)}&query=`,
+            {
+              headers: { tmd_portal_api_key: TMD_PORTAL_API_KEY },
+            },
+          );
+          const json = await res.json();
+          if (!res.ok) throw new Error(json?.error || 'Failed to fetch options');
+          setAsyncOptions((json?.options ?? []) as { label: string; value: string | number }[]);
         } catch (e) {
           console.error('Failed to fetch async options', e);
           setAsyncOptions([]);
@@ -205,7 +227,7 @@ export function WorksheetSidebar({
   const handleSaveEdit = async () => {
     if (isMulti && onBulkValueChange && selectedCells.length > 0) {
       const updates = selectedCells.map((c) => {
-        const colDef = worksheetConfig.columns.find(
+        const colDef = (worksheetConfig.columns ?? []).find(
           (col) => col.field === c.field,
         );
         let finalValue: any = editValue;
@@ -240,14 +262,24 @@ export function WorksheetSidebar({
 
   const [activeTab, setActiveTab] = useState<'record' | 'columns'>('record');
 
-  const allColumnsForTab: { field: string; label: string }[] = useMemo(() => {
-    const cols: { field: string; label: string }[] = [];
-    if (worksheetConfig.serialColumn) {
+  const allColumnsForTab: {
+    field: string;
+    label: string;
+    googleForm?: { questionTitle: string; questionType?: string };
+  }[] = useMemo(() => {
+    const cols: {
+      field: string;
+      label: string;
+      googleForm?: { questionTitle: string; questionType?: string };
+    }[] = [];
+    (worksheetConfig.columns ?? []).forEach((c) => {
+      const meta = getColumnMeta(c);
       cols.push({
-        field: '__srno__',
-        label: worksheetConfig.serialColumn.label ?? 'Sr. No',
+        field: c.field,
+        label: c.label,
+        googleForm: meta?.googleForm,
       });
-    }
+    });
     if (worksheetConfig.idColumn !== false) {
       cols.push({
         field: 'id',
@@ -257,9 +289,6 @@ export function WorksheetSidebar({
             : 'ID',
       });
     }
-    worksheetConfig.columns.forEach((c) =>
-      cols.push({ field: c.field, label: c.label }),
-    );
     if (worksheetConfig.createdAtColumn !== false) {
       cols.push({
         field: 'createdAt',
@@ -279,13 +308,13 @@ export function WorksheetSidebar({
       });
     }
     return cols;
-  }, [worksheetConfig]);
+  }, [worksheetConfig, getColumnMeta]);
 
   return (
     <div className="flex h-full w-full flex-col bg-white font-sans text-black">
       {/* Tabs header */}
       <div className="flex border-b border-black">
-        <button
+        <button 
           className={`flex-1 border-r border-black py-2 text-xs font-bold uppercase tracking-widest last:border-r-0 ${
             activeTab === 'record'
               ? 'bg-black text-white'
@@ -295,7 +324,7 @@ export function WorksheetSidebar({
         >
           Record
         </button>
-        <button
+        <button 
           className={`flex-1 py-2 text-xs font-bold uppercase tracking-widest ${
             activeTab === 'columns'
               ? 'bg-black text-white'
@@ -321,51 +350,61 @@ export function WorksheetSidebar({
                   return (
                     <div
                       key={col.field}
-                      className="flex items-center justify-between gap-2 text-xs"
+                      className="flex flex-col gap-0.5 text-xs"
                     >
-                      <span className="truncate font-medium">{col.label}</span>
-                      <div className="flex gap-1">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 w-16 rounded-none px-1 text-[10px]"
-                          onClick={() =>
-                            store.toggleHiddenCol(worksheetConfig.id, col.field)
-                          }
-                        >
-                          {isHidden ? (
-                            <>
-                              <EyeOff className="mr-1 h-3 w-3" />
-                              Show
-                            </>
-                          ) : (
-                            <>
-                              <Eye className="mr-1 h-3 w-3" />
-                              Hide
-                            </>
-                          )}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 w-20 rounded-none px-1 text-[10px]"
-                          onClick={() =>
-                            store.togglePinnedCol(worksheetConfig.id, col.field)
-                          }
-                        >
-                          {isPinned ? (
-                            <>
-                              <PinOff className="mr-1 h-3 w-3" />
-                              Unpin
-                            </>
-                          ) : (
-                            <>
-                              <Pin className="mr-1 h-3 w-3" />
-                              Pin
-                            </>
-                          )}
-                        </Button>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate font-medium">{col.label}</span>
+                        <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 w-16 rounded-none px-1 text-[10px]"
+                            onClick={() =>
+                              store.toggleHiddenCol(worksheetConfig.id, col.field)
+                            }
+                          >
+                            {isHidden ? (
+                              <>
+                                <EyeOff className="mr-1 h-3 w-3" />
+                                Show
+                              </>
+                            ) : (
+                              <>
+                                <Eye className="mr-1 h-3 w-3" />
+                                Hide
+                              </>
+                            )}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 w-20 rounded-none px-1 text-[10px]"
+                            onClick={() =>
+                              store.togglePinnedCol(worksheetConfig.id, col.field)
+                            }
+                          >
+                            {isPinned ? (
+                              <>
+                                <PinOff className="mr-1 h-3 w-3" />
+                                Unpin
+                              </>
+                            ) : (
+                              <>
+                                <Pin className="mr-1 h-3 w-3" />
+                                Pin
+                              </>
+                            )}
+                          </Button>
+                        </div>
                       </div>
+                      {col.googleForm && (
+                        <p className="text-[10px] text-blue-700">
+                          Form: {col.googleForm.questionTitle}
+                          {col.googleForm.questionType
+                            ? ` (${col.googleForm.questionType})`
+                            : ''}
+                        </p>
+                      )}
                     </div>
                   );
                 })}
@@ -418,6 +457,24 @@ export function WorksheetSidebar({
                           {column.type}
                         </span>
                       </div>
+                      
+                      {columnMeta?.googleForm && (
+                        <div className="rounded border border-black bg-blue-50/80 p-2">
+                          <Label className="mb-1 block text-xs font-bold uppercase text-blue-900">
+                            Google Form mapping
+                          </Label>
+                          <div className="flex flex-col gap-1 text-xs text-blue-900">
+                            <span>
+                              <span className="font-medium">Question:</span>{' '}
+                              {columnMeta.googleForm.questionTitle}
+                            </span>
+                            <span>
+                              <span className="font-medium">Type:</span>{' '}
+                              {columnMeta.googleForm.questionType ?? '—'}
+                            </span>
+                          </div>
+                        </div>
+                      )}
 
                       {validationResult.hasSchema && selectedCell && (
                         <div className="mt-4 space-y-2">
@@ -1099,7 +1156,7 @@ export function WorksheetSidebar({
                           </Button>
                         </div>
                       )}
-
+                      
                       {isMulti && (
                         <div className="mt-4 border-t border-black pt-4 text-center text-xs font-bold uppercase tracking-widest">
                           Multiple cells selected
@@ -1169,10 +1226,10 @@ export function WorksheetSidebar({
                             ? 'Unhide Rows'
                             : 'Hide Rows'}
                         </Button>
-                      </div>
-                    </div>
-                  </div>
-                )}
+              </div>
+            </div>
+          </div>
+        )}
               </div>
             )}
           </div>
