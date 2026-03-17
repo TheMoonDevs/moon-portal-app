@@ -19,7 +19,13 @@ export async function POST(request: NextRequest) {
     }
 
     await sendEmailAction(row as Record<string, unknown>);
-    return NextResponse.json({ status: 'success' });
+    const now = new Date().toISOString();
+    return NextResponse.json({
+      status: 'success',
+      patch: {
+        last_email_sent_at: now,
+      },
+    });
   } catch (e) {
     console.error('Send email action error:', e);
     return NextResponse.json(
