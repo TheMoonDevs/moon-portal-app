@@ -1,12 +1,13 @@
-import { prisma } from "@/prisma/prisma";
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
+
+import { db } from '@/lib/mongodb/db-client';
 
 export async function GET(request: Request) {
   try {
-    const jobPost = await prisma.jobPost.findMany({});
+    const jobPost = await db.jobPost.findMany({});
 
-    let json_response = {
-      status: "success",
+    const json_response = {
+      status: 'success',
       data: {
         jobPost,
       },
@@ -16,7 +17,7 @@ export async function GET(request: Request) {
   } catch (e) {
     return new NextResponse(JSON.stringify(e), {
       status: 404,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }
