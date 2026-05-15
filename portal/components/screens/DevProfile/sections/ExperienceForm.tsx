@@ -1,17 +1,19 @@
 'use client';
-import Input from '@/components/elements/Input';
-import Textarea from '@/components/elements/Textarea';
+import type { WORKEXPERIENCE } from '@db/client';
+import { Autocomplete, TextField } from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers';
+import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
-import { DatePicker } from '@mui/x-date-pickers';
-import Label from '@/components/elements/Label';
-import { Autocomplete, TextField, SelectChangeEvent } from '@mui/material';
-import { PortalSdk } from '@/utils/services/PortalSdk';
-import dayjs from 'dayjs';
 import { toast } from 'sonner';
-import { WORKEXPERIENCE } from '@prisma/client';
-import ExperienceCard from './ExperienceCard';
+
+import Input from '@/components/elements/Input';
+import Label from '@/components/elements/Label';
+import Textarea from '@/components/elements/Textarea';
+import { PortalSdk } from '@/utils/services/PortalSdk';
+
 import { formatDate } from '.';
+import ExperienceCard from './ExperienceCard';
 
 const defaultFields = {
   startDate: null as dayjs.Dayjs | null,
@@ -129,7 +131,7 @@ const ExperienceForm = () => {
 
   return (
     <div
-      className={`flex h-full w-full ${workExperienceValues.length === 0 ? 'items-center' : 'items-start'} gap-4 max-sm:flex-col`}
+      className={`flex size-full ${workExperienceValues.length === 0 ? 'items-center' : 'items-start'} gap-4 max-sm:flex-col`}
     >
       <div className="flex w-1/2 flex-col gap-2 max-sm:w-full">
         <Input
