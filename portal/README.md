@@ -10,15 +10,35 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## DB & prisma
+## Database Setup
 
 Required  `node v18.x.x`
 
 1. `npm i`
 2. `npm run dev`
-3. `npx prisma generate`
-4. `npx prisma db push`
-5. `npx prisma studio` - optional to edit db
+
+## DB Schema DX Workflow
+
+The DB contract is now split so schema/type changes are easy to find:
+
+- `models/<domain>.ts`: model types + Zod CRUD schemas (`entity`, `create`, `update`)
+- `lib/mongodb/registry.ts`: Mongo model registry (`collection`, `idField`, `objectIdFields`, `relations`)
+- `types/db-client/index.ts`: public barrel used by `@db/client`
+- `lib/mongodb/validation.ts`: write-path helpers (`parseCreateInput`, `parseUpdateInput`)
+
+### Add a new model
+
+1. Add the model type and `createCrudSchemas<YourModel>()` in the relevant `models/<domain>.ts` file.
+2. Register the model in `lib/mongodb/registry.ts`.
+3. Re-export from `types/db-client/index.ts` (usually automatic through `models/index.ts` exports).
+4. Use `parseCreateInput` / `parseUpdateInput` in write routes before calling `db.<model>.create/update`.
+
+### Change an existing model
+
+1. Update the model shape in `models/<domain>.ts`.
+2. If Mongo relation/object-id behavior changed, update `lib/mongodb/registry.ts`.
+3. Update any route/service write parsing through `lib/mongodb/validation.ts`.
+4. Run `npm run check-types` and `npm run lint`.
 
 # Tools, Deps & Links
 
