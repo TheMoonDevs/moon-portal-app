@@ -1,4 +1,4 @@
-import { FileUpload } from "@prisma/client";
+import { FileUpload } from "@db/client";
 import { createSlice } from "@reduxjs/toolkit";
 
 export interface FileAdminWithPath extends File {
