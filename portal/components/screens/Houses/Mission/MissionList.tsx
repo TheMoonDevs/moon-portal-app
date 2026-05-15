@@ -1,14 +1,17 @@
-import { RootState, useAppSelector } from "@/utils/redux/store";
-import { Mission } from "@prisma/client";
-import { HOUSES_LIST } from "../HousesList";
-import MissionListItem from "./MissionListItem";
-import { useState } from "react";
-import ExpandedMission from "./ExpandedMission";
+import type { Mission } from '@db/client';
+import { useState } from 'react';
+
+import type { RootState } from '@/utils/redux/store';
+import { useAppSelector } from '@/utils/redux/store';
+
+import { HOUSES_LIST } from '../HousesList';
+import ExpandedMission from './ExpandedMission';
+import MissionListItem from './MissionListItem';
 
 const MissionList = ({ currentHouseIndex }: { currentHouseIndex: number }) => {
   const { allMissions } = useAppSelector((state: RootState) => state.mission);
   const { allTasks } = useAppSelector(
-    (state: RootState) => state.missionsTasks
+    (state: RootState) => state.missionsTasks,
   );
   const [expanded, setExpanded] = useState<string | false>(false);
 
@@ -20,7 +23,7 @@ const MissionList = ({ currentHouseIndex }: { currentHouseIndex: number }) => {
     allMissions
       .filter(
         (mission: Mission) =>
-          HOUSES_LIST[currentHouseIndex]?.id == mission.house
+          HOUSES_LIST[currentHouseIndex]?.id == mission.house,
       )
       .map((mission, i) => {
         const missionTasks =
@@ -97,7 +100,7 @@ const MissionList = ({ currentHouseIndex }: { currentHouseIndex: number }) => {
         );
       })
   ) : (
-    <div className="text-gray-500 px-4 py-10 flex justify-center items-center">
+    <div className="flex items-center justify-center px-4 py-10 text-gray-500">
       No Missions Found
     </div>
   );

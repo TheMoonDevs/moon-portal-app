@@ -1,7 +1,5 @@
-import { HOUSEID, Mission } from "@prisma/client";
-import { initialMissionState } from "../state";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useUser } from "@/utils/hooks/useUser";
+import type { HOUSEID, Mission } from '@db/client';
+import type { MDXEditorMethods } from '@mdxeditor/editor';
 import {
   BoldItalicUnderlineToggles,
   CreateLink,
@@ -9,53 +7,58 @@ import {
   linkPlugin,
   listsPlugin,
   markdownShortcutPlugin,
-  MDXEditorMethods,
   quotePlugin,
   thematicBreakPlugin,
   toolbarPlugin,
-} from "@mdxeditor/editor";
-import { MARKDOWN_PLACEHOLDER } from "../../Worklogs/WorklogTabs/TodoTab";
-import { Button, Divider } from "@mui/material";
-import dayjs from "dayjs";
-import { MdxAppEditor } from "@/utils/configure/MdxAppEditor";
-import { Spinner } from "@/components/elements/Loaders";
-import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import { PortalSdk } from "@/utils/services/PortalSdk";
-import { toast } from "sonner";
-import {
-  clearEditorState,
-  setEditModalOpen,
-} from "@/utils/redux/missions/mission.ui.slice";
-import { PRIORITY, STATUSES } from "./mission.utils";
-import { HOUSES_LIST } from "../HousesList";
+} from '@mdxeditor/editor';
+import { Button, Divider } from '@mui/material';
+import dayjs from 'dayjs';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
+
+import { Spinner } from '@/components/elements/Loaders';
+import { MdxAppEditor } from '@/utils/configure/MdxAppEditor';
+import { useUser } from '@/utils/hooks/useUser';
 import {
   setAddMission,
   setDeleteMission,
   setUpdateMission,
-} from "@/utils/redux/missions/mission.slice";
+} from '@/utils/redux/missions/mission.slice';
+import {
+  clearEditorState,
+  setEditModalOpen,
+} from '@/utils/redux/missions/mission.ui.slice';
+import type { RootState } from '@/utils/redux/store';
+import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
+import { PortalSdk } from '@/utils/services/PortalSdk';
+
+import { MARKDOWN_PLACEHOLDER } from '../../Worklogs/WorklogTabs/TodoTab';
+import { HOUSES_LIST } from '../HousesList';
+import { initialMissionState } from '../state';
+import { PRIORITY, STATUSES } from './mission.utils';
 
 const housesList = [
-  { label: "Management", value: "MANAGEMENT" },
-  { label: "Growth", value: "GROWTH" },
-  { label: "Product Tech", value: "PRODUCT_TECH" },
-  { label: "Executive", value: "EXECUTIVE" },
+  { label: 'Management', value: 'MANAGEMENT' },
+  { label: 'Growth', value: 'GROWTH' },
+  { label: 'Product Tech', value: 'PRODUCT_TECH' },
+  { label: 'Executive', value: 'EXECUTIVE' },
 ];
 
 const MissionForm = ({ currentHouseIndex }: { currentHouseIndex: number }) => {
-  console.log("currentHouseIndex", currentHouseIndex);
+  console.log('currentHouseIndex', currentHouseIndex);
   const mdRef = useRef<MDXEditorMethods | null>(null);
   const { user } = useUser();
   const { isEditModalOpen } = useAppSelector(
-    (state: RootState) => state.missionUi
+    (state: RootState) => state.missionUi,
   );
   const { editingMission } = useAppSelector(
-    (state: RootState) => state.missionUi
+    (state: RootState) => state.missionUi,
   );
   const { activeTask } = useAppSelector(
-    (state: RootState) => state.missionsTasks
+    (state: RootState) => state.missionsTasks,
   );
   const [missionState, setMissionState] = useState<Partial<Mission>>(
-    editingMission || initialMissionState
+    editingMission || initialMissionState,
   );
 
   useEffect(() => {
@@ -75,7 +78,7 @@ const MissionForm = ({ currentHouseIndex }: { currentHouseIndex: number }) => {
     const missionData = {
       ...missionState,
       vertical: user?.vertical || null,
-      month: dayjs().format("YYYY-MM"),
+      month: dayjs().format('YYYY-MM'),
       completedAt:
         missionState.completedAt !== editingMission?.completedAt
           ? missionState.completedAt
@@ -94,11 +97,11 @@ const MissionForm = ({ currentHouseIndex }: { currentHouseIndex: number }) => {
       let res;
       if (missionState.id) {
         res = await PortalSdk.putData(`/api/missions`, missionData);
-        toast.success("Mission updated successfully!");
+        toast.success('Mission updated successfully!');
         dispatch(setUpdateMission(res.data.mission));
       } else {
-        res = await PortalSdk.postData("/api/missions", missionData);
-        toast.success("Mission created successfully!");
+        res = await PortalSdk.postData('/api/missions', missionData);
+        toast.success('Mission created successfully!');
         dispatch(setAddMission(res.data.mission));
       }
       setLoading(false);
@@ -106,9 +109,9 @@ const MissionForm = ({ currentHouseIndex }: { currentHouseIndex: number }) => {
       dispatch(clearEditorState());
       dispatch(setEditModalOpen(false));
     } catch (error) {
-      console.error("Error creating mission:", error);
+      console.error('Error creating mission:', error);
       setLoading(false);
-      toast.error("Failed to create mission");
+      toast.error('Failed to create mission');
       dispatch(setEditModalOpen(false));
       dispatch(clearEditorState());
     }
@@ -118,21 +121,21 @@ const MissionForm = ({ currentHouseIndex }: { currentHouseIndex: number }) => {
     try {
       const res = await PortalSdk.deleteData(
         `/api/missions?id=${missionState.id}`,
-        {}
+        {},
       );
       dispatch(setDeleteMission(res.data.mission));
-      toast.success("Mission deleted successfully");
+      toast.success('Mission deleted successfully');
       dispatch(clearEditorState());
       dispatch(setEditModalOpen(false));
     } catch (error) {
-      toast.error("Failed to delete mission");
+      toast.error('Failed to delete mission');
     }
   };
 
   return (
     <div>
       {/* HEADER */}
-      <div className="px-4 py-4 font-bold flex items-center justify-between">
+      <div className="flex items-center justify-between p-4 font-bold">
         <span className="text-sm">Missions</span>
         {missionState.id && (
           <Button
@@ -145,7 +148,7 @@ const MissionForm = ({ currentHouseIndex }: { currentHouseIndex: number }) => {
         )}
       </div>
       <Divider />
-      <div className="py-6 px-8 flex flex-col w-full">
+      <div className="flex w-full flex-col px-8 py-6">
         <input
           className="text-3xl outline-none"
           type="text"
@@ -158,15 +161,15 @@ const MissionForm = ({ currentHouseIndex }: { currentHouseIndex: number }) => {
           placeholder="Add Mission Name"
         />
         <div className="mt-8">
-          <div className="grid grid-cols-2 items-center gap-4 w-full">
-            <div className="flex items-center gap-4 w-full">
+          <div className="grid w-full grid-cols-2 items-center gap-4">
+            <div className="flex w-full items-center gap-4">
               <label
-                className=" text-base font-medium text-neutral-400 flex items-center gap-2"
+                className="flex items-center gap-2 text-base font-medium text-neutral-400"
                 htmlFor="select-mission"
               >
                 <span className="material-symbols-outlined !text-base">
                   interests
-                </span>{" "}
+                </span>{' '}
                 <span>House</span>
               </label>
               <select
@@ -178,7 +181,7 @@ const MissionForm = ({ currentHouseIndex }: { currentHouseIndex: number }) => {
                     house: e.target.value as HOUSEID,
                   })
                 }
-                className="w-full text-sm rounded-md appearance-none outline-none hover:bg-neutral-100 p-2"
+                className="w-full appearance-none rounded-md p-2 text-sm outline-none hover:bg-neutral-100"
               >
                 <option value="" disabled>
                   Select House
@@ -190,14 +193,14 @@ const MissionForm = ({ currentHouseIndex }: { currentHouseIndex: number }) => {
                 ))}
               </select>
             </div>
-            <div className="flex items-center gap-4 w-full">
+            <div className="flex w-full items-center gap-4">
               <label
-                className="text-base font-medium text-neutral-400 flex items-center gap-2"
+                className="flex items-center gap-2 text-base font-medium text-neutral-400"
                 htmlFor="status"
               >
                 <span className="material-symbols-outlined !text-base">
                   adjust
-                </span>{" "}
+                </span>{' '}
                 <span>Status</span>
               </label>
 
@@ -211,16 +214,16 @@ const MissionForm = ({ currentHouseIndex }: { currentHouseIndex: number }) => {
                       value: e.target.value,
                       label:
                         STATUSES.find(
-                          (status) => status.value === e.target.value
-                        )?.label || "",
+                          (status) => status.value === e.target.value,
+                        )?.label || '',
                       color:
                         STATUSES.find(
-                          (status) => status.value === e.target.value
-                        )?.color || "",
+                          (status) => status.value === e.target.value,
+                        )?.color || '',
                     },
                   })
                 }
-                className="text-sm w-full rounded-md appearance-none outline-none hover:bg-neutral-100 p-2"
+                className="w-full appearance-none rounded-md p-2 text-sm outline-none hover:bg-neutral-100"
               >
                 {STATUSES.map((status) => (
                   <option
@@ -230,7 +233,7 @@ const MissionForm = ({ currentHouseIndex }: { currentHouseIndex: number }) => {
                   >
                     <span
                       style={{ color: status.color }}
-                      className="w-4 h-4 rounded-full"
+                      className="size-4 rounded-full"
                     ></span>
                     <span className="text-sm">{status.label}</span>
                   </option>
@@ -238,15 +241,15 @@ const MissionForm = ({ currentHouseIndex }: { currentHouseIndex: number }) => {
               </select>
             </div>
           </div>
-          <div className="grid grid-cols-2 items-center gap-4 w-full">
-            <div className="flex items-center gap-4 w-full">
+          <div className="grid w-full grid-cols-2 items-center gap-4">
+            <div className="flex w-full items-center gap-4">
               <label
-                className="text-base font-medium text-neutral-400 flex items-center gap-2"
+                className="flex items-center gap-2 text-base font-medium text-neutral-400"
                 htmlFor="priority"
               >
                 <span className="material-symbols-outlined !text-base">
                   flag
-                </span>{" "}
+                </span>{' '}
                 <span>Priority</span>
               </label>
               <select
@@ -258,16 +261,16 @@ const MissionForm = ({ currentHouseIndex }: { currentHouseIndex: number }) => {
                       value: e.target.value,
                       label:
                         PRIORITY.find(
-                          (priority) => priority.value === e.target.value
-                        )?.label || "",
+                          (priority) => priority.value === e.target.value,
+                        )?.label || '',
                       color:
                         PRIORITY.find(
-                          (priority) => priority.value === e.target.value
-                        )?.color || "",
+                          (priority) => priority.value === e.target.value,
+                        )?.color || '',
                     },
                   })
                 }
-                className="text-sm w-full rounded-md appearance-none outline-none hover:bg-neutral-100 p-2"
+                className="w-full appearance-none rounded-md p-2 text-sm outline-none hover:bg-neutral-100"
               >
                 <option value="" hidden>
                   Select Priority
@@ -280,34 +283,34 @@ const MissionForm = ({ currentHouseIndex }: { currentHouseIndex: number }) => {
                   >
                     <span
                       style={{ color: priority.color }}
-                      className="w-4 h-4 rounded-full"
+                      className="size-4 rounded-full"
                     ></span>
                     <span>{priority.label}</span>
                   </option>
                 ))}
               </select>
             </div>
-            <div className="flex items-center gap-4 w-full">
+            <div className="flex w-full items-center gap-4">
               <label
-                className="w-full text-base font-medium text-neutral-400 flex items-center gap-2"
+                className="flex w-full items-center gap-2 text-base font-medium text-neutral-400"
                 htmlFor="select-mission"
               >
                 <span className="material-symbols-outlined !text-base">
                   calendar_clock
-                </span>{" "}
+                </span>{' '}
                 <span>Due Date</span>
               </label>
               <input
                 type="date"
                 id="due-date"
-                value={dayjs(missionState.expiresAt).format("YYYY-MM-DD")}
+                value={dayjs(missionState.expiresAt).format('YYYY-MM-DD')}
                 onChange={(e) =>
                   setMissionState((prevState) => ({
                     ...prevState,
                     expiresAt: e.target.value ? new Date(e.target.value) : null,
                   }))
                 }
-                className="w-full p-2 rounded-md appearance-none outline-none hover:bg-neutral-100 text-sm"
+                className="w-full appearance-none rounded-md p-2 text-sm outline-none hover:bg-neutral-100"
               />
             </div>
           </div>
@@ -514,7 +517,7 @@ const MissionForm = ({ currentHouseIndex }: { currentHouseIndex: number }) => {
           </div> */}
           <div className="mt-6">
             <label
-              className="w-full text-lg mb-4 font-bold text-neutral-400 flex items-center gap-2"
+              className="mb-4 flex w-full items-center gap-2 text-lg font-bold text-neutral-400"
               htmlFor="Description"
             >
               {/* <span className="material-symbols-outlined !text-base">
@@ -522,11 +525,11 @@ const MissionForm = ({ currentHouseIndex }: { currentHouseIndex: number }) => {
               </span>{" "} */}
               <span>Description</span>
             </label>
-            <div className="h-[180px] overflow-y-scroll border border-gray-300 rounded-md p-3 bg-white">
+            <div className="h-[180px] overflow-y-scroll rounded-md border border-gray-300 bg-white p-3">
               <MdxAppEditor
                 ref={mdRef}
                 toMarkdownOptions={{
-                  bullet: "*",
+                  bullet: '*',
                 }}
                 plugins={[
                   headingsPlugin(),
@@ -538,7 +541,7 @@ const MissionForm = ({ currentHouseIndex }: { currentHouseIndex: number }) => {
                   toolbarPlugin({
                     toolbarContents: () => (
                       <>
-                        {" "}
+                        {' '}
                         <BoldItalicUnderlineToggles />
                         <CreateLink />
                       </>
@@ -551,37 +554,37 @@ const MissionForm = ({ currentHouseIndex }: { currentHouseIndex: number }) => {
                   missionState.description?.trim().length === 0 ||
                   missionState.description === null ||
                   missionState.description === undefined
-                    ? ""
+                    ? ''
                     : missionState.description
                 }
-                className="w-full h-full"
+                className="size-full"
                 contentEditableClassName={`mdx_ce ${
                   missionState.description?.trim() ===
                   MARKDOWN_PLACEHOLDER.trim()
-                    ? "mdx_uninit"
-                    : ""
+                    ? 'mdx_uninit'
+                    : ''
                 } `}
                 onChange={handleMarkdownChange}
               />
             </div>
           </div>
 
-          <div className="flex w-full ml-auto justify-self-end justify-end gap-4 mt-6">
+          <div className="ml-auto mt-6 flex w-full justify-end gap-4 justify-self-end">
             <Button
               onClick={() => {
                 dispatch(clearEditorState());
                 dispatch(setEditModalOpen(false));
               }}
               variant="outlined"
-              className="!w-full  hover:!bg-neutral-100"
+              className="!w-full hover:!bg-neutral-100"
             >
               Cancel
             </Button>
             <Button
               onClick={onSubmit}
-              className="!w-full !bg-neutral-900 hover:!bg-neutral-800 !text-white"
+              className="!w-full !bg-neutral-900 !text-white hover:!bg-neutral-800"
             >
-              {loading ? <Spinner className="w-6 h-6 text-white" /> : "Save"}
+              {loading ? <Spinner className="size-6 text-white" /> : 'Save'}
             </Button>
           </div>
         </div>

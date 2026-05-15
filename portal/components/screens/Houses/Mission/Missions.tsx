@@ -1,30 +1,31 @@
 /* eslint-disable @next/next/no-img-element */
 
-"use client";
-import React from "react";
+'use client';
+import type { Mission, User } from '@db/client';
+import dayjs from 'dayjs';
+import React from 'react';
+import { useEffect, useState } from 'react';
+import useSWR from 'swr';
 
-import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import { Mission, User } from "@prisma/client";
-import { HOUSES_LIST } from "../HousesList";
-import { useEffect, useState } from "react";
-import { PortalSdk } from "@/utils/services/PortalSdk";
-import dayjs from "dayjs";
-import useSWR from "swr";
-import {
-  setAllTasks,
-  setTasksLoading,
-} from "@/utils/redux/missions/missionsTasks.slice";
-import CreateMissionSlider from "../CreateMissionSlider";
 import {
   setActiveMission,
   setAllMissions,
   setMissionDetailsOpen,
   setMissionsLoading,
-} from "@/utils/redux/missions/mission.slice";
+} from '@/utils/redux/missions/mission.slice';
+import {
+  setAllTasks,
+  setTasksLoading,
+} from '@/utils/redux/missions/missionsTasks.slice';
+import type { RootState } from '@/utils/redux/store';
+import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
+import { PortalSdk } from '@/utils/services/PortalSdk';
 
-import ActionBar from "./ActionBar";
-import { getQueryString } from "./mission.utils";
-import MissionList from "./MissionList";
+import CreateMissionSlider from '../CreateMissionSlider';
+import { HOUSES_LIST } from '../HousesList';
+import ActionBar from './ActionBar';
+import { getQueryString } from './mission.utils';
+import MissionList from './MissionList';
 
 export const Missions = ({
   currentHouseIndex,
@@ -37,13 +38,13 @@ export const Missions = ({
   const dispatch = useAppDispatch();
   const { allMissions } = useAppSelector((state: RootState) => state.mission);
   const { activeTab } = useAppSelector((state: RootState) => state.missionUi);
-  const [timeFrame, setTimeFrame] = useState("month");
-  const [timeValue, setTimeValue] = useState(dayjs().format("YYYY-MM"));
+  const [timeFrame, setTimeFrame] = useState('month');
+  const [timeValue, setTimeValue] = useState(dayjs().format('YYYY-MM'));
   const [tasksFetched, setTasksFetched] = useState(false);
 
   const fetchUrl = `/api/missions?${getQueryString(timeFrame, timeValue)}`;
   const { data, error } = useSWR(fetchUrl, (url) =>
-    fetch(url).then((res) => res.json())
+    fetch(url).then((res) => res.json()),
   );
   useEffect(() => {
     dispatch(setMissionsLoading(true));
@@ -53,7 +54,7 @@ export const Missions = ({
       const selectedMissionData =
         data?.data?.missions.filter(
           (mission: Mission) =>
-            mission.house === HOUSES_LIST[currentHouseIndex]?.id
+            mission.house === HOUSES_LIST[currentHouseIndex]?.id,
         )[0] || null;
       dispatch(setActiveMission(selectedMissionData));
       dispatch(setMissionsLoading(false));
@@ -61,7 +62,7 @@ export const Missions = ({
 
     if (error) {
       dispatch(setMissionDetailsOpen(false));
-      console.error("Error fetching missions:", error);
+      console.error('Error fetching missions:', error);
       dispatch(setMissionsLoading(false));
     }
   }, [data, error, dispatch, currentHouseIndex]);
@@ -74,14 +75,14 @@ export const Missions = ({
           try {
             const res = await PortalSdk.getData(
               `/api/mission-tasks?missionId=${mission.id}`,
-              null
+              null,
             );
             const tasksFromResponse = res.data.tasks || [];
             dispatch(setAllTasks(tasksFromResponse));
           } catch (error) {
             console.log(
               `Error fetching tasks for mission ${mission.id}:`,
-              error
+              error,
             );
           }
         }
@@ -100,7 +101,7 @@ export const Missions = ({
   }
 
   return (
-    <div className=" flex flex-col  my-4 shadow-xl h-[96vh] rounded-lg border overflow-y-scroll">
+    <div className="my-4 flex h-[96vh] flex-col overflow-y-scroll rounded-lg border shadow-xl">
       <ActionBar
         currentHouseIndex={currentHouseIndex}
         activeTab={activeTab}
@@ -121,15 +122,15 @@ export const Missions = ({
 
 export const MissionsListSkeleton = () => {
   return (
-    <div className="h-full flex flex-col gap-4 my-4 shadow-xl rounded-lg border animate-pulse">
+    <div className="my-4 flex h-full animate-pulse flex-col gap-4 rounded-lg border shadow-xl">
       <div
         id="mission-header"
-        className="flex flex-row items-center justify-between px-4 py-4 border-b border-neutral-200 rounded-t-xl"
+        className="flex flex-row items-center justify-between rounded-t-xl border-b border-neutral-200 p-4"
       >
-        <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+        <div className="h-4 w-1/4 rounded bg-gray-200"></div>
         <div className="flex flex-row items-center gap-2">
-          <div className="w-6 h-6 bg-gray-200 rounded-full"></div>
-          <div className="w-6 h-6 bg-gray-200 rounded-full"></div>
+          <div className="size-6 rounded-full bg-gray-200"></div>
+          <div className="size-6 rounded-full bg-gray-200"></div>
         </div>
       </div>
       {[...Array(5)].map((_, i) => (
@@ -137,14 +138,14 @@ export const MissionsListSkeleton = () => {
           key={i}
           className="flex flex-col gap-2 border-b border-neutral-200 px-4 py-2"
         >
-          <div className="flex flex-row items-center gap-2 w-full">
-            <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/3"></div>
-            <div className="h-4 bg-gray-200 rounded w-16 ml-auto"></div>
-            <div className="h-4 bg-gray-200 rounded w-20"></div>
-            <div className="h-4 bg-gray-200 rounded w-6"></div>
+          <div className="flex w-full flex-row items-center gap-2">
+            <div className="size-8 rounded-full bg-gray-200"></div>
+            <div className="h-4 w-1/3 rounded bg-gray-200"></div>
+            <div className="ml-auto h-4 w-16 rounded bg-gray-200"></div>
+            <div className="h-4 w-20 rounded bg-gray-200"></div>
+            <div className="h-4 w-6 rounded bg-gray-200"></div>
           </div>
-          <div className="h-[2px] bg-gray-200 w-full"></div>
+          <div className="h-[2px] w-full bg-gray-200"></div>
         </div>
       ))}
     </div>
