@@ -1,4 +1,4 @@
-import { Task } from "@prisma/client";
+import { Task } from "@db/client";
 import { RawTask } from "../@types/clickup/types";
 
 function isValidDate(timestamp: string) {
