@@ -19,7 +19,9 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@db/client": ["./types/db-client/index.ts"],
+      "@db/runtime": ["./types/db-runtime-library.ts"]
     }
   },
   "include": [
