@@ -1,4 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
 import { resolveOptionsFetcher } from '@/lib/worksheets';
 
 export async function GET(request: NextRequest) {
@@ -21,7 +23,7 @@ export async function GET(request: NextRequest) {
               error: `No options config for worksheet ${worksheetId} field ${field}`,
             }
           : { error: `Unknown options type: ${type}` },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -31,7 +33,7 @@ export async function GET(request: NextRequest) {
     console.error('Options fetch error:', e);
     return NextResponse.json(
       { error: e instanceof Error ? e.message : 'Failed to fetch options' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

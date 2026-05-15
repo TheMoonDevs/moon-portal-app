@@ -1,6 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
 import { getAllWorksheetConfigs } from '@/lib/worksheets';
-import type { WorksheetConfig, ColumnConfig } from '@/lib/worksheets/core/types';
+import type {
+  ColumnConfig,
+  WorksheetConfig,
+} from '@/lib/worksheets/core/types';
 
 export async function GET(request: NextRequest) {
   try {
@@ -49,7 +54,7 @@ export async function GET(request: NextRequest) {
     console.error('Worksheets list error:', e);
     return NextResponse.json(
       { error: e instanceof Error ? e.message : 'Failed to list worksheets' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
