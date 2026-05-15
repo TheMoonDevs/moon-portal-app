@@ -1,5 +1,6 @@
-import { LogoutPage } from "@/components/screens/Login/LogoutPage";
-import React from "react";
+import React from 'react';
+
+import { LogoutPage } from '@/components/screens/Login/LogoutPage';
 
 const ThisLogoutPage: React.FC = () => {
   return <LogoutPage />;
