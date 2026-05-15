@@ -1,27 +1,30 @@
-import { Link as Quicklink, USERLINKTYPE } from "@prisma/client";
-import { VIEW, withView } from "./LinkList";
-import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import { useUser } from "@/utils/hooks/useUser";
-import { useCallback, useState } from "react";
-import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
+import type { Link as Quicklink } from '@db/client';
+import { USERLINKTYPE } from '@db/client';
+import { Fade, Tooltip } from '@mui/material';
+import { useCallback } from 'react';
 
-import { ToastSeverity } from "@/components/elements/Toast";
-import { debounce } from "@/utils/helpers/functions";
-import { Fade, Tooltip } from "@mui/material";
-import { ThumbnailView } from "./Views/ThumbnailView";
-import { ListView } from "./Views/ListView";
-import { CardView } from "./Views/CardView";
-import { LineView } from "./Views/LineView";
+import { ToastSeverity } from '@/components/elements/Toast';
+import { debounce } from '@/utils/helpers/functions';
+import { useUser } from '@/utils/hooks/useUser';
 import {
   deleteQuicklink,
   toggleFavoriteLinks,
-} from "@/utils/redux/quicklinks/slices/quicklinks.links.slice";
-import { setToast } from "@/utils/redux/quicklinks/slices/quicklinks.ui.slice";
+} from '@/utils/redux/quicklinks/slices/quicklinks.links.slice';
+import { setToast } from '@/utils/redux/quicklinks/slices/quicklinks.ui.slice';
+import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
+import { QuicklinksSdk } from '@/utils/services/QuicklinksSdk';
+
+import type { withView } from './LinkList';
+import { VIEW } from './LinkList';
+import { CardView } from './Views/CardView';
+import { LineView } from './Views/LineView';
+import { ListView } from './Views/ListView';
+import { ThumbnailView } from './Views/ThumbnailView';
 
 export const LinkItem = ({
   allQuicklinks,
   link,
-  withView = "list",
+  withView = 'list',
   isLoading,
 }: {
   link: Quicklink;
@@ -44,7 +47,7 @@ export const LinkItem = ({
           linkId: linkId,
           userId: user?.id,
           linkType: USERLINKTYPE.TOPUSED,
-        }
+        },
       );
     } catch (error) {
       console.log(error);
@@ -55,7 +58,7 @@ export const LinkItem = ({
       dispatch(toggleFavoriteLinks(link));
       try {
         if (!user?.id) {
-          throw new Error("User not logged in");
+          throw new Error('User not logged in');
         }
         const response = await QuicklinksSdk.createData(
           `/api/quicklinks/link/user-link`,
@@ -63,54 +66,54 @@ export const LinkItem = ({
             linkId: link.id,
             userId: user?.id,
             linkType: USERLINKTYPE.FAVORITED,
-          }
+          },
         );
         if (response) {
           dispatch(
             setToast({
               toastMsg: response.statusText,
               toastSev: ToastSeverity.success,
-            })
+            }),
           );
         }
       } catch (error) {
         dispatch(
           setToast({
-            toastMsg: "Something went wrong. Please try again.",
+            toastMsg: 'Something went wrong. Please try again.',
             toastSev: ToastSeverity.error,
-          })
+          }),
         );
         dispatch(toggleFavoriteLinks(link));
         console.log(error);
       }
     },
-    [dispatch, user?.id]
+    [dispatch, user?.id],
   );
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const debouncedHandleFavoriteClick = useCallback(
     debounce(handleFavoriteClick, 300),
-    [handleFavoriteClick]
+    [handleFavoriteClick],
   );
 
   const handleDeleteLink = async (linkId: string) => {
     try {
       const response = await QuicklinksSdk.deleteData(
-        `/api/quicklinks/link?linkId=${linkId}`
+        `/api/quicklinks/link?linkId=${linkId}`,
       );
       dispatch(deleteQuicklink(linkId));
       dispatch(
         setToast({
-          toastMsg: response.statusText || "Deleted successfully",
+          toastMsg: response.statusText || 'Deleted successfully',
           toastSev: ToastSeverity.success,
-        })
+        }),
       );
     } catch (error) {
       dispatch(
         setToast({
-          toastMsg: "Something went wrong. Please try again.",
+          toastMsg: 'Something went wrong. Please try again.',
           toastSev: ToastSeverity.error,
-        })
+        }),
       );
       console.log(error);
     }
@@ -128,9 +131,9 @@ export const LinkItem = ({
       enterDelay={1000}
     >
       <>
-        {(withView === "thumbnail" ||
-          (isViewThumbnail && withView == "all")) && (
-          <div className="group relative rounded-md hover:bg-neutral-100 ">
+        {(withView === 'thumbnail' ||
+          (isViewThumbnail && withView == 'all')) && (
+          <div className="group relative rounded-md hover:bg-neutral-100">
             <ThumbnailView
               link={link}
               handleLinkClick={handleLinkClick}
@@ -139,7 +142,7 @@ export const LinkItem = ({
             />
           </div>
         )}
-        {(withView === "list" || (isViewList && withView == "all")) && (
+        {(withView === 'list' || (isViewList && withView == 'all')) && (
           <ListView
             link={link}
             handleLinkClick={handleLinkClick}
@@ -147,7 +150,7 @@ export const LinkItem = ({
             handleDeleteLink={handleDeleteLink}
           />
         )}
-        {(withView === "line" || (isViewLine && withView == "all")) && (
+        {(withView === 'line' || (isViewLine && withView == 'all')) && (
           <LineView
             link={link}
             handleLinkClick={handleLinkClick}
@@ -155,7 +158,7 @@ export const LinkItem = ({
             handleDeleteLink={handleDeleteLink}
           />
         )}
-        {withView === "all" && isViewGroup && (
+        {withView === 'all' && isViewGroup && (
           <CardView
             link={link}
             handleLinkClick={handleLinkClick}

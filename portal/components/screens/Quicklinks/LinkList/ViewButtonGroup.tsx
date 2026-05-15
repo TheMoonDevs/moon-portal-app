@@ -1,10 +1,18 @@
 'use client';
-import { setCurrentView } from '@/utils/redux/quicklinks/slices/quicklinks.ui.slice';
-import { VIEW } from './LinkList';
-import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
-import { IconButton, Menu, MenuItem, Typography, useMediaQuery } from '@mui/material';
-import media from '@/styles/media';
+import {
+  IconButton,
+  Menu,
+  MenuItem,
+  Typography,
+  useMediaQuery,
+} from '@mui/material';
 import { useState } from 'react';
+
+import media from '@/styles/media';
+import { setCurrentView } from '@/utils/redux/quicklinks/slices/quicklinks.ui.slice';
+import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
+
+import { VIEW } from './LinkList';
 
 const items = [
   {
@@ -22,7 +30,7 @@ const items = [
     viewName: VIEW.list,
     label: 'List View',
   },
-]
+];
 
 export const ViewButtonGroup = () => {
   const dispatch = useAppDispatch();
@@ -63,7 +71,7 @@ export const ViewButtonGroup = () => {
                     dispatch(setCurrentView(item.viewName));
                     handleClose();
                   }}
-                  className='!flex !items-center !gap-2'
+                  className="!flex !items-center !gap-2"
                 >
                   <span
                     className="material-symbols-outlined"
