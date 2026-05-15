@@ -1,9 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getUiState, setUiState } from '@/lib/worksheets/core/db/ui-state-repository';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
+import {
+  getUiState,
+  setUiState,
+} from '@/lib/worksheets/core/db/ui-state-repository';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ worksheetId: string }> }
+  { params }: { params: Promise<{ worksheetId: string }> },
 ) {
   try {
     const { worksheetId } = await params;
@@ -17,18 +22,18 @@ export async function GET(
     console.error('Get UI state error:', e);
     return NextResponse.json(
       { error: e instanceof Error ? e.message : 'Failed to get UI state' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ worksheetId: string }> }
+  { params }: { params: Promise<{ worksheetId: string }> },
 ) {
   try {
     const { worksheetId } = await params;
-    const body = await request.json() as { uiState: Record<string, unknown> };
+    const body = (await request.json()) as { uiState: Record<string, unknown> };
     const uiState = await setUiState(worksheetId, body.uiState);
 
     return NextResponse.json({
@@ -39,7 +44,7 @@ export async function PATCH(
     console.error('Update UI state error:', e);
     return NextResponse.json(
       { error: e instanceof Error ? e.message : 'Failed to update UI state' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
