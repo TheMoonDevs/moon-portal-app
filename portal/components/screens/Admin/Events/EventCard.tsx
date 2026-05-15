@@ -1,11 +1,13 @@
-import { useState } from 'react';
-import { loadingState } from './EventForm';
-import { PortalSdk } from '@/utils/services/PortalSdk';
-import { toast } from 'sonner';
-import { Event } from '@prisma/client';
-import { Spinner } from '@/components/elements/Loaders';
+import type { Event } from '@db/client';
 import { IconButton } from '@mui/material';
 import dayjs from 'dayjs';
+import { useState } from 'react';
+import { toast } from 'sonner';
+
+import { Spinner } from '@/components/elements/Loaders';
+import { PortalSdk } from '@/utils/services/PortalSdk';
+
+import type { loadingState } from './EventForm';
 
 export const EventCard = ({
   event,
@@ -54,7 +56,7 @@ export const EventCard = ({
         </p>
       </div>
       {deleting ? (
-        <Spinner className="mr-2 h-5 w-5" />
+        <Spinner className="mr-2 size-5" />
       ) : (
         <IconButton sx={{ backgroundColor: '#1b1b1b' }} onClick={deleteEvent}>
           <span className="material-symbols-outlined text-red-600">delete</span>
