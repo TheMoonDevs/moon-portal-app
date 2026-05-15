@@ -1,8 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
-import Image from "next/image";
-import Link from "next/link";
-import { Link as Quicklink } from "@prisma/client";
-import { LinkActions } from "../LinkActions";
+import type { Link as Quicklink } from '@db/client';
+import Link from 'next/link';
 export const LineView = ({
   link,
   handleLinkClick,
@@ -16,7 +14,7 @@ export const LineView = ({
 }) => {
   return (
     <div
-      className="group cursor-pointer relative rounded-md py-2 px-2 w-full hover:bg-neutral-100 mt-2"
+      className="group relative mt-2 w-full cursor-pointer rounded-md p-2 hover:bg-neutral-100"
       onClick={() => handleLinkClick(link.id)}
     >
       <Link
@@ -25,29 +23,29 @@ export const LineView = ({
         className="flex flex-row items-center justify-between"
       >
         <div className="flex flex-row items-center justify-start">
-          <div className="bg-white rounded-full shadow-md min-w-[30px]">
+          <div className="min-w-[30px] rounded-full bg-white shadow-md">
             {link.logo ? (
               <img
-                className="!h-[30px] !w-[30px] object-cover object-center rounded-full"
+                className="!h-[30px] !w-[30px] rounded-full object-cover object-center"
                 src={link.logo}
                 alt={link.title}
               />
             ) : (
               <img
-                className="!h-[30px] !w-[30px] object-cover object-center rounded-full"
+                className="!h-[30px] !w-[30px] rounded-full object-cover object-center"
                 src="/logo.png"
                 alt={link.title}
               />
             )}
           </div>
-          <div className="flex flex-col px-4 overflow-hidden ">
-            <p className="text-xs max-w-[70%] font-regular truncate ">
+          <div className="flex flex-col overflow-hidden px-4">
+            <p className="font-regular max-w-[70%] truncate text-xs">
               {link.title.length > 100
-                ? link.title.substring(0, 100) + " ..."
+                ? link.title.substring(0, 100) + ' ...'
                 : link.title}
             </p>
-            <p className="text-[10px] opacity-[0.5] max-w-[50%] overflow-hidden truncate font-regular ">
-              {link.url?.replace("https://", "")}
+            <p className="font-regular max-w-[50%] overflow-hidden truncate text-[10px] opacity-50">
+              {link.url?.replace('https://', '')}
             </p>
           </div>
         </div>
