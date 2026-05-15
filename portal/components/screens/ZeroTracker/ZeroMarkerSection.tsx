@@ -11,29 +11,29 @@ export const ZeroMarkerSection = ({
 }: ZeroMarkerSectionProps) => {
   return (
     <>
-      <div className="flex flex-row justify-between w-full py-2 px-3 gap-2">
-        <div className="relative flex-1 flex flex-col items-start justify-center gap-1 p-4 rounded-[0.75em] overflow-hidden bg-neutral-100 text-neutral-900">
+      <div className="flex w-full flex-row justify-between gap-2 px-3 py-2">
+        <div className="relative flex flex-1 flex-col items-start justify-center gap-1 overflow-hidden rounded-[0.75em] bg-neutral-100 p-4 text-neutral-900">
           <span
-            style={{ width: `${zeroUsage !== "NaN" ? zeroUsage : 0}%` }}
-            className=" bg-blue-500 h-1 rounded-[1.15em] absolute top-0 left-0 right-0"
+            style={{ width: `${zeroUsage !== 'NaN' ? zeroUsage : 0}%` }}
+            className="absolute inset-x-0 top-0 h-1 rounded-[1.15em] bg-blue-500"
           ></span>
-          <p className="text-[0.7em] text-neutral-500 leading-none tracking-[0.2em] ">
-            {" "}
+          <p className="text-[0.7em] leading-none tracking-[0.2em] text-neutral-500">
+            {' '}
             MY ZEROS
           </p>
-          <p className="text-[1.3em] font-bold leading-none ">
-            {" "}
-            {zeroRecord?.allZeros?.filter((_zero: any) => _zero.type === "zero")
-              .length || "0"}{" "}
+          <p className="text-[1.3em] font-bold leading-none">
+            {' '}
+            {zeroRecord?.allZeros?.filter((_zero: any) => _zero.type === 'zero')
+              .length || '0'}{' '}
             {/* / 30 */}
           </p>
         </div>
         <button
           onClick={handleZeroMarkerButtonClick}
-          className="flex flex-row items-center justify-between gap-1 p-4 rounded-[0.75em] overflow-hidden bg-blue-500 text-neutral-100"
+          className="flex flex-row items-center justify-between gap-1 overflow-hidden rounded-[0.75em] bg-blue-500 p-4 text-neutral-100"
         >
-          <p className="text-[0.7em] font-bold tracking-[0.2em] cursor-pointer">
-            {" "}
+          <p className="cursor-pointer text-[0.7em] font-bold tracking-[0.2em]">
+            {' '}
             ZERO MARKER
           </p>
           <span className="icon_size material-icons">add_circle_outline</span>
