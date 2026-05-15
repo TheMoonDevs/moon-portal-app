@@ -1,5 +1,7 @@
-import { prisma } from '@/prisma/prisma';
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
+import { db } from '@/lib/mongodb/db-client';
 
 export async function POST(req: NextRequest) {
   if (!req.body) {
@@ -16,7 +18,7 @@ export async function POST(req: NextRequest) {
     } else {
       body.paidDate = null;
     }
-    const newInvoice = await prisma.invoice.create({
+    const newInvoice = await db.invoice.create({
       data: {
         ...body,
       },
@@ -39,7 +41,7 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   const clientId = req.nextUrl.searchParams.get('clientId') as string;
   try {
-    const invoices = await prisma.invoice.findMany({
+    const invoices = await db.invoice.findMany({
       where: {
         clientId: clientId,
       },
@@ -60,12 +62,12 @@ export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();
     const isInvoicePaid = body.formData.isInvoicePaid;
-    const currentInvoice = await prisma.invoice.findUnique({
+    const currentInvoice = await db.invoice.findUnique({
       where: {
         id: body.id,
       },
     });
-    const updatedInvoice = await prisma.invoice.update({
+    const updatedInvoice = await db.invoice.update({
       where: {
         id: body.id,
       },
@@ -95,7 +97,7 @@ export async function PUT(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     const body = await req.json();
-    const deletedInvoice = await prisma.invoice.delete({
+    const deletedInvoice = await db.invoice.delete({
       where: {
         id: body.id,
       },
