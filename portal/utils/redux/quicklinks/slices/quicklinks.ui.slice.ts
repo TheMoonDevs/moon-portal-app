@@ -1,5 +1,5 @@
 import { ToastSeverity } from "@/components/elements/Toast";
-import { UserLink, Link } from "@prisma/client";
+import { UserLink, Link } from "@db/client";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 type listView = "list" | "widget" | "thumbnail" | "line";
