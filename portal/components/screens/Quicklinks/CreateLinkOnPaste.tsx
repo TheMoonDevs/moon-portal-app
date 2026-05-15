@@ -1,29 +1,32 @@
-import React, { useState, useEffect, FormEvent, useMemo } from 'react';
+import type { DirectoryList } from '@db/client';
+import { ROOTTYPE } from '@db/client';
 import {
-  Modal,
-  Box,
-  IconButton,
-  TextField,
-  InputAdornment,
-  CircularProgress,
-  Tooltip,
-  Popover,
-} from '@mui/material';
-import {
+  Check as CheckIcon,
   Close as CloseIcon,
   Edit as EditIcon,
-  Check as CheckIcon,
-  Save,
 } from '@mui/icons-material';
-import useClipboardURLDetection from '@/utils/hooks/useClipboardUrlDetection';
+import {
+  Box,
+  CircularProgress,
+  IconButton,
+  InputAdornment,
+  Modal,
+  Popover,
+  TextField,
+  Tooltip,
+} from '@mui/material';
+import { usePathname } from 'next/navigation';
+import type { FormEvent } from 'react';
+import React, { useMemo, useState } from 'react';
 import { toast, Toaster } from 'sonner';
+
+import { isValidURL } from '@/utils/helpers/functions';
+import useClipboardURLDetection from '@/utils/hooks/useClipboardUrlDetection';
+import { useUser } from '@/utils/hooks/useUser';
+import { addNewQuicklink } from '@/utils/redux/quicklinks/slices/quicklinks.links.slice';
 import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
 import { QuicklinksSdk } from '@/utils/services/QuicklinksSdk';
-import { usePathname } from 'next/navigation';
-import { useUser } from '@/utils/hooks/useUser';
-import { DirectoryList, ROOTTYPE } from '@prisma/client';
-import { isValidURL } from '@/utils/helpers/functions';
-import { addNewQuicklink } from '@/utils/redux/quicklinks/slices/quicklinks.links.slice';
+
 import { excludedPaths } from './CreateLinkPopup';
 
 const modalStyle = {
@@ -120,7 +123,7 @@ const CreateLinkOnPaste = () => {
         if (metadata.title) return metadata.title;
         const url = new URL(link);
         const splittedUrl = url.hostname.split('.');
-        let domain = splittedUrl.length > 2 ? splittedUrl[1] : splittedUrl[0];
+        const domain = splittedUrl.length > 2 ? splittedUrl[1] : splittedUrl[0];
 
         return domain.charAt(0).toUpperCase() + domain.slice(1);
       };
@@ -208,7 +211,7 @@ const CreateLinkOnPaste = () => {
       >
         <Box
           sx={modalStyle}
-          className="relative mx-auto max-w-lg rounded-lg bg-white p-6 shadow-lg sm:w-[36rem] max-sm:w-[90%]"
+          className="relative mx-auto max-w-lg rounded-lg bg-white p-6 shadow-lg max-sm:w-[90%] sm:w-[36rem]"
         >
           <span className="absolute right-1 top-1">
             <IconButton

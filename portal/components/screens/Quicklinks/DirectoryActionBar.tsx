@@ -1,10 +1,14 @@
-"use client";
+'use client';
 
-import ToolTip from "@/components/elements/ToolTip";
-import { handleDeleteDirectory } from "@/utils/redux/quicklinks/quicklinks.thunks";
-import { setIsFolderSectionOpen, setModal } from "@/utils/redux/quicklinks/slices/quicklinks.ui.slice";
-import { useAppDispatch } from "@/utils/redux/store";
-import { DirectoryList } from "@prisma/client";
+import type { DirectoryList } from '@db/client';
+
+import ToolTip from '@/components/elements/ToolTip';
+import { handleDeleteDirectory } from '@/utils/redux/quicklinks/quicklinks.thunks';
+import {
+  setIsFolderSectionOpen,
+  setModal,
+} from '@/utils/redux/quicklinks/slices/quicklinks.ui.slice';
+import { useAppDispatch } from '@/utils/redux/store';
 
 const DirectoryActionBar = ({
   selectedDir,
@@ -21,37 +25,34 @@ const DirectoryActionBar = ({
   if (!selectedDir) return null;
 
   return (
-    <div className="w-full p-2 px-2 rounded-2xl bg-neutral-100 flex gap-6 max-sm:flex-col max-sm:h-full">
-    <div className="flex items-center gap-2">
+    <div className="flex w-full gap-6 rounded-2xl bg-neutral-100 p-2 max-sm:h-full max-sm:flex-col">
+      <div className="flex items-center gap-2">
         <span
           onClick={() => setSelectedDir(null)}
-          className="material-symbols-outlined !text-neutral-500 hover:scale-110 transition-all cursor-pointer"
+          className="material-symbols-outlined cursor-pointer !text-neutral-500 transition-all hover:scale-110"
         >
           close
         </span>
-        <span className=" !text-neutral-500 hover:scale-110 transition-all cursor-pointer md:hidden ">
+        <span className="cursor-pointer !text-neutral-500 transition-all hover:scale-110 md:hidden">
           {selectedDir?.title}
         </span>
       </div>
-      <span className=" !text-neutral-500 hover:scale-110 transition-all cursor-pointer max-sm:hidden">
+      <span className="cursor-pointer !text-neutral-500 transition-all hover:scale-110 max-sm:hidden">
         {selectedDir?.title}
       </span>
       <div className="flex items-center gap-6">
         <ToolTip title="Rename">
           <span
-            onClick={() => { 
+            onClick={() => {
               dispatch(
                 setModal({
-                  type: "rename-folder",
+                  type: 'rename-folder',
                   data: { selectedDirectory: selectedDir },
-                })
+                }),
               );
-              dispatch(
-                setIsFolderSectionOpen(false)
-              );
-            }
-            }
-            className="material-symbols-outlined !text-neutral-500 hover:scale-110 transition-all cursor-pointer"
+              dispatch(setIsFolderSectionOpen(false));
+            }}
+            className="material-symbols-outlined cursor-pointer !text-neutral-500 transition-all hover:scale-110"
           >
             edit_square
           </span>
@@ -61,7 +62,7 @@ const DirectoryActionBar = ({
           <ToolTip title="Remove Favourite">
             <span
               onClick={() => handleToggleFavorite(selectedDir)}
-              className="material-icons !text-neutral-500 hover:scale-110 transition-all cursor-pointer"
+              className="material-icons cursor-pointer !text-neutral-500 transition-all hover:scale-110"
             >
               star
             </span>
@@ -70,7 +71,7 @@ const DirectoryActionBar = ({
           <ToolTip title="Mark as Favourite">
             <span
               onClick={() => handleToggleFavorite(selectedDir)}
-              className="material-symbols-outlined !text-neutral-500 hover:scale-110 transition-all cursor-pointer"
+              className="material-symbols-outlined cursor-pointer !text-neutral-500 transition-all hover:scale-110"
             >
               star
             </span>
@@ -81,18 +82,16 @@ const DirectoryActionBar = ({
             onClick={() => {
               dispatch(
                 setModal({
-                  type: "move-folder",
+                  type: 'move-folder',
                   data: {
                     selectedDirectory: selectedDir,
                     isParent: selectedDir.parentDirId === null,
                   },
-                })
+                }),
               );
-              dispatch(
-                setIsFolderSectionOpen(false)
-              );
+              dispatch(setIsFolderSectionOpen(false));
             }}
-            className="material-symbols-outlined !text-neutral-500 hover:scale-110 transition-all cursor-pointer"
+            className="material-symbols-outlined cursor-pointer !text-neutral-500 transition-all hover:scale-110"
           >
             drive_file_move
           </span>
@@ -104,10 +103,10 @@ const DirectoryActionBar = ({
                 handleDeleteDirectory({
                   directory: selectedDir,
                   parentId: selectedDir.parentDirId,
-                })
+                }),
               );
             }}
-            className="material-symbols-outlined !text-neutral-500 hover:scale-110 transition-all cursor-pointer"
+            className="material-symbols-outlined cursor-pointer !text-neutral-500 transition-all hover:scale-110"
           >
             archive
           </span>
@@ -115,7 +114,7 @@ const DirectoryActionBar = ({
         <ToolTip title="Link">
           <span
             onClick={() => handleShareLink(selectedDir)}
-            className="material-symbols-outlined !text-neutral-500 hover:scale-110 transition-all cursor-pointer"
+            className="material-symbols-outlined cursor-pointer !text-neutral-500 transition-all hover:scale-110"
           >
             link
           </span>
