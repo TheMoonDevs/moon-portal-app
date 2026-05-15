@@ -1,10 +1,10 @@
-import { useState, useEffect, useMemo } from "react";
-import { useTable } from "react-table";
-import EditJobPostModal from "@/pages/edit-jobpost/page";
-import { NewJobPostModal } from "./JobPosts/_JobPostModal";
-import { useAppSelector } from "@/utils/redux/store";
-import { PortalSdk } from "@/utils/services/PortalSdk";
-import { TMD_PORTAL_API_KEY } from "@/utils/constants/appInfo";
+import { useState, useEffect, useMemo } from 'react';
+import { useTable } from 'react-table';
+import EditJobPostModal from '@/pages/edit-jobpost/page';
+import { NewJobPostModal } from './JobPosts/_JobPostModal';
+import { useAppSelector } from '@/utils/redux/store';
+import { PortalSdk } from '@/utils/services/PortalSdk';
+import { TMD_PORTAL_API_KEY } from '@/utils/constants/appInfo';
 function ScreeningTable() {
   const [data, setData] = useState([]);
   const [selectedJobPost, setSelectedJobPost] = useState({});
@@ -14,37 +14,37 @@ function ScreeningTable() {
   const columns = useMemo(
     () => [
       {
-        Header: "S.No",
+        Header: 'S.No',
         accessor: (row, i) => i + 1,
       },
       {
-        Header: "Department",
-        accessor: "dept_name",
+        Header: 'Department',
+        accessor: 'dept_name',
       },
       {
-        Header: "Description",
-        accessor: "description",
+        Header: 'Description',
+        accessor: 'description',
       },
       {
-        Header: "Skill",
-        accessor: "skill_requirement",
+        Header: 'Skill',
+        accessor: 'skill_requirement',
       },
       {
-        Header: "Title",
-        accessor: "title",
+        Header: 'Title',
+        accessor: 'title',
       },
       {
-        Header: "Status",
-        accessor: "status",
+        Header: 'Status',
+        accessor: 'status',
       },
       {
-        Header: "Actions",
-        accessor: "actions", // Accessor to represent the Actions column
+        Header: 'Actions',
+        accessor: 'actions', // Accessor to represent the Actions column
         Cell: ({ row }) => (
           <div className="flex justify-end space-x-2">
             <button
               onClick={() => handleEdit(row.original._id)} // Replace with your edit function
-              className="px-3 py-2 bg-blue-500 text-white rounded"
+              className="rounded bg-blue-500 px-3 py-2 text-white"
             >
               Edit
             </button>
@@ -52,7 +52,7 @@ function ScreeningTable() {
               onClick={() => {
                 handleDelete(row.original._id);
               }} // Replace with your delete function
-              className="px-3 py-2 bg-red-500 text-white rounded"
+              className="rounded bg-red-500 px-3 py-2 text-white"
             >
               Delete
             </button>
@@ -60,7 +60,7 @@ function ScreeningTable() {
         ),
       },
     ],
-    []
+    [],
   );
 
   const { getTableProps, getTableBodyProps, headerGroups, rows, prepareRow } =
@@ -69,7 +69,7 @@ function ScreeningTable() {
   const handleDelete = async (id) => {
     try {
       const response = await fetch(`/api/jobPost?id=${id}}`, {
-        method: "DELETE",
+        method: 'DELETE',
         headers: {
           tmd_portal_api_key: TMD_PORTAL_API_KEY,
         },
@@ -80,10 +80,10 @@ function ScreeningTable() {
         const updatedData = data.filter((item) => item._id !== id);
         setData(updatedData);
       } else {
-        console.error("Error deleting job post");
+        console.error('Error deleting job post');
       }
     } catch (error) {
-      console.error("Error deleting job post:", error);
+      console.error('Error deleting job post:', error);
     }
   };
 
@@ -98,19 +98,19 @@ function ScreeningTable() {
         }
         setIsEditModalOpen(true);
       } else {
-        console.error("Error fetching job post for editing");
+        console.error('Error fetching job post for editing');
       }
     } catch (error) {
-      console.error("Error fetching job post for editing:", error);
+      console.error('Error fetching job post for editing:', error);
     }
   };
 
   const handleEditSubmit = async (formData) => {
     try {
       const response = await fetch(`/api/jobPost`, {
-        method: "PUT",
+        method: 'PUT',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
           tmd_portal_api_key: TMD_PORTAL_API_KEY,
         },
         body: JSON.stringify({ ...formData, id: selectedJobPost.id }),
@@ -120,26 +120,26 @@ function ScreeningTable() {
         // If the update is successful, close the modal and update the data in the state
         setIsEditModalOpen(false);
         const updatedData = data.map((post) =>
-          post._id === selectedJobPost._id ? formData : post
+          post._id === selectedJobPost._id ? formData : post,
         );
         setData(updatedData);
       } else {
-        console.error("Error updating job post");
+        console.error('Error updating job post');
       }
     } catch (error) {
-      console.error("Error updating job post:", error);
+      console.error('Error updating job post:', error);
     }
   };
 
   useEffect(() => {
     // Fetch data from your API endpoint
-    PortalSdk.getData("/api/jobPost/getAll")
+    PortalSdk.getData('/api/jobPost/getAll')
       .then((data) => setData(data?.data?.jobPost))
-      .catch((error) => console.error("Error fetching data:", error));
+      .catch((error) => console.error('Error fetching data:', error));
   }, [jobPostsRefresh]); // Empty dependency array to run the effect only once on mount
 
   return (
-    <div className="shadow-md overflow-x-auto">
+    <div className="overflow-x-auto shadow-md">
       <table
         {...getTableProps()}
         className="min-w-full divide-y divide-gray-200"
@@ -151,9 +151,9 @@ function ScreeningTable() {
                 <th
                   key={index2}
                   {...column.getHeaderProps()}
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
                 >
-                  {column.render("Header")}
+                  {column.render('Header')}
                 </th>
               ))}
             </tr>
@@ -161,7 +161,7 @@ function ScreeningTable() {
         </thead>
         <tbody
           {...getTableBodyProps()}
-          className="bg-white divide-y divide-gray-200"
+          className="divide-y divide-gray-200 bg-white"
         >
           {rows.map((row, index) => {
             prepareRow(row);
@@ -171,9 +171,9 @@ function ScreeningTable() {
                   <td
                     key={index2}
                     {...cell.getCellProps()}
-                    className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
+                    className="whitespace-nowrap px-6 py-4 text-sm text-gray-900"
                   >
-                    {cell.render("Cell")}
+                    {cell.render('Cell')}
                   </td>
                 ))}
               </tr>
