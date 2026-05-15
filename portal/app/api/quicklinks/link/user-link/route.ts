@@ -1,13 +1,15 @@
-import { prisma } from "@/prisma/prisma";
-import { USERLINKTYPE } from "@prisma/client";
-import { NextRequest, NextResponse } from "next/server";
+import { USERLINKTYPE } from '@db/client';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
+import { db } from '@/lib/mongodb/db-client';
 
 export async function GET(request: NextRequest) {
-  const userId = request.nextUrl.searchParams.get("userId") as string;
-  const linkType = request.nextUrl.searchParams.get("linkType") as USERLINKTYPE;
+  const userId = request.nextUrl.searchParams.get('userId') as string;
+  const linkType = request.nextUrl.searchParams.get('linkType') as USERLINKTYPE;
 
   try {
-    const favoriteLinks = await prisma.userLink.findMany({
+    const favoriteLinks = await db.userLink.findMany({
       where: {
         linkType: linkType,
         userId,
@@ -32,7 +34,7 @@ export async function GET(request: NextRequest) {
         // topUsed: linkType === USERLINKTYPE.TOPUSED,
       },
       orderBy: {
-        topUsed: "desc",
+        topUsed: 'desc',
       },
     });
 
@@ -41,7 +43,7 @@ export async function GET(request: NextRequest) {
     console.log(e);
     return new NextResponse(JSON.stringify(e), {
       status: 404,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }
@@ -51,16 +53,16 @@ export async function POST(request: NextRequest) {
 
   if (!userId || !linkId || !linkType) {
     return new NextResponse(
-      JSON.stringify({ error: "Missing userId or linkId or linkType" }),
+      JSON.stringify({ error: 'Missing userId or linkId or linkType' }),
       {
         status: 404,
-        headers: { "Content-Type": "application/json" },
-      }
+        headers: { 'Content-Type': 'application/json' },
+      },
     );
   }
 
   try {
-    const linkExist = await prisma.userLink.findFirst({
+    const linkExist = await db.userLink.findFirst({
       where: {
         userId,
         linkId,
@@ -68,7 +70,7 @@ export async function POST(request: NextRequest) {
       },
     });
     if (linkExist && linkType === USERLINKTYPE.FAVORITED) {
-      const deletedLink = await prisma.userLink.delete({
+      const deletedLink = await db.userLink.delete({
         where: {
           id: linkExist.id,
           linkType: USERLINKTYPE.FAVORITED,
@@ -76,13 +78,13 @@ export async function POST(request: NextRequest) {
       });
       return NextResponse.json(deletedLink, {
         status: 200,
-        statusText: "Unfavorited!",
+        statusText: 'Unfavorited!',
       });
     }
 
     if (linkExist && linkType === USERLINKTYPE.TOPUSED) {
       try {
-        const updatedTopUsedCounterInLink = await prisma.link.update({
+        const updatedTopUsedCounterInLink = await db.link.update({
           where: {
             id: linkExist.linkId,
           },
@@ -96,7 +98,7 @@ export async function POST(request: NextRequest) {
         console.log(e);
       }
       // console.log(updatedTopUsedCounterInLink);
-      const updatedTopUsedCounterInUserLink = await prisma.userLink.update({
+      const updatedTopUsedCounterInUserLink = await db.userLink.update({
         where: {
           id: linkExist.id,
         },
@@ -110,7 +112,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(updatedTopUsedCounterInUserLink);
     }
 
-    const link = await prisma.userLink.create({
+    const link = await db.userLink.create({
       data: {
         userId,
         linkId,
@@ -118,9 +120,9 @@ export async function POST(request: NextRequest) {
         topUsed: 0,
       },
     });
-    let statusText = "Favorited";
+    let statusText = 'Favorited';
     if (linkType === USERLINKTYPE.TOPUSED) {
-      statusText = "Added to top used";
+      statusText = 'Added to top used';
     }
 
     return NextResponse.json(link, {
@@ -131,7 +133,7 @@ export async function POST(request: NextRequest) {
     console.log(e);
     return new NextResponse(JSON.stringify(e), {
       status: 404,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }

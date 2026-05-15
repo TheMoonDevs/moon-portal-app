@@ -1,15 +1,17 @@
-import { prisma } from "@/prisma/prisma";
-import { USERDIRECTORYTYPE } from "@prisma/client";
-import { NextRequest, NextResponse } from "next/server";
+import { USERDIRECTORYTYPE } from '@db/client';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
+import { db } from '@/lib/mongodb/db-client';
 
 export async function GET(request: NextRequest) {
-  const userId = request.nextUrl.searchParams.get("userId") as string;
+  const userId = request.nextUrl.searchParams.get('userId') as string;
   const directoryType = request.nextUrl.searchParams.get(
-    "directoryType"
+    'directoryType',
   ) as USERDIRECTORYTYPE;
 
   try {
-    const favoriteDirectories = await prisma.userDirectory.findMany({
+    const favoriteDirectories = await db.userDirectory.findMany({
       where: {
         directoryType: directoryType,
         userId,
@@ -24,7 +26,7 @@ export async function GET(request: NextRequest) {
     console.log(e);
     return new NextResponse(JSON.stringify(e), {
       status: 404,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }
@@ -35,17 +37,17 @@ export async function POST(request: NextRequest) {
   if (!userId || !directoryId || !directoryType) {
     return new NextResponse(
       JSON.stringify({
-        error: "Missing userId or directoryId or directoryType",
+        error: 'Missing userId or directoryId or directoryType',
       }),
       {
         status: 404,
-        headers: { "Content-Type": "application/json" },
-      }
+        headers: { 'Content-Type': 'application/json' },
+      },
     );
   }
 
   try {
-    const directoryExist = await prisma.userDirectory.findFirst({
+    const directoryExist = await db.userDirectory.findFirst({
       where: {
         userId,
         directoryId,
@@ -53,7 +55,7 @@ export async function POST(request: NextRequest) {
       },
     });
     if (directoryExist && directoryType === USERDIRECTORYTYPE.FAVORITED) {
-      const deletedUserDirectory = await prisma.userDirectory.delete({
+      const deletedUserDirectory = await db.userDirectory.delete({
         where: {
           id: directoryExist.id,
           directoryType: USERDIRECTORYTYPE.FAVORITED,
@@ -61,13 +63,13 @@ export async function POST(request: NextRequest) {
       });
       return NextResponse.json(deletedUserDirectory, {
         status: 200,
-        statusText: "Unfavorited!",
+        statusText: 'Unfavorited!',
       });
     }
 
     if (directoryExist && directoryType === USERDIRECTORYTYPE.OTHER) {
       //   try {
-      //     const updatedTopUsedCounterInLink = await prisma.userDirectory.update({
+      //     const updatedTopUsedCounterInLink = await db.userDirectory.update({
       //       where: {
       //         id: directoryExist.directoryId,
       //       },
@@ -81,7 +83,7 @@ export async function POST(request: NextRequest) {
       //     console.log(e);
       //   }
       // console.log(updatedTopUsedCounterInLink);
-      const updatedUserDirectory = await prisma.userDirectory.update({
+      const updatedUserDirectory = await db.userDirectory.update({
         where: {
           id: directoryExist.id,
         },
@@ -96,7 +98,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(updatedUserDirectory);
     }
 
-    const userDirectory = await prisma.userDirectory.create({
+    const userDirectory = await db.userDirectory.create({
       data: {
         userId,
         directoryId,
@@ -104,9 +106,9 @@ export async function POST(request: NextRequest) {
         clickCount: 0,
       },
     });
-    let statusText = "Favorited";
+    let statusText = 'Favorited';
     if (directoryType === USERDIRECTORYTYPE.OTHER) {
-      statusText = "Added to other";
+      statusText = 'Added to other';
     }
 
     return NextResponse.json(userDirectory, {
@@ -117,7 +119,7 @@ export async function POST(request: NextRequest) {
     console.log(e);
     return new NextResponse(JSON.stringify(e), {
       status: 404,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }
