@@ -1,20 +1,22 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
-import { useUser } from '@/utils/hooks/useUser';
-import { Box, LinearProgress, styled, Typography } from '@mui/material';
-import { PortalSdk } from '@/utils/services/PortalSdk';
-import { WorkLogs, BuffBadge, BUFF_LEVEL } from '@prisma/client';
-import React, { useEffect, useMemo, useState } from 'react';
-import dayjs from 'dayjs';
+import type { BuffBadge, WorkLogs } from '@db/client';
+import { BUFF_LEVEL } from '@db/client';
+import { Box } from '@mui/material';
 import { Skeleton } from '@mui/material';
-import MultiColorProgressBar from './MultiColorProgressBar';
+import dayjs from 'dayjs';
+import React, { useEffect, useMemo, useState } from 'react';
+
 import {
   getBuffLevelAndTitle,
   getColorsForBuffLevel,
   getPoints,
   isValidContent,
 } from '@/utils/helpers/badges';
-import { Summarize, SummarizeOutlined } from '@mui/icons-material';
+import { useUser } from '@/utils/hooks/useUser';
+import { PortalSdk } from '@/utils/services/PortalSdk';
+
+import MultiColorProgressBar from './MultiColorProgressBar';
 
 const WorklogBuff = ({
   filteredLogs,
@@ -30,7 +32,7 @@ const WorklogBuff = ({
 
   const totalPoints = useMemo(() => {
     return filteredLogs.reduce((total, log: WorkLogs) => {
-      const logPoints = log.works.reduce((sum: number, work) => {
+      const logPoints = log.works.reduce((sum: number, work: any) => {
         const workContent = (
           typeof work === 'object' && work !== null && 'content' in work
             ? work.content
@@ -47,7 +49,9 @@ const WorklogBuff = ({
   }, [filteredLogs]);
 
   const loggedDays = useMemo(() => {
-    return filteredLogs.filter((wl) => wl.works.length > 0 ? (wl.works[0] as any)?.content?.length > 3 : false).length;
+    return filteredLogs.filter((wl) =>
+      wl.works.length > 0 ? (wl.works[0] as any)?.content?.length > 3 : false,
+    ).length;
   }, [filteredLogs]);
 
   //console.log('loggedDays:', filteredLogs.filter((wl) => wl.works.length > 0 ? (wl.works[0] as any)?.content?.length > 3 : false));
@@ -63,7 +67,7 @@ const WorklogBuff = ({
 
       const res = await PortalSdk.getData(
         `/api/badges/buff-badges?${params}`,
-        null
+        null,
       );
       setBuffBadge(res.data);
       // console.log(res.data)
@@ -93,7 +97,7 @@ const WorklogBuff = ({
   const updateBadge = async (
     badgeId: string,
     title: string,
-    buffLevel: BUFF_LEVEL
+    buffLevel: BUFF_LEVEL,
   ) => {
     if (!user?.id) return;
     try {
@@ -147,12 +151,15 @@ const WorklogBuff = ({
   return (
     <>
       {loading ? (
-        <Box sx={{
-          bgcolor: '#121212',
-        }} className=' rounded-xl'>
+        <Box
+          sx={{
+            bgcolor: '#121212',
+          }}
+          className="rounded-xl"
+        >
           <Skeleton
-            variant='rectangular'
-            animation='pulse'
+            variant="rectangular"
+            animation="pulse"
             sx={{
               borderRadius: 2,
               bgcolor: 'grey.800',
@@ -163,34 +170,43 @@ const WorklogBuff = ({
       ) : filteredLogs && buffBadge.length > 0 && buffBadge[0].points > 0 ? (
         <>
           {
-            <div className=' border border-neutral-700 rounded-xl shadow-xl bg-black text-white w-full max-w-lg mx-auto'>
-              <div className=' px-6 py-3 text-xs flex flex-row items-center justify-between border-b-2 border-neutral-700'>
-                <h2 className='text-center uppercase tracking-[1em] text-xs'>
+            <div className="mx-auto w-full max-w-lg rounded-xl border border-neutral-700 bg-black text-white shadow-xl">
+              <div className="flex flex-row items-center justify-between border-b-2 border-neutral-700 px-6 py-3 text-xs">
+                <h2 className="text-center text-xs uppercase tracking-[1em]">
                   {selectedMonth}
                 </h2>
-                <h2 className='text-center uppercase tracking-[0.1em] text-xs'>
-                  {loggedDays} <span className='text-neutral-500'> / {dayjs().daysInMonth()} days </span>
+                <h2 className="text-center text-xs uppercase tracking-widest">
+                  {loggedDays}{' '}
+                  <span className="text-neutral-500">
+                    {' '}
+                    / {dayjs().daysInMonth()} days{' '}
+                  </span>
                 </h2>
               </div>
-              <div className='p-6 pt-4 flex flex-row items-center justify-start gap-4'>
+              <div className="flex flex-row items-center justify-start gap-4 p-6 pt-4">
                 <img
                   src={getBuffLevelAndTitle(buffBadge[0].points).src}
                   alt={buffBadge[0].title.charAt(0)}
-                  className='w-24 rounded-full border p-1 border-white shadow-md'
+                  className="w-24 rounded-full border border-white p-1 shadow-md"
                 />
-                <div className='flex flex-col flex-grow'>
-                  <div className='flex flex-row items-center justify-between'>
-                    <h3 className='text-xl'>
+                <div className="flex grow flex-col">
+                  <div className="flex flex-row items-center justify-between">
+                    <h3 className="text-xl">
                       {getBuffLevelAndTitle(buffBadge[0].points).title}
                     </h3>
-                    <p className='text-base text-xs text-neutral-400'>
-                      <span className='font-bold'>{nextLevelPoints - totalPoints} pts till `{getBuffLevelAndTitle(nextLevelPoints).title}` </span>
+                    <p className="text-base text-xs text-neutral-400">
+                      <span className="font-bold">
+                        {nextLevelPoints - totalPoints} pts till `
+                        {getBuffLevelAndTitle(nextLevelPoints).title}`{' '}
+                      </span>
                     </p>
                   </div>
                   <MultiColorProgressBar
                     currentPoints={totalPoints}
                     nextLevelPoints={nextLevelPoints}
-                    colors={getColorsForBuffLevel(getBuffLevelAndTitle(buffBadge[0]?.points).level)}
+                    colors={getColorsForBuffLevel(
+                      getBuffLevelAndTitle(buffBadge[0]?.points).level,
+                    )}
                     height={8}
                   />
                 </div>
