@@ -1,10 +1,11 @@
-import { prisma } from '@/prisma/prisma';
 import { NextResponse } from 'next/server';
+
+import { db } from '@/lib/mongodb/db-client';
 
 export async function POST(req: Request) {
   try {
     const data = await req.json();
-    const subscriber = await prisma.emailSubscriber.create({ data });
+    const subscriber = await db.emailSubscriber.create({ data });
     return NextResponse.json(subscriber, { status: 201 });
   } catch (error) {
     console.error(error);
@@ -22,7 +23,7 @@ export async function GET(req: Request) {
     const email = searchParams.get('email');
 
     if (email) {
-      const subscriber = await prisma.emailSubscriber.findUnique({
+      const subscriber = await db.emailSubscriber.findUnique({
         where: { email },
       });
       if (!subscriber) {
@@ -35,7 +36,7 @@ export async function GET(req: Request) {
     }
 
     if (id) {
-      const subscriber = await prisma.emailSubscriber.findUnique({
+      const subscriber = await db.emailSubscriber.findUnique({
         where: { id },
       });
       if (!subscriber) {
@@ -47,7 +48,7 @@ export async function GET(req: Request) {
       return NextResponse.json(subscriber);
     }
 
-    const subscribers = await prisma.emailSubscriber.findMany();
+    const subscribers = await db.emailSubscriber.findMany();
     return NextResponse.json(subscribers);
   } catch (error) {
     return NextResponse.json(
@@ -60,7 +61,7 @@ export async function GET(req: Request) {
 export async function PUT(req: Request) {
   try {
     const { id, ...updates } = await req.json();
-    const updatedSubscriber = await prisma.emailSubscriber.update({
+    const updatedSubscriber = await db.emailSubscriber.update({
       where: { id },
       data: updates,
     });
@@ -76,7 +77,7 @@ export async function PUT(req: Request) {
 export async function DELETE(req: Request) {
   try {
     const { id } = await req.json();
-    await prisma.emailSubscriber.delete({ where: { id } });
+    await db.emailSubscriber.delete({ where: { id } });
     return NextResponse.json({ message: 'Subscriber deleted' });
   } catch (error) {
     return NextResponse.json(
