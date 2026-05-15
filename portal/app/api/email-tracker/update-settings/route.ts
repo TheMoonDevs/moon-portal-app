@@ -1,13 +1,15 @@
-import { prisma } from "@/prisma/prisma";
-import { NextRequest, NextResponse } from "next/server";
-import { JsonObject } from "@prisma/client/runtime/library";
+import type { JsonObject } from '@db/runtime';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
+import { db } from '@/lib/mongodb/db-client';
 
 export async function PATCH(req: NextRequest) {
   // Check if the request body is present
   if (!req.body) {
-    return new NextResponse(JSON.stringify({ error: "body not found" }), {
+    return new NextResponse(JSON.stringify({ error: 'body not found' }), {
       status: 400,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 
@@ -16,31 +18,34 @@ export async function PATCH(req: NextRequest) {
   const emailData = JSON.parse(body);
 
   const { mailId, mailMaxCount, fallbackMailId } = emailData;
-  const currentDate = new Date().toISOString().split("T")[0];
+  const currentDate = new Date().toISOString().split('T')[0];
 
   try {
     // Fetch existing email tracker configuration data from the database
-    const existingConfig = await prisma.configData.findUnique({
-      where: { configId: "email-tracker" },
+    const existingConfig = await db.configData.findUnique({
+      where: { configId: 'email-tracker' },
     });
 
     if (!existingConfig || !existingConfig.configData) {
-      return new NextResponse(JSON.stringify({ error: "email-tracker config not found" }), {
-        status: 404,
-        headers: { "Content-Type": "application/json" },
-      });
+      return new NextResponse(
+        JSON.stringify({ error: 'email-tracker config not found' }),
+        {
+          status: 404,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      );
     }
 
     const existingData = existingConfig.configData as any;
-    const emailTracker = (existingData.emailTracker) || [];
+    const emailTracker = existingData.emailTracker || [];
 
-    let updatedEmailTracker = emailTracker.map((log: JsonObject) => {
+    const updatedEmailTracker = emailTracker.map((log: JsonObject) => {
       if (log.mailId === mailId) {
         // Reset count and status if it's a new day
         if (log.id !== currentDate) {
           log.mailCurrentCount = 0;
           log.id = currentDate;
-          log.status = "Sendable"; // Reset status for a new day
+          log.status = 'Sendable'; // Reset status for a new day
         }
 
         // Update mailMaxCount and fallbackMailId if provided in the request
@@ -48,7 +53,10 @@ export async function PATCH(req: NextRequest) {
         log.fallbackMailId = fallbackMailId ?? log.fallbackMailId;
 
         // Update status based on new mailMaxCount
-        const status = (log.mailCurrentCount || 0) >= (log.mailMaxCount || 0) ? "Exhausted" : "Sendable";
+        const status =
+          (log.mailCurrentCount || 0) >= (log.mailMaxCount || 0)
+            ? 'Exhausted'
+            : 'Sendable';
         log.status = status;
 
         log.lastMailSentAt = new Date().toISOString();
@@ -59,20 +67,22 @@ export async function PATCH(req: NextRequest) {
     });
 
     // Ensure the mailId exists in the configuration
-    if (!updatedEmailTracker.find((log: { mailId: any; }) => log.mailId === mailId)) {
-      return new NextResponse(JSON.stringify({ error: "Mail ID not found" }), {
+    if (
+      !updatedEmailTracker.find((log: { mailId: any }) => log.mailId === mailId)
+    ) {
+      return new NextResponse(JSON.stringify({ error: 'Mail ID not found' }), {
         status: 404,
-        headers: { "Content-Type": "application/json" },
+        headers: { 'Content-Type': 'application/json' },
       });
     }
 
     // Upsert the updated email tracker data into the database
-    const updateData = await prisma.configData.upsert({
-      where: { configId: "email-tracker" },
+    const updateData = await db.configData.upsert({
+      where: { configId: 'email-tracker' },
       create: {
-        configId: "email-tracker",
-        configApp: "portal",
-        configType: "singular",
+        configId: 'email-tracker',
+        configApp: 'portal',
+        configType: 'singular',
         configData: {
           emailTracker: updatedEmailTracker,
         },
@@ -87,20 +97,20 @@ export async function PATCH(req: NextRequest) {
     // Return a success response with the updated data
     return new NextResponse(
       JSON.stringify({
-        status: "success",
+        status: 'success',
         data: updateData,
       }),
       {
         status: 200,
-        headers: { "Content-Type": "application/json" },
-      }
+        headers: { 'Content-Type': 'application/json' },
+      },
     );
   } catch (error: any) {
     // Handle any errors and return a 500 response with the error message
-    console.error("Error updating email tracker settings:", error);
+    console.error('Error updating email tracker settings:', error);
     return new NextResponse(JSON.stringify({ error: error.message }), {
       status: 500,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }
