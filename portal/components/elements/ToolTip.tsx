@@ -1,17 +1,18 @@
 import { Tooltip } from '@mui/material';
-import React, { ReactElement } from 'react';
+import type { ReactElement } from 'react';
+import React from 'react';
 
 const ToolTip = ({
   title,
   children,
-  arrow
+  arrow,
 }: {
   title: string;
   children: ReactElement;
-  arrow?: boolean
+  arrow?: boolean;
 }) => {
   return (
-    <Tooltip title={title} placement='top' arrow={arrow}>
+    <Tooltip title={title} placement="top" arrow={arrow}>
       {children}
     </Tooltip>
   );

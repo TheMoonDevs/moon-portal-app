@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
-import styled from "@emotion/styled";
+import styled from '@emotion/styled';
 
 export enum IconFilter {
-  primary = "primary",
-  primaryDark = "primary-dark",
-  white = "white",
-  whiteFixed = "white-f",
-  black = "black",
-  blackFixed = "black-f",
-  grey = "grey",
-  green = "green",
-  red = "red",
-  unset = "unset",
-  yellow = "yellow",
+  primary = 'primary',
+  primaryDark = 'primary-dark',
+  white = 'white',
+  whiteFixed = 'white-f',
+  black = 'black',
+  blackFixed = 'black-f',
+  grey = 'grey',
+  green = 'green',
+  red = 'red',
+  unset = 'unset',
+  yellow = 'yellow',
 }
 
 interface IconProps {
@@ -30,7 +30,7 @@ interface IconProps {
 
 const StyledIcon = styled.div<IconProps & { size: number }>`
   display: block;
-  align-self: ${(props) => (props.alignSelf ? props.alignSelf : "center")};
+  align-self: ${(props) => (props.alignSelf ? props.alignSelf : 'center')};
   min-width: ${(props) => props.size}em;
   min-height: ${(props) => props.size}em;
   width: ${(props) => props.size}em;
@@ -55,7 +55,7 @@ const StyledIcon = styled.div<IconProps & { size: number }>`
     if (props.fill == IconFilter.green) return props.theme.filters.green;
     if (props.fill == IconFilter.red) return props.theme.filters.red;
     if (props.fill == IconFilter.yellow) return props.theme.filters.yellow;
-    if (props.fill == IconFilter.unset) return "unset";
+    if (props.fill == IconFilter.unset) return 'unset';
   }};
 `;
 
