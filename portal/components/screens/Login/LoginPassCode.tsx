@@ -40,7 +40,7 @@ export const LoginPassCode = ({
       if (e.key === 'Backspace') {
         setPassCodes((p) => {
           // replace last not empty string with empty string in p array
-          let newPassCodes = [...p];
+          const newPassCodes = [...p];
           for (let i = newPassCodes.length - 1; i >= 0; i--) {
             if (newPassCodes[i] !== '') {
               newPassCodes[i] = '';
@@ -73,7 +73,7 @@ export const LoginPassCode = ({
             onChange={(e) => {
               if (e.target.value.length < 1) return;
               setPassCodes((p) => {
-                let newPassCodes = [...p];
+                const newPassCodes = [...p];
                 newPassCodes[index] =
                   e.target.value.length > 1
                     ? e.target.value.substring(0, 1)

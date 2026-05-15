@@ -1,18 +1,20 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
 
-import { APP_ROUTES } from '@/utils/constants/appInfo';
-import { useUser } from '@/utils/hooks/useUser';
-import { signIn } from 'next-auth/react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { signIn } from 'next-auth/react';
 import { useEffect, useState } from 'react';
+
+import { GreyButton } from '@/components/elements/Button';
+import { SparklesCore } from '@/components/ui/sparkles';
+import { APP_ROUTES } from '@/utils/constants/appInfo';
+import { useUser } from '@/utils/hooks/useUser';
+
+import GoogleVerifyPage from './GoogleVerifyPage';
 import { InstallButton, InstallState } from './Install';
 import { LoginButtons, LoginState, MobileBox } from './Login';
 import { LoginPassCode } from './LoginPassCode';
-import { GreyButton } from '@/components/elements/Button';
-import GoogleVerifyPage from './GoogleVerifyPage';
-import { SparklesCore } from '@/components/ui/sparkles';
 
 export const LoginScreen = () => {
   const [tab, setTab] = useState<InstallState | LoginState>(
@@ -84,12 +86,12 @@ export const LoginScreen = () => {
           minSize={0.6}
           maxSize={1.4}
           particleDensity={100}
-          className="h-full w-full"
+          className="size-full"
           particleColor="#FFFFFF"
         />
       </div>
       <MobileBox customClass="group rounded-3xl border border-neutral-700 ">
-        <div className="absolute left-0 top-0 h-full w-full rounded-3xl bg-gradient-to-r from-gray-600 to-gray-500 opacity-65 blur transition duration-1000 group-hover:opacity-100 group-hover:blur-lg"></div>
+        <div className="absolute left-0 top-0 size-full rounded-3xl bg-gradient-to-r from-gray-600 to-gray-500 opacity-65 blur transition duration-1000 group-hover:opacity-100 group-hover:blur-lg"></div>
         <div className="z-50 flex w-full flex-col items-center justify-center gap-10 rounded-3xl bg-neutral-900 p-[20px] md:px-[12px] md:py-8">
           <div className="flex flex-col items-center justify-center gap-8">
             <div className="flex grow flex-col items-center justify-center gap-4">
@@ -119,14 +121,14 @@ export const LoginScreen = () => {
 
             {loading && (
               <div className="flex flex-row items-center justify-center gap-2">
-                <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-t-2 border-neutral-100"></div>
+                <div className="size-5 animate-spin rounded-full border-y-2 border-neutral-100"></div>
                 <p className="text-neutral-100">Logging in...</p>
               </div>
             )}
             {status === 'authenticated' &&
               (!user ? (
                 <div className="flex flex-row items-center justify-center gap-2">
-                  <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-t-2 border-neutral-100"></div>
+                  <div className="size-5 animate-spin rounded-full border-y-2 border-neutral-100"></div>
                   <p className="text-neutral-100">Verifying...</p>
                 </div>
               ) : (

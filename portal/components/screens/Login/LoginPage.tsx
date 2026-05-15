@@ -1,7 +1,8 @@
 'use client';
 import { useState } from 'react';
-import WelcomeScreen from './WelcomeScreen';
+
 import { LoginScreen } from './LoginScreen';
+import WelcomeScreen from './WelcomeScreen';
 
 const LoginPage = () => {
   const [showWelcome, setShowWelcome] = useState(true);

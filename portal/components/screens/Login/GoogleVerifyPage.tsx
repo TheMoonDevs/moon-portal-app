@@ -1,13 +1,14 @@
-"use client";
-import { useAuthSession } from "@/utils/hooks/useAuthSession";
-import { useUser } from "@/utils/hooks/useUser";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
-import { setGoogleVerificationEmail } from "../../../utils/redux/auth/auth.slice";
-import { useAppDispatch } from "../../../utils/redux/store";
-import { APP_ROUTES } from "@/utils/constants/appInfo";
-import { useState } from "react";
-import { PortalSdk } from "@/utils/services/PortalSdk";
+'use client';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+
+import { APP_ROUTES } from '@/utils/constants/appInfo';
+import { useAuthSession } from '@/utils/hooks/useAuthSession';
+import { useUser } from '@/utils/hooks/useUser';
+
+import { setGoogleVerificationEmail } from '../../../utils/redux/auth/auth.slice';
+import { useAppDispatch } from '../../../utils/redux/store';
 
 const GoogleVerifyPage = ({ signOutUser, setError, passcode }: any) => {
   const { user } = useUser();
@@ -28,7 +29,7 @@ const GoogleVerifyPage = ({ signOutUser, setError, passcode }: any) => {
 
     try {
       const user = await signInWithSocial();
-      if (!user || !user.email) throw new Error("User email is empty");
+      if (!user || !user.email) throw new Error('User email is empty');
       const email = user.email;
 
       if (email === fetchedUserEmail) {
@@ -70,7 +71,7 @@ const GoogleVerifyPage = ({ signOutUser, setError, passcode }: any) => {
   return (
     <div>
       <button
-        className="w-full flex flex-row justify-center items-center gap-[0.5rem] px-[1rem] py-[0.5rem] border-[#959595] rounded-[0.5rem] bg-[#fff] color-[#000] capitalize"
+        className="color-[#000] flex w-full flex-row items-center justify-center gap-2 rounded-[0.5rem] border-[#959595] bg-white px-4 py-2 capitalize"
         onClick={handleGoogleLogin}
         disabled={verificationFailed}
       >
