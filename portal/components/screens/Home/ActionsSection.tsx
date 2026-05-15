@@ -1,65 +1,66 @@
 /* eslint-disable @next/next/no-img-element */
-import { APP_ROUTES, APP_SOCIAL } from "@/utils/constants/appInfo";
-import Link from "next/link";
-import React from "react";
+import Link from 'next/link';
+import React from 'react';
+
+import { APP_ROUTES, APP_SOCIAL } from '@/utils/constants/appInfo';
 
 const Links = [
   {
-    icon: "/images/thirdparty/bolt.avif",
-    title: "QuickLinks Directory",
+    icon: '/images/thirdparty/bolt.avif',
+    title: 'QuickLinks Directory',
     route: APP_ROUTES.quicklinksDashboard,
     active: true,
-    color: "rose",
+    color: 'rose',
     openNew: false,
   },
   {
-    icon: "task_alt",
-    title: "All My Worklogs",
+    icon: 'task_alt',
+    title: 'All My Worklogs',
     route: APP_ROUTES.userWorklogs,
     active: true,
-    color: "green",
+    color: 'green',
   },
   {
-    icon: "calendar_month",
-    title: "Events & Availabilities",
+    icon: 'calendar_month',
+    title: 'Events & Availabilities',
     route: APP_ROUTES.userZeroTracker,
     active: true,
-    color: "blue",
+    color: 'blue',
   },
   {
-    icon: "open_in_new",
-    title: "URL Shortener",
+    icon: 'open_in_new',
+    title: 'URL Shortener',
     route: APP_ROUTES.urlShortener,
     active: true,
-    color: "rose",
+    color: 'rose',
   },
   {
-    icon: "/icons/google-calendar.svg",
-    title: "Google Calendar",
+    icon: '/icons/google-calendar.svg',
+    title: 'Google Calendar',
     route: APP_ROUTES.googleCalendar,
     active: true,
   },
   {
-    icon: "/images/thirdparty/up.jpg",
-    title: "Upload & Share Files",
+    icon: '/images/thirdparty/up.jpg',
+    title: 'Upload & Share Files',
     route: APP_ROUTES.fileUploads,
     active: true,
-    color: "blue",
+    color: 'blue',
   },
   {
-    icon: "/images/thirdparty/slack.png",
-    title: "Chat with the Team",
+    icon: '/images/thirdparty/slack.png',
+    title: 'Chat with the Team',
     route: APP_SOCIAL.slack,
     active: true,
-    color: "fuchsia",
+    color: 'fuchsia',
     openNew: true,
   },
   {
-    icon: "/images/thirdparty/clickup.webp",
-    title: "Assign Tasks to Team",
+    icon: '/images/thirdparty/clickup.webp',
+    title: 'Assign Tasks to Team',
     route: APP_SOCIAL.clickup,
     active: true,
-    color: "fuchsia",
+    color: 'fuchsia',
     openNew: true,
   },
   // {
@@ -68,53 +69,53 @@ const Links = [
   //   route: APP_ROUTES.home,
   // },
   {
-    icon: "price_check",
-    title: "Your Earnings",
+    icon: 'price_check',
+    title: 'Your Earnings',
     route: APP_ROUTES.home,
   },
   {
-    icon: "all_inclusive",
-    title: "Work & Expertise Profile",
+    icon: 'all_inclusive',
+    title: 'Work & Expertise Profile',
     route: APP_ROUTES.home,
   },
   {
-    icon: "diamond",
-    title: "Badges & Achievements",
+    icon: 'diamond',
+    title: 'Badges & Achievements',
     route: APP_ROUTES.home,
   },
 ];
 export const ActionsSection = () => {
   return (
-    <div className=" flex flex-col mx-3 mt-6 gap-3 border border-neutral-400 rounded-[1.15em] overflow-hidden">
-      <div className="flex flex-col ">
+    <div className="mx-3 mt-6 flex flex-col gap-3 overflow-hidden rounded-[1.15em] border border-neutral-400">
+      <div className="flex flex-col">
         {Links.map((link) => (
           <Link
             key={link.title}
             href={link.route}
-            target={link.openNew ? "_blank" : "_self"}
+            target={link.openNew ? '_blank' : '_self'}
           >
             <div
-              className={`text-xl flex flex-row items-center gap-4 border-b border-neutral-200 ${
-                link.active ? "bg-white hover:bg-white/70" : ""
-              }  px-5 py-3`}
+              className={`flex flex-row items-center gap-4 border-b border-neutral-200 text-xl ${
+                link.active ? 'bg-white hover:bg-white/70' : ''
+              } px-5 py-3`}
             >
-              {link.icon.startsWith("/") ? (
+              {link.icon.startsWith('/') ? (
                 <img
                   src={link.icon}
                   alt={link.title}
-                  className="w-8 h-8 ml-[-5px] mr-[-5px] object-contain object-center rounded-full"
+                  className="mx-[-5px] size-8 rounded-full object-contain object-center"
                 />
               ) : (
                 <span
-                  className={`icon_size  material-symbols-outlined text-${link.color}-500`}
+                  className={`icon_size material-symbols-outlined text-${link.color}-500`}
                 >
                   {link.icon}
                 </span>
               )}
 
-              <p className="font-regular text-[0.75em] mb-0">{link.title}</p>
-              <span className="ml-auto icon_size text-neutral-800 icon_size material-symbols-outlined">
-                {link.active ? "chevron_right" : "history_toggle_off"}
+              <p className="font-regular mb-0 text-[0.75em]">{link.title}</p>
+              <span className="icon_size material-symbols-outlined ml-auto text-neutral-800">
+                {link.active ? 'chevron_right' : 'history_toggle_off'}
               </span>
             </div>
           </Link>
