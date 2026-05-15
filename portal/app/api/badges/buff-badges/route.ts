@@ -1,9 +1,11 @@
-import { prisma } from '@/prisma/prisma';
-import { NextRequest, NextResponse } from 'next/server';
-import { BuffBadge, BUFF_LEVEL } from '@prisma/client';
-import { SlackBotSdk, SlackChannels } from '@/utils/services/slackBotSdk';
-import { getBuffLevelAndTitle } from '@/utils/helpers/badges';
+import { BUFF_LEVEL } from '@db/client';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
+import { db } from '@/lib/mongodb/db-client';
 import { APP_BASE_URL, IN_DEV } from '@/utils/constants/appInfo';
+import { getBuffLevelAndTitle } from '@/utils/helpers/badges';
+import { SlackBotSdk, SlackChannels } from '@/utils/services/slackBotSdk';
 
 const slackBotSdk = new SlackBotSdk();
 
@@ -19,9 +21,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const existingBadge = await prisma.buffBadge.findUnique({
+    const existingBadge = await db.buffBadge.findFirst({
       where: {
-        userId_month: { userId, month },
+        userId,
+        month,
       },
     });
 
@@ -32,7 +35,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const newBuffBadge = await prisma.buffBadge.create({
+    const newBuffBadge = await db.buffBadge.create({
       data: {
         userId,
         title,
@@ -67,7 +70,7 @@ export async function GET(req: NextRequest) {
     if (buffLevel) query.buffLevel = buffLevel;
     if (month) query.month = month;
 
-    const buffBadges = await prisma.buffBadge.findMany({
+    const buffBadges = await db.buffBadge.findMany({
       where: query,
     });
 
@@ -87,11 +90,11 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();
-    const { id, userId, title, points, buffLevel } = body;
+    const { id, userId, title, points, buffLevel, month: badgeMonth } = body;
 
     if (
-      !id ||
       !userId ||
+      !badgeMonth ||
       !buffLevel ||
       !title ||
       points === undefined ||
@@ -106,22 +109,30 @@ export async function PUT(req: NextRequest) {
       );
     }
     const updatedPoints = points && points > 0 ? points : 0;
-    const updatedBuffBadge = await prisma.buffBadge.update({
-      where: { id },
-      data: {
+    const updatedBuffBadge = await db.buffBadge.upsert({
+      where: id && String(id).length > 2 ? { id } : { userId, month: badgeMonth },
+      update: {
         userId,
         title,
         points: updatedPoints,
         buffLevel,
+        month: badgeMonth,
+      },
+      create: {
+        userId,
+        title,
+        points: updatedPoints,
+        buffLevel,
+        month: badgeMonth,
       },
     });
 
     // fetch all buff badges of this month and if the current badge is the highest, send slack notifiaction
     const month = updatedBuffBadge.month;
-    const allBuffBadges = await prisma.buffBadge.findMany({
+    const allBuffBadges = await db.buffBadge.findMany({
       where: { month },
     });
-    let badgeConfig: any = await prisma.configData.findFirst({
+    let badgeConfig: any = await db.configData.findFirst({
       where: { configId: 'buffBadgeUnlocking' },
     });
 
@@ -137,23 +148,23 @@ export async function PUT(req: NextRequest) {
     }
 
     // check if the current badge level is already unlocked.
-    let unlocked =
+    const unlocked =
       allBuffBadges.filter(
-        (badge) =>
+        (badge: any) =>
           badge.points > updatedBuffBadge.points && badge.userId != userId,
       ).length == 0;
 
     // check if notification is already sent for this badge level in this month
-    let notified =
+    const notified =
       badgeConfig.configData.lastMonth == month &&
       badgeConfig.configData.lastUnlockedMarker >=
         getBuffLevelAndTitle(updatedBuffBadge.points).marker;
 
     if (unlocked && !notified && !IN_DEV) {
-      const user = await prisma.user.findUnique({
+      const user = await db.user.findUnique({
         where: { id: userId },
       });
-      await prisma.configData.upsert({
+      await db.configData.upsert({
         where: { configId: 'buffBadgeUnlocking' },
         update: {
           configData: {

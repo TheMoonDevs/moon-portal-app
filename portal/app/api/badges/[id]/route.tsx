@@ -1,14 +1,16 @@
-import { prisma } from '@/prisma/prisma';
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
+import { db } from '@/lib/mongodb/db-client';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   const { id } = params;
 
   try {
-    const badge = await prisma.badgeTemplate.findUnique({
+    const badge = await db.badgeTemplate.findUnique({
       where: { id },
     });
 
@@ -21,7 +23,7 @@ export async function GET(
 
     return new NextResponse(
       JSON.stringify({ status: 'success', data: badge }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
     );
   } catch (error: any) {
     console.error('Error fetching badge details:', error);
@@ -34,7 +36,7 @@ export async function GET(
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   const { id } = params;
 
@@ -52,11 +54,11 @@ export async function PUT(
     if (!badgeName || !badgeDescription || !criteria) {
       return new NextResponse(
         JSON.stringify({ error: 'Required fields are missing' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        { status: 400, headers: { 'Content-Type': 'application/json' } },
       );
     }
 
-    const updatedBadge = await prisma.badgeTemplate.update({
+    const updatedBadge = await db.badgeTemplate.update({
       where: { id },
       data: {
         name: badgeName,
@@ -68,7 +70,7 @@ export async function PUT(
 
     return new NextResponse(
       JSON.stringify({ status: 'success', data: updatedBadge }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
     );
   } catch (error: any) {
     console.error('Error updating badge details:', error);
@@ -81,12 +83,12 @@ export async function PUT(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   const { id } = params;
 
   try {
-    await prisma.badgeTemplate.delete({
+    await db.badgeTemplate.delete({
       where: { id },
     });
 
