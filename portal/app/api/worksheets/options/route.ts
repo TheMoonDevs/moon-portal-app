@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server';
 
 import { resolveOptionsFetcher } from '@/lib/worksheets';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url);
