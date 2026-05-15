@@ -1,20 +1,23 @@
-import { LoadingSkeleton } from '@/components/elements/LoadingSkeleton';
-import { WorklogSummaryView } from './WorklogSummaryView';
-import { WorklogSummaryActions } from './WorklogSummaryActions';
-import useAsyncState from '@/utils/hooks/useAsyncState';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { PortalSdk } from '@/utils/services/PortalSdk';
-import { User, WorkLogs } from '@prisma/client';
-import { useSearchParams } from 'next/navigation';
-import dayjs from 'dayjs';
-import { calculateMetrics } from '../WorklogBreakdown/BreakdownMetrics';
-import generatePDF, { Margin } from 'react-to-pdf';
+import type { User, WorkLogs } from '@db/client';
 import { Tooltip } from '@mui/material';
-import { GenAiSdk } from '@/utils/services/GenAiSdk';
-import useCopyToClipboard from '@/utils/hooks/useCopyToClipboard';
-import { MdxAppEditor } from '@/utils/configure/MdxAppEditor';
+import dayjs from 'dayjs';
 import { uniqueId } from 'lodash';
-import { RootState, useAppSelector } from '@/utils/redux/store';
+import { useSearchParams } from 'next/navigation';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import generatePDF, { Margin } from 'react-to-pdf';
+
+import { LoadingSkeleton } from '@/components/elements/LoadingSkeleton';
+import { MdxAppEditor } from '@/utils/configure/MdxAppEditor';
+import useAsyncState from '@/utils/hooks/useAsyncState';
+import useCopyToClipboard from '@/utils/hooks/useCopyToClipboard';
+import type { RootState } from '@/utils/redux/store';
+import { useAppSelector } from '@/utils/redux/store';
+import { GenAiSdk } from '@/utils/services/GenAiSdk';
+import { PortalSdk } from '@/utils/services/PortalSdk';
+
+import { calculateMetrics } from '../WorklogBreakdown/BreakdownMetrics';
+import { WorklogSummaryActions } from './WorklogSummaryActions';
+import { WorklogSummaryView } from './WorklogSummaryView';
 
 export const WorklogSummaryContent = ({
   userData,
@@ -27,7 +30,7 @@ export const WorklogSummaryContent = ({
 }) => {
   const searchParams = useSearchParams();
   const year = searchParams?.get('year') || dayjs().year();
-  let month = !onlyYearSummary
+  const month = !onlyYearSummary
     ? searchParams?.get('month') || dayjs().month(dayjs().month()).format('MM')
     : null;
 
@@ -106,7 +109,7 @@ export const WorklogSummaryContent = ({
   return (
     <div className="flex h-screen-minus-74 flex-col bg-neutral-100 md:flex-row">
       <div
-        className={`m-4 mt-4 w-[100%] max-sm:mx-0 ${showCompletedTasks || showMissedLogs || showUpdatedLogs || showMissedTasks ? 'overflow-y-scroll' : ''} rounded-2xl bg-white shadow-xl md:w-[50%]`}
+        className={`m-4 w-full max-sm:mx-0 ${showCompletedTasks || showMissedLogs || showUpdatedLogs || showMissedTasks ? 'overflow-y-scroll' : ''} rounded-2xl bg-white shadow-xl md:w-[50%]`}
       >
         <div className="">
           {userData && (
@@ -114,7 +117,7 @@ export const WorklogSummaryContent = ({
               <img
                 src={userData?.avatar ?? '/images/avatar.png'}
                 alt="avatar"
-                className="h-16 w-16 rounded-full object-cover max-sm:h-12 max-sm:w-12"
+                className="size-16 rounded-full object-cover max-sm:size-12"
               />
               <div>
                 <p className="text-xl font-bold max-sm:text-lg">

@@ -1,15 +1,12 @@
-"use client";
-import { MdxAppEditor } from "@/utils/configure/MdxAppEditor";
-import { Mission } from "@prisma/client";
-import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import { useMemo } from "react";
-import { Button } from "@mui/material";
-import {
-  setActiveTab,
-  setEditModalOpen,
-} from "@/utils/redux/missions/mission.ui.slice";
-import { calculateMissionStat, getMissionProgress } from "./mission.utils";
-import { MDXEditor } from "@mdxeditor/editor";
+'use client';
+import type { Mission } from '@db/client';
+import { useMemo } from 'react';
+
+import { MdxAppEditor } from '@/utils/configure/MdxAppEditor';
+import type { RootState } from '@/utils/redux/store';
+import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
+
+import { calculateMissionStat } from './mission.utils';
 
 const ExpandedMission = ({
   expanded,
@@ -20,27 +17,27 @@ const ExpandedMission = ({
 }) => {
   const dispatch = useAppDispatch();
   const { allTasks } = useAppSelector(
-    (state: RootState) => state.missionsTasks
+    (state: RootState) => state.missionsTasks,
   );
 
   const missionTasks = allTasks?.filter((t) => t?.missionId === mission?.id);
 
   const missionStatus = useMemo(() => {
-    return mission && calculateMissionStat(mission, missionTasks, "status");
+    return mission && calculateMissionStat(mission, missionTasks, 'status');
   }, [mission, missionTasks]);
 
   const missionPercentage =
-    mission && calculateMissionStat(mission, missionTasks, "percentage");
+    mission && calculateMissionStat(mission, missionTasks, 'percentage');
 
   const missionBalance = useMemo(() => {
-    return mission && calculateMissionStat(mission, missionTasks, "balance");
+    return mission && calculateMissionStat(mission, missionTasks, 'balance');
   }, [mission, missionTasks]);
 
   return (
     <div
       className={`overflow-hidden transition-all duration-500 ${
-        expanded === mission.id ? "max-h-[200px]" : "max-h-0"
-      } border-b overflow-y-auto`}
+        expanded === mission.id ? 'max-h-[200px]' : 'max-h-0'
+      } overflow-y-auto border-b`}
     >
       <div className="p-4">
         {/* <div className="mb-6">
@@ -54,7 +51,7 @@ const ExpandedMission = ({
         <div>
           {mission?.description ? (
             <div>
-              <h1 className="text-lg font-bold mb-2">Description</h1>
+              <h1 className="mb-2 text-lg font-bold">Description</h1>
               <MdxAppEditor
                 key={mission?.id}
                 editorKey={mission?.id}
@@ -64,7 +61,7 @@ const ExpandedMission = ({
               />
             </div>
           ) : (
-            <p className="text-sm text-gray-400 italic">
+            <p className="text-sm italic text-gray-400">
               Description not available for this mission
             </p>
           )}

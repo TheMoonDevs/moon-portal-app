@@ -1,10 +1,11 @@
-"use client";
+'use client';
 
-import { PageAccess } from "@/components/global/PageAccess";
-import { WorklogSummaryByUserId } from "./WorklogSummaryByUserId";
-import { Bottombar } from "@/components/global/Bottombar";
-import media from "@/styles/media";
-import { useUser } from "@/utils/hooks/useUser";
+import { Bottombar } from '@/components/global/Bottombar';
+import { PageAccess } from '@/components/global/PageAccess';
+import media from '@/styles/media';
+import { useUser } from '@/utils/hooks/useUser';
+
+import { WorklogSummaryByUserId } from './WorklogSummaryByUserId';
 
 export const DefaultWorklogSummary = () => {
   const { user } = useUser();

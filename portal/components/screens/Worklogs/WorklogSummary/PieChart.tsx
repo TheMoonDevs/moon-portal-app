@@ -1,7 +1,7 @@
-import React from 'react';
+import type { WorkLogs } from '@db/client';
 import { ResponsivePie } from '@nivo/pie';
-import dayjs from 'dayjs';
-import { WorkLogs } from '@prisma/client';
+import React from 'react';
+
 import { groupByWeek } from './Breakdown';
 
 const Pie = ({ worklogSummary }: { worklogSummary: WorkLogs[] }) => {
@@ -34,7 +34,7 @@ const Pie = ({ worklogSummary }: { worklogSummary: WorkLogs[] }) => {
           modifiers: [['darker', 0.2]],
         }}
         arcLinkLabelsSkipAngle={10}
-        arcLinkLabelsTextColor='#333333'
+        arcLinkLabelsTextColor="#333333"
         arcLinkLabelsThickness={2}
         arcLinkLabelsColor={{ from: 'color' }}
         arcLabel={({ value }) => `${value}`}

@@ -1,11 +1,13 @@
-import { prisma } from "@/prisma/prisma";
-import { NextRequest, NextResponse } from "next/server";
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
+import { db } from '@/lib/mongodb/db-client';
 
 export async function GET(request: NextRequest) {
   try {
-    const tasks = await prisma.task.findMany();
-    let json_response = {
-      status: "success",
+    const tasks = await db.task.findMany();
+    const json_response = {
+      status: 'success',
       data: {
         tasks,
       },
@@ -15,7 +17,7 @@ export async function GET(request: NextRequest) {
     console.log(e);
     return new NextResponse(JSON.stringify(e), {
       status: 404,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }

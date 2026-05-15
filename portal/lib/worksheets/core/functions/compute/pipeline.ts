@@ -1,8 +1,8 @@
 import {
+  COMPUTE_FNS,
   type ComputeContext,
   type ComputeKey,
-  COMPUTE_FNS,
-} from "@/lib/worksheets/functions";
+} from '@/lib/worksheets/functions';
 
 export function executeComputedPipelineSync(
   ctx: ComputeContext,

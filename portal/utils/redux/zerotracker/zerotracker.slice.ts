@@ -1,4 +1,4 @@
-import { User, ZeroRecords } from "@prisma/client";
+import { User, ZeroRecords } from "@db/client";
 import { createSlice } from "@reduxjs/toolkit";
 export interface IMeetingData {
   id?: string;

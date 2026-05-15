@@ -1,24 +1,25 @@
-"use client";
+'use client';
 
-import { Spinner } from "@/components/elements/Loaders";
-import { handleDirectoryUpdate } from "@/utils/redux/quicklinks/quicklinks.thunks";
-import { setModal } from "@/utils/redux/quicklinks/slices/quicklinks.ui.slice";
-import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import { Modal, TextField } from "@mui/material";
-import { useEffect, useState } from "react";
+import { Modal, TextField } from '@mui/material';
+import { useEffect, useState } from 'react';
+
+import { Spinner } from '@/components/elements/Loaders';
+import { handleDirectoryUpdate } from '@/utils/redux/quicklinks/quicklinks.thunks';
+import { setModal } from '@/utils/redux/quicklinks/slices/quicklinks.ui.slice';
+import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
 
 const RenameModal = () => {
   const dispatch = useAppDispatch();
   const { modal, isLoading } = useAppSelector((state) => state.quicklinksUi);
   const selectedDirectory = modal.data && modal.data.selectedDirectory;
   const name = selectedDirectory && selectedDirectory.title;
-  const [newName, setNewName] = useState("");
+  const [newName, setNewName] = useState('');
 
   useEffect(() => {
     setNewName(name);
   }, [name]);
 
-  if (!(modal.type === "rename-folder")) return null;
+  if (!(modal.type === 'rename-folder')) return null;
   const handleRename = async () => {
     try {
       dispatch(
@@ -27,9 +28,9 @@ const RenameModal = () => {
           parentId: selectedDirectory.parentDirId,
           updateInfo: {
             title: newName,
-            slug: newName.toLowerCase().replace(/ /g, "-"),
+            slug: newName.toLowerCase().replace(/ /g, '-'),
           },
-        })
+        }),
       );
     } catch (error) {
       console.log(error);
@@ -39,11 +40,11 @@ const RenameModal = () => {
   return (
     <Modal
       onClose={() => dispatch(setModal({ type: null, data: null }))}
-      open={modal.type === "rename-folder"}
-      className=" text-black p-5 rounded-lg shadow-lg drop-shadow-sm flex items-center justify-center"
+      open={modal.type === 'rename-folder'}
+      className="flex items-center justify-center rounded-lg p-5 text-black shadow-lg drop-shadow-sm"
     >
-      <div className="bg-white w-fit p-6 rounded-2xl outline-none max-sm:w-[95%]">
-        <h1 className="mb-6 font-semibold text-2xl">Rename</h1>
+      <div className="w-fit rounded-2xl bg-white p-6 outline-none max-sm:w-[95%]">
+        <h1 className="mb-6 text-2xl font-semibold">Rename</h1>
         <TextField
           onChange={(e) => setNewName(e.target.value)}
           className="w-[500px] max-sm:w-full"
@@ -52,19 +53,19 @@ const RenameModal = () => {
           id="outlined-required"
           autoFocus
         />
-        <div className="flex mt-5 gap-2 ml-auto w-fit">
+        <div className="ml-auto mt-5 flex w-fit gap-2">
           <button
-            className="px-3 py-2 hover:border hover:border-gray-500 text-gray-800 rounded-xl cursor-pointer"
+            className="cursor-pointer rounded-xl px-3 py-2 text-gray-800 hover:border hover:border-gray-500"
             onClick={() => dispatch(setModal({ type: null, data: null }))}
           >
             Cancel
           </button>
           <button
             onClick={handleRename}
-            disabled={newName === "" || isLoading}
-            className="px-6 text-sm  bg-gray-900 text-white rounded-xl cursor-pointer disabled:opacity-50"
+            disabled={newName === '' || isLoading}
+            className="cursor-pointer rounded-xl bg-gray-900 px-6 text-sm text-white disabled:opacity-50"
           >
-            {isLoading ? <Spinner className="w-6 h-6  text-neutral-600" /> : 'OK'}
+            {isLoading ? <Spinner className="size-6 text-neutral-600" /> : 'OK'}
           </button>
         </div>
       </div>

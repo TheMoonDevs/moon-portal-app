@@ -1,4 +1,4 @@
-import UserTopUsedDirectories from "@/components/screens/Quicklinks/screens/User/UserTopUsed/UserTopUsedDirectories";
+import UserTopUsedDirectories from '@/components/screens/Quicklinks/screens/User/UserTopUsed/UserTopUsedDirectories';
 
 const UserTopUsedDirectoriesPage = () => {
   return <UserTopUsedDirectories withTitle={true} view="gridView" />;

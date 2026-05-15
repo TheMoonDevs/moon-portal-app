@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Tabs, Tab, Box, Typography } from "@mui/material";
+import { Box, Tab, Tabs, Typography } from '@mui/material';
+import React, { useState } from 'react';
 
 interface TabInfo {
   label: string | React.ReactNode;
@@ -40,7 +40,7 @@ const SimpleTabs: React.FC<SimpleTabsProps> = ({ tabs }) => {
   };
 
   return (
-    <Box sx={{ width: "100%" }}>
+    <Box sx={{ width: '100%' }}>
       <Tabs value={activeTab} onChange={handleChange} aria-label="simple-tabs">
         {tabs.map((tab, index) => (
           <Tab

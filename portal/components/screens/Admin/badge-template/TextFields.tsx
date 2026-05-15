@@ -17,7 +17,7 @@ interface TextAreaFieldProps extends BaseInputFieldProps {
   onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
 }
 
-import React, { useRef, useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 
 export const InputField: React.FC<InputFieldProps> = ({
   id,
@@ -49,16 +49,16 @@ export const InputField: React.FC<InputFieldProps> = ({
   }, [type]);
 
   return (
-    <div className='flex flex-col'>
+    <div className="flex flex-col">
       <label
         htmlFor={id}
-        className='text-white font-semibold mb-2 flex items-center gap-2'
+        className="mb-2 flex items-center gap-2 font-semibold text-white"
       >
         {label}
         {title && (
           <ToolTip title={title}>
             <span
-              className='material-symbols-outlined'
+              className="material-symbols-outlined"
               style={{ fontSize: '1rem' }}
             >
               info
@@ -70,7 +70,7 @@ export const InputField: React.FC<InputFieldProps> = ({
         type={type}
         id={id}
         ref={inputRef}
-        className='p-3 rounded-lg bg-neutral-800 text-white border border-neutral-700 focus:ring-2 focus:ring-white transition'
+        className="rounded-lg border border-neutral-700 bg-neutral-800 p-3 text-white transition focus:ring-2 focus:ring-white"
         placeholder={placeholder}
         onChange={onChange}
         value={type !== 'file' ? value : undefined}
@@ -87,16 +87,16 @@ export const TextAreaField: React.FC<TextAreaFieldProps> = ({
   onChange,
   title,
 }) => (
-  <div className='flex flex-col'>
+  <div className="flex flex-col">
     <label
       htmlFor={id}
-      className='text-white font-semibold mb-2 flex items-center gap-2'
+      className="mb-2 flex items-center gap-2 font-semibold text-white"
     >
       {label}
       {title && (
         <ToolTip title={title}>
           <span
-            className='material-symbols-outlined'
+            className="material-symbols-outlined"
             style={{ fontSize: '1rem' }}
           >
             info
@@ -106,7 +106,7 @@ export const TextAreaField: React.FC<TextAreaFieldProps> = ({
     </label>
     <textarea
       id={id}
-      className='p-3 rounded-lg bg-neutral-800 text-white border border-neutral-700 focus:ring-2 focus:ring-white transition'
+      className="rounded-lg border border-neutral-700 bg-neutral-800 p-3 text-white transition focus:ring-2 focus:ring-white"
       placeholder={placeholder}
       rows={4}
       onChange={onChange}

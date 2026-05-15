@@ -1,19 +1,19 @@
 'use client';
-import React, { useState } from 'react';
+import type { Pointer, Reply } from '@db/client';
 import { Avatar } from '@mui/material';
-import { Pointer, Reply } from '@prisma/client';
-import { RootState, useAppSelector } from '@/utils/redux/store';
-import { prettySinceTime } from '@/utils/helpers/prettyprint';
-import { Toaster, toast } from 'sonner';
-import { ReplyBox } from './ReplyBox';
-import { PortalSdk } from '@/utils/services/PortalSdk';
-import { useUser } from '@/utils/hooks/useUser';
+import type { EmojiClickData, Theme } from 'emoji-picker-react';
+import EmojiPicker, { SuggestionMode } from 'emoji-picker-react';
+import React, { useState } from 'react';
+import { toast } from 'sonner';
+
 import ToolTip from '@/components/elements/ToolTip';
-import EmojiPicker, {
-  EmojiClickData,
-  SuggestionMode,
-  Theme,
-} from 'emoji-picker-react';
+import { prettySinceTime } from '@/utils/helpers/prettyprint';
+import { useUser } from '@/utils/hooks/useUser';
+import type { RootState } from '@/utils/redux/store';
+import { useAppSelector } from '@/utils/redux/store';
+import { PortalSdk } from '@/utils/services/PortalSdk';
+
+import { ReplyBox } from './ReplyBox';
 
 const ChatCard = ({
   pointer,
@@ -182,7 +182,7 @@ export const EmojiPopOver = ({
   open,
   handleClose,
   onEmojiSelect,
-  theme
+  theme,
 }: {
   open: boolean;
   handleClose: () => void;

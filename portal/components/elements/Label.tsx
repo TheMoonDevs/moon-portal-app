@@ -9,7 +9,7 @@ const Label: React.FC<LabelProps> = ({ htmlFor, label }) => {
   return (
     <label
       htmlFor={htmlFor}
-      className=" text-sm font-medium text-gray-700 cursor-pointer"
+      className="cursor-pointer text-sm font-medium text-gray-700"
     >
       {label}
     </label>

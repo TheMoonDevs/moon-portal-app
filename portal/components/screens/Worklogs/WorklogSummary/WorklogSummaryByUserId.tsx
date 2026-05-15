@@ -1,11 +1,12 @@
-"use client";
+'use client';
 
-import { User } from "@prisma/client";
-import dayjs from "dayjs";
-import { useState } from "react";
-import { useSearchParams } from "next/navigation";
-import { WorklogSummaryHeader } from "./WorklogSummaryHeader";
-import { WorklogSummaryContent } from "./WorklogSummaryContent";
+import type { User } from '@db/client';
+import dayjs from 'dayjs';
+import { useSearchParams } from 'next/navigation';
+import { useState } from 'react';
+
+import { WorklogSummaryContent } from './WorklogSummaryContent';
+import { WorklogSummaryHeader } from './WorklogSummaryHeader';
 
 interface WorklogSummaryByUserIdProps {
   userId?: string;
@@ -16,8 +17,8 @@ export const WorklogSummaryByUserId: React.FC<WorklogSummaryByUserIdProps> = ({
   userData,
 }) => {
   const searchParams = useSearchParams();
-  const yearParam = searchParams?.get("year");
-  const monthParam = searchParams?.get("month");
+  const yearParam = searchParams?.get('year');
+  const monthParam = searchParams?.get('month');
 
   const year = yearParam ? Number(yearParam) : dayjs().year();
   const month = monthParam ? Number(monthParam) - 1 : dayjs().month();
@@ -30,12 +31,12 @@ export const WorklogSummaryByUserId: React.FC<WorklogSummaryByUserIdProps> = ({
 
   const summaryTitle = `${
     !onlyYearSummary && selectedMonth !== null
-      ? `${dayjs().month(selectedMonth).format("MMM")}, `
-      : ""
+      ? `${dayjs().month(selectedMonth).format('MMM')}, `
+      : ''
   } ${selectedYear}`;
 
   return (
-    <div className="w-full overflow-y-hidden ">
+    <div className="w-full overflow-y-hidden">
       <WorklogSummaryHeader
         joiningDate={joiningDate}
         setOnlyYearSummary={setOnlyYearSummary}

@@ -1,4 +1,4 @@
-// import { MissionTask } from "@/prisma/missionTasks";
+import type { Mission, MissionTask, User } from '@db/client';
 import {
   Box,
   Button,
@@ -14,7 +14,6 @@ import {
   Typography,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
-import type { Mission, MissionTask, User } from '@prisma/client';
 import dayjs from 'dayjs';
 import { Loader, Plus, Save, Trash2, X } from 'lucide-react';
 import type { Dispatch, SetStateAction } from 'react';

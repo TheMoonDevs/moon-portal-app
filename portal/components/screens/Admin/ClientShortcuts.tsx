@@ -1,9 +1,10 @@
-import { Spinner } from '@/components/elements/Loaders';
-import { PortalSdk } from '@/utils/services/PortalSdk';
+import type { ClientUtilityLink } from '@db/client';
 import Image from 'next/image';
 import React, { useState } from 'react';
 import { toast } from 'sonner';
-import { ClientUtilityLink } from '@prisma/client';
+
+import { Spinner } from '@/components/elements/Loaders';
+import { PortalSdk } from '@/utils/services/PortalSdk';
 
 export interface GroupedClientUtilityLink {
   clientName: string;
@@ -55,7 +56,7 @@ const ClientShortcuts = ({
               alt=""
               width={40}
               height={40}
-              className="mr-2 h-10 w-10 rounded-full border-none bg-white object-cover"
+              className="mr-2 size-10 rounded-full border-none bg-white object-cover"
             />
             <p className="text-sm font-medium text-neutral-300 md:text-base">
               {shortcut.clientName}
@@ -73,8 +74,8 @@ const ClientShortcuts = ({
                 className="mb-2 flex items-center justify-between rounded-md bg-neutral-800 p-2 hover:bg-neutral-700"
               >
                 <div className="flex items-center gap-2">
-                  <p className='text-2xl'>{sc.icon}</p>
-                  <div className="flex w-[60%] flex-col items-start">
+                  <p className="text-2xl">{sc.icon}</p>
+                  <div className="flex w-3/5 flex-col items-start">
                     <p className="w-full truncate text-neutral-200">
                       {sc.title}
                     </p>
@@ -96,7 +97,7 @@ const ClientShortcuts = ({
                     disabled={deletingShortcutId === sc.id}
                   >
                     {deletingShortcutId === sc.id ? (
-                      <Spinner className="h-4 w-4" />
+                      <Spinner className="size-4" />
                     ) : (
                       <span className="material-symbols-outlined">delete</span>
                     )}

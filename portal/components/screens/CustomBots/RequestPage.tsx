@@ -1,22 +1,19 @@
 'use client';
-import { Button } from '@/components/ui/button';
-import { CommandEmpty } from '@/components/ui/command';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { prettySinceTime } from '@/utils/helpers/prettyprint';
-import { useUser } from '@/utils/hooks/useUser';
+import { REQUESTSTATUS } from '@db/client';
 import { Skeleton } from '@mui/material';
-import { BotProject, ClientRequest, REQUESTSTATUS } from '@prisma/client';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import useSWR from 'swr';
-import NewRequestCreation from './NewRequestCreation';
-import { CirclePlusIcon } from 'lucide-react';
+
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { useUser } from '@/utils/hooks/useUser';
+
 import ChatWindow from './ChatWindow';
 import { ClientBotProvider } from './ClientBotProvider';
-import Sidebar from './Sidebar';
-import { toast } from 'sonner';
+import NewRequestCreation from './NewRequestCreation';
 import PreviewWindow from './PreviewWindow/PreviewWindow';
+import Sidebar from './Sidebar';
 
 export const RequestPage = () => {
   const [selectedProject, setSelectedProject] = useState<any | null>(null);

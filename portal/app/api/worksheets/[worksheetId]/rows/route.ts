@@ -1,28 +1,39 @@
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
 import { getWorksheetConfig } from '@/lib/worksheets';
-import { listRows, createRow } from '@/lib/worksheets/core/db/worksheet-repository';
+import {
+  createRow,
+  listRows,
+} from '@/lib/worksheets/core/db/worksheet-repository';
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 200;
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ worksheetId: string }> }
+  { params }: { params: Promise<{ worksheetId: string }> },
 ) {
   try {
     const { worksheetId } = await params;
     const url = new URL(request.url);
     const limit = Math.min(
-      parseInt(url.searchParams.get('limit') ?? String(DEFAULT_LIMIT), 10) || DEFAULT_LIMIT,
-      MAX_LIMIT
+      parseInt(url.searchParams.get('limit') ?? String(DEFAULT_LIMIT), 10) ||
+        DEFAULT_LIMIT,
+      MAX_LIMIT,
     );
     const cursor = url.searchParams.get('cursor') ?? undefined;
     const sortBy = url.searchParams.get('sortBy') ?? undefined;
-    const sortOrder = (url.searchParams.get('sortOrder') ?? 'desc') as 'asc' | 'desc';
+    const sortOrder = (url.searchParams.get('sortOrder') ?? 'desc') as
+      | 'asc'
+      | 'desc';
 
     const worksheetConfig = getWorksheetConfig(worksheetId);
     if (!worksheetConfig) {
-      return NextResponse.json({ error: 'Worksheet not found in code registry' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Worksheet not found in code registry' },
+        { status: 404 },
+      );
     }
 
     const filterObj: Record<string, unknown> = {};
@@ -49,24 +60,30 @@ export async function GET(
     console.error('Rows list error:', e);
     return NextResponse.json(
       { error: e instanceof Error ? e.message : 'Failed to list rows' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ worksheetId: string }> }
+  { params }: { params: Promise<{ worksheetId: string }> },
 ) {
   try {
     const { worksheetId } = await params;
     const worksheetConfig = getWorksheetConfig(worksheetId);
 
     if (!worksheetConfig) {
-      return NextResponse.json({ error: 'Worksheet not found in code registry' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Worksheet not found in code registry' },
+        { status: 404 },
+      );
     }
 
-    const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
+    const body = (await request.json().catch(() => ({}))) as Record<
+      string,
+      unknown
+    >;
 
     const row = await createRow(worksheetConfig.id, body);
 
@@ -83,7 +100,7 @@ export async function POST(
           updatedAt: row.updatedAt,
         },
       },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (e) {
     console.error('Create row error:', e);

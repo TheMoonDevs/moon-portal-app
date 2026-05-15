@@ -1,22 +1,24 @@
-"use client";
+'use client';
 
-import useAsyncState from "@/utils/hooks/useAsyncState";
-import { useUser } from "@/utils/hooks/useUser";
-import { useAppSelector } from "@/utils/redux/store";
-import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
-import { UserLink, USERLINKTYPE } from "@prisma/client";
-import { useEffect } from "react";
-import { useDispatch } from "react-redux";
-import LinkList from "../../../LinkList/LinkList";
-import { ViewButtonGroup } from "../../../LinkList/ViewButtonGroup";
-import { setFavoriteLinksList } from "@/utils/redux/quicklinks/slices/quicklinks.links.slice";
+import { USERLINKTYPE } from '@db/client';
+import { useEffect } from 'react';
+import { useDispatch } from 'react-redux';
+
+import useAsyncState from '@/utils/hooks/useAsyncState';
+import { useUser } from '@/utils/hooks/useUser';
+import { setFavoriteLinksList } from '@/utils/redux/quicklinks/slices/quicklinks.links.slice';
+import { useAppSelector } from '@/utils/redux/store';
+import { QuicklinksSdk } from '@/utils/services/QuicklinksSdk';
+
+import LinkList from '../../../LinkList/LinkList';
+import { ViewButtonGroup } from '../../../LinkList/ViewButtonGroup';
 
 const UserSavedLinks = () => {
   const dispatch = useDispatch();
   const { user } = useUser();
   const { loading, setLoading, error, setError } = useAsyncState();
   const { favoriteLinksList } = useAppSelector(
-    (state) => state.quicklinksLinks
+    (state) => state.quicklinksLinks,
   );
 
   useEffect(() => {
@@ -26,7 +28,7 @@ const UserSavedLinks = () => {
       setLoading(true);
       try {
         const favoriteLinksData = await QuicklinksSdk.getData(
-          `/api/quicklinks/link/user-link?userId=${user?.id}&linkType=${USERLINKTYPE.FAVORITED}`
+          `/api/quicklinks/link/user-link?userId=${user?.id}&linkType=${USERLINKTYPE.FAVORITED}`,
         );
 
         dispatch(setFavoriteLinksList(favoriteLinksData));
@@ -46,8 +48,8 @@ const UserSavedLinks = () => {
         </span>
         <span>Saved Items</span>
       </h1> */}
-      <div className="mt-8 flex justify-between items-center max-sm:mt-0">
-        <h1 className="py-[10px] font-bold text-xl">Saved Links</h1>
+      <div className="mt-8 flex items-center justify-between max-sm:mt-0">
+        <h1 className="py-[10px] text-xl font-bold">Saved Links</h1>
         <ViewButtonGroup />
       </div>
       <LinkList

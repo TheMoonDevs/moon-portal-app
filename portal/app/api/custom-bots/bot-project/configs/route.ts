@@ -1,6 +1,7 @@
+import type { JsonObject } from '@db/runtime';
 import { NextResponse } from 'next/server';
-import { prisma } from '@/prisma/prisma';
-import { JsonObject } from '@prisma/client/runtime/library';
+
+import { db } from '@/lib/mongodb/db-client';
 
 export async function GET(req: Request) {
   try {
@@ -14,7 +15,7 @@ export async function GET(req: Request) {
       );
     }
 
-    const project = await prisma.botProject.findUnique({
+    const project = await db.botProject.findUnique({
       where: { id },
       select: {
         previewConfigs: true,
@@ -47,7 +48,7 @@ interface PutRequestBody {
 export async function PUT(req: Request) {
   try {
     const { id, configs, type }: PutRequestBody = await req.json();
-    const existingProject = await prisma.botProject.findUnique({
+    const existingProject = await db.botProject.findUnique({
       where: { id },
       select: {
         previewConfigs: true,
@@ -76,7 +77,7 @@ export async function PUT(req: Request) {
       ...configs,
     };
 
-    const updatedProject = await prisma.botProject.update({
+    const updatedProject = await db.botProject.update({
       where: { id },
       data: {
         ...(type === 'prod'
@@ -86,7 +87,7 @@ export async function PUT(req: Request) {
             : { stagingConfigs: updatedConfiguration }),
       },
     });
-    
+
     return NextResponse.json({
       message: 'Configuration updated successfully',
       updatedProject,
@@ -120,7 +121,7 @@ export async function DELETE(req: Request) {
       );
     }
 
-    const existingProject = await prisma.botProject.findUnique({
+    const existingProject = await db.botProject.findUnique({
       where: { id },
       select: {
         previewConfigs: true,
@@ -143,7 +144,7 @@ export async function DELETE(req: Request) {
 
     keysToDelete.forEach((key: string) => delete updatedConfiguration[key]);
 
-    const updatedProject = await prisma.botProject.update({
+    const updatedProject = await db.botProject.update({
       where: { id },
       data: {
         ...(type === 'prod'

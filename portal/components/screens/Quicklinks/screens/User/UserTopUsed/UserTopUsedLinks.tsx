@@ -1,31 +1,38 @@
-"use client";
+'use client';
 
-import useAsyncState from "@/utils/hooks/useAsyncState";
-import { useUser } from "@/utils/hooks/useUser";
-import { useAppSelector } from "@/utils/redux/store";
-import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
-import { USERDIRECTORYTYPE } from "@prisma/client";
-import { useEffect, useState } from "react";
-import { useDispatch } from "react-redux";
-import { ViewButtonGroup } from "../../../LinkList/ViewButtonGroup";
+import { USERDIRECTORYTYPE } from '@db/client';
+import {
+  Box,
+  CircularProgress,
+  Drawer,
+  IconButton,
+  useMediaQuery,
+} from '@mui/material';
+import { useEffect } from 'react';
+import { useDispatch } from 'react-redux';
 
-import { setTopUsedDirectoryList } from "@/utils/redux/quicklinks/slices/quicklinks.directory.slice";
-import TopLinksFromDirectory from "./TopLinksFromDirectory";
-import { Box, CircularProgress, Drawer, IconButton, useMediaQuery } from "@mui/material";
-import QuicklinkSearchBar from "../../../global/QuicklinkSearchBar";
-import FolderSection from "../../Dashboard/FolderSection";
-import media from "@/styles/media";
-import { setIsFolderSectionOpen } from "@/utils/redux/quicklinks/slices/quicklinks.ui.slice";
+import media from '@/styles/media';
+import useAsyncState from '@/utils/hooks/useAsyncState';
+import { useUser } from '@/utils/hooks/useUser';
+import { setTopUsedDirectoryList } from '@/utils/redux/quicklinks/slices/quicklinks.directory.slice';
+import { setIsFolderSectionOpen } from '@/utils/redux/quicklinks/slices/quicklinks.ui.slice';
+import { useAppSelector } from '@/utils/redux/store';
+import { QuicklinksSdk } from '@/utils/services/QuicklinksSdk';
+
+import QuicklinkSearchBar from '../../../global/QuicklinkSearchBar';
+import { ViewButtonGroup } from '../../../LinkList/ViewButtonGroup';
+import FolderSection from '../../Dashboard/FolderSection';
+import TopLinksFromDirectory from './TopLinksFromDirectory';
 
 const UserTopUsedLinks = ({ withTitle }: { withTitle?: boolean }) => {
   const dispatch = useDispatch();
   const { user } = useUser();
   const { loading, setLoading, error, setError } = useAsyncState();
   const { topUsedDirectoryList } = useAppSelector(
-    (state) => state.quicklinksDirectory
+    (state) => state.quicklinksDirectory,
   );
   const isFolderSectionOpen = useAppSelector(
-    (state) => state.quicklinksUi.isFolderSectionOpen
+    (state) => state.quicklinksUi.isFolderSectionOpen,
   );
   // const [isFolderSectionOpen, setIsFolderSectionOpen] = useState(false);
   const isTablet = useMediaQuery(media.tablet);
@@ -36,18 +43,18 @@ const UserTopUsedLinks = ({ withTitle }: { withTitle?: boolean }) => {
       setLoading(true);
       try {
         const userTopUsedDirectories = await QuicklinksSdk.getData(
-          `/api/quicklinks/directory-list/user-directory?userId=${user.id}&directoryType=${USERDIRECTORYTYPE.OTHER}`
+          `/api/quicklinks/directory-list/user-directory?userId=${user.id}&directoryType=${USERDIRECTORYTYPE.OTHER}`,
         );
         const sortedByClickCount = userTopUsedDirectories.sort(
           (a: any, b: any) => {
             return b.clickCount - a.clickCount;
-          }
+          },
         );
 
         dispatch(
           setTopUsedDirectoryList(
-            sortedByClickCount.map((dir: any) => dir.directoryData)
-          )
+            sortedByClickCount.map((dir: any) => dir.directoryData),
+          ),
         );
         setLoading(false);
         // console.log(sortedByClickCount.map((dir: any) => dir.directoryData));
@@ -60,14 +67,16 @@ const UserTopUsedLinks = ({ withTitle }: { withTitle?: boolean }) => {
 
     getTopUsedDirectories();
   }, [user, dispatch]);
-  
+
   return (
     <>
-      <div className={`${isTablet ? 'flex items-center justify-between gap-2 px-1 py-2' : 'hidden' }`}>
+      <div
+        className={`${isTablet ? 'flex items-center justify-between gap-2 px-1 py-2' : 'hidden'}`}
+      >
         <QuicklinkSearchBar />
         <IconButton
           onClick={() => {
-            dispatch(setIsFolderSectionOpen(!isFolderSectionOpen))
+            dispatch(setIsFolderSectionOpen(!isFolderSectionOpen));
           }}
         >
           <span className="material-symbols-outlined">folder</span>
@@ -76,7 +85,7 @@ const UserTopUsedLinks = ({ withTitle }: { withTitle?: boolean }) => {
       <div>
         <div className="flex items-center justify-between">
           {withTitle && (
-            <h1 className="flex items-center gap-4 py-[10px] text-xl font-bold max-sm:text-lg max-sm:gap-3">
+            <h1 className="flex items-center gap-4 py-[10px] text-xl font-bold max-sm:gap-3 max-sm:text-lg">
               <span className="material-symbols-outlined rounded-full border border-neutral-200 p-2">
                 link
               </span>{' '}
@@ -106,7 +115,7 @@ const UserTopUsedLinks = ({ withTitle }: { withTitle?: boolean }) => {
       <FoldersDrawer
         foldersOpen={isFolderSectionOpen}
         handleClose={() => {
-          dispatch(setIsFolderSectionOpen(false))
+          dispatch(setIsFolderSectionOpen(false));
         }}
       />
     </>
@@ -155,7 +164,7 @@ export const ReusableFolderDrawer = ({
           overflowX: 'hidden',
           overflowY: 'scroll',
           px: 1,
-          py: 3
+          py: 3,
         }}
         role="presentation"
       >

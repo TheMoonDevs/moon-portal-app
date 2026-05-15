@@ -1,14 +1,16 @@
-import { prisma } from "@/prisma/prisma";
-import { NextRequest, NextResponse } from "next/server";
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
+import { db } from '@/lib/mongodb/db-client';
 
 export async function GET(request: NextRequest) {
-  const userId = request.nextUrl.searchParams.get("userId") as string;
-  const ifModifiedSince = request.headers.get("If-Modified-Since");
+  const userId = request.nextUrl.searchParams.get('userId') as string;
+  const ifModifiedSince = request.headers.get('If-Modified-Since');
 
   try {
     const lastModifiedDate = ifModifiedSince ? new Date(ifModifiedSince) : null;
 
-    const notifications = await prisma.notification.findMany({
+    const notifications = await db.notification.findMany({
       where: {
         userId,
         ...(lastModifiedDate && { updatedAt: { gt: lastModifiedDate } }),
@@ -28,7 +30,7 @@ export async function GET(request: NextRequest) {
     }
 
     const json_response = {
-      status: "success",
+      status: 'success',
       data: {
         notifications,
       },
@@ -36,14 +38,14 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(json_response, {
       headers: {
-        "Last-Modified": new Date().toUTCString(),
+        'Last-Modified': new Date().toUTCString(),
       },
     });
   } catch (error) {
-    console.error("Error fetching notifications:", error);
+    console.error('Error fetching notifications:', error);
     return new NextResponse(JSON.stringify(error), {
       status: 500,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }

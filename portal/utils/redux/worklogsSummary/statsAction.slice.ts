@@ -1,4 +1,4 @@
-import { WorkLogs } from "@prisma/client";
+import { WorkLogs } from "@db/client";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 export interface MissedTask {

@@ -1,39 +1,40 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { UPDATEFROM } from '@db/client';
+import { Skeleton } from '@mui/material';
+import dayjs from 'dayjs';
 import {
-  Send,
-  RefreshCw,
-  User,
   Bot,
-  GitPullRequest,
   FilePlus,
   FileText,
-  Mail,
+  GitPullRequest,
   Instagram,
-  Slack,
-  Twitter,
-  Youtube,
-  Settings,
+  Mail,
   MessageCircle,
   Phone,
+  RefreshCw,
+  Send,
+  Settings,
+  Slack,
+  Twitter,
+  User,
+  Youtube,
 } from 'lucide-react';
-import { Skeleton } from '@mui/material';
+import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
+import useSWR from 'swr';
+
+import { ButtonSCN } from '@/components/elements/Button';
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from '@/components/elements/Tab';
-import { toast } from 'sonner';
-import dayjs from 'dayjs';
-import { Badge } from '@/components/elements/badge';
-import useSWR from 'swr';
-import { UPDATEFROM } from '@prisma/client';
-import { PortalSdk } from '@/utils/services/PortalSdk';
-import { ButtonSCN } from '@/components/elements/Button';
-import { useClientBots } from './ClientBotProvider';
 import { TMD_PORTAL_API_KEY } from '@/utils/constants/appInfo';
+import { PortalSdk } from '@/utils/services/PortalSdk';
+
+import { useClientBots } from './ClientBotProvider';
 
 type RequestMessage = {
   id: string;
@@ -139,7 +140,11 @@ export default function ChatWindow({
   );
 
   // Get client bots from our global provider.
-  const { clientBots, refreshClientBots, isLoading: clientBotsLoading } = useClientBots();
+  const {
+    clientBots,
+    refreshClientBots,
+    isLoading: clientBotsLoading,
+  } = useClientBots();
 
   // Update messages when new updates are fetched.
   useEffect(() => {
@@ -260,13 +265,13 @@ export default function ChatWindow({
   const getMessageIcon = (updateFrom: UPDATEFROM) => {
     switch (updateFrom) {
       case UPDATEFROM.CLIENT:
-        return <User className="h-5 w-5" />;
+        return <User className="size-5" />;
       case UPDATEFROM.BOT:
-        return <Bot className="h-5 w-5" />;
+        return <Bot className="size-5" />;
       case UPDATEFROM.SYSTEM:
-        return <GitPullRequest className="h-5 w-5" />;
+        return <GitPullRequest className="size-5" />;
       default:
-        return <User className="h-5 w-5" />;
+        return <User className="size-5" />;
     }
   };
 
@@ -309,23 +314,23 @@ export default function ChatWindow({
   const getTemplateIcon = (type?: string) => {
     switch (type) {
       case 'DISCORD':
-        return <MessageCircle className="mr-2 h-5 w-5" />;
+        return <MessageCircle className="mr-2 size-5" />;
       case 'EMAIL':
-        return <Mail className="mr-2 h-5 w-5" />;
+        return <Mail className="mr-2 size-5" />;
       case 'INSTAGRAM':
-        return <Instagram className="mr-2 h-5 w-5" />;
+        return <Instagram className="mr-2 size-5" />;
       case 'SLACK':
-        return <Slack className="mr-2 h-5 w-5" />;
+        return <Slack className="mr-2 size-5" />;
       case 'TELEGRAM':
-        return <Send className="mr-2 h-5 w-5" />;
+        return <Send className="mr-2 size-5" />;
       case 'X':
-        return <Twitter className="mr-2 h-5 w-5" />;
+        return <Twitter className="mr-2 size-5" />;
       case 'WHATSAPP':
-        return <Phone className="mr-2 h-5 w-5" />;
+        return <Phone className="mr-2 size-5" />;
       case 'YOUTUBE':
-        return <Youtube className="mr-2 h-5 w-5" />;
+        return <Youtube className="mr-2 size-5" />;
       default:
-        return <Settings className="mr-2 h-5 w-5" />; // For CUSTOM or undefined types.
+        return <Settings className="mr-2 size-5" />; // For CUSTOM or undefined types.
     }
   };
 
@@ -460,11 +465,11 @@ export default function ChatWindow({
   };
 
   return (
-    <div className="relative flex h-full w-full flex-col overflow-y-auto">
+    <div className="relative flex size-full flex-col overflow-y-auto">
       {/* Header */}
       <div className="flex items-center justify-between gap-2 p-4">
         <div className="w-fit">
-          <h2 className="flex flex-wrap text-sm line-clamp-1 items-center justify-start gap-2 font-semibold">
+          <h2 className="line-clamp-1 flex flex-wrap items-center justify-start gap-2 text-sm font-semibold">
             {clientRequest.title}
           </h2>
           <p className="text-xs text-gray-500">
@@ -478,7 +483,7 @@ export default function ChatWindow({
           disabled={isLoading}
         >
           <RefreshCw
-            className={`my-auto h-4 w-4 ${isValidating ? 'animate-spin' : ''}`}
+            className={`my-auto size-4 ${isValidating ? 'animate-spin' : ''}`}
           />
           {/* {isValidating ? 'Refreshing...' : 'Refresh'} */}
         </ButtonSCN>
@@ -498,7 +503,7 @@ export default function ChatWindow({
         className="relative flex h-full max-h-[75vh] flex-1 flex-col overflow-y-auto"
       >
         <div className="w-full px-4">
-          <TabsList className="flex w-full justify-evenly text-md gap-4">
+          <TabsList className="text-md flex w-full justify-evenly gap-4">
             <TabsTrigger className="w-full" value="chat">
               Chat
             </TabsTrigger>
@@ -559,7 +564,7 @@ export default function ChatWindow({
                             ) : (
                               <a key={idx} href={m.mediaUrl} target="_blank">
                                 <span className="flex items-center gap-1">
-                                  <FileText className="h-12 w-12 text-gray-600" />
+                                  <FileText className="size-12 text-gray-600" />
                                   {m.mediaName}
                                 </span>
                               </a>
@@ -597,8 +602,8 @@ export default function ChatWindow({
           {isLoading ? (
             <Skeleton variant="rectangular" width="100%" height={200} />
           ) : updates.filter(
-            (update) => update.updateFrom === UPDATEFROM.SYSTEM,
-          ).length > 0 ? (
+              (update) => update.updateFrom === UPDATEFROM.SYSTEM,
+            ).length > 0 ? (
             updates
               .filter((update) => update.updateFrom === UPDATEFROM.SYSTEM)
               .map((update) => (
@@ -630,11 +635,11 @@ export default function ChatWindow({
                       <img
                         src={media.preview}
                         alt={media.file.name}
-                        className="h-16 w-16 rounded object-cover"
+                        className="size-16 rounded object-cover"
                       />
                     ) : (
-                      <div className="flex h-16 w-16 items-center justify-center rounded bg-gray-100">
-                        <FileText className="h-6 w-6 text-gray-600" />
+                      <div className="flex size-16 items-center justify-center rounded bg-gray-100">
+                        <FileText className="size-6 text-gray-600" />
                       </div>
                     )}
                     <button
@@ -647,7 +652,7 @@ export default function ChatWindow({
                 ))}
               </div>
             )}
-            <div className="flex  items-end gap-2">
+            <div className="flex items-end gap-2">
               <textarea
                 placeholder="Type your message... (start with '/' to choose a ClientBot)"
                 className="w-full resize-none rounded-lg border p-3 outline-none"
@@ -660,23 +665,25 @@ export default function ChatWindow({
                 }}
                 disabled={sending}
               />
-              <div className='flex flex-col-reverse gap-1'>
+              <div className="flex flex-col-reverse gap-1">
                 <ButtonSCN
                   onClick={sendMessage}
                   disabled={
                     (!message.trim() && attachedMedia.length === 0) || sending
                   }
-                  className='py-1'
+                  className="py-1"
                 >
                   {!sending ? (
-                    <Send className="my-auto h-4 w-4" />
+                    <Send className="my-auto size-4" />
                   ) : (
-                    <RefreshCw className="my-auto h-4 w-4 animate-spin" />
+                    <RefreshCw className="my-auto size-4 animate-spin" />
                   )}
                 </ButtonSCN>
-                <ButtonSCN onClick={() => fileInputRef.current?.click()}
-                  className='py-1'>
-                  <FilePlus className="my-auto h-4 w-4" />
+                <ButtonSCN
+                  onClick={() => fileInputRef.current?.click()}
+                  className="py-1"
+                >
+                  <FilePlus className="my-auto size-4" />
                 </ButtonSCN>
               </div>
               <input
@@ -698,7 +705,7 @@ export default function ChatWindow({
           <div className="flex flex-col gap-2">
             {clientBotsLoading ? (
               <div className="flex justify-center py-4">
-                <RefreshCw className="h-6 w-6 animate-spin text-blue-500" />
+                <RefreshCw className="size-6 animate-spin text-blue-500" />
                 <span className="ml-2">Loading bots...</span>
               </div>
             ) : clientBots && clientBots.length > 0 ? (
@@ -742,8 +749,7 @@ export default function ChatWindow({
                 <h2 className="text-sm">Add your Bots to this request</h2>
                 {clientBots
                   .filter(
-                    (bot) =>
-                      !bot.clientRequestIds.includes(clientRequest?.id),
+                    (bot) => !bot.clientRequestIds.includes(clientRequest?.id),
                   )
                   .map((bot) => (
                     <div

@@ -1,13 +1,13 @@
-import { z } from "zod";
-import type { WorksheetConfig, ColumnConfig, ColumnType } from "./types";
-import type { WorksheetFieldMeta, WorksheetSchemaMeta } from "./db/zod-meta";
-import { executeComputedPipelineSync } from "./functions/compute/pipeline";
-import { ACTION_FNS, type ComputeKey } from "@/lib/worksheets/functions";
+import { z } from 'zod';
+
+import { ACTION_FNS, type ComputeKey } from '@/lib/worksheets/functions';
+
+import type { WorksheetFieldMeta, WorksheetSchemaMeta } from './db/zod-meta';
+import { executeComputedPipelineSync } from './functions/compute/pipeline';
+import type { ColumnConfig, ColumnType, WorksheetConfig } from './types';
 
 function titleFromField(field: string): string {
-  return field
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (m) => m.toUpperCase());
+  return field.replace(/_/g, ' ').replace(/\b\w/g, (m) => m.toUpperCase());
 }
 
 function inferColumnType(fieldSchema: z.ZodTypeAny, field: string): ColumnType {
@@ -16,9 +16,9 @@ function inferColumnType(fieldSchema: z.ZodTypeAny, field: string): ColumnType {
     | undefined;
   const hinted = (meta?.ui as any)?.type as ColumnType | undefined;
   if (hinted) return hinted;
-  if ((meta?.options as any)?.type === "__async_select__") return "asyncSelect";
-  if (field.toLowerCase().includes("email")) return "email";
-  return "text";
+  if ((meta?.options as any)?.type === '__async_select__') return 'asyncSelect';
+  if (field.toLowerCase().includes('email')) return 'email';
+  return 'text';
 }
 
 function applyColumnOrdering(columns: ColumnConfig[]): ColumnConfig[] {
@@ -59,20 +59,22 @@ export function deriveColumns(config: WorksheetConfig): ColumnConfig[] {
 
   const derived = fields.map((field) => {
     const fieldSchema = shape[field];
-    const meta = (fieldSchema as unknown as { meta?: () => unknown }).meta?.() as
-      | WorksheetFieldMeta
-      | undefined;
+    const meta = (
+      fieldSchema as unknown as { meta?: () => unknown }
+    ).meta?.() as WorksheetFieldMeta | undefined;
     const ui = meta?.ui;
     const type = inferColumnType(fieldSchema, field);
     const staticOptions =
-      meta?.options && "staticOptions" in meta.options ? meta.options.staticOptions : undefined;
+      meta?.options && 'staticOptions' in meta.options
+        ? meta.options.staticOptions
+        : undefined;
     return {
       field,
       label: titleFromField(field),
       type,
       valueFormatter: undefined,
       zodSchema: fieldSchema,
-      options: type === "enum" ? staticOptions : undefined,
+      options: type === 'enum' ? staticOptions : undefined,
       width: ui?.width,
       pinned: ui?.pinned,
       hidden: ui?.hidden,
@@ -86,22 +88,25 @@ export function deriveColumns(config: WorksheetConfig): ColumnConfig[] {
   const uiColumnsMeta = meta?.uiColumns ?? [];
 
   const uiColumns: ColumnConfig[] = uiColumnsMeta.map((u) => {
-    const type: ColumnType = (u.type as ColumnType) || "text";
+    const type: ColumnType = (u.type as ColumnType) || 'text';
     const label = u.label ?? titleFromField(u.field);
 
-    if (type === "computed") {
-      const zodSchema = z.any().optional().meta({
-        ui: {
-          width: u.width,
-          pinned: u.pinned,
-          hidden: u.hidden,
-          align: u.align,
-        },
-      } as WorksheetFieldMeta);
+    if (type === 'computed') {
+      const zodSchema = z
+        .any()
+        .optional()
+        .meta({
+          ui: {
+            width: u.width,
+            pinned: u.pinned,
+            hidden: u.hidden,
+            align: u.align,
+          },
+        } as WorksheetFieldMeta);
       return {
         field: u.field,
         label,
-        type: "computed",
+        type: 'computed',
         zodSchema,
         width: u.width,
         pinned: u.pinned,
@@ -123,24 +128,27 @@ export function deriveColumns(config: WorksheetConfig): ColumnConfig[] {
       };
     }
 
-    if (type === "actions") {
+    if (type === 'actions') {
       const handlerKey = u.action?.handlerKey;
       const handler = handlerKey
         ? ACTION_FNS[handlerKey as keyof typeof ACTION_FNS]
         : undefined;
-      const zodSchema = z.any().optional().meta({
-        ui: {
-          width: u.width,
-          pinned: u.pinned,
-          hidden: u.hidden,
-          align: u.align,
-        },
-      } as WorksheetFieldMeta);
+      const zodSchema = z
+        .any()
+        .optional()
+        .meta({
+          ui: {
+            width: u.width,
+            pinned: u.pinned,
+            hidden: u.hidden,
+            align: u.align,
+          },
+        } as WorksheetFieldMeta);
 
       return {
         field: u.field,
         label,
-        type: "actions",
+        type: 'actions',
         zodSchema,
         width: u.width,
         pinned: u.pinned,
@@ -166,14 +174,17 @@ export function deriveColumns(config: WorksheetConfig): ColumnConfig[] {
       };
     }
 
-    const zodSchema = z.any().optional().meta({
-      ui: {
-        width: u.width,
-        pinned: u.pinned,
-        hidden: u.hidden,
-        align: u.align,
-      },
-    } as WorksheetFieldMeta);
+    const zodSchema = z
+      .any()
+      .optional()
+      .meta({
+        ui: {
+          width: u.width,
+          pinned: u.pinned,
+          hidden: u.hidden,
+          align: u.align,
+        },
+      } as WorksheetFieldMeta);
 
     return {
       field: u.field,
@@ -190,7 +201,9 @@ export function deriveColumns(config: WorksheetConfig): ColumnConfig[] {
     } as ColumnConfig;
   });
 
-  return applyColumnOrdering(uiColumns.length ? [...derived, ...uiColumns] : derived);
+  return applyColumnOrdering(
+    uiColumns.length ? [...derived, ...uiColumns] : derived,
+  );
 }
 
 export function deriveWorksheetConfigFromSchema(
@@ -200,7 +213,7 @@ export function deriveWorksheetConfigFromSchema(
     | WorksheetSchemaMeta
     | undefined;
   if (!meta) {
-    throw new Error("Worksheet schema is missing meta with id/name/slug");
+    throw new Error('Worksheet schema is missing meta with id/name/slug');
   }
 
   return {

@@ -1,14 +1,15 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import { PortalSdk } from "@/utils/services/PortalSdk";
-import { MdxAppEditor } from "@/utils/configure/MdxAppEditor";
-import { debounce } from "lodash";
-import { MDXEditorMethods } from "@mdxeditor/editor";
-import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
+import type { MDXEditorMethods } from '@mdxeditor/editor';
+import { debounce } from 'lodash';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+
+import { MdxAppEditor } from '@/utils/configure/MdxAppEditor';
+import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
 import {
   setCompletedTodos,
   setIncompleteTodos,
   setTodoMarkdown,
-} from "@/utils/redux/worklogs/laterTodos.slice";
+} from '@/utils/redux/worklogs/laterTodos.slice';
+import { PortalSdk } from '@/utils/services/PortalSdk';
 
 export const MARKDOWN_PLACEHOLDER = `*`;
 
@@ -22,7 +23,7 @@ const TodoTabs: React.FC<TodoTabsProps> = ({ userId }) => {
   const [saving, setSaving] = useState<boolean>(false);
   // moved the later todos logic to the parent component to render pulsating dot
   const { todoMarkdown, incompleteTodos, completedTodos } = useAppSelector(
-    (state) => state.laterTodos
+    (state) => state.laterTodos,
   );
   const mdRef = useRef<MDXEditorMethods | null>(null);
 
@@ -30,7 +31,7 @@ const TodoTabs: React.FC<TodoTabsProps> = ({ userId }) => {
     setLoading(true);
     PortalSdk.getData(`/api/user/todolater?userId=${userId}`, null)
       .then((data) => {
-        const content = data?.data?.markdown?.content || "";
+        const content = data?.data?.markdown?.content || '';
         dispatch(setTodoMarkdown(content));
         mdRef?.current?.setMarkdown(content);
       })
@@ -47,38 +48,38 @@ const TodoTabs: React.FC<TodoTabsProps> = ({ userId }) => {
       setSaving(true);
       PortalSdk.putData(`/api/user/todolater`, {
         userId: userId,
-        logType: "todoLater",
+        logType: 'todoLater',
         markdown: { content: content },
       })
         .then((response) => {
-          console.log("Markdown saved successfully", response);
+          console.log('Markdown saved successfully', response);
         })
         .catch((error) => {
-          console.error("Error saving markdown", error);
+          console.error('Error saving markdown', error);
         })
         .finally(() => {
           setSaving(false);
         });
     },
-    [userId]
+    [userId],
   );
 
   const debouncedSave = useCallback(
     debounce((content: string) => saveMarkdownContent(content), 3000),
-    [saveMarkdownContent]
+    [saveMarkdownContent],
   );
 
   const handleMarkdownChange = (content: string) => {
     const emojiMap: { [key: string]: string } = {
-      ":check:": "✅",
-      ":cross:": "❌",
-      ":yellow:": "🟡",
-      ":red:": "🔴",
-      ":calendar:": "📅",
-      ":pencil:": "✏️",
-      ":bulb:": "💡",
-      ":question:": "❓",
-      ":star:": "⭐",
+      ':check:': '✅',
+      ':cross:': '❌',
+      ':yellow:': '🟡',
+      ':red:': '🔴',
+      ':calendar:': '📅',
+      ':pencil:': '✏️',
+      ':bulb:': '💡',
+      ':question:': '❓',
+      ':star:': '⭐',
     };
 
     let new_content = content;
@@ -102,7 +103,7 @@ const TodoTabs: React.FC<TodoTabsProps> = ({ userId }) => {
 
   useEffect(() => {
     if (todoMarkdown) {
-      if (todoMarkdown.trim() === "*" || todoMarkdown.trim() === "") {
+      if (todoMarkdown.trim() === '*' || todoMarkdown.trim() === '') {
         dispatch(setIncompleteTodos(0));
       } else {
         const total = (todoMarkdown.match(/\n/g) || []).length + 1;
@@ -115,29 +116,29 @@ const TodoTabs: React.FC<TodoTabsProps> = ({ userId }) => {
 
   return (
     <div className="mt-4">
-      <div className="text-sm flex item-center gap-2 leading-3 mb-2 text-neutral-500">
+      <div className="item-center mb-2 flex gap-2 text-sm leading-3 text-neutral-500">
         {(saving || loading) && (
-          <div className="animate-spin rounded-full h-3 w-3 border-t-2 border-b-2 border-neutral-800"></div>
+          <div className="size-3 animate-spin rounded-full border-y-2 border-neutral-800"></div>
         )}
         Todo - {`${completedTodos} / ${completedTodos + incompleteTodos}`}
-        {" | "}
-        {saving ? "saving..." : loading ? "fetching.." : "Saved"}
+        {' | '}
+        {saving ? 'saving...' : loading ? 'fetching..' : 'Saved'}
       </div>
       <div
         onKeyDown={(e) => {
-          if (e.ctrlKey && e.key === "s") {
+          if (e.ctrlKey && e.key === 's') {
             e.preventDefault();
-            console.log("Saving Worklogs");
+            console.log('Saving Worklogs');
             saveMarkdownContent(todoMarkdown);
           }
-          if (e.ctrlKey && e.key === "r") {
+          if (e.ctrlKey && e.key === 'r') {
             e.preventDefault();
-            console.log("Refreshing Worklogs");
+            console.log('Refreshing Worklogs');
             fetchLaterToDo(userId);
           }
-          if (e.ctrlKey && e.key === " ") {
+          if (e.ctrlKey && e.key === ' ') {
             e.preventDefault();
-            mdRef?.current?.insertMarkdown("✅");
+            mdRef?.current?.insertMarkdown('✅');
           }
         }}
       >
@@ -150,11 +151,12 @@ const TodoTabs: React.FC<TodoTabsProps> = ({ userId }) => {
               ? MARKDOWN_PLACEHOLDER
               : todoMarkdown
           }
-          className="flex-grow h-full"
-          contentEditableClassName={`mdx_ce ${todoMarkdown.trim() == MARKDOWN_PLACEHOLDER.trim()
-            ? " mdx_uninit "
-            : ""
-            } leading-1 imp-p-0 grow w-full h-full`}
+          className="h-full grow"
+          contentEditableClassName={`mdx_ce ${
+            todoMarkdown.trim() == MARKDOWN_PLACEHOLDER.trim()
+              ? ' mdx_uninit '
+              : ''
+          } leading-1 imp-p-0 grow w-full h-full`}
           onChange={handleMarkdownChange}
         />
       </div>

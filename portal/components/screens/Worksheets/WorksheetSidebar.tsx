@@ -1,23 +1,22 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { z } from 'zod';
-import { useWorksheetStore } from './useWorksheetStore';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import {
-  MousePointer2,
-  Save,
-  RefreshCw,
-  Trash2,
   Eye,
   EyeOff,
+  MousePointer2,
   Pin,
   PinOff,
+  RefreshCw,
+  Save,
+  Trash2,
 } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { z } from 'zod';
+
+import { Button } from '@/components/ui/button';
 import { ColorPicker } from '@/components/ui/color-picker';
-import { TMD_PORTAL_API_KEY } from '@/utils/constants/appInfo';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select as SelectUI,
   SelectContent,
@@ -25,12 +24,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import type { WorksheetFieldMeta } from '@/lib/worksheets/core/db/zod-meta';
 import type {
-  WorksheetConfig,
   ColumnConfig,
   ComputedColumnConfig,
+  WorksheetConfig,
 } from '@/lib/worksheets/core/types';
-import type { WorksheetFieldMeta } from '@/lib/worksheets/core/db/zod-meta';
+import { TMD_PORTAL_API_KEY } from '@/utils/constants/appInfo';
+
+import { useWorksheetStore } from './useWorksheetStore';
 
 interface WorksheetSidebarProps {
   worksheetConfig: WorksheetConfig;
@@ -120,13 +122,16 @@ export function WorksheetSidebar({
 
   const column = columns.length === 1 ? columns[0] : null;
 
-  const getColumnMeta = useCallback((col?: ColumnConfig | null): WorksheetFieldMeta | undefined => {
-    if (!col || !('zodSchema' in col)) return undefined;
-    const zodSchema = (col as { zodSchema?: z.ZodTypeAny }).zodSchema;
-    return (zodSchema as unknown as { meta?: () => unknown } | undefined)?.meta?.() as
-      | WorksheetFieldMeta
-      | undefined;
-  }, []);
+  const getColumnMeta = useCallback(
+    (col?: ColumnConfig | null): WorksheetFieldMeta | undefined => {
+      if (!col || !('zodSchema' in col)) return undefined;
+      const zodSchema = (col as { zodSchema?: z.ZodTypeAny }).zodSchema;
+      return (
+        zodSchema as unknown as { meta?: () => unknown } | undefined
+      )?.meta?.() as WorksheetFieldMeta | undefined;
+    },
+    [],
+  );
 
   const isComputedOnly =
     columns.length > 0 && columns.every((c) => c.type === 'computed');
@@ -137,8 +142,12 @@ export function WorksheetSidebar({
     !isMulti && column && rowData ? rowData[column.field] : undefined;
 
   const validationResult = useMemo(() => {
-    if (!column || column.type === 'computed' || column.type === 'actions') return { error: null, hasSchema: false };
-    const schema = 'zodSchema' in column ? (column as { zodSchema?: z.ZodTypeAny }).zodSchema : undefined;
+    if (!column || column.type === 'computed' || column.type === 'actions')
+      return { error: null, hasSchema: false };
+    const schema =
+      'zodSchema' in column
+        ? (column as { zodSchema?: z.ZodTypeAny }).zodSchema
+        : undefined;
     if (!schema) return { error: null, hasSchema: false };
     if (!rowData) return { error: null, hasSchema: true };
     const result = schema.safeParse(rowData[column.field]);
@@ -160,7 +169,9 @@ export function WorksheetSidebar({
   const computedCellValue = useMemo(() => {
     if (column?.type !== 'computed' || !fullRowData) return undefined;
     try {
-      const v = (column as ComputedColumnConfig).valueGetter(fullRowData as Record<string, any>);
+      const v = (column as ComputedColumnConfig).valueGetter(
+        fullRowData as Record<string, any>,
+      );
       return v === undefined || v === null ? '' : String(v);
     } catch {
       return undefined;
@@ -181,7 +192,7 @@ export function WorksheetSidebar({
   }, [rawVal, column]);
 
   const [editValue, setEditValue] = useState<string>('');
-  
+
   const selectionKey = selectedCells
     .map((c) => `${c.rowId}-${c.field}`)
     .join('|');
@@ -209,8 +220,14 @@ export function WorksheetSidebar({
             },
           );
           const json = await res.json();
-          if (!res.ok) throw new Error(json?.error || 'Failed to fetch options');
-          setAsyncOptions((json?.options ?? []) as { label: string; value: string | number }[]);
+          if (!res.ok)
+            throw new Error(json?.error || 'Failed to fetch options');
+          setAsyncOptions(
+            (json?.options ?? []) as {
+              label: string;
+              value: string | number;
+            }[],
+          );
         } catch (e) {
           console.error('Failed to fetch async options', e);
           setAsyncOptions([]);
@@ -285,7 +302,7 @@ export function WorksheetSidebar({
         field: 'id',
         label:
           typeof worksheetConfig.idColumn === 'object'
-            ? worksheetConfig.idColumn?.label ?? 'ID'
+            ? (worksheetConfig.idColumn?.label ?? 'ID')
             : 'ID',
       });
     }
@@ -294,7 +311,7 @@ export function WorksheetSidebar({
         field: 'createdAt',
         label:
           typeof worksheetConfig.createdAtColumn === 'object'
-            ? worksheetConfig.createdAtColumn?.label ?? 'Created'
+            ? (worksheetConfig.createdAtColumn?.label ?? 'Created')
             : 'Created',
       });
     }
@@ -303,7 +320,7 @@ export function WorksheetSidebar({
         field: 'updatedAt',
         label:
           typeof worksheetConfig.updatedAtColumn === 'object'
-            ? worksheetConfig.updatedAtColumn?.label ?? 'Updated'
+            ? (worksheetConfig.updatedAtColumn?.label ?? 'Updated')
             : 'Updated',
       });
     }
@@ -311,10 +328,10 @@ export function WorksheetSidebar({
   }, [worksheetConfig, getColumnMeta]);
 
   return (
-    <div className="flex h-full w-full flex-col bg-white font-sans text-black">
+    <div className="flex size-full flex-col bg-white font-sans text-black">
       {/* Tabs header */}
       <div className="flex border-b border-black">
-        <button 
+        <button
           className={`flex-1 border-r border-black py-2 text-xs font-bold uppercase tracking-widest last:border-r-0 ${
             activeTab === 'record'
               ? 'bg-black text-white'
@@ -324,7 +341,7 @@ export function WorksheetSidebar({
         >
           Record
         </button>
-        <button 
+        <button
           className={`flex-1 py-2 text-xs font-bold uppercase tracking-widest ${
             activeTab === 'columns'
               ? 'bg-black text-white'
@@ -353,24 +370,29 @@ export function WorksheetSidebar({
                       className="flex flex-col gap-0.5 text-xs"
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span className="truncate font-medium">{col.label}</span>
+                        <span className="truncate font-medium">
+                          {col.label}
+                        </span>
                         <div className="flex gap-1">
                           <Button
                             size="sm"
                             variant="ghost"
                             className="h-6 w-16 rounded-none px-1 text-[10px]"
                             onClick={() =>
-                              store.toggleHiddenCol(worksheetConfig.id, col.field)
+                              store.toggleHiddenCol(
+                                worksheetConfig.id,
+                                col.field,
+                              )
                             }
                           >
                             {isHidden ? (
                               <>
-                                <EyeOff className="mr-1 h-3 w-3" />
+                                <EyeOff className="mr-1 size-3" />
                                 Show
                               </>
                             ) : (
                               <>
-                                <Eye className="mr-1 h-3 w-3" />
+                                <Eye className="mr-1 size-3" />
                                 Hide
                               </>
                             )}
@@ -380,17 +402,20 @@ export function WorksheetSidebar({
                             variant="ghost"
                             className="h-6 w-20 rounded-none px-1 text-[10px]"
                             onClick={() =>
-                              store.togglePinnedCol(worksheetConfig.id, col.field)
+                              store.togglePinnedCol(
+                                worksheetConfig.id,
+                                col.field,
+                              )
                             }
                           >
                             {isPinned ? (
                               <>
-                                <PinOff className="mr-1 h-3 w-3" />
+                                <PinOff className="mr-1 size-3" />
                                 Unpin
                               </>
                             ) : (
                               <>
-                                <Pin className="mr-1 h-3 w-3" />
+                                <Pin className="mr-1 size-3" />
                                 Pin
                               </>
                             )}
@@ -416,7 +441,7 @@ export function WorksheetSidebar({
             {!hasSelection ? (
               <div className="flex h-full flex-col items-center justify-center border border-black p-6 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                 <MousePointer2
-                  className="mb-3 h-10 w-10 text-black"
+                  className="mb-3 size-10 text-black"
                   strokeWidth={1}
                 />
                 <p className="text-xs font-medium uppercase tracking-wider">
@@ -457,7 +482,7 @@ export function WorksheetSidebar({
                           {column.type}
                         </span>
                       </div>
-                      
+
                       {columnMeta?.googleForm && (
                         <div className="rounded border border-black bg-blue-50/80 p-2">
                           <Label className="mb-1 block text-xs font-bold uppercase text-blue-900">
@@ -483,7 +508,8 @@ export function WorksheetSidebar({
                               Validation rules
                             </Label>
                             <p className="text-xs text-gray-800">
-                              {validationHint || 'This field has validation rules.'}
+                              {validationHint ||
+                                'This field has validation rules.'}
                             </p>
                           </div>
                           {validationResult.error && (
@@ -491,7 +517,9 @@ export function WorksheetSidebar({
                               <Label className="mb-1 block text-xs font-bold uppercase text-red-700">
                                 Validation error
                               </Label>
-                              <p className="text-xs text-red-800">{validationResult.error}</p>
+                              <p className="text-xs text-red-800">
+                                {validationResult.error}
+                              </p>
                             </div>
                           )}
                         </div>
@@ -500,107 +528,112 @@ export function WorksheetSidebar({
                       {(selectedCell || (isMulti && column)) &&
                         !isComputedOnly &&
                         !isActionsOnly && (
-                        <div className="mt-4 flex flex-col gap-2 border-t border-black pt-4">
-                          <Label className="text-xs font-bold uppercase">
-                            {isMulti
-                              ? 'Bulk Edit Value (same for all)'
-                              : 'Edit Value'}
-                          </Label>
-                          <div className="flex flex-col gap-2">
-                            {column.type === 'enum' && 'options' in column ? (
-                              <SelectUI
-                                value={editValue}
-                                onValueChange={setEditValue}
-                              >
-                                <SelectTrigger className="h-8 rounded-none border-black text-xs focus:ring-0 focus:ring-offset-0">
-                                  <SelectValue placeholder="Select..." />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-none border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                                  {(column.options as { label: string; value: string | number }[] || []).map((v) => {
-                                    const valStr =
-                                      typeof v === 'object'
-                                        ? String(v.value)
-                                        : String(v);
-                                    const labelStr =
-                                      typeof v === 'object'
-                                        ? v.label
-                                        : String(v);
-                                    return (
-                                      <SelectItem
-                                        key={valStr}
-                                        value={valStr}
-                                        className="rounded-none text-xs focus:bg-black focus:text-white"
-                                      >
-                                        {labelStr}
-                                      </SelectItem>
-                                    );
-                                  })}
-                                </SelectContent>
-                              </SelectUI>
-                            ) : column.type === 'asyncSelect' ? (
-                              <div className="flex gap-2">
+                          <div className="mt-4 flex flex-col gap-2 border-t border-black pt-4">
+                            <Label className="text-xs font-bold uppercase">
+                              {isMulti
+                                ? 'Bulk Edit Value (same for all)'
+                                : 'Edit Value'}
+                            </Label>
+                            <div className="flex flex-col gap-2">
+                              {column.type === 'enum' && 'options' in column ? (
                                 <SelectUI
                                   value={editValue}
                                   onValueChange={setEditValue}
                                 >
                                   <SelectTrigger className="h-8 rounded-none border-black text-xs focus:ring-0 focus:ring-offset-0">
-                                    <SelectValue
-                                      placeholder={
-                                        asyncLoading
-                                          ? 'Loading...'
-                                          : 'Select...'
-                                      }
-                                    />
+                                    <SelectValue placeholder="Select..." />
                                   </SelectTrigger>
                                   <SelectContent className="rounded-none border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                                    {(asyncOptions || []).map((v) => (
-                                      <SelectItem
-                                        key={String(v.value)}
-                                        value={String(v.value)}
-                                        className="rounded-none text-xs focus:bg-black focus:text-white"
-                                      >
-                                        {v.label}
-                                      </SelectItem>
-                                    ))}
+                                    {(
+                                      (column.options as {
+                                        label: string;
+                                        value: string | number;
+                                      }[]) || []
+                                    ).map((v) => {
+                                      const valStr =
+                                        typeof v === 'object'
+                                          ? String(v.value)
+                                          : String(v);
+                                      const labelStr =
+                                        typeof v === 'object'
+                                          ? v.label
+                                          : String(v);
+                                      return (
+                                        <SelectItem
+                                          key={valStr}
+                                          value={valStr}
+                                          className="rounded-none text-xs focus:bg-black focus:text-white"
+                                        >
+                                          {labelStr}
+                                        </SelectItem>
+                                      );
+                                    })}
                                   </SelectContent>
                                 </SelectUI>
-                                {asyncLoading && (
-                                  <RefreshCw className="my-auto h-4 w-4 animate-spin" />
-                                )}
-                              </div>
-                            ) : (
-                              <Input
-                                type={
-                                  column.type === 'number'
-                                    ? 'number'
-                                    : column.type === 'date'
-                                      ? 'date'
-                                      : column.type === 'email'
-                                        ? 'email'
-                                        : 'text'
-                                }
-                                value={editValue}
-                                onChange={(e) => setEditValue(e.target.value)}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    handleSaveEdit();
+                              ) : column.type === 'asyncSelect' ? (
+                                <div className="flex gap-2">
+                                  <SelectUI
+                                    value={editValue}
+                                    onValueChange={setEditValue}
+                                  >
+                                    <SelectTrigger className="h-8 rounded-none border-black text-xs focus:ring-0 focus:ring-offset-0">
+                                      <SelectValue
+                                        placeholder={
+                                          asyncLoading
+                                            ? 'Loading...'
+                                            : 'Select...'
+                                        }
+                                      />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-none border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                      {(asyncOptions || []).map((v) => (
+                                        <SelectItem
+                                          key={String(v.value)}
+                                          value={String(v.value)}
+                                          className="rounded-none text-xs focus:bg-black focus:text-white"
+                                        >
+                                          {v.label}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </SelectUI>
+                                  {asyncLoading && (
+                                    <RefreshCw className="my-auto size-4 animate-spin" />
+                                  )}
+                                </div>
+                              ) : (
+                                <Input
+                                  type={
+                                    column.type === 'number'
+                                      ? 'number'
+                                      : column.type === 'date'
+                                        ? 'date'
+                                        : column.type === 'email'
+                                          ? 'email'
+                                          : 'text'
                                   }
-                                }}
-                                className="h-8 rounded-none border-black text-xs focus-visible:border-black focus-visible:ring-0"
-                              />
-                            )}
-                            <Button
-                              type="button"
-                              size="sm"
-                              onClick={handleSaveEdit}
-                              className="mt-2 h-8 rounded-none border-2 border-black bg-white text-xs font-bold uppercase tracking-wider text-black hover:bg-black hover:text-white"
-                            >
-                              <Save className="mr-2 h-3 w-3" />
-                              Save Changes
-                            </Button>
+                                  value={editValue}
+                                  onChange={(e) => setEditValue(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      handleSaveEdit();
+                                    }
+                                  }}
+                                  className="h-8 rounded-none border-black text-xs focus-visible:border-black focus-visible:ring-0"
+                                />
+                              )}
+                              <Button
+                                type="button"
+                                size="sm"
+                                onClick={handleSaveEdit}
+                                className="mt-2 h-8 rounded-none border-2 border-black bg-white text-xs font-bold uppercase tracking-wider text-black hover:bg-black hover:text-white"
+                              >
+                                <Save className="mr-2 size-3" />
+                                Save Changes
+                              </Button>
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
 
                       {selectedCell && isComputedOnly && (
                         <div className="mt-4 border-t border-black pt-4">
@@ -608,7 +641,9 @@ export function WorksheetSidebar({
                             Value (read-only)
                           </Label>
                           <div className="rounded border border-black bg-gray-100 px-2 py-1.5 font-mono text-xs">
-                            {computedCellValue !== undefined ? computedCellValue : '—'}
+                            {computedCellValue !== undefined
+                              ? computedCellValue
+                              : '—'}
                           </div>
                           <p className="mt-2 text-center text-xs font-bold uppercase tracking-widest text-gray-500">
                             Computed cell (read-only)
@@ -639,10 +674,10 @@ export function WorksheetSidebar({
                                 actionRowIds.length > 0
                                   ? actionRowIds
                                   : selectedRowIds.length > 0
-                                  ? selectedRowIds
-                                  : selectedCell
-                                  ? [selectedCell.rowId]
-                                  : [];
+                                    ? selectedRowIds
+                                    : selectedCell
+                                      ? [selectedCell.rowId]
+                                      : [];
                               const count = targetRowIds.length;
                               const disabled = !onRunActions || count === 0;
                               return (
@@ -712,7 +747,7 @@ export function WorksheetSidebar({
                                   <Button
                                     size="icon"
                                     variant="outline"
-                                    className="h-8 w-8 rounded-none border-black text-[10px]"
+                                    className="size-8 rounded-none border-black text-[10px]"
                                     onClick={() => {
                                       if (isMulti)
                                         store.bulkSetCellStyles(
@@ -743,7 +778,8 @@ export function WorksheetSidebar({
                                     color={
                                       safeUiState.cellStyles[
                                         selectedCell?.rowId || ''
-                                      ]?.[selectedCell?.field || '']?.color || ''
+                                      ]?.[selectedCell?.field || '']?.color ||
+                                      ''
                                     }
                                     defaultColor="#000000"
                                     onChange={(color) => {
@@ -765,7 +801,7 @@ export function WorksheetSidebar({
                                   <Button
                                     size="icon"
                                     variant="outline"
-                                    className="h-8 w-8 rounded-none border-black text-[10px]"
+                                    className="size-8 rounded-none border-black text-[10px]"
                                     onClick={() => {
                                       if (isMulti)
                                         store.bulkSetCellStyles(
@@ -1131,32 +1167,34 @@ export function WorksheetSidebar({
                         </div>
                       )}
 
-                      {column && uniqueFields.length >= 1 && allRowIds.length > 0 && (
-                        <div className="mt-4 flex flex-col gap-1 border-t border-black pt-4">
-                          <Label className="text-[10px] uppercase">
-                            Select all cells of column
-                          </Label>
-                          <Button
-                            size="sm"
-                            type="button"
-                            className="h-8 w-full rounded-none border-2 border-black bg-white text-black hover:bg-black hover:text-white text-[11px] uppercase font-medium"
-                            onClick={() => {
-                              const field = uniqueFields[0];
-                              const cells = allRowIds.map((rowId) => ({
-                                rowId,
-                                field,
-                              }));
-                              store.setSelection({
-                                type: 'range',
-                                selectedCells: cells,
-                              });
-                            }}
-                          >
-                            Select column cells
-                          </Button>
-                        </div>
-                      )}
-                      
+                      {column &&
+                        uniqueFields.length >= 1 &&
+                        allRowIds.length > 0 && (
+                          <div className="mt-4 flex flex-col gap-1 border-t border-black pt-4">
+                            <Label className="text-[10px] uppercase">
+                              Select all cells of column
+                            </Label>
+                            <Button
+                              size="sm"
+                              type="button"
+                              className="h-8 w-full rounded-none border-2 border-black bg-white text-[11px] font-medium uppercase text-black hover:bg-black hover:text-white"
+                              onClick={() => {
+                                const field = uniqueFields[0];
+                                const cells = allRowIds.map((rowId) => ({
+                                  rowId,
+                                  field,
+                                }));
+                                store.setSelection({
+                                  type: 'range',
+                                  selectedCells: cells,
+                                });
+                              }}
+                            >
+                              Select column cells
+                            </Button>
+                          </div>
+                        )}
+
                       {isMulti && (
                         <div className="mt-4 border-t border-black pt-4 text-center text-xs font-bold uppercase tracking-widest">
                           Multiple cells selected
@@ -1183,12 +1221,14 @@ export function WorksheetSidebar({
                           size="sm"
                           className="h-8 w-full rounded-none border-2 border-red-600 text-xs font-bold uppercase"
                           onClick={() => {
-                            if (confirm(`Delete ${selectedRowIds.length} row(s)?`)) {
+                            if (
+                              confirm(`Delete ${selectedRowIds.length} row(s)?`)
+                            ) {
                               onDeleteRows(selectedRowIds);
                             }
                           }}
                         >
-                          <Trash2 className="mr-2 h-3 w-3" />
+                          <Trash2 className="mr-2 size-3" />
                           Delete {selectedRowIds.length} Row(s)
                         </Button>
                       )}
@@ -1197,7 +1237,7 @@ export function WorksheetSidebar({
                         <Button
                           size="sm"
                           variant="outline"
-                          className="h-8 flex-1 rounded-none border-2 border-black bg-white text-black hover:bg-black hover:text-white text-[11px] uppercase"
+                          className="h-8 flex-1 rounded-none border-2 border-black bg-white text-[11px] uppercase text-black hover:bg-black hover:text-white"
                           onClick={() => {
                             selectedRowIds.forEach((id) =>
                               store.togglePinnedRow(worksheetConfig.id, id),
@@ -1213,7 +1253,7 @@ export function WorksheetSidebar({
                         <Button
                           size="sm"
                           variant="outline"
-                          className="h-8 flex-1 rounded-none border-2 border-black bg-white text-black hover:bg-black hover:text-white text-[11px] uppercase"
+                          className="h-8 flex-1 rounded-none border-2 border-black bg-white text-[11px] uppercase text-black hover:bg-black hover:text-white"
                           onClick={() => {
                             selectedRowIds.forEach((id) =>
                               store.toggleHiddenRow(worksheetConfig.id, id),
@@ -1226,10 +1266,10 @@ export function WorksheetSidebar({
                             ? 'Unhide Rows'
                             : 'Hide Rows'}
                         </Button>
-              </div>
-            </div>
-          </div>
-        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -1238,4 +1278,3 @@ export function WorksheetSidebar({
     </div>
   );
 }
-

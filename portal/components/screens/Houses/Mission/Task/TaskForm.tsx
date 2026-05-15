@@ -1,16 +1,5 @@
-import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import {
-  Avatar,
-  AvatarGroup,
-  Button,
-  Checkbox,
-  Divider,
-  Menu,
-  MenuItem,
-} from "@mui/material";
-import { useCallback, useRef, useState } from "react";
-import { initialTaskState } from "../../state";
-import { User } from "@prisma/client";
+import type { User } from '@db/client';
+import type { MDXEditorMethods } from '@mdxeditor/editor';
 import {
   BoldItalicUnderlineToggles,
   CreateLink,
@@ -18,30 +7,43 @@ import {
   linkPlugin,
   listsPlugin,
   markdownShortcutPlugin,
-  MDXEditorMethods,
   quotePlugin,
   thematicBreakPlugin,
   toolbarPlugin,
-} from "@mdxeditor/editor";
-import { MdxAppEditor } from "@/utils/configure/MdxAppEditor";
-import { MARKDOWN_PLACEHOLDER } from "../../../Worklogs/WorklogTabs/TodoTab";
-import { useUser } from "@/utils/hooks/useUser";
-import { Spinner } from "@/components/elements/Loaders";
-import { PortalSdk } from "@/utils/services/PortalSdk";
-import { toast } from "sonner";
+} from '@mdxeditor/editor';
+import {
+  Avatar,
+  AvatarGroup,
+  Button,
+  Divider,
+  Menu,
+  MenuItem,
+} from '@mui/material';
+import dayjs from 'dayjs';
+import { useCallback, useRef, useState } from 'react';
+import { toast } from 'sonner';
+
+import { Spinner } from '@/components/elements/Loaders';
+import ToolTip from '@/components/elements/ToolTip';
+import { MdxAppEditor } from '@/utils/configure/MdxAppEditor';
+import { useUser } from '@/utils/hooks/useUser';
 import {
   clearEditorState,
   setEditModalOpen,
-} from "@/utils/redux/missions/mission.ui.slice";
-import ToolTip from "@/components/elements/ToolTip";
-import { PRIORITY, STATUSES } from "../mission.utils";
-import dayjs from "dayjs";
+} from '@/utils/redux/missions/mission.ui.slice';
 import {
   deleteTask,
   setActiveTask,
   setAllTasks,
   updateTask,
-} from "@/utils/redux/missions/missionsTasks.slice";
+} from '@/utils/redux/missions/missionsTasks.slice';
+import type { RootState } from '@/utils/redux/store';
+import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
+import { PortalSdk } from '@/utils/services/PortalSdk';
+
+import { MARKDOWN_PLACEHOLDER } from '../../../Worklogs/WorklogTabs/TodoTab';
+import { initialTaskState } from '../../state';
+import { PRIORITY, STATUSES } from '../mission.utils';
 
 const TaskForm = ({ houseMembers }: { houseMembers: User[] }) => {
   const [loading, setLoading] = useState(false);
@@ -51,22 +53,25 @@ const TaskForm = ({ houseMembers }: { houseMembers: User[] }) => {
   const [assigneeDropdownRef, setAssigneeDropdownRef] = useState<any>(null);
   const isAssigneeDropdownOpen = Boolean(assigneeDropdownRef);
   const { allMissions, activeMission } = useAppSelector(
-    (state: RootState) => state.mission
+    (state: RootState) => state.mission,
   );
   const { activeTask } = useAppSelector(
-    (state: RootState) => state.missionsTasks
+    (state: RootState) => state.missionsTasks,
   );
 
   const [taskState, setTaskState] = useState(
-    activeTask || { ...initialTaskState, missionId: activeMission?.id }
+    activeTask || { ...initialTaskState, missionId: activeMission?.id },
   );
   const handleUserChange = useCallback(
     (selectedUserId: string) => {
       setTaskState((prevState) => ({
         ...prevState,
-        assignees: prevState.assignees?.find((a) => a === selectedUserId)
-          ? [...prevState.assignees?.filter((a) => a !== selectedUserId)]
-          : [...prevState.assignees!, selectedUserId],
+        assignees: prevState.assignees?.find(
+          (a: string) => a === selectedUserId,
+        )
+          ? (prevState.assignees?.filter((a: string) => a !== selectedUserId) ??
+            [])
+          : [...(prevState.assignees ?? []), selectedUserId],
       }));
       // const selectedUser = houseMembers.find(
       //   (user) => user.id === selectedUserId
@@ -81,7 +86,7 @@ const TaskForm = ({ houseMembers }: { houseMembers: User[] }) => {
       //   userInfoId: selectedUser?.id || "",
       // }));
     },
-    [setTaskState, houseMembers]
+    [setTaskState, houseMembers],
   );
 
   const handleMarkdownChange = useCallback((content: string) => {
@@ -113,20 +118,20 @@ const TaskForm = ({ houseMembers }: { houseMembers: User[] }) => {
       let res;
       if (taskState.id) {
         res = await PortalSdk.putData(`/api/mission-tasks`, taskData);
-        toast.success("Task updated successfully!");
+        toast.success('Task updated successfully!');
         dispatch(updateTask(res.data.task));
       } else {
-        res = await PortalSdk.postData("/api/mission-tasks", taskState);
-        toast.success("Task created successfully!");
+        res = await PortalSdk.postData('/api/mission-tasks', taskState);
+        toast.success('Task created successfully!');
         dispatch(setAllTasks([res.data.task]));
       }
       setLoading(false);
       dispatch(clearEditorState());
       dispatch(setEditModalOpen(false));
     } catch (error) {
-      console.error("Error creating tasks:", error);
+      console.error('Error creating tasks:', error);
       setLoading(false);
-      toast.error("Failed to create tasks");
+      toast.error('Failed to create tasks');
       dispatch(setEditModalOpen(false));
       dispatch(clearEditorState());
     }
@@ -136,21 +141,21 @@ const TaskForm = ({ houseMembers }: { houseMembers: User[] }) => {
     try {
       const res = await PortalSdk.deleteData(
         `/api/mission-tasks?id=${taskState.id}`,
-        {}
+        {},
       );
-      toast.success("Task deleted successfully");
+      toast.success('Task deleted successfully');
       dispatch(deleteTask(res.data.task));
       dispatch(setActiveTask(null));
       dispatch(setEditModalOpen(false));
     } catch (error) {
-      toast.error("Failed to delete task");
+      toast.error('Failed to delete task');
     }
   };
 
   console.log(taskState.priority?.value);
   return (
     <div>
-      <div className="px-4 py-4 font-bold flex items-center justify-between">
+      <div className="flex items-center justify-between p-4 font-bold">
         <span className="text-lg">Task</span>
         {taskState.id && (
           <Button
@@ -163,23 +168,23 @@ const TaskForm = ({ houseMembers }: { houseMembers: User[] }) => {
         )}
       </div>
       <Divider />
-      <div className="py-6 px-8 flex flex-col w-full">
+      <div className="flex w-full flex-col px-8 py-6">
         <input
           className="text-3xl outline-none"
           type="text"
           id="title"
           name="title"
-          value={taskState.title ? taskState.title : ""}
+          value={taskState.title ? taskState.title : ''}
           onChange={(e) =>
             setTaskState({ ...taskState, title: e.target.value })
           }
           placeholder="Add Task Name"
         />
         <div className="mt-8">
-          <div className="grid grid-cols-2 items-center gap-4 w-full">
-            <div className="flex items-center gap-4 w-full">
+          <div className="grid w-full grid-cols-2 items-center gap-4">
+            <div className="flex w-full items-center gap-4">
               <label
-                className="w-full text-base font-medium text-neutral-400 flex items-center gap-2"
+                className="flex w-full items-center gap-2 text-base font-medium text-neutral-400"
                 htmlFor="select-mission"
               >
                 <span className="material-symbols-outlined !text-base">
@@ -196,7 +201,7 @@ const TaskForm = ({ houseMembers }: { houseMembers: User[] }) => {
                     missionId: e.target.value,
                   })
                 }
-                className="w-full rounded-md appearance-none outline-none hover:bg-neutral-100 p-2"
+                className="w-full appearance-none rounded-md p-2 outline-none hover:bg-neutral-100"
               >
                 <option value="" disabled>
                   Select Mission
@@ -234,10 +239,10 @@ const TaskForm = ({ houseMembers }: { houseMembers: User[] }) => {
               aria-label="Enter indie points"
             />
           </div> */}
-          <div className="grid grid-cols-2 items-center gap-4 w-full">
-            <div className="flex items-center gap-4 w-full">
+          <div className="grid w-full grid-cols-2 items-center gap-4">
+            <div className="flex w-full items-center gap-4">
               <label
-                className="w-full text-base font-medium text-neutral-400 flex items-center gap-2"
+                className="flex w-full items-center gap-2 text-base font-medium text-neutral-400"
                 htmlFor="select-mission"
               >
                 <span className="material-symbols-outlined !text-base">
@@ -246,32 +251,32 @@ const TaskForm = ({ houseMembers }: { houseMembers: User[] }) => {
                 <span>Assignees</span>
               </label>
               <div
-                className="w-full cursor-pointer rounded-md appearance-none outline-none hover:bg-neutral-100 p-2"
+                className="w-full cursor-pointer appearance-none rounded-md p-2 outline-none hover:bg-neutral-100"
                 onClick={(e) => setAssigneeDropdownRef(e.currentTarget)}
               >
-                {taskState.assignees!.length > 0 ? (
+                {(taskState.assignees ?? []).length > 0 ? (
                   <div className="flex">
                     <AvatarGroup
                       sx={{
-                        "& .MuiAvatar-root": {
+                        '& .MuiAvatar-root': {
                           width: 24,
                           height: 24,
                           fontSize: 15,
                         },
                       }}
                     >
-                      {taskState.assignees?.map((assignee) => (
+                      {taskState.assignees?.map((assignee: string) => (
                         <ToolTip
                           title={
                             houseMembers.find((user) => user.id === assignee)
-                              ?.name || ""
+                              ?.name || ''
                           }
                           key={assignee}
                         >
                           <Avatar
                             src={
                               houseMembers.find((user) => user.id === assignee)
-                                ?.avatar || ""
+                                ?.avatar || ''
                             }
                           />
                         </ToolTip>
@@ -294,7 +299,7 @@ const TaskForm = ({ houseMembers }: { houseMembers: User[] }) => {
               >
                 {houseMembers.map((member) => (
                   <MenuItem
-                    className="gap-2 items-center"
+                    className="items-center gap-2"
                     key={member.id}
                     onClick={(e) => {
                       setAssigneeDropdownRef(null);
@@ -306,46 +311,46 @@ const TaskForm = ({ houseMembers }: { houseMembers: User[] }) => {
                         width: 24,
                         height: 24,
                       }}
-                      src={member.avatar || ""}
+                      src={member.avatar || ''}
                     />
                     <span className="text-sm">{member.name}</span>
                   </MenuItem>
                 ))}
               </Menu>
             </div>
-            <div className="flex items-center gap-4 w-full">
+            <div className="flex w-full items-center gap-4">
               <label
-                className="w-full text-base font-medium text-neutral-400 flex items-center gap-2"
+                className="flex w-full items-center gap-2 text-base font-medium text-neutral-400"
                 htmlFor="select-mission"
               >
                 <span className="material-symbols-outlined !text-base">
                   calendar_clock
-                </span>{" "}
+                </span>{' '}
                 <span>Due Date</span>
               </label>
               <input
                 type="date"
                 id="due-date"
-                value={dayjs(taskState.expiresAt).format("YYYY-MM-DD")}
+                value={dayjs(taskState.expiresAt).format('YYYY-MM-DD')}
                 onChange={(e) =>
                   setTaskState((prevState) => ({
                     ...prevState,
                     expiresAt: e.target.value ? new Date(e.target.value) : null,
                   }))
                 }
-                className="w-full p-2 rounded-md appearance-none outline-none hover:bg-neutral-100 text-sm"
+                className="w-full appearance-none rounded-md p-2 text-sm outline-none hover:bg-neutral-100"
               />
             </div>
           </div>
-          <div className="grid grid-cols-2 items-center gap-4 w-full">
-            <div className="flex items-center gap-4 w-full">
+          <div className="grid w-full grid-cols-2 items-center gap-4">
+            <div className="flex w-full items-center gap-4">
               <label
-                className="w-full text-base font-medium text-neutral-400 flex items-center gap-2"
+                className="flex w-full items-center gap-2 text-base font-medium text-neutral-400"
                 htmlFor="status"
               >
                 <span className="material-symbols-outlined !text-base">
                   adjust
-                </span>{" "}
+                </span>{' '}
                 <span>Status</span>
               </label>
 
@@ -360,16 +365,16 @@ const TaskForm = ({ houseMembers }: { houseMembers: User[] }) => {
                       value: e.target.value,
                       label:
                         STATUSES.find(
-                          (status) => status.value === e.target.value
-                        )?.label || "",
+                          (status) => status.value === e.target.value,
+                        )?.label || '',
                       color:
                         STATUSES.find(
-                          (status) => status.value === e.target.value
-                        )?.color || "",
+                          (status) => status.value === e.target.value,
+                        )?.color || '',
                     },
                   })
                 }
-                className="text-sm w-full rounded-md appearance-none outline-none hover:bg-neutral-100 p-2"
+                className="w-full appearance-none rounded-md p-2 text-sm outline-none hover:bg-neutral-100"
               >
                 {STATUSES.map((status) => (
                   <option
@@ -379,21 +384,21 @@ const TaskForm = ({ houseMembers }: { houseMembers: User[] }) => {
                   >
                     <span
                       style={{ color: status.color }}
-                      className="w-4 h-4 rounded-full"
+                      className="size-4 rounded-full"
                     ></span>
                     <span className="text-sm">{status.label}</span>
                   </option>
                 ))}
               </select>
             </div>
-            <div className="flex items-center gap-4 w-full">
+            <div className="flex w-full items-center gap-4">
               <label
-                className="text-base font-medium text-neutral-400 flex items-center gap-2"
+                className="flex items-center gap-2 text-base font-medium text-neutral-400"
                 htmlFor="status"
               >
                 <span className="material-symbols-outlined !text-base">
                   flag
-                </span>{" "}
+                </span>{' '}
                 <span>Priority</span>
               </label>
               <select
@@ -405,16 +410,16 @@ const TaskForm = ({ houseMembers }: { houseMembers: User[] }) => {
                       value: e.target.value,
                       label:
                         PRIORITY.find(
-                          (priority) => priority.value === e.target.value
-                        )?.label || "",
+                          (priority) => priority.value === e.target.value,
+                        )?.label || '',
                       color:
                         PRIORITY.find(
-                          (priority) => priority.value === e.target.value
-                        )?.color || "",
+                          (priority) => priority.value === e.target.value,
+                        )?.color || '',
                     },
                   })
                 }
-                className="text-sm w-full rounded-md appearance-none outline-none hover:bg-neutral-100 p-2"
+                className="w-full appearance-none rounded-md p-2 text-sm outline-none hover:bg-neutral-100"
               >
                 <option value="" hidden>
                   Select Priority
@@ -427,7 +432,7 @@ const TaskForm = ({ houseMembers }: { houseMembers: User[] }) => {
                   >
                     <span
                       style={{ color: priority.color }}
-                      className="w-4 h-4 rounded-full"
+                      className="size-4 rounded-full"
                     ></span>
                     <span>{priority.label}</span>
                   </option>
@@ -512,7 +517,7 @@ const TaskForm = ({ houseMembers }: { houseMembers: User[] }) => {
           </div> */}
           <div className="mt-6">
             <label
-              className="w-full text-lg mb-4 font-bold text-neutral-400 flex items-center gap-2"
+              className="mb-4 flex w-full items-center gap-2 text-lg font-bold text-neutral-400"
               htmlFor="Description"
             >
               {/* <span className="material-symbols-outlined !text-base">
@@ -520,11 +525,11 @@ const TaskForm = ({ houseMembers }: { houseMembers: User[] }) => {
               </span>{" "} */}
               <span>Description</span>
             </label>
-            <div className="h-[180px] overflow-y-scroll border border-gray-300 rounded-md p-3 bg-white">
+            <div className="h-[180px] overflow-y-scroll rounded-md border border-gray-300 bg-white p-3">
               <MdxAppEditor
                 ref={mdRef}
                 toMarkdownOptions={{
-                  bullet: "*",
+                  bullet: '*',
                 }}
                 plugins={[
                   headingsPlugin(),
@@ -536,7 +541,7 @@ const TaskForm = ({ houseMembers }: { houseMembers: User[] }) => {
                   toolbarPlugin({
                     toolbarContents: () => (
                       <>
-                        {" "}
+                        {' '}
                         <BoldItalicUnderlineToggles />
                         <CreateLink />
                       </>
@@ -549,36 +554,36 @@ const TaskForm = ({ houseMembers }: { houseMembers: User[] }) => {
                   taskState.description?.trim().length === 0 ||
                   taskState.description === null ||
                   taskState.description === undefined
-                    ? ""
+                    ? ''
                     : taskState.description
                 }
-                className="w-full h-full"
+                className="size-full"
                 contentEditableClassName={`mdx_ce ${
                   taskState.description?.trim() === MARKDOWN_PLACEHOLDER.trim()
-                    ? "mdx_uninit"
-                    : ""
+                    ? 'mdx_uninit'
+                    : ''
                 } `}
                 onChange={handleMarkdownChange}
               />
             </div>
           </div>
 
-          <div className="flex w-full ml-auto justify-self-end justify-end gap-4 mt-6 ">
+          <div className="ml-auto mt-6 flex w-full justify-end gap-4 justify-self-end">
             <Button
               onClick={() => {
                 dispatch(clearEditorState());
                 dispatch(setEditModalOpen(false));
               }}
               variant="outlined"
-              className="!w-full  hover:!bg-neutral-100"
+              className="!w-full hover:!bg-neutral-100"
             >
               Cancel
             </Button>
             <Button
               onClick={onSubmit}
-              className="!w-full !bg-neutral-900 hover:!bg-neutral-800 !text-white"
+              className="!w-full !bg-neutral-900 !text-white hover:!bg-neutral-800"
             >
-              {loading ? <Spinner className="w-6 h-6 text-white" /> : "Save"}
+              {loading ? <Spinner className="size-6 text-white" /> : 'Save'}
             </Button>
           </div>
         </div>

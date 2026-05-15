@@ -1,15 +1,6 @@
-"use client";
+'use client';
 
-import { LandscapeCard } from "@/components/elements/Cards";
-import { ChangeEvent, Dispatch, SetStateAction, useMemo } from "react";
-import TimezoneSelect from "react-timezone-select";
-import { getCountryDataList } from "countries-list";
-import dayjs from "dayjs";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import { Spinner } from "@/components/elements/Loaders";
-import { useSearchParams } from "next/navigation";
+import type { User } from '@db/client';
 import {
   HOUSEID,
   USERINDUSTRY,
@@ -17,8 +8,17 @@ import {
   USERSTATUS,
   USERTYPE,
   USERVERTICAL,
-  User,
-} from "@prisma/client";
+} from '@db/client';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { getCountryDataList } from 'countries-list';
+import { useSearchParams } from 'next/navigation';
+import type { ChangeEvent, Dispatch, SetStateAction } from 'react';
+import { useMemo } from 'react';
+import TimezoneSelect from 'react-timezone-select';
+
+import { LandscapeCard } from '@/components/elements/Cards';
+import { Spinner } from '@/components/elements/Loaders';
 
 export const AdminUserBasicData = ({
   user,
@@ -53,7 +53,7 @@ export const AdminUserBasicData = ({
             className="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-white shadow-md transition hover:bg-green-700"
           >
             {loading ? (
-              <Spinner className="h-5 w-5 animate-spin text-white" />
+              <Spinner className="size-5 animate-spin text-white" />
             ) : (
               <span className="material-icons">done_all</span>
             )}
@@ -90,7 +90,7 @@ export const AdminUserBasicData = ({
               <input
                 id="name"
                 type="text"
-                value={user?.name || ""}
+                value={user?.name || ''}
                 onChange={updateField}
                 className="w-full rounded-md border border-gray-600 bg-neutral-800 p-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
@@ -103,7 +103,7 @@ export const AdminUserBasicData = ({
               <input
                 id="email"
                 type="text"
-                value={user.email || ""}
+                value={user.email || ''}
                 onChange={updateField}
                 className="w-full rounded-md border border-gray-600 bg-neutral-800 p-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
@@ -115,7 +115,7 @@ export const AdminUserBasicData = ({
               </label>
               <textarea
                 id="description"
-                value={user.description || ""}
+                value={user.description || ''}
                 onChange={updateTextareaField}
                 className="max-h-40 w-full rounded-md border border-gray-600 bg-neutral-800 p-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
@@ -128,7 +128,7 @@ export const AdminUserBasicData = ({
               <input
                 id="avatar"
                 type="text"
-                value={user.avatar || ""}
+                value={user.avatar || ''}
                 onChange={updateField}
                 className="w-full rounded-md border border-gray-600 bg-neutral-800 p-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
@@ -139,7 +139,7 @@ export const AdminUserBasicData = ({
                 <label className="text-sm font-medium">Type</label>
                 <select
                   id="userType"
-                  value={user.userType || ""}
+                  value={user.userType || ''}
                   onChange={updateField}
                   className="w-full rounded-md border border-gray-600 bg-neutral-800 p-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 >
@@ -155,7 +155,7 @@ export const AdminUserBasicData = ({
                 <label className="text-sm font-medium">Status</label>
                 <select
                   id="status"
-                  value={user.status || ""}
+                  value={user.status || ''}
                   onChange={updateField}
                   className="w-full rounded-md border border-gray-600 bg-neutral-800 p-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 >
@@ -169,13 +169,13 @@ export const AdminUserBasicData = ({
               </div>
             </div>
 
-            {user.userType === "MEMBER" && (
+            {user.userType === 'MEMBER' && (
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium">Role</label>
                   <select
                     id="role"
-                    value={user.role || ""}
+                    value={user.role || ''}
                     onChange={updateField}
                     className="w-full rounded-md border border-gray-600 bg-neutral-800 p-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                   >
@@ -191,7 +191,7 @@ export const AdminUserBasicData = ({
                   <label className="text-sm font-medium">Vertical</label>
                   <select
                     id="vertical"
-                    value={user.vertical || ""}
+                    value={user.vertical || ''}
                     onChange={updateField}
                     className="w-full rounded-md border border-gray-600 bg-neutral-800 p-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                   >
@@ -205,13 +205,13 @@ export const AdminUserBasicData = ({
               </div>
             )}
 
-            {user.userType === "CLIENT" && (
+            {user.userType === 'CLIENT' && (
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium">Industry</label>
                   <select
                     id="industry"
-                    value={user.industry || ""}
+                    value={user.industry || ''}
                     onChange={updateField}
                     className="w-full rounded-md border border-gray-600 bg-neutral-800 p-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                   >
@@ -239,7 +239,7 @@ export const AdminUserBasicData = ({
               <input
                 id="positionTitle"
                 type="text"
-                value={user.positionTitle || ""}
+                value={user.positionTitle || ''}
                 onChange={updateField}
                 className="w-full rounded-md border border-gray-600 bg-neutral-800 p-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
@@ -248,7 +248,7 @@ export const AdminUserBasicData = ({
               <p className="mb-1 text-sm text-gray-300">House</p>
               <select
                 id="house"
-                value={user.house || ""}
+                value={user.house || ''}
                 onChange={updateField}
                 className="w-full rounded-md border border-gray-600 bg-neutral-800 p-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               >
@@ -265,7 +265,7 @@ export const AdminUserBasicData = ({
                 id="isAdmin"
                 checked={user.isAdmin}
                 onChange={updateField}
-                className="h-5 w-5 rounded-md border border-gray-600 bg-neutral-800 text-blue-500 focus:ring-2 focus:ring-blue-500"
+                className="size-5 rounded-md border border-gray-600 bg-neutral-800 text-blue-500 focus:ring-2 focus:ring-blue-500"
               />
               <label
                 htmlFor="isAdmin"
@@ -279,12 +279,12 @@ export const AdminUserBasicData = ({
               <label className="mb-1 text-sm text-gray-300">Timezone</label>
               <TimezoneSelect
                 inputId="timezone"
-                value={user.timezone || ""}
+                value={user.timezone || ''}
                 onChange={(timezone) => {
                   setUser((u) => ({
                     ...u,
                     timezone:
-                      typeof timezone === "string" ? timezone : timezone.value,
+                      typeof timezone === 'string' ? timezone : timezone.value,
                   }));
                 }}
                 className="w-full rounded-lg border !border-neutral-600 !bg-gray-800 text-gray-200 focus:ring-2 focus:ring-blue-500"
@@ -295,11 +295,11 @@ export const AdminUserBasicData = ({
               <label className="mb-1 text-sm text-gray-300">Country</label>
               <select
                 id="country"
-                value={user.country || ""}
+                value={user.country || ''}
                 onChange={updateField}
                 className="w-full cursor-pointer rounded-lg border border-neutral-600 bg-gray-800 p-2 text-gray-200 focus:ring-2 focus:ring-blue-500"
               >
-                <option key={"Select Country"} value={""}>
+                <option key={'Select Country'} value={''}>
                   Select Country
                 </option>
                 {countryData.map((country) => (

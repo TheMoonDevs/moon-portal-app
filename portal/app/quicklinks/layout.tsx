@@ -1,7 +1,8 @@
-import { QuicklinksLayout } from "@/components/screens/Quicklinks/global/QuicklinksLayout";
-import { APP_BASE_URL } from "@/utils/constants/appInfo";
-import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
-import { DirectoryList } from "@prisma/client";
+import type { DirectoryList } from '@db/client';
+
+import { QuicklinksLayout } from '@/components/screens/Quicklinks/global/QuicklinksLayout';
+import { APP_BASE_URL } from '@/utils/constants/appInfo';
+import { QuicklinksSdk } from '@/utils/services/QuicklinksSdk';
 
 const getParentDirsAndSubDirs = async () => {
   try {
@@ -12,14 +13,14 @@ const getParentDirsAndSubDirs = async () => {
         directoryList: DirectoryList[];
       };
     } = await QuicklinksSdk.getData(
-      `${APP_BASE_URL}/api/quicklinks/directory-list`
+      `${APP_BASE_URL}/api/quicklinks/directory-list`,
     );
 
     const parentDirs: DirectoryList[] = data.directoryList.filter(
-      (dir) => dir.parentDirId === null
+      (dir) => dir.parentDirId === null,
     );
     const directories: DirectoryList[] = data.directoryList.filter(
-      (dir) => dir.parentDirId !== null
+      (dir) => dir.parentDirId !== null,
     );
 
     return { parentDirs, directories };

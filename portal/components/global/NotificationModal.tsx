@@ -1,12 +1,10 @@
+import { Box, Modal } from '@mui/material';
 import React, { useEffect, useState } from 'react';
-import { Modal, Box } from '@mui/material';
-import { Notification } from '@prisma/client';
-import NotificationsList, {
-  INotification,
-} from '../screens/notifications/NotificationsList';
+
+import NotificationsList from '../screens/notifications/NotificationsList';
 
 const style = (left: number) => ({
-  position: 'absolute' as 'absolute',
+  position: 'absolute' as const,
   bottom: '16px',
   left: `${left}px`,
   width: 400,
@@ -44,11 +42,11 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
     <Modal
       open={open}
       onClose={onClose}
-      aria-labelledby='notification-modal-title'
-      aria-describedby='notification-modal-description'
+      aria-labelledby="notification-modal-title"
+      aria-describedby="notification-modal-description"
       sx={{ zIndex: 10 }}
     >
-      <Box sx={style(leftPosition)} className='no-scrollbar'>
+      <Box sx={style(leftPosition)} className="no-scrollbar">
         <NotificationsList />
       </Box>
     </Modal>

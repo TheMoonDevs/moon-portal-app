@@ -1,4 +1,3 @@
-import { APP_ROUTES } from '@/utils/constants/appInfo';
 import {
   Button,
   Dialog,
@@ -8,6 +7,8 @@ import {
   DialogTitle,
 } from '@mui/material';
 import { CircleAlert } from 'lucide-react';
+
+import { APP_ROUTES } from '@/utils/constants/appInfo';
 
 const LogoutConfirmationDialog = ({
   open,

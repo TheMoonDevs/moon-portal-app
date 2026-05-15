@@ -1,4 +1,4 @@
-import UserSavedList from "@/components/screens/Quicklinks/screens/User/UserSavedList";
+import UserSavedList from '@/components/screens/Quicklinks/screens/User/UserSavedList';
 
 const UserListPage = () => {
   return <UserSavedList />;

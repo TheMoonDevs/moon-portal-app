@@ -1,6 +1,11 @@
-import { SlackButtonAction, SlackInteractionPayload } from "@/utils/services/slackBotSdk";
-import { confirmPayment } from "@/utils/slack/webhooks/confirm-payment";
-import { NextRequest, NextResponse } from "next/server";
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
+import type {
+  SlackButtonAction,
+  SlackInteractionPayload,
+} from '@/utils/services/slackBotSdk';
+import { confirmPayment } from '@/utils/slack/webhooks/confirm-payment';
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,20 +17,25 @@ export async function POST(request: NextRequest) {
     const actions = payload?.actions;
 
     if (payload && actions?.length > 0) {
-      await Promise.all(actions.map(async (action: SlackButtonAction) => {
-        if (action.block_id === 'confirm-payment') {
-          await confirmPayment(action, payload?.message?.ts);
-        }
-      }));
+      await Promise.all(
+        actions.map(async (action: SlackButtonAction) => {
+          if (action.block_id === 'confirm-payment') {
+            await confirmPayment(action, payload?.message?.ts);
+          }
+        }),
+      );
       return NextResponse.json({ message: 'Actions processed successfully.' });
     } else {
       console.log('No actions found');
-      return NextResponse.json({ message: 'No actions found' }, { status: 200 });
+      return NextResponse.json(
+        { message: 'No actions found' },
+        { status: 200 },
+      );
     }
   } catch (error: any) {
     return new NextResponse(JSON.stringify(error), {
       status: 404,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }

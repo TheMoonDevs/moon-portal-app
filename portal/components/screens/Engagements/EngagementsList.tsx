@@ -1,7 +1,8 @@
-import { Engagement, User } from '@prisma/client';
-import React from 'react';
-import { EngagementTeam } from './EngagementTeam';
+import type { Engagement, User } from '@db/client';
 import dayjs from 'dayjs';
+import React from 'react';
+
+import { EngagementTeam } from './EngagementTeam';
 
 const EngagementsList = ({
   engagements,
@@ -15,7 +16,7 @@ const EngagementsList = ({
   team: User[];
 }) => {
   return (
-    <div className='flex flex-col gap-2'>
+    <div className="flex flex-col gap-2">
       {engagements.map((engagement) => (
         <div
           key={engagement.id}

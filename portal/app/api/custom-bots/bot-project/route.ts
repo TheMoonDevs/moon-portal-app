@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/prisma/prisma';
+
+import { db } from '@/lib/mongodb/db-client';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -13,15 +14,15 @@ export async function GET(request: Request) {
   }
 
   try {
-    let botProjects = await prisma.botProject.findMany({
+    const botProjects = await db.botProject.findMany({
       where: { clientId },
       include: { clientRequests: true },
     });
 
-    const filteredBotProjects = botProjects.map((project) => {
+    const filteredBotProjects = botProjects.map((project: any) => {
       const { prodConfigs, previewConfigs, stagingConfigs, metadata, ...rest } =
         project;
-      const filteredClientRequests = rest.clientRequests.map((request) => {
+      const filteredClientRequests = rest.clientRequests.map((request: any) => {
         const { metadata, ...rest } = request;
         return rest;
       });

@@ -1,13 +1,14 @@
-"use client";
+'use client';
 
-import { setAllQuicklinks } from "@/utils/redux/quicklinks/slices/quicklinks.links.slice";
-import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
-import { Link, DirectoryList } from "@prisma/client";
-import { useEffect, useRef, useState } from "react";
-import { CircularProgress } from "@mui/material";
-import PaginationWrapper from "../../../global/PaginationWrapper";
-import LinkList from "../../../LinkList/LinkList";
+import type { DirectoryList, Link } from '@db/client';
+import { CircularProgress } from '@mui/material';
+import { useEffect, useRef, useState } from 'react';
+
+import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
+import { QuicklinksSdk } from '@/utils/services/QuicklinksSdk';
+
+import PaginationWrapper from '../../../global/PaginationWrapper';
+import LinkList from '../../../LinkList/LinkList';
 
 const NUMBER_OF_LINKS_TO_FETCH = 5;
 
@@ -27,7 +28,7 @@ const TopLinksFromDirectory = ({ directory }: { directory: DirectoryList }) => {
   const fetchTopLinksFromDirectory = async () => {
     try {
       const fetchedLinks = await QuicklinksSdk.getData(
-        `/api/quicklinks/link?offset=${page}&limit=${NUMBER_OF_LINKS_TO_FETCH}&directoryId=${directory.id}`
+        `/api/quicklinks/link?offset=${page}&limit=${NUMBER_OF_LINKS_TO_FETCH}&directoryId=${directory.id}`,
       );
       const links: Link[] = fetchedLinks.data.links;
       const topLinks = links.sort((a, b) => b.clickCount - a.clickCount);
@@ -41,14 +42,15 @@ const TopLinksFromDirectory = ({ directory }: { directory: DirectoryList }) => {
 
   const setItems = (topLinks: Link[] | undefined) => {
     if (!topLinks) return;
-    console.log("prev", directoryLinks);
-    console.log("new", topLinks);
+    console.log('prev', directoryLinks);
+    console.log('new', topLinks);
     setDirectoryLinks((prevLinks) => {
       const combinedLinks = [...prevLinks, ...topLinks];
 
       // Filter out duplicates by 'id' (assuming links have a unique 'id')
       const uniqueLinks = combinedLinks.filter(
-        (link, index, self) => index === self.findIndex((l) => l.id === link.id)
+        (link, index, self) =>
+          index === self.findIndex((l) => l.id === link.id),
       );
 
       return uniqueLinks;
@@ -70,14 +72,14 @@ const TopLinksFromDirectory = ({ directory }: { directory: DirectoryList }) => {
             return (
               <>
                 {loading && page !== 0 && (
-                  <div className="w-full items-center justify-center flex">
+                  <div className="flex w-full items-center justify-center">
                     <CircularProgress />
                   </div>
                 )}
               </>
             );
           return (
-            <div className="flex flex-col bg-neutral-50 rounded-2xl p-2 py-3 gap-5 w-full transition-all max-sm:px-2">
+            <div className="flex w-full flex-col gap-5 rounded-2xl bg-neutral-50 p-2 py-3 transition-all max-sm:px-2">
               <div className="px-4 max-sm:px-0">
                 <h1 className="mb-3 text-3xl font-semibold max-sm:text-2xl">
                   {directory.title}
@@ -88,7 +90,7 @@ const TopLinksFromDirectory = ({ directory }: { directory: DirectoryList }) => {
                   //   withView={currentView}
                 />
                 {loading && page !== 0 && (
-                  <div className="w-full items-center justify-center flex">
+                  <div className="flex w-full items-center justify-center">
                     <CircularProgress />
                   </div>
                 )}
@@ -96,7 +98,7 @@ const TopLinksFromDirectory = ({ directory }: { directory: DirectoryList }) => {
                   <>
                     {hasMore ? (
                       <button
-                        className="w-full bg-neutral-200 hover:bg-neutral-100 rounded-xl p-2 font-bold text-neutral-600"
+                        className="w-full rounded-xl bg-neutral-200 p-2 font-bold text-neutral-600 hover:bg-neutral-100"
                         onClick={loadMore}
                       >
                         Show More
@@ -104,7 +106,7 @@ const TopLinksFromDirectory = ({ directory }: { directory: DirectoryList }) => {
                     ) : (
                       displayCount !== NUMBER_OF_LINKS_TO_FETCH && (
                         <button
-                          className="w-full bg-neutral-200 hover:bg-neutral-100 rounded-xl p-2 font-bold text-neutral-600"
+                          className="w-full rounded-xl bg-neutral-200 p-2 font-bold text-neutral-600 hover:bg-neutral-100"
                           onClick={showLess}
                         >
                           Show Less

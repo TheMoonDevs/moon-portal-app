@@ -1,12 +1,23 @@
-import { Search as SearchIcon, ContentCopy, Check, Delete } from "@mui/icons-material"; // Import Material Icons
-import { InputAdornment, TextField, Tooltip, CircularProgress } from "@mui/material";
-import React, { useEffect, useRef, useState } from "react";
-import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import { setAllLinks } from "@/utils/redux/shortUrl/shortUrl.slice";
-import { setError, setLoading, setSuccess } from "@/utils/redux/ui/ui.slice";
-import useCopyToClipboard from "@/utils/hooks/useCopyToClipboard";
-import { ShortUrlSdk } from "@/utils/services/ShortUrlSdk";
-import TableLoader from "@/components/elements/TableLoader";
+import {
+  Check,
+  ContentCopy,
+  Delete,
+  Search as SearchIcon,
+} from '@mui/icons-material'; // Import Material Icons
+import {
+  CircularProgress,
+  InputAdornment,
+  TextField,
+  Tooltip,
+} from '@mui/material';
+import React, { useEffect, useState } from 'react';
+
+import TableLoader from '@/components/elements/TableLoader';
+import useCopyToClipboard from '@/utils/hooks/useCopyToClipboard';
+import { setAllLinks } from '@/utils/redux/shortUrl/shortUrl.slice';
+import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
+import { setError, setLoading, setSuccess } from '@/utils/redux/ui/ui.slice';
+import { ShortUrlSdk } from '@/utils/services/ShortUrlSdk';
 
 export const ShortUrlList = () => {
   const { isLoading, error, success } = useAppSelector((state) => state.ui);
@@ -14,12 +25,12 @@ export const ShortUrlList = () => {
   const { copyToClipboard, copied } = useCopyToClipboard();
   const [activeCopyIndex, setActiveCopyIndex] = useState<null | number>(null);
   const [activeDeleteId, setActiveDeleteId] = useState<null | string>(null);
-  const [searchQuery, setSearchQuery] = useState(""); // Search query state
+  const [searchQuery, setSearchQuery] = useState(''); // Search query state
   const dispatch = useAppDispatch();
 
   const handleCopy = (index: number) => {
     copyToClipboard(
-      `${process.env.NEXT_PUBLIC_SHORT_LINK_BASE_URL}/l/${allLinks[index].slug}`
+      `${process.env.NEXT_PUBLIC_SHORT_LINK_BASE_URL}/l/${allLinks[index].slug}`,
     );
     setActiveCopyIndex(index);
   };
@@ -29,8 +40,8 @@ export const ShortUrlList = () => {
     setActiveDeleteId(id);
     try {
       const response = await ShortUrlSdk.deleteShortUrl(
-        "/api/short-url/delete-link",
-        id
+        '/api/short-url/delete-link',
+        id,
       );
       if (response) {
         const updatedData = allLinks.filter((item) => item.id !== id);
@@ -49,7 +60,7 @@ export const ShortUrlList = () => {
     const getAllLinks = async () => {
       try {
         const response = await ShortUrlSdk.getAllShortUrls(
-          "/api/short-url/get-all-links"
+          '/api/short-url/get-all-links',
         );
         dispatch(setAllLinks(response));
         dispatch(setLoading(false));
@@ -64,14 +75,15 @@ export const ShortUrlList = () => {
     getAllLinks();
   }, [dispatch]);
 
-  const filteredLinks = allLinks.filter((link) =>
-    link.slug.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    link.redirectTo.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredLinks = allLinks.filter(
+    (link) =>
+      link.slug.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      link.redirectTo.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   return (
-    <div className="w-11/12 flex flex-col rounded-lg min-h-full h-full overflow-y-auto bg-white">
-      <div className="sticky top-0 bg-white z-10 py-4 shadow">
+    <div className="flex h-full min-h-full w-11/12 flex-col overflow-y-auto rounded-lg bg-white">
+      <div className="sticky top-0 z-10 bg-white py-4 shadow">
         <TextField
           label="Search Links"
           variant="outlined"
@@ -91,7 +103,7 @@ export const ShortUrlList = () => {
       {success ? (
         <table className="w-full space-y-2 overflow-y-auto">
           <thead className="border-b border-gray-400">
-            <tr className="text-left bg-stone-800">
+            <tr className="bg-stone-800 text-left">
               <th className="p-4 text-white">Short Links</th>
             </tr>
           </thead>
@@ -100,28 +112,29 @@ export const ShortUrlList = () => {
               const isCopied = copied && activeCopyIndex === index;
               return (
                 <React.Fragment key={link.id}>
-                  <tr
-                    className="bg-white hover:bg-gray-600 hover:text-white rounded-l-lg rounded-r-lg py-4 transition duration-200 shadow-md group"
-                  >
-                    <td className="px-4 py-3 flex flex-col gap-2 cursor-default">
+                  <tr className="group rounded-lg bg-white py-4 shadow-md transition duration-200 hover:bg-gray-600 hover:text-white">
+                    <td className="flex cursor-default flex-col gap-2 px-4 py-3">
                       <div className="flex items-center justify-between">
-                        <Tooltip title={`${process.env.NEXT_PUBLIC_SHORT_LINK_BASE_URL}/l/${link.slug}`}>
+                        <Tooltip
+                          title={`${process.env.NEXT_PUBLIC_SHORT_LINK_BASE_URL}/l/${link.slug}`}
+                        >
                           <a
                             href={`${process.env.NEXT_PUBLIC_SHORT_LINK_BASE_URL}/l/${link.slug}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="font-bold text-stone-800 group-hover:text-white"
                           >
-                            {process.env.NEXT_PUBLIC_SHORT_LINK_BASE_URL}/l/{link.slug}
+                            {process.env.NEXT_PUBLIC_SHORT_LINK_BASE_URL}/l/
+                            {link.slug}
                           </a>
                         </Tooltip>
                         <div className="flex gap-4">
-                          <Tooltip title={isCopied ? "Copied!" : "Copy"}>
+                          <Tooltip title={isCopied ? 'Copied!' : 'Copy'}>
                             {isCopied ? (
-                              <Check className="!text-xl cursor-pointer" />
+                              <Check className="cursor-pointer !text-xl" />
                             ) : (
                               <ContentCopy
-                                className="!text-xl cursor-pointer"
+                                className="cursor-pointer !text-xl"
                                 onClick={() => handleCopy(index)}
                               />
                             )}
@@ -131,14 +144,14 @@ export const ShortUrlList = () => {
                               <CircularProgress size={24} />
                             ) : (
                               <Delete
-                                className="!text-2xl hover:text-red-500 cursor-pointer"
+                                className="cursor-pointer !text-2xl hover:text-red-500"
                                 onClick={() => handleDelete(link.id)}
                               />
                             )}
                           </Tooltip>
                         </div>
                       </div>
-                      <span className="text-gray-500 group-hover:text-gray-100 text-sm ">
+                      <span className="text-sm text-gray-500 group-hover:text-gray-100">
                         {new Date(link?.createdAt).toDateString()}
                       </span>
                       <div className="mt-3">

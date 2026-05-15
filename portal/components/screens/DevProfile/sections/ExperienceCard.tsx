@@ -1,7 +1,7 @@
 'use client';
-import { WORKEXPERIENCE } from '@prisma/client';
-import React from 'react';
+import type { WORKEXPERIENCE } from '@db/client';
 import { IconButton } from '@mui/material';
+import React from 'react';
 
 const ExperienceCard = ({
   experience,

@@ -1,13 +1,18 @@
-import { NewJobPostModalProps, modalCenterStyle } from "./_JobPostModal";
-import { Modal, Portal, Tooltip } from "@mui/material";
-import { Button } from "@/components/elements/Button";
-import { AppDropdown } from "@/components/elements/Dropdown";
-import { Spinner } from "@/components/elements/Loaders";
-import { ChangeEvent, useEffect, useState } from "react";
-import { JobPostDeptReq, workExpInYears } from "@/prisma/dbExtras";
-import { PortalSdk } from "@/utils/services/PortalSdk";
-import { setJobPostsRefresh } from "@/utils/redux/ui/ui.slice";
-import { useAppDispatch } from "@/utils/redux/store";
+import { Modal, Portal, Tooltip } from '@mui/material';
+import type { ChangeEvent } from 'react';
+import { useEffect, useState } from 'react';
+
+import { Button } from '@/components/elements/Button';
+import { AppDropdown } from '@/components/elements/Dropdown';
+import { Spinner } from '@/components/elements/Loaders';
+import type { JobPostDeptReq } from '@/types/db/job-post';
+import { workExpInYears } from '@/types/db/job-post';
+import { useAppDispatch } from '@/utils/redux/store';
+import { setJobPostsRefresh } from '@/utils/redux/ui/ui.slice';
+import { PortalSdk } from '@/utils/services/PortalSdk';
+
+import type { NewJobPostModalProps } from './_JobPostModal';
+import { modalCenterStyle } from './_JobPostModal';
 
 export const JobDeptReqModal: React.FC<NewJobPostModalProps> = ({
   isOpen,
@@ -20,8 +25,8 @@ export const JobDeptReqModal: React.FC<NewJobPostModalProps> = ({
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
   const [isInputFocused, setInputFocused] = useState(false);
-  const [inputQuestion, setInputQuestion] = useState("");
-  const [inputSkill, setInputSkill] = useState("");
+  const [inputQuestion, setInputQuestion] = useState('');
+  const [inputSkill, setInputSkill] = useState('');
 
   // load default req
   useEffect(() => {
@@ -31,7 +36,7 @@ export const JobDeptReqModal: React.FC<NewJobPostModalProps> = ({
   }, [jobPostData]);
 
   const handleInputChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prevData: any) => ({ ...prevData, [name]: value }));
@@ -39,7 +44,7 @@ export const JobDeptReqModal: React.FC<NewJobPostModalProps> = ({
 
   const handleFormSubmit = () => {
     setLoading(true);
-    PortalSdk.putData("/api/jobPost", {
+    PortalSdk.putData('/api/jobPost', {
       data: { id: jobPostData.id, defaultReq: formData },
     })
       .then((response) => {
@@ -50,7 +55,7 @@ export const JobDeptReqModal: React.FC<NewJobPostModalProps> = ({
       })
       .catch((err) => {
         setLoading(false);
-        console.error("Error submitting form:", err);
+        console.error('Error submitting form:', err);
       });
   };
 
@@ -61,7 +66,7 @@ export const JobDeptReqModal: React.FC<NewJobPostModalProps> = ({
       <Modal open={isOpen} onClose={handleClose}>
         <div
           style={{ ...modalCenterStyle }}
-          className="bg-white rounded-md p-4 w-[50%] h-[80%] overflow-y-auto"
+          className="h-4/5 w-[50%] overflow-y-auto rounded-md bg-white p-4"
         >
           <p className="text-2xl font-bold">Department Requirements</p>
           <p className="text-sm text-gray-500">
@@ -69,23 +74,23 @@ export const JobDeptReqModal: React.FC<NewJobPostModalProps> = ({
           </p>
 
           {/* Skills */}
-          <div className="mt-2 w-full flex flex-col items-stretch">
+          <div className="mt-2 flex w-full flex-col items-stretch">
             <label>Add Skills Required</label>
             <input
-              className="mb-2 p-2 border border-gray-300 rounded-md w-full"
+              className="mb-2 w-full rounded-md border border-gray-300 p-2"
               id="skills"
               placeholder="e.g Java, JavaScript, Python"
               value={inputSkill}
               onChange={(e) => setInputSkill(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") {
+                if (e.key === 'Enter') {
                   e.preventDefault();
-                  if (inputSkill.trim() === "") {
+                  if (inputSkill.trim() === '') {
                     // input is empty, do not add skill
                     return;
                   }
                   const newSkills = inputSkill
-                    .split(",")
+                    .split(',')
                     .map((skill) => skill.trim());
                   setFormData((f) => {
                     const existingSkills = f.skills || [];
@@ -93,14 +98,14 @@ export const JobDeptReqModal: React.FC<NewJobPostModalProps> = ({
                       (skill) =>
                         !existingSkills
                           .map((s) => s.toLowerCase())
-                          .includes(skill.toLowerCase())
+                          .includes(skill.toLowerCase()),
                     );
                     return {
                       ...f,
                       skills: [...existingSkills, ...uniqueSkills],
                     };
                   });
-                  setInputSkill("");
+                  setInputSkill('');
                 }
               }}
               type="text"
@@ -109,7 +114,7 @@ export const JobDeptReqModal: React.FC<NewJobPostModalProps> = ({
               {formData.skills?.map((skill, index) => (
                 <div
                   key={index}
-                  className="flex flex-row w-fit bg-neutral-800 text-white rounded-md p-2 gap-2"
+                  className="flex w-fit flex-row gap-2 rounded-md bg-neutral-800 p-2 text-white"
                 >
                   <p>{skill}</p>
                   <span
@@ -131,15 +136,15 @@ export const JobDeptReqModal: React.FC<NewJobPostModalProps> = ({
 
           {/* Work Experience */}
           <AppDropdown
-            className="mt-4 w-full flex flex-col items-stretch"
+            className="mt-4 flex w-full flex-col items-stretch"
             id="workExpInYears"
             label="Work Experience (in years)"
             options={Object.values(workExpInYears)}
-            value={formData.workExpInYears || ""}
+            value={formData.workExpInYears || ''}
             onChange={(e) => handleInputChange(e as any)}
           />
 
-          <p className="text-2xl font-bold mt-8 pt-8 border-t-2">
+          <p className="mt-8 border-t-2 pt-8 text-2xl font-bold">
             Applicant Questions (Optional)
           </p>
           <p className="text-sm text-gray-500">
@@ -147,13 +152,13 @@ export const JobDeptReqModal: React.FC<NewJobPostModalProps> = ({
             questions as less as possible.
           </p>
 
-          <div className="flex flex-col mt-8">
+          <div className="mt-8 flex flex-col">
             <div>
               {/* ADDED QUESTIONS */}
               {formData.applicantQuestions?.map((question, index) => (
                 <div
                   key={index}
-                  className="flex flex-row justify-between items-center gap-2 p-3 bg-gray-100 rounded-md"
+                  className="flex flex-row items-center justify-between gap-2 rounded-md bg-gray-100 p-3"
                 >
                   <p className="font-medium text-gray-700">
                     Q{index + 1}. {question.question}
@@ -164,7 +169,7 @@ export const JobDeptReqModal: React.FC<NewJobPostModalProps> = ({
                     </Tooltip>
                     <Tooltip
                       title="Delete"
-                      className=" hover:text-red-500 cursor-pointer"
+                      className="cursor-pointer hover:text-red-500"
                       onClick={() => {
                         const newApplicantQuestions = [
                           ...(formData.applicantQuestions || []),
@@ -190,7 +195,7 @@ export const JobDeptReqModal: React.FC<NewJobPostModalProps> = ({
               onBlur={() => setInputFocused(false)}
               value={inputQuestion}
               onChange={(e) => setInputQuestion(e.target.value)}
-              className="mt-1 p-2 border border-gray-300 rounded-md w-full"
+              className="mt-1 w-full rounded-md border border-gray-300 p-2"
             />
             <div
               onClick={() => {
@@ -198,33 +203,33 @@ export const JobDeptReqModal: React.FC<NewJobPostModalProps> = ({
                   ...f,
                   applicantQuestions: [
                     ...(f.applicantQuestions || []),
-                    { question: inputQuestion, description: "", type: "text" },
+                    { question: inputQuestion, description: '', type: 'text' },
                   ],
                 }));
-                setInputQuestion("");
+                setInputQuestion('');
               }}
-              className={`cursor-pointer flex flex-row mt-3 items-center w-fit gap-2 p-2 rounded-md transition-all duration-100 ease-in-out ${
+              className={`mt-3 flex w-fit cursor-pointer flex-row items-center gap-2 rounded-md p-2 transition-all duration-100 ease-in-out ${
                 isInputFocused
-                  ? "bg-neutral-800 text-white"
-                  : "bg-neutral-100 hover:bg-neutral-200"
+                  ? 'bg-neutral-800 text-white'
+                  : 'bg-neutral-100 hover:bg-neutral-200'
               }`}
             >
               {loading && (
-                <Spinner className="w-3 h-3 fill-green-400 text-green-600" />
+                <Spinner className="size-3 fill-green-400 text-green-600" />
               )}
-              {"Add Question"}
+              {'Add Question'}
             </div>
           </div>
 
-          <div className="flex flex-row mt-8">
+          <div className="mt-8 flex flex-row">
             <Button
               onClick={handleFormSubmit}
               className="flex flex-row items-center gap-2"
             >
               {loading && (
-                <Spinner className="w-3 h-3 fill-green-400 text-green-600" />
+                <Spinner className="size-3 fill-green-400 text-green-600" />
               )}
-              {"Save Changes"}
+              {'Save Changes'}
             </Button>
           </div>
         </div>

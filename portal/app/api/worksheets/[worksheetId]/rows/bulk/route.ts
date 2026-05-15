@@ -1,17 +1,22 @@
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
 import { getWorksheetConfig } from '@/lib/worksheets';
 import { bulkUpdateRows } from '@/lib/worksheets/core/db/worksheet-repository';
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ worksheetId: string }> }
+  { params }: { params: Promise<{ worksheetId: string }> },
 ) {
   try {
     const { worksheetId } = await params;
     const worksheetConfig = getWorksheetConfig(worksheetId);
-    
+
     if (!worksheetConfig) {
-      return NextResponse.json({ error: 'Worksheet not found in registry' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Worksheet not found in registry' },
+        { status: 404 },
+      );
     }
 
     const body = (await request.json()) as {
@@ -19,10 +24,16 @@ export async function PATCH(
     };
 
     if (!body.updates || !Array.isArray(body.updates)) {
-      return NextResponse.json({ error: 'Invalid updates payload' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid updates payload' },
+        { status: 400 },
+      );
     }
 
-    const successfulUpdates = await bulkUpdateRows(worksheetConfig.id, body.updates);
+    const successfulUpdates = await bulkUpdateRows(
+      worksheetConfig.id,
+      body.updates,
+    );
 
     return NextResponse.json({
       status: 'success',
@@ -32,7 +43,7 @@ export async function PATCH(
     console.error('Bulk update error:', e);
     return NextResponse.json(
       { error: e instanceof Error ? e.message : 'Failed to bulk update rows' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

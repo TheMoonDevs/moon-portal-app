@@ -1,4 +1,4 @@
-import { CandidateListPage } from "@/components/screens/Screening/CandidateListPage";
+import { CandidateListPage } from '@/components/screens/Screening/CandidateListPage';
 
 const CandidateList = ({ params }: { params: { job_id: string } }) => {
   const { job_id } = params;

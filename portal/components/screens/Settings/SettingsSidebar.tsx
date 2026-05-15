@@ -1,10 +1,11 @@
 'use client';
 
-import LogoutConfirmationDialog from '@/components/global/LogoutConfirmationDialog';
-import media from '@/styles/media';
 import { useMediaQuery } from '@mui/material';
 import { useState } from 'react';
 import Ripples from 'react-ripples';
+
+import LogoutConfirmationDialog from '@/components/global/LogoutConfirmationDialog';
+import media from '@/styles/media';
 
 const NestedSidebarElements = [
   // {
@@ -35,20 +36,22 @@ const SettingsSidebar = ({
         <div className="text-lg font-bold sm:hidden">Settings</div>
         <div>
           {NestedSidebarElements.map((element) => (
-            <div className="mb-4 border-b border-neutral-300">
-              <div key={element.title} className="mb-2">
+            <div
+              key={element.title}
+              className="mb-4 border-b border-neutral-300"
+            >
+              <div className="mb-2">
                 <div className="mb-2 pl-2 text-xs font-bold uppercase text-neutral-500">
                   {element.title}
                 </div>
                 {element.items &&
                   element.items.map((item) => (
-                    <div className="relative cursor-pointer">
+                    <div key={item} className="relative cursor-pointer">
                       <div
                         onClick={() => {
                           setActiveTab(item);
                           isSmallerTablets && setIsDrawerOpen(true);
                         }}
-                        key={item}
                         className={`flex items-center justify-between rounded-md px-2 py-1 text-base hover:bg-neutral-300 ${activeTab === item && !isSmallerTablets ? 'bg-white' : ''}`}
                       >
                         <span>{item}</span>
@@ -70,7 +73,7 @@ const SettingsSidebar = ({
                           setActiveTab(item);
                           setIsDrawerOpen(true);
                         }}
-                        className="!absolute top-0 z-50 h-full w-full rounded-lg"
+                        className="!absolute top-0 z-50 size-full rounded-lg"
                       ></Ripples>
                     </div>
                   ))}

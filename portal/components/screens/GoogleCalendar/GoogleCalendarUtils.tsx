@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction } from "react";
+import type { Dispatch, SetStateAction } from 'react';
 export type FormDataType = {
   title: string;
   details: string;
@@ -30,50 +30,50 @@ export const validateForm = (formData: FormDataType): FormValidationsType => {
 export const formatDate = (
   date: Date,
   time: string | Date | null,
-  setAlertMessage: Dispatch<SetStateAction<string | null>>
+  setAlertMessage: Dispatch<SetStateAction<string | null>>,
 ): string | null => {
   if (!(date instanceof Date) || isNaN(date.getTime())) {
-    setAlertMessage("Invalid Date Format");
+    setAlertMessage('Invalid Date Format');
     return null;
   }
   const formattedDate = new Date(date);
 
   if (time) {
-    if (typeof time === "string") {
-      const [hours, minutes] = time.split(":").map(Number);
+    if (typeof time === 'string') {
+      const [hours, minutes] = time.split(':').map(Number);
       formattedDate.setHours(hours, minutes);
     } else if (time instanceof Date) {
       formattedDate.setHours(time.getHours(), time.getMinutes());
     }
   }
 
-  return formattedDate.toISOString().replace(/[-:.]/g, "").split(".")[0] + "Z";
+  return formattedDate.toISOString().replace(/[-:.]/g, '').split('.')[0] + 'Z';
 };
 
 export const formatAllDayDate = (
   date: Date,
-  setAlertMessage: Dispatch<SetStateAction<string | null>>
+  setAlertMessage: Dispatch<SetStateAction<string | null>>,
 ): string | null => {
   if (!(date instanceof Date) || isNaN(date.getTime())) {
-    setAlertMessage("Invalid Date Format");
+    setAlertMessage('Invalid Date Format');
     return null;
   }
 
   const formattedDate = new Date(date);
   formattedDate.setDate(formattedDate.getDate() + 1); // Adjust for all-day event
-  return formattedDate.toISOString().split("T")[0].replace(/-/g, "");
+  return formattedDate.toISOString().split('T')[0].replace(/-/g, '');
 };
 
 export const formatDates = (
   formData: FormDataType,
-  setAlertMessage: Dispatch<SetStateAction<string | null>>
+  setAlertMessage: Dispatch<SetStateAction<string | null>>,
 ): { startDate: string; endDate: string } | null => {
   if (
     !formData.startDate ||
     !(formData.startDate instanceof Date) ||
     isNaN(formData.startDate.getTime())
   ) {
-    setAlertMessage("Invalid Date Format");
+    setAlertMessage('Invalid Date Format');
     return null;
   }
 
@@ -87,7 +87,7 @@ export const formatDates = (
     formattedStartDate = formatDate(
       formData.startDate,
       formData.startTime,
-      setAlertMessage
+      setAlertMessage,
     );
     const endDate =
       formData.endDate &&
@@ -104,10 +104,10 @@ export const formatDates = (
 };
 
 export const generateRecurrenceRule = (formData: FormDataType): string => {
-  if (formData.repeat === "no-repeat") return "";
+  if (formData.repeat === 'no-repeat') return '';
 
-  let freq = "";
-  let until = "";
+  let freq = '';
+  let until = '';
 
   if (formData.endRepeat) {
     const endRepeat = new Date(formData.endRepeat);
@@ -116,28 +116,30 @@ export const generateRecurrenceRule = (formData: FormDataType): string => {
     endRepeat.setMinutes(endRepeat.getMinutes() - endOffset);
     until = `;UNTIL=${endRepeat
       .toISOString()
-      .replace(/[-:]/g, "")
+      .replace(/[-:]/g, '')
       .slice(0, -5)}Z`;
   }
 
   switch (formData.repeat) {
-    case "daily":
-      freq = "DAILY";
+    case 'daily':
+      freq = 'DAILY';
       break;
-    case "weekly":
-      freq = "WEEKLY";
+    case 'weekly':
+      freq = 'WEEKLY';
       return `RRULE:FREQ=${freq};BYDAY=MO${until}`;
-    case "monthly":
-      freq = "MONTHLY";
+    case 'monthly':
+      freq = 'MONTHLY';
       return `RRULE:FREQ=${freq};BYDAY=+3MO${until}`;
-    case "annually":
-      freq = "YEARLY";
-      const startDate = new Date(formData.startDate!);
-      return `RRULE:FREQ=${freq};BYMONTH=${
-        startDate.getMonth() + 1
-      };BYMONTHDAY=${startDate.getDate()}${until}`;
-    case "every-weekday":
-      freq = "WEEKLY";
+    case 'annually':
+      freq = 'YEARLY';
+      {
+        const startDate = new Date(formData.startDate!);
+        return `RRULE:FREQ=${freq};BYMONTH=${
+          startDate.getMonth() + 1
+        };BYMONTHDAY=${startDate.getDate()}${until}`;
+      }
+    case 'every-weekday':
+      freq = 'WEEKLY';
       return `RRULE:FREQ=${freq};BYDAY=MO,TU,WE,TH,FR${until}`;
     default:
       return `RRULE:FREQ=${formData.repeat.toUpperCase()}${until}`;
@@ -150,10 +152,10 @@ export const buildGoogleCalendarURL = (
   formData: FormDataType,
   startDate: string,
   endDate: string,
-  recurrence: string
+  recurrence: string,
 ): string => {
   let url = `https://calendar.google.com/calendar/u/0/r/eventedit?text=${encodeURIComponent(
-    formData.title
+    formData.title,
   )}&dates=${startDate}/${endDate}`;
 
   if (formData.details) {

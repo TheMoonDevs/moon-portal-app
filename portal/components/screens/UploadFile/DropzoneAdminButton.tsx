@@ -1,23 +1,26 @@
-"use client";
-import React, { useEffect, useState } from "react";
-import { Button } from "@/components/elements/Button";
-import { RootState, useAppDispatch } from "@/utils/redux/store";
-import { User } from "@prisma/client";
-import { useAppSelector } from "@/utils/redux/store";
-import { Dropzone, FileWithPath, MIME_TYPES } from "@mantine/dropzone";
+'use client';
+import type { User } from '@db/client';
+import type { FileWithPath } from '@mantine/dropzone';
+import { Dropzone, MIME_TYPES } from '@mantine/dropzone';
+import { CircularProgress } from '@mui/material';
+import React, { useState } from 'react';
+
+import { Button } from '@/components/elements/Button';
+import { TMD_PORTAL_API_KEY } from '@/utils/constants/appInfo';
+import { useUser } from '@/utils/hooks/useUser';
 import {
   addFilesToPreview,
   removeFilesFromPreview,
   resetPreview,
-} from "@/utils/redux/filesUpload/fileUpload.slice";
-import { useUser } from "@/utils/hooks/useUser";
-import { CircularProgress } from "@mui/material";
-import { TMD_PORTAL_API_KEY } from "@/utils/constants/appInfo";
+} from '@/utils/redux/filesUpload/fileUpload.slice';
+import type { RootState } from '@/utils/redux/store';
+import { useAppDispatch } from '@/utils/redux/store';
+import { useAppSelector } from '@/utils/redux/store';
 
 export default function DropzoneAdminButton({ users }: { users: User[] }) {
   const dispatch = useAppDispatch();
   // const [users, setUsers] = useState<User[]>([]);
-  const [selectedUser, setSelectedUser] = useState<string>("");
+  const [selectedUser, setSelectedUser] = useState<string>('');
   const [selectedUserObj, setSelectedUserObj] = useState<User | null>(null);
   const [isFileUploading, setIsFileUploading] = useState<boolean>(false);
   const { user } = useUser();
@@ -33,7 +36,7 @@ export default function DropzoneAdminButton({ users }: { users: User[] }) {
     if (files.length > 0) {
       const formData = new FormData();
       files.forEach((file) => {
-        formData.append("file", file, file.path);
+        formData.append('file', file, file.path);
       });
       let userId,
         uploadedByUserId = null;
@@ -43,16 +46,16 @@ export default function DropzoneAdminButton({ users }: { users: User[] }) {
       } else if (user) {
         userId = user.id;
       } else {
-        console.error("No user selected or logged in");
+        console.error('No user selected or logged in');
         return;
       }
 
-      formData.append("userId", userId);
-      uploadedByUserId && formData.append("uploadedByUserId", uploadedByUserId);
-      formData.append("folderName", "userUploads");
+      formData.append('userId', userId);
+      uploadedByUserId && formData.append('uploadedByUserId', uploadedByUserId);
+      formData.append('folderName', 'userUploads');
       try {
         const response = await fetch(`api/upload/file-upload`, {
-          method: "POST",
+          method: 'POST',
           body: formData,
           headers: {
             tmd_portal_api_key: TMD_PORTAL_API_KEY,
@@ -66,15 +69,15 @@ export default function DropzoneAdminButton({ users }: { users: User[] }) {
 
           // Handle success, maybe show a success message
           setIsFileUploading(false);
-          console.log("File uploaded successfully!");
+          console.log('File uploaded successfully!');
         } else {
           setIsFileUploading(false);
           // Handle error
-          console.error("Failed to upload file:", response.statusText);
+          console.error('Failed to upload file:', response.statusText);
         }
       } catch (error) {
         setIsFileUploading(false);
-        console.error("Error uploading file:", error);
+        console.error('Error uploading file:', error);
         // Handle error
       }
     }
@@ -82,25 +85,25 @@ export default function DropzoneAdminButton({ users }: { users: User[] }) {
   const previews = files.map((file: FileWithPath, index) => {
     const fileUrl = URL.createObjectURL(file);
     return (
-      <div className="relative group" key={index}>
+      <div className="group relative" key={index}>
         <span
-          className="material-symbols-outlined absolute px-2 -top-5 -right-2 cursor-pointer text-white bg-[rgba(0,0,0,0.5)] rounded-full p-[0.1rem]"
-          style={{ fontSize: "1rem" }}
+          className="material-symbols-outlined absolute -right-2 -top-5 cursor-pointer rounded-full bg-[rgba(0,0,0,0.5)] p-[0.1rem] px-2 text-white"
+          style={{ fontSize: '1rem' }}
           onClick={() =>
             dispatch(
               removeFilesFromPreview({
                 path: file.path,
                 lastModified: file.lastModified,
-              })
+              }),
             )
           }
         >
           close
         </span>
-        {file.type === "image/png" || file.type === "image/jpeg" ? (
+        {file.type === 'image/png' || file.type === 'image/jpeg' ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            style={{ height: "100px", aspectRatio: "1/1" }}
+            style={{ height: '100px', aspectRatio: '1/1' }}
             alt={file.path}
             key={index}
             src={fileUrl}
@@ -111,7 +114,7 @@ export default function DropzoneAdminButton({ users }: { users: User[] }) {
             href={fileUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="hover:text-blue-500 hover:underline border-2 border-gray-300 rounded-lg p-3 "
+            className="rounded-lg border-2 border-gray-300 p-3 hover:text-blue-500 hover:underline"
           >
             {file.path}
           </a>
@@ -121,13 +124,13 @@ export default function DropzoneAdminButton({ users }: { users: User[] }) {
   });
 
   return (
-    <div className="flex flex-col items-center justify-center  md:mt-4">
-      <div className="w-full  space-y-4">
-        <div className="rounded-lg border border-gray-300 bg-white p-6 shadow-sm ">
+    <div className="flex flex-col items-center justify-center md:mt-4">
+      <div className="w-full space-y-4">
+        <div className="rounded-lg border border-gray-300 bg-white p-6 shadow-sm">
           <div className="space-y-2">
             <h3 className="text-lg font-semibold">Upload User File</h3>
           </div>
-          <div className="md:my-4 py-6 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 transition-colors hover:border-gray-400">
+          <div className="rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 py-6 transition-colors hover:border-gray-400 md:my-4">
             <Dropzone
               loading={isFileUploading}
               onDrop={handleDrop}
@@ -140,12 +143,12 @@ export default function DropzoneAdminButton({ users }: { users: User[] }) {
                 MIME_TYPES.doc,
               ]}
               maxSize={30 * 1024 ** 2}
-              className="group relative flex h-48 cursor-pointer items-center justify-center "
+              className="group relative flex h-48 cursor-pointer items-center justify-center"
               multiple
             >
               <div className="pointer-events-none space-y-1 text-center">
                 <svg
-                  className="mx-auto h-8 w-8 text-gray-400 group-hover:text-gray-500 "
+                  className="mx-auto size-8 text-gray-400 group-hover:text-gray-500"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth={2}
@@ -163,31 +166,31 @@ export default function DropzoneAdminButton({ users }: { users: User[] }) {
                 </Dropzone.Idle>
               </div>
               <input
-                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                className="absolute inset-0 size-full cursor-pointer opacity-0"
                 type="file"
               />
             </Dropzone>
             {files.length > 0 && (
-              <div className="ml-4 flex gap-4 flex-wrap">{previews}</div>
+              <div className="ml-4 flex flex-wrap gap-4">{previews}</div>
             )}
           </div>
 
           <div className="space-y-4">
             <div className="space-y-2">
               <label
-                className="block text-sm font-medium bg-white text-gray-700 "
+                className="block bg-white text-sm font-medium text-gray-700"
                 htmlFor="user"
               >
                 Select a user
               </label>
-              <div className="flex gap-4 justify-between">
+              <div className="flex justify-between gap-4">
                 <select
-                  className="w-2/3 rounded-md border bg-white border-gray-300 py-2 px-3 pr-10 text-base focus:border-indigo-500  focus:ring-indigo-500 sm:text-sm "
+                  className="w-2/3 rounded-md border border-gray-300 bg-white px-3 py-2 pr-10 text-base focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                   id="user"
                   onChange={(e) => {
                     const selectedUserId = e.target.value;
                     const selectedUser = users.find(
-                      (user) => user.id === selectedUserId
+                      (user) => user.id === selectedUserId,
                     );
                     setSelectedUser(selectedUserId);
                     setSelectedUserObj(selectedUser || null);
@@ -209,7 +212,7 @@ export default function DropzoneAdminButton({ users }: { users: User[] }) {
                   )}
                 </select>
                 <Button
-                  className="w-1/3 rounded-md  py-2 px-4 text-sm font-medium text-white bg-black focus:outline-none  "
+                  className="w-1/3 rounded-md bg-black px-4 py-2 text-sm font-medium text-white focus:outline-none"
                   type="submit"
                   onClick={handleSubmit}
                   disabled={isFileUploading}
@@ -220,7 +223,7 @@ export default function DropzoneAdminButton({ users }: { users: User[] }) {
                       <span>Uploading...</span>
                     </div>
                   ) : (
-                    "Upload File"
+                    'Upload File'
                   )}
                 </Button>
               </div>

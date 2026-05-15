@@ -1,18 +1,22 @@
-"use client";
-import { useMediaQuery } from "@mui/material";
-import QuicklinkHeaderWrapper from "../../global/QuicklinkHeaderWrapper";
-import { useQuickLinkDirectory } from "../../hooks/useQuickLinkDirectory";
-import ArchiveDirectoryItem from "./ArchiveDirectoryItem";
-import media from "@/styles/media";
+'use client';
+import { useMediaQuery } from '@mui/material';
+
+import media from '@/styles/media';
+
+import QuicklinkHeaderWrapper from '../../global/QuicklinkHeaderWrapper';
+import { useQuickLinkDirectory } from '../../hooks/useQuickLinkDirectory';
+import ArchiveDirectoryItem from './ArchiveDirectoryItem';
 
 const ArchiveDirectory = () => {
   const { parentDirs } = useQuickLinkDirectory();
-  const isTablet = useMediaQuery(media.tablet)
+  const isTablet = useMediaQuery(media.tablet);
   return (
     <div>
       <QuicklinkHeaderWrapper title="Archived" icon="archive" />
 
-      <div className={`flex flex-row flex-wrap gap-5 items-center mt-10  ${isTablet && 'px-10 mt-5'} max-sm:px-5`}>
+      <div
+        className={`mt-10 flex flex-row flex-wrap items-center gap-5 ${isTablet && 'mt-5 px-10'} max-sm:px-5`}
+      >
         {parentDirs.map((parentDirectory, index) => (
           <ArchiveDirectoryItem
             key={parentDirectory.id}

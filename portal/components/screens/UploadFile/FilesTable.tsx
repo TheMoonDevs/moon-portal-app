@@ -1,19 +1,19 @@
-"use client";
-import React, { useEffect, useRef, useState } from "react";
-import { FileUpload, User } from "@prisma/client";
-import { useUser } from "@/utils/hooks/useUser";
-import Image from "next/image";
-import { useAppSelector } from "@/utils/redux/store";
-import { Spinner } from "@/components/elements/Loaders";
-import TableLoader from "@/components/elements/TableLoader";
-import ConfirmationModal from "@/components/elements/DeleteModal"; // Import the ConfirmationModal component
-import { Button } from "@/components/elements/Button";
-import { useDispatch } from "react-redux";
+'use client';
+import type { FileUpload, User } from '@db/client';
+import Image from 'next/image';
+import React, { useEffect, useRef, useState } from 'react';
+import { useDispatch } from 'react-redux';
+
+import { Button } from '@/components/elements/Button';
+import ConfirmationModal from '@/components/elements/DeleteModal'; // Import the ConfirmationModal component
+import TableLoader from '@/components/elements/TableLoader';
+import { TMD_PORTAL_API_KEY } from '@/utils/constants/appInfo';
+import { useUser } from '@/utils/hooks/useUser';
 import {
   deleteUploadedFile,
   setUploadedFiles,
-} from "@/utils/redux/filesUpload/fileUpload.slice";
-import { TMD_PORTAL_API_KEY } from "@/utils/constants/appInfo";
+} from '@/utils/redux/filesUpload/fileUpload.slice';
+import { useAppSelector } from '@/utils/redux/store';
 
 interface TableProps extends React.HTMLProps<HTMLTableCellElement> {
   children: React.ReactNode;
@@ -27,7 +27,7 @@ const TableHeading: React.FC<TableProps> = ({
 }) => {
   return (
     <th
-      className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${className}`}
+      className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 ${className}`}
       {...rest}
     >
       {children}
@@ -36,7 +36,7 @@ const TableHeading: React.FC<TableProps> = ({
 };
 
 const TableCell: React.FC<TableProps> = ({ children, className, ...rest }) => {
-  const defaultClassName = "px-6 py-4 whitespace-nowrap";
+  const defaultClassName = 'px-6 py-4 whitespace-nowrap';
 
   const combinedClassName = className
     ? `${defaultClassName} ${className}`
@@ -60,7 +60,7 @@ const FilesTable = ({ users }: { users?: User[] }) => {
   const dispatch = useDispatch();
   const { uploadedFiles } = useAppSelector((state) => state.filesUpload);
   if (!user) {
-    throw new Error("User not found");
+    throw new Error('User not found');
   }
 
   const handleDelete = async (file: FileUpload) => {
@@ -71,10 +71,10 @@ const FilesTable = ({ users }: { users?: User[] }) => {
   const confirmDelete = async () => {
     if (user && fileToDelete) {
       try {
-        const response = await fetch("/api/upload/file-upload", {
-          method: "DELETE",
+        const response = await fetch('/api/upload/file-upload', {
+          method: 'DELETE',
           headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
             tmd_portal_api_key: TMD_PORTAL_API_KEY,
           },
           body: JSON.stringify({
@@ -83,13 +83,13 @@ const FilesTable = ({ users }: { users?: User[] }) => {
         });
         console.log(response);
         if (response.ok) {
-          console.log("File deleted successfully!");
+          console.log('File deleted successfully!');
           dispatch(deleteUploadedFile(fileToDelete));
         } else {
-          console.error("Failed to delete file:", response.statusText);
+          console.error('Failed to delete file:', response.statusText);
         }
       } catch (error) {
-        console.error("Error deleting file:", error);
+        console.error('Error deleting file:', error);
       }
     }
     setShowConfirmationModal(false);
@@ -115,7 +115,7 @@ const FilesTable = ({ users }: { users?: User[] }) => {
         if (!user.isAdmin) {
           response = await fetch(`/api/upload/file-upload?userId=${user.id}`);
         } else {
-          response = await fetch("/api/upload/file-upload");
+          response = await fetch('/api/upload/file-upload');
         }
         if (!response.ok) {
           throw new Error(`Failed to fetch files: ${response.statusText}`);
@@ -124,7 +124,7 @@ const FilesTable = ({ users }: { users?: User[] }) => {
 
         dispatch(setUploadedFiles(filesData));
       } catch (error) {
-        console.error("Error fetching files:", error);
+        console.error('Error fetching files:', error);
       } finally {
         setIsLoading(false); // Set loading state to false after fetching data
       }
@@ -136,13 +136,13 @@ const FilesTable = ({ users }: { users?: User[] }) => {
 
   const filteredFiles = searchTerm
     ? uploadedFiles.filter((file) =>
-        file.fileName?.toLowerCase().startsWith(searchTerm.toLowerCase())
+        file.fileName?.toLowerCase().startsWith(searchTerm.toLowerCase()),
       )
     : uploadedFiles;
 
   if (filteredFiles.length === 0 && searchTerm) {
     return (
-      <div className="text-center mt-4 font-semibold text-lg">
+      <div className="mt-4 text-center text-lg font-semibold">
         No document found
       </div>
     );
@@ -156,7 +156,7 @@ const FilesTable = ({ users }: { users?: User[] }) => {
     );
   }
   return (
-    <div className="overflow-x-auto mx-3 mt-6">
+    <div className="mx-3 mt-6 overflow-x-auto">
       <ConfirmationModal
         isOpen={showConfirmationModal}
         onConfirm={confirmDelete}
@@ -164,7 +164,7 @@ const FilesTable = ({ users }: { users?: User[] }) => {
         title="Confirm Delete"
         message="Are you sure you want to delete this file?"
       />
-      <table className="rounded-xl table-auto min-w-full divide-y divide-gray-200">
+      <table className="min-w-full table-auto divide-y divide-gray-200 rounded-xl">
         <thead>
           <tr className="bg-gray-100">
             {/* {user.isAdmin && <TableHeading>Name</TableHeading>} */}
@@ -176,71 +176,74 @@ const FilesTable = ({ users }: { users?: User[] }) => {
             <TableHeading>Actions</TableHeading>
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+        <tbody className="divide-y divide-gray-200 bg-white">
           {filteredFiles.map((file) => (
             <tr key={file.id}>
               <TableCell>{file.fileName}</TableCell>
               <TableCell
-                className="text-blue-400 cursor-pointer hover:underline underline-offset-2"
-                onClick={() => window.open(file.fileUrl!, "_blank")}
+                className="cursor-pointer text-blue-400 underline-offset-2 hover:underline"
+                onClick={() => window.open(file.fileUrl!, '_blank')}
               >
                 {file.fileUrl && file.fileUrl.length > 40
                   ? `${file.fileUrl.substring(0, 40)}...`
                   : file.fileUrl}
               </TableCell>
               {user.isAdmin && (
-                <TableCell className="flex gap-y-3 items-start flex-col">
-                  <div className="flex gap-x-3">
-                    <Image
-                      src={users?.find((u) => u.id === file.userId)?.avatar!}
-                      width={24}
-                      height={24}
-                      className="rounded-full"
-                      alt="Profile Picture"
-                    />{" "}
-                    <span>
-                      {users?.find((u) => u.id === file.userId)?.name!}
-                    </span>
-                  </div>
-                  {file.uploadedByUserId && (
-                    <div className="flex gap-x-2">
-                      <span className="text-xs">Issued by</span>
-                      <Image
-                        src={
-                          users?.find((u) => u.id === file.uploadedByUserId)
-                            ?.avatar!
-                        }
-                        width={20}
-                        height={20}
-                        className="rounded-full"
-                        alt="Profile Picture"
-                      />{" "}
-                      <span className="text-xs">
-                        {
-                          users?.find((u) => u.id === file.uploadedByUserId)
-                            ?.name!
-                        }
-                      </span>
-                    </div>
-                  )}
+                <TableCell className="flex flex-col items-start gap-y-3">
+                  {(() => {
+                    const owner = users?.find((u) => u.id === file.userId);
+                    const issuer = users?.find(
+                      (u) => u.id === file.uploadedByUserId,
+                    );
+
+                    return (
+                      <>
+                        <div className="flex gap-x-3">
+                          <Image
+                            src={owner?.avatar || '/images/avatar.png'}
+                            width={24}
+                            height={24}
+                            className="rounded-full"
+                            alt="Profile Picture"
+                          />{' '}
+                          <span>{owner?.name || 'Unknown user'}</span>
+                        </div>
+                        {file.uploadedByUserId && (
+                          <div className="flex gap-x-2">
+                            <span className="text-xs">Issued by</span>
+                            <Image
+                              src={issuer?.avatar || '/images/avatar.png'}
+                              width={20}
+                              height={20}
+                              className="rounded-full"
+                              alt="Profile Picture"
+                            />{' '}
+                            <span className="text-xs">
+                              {issuer?.name || 'Unknown user'}
+                            </span>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </TableCell>
               )}
               <TableCell>
-                <span className="flex justify-center items-center w-3/4 bg-green-200 text-green-600 px-2 py-1 rounded-full text-xs">
+                <span className="flex w-3/4 items-center justify-center rounded-full bg-green-200 px-2 py-1 text-xs text-green-600">
                   {file.mimeType &&
                     file.mimeType.replace(
                       /(?:application|image|video|text)\/(.+)/,
-                      (_, match) => match.toUpperCase()
+                      (_: string, match: string) => match.toUpperCase(),
                     )}
                 </span>
               </TableCell>
               <TableCell>
                 {file.createdAt &&
-                  new Date(file.createdAt).toLocaleDateString("en-GB")}
+                  new Date(file.createdAt).toLocaleDateString('en-GB')}
               </TableCell>
               <TableCell className="cursor-pointer">
                 <Button
-                  className="border px-2 py-1 border-gray-400 bg-transparent text-black rounded-md hover:bg-gray-300"
+                  className="rounded-md border border-gray-400 bg-transparent px-2 py-1 text-black hover:bg-gray-300"
                   alt="Delete Button"
                   onClick={() => handleDelete(file)}
                 >
@@ -250,7 +253,7 @@ const FilesTable = ({ users }: { users?: User[] }) => {
                     viewBox="0 0 24 24"
                     strokeWidth={1.5}
                     stroke="currentColor"
-                    className="w-6 h-6"
+                    className="size-6"
                   >
                     <path
                       strokeLinecap="round"

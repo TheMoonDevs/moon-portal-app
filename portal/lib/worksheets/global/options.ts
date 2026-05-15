@@ -1,4 +1,4 @@
-import { countries } from "countries-list";
+import { countries } from 'countries-list';
 
 export async function fetchCountryOptions(query: string) {
   const options = Object.entries(countries).map(([code, data]) => ({
@@ -7,17 +7,21 @@ export async function fetchCountryOptions(query: string) {
   }));
 
   if (!query) return options;
-  return options.filter((c) => c.label.toLowerCase().includes(query.toLowerCase()));
+  return options.filter((c) =>
+    c.label.toLowerCase().includes(query.toLowerCase()),
+  );
 }
 
 export async function fetchTimezoneOptions(query: string) {
   try {
-    const timezones = Intl.supportedValuesOf("timeZone");
+    const timezones = Intl.supportedValuesOf('timeZone');
     const options = timezones.map((tz) => ({ label: tz, value: tz }));
     if (!query) return options;
-    return options.filter((c) => c.label.toLowerCase().includes(query.toLowerCase()));
+    return options.filter((c) =>
+      c.label.toLowerCase().includes(query.toLowerCase()),
+    );
   } catch {
-    return [{ label: "UTC", value: "UTC" }];
+    return [{ label: 'UTC', value: 'UTC' }];
   }
 }
 
@@ -26,13 +30,13 @@ type OptionItem = { label: string; value: string | number };
 async function fetchCompanyOptions(query: string): Promise<OptionItem[]> {
   await new Promise((resolve) => setTimeout(resolve, 500));
   const companies = [
-    "Apple",
-    "Google",
-    "Microsoft",
-    "Amazon",
-    "Facebook",
-    "Tesla",
-    "Netflix",
+    'Apple',
+    'Google',
+    'Microsoft',
+    'Amazon',
+    'Facebook',
+    'Tesla',
+    'Netflix',
   ];
   return companies
     .filter((c) => c.toLowerCase().includes(query.toLowerCase()))
@@ -41,7 +45,7 @@ async function fetchCompanyOptions(query: string): Promise<OptionItem[]> {
 
 async function fetchCurrencyCodeOptions(query: string): Promise<OptionItem[]> {
   await new Promise((resolve) => setTimeout(resolve, 200));
-  const codes = ["USD", "EUR", "GBP", "INR", "AED", "JPY", "AUD", "CAD"];
+  const codes = ['USD', 'EUR', 'GBP', 'INR', 'AED', 'JPY', 'AUD', 'CAD'];
   return codes
     .filter((c) => c.toLowerCase().includes(query.toLowerCase()))
     .map((c) => ({ label: c, value: c }));

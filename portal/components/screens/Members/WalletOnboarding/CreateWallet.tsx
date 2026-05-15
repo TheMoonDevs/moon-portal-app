@@ -1,17 +1,18 @@
-"use client";
-import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { APP_ROUTES, LOCAL_STORAGE } from "@/utils/constants/appInfo";
-import { PortalSdk } from "@/utils/services/PortalSdk";
-import { JsonObject } from "@prisma/client/runtime/library";
-import { INotification } from "@/components/screens/notifications/NotificationsList";
-import { useUser } from "@/utils/hooks/useUser";
-import DownloadCoinbase from "@/components/screens/Members/WalletOnboarding/Steps/DownloadCoinbase";
-import CopyWalletAddress from "@/components/screens/Members/WalletOnboarding/Steps/CopyWalletAddress";
-import UploadWalletAddress from "@/components/screens/Members/WalletOnboarding/Steps/UploadWalletAddress";
-import { isValidEthAddress } from "@/utils/helpers/functions";
-import { toast, Toaster } from "sonner";
-import { useAppSelector } from "@/utils/redux/store";
+'use client';
+import type { JsonObject } from '@db/runtime';
+import { useRouter } from 'next/navigation';
+import React, { useEffect, useState } from 'react';
+import { toast, Toaster } from 'sonner';
+
+import CopyWalletAddress from '@/components/screens/Members/WalletOnboarding/Steps/CopyWalletAddress';
+import DownloadCoinbase from '@/components/screens/Members/WalletOnboarding/Steps/DownloadCoinbase';
+import UploadWalletAddress from '@/components/screens/Members/WalletOnboarding/Steps/UploadWalletAddress';
+import type { INotification } from '@/components/screens/notifications/NotificationsList';
+import { APP_ROUTES, LOCAL_STORAGE } from '@/utils/constants/appInfo';
+import { isValidEthAddress } from '@/utils/helpers/functions';
+import { useUser } from '@/utils/hooks/useUser';
+import { useAppSelector } from '@/utils/redux/store';
+import { PortalSdk } from '@/utils/services/PortalSdk';
 
 const CreateWallet = () => {
   const [step, setStep] = useState(1);
@@ -19,7 +20,7 @@ const CreateWallet = () => {
   const { user, refetchUser } = useUser();
   const router = useRouter();
   const notifications = useAppSelector(
-    (state) => state.notifications.notifications
+    (state) => state.notifications.notifications,
   );
   useEffect(() => {
     if (!user?.payData) refetchUser();
@@ -27,14 +28,14 @@ const CreateWallet = () => {
   const walletNotification = notifications.find(
     (notification) =>
       (notification as INotification).matchId ===
-      `${user?.id}_onboard_walletAddress`
+      `${user?.id}_onboard_walletAddress`,
   ) as INotification | undefined;
 
   const payDataTemplate = {
-    upiId: "",
-    payMethod: "Crypto",
-    stipendWalletAddress: "",
-    walletAddress: "",
+    upiId: '',
+    payMethod: 'Crypto',
+    stipendWalletAddress: '',
+    walletAddress: '',
   };
 
   const handleNextStep = async (walletAddress?: string) => {
@@ -49,30 +50,30 @@ const CreateWallet = () => {
         ? (user?.payData as JsonObject)
         : payDataTemplate;
       if (!userPayData) {
-        toast.error("User PayData is not available !!");
+        toast.error('User PayData is not available !!');
         return;
       }
       if (
         userPayData.walletAddress === walletAddress &&
         isValidEthAddress(walletAddress)
       ) {
-        toast.info("This wallet address is already set.");
+        toast.info('This wallet address is already set.');
         return;
       }
 
       const updatedUser = await updateUserWalletAddress(
         walletAddress,
-        userPayData
+        userPayData,
       );
       localStorage.setItem(LOCAL_STORAGE.user, JSON.stringify(updatedUser));
 
       await updateWalletNotification();
       toast.success(
-        "Wallet address updated successfully! Redirecting to home..."
+        'Wallet address updated successfully! Redirecting to home...',
       );
       setTimeout(() => router.push(APP_ROUTES.home), 3000);
     } catch (error) {
-      toast.error("Error updating wallet address.");
+      toast.error('Error updating wallet address.');
     } finally {
       setLoading(false);
     }
@@ -80,9 +81,9 @@ const CreateWallet = () => {
 
   async function updateUserWalletAddress(
     walletAddress: string,
-    userPayData: JsonObject
+    userPayData: JsonObject,
   ) {
-    const response = await PortalSdk.putData("/api/user", {
+    const response = await PortalSdk.putData('/api/user', {
       id: user?.id,
       payData: { ...userPayData, walletAddress },
       updatedAt: user?.updatedAt,
@@ -93,9 +94,9 @@ const CreateWallet = () => {
 
   async function updateWalletNotification() {
     if (walletNotification && !walletNotification.notificationData.actionDone) {
-      await PortalSdk.putData("/api/notifications/update", {
+      await PortalSdk.putData('/api/notifications/update', {
         ...walletNotification,
-        description: "Wallet address successfully updated.",
+        description: 'Wallet address successfully updated.',
         notificationData: {
           ...walletNotification.notificationData,
           actionDone: true,
@@ -106,15 +107,15 @@ const CreateWallet = () => {
 
   return (
     <>
-      <div className="bg-neutral-900 h-screen flex flex-col items-center justify-center relative">
-        <div className="absolute top-10 left-10 max-sm:top-5 max-sm:left-5 z-20 flex items-center gap-2">
+      <div className="relative flex h-screen flex-col items-center justify-center bg-neutral-900">
+        <div className="absolute left-10 top-10 z-20 flex items-center gap-2 max-sm:left-5 max-sm:top-5">
           <div
             onClick={() => {
               if (step > 1) {
                 setStep(step - 1);
               } else router.back();
             }}
-            className=" bg-gray-700 text-white px-2 py-2 rounded-full  cursor-pointer flex justify-center items-center "
+            className="flex cursor-pointer items-center justify-center rounded-full bg-gray-700 p-2 text-white"
           >
             <span className="material-symbols-outlined">arrow_back</span>
           </div>

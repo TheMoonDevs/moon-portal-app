@@ -1,4 +1,4 @@
-import { Box, LinearProgress, styled, Typography } from '@mui/material';
+import { Box, LinearProgress, styled } from '@mui/material';
 
 interface MultiColorProgressBarProps {
   currentPoints: number;
@@ -22,7 +22,7 @@ const CustomLinearProgress = styled(LinearProgress)<CustomLinearProgressProps>(
       borderRadius: 10,
       backgroundImage: `linear-gradient(90deg, ${colors.join(', ')})`,
     },
-  })
+  }),
 );
 
 const MultiColorProgressBar: React.FC<MultiColorProgressBarProps> = ({
@@ -33,7 +33,7 @@ const MultiColorProgressBar: React.FC<MultiColorProgressBarProps> = ({
 }) => {
   const progressPercentage = Math.min(
     (currentPoints / nextLevelPoints) * 100,
-    100
+    100,
   );
   const pointsRemaining = nextLevelPoints - currentPoints;
 
@@ -53,7 +53,7 @@ const MultiColorProgressBar: React.FC<MultiColorProgressBarProps> = ({
         )}
       </Typography> */}
       <CustomLinearProgress
-        variant='determinate'
+        variant="determinate"
         value={progressPercentage}
         colors={colors}
         height={height}

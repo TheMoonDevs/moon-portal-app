@@ -1,4 +1,4 @@
-import { Task } from "@prisma/client";
+import { Task } from "@db/client";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface TasksState {

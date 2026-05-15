@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useEffect } from 'react';
+
+import { setRedirectUri, setReduxUser } from '@/utils/redux/auth/auth.slice';
 import { useAppDispatch } from '@/utils/redux/store';
-import { setRedirectUri } from '@/utils/redux/auth/auth.slice';
 
 const PUBLIC_ROUTES = ['/', '/login', '/logout', '/api/auth', '/api'];
 
@@ -18,12 +19,25 @@ export default function RedirectWrapperProvider({
   const router = useRouter();
   const pathname = usePathname();
   useEffect(() => {
-
+    if (status === 'authenticated' && session?.user) {
+      dispatch(setReduxUser(session.user));
+      return;
+    }
     if (status === 'loading') return;
     if (status === 'authenticated') return;
     if (session === null) return;
 
-    console.log('RedirectWrapperProvider.tsx', 'session:', session, 'status:', status, 'pathname:', pathname, 'url', window.location.href);
+    console.log(
+      'RedirectWrapperProvider.tsx',
+      'session:',
+      session,
+      'status:',
+      status,
+      'pathname:',
+      pathname,
+      'url',
+      window.location.href,
+    );
 
     let requestedRoute;
 
@@ -38,7 +52,7 @@ export default function RedirectWrapperProvider({
       router.replace(`/login?uri=${callbackurl}`);
       console.log('Redirecting to login page');
     }
-  }, [session, status]);
+  }, [session, status, dispatch, pathname, router]);
 
   return <>{children}</>;
 }

@@ -1,8 +1,8 @@
 'use client';
 
+import { Tooltip } from '@mui/material';
 import { useState } from 'react';
 
-import { Tooltip } from '@mui/material';
 import { usePwaUpdate } from '@/utils/hooks/usePwaUpdate';
 
 export const UpdatePWA = ({ children }: { children: React.ReactNode }) => {
@@ -12,14 +12,14 @@ export const UpdatePWA = ({ children }: { children: React.ReactNode }) => {
     <div>
       {isOpen && updateAvailable && (
         <div className="fixed z-50 mx-1 flex items-center rounded-[10px] bg-black text-white md:gap-8">
-          <div className="animated-border-box-glow absolute z-0 h-full max-h-52 w-full max-w-[250px] overflow-hidden rounded-lg blur-lg"></div>
-          <div className="fixed left-4 right-4 top-2 z-50 rounded-lg bg-black p-1 sm:bottom-2 sm:left-auto sm:right-2 sm:top-auto">
+          <div className="animated-border-box-glow absolute z-0 size-full max-h-52 max-w-[250px] overflow-hidden rounded-lg blur-lg"></div>
+          <div className="fixed inset-x-4 top-2 z-50 rounded-lg bg-black p-1 sm:bottom-2 sm:left-auto sm:right-2 sm:top-auto">
             <div className="animated-border-box mx-auto flex w-fit animate-fadeInTopDown items-center gap-4 bg-black p-4 text-white backdrop-blur-md sm:mx-0 md:animate-none md:gap-8">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/logo/logo_white.png"
                 alt="logo"
-                className="h-w-8 w-8 md:h-12 md:w-12"
+                className="h-w-8 w-8 md:size-12"
               />
               <div>
                 <h1 className="!ms-0 text-sm md:text-base">

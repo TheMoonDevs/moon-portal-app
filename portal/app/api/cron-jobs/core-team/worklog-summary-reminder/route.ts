@@ -1,12 +1,15 @@
 export const dynamic = 'force-dynamic';
-import { prisma } from '@/prisma/prisma';
-import { User } from '@prisma/client';
-import { NextResponse, NextRequest } from 'next/server';
+import type { User } from '@db/client';
 import { format } from 'date-fns';
-import { APP_BASE_URL } from '../../../../../utils/constants/appInfo';
-import { SlackBotSdk, SlackChannels } from '@/utils/services/slackBotSdk';
-import { GenAiSdk } from '@/utils/services/GenAiSdk';
 import dayjs from 'dayjs';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
+import { db } from '@/lib/mongodb/db-client';
+import { GenAiSdk } from '@/utils/services/GenAiSdk';
+import { SlackBotSdk, SlackChannels } from '@/utils/services/slackBotSdk';
+
+import { APP_BASE_URL } from '../../../../../utils/constants/appInfo';
 
 export const revalidate = 0;
 
@@ -82,7 +85,7 @@ export async function GET(request: NextRequest) {
     const formattedToday = format(today, 'yyyy-MM-dd');
     const formattedYesterday = format(yesterday, 'yyyy-MM-dd');
 
-    const users = await prisma.user.findMany({
+    const users = await db.user.findMany({
       where: {
         userType: 'MEMBER',
         //role: 'CORETEAM',
@@ -92,7 +95,7 @@ export async function GET(request: NextRequest) {
 
     const usersWithWorkLogs = await Promise.all(
       users.map(async (user: User) => {
-        const workLogs = await prisma.workLogs.findMany({
+        const workLogs = await db.workLogs.findMany({
           where: {
             userId: user.id,
             date: {

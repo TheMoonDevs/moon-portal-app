@@ -1,38 +1,39 @@
-import { APP_ROUTES } from "@/utils/constants/appInfo";
-import useOutsideClick from "@/utils/hooks/useOutsideClick";
-import { Fade } from "@mui/material";
-import dayjs from "dayjs";
-import Link from "next/link";
-import { useRef, useState } from "react";
+import { Fade } from '@mui/material';
+import dayjs from 'dayjs';
+import Link from 'next/link';
+import { useRef, useState } from 'react';
+
+import { APP_ROUTES } from '@/utils/constants/appInfo';
+import useOutsideClick from '@/utils/hooks/useOutsideClick';
 
 const thisYear = dayjs().year();
-const thisMonth = dayjs().format("MM"); //June = "06"
+const thisMonth = dayjs().format('MM'); //June = "06"
 const previousYear = thisYear - 1;
 const previousMonth =
   Number(thisMonth) === 1
-    ? "12"
+    ? '12'
     : dayjs()
-      .month(Number(thisMonth) - 2)
-      .format("MM");
+        .month(Number(thisMonth) - 2)
+        .format('MM');
 
 const calculateYearForPreviousMonth =
   Number(thisMonth) === 1 ? thisYear - 1 : thisYear;
 
 const options = (userId: string | null | undefined) => [
   {
-    text: "This Year",
+    text: 'This Year',
     url: `${APP_ROUTES.userWorklogSummary}/${userId}?year=${thisYear}`,
   },
   {
-    text: "This Month",
+    text: 'This Month',
     url: `${APP_ROUTES.userWorklogSummary}/${userId}?year=${thisYear}&month=${thisMonth}`,
   },
   {
-    text: "Previous Year",
+    text: 'Previous Year',
     url: `${APP_ROUTES.userWorklogSummary}/${userId}?year=${previousYear}`,
   },
   {
-    text: "Previous Month",
+    text: 'Previous Month',
     url: `${APP_ROUTES.userWorklogSummary}/${userId}?year=${calculateYearForPreviousMonth}&month=${previousMonth}`,
   },
 ];
@@ -51,22 +52,22 @@ export const SummarizeButton = ({
       ref={summaryBtnRef}
       className="relative z-50"
       onClick={() => setIsBtnDropdownOpen(!isBtnDropdownOpen)}
-    // href={`${APP_ROUTES.userWorklogSummary}/${
-    //   user?.id
-    // }?year=${dayjs().format("YYYY")}&month=${dayjs().format("MM")}`}
+      // href={`${APP_ROUTES.userWorklogSummary}/${
+      //   user?.id
+      // }?year=${dayjs().format("YYYY")}&month=${dayjs().format("MM")}`}
     >
-      <button className="cursor-pointer border border-neutral-800 rounded-md  text-neutral-900 flex flex-row gap-2 items-center py-1 px-2 text-[0.7rem] sm:text-sm">
+      <button className="flex cursor-pointer flex-row items-center gap-2 rounded-md border border-neutral-800 px-2 py-1 text-[0.7rem] text-neutral-900 sm:text-sm">
         <span className="icon_size material-symbols-outlined">timeline</span>
         <span>Archive</span>
         <span className="icon_size material-symbols-outlined">expand_more</span>
       </button>
       <Fade in={isBtnDropdownOpen} mountOnEnter unmountOnExit>
-        <div className="flex flex-col shadow-3xl border border-1 absolute z-[9999] bg-white rounded-md w-full mt-2">
+        <div className="shadow-3xl border-1 absolute z-[9999] mt-2 flex w-full flex-col rounded-md border bg-white">
           {summaryOptions.map(({ text, url }, index) => (
             <Link
               href={url}
               key={index}
-              className="text-xs z-50 flex justify-between items-center hover:bg-neutral-200 p-2"
+              className="z-50 flex items-center justify-between p-2 text-xs hover:bg-neutral-200"
               onClick={() => setIsBtnDropdownOpen(false)}
             >
               <span>{text}</span>

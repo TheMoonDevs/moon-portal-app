@@ -1,21 +1,11 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { format, isValid } from "date-fns";
-import {
-  validateForm,
-  buildGoogleCalendarURL,
-  formatDates,
-  generateRecurrenceRule,
-  FormDataType,
-} from "./GoogleCalendarUtils";
+import { Alert } from '@mui/material';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { format, isValid } from 'date-fns';
+import { useEffect, useState } from 'react';
 
-import {
-  useHandleInputChange,
-  useHandleTimeChange,
-  useHandleSelectChange,
-  useToggleAllDay,
-} from "./GoogleCalendarHandlers";
 import {
   AllDayCheckbox,
   DetailsInput,
@@ -26,22 +16,31 @@ import {
   SubmitButton,
   TimeInputs,
   TitleInput,
-} from "./GoogleCalendarComponent";
-
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { Alert } from "@mui/material";
+} from './GoogleCalendarComponent';
+import {
+  useHandleInputChange,
+  useHandleSelectChange,
+  useHandleTimeChange,
+  useToggleAllDay,
+} from './GoogleCalendarHandlers';
+import type { FormDataType } from './GoogleCalendarUtils';
+import {
+  buildGoogleCalendarURL,
+  formatDates,
+  generateRecurrenceRule,
+  validateForm,
+} from './GoogleCalendarUtils';
 
 const GoogleCalendarCard: React.FC = () => {
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [formData, setFormData] = useState<FormDataType>({
-    title: "",
-    details: "",
-    location: "",
+    title: '',
+    details: '',
+    location: '',
     startDate: null,
-    repeat: "no-repeat",
-    startTime: "11:00",
-    endTime: "12:00",
+    repeat: 'no-repeat',
+    startTime: '11:00',
+    endTime: '12:00',
     allDay: false,
     endRepeat: null,
     endDate: null,
@@ -64,52 +63,52 @@ const GoogleCalendarCard: React.FC = () => {
     });
   }, [formData.title, formData.startDate]);
 
-   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-     e.preventDefault();
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
 
-     // Validate the form data 📝
-     const validations = validateForm(formData);
-     if (validations.title || validations.startDate) {
-       setFormValidations(validations);
-       setAlertMessage("Please fill in all required fields.");
-       return;
-     }
+    // Validate the form data 📝
+    const validations = validateForm(formData);
+    if (validations.title || validations.startDate) {
+      setFormValidations(validations);
+      setAlertMessage('Please fill in all required fields.');
+      return;
+    }
 
-     // Format the start and end dates 📅
-     const dates = formatDates(formData, setAlertMessage);
-     if (!dates) return;
+    // Format the start and end dates 📅
+    const dates = formatDates(formData, setAlertMessage);
+    if (!dates) return;
 
-     const { startDate, endDate } = dates;
+    const { startDate, endDate } = dates;
 
-     // Generate the recurrence rule 🔄
-     const recurrence = generateRecurrenceRule(formData);
+    // Generate the recurrence rule 🔄
+    const recurrence = generateRecurrenceRule(formData);
 
-     // Build the Google Calendar URL 🔗
-     const googleCalendarLink = buildGoogleCalendarURL(
-       formData,
-       startDate,
-       endDate,
-       recurrence
-     );
+    // Build the Google Calendar URL 🔗
+    const googleCalendarLink = buildGoogleCalendarURL(
+      formData,
+      startDate,
+      endDate,
+      recurrence,
+    );
 
-     // Reset the form after submission 🔄
-     setFormValidations({ title: false, startDate: false });
-     setFormData({
-       title: "",
-       details: "",
-       location: "",
-       startDate: null,
-       repeat: "no-repeat",
-       startTime: null,
-       endTime: null,
-       allDay: false,
-       endRepeat: null,
-       endDate: null,
-     });
+    // Reset the form after submission 🔄
+    setFormValidations({ title: false, startDate: false });
+    setFormData({
+      title: '',
+      details: '',
+      location: '',
+      startDate: null,
+      repeat: 'no-repeat',
+      startTime: null,
+      endTime: null,
+      allDay: false,
+      endRepeat: null,
+      endDate: null,
+    });
 
-     // Open the Google Calendar event in a new tab 🌐
-     window.open(googleCalendarLink, "_blank");
-   };
+    // Open the Google Calendar event in a new tab 🌐
+    window.open(googleCalendarLink, '_blank');
+  };
 
   const handleDateChange = (newValue: any) => {
     setFormData({
@@ -120,19 +119,19 @@ const GoogleCalendarCard: React.FC = () => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <div className="max-w-[90vw] md:max-w-[60vw] md:w-full mx-auto rounded-lg mb-5 p-4 md:p-8 shadow-input border border-gray-400">
+      <div className="mx-auto mb-5 max-w-[90vw] rounded-lg border border-gray-400 p-4 shadow-input md:w-full md:max-w-[60vw] md:p-8">
         <Header />
-        <h2 className="font-normal mt-3 text-center text-3xl md:text-4xl text-gray-900">
+        <h2 className="mt-3 text-center text-3xl font-normal text-gray-900 md:text-4xl">
           Invite Link Generator
         </h2>
-        <div className="bg-gradient-to-r from-transparent via-neutral-300 dark:via-neutral-700 to-transparent my-3 h-[1px] w-full"></div>
+        <div className="my-3 h-px w-full bg-gradient-to-r from-transparent via-neutral-300 to-transparent dark:via-neutral-700"></div>
         {alertMessage && (
           <Alert severity="error" onClose={() => setAlertMessage(null)}>
             {alertMessage}
           </Alert>
         )}
-        <form className="my-3 " onSubmit={handleSubmit}>
-          <div className="flex justify-end items-center mt-4">
+        <form className="my-3" onSubmit={handleSubmit}>
+          <div className="mt-4 flex items-center justify-end">
             <AllDayCheckbox checked={formData.allDay} onChange={toggleAllDay} />
           </div>
           <div className="flex flex-col md:flex-row md:justify-between md:space-x-4">
@@ -143,7 +142,7 @@ const GoogleCalendarCard: React.FC = () => {
                 error={formValidations.title ?? false}
               />
               <LocationInput
-                value={formData.location || ""}
+                value={formData.location || ''}
                 onChange={handleInputChange}
               />
               <DetailsInput
@@ -151,7 +150,7 @@ const GoogleCalendarCard: React.FC = () => {
                 onChange={handleInputChange}
               />
             </div>
-            <div className="flex-1 ">
+            <div className="flex-1">
               <div>
                 <StartDatePicker
                   onDateChange={handleDateChange}
@@ -166,8 +165,8 @@ const GoogleCalendarCard: React.FC = () => {
                   onRepeatChange={handleSelectChange}
                   endDateValue={
                     formData.endDate && isValid(new Date(formData.endDate))
-                      ? format(new Date(formData.endDate), "yyyy-MM-dd")
-                      : ""
+                      ? format(new Date(formData.endDate), 'yyyy-MM-dd')
+                      : ''
                   }
                   onEndDateChange={(selectedDate: any) => {
                     setFormData({
@@ -177,7 +176,7 @@ const GoogleCalendarCard: React.FC = () => {
                   }}
                   startDate={
                     formData.startDate && isValid(new Date(formData.startDate))
-                      ? format(new Date(formData.startDate), "yyyy-MM-dd")
+                      ? format(new Date(formData.startDate), 'yyyy-MM-dd')
                       : null
                   }
                 />
@@ -185,16 +184,16 @@ const GoogleCalendarCard: React.FC = () => {
                   <div className="flex space-x-4">
                     <TimeInputs
                       startTime={formData.startTime}
-                      onStartTimeChange={handleTimeChange("startTime")}
+                      onStartTimeChange={handleTimeChange('startTime')}
                       endTime={formData.endTime}
-                      onEndTimeChange={handleTimeChange("endTime")}
+                      onEndTimeChange={handleTimeChange('endTime')}
                     />
                   </div>
                 )}
               </div>
             </div>
           </div>
-          <div className="flex justify-end mt-6">
+          <div className="mt-6 flex justify-end">
             <SubmitButton />
           </div>
         </form>

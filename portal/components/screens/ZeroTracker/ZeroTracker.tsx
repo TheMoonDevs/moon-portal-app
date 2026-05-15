@@ -1,40 +1,43 @@
-"use client";
+'use client';
 
-import { useUser } from "@/utils/hooks/useUser";
-import dayjs, { Dayjs } from "dayjs";
-import { useEffect, useState } from "react";
-import { PortalSdk } from "@/utils/services/PortalSdk";
-import { User, ZeroRecords } from "@prisma/client";
-import CalendarView from "./CalendarView";
-import { ZeroTrackerHeader } from "./ZeroTrackerHeader";
-import { Meeting } from "./Meeting/Meeting";
-import { setLoggedInUserMeetingRecord } from "@/utils/redux/zerotracker/zerotracker.slice";
-import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import { ZeroMarkerSection } from "./ZeroMarkerSection";
-import { Zeros } from "./Zeros/Zeros";
-import { ThisMonthSection } from "./ThisMonthSection";
-import { MeetingButton } from "./MeetingButton";
+import type { User, ZeroRecords } from '@db/client';
+import type { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
+import { useEffect, useState } from 'react';
+
+import { useUser } from '@/utils/hooks/useUser';
+import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
+import { setLoggedInUserMeetingRecord } from '@/utils/redux/zerotracker/zerotracker.slice';
+import { PortalSdk } from '@/utils/services/PortalSdk';
+
+import CalendarView from './CalendarView';
+import { Meeting } from './Meeting/Meeting';
+import { MeetingButton } from './MeetingButton';
+import { ThisMonthSection } from './ThisMonthSection';
+import { ZeroMarkerSection } from './ZeroMarkerSection';
+import { Zeros } from './Zeros/Zeros';
+import { ZeroTrackerHeader } from './ZeroTrackerHeader';
 
 const dayjsLib = dayjs();
-export type TrackerMode = "leave" | "zero" | "meeting" | "normal" | "extra";
+export type TrackerMode = 'leave' | 'zero' | 'meeting' | 'normal' | 'extra';
 export const ZeroTrackerPage = () => {
   const { user } = useUser(false);
   const [currentMonthDayjs, setCurrentMonthDayJs] = useState<Dayjs>(
-    dayjs().month(dayjsLib.month())
+    dayjs().month(dayjsLib.month()),
   );
   const [zeroUsers, setZeroUsers] = useState<any>([]);
   const [zeroRecord, setZeroRecord] = useState<ZeroRecords | null>(null);
-  const [trackerMode, setTrackerMode] = useState<TrackerMode>("normal");
+  const [trackerMode, setTrackerMode] = useState<TrackerMode>('normal');
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isSavingZeroes, setIsSavingZeros] = useState<boolean>(false);
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [meetingDate, setMeetingDate] = useState<string>(
-    dayjsLib.format("YYYY-MM-DD")
+    dayjsLib.format('YYYY-MM-DD'),
   );
   const dispatch = useAppDispatch();
   const loggedInUserMeetingRecord = useAppSelector(
-    (state) => state.zerotracker.loggedInUserMeetingRecord
+    (state) => state.zerotracker.loggedInUserMeetingRecord,
   );
   useEffect(() => {
     if (!user) return;
@@ -42,7 +45,7 @@ export const ZeroTrackerPage = () => {
       `/api/user/zeros?userId=${user?.id}&userType=${
         user.userType
       }&config=meeting&year=${dayjsLib.year()}`,
-      null
+      null,
     )
       .then(({ data }) => {
         dispatch(setLoggedInUserMeetingRecord(data.zeroRecords[0]));
@@ -57,16 +60,16 @@ export const ZeroTrackerPage = () => {
     setIsLoading(true);
     PortalSdk.getData(
       `/api/user/zeros?userId=${user?.id}&config=zero&year=${dayjsLib.year()}`,
-      null
+      null,
     )
       .then(({ data }) => {
         //console.log(data);
         if (data?.zeroRecords?.length === 0 || !data?.zeroRecords) {
           setZeroRecord({
-            id: "",
+            id: '',
             userId: user.id,
             year: dayjsLib.year().toString(),
-            config: "zero",
+            config: 'zero',
             allZeros: [],
             allMeetings: [],
           } as ZeroRecords);
@@ -83,7 +86,7 @@ export const ZeroTrackerPage = () => {
     Promise.all([
       PortalSdk.getData(
         `/api/user/zeros?year=${dayjsLib.year()}&config=zero`,
-        null
+        null,
       ),
       PortalSdk.getData(`/api/user?userType=${user.userType}`, null),
     ])
@@ -146,11 +149,11 @@ export const ZeroTrackerPage = () => {
     });
     _zeros.push(
       ...type_zeros,
-      ..._newTypeZeros.map((date) => ({ date, type: trackerMode }))
+      ..._newTypeZeros.map((date) => ({ date, type: trackerMode })),
     );
     const _zeroRecord = {
       ...zeroRecord,
-      year: dayjsLib.format("YYYY"),
+      year: dayjsLib.format('YYYY'),
       userId: user?.id,
       allZeros: _zeros,
     };
@@ -161,35 +164,35 @@ export const ZeroTrackerPage = () => {
         if (!data?.zeroRecords) return;
         setZeroRecord(data.zeroRecords);
         setIsSavingZeros(false);
-        setTrackerMode("normal");
+        setTrackerMode('normal');
       })
       .catch((error) => {
         console.error(error);
         setIsSavingZeros(false);
       });
-    console.log("request");
+    console.log('request');
   };
 
   const handleZeroMarkerButtonClick = () => {
-    setTrackerMode("zero");
+    setTrackerMode('zero');
     setSelectedDates(
       zeroRecord?.allZeros
-        ?.filter((a_zero: any) => a_zero.type === "zero")
-        .map((a_zero: any) => a_zero.date) || []
+        ?.filter((a_zero: any) => a_zero.type === 'zero')
+        .map((a_zero: any) => a_zero.date) || [],
     );
   };
 
   const handleZeroDateClick = (date: string) => {
-    if (dayjs(date).isBefore(_today, "date")) return;
+    if (dayjs(date).isBefore(_today, 'date')) return;
     setSelectedDates((_dates) => _dates.filter((a_date) => a_date !== date));
   };
 
   const handleMeetingButtonClick = () => {
-    setTrackerMode("meeting");
+    setTrackerMode('meeting');
     setSelectedDates(
       loggedInUserMeetingRecord?.allMeetings?.map(
-        (a_zero: any) => a_zero.date
-      ) || []
+        (a_zero: any) => a_zero.date,
+      ) || [],
     );
   };
   // TO-DO : need to enable as a fail-safe for must-adding workData.
@@ -204,13 +207,13 @@ export const ZeroTrackerPage = () => {
     return date.day() !== 0 && date.day() !== 6;
   }).length;
   const totalZeros = zeroRecord?.allZeros?.filter(
-    (a_zero: any) => a_zero.type === "zero"
+    (a_zero: any) => a_zero.type === 'zero',
   ).length;
   const totalExtraWork = zeroRecord?.allZeros?.filter(
-    (a_zero: any) => a_zero.type === "extra"
+    (a_zero: any) => a_zero.type === 'extra',
   ).length;
   const totalLeaves = zeroRecord?.allZeros?.filter(
-    (a_zero: any) => a_zero.type === "leave"
+    (a_zero: any) => a_zero.type === 'leave',
   ).length;
   const stipendPercentage =
     totalExtraWork &&
@@ -225,7 +228,7 @@ export const ZeroTrackerPage = () => {
         setCurrentMonthDayJs={setCurrentMonthDayJs}
         dayjs={dayjs}
       />
-      <div className="w-4/5 mx-auto max-w-[400px] m-auto my-1 max-md:w-full relative ">
+      <div className="relative m-auto my-1 w-4/5 max-w-[400px] max-md:w-full">
         {!isLoading && (
           <CalendarView
             currentMonthDayjs={currentMonthDayjs}
@@ -239,12 +242,12 @@ export const ZeroTrackerPage = () => {
           />
         )}
         {isLoading && (
-          <div className="flex flex-row items-center justify-center gap-2 h-[400px]">
-            <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-neutral-800"></div>
+          <div className="flex h-[400px] flex-row items-center justify-center gap-2">
+            <div className="size-5 animate-spin rounded-full border-y-2 border-neutral-800"></div>
             <p className="text-neutral-900">Initialising...</p>
           </div>
         )}
-        {!isLoading && trackerMode === "normal" && (
+        {!isLoading && trackerMode === 'normal' && (
           <>
             <ZeroMarkerSection
               zeroRecord={zeroRecord}
@@ -260,8 +263,8 @@ export const ZeroTrackerPage = () => {
             />
           </>
         )}
-        {!isLoading && trackerMode === "normal" && (
-          <div className="flex flex-row justify-between w-full py-2 px-3 gap-2">
+        {!isLoading && trackerMode === 'normal' && (
+          <div className="flex w-full flex-row justify-between gap-2 px-3 py-2">
             {/* <div className="h-[175px] flex-1 flex flex-col items-start justify-start gap-1 p-4 rounded-[0.75em] bg-neutral-100 text-neutral-900">
             <p className="text-[0.7em] text-neutral-500 leading-none tracking-[0.2em] ">
               {" "}
@@ -314,33 +317,33 @@ export const ZeroTrackerPage = () => {
           </div>
         )}
 
-        {trackerMode === "leave" && (
-          <div className="flex flex-col justify-between w-full p-4 gap-2">
-            <div className="flex flex-row items-center justify-start gap-1  overflow-hidden text-neutral-900">
-              <p className="text-[1.5em] font-bold  ">
-                {" "}
+        {trackerMode === 'leave' && (
+          <div className="flex w-full flex-col justify-between gap-2 p-4">
+            <div className="flex flex-row items-center justify-start gap-1 overflow-hidden text-neutral-900">
+              <p className="text-[1.5em] font-bold">
+                {' '}
                 Select your Leaves in Calendar
               </p>
               {/* <span className="icon_size material-icons">ios_arrow_forward</span> */}
             </div>
-            <p className="text-[0.7em] text-neutral-500 leading-none ">
+            <p className="text-[0.7em] leading-none text-neutral-500">
               Note that leaves will cause a deduction in your stipend.
             </p>
-            <div className="flex flex-row items-center justify-start gap-1 my-2">
+            <div className="my-2 flex flex-row items-center justify-start gap-1">
               {selectedDates.map((date, index) => (
                 <div
                   key={index}
-                  className="flex flex-row items-center justify-center gap-1 p-2 rounded-[0.75em] bg-white-500 border border-red-500 text-neutral-900"
+                  className="bg-white-500 flex flex-row items-center justify-center gap-1 rounded-[0.75em] border border-red-500 p-2 text-neutral-900"
                 >
-                  <p className="text-[0.7em] font-bold tracking-[0.2em] ">
-                    {" "}
-                    {dayjs(date).format("DD")}
+                  <p className="text-[0.7em] font-bold tracking-[0.2em]">
+                    {' '}
+                    {dayjs(date).format('DD')}
                   </p>
                   <span
                     onClick={() => {
-                      if (dayjs(date).isBefore(_today, "date")) return;
+                      if (dayjs(date).isBefore(_today, 'date')) return;
                       setSelectedDates((_dates) =>
-                        _dates.filter((a_date) => a_date !== date)
+                        _dates.filter((a_date) => a_date !== date),
                       );
                     }}
                     className="icon_size material-icons"
@@ -352,23 +355,23 @@ export const ZeroTrackerPage = () => {
             </div>
             <div className="flex flex-row gap-2">
               <div
-                onClick={() => setTrackerMode("normal")}
-                className="flex-1 flex-grow flex flex-row items-center justify-start gap-1 p-4 rounded-[0.75em] bg-neutral-100 text-neutral-900"
+                onClick={() => setTrackerMode('normal')}
+                className="flex flex-1 grow flex-row items-center justify-start gap-1 rounded-[0.75em] bg-neutral-100 p-4 text-neutral-900"
               >
                 <span className="icon_size material-symbols-outlined">
                   arrow_back
                 </span>
-                <p className="text-[0.7em] whitespace-nowrap font-bold tracking-[0.2em] ">
-                  {" "}
+                <p className="whitespace-nowrap text-[0.7em] font-bold tracking-[0.2em]">
+                  {' '}
                   BACK
                 </p>
               </div>
               <div
                 onClick={updateDates}
-                className="flex-1 flex-grow flex flex-row items-center justify-start gap-1 p-4 rounded-[0.75em] bg-red-500 text-neutral-100"
+                className="flex flex-1 grow flex-row items-center justify-start gap-1 rounded-[0.75em] bg-red-500 p-4 text-neutral-100"
               >
-                <p className="text-[0.7em] whitespace-nowrap font-bold tracking-[0.2em] ">
-                  {" "}
+                <p className="whitespace-nowrap text-[0.7em] font-bold tracking-[0.2em]">
+                  {' '}
                   SAVE CHANGES
                 </p>
                 <span className="icon_size material-icons">task_alt</span>
@@ -376,7 +379,7 @@ export const ZeroTrackerPage = () => {
             </div>
           </div>
         )}
-        {trackerMode === "zero" && (
+        {trackerMode === 'zero' && (
           <Zeros
             currentMonthDayjs={currentMonthDayjs}
             handleZeroDateClick={handleZeroDateClick}
@@ -387,7 +390,7 @@ export const ZeroTrackerPage = () => {
           />
         )}
 
-        {trackerMode === "meeting" && (
+        {trackerMode === 'meeting' && (
           <Meeting
             allUsers={allUsers}
             meetingDate={meetingDate}

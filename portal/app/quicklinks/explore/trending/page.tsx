@@ -1,4 +1,4 @@
-import TrendingLinks from "@/components/screens/Quicklinks/screens/Explore/TrendingLinks";
+import TrendingLinks from '@/components/screens/Quicklinks/screens/Explore/TrendingLinks';
 
 const TrendingPage = () => {
   return (

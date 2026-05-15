@@ -1,9 +1,10 @@
 /* eslint-disable @next/next/no-img-element */
-import { User } from "@prisma/client";
-import React, { useState } from "react";
-import Slider from "react-slick";
-import { QuotesData } from "@/utils/constants/quotesData";
-import { HomeTabs } from "@/utils/@types/enums";
+import type { User } from '@db/client';
+import React, { useState } from 'react';
+import Slider from 'react-slick';
+
+import { HomeTabs } from '@/utils/@types/enums';
+import { QuotesData } from '@/utils/constants/quotesData';
 
 const DAY_MOOD = [{}];
 
@@ -19,7 +20,7 @@ export const MoodTabs = ({
   const [activeSlide2, setActiveSlide2] = useState(0);
 
   return (
-    <div className=" flex flex-col mx-2 mt-2 mb-3 gap-3 bg-white rounded-[1.15em]">
+    <div className="mx-2 mb-3 mt-2 flex flex-col gap-3 rounded-[1.15em] bg-white">
       <Slider
         dots={true}
         infinite={true}
@@ -47,82 +48,82 @@ export const MoodTabs = ({
         }}
         className="h-[150px]"
       >
-        <div className="w-full relative bg-black rounded-[1.15em]">
+        <div className="relative w-full rounded-[1.15em] bg-black">
           <img
-            src={"/images/lexica/man_walk_landscape_fields.jpg"}
-            alt={""}
-            className="static w-full h-[150px] opacity-[0.9] object-cover object-center rounded-[1.15em]"
+            src={'/images/lexica/man_walk_landscape_fields.jpg'}
+            alt={''}
+            className="static h-[150px] w-full rounded-[1.15em] object-cover object-center opacity-90"
           />
-          <div className="absolute text-4xl left-[20px] right-[20px] top-0 bottom-0 h-[150px] flex items-center justify-between">
+          <div className="absolute inset-x-[20px] inset-y-0 flex h-[150px] items-center justify-between text-4xl">
             <div>
-              <p className="text-xl  bottom-auto text-left font-black tracking-[0.2em] text-neutral-100 text-sm">
+              <p className="bottom-auto text-left text-sm text-xl font-black tracking-[0.2em] text-neutral-100">
                 GOOD MORNING
               </p>
-              <p className="text-xs text-left font-mono text-neutral-100 text-sm">
+              <p className="text-left font-mono text-sm text-xs text-neutral-100">
                 Swipe to start your day..
               </p>
             </div>
-            <span className="icon_size text-neutral-100 material-icons-outlined">
+            <span className="icon_size material-icons-outlined text-neutral-100">
               arrow_forward_ios
             </span>
           </div>
         </div>
-        <div className="w-full relative bg-black rounded-[1.15em]">
+        <div className="relative w-full rounded-[1.15em] bg-black">
           <img
-            src={"/images/lexica/blowing_green.jpg"}
-            alt={""}
-            className="static w-full h-[150px] opacity-[0.9] object-cover object-center rounded-[1.15em]"
+            src={'/images/lexica/blowing_green.jpg'}
+            alt={''}
+            className="static h-[150px] w-full rounded-[1.15em] object-cover object-center opacity-90"
           />
-          <div className="absolute text-4xl left-[20px] right-[20px] top-0 bottom-0 h-[150px] flex items-center justify-between">
+          <div className="absolute inset-x-[20px] inset-y-0 flex h-[150px] items-center justify-between text-4xl">
             <div>
-              <p className="text-xl  bottom-auto text-left font-black tracking-[0.2em] text-neutral-100 text-sm">
+              <p className="bottom-auto text-left text-sm text-xl font-black tracking-[0.2em] text-neutral-100">
                 CHARGING
               </p>
-              <p className="text-xs text-left font-mono text-neutral-100 text-sm">
+              <p className="text-left font-mono text-sm text-xs text-neutral-100">
                 Planning the day...
               </p>
             </div>
-            <span className="icon_size text-neutral-100 material-symbols-outlined">
+            <span className="icon_size material-symbols-outlined text-neutral-100">
               charger
             </span>
           </div>
         </div>
-        <div className="w-full relative bg-black rounded-[1.15em]">
+        <div className="relative w-full rounded-[1.15em] bg-black">
           <img
-            src={"/images/lexica/workroom.jpg"}
-            alt={""}
-            className="static w-full h-[150px] opacity-[0.9] object-cover object-center rounded-[1.15em]"
+            src={'/images/lexica/workroom.jpg'}
+            alt={''}
+            className="static h-[150px] w-full rounded-[1.15em] object-cover object-center opacity-90"
           />
-          <div className="absolute text-4xl left-[20px] right-[20px] top-0 bottom-0 h-[150px] flex items-center justify-between">
+          <div className="absolute inset-x-[20px] inset-y-0 flex h-[150px] items-center justify-between text-4xl">
             <div>
-              <p className="text-xl  bottom-auto text-left font-black tracking-[0.2em] text-neutral-100 text-sm">
+              <p className="bottom-auto text-left text-sm text-xl font-black tracking-[0.2em] text-neutral-100">
                 IN THE ZONE
               </p>
-              <p className="text-xs text-left font-mono text-neutral-100 text-sm">
+              <p className="text-left font-mono text-sm text-xs text-neutral-100">
                 Getting things done..
               </p>
             </div>
-            <span className="icon_size text-neutral-100 material-symbols-outlined">
+            <span className="icon_size material-symbols-outlined text-neutral-100">
               whatshot
             </span>
           </div>
         </div>
-        <div className="w-full relative bg-black rounded-[1.15em]">
+        <div className="relative w-full rounded-[1.15em] bg-black">
           <img
-            src={"/images/lexica/universe_orange.jpg"}
-            alt={""}
-            className="static w-full h-[150px] opacity-[0.9] object-cover object-center rounded-[1.15em]"
+            src={'/images/lexica/universe_orange.jpg'}
+            alt={''}
+            className="static h-[150px] w-full rounded-[1.15em] object-cover object-center opacity-90"
           />
-          <div className="absolute text-4xl left-[20px] right-[20px] top-0 bottom-0 h-[150px] flex items-center justify-between">
+          <div className="absolute inset-x-[20px] inset-y-0 flex h-[150px] items-center justify-between text-4xl">
             <div>
-              <p className="text-xl  bottom-auto text-left font-black tracking-[0.2em] text-neutral-100 text-sm">
+              <p className="bottom-auto text-left text-sm text-xl font-black tracking-[0.2em] text-neutral-100">
                 PLAN TOMORROW
               </p>
-              <p className="text-xs text-left font-mono text-neutral-100 text-sm">
+              <p className="text-left font-mono text-sm text-xs text-neutral-100">
                 Whats coming next?
               </p>
             </div>
-            <span className="icon_size text-neutral-100 material-symbols-outlined">
+            <span className="icon_size material-symbols-outlined text-neutral-100">
               explore
             </span>
           </div>

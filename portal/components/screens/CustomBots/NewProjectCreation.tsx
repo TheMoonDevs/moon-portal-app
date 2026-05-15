@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
-import { ButtonSCN } from '@/components/elements/Button';
-import { Send, Loader2 } from 'lucide-react';
-import { PortalSdk } from '@/utils/services/PortalSdk';
-import { toast } from 'sonner';
+import { Loader2, Send } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { toast } from 'sonner';
+
+import { ButtonSCN } from '@/components/elements/Button';
+import { PortalSdk } from '@/utils/services/PortalSdk';
 
 export default function NewProjectCreation({
   clientId,
@@ -80,9 +81,9 @@ export default function NewProjectCreation({
           disabled={sending || !projectTitle.trim() || !description.trim()}
         >
           {sending ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <Loader2 className="mr-2 size-4 animate-spin" />
           ) : (
-            <Send className="mr-2 h-4 w-4" />
+            <Send className="mr-2 size-4" />
           )}
           Create Project
         </ButtonSCN>

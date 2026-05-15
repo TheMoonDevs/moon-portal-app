@@ -1,8 +1,9 @@
 'use client';
-import React from 'react';
-import { USERTYPE } from '@prisma/client';
-import { cn } from '@/lib/utils';
+import { USERTYPE } from '@db/client';
 import { useSearchParams } from 'next/navigation';
+import React from 'react';
+
+import { cn } from '@/lib/utils';
 export enum LoginState {
   SELECT_USER_TYPE = 'SELECT_USER_TYPE',
   LOGIN_CODE = 'LOGIN_CODE',
@@ -39,7 +40,8 @@ export const LoginButtons = ({
     return (
       <div className="mt-auto w-3/4">
         <p className="text-center text-xs text-neutral-400">
-          Thank you for your interest in <b>BotBase</b>. Make sure you have your passcode ready.
+          Thank you for your interest in <b>BotBase</b>. Make sure you have your
+          passcode ready.
         </p>
         <div className="x mt-1 flex w-full flex-col gap-4">
           <button

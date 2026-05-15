@@ -1,8 +1,41 @@
-"use client";
-import React, { useEffect, useState } from "react";
-import { User, WorkLogs } from "@prisma/client";
+'use client';
+import type { WorkLogs } from '@db/client';
 // import { PieChart, BarChart } from "@mui/x-charts";
-import { format, parseISO } from "date-fns";
+import { format, parseISO } from 'date-fns';
+import {
+  CircleAlert,
+  CircleCheckBig,
+  History,
+  ListTodo,
+  RefreshCw,
+  Sparkles,
+  Star,
+  TriangleAlert,
+} from 'lucide-react';
+// import StatiStics from "./StatiStics";
+// import Pie from "./PieChart";
+import dynamic from 'next/dynamic';
+import React, { useEffect, useState } from 'react';
+
+import LoadingAnimation from '@/components/elements/LoadingAnimation';
+// import Pattern from "./Pattern";
+// import { setIsCreateLinkModalOpen } from "@/utils/redux/quicklinks/quicklinks.slice";
+import ToolTip from '@/components/elements/ToolTip';
+import type { RootState } from '@/utils/redux/store';
+import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
+import {
+  setCompletedTasksData,
+  setIsShowProductiveStreak,
+  setMissedDates,
+  setMissedTasksData,
+  setProductiveStreakData,
+  setShowCompletedTasks,
+  setShowMissedLogs,
+  setShowMissedTasks,
+  setShowUpdatedLogs,
+  setUpdatedLogsDates,
+} from '@/utils/redux/worklogsSummary/statsAction.slice';
+
 import {
   calculateMetrics,
   getCompletedTasks,
@@ -10,49 +43,12 @@ import {
   getMissedTasks,
   getMissedWorklogDates,
   getUpdatedLogsLater,
-} from "../WorklogBreakdown/BreakdownMetrics";
-import MetricCard, { SquareCard } from "../WorklogBreakdown/MetricCard";
-import {
-  AudioLines,
-  CircleCheckBig,
-  ListTodo,
-  SquareGanttChart,
-  CalendarCheck,
-  CircleArrowUp,
-  CircleX,
-  History,
-  TrendingUp,
-  CircleAlert,
-  RefreshCw,
-  Star,
-  TriangleAlert,
-  Sparkles,
-} from "lucide-react";
-import { Stack, useMediaQuery } from "@mui/material";
-// import Pattern from "./Pattern";
-// import { setIsCreateLinkModalOpen } from "@/utils/redux/quicklinks/quicklinks.slice";
-import ToolTip from "@/components/elements/ToolTip";
-// import StatiStics from "./StatiStics";
-// import Pie from "./PieChart";
-import dynamic from "next/dynamic";
-import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import {
-  setIsShowProductiveStreak,
-  setMissedDates,
-  setProductiveStreakData,
-  setShowMissedLogs,
-  setShowUpdatedLogs,
-  setShowMissedTasks,
-  setMissedTasksData,
-  setUpdatedLogsDates,
-  setCompletedTasksData,
-  setShowCompletedTasks,
-} from "@/utils/redux/worklogsSummary/statsAction.slice";
-import Pointers from "./Pointers";
-import LoadingAnimation from "@/components/elements/LoadingAnimation";
-import { getLatestWorklogPerDate } from "./WorklogSummaryView";
+} from '../WorklogBreakdown/BreakdownMetrics';
+import MetricCard, { SquareCard } from '../WorklogBreakdown/MetricCard';
+import Pointers from './Pointers';
+import { getLatestWorklogPerDate } from './WorklogSummaryView';
 
-const Pattern = dynamic(() => import("./Pattern"), {
+const Pattern = dynamic(() => import('./Pattern'), {
   loading: () => (
     <div className="flex h-[200px] w-full items-center justify-center">
       <LoadingAnimation />,
@@ -60,7 +56,7 @@ const Pattern = dynamic(() => import("./Pattern"), {
   ),
 });
 
-const Pie = dynamic(() => import("./PieChart"), {
+const Pie = dynamic(() => import('./PieChart'), {
   loading: () => (
     <div className="flex h-[200px] w-full items-center justify-center">
       <LoadingAnimation />
@@ -68,7 +64,7 @@ const Pie = dynamic(() => import("./PieChart"), {
   ),
 });
 
-const StatiStics = dynamic(() => import("./StatiStics"), {
+const StatiStics = dynamic(() => import('./StatiStics'), {
   loading: () => (
     <div className="flex h-[200px] w-full items-center justify-center">
       <LoadingAnimation />
@@ -76,7 +72,7 @@ const StatiStics = dynamic(() => import("./StatiStics"), {
   ),
 });
 
-const BarChart = dynamic(() => import("./Histogram"), {
+const BarChart = dynamic(() => import('./Histogram'), {
   loading: () => (
     <div className="flex h-[200px] w-full items-center justify-center">
       <LoadingAnimation />
@@ -84,10 +80,10 @@ const BarChart = dynamic(() => import("./Histogram"), {
   ),
 });
 
-const tabs: string[] = ["POINTERS", "ANALYTICS", "STATS", "GROWTH", "MISSIONS"];
+const tabs: string[] = ['POINTERS', 'ANALYTICS', 'STATS', 'GROWTH', 'MISSIONS'];
 const icons = [
-  { icon: "show_chart", label: "Show Lines Chart" },
-  { icon: "bar_chart", label: "Show Histogram" },
+  { icon: 'show_chart', label: 'Show Lines Chart' },
+  { icon: 'bar_chart', label: 'Show Histogram' },
 ];
 
 interface WorklogBreakdownProps {
@@ -102,7 +98,7 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
   isYearly,
 }) => {
   const metrics = calculateMetrics(worklogSummary, isMonthly, isYearly);
-  const [activeTab, setActiveTab] = useState("POINTERS");
+  const [activeTab, setActiveTab] = useState('POINTERS');
   const [activeIndex, setActiveIndex] = useState(0);
   const [gridVisible, setGridVisible] = useState(true);
   const dispatch = useAppDispatch();
@@ -111,12 +107,12 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
   const uniqueWorklogs = getLatestWorklogPerDate(worklogSummary); //removes duplicate data from worklogs and we will get the latest updated worklogs
 
   const weekdays = [
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
   ];
 
   // const completedTasksData = weekdays.map(
@@ -152,27 +148,27 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
     dispatch(setShowMissedTasks(false));
     dispatch(setShowCompletedTasks(false));
 
-    if (cardTitle === "topProductiveDays") {
+    if (cardTitle === 'topProductiveDays') {
       const topProductiveDay = metrics.topProductiveDays[0];
       if (topProductiveDay) {
         scrollToWorklog(topProductiveDay.date);
       }
     }
-    if (cardTitle === "productiveStreak") {
+    if (cardTitle === 'productiveStreak') {
       if (productiveStreakData.length > 0) {
         dispatch(setIsShowProductiveStreak(true));
       }
     }
-    if (cardTitle === "missedLogs") {
+    if (cardTitle === 'missedLogs') {
       dispatch(setShowMissedLogs(true));
     }
-    if (cardTitle === "updatedLogsLater") {
+    if (cardTitle === 'updatedLogsLater') {
       dispatch(setShowUpdatedLogs(true));
     }
-    if (cardTitle === "missedTasks") {
+    if (cardTitle === 'missedTasks') {
       dispatch(setShowMissedTasks(true));
     }
-    if (cardTitle === "taskCompletionRate") {
+    if (cardTitle === 'taskCompletionRate') {
       dispatch(setShowCompletedTasks(true));
     }
   };
@@ -181,7 +177,7 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
     const worklogElement = document.querySelector(`[data-date="${date}"]`);
     if (worklogElement) {
       const container = worklogElement.closest(
-        ".scrollable-container-summaryView",
+        '.scrollable-container-summaryView',
       );
       if (container) {
         const containerRect = container.getBoundingClientRect();
@@ -193,10 +189,10 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
 
         container.scrollTo({
           top: scrollPosition,
-          behavior: "smooth",
+          behavior: 'smooth',
         });
       } else {
-        worklogElement.scrollIntoView({ behavior: "smooth", block: "start" });
+        worklogElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     }
   };
@@ -204,7 +200,7 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
   return (
     <main
       className={`overflow-y-hiddem relative mx-2 my-4 flex flex-col justify-start gap-5 overflow-x-hidden rounded-b-2xl bg-white px-2`}
-      style={{ height: "calc(100vh - 110px)" }}
+      style={{ height: 'calc(100vh - 110px)' }}
     >
       <div className="absolute top-0 z-10 w-full bg-white">
         <h1 className="mt-4 justify-start bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-center font-sans text-lg font-semibold text-transparent md:text-2xl">
@@ -216,8 +212,8 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
               key={`${tab}-${i}`}
               className={`cursor-pointer px-2 pb-2 text-sm leading-3 tracking-widest text-black transition-all duration-300 ease-in-out ${
                 activeTab === tab
-                  ? "rounded-b-sm rounded-l-sm rounded-r-sm rounded-t-sm border-b-2 border-black font-extrabold"
-                  : "border-b-2 border-transparent font-normal"
+                  ? 'rounded-sm border-b-2 border-black font-extrabold'
+                  : 'border-b-2 border-transparent font-normal'
               }`}
               onClick={() => setActiveTab(tab)}
             >
@@ -228,7 +224,7 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
       </div>
       <div className="relative top-28 pb-6">
         {/* ANALYTICS */}
-        {activeTab === "ANALYTICS" && (
+        {activeTab === 'ANALYTICS' && (
           <div>
             <div className="flex w-full items-center justify-between px-4">
               <p className="text-sm font-normal leading-4 text-gray-500">
@@ -240,14 +236,14 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
                     <ToolTip key={icon.icon} title={icon.label}>
                       <div
                         className={`flex cursor-pointer items-center justify-center rounded-lg border border-[#00000033] px-3 py-2 transition-colors duration-300 hover:bg-neutral-100 ${
-                          activeIndex === index ? "bg-neutral-200" : "bg-white"
+                          activeIndex === index ? 'bg-neutral-200' : 'bg-white'
                         }`}
                         key={icon.icon}
                         onClick={() => setActiveIndex(index)}
                       >
                         <span
                           className="material-symbols-outlined"
-                          style={{ fontSize: "16px" }}
+                          style={{ fontSize: '16px' }}
                         >
                           {icon.icon}
                         </span>
@@ -255,18 +251,18 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
                     </ToolTip>
                   );
                 })}
-                <ToolTip title={gridVisible ? "Hide Grid" : "Show Grid"}>
+                <ToolTip title={gridVisible ? 'Hide Grid' : 'Show Grid'}>
                   <div
                     className={`flex cursor-pointer items-center justify-center rounded-lg border border-[#00000033] px-3 py-2 transition-colors duration-300 hover:bg-neutral-100 ${
-                      gridVisible ? "bg-neutral-200" : "bg-white"
+                      gridVisible ? 'bg-neutral-200' : 'bg-white'
                     }`}
                     onClick={() => setGridVisible(!gridVisible)}
                   >
                     <span
                       className="material-symbols-outlined"
-                      style={{ fontSize: "16px" }}
+                      style={{ fontSize: '16px' }}
                     >
-                      {gridVisible ? "grid_off" : "grid_on"}
+                      {gridVisible ? 'grid_off' : 'grid_on'}
                     </span>
                   </div>
                 </ToolTip>
@@ -274,7 +270,7 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
             </div>
             <div className="h-[400px] w-full py-4">
               <p className="p-4 text-base font-semibold leading-4 tracking-widest text-black">
-                Total tasks and completed tasks <br />{" "}
+                Total tasks and completed tasks <br />{' '}
                 <span className="text-xs font-medium text-gray-500">
                   (Day wise)
                 </span>
@@ -312,7 +308,7 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
           </div>
         )}
         {/* STATS */}
-        {activeTab === "STATS" && (
+        {activeTab === 'STATS' && (
           <>
             <div className="flex flex-col gap-4">
               <div className="grid grid-cols-2 gap-2 max-sm:grid-cols-1">
@@ -323,21 +319,21 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
                       {metrics.topProductiveDays
                         .map(
                           (day) =>
-                            `${format(parseISO(day.date), "MMM d")}(${day.completedTasks
+                            `${format(parseISO(day.date), 'MMM d')}(${day.completedTasks
                               .toString()
-                              .padStart(2, "0")})`,
+                              .padStart(2, '0')})`,
                         )
-                        .join(", ")}
+                        .join(', ')}
                     </div>
                   }
                   logo={<Star color="#FFC107" size={30} />}
-                  onClick={() => handleCardClick("topProductiveDays")}
+                  onClick={() => handleCardClick('topProductiveDays')}
                 />
                 <MetricCard
                   title="Task Completion Rate"
                   content={`${metrics.taskCompletionRate.toFixed(2)}%`}
                   logo={<CircleCheckBig color="#28A745 " size={30} />}
-                  onClick={() => handleCardClick("taskCompletionRate")}
+                  onClick={() => handleCardClick('taskCompletionRate')}
                 />
               </div>
 
@@ -346,25 +342,25 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
                   icon={<Sparkles color="#4CAF50" size={24} />}
                   content={`${metrics.longestProductiveStreakData.length}`}
                   title="Productive Streak"
-                  onClick={() => handleCardClick("productiveStreak")}
+                  onClick={() => handleCardClick('productiveStreak')}
                 />
                 <SquareCard
                   icon={<CircleAlert color="#FF6347" size={24} />}
                   content={`${metrics.missedLogsDates.length}`}
                   title="Missed Logs"
-                  onClick={() => handleCardClick("missedLogs")}
+                  onClick={() => handleCardClick('missedLogs')}
                 />
                 <SquareCard
                   icon={<History color="#FF9800" size={24} />}
                   content={`${metrics.updatedLogsLater.length}`}
                   title="Updated Logs Later"
-                  onClick={() => handleCardClick("updatedLogsLater")}
+                  onClick={() => handleCardClick('updatedLogsLater')}
                 />
                 <SquareCard
                   icon={<TriangleAlert color="#FF5722" size={24} />}
                   content={`${metrics.missedTasks}`}
                   title="Missed Tasks"
-                  onClick={() => handleCardClick("missedTasks")}
+                  onClick={() => handleCardClick('missedTasks')}
                 />
               </div>
 
@@ -404,19 +400,19 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
           </>
         )}
         {/* POINTERS */}
-        {activeTab === "POINTERS" && (
+        {activeTab === 'POINTERS' && (
           <div className="h-full">
             <Pointers />
           </div>
         )}
         {/* GROWTH */}
-        {activeTab === "GROWTH" && (
+        {activeTab === 'GROWTH' && (
           <div className="flex items-center justify-center p-4">
             Coming soon, Stay tuned!
           </div>
-        )}{" "}
+        )}{' '}
         {/* MISSIONS */}
-        {activeTab === "MISSIONS" && (
+        {activeTab === 'MISSIONS' && (
           <div className="flex items-center justify-center p-4">
             Coming soon, Stay tuned!
           </div>

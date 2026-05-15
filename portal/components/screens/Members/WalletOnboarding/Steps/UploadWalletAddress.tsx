@@ -1,7 +1,9 @@
-import React, { useState } from "react";
-import OnboardingStep from "./OnboardingStep";
-import { toast, Toaster } from "sonner";
-import { isValidEthAddress } from "@/utils/helpers/functions";
+import React, { useState } from 'react';
+import { toast } from 'sonner';
+
+import { isValidEthAddress } from '@/utils/helpers/functions';
+
+import OnboardingStep from './OnboardingStep';
 
 interface IStep3Props {
   onNext: (walletAddress: string) => void;
@@ -14,7 +16,7 @@ const UploadWalletAddress: React.FC<IStep3Props> = ({
   loading,
   step,
 }) => {
-  const [walletAddress, setWalletAddress] = useState("");
+  const [walletAddress, setWalletAddress] = useState('');
 
   const handleNext = async () => {
     try {
@@ -24,12 +26,12 @@ const UploadWalletAddress: React.FC<IStep3Props> = ({
         address = clipboardText;
       }
       if (!isValidEthAddress(address)) {
-        throw new Error("Invalid wallet address!");
+        throw new Error('Invalid wallet address!');
       }
       setWalletAddress(address);
       onNext(address);
     } catch (error) {
-      toast.error("Invalid wallet address!");
+      toast.error('Invalid wallet address!');
     }
   };
 
@@ -47,7 +49,7 @@ const UploadWalletAddress: React.FC<IStep3Props> = ({
         value={walletAddress}
         onChange={(e) => setWalletAddress(e.target.value)}
         placeholder="Paste your wallet address"
-        className="mt-4 p-3 rounded border border-gray-300 bg-gray-900 text-white w-full outline-none text-md"
+        className="text-md mt-4 w-full rounded border border-gray-300 bg-gray-900 p-3 text-white outline-none"
       />
     </OnboardingStep>
   );

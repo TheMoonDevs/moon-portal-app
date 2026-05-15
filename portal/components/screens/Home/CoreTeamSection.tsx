@@ -1,34 +1,42 @@
 /* eslint-disable @next/next/no-img-element */
-import { PortalSdk } from "@/utils/services/PortalSdk";
-import { USERROLE, USERTYPE, User } from "@prisma/client";
-import { useEffect, useState } from "react";
-import { UserProfileDrawer } from "@/components/screens/Home/ProfileDrawer";
+import type { User } from '@db/client';
+import { USERROLE, USERTYPE } from '@db/client';
+import dayjs from 'dayjs';
+import { useEffect } from 'react';
+
+import ToolTip from '@/components/elements/ToolTip';
+import { UserProfileDrawer } from '@/components/screens/Home/ProfileDrawer';
+import { getBuffLevelAndTitle } from '@/utils/helpers/badges';
 import {
   selectMember,
   setCoreTeamMembers,
-  setTrialCandidates
-} from "@/utils/redux/coreTeam/coreTeam.slice";
-import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import dayjs from "dayjs";
-import ToolTip from "@/components/elements/ToolTip";
-import { getBuffLevelAndTitle } from "@/utils/helpers/badges";
+  setTrialCandidates,
+} from '@/utils/redux/coreTeam/coreTeam.slice';
+import type { RootState } from '@/utils/redux/store';
+import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
+import { PortalSdk } from '@/utils/services/PortalSdk';
 interface CoreTeamSectionProps {
   userRoles: USERROLE;
 }
 
 export const CoreTeamSection = ({ userRoles }: CoreTeamSectionProps) => {
   const dispatch = useAppDispatch();
-  const currentMonth = dayjs().format("MMMM");
+  const currentMonth = dayjs().format('MMMM');
 
   const coreTeam = useAppSelector((state: RootState) =>
     userRoles === USERROLE.CORETEAM
       ? state.coreTeam.coreTeamMembers
-      : state.coreTeam.trialCandidates
+      : state.coreTeam.trialCandidates,
   );
   useEffect(() => {
     PortalSdk.getData(
-      "/api/user?role=" + userRoles + "&userType=" + USERTYPE.MEMBER + "&status=ACTIVE&cache=true" + `&month=${currentMonth}`,
-      null
+      '/api/user?role=' +
+        userRoles +
+        '&userType=' +
+        USERTYPE.MEMBER +
+        '&status=ACTIVE&cache=true' +
+        `&month=${currentMonth}`,
+      null,
     )
       .then((data) => {
         if (userRoles === USERROLE.CORETEAM) {
@@ -47,7 +55,7 @@ export const CoreTeamSection = ({ userRoles }: CoreTeamSectionProps) => {
   };
 
   return (
-    <section className="bg-white m-4 mt-6 px-0 border-neutral-400 rounded-xl shadow-md overflow-hidden">
+    <section className="m-4 mt-6 overflow-hidden rounded-xl border-neutral-400 bg-white px-0 shadow-md">
       <div className="flex flex-col items-stretch justify-center">
         {coreTeam.map((user) => {
           const badge = (user as any).buffBadge;
@@ -55,37 +63,38 @@ export const CoreTeamSection = ({ userRoles }: CoreTeamSectionProps) => {
             <div
               key={user.id}
               onClick={() => handleOpenSlideIn(user)}
-              className="flex flex-row gap-1 items-center justify-between px-2 py-3 cursor-pointer hover:bg-black/5 border-b border-neutral-200"
+              className="flex cursor-pointer flex-row items-center justify-between gap-1 border-b border-neutral-200 px-2 py-3 hover:bg-black/5"
             >
               <div className="flex items-center gap-4">
                 <div className="rounded-full bg-neutral-400">
                   <img
                     src={
                       user?.avatar ||
-                      `https://via.placeholder.com/150?text=${user?.name?.charAt(0) || "U"
+                      `https://via.placeholder.com/150?text=${
+                        user?.name?.charAt(0) || 'U'
                       }`
                     }
-                    alt={user?.name?.charAt(0) || ""}
-                    className="w-8 h-8 object-cover object-center rounded-full"
+                    alt={user?.name?.charAt(0) || ''}
+                    className="size-8 rounded-full object-cover object-center"
                   />
                 </div>
                 <div className="text-left">
-                  <p className="text-sm font-semibold text-neutral-900 line-clamp-1">
+                  <p className="line-clamp-1 text-sm font-semibold text-neutral-900">
                     {user.name}
                   </p>
                 </div>
               </div>
               <div className="flex items-center justify-end gap-2">
-                {(user as any).buffBadge.length > 0 ? (
+                {(user as any).buffBadge?.length > 0 ? (
                   <ToolTip title={badge[0].title} arrow={true}>
                     <img
                       src={getBuffLevelAndTitle(badge[0].points).src}
                       alt={badge[0].title.charAt(0)}
-                      className="w-8 h-8 rounded-full shadow-md"
+                      className="size-8 rounded-full shadow-md"
                     />
                   </ToolTip>
                 ) : (
-                  <span className="text-[8px] border rounded-lg p-2">
+                  <span className="rounded-lg border p-2 text-[8px]">
                     {user.vertical && user.vertical?.length > 2
                       ? user.vertical?.substring(0, 3).toUpperCase()
                       : user.vertical}
@@ -94,7 +103,7 @@ export const CoreTeamSection = ({ userRoles }: CoreTeamSectionProps) => {
               </div>
             </div>
           );
-        })}{" "}
+        })}{' '}
       </div>
       <UserProfileDrawer />
     </section>

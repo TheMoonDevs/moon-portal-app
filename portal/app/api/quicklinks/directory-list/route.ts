@@ -1,16 +1,19 @@
-import { prisma } from "@/prisma/prisma";
-import { ROOTTYPE } from "@prisma/client";
-import { NextRequest, NextResponse } from "next/server";
+import type { ROOTTYPE } from '@db/client';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
+import { db } from '@/lib/mongodb/db-client';
+import { parseCreateInput, parseUpdateInput } from '@/lib/mongodb/validation';
 
 export async function GET(request: NextRequest) {
-  const id = request.nextUrl.searchParams.get("id");
-  const slug = request.nextUrl.searchParams.get("slug");
-  const tabType = request.nextUrl.searchParams.get("tabType") as ROOTTYPE;
-  const userId = request.nextUrl.searchParams.get("userId") as string;
+  const id = request.nextUrl.searchParams.get('id');
+  const slug = request.nextUrl.searchParams.get('slug');
+  const tabType = request.nextUrl.searchParams.get('tabType') as ROOTTYPE;
+  const userId = request.nextUrl.searchParams.get('userId') as string;
   let directoryList = [];
   try {
     if (!userId) {
-      directoryList = await prisma.directoryList.findMany({
+      directoryList = await db.directoryList.findMany({
         where: {
           ...(id && { id: id }),
           ...(slug && { slug: slug }),
@@ -18,7 +21,7 @@ export async function GET(request: NextRequest) {
         },
       });
     } else {
-      directoryList = await prisma.directoryList.findMany({
+      directoryList = await db.directoryList.findMany({
         where: {
           ...(id && { id: id }),
           ...(slug && { slug: slug }),
@@ -28,7 +31,7 @@ export async function GET(request: NextRequest) {
           userDirectory: {
             where: {
               userId: userId,
-              directoryType: "FAVORITED",
+              directoryType: 'FAVORITED',
             },
             select: {
               directoryId: true,
@@ -37,8 +40,8 @@ export async function GET(request: NextRequest) {
         },
       });
     }
-    let json_response = {
-      status: "success",
+    const json_response = {
+      status: 'success',
       data: {
         directoryList,
       },
@@ -47,7 +50,7 @@ export async function GET(request: NextRequest) {
   } catch (e) {
     return new NextResponse(JSON.stringify(e), {
       status: 404,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }
@@ -56,21 +59,22 @@ export async function POST(request: Request) {
   const newDirectory = await request.json();
 
   try {
-    const lastDirectory = await prisma.directoryList.findFirst({
+    const lastDirectory = await db.directoryList.findFirst({
       where: { parentDirId: newDirectory.parentDirId },
-      orderBy: { position: "desc" },
+      orderBy: { position: 'desc' },
       select: { position: true },
     });
 
     const newPosition = lastDirectory ? lastDirectory.position + 10 : 10;
-    const directory = await prisma.directoryList.create({
-      data: {
-        ...newDirectory,
-        position: newPosition,
-      },
+    const createData = parseCreateInput('directoryList', {
+      ...newDirectory,
+      position: newPosition,
     });
-    let json_response = {
-      status: "success",
+    const directory = await db.directoryList.create({
+      data: createData,
+    });
+    const json_response = {
+      status: 'success',
       data: { directory },
     };
     return NextResponse.json(json_response);
@@ -78,27 +82,27 @@ export async function POST(request: Request) {
     console.log(e);
     return new NextResponse(JSON.stringify(e), {
       status: 404,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }
 
 export async function DELETE(request: NextRequest) {
-  const id = request.nextUrl.searchParams.get("id");
+  const id = request.nextUrl.searchParams.get('id');
   if (!id) {
-    return new NextResponse(JSON.stringify({ error: "Missing id" }), {
+    return new NextResponse(JSON.stringify({ error: 'Missing id' }), {
       status: 404,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
   try {
-    const directory = await prisma.directoryList.delete({
+    const directory = await db.directoryList.delete({
       where: {
         id: id,
       },
     });
-    let json_response = {
-      status: "success",
+    const json_response = {
+      status: 'success',
       data: {
         directory,
       },
@@ -107,7 +111,7 @@ export async function DELETE(request: NextRequest) {
   } catch (e) {
     return new NextResponse(JSON.stringify(e), {
       status: 404,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }
@@ -115,22 +119,21 @@ export async function DELETE(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   const { id, ...rest } = await request.json();
   if (!id) {
-    return new NextResponse(JSON.stringify({ error: "Missing id" }), {
+    return new NextResponse(JSON.stringify({ error: 'Missing id' }), {
       status: 404,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
   try {
-    const directory = await prisma.directoryList.update({
+    const updateData = parseUpdateInput('directoryList', rest);
+    const directory = await db.directoryList.update({
       where: {
         id: id,
       },
-      data: {
-        ...rest,
-      },
+      data: updateData,
     });
-    let json_response = {
-      status: "success",
+    const json_response = {
+      status: 'success',
       data: {
         directory,
       },
@@ -139,7 +142,7 @@ export async function PUT(request: NextRequest) {
   } catch (e) {
     return new NextResponse(JSON.stringify(e), {
       status: 404,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }

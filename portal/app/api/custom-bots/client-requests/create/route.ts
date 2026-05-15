@@ -1,9 +1,11 @@
+import { REQUESTSTATUS, UPDATEFROM, UPDATETYPE } from '@db/client';
 import { NextResponse } from 'next/server';
-import { prisma } from '@/prisma/prisma';
-import { REQUESTSTATUS, UPDATETYPE, UPDATEFROM } from '@prisma/client';
+
+import { db } from '@/lib/mongodb/db-client';
+import { parseCreateInput } from '@/lib/mongodb/validation';
 import { TEMPLATE_REPO_OWNER } from '@/utils/constants/customBots';
-import { GithubSdk } from '@/utils/services/githubSdk';
 import { GenAiSdk } from '@/utils/services/GenAiSdk';
+import { GithubSdk } from '@/utils/services/githubSdk';
 import { SlackBotSdk, SlackChannels } from '@/utils/services/slackBotSdk';
 
 const slackBotSdk = new SlackBotSdk();
@@ -20,7 +22,8 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  let { requestDescription, clientId, botProjectId } = body;
+  let { requestDescription } = body;
+  const { clientId, botProjectId } = body;
   const initTime = new Date();
 
   if (!requestDescription || !clientId || !botProjectId) {
@@ -31,7 +34,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const botProject = await prisma.botProject.findUnique({
+    const botProject = await db.botProject.findUnique({
       where: { id: botProjectId },
     });
 
@@ -97,28 +100,30 @@ export async function POST(request: Request) {
     });
 
     // 4️⃣ Create the `ClientRequest`
-    const clientRequest = await prisma.clientRequest.create({
-      data: {
-        botProjectId,
-        clientId,
-        title: generatedTitle,
-        description: requestDescription, // First message stored here
-        requestDir,
-        prUrl: prResult?.html_url || '',
-        prNumber: prResult?.number || null,
-        prBranch: newBranch,
-        prTargetBranch: targetBranch,
-        requestStatus: REQUESTSTATUS.UN_ASSIGNED,
-        metadata: prResult,
-        lastUpdatedAt: initTime,
-        createdAt: initTime,
-        updatedAt: initTime,
-      },
+    const clientRequestData = parseCreateInput('clientRequest', {
+      botProjectId,
+      clientId,
+      title: generatedTitle,
+      description: requestDescription, // First message stored here
+      requestDir,
+      prUrl: prResult?.html_url || '',
+      prNumber: prResult?.number || null,
+      prBranch: newBranch,
+      prTargetBranch: targetBranch,
+      requestStatus: REQUESTSTATUS.UN_ASSIGNED,
+      metadata: prResult,
+      lastUpdatedAt: initTime,
+      createdAt: initTime,
+      updatedAt: initTime,
+    });
+
+    const clientRequest = await db.clientRequest.create({
+      data: clientRequestData,
     });
 
     const clientRequestFilePath = `${requestDir}/clientRequest.json`;
     // 5️⃣ Create the clientRequest.json file on the new branch with the updated ID.
-    const clientRequestData = {
+    const clientRequestFileData = {
       id: clientRequest.id,
       botProjectId: clientRequest.botProjectId,
       clientId: clientRequest.clientId,
@@ -135,33 +140,37 @@ export async function POST(request: Request) {
 
     await appRepoSdk.updateFile({
       path: clientRequestFilePath,
-      content: JSON.stringify(clientRequestData, null, 2),
+      content: JSON.stringify(clientRequestFileData, null, 2),
       commitMessage: `Add clientRequest.json for ${requestTitle}`,
       branch: newBranch,
     });
 
     // 6️⃣ Create a `requestMessage` for the first message
-    await prisma.requestMessage.create({
-      data: {
-        originClientRequestId: clientRequest.id,
-        clientId,
-        message: requestDescription,
-        updateType: UPDATETYPE.MESSAGE,
-        updateFrom: UPDATEFROM.CLIENT,
-        createdAt: initTime,
-        updatedAt: initTime,
-      },
+    const firstMessageData = parseCreateInput('requestMessage', {
+      originClientRequestId: clientRequest.id,
+      clientId,
+      message: requestDescription,
+      updateType: UPDATETYPE.MESSAGE,
+      updateFrom: UPDATEFROM.CLIENT,
+      createdAt: initTime,
+      updatedAt: initTime,
     });
 
-    await prisma.requestMessage.create({
-      data: {
-        originClientRequestId: clientRequest.id,
-        clientId,
-        message:
-          'Your request has been received. We will get back to you shortly.',
-        updateType: UPDATETYPE.MESSAGE,
-        updateFrom: UPDATEFROM.BOT,
-      },
+    await db.requestMessage.create({
+      data: firstMessageData,
+    });
+
+    const ackMessageData = parseCreateInput('requestMessage', {
+      originClientRequestId: clientRequest.id,
+      clientId,
+      message:
+        'Your request has been received. We will get back to you shortly.',
+      updateType: UPDATETYPE.MESSAGE,
+      updateFrom: UPDATEFROM.BOT,
+    });
+
+    await db.requestMessage.create({
+      data: ackMessageData,
     });
 
     const slackMsg = `A new request has been created for the project: *${botProject.name}*\n\n*Title*: ${generatedTitle}\n*Description*: ${requestDescription}\n*PR Link*: ${prResult.html_url}`;

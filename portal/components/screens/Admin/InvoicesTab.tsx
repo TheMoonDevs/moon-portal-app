@@ -1,21 +1,26 @@
-import { Spinner } from '@/components/elements/Loaders';
-import { MobileBox } from '../Login/Login';
-import { Invoice, PayType, User, USERTYPE } from '@prisma/client';
-import { FormEvent, useEffect, useState } from 'react';
-import { PortalSdk } from '@/utils/services/PortalSdk';
-import { INITIAL_LOADING_STATE } from './ClientShortcutsManager';
-import { loadingState } from './Events/EventForm';
-import ToolTip from '@/components/elements/ToolTip';
+import type { Invoice, User } from '@db/client';
+import { PayType, USERTYPE } from '@db/client';
+import type { FileWithPath } from '@mantine/dropzone';
 import { Autocomplete, Chip, IconButton, TextField } from '@mui/material';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import dayjs, { Dayjs } from 'dayjs';
-import { useUser } from '@/utils/hooks/useUser';
-import { FileWithPath } from '@mantine/dropzone';
-import { TMD_PORTAL_API_KEY } from '@/utils/constants/appInfo';
+import type { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
 import Link from 'next/link';
+import type { FormEvent } from 'react';
+import { useEffect, useState } from 'react';
 import { toast, Toaster } from 'sonner';
+
 import DeleteConfirmationDialog from '@/components/elements/Dialogs';
+import { Spinner } from '@/components/elements/Loaders';
+import ToolTip from '@/components/elements/ToolTip';
+import { TMD_PORTAL_API_KEY } from '@/utils/constants/appInfo';
+import { useUser } from '@/utils/hooks/useUser';
+import { PortalSdk } from '@/utils/services/PortalSdk';
+
+import { MobileBox } from '../Login/Login';
+import { INITIAL_LOADING_STATE } from './ClientShortcutsManager';
+import type { loadingState } from './Events/EventForm';
 type InvoiceFormState = {
   clientId: string;
   startDate: string | null | Dayjs;
@@ -328,9 +333,9 @@ const InvoicesTab = ({
     return (
       <form
         onSubmit={loadingState.updating ? handleUpdate : handleFormSubmit}
-        className="relative my-2 flex h-full w-[90%] flex-grow flex-col"
+        className="relative my-2 flex h-full w-[90%] grow flex-col"
       >
-        <div className="flex-grow">
+        <div className="grow">
           <div className="mb-5">
             <label
               htmlFor="user"
@@ -751,7 +756,7 @@ const InvoicesTab = ({
               //   }
             >
               {loadingState.adding || loadingState.updateUploading ? (
-                <Spinner className="h-4 w-4" />
+                <Spinner className="size-4" />
               ) : (
                 <>{loadingState.updating ? 'Update Invoice' : 'Add Invoice'}</>
               )}
@@ -803,7 +808,7 @@ const InvoicesTab = ({
                   <img
                     src={user?.avatar || undefined}
                     alt={user?.name || ''}
-                    className="h-12 w-12 rounded-full object-cover object-center"
+                    className="size-12 rounded-full object-cover object-center"
                   />
                 </div>
                 <div>
@@ -831,7 +836,7 @@ const InvoicesTab = ({
           </div>
         ) : (
           <div
-            className={`relative h-full w-full ${loadingState.addNew || loadingState.updating ? '' : 'flex justify-center'}`}
+            className={`relative size-full ${loadingState.addNew || loadingState.updating ? '' : 'flex justify-center'}`}
           >
             {loadingState.addNew || loadingState.updating ? (
               <div className="flex flex-col items-center justify-center">
@@ -864,7 +869,7 @@ const InvoicesTab = ({
                 <p className="text-neutral-400">No Invoice found.</p>
               </div>
             ) : (
-              <div className="no-scrollbar flex h-[80%] w-[90%] flex-col gap-2 overflow-y-scroll">
+              <div className="no-scrollbar flex h-4/5 w-[90%] flex-col gap-2 overflow-y-scroll">
                 {invoices.map((invoice: Invoice, index: number) => {
                   return (
                     <div
@@ -903,7 +908,7 @@ const InvoicesTab = ({
                           disabled={invoiceId === invoice.id}
                         >
                           {openDeleteDialog ? (
-                            <Spinner className="h-4 w-4" />
+                            <Spinner className="size-4" />
                           ) : (
                             <span className="material-symbols-outlined">
                               delete

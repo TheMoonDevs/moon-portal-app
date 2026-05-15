@@ -1,20 +1,22 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useUser } from '@/utils/hooks/useUser';
-import { PanelRight, PanelRightClose, PlusCircle } from 'lucide-react';
-import { ButtonSCN } from '@/components/elements/Button';
-import Sidebar from './Sidebar';
-import ChatWindow from './ChatWindow';
-import NewRequestCreation from './NewRequestCreation';
-import NewProjectCreation from './NewProjectCreation';
-import ProjectConfigModal from './ProjectConfigModal';
-import { useRouter, useSearchParams } from 'next/navigation';
-import useSWR from 'swr';
-import { toast, Toaster } from 'sonner';
-import { REQUESTSTATUS } from '@prisma/client';
+import { REQUESTSTATUS } from '@db/client';
 import { Skeleton } from '@mui/material';
+import { PanelRight, PanelRightClose, PlusCircle } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import useSWR from 'swr';
+
+import { ButtonSCN } from '@/components/elements/Button';
+import { useUser } from '@/utils/hooks/useUser';
+
+import ChatWindow from './ChatWindow';
 import { ClientBotProvider } from './ClientBotProvider';
+import NewProjectCreation from './NewProjectCreation';
+import NewRequestCreation from './NewRequestCreation';
+import ProjectConfigModal from './ProjectConfigModal';
+import Sidebar from './Sidebar';
 
 /** DEPRECATED - copied all functionality except config modal */
 export default function Dashboard() {

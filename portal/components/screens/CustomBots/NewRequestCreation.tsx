@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
-import { ButtonSCN } from '@/components/elements/Button';
-import { Send, Loader2 } from 'lucide-react';
-import { PortalSdk } from '@/utils/services/PortalSdk';
-import { toast } from 'sonner';
+import type { BotProject, ClientRequest } from '@db/client';
+import { Loader2, Send } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { BotProject, ClientRequest } from '@prisma/client';
+import { useState } from 'react';
+import { toast } from 'sonner';
+
+import { ButtonSCN } from '@/components/elements/Button';
+import { PortalSdk } from '@/utils/services/PortalSdk';
 
 interface BotProjectWithRequests extends BotProject {
   clientRequests: ClientRequest[];
@@ -78,9 +79,9 @@ export default function NewRequestCreation({
           disabled={sending || !description.trim()}
         >
           {sending ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <Loader2 className="mr-2 size-4 animate-spin" />
           ) : (
-            <Send className="mr-2 h-4 w-4" />
+            <Send className="mr-2 size-4" />
           )}
           Create Request
         </ButtonSCN>

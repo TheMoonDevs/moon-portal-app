@@ -1,6 +1,7 @@
-import media from '@/styles/media';
-import { Box, Drawer, Fab, useMediaQuery } from '@mui/material';
+import { Box, Drawer, useMediaQuery } from '@mui/material';
 import React from 'react';
+
+import media from '@/styles/media';
 
 const DrawerComponent = ({
   children,

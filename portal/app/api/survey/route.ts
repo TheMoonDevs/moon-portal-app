@@ -1,5 +1,6 @@
-import { prisma } from "@/prisma/prisma";
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
+
+import { db } from '@/lib/mongodb/db-client';
 
 type Params = {
   id: string;
@@ -12,13 +13,13 @@ export async function GET(request: Request, { params }: { params: Params }) {
 
   if (!id) {
     error_response = {
-      status: "fail",
-      message: "User ID is required",
+      status: 'fail',
+      message: 'User ID is required',
     };
   }
 
   try {
-    const survey = await prisma.survey.findUnique({
+    const survey = await db.survey.findUnique({
       where: {
         id,
       },
@@ -27,12 +28,12 @@ export async function GET(request: Request, { params }: { params: Params }) {
     if (error_response) {
       return new NextResponse(JSON.stringify(error_response), {
         status: 404,
-        headers: { "Content-Type": "application/json" },
+        headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    let json_response = {
-      status: "success",
+    const json_response = {
+      status: 'success',
       data: {
         survey,
       },
@@ -42,7 +43,7 @@ export async function GET(request: Request, { params }: { params: Params }) {
   } catch (e) {
     return new NextResponse(JSON.stringify(e), {
       status: 404,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }
@@ -51,14 +52,14 @@ export async function POST(request: Request) {
   try {
     const json = await request.json();
 
-    const survey = await prisma.survey.create({
+    const survey = await db.survey.create({
       data: {
         ...json,
       },
     });
 
-    let json_response = {
-      status: "success",
+    const json_response = {
+      status: 'success',
       data: {
         survey,
       },
@@ -68,7 +69,7 @@ export async function POST(request: Request) {
   } catch (e) {
     return new NextResponse(JSON.stringify(e), {
       status: 404,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }
@@ -77,7 +78,7 @@ export async function PUT(request: Request) {
   try {
     const { id, ...rest } = await request.json();
 
-    const survey = await prisma.survey.upsert({
+    const survey = await db.survey.upsert({
       where: {
         id,
       },
@@ -85,8 +86,8 @@ export async function PUT(request: Request) {
       update: { ...rest },
     });
 
-    let json_response = {
-      status: "success",
+    const json_response = {
+      status: 'success',
       data: {
         survey,
       },
@@ -96,7 +97,7 @@ export async function PUT(request: Request) {
   } catch (e) {
     return new NextResponse(JSON.stringify(e), {
       status: 404,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }
@@ -108,13 +109,13 @@ export async function DELETE(request: Request, { params }: { params: Params }) {
 
   if (!id) {
     error_response = {
-      status: "fail",
-      message: "User ID is required",
+      status: 'fail',
+      message: 'User ID is required',
     };
   }
 
   try {
-    const survey = await prisma.survey.delete({
+    const survey = await db.survey.delete({
       where: {
         id,
       },
@@ -123,12 +124,12 @@ export async function DELETE(request: Request, { params }: { params: Params }) {
     if (error_response) {
       return new NextResponse(JSON.stringify(error_response), {
         status: 404,
-        headers: { "Content-Type": "application/json" },
+        headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    let json_response = {
-      status: "success",
+    const json_response = {
+      status: 'success',
       data: {
         survey,
       },
@@ -138,7 +139,7 @@ export async function DELETE(request: Request, { params }: { params: Params }) {
   } catch (e) {
     return new NextResponse(JSON.stringify(e), {
       status: 404,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }

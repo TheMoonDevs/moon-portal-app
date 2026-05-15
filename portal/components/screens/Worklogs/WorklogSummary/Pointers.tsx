@@ -1,12 +1,14 @@
 'use client';
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import type { Pointer, Reply } from '@db/client';
+import { CircularProgress } from '@mui/material';
+import { usePathname } from 'next/navigation';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { toast, Toaster } from 'sonner';
 import useSWR, { useSWRConfig } from 'swr';
+
 import { useUser } from '@/utils/hooks/useUser';
 import { PortalSdk } from '@/utils/services/PortalSdk';
-import { CircularProgress } from '@mui/material';
-import { Pointer, Reply } from '@prisma/client';
-import { usePathname } from 'next/navigation';
-import { Toaster, toast } from 'sonner';
+
 import ChatCard from './ChatCard';
 import { ReplyBox } from './ReplyBox';
 
@@ -79,11 +81,11 @@ const Pointers = () => {
         ref={chatContainerRef}
       >
         {isValidating && !pointers ? (
-          <div className="flex h-full w-full items-center justify-center">
+          <div className="flex size-full items-center justify-center">
             <CircularProgress size={24} />
           </div>
         ) : pointers && pointers.length === 0 ? (
-          <div className="flex h-full w-full flex-col items-center text-neutral-400">
+          <div className="flex size-full flex-col items-center text-neutral-400">
             No Messages Found!
           </div>
         ) : (

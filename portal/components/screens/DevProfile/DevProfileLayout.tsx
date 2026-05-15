@@ -1,31 +1,34 @@
 'use client';
-import React, { Dispatch, SetStateAction, useEffect, useState } from 'react';
-import DetailsForm from './sections/DetailsForm';
-import ExperienceForm from './sections/ExperienceForm';
-import ProjectsForm from './sections/ProjectsForm';
-import SkillsForm from './sections/SkillsForm';
-import SocialLinksForm from './sections/SocialLinksForm';
-import { useForm, FormProvider, useFieldArray } from 'react-hook-form';
-import {
-  areAllFieldsFilled,
-  defaultValues,
-  validateStepFields,
-} from './sections';
-import { useUser } from '@/utils/hooks/useUser';
-import { PortalSdk } from '@/utils/services/PortalSdk';
-import { Spinner } from '@/components/elements/Loaders';
-import StepperCompo from './sections/StepperCompo';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { stepDescriptions, steps } from '@/utils/constants/devProfileConstants';
-import { toast } from 'sonner';
+import type { DevProfile } from '@db/client';
 import {
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
 } from '@mui/material';
-import { DevProfile } from '@prisma/client';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import type { Dispatch, SetStateAction } from 'react';
+import React, { useEffect, useState } from 'react';
+import { FormProvider, useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+
+import { Spinner } from '@/components/elements/Loaders';
+import { stepDescriptions, steps } from '@/utils/constants/devProfileConstants';
+import { useUser } from '@/utils/hooks/useUser';
+import { PortalSdk } from '@/utils/services/PortalSdk';
+
+import {
+  areAllFieldsFilled,
+  defaultValues,
+  validateStepFields,
+} from './sections';
+import DetailsForm from './sections/DetailsForm';
+import ExperienceForm from './sections/ExperienceForm';
+import ProjectsForm from './sections/ProjectsForm';
+import SkillsForm from './sections/SkillsForm';
+import SocialLinksForm from './sections/SocialLinksForm';
+import StepperCompo from './sections/StepperCompo';
 
 const DevProfileLayout = () => {
   const methods = useForm({
@@ -184,14 +187,14 @@ const DevProfileLayout = () => {
   };
 
   return isProfileFetching || !user?.user?.id ? (
-    <div className="flex h-full w-full items-center justify-center">
+    <div className="flex size-full items-center justify-center">
       <Spinner />
     </div>
   ) : (
     <>
       <FormProvider {...methods}>
         <form>
-          <div className="no-scrollbar flex h-full w-full items-start gap-2 overflow-y-scroll bg-[#F2F4F7] px-6 py-4 max-md:px-3 max-sm:flex-col max-sm:px-2">
+          <div className="no-scrollbar flex size-full items-start gap-2 overflow-y-scroll bg-[#F2F4F7] px-6 py-4 max-md:px-3 max-sm:flex-col max-sm:px-2">
             <div className="w-1/5 px-2 py-4 max-md:px-0 max-sm:w-full">
               <StepperCompo
                 activeStep={activeStep}
@@ -209,7 +212,7 @@ const DevProfileLayout = () => {
                 }`}
               >
                 <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-white">
-                  <div className="mb-4 py-4 pb-4">
+                  <div className="mb-4 py-4">
                     <h2 className="text-2xl font-semibold text-gray-800 max-sm:text-xl">
                       {steps[activeStep].label}
                     </h2>
@@ -224,7 +227,7 @@ const DevProfileLayout = () => {
                   >
                     {uploading ? (
                       <span className="flex items-center justify-center gap-2">
-                        Saving... <Spinner className="h-4 w-4" />
+                        Saving... <Spinner className="size-4" />
                       </span>
                     ) : showUpdate ? (
                       'Update'
@@ -316,7 +319,7 @@ const Modal = ({
             <>
               <span className="flex items-center justify-center gap-2">
                 Saving
-                <Spinner className="h-4 w-4" />
+                <Spinner className="size-4" />
               </span>
             </>
           ) : (

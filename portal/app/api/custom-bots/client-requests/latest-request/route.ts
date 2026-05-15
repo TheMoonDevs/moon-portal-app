@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/prisma/prisma';
+
+import { db } from '@/lib/mongodb/db-client';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -13,7 +14,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const clientRequest = await prisma.clientRequest.findFirst({
+    const clientRequest = await db.clientRequest.findFirst({
       where: { clientId },
       orderBy: { updatedAt: 'desc' },
     });

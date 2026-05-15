@@ -1,6 +1,6 @@
-import { prisma } from "@/prisma/prisma";
-import { USERROLE, USERTYPE } from "@prisma/client";
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
+
+import { db } from '@/lib/mongodb/db-client';
 
 type Params = {
   id: string;
@@ -15,13 +15,13 @@ export async function GET(request: Request, { params }: { params: Params }) {
 
   if (!id) {
     error_response = {
-      status: "fail",
-      message: "User ID is required",
+      status: 'fail',
+      message: 'User ID is required',
     };
   }
 
   try {
-    const candidate = await prisma.candidate.findUnique({
+    const candidate = await db.candidate.findUnique({
       where: {
         id,
         ...(name && { name }),
@@ -31,12 +31,12 @@ export async function GET(request: Request, { params }: { params: Params }) {
     if (error_response) {
       return new NextResponse(JSON.stringify(error_response), {
         status: 404,
-        headers: { "Content-Type": "application/json" },
+        headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    let json_response = {
-      status: "success",
+    const json_response = {
+      status: 'success',
       data: {
         candidate,
       },
@@ -46,7 +46,7 @@ export async function GET(request: Request, { params }: { params: Params }) {
   } catch (e) {
     return new NextResponse(JSON.stringify(e), {
       status: 404,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
 
     // check if phone number already exists
 
-    const existedMobileNumber = await prisma.candidate.count({
+    const existedMobileNumber = await db.candidate.count({
       where: {
         mobileNumber: json.mobileNumber,
       },
@@ -65,22 +65,22 @@ export async function POST(request: Request) {
 
     if (existedMobileNumber > 0) {
       return new NextResponse(
-        JSON.stringify({ message: "Mobile number already exists" }),
+        JSON.stringify({ message: 'Mobile number already exists' }),
         {
           status: 409,
-          headers: { "Content-Type": "application/json" },
-        }
+          headers: { 'Content-Type': 'application/json' },
+        },
       );
     }
 
-    const candidate = await prisma.candidate.create({
+    const candidate = await db.candidate.create({
       data: {
         ...json,
       },
     });
 
-    let json_response = {
-      status: "success",
+    const json_response = {
+      status: 'success',
       data: {
         candidate,
       },
@@ -90,7 +90,7 @@ export async function POST(request: Request) {
   } catch (e) {
     return new NextResponse(JSON.stringify(e), {
       status: 404,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }
@@ -99,7 +99,7 @@ export async function PUT(request: Request) {
   try {
     const { id, ...rest } = await request.json();
 
-    const candidate = await prisma.candidate.upsert({
+    const candidate = await db.candidate.upsert({
       where: {
         id,
       },
@@ -107,8 +107,8 @@ export async function PUT(request: Request) {
       update: { ...rest },
     });
 
-    let json_response = {
-      status: "success",
+    const json_response = {
+      status: 'success',
       data: {
         candidate,
       },
@@ -118,7 +118,7 @@ export async function PUT(request: Request) {
   } catch (e) {
     return new NextResponse(JSON.stringify(e), {
       status: 404,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }
@@ -130,13 +130,13 @@ export async function DELETE(request: Request, { params }: { params: Params }) {
 
   if (!id) {
     error_response = {
-      status: "fail",
-      message: "User ID is required",
+      status: 'fail',
+      message: 'User ID is required',
     };
   }
 
   try {
-    const candidate = await prisma.candidate.delete({
+    const candidate = await db.candidate.delete({
       where: {
         id,
       },
@@ -145,12 +145,12 @@ export async function DELETE(request: Request, { params }: { params: Params }) {
     if (error_response) {
       return new NextResponse(JSON.stringify(error_response), {
         status: 404,
-        headers: { "Content-Type": "application/json" },
+        headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    let json_response = {
-      status: "success",
+    const json_response = {
+      status: 'success',
       data: {
         candidate,
       },
@@ -160,7 +160,7 @@ export async function DELETE(request: Request, { params }: { params: Params }) {
   } catch (e) {
     return new NextResponse(JSON.stringify(e), {
       status: 404,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }

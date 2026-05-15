@@ -1,5 +1,5 @@
 'use client ';
-import React from 'react';
+import type { DevProfile } from '@db/client';
 import {
   Step,
   StepLabel,
@@ -7,11 +7,13 @@ import {
   Tooltip,
   useMediaQuery,
 } from '@mui/material';
-import { steps } from '@/utils/constants/devProfileConstants';
-import media from '@/styles/media';
+import React from 'react';
 import { useFormContext } from 'react-hook-form';
-import { hasUnfilledFieldsInStep, stepFields, validateStepFields } from '.';
-import { DevProfile } from '@prisma/client';
+
+import media from '@/styles/media';
+import { steps } from '@/utils/constants/devProfileConstants';
+
+import { hasUnfilledFieldsInStep, stepFields } from '.';
 
 const StepperCompo = ({
   activeStep,
@@ -48,7 +50,7 @@ const StepperCompo = ({
               StepIconComponent={() =>
                 !isMobile ? (
                   <div
-                    className={`flex h-10 w-10 items-center justify-center rounded-full ${
+                    className={`flex size-10 items-center justify-center rounded-full ${
                       index === activeStep
                         ? 'bg-gray-300 text-gray-600'
                         : 'bg-gray-100 text-gray-800'
@@ -64,7 +66,7 @@ const StepperCompo = ({
                   </div>
                 ) : (
                   <div
-                    className={`flex h-10 w-10 items-center justify-center rounded-full text-lg font-semibold ${
+                    className={`flex size-10 items-center justify-center rounded-full text-lg font-semibold ${
                       !hasUnfilledFieldsInStep(formData, stepFields, index)
                         ? 'border border-green-600 bg-green-100 text-green-600'
                         : hasUnfilledFieldsInStep(formData, stepFields, index)

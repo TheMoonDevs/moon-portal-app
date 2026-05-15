@@ -1,16 +1,19 @@
 'use client';
-import React, { useEffect, useState } from 'react';
-import { MobileBox } from '../../Login/Login';
-import { Spinner } from '@/components/elements/Loaders';
-import dayjs, { Dayjs } from 'dayjs';
-import { DatePicker, TimePicker } from '@mui/x-date-pickers';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { toast, Toaster } from 'sonner';
-import { PortalSdk } from '@/utils/services/PortalSdk';
-import { Event } from '@prisma/client';
+import type { Event } from '@db/client';
 import { IconButton } from '@mui/material';
+import { DatePicker, TimePicker } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import type { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
+import React, { useEffect, useState } from 'react';
+import { toast, Toaster } from 'sonner';
+
+import { Spinner } from '@/components/elements/Loaders';
 import ToolTip from '@/components/elements/ToolTip';
+import { PortalSdk } from '@/utils/services/PortalSdk';
+
+import { MobileBox } from '../../Login/Login';
 import { EventCard } from './EventCard';
 
 export type loadingState = {
@@ -159,7 +162,7 @@ const EventForm = () => {
             <Spinner />
           </div>
         ) : (
-          <div className="relative h-full w-full">
+          <div className="relative size-full">
             {loadingState.addNew || loadingState.updating ? (
               <>
                 <ToolTip title="Back to Previous Slide">
@@ -179,9 +182,9 @@ const EventForm = () => {
                 </ToolTip>
                 <form
                   onSubmit={handleFormSubmit}
-                  className="relative my-2 flex h-full w-full flex-grow flex-col"
+                  className="relative my-2 flex size-full grow flex-col"
                 >
-                  <div className="flex-grow">
+                  <div className="grow">
                     <div className="mb-5">
                       <label
                         htmlFor="eventTitle"
@@ -299,7 +302,7 @@ const EventForm = () => {
                         disabled={!title || !subTitle || !date || !link}
                       >
                         {loadingState.adding || loadingState.updateUploading ? (
-                          <Spinner className="h-4 w-4" />
+                          <Spinner className="size-4" />
                         ) : (
                           <>
                             {selectedEvent ? 'Update Event' : 'Add Event'}
@@ -321,7 +324,7 @@ const EventForm = () => {
               </div>
             ) : (
               <div className="flex w-full items-center justify-center">
-                <div className="scrollbar no-scrollbar flex h-[80%] w-full flex-col gap-2 overflow-y-scroll">
+                <div className="scrollbar no-scrollbar flex h-4/5 w-full flex-col gap-2 overflow-y-scroll">
                   {events.map((event: Event) => {
                     return (
                       <EventCard

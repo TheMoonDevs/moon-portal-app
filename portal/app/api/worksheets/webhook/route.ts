@@ -1,21 +1,23 @@
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+import type { z } from 'zod';
+
 import { getWorksheetConfig } from '@/lib/worksheets';
 import { createRowLenient } from '@/lib/worksheets/core/db/worksheet-repository';
 import type { WorksheetFieldMeta } from '@/lib/worksheets/core/db/zod-meta';
-import { z } from 'zod';
 
 function mapGoogleFormAnswersToPayload(
   worksheetConfig: NonNullable<ReturnType<typeof getWorksheetConfig>>,
-  answers: Record<string, unknown>
+  answers: Record<string, unknown>,
 ) {
   const payload: Record<string, unknown> = {};
   const schema = worksheetConfig.rowSchema as z.ZodObject<any>;
   const shape = (schema as any).shape as Record<string, z.ZodTypeAny>;
 
   for (const [field, fieldSchema] of Object.entries(shape)) {
-    const meta = (fieldSchema as unknown as { meta?: () => unknown }).meta?.() as
-      | WorksheetFieldMeta
-      | undefined;
+    const meta = (
+      fieldSchema as unknown as { meta?: () => unknown }
+    ).meta?.() as WorksheetFieldMeta | undefined;
     const title = meta?.googleForm?.questionTitle?.trim();
     if (!title) continue;
     if (!(title in answers)) continue;
@@ -43,29 +45,46 @@ export async function POST(request: NextRequest) {
   try {
     const url = new URL(request.url);
     const worksheetIdQuery = url.searchParams.get('worksheetId') ?? undefined;
-    const worksheetSlugQuery = url.searchParams.get('worksheetSlug') ?? undefined;
-    const secret = url.searchParams.get('secret') ?? request.headers.get('x-webhook-secret') ?? undefined;
+    const worksheetSlugQuery =
+      url.searchParams.get('worksheetSlug') ?? undefined;
+    const secret =
+      url.searchParams.get('secret') ??
+      request.headers.get('x-webhook-secret') ??
+      undefined;
 
-    const body = await request.json() as Record<string, unknown>;
+    const body = (await request.json()) as Record<string, unknown>;
     const worksheetIdBody = body?.worksheetId as string | undefined;
     const worksheetSlugBody = body?.worksheetSlug as string | undefined;
-    const worksheetIdOrSlug = worksheetIdQuery ?? worksheetIdBody ?? worksheetSlugQuery ?? worksheetSlugBody;
+    const worksheetIdOrSlug =
+      worksheetIdQuery ??
+      worksheetIdBody ??
+      worksheetSlugQuery ??
+      worksheetSlugBody;
 
     if (!worksheetIdOrSlug) {
       return NextResponse.json(
         { error: 'worksheetId or worksheetSlug required (query or body)' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const worksheetConfig = getWorksheetConfig(worksheetIdOrSlug);
 
     if (!worksheetConfig) {
-      return NextResponse.json({ error: 'Worksheet not found in code registry' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Worksheet not found in code registry' },
+        { status: 404 },
+      );
     }
 
-    if (worksheetConfig.webhookSecret && worksheetConfig.webhookSecret !== secret) {
-      return NextResponse.json({ error: 'Invalid webhook secret' }, { status: 401 });
+    if (
+      worksheetConfig.webhookSecret &&
+      worksheetConfig.webhookSecret !== secret
+    ) {
+      return NextResponse.json(
+        { error: 'Invalid webhook secret' },
+        { status: 401 },
+      );
     }
 
     const answers = body?.answers;
@@ -73,7 +92,7 @@ export async function POST(request: NextRequest) {
       answers && typeof answers === 'object' && !Array.isArray(answers)
         ? mapGoogleFormAnswersToPayload(
             worksheetConfig,
-            answers as Record<string, unknown>
+            answers as Record<string, unknown>,
           )
         : (() => {
             const out = { ...body };
@@ -83,8 +102,7 @@ export async function POST(request: NextRequest) {
             return out;
           })();
 
-    let payload: Record<string, unknown>;
-    payload = {};
+    const payload: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(rawPayload)) {
       payload[k] = coerceCommonWebhookValue(v);
     }
@@ -100,7 +118,7 @@ export async function POST(request: NextRequest) {
           validationErrors: row.validationErrors,
         },
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (e) {
     console.error('Worksheet webhook error:', e);

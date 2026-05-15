@@ -1,9 +1,11 @@
-import { prisma } from "@/prisma/prisma";
-import { NextRequest, NextResponse } from "next/server";
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
+import { db } from '@/lib/mongodb/db-client';
 
 export async function POST(req: NextRequest) {
   if (!req.body) {
-    return new NextResponse(JSON.stringify({ error: "Body not found" }), {
+    return new NextResponse(JSON.stringify({ error: 'Body not found' }), {
       status: 400,
     });
   }
@@ -22,12 +24,12 @@ export async function POST(req: NextRequest) {
 
     if (!userId || !badgeTemplateId || !name || !sequence) {
       return new NextResponse(
-        JSON.stringify({ error: "Required fields are missing" }),
-        { status: 400 }
+        JSON.stringify({ error: 'Required fields are missing' }),
+        { status: 400 },
       );
     }
 
-    const existingBadge = await prisma.badgeRewarded.findFirst({
+    const existingBadge = await db.badgeRewarded.findFirst({
       where: { userId, badgeTemplateId, status },
     });
 
@@ -35,11 +37,11 @@ export async function POST(req: NextRequest) {
       return new NextResponse(
         JSON.stringify({
           message: `Badge already ${status.toLowerCase()}`,
-        })
+        }),
       );
     }
 
-    const badgeRewarded = await prisma.badgeRewarded.create({
+    const badgeRewarded = await db.badgeRewarded.create({
       data: {
         userId,
         badgeTemplateId,
@@ -53,11 +55,11 @@ export async function POST(req: NextRequest) {
     });
 
     return new NextResponse(
-      JSON.stringify({ status: "success", data: badgeRewarded }),
-      { status: 201 }
+      JSON.stringify({ status: 'success', data: badgeRewarded }),
+      { status: 201 },
     );
   } catch (error: any) {
-    console.error("Error processing badge request:", error);
+    console.error('Error processing badge request:', error);
     return new NextResponse(JSON.stringify({ error: error.message }), {
       status: 500,
     });
@@ -66,7 +68,7 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   if (!req.body) {
-    return new NextResponse(JSON.stringify({ error: "Body not found" }), {
+    return new NextResponse(JSON.stringify({ error: 'Body not found' }), {
       status: 400,
     });
   }
@@ -77,45 +79,45 @@ export async function PUT(req: NextRequest) {
 
     if (!userId || !badgeTemplateId || !name || !sequence) {
       return new NextResponse(
-        JSON.stringify({ error: "Required fields are missing" }),
-        { status: 400 }
+        JSON.stringify({ error: 'Required fields are missing' }),
+        { status: 400 },
       );
     }
 
-    const existingRewardedBadge = await prisma.badgeRewarded.findFirst({
-      where: { userId, badgeTemplateId, status: "REWARDED" },
+    const existingRewardedBadge = await db.badgeRewarded.findFirst({
+      where: { userId, badgeTemplateId, status: 'REWARDED' },
     });
 
     if (existingRewardedBadge) {
       return new NextResponse(
         JSON.stringify({
-          status: "skipped",
-          message: "Badge already rewarded",
+          status: 'skipped',
+          message: 'Badge already rewarded',
         }),
-        { status: 409 }
+        { status: 409 },
       );
     }
 
-    const badgeRewarded = await prisma.badgeRewarded.update({
+    const badgeRewarded = await db.badgeRewarded.update({
       where: {
         id,
         userId,
         badgeTemplateId,
-        status: "ACTIVATED",
+        status: 'ACTIVATED',
       },
       data: {
-        status: "REWARDED",
+        status: 'REWARDED',
         date: date || undefined,
         showsCounter: false,
       },
     });
 
     return new NextResponse(
-      JSON.stringify({ status: "success", data: badgeRewarded }),
-      { status: 200 }
+      JSON.stringify({ status: 'success', data: badgeRewarded }),
+      { status: 200 },
     );
   } catch (error: any) {
-    console.error("Error updating badge request:", error);
+    console.error('Error updating badge request:', error);
     return new NextResponse(JSON.stringify({ error: error.message }), {
       status: 500,
     });
@@ -125,26 +127,26 @@ export async function PUT(req: NextRequest) {
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const id = searchParams.get("id");
+    const id = searchParams.get('id');
     if (!id) return;
-    const badges = await prisma.badgeRewarded.findMany({
+    const badges = await db.badgeRewarded.findMany({
       where: {
         userId: id,
       },
     });
 
     return new NextResponse(
-      JSON.stringify({ status: "success", data: badges }),
+      JSON.stringify({ status: 'success', data: badges }),
       {
         status: 200,
-        headers: { "Content-Type": "application/json" },
-      }
+        headers: { 'Content-Type': 'application/json' },
+      },
     );
   } catch (error: any) {
-    console.log("Error getting badges rewarded", error);
+    console.log('Error getting badges rewarded', error);
     return new NextResponse(JSON.stringify({ error: error.message }), {
       status: 500,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }

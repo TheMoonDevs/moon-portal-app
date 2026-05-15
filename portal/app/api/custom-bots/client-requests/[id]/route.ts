@@ -1,5 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/prisma/prisma';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
+import { db } from '@/lib/mongodb/db-client';
 
 export async function GET(
   req: NextRequest,
@@ -15,7 +17,7 @@ export async function GET(
   }
 
   try {
-    const clientRequest = await prisma.clientRequest.findUnique({
+    const clientRequest = await db.clientRequest.findUnique({
       where: { id },
     });
     return NextResponse.json(clientRequest);

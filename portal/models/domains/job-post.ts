@@ -1,36 +1,36 @@
 export enum OVERLAPTYPE {
-  ALLDAYS = "alldays",
-  WEEKDAYS = "weekdays",
-  WEEKENDS = "weekends",
+  ALLDAYS = 'alldays',
+  WEEKDAYS = 'weekdays',
+  WEEKENDS = 'weekends',
 }
 
 export interface ApplicantQuestion {
   question: string;
   description?: string;
-  type: "text" | "dropdown" | "checkbox";
+  type: 'text' | 'dropdown' | 'checkbox';
   options?: string[];
   required?: boolean;
 }
 
 export enum ApplicantTargetGroup {
-  STUDENTS = "Students",
-  FRESHERS = "Freshers",
-  EXPERIENCED = "Experienced",
+  STUDENTS = 'Students',
+  FRESHERS = 'Freshers',
+  EXPERIENCED = 'Experienced',
 }
 
 export enum JobPositionType {
-  FULL_TIME = "Full Time",
-  PART_TIME = "Part Time",
-  INTERN = "Intern",
-  CONTRACTUAL = "Contractual",
+  FULL_TIME = 'Full Time',
+  PART_TIME = 'Part Time',
+  INTERN = 'Intern',
+  CONTRACTUAL = 'Contractual',
 }
 
 export enum workExpInYears {
-  FRESHER = "Fresher/Entry-Level",
-  ONE_TO_THREE = "1-3 Years",
-  THREE_TO_FIVE = "3-5 Years",
-  FIVE_TO_SEVEN = "5-7 Years",
-  SEVEN_PLUS = "7+ Years",
+  FRESHER = 'Fresher/Entry-Level',
+  ONE_TO_THREE = '1-3 Years',
+  THREE_TO_FIVE = '3-5 Years',
+  FIVE_TO_SEVEN = '5-7 Years',
+  SEVEN_PLUS = '7+ Years',
 }
 
 export interface JobPostDefaultReq {
@@ -39,8 +39,8 @@ export interface JobPostDefaultReq {
   positionType?: JobPositionType;
   targetGroup?: ApplicantTargetGroup;
   applicantQuestions?: ApplicantQuestion[];
-  isRemote?: boolean; //not required for now
-  jobLocation?: string; // global //not required for now
+  isRemote?: boolean;
+  jobLocation?: string;
 }
 
 export interface JobPostDeptReq {
@@ -91,6 +91,7 @@ export interface Candidate {
   screeningRound1: ScreeningRound1;
   screeningRound2: ScreeningRound2;
 }
+
 interface ScreeningDetails {
   name: string;
   rating: number;
@@ -110,7 +111,7 @@ export interface ScreeningRound1 extends ScreeningRound {}
 export interface ScreeningRound2 extends ScreeningRound {}
 
 export enum CANDIDATERESULT {
-  APPROVED = "Approved",
-  REJECTED = "Rejected",
-  PENDING = "Pending",
+  APPROVED = 'Approved',
+  REJECTED = 'Rejected',
+  PENDING = 'Pending',
 }

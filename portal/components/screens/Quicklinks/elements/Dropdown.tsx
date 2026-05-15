@@ -1,5 +1,5 @@
-import { DirectoryList } from "@prisma/client";
-import { ChangeEvent } from "react";
+import type { DirectoryList } from '@db/client';
+import type { ChangeEvent } from 'react';
 interface DropdownProps {
   options: DirectoryList[];
   placeholder: string;
@@ -23,11 +23,11 @@ export const Dropdown: React.FC<DropdownProps> = ({
 
   return (
     <>
-      <label htmlFor="department" className="text-3xl py-4">
+      <label htmlFor="department" className="py-4 text-3xl">
         Choose Department
       </label>
       <select
-        className="outline outline-gray-100 p-2 cursor-pointer"
+        className="cursor-pointer p-2 outline outline-gray-100"
         value={selectedDepartment.title}
         onChange={handleOptionChange}
         required

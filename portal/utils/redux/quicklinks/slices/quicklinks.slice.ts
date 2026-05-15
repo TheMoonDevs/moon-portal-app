@@ -7,7 +7,7 @@
 //   ROOTTYPE,
 //   DirectoryList,
 //   UserDirectory,
-// } from "@prisma/client";
+// } from "@db/client";
 // import { PayloadAction, createSlice } from "@reduxjs/toolkit";
 // import {
 //   toggleFavoriteDirectoryList,

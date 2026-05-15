@@ -1,5 +1,6 @@
-import { User } from '@prisma/client';
-import { LoggedInUser } from '../ProfileDrawer';
+import type { User } from '@db/client';
+
+import type { LoggedInUser } from '../ProfileDrawer';
 
 export const ProfileImagesSection = ({
   bannerLoading,
@@ -19,11 +20,11 @@ export const ProfileImagesSection = ({
   return (
     <div className="relative h-[120px]">
       {bannerLoading ? (
-        <div className="h-full w-full animate-pulse bg-gray-300" />
+        <div className="size-full animate-pulse bg-gray-300" />
       ) : (
         <img
           src={selectedUser?.banner || '/images/gradientBanner.jpg'}
-          className="absolute h-full w-full object-cover"
+          className="absolute size-full object-cover"
           alt="Profile Banner"
         />
       )}
@@ -43,16 +44,16 @@ export const ProfileImagesSection = ({
           />
         </label>
       )}
-      <div className="absolute -bottom-[3.25rem] left-5 h-24 w-24 rounded-full border-4 border-white">
+      <div className="absolute -bottom-[3.25rem] left-5 size-24 rounded-full border-4 border-white">
         {avatarLoading ? (
           <div className="rounded-full bg-white">
-            <div className="h-24 w-24 animate-pulse rounded-full bg-gray-300" />
+            <div className="size-24 animate-pulse rounded-full bg-gray-300" />
           </div>
         ) : (
           <img
             src={selectedUser?.avatar || '/icons/placeholderAvatar.svg'}
             alt={selectedUser?.name?.charAt(0) || ''}
-            className="h-full w-full rounded-full bg-white object-cover"
+            className="size-full rounded-full bg-white object-cover"
           />
         )}
 

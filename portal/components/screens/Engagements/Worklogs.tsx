@@ -1,6 +1,8 @@
-import { MdxAppEditor } from '@/utils/configure/MdxAppEditor';
-import { User, WorkLogs } from '@prisma/client';
+import type { User, WorkLogs } from '@db/client';
 import dayjs from 'dayjs';
+
+import { MdxAppEditor } from '@/utils/configure/MdxAppEditor';
+
 import { getStatsOfContent } from '../Worklogs/WorklogEditor';
 
 interface WorkLogsByDate {
@@ -9,7 +11,7 @@ interface WorkLogsByDate {
 
 const isValidWorkLog = (workLog: WorkLogs) =>
   workLog.works?.some(
-    (work) =>
+    (work: any) =>
       (work as { content: string }).content.trim() &&
       !/^[*]\s*$/m.test((work as { content: string }).content),
   );
@@ -27,7 +29,7 @@ const UserInfo = ({
     <img
       src={user.avatar || '/images/avatar.png'}
       alt={user.name || ''}
-      className="mt-1 h-[30px] w-[30px] rounded-full object-cover"
+      className="mt-1 size-[30px] rounded-full object-cover"
     />
     <span className="text-[0.8em] uppercase tracking-widest text-neutral-500">
       {user.name} -{' '}
@@ -60,7 +62,7 @@ const WorkLogEntry = ({
   return (
     <div key={workLog.id} className="my-2 rounded-lg bg-white px-8">
       {user && <UserInfo user={user} completed={completed} total={total} />}
-      <div className="ml-6 flex-grow">
+      <div className="ml-6 grow">
         <MdxAppEditor
           readOnly
           markdown={(markdownData as { content: string })?.content || ''}

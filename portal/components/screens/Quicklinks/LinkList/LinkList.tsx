@@ -1,14 +1,14 @@
 'use client';
 
-import { Button, CircularProgress } from '@mui/material';
-import { Link as Quicklink } from '@prisma/client';
+import type { Link as Quicklink } from '@db/client';
 import { SearchOff } from '@mui/icons-material';
-import { ViewButtonGroup } from './ViewButtonGroup';
-import { LinkItem } from './LinkItem';
-import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
-import { setIsCreateLinkModalOpen } from '@/utils/redux/quicklinks/slices/quicklinks.ui.slice';
+import { CircularProgress } from '@mui/material';
 import Image from 'next/image';
+
 import { cn } from '@/app/lib/utils';
+import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
+
+import { LinkItem } from './LinkItem';
 
 export enum VIEW {
   list = 'list',

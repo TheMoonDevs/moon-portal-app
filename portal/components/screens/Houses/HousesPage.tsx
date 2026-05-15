@@ -1,10 +1,12 @@
-"use client";
-import { HousesList } from "./HousesList";
-import { useEffect, useState } from "react";
-import { User } from "@prisma/client";
-import { PortalSdk } from "@/utils/services/PortalSdk";
-import { Missions } from "./Mission/Missions";
-import Tasks from "./Mission/Task/Tasks";
+'use client';
+import type { User } from '@db/client';
+import { useEffect, useState } from 'react';
+
+import { PortalSdk } from '@/utils/services/PortalSdk';
+
+import { HousesList } from './HousesList';
+import { Missions } from './Mission/Missions';
+import Tasks from './Mission/Task/Tasks';
 
 export const HousesPage = () => {
   const [loading, setloading] = useState<boolean>(true);
@@ -13,7 +15,7 @@ export const HousesPage = () => {
   const [houseMembers, setHouseMembers] = useState<User[]>([]);
   const [houseMembersLoading, setHouseMembersLoading] = useState<boolean>(true);
   useEffect(() => {
-    PortalSdk.getData("/api/users", null)
+    PortalSdk.getData('/api/users', null)
       .then((data) => {
         setHouseMembers(data.data.user);
         setHouseMembersLoading(false);
@@ -24,7 +26,7 @@ export const HousesPage = () => {
   }, []);
 
   return (
-    <div className="grid grid-cols-8 gap-4 max-h-[96vh] ">
+    <div className="grid max-h-[96vh] grid-cols-8 gap-4">
       <div className="col-span-3">
         <HousesList
           setCurrentHouseIndex={setCurrentHouseIndex}

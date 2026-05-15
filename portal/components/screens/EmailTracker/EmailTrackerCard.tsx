@@ -1,30 +1,30 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
 import {
+  Button,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  Paper,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
-  Typography,
-  CircularProgress,
-  Button,
-  IconButton,
   TextField,
   Tooltip,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
+  Typography,
   Zoom,
-} from "@mui/material";
+} from '@mui/material';
+import formatDistanceToNow from 'date-fns/formatDistanceToNow';
+import parseISO from 'date-fns/parseISO';
+import React, { useEffect, useState } from 'react';
 
-import formatDistanceToNow from "date-fns/formatDistanceToNow";
-import parseISO from "date-fns/parseISO";
-import { TMD_PORTAL_API_KEY } from "@/utils/constants/appInfo";
+import { TMD_PORTAL_API_KEY } from '@/utils/constants/appInfo';
 
 interface EmailLog {
   mailId: string;
@@ -42,14 +42,14 @@ const EmailTrackerCard: React.FC = () => {
 
   // State for edit mode
   const [editIndex, setEditIndex] = useState<number | null>(null);
-  const [editFallbackMailId, setEditFallbackMailId] = useState<string>("");
+  const [editFallbackMailId, setEditFallbackMailId] = useState<string>('');
   const [editMailMaxCount, setEditMailMaxCount] = useState<number>(0);
 
   // State for add new mail dialog
   const [open, setOpen] = useState<boolean>(false);
-  const [newMailId, setNewMailId] = useState<string>("");
+  const [newMailId, setNewMailId] = useState<string>('');
   const [newMailMaxCount, setNewMailMaxCount] = useState<number>(0);
-  const [newFallbackMailId, setNewFallbackMailId] = useState<string>("");
+  const [newFallbackMailId, setNewFallbackMailId] = useState<string>('');
 
   useEffect(() => {
     fetchData();
@@ -58,16 +58,16 @@ const EmailTrackerCard: React.FC = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const response = await fetch("/api/email-tracker");
+      const response = await fetch('/api/email-tracker');
       if (!response.ok) {
-        throw new Error("Failed to fetch data");
+        throw new Error('Failed to fetch data');
       }
       const result = await response.json();
       setData(result.data);
       setError(null);
     } catch (error: any) {
-      console.error("Error fetching data:", error);
-      setError(error.message || "Failed to fetch data");
+      console.error('Error fetching data:', error);
+      setError(error.message || 'Failed to fetch data');
     } finally {
       setLoading(false);
     }
@@ -75,13 +75,13 @@ const EmailTrackerCard: React.FC = () => {
 
   const handleSetEdit = (index: number, log: EmailLog) => {
     setEditIndex(index);
-    setEditFallbackMailId(log.fallbackMailId || "");
+    setEditFallbackMailId(log.fallbackMailId || '');
     setEditMailMaxCount(log.mailMaxCount);
   };
 
   const handleCancelEdit = () => {
     setEditIndex(null);
-    setEditFallbackMailId("");
+    setEditFallbackMailId('');
     setEditMailMaxCount(0);
   };
 
@@ -92,26 +92,26 @@ const EmailTrackerCard: React.FC = () => {
         mailMaxCount: editMailMaxCount,
         fallbackMailId: editFallbackMailId,
       };
-      console.log("Sending payload for edit:", payload);
+      console.log('Sending payload for edit:', payload);
 
-      const response = await fetch("/api/email-tracker/update-settings", {
-        method: "PATCH",
+      const response = await fetch('/api/email-tracker/update-settings', {
+        method: 'PATCH',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
           tmd_portal_api_key: TMD_PORTAL_API_KEY,
         },
         body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to update entry");
+        throw new Error('Failed to update entry');
       }
 
       await fetchData();
       handleCancelEdit();
     } catch (error: any) {
-      console.error("Error updating email tracker settings:", error);
-      setError(error.message || "Failed to update entry");
+      console.error('Error updating email tracker settings:', error);
+      setError(error.message || 'Failed to update entry');
     }
   };
 
@@ -120,7 +120,7 @@ const EmailTrackerCard: React.FC = () => {
       // Validate fields
       setLoading(true);
       if (!newMailId || !newMailMaxCount) {
-        setError("* Please fill out all required fields. 😥");
+        setError('* Please fill out all required fields. 😥');
         return;
       }
 
@@ -129,29 +129,29 @@ const EmailTrackerCard: React.FC = () => {
         mailMaxCount: newMailMaxCount,
         fallbackMailId: newFallbackMailId,
       };
-      console.log("Sending payload for add new mail:", payload);
+      console.log('Sending payload for add new mail:', payload);
 
-      const response = await fetch("/api/email-tracker/manage-mails", {
-        method: "PUT",
+      const response = await fetch('/api/email-tracker/manage-mails', {
+        method: 'PUT',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
           tmd_portal_api_key: TMD_PORTAL_API_KEY,
         },
         body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to add new mail");
+        throw new Error('Failed to add new mail');
       }
 
       await fetchData();
       setOpen(false);
-      setNewMailId("");
+      setNewMailId('');
       setNewMailMaxCount(0);
-      setNewFallbackMailId("");
+      setNewFallbackMailId('');
     } catch (error: any) {
-      console.error("Error adding new mail:", error);
-      setError(error.message || "Failed to add new mail");
+      console.error('Error adding new mail:', error);
+      setError(error.message || 'Failed to add new mail');
     } finally {
       setLoading(false);
     }
@@ -169,23 +169,23 @@ const EmailTrackerCard: React.FC = () => {
         mailId: mailID,
       };
 
-      const response = await fetch("/api/email-tracker/manage-mails", {
-        method: "DELETE",
+      const response = await fetch('/api/email-tracker/manage-mails', {
+        method: 'DELETE',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
           tmd_portal_api_key: TMD_PORTAL_API_KEY,
         },
         body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to delete mail");
+        throw new Error('Failed to delete mail');
       }
 
       await fetchData();
     } catch (error: any) {
-      console.error("Error deleting mail:", error);
-      setError(error.message || "Failed to delete mail");
+      console.error('Error deleting mail:', error);
+      setError(error.message || 'Failed to delete mail');
     } finally {
       setLoading(false);
     }
@@ -194,34 +194,34 @@ const EmailTrackerCard: React.FC = () => {
   const handleDialogClose = () => {
     setOpen(false);
     // Reset fields and errors on dialog close
-    setNewMailId("");
+    setNewMailId('');
     setNewMailMaxCount(0);
-    setNewFallbackMailId("");
+    setNewFallbackMailId('');
     setError(null);
   };
 
   const formatLastMailSentAt = (dateString: string | undefined) => {
-    if (!dateString) return "Never";
+    if (!dateString) return 'Never';
     const date = parseISO(dateString);
     return `${formatDistanceToNow(date, { addSuffix: true })}`;
   };
 
   return (
     <div className="lg:px-8">
-      <div className="max-w-5xl mx-auto bg-white p-6 rounded shadow-lg shadow-gray-300">
+      <div className="mx-auto max-w-5xl rounded bg-white p-6 shadow-lg shadow-gray-300">
         <Typography variant="h4" className="mb-4">
           Email Tracker
         </Typography>
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          <div className="mb-4 rounded border border-red-400 bg-red-100 px-4 py-3 text-red-700">
             <strong>Error:</strong> {error}
           </div>
         )}
 
         {
-          <TableContainer component={Paper} className="shadow-md mt-4">
+          <TableContainer component={Paper} className="mt-4 shadow-md">
             <Table>
-              <TableHead className="bg-gray-200 whitespace-nowrap">
+              <TableHead className="whitespace-nowrap bg-gray-200">
                 <TableRow>
                   <TableCell>Status</TableCell>
                   <TableCell>Mail ID</TableCell>
@@ -247,14 +247,14 @@ const EmailTrackerCard: React.FC = () => {
                   data.map((log, index) => (
                     <TableRow
                       key={index}
-                      className="hover:bg-gray-50 transition duration-200"
+                      className="transition duration-200 hover:bg-gray-50"
                     >
                       <TableCell>
                         <span
                           className={`rounded px-2 py-1 text-white ${
-                            log.status === "Sendable"
-                              ? "bg-green-500"
-                              : "bg-red-500"
+                            log.status === 'Sendable'
+                              ? 'bg-green-500'
+                              : 'bg-red-500'
                           }`}
                         >
                           {log.status}
@@ -271,7 +271,7 @@ const EmailTrackerCard: React.FC = () => {
                             fullWidth
                           />
                         ) : (
-                          log.fallbackMailId || "-"
+                          log.fallbackMailId || '-'
                         )}
                       </TableCell>
                       <TableCell>{log.mailCurrentCount}</TableCell>
@@ -295,7 +295,7 @@ const EmailTrackerCard: React.FC = () => {
                       <TableCell>
                         {loading ? (
                           <div className="flex justify-center">
-                            <CircularProgress size={"1rem"} />
+                            <CircularProgress size={'1rem'} />
                           </div>
                         ) : (
                           <div className="flex">
@@ -360,7 +360,7 @@ const EmailTrackerCard: React.FC = () => {
             </Table>
           </TableContainer>
         }
-        <div className="flex justify-end mt-5 space-x-3">
+        <div className="mt-5 flex justify-end space-x-3">
           <Button
             variant="contained"
             color="inherit"

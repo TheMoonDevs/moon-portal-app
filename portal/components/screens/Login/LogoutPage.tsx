@@ -1,19 +1,19 @@
-"use client";
-import Image from "next/image";
-import { MobileBox } from "./Login";
-import { useUser } from "@/utils/hooks/useUser";
-import { Logout } from "./Logout";
-import { usePassphrase } from "@/utils/hooks/usePassphrase"; // Assuming you have this hook
+'use client';
+import Image from 'next/image';
+
+import { useUser } from '@/utils/hooks/useUser';
+
+import { MobileBox } from './Login';
+import { Logout } from './Logout';
 
 export const LogoutPage = () => {
   const { status, user, signOutUser } = useUser(false);
-  const { localPassphrase } = usePassphrase(); // Get the passphrase from your hook
 
   return (
-    <div className="flex flex-col items-center justify-center py-2 bg-neutral-700 md:bg-neutral-900 h-screen">
+    <div className="flex h-screen flex-col items-center justify-center bg-neutral-700 py-2 md:bg-neutral-900">
       <MobileBox>
-        <div className="flex flex-col grow gap-4 items-center justify-center">
-          <div className="  p-4 rounded-full">
+        <div className="flex grow flex-col items-center justify-center gap-4">
+          <div className="rounded-full p-4">
             <Image
               src="/logo/logo_white.png"
               alt="The Moon Devs"
@@ -21,16 +21,12 @@ export const LogoutPage = () => {
               height={80}
             />
           </div>
-          <p className="text-neutral-400 tracking-[0.5em] uppercase text-xs text-center">
+          <p className="text-center text-xs uppercase tracking-[0.5em] text-neutral-400">
             Sign out ?
           </p>
         </div>
-        {status === "authenticated" && (
-          <Logout
-            user={user}
-            signOut={signOutUser}
-            passphrase={localPassphrase}
-          />
+        {status === 'authenticated' && (
+          <Logout user={user} signOut={signOutUser} />
         )}
       </MobileBox>
     </div>

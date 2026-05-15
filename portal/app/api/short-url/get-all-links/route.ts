@@ -1,11 +1,12 @@
-import { prisma } from "@/prisma/prisma";
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
+
+import { db } from '@/lib/mongodb/db-client';
 
 export async function GET() {
   try {
-    const shortLinks = await prisma.shortLink.findMany({
+    const shortLinks = await db.shortLink.findMany({
       orderBy: {
-        createdAt: "desc",
+        createdAt: 'desc',
       },
       select: {
         id: true,

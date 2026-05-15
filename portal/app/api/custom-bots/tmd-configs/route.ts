@@ -1,9 +1,11 @@
-import { prisma } from '@/prisma/prisma';
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
+import { db } from '@/lib/mongodb/db-client';
 
 export async function GET(req: NextRequest) {
   try {
-    const configs = await prisma.configData.findUnique({
+    const configs = await db.configData.findUnique({
       where: { configId: 'customBotsConfigKeys' },
     });
 

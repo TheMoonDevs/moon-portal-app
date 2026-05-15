@@ -1,5 +1,5 @@
-import { Button } from "@mui/material";
-import { useEffect, useState } from "react";
+import { Button } from '@mui/material';
+import { useEffect, useState } from 'react';
 
 export const ScreeningFields = ({
   tabindex,
@@ -11,16 +11,16 @@ export const ScreeningFields = ({
   handleScreeningRoundSave: (
     e: any,
     data: any,
-    candidateId: string
+    candidateId: string,
   ) => Promise<any>;
 }) => {
   const [isEditable, setIsEditable] = useState(false);
   const [formData, setFormData] = useState({
-    name: "",
-    comments: "",
-    ratings: "",
+    name: '',
+    comments: '',
+    ratings: '',
   });
-  const headerText = tabindex === 0 ? "Reviewer" : "Interviewer";
+  const headerText = tabindex === 0 ? 'Reviewer' : 'Interviewer';
 
   const handleEdit = () => {
     setIsEditable(true);
@@ -28,7 +28,7 @@ export const ScreeningFields = ({
 
   const handleSave = async (
     e: React.MouseEvent<HTMLButtonElement>,
-    fromData: any
+    fromData: any,
   ) => {
     e.preventDefault();
     const reviewerData = {
@@ -54,7 +54,7 @@ export const ScreeningFields = ({
   };
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prevState) => ({
@@ -68,12 +68,12 @@ export const ScreeningFields = ({
   }, [data]);
 
   return (
-    <form className="mt-14 w-4/5 m-auto">
+    <form className="m-auto mt-14 w-4/5">
       <div className="flex flex-col gap-4">
         <label className="font-semibold">{`${headerText} Name`}</label>
         <input
-          className={`p-2 border-2 rounded-md ${
-            isEditable ? "" : "border-none focus:outline-none cursor-default"
+          className={`rounded-md border-2 p-2 ${
+            isEditable ? '' : 'cursor-default border-none focus:outline-none'
           }`}
           type="text"
           name="name"
@@ -83,10 +83,10 @@ export const ScreeningFields = ({
         />
         <label className="font-semibold">{`${headerText} Feedback`}</label>
         <textarea
-          className={`p-2 border-2 rounded-md ${
+          className={`rounded-md border-2 p-2 ${
             isEditable
-              ? ""
-              : "border-none focus:outline-none cursor-default resize-none"
+              ? ''
+              : 'cursor-default resize-none border-none focus:outline-none'
           }`}
           name="comments"
           value={formData.comments}
@@ -96,8 +96,8 @@ export const ScreeningFields = ({
         <label className="font-semibold">{`${headerText} Ratings`}</label>
         <input
           type="number"
-          className={`p-2 border-2 rounded-md ${
-            isEditable ? "" : "border-none focus:outline-none cursor-default"
+          className={`rounded-md border-2 p-2 ${
+            isEditable ? '' : 'cursor-default border-none focus:outline-none'
           }`}
           name="ratings"
           value={formData.ratings}
@@ -108,14 +108,14 @@ export const ScreeningFields = ({
       {isEditable ? (
         <div className="flex gap-2">
           <Button
-            className="!mt-4 !bg-neutral-800 hover:!bg-neutral-700 !text-white"
+            className="!mt-4 !bg-neutral-800 !text-white hover:!bg-neutral-700"
             onClick={(e) => handleSave(e, formData)}
           >
             Save
           </Button>
           <Button
             variant="outlined"
-            className="!mt-4 !text-red-500 !border-none !bg-transparent hover:!text-red-400 font-bold py-2 px-4 rounded"
+            className="!mt-4 rounded !border-none !bg-transparent px-4 py-2 font-bold !text-red-500 hover:!text-red-400"
             onClick={() => setIsEditable(false)}
           >
             Cancel
@@ -123,7 +123,7 @@ export const ScreeningFields = ({
         </div>
       ) : (
         <Button
-          className="!mt-4 !bg-neutral-800 hover:!bg-neutral-700 !text-white font-bold py-2 px-4 rounded"
+          className="!mt-4 rounded !bg-neutral-800 px-4 py-2 font-bold !text-white hover:!bg-neutral-700"
           onClick={handleEdit}
         >
           Edit

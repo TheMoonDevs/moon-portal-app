@@ -1,22 +1,24 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/prisma/prisma";
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
+import { db } from '@/lib/mongodb/db-client';
 
 export async function GET(request: NextRequest) {
   try {
-    const userId = request.nextUrl.searchParams.get("userId") as string;
-    const logType = request.nextUrl.searchParams.get("logType") as string;
+    const userId = request.nextUrl.searchParams.get('userId') as string;
+    const logType = request.nextUrl.searchParams.get('logType') as string;
 
     if (!userId) {
       return NextResponse.json(
-        { success: false, error: "userId is required" },
-        { status: 400 }
+        { success: false, error: 'userId is required' },
+        { status: 400 },
       );
     }
 
     // Admin tasks are user-specific
     const docId = `${userId}-adminTasks`;
 
-    const docMarkdown = await prisma.docMarkdown.findUnique({
+    const docMarkdown = await db.docMarkdown.findUnique({
       where: {
         docId: docId,
         ...(logType && { logType }),
@@ -31,25 +33,25 @@ export async function GET(request: NextRequest) {
           data: {
             docId: docId,
             userId: userId,
-            logType: logType || "adminTasks",
-            markdown: { content: "*" },
+            logType: logType || 'adminTasks',
+            markdown: { content: '*' },
             createdAt: new Date(),
             updatedAt: new Date(),
           },
         },
-        { status: 200 }
+        { status: 200 },
       );
     }
 
     return NextResponse.json(
       { success: true, data: docMarkdown },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (e) {
     return new NextResponse(JSON.stringify(e), {
       status: 404,
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
     });
   }
@@ -62,18 +64,18 @@ export async function PUT(request: NextRequest) {
 
     if (!userId || !logType || !markdown) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: "Missing required fields: userId, logType, and markdown" 
+        {
+          success: false,
+          error: 'Missing required fields: userId, logType, and markdown',
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Admin tasks are user-specific
     const docId = `${userId}-adminTasks`;
 
-    const newDocMarkdown = await prisma.docMarkdown.upsert({
+    const newDocMarkdown = await db.docMarkdown.upsert({
       where: {
         docId: docId,
       },
@@ -91,13 +93,13 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json(
       { success: true, data: newDocMarkdown },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (e) {
     return new NextResponse(JSON.stringify(e), {
       status: 404,
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
     });
   }

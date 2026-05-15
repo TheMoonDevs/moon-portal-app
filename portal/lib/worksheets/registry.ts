@@ -1,24 +1,24 @@
-import contactFormWorksheet from "@/lib/worksheets/contact-form";
-import globalCrmWorksheet from "@/lib/worksheets/global-crm";
-import leadGenerationWorksheet from "@/lib/worksheets/lead-generation";
-import { globalActions } from "@/lib/worksheets/global/actions";
-import { globalComputes } from "@/lib/worksheets/global/compute";
-import { globalOptionsByType } from "@/lib/worksheets/global/options";
-import {
+import contactFormWorksheet from '@/lib/worksheets/contact-form';
+import type {
   contactFormActions,
   contactFormComputes,
   contactFormOptions,
-} from "@/lib/worksheets/contact-form/functions";
-import {
+} from '@/lib/worksheets/contact-form/functions';
+import type { globalActions } from '@/lib/worksheets/global/actions';
+import type { globalComputes } from '@/lib/worksheets/global/compute';
+import type { globalOptionsByType } from '@/lib/worksheets/global/options';
+import globalCrmWorksheet from '@/lib/worksheets/global-crm';
+import type {
   globalCrmActions,
   globalCrmComputes,
   globalCrmOptions,
-} from "@/lib/worksheets/global-crm/functions";
-import {
+} from '@/lib/worksheets/global-crm/functions';
+import leadGenerationWorksheet from '@/lib/worksheets/lead-generation';
+import type {
   leadGenerationActions,
   leadGenerationComputes,
   leadGenerationOptions,
-} from "@/lib/worksheets/lead-generation/functions";
+} from '@/lib/worksheets/lead-generation/functions';
 
 export const worksheets = {
   contactForm: contactFormWorksheet,

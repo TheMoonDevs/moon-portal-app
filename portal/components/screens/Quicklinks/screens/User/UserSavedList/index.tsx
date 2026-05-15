@@ -1,5 +1,5 @@
-import UserSavedDirectories from "./UserSavedDirectories";
-import UserSavedLinks from "./UserSavedLinks";
+import UserSavedDirectories from './UserSavedDirectories';
+import UserSavedLinks from './UserSavedLinks';
 
 const UserSavedList = () => {
   return (

@@ -1,6 +1,7 @@
-import ToolTip from '@/components/elements/ToolTip';
+import type { Engagement, User } from '@db/client';
 import { Avatar, AvatarGroup } from '@mui/material';
-import { Engagement, User } from '@prisma/client';
+
+import ToolTip from '@/components/elements/ToolTip';
 
 export const EngagementTeam = ({
   team,

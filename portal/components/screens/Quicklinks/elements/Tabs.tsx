@@ -1,26 +1,29 @@
-"use client";
+'use client';
 
-import media from "@/styles/media";
-import { setIsParentDirectoryFoldersOpen } from "@/utils/redux/quicklinks/slices/quicklinks.ui.slice";
-import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import { IconButton, styled, Tab, Tabs, useMediaQuery } from "@mui/material";
-import { useEffect, useRef, useState } from "react";
+import { IconButton, styled, Tab, Tabs, useMediaQuery } from '@mui/material';
+import { useEffect, useRef, useState } from 'react';
+
+import media from '@/styles/media';
+import { setIsParentDirectoryFoldersOpen } from '@/utils/redux/quicklinks/slices/quicklinks.ui.slice';
+import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
 
 const QuicklinksTabs = ({
   children,
   tabs,
-  isParentDir
+  isParentDir,
 }: {
   children: (value: number, searchQuery?: string) => React.ReactNode;
   tabs: string[];
   isParentDir?: boolean;
 }) => {
   const [value, setValue] = useState<number>(0);
-  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const targetRef = useRef<HTMLInputElement>(null);
   const [isHovered, setIsHovered] = useState<boolean>(false);
   const [isFocused, setIsFocused] = useState<boolean>(false);
-  const { isParentDirectoryFoldersOpen } = useAppSelector((state) => state.quicklinksUi)
+  const { isParentDirectoryFoldersOpen } = useAppSelector(
+    (state) => state.quicklinksUi,
+  );
   const dispatch = useAppDispatch();
   const isTablet = useMediaQuery(media.tablet);
 
@@ -28,8 +31,8 @@ const QuicklinksTabs = ({
 
   useEffect(() => {
     if (!showSearchInput && targetRef.current) {
-      targetRef.current.value = "";
-      setSearchQuery("");
+      targetRef.current.value = '';
+      setSearchQuery('');
     }
   }, [showSearchInput]);
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -37,63 +40,71 @@ const QuicklinksTabs = ({
   };
 
   const AntTabs = styled(Tabs)({
-    borderBottom: "1px solid #e8e8e8",
-    "& .MuiTabs-indicator": {
-      backgroundColor: "#1890ff",
+    borderBottom: '1px solid #e8e8e8',
+    '& .MuiTabs-indicator': {
+      backgroundColor: '#1890ff',
     },
   });
 
   const AntTab = styled((props: any) => <Tab disableRipple {...props} />)(
     ({ theme }) => ({
-      textTransform: "none",
+      textTransform: 'none',
       minWidth: 0,
-      [theme.breakpoints.up("sm")]: {
+      [theme.breakpoints.up('sm')]: {
         minWidth: 0,
       },
       fontWeight: theme.typography.fontWeightRegular,
       marginRight: theme.spacing(1),
-      color: "rgba(0, 0, 0, 0.85)",
+      color: 'rgba(0, 0, 0, 0.85)',
       fontFamily: [
-        "-apple-system",
-        "BlinkMacSystemFont",
+        '-apple-system',
+        'BlinkMacSystemFont',
         '"Segoe UI"',
-        "Roboto",
+        'Roboto',
         '"Helvetica Neue"',
-        "Arial",
-        "sans-serif",
+        'Arial',
+        'sans-serif',
         '"Apple Color Emoji"',
         '"Segoe UI Emoji"',
         '"Segoe UI Symbol"',
-      ].join(","),
-      "&:hover": {
-        color: "#40a9ff",
+      ].join(','),
+      '&:hover': {
+        color: '#40a9ff',
         opacity: 1,
       },
-      "&.Mui-selected": {
-        color: "#1890ff",
+      '&.Mui-selected': {
+        color: '#1890ff',
         fontWeight: theme.typography.fontWeightMedium,
       },
-      "&.Mui-focusVisible": {
-        backgroundColor: "#d1eaff",
+      '&.Mui-focusVisible': {
+        backgroundColor: '#d1eaff',
       },
-    })
+    }),
   );
 
   return (
     <div className="space-y-3 bg-white">
-      <div className={`flex items-center gap-2 ${isTablet && 'flex-col'} max-sm:gap-0`}>
-        <div className={`flex items-center justify-between gap-2 ${isTablet && 'w-full'}`}>
+      <div
+        className={`flex items-center gap-2 ${isTablet && 'flex-col'} max-sm:gap-0`}
+      >
+        <div
+          className={`flex items-center justify-between gap-2 ${isTablet && 'w-full'}`}
+        >
           <input
             // ref={targetRef}
             placeholder="Search Folders..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className={`my-3  w-full rounded-2xl border border-gray-700 bg-transparent p-3 placeholder-gray-500 shadow-md outline-none transition-all duration-300 focus:border-b-2 focus:border-gray-600 ${isTablet ? 'block' : 'hidden'}`}
+            className={`my-3 w-full rounded-2xl border border-gray-700 bg-transparent p-3 shadow-md outline-none transition-all duration-300 placeholder:text-gray-500 focus:border-b-2 focus:border-gray-600 ${isTablet ? 'block' : 'hidden'}`}
           />
           {isParentDir && (
             <IconButton
               onClick={() => {
-                dispatch(setIsParentDirectoryFoldersOpen(!isParentDirectoryFoldersOpen))
+                dispatch(
+                  setIsParentDirectoryFoldersOpen(
+                    !isParentDirectoryFoldersOpen,
+                  ),
+                );
               }}
             >
               <span className="material-symbols-outlined">folder</span>

@@ -1,14 +1,16 @@
-import { prisma } from '@/prisma/prisma';
-import { sheetMap, spreadsheetId } from '@/utils/constants/spreadsheetData';
+// import GoogleSheetsAPI from "@/utils/services/googleSheetSdk";
+import type { HOUSEID, USERROLE, USERTYPE } from '@db/client';
+import { USERSTATUS } from '@db/client';
+import dayjs from 'dayjs';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
+import { db } from '@/lib/mongodb/db-client';
 import {
   ADMIN_EMAIL,
   passcodeEmailTemplate,
   POST_EMAIL_API,
 } from '@/utils/helpers/emailTemplates';
-// import GoogleSheetsAPI from "@/utils/services/googleSheetSdk";
-import { HOUSEID, USERROLE, USERSTATUS, USERTYPE } from '@prisma/client';
-import dayjs from 'dayjs';
-import { NextResponse, NextRequest } from 'next/server';
 
 // const sheetConfig = {
 //   clientEmail: process.env.GIAM_CLIENT_EMAIL || "",
@@ -30,13 +32,15 @@ export async function GET(request: NextRequest) {
   let error_response: any;
 
   try {
-    const user = await prisma.user.findMany({
+    const user = await db.user.findMany({
       where: {
         ...(id && { id }),
         ...(userType && { userType }),
         ...(role && { role }),
         ...(house && { house }),
-        status: status ? (status as USERSTATUS) : USERSTATUS.ACTIVE,
+        // skip status filter when fetching a specific user by id
+        ...(!id && { status: status ? (status as USERSTATUS) : USERSTATUS.ACTIVE }),
+        ...(id && status && { status: status as USERSTATUS }),
       },
       include: {
         ...(month && {
@@ -48,6 +52,7 @@ export async function GET(request: NextRequest) {
         }),
       },
     });
+
     // console.log(user);
 
     if (error_response) {
@@ -57,7 +62,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    let json_response = {
+    const json_response = {
       status: 'success',
       data: {
         user,
@@ -87,7 +92,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: Request) {
   try {
     const { id, ...rest } = await request.json();
-    const user = await prisma.user.create({
+    const user = await db.user.create({
       data: {
         ...rest,
       },
@@ -168,7 +173,7 @@ export async function POST(request: Request) {
     //   range: "A:A",
     //   majorDimension: "ROWS",
     // });
-    let json_response = {
+    const json_response = {
       status: 'success',
       data: {
         user,
@@ -188,7 +193,7 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     const { id, ...rest } = await request.json();
-    const oldUser = await prisma.user.findFirst({
+    const oldUser = await db.user.findFirst({
       where: {
         id,
       },
@@ -209,7 +214,7 @@ export async function PUT(request: Request) {
     }
     // console.log("old user", oldUser);
     // console.log("rest ", rest);
-    const user = await prisma.user.update({
+    const user = await db.user.update({
       where: {
         id,
       },
@@ -402,7 +407,7 @@ export async function PUT(request: Request) {
     //     })
     //   );
     // }
-    let json_response = {
+    const json_response = {
       status: 'success',
       data: {
         user,

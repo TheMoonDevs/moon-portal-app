@@ -1,19 +1,17 @@
+import type { SelectChangeEvent } from '@mui/material';
+import { FormControl, MenuItem, Select, Tooltip } from '@mui/material';
+import dayjs from 'dayjs';
+
 import {
   clearEditorState,
   setActiveTab,
   setEditModalOpen,
-} from "@/utils/redux/missions/mission.ui.slice";
-import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import {
-  FormControl,
-  MenuItem,
-  Select,
-  SelectChangeEvent,
-  Tooltip,
-} from "@mui/material";
-import { getTimeValueOptions } from "./mission.utils";
-import dayjs from "dayjs";
-import { HOUSES_LIST } from "../HousesList";
+} from '@/utils/redux/missions/mission.ui.slice';
+import type { RootState } from '@/utils/redux/store';
+import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
+
+import { HOUSES_LIST } from '../HousesList';
+import { getTimeValueOptions } from './mission.utils';
 
 const ActionBar = ({
   currentHouseIndex,
@@ -37,13 +35,13 @@ const ActionBar = ({
     const newTimeFrame = event.target.value as string;
     setTimeFrame(newTimeFrame);
     switch (newTimeFrame) {
-      case "month":
-        setTimeValue(dayjs().format("YYYY-MM"));
+      case 'month':
+        setTimeValue(dayjs().format('YYYY-MM'));
         break;
-      case "quarter":
-        setTimeValue("1");
+      case 'quarter':
+        setTimeValue('1');
         break;
-      case "year":
+      case 'year':
         setTimeValue(dayjs().year().toString());
         break;
     }
@@ -57,39 +55,38 @@ const ActionBar = ({
   return (
     <div
       id="mission-header"
-      className=" w-full flex flex-row items-center justify-between px-4 py-4 border-b border-neutral-200 rounded-t-xl"
+      className="flex w-full flex-row items-center justify-between rounded-t-xl border-b border-neutral-200 p-4"
     >
-      <div className="w-full flex flex-row items-center gap-2">
+      <div className="flex w-full flex-row items-center gap-2">
         <h3
-          className={`text-sm font-semibold text-neutral-600 tracking-widest uppercase cursor-pointer  w-fit transition-colors duration-300 ease-in-out
-            `}
+          className={`w-fit cursor-pointer text-sm font-semibold uppercase tracking-widest text-neutral-600 transition-colors duration-300 ease-in-out`}
           // ${
           //   activeTab === "missions"
           //     ? "border-neutral-400 bg-gray-100"
           //     : "border-transparent bg-white"
           // }
-          onClick={() => dispatch(setActiveTab("missions"))}
+          onClick={() => dispatch(setActiveTab('missions'))}
         >
           <span className="font-bold">
             {HOUSES_LIST[currentHouseIndex]?.name}
-          </span>{" "}
+          </span>{' '}
           /<span className="text-xs"> Missions</span>
         </h3>
 
         <Tooltip
           title={
-            activeTab === "tasks" && allMissions && allMissions.length === 0
-              ? "No mission found. Add a new mission to create tasks."
-              : activeTab === "tasks"
-              ? "Add New Task"
-              : "Add New Mission"
+            activeTab === 'tasks' && allMissions && allMissions.length === 0
+              ? 'No mission found. Add a new mission to create tasks.'
+              : activeTab === 'tasks'
+                ? 'Add New Task'
+                : 'Add New Mission'
           }
         >
           <span
             className={`material-symbols-outlined cursor-pointer transition-transform duration-300 ease-in-out hover:scale-110`}
             onClick={() => {
               dispatch(clearEditorState());
-              dispatch(setActiveTab("missions"));
+              dispatch(setActiveTab('missions'));
               dispatch(setEditModalOpen(true));
             }}
           >
@@ -103,7 +100,7 @@ const ActionBar = ({
             value={timeFrame}
             onChange={handleTimeFrameChange}
             label="Time Frame"
-            disabled={activeTab === "tasks"}
+            disabled={activeTab === 'tasks'}
           >
             <MenuItem value="month">Month</MenuItem>
             <MenuItem value="quarter">Quarter</MenuItem>
@@ -115,7 +112,7 @@ const ActionBar = ({
             value={timeValue}
             onChange={handleTimeValueChange}
             label="Value"
-            disabled={activeTab === "tasks"}
+            disabled={activeTab === 'tasks'}
           >
             {getTimeValueOptions(timeFrame).map((option) => (
               <MenuItem key={option.value} value={option.value}>

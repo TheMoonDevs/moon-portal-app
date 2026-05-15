@@ -1,14 +1,15 @@
-"use client";
+'use client';
 
-import { Breadcrumbs, Typography } from "@mui/material";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useQuickLinkDirectory } from "../hooks/useQuickLinkDirectory";
-import { useCallback, useEffect, useState } from "react";
-import { ROOTTYPE } from "@prisma/client";
-import { useQuickLinkDirs } from "../hooks/useQuickLinksDirs";
-import { useAppDispatch } from "@/utils/redux/store";
-import { setPopoverElementWithData } from "@/utils/redux/quicklinks/slices/quicklinks.ui.slice";
+import { ROOTTYPE } from '@db/client';
+import { Breadcrumbs } from '@mui/material';
+import Link from 'next/link';
+import { useCallback, useEffect, useState } from 'react';
+
+import { setPopoverElementWithData } from '@/utils/redux/quicklinks/slices/quicklinks.ui.slice';
+import { useAppDispatch } from '@/utils/redux/store';
+
+import { useQuickLinkDirectory } from '../hooks/useQuickLinkDirectory';
+import { useQuickLinkDirs } from '../hooks/useQuickLinksDirs';
 export const BreadCrumbs = ({
   rootType,
   path,
@@ -29,7 +30,7 @@ export const BreadCrumbs = ({
         parentDirs.find((dir) => dir.id === directoryId);
       return directory;
     },
-    [directories, parentDirs]
+    [directories, parentDirs],
   );
 
   // Function to get parents recursively
@@ -49,11 +50,11 @@ export const BreadCrumbs = ({
       // Return parents in reverse order so the root is first
       return parents.reverse();
     },
-    [getDirectoryById]
+    [getDirectoryById],
   );
 
   useEffect(() => {
-    console.log("activeDirectoryId", activeDirectoryId);
+    console.log('activeDirectoryId', activeDirectoryId);
     const breadcrumb = loadBreadcrumb(activeDirectoryId);
     setBreadcrumbPath(breadcrumb);
   }, [activeDirectoryId, loadBreadcrumb, rootParentDirectory]);
@@ -68,15 +69,15 @@ export const BreadCrumbs = ({
           dir.title === rootParentDirectory?.title
             ? `/quicklinks/${
                 rootType === ROOTTYPE.COMMON_RESOURCES
-                  ? "common-resources"
-                  : "department"
+                  ? 'common-resources'
+                  : 'department'
               }/${rootParentDirectory?.slug}`
             : `/quicklinks/${
                 rootType === ROOTTYPE.COMMON_RESOURCES
-                  ? "common-resources"
-                  : "department"
+                  ? 'common-resources'
+                  : 'department'
               }/${rootParentDirectory?.slug}/${dir.slug}-${new Date(
-                dir.timestamp
+                dir.timestamp,
               )
                 .getTime()
                 .toString()
@@ -89,19 +90,19 @@ export const BreadCrumbs = ({
               dispatch(
                 setPopoverElementWithData({
                   element: e.currentTarget,
-                  anchorId: "edit-folder",
+                  anchorId: 'edit-folder',
                   data: {
                     selectedDirectory: dir,
                     parentDirectoryId: dir.parentDirId,
                     rootSlug:
                       rootType === ROOTTYPE.COMMON_RESOURCES
-                        ? "common-resources"
-                        : "department",
+                        ? 'common-resources'
+                        : 'department',
                   },
-                })
+                }),
               );
             }}
-            className="hover:bg-neutral-100  cursor-pointer flex items-center gap-2  py-1 px-2 rounded-xl"
+            className="flex cursor-pointer items-center gap-2 rounded-xl px-2 py-1 hover:bg-neutral-100"
           >
             <span className="text-neutral-700">{dir.title}</span>
             <span className="material-symbols-outlined">

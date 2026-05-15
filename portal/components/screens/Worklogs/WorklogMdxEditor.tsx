@@ -1,6 +1,7 @@
-import { MdxAppEditor } from '@/utils/configure/MdxAppEditor';
-import { MDXEditorMethods } from '@mdxeditor/editor';
+import type { MDXEditorMethods } from '@mdxeditor/editor';
 import React, { useEffect, useRef } from 'react';
+
+import { MdxAppEditor } from '@/utils/configure/MdxAppEditor';
 const MARKDOWN_PLACEHOLDER = '*';
 
 interface WorklogMdxEditorProps {
@@ -100,7 +101,7 @@ const WorklogMdxEditor: React.FC<WorklogMdxEditorProps> = ({
       <MdxAppEditor
         ref={editorRef}
         markdown={content}
-        className="h-full flex-grow"
+        className="h-full grow"
         placeholder="* Write your private logs here ..."
         contentEditableClassName={`mdx_ce ${content.trim() === MARKDOWN_PLACEHOLDER ? 'mdx_uninit' : ''} leading-1 imp-p-0 grow w-full h-full`}
         onChange={onChange}

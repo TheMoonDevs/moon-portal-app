@@ -1,26 +1,18 @@
-import React, {
-  ChangeEvent,
-  MouseEvent,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
-import { Backdrop, Modal, Portal, Tooltip } from "@mui/material";
-import { Button } from "@/components/elements/Button";
-import { useAppDispatch } from "@/utils/redux/store";
-import { setJobPostsRefresh } from "@/utils/redux/ui/ui.slice";
-import { PortalSdk } from "@/utils/services/PortalSdk";
-import {
-  JOBPOST,
-  JOBSTATUS,
-  JobPost,
-  USERROLE,
-  USERVERTICAL,
-} from "@prisma/client";
-import { AppDropdown } from "@/components/elements/Dropdown";
-import { Spinner } from "@/components/elements/Loaders";
-import { JobPositionType, JobPostDefaultReq } from "@/prisma/dbExtras";
-import { NewJobPostModalProps, modalCenterStyle } from "./_JobPostModal";
+import { Modal, Portal, Tooltip } from '@mui/material';
+import type { ChangeEvent } from 'react';
+import React, { useEffect, useState } from 'react';
+
+import { Button } from '@/components/elements/Button';
+import { AppDropdown } from '@/components/elements/Dropdown';
+import { Spinner } from '@/components/elements/Loaders';
+import type { JobPostDefaultReq } from '@/types/db/job-post';
+import { JobPositionType } from '@/types/db/job-post';
+import { useAppDispatch } from '@/utils/redux/store';
+import { setJobPostsRefresh } from '@/utils/redux/ui/ui.slice';
+import { PortalSdk } from '@/utils/services/PortalSdk';
+
+import type { NewJobPostModalProps } from './_JobPostModal';
+import { modalCenterStyle } from './_JobPostModal';
 
 export const JobDefaultReqModal: React.FC<NewJobPostModalProps> = ({
   isOpen,
@@ -33,7 +25,7 @@ export const JobDefaultReqModal: React.FC<NewJobPostModalProps> = ({
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
   const [isInputFocused, setInputFocused] = useState(false);
-  const [inputQuestion, setInputQuestion] = useState("");
+  const [inputQuestion, setInputQuestion] = useState('');
 
   // load default req
   useEffect(() => {
@@ -43,7 +35,7 @@ export const JobDefaultReqModal: React.FC<NewJobPostModalProps> = ({
   }, [jobPostData]);
 
   const handleInputChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prevData: any) => ({ ...prevData, [name]: value }));
@@ -51,7 +43,7 @@ export const JobDefaultReqModal: React.FC<NewJobPostModalProps> = ({
 
   const handleFormSubmit = () => {
     setLoading(true);
-    PortalSdk.putData("/api/jobPost", {
+    PortalSdk.putData('/api/jobPost', {
       data: { id: jobPostData.id, defaultReq: formData },
     })
       .then((response) => {
@@ -62,7 +54,7 @@ export const JobDefaultReqModal: React.FC<NewJobPostModalProps> = ({
       })
       .catch((err) => {
         setLoading(false);
-        console.error("Error submitting form:", err);
+        console.error('Error submitting form:', err);
       });
   };
 
@@ -73,33 +65,33 @@ export const JobDefaultReqModal: React.FC<NewJobPostModalProps> = ({
       <Modal open={isOpen} onClose={handleClose}>
         <div
           style={{ ...modalCenterStyle }}
-          className="bg-white rounded-md p-4 w-[50%] h-[80%] overflow-y-auto"
+          className="h-4/5 w-[50%] overflow-y-auto rounded-md bg-white p-4"
         >
           <p className="text-2xl font-bold">Default Requirements</p>
           <p className="text-sm text-gray-500">
             Create/Edit a job post for your company | job id - {jobPostData.id}
           </p>
-          <label className="block mt-2">
+          <label className="mt-2 block">
             Target Group
             <input
               type="text"
               name="targetGroup"
               value={formData.targetGroup}
               onChange={handleInputChange}
-              className="mt-1 p-2 border border-gray-300 rounded-md w-full"
+              className="mt-1 w-full rounded-md border border-gray-300 p-2"
             />
           </label>
 
           <AppDropdown
-            className="mt-4 w-full flex flex-col items-stretch"
+            className="mt-4 flex w-full flex-col items-stretch"
             id="positionType"
             label="Position Type"
             options={Object.values(JobPositionType)}
-            value={formData.positionType || ""}
+            value={formData.positionType || ''}
             onChange={(e) => handleInputChange(e as any)}
           />
 
-          <p className="text-2xl font-bold mt-8 pt-8 border-t-2">
+          <p className="mt-8 border-t-2 pt-8 text-2xl font-bold">
             Applicant Questions (Optional)
           </p>
           <p className="text-sm text-gray-500">
@@ -108,13 +100,13 @@ export const JobDefaultReqModal: React.FC<NewJobPostModalProps> = ({
           </p>
 
           {/* ADD QUESTIONS */}
-          <div className="flex flex-col mt-8">
+          <div className="mt-8 flex flex-col">
             <div>
               {/* ADDED QUESTIONS */}
               {formData.applicantQuestions?.map((question, index) => (
                 <div
                   key={index}
-                  className="flex flex-row justify-between items-center gap-2 p-3 bg-gray-100 rounded-md"
+                  className="flex flex-row items-center justify-between gap-2 rounded-md bg-gray-100 p-3"
                 >
                   <p className="font-medium text-gray-700">
                     Q{index + 1}. {question.question}
@@ -125,7 +117,7 @@ export const JobDefaultReqModal: React.FC<NewJobPostModalProps> = ({
                     </Tooltip>
                     <Tooltip
                       title="Delete"
-                      className=" hover:text-red-500 cursor-pointer"
+                      className="cursor-pointer hover:text-red-500"
                       onClick={() => {
                         const newApplicantQuestions = [
                           ...(formData.applicantQuestions || []),
@@ -149,7 +141,7 @@ export const JobDefaultReqModal: React.FC<NewJobPostModalProps> = ({
               onBlur={() => setInputFocused(false)}
               value={inputQuestion}
               onChange={(e) => setInputQuestion(e.target.value)}
-              className="mt-1 p-2 border border-gray-300 rounded-md w-full"
+              className="mt-1 w-full rounded-md border border-gray-300 p-2"
             />
             <div
               onClick={() => {
@@ -157,30 +149,30 @@ export const JobDefaultReqModal: React.FC<NewJobPostModalProps> = ({
                   ...f,
                   applicantQuestions: [
                     ...(f.applicantQuestions || []),
-                    { question: inputQuestion, description: "", type: "text" },
+                    { question: inputQuestion, description: '', type: 'text' },
                   ],
                 }));
-                setInputQuestion("");
+                setInputQuestion('');
               }}
-              className={`cursor-pointer flex flex-row mt-3 items-center w-fit gap-2 p-2 rounded-md transition-all duration-100 ease-in-out ${
+              className={`mt-3 flex w-fit cursor-pointer flex-row items-center gap-2 rounded-md p-2 transition-all duration-100 ease-in-out ${
                 isInputFocused
-                  ? "bg-neutral-800 text-white"
-                  : "bg-neutral-100 hover:bg-neutral-200"
+                  ? 'bg-neutral-800 text-white'
+                  : 'bg-neutral-100 hover:bg-neutral-200'
               }`}
             >
               Add Question
             </div>
           </div>
 
-          <div className="flex flex-row mt-8">
+          <div className="mt-8 flex flex-row">
             <Button
               onClick={handleFormSubmit}
               className="flex flex-row items-center gap-2"
             >
               {loading && (
-                <Spinner className="w-3 h-3 fill-green-400 text-green-600" />
+                <Spinner className="size-3 fill-green-400 text-green-600" />
               )}
-              {"Save Changes"}
+              {'Save Changes'}
             </Button>
           </div>
         </div>

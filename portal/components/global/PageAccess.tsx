@@ -1,13 +1,13 @@
 'use client';
 
-import { APP_ROUTES, AppRoutesHelper } from '@/utils/constants/appInfo';
-import { useUser } from '@/utils/hooks/useUser';
-import { useAppSelector } from '@/utils/redux/store';
-import { el } from 'date-fns/locale';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-export const usePageAccess = () => { };
+import { APP_ROUTES } from '@/utils/constants/appInfo';
+import { useUser } from '@/utils/hooks/useUser';
+import { useAppSelector } from '@/utils/redux/store';
+
+export const usePageAccess = () => {};
 export const PageAccess = ({
   isAuthRequired,
   isAdminRequired,
@@ -58,7 +58,7 @@ export const PageAccess = ({
       return (
         <div className="flex h-screen flex-col items-center justify-center bg-neutral-700 py-2 md:bg-neutral-900">
           <div className="flex flex-row items-center justify-center gap-2">
-            <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-t-2 border-neutral-100"></div>
+            <div className="size-5 animate-spin rounded-full border-y-2 border-neutral-100"></div>
             <p className="text-neutral-100">Verifying Connection...</p>
           </div>
         </div>
@@ -70,7 +70,7 @@ export const PageAccess = ({
     return (
       <div className="flex h-screen flex-col items-center justify-center bg-neutral-700 py-2 md:bg-neutral-900">
         <div className="flex flex-row items-center justify-center gap-2">
-          <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-t-2 border-neutral-100"></div>
+          <div className="size-5 animate-spin rounded-full border-y-2 border-neutral-100"></div>
           <p className="text-neutral-100">Redirecting...</p>
         </div>
       </div>
@@ -81,7 +81,7 @@ export const PageAccess = ({
     return (
       <div className="flex h-screen flex-col items-center justify-center bg-neutral-700 py-2 md:bg-neutral-900">
         <div className="flex flex-row items-center justify-center gap-2">
-          <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-t-2 border-neutral-100"></div>
+          <div className="size-5 animate-spin rounded-full border-y-2 border-neutral-100"></div>
           <p className="text-neutral-100">Redirecting...</p>
         </div>
       </div>

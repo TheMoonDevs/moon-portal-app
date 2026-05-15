@@ -1,15 +1,17 @@
-import { z } from "zod";
-import type {
-  WorksheetFieldMeta,
-  WorksheetSchemaMeta,
-  WorksheetUiColumnMeta,
-} from "./db/zod-meta";
+import { z } from 'zod';
+
 import type {
   ActionKey,
   ComputeKey,
   OptionsFnKey,
   OptionsTypeKey,
-} from "@/lib/worksheets/registry";
+} from '@/lib/worksheets/registry';
+
+import type {
+  WorksheetFieldMeta,
+  WorksheetSchemaMeta,
+  WorksheetUiColumnMeta,
+} from './db/zod-meta';
 
 type FieldShape = Record<string, z.ZodTypeAny>;
 
@@ -19,9 +21,9 @@ type BuiltField = {
 
 type UiOpts = {
   width?: number;
-  pinned?: "left" | "right";
+  pinned?: 'left' | 'right';
   hidden?: boolean;
-  align?: "left" | "center" | "right";
+  align?: 'left' | 'center' | 'right';
 };
 
 export interface WorksheetDefinition<S extends FieldShape> {
@@ -49,12 +51,17 @@ export interface WorksheetRuntimeBundle<S extends FieldShape = FieldShape> {
   options: Record<string, (...args: any[]) => any>;
 }
 
-export function defineWorksheetBundle<T extends WorksheetRuntimeBundle>(bundle: T): T {
+export function defineWorksheetBundle<T extends WorksheetRuntimeBundle>(
+  bundle: T,
+): T {
   return bundle;
 }
 
 class BaseFieldBuilder<T extends z.ZodTypeAny> {
-  constructor(private base: T, private meta: WorksheetFieldMeta = {}) {}
+  constructor(
+    private base: T,
+    private meta: WorksheetFieldMeta = {},
+  ) {}
 
   required(): this {
     return this;
@@ -116,7 +123,7 @@ class BaseFieldBuilder<T extends z.ZodTypeAny> {
 
   optionsType(type: OptionsTypeKey | (string & {})): this {
     this.meta.options = {
-      ...(typeof this.meta.options === "object" ? this.meta.options : {}),
+      ...(typeof this.meta.options === 'object' ? this.meta.options : {}),
       type,
     } as any;
     return this;
@@ -124,18 +131,17 @@ class BaseFieldBuilder<T extends z.ZodTypeAny> {
 
   optionsFn(key: OptionsFnKey | (string & {})): this {
     this.meta.options = {
-      ...(typeof this.meta.options === "object" ? this.meta.options : {}),
+      ...(typeof this.meta.options === 'object' ? this.meta.options : {}),
       fnKey: key,
     } as any;
     return this;
   }
 
   staticOptions(options: { label: string; value: string | number }[]): this {
-    const current = (typeof this.meta.options === "object" ? this.meta.options : {}) as Record<
-      string,
-      unknown
-    >;
-    this.meta.ui = { ...(this.meta.ui || {}), type: "enum" };
+    const current = (
+      typeof this.meta.options === 'object' ? this.meta.options : {}
+    ) as Record<string, unknown>;
+    this.meta.ui = { ...(this.meta.ui || {}), type: 'enum' };
     this.meta.options = {
       ...current,
       staticOptions: options,
@@ -152,10 +158,9 @@ class BaseFieldBuilder<T extends z.ZodTypeAny> {
       queryParam?: string;
     },
   ): this {
-    const current = (typeof this.meta.options === "object" ? this.meta.options : {}) as Record<
-      string,
-      unknown
-    >;
+    const current = (
+      typeof this.meta.options === 'object' ? this.meta.options : {}
+    ) as Record<string, unknown>;
     this.meta.options = {
       ...current,
       url,
@@ -164,14 +169,17 @@ class BaseFieldBuilder<T extends z.ZodTypeAny> {
     return this;
   }
 
-  googleForm(binding: WorksheetFieldMeta["googleForm"]): this {
+  googleForm(binding: WorksheetFieldMeta['googleForm']): this {
     this.meta.googleForm = binding;
     return this;
   }
 
   asAsyncSelect(): this {
-    this.meta.ui = { ...(this.meta.ui || {}), type: "asyncSelect" };
-    this.meta.options = { ...(this.meta.options as any), type: "__async_select__" };
+    this.meta.ui = { ...(this.meta.ui || {}), type: 'asyncSelect' };
+    this.meta.options = {
+      ...(this.meta.options as any),
+      type: '__async_select__',
+    };
     return this;
   }
 
@@ -213,12 +221,12 @@ export class FieldBuilder {
 }
 
 export class ColumnBuilderResult {
-  kind: "serial" | "computed" | "actions";
+  kind: 'serial' | 'computed' | 'actions';
   field: string;
   label?: string;
   width?: number;
-  align?: "left" | "center" | "right";
-  pinned?: "left" | "right";
+  align?: 'left' | 'center' | 'right';
+  pinned?: 'left' | 'right';
   computeKeys?: string[];
   persist?: boolean;
   actionKey?: string;
@@ -226,7 +234,7 @@ export class ColumnBuilderResult {
   before?: string;
   after?: string;
 
-  constructor(kind: ColumnBuilderResult["kind"], field: string) {
+  constructor(kind: ColumnBuilderResult['kind'], field: string) {
     this.kind = kind;
     this.field = field;
   }
@@ -234,7 +242,7 @@ export class ColumnBuilderResult {
 
 export class ColumnBuilder {
   serial() {
-    const res = new ColumnBuilderResult("serial", "__srno__");
+    const res = new ColumnBuilderResult('serial', '__srno__');
     const api = {
       label(label: string) {
         res.label = label;
@@ -256,8 +264,8 @@ export class ColumnBuilder {
   }
 
   computed(field?: string) {
-    const autoField = "__computed__";
-    const res = new ColumnBuilderResult("computed", field ?? autoField);
+    const autoField = '__computed__';
+    const res = new ColumnBuilderResult('computed', field ?? autoField);
     const api = {
       fromFields(..._fields: string[]) {
         return api;
@@ -265,14 +273,14 @@ export class ColumnBuilder {
       compute(key: ComputeKey | (string & {})) {
         res.computeKeys = [...(res.computeKeys ?? []), key];
         if (res.field === autoField && res.computeKeys.length === 1) {
-          res.field = `computed_${String(key).replace(/[^\w]+/g, "_")}`;
+          res.field = `computed_${String(key).replace(/[^\w]+/g, '_')}`;
         }
         return api;
       },
       pipeline(...keys: Array<ComputeKey | (string & {})>) {
         res.computeKeys = [...keys];
         if (res.field === autoField && keys.length > 0) {
-          res.field = `computed_${String(keys[0]).replace(/[^\w]+/g, "_")}`;
+          res.field = `computed_${String(keys[0]).replace(/[^\w]+/g, '_')}`;
         }
         return api;
       },
@@ -310,21 +318,24 @@ export class ColumnBuilder {
   }
 
   actions(field?: string) {
-    const res = new ColumnBuilderResult("actions", field ?? "__actions");
+    const res = new ColumnBuilderResult('actions', field ?? '__actions');
     const api = {
       pinRight() {
-        res.pinned = "right";
+        res.pinned = 'right';
         return api;
       },
       pinLeft() {
-        res.pinned = "left";
+        res.pinned = 'left';
         return api;
       },
       width(width: number) {
         res.width = width;
         return api;
       },
-      add(key: ActionKey | (string & {}), opts?: { label: string; variant?: string }) {
+      add(
+        key: ActionKey | (string & {}),
+        opts?: { label: string; variant?: string },
+      ) {
         res.actionKey = key;
         if (opts?.label) res.label = opts.label;
         return api;
@@ -342,23 +353,23 @@ export class ColumnBuilder {
 }
 
 function toUiColumn(col: ColumnBuilderResult): WorksheetUiColumnMeta {
-  if (col.kind === "serial") {
+  if (col.kind === 'serial') {
     return {
       field: col.field,
-      label: col.label ?? "Sr. No",
-      type: "computed",
+      label: col.label ?? 'Sr. No',
+      type: 'computed',
       width: col.width ?? 70,
       order: col.order ?? 0,
       before: col.before,
       after: col.after,
-      computed: { pipeline: ["__builtin.serial"], persist: false },
+      computed: { pipeline: ['__builtin.serial'], persist: false },
     };
   }
-  if (col.kind === "computed") {
+  if (col.kind === 'computed') {
     return {
       field: col.field,
       label: col.label,
-      type: "computed",
+      type: 'computed',
       width: col.width,
       align: col.align,
       pinned: col.pinned,
@@ -373,7 +384,7 @@ function toUiColumn(col: ColumnBuilderResult): WorksheetUiColumnMeta {
   return {
     field: col.field,
     label: col.label,
-    type: "actions",
+    type: 'actions',
     width: col.width,
     pinned: col.pinned,
     order: col.order,
@@ -391,7 +402,7 @@ export function defineWorksheet<S extends FieldShape>(
   const shape = Object.fromEntries(
     Object.entries(rawShape).map(([k, v]) => [
       k,
-      v && typeof (v as BuiltField).build === "function"
+      v && typeof (v as BuiltField).build === 'function'
         ? (v as BuiltField).build()
         : (v as z.ZodTypeAny),
     ]),
@@ -399,7 +410,9 @@ export function defineWorksheet<S extends FieldShape>(
 
   const cb = new ColumnBuilder();
   const uiColumns = (def.columns ? def.columns(cb) : [])
-    .map((c) => (c && typeof (c as any).build === "function" ? (c as any).build() : c))
+    .map((c) =>
+      c && typeof (c as any).build === 'function' ? (c as any).build() : c,
+    )
     .map((c) => toUiColumn(c as ColumnBuilderResult))
     .sort((a, b) => {
       const av = (a as any).order ?? Number.MAX_SAFE_INTEGER;

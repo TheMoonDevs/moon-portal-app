@@ -1,11 +1,13 @@
-import { ObjectId } from "mongodb";
-import { z } from "zod";
-import { getWorksheetCollection } from "./mongo";
-import { getBuiltRowSchema, ensureIndexes } from "./schema-builder";
-import { getWorksheetConfig } from "@/lib/worksheets";
-import type { WorksheetFieldMeta, WorksheetSchemaMeta } from "./zod-meta";
-import { executeComputedPipelineSync } from "../functions/compute/pipeline";
-import type { ComputeKey } from "@/lib/worksheets/functions";
+import { ObjectId } from 'mongodb';
+import type { z } from 'zod';
+
+import { getWorksheetConfig } from '@/lib/worksheets';
+import type { ComputeKey } from '@/lib/worksheets/functions';
+
+import { executeComputedPipelineSync } from '../functions/compute/pipeline';
+import { getWorksheetCollection } from './mongo';
+import { ensureIndexes, getBuiltRowSchema } from './schema-builder';
+import type { WorksheetFieldMeta, WorksheetSchemaMeta } from './zod-meta';
 
 function applyPersistedComputed(
   worksheetId: string,
@@ -17,9 +19,9 @@ function applyPersistedComputed(
   const next: Record<string, unknown> = { ...baseRow };
 
   for (const [field, fieldSchema] of Object.entries(shape)) {
-    const meta = (fieldSchema as unknown as { meta?: () => unknown }).meta?.() as
-      | WorksheetFieldMeta
-      | undefined;
+    const meta = (
+      fieldSchema as unknown as { meta?: () => unknown }
+    ).meta?.() as WorksheetFieldMeta | undefined;
     const computed = meta?.computed;
     if (!computed?.persist || !computed.pipeline?.length) continue;
 
@@ -67,7 +69,7 @@ export interface WorksheetRowResult {
 export interface ListRowsOptions {
   filter?: Record<string, unknown>;
   sortBy?: string;
-  sortOrder?: "asc" | "desc";
+  sortOrder?: 'asc' | 'desc';
   limit?: number;
   cursor?: string;
 }
@@ -77,11 +79,20 @@ function docToResult(
   worksheetId: string,
   indexField?: string,
 ): WorksheetRowResult {
-  const { _id, worksheetId: _wid, createdAt, updatedAt, validationErrors, ...payload } = doc;
+  const {
+    _id,
+    worksheetId: _wid,
+    createdAt,
+    updatedAt,
+    validationErrors,
+    ...payload
+  } = doc;
   const id = _id instanceof ObjectId ? _id.toString() : String(_id);
   const rawPayload = payload as Record<string, unknown>;
   const indexValue =
-    indexField && rawPayload[indexField] != null ? String(rawPayload[indexField]) : undefined;
+    indexField && rawPayload[indexField] != null
+      ? String(rawPayload[indexField])
+      : undefined;
   return {
     id,
     worksheetId,
@@ -89,19 +100,19 @@ function docToResult(
     rawPayload,
     indexedFields: rawPayload,
     validationErrors:
-      validationErrors && typeof validationErrors === "object"
+      validationErrors && typeof validationErrors === 'object'
         ? (validationErrors as Record<string, string[]>)
         : null,
     createdAt:
       createdAt instanceof Date
         ? createdAt.toISOString()
-        : typeof createdAt === "string"
+        : typeof createdAt === 'string'
           ? createdAt
           : new Date().toISOString(),
     updatedAt:
       updatedAt instanceof Date
         ? updatedAt.toISOString()
-        : typeof updatedAt === "string"
+        : typeof updatedAt === 'string'
           ? updatedAt
           : new Date().toISOString(),
   };
@@ -110,7 +121,10 @@ function docToResult(
 function normalizePayloadAgainstSchema(
   schema: z.ZodObject<any>,
   payload: Record<string, unknown>,
-): { normalized: Record<string, unknown>; validationErrors: Record<string, string[]> | null } {
+): {
+  normalized: Record<string, unknown>;
+  validationErrors: Record<string, string[]> | null;
+} {
   const shape = (schema as any).shape as Record<string, z.ZodTypeAny>;
   const normalized: Record<string, unknown> = { ...payload };
   const fieldErrors: Record<string, string[]> = {};
@@ -129,7 +143,7 @@ function normalizePayloadAgainstSchema(
   const schemaParsed = schema.safeParse(normalized);
   if (!schemaParsed.success) {
     for (const issue of schemaParsed.error.issues) {
-      const key = String(issue.path[0] ?? "_schema");
+      const key = String(issue.path[0] ?? '_schema');
       fieldErrors[key] = [...(fieldErrors[key] ?? []), issue.message];
     }
   } else {
@@ -142,13 +156,15 @@ function normalizePayloadAgainstSchema(
   };
 }
 
-function getPrimaryIndexField(config: { rowSchema: z.ZodObject<any> } | undefined): string | undefined {
+function getPrimaryIndexField(
+  config: { rowSchema: z.ZodObject<any> } | undefined,
+): string | undefined {
   if (!config) return undefined;
   const shape = (config.rowSchema as any).shape as Record<string, z.ZodTypeAny>;
   for (const [field, fieldSchema] of Object.entries(shape)) {
-    const meta = (fieldSchema as unknown as { meta?: () => unknown }).meta?.() as
-      | WorksheetFieldMeta
-      | undefined;
+    const meta = (
+      fieldSchema as unknown as { meta?: () => unknown }
+    ).meta?.() as WorksheetFieldMeta | undefined;
     if (meta?.db?.index || meta?.db?.unique) return field;
   }
   return undefined;
@@ -161,13 +177,16 @@ export async function listRows(
   await ensureIndexes(worksheetId);
   const config = getWorksheetConfig(worksheetId);
   const indexField = getPrimaryIndexField(config);
-  const collection = getWorksheetCollection(worksheetId);
+  const collection = await getWorksheetCollection(worksheetId);
 
   const limit = Math.min(options.limit ?? 50, 200);
-  const sortOrder = options.sortOrder ?? "desc";
-  const sortKey = options.sortBy ?? "createdAt";
-  const order = sortOrder === "asc" ? 1 : -1;
-  const sort: [string, 1 | -1][] = [[sortKey, order], ["_id", order]];
+  const sortOrder = options.sortOrder ?? 'desc';
+  const sortKey = options.sortBy ?? 'createdAt';
+  const order = sortOrder === 'asc' ? 1 : -1;
+  const sort: [string, 1 | -1][] = [
+    [sortKey, order],
+    ['_id', order],
+  ];
 
   let filter: Record<string, unknown> = { ...options.filter };
   if (options.cursor) {
@@ -191,10 +210,15 @@ export async function listRows(
   const hasMore = docs.length > limit;
   const slice = hasMore ? docs.slice(0, limit) : docs;
   const last = slice[slice.length - 1];
-  const nextCursor = hasMore && last && last._id ? (last._id as ObjectId).toString() : null;
+  const nextCursor =
+    hasMore && last && last._id ? (last._id as ObjectId).toString() : null;
 
-  const rows = slice.map((d) =>
-    docToResult(d as unknown as Record<string, unknown>, worksheetId, indexField),
+  const rows = slice.map((d: any) =>
+    docToResult(
+      d as unknown as Record<string, unknown>,
+      worksheetId,
+      indexField,
+    ),
   );
   return { rows, nextCursor };
 }
@@ -204,21 +228,21 @@ export async function createRow(
   payload: Record<string, unknown>,
 ): Promise<WorksheetRowResult> {
   const built = getBuiltRowSchema(worksheetId);
-  if (!built) throw new Error("Worksheet not found");
+  if (!built) throw new Error('Worksheet not found');
 
   const parsed = built.schema.safeParse(payload);
   if (!parsed.success) {
-    const msg = parsed.error.issues.map((i) => i.message).join("; ");
+    const msg = parsed.error.issues.map((i) => i.message).join('; ');
     throw new Error(`Validation failed: ${msg}`);
   }
 
   await ensureIndexes(worksheetId);
   const config = getWorksheetConfig(worksheetId);
   const indexField = getPrimaryIndexField(config);
-  const collection = getWorksheetCollection(worksheetId);
-  const schemaMeta = (built.schema as unknown as { meta?: () => unknown }).meta?.() as
-    | WorksheetSchemaMeta
-    | undefined;
+  const collection = await getWorksheetCollection(worksheetId);
+  const schemaMeta = (
+    built.schema as unknown as { meta?: () => unknown }
+  ).meta?.() as WorksheetSchemaMeta | undefined;
 
   const withComputed = applyPersistedComputed(
     worksheetId,
@@ -248,17 +272,20 @@ export async function createRowLenient(
   payload: Record<string, unknown>,
 ): Promise<WorksheetRowResult> {
   const built = getBuiltRowSchema(worksheetId);
-  if (!built) throw new Error("Worksheet not found");
+  if (!built) throw new Error('Worksheet not found');
 
   await ensureIndexes(worksheetId);
   const config = getWorksheetConfig(worksheetId);
   const indexField = getPrimaryIndexField(config);
-  const collection = getWorksheetCollection(worksheetId);
-  const schemaMeta = (built.schema as unknown as { meta?: () => unknown }).meta?.() as
-    | WorksheetSchemaMeta
-    | undefined;
+  const collection = await getWorksheetCollection(worksheetId);
+  const schemaMeta = (
+    built.schema as unknown as { meta?: () => unknown }
+  ).meta?.() as WorksheetSchemaMeta | undefined;
 
-  const { normalized, validationErrors } = normalizePayloadAgainstSchema(built.schema, payload);
+  const { normalized, validationErrors } = normalizePayloadAgainstSchema(
+    built.schema,
+    payload,
+  );
   const withComputed = applyPersistedComputed(
     worksheetId,
     built.schema,
@@ -289,13 +316,18 @@ export async function updateRow(
   payload: Partial<Record<string, unknown>>,
 ): Promise<WorksheetRowResult | null> {
   const built = getBuiltRowSchema(worksheetId);
-  if (!built) throw new Error("Worksheet not found");
+  if (!built) throw new Error('Worksheet not found');
 
-  const collection = getWorksheetCollection(worksheetId);
-  const existing = await collection.findOne({ _id: new ObjectId(rowId) } as { _id: ObjectId });
+  const collection = await getWorksheetCollection(worksheetId);
+  const existing = await collection.findOne({ _id: new ObjectId(rowId) } as {
+    _id: ObjectId;
+  });
   if (!existing) return null;
 
-  const merged = { ...(existing as unknown as Record<string, unknown>), ...payload };
+  const merged = {
+    ...(existing as unknown as Record<string, unknown>),
+    ...payload,
+  };
   delete merged._id;
   delete merged.worksheetId;
   delete merged.createdAt;
@@ -303,13 +335,13 @@ export async function updateRow(
 
   const parsed = built.schema.safeParse(merged);
   if (!parsed.success) {
-    const msg = parsed.error.issues.map((i) => i.message).join("; ");
+    const msg = parsed.error.issues.map((i) => i.message).join('; ');
     throw new Error(`Validation failed: ${msg}`);
   }
 
-  const schemaMeta = (built.schema as unknown as { meta?: () => unknown }).meta?.() as
-    | WorksheetSchemaMeta
-    | undefined;
+  const schemaMeta = (
+    built.schema as unknown as { meta?: () => unknown }
+  ).meta?.() as WorksheetSchemaMeta | undefined;
   const withComputed = applyPersistedComputed(
     worksheetId,
     built.schema,
@@ -328,7 +360,9 @@ export async function updateRow(
     { _id: new ObjectId(rowId) } as { _id: ObjectId },
     doc as Record<string, unknown>,
   );
-  const updated = await collection.findOne({ _id: new ObjectId(rowId) } as { _id: ObjectId });
+  const updated = await collection.findOne({ _id: new ObjectId(rowId) } as {
+    _id: ObjectId;
+  });
   const config = getWorksheetConfig(worksheetId);
   const indexField = getPrimaryIndexField(config);
   return docToResult(
@@ -338,9 +372,14 @@ export async function updateRow(
   );
 }
 
-export async function deleteRow(worksheetId: string, rowId: string): Promise<boolean> {
-  const collection = getWorksheetCollection(worksheetId);
-  const result = await collection.deleteOne({ _id: new ObjectId(rowId) } as { _id: ObjectId });
+export async function deleteRow(
+  worksheetId: string,
+  rowId: string,
+): Promise<boolean> {
+  const collection = await getWorksheetCollection(worksheetId);
+  const result = await collection.deleteOne({ _id: new ObjectId(rowId) } as {
+    _id: ObjectId;
+  });
   return result.deletedCount > 0;
 }
 
@@ -354,7 +393,7 @@ export async function bulkUpdateRows(
   updates: BulkUpdateItem[],
 ): Promise<WorksheetRowResult[]> {
   const built = getBuiltRowSchema(worksheetId);
-  if (!built) throw new Error("Worksheet not found");
+  if (!built) throw new Error('Worksheet not found');
 
   const results: WorksheetRowResult[] = [];
   for (const u of updates) {

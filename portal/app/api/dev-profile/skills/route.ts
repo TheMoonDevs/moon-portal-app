@@ -1,5 +1,7 @@
-import { skillsAndTechnologies } from "@/utils/constants/devProfileConstants";
-import { NextRequest, NextResponse } from "next/server";
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
+import { skillsAndTechnologies } from '@/utils/constants/devProfileConstants';
 
 export async function GET(req: NextRequest) {
   try {
@@ -11,11 +13,14 @@ export async function GET(req: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching skills:', error);
-    return new NextResponse(JSON.stringify({ error: 'Failed to fetch skills' }), {
-      status: 500,
-      headers: {
-        'Content-Type': 'application/json',
+    return new NextResponse(
+      JSON.stringify({ error: 'Failed to fetch skills' }),
+      {
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+        },
       },
-    });
+    );
   }
 }

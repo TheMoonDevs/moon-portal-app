@@ -1,7 +1,5 @@
-import React, { useState } from "react";
-import { CandidateAnswersModal } from "./JobPosts/CandidateAnswersModal";
-import { ScreeningModal } from "./JobPosts/ScreeningModal/ScreeningModal";
-import { Candidate } from "@prisma/client";
+import type { Candidate } from '@db/client';
+import React from 'react';
 
 export const CandidateListTable = ({
   candidates,
@@ -11,25 +9,25 @@ export const CandidateListTable = ({
   openModal: (modalType: string, _candidate: Candidate) => void;
 }) => {
   const tableHeadings = [
-    "Name",
-    "Email",
-    "Mobile Number",
-    "Portfolio",
-    "Resume",
-    "Applicant Answers",
-    "Screening Round 1",
-    "Screening Round 2",
-    "Status",
+    'Name',
+    'Email',
+    'Mobile Number',
+    'Portfolio',
+    'Resume',
+    'Applicant Answers',
+    'Screening Round 1',
+    'Screening Round 2',
+    'Status',
   ];
   return (
     <div className="overflow-x-scroll md:overflow-visible">
       <table id="candidate-list" className="w-full">
         <thead>
-          <tr className=" w-full bg-neutral-100 rounded-lg divide-x-2">
+          <tr className="w-full divide-x-2 rounded-lg bg-neutral-100">
             {tableHeadings.map((heading) => (
               <th
                 key={heading}
-                className="text-md font-semibold text-neutral-800 text-left p-2"
+                className="text-md p-2 text-left font-semibold text-neutral-800"
               >
                 {heading}
               </th>
@@ -50,16 +48,16 @@ export const CandidateListTable = ({
             return (
               <tr
                 key={id}
-                className="border-b-2 border-neutral-200 w-full divide-x-2"
+                className="w-full divide-x-2 border-b-2 border-neutral-200"
               >
-                <td className="text-sm p-2">{name}</td>
-                <td className="text-sm p-2">
+                <td className="p-2 text-sm">{name}</td>
+                <td className="p-2 text-sm">
                   <a className="underline" href={`mailto:${email}`}>
                     {email}
                   </a>
                 </td>
-                <td className="text-sm p-2">{mobileNumber}</td>
-                <td className="text-sm p-2">
+                <td className="p-2 text-sm">{mobileNumber}</td>
+                <td className="p-2 text-sm">
                   {portfolio ? (
                     <a
                       className="text-blue-700 underline"
@@ -70,44 +68,44 @@ export const CandidateListTable = ({
                       {portfolio}
                     </a>
                   ) : (
-                    "N/A"
+                    'N/A'
                   )}
                 </td>
-                <td className="text-sm p-2">{resume || "No Resume"}</td>
+                <td className="p-2 text-sm">{resume || 'No Resume'}</td>
                 <td
-                  className="text-sm p-2  cursor-pointer hover:bg-gray-100"
-                  onClick={() => openModal("candidateAnswers", candidate)}
+                  className="cursor-pointer p-2 text-sm hover:bg-gray-100"
+                  onClick={() => openModal('candidateAnswers', candidate)}
                 >
                   <div className="flex items-center gap-2">
-                    <span className="material-icons-outlined !text-sm pt-1">
+                    <span className="material-icons-outlined pt-1 !text-sm">
                       visibility
                     </span>
                     <span>View</span>
                   </div>
                 </td>
                 <td
-                  className="text-sm p-2  cursor-pointer hover:bg-gray-100"
-                  onClick={() => openModal("screeningModal1", candidate)}
+                  className="cursor-pointer p-2 text-sm hover:bg-gray-100"
+                  onClick={() => openModal('screeningModal1', candidate)}
                 >
                   <div className="flex items-center gap-2">
-                    <span className="material-icons-outlined !text-sm pt-1">
+                    <span className="material-icons-outlined pt-1 !text-sm">
                       visibility
                     </span>
                     <span>View</span>
                   </div>
                 </td>
                 <td
-                  className="text-sm p-2  cursor-pointer hover:bg-gray-100"
-                  onClick={() => openModal("screeningModal2", candidate)}
+                  className="cursor-pointer p-2 text-sm hover:bg-gray-100"
+                  onClick={() => openModal('screeningModal2', candidate)}
                 >
                   <div className="flex items-center gap-2">
-                    <span className="material-icons-outlined !text-sm pt-1">
+                    <span className="material-icons-outlined pt-1 !text-sm">
                       visibility
                     </span>
                     <span>View</span>
                   </div>
                 </td>
-                <td className="text-sm p-2">status </td>
+                <td className="p-2 text-sm">status </td>
               </tr>
             );
           })}

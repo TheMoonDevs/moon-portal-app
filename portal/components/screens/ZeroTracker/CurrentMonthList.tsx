@@ -1,5 +1,5 @@
-import { User } from "@prisma/client";
-import dayjs from "dayjs";
+import type { User } from '@db/client';
+import dayjs from 'dayjs';
 
 export const CurrentMonthList = ({
   item,
@@ -9,25 +9,25 @@ export const CurrentMonthList = ({
   itemMembers: User[];
 }) => {
   return (
-    <div className="p-2 flex flex-row justify-between items-center gap-4 w-full border-b border-neutral-300">
+    <div className="flex w-full flex-row items-center justify-between gap-4 border-b border-neutral-300 p-2">
       <div className="flex flex-row items-center gap-2">
-        {item.type === "zero" && (
-          <span className={`bg-blue-500 w-2 h-2 rounded-full`}></span>
+        {item.type === 'zero' && (
+          <span className={`size-2 rounded-full bg-blue-500`}></span>
         )}
-        {item.type === "leave" && (
-          <span className={`bg-red-500 w-2 h-2 rounded-full`}></span>
+        {item.type === 'leave' && (
+          <span className={`size-2 rounded-full bg-red-500`}></span>
         )}
-        {item.type === "meeting" && (
-          <span className={`bg-red-500 w-2 h-2 rounded-full`}></span>
+        {item.type === 'meeting' && (
+          <span className={`size-2 rounded-full bg-red-500`}></span>
         )}
         <div>
           {item.title && (
-            <p className="text-[0.9em] text-neutral-500  font-bold">
+            <p className="text-[0.9em] font-bold text-neutral-500">
               {item.title}
             </p>
           )}
-          <p className="text-[0.9em] text-neutral-500  font-bold">
-            {dayjs(item.date).format("DD MMM")}
+          <p className="text-[0.9em] font-bold text-neutral-500">
+            {dayjs(item.date).format('DD MMM')}
           </p>
         </div>
       </div>
@@ -36,9 +36,9 @@ export const CurrentMonthList = ({
           // eslint-disable-next-line @next/next/no-img-element
           <img
             key={`${z_user?.id}-${index}`}
-            src={z_user?.avatar || ""}
-            className="w-6 h-6 rounded-full border border-neutral-200"
-            alt={z_user?.name || ""}
+            src={z_user?.avatar || ''}
+            className="size-6 rounded-full border border-neutral-200"
+            alt={z_user?.name || ''}
           />
         ))}
       </div>

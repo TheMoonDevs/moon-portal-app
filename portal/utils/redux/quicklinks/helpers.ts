@@ -1,4 +1,4 @@
-import { DirectoryList, Link } from "@prisma/client";
+import { DirectoryList, Link } from "@db/client";
 
 export const toggleFavoriteLinksList = (
   prevFavList: Link[],
