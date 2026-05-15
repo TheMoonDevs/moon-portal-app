@@ -1,17 +1,15 @@
-import { WorkLogs } from '@prisma/client';
-import React, { useCallback, useEffect, useState } from 'react';
+import type { WorkLogs } from '@db/client';
+import { Box, Skeleton, Tooltip as MuiTooltip } from '@mui/material';
 import dayjs from 'dayjs';
-import ActivityCalendar, { ThemeInput } from 'react-activity-calendar';
-import {
-  Box,
-  Tooltip as MuiTooltip,
-  Skeleton,
-  useMediaQuery,
-} from '@mui/material';
+import React, { useCallback, useEffect, useState } from 'react';
+import type { ThemeInput } from 'react-activity-calendar';
+import ActivityCalendar from 'react-activity-calendar';
+
+import { breakpoints } from '@/styles/media';
 import useAsyncState from '@/utils/hooks/useAsyncState';
+import type { RootState } from '@/utils/redux/store';
+import { useAppSelector } from '@/utils/redux/store';
 import { PortalSdk } from '@/utils/services/PortalSdk';
-import { RootState, useAppSelector } from '@/utils/redux/store';
-import media, { breakpoints } from '@/styles/media';
 
 const customTheme: ThemeInput = {
   light: [
@@ -79,7 +77,8 @@ const ReactActivityCalendar = () => {
     setLoading(true);
     try {
       const response = await PortalSdk.getData(
-        `/api/user/worklogs/summary?userId=${selectedUser?.id
+        `/api/user/worklogs/summary?userId=${
+          selectedUser?.id
         }&year=${dayjs().year()}`,
         null,
       );
@@ -148,15 +147,17 @@ const ReactActivityCalendar = () => {
           maxLevel={9}
           hideColorLegend
           hideTotalCount
-          showWeekdayLabels={[
-            // 'sun',
-            // 'mon',
-            // 'tue',
-            // 'wed',
-            // 'thu',
-            // 'fri',
-            // 'sat',
-          ]}
+          showWeekdayLabels={
+            [
+              // 'sun',
+              // 'mon',
+              // 'tue',
+              // 'wed',
+              // 'thu',
+              // 'fri',
+              // 'sat',
+            ]
+          }
           blockSize={12}
           theme={customTheme}
           weekStart={0}

@@ -1,13 +1,15 @@
-import { prisma } from "@/prisma/prisma";
-import { HOUSEID } from "@prisma/client";
-import { NextResponse, NextRequest } from "next/server";
+import type { HOUSEID } from '@db/client';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
+import { db } from '@/lib/mongodb/db-client';
 
 export async function GET(request: NextRequest) {
-  const id = request.nextUrl.searchParams.get("id") as string;
-  const house = request.nextUrl.searchParams.get("house") as string;
-  const month = request.nextUrl.searchParams.get("month") as string; // YYYY-MM
-  const quarter = request.nextUrl.searchParams.get("quarter") as string;
-  const year = request.nextUrl.searchParams.get("year") as string;
+  const id = request.nextUrl.searchParams.get('id') as string;
+  const house = request.nextUrl.searchParams.get('house') as string;
+  const month = request.nextUrl.searchParams.get('month') as string; // YYYY-MM
+  const quarter = request.nextUrl.searchParams.get('quarter') as string;
+  const year = request.nextUrl.searchParams.get('year') as string;
 
   let monthFilter: any = {};
 
@@ -17,17 +19,17 @@ export async function GET(request: NextRequest) {
     const quarterNumber = parseInt(quarter);
     if (isNaN(quarterNumber) || quarterNumber < 1 || quarterNumber > 4) {
       return new NextResponse(
-        JSON.stringify({ error: "Invalid quarter format" }),
+        JSON.stringify({ error: 'Invalid quarter format' }),
         {
           status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
+          headers: { 'Content-Type': 'application/json' },
+        },
       );
     }
     const startMonth = ((quarterNumber - 1) * 3 + 1)
       .toString()
-      .padStart(2, "0");
-    const endMonth = (quarterNumber * 3).toString().padStart(2, "0");
+      .padStart(2, '0');
+    const endMonth = (quarterNumber * 3).toString().padStart(2, '0');
 
     monthFilter = {
       month: {
@@ -54,7 +56,7 @@ export async function GET(request: NextRequest) {
 
   try {
     //console.log("fetching user on server", id, userType, role);
-    const missions = await prisma.mission.findMany({
+    const missions = await db.mission.findMany({
       where: {
         ...(id && { id }),
         ...(house && { house: house as HOUSEID }),
@@ -62,8 +64,8 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    let json_response = {
-      status: "success",
+    const json_response = {
+      status: 'success',
       data: {
         missions: missions,
       },
@@ -71,10 +73,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(json_response);
   } catch (e) {
-    console.log("mission error", e);
+    console.log('mission error', e);
     return new NextResponse(JSON.stringify(e), {
       status: 404,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }
@@ -82,9 +84,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const { id, ...rest } = await request.json();
-    console.log("rest", rest);
+    console.log('rest', rest);
 
-    const mission = await prisma.mission.create({
+    const mission = await db.mission.create({
       data: {
         ...rest,
       },
@@ -92,8 +94,8 @@ export async function POST(request: NextRequest) {
 
     //console.log("user", mission);
 
-    let json_response = {
-      status: "success",
+    const json_response = {
+      status: 'success',
       data: {
         mission,
       },
@@ -101,10 +103,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(json_response);
   } catch (e) {
-    console.log("mission error", e);
+    console.log('mission error', e);
     return new NextResponse(JSON.stringify(e), {
       status: 404,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }
@@ -113,7 +115,7 @@ export async function PUT(request: Request) {
   try {
     const { id, ...rest } = await request.json();
 
-    const mission = await prisma.mission.upsert({
+    const mission = await db.mission.upsert({
       where: {
         id,
       },
@@ -121,8 +123,8 @@ export async function PUT(request: Request) {
       update: { ...rest },
     });
 
-    let json_response = {
-      status: "success",
+    const json_response = {
+      status: 'success',
       data: {
         mission,
       },
@@ -133,29 +135,29 @@ export async function PUT(request: Request) {
     console.log(e);
     return new NextResponse(JSON.stringify(e), {
       status: 404,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }
 
 export async function DELETE(request: NextRequest) {
   try {
-    const id = request.nextUrl.searchParams.get("id") as string;
+    const id = request.nextUrl.searchParams.get('id') as string;
 
     if (!id) {
-      return new NextResponse(JSON.stringify({ error: "Missing id" }), {
+      return new NextResponse(JSON.stringify({ error: 'Missing id' }), {
         status: 404,
-        headers: { "Content-Type": "application/json" },
+        headers: { 'Content-Type': 'application/json' },
       });
     }
-    const mission = await prisma.mission.delete({
+    const mission = await db.mission.delete({
       where: {
         id,
       },
     });
 
-    let json_response = {
-      status: "success",
+    const json_response = {
+      status: 'success',
       data: {
         mission,
       },
@@ -166,7 +168,7 @@ export async function DELETE(request: NextRequest) {
     console.log(e);
     return new NextResponse(JSON.stringify(e), {
       status: 404,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }

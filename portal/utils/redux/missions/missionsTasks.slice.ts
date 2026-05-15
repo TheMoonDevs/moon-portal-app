@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { MissionTask } from "@prisma/client";
+import { MissionTask } from "@db/client";
 
 interface MissionsTasksState {
   allTasks: MissionTask[];

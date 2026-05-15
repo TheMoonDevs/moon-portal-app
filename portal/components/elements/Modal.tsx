@@ -1,13 +1,14 @@
-import React, { useState, ChangeEvent } from "react";
-import Modal from "react-modal";
-import { Button } from "./Button";
+import React, { useState } from 'react';
+import Modal from 'react-modal';
+
+import { Button } from './Button';
 
 const customStyles = {
   overlay: {
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   content: {
-    width: "70%",
+    width: '70%',
   },
 };
 
@@ -51,12 +52,12 @@ const GeneralModal: React.FC<GeneralModalProps> = ({
     <Modal
       isOpen={isOpen}
       onRequestClose={onClose}
-      contentLabel={modalTitle || "Modal"}
+      contentLabel={modalTitle || 'Modal'}
       style={customStyles}
       ariaHideApp={false}
     >
       {children}
-      <div className=" mt-7">
+      <div className="mt-7">
         <Button onClick={handleSubmit}>Submit</Button>
       </div>
     </Modal>

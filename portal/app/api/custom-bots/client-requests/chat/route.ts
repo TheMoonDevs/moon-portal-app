@@ -1,10 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/prisma/prisma';
-import { s3FileUploadSdk } from '@/utils/services/s3FileUploadSdk';
-import { GithubSdk } from '@/utils/services/githubSdk';
+import { REQUESTSTATUS, UPDATEFROM, UPDATETYPE } from '@db/client';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
+import { db } from '@/lib/mongodb/db-client';
 import { TEMPLATE_REPO_OWNER } from '@/utils/constants/customBots';
 import { updateClientRequest } from '@/utils/services/customBots/clientRequests/updateClientRequest';
-import { REQUESTSTATUS, UPDATEFROM, UPDATETYPE } from '@prisma/client';
+import { GithubSdk } from '@/utils/services/githubSdk';
+import { s3FileUploadSdk } from '@/utils/services/s3FileUploadSdk';
 import { SlackBotSdk, SlackChannels } from '@/utils/services/slackBotSdk';
 
 const slackBotSdk = new SlackBotSdk();
@@ -28,7 +30,7 @@ export async function POST(req: NextRequest) {
     }
     const initTime = new Date();
 
-    const clientRequest = await prisma.clientRequest.findUnique({
+    const clientRequest = await db.clientRequest.findUnique({
       where: { id: originClientRequestId },
       include: { requestUpdates: true },
     });
@@ -121,7 +123,7 @@ export async function POST(req: NextRequest) {
     // Find the update with the largest prNumber.
     const lastRequestPrNumber =
       requestUpdates.length > 0
-        ? requestUpdates.reduce((acc, curr) =>
+        ? requestUpdates.reduce((acc: any, curr: any) =>
             acc.prNumber > curr.prNumber ? acc : curr,
           ).prNumber
         : null;
@@ -165,7 +167,7 @@ export async function POST(req: NextRequest) {
       }
 
       // Save the PR update.
-      await prisma.requestUpdate.create({
+      await db.requestUpdate.create({
         data: {
           originClientRequestId,
           botProjectId: clientRequest.botProjectId,
@@ -180,7 +182,7 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      const updatedClientRequest = await prisma.clientRequest.update({
+      const updatedClientRequest = await db.clientRequest.update({
         where: { id: originClientRequestId },
         data: { requestStatus: REQUESTSTATUS.UN_ASSIGNED },
         include: { requestUpdates: true },
@@ -213,7 +215,7 @@ export async function POST(req: NextRequest) {
       // Refresh client request updates.
       await updateClientRequest(clientRequest);
 
-      await prisma.requestMessage.create({
+      await db.requestMessage.create({
         data: {
           originClientRequestId,
           clientId,
@@ -225,7 +227,7 @@ export async function POST(req: NextRequest) {
           updatedAt: initTime,
         },
       });
-      await prisma.requestMessage.create({
+      await db.requestMessage.create({
         data: {
           originClientRequestId,
           clientId,
@@ -253,7 +255,7 @@ export async function POST(req: NextRequest) {
       );
       await updateClientRequest(clientRequest);
 
-      await prisma.requestMessage.create({
+      await db.requestMessage.create({
         data: {
           originClientRequestId,
           clientId,
@@ -267,7 +269,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const updatedRequestMessages = await prisma.requestMessage.findMany({
+    const updatedRequestMessages = await db.requestMessage.findMany({
       where: { originClientRequestId },
       orderBy: { createdAt: 'asc' },
     });

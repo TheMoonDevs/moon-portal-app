@@ -43,6 +43,8 @@ yarn-error.log*
 next-env.d.ts
 .db_assets
 
+# Generated Google Apps Scripts (run npm run generate:gs to regenerate)
+lib/worksheets/*/GoogleAppsScript-*.gs
 
 sw.*
 workbox-*

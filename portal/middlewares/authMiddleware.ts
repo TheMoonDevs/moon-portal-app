@@ -74,7 +74,7 @@ export function withAuthMiddleware(middleware: CustomMiddleware) {
     // Check API key for methods that modify the database
     const method = request.method.toUpperCase();
     const modifyingMethods = ['POST', 'PUT', 'PATCH', 'DELETE'];
-
+    
     if (
       modifyingMethods.includes(method) &&
       !request.url.includes('/api/auth') &&

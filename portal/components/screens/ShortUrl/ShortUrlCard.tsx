@@ -1,15 +1,15 @@
-import { useCallback, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Button, CircularProgress, TextField } from "@mui/material";
-import useAsyncState from "@/utils/hooks/useAsyncState";
-import useCopyToClipboard from "@/utils/hooks/useCopyToClipboard";
-import { generateSlug } from "@/utils/helpers/functions";
-import { ShortUrlSdk } from "@/utils/services/ShortUrlSdk";
-import { addLink } from "@/utils/redux/shortUrl/shortUrl.slice";
-import { useAppDispatch } from "@/utils/redux/store";
+import { Button, CircularProgress, TextField } from '@mui/material';
+import { useCallback, useRef, useState } from 'react';
+
+import { generateSlug } from '@/utils/helpers/functions';
+import useAsyncState from '@/utils/hooks/useAsyncState';
+import useCopyToClipboard from '@/utils/hooks/useCopyToClipboard';
+import { addLink } from '@/utils/redux/shortUrl/shortUrl.slice';
+import { useAppDispatch } from '@/utils/redux/store';
+import { ShortUrlSdk } from '@/utils/services/ShortUrlSdk';
 export const ShortUrlCard = () => {
   const [newLinkButtonClicked, setNewLinkButtonClicked] = useState(false);
-  const [formData, setFormData] = useState({ slug: "", url: "" });
+  const [formData, setFormData] = useState({ slug: '', url: '' });
   const textRef = useRef<HTMLSpanElement | null>(null);
   const dispatch = useAppDispatch();
   const { loading, error, success, setLoading, setSuccess, setError } =
@@ -22,7 +22,7 @@ export const ShortUrlCard = () => {
   };
   const processSearchParams = useCallback(
     (
-      url: string
+      url: string,
     ):
       | Array<{
           event_id?: string;
@@ -38,11 +38,11 @@ export const ShortUrlCard = () => {
       }[] = [];
       if (searchParams.size !== 0) {
         let firstElement: { key: string; value: string } = {
-          key: "",
-          value: "",
+          key: '',
+          value: '',
         };
         searchParams.forEach((value, key) => {
-          if (firstElement.key === "" && firstElement.value === "") {
+          if (firstElement.key === '' && firstElement.value === '') {
             firstElement = { key, value };
           }
         });
@@ -56,7 +56,7 @@ export const ShortUrlCard = () => {
       }
       return params;
     },
-    []
+    [],
   );
   const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -64,14 +64,14 @@ export const ShortUrlCard = () => {
     const { url, slug } = formData;
     const params = processSearchParams(url);
     try {
-      if (!slug.match("^[-a-zA-Z0-9]+$")) {
+      if (!slug.match('^[-a-zA-Z0-9]+$')) {
         throw new Error(
-          `Invalid slug! Only alphanumeric characters and hyphens are allowed. No spaces.`
+          `Invalid slug! Only alphanumeric characters and hyphens are allowed. No spaces.`,
         );
       }
       const response = await ShortUrlSdk.createShortUrl(
-        "/api/short-url/create-link",
-        { url, slug, params }
+        '/api/short-url/create-link',
+        { url, slug, params },
       );
       const link = JSON.parse(response);
       dispatch(addLink(link));
@@ -86,15 +86,15 @@ export const ShortUrlCard = () => {
   };
   if (success && !newLinkButtonClicked) {
     return (
-      <div className="flex flex-col gap-4 justify-center items-center">
-        <div className="flex flex-col gap-4 justify-center items-center shadow-md p-6">
+      <div className="flex flex-col items-center justify-center gap-4">
+        <div className="flex flex-col items-center justify-center gap-4 p-6 shadow-md">
           <span className="material-icons-outlined !text-6xl">task_alt</span>
-          <h1 className="text-3xl md:text-4xl font-bold">
+          <h1 className="text-3xl font-bold md:text-4xl">
             Here is your short link!
           </h1>
-          <div className="flex gap-6 items-center mt-6">
+          <div className="mt-6 flex items-center gap-6">
             <span
-              className="text-gray-600 text-center md:pl-3 font-normal"
+              className="text-center font-normal text-gray-600 md:pl-3"
               ref={textRef}
             >
               {process.env.NEXT_PUBLIC_SHORT_LINK_BASE_URL}/l/{formData.slug}
@@ -110,8 +110,8 @@ export const ShortUrlCard = () => {
               variant="outlined"
               className={` ${
                 copied
-                  ? "!bg-green-500 !border-none !text-white"
-                  : "!border-black !text-black"
+                  ? '!border-none !bg-green-500 !text-white'
+                  : '!border-black !text-black'
               }`}
               onClick={handleCopy}
             >
@@ -120,7 +120,7 @@ export const ShortUrlCard = () => {
           </div>
           <Button
             variant="contained"
-            className="!bg-stone-800 !text-white w-full !mt-8"
+            className="!mt-8 w-full !bg-stone-800 !text-white"
             onClick={() => setNewLinkButtonClicked(true)}
           >
             Create New
@@ -130,17 +130,17 @@ export const ShortUrlCard = () => {
     );
   }
   return (
-    <div className="w-full max-w-md p-6 bg-white rounded-md shadow-md ">
-      <h2 className="text-2xl font-bold text-center text-gray-800  mb-4">
+    <div className="w-full max-w-md rounded-md bg-white p-6 shadow-md">
+      <h2 className="mb-4 text-center text-2xl font-bold text-gray-800">
         URL Shortener
       </h2>
       {error ? (
         <div className="">
-          <span className="text-red-500 text-sm">{error.description}</span>
+          <span className="text-sm text-red-500">{error.description}</span>
         </div>
       ) : null}
-      <form className="grid gap-6 mt-5" onSubmit={handleFormSubmit}>
-        <div className="flex items-stretch space-x-2  ">
+      <form className="mt-5 grid gap-6" onSubmit={handleFormSubmit}>
+        <div className="flex items-stretch space-x-2">
           {/* <TextField
             inputProps={{
               pattern: "^[-a-zA-Z0-9]+$",
@@ -161,18 +161,18 @@ export const ShortUrlCard = () => {
           /> */}
           <TextField
             inputProps={{
-              pattern: "^[-a-zA-Z0-9]+$",
-              sx: { padding: "10px" }, // Adjust the padding as needed
+              pattern: '^[-a-zA-Z0-9]+$',
+              sx: { padding: '10px' }, // Adjust the padding as needed
             }}
             InputLabelProps={{
               sx: {
-                transform: "translate(10px, 12px) scale(1)", // Adjust this as needed
-                "&.MuiInputLabel-shrink": {
-                  transform: "translate(13.5px, -5.5px) scale(0.75)", // Adjust this as needed
+                transform: 'translate(10px, 12px) scale(1)', // Adjust this as needed
+                '&.MuiInputLabel-shrink': {
+                  transform: 'translate(13.5px, -5.5px) scale(0.75)', // Adjust this as needed
                 },
               },
             }}
-            className="flex-1 h-full"
+            className="h-full flex-1"
             name="slug"
             value={formData.slug}
             id="slug"
@@ -180,7 +180,7 @@ export const ShortUrlCard = () => {
             type="text"
             label="Slug"
             onChange={(e) => {
-              if (error.isError) setError({ isError: false, description: "" });
+              if (error.isError) setError({ isError: false, description: '' });
               setFormData({ ...formData, slug: e.target.value });
             }}
             required
@@ -200,13 +200,13 @@ export const ShortUrlCard = () => {
         <div className="space-y-2">
           <TextField
             inputProps={{
-              sx: { padding: "10px" }, // Adjust the padding as needed
+              sx: { padding: '10px' }, // Adjust the padding as needed
             }}
             InputLabelProps={{
               sx: {
-                transform: "translate(10px, 12px) scale(1)", // Adjust this as needed
-                "&.MuiInputLabel-shrink": {
-                  transform: "translate(13.5px, -5.5px) scale(0.75)", // Adjust this as needed
+                transform: 'translate(10px, 12px) scale(1)', // Adjust this as needed
+                '&.MuiInputLabel-shrink': {
+                  transform: 'translate(13.5px, -5.5px) scale(0.75)', // Adjust this as needed
                 },
               },
             }}
@@ -222,7 +222,7 @@ export const ShortUrlCard = () => {
         </div>
         <Button
           variant="contained"
-          className="!bg-stone-800 !text-white flex gap-3"
+          className="flex gap-3 !bg-stone-800 !text-white"
           type="submit"
           disabled={loading}
         >

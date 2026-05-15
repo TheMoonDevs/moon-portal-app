@@ -1,7 +1,8 @@
 export const dynamic = 'force-dynamic'; // static by default, unless reading the request
-import { prisma } from '@/prisma/prisma';
-import { MediumBlogsSdk } from '@/utils/services/MediumBlogsSdk';
 import { NextResponse } from 'next/server';
+
+import { db } from '@/lib/mongodb/db-client';
+import { MediumBlogsSdk } from '@/utils/services/MediumBlogsSdk';
 
 export async function GET(request: Request) {
   try {
@@ -17,7 +18,7 @@ export async function GET(request: Request) {
       item.image = metadata.imageUrl;
       item.description = metadata.description;
 
-      const existingArticle = await prisma.article.findFirst({
+      const existingArticle = await db.article.findFirst({
         where: { articleUrl: item.link },
       });
 
@@ -28,7 +29,7 @@ export async function GET(request: Request) {
           content: item.description || '',
           articleUrl: item.link,
           articleType: 'medium', // or any other type you define
-          author: item?.["dc:creator"],
+          author: item?.['dc:creator'],
           publishDate: new Date(item.pubDate),
           categories: item.category,
         });
@@ -37,7 +38,7 @@ export async function GET(request: Request) {
 
     // Create new articles in the database
     if (newArticles.length)
-      await prisma.article.createMany({
+      await db.article.createMany({
         data: newArticles,
       });
 

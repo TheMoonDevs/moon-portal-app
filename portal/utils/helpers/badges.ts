@@ -1,4 +1,4 @@
-import { BUFF_LEVEL } from '@prisma/client';
+import { BUFF_LEVEL } from '@db/client';
 
 export const getPoints = (content: string) => {
   const points = (content?.match(/\n/g) || []).length + 1;

@@ -1,19 +1,19 @@
-import { WorkLogs } from "@prisma/client";
+import type { WorkLogs } from '@db/client';
 import {
   differenceInDays,
+  endOfMonth,
+  endOfYear,
   format,
+  isToday,
   parseISO,
   startOfMonth,
-  endOfMonth,
   startOfYear,
-  endOfYear,
-  isToday,
-} from "date-fns";
+} from 'date-fns';
 import dayjs from 'dayjs';
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
-import { getStatsOfContent } from "../WorklogSummary/Pattern";
-import { MissedTask } from "@/utils/redux/worklogsSummary/statsAction.slice";
+
+import type { MissedTask } from '@/utils/redux/worklogsSummary/statsAction.slice';
 
 dayjs.extend(isSameOrAfter);
 dayjs.extend(isSameOrBefore);
@@ -43,25 +43,25 @@ interface Metrics {
   };
   missedLogsDates: string[];
   updatedLogsLater: string[];
-  missedTasks: number
+  missedTasks: number;
 }
 
 enum TaskType {
-  Completed = "✅",
-  Failed = "❌",
-  InProgress = "🟡",
-  Blocked = "🔴",
-  Scheduled = "📅",
-  BeingWritten = "✏️",
-  NewIdea = "💡",
-  NeedClarification = "❓",
-  HighPriority = "⭐",
+  Completed = '✅',
+  Failed = '❌',
+  InProgress = '🟡',
+  Blocked = '🔴',
+  Scheduled = '📅',
+  BeingWritten = '✏️',
+  NewIdea = '💡',
+  NeedClarification = '❓',
+  HighPriority = '⭐',
 }
 
 export function calculateMetrics(
   worklogSummary: WorkLogs[],
   isMonthly: boolean,
-  isYearly?: boolean
+  isYearly?: boolean,
 ): Metrics {
   //console.log("calculateMetrics called with worklogSummary:", worklogSummary);
   //console.log("calculateMetrics called with isMonthly:", isMonthly);
@@ -77,22 +77,22 @@ export function calculateMetrics(
   const failedTasks = getTaskCountByType(worklogSummary, TaskType.Failed);
   const inProgressTasks = getTaskCountByType(
     worklogSummary,
-    TaskType.InProgress
+    TaskType.InProgress,
   );
   const blockedTasks = getTaskCountByType(worklogSummary, TaskType.Blocked);
   const scheduledTasks = getTaskCountByType(worklogSummary, TaskType.Scheduled);
   const beingWrittenTasks = getTaskCountByType(
     worklogSummary,
-    TaskType.BeingWritten
+    TaskType.BeingWritten,
   );
   const newIdeaTasks = getTaskCountByType(worklogSummary, TaskType.NewIdea);
   const needClarificationTasks = getTaskCountByType(
     worklogSummary,
-    TaskType.NeedClarification
+    TaskType.NeedClarification,
   );
   const highPriorityTasks = getTaskCountByType(
     worklogSummary,
-    TaskType.HighPriority
+    TaskType.HighPriority,
   );
   const tasksByWeekday =
     getCompletedAndInProgressTasksByWeekday(worklogSummary);
@@ -103,15 +103,17 @@ export function calculateMetrics(
   // const missedLogsCount = missedDates.length;
   const updatedLogsLater = getUpdatedLogsLater(worklogSummary);
 
-  const longestProductiveStreakData = getLongestProductiveStreak(worklogSummary);
+  const longestProductiveStreakData =
+    getLongestProductiveStreak(worklogSummary);
 
   const missedTasks = getMissedTasks(worklogSummary);
 
   const totalRemainingTasks = missedTasks.reduce((acc, taskGroup) => {
-    const taskCount = taskGroup.content.split("\n").filter(task => task.trim() !== "").length;
+    const taskCount = taskGroup.content
+      .split('\n')
+      .filter((task) => task.trim() !== '').length;
     return acc + taskCount;
   }, 0);
-
 
   return {
     completedTasks,
@@ -133,19 +135,19 @@ export function calculateMetrics(
     tasksByWeekday,
     missedLogsDates: missedDates,
     updatedLogsLater,
-    missedTasks: totalRemainingTasks
+    missedTasks: totalRemainingTasks,
   };
 }
 
 function getTaskCountByType(
   worklogSummary: WorkLogs[],
-  type: TaskType
+  type: TaskType,
 ): number {
   let count = 0;
   const allTasks = worklogSummary.flatMap((worklog) =>
     worklog.works.flatMap((work: any) =>
-      work.content.split("\n").map((task: any) => task.trim())
-    )
+      work.content.split('\n').map((task: any) => task.trim()),
+    ),
   );
 
   allTasks.forEach((task) => {
@@ -167,17 +169,19 @@ function getTaskCompletionRate(worklogSummary: WorkLogs[]): number {
 }
 
 function getAverageTasksPerDay(worklogSummary: WorkLogs[]): number {
-  const dates = worklogSummary.map((worklog) => parseISO(worklog.date || ""));
+  const dates = worklogSummary.map((worklog) => parseISO(worklog.date || ''));
   const uniqueDates = Array.from(
-    new Set(dates.map((date) => format(date, "yyyy-MM-dd")))
+    new Set(dates.map((date) => format(date, 'yyyy-MM-dd'))),
   );
   const totalTasks = getTotalTasks(worklogSummary);
   return totalTasks / uniqueDates.length;
 }
 
-export function getLongestProductiveStreak(worklogSummary: WorkLogs[]): WorkLogs[] {
+export function getLongestProductiveStreak(
+  worklogSummary: WorkLogs[],
+): WorkLogs[] {
   const dates = worklogSummary
-    .map((worklog) => parseISO(worklog.date || ""))
+    .map((worklog) => parseISO(worklog.date || ''))
     .sort((a, b) => a.getTime() - b.getTime());
 
   let longestStreak = 0;
@@ -211,16 +215,16 @@ export function getLongestProductiveStreak(worklogSummary: WorkLogs[]): WorkLogs
 function getTotalTasks(worklogSummary: WorkLogs[]): number {
   const allTasks = worklogSummary.flatMap((worklog) =>
     worklog.works.flatMap((work: any) =>
-      work.content.split("\n").map((task: any) => task.trim())
-    )
+      work.content.split('\n').map((task: any) => task.trim()),
+    ),
   );
   return allTasks.length;
 }
 
 function getUpdateMetrics(worklogSummary: WorkLogs[]): { updatedDays: number } {
-  const dates = worklogSummary.map((worklog) => parseISO(worklog.date || ""));
+  const dates = worklogSummary.map((worklog) => parseISO(worklog.date || ''));
   const uniqueDates = Array.from(
-    new Set(dates.map((date) => format(date, "yyyy-MM-dd")))
+    new Set(dates.map((date) => format(date, 'yyyy-MM-dd'))),
   ).map((date) => parseISO(date));
 
   return {
@@ -234,25 +238,25 @@ function getContributionPercentage(worklogSummary: WorkLogs[]): number {
   const lastMonthEnd = endOfMonth(today.setMonth(today.getMonth() - 1));
   const thisMonthLogs = worklogSummary.filter(
     (worklog) =>
-      parseISO(worklog.date || "") >= startOfMonth(new Date()) &&
-      parseISO(worklog.date || "") <= endOfMonth(new Date())
+      parseISO(worklog.date || '') >= startOfMonth(new Date()) &&
+      parseISO(worklog.date || '') <= endOfMonth(new Date()),
   );
   const lastMonthLogs = worklogSummary.filter(
     (worklog) =>
-      parseISO(worklog.date || "") >= lastMonthStart &&
-      parseISO(worklog.date || "") <= lastMonthEnd
+      parseISO(worklog.date || '') >= lastMonthStart &&
+      parseISO(worklog.date || '') <= lastMonthEnd,
   );
 
   const thisMonthTasks = thisMonthLogs.flatMap((worklog) =>
     worklog.works.flatMap((work: any) =>
-      work.content.split("\n").map((task: any) => task.trim())
-    )
+      work.content.split('\n').map((task: any) => task.trim()),
+    ),
   ).length;
 
   const lastMonthTasks = lastMonthLogs.flatMap((worklog) =>
     worklog.works.flatMap((work: any) =>
-      work.content.split("\n").map((task: any) => task.trim())
-    )
+      work.content.split('\n').map((task: any) => task.trim()),
+    ),
   ).length;
 
   return ((thisMonthTasks - lastMonthTasks) / (lastMonthTasks || 1)) * 100;
@@ -265,10 +269,10 @@ function getTopProductiveDays(worklogSummary: WorkLogs[]): {
   const taskCounts: { [key: string]: number } = {};
 
   worklogSummary.forEach((worklog) => {
-    const date = format(parseISO(worklog.date || ""), "yyyy-MM-dd");
+    const date = format(parseISO(worklog.date || ''), 'yyyy-MM-dd');
 
     worklog.works.forEach((work: any) => {
-      const tasks = work.content.split("\n").map((task: string) => task.trim());
+      const tasks = work.content.split('\n').map((task: string) => task.trim());
 
       tasks.forEach((task: string) => {
         if (task.endsWith(TaskType.Completed)) {
@@ -306,11 +310,11 @@ function getCompletedAndInProgressTasksByWeekday(worklogSummary: WorkLogs[]): {
   };
 
   worklogSummary.forEach((worklog) => {
-    const date = parseISO(worklog.date || "");
-    const weekday = format(date, "EEEE");
+    const date = parseISO(worklog.date || '');
+    const weekday = format(date, 'EEEE');
 
     worklog.works.forEach((work: any) => {
-      const tasks = work.content.split("\n").map((task: string) => task.trim());
+      const tasks = work.content.split('\n').map((task: string) => task.trim());
       tasks.forEach((task: string) => {
         if (task.endsWith(TaskType.Completed) && weekdayCounts[weekday]) {
           weekdayCounts[weekday].completed++;
@@ -330,7 +334,7 @@ function getCompletedAndInProgressTasksByWeekday(worklogSummary: WorkLogs[]): {
 export function getMissedLogs(
   worklogSummary: WorkLogs[],
   isMonthly: boolean,
-  isYearly?: boolean
+  isYearly?: boolean,
 ): Date[] {
   const today = new Date();
   let startDate, endDate;
@@ -341,7 +345,7 @@ export function getMissedLogs(
   } else if (isYearly) {
     // Find the first worklog date in the current year
     const firstWorklogDate = worklogSummary
-      .map((worklog) => parseISO(worklog.date || ""))
+      .map((worklog) => parseISO(worklog.date || ''))
       .filter((date) => date.getUTCFullYear() === today.getUTCFullYear())
       .sort((a, b) => a.getTime() - b.getTime())[0];
 
@@ -353,13 +357,13 @@ export function getMissedLogs(
 
   const allDates = getAllDatesInRange(startDate, endDate);
   const logDates = worklogSummary.map((worklog) =>
-    parseISO(worklog.date || "")
+    parseISO(worklog.date || ''),
   );
 
   //console.log("logDates:", logDates);
 
   const missedDates = allDates.filter(
-    (date) => !logDates.some((logDate) => isSameDay(date, logDate))
+    (date) => !logDates.some((logDate) => isSameDay(date, logDate)),
   );
 
   //console.log("missedDates:", missedDates);
@@ -371,11 +375,11 @@ export function getUpdatedLogsLater(worklogSummary: WorkLogs[]): string[] {
   const updatedLogsDates: string[] = [];
 
   worklogSummary.forEach((worklog) => {
-    const logDate = parseISO(worklog.date || "");
-    const updatedAt = parseISO(worklog.updatedAt?.toString() || "");
+    const logDate = parseISO(worklog.date || '');
+    const updatedAt = parseISO(worklog.updatedAt?.toString() || '');
 
     if (differenceInDays(updatedAt, logDate) > 0) {
-      updatedLogsDates.push(worklog.date || "");
+      updatedLogsDates.push(worklog.date || '');
     }
   });
   return updatedLogsDates;
@@ -383,7 +387,7 @@ export function getUpdatedLogsLater(worklogSummary: WorkLogs[]): string[] {
 
 export function getAllDatesInRange(startDate: Date, endDate: Date): Date[] {
   const dates = [];
-  let currentDate = startDate;
+  const currentDate = startDate;
 
   while (currentDate <= endDate) {
     dates.push(new Date(currentDate));
@@ -408,7 +412,9 @@ export function getMissedWorklogDates(logs: WorkLogs[]) {
   const year = firstLogDate.year();
   const month = firstLogDate.month() + 1;
 
-  const loggedDatesSet = new Set(logs.map(log => dayjs(log.date).format('YYYY-MM-DD')));
+  const loggedDatesSet = new Set(
+    logs.map((log) => dayjs(log.date).format('YYYY-MM-DD')),
+  );
 
   const daysInMonth = firstLogDate.daysInMonth();
   const missedDates = [];
@@ -424,18 +430,20 @@ export function getMissedWorklogDates(logs: WorkLogs[]) {
 }
 
 export function getMissedTasks(worklogSummary: WorkLogs[]): MissedTask[] {
-  const missedTasksByDate: { [key: string]: { title: string; content: string; date: string } } = {};
+  const missedTasksByDate: {
+    [key: string]: { title: string; content: string; date: string };
+  } = {};
 
   worklogSummary.forEach((worklog) => {
-    const date = format(parseISO(worklog.date || ""), "yyyy-MM-dd");
+    const date = format(parseISO(worklog.date || ''), 'yyyy-MM-dd');
 
     worklog.works.forEach((work: any) => {
-      const tasks = work.content.split("\n").map((task: string) => task.trim());
+      const tasks = work.content.split('\n').map((task: string) => task.trim());
       tasks.forEach((task: string) => {
-        if (!task.includes("✅")) {
+        if (!task.includes('✅')) {
           if (!missedTasksByDate[date]) {
             missedTasksByDate[date] = {
-              title: worklog.title || "Untitled",
+              title: worklog.title || 'Untitled',
               content: task,
               date: date,
             };
@@ -450,20 +458,21 @@ export function getMissedTasks(worklogSummary: WorkLogs[]): MissedTask[] {
   return Object.values(missedTasksByDate);
 }
 
-
 export function getCompletedTasks(worklogSummary: WorkLogs[]): MissedTask[] {
-  const completedTasksByDate: { [key: string]: { title: string; content: string; date: string } } = {};
+  const completedTasksByDate: {
+    [key: string]: { title: string; content: string; date: string };
+  } = {};
 
   worklogSummary.forEach((worklog) => {
-    const date = format(parseISO(worklog.date || ""), "yyyy-MM-dd");
+    const date = format(parseISO(worklog.date || ''), 'yyyy-MM-dd');
 
     worklog.works.forEach((work: any) => {
-      const tasks = work.content.split("\n").map((task: string) => task.trim());
+      const tasks = work.content.split('\n').map((task: string) => task.trim());
       tasks.forEach((task: string) => {
-        if (task.includes("✅")) {
+        if (task.includes('✅')) {
           if (!completedTasksByDate[date]) {
             completedTasksByDate[date] = {
-              title: worklog.title || "Untitled",
+              title: worklog.title || 'Untitled',
               content: task,
               date: date,
             };

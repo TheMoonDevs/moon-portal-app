@@ -1,6 +1,9 @@
-import React, { ChangeEvent, useState, useEffect } from "react";
-import GeneralModal from "../../components/elements/Modal";
-import { TMD_PORTAL_API_KEY } from "@/utils/constants/appInfo";
+import type { ChangeEvent } from 'react';
+import React, { useEffect, useState } from 'react';
+
+import { TMD_PORTAL_API_KEY } from '@/utils/constants/appInfo';
+
+import GeneralModal from '../../components/elements/Modal';
 
 interface EditJobPostModalProps {
   isOpen: boolean;
@@ -22,9 +25,9 @@ const EditJobPostModal: React.FC<EditJobPostModalProps> = ({
       try {
         if (jobPostData && jobPostData._id) {
           const response = await fetch(`/api/jobPost?id=${jobPostData.id}`, {
-            method: "GET",
+            method: 'GET',
             headers: {
-              "Content-Type": "application/json",
+              'Content-Type': 'application/json',
             },
           });
 
@@ -32,11 +35,11 @@ const EditJobPostModal: React.FC<EditJobPostModalProps> = ({
             const fetchedData = await response.json();
             setFormData(fetchedData); // Set the fetched data to formData state
           } else {
-            console.error("Error fetching Job Post data");
+            console.error('Error fetching Job Post data');
           }
         }
       } catch (error) {
-        console.error("Error fetching Job Post data:", error);
+        console.error('Error fetching Job Post data:', error);
       }
     };
 
@@ -47,7 +50,7 @@ const EditJobPostModal: React.FC<EditJobPostModalProps> = ({
   }, [isOpen, jobPostData]);
 
   const handleInputChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prevData: any) => ({ ...prevData, [name]: value }));
@@ -57,24 +60,24 @@ const EditJobPostModal: React.FC<EditJobPostModalProps> = ({
     try {
       if (jobPostData && jobPostData._id) {
         const response = await fetch(`/api/jobPost`, {
-          method: "PUT", // Use PATCH for updating
+          method: 'PUT', // Use PATCH for updating
           headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
             tmd_portal_api_key: TMD_PORTAL_API_KEY,
           },
           body: JSON.stringify({ ...formData, id: jobPostData.jobPosts.id }),
         });
 
         if (response.ok) {
-          console.log("Job Post updated successfully");
+          console.log('Job Post updated successfully');
           onClose();
           window.location?.reload();
         } else {
-          console.error("Error updating Job Post");
+          console.error('Error updating Job Post');
         }
       }
     } catch (error) {
-      console.error("Error submitting form:", error);
+      console.error('Error submitting form:', error);
     }
   };
 
@@ -95,7 +98,7 @@ const EditJobPostModal: React.FC<EditJobPostModalProps> = ({
             name="title"
             value={formData.title}
             onChange={handleInputChange}
-            className="mt-1 p-2 border border-gray-300 rounded-md w-full"
+            className="mt-1 w-full rounded-md border border-gray-300 p-2"
           />
         </label>
         <label className="block">
@@ -105,7 +108,7 @@ const EditJobPostModal: React.FC<EditJobPostModalProps> = ({
             name="dept_name"
             value={formData.dept_name}
             onChange={handleInputChange}
-            className="mt-1 p-2 border border-gray-300 rounded-md w-full"
+            className="mt-1 w-full rounded-md border border-gray-300 p-2"
           />
         </label>
 
@@ -116,7 +119,7 @@ const EditJobPostModal: React.FC<EditJobPostModalProps> = ({
             name="description"
             value={formData.description}
             onChange={handleInputChange}
-            className="mt-1 p-2 border border-gray-300 rounded-md w-full"
+            className="mt-1 w-full rounded-md border border-gray-300 p-2"
           />
         </label>
 
@@ -127,7 +130,7 @@ const EditJobPostModal: React.FC<EditJobPostModalProps> = ({
             name="skill_requirement"
             value={formData.skill_requirement}
             onChange={handleInputChange}
-            className="mt-1 p-2 border border-gray-300 rounded-md w-full"
+            className="mt-1 w-full rounded-md border border-gray-300 p-2"
           />
         </label>
 

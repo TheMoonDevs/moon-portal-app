@@ -1,19 +1,20 @@
-"use client";
+'use client';
 
-import { Spinner } from "@/components/elements/Loaders";
-import { handleAddChildDirectory } from "@/utils/redux/quicklinks/quicklinks.thunks";
-import { setModal } from "@/utils/redux/quicklinks/slices/quicklinks.ui.slice";
-import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import { Modal, TextField } from "@mui/material";
-import { useState } from "react";
+import { Modal, TextField } from '@mui/material';
+import { useState } from 'react';
+
+import { Spinner } from '@/components/elements/Loaders';
+import { handleAddChildDirectory } from '@/utils/redux/quicklinks/quicklinks.thunks';
+import { setModal } from '@/utils/redux/quicklinks/slices/quicklinks.ui.slice';
+import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
 
 const CreateDirectoryModal = () => {
   const dispatch = useAppDispatch();
-  const [name, setName] = useState("");
+  const [name, setName] = useState('');
   const { modal, isLoading } = useAppSelector((state) => state.quicklinksUi);
   const selectedDirectory = modal.data && modal.data.selectedDirectory;
 
-  if (!(modal.type === "create-folder")) return null;
+  if (!(modal.type === 'create-folder')) return null;
 
   const handleNameChange = async () => {
     try {
@@ -23,7 +24,7 @@ const CreateDirectoryModal = () => {
             parentDirId: null,
             title: name,
             rootType: selectedDirectory.root,
-          })
+          }),
         );
       } else {
         dispatch(
@@ -31,7 +32,7 @@ const CreateDirectoryModal = () => {
             parentDirId: selectedDirectory.id,
             title: name,
             rootType: selectedDirectory.tabType || selectedDirectory.root,
-          })
+          }),
         );
       }
     } catch (error) {
@@ -42,18 +43,18 @@ const CreateDirectoryModal = () => {
     <Modal
       onClose={() => {
         dispatch(setModal({ type: null, data: null }));
-        setName("");
+        setName('');
       }}
-      open={modal.type === "create-folder"}
-      className=" text-black p-5 rounded-lg shadow-lg drop-shadow-sm flex items-center justify-center"
+      open={modal.type === 'create-folder'}
+      className="flex items-center justify-center rounded-lg p-5 text-black shadow-lg drop-shadow-sm"
     >
-      <div className="bg-white w-fit p-6 rounded-2xl outline-none max-sm:w-full">
-        <h1 className="mb-6 font-semibold text-2xl">
-          {selectedDirectory.root === "DEPARTMENT"
-            ? "Add New Department"
-            : selectedDirectory.root === "COMMON_RESOURCES" &&
-              "Add New Team Folder"}
-          {selectedDirectory.tabType !== null && "New Folder"}
+      <div className="w-fit rounded-2xl bg-white p-6 outline-none max-sm:w-full">
+        <h1 className="mb-6 text-2xl font-semibold">
+          {selectedDirectory.root === 'DEPARTMENT'
+            ? 'Add New Department'
+            : selectedDirectory.root === 'COMMON_RESOURCES' &&
+              'Add New Team Folder'}
+          {selectedDirectory.tabType !== null && 'New Folder'}
         </h1>
         <TextField
           onChange={(e) => setName(e.target.value)}
@@ -63,22 +64,22 @@ const CreateDirectoryModal = () => {
           id="outlined-required"
           autoFocus
         />
-        <div className="flex mt-5 gap-2 ml-auto w-fit">
+        <div className="ml-auto mt-5 flex w-fit gap-2">
           <button
-            className="px-3 py-2 hover:border hover:border-gray-500 text-gray-800 rounded-xl cursor-pointer"
+            className="cursor-pointer rounded-xl px-3 py-2 text-gray-800 hover:border hover:border-gray-500"
             onClick={() => {
               dispatch(setModal({ type: null, data: null }));
-              setName("");
+              setName('');
             }}
           >
             Cancel
           </button>
           <button
             onClick={handleNameChange}
-            disabled={name === "" || isLoading}
-            className="px-6 text-sm  bg-gray-900 text-white rounded-xl cursor-pointer disabled:opacity-50"
+            disabled={name === '' || isLoading}
+            className="cursor-pointer rounded-xl bg-gray-900 px-6 text-sm text-white disabled:opacity-50"
           >
-            {isLoading ? <Spinner className="w-6 h-6 text-neutral-600" /> : 'OK'}
+            {isLoading ? <Spinner className="size-6 text-neutral-600" /> : 'OK'}
           </button>
         </div>
       </div>

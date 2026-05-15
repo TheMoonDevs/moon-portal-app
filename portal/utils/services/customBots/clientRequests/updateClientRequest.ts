@@ -4,9 +4,11 @@ import {
   RequestUpdate,
   UPDATEFROM,
   UPDATETYPE,
-} from '@prisma/client';
+} from '@db/client';
+
+import { db } from '@/lib/mongodb/db-client';
+import { parseCreateInput, parseUpdateInput } from '@/lib/mongodb/validation';
 import { GithubSdk } from '@/utils/services/githubSdk';
-import { prisma } from '@/prisma/prisma';
 
 // Determine new PR status based on GitHub events
 export const determinePrStatus = (events: any[]): REQUESTSTATUS => {
@@ -72,9 +74,11 @@ export const updateClientRequest = async (
     let { prNumber, prUrl, lastUpdatedAt, requestUpdates } = clientRequest;
     const lastUpdate =
       requestUpdates?.length > 0
-        ? requestUpdates?.reduce((prev, current) =>
-            prev?.createdAt > current?.createdAt ? prev : current,
-          )
+        ? requestUpdates.reduce((prev, current) => {
+            const prevTime = new Date(prev.createdAt ?? 0).getTime();
+            const currentTime = new Date(current.createdAt ?? 0).getTime();
+            return prevTime > currentTime ? prev : current;
+          })
         : null;
 
     prNumber = lastUpdate?.prNumber || prNumber;
@@ -133,8 +137,8 @@ export const updateClientRequest = async (
       );
     });
     if (newEvents.length > 0) {
-      await prisma.requestMessage.createMany({
-        data: newEvents.map((event: any) => ({
+      const requestMessages = newEvents.map((event: any) =>
+        parseCreateInput('requestMessage', {
           originClientRequestId: clientRequest.id,
           clientId: clientRequest.clientId,
           message: eventMessage(event),
@@ -151,7 +155,11 @@ export const updateClientRequest = async (
           createdAt: new Date(
             event?.author?.date || event?.updated_at || event?.created_at,
           ),
-        })),
+        }),
+      );
+
+      await db.requestMessage.createMany({
+        data: requestMessages,
       });
 
       // if any event is merged then remove every event after that
@@ -163,14 +171,17 @@ export const updateClientRequest = async (
       }
 
       const newStatus = determinePrStatus(events);
-      const updatedClientRequest = await prisma.clientRequest.update({
+      const updatedClientRequest = await db.clientRequest.update({
         where: { id: clientRequest.id },
-        data: { lastUpdatedAt: initTime, requestStatus: newStatus },
+        data: parseUpdateInput('clientRequest', {
+          lastUpdatedAt: initTime,
+          requestStatus: newStatus,
+        }),
         include: { requestMessages: true },
       });
       return updatedClientRequest;
     } else {
-      const requestMessages = await prisma.requestMessage.findMany({
+      const requestMessages = await db.requestMessage.findMany({
         where: { originClientRequestId: clientRequest.id },
         orderBy: { createdAt: 'asc' },
       });

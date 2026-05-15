@@ -1,4 +1,4 @@
-import { UserLink, Link } from "@prisma/client";
+import { UserLink, Link } from "@db/client";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { toggleFavoriteLinksList } from "../helpers";
 

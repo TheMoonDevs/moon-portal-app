@@ -1,15 +1,16 @@
-"use client";
+'use client';
 
-import { LandscapeCard } from "@/components/elements/Cards";
-import { ChangeEvent, Dispatch, SetStateAction } from "react";
-import dayjs from "dayjs";
-import { DatePicker } from "@mui/x-date-pickers";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import { User } from "@prisma/client";
-import { JsonObject } from "@prisma/client/runtime/library";
-import { personalData } from "@/prisma/UserScehmaInterfaces";
-import { Spinner } from "@/components/elements/Loaders";
+import type { User } from '@db/client';
+import type { JsonObject } from '@db/runtime';
+import { DatePicker } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import dayjs from 'dayjs';
+import type { ChangeEvent, Dispatch, SetStateAction } from 'react';
+
+import { LandscapeCard } from '@/components/elements/Cards';
+import { Spinner } from '@/components/elements/Loaders';
+import type { personalData } from '@/types/db/user-profile';
 
 export const AdminUserPersonalData = ({
   user,
@@ -37,7 +38,7 @@ export const AdminUserPersonalData = ({
           className="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-white shadow-md transition hover:bg-green-700"
         >
           <>
-            {loading && <Spinner className="h-5 w-5 text-green-600" />}
+            {loading && <Spinner className="size-5 text-green-600" />}
             {!loading && <span className="material-icons">done_all</span>}
           </>
           Save User
@@ -55,7 +56,7 @@ export const AdminUserPersonalData = ({
                 value={
                   user.personalData
                     ? (user?.personalData as personalData)?.phone
-                    : ""
+                    : ''
                 }
                 onChange={updateField}
                 className="w-full rounded-md border border-gray-600 bg-neutral-800 p-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
@@ -69,7 +70,7 @@ export const AdminUserPersonalData = ({
                 value={
                   user.personalData
                     ? (user?.personalData as personalData)?.address
-                    : ""
+                    : ''
                 }
                 onChange={updateField}
                 className="w-full rounded-md border border-gray-600 bg-neutral-800 p-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
@@ -84,30 +85,30 @@ export const AdminUserPersonalData = ({
                     ...u,
                     personalData: {
                       ...(u.personalData as JsonObject),
-                      dateOfBirth: newValue?.format("YYYY-MM-DD"),
+                      dateOfBirth: newValue?.format('YYYY-MM-DD'),
                     },
                   }))
                 }
                 sx={{
-                  border: "1px solid #737373",
-                  borderRadius: "4px",
-                  width: "100%",
-                  backgroundColor: "#262626",
-                  "& .MuiPaper-root": {
-                    "& .MuiPickersLayout-root": {
-                      "& MuiDateCalendar-root": {
-                        backgroundColor: "#1f1f1f !important",
+                  border: '1px solid #737373',
+                  borderRadius: '4px',
+                  width: '100%',
+                  backgroundColor: '#262626',
+                  '& .MuiPaper-root': {
+                    '& .MuiPickersLayout-root': {
+                      '& MuiDateCalendar-root': {
+                        backgroundColor: '#1f1f1f !important',
                       },
                     },
                   },
-                  "& .MuiDateCalendar-root": {
-                    backgroundColor: "#1f1f1f !important",
+                  '& .MuiDateCalendar-root': {
+                    backgroundColor: '#1f1f1f !important',
                   },
-                  "& .MuiInputBase-input": {
-                    color: "white !important",
+                  '& .MuiInputBase-input': {
+                    color: 'white !important',
                   },
-                  "& .MuiButtonBase-root": {
-                    color: "white !important",
+                  '& .MuiButtonBase-root': {
+                    color: 'white !important',
                   },
                 }}
               />
@@ -123,7 +124,7 @@ export const AdminUserPersonalData = ({
                 value={
                   user.personalData
                     ? (user?.personalData as personalData)?.city
-                    : ""
+                    : ''
                 }
                 onChange={updateField}
                 className="w-full rounded-md border border-gray-600 bg-neutral-800 p-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
@@ -137,7 +138,7 @@ export const AdminUserPersonalData = ({
                 value={
                   user.personalData
                     ? (user?.personalData as personalData)?.workHourOverlap
-                    : ""
+                    : ''
                 }
                 onChange={updateField}
                 className="w-full rounded-md border border-gray-600 bg-neutral-800 p-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
@@ -151,7 +152,7 @@ export const AdminUserPersonalData = ({
                 value={
                   user.personalData
                     ? (user?.personalData as personalData)?.govtId
-                    : ""
+                    : ''
                 }
                 onChange={updateField}
                 className="w-full rounded-md border border-gray-600 bg-neutral-800 p-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"

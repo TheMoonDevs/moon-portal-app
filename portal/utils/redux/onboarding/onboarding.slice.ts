@@ -1,4 +1,4 @@
-import { USERVERTICAL } from "@prisma/client";
+import { USERVERTICAL } from "@db/client";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface FormState {

@@ -1,11 +1,6 @@
-import {
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Select,
-  SelectChangeEvent,
-} from "@mui/material";
-import { ReactNode } from "react";
+import type { SelectChangeEvent } from '@mui/material';
+import { InputLabel, MenuItem, Select } from '@mui/material';
+import type { ReactNode } from 'react';
 
 export const AppDropdown = (props: {
   label?: string;
@@ -22,14 +17,14 @@ export const AppDropdown = (props: {
       <InputLabel id={props.id}>{props.label}</InputLabel>
       <Select
         labelId={props.id}
-        id={props.id + "-select"}
+        id={props.id + '-select'}
         value={props.value}
         label={props.label}
         name={props.id}
         onChange={props.onChange}
       >
         {props.options.map((option: string | any) =>
-          typeof option === "string" ? (
+          typeof option === 'string' ? (
             <MenuItem key={option} value={option}>
               {option}
             </MenuItem>
@@ -37,7 +32,7 @@ export const AppDropdown = (props: {
             <MenuItem key={option.value} value={option.value}>
               {option.label}
             </MenuItem>
-          )
+          ),
         )}
       </Select>
     </div>

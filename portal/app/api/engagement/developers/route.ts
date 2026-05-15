@@ -1,5 +1,7 @@
-import { prisma } from '@/prisma/prisma';
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
+import { db } from '@/lib/mongodb/db-client';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -9,22 +11,22 @@ export async function GET(req: NextRequest) {
     if (!clientId) {
       return NextResponse.json(
         { status: 'error', message: 'client_id is required' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    const engagement = await prisma.engagement.findFirst({
+    const engagement = await db.engagement.findFirst({
       where: { client_id: clientId },
     });
 
     if (!engagement) {
       return NextResponse.json(
         { status: 'error', message: 'Engagement not found' },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
-    const developers = await prisma.user.findMany({
+    const developers = await db.user.findMany({
       where: {
         id: {
           in: engagement.developer_ids,
@@ -37,7 +39,7 @@ export async function GET(req: NextRequest) {
     console.error('Error fetching developers:', error);
     return NextResponse.json(
       { status: 'error', message: 'Internal server error' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

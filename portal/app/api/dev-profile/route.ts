@@ -1,11 +1,13 @@
-import { prisma } from '@/prisma/prisma';
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
+import { db } from '@/lib/mongodb/db-client';
 
 export async function GET(req: NextRequest, res: NextResponse) {
   try {
     const userId = req.nextUrl.searchParams.get('userId');
     if (!userId) {
-      const response = await prisma.devProfile.findMany();
+      const response = await db.devProfile.findMany();
 
       return new NextResponse(JSON.stringify(response), {
         status: 200,
@@ -14,7 +16,7 @@ export async function GET(req: NextRequest, res: NextResponse) {
         },
       });
     } else {
-      const response = await prisma.devProfile.findUnique({
+      const response = await db.devProfile.findUnique({
         where: {
           userId,
         },
@@ -45,7 +47,7 @@ export async function POST(req: NextRequest, res: NextResponse) {
 
     // upsert
 
-    const response = await prisma.devProfile.upsert({
+    const response = await db.devProfile.upsert({
       where: {
         userId,
       },
@@ -79,7 +81,7 @@ export async function DELETE(req: NextRequest, res: NextResponse) {
     const body = await req.json();
     const { userId } = body;
 
-    const response = await prisma.devProfile.delete({
+    const response = await db.devProfile.delete({
       where: {
         userId,
       },

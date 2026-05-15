@@ -1,26 +1,27 @@
 /* eslint-disable @next/next/no-img-element */
-"use client";
-import React, { useState } from "react";
-import { Button } from "@/components/elements/Button";
-import { RootState, useAppDispatch } from "@/utils/redux/store";
-import { useSelector } from "react-redux";
+'use client';
+import type { FileWithPath } from '@mantine/dropzone';
+import { CircularProgress } from '@mui/material';
+import React, { useState } from 'react';
+import { useSelector } from 'react-redux';
+
+import { TMD_PORTAL_API_KEY } from '@/utils/constants/appInfo';
+import { useUser } from '@/utils/hooks/useUser';
 import {
   addFilesToPreview,
   resetPreview,
   setUploadedFiles,
-} from "@/utils/redux/filesUpload/fileUpload.slice";
-import { CircularProgress } from "@mui/material";
-import { updateAvatarUrl } from "@/utils/redux/onboarding/onboarding.slice";
-import { FileWithPath } from "@mantine/dropzone";
-import { useUser } from "@/utils/hooks/useUser";
-import { TMD_PORTAL_API_KEY } from "@/utils/constants/appInfo";
+} from '@/utils/redux/filesUpload/fileUpload.slice';
+import { updateAvatarUrl } from '@/utils/redux/onboarding/onboarding.slice';
+import type { RootState } from '@/utils/redux/store';
+import { useAppDispatch } from '@/utils/redux/store';
 
 export function UploadAvatar() {
   const { user } = useUser();
   const [isFileUploading, setIsFileUploading] = useState<boolean>(false);
   const dispatch = useAppDispatch();
   const avatarUrl = useSelector(
-    (state: RootState) => state.onboardingForm.avatar
+    (state: RootState) => state.onboardingForm.avatar,
   );
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -36,15 +37,15 @@ export function UploadAvatar() {
     setIsFileUploading(true);
     const formData = new FormData();
 
-    formData.append("file", file, file.path);
+    formData.append('file', file, file.path);
     if (user) {
       const userId = user.id;
-      formData.append("userId", userId);
+      formData.append('userId', userId);
     }
-    formData.append("folderName", "userAvatars");
+    formData.append('folderName', 'userAvatars');
     try {
-      const response = await fetch("/api/upload/file-upload", {
-        method: "POST",
+      const response = await fetch('/api/upload/file-upload', {
+        method: 'POST',
         body: formData,
         headers: {
           tmd_portal_api_key: TMD_PORTAL_API_KEY,
@@ -53,8 +54,8 @@ export function UploadAvatar() {
 
       if (response.ok) {
         const data = await response.json();
-        console.log("File uploaded successfully!");
-        console.log("Uploaded file info:", data.fileInfo);
+        console.log('File uploaded successfully!');
+        console.log('Uploaded file info:', data.fileInfo);
 
         // Update the avatar URL with the file's URL
         const avatarUrl = data.fileInfo[0].fileUrl;
@@ -63,35 +64,35 @@ export function UploadAvatar() {
         setUploadedFiles([data.fileInfo]);
         dispatch(resetPreview());
       } else {
-        console.error("Failed to upload file:", response.statusText);
+        console.error('Failed to upload file:', response.statusText);
       }
     } catch (error) {
-      console.error("Error uploading file:", error);
+      console.error('Error uploading file:', error);
     } finally {
       setIsFileUploading(false);
     }
   };
 
   return (
-    <div className="flex gap-4 items-center my-4">
+    <div className="my-4 flex items-center gap-4">
       {avatarUrl ? (
         <div className="flex items-center">
           <img
             src={avatarUrl}
             alt="Profile photo"
-            className="rounded-full h-12 w-12 object-cover"
+            className="size-12 rounded-full object-cover"
           />
-          <label className="ml-4 flex items-center cursor-pointer">
-            <span className="flex items-center border p-2 rounded-lg text-sm text-gray-500">
+          <label className="ml-4 flex cursor-pointer items-center">
+            <span className="flex items-center rounded-lg border p-2 text-sm text-gray-500">
               {isFileUploading ? (
                 <div className="flex items-center justify-center gap-2">
                   <CircularProgress size={20} color="inherit" />
-                  <span className="text-gray-400 text-sm font-light">
+                  <span className="text-sm font-light text-gray-400">
                     Uploading....
                   </span>
                 </div>
               ) : (
-                "Click to replace"
+                'Click to replace'
               )}
             </span>
             <input
@@ -103,23 +104,23 @@ export function UploadAvatar() {
           </label>
         </div>
       ) : (
-        <div className="flex gap-2 justify-center items-center">
+        <div className="flex items-center justify-center gap-2">
           <img
-            src={avatarUrl ? avatarUrl : "/icons/placeholderAvatar.svg"}
+            src={avatarUrl ? avatarUrl : '/icons/placeholderAvatar.svg'}
             alt="Profile photo"
-            className="rounded-full w-10 h-10"
+            className="size-10 rounded-full"
           />
-          <label className="flex items-center cursor-pointer">
-            <span className="flex items-center border p-2 rounded-lg text-sm text-gray-500">
+          <label className="flex cursor-pointer items-center">
+            <span className="flex items-center rounded-lg border p-2 text-sm text-gray-500">
               {isFileUploading ? (
                 <div className="flex items-center justify-center gap-2">
                   <CircularProgress size={20} color="inherit" />
-                  <span className="text-gray-400 text-sm font-light">
+                  <span className="text-sm font-light text-gray-400">
                     Uploading....
                   </span>
                 </div>
               ) : (
-                "Upload Avatar"
+                'Upload Avatar'
               )}
             </span>
             <input

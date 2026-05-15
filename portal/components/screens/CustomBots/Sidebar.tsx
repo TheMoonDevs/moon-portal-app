@@ -1,14 +1,15 @@
 'use client';
 
-import { ButtonSCN } from '@/components/elements/Button';
-import { BotProject, ClientRequest } from '@prisma/client';
+import type { BotProject, ClientRequest } from '@db/client';
 import {
   ChevronRight,
   MessageSquare,
   PlusCircle,
-  Settings
+  Settings,
 } from 'lucide-react';
-import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
+
+import { ButtonSCN } from '@/components/elements/Button';
 
 interface BotProjectWithRequests extends BotProject {
   clientRequests: ClientRequest[];
@@ -33,7 +34,6 @@ export default function Sidebar({
   const projectParamId = params?.project_id;
   const requestParamId = params?.request_id;
   const searchParams: any = useSearchParams();
-
 
   return (
     <div className="h-full flex-1 overflow-y-auto border-r">
@@ -72,12 +72,12 @@ export default function Sidebar({
         </div>
       </div>
 
-      <div className="mb-2 mx-1 mt-1 space-y-1">
+      <div className="mx-1 mb-2 mt-1 space-y-1">
         {selectedProject?.clientRequests?.length > 0 ? (
           selectedProject?.clientRequests?.map((request: ClientRequest) => (
             <button
               key={request?.id}
-              className={`flex cursor-pointer line-clamp-1 max-w-[27ch] items-center rounded-sm px-2 py-2 text-sm ${request?.id === requestParamId ? 'bg-blue-500 text-white' : 'hover:bg-gray-100'}`}
+              className={`line-clamp-1 flex max-w-[27ch] cursor-pointer items-center rounded-sm p-2 text-sm ${request?.id === requestParamId ? 'bg-blue-500 text-white' : 'hover:bg-gray-100'}`}
               onClick={() => onSelectRequest(request)}
             >
               {request.id === requestParamId ? (
@@ -87,7 +87,8 @@ export default function Sidebar({
                     height: '1rem',
                     width: '1rem',
                     color: '#fff',
-                  }} />
+                  }}
+                />
               ) : (
                 <MessageSquare
                   style={{
@@ -96,9 +97,15 @@ export default function Sidebar({
                     width: '1rem',
                     color: '#4c4c4c',
                   }}
-                />)}
-              <span className={`flex-1 truncate ${request.id === requestParamId ? 'font-semibold' : ''
-                }`}>{request.title}</span>
+                />
+              )}
+              <span
+                className={`flex-1 truncate ${
+                  request.id === requestParamId ? 'font-semibold' : ''
+                }`}
+              >
+                {request.title}
+              </span>
             </button>
           ))
         ) : (

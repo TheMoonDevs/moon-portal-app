@@ -3,7 +3,7 @@ import { useSession, signOut } from 'next-auth/react';
 import { useEffect, useMemo, useState } from 'react';
 import { PortalSdk } from '../services/PortalSdk';
 import { APP_ROUTES, LOCAL_STORAGE } from '../constants/appInfo';
-import { User } from '@prisma/client';
+import { User } from '@db/client';
 import { useAppDispatch, useAppSelector } from '../redux/store';
 import { setReduxUser } from '../redux/auth/auth.slice';
 
@@ -16,6 +16,19 @@ export const useUser = (newfetch?: boolean) => {
   const verifiedUserEmail = useAppSelector(
     (state) => state.auth.verifiedUserEmail,
   );
+
+  const getParsedLocalUser = (): User | null => {
+    const rawUser = localStorage.getItem(LOCAL_STORAGE.user);
+    if (!rawUser) return null;
+    try {
+      const parsed = JSON.parse(rawUser) as User;
+      return parsed?.id ? parsed : null;
+    } catch {
+      localStorage.removeItem(LOCAL_STORAGE.user);
+      return null;
+    }
+  };
+
   const refetchUser = () => {
     try {
       PortalSdk.getData('/api/user?id=' + sessionUser.id, null)
@@ -31,12 +44,8 @@ export const useUser = (newfetch?: boolean) => {
             return;
           }
           if (data?.data?.user?.[0]) {
-            localStorage.setItem(
-              LOCAL_STORAGE.user,
-              JSON.stringify(data?.data?.user?.[0]),
-            );
+            dispatch(setReduxUser(data?.data?.user?.[0]));
           }
-          dispatch(setReduxUser(data?.data?.user?.[0]));
         })
         .catch((err) => {
           console.log(err);
@@ -49,35 +58,36 @@ export const useUser = (newfetch?: boolean) => {
 
   // fetch from local storage
   useEffect(() => {
-    //if (newfetch) return;
-    let _user: any = localStorage.getItem(LOCAL_STORAGE.user);
-    //console.log("fetching from local storage", _user);
-    if (_user) {
-      _user = JSON.parse(_user);
-      //if (_user?.id) setFetchedUser(_user);
-      if (_user?.id) setLocalUser(_user);
-      if (_user?.id) dispatch(setReduxUser(_user));
+    const localStorageUser = getParsedLocalUser();
+    if (localStorageUser?.id) {
+      setLocalUser(localStorageUser);
+      // only promote to Redux if it's a full user record (has userType)
+      if (localStorageUser?.userType) {
+        dispatch(setReduxUser(localStorageUser));
+      }
     }
   }, [dispatch]);
 
   useEffect(() => {
-    if (fetchedUser) return;
-    let _local_user: any = localStorage.getItem(LOCAL_STORAGE.user);
-    //console.log("fetching from local storage", _user);
-    if (_local_user) _local_user = JSON.parse(_local_user);
-    if (!sessionUser?.id || !newfetch) return;
-    // unless new fetch is demanded, default fetchedUser to LocalUser
-    if (!newfetch && _local_user?.id) {
-      console.log('setting fetched user to local user', _local_user);
+    if (fetchedUser?.userType) return;
+    const _local_user = getParsedLocalUser();
+    if (!sessionUser?.id) return;
+    // use cached local user only if it has full data (userType present)
+    if (_local_user?.userType) {
       dispatch(setReduxUser(_local_user));
       return;
     }
-    console.log('fetching user', sessionUser, _local_user, newfetch);
     refetchUser();
   }, [newfetch, sessionUser, fetchedUser, dispatch]);
 
   return {
-    user: fetchedUser?.id ? fetchedUser : localUser?.id ? localUser : null,
+    user: fetchedUser?.id
+      ? fetchedUser
+      : localUser?.id
+        ? localUser
+        : sessionUser?.id
+          ? sessionUser
+          : null,
     verifiedUserEmail: verifiedUserEmail,
     status: fetchedUser?.id != null ? 'authenticated' : status,
     data,
@@ -87,7 +97,6 @@ export const useUser = (newfetch?: boolean) => {
       })
         .then(() => {
           localStorage.removeItem(LOCAL_STORAGE.user);
-          // localStorage.removeItem(LOCAL_STORAGE.passphrase);
         })
         .catch((err: any) => {
           console.log('signout error', err);

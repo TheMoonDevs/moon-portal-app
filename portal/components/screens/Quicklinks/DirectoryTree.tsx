@@ -1,8 +1,9 @@
-"use client";
-import { useRouter } from "next/navigation";
-import { useQuickLinkDirectory } from "./hooks/useQuickLinkDirectory";
-import { useQuickLinkDirs } from "./hooks/useQuickLinksDirs";
-import { DirectoryList } from "@prisma/client";
+'use client';
+import type { DirectoryList } from '@db/client';
+import { useRouter } from 'next/navigation';
+
+import { useQuickLinkDirectory } from './hooks/useQuickLinkDirectory';
+import { useQuickLinkDirs } from './hooks/useQuickLinksDirs';
 
 interface DirectoryTreeProps {
   directories: DirectoryList[];
@@ -17,13 +18,12 @@ const DirectoryTree: React.FC<DirectoryTreeProps> = ({
   activeDirectoryId,
   getConstructedPath,
 }) => {
+  const router = useRouter();
   const currentDirectory = directories.find((dir) => dir.id === currentDirId);
   if (!currentDirectory) return null;
   const childDirectories = directories.filter(
-    (dir) => dir.parentDirId === currentDirId
+    (dir) => dir.parentDirId === currentDirId,
   );
-  const router = useRouter();
-
   const getDepth = (dirId: string): number => {
     const dir = directories.find((d) => d.id === dirId);
     if (!dir || !dir.parentDirId) return 0;
@@ -35,7 +35,7 @@ const DirectoryTree: React.FC<DirectoryTreeProps> = ({
 
   const handleGotoDirectory = () => {
     const href = getConstructedPath(currentDirectory);
-    router.push(href || "/");
+    router.push(href || '/');
   };
 
   if (currDepth > maxDepth) return;
@@ -43,7 +43,7 @@ const DirectoryTree: React.FC<DirectoryTreeProps> = ({
   return (
     <div className="ml-2 p-2 pb-0">
       <div
-        className="flex items-center hover:cursor-pointer hover:transition-all hover:bg-neutral-200 p-1 px-2 rounded-2xl"
+        className="flex items-center rounded-2xl p-1 px-2 hover:cursor-pointer hover:bg-neutral-200 hover:transition-all"
         onClick={handleGotoDirectory}
       >
         <span className="material-symbols-outlined mr-2">folder</span>
@@ -70,11 +70,11 @@ const RecursiveDirectoryTree: React.FC<RecursiveDirectoryTreeProps> = () => {
   const { rootParentDirectory } = useQuickLinkDirs(activeDirectoryId);
 
   const getConstructedPath = (directory: DirectoryList): string | null => {
-    const rootPath = "/quicklinks";
+    const rootPath = '/quicklinks';
     const basePath =
-      directory.tabType === "DEPARTMENT" ? "/department" : "/common-resources";
+      directory.tabType === 'DEPARTMENT' ? '/department' : '/common-resources';
     if (!directory.parentDirId) {
-      return rootPath + basePath + "/" + directory.slug;
+      return rootPath + basePath + '/' + directory.slug;
     }
 
     const topLevelParentDir = rootParentDirectory;
@@ -85,11 +85,11 @@ const RecursiveDirectoryTree: React.FC<RecursiveDirectoryTreeProps> = () => {
     return (
       rootPath +
       basePath +
-      "/" +
+      '/' +
       topLevelParentDir.slug +
-      "/" +
+      '/' +
       directory.slug +
-      "-" +
+      '-' +
       new Date(directory.timestamp as Date).getTime().toString().slice(-5)
     );
   };
@@ -100,9 +100,9 @@ const RecursiveDirectoryTree: React.FC<RecursiveDirectoryTreeProps> = () => {
   if ((rootParentDirectory?.id as string) === (activeDirectoryId as string))
     return;
   return (
-    <div className=" mt-3">
-      <h1 className="text-xl font-semibold mb-2 ">Directory Tree</h1>
-      <div className="bg-neutral-50 rounded-2xl py-2">
+    <div className="mt-3">
+      <h1 className="mb-2 text-xl font-semibold">Directory Tree</h1>
+      <div className="rounded-2xl bg-neutral-50 py-2">
         <DirectoryTree
           directories={[...directories, ...parentDirs]}
           currentDirId={rootParentDirectory?.id as string}

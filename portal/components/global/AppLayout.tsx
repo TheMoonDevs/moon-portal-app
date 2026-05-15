@@ -1,14 +1,8 @@
-"use client";
+'use client';
 
-import {
-  APP_ROUTES,
-  GLOBAL_ROUTES,
-  LOCAL_STORAGE,
-} from "@/utils/constants/appInfo";
-import { useUser } from "@/utils/hooks/useUser";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
-import { Bottombar } from "./Bottombar";
+import { usePathname, useRouter } from 'next/navigation';
+
+import { useUser } from '@/utils/hooks/useUser';
 
 export interface PageReactFC extends React.FC {
   isAuthRequired: boolean;

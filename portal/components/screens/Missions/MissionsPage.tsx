@@ -1,33 +1,29 @@
-"use client";
-import { PortalSdk } from "@/utils/services/PortalSdk";
-import { Button, Typography, Paper, Grid, Skeleton } from "@mui/material";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import {
-  HOUSEID,
-  Mission,
-  USERROLE,
-  USERSTATUS,
-  USERTYPE,
-  User,
-} from "@prisma/client";
-import dayjs from "dayjs";
-import { useEffect, useState } from "react";
-import { Plus } from "lucide-react";
-import { MissionEntry } from "./Mission";
+'use client';
+import type { Mission, User } from '@db/client';
+import { HOUSEID, USERROLE, USERSTATUS, USERTYPE } from '@db/client';
+import { Button, Grid, Paper, Skeleton, Typography } from '@mui/material';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import dayjs from 'dayjs';
+import { Plus } from 'lucide-react';
+import { useEffect, useState } from 'react';
+
+import { PortalSdk } from '@/utils/services/PortalSdk';
+
+import { MissionEntry } from './Mission';
 
 const gridItems = [
-  "tasks",
-  "title",
-  "house",
-  "house points",
-  "indie points",
-  "indie balance",
-  "completed at",
-  "completed",
-  "expires at",
-  "expirable",
-  "actions",
+  'tasks',
+  'title',
+  'house',
+  'house points',
+  'indie points',
+  'indie balance',
+  'completed at',
+  'completed',
+  'expires at',
+  'expirable',
+  'actions',
 ];
 
 export const MissionsPage = () => {
@@ -37,13 +33,13 @@ export const MissionsPage = () => {
 
   useEffect(() => {
     PortalSdk.getData(
-      "/api/user?role=" +
+      '/api/user?role=' +
         USERROLE.CORETEAM +
-        "&userType=" +
+        '&userType=' +
         USERTYPE.MEMBER +
-        "&status=" +
+        '&status=' +
         USERSTATUS.ACTIVE,
-      null
+      null,
     )
       .then((data) => {
         setCoreTeam(data?.data?.user || []);
@@ -57,7 +53,7 @@ export const MissionsPage = () => {
   }, []);
 
   useEffect(() => {
-    PortalSdk.getData("/api/missions?month=" + dayjs().format("YYYY-MM"), null)
+    PortalSdk.getData('/api/missions?month=' + dayjs().format('YYYY-MM'), null)
       .then((data) => {
         // console.log(data);
         setMissions(data.data.missions);
@@ -68,14 +64,14 @@ export const MissionsPage = () => {
   }, []);
 
   const createMission = () => {
-    PortalSdk.postData("/api/missions", {
-      title: "New Mission",
+    PortalSdk.postData('/api/missions', {
+      title: 'New Mission',
       house: HOUSEID.MANAGEMENT,
       housePoints: 10,
       indiePoints: 1000,
       expirable: true,
-      month: dayjs().format("YYYY-MM"),
-      expiresAt: dayjs().add(1, "day").toDate(),
+      month: dayjs().format('YYYY-MM'),
+      expiresAt: dayjs().add(1, 'day').toDate(),
     })
       .then((data) => {
         // console.log(data);
@@ -88,7 +84,7 @@ export const MissionsPage = () => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <Paper elevation={3} className="p-6 m-4">
+      <Paper elevation={3} className="m-4 p-6">
         <div className="sticky top-0 z-50 bg-white pt-2">
           <Grid
             container
@@ -113,10 +109,10 @@ export const MissionsPage = () => {
           <Grid
             container
             spacing={2}
-            className="font-semibold mb-4 px-4 border-b-2 border-t-2"
+            className="mb-4 border-y-2 px-4 font-semibold"
           >
             {gridItems.map((item) => (
-              <Grid item xs={item === "title" ? 2 : 1} key={item}>
+              <Grid item xs={item === 'title' ? 2 : 1} key={item}>
                 <span className="capitalize">{item}</span>
               </Grid>
             ))}
@@ -139,7 +135,7 @@ export const MissionsPage = () => {
             />
           ))
         ) : (
-          <div className="text-center text-lg font-bold mt-8">
+          <div className="mt-8 text-center text-lg font-bold">
             No missions found
           </div>
         )}

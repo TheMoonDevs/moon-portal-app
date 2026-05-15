@@ -1,29 +1,23 @@
 'use client';
 
+import type { WorkLogs } from '@db/client';
+import { useMediaQuery } from '@mui/material';
+import dayjs from 'dayjs';
+import Link from 'next/link';
+import React, { useEffect, useMemo, useState } from 'react';
+import { toast, Toaster } from 'sonner';
+
+import SimpleTabs from '@/components/elements/Tabs';
+import media from '@/styles/media';
 import { MdxAppEditor } from '@/utils/configure/MdxAppEditor';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
 import { useUser } from '@/utils/hooks/useUser';
-import { PortalSdk } from '@/utils/services/PortalSdk';
-import { WorkLogs } from '@prisma/client';
-import Link from 'next/link';
-import React, { useEffect, useMemo, useState } from 'react';
-import store, { useAppDispatch, useAppSelector } from '@/utils/redux/store';
-import dayjs from 'dayjs';
-import { WorkLogsHelper } from './WorklogsHelper';
-import { Fade, useMediaQuery } from '@mui/material';
-import media from '@/styles/media';
-import { WorklogView } from './WorklogView';
-import { SummarizeButton } from './SummarizeButton';
-import { Toaster, toast } from 'sonner';
+import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
 import {
-  setLogsList,
-  setSelectedEngagement,
-} from '@/utils/redux/worklogs/worklogs.slice';
-import SimpleTabs from '@/components/elements/Tabs';
-import WorklogTips from './WorklogTabs/WorklogTips';
-import TodoTab from './WorklogTabs/TodoTab';
-import MonthlyTargetsTab from './WorklogTabs/MonthlyTargetsTab';
-import AdminTasksTab from './WorklogTabs/AdminTasksTab';
+  setAdminTasksMarkdown,
+  setCompletedTasks,
+  setIncompleteTasks,
+} from '@/utils/redux/worklogs/adminTasks.slice';
 import {
   setCompletedTodos,
   setIncompleteTodos,
@@ -32,18 +26,21 @@ import {
 import {
   setCompletedTargets,
   setIncompleteTargets,
-  setTargetsMarkdown,
 } from '@/utils/redux/worklogs/monthlyTargets.slice';
 import {
-  setCompletedTasks,
-  setIncompleteTasks,
-  setAdminTasksMarkdown,
-} from '@/utils/redux/worklogs/adminTasks.slice';
-import WorklogBuff from './WorklogTabs/WorklogBuff';
-import ClickupTasks from './WorklogTabs/ClickupTasks';
-import { PrivateWorklogView } from './PrivateWorklogView';
-import { usePassphrase } from '@/utils/hooks/usePassphrase';
+  setLogsList,
+  setSelectedEngagement,
+} from '@/utils/redux/worklogs/worklogs.slice';
+import { PortalSdk } from '@/utils/services/PortalSdk';
 
+import { SummarizeButton } from './SummarizeButton';
+import { WorkLogsHelper } from './WorklogsHelper';
+import AdminTasksTab from './WorklogTabs/AdminTasksTab';
+import MonthlyTargetsTab from './WorklogTabs/MonthlyTargetsTab';
+import TodoTab from './WorklogTabs/TodoTab';
+import WorklogBuff from './WorklogTabs/WorklogBuff';
+import WorklogTips from './WorklogTabs/WorklogTips';
+import { WorklogView } from './WorklogView';
 
 const linkForWorkLog = (data: WorkLogs) => {
   return (
@@ -121,7 +118,7 @@ export const WorkLogItem = ({
 
       <div className="flex max-h-[100px] min-h-[100px] flex-col p-1">
         {!isEmpty ? (
-          data.works.map((point: any, index) => {
+          data.works.map((point: any, index: number) => {
             if (!point) return null;
             return (
               <div
@@ -148,7 +145,6 @@ export const WorkLogItem = ({
   );
 };
 export const WorklogsPage = () => {
-  const { localPassphrase } = usePassphrase();
   const { user } = useUser();
 
   const thisYear = dayjs().year();
@@ -167,7 +163,6 @@ export const WorklogsPage = () => {
   const [monthTab, setMonthTab] = useState<number>(thisMonth);
   const logsList = useAppSelector((state) => state.worklogs.logsList);
   const [yearLogData, setYearLogData] = useState<any>();
-  const [privateBoard, setPrivateBoard] = useState<WorkLogs | null>(null);
   const isTabletOrMore = useMediaQuery(media.moreTablet);
   const isEditorSaving = useAppSelector(
     (state) => state.worklogs.isEditorSaving,
@@ -195,7 +190,6 @@ export const WorklogsPage = () => {
         console.log(err);
       });
   };
-
 
   useEffect(() => {
     if (todoMarkdown) {
@@ -225,7 +219,10 @@ export const WorklogsPage = () => {
 
   useEffect(() => {
     if (adminTasksMarkdown) {
-      if (adminTasksMarkdown.trim() === '*' || adminTasksMarkdown.trim() === '') {
+      if (
+        adminTasksMarkdown.trim() === '*' ||
+        adminTasksMarkdown.trim() === ''
+      ) {
         dispatch(setIncompleteTasks(0));
       } else {
         const total = (adminTasksMarkdown.match(/\n/g) || []).length + 1;
@@ -245,10 +242,8 @@ export const WorklogsPage = () => {
   }, [user?.id]);
 
   useEffect(() => {
-    const _user = store.getState().auth.user;
-
-    if (!_user) return;
-    PortalSdk.getData(`/api/user/worklogs?userId=${_user.id}`, null)
+    if (!user?.id) return;
+    PortalSdk.getData(`/api/user/worklogs?userId=${user.id}`, null)
       .then((data) => {
         // console.log(data);
         setYearLogData(data);
@@ -267,11 +262,10 @@ export const WorklogsPage = () => {
       .catch((err) => {
         console.log(err);
       });
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
-    if (!yearLogData) return;
-    const _user = store.getState().auth.user;
+    if (!yearLogData || !user) return;
     const _total_days_in_month = dayjs().month(monthTab).daysInMonth();
     const _logList = Array.from({
       length:
@@ -289,11 +283,11 @@ export const WorklogsPage = () => {
         const _worklog = yearLogData?.data?.workLogs.find(
           (wl: WorkLogs) => wl.date === _date,
         );
-        return _worklog || WorkLogsHelper.defaultWorklogs(_date, _user);
+        return _worklog || WorkLogsHelper.defaultWorklogs(_date, user);
       })
       .reverse();
     dispatch(setLogsList(_logList));
-  }, [monthTab, yearLogData, dispatch]);
+  }, [monthTab, yearLogData, dispatch, user]);
 
   const [selectedID, setSelectedID] = useState<string>();
   const [selectedDate, setSelectedDate] = useState<string | undefined>(
@@ -324,7 +318,7 @@ export const WorklogsPage = () => {
         <div className="flex items-center gap-2 p-3">
           Todos
           {incompleteTodos > 0 && (
-            <div className="h-2 w-2 animate-pulse rounded-full bg-blue-500"></div>
+            <div className="size-2 animate-pulse rounded-full bg-blue-500"></div>
           )}
         </div>
       ),
@@ -335,7 +329,7 @@ export const WorklogsPage = () => {
         <div className="flex items-center gap-2 p-3">
           Monthly
           {incompleteTargets > 0 && (
-            <div className="h-2 w-2 animate-pulse rounded-full bg-blue-500"></div>
+            <div className="size-2 animate-pulse rounded-full bg-blue-500"></div>
           )}
         </div>
       ),
@@ -352,7 +346,7 @@ export const WorklogsPage = () => {
         <div className="flex items-center gap-2 p-3">
           Assigned
           {incompleteTasks > 0 && (
-            <div className="h-2 w-2 animate-pulse rounded-full bg-blue-500"></div>
+            <div className="size-2 animate-pulse rounded-full bg-blue-500"></div>
           )}
         </div>
       ),
@@ -367,19 +361,10 @@ export const WorklogsPage = () => {
       toast.error('Save your Logs! (Ctrl+S)');
       return;
     }
-    if (data.id?.trim().length > 0) {
-      setSelectedID(data.id);
-      if (data.date) {
-        setSelectedDate(data.date);
-        setMonthTab(dayjs(data.date).month());
-      }
-    } else if (data.date) {
-      // console.log(data);
-      setSelectedID(undefined);
-      if (data.date) {
-        setSelectedDate(data.date);
-        setMonthTab(dayjs(data.date).month());
-      }
+    setSelectedID(data.id?.trim().length > 0 ? data.id : undefined);
+    if (data.date) {
+      setSelectedDate(data.date);
+      setMonthTab(dayjs(data.date).month());
     }
   };
 
@@ -404,7 +389,7 @@ export const WorklogsPage = () => {
 
   return (
     <div className="flex flex-col">
-      <div className="fixed left-0 right-0 top-0 z-10 flex h-14 flex-row items-center justify-between gap-3 border-b border-neutral-400 bg-white px-3 py-2 md:left-4 md:pl-[6rem]">
+      <div className="fixed inset-x-0 top-0 z-10 flex h-14 flex-row items-center justify-between gap-3 border-b border-neutral-400 bg-white px-3 py-2 md:left-4 md:pl-24">
         <div className="flex items-center">
           <Link href={APP_ROUTES.home}>
             <h1 className="mr-3 cursor-pointer whitespace-nowrap border-r-2 pr-3 text-sm font-extrabold md:text-lg">
@@ -419,8 +404,9 @@ export const WorklogsPage = () => {
           <SummarizeButton userId={user?.id} />
           <Link
             className="hidden sm:block"
-            href={`${APP_ROUTES.userWorklogSummary}/${user?.id
-              }?year=${thisYear}&month=${dayjs().month(thisMonth).format('MM')}`}
+            href={`${APP_ROUTES.userWorklogSummary}/${
+              user?.id
+            }?year=${thisYear}&month=${dayjs().month(thisMonth).format('MM')}`}
           >
             <div className="flex cursor-pointer items-center gap-1 whitespace-nowrap rounded-md bg-neutral-800 px-2 py-1 text-[0.7rem] text-neutral-100 hover:bg-neutral-700 sm:gap-2 sm:px-3 sm:py-1 sm:text-sm">
               <span className="icon_size material-symbols-outlined">
@@ -438,15 +424,23 @@ export const WorklogsPage = () => {
           {Array.from({ length: 12 }).map((_, month_tab: number) => (
             <div
               key={month_tab}
-              onClick={() => setMonthTab(month_tab)}
-              className={`flex-shrink-0 cursor-pointer rounded-3xl px-1 py-1 md:p-0 ${monthTab === month_tab ? 'border border-neutral-600' : ''
-                }`}
+              onClick={() => {
+                setMonthTab(month_tab);
+                setSelectedID(undefined);
+                setSelectedDate(
+                  dayjs().month(month_tab).startOf('month').format('YYYY-MM-DD'),
+                );
+              }}
+              className={`shrink-0 cursor-pointer rounded-3xl p-1 md:p-0 ${
+                monthTab === month_tab ? 'border border-neutral-600' : ''
+              }`}
             >
               <h4
-                className={`text-xs md:text-sm lg:text-base ${monthTab === month_tab
-                  ? 'font-bold text-neutral-800'
-                  : 'text-neutral-400'
-                  } p-1 md:p-2 lg:px-4`}
+                className={`text-xs md:text-sm lg:text-base ${
+                  monthTab === month_tab
+                    ? 'font-bold text-neutral-800'
+                    : 'text-neutral-400'
+                } p-1 md:p-2 lg:px-4`}
               >
                 {dayjs().month(month_tab).format('MMMM')}
               </h4>
@@ -455,7 +449,7 @@ export const WorklogsPage = () => {
         </div>
 
         <div className="flex w-full flex-row-reverse max-lg:flex-col">
-          <div className="invisible hidden max-h-[80vh] w-[40%] overflow-y-scroll p-3 max-lg:w-full md:visible md:block">
+          <div className="invisible hidden max-h-[80vh] w-2/5 overflow-y-scroll p-3 max-lg:w-full md:visible md:block">
             <WorklogBuff filteredLogs={filteredLogs} monthTab={monthTab} />
             <SimpleTabs tabs={tabs} />
           </div>
@@ -468,12 +462,6 @@ export const WorklogsPage = () => {
               setMonthTab={setMonthTab}
               handleNextMonthClick={handleNextMonthClick}
             />
-            <div className="">
-              <PrivateWorklogView
-                date={centerdate.format('YYYY-MM-DD')}
-                logType={'privateWorklogs'}
-              />
-            </div>
           </div>
           <div className="m-3 grid max-h-[80vh] grid-cols-2 gap-3 overflow-y-scroll p-2 max-lg:grid-cols-4 max-md:grid-cols-2 lg:w-[30%]">
             {filteredLogs.map(

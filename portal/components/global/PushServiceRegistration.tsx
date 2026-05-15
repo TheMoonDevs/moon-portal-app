@@ -1,8 +1,9 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
-import { useUser } from "@/utils/hooks/useUser";
-import { registerServiceWorker } from "@/utils/helpers/serviceWorker";
+import { useEffect } from 'react';
+
+import { registerServiceWorker } from '@/utils/helpers/serviceWorker';
+import { useUser } from '@/utils/hooks/useUser';
 
 const PushServiceRegistration = ({
   children,

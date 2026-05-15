@@ -1,16 +1,17 @@
-import { useUser } from "@/utils/hooks/useUser";
-import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import { Drawer } from "@mui/material";
-import { User } from "@prisma/client";
-import MissionForm from "./Mission/MissionForm";
+import type { User } from '@db/client';
+import { Drawer } from '@mui/material';
 
-import TaskForm from "./Mission/Task/TaskForm";
+import { useUser } from '@/utils/hooks/useUser';
 import {
   clearEditorState,
   setEditModalOpen,
-} from "@/utils/redux/missions/mission.ui.slice";
-import { setActiveTask } from "@/utils/redux/missions/missionsTasks.slice";
-import { setActiveMission } from "@/utils/redux/missions/mission.slice";
+} from '@/utils/redux/missions/mission.ui.slice';
+import { setActiveTask } from '@/utils/redux/missions/missionsTasks.slice';
+import type { RootState } from '@/utils/redux/store';
+import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
+
+import MissionForm from './Mission/MissionForm';
+import TaskForm from './Mission/Task/TaskForm';
 
 const CreateMissionSlider = ({
   houseMembers,
@@ -24,10 +25,10 @@ const CreateMissionSlider = ({
   const { user } = useUser();
   const dispatch = useAppDispatch();
   const { isEditModalOpen } = useAppSelector(
-    (state: RootState) => state.missionUi
+    (state: RootState) => state.missionUi,
   );
   const { activeTask } = useAppSelector(
-    (state: RootState) => state.missionsTasks
+    (state: RootState) => state.missionsTasks,
   );
   const { activeMission } = useAppSelector((state: RootState) => state.mission);
 
@@ -43,13 +44,13 @@ const CreateMissionSlider = ({
       }}
     >
       {
-        activeTab === "missions" && (
+        activeTab === 'missions' && (
           <MissionForm currentHouseIndex={currentHouseIndex} />
         )
 
         //   <MissionForm />
       }
-      {activeTab === "tasks" && <TaskForm houseMembers={houseMembers} />}
+      {activeTab === 'tasks' && <TaskForm houseMembers={houseMembers} />}
     </Drawer>
   );
 };

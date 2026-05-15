@@ -1,5 +1,6 @@
-import { prisma } from "@/prisma/prisma";
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
+
+import { db } from '@/lib/mongodb/db-client';
 
 export async function POST(request: Request) {
   try {
@@ -7,7 +8,7 @@ export async function POST(request: Request) {
 
     let error_response: any;
 
-    const user = await prisma.user.findFirst({
+    const user = await db.user.findFirst({
       where: {
         username,
         password,
@@ -16,20 +17,20 @@ export async function POST(request: Request) {
 
     if (!user) {
       error_response = {
-        status: "fail",
-        message: "User not found",
+        status: 'fail',
+        message: 'User not found',
       };
     }
 
     if (error_response) {
       return new NextResponse(JSON.stringify(error_response), {
         status: 404,
-        headers: { "Content-Type": "application/json" },
+        headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    let json_response = {
-      status: "success",
+    const json_response = {
+      status: 'success',
       data: {
         user,
       },
@@ -39,7 +40,7 @@ export async function POST(request: Request) {
   } catch (e) {
     return new NextResponse(JSON.stringify(e), {
       status: 404,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }

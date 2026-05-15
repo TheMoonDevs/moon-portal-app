@@ -1,24 +1,15 @@
-import React, {
-  ChangeEvent,
-  MouseEvent,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
-import { Backdrop, Modal, Portal } from "@mui/material";
-import { Button } from "@/components/elements/Button";
-import { useAppDispatch } from "@/utils/redux/store";
-import { setJobPostsRefresh } from "@/utils/redux/ui/ui.slice";
-import { PortalSdk } from "@/utils/services/PortalSdk";
-import {
-  JOBPOST,
-  JOBSTATUS,
-  JobPost,
-  USERROLE,
-  USERVERTICAL,
-} from "@prisma/client";
-import { AppDropdown } from "@/components/elements/Dropdown";
-import { Spinner } from "@/components/elements/Loaders";
+import type { JobPost } from '@db/client';
+import { JOBPOST, JOBSTATUS, USERVERTICAL } from '@db/client';
+import { Modal, Portal } from '@mui/material';
+import type { ChangeEvent } from 'react';
+import React, { useEffect, useState } from 'react';
+
+import { Button } from '@/components/elements/Button';
+import { AppDropdown } from '@/components/elements/Dropdown';
+import { Spinner } from '@/components/elements/Loaders';
+import { useAppDispatch } from '@/utils/redux/store';
+import { setJobPostsRefresh } from '@/utils/redux/ui/ui.slice';
+import { PortalSdk } from '@/utils/services/PortalSdk';
 
 export interface NewJobPostModalProps {
   isOpen: boolean;
@@ -27,10 +18,10 @@ export interface NewJobPostModalProps {
 }
 
 export const modalCenterStyle = {
-  position: "absolute" as "absolute",
-  top: "50%",
-  left: "50%",
-  transform: "translate(-50%, -50%)",
+  position: 'absolute' as const,
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
 };
 
 export const NewJobPostModal: React.FC<NewJobPostModalProps> = ({
@@ -40,9 +31,9 @@ export const NewJobPostModal: React.FC<NewJobPostModalProps> = ({
 }) => {
   const initialFormData: JobPost = {
     id: jobPostData ? jobPostData.id : null,
-    title: "",
+    title: '',
     deptName: USERVERTICAL.DEV,
-    description: "",
+    description: '',
     status: JOBSTATUS.ACTIVE,
     jobpost: JOBPOST.INTERN,
     createdAt: new Date(),
@@ -65,7 +56,7 @@ export const NewJobPostModal: React.FC<NewJobPostModalProps> = ({
   }, [jobPostData]);
 
   const handleInputChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prevData: any) => ({ ...prevData, [name]: value }));
@@ -75,8 +66,8 @@ export const NewJobPostModal: React.FC<NewJobPostModalProps> = ({
     setLoading(true);
     let promise: Promise<any>;
     if (formData.id)
-      promise = PortalSdk.putData("/api/jobPost", { data: formData });
-    else promise = PortalSdk.postData("/api/jobPost", { data: formData });
+      promise = PortalSdk.putData('/api/jobPost', { data: formData });
+    else promise = PortalSdk.postData('/api/jobPost', { data: formData });
     promise
       .then((response) => {
         console.log(response);
@@ -86,7 +77,7 @@ export const NewJobPostModal: React.FC<NewJobPostModalProps> = ({
       })
       .catch((err) => {
         setLoading(false);
-        console.error("Error submitting form:", err);
+        console.error('Error submitting form:', err);
       });
   };
 
@@ -95,7 +86,7 @@ export const NewJobPostModal: React.FC<NewJobPostModalProps> = ({
       <Modal open={isOpen} onClose={handleClose}>
         <div
           style={{ ...modalCenterStyle }}
-          className="bg-white rounded-md p-4 w-[50%] h-[80%] overflow-y-auto"
+          className="h-4/5 w-[50%] overflow-y-auto rounded-md bg-white p-4"
         >
           <p className="text-2xl font-bold">Create Job Post</p>
           <p className="text-sm text-gray-500">
@@ -108,12 +99,12 @@ export const NewJobPostModal: React.FC<NewJobPostModalProps> = ({
               name="title"
               value={formData.title}
               onChange={handleInputChange}
-              className="mt-1 p-2 border border-gray-300 rounded-md w-full"
+              className="mt-1 w-full rounded-md border border-gray-300 p-2"
             />
           </label>
 
           <AppDropdown
-            className="mt-4 w-full flex flex-col items-stretch"
+            className="mt-4 flex w-full flex-col items-stretch"
             id="deptName"
             label="Department"
             options={Object.values(USERVERTICAL)}
@@ -121,25 +112,25 @@ export const NewJobPostModal: React.FC<NewJobPostModalProps> = ({
             onChange={(e) => handleInputChange(e as any)}
           />
 
-          <label className="block mt-4">
+          <label className="mt-4 block">
             Job Description:
             <textarea
               name="description"
               value={formData.description}
               onChange={handleInputChange}
-              className="mt-1 p-2 border border-gray-300 rounded-md w-full"
+              className="mt-1 w-full rounded-md border border-gray-300 p-2"
             />
           </label>
 
-          <div className="flex flex-row mt-8">
+          <div className="mt-8 flex flex-row">
             <Button
               onClick={handleFormSubmit}
               className="flex flex-row items-center gap-2"
             >
               {loading && (
-                <Spinner className="w-3 h-3 fill-green-400 text-green-600" />
+                <Spinner className="size-3 fill-green-400 text-green-600" />
               )}
-              {formData.id ? "Save Job Post" : "Create Job Post"}
+              {formData.id ? 'Save Job Post' : 'Create Job Post'}
             </Button>
           </div>
         </div>

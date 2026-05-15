@@ -1,33 +1,33 @@
-import { getDateInFormat, getTimeInFormat } from "@/utils/helpers/prettyprint";
-import { useUser } from "@/utils/hooks/useUser";
-import { USERTYPE, User } from "@prisma/client";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import type { User } from '@db/client';
+import { USERTYPE } from '@db/client';
+import { useRouter } from 'next/navigation';
+
+import { getDateInFormat, getTimeInFormat } from '@/utils/helpers/prettyprint';
 
 export const DailySection = ({ user }: { user: User }) => {
   const router = useRouter();
 
   return (
-    <div className=" flex flex-col py-1 px-1 mx-2 my-1 gap-3 bg-white rounded-[1.15em]">
-      <div className="flex flex-row justify-between border-neutral-400 border-b text-sm px-2 py-3 w-full">
+    <div className="mx-2 my-1 flex flex-col gap-3 rounded-[1.15em] bg-white p-1">
+      <div className="flex w-full flex-row justify-between border-b border-neutral-400 px-2 py-3 text-sm">
         <h4>
           It&apos;s &nbsp;
           <strong>{getTimeInFormat()}</strong> &nbsp; now.
         </h4>
         {user?.userType === USERTYPE.MEMBER && (
-          <p className="flex items-center gap-2 pl-2 text-xs border-neutral-400 border-l">
-            <span className="icon_size text-neutral-800  material-icons">
+          <p className="flex items-center gap-2 border-l border-neutral-400 pl-2 text-xs">
+            <span className="icon_size material-icons text-neutral-800">
               schedule
             </span>
-            {(user?.workData as any)?.workHours || "40"}Hrs per week
+            {(user?.workData as any)?.workHours || '40'}Hrs per week
           </p>
         )}
       </div>
-      <div className="flex flex-row items-center justify-between text-sm p-2 w-full">
+      <div className="flex w-full flex-row items-center justify-between p-2 text-sm">
         <div className="pl-2">
-          <h1 className="font-black text-3xl">{getDateInFormat("mmm")}</h1>
+          <h1 className="text-3xl font-black">{getDateInFormat('mmm')}</h1>
           <p className="text-xs">
-            {getDateInFormat("dayname")} | {user?.timezone}
+            {getDateInFormat('dayname')} | {user?.timezone}
           </p>
         </div>
         {/* <div className="flex flex-col  gap-2 ">

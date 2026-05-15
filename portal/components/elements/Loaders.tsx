@@ -1,4 +1,4 @@
-import { cn } from "@/app/lib/utils";
+import { cn } from '@/app/lib/utils';
 
 export const Spinner = ({ className }: { className?: string }) => {
   return (
@@ -6,8 +6,8 @@ export const Spinner = ({ className }: { className?: string }) => {
       <svg
         aria-hidden="true"
         className={cn(
-          "inline w-8 h-8 text-gray-200 animate-spin dark:text-gray-600 fill-gray-600 dark:fill-gray-300 ",
-          className
+          'inline h-8 w-8 animate-spin fill-gray-600 text-gray-200 dark:fill-gray-300 dark:text-gray-600',
+          className,
         )}
         viewBox="0 0 100 101"
         fill="none"
@@ -29,9 +29,9 @@ export const Spinner = ({ className }: { className?: string }) => {
 
 export const LoaderScreen = ({ text }: { text?: string }) => {
   return (
-    <div className="flex flex-col items-center justify-center py-2 bg-neutral-700 md:bg-neutral-900 h-screen">
+    <div className="flex h-screen flex-col items-center justify-center bg-neutral-700 py-2 md:bg-neutral-900">
       <div className="flex flex-row items-center justify-center gap-2">
-        <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-neutral-100"></div>
+        <div className="size-5 animate-spin rounded-full border-y-2 border-neutral-100"></div>
         <p className="text-neutral-100">{text}...</p>
       </div>
     </div>

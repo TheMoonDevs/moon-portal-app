@@ -1,13 +1,14 @@
 'use client';
-import Textarea from '@/components/elements/Textarea';
-import Input from '@/components/elements/Input';
-import React, { useEffect, useRef, useState } from 'react';
-import { useFormContext, UseFormReturn } from 'react-hook-form';
-import { useUser } from '@/utils/hooks/useUser';
-import { TMD_PORTAL_API_KEY } from '@/utils/constants/appInfo';
-import { Spinner } from '@/components/elements/Loaders';
+import type { DevProfile } from '@db/client';
+import React, { useRef, useState } from 'react';
+import type { UseFormReturn } from 'react-hook-form';
 import { toast } from 'sonner';
-import { DevProfile } from '@prisma/client';
+
+import Input from '@/components/elements/Input';
+import { Spinner } from '@/components/elements/Loaders';
+import Textarea from '@/components/elements/Textarea';
+import { TMD_PORTAL_API_KEY } from '@/utils/constants/appInfo';
+import { useUser } from '@/utils/hooks/useUser';
 
 const DetailsForm = ({
   methods,
@@ -72,7 +73,7 @@ const DetailsForm = ({
           <img
             src={getValues('avatar') || '/user.png'}
             alt="logo"
-            className="h-[150px] w-[150px] rounded-full object-cover"
+            className="size-[150px] rounded-full object-cover"
           />
           <button
             className={`cursor-pointer rounded-lg bg-black px-4 py-2 text-xs text-white transition duration-300 ease-in-out ${isUploadingImg ? '!cursor-not-allowed opacity-50' : 'hover:bg-neutral-700'}`}
@@ -82,7 +83,7 @@ const DetailsForm = ({
               'Change Avatar'
             ) : (
               <span className="flex items-center gap-2">
-                Uploading... <Spinner className="h-4 w-4" />
+                Uploading... <Spinner className="size-4" />
               </span>
             )}
           </button>

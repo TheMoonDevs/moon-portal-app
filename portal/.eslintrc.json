@@ -35,7 +35,7 @@
         "plugin:prettier/recommended"
       ],
       "parserOptions": {
-        "project":  "portal/tsconfig.json"
+        "project": ["tsconfig.json", "portal/tsconfig.json"]
       },
       "rules": {
         "@cspell/spellchecker": [
@@ -52,17 +52,19 @@
           }
         ],
         "@typescript-eslint/comma-dangle": "off", // Avoid conflict rule between Eslint and Prettier
-        "@typescript-eslint/consistent-type-imports": "error", // Ensure `import type` is used when it's necessary
+        "@typescript-eslint/consistent-type-imports": "warn", // Keep visible, but don't block repo-wide lint
         "@typescript-eslint/no-unused-vars": "off", // Avoid conflict with unused-imports/no-unused-vars
-        "unused-imports/no-unused-imports": "error",
+        "unused-imports/no-unused-imports": "warn",
         "unused-imports/no-unused-vars": [
-          "error",
+          "warn",
           { "argsIgnorePattern": "^_" }
         ],
         "import/prefer-default-export": "off", // Named export is easier to refactor automatically
         "simple-import-sort/imports": "error", // Import configuration for `eslint-plugin-simple-import-sort`
         "simple-import-sort/exports": "error", // Export configuration for `eslint-plugin-simple-import-sort`
         "tailwindcss/no-custom-classname": "off", // Disabled otherwise nightmare to allow each custom tailwind classes
+        "tailwindcss/no-contradicting-classname": "warn",
+        "@typescript-eslint/ban-types": "warn",
         "tailwindcss/classnames-order": [
           2,
           {

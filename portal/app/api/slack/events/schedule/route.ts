@@ -1,7 +1,9 @@
-import { SlackBotSdk, SlackChannels } from "@/utils/services/slackBotSdk";
-import { NextRequest, NextResponse } from "next/server";
-import { format, addMinutes, addHours, parse, isBefore } from "date-fns";
-import { enIN } from "date-fns/locale";
+import { addHours, addMinutes, format, isBefore, parse } from 'date-fns';
+import { enIN } from 'date-fns/locale';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
+import { SlackBotSdk } from '@/utils/services/slackBotSdk';
 
 const slackBotSdk = new SlackBotSdk();
 
@@ -31,7 +33,7 @@ export async function POST(request: NextRequest) {
     const resolvedUsers = await Promise.all(usersPromise);
 
     // Extract title if provided
-    let meetingTitle = "Untitled";
+    let meetingTitle = 'Untitled';
     const titlePattern = /title:(.+)/i;
     const titleMatch = text.match(titlePattern);
     if (titleMatch) {
@@ -39,23 +41,23 @@ export async function POST(request: NextRequest) {
     }
 
     // Remove mentions and title from the text for date and time extraction
-    let cleanText = text.replace(mentionPattern, "").replace(titlePattern, "");
+    let cleanText = text.replace(mentionPattern, '').replace(titlePattern, '');
 
     // Extract and parse time
     const timePattern = /(\d{1,2}):?(\d{2})?\s?(am|pm)?/i;
     const timeMatch = cleanText.match(timePattern);
     if (!timeMatch) {
-      throw new Error("Invalid or missing time format");
+      throw new Error('Invalid or missing time format');
     }
 
     let hours = parseInt(timeMatch[1]);
-    let minutes = parseInt(timeMatch[2]) || 0;
+    const minutes = parseInt(timeMatch[2]) || 0;
     const period = timeMatch[3];
 
     if (period) {
-      if (period.toLowerCase() === "pm" && hours !== 12) {
+      if (period.toLowerCase() === 'pm' && hours !== 12) {
         hours += 12;
-      } else if (period.toLowerCase() === "am" && hours === 12) {
+      } else if (period.toLowerCase() === 'am' && hours === 12) {
         hours = 0;
       }
     }
@@ -70,7 +72,7 @@ export async function POST(request: NextRequest) {
     chosenDate.setHours(hours, minutes, 0, 0);
 
     // Remove time-related text from cleanText before extracting date
-    cleanText = cleanText.replace(timeMatch[0], "");
+    cleanText = cleanText.replace(timeMatch[0], '');
 
     // Extract and parse date
     const datePattern =
@@ -78,17 +80,17 @@ export async function POST(request: NextRequest) {
     const dateMatch = cleanText.match(datePattern);
     if (dateMatch) {
       const dateStr = dateMatch[0].toLowerCase();
-      if (dateStr === "tomorrow") {
+      if (dateStr === 'tomorrow') {
         chosenDate.setDate(chosenDate.getDate() + 1);
-      } else if (dateStr !== "today") {
-        const parsedDate = parse(dateStr, "d MMMM yyyy", new Date(), {
+      } else if (dateStr !== 'today') {
+        const parsedDate = parse(dateStr, 'd MMMM yyyy', new Date(), {
           locale: enIN,
         });
         if (!isNaN(parsedDate.getTime())) {
           chosenDate = parsedDate;
           chosenDate.setHours(hours, minutes, 0, 0);
         } else {
-          const parsedDateWithoutYear = parse(dateStr, "d MMMM", new Date(), {
+          const parsedDateWithoutYear = parse(dateStr, 'd MMMM', new Date(), {
             locale: enIN,
           });
           if (!isNaN(parsedDateWithoutYear.getTime())) {
@@ -96,7 +98,7 @@ export async function POST(request: NextRequest) {
             chosenDate.setFullYear(nowIST.getFullYear());
             chosenDate.setHours(hours, minutes, 0, 0);
           } else {
-            throw new Error("Invalid date format");
+            throw new Error('Invalid date format');
           }
         }
       }
@@ -107,89 +109,91 @@ export async function POST(request: NextRequest) {
 
     // Check if the chosen date and time are in the past
     if (isBefore(chosenDate, nowIST)) {
-      throw new Error("The date and time cannot be in the past");
+      throw new Error('The date and time cannot be in the past');
     }
 
     // Calculate reminder time (30 minutes before start)
     const reminderTime = addMinutes(chosenDateIST, -30);
 
     // Construct the reminder message
-    let reminderMessage = `Reminder: ${titleMatch ? meetingTitle : "A"
-      } meeting is starting in 30 minutes.`;
+    let reminderMessage = `Reminder: ${
+      titleMatch ? meetingTitle : 'A'
+    } meeting is starting in 30 minutes.`;
     if (resolvedUsers.length > 0) {
       const formattedMentions = resolvedUsers
         .map((user) => `<@${user.id}>`)
-        .join(", ");
+        .join(', ');
       reminderMessage += ` Participants: ${formattedMentions}.`;
     }
-    reminderMessage += " Please join on time!";
+    reminderMessage += ' Please join on time!';
 
     const encodedMeetingTitle = encodeURIComponent(meetingTitle);
     const googleCalendarLink = `https://calendar.google.com/calendar/u/0/r/eventedit?text=${encodedMeetingTitle}&dates=${format(
       chosenDateIST.getTime() - istOffset,
-      "yyyyMMdd'T'HHmmss'Z'"
+      "yyyyMMdd'T'HHmmss'Z'",
     )}/${format(
       addHours(chosenDateIST.getTime() - istOffset, 1),
-      "yyyyMMdd'T'HHmmss'Z'"
+      "yyyyMMdd'T'HHmmss'Z'",
     )}`;
 
     // Send Slack reminder using global time
     await slackBotSdk.setSlackReminder({
       time: format(reminderTime, "yyyyMMdd'T'HHmmss'Z'"),
       message: reminderMessage,
-      channel: jsonPayload.channel_id
+      channel: jsonPayload.channel_id,
     });
 
     // Construct response message based on resolved users
-    let responseMessage =
+    const responseMessage =
       resolvedUsers.length > 0
         ? `Don't forget to add ${resolvedUsers
-          .map((user) => user.email)
-          .join(", ")}.`
-        : "Please make sure to add Guests.";
+            .map((user) => user.email)
+            .join(', ')}.`
+        : 'Please make sure to add Guests.';
 
     // Response to user
     return NextResponse.json({
-      response_type: "in_channel",
+      response_type: 'in_channel',
       blocks: [
         {
-          type: "section",
+          type: 'section',
           text: {
-            type: "mrkdwn",
+            type: 'mrkdwn',
             text: `Great! I have scheduled a reminder on Slack.`,
           },
         },
         {
-          type: "section",
+          type: 'section',
           text: {
-            type: "mrkdwn",
-            text: `The meeting${titleMatch ? ` "${meetingTitle}"` : ""
-              } is scheduled for ${format(
-                chosenDateIST,
-                "do MMMM yyyy"
-              )} at ${format(chosenDateIST, "HH:mm")} IST.`,
+            type: 'mrkdwn',
+            text: `The meeting${
+              titleMatch ? ` "${meetingTitle}"` : ''
+            } is scheduled for ${format(
+              chosenDateIST,
+              'do MMMM yyyy',
+            )} at ${format(chosenDateIST, 'HH:mm')} IST.`,
           },
         },
         {
-          type: "section",
+          type: 'section',
           text: {
-            type: "mrkdwn",
+            type: 'mrkdwn',
             text: `You can create a Google event via this link - <${googleCalendarLink}|Click here>.`,
           },
         },
         {
-          type: "section",
+          type: 'section',
           text: {
-            type: "mrkdwn",
+            type: 'mrkdwn',
             text: `${responseMessage}`,
           },
         },
       ],
     });
   } catch (error: any) {
-    console.error("Error processing the request:", error);
+    console.error('Error processing the request:', error);
     return NextResponse.json({
-      response_type: "ephemeral",
+      response_type: 'ephemeral',
       text: `Sorry, there was an error processing your request: ${error.message}. Please make sure your command is formatted correctly.`,
     });
   }

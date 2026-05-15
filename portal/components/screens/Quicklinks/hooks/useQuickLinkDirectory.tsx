@@ -1,7 +1,8 @@
-import { useAppSelector } from "@/utils/redux/store";
-import { DirectoryList } from "@prisma/client";
-import { useParams, usePathname, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import type { DirectoryList } from '@db/client';
+import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
+
+import { useAppSelector } from '@/utils/redux/store';
 
 export const useQuickLinkDirectory = (init?: boolean) => {
   const [currentDirectory, setCurrentDirectory] =
@@ -10,7 +11,7 @@ export const useQuickLinkDirectory = (init?: boolean) => {
   const { parentDirs, directories, rootDirectories, activeDirectoryId } =
     useAppSelector((state) => state.quicklinksDirectory);
   const pathname = usePathname();
-  const rootSlug = "/quicklinks";
+  const rootSlug = '/quicklinks';
 
   useEffect(() => {
     if (!init) return;

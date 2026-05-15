@@ -1,13 +1,17 @@
-import { NewJobPostModalProps, modalCenterStyle } from "./_JobPostModal";
-import { Modal, Portal, Tooltip } from "@mui/material";
-import { Button } from "@/components/elements/Button";
-import { Spinner } from "@/components/elements/Loaders";
-import { ChangeEvent, use, useEffect, useRef, useState } from "react";
-import { JobPostHRReq } from "@/prisma/dbExtras";
-import { PortalSdk } from "@/utils/services/PortalSdk";
-import { setJobPostsRefresh } from "@/utils/redux/ui/ui.slice";
-import { useAppDispatch } from "@/utils/redux/store";
-import useCopyToClipboard from "@/utils/hooks/useCopyToClipboard";
+import { Modal, Portal, Tooltip } from '@mui/material';
+import type { ChangeEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
+
+import { Button } from '@/components/elements/Button';
+import { Spinner } from '@/components/elements/Loaders';
+import type { JobPostHRReq } from '@/types/db/job-post';
+import useCopyToClipboard from '@/utils/hooks/useCopyToClipboard';
+import { useAppDispatch } from '@/utils/redux/store';
+import { setJobPostsRefresh } from '@/utils/redux/ui/ui.slice';
+import { PortalSdk } from '@/utils/services/PortalSdk';
+
+import type { NewJobPostModalProps } from './_JobPostModal';
+import { modalCenterStyle } from './_JobPostModal';
 
 interface PlatformData {
   platformName: string;
@@ -25,14 +29,14 @@ export const JobHRReqModal: React.FC<NewJobPostModalProps> = ({
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
   const [isInputFocused, setInputFocused] = useState(false);
-  const [inputQuestion, setInputQuestion] = useState("");
+  const [inputQuestion, setInputQuestion] = useState('');
   const [showPlatformFields, setShowPlatformFields] = useState(false);
   const [inputData, setInputData] = useState({
-    platformName: "",
-    jobPostUrl: "",
+    platformName: '',
+    jobPostUrl: '',
   });
   const [addPlatformData, setAddPlatformData] = useState<PlatformData[] | []>(
-    []
+    [],
   );
 
   const { copyToClipboard, copied } = useCopyToClipboard();
@@ -53,7 +57,7 @@ export const JobHRReqModal: React.FC<NewJobPostModalProps> = ({
   }, [jobPostData]);
 
   const handleInputChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prevData: any) => ({ ...prevData, [name]: value }));
@@ -61,7 +65,7 @@ export const JobHRReqModal: React.FC<NewJobPostModalProps> = ({
 
   const handleFormSubmit = () => {
     setLoading(true);
-    PortalSdk.putData("/api/jobPost", {
+    PortalSdk.putData('/api/jobPost', {
       data: { id: jobPostData.id, defaultReq: formData },
     })
       .then((response) => {
@@ -72,7 +76,7 @@ export const JobHRReqModal: React.FC<NewJobPostModalProps> = ({
       })
       .catch((err) => {
         setLoading(false);
-        console.error("Error submitting form:", err);
+        console.error('Error submitting form:', err);
       });
   };
 
@@ -83,21 +87,21 @@ export const JobHRReqModal: React.FC<NewJobPostModalProps> = ({
       <Modal open={isOpen} onClose={handleClose}>
         <div
           style={{ ...modalCenterStyle }}
-          className="bg-white rounded-md p-4 w-[50%] h-[80%] overflow-y-auto"
+          className="h-4/5 w-[50%] overflow-y-auto rounded-md bg-white p-4"
         >
           <p className="text-2xl font-bold">HR Requirements</p>
           <p className="text-sm text-gray-500">
             Create/Edit a job post for your company | job id - {jobPostData.id}
           </p>
 
-          <div className="flex flex-col mt-2 gap-1">
+          <div className="mt-2 flex flex-col gap-1">
             <p className="text-xl font-medium">Public Posting</p>
 
             {/* Added platform */}
             {addPlatformData.map((data, index) => (
               <div
                 key={`${data.platformName}-${data.jobPostUrl}`}
-                className="flex flex-row justify-between items-center gap-2 p-3 bg-gray-100 rounded-md"
+                className="flex flex-row items-center justify-between gap-2 rounded-md bg-gray-100 p-3"
               >
                 <p>{data.platformName}</p>
                 <div className="flex flex-row gap-2">
@@ -105,7 +109,7 @@ export const JobHRReqModal: React.FC<NewJobPostModalProps> = ({
                     {data.jobPostUrl}
                   </p>
                   <Tooltip
-                    title={copied ? "Copied!" : "Copy Link"}
+                    title={copied ? 'Copied!' : 'Copy Link'}
                     className="cursor-pointer"
                     onClick={handleCopyLink}
                   >
@@ -116,7 +120,7 @@ export const JobHRReqModal: React.FC<NewJobPostModalProps> = ({
                   </Tooltip>
                   <Tooltip
                     title="Delete"
-                    className=" hover:text-red-500 cursor-pointer"
+                    className="cursor-pointer hover:text-red-500"
                     onClick={() => {
                       const newPlatformData = [...addPlatformData];
                       newPlatformData.splice(index, 1);
@@ -133,10 +137,10 @@ export const JobHRReqModal: React.FC<NewJobPostModalProps> = ({
             {!showPlatformFields && (
               <div
                 onClick={() => setShowPlatformFields(true)}
-                className="flex flex-row items-center gap-2 bg-neutral-800 text-white p-2 w-fit rounded-md cursor-pointer"
+                className="flex w-fit cursor-pointer flex-row items-center gap-2 rounded-md bg-neutral-800 p-2 text-white"
               >
                 <p>Add Platform</p>
-                <span className="material-symbols-outlined ">add</span>
+                <span className="material-symbols-outlined">add</span>
               </div>
             )}
             {showPlatformFields && (
@@ -153,7 +157,7 @@ export const JobHRReqModal: React.FC<NewJobPostModalProps> = ({
                         platformName: e.target.value,
                       })
                     }
-                    className="mt-1 p-2 border border-gray-300 rounded-md w-full"
+                    className="mt-1 w-full rounded-md border border-gray-300 p-2"
                   />
                 </label>
                 <label className="block">
@@ -165,10 +169,10 @@ export const JobHRReqModal: React.FC<NewJobPostModalProps> = ({
                     onChange={(e) =>
                       setInputData({ ...inputData, jobPostUrl: e.target.value })
                     }
-                    className="mt-1 p-2 border border-gray-300 rounded-md w-full"
+                    className="mt-1 w-full rounded-md border border-gray-300 p-2"
                   />
                 </label>
-                <div className="flex flex-row mt-2">
+                <div className="mt-2 flex flex-row">
                   <Button
                     onClick={() => {
                       if (
@@ -186,7 +190,7 @@ export const JobHRReqModal: React.FC<NewJobPostModalProps> = ({
                           jobPostUrl: inputData.jobPostUrl,
                         },
                       ]);
-                      setInputData({ platformName: "", jobPostUrl: "" }); // reset input fields
+                      setInputData({ platformName: '', jobPostUrl: '' }); // reset input fields
                     }}
                     className="flex flex-row items-center gap-2"
                   >
@@ -197,7 +201,7 @@ export const JobHRReqModal: React.FC<NewJobPostModalProps> = ({
             )}
           </div>
 
-          <p className="text-2xl font-bold mt-8 pt-8 border-t-2">
+          <p className="mt-8 border-t-2 pt-8 text-2xl font-bold">
             Applicant Questions (Optional)
           </p>
           <p className="text-sm text-gray-500">
@@ -205,7 +209,7 @@ export const JobHRReqModal: React.FC<NewJobPostModalProps> = ({
             questions as less as possible.
           </p>
 
-          <div className="flex flex-col mt-8">
+          <div className="mt-8 flex flex-col">
             <div>
               {/* ADDED QUESTIONS */}
               {formData.applicantQuestions?.map((question, index) => (
@@ -224,7 +228,7 @@ export const JobHRReqModal: React.FC<NewJobPostModalProps> = ({
               onBlur={() => setInputFocused(false)}
               value={inputQuestion}
               onChange={(e) => setInputQuestion(e.target.value)}
-              className="mt-1 p-2 border border-gray-300 rounded-md w-full"
+              className="mt-1 w-full rounded-md border border-gray-300 p-2"
             />
             <div
               onClick={() => {
@@ -232,33 +236,33 @@ export const JobHRReqModal: React.FC<NewJobPostModalProps> = ({
                   ...f,
                   applicantQuestions: [
                     ...(f.applicantQuestions || []),
-                    { question: inputQuestion, description: "", type: "text" },
+                    { question: inputQuestion, description: '', type: 'text' },
                   ],
                 }));
-                setInputQuestion("");
+                setInputQuestion('');
               }}
-              className={`cursor-pointer flex flex-row mt-3 items-center w-fit gap-2 p-2 rounded-md transition-all duration-100 ease-in-out ${
+              className={`mt-3 flex w-fit cursor-pointer flex-row items-center gap-2 rounded-md p-2 transition-all duration-100 ease-in-out ${
                 isInputFocused
-                  ? "bg-neutral-800 text-white"
-                  : "bg-neutral-100 hover:bg-neutral-200"
+                  ? 'bg-neutral-800 text-white'
+                  : 'bg-neutral-100 hover:bg-neutral-200'
               }`}
             >
               {loading && (
-                <Spinner className="w-3 h-3 fill-green-400 text-green-600" />
+                <Spinner className="size-3 fill-green-400 text-green-600" />
               )}
-              {"Add Question"}
+              {'Add Question'}
             </div>
           </div>
 
-          <div className="flex flex-row mt-8">
+          <div className="mt-8 flex flex-row">
             <Button
               onClick={handleFormSubmit}
               className="flex flex-row items-center gap-2"
             >
               {loading && (
-                <Spinner className="w-3 h-3 fill-green-400 text-green-600" />
+                <Spinner className="size-3 fill-green-400 text-green-600" />
               )}
-              {"Save Changes"}
+              {'Save Changes'}
             </Button>
           </div>
         </div>

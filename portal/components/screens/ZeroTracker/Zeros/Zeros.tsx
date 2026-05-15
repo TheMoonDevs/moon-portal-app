@@ -1,7 +1,8 @@
-import dayjs from "dayjs";
-import React from "react";
-import { TrackerMode } from "../ZeroTracker";
-import { CircularProgress } from "@mui/material";
+import { CircularProgress } from '@mui/material';
+import dayjs from 'dayjs';
+import React from 'react';
+
+import type { TrackerMode } from '../ZeroTracker';
 interface IZerosProps {
   selectedDates: string[];
   isSavingZeroes: boolean;
@@ -19,28 +20,25 @@ export const Zeros = ({
   isSavingZeroes,
 }: IZerosProps) => {
   return (
-    <div className="flex flex-col justify-between w-full p-4 gap-2">
-      <div className="flex flex-row items-center justify-start gap-1  overflow-hidden text-neutral-900">
-        <p className="text-[1.5em] font-bold ">
-          {" "}
-          Select your Zeros in Calendar
-        </p>
+    <div className="flex w-full flex-col justify-between gap-2 p-4">
+      <div className="flex flex-row items-center justify-start gap-1 overflow-hidden text-neutral-900">
+        <p className="text-[1.5em] font-bold"> Select your Zeros in Calendar</p>
         {/* <span className="icon_size material-icons">ios_arrow_forward</span> */}
       </div>
-      <p className="text-[0.7em] text-neutral-500 leading-none ">
+      <p className="text-[0.7em] leading-none text-neutral-500">
         Note that zeros are paid holidays/vacations and will not effect stipend.
       </p>
-      <div className="flex flex-row items-center justify-start gap-1 my-2 cursor-pointer">
+      <div className="my-2 flex cursor-pointer flex-row items-center justify-start gap-1">
         {selectedDates
           .filter((date) => dayjs(date).month() === currentMonthDayjs.month())
           .map((date, index) => (
             <div
               key={index}
-              className="flex flex-row items-center justify-center gap-1 p-2 rounded-[0.75em] bg-white-500 border border-blue-500 text-neutral-900"
+              className="bg-white-500 flex flex-row items-center justify-center gap-1 rounded-[0.75em] border border-blue-500 p-2 text-neutral-900"
             >
-              <p className="text-[0.7em] font-bold tracking-[0.2em] ">
-                {" "}
-                {dayjs(date).format("DD") + " " + dayjs(date).format("MMM")}
+              <p className="text-[0.7em] font-bold tracking-[0.2em]">
+                {' '}
+                {dayjs(date).format('DD') + ' ' + dayjs(date).format('MMM')}
               </p>
               <span
                 onClick={handleZeroDateClick}
@@ -53,18 +51,18 @@ export const Zeros = ({
       </div>
       <div className="flex flex-row gap-2">
         <button
-          onClick={() => setTrackerMode("normal")}
+          onClick={() => setTrackerMode('normal')}
           disabled={isSavingZeroes}
           className={` ${
             isSavingZeroes
-              ? "bg-neutral-300	 text-white"
-              : "bg-neutral-100 text-neutral-900"
-          } flex-1 flex-grow flex flex-row items-center justify-start gap-1 p-4 rounded-[0.75em] `}
+              ? 'bg-neutral-300 text-white'
+              : 'bg-neutral-100 text-neutral-900'
+          } flex flex-1 grow flex-row items-center justify-start gap-1 rounded-[0.75em] p-4`}
         >
           <span className="icon_size material-symbols-outlined">
             arrow_back
           </span>
-          <p className="text-[0.7em] whitespace-nowrap font-bold tracking-[0.2em] ">
+          <p className="whitespace-nowrap text-[0.7em] font-bold tracking-[0.2em]">
             BACK
           </p>
         </button>
@@ -72,11 +70,11 @@ export const Zeros = ({
           onClick={updateDates}
           disabled={isSavingZeroes}
           className={`${
-            isSavingZeroes ? "bg-neutral-300	" : "bg-blue-500"
-          } flex flex-row items-center justify-between gap-1 p-4 rounded-[0.75em] overflow-hidden text-neutral-100`}
+            isSavingZeroes ? 'bg-neutral-300' : 'bg-blue-500'
+          } flex flex-row items-center justify-between gap-1 overflow-hidden rounded-[0.75em] p-4 text-neutral-100`}
         >
-          <p className="text-[0.7em] font-bold tracking-[0.2em] ">
-            {" "}
+          <p className="text-[0.7em] font-bold tracking-[0.2em]">
+            {' '}
             SAVE CHANGES
           </p>
           {!isSavingZeroes && (

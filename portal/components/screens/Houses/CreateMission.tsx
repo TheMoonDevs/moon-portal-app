@@ -1,22 +1,24 @@
-import React, { useEffect, useState } from "react";
-import { Box, Modal, IconButton, Button, Grid } from "@mui/material";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import dayjs, { Dayjs } from "dayjs";
-import { User, MissionTask, Mission } from "@prisma/client";
-import CreateTask from "./CreateTask";
-import CreateMissionFields from "./CreateMissionFields";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import { PortalSdk } from "@/utils/services/PortalSdk";
-import { useUser } from "@/utils/hooks/useUser";
-import { toast, Toaster } from "sonner";
-import { Spinner } from "@/components/elements/Loaders";
-import { initialMissionState, initialTaskState } from "./state";
+import type { Mission, User } from '@db/client';
+import { Box, Button, IconButton, Modal } from '@mui/material';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import dayjs from 'dayjs';
+import React, { useEffect, useState } from 'react';
+import { toast, Toaster } from 'sonner';
 
-import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
+import { Spinner } from '@/components/elements/Loaders';
+import { useUser } from '@/utils/hooks/useUser';
 import {
   clearEditorState,
   setEditModalOpen,
-} from "@/utils/redux/missions/mission.ui.slice";
+} from '@/utils/redux/missions/mission.ui.slice';
+import type { RootState } from '@/utils/redux/store';
+import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
+import { PortalSdk } from '@/utils/services/PortalSdk';
+
+import CreateMissionFields from './CreateMissionFields';
+import CreateTask from './CreateTask';
+import { initialMissionState, initialTaskState } from './state';
 
 const CreateMission = ({
   houseMembers,
@@ -26,15 +28,15 @@ const CreateMission = ({
   activeTab: string;
 }) => {
   const { isEditModalOpen } = useAppSelector(
-    (state: RootState) => state.missionUi
+    (state: RootState) => state.missionUi,
   );
 
   const { activeMission } = useAppSelector((state: RootState) => state.mission);
   const { activeTask } = useAppSelector(
-    (state: RootState) => state.missionsTasks
+    (state: RootState) => state.missionsTasks,
   );
   const [missionState, setMissionState] = useState<Partial<Mission>>(
-    activeMission || initialMissionState
+    activeMission || initialMissionState,
   );
   const [taskState, setTaskState] = useState(activeTask || initialTaskState);
   const { user } = useUser();
@@ -50,7 +52,7 @@ const CreateMission = ({
     const missionData = {
       ...missionState,
       vertical: user?.vertical || null,
-      month: dayjs().format("YYYY-MM"),
+      month: dayjs().format('YYYY-MM'),
       completedAt:
         missionState.completedAt !== activeMission?.completedAt
           ? missionState.completedAt
@@ -69,18 +71,18 @@ const CreateMission = ({
       let res;
       if (missionState.id) {
         res = await PortalSdk.putData(`/api/missions`, missionData);
-        toast.success("Mission updated successfully!");
+        toast.success('Mission updated successfully!');
       } else {
-        res = await PortalSdk.postData("/api/missions", missionData);
-        toast.success("Mission created successfully!");
+        res = await PortalSdk.postData('/api/missions', missionData);
+        toast.success('Mission created successfully!');
       }
       setLoading(false);
       dispatch(clearEditorState());
       dispatch(setEditModalOpen(false));
     } catch (error) {
-      console.error("Error creating mission:", error);
+      console.error('Error creating mission:', error);
       setLoading(false);
-      toast.error("Failed to create mission");
+      toast.error('Failed to create mission');
       dispatch(setEditModalOpen(false));
       dispatch(clearEditorState());
     }
@@ -108,18 +110,18 @@ const CreateMission = ({
       let res;
       if (taskState.id) {
         res = await PortalSdk.putData(`/api/mission-tasks`, taskData);
-        toast.success("Task updated successfully!");
+        toast.success('Task updated successfully!');
       } else {
-        res = await PortalSdk.postData("/api/mission-tasks", taskState);
-        toast.success("Task created successfully!");
+        res = await PortalSdk.postData('/api/mission-tasks', taskState);
+        toast.success('Task created successfully!');
       }
       setLoading(false);
       dispatch(clearEditorState());
       dispatch(setEditModalOpen(false));
     } catch (error) {
-      console.error("Error creating tasks:", error);
+      console.error('Error creating tasks:', error);
       setLoading(false);
-      toast.error("Failed to create tasks");
+      toast.error('Failed to create tasks');
       dispatch(setEditModalOpen(false));
     }
   };
@@ -137,12 +139,12 @@ const CreateMission = ({
         disableEnforceFocus
       >
         <Box
-          className="w-full max-w-2xl bg-white rounded-lg p-8 fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 shadow-lg overflow-y-auto no-scrollbar outline-none"
+          className="no-scrollbar fixed left-1/2 top-1/2 w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-lg bg-white p-8 shadow-lg outline-none"
           sx={{
-            maxHeight: "80vh",
-            position: "relative",
-            overflowY: "auto",
-            boxShadow: "0 4px 20px rgba(0, 0, 0, 0.2)",
+            maxHeight: '80vh',
+            position: 'relative',
+            overflowY: 'auto',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.2)',
           }}
         >
           <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -151,14 +153,14 @@ const CreateMission = ({
                 dispatch(clearEditorState());
                 dispatch(setEditModalOpen(false));
               }}
-              className="absolute top-4 right-4 bg-gray-300 hover:bg-gray-200 rounded-full w-10 h-10 flex items-center justify-center shadow-md"
-              sx={{ position: "absolute", transition: "all 0.3s ease-in-out" }}
+              className="absolute right-4 top-4 flex size-10 items-center justify-center rounded-full bg-gray-300 shadow-md hover:bg-gray-200"
+              sx={{ position: 'absolute', transition: 'all 0.3s ease-in-out' }}
             >
-              <span className="material-symbols-outlined text-black text-lg">
+              <span className="material-symbols-outlined text-lg text-black">
                 close
               </span>
             </IconButton>
-            {activeTab === "missions" && (
+            {activeTab === 'missions' && (
               <>
                 <CreateMissionFields
                   state={missionState}
@@ -171,24 +173,24 @@ const CreateMission = ({
                   sx={{
                     py: 2,
                     mt: 4,
-                    fontWeight: "bold",
-                    borderRadius: "6px",
-                    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+                    fontWeight: 'bold',
+                    borderRadius: '6px',
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
                   }}
                   onClick={handleSubmit}
                 >
                   {loading ? (
-                    <Spinner className="w-6 h-6 text-white" />
+                    <Spinner className="size-6 text-white" />
                   ) : missionState.id ? (
-                    "Update Mission"
+                    'Update Mission'
                   ) : (
-                    "Create Mission"
+                    'Create Mission'
                   )}
                 </Button>
               </>
             )}
 
-            {activeTab === "tasks" && (
+            {activeTab === 'tasks' && (
               <>
                 <CreateTask
                   taskState={taskState}
@@ -202,9 +204,9 @@ const CreateMission = ({
                   sx={{
                     py: 2,
                     mt: 4,
-                    fontWeight: "bold",
-                    borderRadius: "6px",
-                    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+                    fontWeight: 'bold',
+                    borderRadius: '6px',
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
                   }}
                   onClick={handleCreateTask}
                   disabled={
@@ -214,11 +216,11 @@ const CreateMission = ({
                   }
                 >
                   {loading ? (
-                    <Spinner className="w-6 h-6 text-white" />
+                    <Spinner className="size-6 text-white" />
                   ) : taskState.id ? (
-                    "Update Task"
+                    'Update Task'
                   ) : (
-                    "Create Task"
+                    'Create Task'
                   )}
                 </Button>
               </>

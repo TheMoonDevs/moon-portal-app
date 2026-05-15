@@ -1,20 +1,20 @@
-"use client";
+'use client';
 
-import { IconFilter, MoonIcon } from "@/components/elements/Icon";
-import media from "@/styles/media";
-import { useMediaQuery } from "@mui/material";
-import { useEffect, useRef, useState } from "react";
+import { useMediaQuery } from '@mui/material';
+import { useEffect, useRef, useState } from 'react';
+
+import media from '@/styles/media';
 
 export enum InstallState {
-  SPLASH = "SPLASH",
-  INSTALL_CHECK = "INSTALL_CHECK",
+  SPLASH = 'SPLASH',
+  INSTALL_CHECK = 'INSTALL_CHECK',
 }
 
 export const usePWAInstall = () => {
   const deferredPrompt = useRef<any>(null);
   const [isInstallable, setIsInstallable] = useState(false);
   const isTabletAndMobile = useMediaQuery(
-    media.tablet.replaceAll("@media ", "")
+    media.tablet.replaceAll('@media ', ''),
   );
 
   useEffect(() => {
@@ -29,21 +29,21 @@ export const usePWAInstall = () => {
       // can have buttons in different locations, or wait to prompt
       // as part of a critical journey.
       //showInAppInstallPromotion();
-      console.log("before install prompt", e);
+      console.log('before install prompt', e);
       setIsInstallable(true);
     };
     const appInstalled = (e: any) => {
-      console.log("app installed", e);
+      console.log('app installed', e);
       setIsInstallable(false);
     };
-    window.addEventListener("beforeinstallprompt", beforeInstallPromptListener);
-    window.addEventListener("appinstalled", appInstalled);
+    window.addEventListener('beforeinstallprompt', beforeInstallPromptListener);
+    window.addEventListener('appinstalled', appInstalled);
     return () => {
       window.removeEventListener(
-        "beforeinstallprompt",
-        beforeInstallPromptListener
+        'beforeinstallprompt',
+        beforeInstallPromptListener,
       );
-      window.removeEventListener("appinstalled", appInstalled);
+      window.removeEventListener('appinstalled', appInstalled);
     };
   }, [isTabletAndMobile]);
 
@@ -54,12 +54,12 @@ export const usePWAInstall = () => {
     // The deferredPrompt can only be used once.
     deferredPrompt.current = null;
     // Act on the user's choice
-    if (outcome === "accepted") {
+    if (outcome === 'accepted') {
       return true;
       setIsInstallable(false);
-      console.log("User accepted the install prompt.");
-    } else if (outcome === "dismissed") {
-      console.log("User dismissed the install prompt");
+      console.log('User accepted the install prompt.');
+    } else if (outcome === 'dismissed') {
+      console.log('User dismissed the install prompt');
       setIsInstallable(false);
       return false;
     }
@@ -85,15 +85,15 @@ export const InstallButton = ({
 
   if (!isInstallable) return null;
   return (
-    <div className="flex flex-col mb-5">
-      <p className="mt-4 text-neutral-400 text-xs text-center mt-4">
+    <div className="mb-5 flex flex-col">
+      <p className="mt-4 text-center text-xs text-neutral-400">
         The Moon Devs Portal supports Progressive Web App, one of the latest
         trends in web development. Click quick install to experience the portal
         as an offline Mobile App.
       </p>
       <button
         onClick={installApp}
-        className="text-lg text-white py-3 gap-4 flex flex-row items-center justify-center mt-4 bg-neutral-800 hover:bg-neutral-700 py-2 px-10 rounded-lg shadow-md"
+        className="mt-4 flex flex-row items-center justify-center gap-4 rounded-lg bg-neutral-800 px-10 py-2 py-3 text-lg text-white shadow-md hover:bg-neutral-700"
       >
         <span className="material-icons text-yellow-500">bolt</span>
         Quick Install App

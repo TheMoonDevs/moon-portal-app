@@ -1,5 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/prisma/prisma';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
+import { db } from '@/lib/mongodb/db-client';
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,7 +19,7 @@ export async function GET(request: NextRequest) {
 
     const docId = `${userId}-${year}-${month}-monthlyTargets`;
 
-    const docMarkdown = await prisma.docMarkdown.findUnique({
+    const docMarkdown = await db.docMarkdown.findUnique({
       where: {
         docId: docId,
         ...(logType && { logType }),
@@ -64,7 +66,7 @@ export async function PUT(request: NextRequest) {
 
     // Better validation with detailed error messages
     const errors: string[] = [];
-    
+
     if (!userId || typeof userId !== 'string') {
       errors.push('userId is required and must be a string');
     }
@@ -79,7 +81,11 @@ export async function PUT(request: NextRequest) {
       errors.push('month is required');
     }
     // Year must be a valid number
-    if (year === undefined || year === null || (typeof year !== 'number' && typeof year !== 'string')) {
+    if (
+      year === undefined ||
+      year === null ||
+      (typeof year !== 'number' && typeof year !== 'string')
+    ) {
       errors.push('year is required and must be a number');
     }
 
@@ -89,11 +95,11 @@ export async function PUT(request: NextRequest) {
           success: false,
           error: 'Validation failed',
           errors: errors,
-          received: { 
-            userId: userId ? 'present' : 'missing', 
-            logType: logType ? 'present' : 'missing', 
+          received: {
+            userId: userId ? 'present' : 'missing',
+            logType: logType ? 'present' : 'missing',
             hasMarkdown: !!markdown,
-            hasMarkdownContent: !!(markdown?.content),
+            hasMarkdownContent: !!markdown?.content,
             month: month,
             monthType: typeof month,
             year: year,
@@ -105,11 +111,13 @@ export async function PUT(request: NextRequest) {
     }
 
     // Ensure month and year are numbers for consistent docId format
-    const monthNum = typeof month === 'string' ? parseInt(month, 10) : Number(month);
-    const yearNum = typeof year === 'string' ? parseInt(year, 10) : Number(year);
+    const monthNum =
+      typeof month === 'string' ? parseInt(month, 10) : Number(month);
+    const yearNum =
+      typeof year === 'string' ? parseInt(year, 10) : Number(year);
     const docId = `${userId}-${yearNum}-${monthNum}-monthlyTargets`;
 
-    const newDocMarkdown = await prisma.docMarkdown.upsert({
+    const newDocMarkdown = await db.docMarkdown.upsert({
       where: {
         docId: docId,
       },

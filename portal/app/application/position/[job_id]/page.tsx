@@ -1,4 +1,4 @@
-import { CandidateApplicationForm } from "@/components/screens/Public/CandidateApplicationForm";
+import { CandidateApplicationForm } from '@/components/screens/Public/CandidateApplicationForm';
 
 export default function ApplicationPage({
   params,

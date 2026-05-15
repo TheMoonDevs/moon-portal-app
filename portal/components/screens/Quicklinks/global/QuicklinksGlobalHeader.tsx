@@ -1,21 +1,28 @@
-"use client";
+'use client';
 
-import { Button, Menu, MenuItem, useMediaQuery } from "@mui/material";
-import { APP_ROUTES } from "@/utils/constants/appInfo";
-import Link from "next/link";
-import QuicklinkSearchBar from "./QuicklinkSearchBar";
-import Avatar from "boring-avatars";
-import { useUser } from "@/utils/hooks/useUser";
-import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import { setHamburgerOpen, setIsCreateLinkModalOpen } from "@/utils/redux/quicklinks/slices/quicklinks.ui.slice";
-import { setToggleSidebar } from "@/utils/redux/quicklinks/slices/quicklinks.ui.slice"; 
-import { useState } from "react";
-import media from "@/styles/media";
+import { Button, Menu, MenuItem, useMediaQuery } from '@mui/material';
+import Avatar from 'boring-avatars';
+import Link from 'next/link';
+import { useState } from 'react';
+
+import media from '@/styles/media';
+import { APP_ROUTES } from '@/utils/constants/appInfo';
+import { useUser } from '@/utils/hooks/useUser';
+import {
+  setHamburgerOpen,
+  setIsCreateLinkModalOpen,
+} from '@/utils/redux/quicklinks/slices/quicklinks.ui.slice';
+import { setToggleSidebar } from '@/utils/redux/quicklinks/slices/quicklinks.ui.slice';
+import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
+
+import QuicklinkSearchBar from './QuicklinkSearchBar';
 
 const QuicklinksGlobalHeader = () => {
   const dispatch = useAppDispatch();
   const { user } = useUser();
-  const {isCollapsed, isHamburgerOpen} = useAppSelector((state) => state.quicklinksUi);
+  const { isCollapsed, isHamburgerOpen } = useAppSelector(
+    (state) => state.quicklinksUi,
+  );
   const isTablet = useMediaQuery(media.tablet);
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -29,11 +36,13 @@ const QuicklinksGlobalHeader = () => {
     setAnchorEl(null);
   };
 
-  const isSidebar = isCollapsed || isHamburgerOpen 
+  const isSidebar = isCollapsed || isHamburgerOpen;
 
   return (
     <div className="fixed top-0 z-[1] flex w-full flex-col">
-      <div className={`grid h-[56px] w-full grid-cols-[1fr_1.5fr_1fr] items-center justify-between bg-white px-4 ${isTablet && 'grid-cols-[1fr_1fr] max-sm:px-2'}`}>
+      <div
+        className={`grid h-[56px] w-full grid-cols-[1fr_1.5fr_1fr] items-center justify-between bg-white px-4 ${isTablet && 'grid-cols-[1fr_1fr] max-sm:px-2'}`}
+      >
         <h1 className="flex items-center gap-4 max-sm:gap-2">
           <span
             className="material-symbols-outlined cursor-pointer rounded-full p-2 transition-colors hover:bg-neutral-100"
@@ -45,13 +54,15 @@ const QuicklinksGlobalHeader = () => {
           >
             {isSidebar ? 'menu' : 'menu_open'}
           </span>
-          <span className="text-2xl font-semibold max-sm:text-xl">QUICKLINKS</span>
+          <span className="text-2xl font-semibold max-sm:text-xl">
+            QUICKLINKS
+          </span>
         </h1>
         <div className={`${isTablet && 'hidden'}`}>
           <QuicklinkSearchBar />
         </div>
         <div className="flex justify-end">
-          <div className="flex gap-4 items-center">
+          <div className="flex items-center gap-4">
             <Button
               startIcon={
                 <span className="material-icons !text-sm !font-thin text-neutral-100">
@@ -59,12 +70,15 @@ const QuicklinksGlobalHeader = () => {
                 </span>
               }
               variant="contained"
-              className="!bg-zinc-900 !text-sm !rounded-lg !capitalize !shadow-none hover:!bg-neutral-700 !text-neutral-100 !tracking-wider !py-[0.6rem]"
+              className="!rounded-lg !bg-zinc-900 !py-[0.6rem] !text-sm !capitalize !tracking-wider !text-neutral-100 !shadow-none hover:!bg-neutral-700"
               onClick={() => dispatch(setIsCreateLinkModalOpen(true))}
             >
               Quicklink
             </Button>
-            <div onClick={handleClick} className={`cursor-pointer ${isTablet && 'hidden'}`}>
+            <div
+              onClick={handleClick}
+              className={`cursor-pointer ${isTablet && 'hidden'}`}
+            >
               {user?.avatar ? (
                 <img
                   src={user?.avatar}
@@ -74,7 +88,7 @@ const QuicklinksGlobalHeader = () => {
                   className="rounded-full"
                 />
               ) : (
-                <Avatar name={user?.name || ""} size="40" variant="beam" />
+                <Avatar name={user?.name || ''} size="40" variant="beam" />
               )}
             </div>
 

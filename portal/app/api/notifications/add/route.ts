@@ -1,12 +1,14 @@
-import { prisma } from "@/prisma/prisma";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
+
+import { db } from '@/lib/mongodb/db-client';
+import { parseCreateInput } from '@/lib/mongodb/validation';
 
 export async function POST(request: Request) {
   try {
-    const data = await request.json();
+    const data = parseCreateInput('notification', await request.json());
 
-    const newNotification = await prisma.notification.create({
-      data
+    const newNotification = await db.notification.create({
+      data,
     });
 
     return NextResponse.json(newNotification, { status: 200 });

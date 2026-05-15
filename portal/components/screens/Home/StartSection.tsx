@@ -1,13 +1,13 @@
-import { QuotesData } from "@/utils/constants/quotesData";
+import { QuotesData } from '@/utils/constants/quotesData';
 
 const randomQuote = QuotesData[Math.floor(Math.random() * QuotesData.length)];
 export const StartSection = () => {
   return (
-    <div className="p-8 mt-4 flex flex-col mx-2 mb-3 gap-3 bg-white rounded-[1.15em]">
-      <h4 className="text-2xl tracking-[0.1em] font-semibold text-lefy text-neutral-900 ">
+    <div className="mx-2 mb-3 mt-4 flex flex-col gap-3 rounded-[1.15em] bg-white p-8">
+      <h4 className="text-lefy text-2xl font-semibold tracking-widest text-neutral-900">
         {randomQuote.quote}
       </h4>
-      <p className="text-left font-serif text-neutral-700  text-sm mt-2">
+      <p className="mt-2 text-left font-serif text-sm text-neutral-700">
         -- {randomQuote.author}
       </p>
     </div>

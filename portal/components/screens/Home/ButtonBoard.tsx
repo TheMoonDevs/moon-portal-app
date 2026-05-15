@@ -1,15 +1,16 @@
+import type { BadgeRewarded, BadgeTemplate } from '@db/client';
+import type { JsonObject } from '@db/runtime';
+import dayjs from 'dayjs';
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+
+import DrawerComponent from '@/components/elements/DrawerComponent';
+import { Spinner } from '@/components/elements/Loaders';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
 import { useUser } from '@/utils/hooks/useUser';
 import { PortalSdk } from '@/utils/services/PortalSdk';
-import Image from 'next/image';
-import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import dayjs from 'dayjs';
-import { BadgeRewarded, BadgeTemplate } from '@prisma/client';
-import { JsonObject } from '@prisma/client/runtime/library';
-import DrawerComponent from '@/components/elements/DrawerComponent';
+
 import BadgeCard from './BadgeCard';
-import { Spinner } from '@/components/elements/Loaders';
 
 export const ButtonBoard = ({
   isCoreTeamDrawerOpen,
@@ -139,7 +140,7 @@ export const ButtonBoard = ({
       <Link
         onClick={() => setCoreTeamDrawerOpen(true)}
         href=""
-        className="relative flex h-[5em] w-[5em] flex-col items-center justify-center gap-1 rounded-[1.15em] bg-white text-neutral-900"
+        className="relative flex size-[5em] flex-col items-center justify-center gap-1 rounded-[1.15em] bg-white text-neutral-900"
       >
         {/* <Image
           width={100}
@@ -148,7 +149,7 @@ export const ButtonBoard = ({
           alt={""}
           className="static w-full h-full opacity-[0.9] object-cover object-center rounded-lg"
         /> */}
-        <div className="absolute bottom-0 left-0 right-0 top-0 flex flex-col items-center justify-center gap-2 text-2xl">
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-2xl">
           <span className="icon_size material-symbols-outlined font-light">
             groups
           </span>
@@ -159,7 +160,7 @@ export const ButtonBoard = ({
       </Link>
       <Link
         href={APP_ROUTES.home}
-        className="relative flex h-[5em] w-[5em] flex-col items-center justify-center gap-1 rounded-[1.15em] bg-white text-neutral-900"
+        className="relative flex size-[5em] flex-col items-center justify-center gap-1 rounded-[1.15em] bg-white text-neutral-900"
       >
         {/* <Image
           width={100}
@@ -168,7 +169,7 @@ export const ButtonBoard = ({
           alt={""}
           className="static w-full h-full opacity-[0.9] object-cover object-center rounded-lg"
         /> */}
-        <div className="absolute bottom-0 left-0 right-0 top-0 flex flex-col items-center justify-center gap-2 text-2xl">
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-2xl">
           <span className="icon_size material-symbols-outlined font-light">
             rocket_launch
           </span>
@@ -179,7 +180,7 @@ export const ButtonBoard = ({
       </Link>
       <Link
         href={APP_ROUTES.home}
-        className="relative flex h-[5em] w-[5em] flex-col items-center justify-center gap-1 rounded-[1.15em] bg-white text-neutral-900"
+        className="relative flex size-[5em] flex-col items-center justify-center gap-1 rounded-[1.15em] bg-white text-neutral-900"
       >
         {/* <Image
           width={100}
@@ -189,7 +190,7 @@ export const ButtonBoard = ({
           className="static w-full h-full opacity-[0.9] object-cover object-center rounded-lg"
         /> */}
         <div
-          className="absolute bottom-0 left-0 right-0 top-0 flex flex-col items-center justify-center gap-2 text-2xl"
+          className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-2xl"
           onClick={() => setIsOpen(!isOpen)}
         >
           <span className="icon_size material-symbols-outlined font-light">
@@ -202,7 +203,7 @@ export const ButtonBoard = ({
       </Link>
       <Link
         href={APP_ROUTES.home}
-        className="relative flex h-[5em] w-[5em] flex-col items-center justify-center gap-1 rounded-[1.15em] bg-white text-neutral-900"
+        className="relative flex size-[5em] flex-col items-center justify-center gap-1 rounded-[1.15em] bg-white text-neutral-900"
       >
         {/* <Image
           width={100}
@@ -211,7 +212,7 @@ export const ButtonBoard = ({
           alt={""}
           className="static w-full h-full opacity-[0.9] object-cover object-center rounded-lg"
         /> */}
-        <div className="absolute bottom-0 left-0 right-0 top-0 flex flex-col items-center justify-center gap-2 text-2xl">
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-2xl">
           <span className="icon_size material-symbols-outlined font-light">
             monitoring
           </span>
@@ -226,17 +227,17 @@ export const ButtonBoard = ({
             Your Earned Badges
           </h2>
           {loading ? (
-            <div className="flex h-[100vh] items-center justify-center">
-              <Spinner className="h-10 w-10" />{' '}
+            <div className="flex h-screen items-center justify-center">
+              <Spinner className="size-10" />{' '}
             </div>
-          ) : badgeRewarded?.length ?? 0 > 0  ? (
+          ) : (badgeRewarded?.length ?? 0 > 0) ? (
             <div className="flex flex-col gap-4">
               {badgeRewarded?.map((badge: BadgeRewarded) => (
                 <BadgeCard key={badge.id} badge={badge} />
               ))}
             </div>
           ) : (
-            <div className="flex h-[100vh] items-center justify-center">
+            <div className="flex h-screen items-center justify-center">
               No badges found.
             </div>
           )}

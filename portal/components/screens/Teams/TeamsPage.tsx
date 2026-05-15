@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { TeamUsersList } from "./TeamUsersList";
+import { TeamUsersList } from './TeamUsersList';
 
 export const TeamsPage = () => {
   return (

@@ -1,21 +1,26 @@
 'use client';
-import React, { ChangeEvent, FormEvent, useEffect, useState } from 'react';
-import { INITIAL_LOADING_STATE } from './ClientShortcutsManager';
-import { loadingState } from './Events/EventForm';
-import { PortalSdk } from '@/utils/services/PortalSdk';
-import { Engagement, ENGAGEMENTTYPE, User } from '@prisma/client';
-import { MobileBox } from '../Login/Login';
-import { Spinner } from '@/components/elements/Loaders';
-import ToolTip from '@/components/elements/ToolTip';
+import type { Engagement, User } from '@db/client';
+import { ENGAGEMENTTYPE } from '@db/client';
 import { IconButton } from '@mui/material';
+import { Autocomplete, Chip, TextField } from '@mui/material';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { Autocomplete, Chip, TextField } from '@mui/material';
-import { toast } from 'sonner';
-import Image from 'next/image';
-import dayjs, { Dayjs } from 'dayjs';
-import { cn } from '@/app/lib/utils';
 import { differenceInBusinessDays, isWeekend } from 'date-fns';
+import type { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
+import Image from 'next/image';
+import type { ChangeEvent, FormEvent } from 'react';
+import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+
+import { cn } from '@/app/lib/utils';
+import { Spinner } from '@/components/elements/Loaders';
+import ToolTip from '@/components/elements/ToolTip';
+import { PortalSdk } from '@/utils/services/PortalSdk';
+
+import { MobileBox } from '../Login/Login';
+import { INITIAL_LOADING_STATE } from './ClientShortcutsManager';
+import type { loadingState } from './Events/EventForm';
 
 type EngagementFormState = {
   client_id: string;
@@ -201,9 +206,9 @@ const Engagements = ({ users }: { users: User[] }) => {
     return (
       <form
         onSubmit={loadingState.updating ? handleUpdate : handleFormSubmit}
-        className="relative my-2 flex h-full w-[90%] flex-grow flex-col"
+        className="relative my-2 flex h-full w-[90%] grow flex-col"
       >
-        <div className="flex-grow">
+        <div className="grow">
           <div className="mb-5">
             <label
               htmlFor="user"
@@ -493,7 +498,7 @@ const Engagements = ({ users }: { users: User[] }) => {
               }
             >
               {loadingState.adding || loadingState.updateUploading ? (
-                <Spinner className="h-4 w-4" />
+                <Spinner className="size-4" />
               ) : (
                 <>
                   {loadingState.updating
@@ -524,7 +529,7 @@ const Engagements = ({ users }: { users: User[] }) => {
         </div>
       ) : (
         <div
-          className={`relative h-full w-full ${loadingState.addNew || loadingState.updating ? '' : 'flex justify-center'}`}
+          className={`relative size-full ${loadingState.addNew || loadingState.updating ? '' : 'flex justify-center'}`}
         >
           {loadingState.addNew || loadingState.updating ? (
             <div className="flex flex-col items-center justify-center">
@@ -554,7 +559,7 @@ const Engagements = ({ users }: { users: User[] }) => {
               <p className="text-neutral-400">No Engament found.</p>
             </div>
           ) : (
-            <div className="no-scrollbar flex h-[80%] w-[90%] flex-col gap-2 overflow-y-scroll">
+            <div className="no-scrollbar flex h-4/5 w-[90%] flex-col gap-2 overflow-y-scroll">
               {engagements?.map((engagement: Engagement, index) => {
                 const client = clients.find(
                   (client) => client.id === engagement.client_id,
@@ -566,11 +571,11 @@ const Engagements = ({ users }: { users: User[] }) => {
                   >
                     {client && (
                       <div className="flex w-full items-center justify-between gap-2">
-                        <div className="flex w-[80%] items-center gap-1 truncate">
+                        <div className="flex w-4/5 items-center gap-1 truncate">
                           <Image
                             src={client.avatar || '/user.png'}
                             alt="U"
-                            className="mr-2 h-8 w-8 rounded-full !bg-white"
+                            className="mr-2 size-8 rounded-full !bg-white"
                             width={32}
                             height={32}
                           />
@@ -602,7 +607,7 @@ const Engagements = ({ users }: { users: User[] }) => {
                             disabled={engagementId === engagement.id}
                           >
                             {engagementId === engagement.id ? (
-                              <Spinner className="h-4 w-4" />
+                              <Spinner className="size-4" />
                             ) : (
                               <span className="material-symbols-outlined">
                                 delete

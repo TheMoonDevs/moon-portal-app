@@ -1,11 +1,12 @@
 'use client';
-import Input from '@/components/elements/Input';
-import { SOCIALLINK } from '@prisma/client';
+import type { SOCIALLINK } from '@db/client';
 import React, { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { toast } from 'sonner';
+
+import Input from '@/components/elements/Input';
+
 import { linkRegex } from '.';
-import Link from 'next/link';
 
 const defaultFields = {
   platform: '',

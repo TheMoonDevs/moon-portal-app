@@ -1,7 +1,7 @@
-import React from 'react';
+import type { PROJECTS } from '@db/client';
 import { IconButton } from '@mui/material';
-import { PROJECTS } from '@prisma/client';
 import Link from 'next/link';
+import React from 'react';
 
 const ProjectCard = ({
   project,

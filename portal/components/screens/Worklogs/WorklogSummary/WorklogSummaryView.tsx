@@ -1,21 +1,23 @@
-import { MdxAppEditor } from "@/utils/configure/MdxAppEditor";
-import { ArrayHelper } from "@/utils/helpers/array";
-import { User, WorkLogs } from "@prisma/client";
-import { uniqueId } from "lodash";
-import { getStatsOfContent } from "../WorklogEditor";
-import Image from "next/image";
-import { format, parseISO } from "date-fns";
-import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
+import type { User, WorkLogs } from '@db/client';
+import { format, parseISO } from 'date-fns';
+import dayjs from 'dayjs';
+import { uniqueId } from 'lodash';
+import Image from 'next/image';
+
+import { MdxAppEditor } from '@/utils/configure/MdxAppEditor';
+import { ArrayHelper } from '@/utils/helpers/array';
+import type { RootState } from '@/utils/redux/store';
+import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
+import type { MissedTask } from '@/utils/redux/worklogsSummary/statsAction.slice';
 import {
-  MissedTask,
   setIsShowProductiveStreak,
-  setProductiveStreakData,
   setShowCompletedTasks,
   setShowMissedLogs,
   setShowMissedTasks,
   setShowUpdatedLogs,
-} from "@/utils/redux/worklogsSummary/statsAction.slice";
-import dayjs from "dayjs";
+} from '@/utils/redux/worklogsSummary/statsAction.slice';
+
+import { getStatsOfContent } from '../WorklogEditor';
 
 interface WorklogSummaryViewProps {
   worklogSummary: WorkLogs[];
@@ -78,7 +80,7 @@ const FilterPill = ({
   return (
     <button
       onClick={onClick}
-      className="group mx-2 mt-5 flex transform items-center gap-2 rounded-full border border-neutral-400 bg-neutral-100 px-4 py-1 text-sm text-neutral-700 transition duration-300 ease-in-out hover:border-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 focus:outline-none focus:ring-2 focus:ring-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
+      className="group mx-2 mt-5 flex items-center gap-2 rounded-full border border-neutral-400 bg-neutral-100 px-4 py-1 text-sm text-neutral-700 transition duration-300 ease-in-out hover:border-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 focus:outline-none focus:ring-2 focus:ring-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
     >
       <span
         className="material-symbols-outlined text-base text-neutral-500 transition duration-300 ease-in-out group-hover:text-neutral-700"
@@ -115,14 +117,14 @@ export const WorklogSummaryView = ({
   } = useAppSelector((state: RootState) => state.statsAction);
 
   const firstStreakDate =
-    productiveStreakData?.[productiveStreakData.length - 1]?.date || "";
-  const lastStreakDate = productiveStreakData?.[0]?.date || "";
+    productiveStreakData?.[productiveStreakData.length - 1]?.date || '';
+  const lastStreakDate = productiveStreakData?.[0]?.date || '';
 
-  const formattedFirstDate = dayjs(firstStreakDate).format("MMMM D");
-  const formattedLastDate = dayjs(lastStreakDate).format("MMMM D");
+  const formattedFirstDate = dayjs(firstStreakDate).format('MMMM D');
+  const formattedLastDate = dayjs(lastStreakDate).format('MMMM D');
 
   const missedLogMonth =
-    missedDates.length > 0 ? dayjs(missedDates[0]).format("MMMM YYYY") : "";
+    missedDates.length > 0 ? dayjs(missedDates[0]).format('MMMM YYYY') : '';
 
   const renderSummary = (summaryData: WorkLogs[]) =>
     summaryData.length > 0 ? (
@@ -134,16 +136,16 @@ export const WorklogSummaryView = ({
           />
         )}
         <div
-          className={`scrollable-container-summaryView ${isShowProductiveStreak ? "h-screen-minus-310" : "h-screen-minus-250"} overflow-y-auto ${!isDrawer ? "p-8" : "p-2"} max-sm:h-[70vh]`}
+          className={`scrollable-container-summaryView ${isShowProductiveStreak ? 'h-screen-minus-310' : 'h-screen-minus-250'} overflow-y-auto ${!isDrawer ? 'p-8' : 'p-2'} max-sm:h-[70vh]`}
         >
           {(!isShowProductiveStreak
-            ? ArrayHelper.reverseSortByDate(summaryData, "date")
+            ? ArrayHelper.reverseSortByDate(summaryData, 'date')
             : summaryData
           ).map((worklog) => {
             const markdownData = worklog?.works[0];
             const stats = markdownData
               ? getStatsOfContent(markdownData.content as string)
-                  .split(" / ")
+                  .split(' / ')
                   .map(Number)
               : [0, 0];
             const [completed, total] = stats;
@@ -151,7 +153,7 @@ export const WorklogSummaryView = ({
             return (
               <div
                 key={worklog.date}
-                data-date={format(parseISO(worklog.date || ""), "yyyy-MM-dd")}
+                data-date={format(parseISO(worklog.date || ''), 'yyyy-MM-dd')}
                 className="py-4"
               >
                 <div className="flex items-start gap-3 rounded-lg bg-white">
@@ -168,9 +170,9 @@ export const WorklogSummaryView = ({
                       <p className="flex items-center gap-1 text-xs font-medium capitalize tracking-[1px] text-gray-600">
                         <span className="font-bold text-gray-900">
                           {completed}
-                        </span>{" "}
-                        out of{" "}
-                        <span className="font-bold text-gray-900">{total}</span>{" "}
+                        </span>{' '}
+                        out of{' '}
+                        <span className="font-bold text-gray-900">{total}</span>{' '}
                         tasks have been completed
                       </p>
                     )}
@@ -231,7 +233,7 @@ export const WorklogSummaryView = ({
           {missedDates.map((date: string) => (
             <div key={date} className="mb-2 border-b border-neutral-200 pb-2">
               <p className="text-base tracking-wide text-gray-800">
-                {dayjs(date).format("D MMMM")}
+                {dayjs(date).format('D MMMM')}
               </p>
             </div>
           ))}
@@ -251,8 +253,8 @@ export const WorklogSummaryView = ({
           }
           label={
             !isCompletedTasks
-              ? "You missed marking tasks as complete. Below are the tasks you missed."
-              : "Completed Tasks"
+              ? 'You missed marking tasks as complete. Below are the tasks you missed.'
+              : 'Completed Tasks'
           }
         />
         <div className="px-8 pt-8">

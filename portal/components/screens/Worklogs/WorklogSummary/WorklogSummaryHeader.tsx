@@ -1,16 +1,19 @@
-"use client";
-import { APP_ROUTES } from "@/utils/constants/appInfo";
-import useOutsideClick from "@/utils/hooks/useOutsideClick";
-import { Fade } from "@mui/material";
-import dayjs from "dayjs";
-import Image from "next/image";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { User, USERROLE, USERTYPE } from "@prisma/client";
-import { PortalSdk } from "@/utils/services/PortalSdk";
-import { setMembers } from "@/utils/redux/coreTeam/coreTeam.slice";
+'use client';
+import type { User } from '@db/client';
+import { USERROLE, USERTYPE } from '@db/client';
+import { Fade } from '@mui/material';
+import dayjs from 'dayjs';
+import Image from 'next/image';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useEffect, useMemo, useRef, useState } from 'react';
+
+import { APP_ROUTES } from '@/utils/constants/appInfo';
+import useOutsideClick from '@/utils/hooks/useOutsideClick';
+import { setMembers } from '@/utils/redux/coreTeam/coreTeam.slice';
+import type { RootState } from '@/utils/redux/store';
+import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
+import { PortalSdk } from '@/utils/services/PortalSdk';
 
 interface MonthTableProps {
   selectedYear: number;
@@ -34,33 +37,33 @@ const MonthTable: React.FC<MonthTableProps> = ({
     <td
       key={monthIndex}
       className={`h-8 ${
-        isActive ? "cursor-pointer hover:bg-neutral-100" : "text-neutral-400"
+        isActive ? 'cursor-pointer hover:bg-neutral-100' : 'text-neutral-400'
       }`}
     >
       {isActive ? (
         <div onClick={() => handleMonthSelect(monthIndex)}>
           <Link
             key={monthIndex}
-            className="px-4 py-4"
+            className="p-4"
             href={`${pathName}?year=${selectedYear}&month=${dayjs()
               .month(monthIndex)
-              .format("MM")}`}
+              .format('MM')}`}
           >
-            {dayjs().month(monthIndex).format("MMM")}
+            {dayjs().month(monthIndex).format('MMM')}
           </Link>
         </div>
       ) : (
-        <div className="px-4">{dayjs().month(monthIndex).format("MMM")}</div>
+        <div className="px-4">{dayjs().month(monthIndex).format('MMM')}</div>
       )}
     </td>
   );
 
   return (
     <Fade in={isMonthDropdownOpen} mountOnEnter unmountOnExit>
-      <table className="flex flex-col gap-1 absolute top-10 z-20 right-0 sm:right-[unset] shadow-lg rounded-md bg-white">
+      <table className="absolute right-0 top-10 z-20 flex flex-col gap-1 rounded-md bg-white shadow-lg sm:right-[unset]">
         <tbody>
           {Array.from({ length: 4 }, (_, rowIndex) => (
-            <tr key={rowIndex} className="items-center !text-sm py-1">
+            <tr key={rowIndex} className="items-center py-1 !text-sm">
               {Array.from({ length: 3 }, (_, colIndex) => {
                 const monthIndex = rowIndex * 3 + colIndex;
                 const isCurrentYear = selectedYear === joiningYear;
@@ -96,7 +99,7 @@ const YearDropdown: React.FC<YearDropdownProps> = ({
   const pathName = usePathname();
   return (
     <Fade in={isYearDropdownOpen} mountOnEnter unmountOnExit>
-      <div className="absolute top-10 z-20 flex flex-col gap-1 shadow-lg rounded-md bg-white">
+      <div className="absolute top-10 z-20 flex flex-col gap-1 rounded-md bg-white shadow-lg">
         {yearArray.map((year) => (
           <Link
             href={
@@ -104,13 +107,13 @@ const YearDropdown: React.FC<YearDropdownProps> = ({
                 ? `${pathName}?year=${year}`
                 : `${pathName}?year=${year}&month=${dayjs()
                     .month(selectedMonth as number)
-                    .format("MM")}`
+                    .format('MM')}`
             }
             key={year}
-            className="flex gap-2 items-center !text-sm cursor-pointer hover:bg-neutral-100 px-4 py-1"
+            className="flex cursor-pointer items-center gap-2 px-4 py-1 !text-sm hover:bg-neutral-100"
             onClick={() => handleYearSelectFromDropdown(year)}
           >
-            <span>{dayjs().year(year).format("YYYY")}</span>
+            <span>{dayjs().year(year).format('YYYY')}</span>
           </Link>
         ))}
       </div>
@@ -130,30 +133,30 @@ const SelectUser = ({
   return (
     <div className="relative">
       <button
-        className="flex items-center gap-2 cursor-pointer border border-neutral-400 rounded-md py-2 px-4 bg-white shadow-lg text-sm hover:bg-neutral-100 transition-colors duration-300"
+        className="flex cursor-pointer items-center gap-2 rounded-md border border-neutral-400 bg-white px-4 py-2 text-sm shadow-lg transition-colors duration-300 hover:bg-neutral-100"
         onClick={() => setIsSelectOpen(!isSelectOpen)}
       >
         <span className="font-medium">Select Team Member</span>
         <span
           className={`material-symbols-outlined transition-transform duration-300 ${
-            isSelectOpen ? "rotate-180" : "rotate-0"
+            isSelectOpen ? 'rotate-180' : 'rotate-0'
           }`}
         >
-          {isSelectOpen ? "expand_less" : "expand_more"}
+          {isSelectOpen ? 'expand_less' : 'expand_more'}
         </span>
       </button>
       <div
-        className={`absolute top-full left-0 w-full bg-white border border-neutral-400 rounded-md shadow-lg z-20 transition-all duration-300 ease-in-out ${
-          isSelectOpen ? "max-h-60 opacity-100" : "max-h-0 opacity-0"
+        className={`absolute left-0 top-full z-20 w-full rounded-md border border-neutral-400 bg-white shadow-lg transition-all duration-300 ease-in-out ${
+          isSelectOpen ? 'max-h-60 opacity-100' : 'max-h-0 opacity-0'
         } overflow-hidden`}
       >
-        <div className="max-h-60 overflow-y-auto no-scrollbar">
+        <div className="no-scrollbar max-h-60 overflow-y-auto">
           {coreTeam.map((user: User) => (
             <Link
               href={`${APP_ROUTES.userWorklogSummary}/${user.id}`}
               key={user.id}
               onClick={() => setIsSelectOpen(false)}
-              className="block w-full text-left px-4 py-2 hover:bg-neutral-100  focus:bg-neutral-100  text-xs transition-colors duration-300"
+              className="block w-full px-4 py-2 text-left text-xs transition-colors duration-300 hover:bg-neutral-100 focus:bg-neutral-100"
             >
               {user.name}
             </Link>
@@ -190,10 +193,10 @@ export const WorklogSummaryHeader = ({
   const monthDropdownRef = useRef(null);
   const yearDropdownRef = useRef(null);
 
-  const joiningYear = Number(dayjs(joiningDate).format("YYYY"));
-  const joiningMonth = Number(dayjs(joiningDate).format("M")) - 1;
-  const currentYear = Number(dayjs().format("YYYY"));
-  const currentMonth = Number(dayjs().format("M"));
+  const joiningYear = Number(dayjs(joiningDate).format('YYYY'));
+  const joiningMonth = Number(dayjs(joiningDate).format('M')) - 1;
+  const currentYear = Number(dayjs().format('YYYY'));
+  const currentMonth = Number(dayjs().format('M'));
   const coreTeam = useAppSelector((state: RootState) => state.coreTeam.members);
   const [isSelectOpen, setIsSelectOpen] = useState(false);
 
@@ -206,9 +209,9 @@ export const WorklogSummaryHeader = ({
     () =>
       Array.from(
         { length: currentYear - joiningYear + 1 },
-        (_, i) => joiningYear + i
+        (_, i) => joiningYear + i,
       ),
-    [currentYear, joiningYear]
+    [currentYear, joiningYear],
   );
   const handleYearSelect = () => {
     setOnlyYearSummary(true);
@@ -239,12 +242,12 @@ export const WorklogSummaryHeader = ({
   useEffect(() => {
     if (coreTeam.length === 0) {
       PortalSdk.getData(
-        "/api/user?role=" +
+        '/api/user?role=' +
           USERROLE.CORETEAM +
-          "&userType=" +
+          '&userType=' +
           USERTYPE.MEMBER +
-          "&status=ACTIVE",
-        null
+          '&status=ACTIVE',
+        null,
       )
         .then((data) => {
           dispatch(setMembers(data?.data?.user));
@@ -256,10 +259,10 @@ export const WorklogSummaryHeader = ({
   }, [dispatch, coreTeam.length]);
 
   return (
-    <div className="py-4 bg-white flex flex-row gap-3 px-3 items-center justify-between border-neutral-400 max-sm:flex-col max-sm:gap-4 max-sm:items-start max-sm:w-full ">
-      <div className="flex items-center justify-between w-full sm:w-[unset] sm:justify-start">
+    <div className="flex flex-row items-center justify-between gap-3 border-neutral-400 bg-white px-3 py-4 max-sm:w-full max-sm:flex-col max-sm:items-start max-sm:gap-4">
+      <div className="flex w-full items-center justify-between sm:w-[unset] sm:justify-start">
         <Link href={APP_ROUTES.home} className="flex items-center">
-          <h1 className="hidden sm:block md:text-lg text-sm whitespace-nowrap cursor-pointer font-extrabold border-r-2 pr-3 mr-3">
+          <h1 className="mr-3 hidden cursor-pointer whitespace-nowrap border-r-2 pr-3 text-sm font-extrabold sm:block md:text-lg">
             The Moon Devs
           </h1>
           <Image
@@ -267,23 +270,23 @@ export const WorklogSummaryHeader = ({
             width={30}
             height={30}
             alt="logo"
-            className="w-6 aspect-square mr-3"
+            className="mr-3 aspect-square w-6"
           />
         </Link>
-        <div className="flex items-center sm:gap-4 pr-10">
-          <h1 className="md:tracking-widest text-sm md:text-base  ml-1 font-regular whitespace-nowrap">
+        <div className="flex items-center pr-10 sm:gap-4">
+          <h1 className="font-regular ml-1 whitespace-nowrap text-sm md:text-base md:tracking-widest">
             Worklog Summary
           </h1>
           <span className="material-symbols-outlined !text-neutral-400">
             chevron_right
           </span>
-          <div className="flex gap-1 sm:gap-2 items-center !text-md relative">
+          <div className="!text-md relative flex items-center gap-1 sm:gap-2">
             <Link
               href={`${pathName}?year=${selectedYear}`}
-              className={`${onlyYearSummary ? "font-bold" : ""} cursor-pointer`}
+              className={`${onlyYearSummary ? 'font-bold' : ''} cursor-pointer`}
               onClick={handleYearSelect}
             >
-              {selectedYear || dayjs().format("YYYY")}
+              {selectedYear || dayjs().format('YYYY')}
             </Link>
             <div ref={yearDropdownRef}>
               <YearDropdown
@@ -295,26 +298,26 @@ export const WorklogSummaryHeader = ({
               />
             </div>
             <span
-              className="material-symbols-outlined !text-base rounded-full border border-neutral-400 px-1 cursor-pointer hover:bg-neutral-100 scale-75"
+              className="material-symbols-outlined scale-75 cursor-pointer rounded-full border border-neutral-400 px-1 !text-base hover:bg-neutral-100"
               onClick={() => setIsYearDropdownOpen(!isYearDropdownOpen)}
             >
-              {isYearDropdownOpen ? "expand_less" : "expand_more"}
+              {isYearDropdownOpen ? 'expand_less' : 'expand_more'}
             </span>
           </div>
           <span className="material-symbols-outlined !text-neutral-400">
             chevron_right
           </span>
-          <div className="flex gap-1 sm:gap-2 items-center !text-md sm:relative z-50">
+          <div className="!text-md z-50 flex items-center gap-1 sm:relative sm:gap-2">
             <Link
               href={
                 onlyYearSummary && selectedMonth !== null
                   ? `${pathName}?year=${selectedYear}&month=${dayjs()
                       .month(selectedMonth)
-                      .format("MM")}`
-                  : ""
+                      .format('MM')}`
+                  : ''
               }
               className={`cursor-pointer ${
-                !onlyYearSummary ? "font-bold" : ""
+                !onlyYearSummary ? 'font-bold' : ''
               }`}
               onClick={() =>
                 onlyYearSummary &&
@@ -323,8 +326,8 @@ export const WorklogSummaryHeader = ({
               }
             >
               {selectedMonth !== null
-                ? dayjs().month(selectedMonth).format("MMM")
-                : dayjs().format("MMM")}
+                ? dayjs().month(selectedMonth).format('MMM')
+                : dayjs().format('MMM')}
             </Link>
             <div ref={monthDropdownRef}>
               <MonthTable
@@ -337,10 +340,10 @@ export const WorklogSummaryHeader = ({
               />
             </div>
             <span
-              className="material-symbols-outlined !text-base rounded-full border border-neutral-400 px-1 cursor-pointer hover:bg-neutral-100 scale-75"
+              className="material-symbols-outlined scale-75 cursor-pointer rounded-full border border-neutral-400 px-1 !text-base hover:bg-neutral-100"
               onClick={() => setIsMonthDropdownOpen(!isMonthDropdownOpen)}
             >
-              {isMonthDropdownOpen ? "expand_less" : "expand_more"}
+              {isMonthDropdownOpen ? 'expand_less' : 'expand_more'}
             </span>
           </div>
         </div>

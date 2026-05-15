@@ -1,21 +1,23 @@
-"use client";
+'use client';
 
-import { useState, SyntheticEvent, useEffect } from "react";
-import Snackbar from "@mui/material/Snackbar";
-import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import { popToast, pushToast, setGlobalToast } from "@/utils/redux/ui/ui.slice";
-import { Alert } from "@mui/material";
+import { Alert } from '@mui/material';
+import Snackbar from '@mui/material/Snackbar';
+import type { SyntheticEvent } from 'react';
+import { useState } from 'react';
+
+import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
+import { popToast, pushToast, setGlobalToast } from '@/utils/redux/ui/ui.slice';
 
 export enum ToastSeverity {
-  success = "success",
-  info = "info",
-  warning = "warning",
-  error = "error",
+  success = 'success',
+  info = 'info',
+  warning = 'warning',
+  error = 'error',
 }
 
 export const useMoonToast = () => {
   const dispatch = useAppDispatch();
-  const [toastMsg, setToastMsg] = useState<string>("");
+  const [toastMsg, setToastMsg] = useState<string>('');
   const [toastSev, setToastSev] = useState<ToastSeverity>();
   const showToast = (msg: string, severity: ToastSeverity) => {
     dispatch(setGlobalToast(true));
@@ -83,15 +85,15 @@ export const SimpleToast = ({
   onClose,
 }: any) => {
   return (
-    <div className={`absolute ${position || "top-2 right-2"}`}>
+    <div className={`absolute ${position || 'right-2 top-2'}`}>
       <div
         id="toast-default"
-        className="flex items-center w-full max-w-xs p-4 text-gray-500 bg-white rounded-lg shadow "
+        className="flex w-full max-w-xs items-center rounded-lg bg-white p-4 text-gray-500 shadow"
         role="alert"
       >
         {icon && (
           <div
-            className={`inline-flex items-center justify-center flex-shrink-0 w-8 h-8 text-${color}-500 bg-${color}-100 rounded-lg `}
+            className={`text- inline-flex size-8 shrink-0 items-center justify-center${color}-500 bg-${color}-100 rounded-lg`}
           >
             <span className="material-icons">{icon}</span>
           </div>
@@ -100,7 +102,7 @@ export const SimpleToast = ({
         {isHidable && (
           <button
             type="button"
-            className="ms-auto -mx-1.5 -my-1.5 bg-white text-gray-400 hover:text-gray-900 rounded-lg focus:ring-2 focus:ring-gray-300 p-1.5 hover:bg-gray-100 inline-flex items-center justify-center h-8 w-8 "
+            className="-m-1.5 ms-auto inline-flex size-8 items-center justify-center rounded-lg bg-white p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-900 focus:ring-2 focus:ring-gray-300"
             data-dismiss-target="#toast-default"
             onClick={onClose}
           >
@@ -117,16 +119,16 @@ export const MoonToast = ({
   action,
   position,
   duration = 2000,
-  severity = "success",
+  severity = 'success',
 }: {
   message: string;
   action?: string;
   duration?: number;
   position: {
-    vertical: "top" | "bottom";
-    horizontal: "left" | "center" | "right";
+    vertical: 'top' | 'bottom';
+    horizontal: 'left' | 'center' | 'right';
   };
-  severity: "success" | "info" | "warning" | "error" | undefined;
+  severity: 'success' | 'info' | 'warning' | 'error' | undefined;
 }) => {
   const dispatch = useAppDispatch();
   const globalToast = useAppSelector((state) => state.ui.globalToast);
@@ -136,7 +138,7 @@ export const MoonToast = ({
   };
 
   const handleClose = (event: SyntheticEvent | Event, reason?: string) => {
-    if (reason === "clickaway") {
+    if (reason === 'clickaway') {
       return;
     }
 
@@ -151,7 +153,7 @@ export const MoonToast = ({
       action={action}
       anchorOrigin={position}
     >
-      <Alert onClose={handleClose} severity={severity} sx={{ width: "100%" }}>
+      <Alert onClose={handleClose} severity={severity} sx={{ width: '100%' }}>
         {message}
       </Alert>
     </Snackbar>

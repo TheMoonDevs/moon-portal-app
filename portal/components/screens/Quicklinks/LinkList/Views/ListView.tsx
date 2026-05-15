@@ -1,7 +1,8 @@
 /* eslint-disable @next/next/no-img-element */
+import type { Link as Quicklink } from '@db/client';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Link as Quicklink } from '@prisma/client';
+
 import { LinkActions } from '../LinkActions';
 export const ListView = ({
   link,
@@ -22,7 +23,7 @@ export const ListView = ({
             <div className="rounded-full bg-white shadow-md">
               {link.logo ? (
                 <img
-                  className="h-[30px] w-[30px] rounded-full object-cover object-center"
+                  className="size-[30px] rounded-full object-cover object-center"
                   src={link.logo}
                   alt={link.title}
                 />
@@ -38,7 +39,7 @@ export const ListView = ({
             </div>
             <div className="flex flex-col px-4">
               <p className="font-regular text-xs">Like Site</p>
-              <p className="font-regular max-w-[200px] truncate text-center text-[10px] opacity-[0.5]">
+              <p className="font-regular max-w-[200px] truncate text-center text-[10px] opacity-50">
                 {link.url?.replace('https://', '')}
               </p>
             </div>
@@ -70,7 +71,7 @@ export const ListView = ({
         </p>
       </div>
       <div className="my-8 flex w-full items-center gap-2">
-        <div className="flex-grow-1 h-[1px] w-full bg-neutral-200"></div>
+        <div className="grow-1 h-px w-full bg-neutral-200"></div>
         {/* <p className="text-sm w-4/5 font-semibold">
           {new Date(link.).toLocaleDateString()}
           </p> */}

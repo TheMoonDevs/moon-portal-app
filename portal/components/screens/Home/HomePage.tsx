@@ -1,38 +1,33 @@
 'use client';
 
-import { useUser } from '@/utils/hooks/useUser';
-import { ActionsSection } from './ActionsSection';
-import { DailySection } from './DailySection';
-import { ProfileSection } from './ProfileSection';
-import {
-  ClientUtilityLink,
-  Engagement,
-  User,
-  USERTYPE,
-  WorkLogs,
-} from '@prisma/client';
-import { LoaderScreen, Spinner } from '@/components/elements/Loaders';
-import { MoodTabs } from './MoodTabs';
-import { useEffect, useState } from 'react';
-import { StartSection } from './StartSection';
-import { HomeTabs } from '@/utils/@types/enums';
-import { ButtonBoard } from './ButtonBoard';
-import { APP_ROUTES } from '@/utils/constants/appInfo';
-import { useRouter } from 'next/navigation';
-import { InWorkSection } from './InWorkSection';
-import { InPlanSection } from './InPlanSection';
-import { USERROLE } from '@prisma/client';
-import media from '@/styles/media';
+import type { ClientUtilityLink, Engagement, User, WorkLogs } from '@db/client';
+import { USERTYPE } from '@db/client';
+import { USERROLE } from '@db/client';
 import { Drawer, useMediaQuery } from '@mui/material';
-import { CoreTeamSection } from './CoreTeamSection';
-import { RootState, useAppDispatch, useAppSelector } from '@/utils/redux/store';
-import Link from 'next/link';
-import Events from './Events';
-import { Toaster } from 'sonner';
-import { PortalSdk } from '@/utils/services/PortalSdk';
 import dayjs from 'dayjs';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { Toaster } from 'sonner';
+
+import { LoaderScreen, Spinner } from '@/components/elements/Loaders';
+import media from '@/styles/media';
+import { HomeTabs } from '@/utils/@types/enums';
 import { MdxAppEditor } from '@/utils/configure/MdxAppEditor';
-import ToolTip from '@/components/elements/ToolTip';
+import { APP_ROUTES } from '@/utils/constants/appInfo';
+import { useUser } from '@/utils/hooks/useUser';
+import type { RootState } from '@/utils/redux/store';
+import { useAppSelector } from '@/utils/redux/store';
+import { PortalSdk } from '@/utils/services/PortalSdk';
+
+import { ActionsSection } from './ActionsSection';
+import { ButtonBoard } from './ButtonBoard';
+import { CoreTeamSection } from './CoreTeamSection';
+import { DailySection } from './DailySection';
+import Events from './Events';
+import { InWorkSection } from './InWorkSection';
+import { ProfileSection } from './ProfileSection';
+import { StartSection } from './StartSection';
 
 const FocusMode = () => {
   const { user } = useUser();
@@ -66,24 +61,27 @@ const FocusMode = () => {
     fetchWorkLogs();
   }, [user, isMobile, workLogId]);
 
-  const link = isMobile && workLogId && !loadingWorkLog ? `${APP_ROUTES.userWorklogs}/${workLogId}?logType=dayLog&date=${currentDate}`
-    : APP_ROUTES.userWorklogs;
+  const link =
+    isMobile && workLogId && !loadingWorkLog
+      ? `${APP_ROUTES.userWorklogs}/${workLogId}?logType=dayLog&date=${currentDate}`
+      : APP_ROUTES.userWorklogs;
 
-  return (<div className="mt-4 flex w-full flex-col-reverse gap-6 md:mt-0 md:flex-col">
-    <div>
-      <h4 className="px-4 text-lg font-bold">In Progress Today </h4>
-      <InWorkSection visible={true} />
+  return (
+    <div className="mt-4 flex w-full flex-col-reverse gap-6 md:mt-0 md:flex-col">
+      <div>
+        <h4 className="px-4 text-lg font-bold">In Progress Today </h4>
+        <InWorkSection visible={true} />
+      </div>
+      <Link
+        className="mx-4 self-stretch rounded-md bg-green-500 px-[30px] py-3 text-center text-sm font-bold uppercase tracking-[4px] text-white hover:bg-green-400"
+        href={link}
+      >
+        <span className="select-none md:mb-0">
+          Enter &nbsp; Focus &nbsp; Mode
+        </span>
+      </Link>
     </div>
-    <Link
-      className="mx-4 self-stretch rounded-md bg-green-500 px-[30px] py-3 text-center text-sm font-bold uppercase tracking-[4px] text-white hover:bg-green-400"
-      href={link}
-    >
-      <span className="select-none md:mb-0">
-        Enter &nbsp; Focus &nbsp; Mode
-      </span>
-    </Link>
-  </div>
-  )
+  );
 };
 const CoreTeamAsSection = ({
   hasTrialCandidates,
@@ -157,7 +155,7 @@ const MemberHomePage = () => {
           isCoreTeamDrawerOpen={isCoreTeamDrawerOpen}
           setCoreTeamDrawerOpen={setCoreTeamDrawerOpen}
         />
-        <div className="flex w-full flex-col pb-2 pt-3 md:pb-0 md:pt-0">
+        <div className="flex w-full flex-col pb-2 pt-3 md:py-0">
           {!isTabletOrMore && <FocusMode />}
         </div>
         <StartSection />
@@ -310,7 +308,7 @@ const ClientHomePage = () => {
                   className=""
                 >
                   <div className="flex flex-row items-center gap-4 border-b border-neutral-200 bg-white px-5 py-3 text-xl hover:bg-white/70">
-                    <span className="material-symbols-outlined ml-[-5px] mr-[-5px] rounded-full object-contain object-center">
+                    <span className="material-symbols-outlined mx-[-5px] rounded-full object-contain object-center">
                       link
                     </span>
                     <p className="font-regular mb-0 text-[0.75em]">
@@ -328,11 +326,11 @@ const ClientHomePage = () => {
                     <Link key={shortcut.id} href={shortcut.url} target="_blank">
                       <div className="flex flex-row items-center gap-4 border-b border-neutral-200 bg-white px-5 py-3 text-xl hover:bg-white/70">
                         {!shortcut.icon ? (
-                          <span className="material-symbols-outlined ml-[-5px] mr-[-5px] rounded-full object-contain object-center">
+                          <span className="material-symbols-outlined mx-[-5px] rounded-full object-contain object-center">
                             link
                           </span>
                         ) : (
-                          <p className="ml-[-5px] mr-[-5px] rounded-full object-contain object-center text-2xl">
+                          <p className="mx-[-5px] rounded-full object-contain object-center text-2xl">
                             {shortcut.icon}
                           </p>
                         )}
@@ -365,14 +363,14 @@ const ClientHomePage = () => {
               <div className="m-4 mt-6 flex max-h-[90vh] flex-col gap-1 rounded-xl">
                 {engagements.map((eng) => {
                   return (
-                    <div>
+                    <div key={eng.id}>
                       <div
                         onClick={() => handleEngagementClick(eng)}
-                        key={eng.id}
-                        className={`flex cursor-pointer flex-col items-center justify-between rounded-lg shadow-sm ${expandedEngagement?.id === eng.id
-                          ? 'bg-gray-50'
-                          : 'bg-white'
-                          }`}
+                        className={`flex cursor-pointer flex-col items-center justify-between rounded-lg shadow-sm ${
+                          expandedEngagement?.id === eng.id
+                            ? 'bg-gray-50'
+                            : 'bg-white'
+                        }`}
                       >
                         <div
                           className={`flex w-full cursor-pointer flex-row items-center justify-between rounded-lg ${expandedEngagement ? 'border-t' : 'border'} border-neutral-300 p-4 shadow-sm`}
@@ -388,14 +386,15 @@ const ClientHomePage = () => {
                         </div>
                         {expandedEngagement?.id === eng.id && (
                           <div
-                            className={`max-h-[300px] w-full overflow-y-auto rounded-lg p-4 shadow-sm transition-all duration-300 ease-in-out ${expandedEngagement?.id === eng.id
-                              ? 'max-h-[300px] opacity-100'
-                              : 'max-h-0 opacity-0'
-                              }`}
+                            className={`max-h-[300px] w-full overflow-y-auto rounded-lg p-4 shadow-sm transition-all duration-300 ease-in-out ${
+                              expandedEngagement?.id === eng.id
+                                ? 'max-h-[300px] opacity-100'
+                                : 'max-h-0 opacity-0'
+                            }`}
                           >
                             <div className="flex flex-col">
                               <h5 className="text-md my-1 font-semibold">
-                                {expandedEngagement.title} Worklogs
+                                {expandedEngagement?.title} Worklogs
                               </h5>
                               {isWorklogsLoading ? (
                                 <div className="mt-2 text-sm font-normal text-neutral-400">
@@ -406,54 +405,56 @@ const ClientHomePage = () => {
                                   {worklogs.map((workLog) => {
                                     return (
                                       <div key={workLog.id}>
-                                        {workLog.works?.map((work) => {
-                                          return (
-                                            <div
-                                              key={workLog.id}
-                                              className="rounded-lg bg-transparent px-0"
-                                            >
-                                              <h1 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[1.5px] text-gray-800">
-                                                {engagementDevelopers
-                                                  .filter(
-                                                    (user) =>
-                                                      user.id ===
-                                                      workLog.userId,
-                                                  )
-                                                  .map((user) => (
-                                                    <div
-                                                      key={user.id}
-                                                      className="flex items-center gap-2"
-                                                    >
-                                                      <img
-                                                        src={
-                                                          user.avatar ||
-                                                          '/images/avatar.png'
-                                                        }
-                                                        alt={user.name || ''}
-                                                        className="h-7 w-7 cursor-pointer rounded-full object-cover"
-                                                      />
-                                                      <span>{user.name}</span>
-                                                    </div>
-                                                  ))}
-                                              </h1>
+                                        {workLog.works?.map(
+                                          (work: any, idx: number) => {
+                                            return (
+                                              <div
+                                                key={`${workLog.id}-${idx}`}
+                                                className="rounded-lg bg-transparent px-0"
+                                              >
+                                                <h1 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[1.5px] text-gray-800">
+                                                  {engagementDevelopers
+                                                    .filter(
+                                                      (user) =>
+                                                        user.id ===
+                                                        workLog.userId,
+                                                    )
+                                                    .map((user) => (
+                                                      <div
+                                                        key={user.id}
+                                                        className="flex items-center gap-2"
+                                                      >
+                                                        <img
+                                                          src={
+                                                            user.avatar ||
+                                                            '/images/avatar.png'
+                                                          }
+                                                          alt={user.name || ''}
+                                                          className="size-7 cursor-pointer rounded-full object-cover"
+                                                        />
+                                                        <span>{user.name}</span>
+                                                      </div>
+                                                    ))}
+                                                </h1>
 
-                                              <MdxAppEditor
-                                                readOnly
-                                                markdown={
-                                                  typeof work === 'object' &&
+                                                <MdxAppEditor
+                                                  readOnly
+                                                  markdown={
+                                                    typeof work === 'object' &&
                                                     work !== null &&
                                                     'content' in work
-                                                    ? ((work.content as string) ??
-                                                      '')
-                                                    : ''
-                                                }
-                                                contentEditableClassName="summary_mdx flex flex-col gap-4 z-1 mb-[-20px] !py-0 ml-3"
-                                                editorKey={'engagement-mdx'}
-                                                className="z-1"
-                                              />
-                                            </div>
-                                          );
-                                        })}
+                                                      ? ((work.content as string) ??
+                                                        '')
+                                                      : ''
+                                                  }
+                                                  contentEditableClassName="summary_mdx flex flex-col gap-4 z-1 mb-[-20px] !py-0 ml-3"
+                                                  editorKey={'engagement-mdx'}
+                                                  className="z-1"
+                                                />
+                                              </div>
+                                            );
+                                          },
+                                        )}
                                       </div>
                                     );
                                   })}
@@ -466,7 +467,7 @@ const ClientHomePage = () => {
                                       : loading
                                         ? 'Loading engagements...'
                                         : worklogs.length === 0 &&
-                                        'No work logs found'}
+                                          'No work logs found'}
                                   </p>
                                 </div>
                               )}
@@ -511,11 +512,12 @@ const ClientHomePage = () => {
                           <img
                             src={
                               dev?.avatar ||
-                              `https://via.placeholder.com/150?text=${dev?.name?.charAt(0) || 'U'
+                              `https://via.placeholder.com/150?text=${
+                                dev?.name?.charAt(0) || 'U'
                               }`
                             }
                             alt={dev?.name?.charAt(0) || ''}
-                            className="h-8 w-8 rounded-full object-cover object-center"
+                            className="size-8 rounded-full object-cover object-center"
                           />
                         </div>
                         <div className="text-left">
@@ -548,6 +550,7 @@ export const HomePage = () => {
   const router = useRouter();
 
   if (!user) return <LoaderScreen />;
+  // console.log('User in HomePage:', user); // Debugging line to check user data
   if (user.userType == USERTYPE.MEMBER) {
     return <MemberHomePage />;
   }
@@ -561,12 +564,3 @@ export const HomePage = () => {
     </div>
   );
 };
-function usePassphrase(): {
-  showModal: any;
-  setShowModal: any;
-  modalMode: any;
-  handleSetPassphrase: any;
-  handleVerifyPassphrase: any;
-} {
-  throw new Error('Function not implemented.');
-}

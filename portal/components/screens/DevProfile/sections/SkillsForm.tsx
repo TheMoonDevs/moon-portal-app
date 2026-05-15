@@ -1,8 +1,9 @@
 'use client';
-import { PortalSdk } from '@/utils/services/PortalSdk';
-import { Autocomplete, TextField, Chip } from '@mui/material';
+import { Autocomplete, Chip, TextField } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
+
+import { PortalSdk } from '@/utils/services/PortalSdk';
 
 const SkillsForm = () => {
   const { setValue, watch } = useFormContext();
@@ -105,7 +106,7 @@ const SkillsForm = () => {
             />
           ))
         ) : (
-          <div className="my-10 flex h-full w-full flex-col items-center justify-center text-gray-500">
+          <div className="my-10 flex size-full flex-col items-center justify-center text-gray-500">
             <span className="material-symbols-outlined !text-8xl !opacity-80">
               psychology
             </span>

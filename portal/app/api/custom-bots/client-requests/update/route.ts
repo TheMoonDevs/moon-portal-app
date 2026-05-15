@@ -1,40 +1,44 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/prisma/prisma';
-import { updateClientRequest } from '@/utils/services/customBots/clientRequests/updateClientRequest';
 
-export async function GET(req: Request) {
+
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
+import { resolveOptionsFetcher } from '@/lib/worksheets';
+
+export const dynamic = 'force-dynamic';
+
+
+
+export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const clientRequestId = searchParams.get('requestId');
-    if (!clientRequestId)
+    const url = new URL(request.url);
+    const type = url.searchParams.get('type') ?? '';
+    const query = url.searchParams.get('query') ?? '';
+    const worksheetId = url.searchParams.get('worksheetId') ?? '';
+    const field = url.searchParams.get('field') ?? '';
+
+    const fetcher = resolveOptionsFetcher({
+      worksheetId: worksheetId || undefined,
+      field: field || undefined,
+      type: type || undefined,
+    });
+    if (!fetcher) {
       return NextResponse.json(
-        { error: 'Missing clientRequestId' },
+        worksheetId && field
+          ? {
+              error: `No options config for worksheet ${worksheetId} field ${field}`,
+            }
+          : { error: `Unknown options type: ${type}` },
         { status: 400 },
       );
+    }
 
-    const clientRequest = await prisma.clientRequest.findUnique({
-      where: { id: clientRequestId },
-      include: { requestUpdates: true },
-    });
-    if (!clientRequest)
-      return NextResponse.json(
-        { error: 'Client request not found' },
-        { status: 404 },
-      );
-
-    const updatedClientRequest = await updateClientRequest(clientRequest);
-
+    const options = await fetcher(query);
+    return NextResponse.json({ options });
+  } catch (e) {
+    console.error('Options fetch error:', e);
     return NextResponse.json(
-      {
-        requestMessages: updatedClientRequest?.requestMessages,
-        requestStatus: updatedClientRequest?.requestStatus,
-      },
-      { status: 200 },
-    );
-  } catch (error) {
-    console.error('Error updating client request:', error);
-    return NextResponse.json(
-      { error: 'Internal Server Error' },
+      { error: e instanceof Error ? e.message : 'Failed to fetch options' },
       { status: 500 },
     );
   }

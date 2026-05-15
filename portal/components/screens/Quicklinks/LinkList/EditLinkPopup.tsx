@@ -1,14 +1,16 @@
-import { CircularProgress } from "@mui/material";
-import { useRef, useState } from "react";
-import { Modal, Tooltip } from "@mui/material";
-import Link from "next/link";
-import Image from "next/image";
-import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
-import { FormFields } from "./LinkActions";
-import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import { TMD_PORTAL_API_KEY } from "@/utils/constants/appInfo";
-import { setToast } from "@/utils/redux/quicklinks/slices/quicklinks.ui.slice";
-import { updateQuicklink } from "@/utils/redux/quicklinks/slices/quicklinks.links.slice";
+import { CircularProgress } from '@mui/material';
+import { Modal, Tooltip } from '@mui/material';
+import Image from 'next/image';
+import Link from 'next/link';
+import { useRef, useState } from 'react';
+
+import { TMD_PORTAL_API_KEY } from '@/utils/constants/appInfo';
+import { updateQuicklink } from '@/utils/redux/quicklinks/slices/quicklinks.links.slice';
+import { setToast } from '@/utils/redux/quicklinks/slices/quicklinks.ui.slice';
+import { useAppDispatch } from '@/utils/redux/store';
+import { QuicklinksSdk } from '@/utils/services/QuicklinksSdk';
+
+import type { FormFields } from './LinkActions';
 
 export const EditLinkPopup = ({
   isModalOpen,
@@ -29,24 +31,24 @@ export const EditLinkPopup = ({
     imageFile: File | null;
     logoFile: File | null;
     logo: string | null;
-  }>({ image: "", logo: "", imageFile: null, logoFile: null });
+  }>({ image: '', logo: '', imageFile: null, logoFile: null });
   const dispatch = useAppDispatch();
   const imageInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = async (
     e: React.ChangeEvent<HTMLInputElement>,
-    type: string
+    type: string,
   ) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
-      if (type === "image" && imageInputRef.current) {
+      if (type === 'image' && imageInputRef.current) {
         setPreviewImage({
           ...previewImage,
           image: URL.createObjectURL(file),
           imageFile: file,
         });
-      } else if (type === "logo") {
+      } else if (type === 'logo') {
         setPreviewImage({
           ...previewImage,
           logo: URL.createObjectURL(file),
@@ -89,10 +91,10 @@ export const EditLinkPopup = ({
   const handleFileUpload = async (file: File, type: string) => {
     try {
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append('file', file);
 
-      const response = await fetch("/api/quicklinks/link/upload-img", {
-        method: "POST",
+      const response = await fetch('/api/quicklinks/link/upload-img', {
+        method: 'POST',
         body: formData,
         headers: {
           tmd_portal_api_key: TMD_PORTAL_API_KEY,
@@ -103,11 +105,11 @@ export const EditLinkPopup = ({
       if (response.ok) {
         return data.fileInfo.fileUrl;
       } else {
-        console.error("Failed to upload file:", data.message);
+        console.error('Failed to upload file:', data.message);
         throw new Error(data.message);
       }
     } catch (error) {
-      console.error("Error uploading file:", error);
+      console.error('Error uploading file:', error);
       throw error;
     }
   };
@@ -118,11 +120,11 @@ export const EditLinkPopup = ({
       setLoading(true);
 
       const imageUploadUrl = previewImage.imageFile
-        ? await handleFileUpload(previewImage.imageFile, "image")
+        ? await handleFileUpload(previewImage.imageFile, 'image')
         : fields.image;
 
       const logoUploadUrl = previewImage.logoFile
-        ? await handleFileUpload(previewImage.logoFile, "logo")
+        ? await handleFileUpload(previewImage.logoFile, 'logo')
         : fields.logo;
 
       const response = await QuicklinksSdk.updateData(`/api/quicklinks/link`, {
@@ -139,9 +141,9 @@ export const EditLinkPopup = ({
       dispatch(
         setToast({
           showToast: true,
-          toastMsg: "Link updated!",
-          toastSev: "success",
-        })
+          toastMsg: 'Link updated!',
+          toastSev: 'success',
+        }),
       );
       const updatedLink = response.data.link;
       setFields(updatedLink);
@@ -154,9 +156,9 @@ export const EditLinkPopup = ({
       dispatch(
         setToast({
           showToast: true,
-          toastMsg: "Error updating link, please try again",
-          toastSev: "error",
-        })
+          toastMsg: 'Error updating link, please try again',
+          toastSev: 'error',
+        }),
       );
     }
   };
@@ -177,11 +179,11 @@ export const EditLinkPopup = ({
       }}
       aria-labelledby="edit-link-modal"
       aria-describedby="modal-modal-description"
-      className='!max-sm:w-[90%]'
+      className="!max-sm:w-[90%]"
     >
-      <div className="relative bg-white rounded-lg shadow-xl max-w-md mx-auto my-12 border border-gray-200 outline-none">
+      <div className="relative mx-auto my-12 max-w-md rounded-lg border border-gray-200 bg-white shadow-xl outline-none">
         <button
-          className="absolute -top-3 -right-3 z-10 border-2 border-gray-300  px-1  flex items-center justify-center rounded-full text-gray-500 focus:outline-none  bg-gray-200 hover:bg-gray-100"
+          className="absolute -right-3 -top-3 z-10 flex items-center justify-center rounded-full border-2 border-gray-300 bg-gray-200 px-1 text-gray-500 hover:bg-gray-100 focus:outline-none"
           onClick={handleCloseModal}
         >
           <span className="material-symbols-outlined !text-base">close</span>
@@ -191,43 +193,40 @@ export const EditLinkPopup = ({
           type="file"
           ref={imageInputRef}
           className="hidden"
-          onChange={(e) => handleFileChange(e, "image")}
+          onChange={(e) => handleFileChange(e, 'image')}
         />
         <input
           type="file"
           ref={logoInputRef}
           className="hidden"
-          onChange={(e) => handleFileChange(e, "logo")}
+          onChange={(e) => handleFileChange(e, 'logo')}
         />
 
         {/* Cover Image */}
 
         <div
-          className="w-full h-48 relative rounded-t-lg overflow-hidden cursor-pointer group"
+          className="group relative h-48 w-full cursor-pointer overflow-hidden rounded-t-lg"
           onClick={() => imageInputRef.current?.click()}
         >
           <Image
-            src={previewImage.image || fields.image || "/logo/logo.png"}
+            src={previewImage.image || fields.image || '/logo/logo.png'}
             alt="cover image"
             layout="fill"
             objectFit="cover"
-            className={`w-full h-48 border-b-2 object-cover border-gray-200 ${
-              imageLoading ? "blur-[2px]" : ""
+            className={`h-48 w-full border-b-2 border-gray-200 object-cover ${
+              imageLoading ? 'blur-[2px]' : ''
             }`}
           />
           {imageLoading && (
-            <div className="absolute inset-0 flex justify-center items-center bg-black bg-opacity-50">
-              <CircularProgress sx={{ color: "whitesmoke" }} />
+            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
+              <CircularProgress sx={{ color: 'whitesmoke' }} />
             </div>
           )}
           <Tooltip title="Edit Profile Image">
-            <div
-              className="group-hover:flex hidden absolute top-2 left-2 w-2 h-auto cursor-pointer  justify-center items-center gap-1 py-2 px-4 shadow-sm text-sm font-medium text-gray-600 border-2 border-gray-400
-              bg-opacity-80 hover:bg-opacity-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black hover:bg-gray-200 bg-gray-200 rounded-full"
-            >
+            <div className="absolute left-2 top-2 hidden h-auto w-2 cursor-pointer items-center justify-center gap-1 rounded-full border-2 border-gray-400 bg-gray-200 bg-opacity-80 px-4 py-2 text-sm font-medium text-gray-600 shadow-sm hover:bg-gray-200 hover:bg-opacity-100 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 group-hover:flex">
               <span
                 className="material-symbols-outlined"
-                style={{ fontSize: "16px" }}
+                style={{ fontSize: '16px' }}
               >
                 edit
               </span>
@@ -239,26 +238,26 @@ export const EditLinkPopup = ({
 
         <div className="relative mb-2 flex justify-center">
           <div
-            className="w-28 h-28 -mt-12  relative rounded-full border-4 border-black bg-white cursor-pointer "
+            className="relative -mt-12 size-28 cursor-pointer rounded-full border-4 border-black bg-white"
             onClick={() => logoInputRef.current?.click()}
           >
             <Image
-              src={previewImage.logo || fields.logo || "/logo/logo.png"}
+              src={previewImage.logo || fields.logo || '/logo/logo.png'}
               alt="logo"
               layout="fill"
               objectFit="cover"
-              className={`rounded-full p-1 ${logoLoading ? "blur-[2px]" : ""}`}
+              className={`rounded-full p-1 ${logoLoading ? 'blur-[2px]' : ''}`}
             />
             {logoLoading && (
-              <div className="absolute inset-0 flex justify-center items-center bg-black bg-opacity-50 rounded-full">
-                <CircularProgress sx={{ color: "whitesmoke" }} />
+              <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black bg-opacity-50">
+                <CircularProgress sx={{ color: 'whitesmoke' }} />
               </div>
             )}
             <Tooltip title="Edit Logo">
-              <div className="w-7 h-7 absolute bottom-2 right-0 z-10 p-1 flex items-center justify-center rounded-full text-gray-600  focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 cursor-pointer border-[2px] border-gray-600 bg-gray-200  ">
+              <div className="absolute bottom-2 right-0 z-10 flex size-7 cursor-pointer items-center justify-center rounded-full border-2 border-gray-600 bg-gray-200 p-1 text-gray-600 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2">
                 <span
                   className="material-symbols-outlined"
-                  style={{ fontSize: "15px" }}
+                  style={{ fontSize: '15px' }}
                 >
                   edit
                 </span>
@@ -280,7 +279,7 @@ export const EditLinkPopup = ({
               type="text"
               value={fields.title}
               onChange={(e) => setFields({ ...fields, title: e.target.value })}
-              className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-black focus:border-black sm:text-sm"
+              className="mt-1 block w-full rounded-md border border-gray-300 bg-gray-50 px-3 py-2 shadow-sm focus:border-black focus:outline-none focus:ring-black sm:text-sm"
             />
           </div>
           <div>
@@ -296,11 +295,11 @@ export const EditLinkPopup = ({
               onChange={(e) =>
                 setFields({ ...fields, description: e.target.value })
               }
-              className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-black focus:border-black sm:text-sm"
+              className="mt-1 block w-full rounded-md border border-gray-300 bg-gray-50 px-3 py-2 shadow-sm focus:border-black focus:outline-none focus:ring-black sm:text-sm"
             />
           </div>
           <div>
-            <div className="flex justify-between items-center">
+            <div className="flex items-center justify-between">
               <label
                 htmlFor="url"
                 className="block text-sm font-medium text-gray-700"
@@ -309,13 +308,13 @@ export const EditLinkPopup = ({
               </label>
               <Link
                 href={fields.url}
-                className="text-xs text-gray-500 flex justify-center items-center gap-1"
+                className="flex items-center justify-center gap-1 text-xs text-gray-500"
                 target="_blank"
               >
                 Visit Link
                 <span
-                  className="material-symbols-outlined "
-                  style={{ fontSize: "12px" }}
+                  className="material-symbols-outlined"
+                  style={{ fontSize: '12px' }}
                 >
                   open_in_new
                 </span>
@@ -326,12 +325,12 @@ export const EditLinkPopup = ({
               type="text"
               value={fields.url}
               onChange={(e) => setFields({ ...fields, url: e.target.value })}
-              className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-black focus:border-black sm:text-sm"
+              className="mt-1 block w-full rounded-md border border-gray-300 bg-gray-50 px-3 py-2 shadow-sm focus:border-black focus:outline-none focus:ring-black sm:text-sm"
             />
           </div>
           <button
             type="submit"
-            className="w-full flex justify-center items-center gap-2 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-black hover:bg-opacity-80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black"
+            className="flex w-full items-center justify-center gap-2 rounded-md border border-transparent bg-black px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-opacity-80 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2"
             disabled={loading}
           >
             {loading ? (
@@ -340,7 +339,7 @@ export const EditLinkPopup = ({
               <>
                 <span className="material-symbols-outlined !text-base">
                   task_alt
-                </span>{" "}
+                </span>{' '}
                 Save
               </>
             )}

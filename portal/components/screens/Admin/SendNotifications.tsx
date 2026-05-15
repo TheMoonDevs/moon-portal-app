@@ -1,9 +1,12 @@
 'use client';
-import React, { ChangeEvent, FormEvent, useState, useEffect } from 'react';
-import { MobileBox } from '../Login/Login';
+import type { User } from '@db/client';
+import type { ChangeEvent, FormEvent } from 'react';
+import React, { useState } from 'react';
+
 import { Spinner } from '@/components/elements/Loaders';
 import { PortalSdk } from '@/utils/services/PortalSdk';
-import { User } from '@prisma/client';
+
+import { MobileBox } from '../Login/Login';
 
 const SendNotifications = ({
   users,
@@ -23,7 +26,7 @@ const SendNotifications = ({
     const value = e.target.value.toLowerCase();
     setSearchTerm(e.target.value);
     const filteredUsers = users.filter((user) =>
-      user.name?.toLowerCase().includes(value)
+      user.name?.toLowerCase().includes(value),
     );
     setSuggestions(filteredUsers);
     setUser(null);
@@ -43,7 +46,7 @@ const SendNotifications = ({
       title,
       description,
       notificationType: 'ADMIN',
-      isRead: false
+      isRead: false,
     };
     try {
       setSending(true);
@@ -65,42 +68,42 @@ const SendNotifications = ({
 
   return (
     <MobileBox customClass="!w-[50%]">
-      <p className='text-neutral-400 tracking-[0.5em] uppercase text-xs text-center mb-6'>
+      <p className="mb-6 text-center text-xs uppercase tracking-[0.5em] text-neutral-400">
         Send Notifications
       </p>
       {loading ? (
-        <div className='flex items-center justify-center h-full'>
+        <div className="flex h-full items-center justify-center">
           <Spinner />
         </div>
       ) : (
         <>
           <form
             onSubmit={handleSubmit}
-            className='w-[90%] flex flex-col flex-grow my-2 relative'
+            className="relative my-2 flex w-[90%] grow flex-col"
           >
-            <div className='flex-grow'>
-              <div className='mb-6'>
+            <div className="grow">
+              <div className="mb-6">
                 <label
-                  htmlFor='user'
-                  className='block text-sm font-medium text-neutral-300 mb-1'
+                  htmlFor="user"
+                  className="mb-1 block text-sm font-medium text-neutral-300"
                 >
                   Select User
                 </label>
                 <input
-                  type='text'
-                  id='user'
+                  type="text"
+                  id="user"
                   value={searchTerm}
                   onChange={handleUserChange}
-                  className='w-full p-2 bg-neutral-800 text-neutral-200 border border-neutral-500 rounded'
-                  placeholder='Search users...'
+                  className="w-full rounded border border-neutral-500 bg-neutral-800 p-2 text-neutral-200"
+                  placeholder="Search users..."
                 />
                 {searchTerm && suggestions.length > 0 && (
-                  <div className='suggestions-container w-full absolute'>
-                    <ul className='bg-neutral-900 text-neutral-200 border border-neutral-500 rounded mt-1 absolute z-10 max-h-40 overflow-y-auto w-full'>
+                  <div className="suggestions-container absolute w-full">
+                    <ul className="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded border border-neutral-500 bg-neutral-900 text-neutral-200">
                       {suggestions.map((suggestion) => (
                         <li
                           key={suggestion.id}
-                          className='p-2 cursor-pointer hover:bg-neutral-700'
+                          className="cursor-pointer p-2 hover:bg-neutral-700"
                           onClick={() => handleUserSelect(suggestion)}
                         >
                           {suggestion.name}
@@ -110,43 +113,43 @@ const SendNotifications = ({
                   </div>
                 )}
               </div>
-              <div className='mb-6'>
+              <div className="mb-6">
                 <label
-                  htmlFor='title'
-                  className='block text-sm font-medium text-neutral-300 mb-1'
+                  htmlFor="title"
+                  className="mb-1 block text-sm font-medium text-neutral-300"
                 >
                   Title
                 </label>
                 <input
-                  type='text'
-                  id='title'
+                  type="text"
+                  id="title"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className='w-full p-2 bg-neutral-800 text-neutral-200 border border-neutral-500 rounded'
-                  placeholder='Enter title...'
+                  className="w-full rounded border border-neutral-500 bg-neutral-800 p-2 text-neutral-200"
+                  placeholder="Enter title..."
                 />
               </div>
-              <div className='mb-6'>
+              <div className="mb-6">
                 <label
-                  htmlFor='description'
-                  className='block text-sm font-medium text-neutral-300 mb-1'
+                  htmlFor="description"
+                  className="mb-1 block text-sm font-medium text-neutral-300"
                 >
                   Description
                 </label>
                 <textarea
-                  id='description'
+                  id="description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className='w-full p-2 bg-neutral-800 text-neutral-200 border border-neutral-500 rounded'
-                  placeholder='Enter description...'
-                  style={{resize:'none'}}
+                  className="w-full rounded border border-neutral-500 bg-neutral-800 p-2 text-neutral-200"
+                  placeholder="Enter description..."
+                  style={{ resize: 'none' }}
                 />
               </div>
             </div>
-            <div className='mt-auto'>
+            <div className="mt-auto">
               <button
-                type='submit'
-                className='py-2 px-5 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg flex items-center justify-center shadow-md w-full'
+                type="submit"
+                className="flex w-full items-center justify-center rounded-lg bg-neutral-800 px-5 py-2 text-white shadow-md hover:bg-neutral-700"
                 disabled={!user || !title || !description}
               >
                 {sending ? (
@@ -154,7 +157,7 @@ const SendNotifications = ({
                 ) : (
                   <>
                     Send Notification
-                    <span className='material-symbols-outlined ml-2'>send</span>
+                    <span className="material-symbols-outlined ml-2">send</span>
                   </>
                 )}
               </button>

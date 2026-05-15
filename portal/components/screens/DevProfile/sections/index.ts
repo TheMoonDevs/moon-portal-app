@@ -1,4 +1,4 @@
-import { DevProfile } from '@prisma/client';
+import type { DevProfile } from '@db/client';
 import dayjs from 'dayjs';
 import { toast } from 'sonner';
 
@@ -85,7 +85,7 @@ export const validateStepFields = (
   suppressToast = false,
 ) => {
   switch (step) {
-    case 0:
+    case 0: {
       const missingFieldsStep1 = Object.keys(fieldLabels).filter(
         (field) => !data[field as keyof DevProfile],
       );
@@ -101,6 +101,7 @@ export const validateStepFields = (
         return false;
       }
       break;
+    }
 
     case 1:
       if (data.workExperience.length === 0) {

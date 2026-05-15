@@ -1,15 +1,16 @@
 'use client';
+import type { Engagement, User, WorkLogs } from '@db/client';
+import { USERROLE, USERTYPE } from '@db/client';
+import Link from 'next/link';
+import React, { useEffect, useRef, useState } from 'react';
+
 import { Spinner } from '@/components/elements/Loaders';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
 import { PortalSdk } from '@/utils/services/PortalSdk';
-import { Engagement, User, USERROLE, USERTYPE, WorkLogs } from '@prisma/client';
-import dayjs from 'dayjs';
-import Link from 'next/link';
-import React, { useEffect, useRef, useState } from 'react';
-import EngagementWorklogs from './Worklogs';
+
 import EngagementHeader from './EngagementHeader';
-import { EngagementTeam } from './EngagementTeam';
 import EngagementsList from './EngagementsList';
+import EngagementWorklogs from './Worklogs';
 
 const EngagementsPage = () => {
   const [loading, setLoading] = useState(true);
@@ -79,7 +80,7 @@ const EngagementsPage = () => {
 
   return (
     <div className="flex flex-col items-center gap-2 overflow-y-hidden">
-      <div className="fixed left-0 right-0 top-0 z-10 flex h-14 flex-row items-center justify-between gap-3 border-b border-neutral-400 bg-white px-3 py-2 md:left-4 md:pl-[6rem]">
+      <div className="fixed inset-x-0 top-0 z-10 flex h-14 flex-row items-center justify-between gap-3 border-b border-neutral-400 bg-white px-3 py-2 md:left-4 md:pl-24">
         <div className="flex items-center">
           <Link href={APP_ROUTES.home}>
             <h1 className="mr-3 cursor-pointer whitespace-nowrap border-r-2 pr-3 text-sm font-extrabold md:text-lg">

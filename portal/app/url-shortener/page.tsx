@@ -1,31 +1,29 @@
-"use client";
+'use client';
 
-import { ShortUrlList } from "@/components/screens/ShortUrl/ShortUrlList";
-import { ShortUrlCard } from "@/components/screens/ShortUrl/ShortUrlCard";
-import { PageAccess } from "@/components/global/PageAccess";
-import Link from "next/link";
-import { APP_ROUTES } from "@/utils/constants/appInfo";
-import { Bottombar } from "@/components/global/Bottombar";
+import { Bottombar } from '@/components/global/Bottombar';
+import { PageAccess } from '@/components/global/PageAccess';
+import { ShortUrlCard } from '@/components/screens/ShortUrl/ShortUrlCard';
+import { ShortUrlList } from '@/components/screens/ShortUrl/ShortUrlList';
 
 export default function URLShortnerPage() {
   return (
     <PageAccess isAuthRequired={true}>
       <Bottombar visible={true} />
-      <div className=" h overflow-hidden ">
-        <div className="rounded-lg pt-6 pl-6 flex items-center gap-2 text-neutral-900   ">
-          <h1 className=" tracking-[0.01em] text-3xl font-bold flex gap-4 items-center">
-            <span className="material-icons-outlined bg-neutral-100 p-2 rounded-full text-blue-500 -rotate-45 border border-neutral-200">
+      <div className="h overflow-hidden">
+        <div className="flex items-center gap-2 rounded-lg pl-6 pt-6 text-neutral-900">
+          <h1 className="flex items-center gap-4 text-3xl font-bold tracking-[0.01em]">
+            <span className="material-icons-outlined -rotate-45 rounded-full border border-neutral-200 bg-neutral-100 p-2 text-blue-500">
               link
-            </span>{" "}
+            </span>{' '}
             <span>URL Shortener</span>
           </h1>
         </div>
         <div className="flex items-start justify-center gap-6 pt-16">
-          <div className="flex flex-col md:flex-row gap-8 items-center justify-center w-full max-sm:w-full">
-            <div className="w-full md:w-auto md:mx-8">
+          <div className="flex w-full flex-col items-center justify-center gap-8 max-sm:w-full md:flex-row">
+            <div className="w-full md:mx-8 md:w-auto">
               <ShortUrlCard />
             </div>
-            <div className="flex-grow h-[80vh] overflow-hidden">
+            <div className="h-[80vh] grow overflow-hidden">
               <ShortUrlList />
             </div>
           </div>

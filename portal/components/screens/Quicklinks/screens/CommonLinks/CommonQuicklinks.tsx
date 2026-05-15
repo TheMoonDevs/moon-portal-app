@@ -1,19 +1,21 @@
-"use client";
-import store, { useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import { ParentDirectoryLinks } from "../ParentDirectory/ParentDirectoryLinks";
-import { useQuickLinkDirs } from "../../hooks/useQuickLinksDirs";
-import { useRef } from "react";
-import QuicklinkHeaderWrapper from "../../global/QuicklinkHeaderWrapper";
-import { useQuickLinkDirectory } from "../../hooks/useQuickLinkDirectory";
-import { usePathname } from "next/navigation";
-import ListOfDirectories from "../../DirectoryList";
-import { setActiveDirectoryId } from "@/utils/redux/quicklinks/slices/quicklinks.directory.slice";
-import Image from "next/image";
-import useFetchQuicklinksByDir from "../../hooks/useFetchQuicklinksByDir";
-import { CircularProgress, useMediaQuery } from "@mui/material";
-import { ReusableFolderDrawer } from "../User/UserTopUsed/UserTopUsedLinks";
-import { setIsParentDirectoryFoldersOpen } from "@/utils/redux/quicklinks/slices/quicklinks.ui.slice";
-import media from "@/styles/media";
+'use client';
+import { CircularProgress, useMediaQuery } from '@mui/material';
+import Image from 'next/image';
+import { usePathname } from 'next/navigation';
+import { useRef } from 'react';
+
+import media from '@/styles/media';
+import { setActiveDirectoryId } from '@/utils/redux/quicklinks/slices/quicklinks.directory.slice';
+import { setIsParentDirectoryFoldersOpen } from '@/utils/redux/quicklinks/slices/quicklinks.ui.slice';
+import store, { useAppDispatch, useAppSelector } from '@/utils/redux/store';
+
+import ListOfDirectories from '../../DirectoryList';
+import QuicklinkHeaderWrapper from '../../global/QuicklinkHeaderWrapper';
+import useFetchQuicklinksByDir from '../../hooks/useFetchQuicklinksByDir';
+import { useQuickLinkDirectory } from '../../hooks/useQuickLinkDirectory';
+import { useQuickLinkDirs } from '../../hooks/useQuickLinksDirs';
+import { ParentDirectoryLinks } from '../ParentDirectory/ParentDirectoryLinks';
+import { ReusableFolderDrawer } from '../User/UserTopUsed/UserTopUsedLinks';
 // import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
 // import { useSearchParams } from "next/navigation";
 // import { useEffect } from "react";
@@ -24,7 +26,7 @@ import media from "@/styles/media";
 //   setTopUsedList,
 // } from "@/utils/redux/quicklinks/quicklinks.slice";
 // import TopUsedLink from "../Dashboard/TopUsedLink";
-// import { Link } from "@prisma/client";
+// import { Link } from "@db/client";
 // import useAsyncState from "@/utils/hooks/useAsyncState";
 // import { LinkFiltersHeader } from "../../LinkList/LinkFiltersHeader";
 // import { useQuickLinkDirs } from "../../hooks/useQuickLinksDirs";
@@ -95,7 +97,7 @@ export const CommonQuicklinks = ({
   const initialize = useRef(false);
 
   if (!initialize.current) {
-    console.log("rootParentDirId", rootParentDirId);
+    console.log('rootParentDirId', rootParentDirId);
     store.dispatch(setActiveDirectoryId(rootParentDirId));
     initialize.current = true;
   }
@@ -103,17 +105,19 @@ export const CommonQuicklinks = ({
   const { thisDirectory } = useQuickLinkDirs(activeDirectoryId);
   const pathname = usePathname();
   const filteredDirectories = directories.filter(
-    (directory) => directory.parentDirId === activeDirectoryId
+    (directory) => directory.parentDirId === activeDirectoryId,
   );
   const { allQuicklinks } = useAppSelector((state) => state.quicklinksLinks);
   const { loading } = useFetchQuicklinksByDir({ isRootDirectory: true });
-  const { isParentDirectoryFoldersOpen } = useAppSelector((state) => state.quicklinksUi)
+  const { isParentDirectoryFoldersOpen } = useAppSelector(
+    (state) => state.quicklinksUi,
+  );
   const dispatch = useAppDispatch();
   const isTablet = useMediaQuery(media.tablet);
 
   if (loading)
     return (
-      <div className="flex justify-center items-center w-full">
+      <div className="flex w-full items-center justify-center">
         <CircularProgress color="inherit" />
       </div>
     );
@@ -121,14 +125,14 @@ export const CommonQuicklinks = ({
   return (
     <div>
       <QuicklinkHeaderWrapper
-        title={thisDirectory?.title || ""}
+        title={thisDirectory?.title || ''}
         icon="group"
         withBreadcrumb={{
-          rootType: "COMMON_RESOURCES",
+          rootType: 'COMMON_RESOURCES',
         }}
       />
       {allQuicklinks.length === 0 && filteredDirectories.length === 0 ? (
-        <div className="flex flex-col gap-3 items-center justify-center h-[350px] w-full max-sm:!mt-16">
+        <div className="flex h-[350px] w-full flex-col items-center justify-center gap-3 max-sm:!mt-16">
           <Image
             className="rounded-full object-cover"
             src="/images/no-data.jpg"
@@ -136,13 +140,15 @@ export const CommonQuicklinks = ({
             width={400}
             height={400}
           />
-          <p className="text-gray-400 text-lg">
+          <p className="text-lg text-gray-400">
             Start by adding a folder or link
           </p>
         </div>
       ) : (
         <div className="flex gap-10">
-          <div className={`mt-4 flex justify-stretch gap-6 w-[70%] ${isTablet && 'w-full'}`}>
+          <div
+            className={`mt-4 flex w-[70%] justify-stretch gap-6 ${isTablet && 'w-full'}`}
+          >
             <div className="w-full">
               <ParentDirectoryLinks loading={loading} />
             </div>
@@ -155,9 +161,18 @@ export const CommonQuicklinks = ({
               directories={filteredDirectories}
             />
           </div>
-          {isParentDirectoryFoldersOpen && 
-            <ReusableFolderDrawer open={isParentDirectoryFoldersOpen} handleClose={() => {dispatch(setIsParentDirectoryFoldersOpen(!isParentDirectoryFoldersOpen))}}>
-              <div className='px-4 w-[300px]'>
+          {isParentDirectoryFoldersOpen && (
+            <ReusableFolderDrawer
+              open={isParentDirectoryFoldersOpen}
+              handleClose={() => {
+                dispatch(
+                  setIsParentDirectoryFoldersOpen(
+                    !isParentDirectoryFoldersOpen,
+                  ),
+                );
+              }}
+            >
+              <div className="w-[300px] px-4">
                 <h1 className="text-xl font-bold">Folders</h1>
                 <ListOfDirectories
                   view="listView"
@@ -166,7 +181,7 @@ export const CommonQuicklinks = ({
                 />
               </div>
             </ReusableFolderDrawer>
-          }
+          )}
         </div>
       )}
     </div>

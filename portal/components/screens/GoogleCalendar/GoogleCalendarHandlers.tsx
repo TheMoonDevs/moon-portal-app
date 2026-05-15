@@ -1,6 +1,7 @@
-import { SelectChangeEvent } from "@mui/material";
-import { FormDataType } from "./GoogleCalendarUtils"; // adjust the path as needed
-import { format } from "date-fns";
+import type { SelectChangeEvent } from '@mui/material';
+import { format } from 'date-fns';
+
+import type { FormDataType } from './GoogleCalendarUtils'; // adjust the path as needed
 
 // 📝 Handles changes to text inputs and textareas.
 export const useHandleInputChange =
@@ -17,7 +18,7 @@ export const useHandleInputChange =
 export const useHandleDateChange =
   (
     setFormData: React.Dispatch<React.SetStateAction<FormDataType>>,
-    today: Date
+    today: Date,
   ) =>
   (name: keyof FormDataType) =>
   (date: Date | null) => {
@@ -63,5 +64,5 @@ export const useToggleAllDay =
 // 📅 Gets today's date as a formatted string.
 export const getTodayDateString = () => {
   const today = new Date();
-  return format(today, "yyyy-MM-dd");
+  return format(today, 'yyyy-MM-dd');
 };

@@ -1,20 +1,19 @@
+import type { Mission, MissionTask, STATUS } from '@db/client';
+import { Menu, MenuItem } from '@mui/material';
+import Image from 'next/image';
+import { useState } from 'react';
+
 import {
   setActiveMission,
   setAllMissions,
   setMissionDetailsOpen,
   setUpdateMission,
-} from "@/utils/redux/missions/mission.slice";
-import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import { Mission, MissionTask, STATUS } from "@prisma/client";
-import Image from "next/image";
-import { useRef, useState } from "react";
-import {
-  calculateMissionStat,
-  getMissionProgress,
-  STATUSES,
-} from "./mission.utils";
-import { Menu, MenuItem } from "@mui/material";
-import { PortalSdk } from "@/utils/services/PortalSdk";
+} from '@/utils/redux/missions/mission.slice';
+import type { RootState } from '@/utils/redux/store';
+import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
+import { PortalSdk } from '@/utils/services/PortalSdk';
+
+import { getMissionProgress, STATUSES } from './mission.utils';
 
 const MissionListItem = ({
   mission,
@@ -31,7 +30,7 @@ const MissionListItem = ({
   const [statusRef, setStatusRef] = useState<HTMLSpanElement | null>(null);
   const isStatusDropdownOpen = Boolean(statusRef);
   const { activeMission, allMissions } = useAppSelector(
-    (state: RootState) => state.mission
+    (state: RootState) => state.mission,
   );
   const handleMissionStatusChange = async (status: STATUS) => {
     dispatch(
@@ -44,8 +43,8 @@ const MissionListItem = ({
             };
           }
           return m;
-        })
-      )
+        }),
+      ),
     );
     try {
       const res = await PortalSdk.putData(`/api/missions`, {
@@ -59,10 +58,7 @@ const MissionListItem = ({
   };
   return (
     <div
-      className={`flex flex-col gap-2 border-b py-2 px-2 border-neutral-200 cursor-pointer hover:bg-gray-100 w-full
-    ${activeMission?.id === mission.id ? "bg-gray-200" : "text-gray-700"}
-    ${expanded === mission.id ? "bg-gray-200" : "text-gray-700"}
-  `}
+      className={`flex w-full cursor-pointer flex-col gap-2 border-b border-neutral-200 p-2 hover:bg-gray-100 ${activeMission?.id === mission.id ? 'bg-gray-200' : 'text-gray-700'} ${expanded === mission.id ? 'bg-gray-200' : 'text-gray-700'} `}
       onClick={() => {
         dispatch(setActiveMission(mission));
         dispatch(setMissionDetailsOpen(false));
@@ -70,7 +66,7 @@ const MissionListItem = ({
       }}
     >
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 w-full">
+        <div className="flex w-full items-center gap-2">
           <span
             onClick={(e) => {
               setStatusRef(e.currentTarget);
@@ -78,7 +74,7 @@ const MissionListItem = ({
             style={{
               background: mission.status?.color,
             }}
-            className={` w-4 h-4 rounded-full border-2 border-gray-300 hover:opacity-40  p-1`}
+            className={`size-4 rounded-full border-2 border-gray-300 p-1 hover:opacity-40`}
           ></span>
           <Menu
             open={isStatusDropdownOpen}
@@ -93,12 +89,12 @@ const MissionListItem = ({
                   setStatusRef(null);
                 }}
               >
-                <div className="flex gap-2 items-center">
+                <div className="flex items-center gap-2">
                   <span
                     style={{
                       background: s.color,
                     }}
-                    className={`w-4 h-4  rounded-full`}
+                    className={`size-4 rounded-full`}
                   ></span>
                   <span>{s.label}</span>
                 </div>
@@ -110,18 +106,18 @@ const MissionListItem = ({
             alt={mission.house}
             width={32}
             height={32}
-            className="w-8 h-8 object-cover object-center rounded-full"
+            className="size-8 rounded-full object-cover object-center"
           />
-          <div className="flex gap-3 items-center">
-            <h4 className="text-md font-semibold ">
+          <div className="flex items-center gap-3">
+            <h4 className="text-md font-semibold">
               {mission.title.length > 20
-                ? mission.title.substring(0, 20).concat("...")
+                ? mission.title.substring(0, 20).concat('...')
                 : mission.title}
             </h4>
             {mission.priority && (
               <p
                 style={{ color: mission.priority.color }}
-                className="text-xs font-regular flex items-center gap-1"
+                className="font-regular flex items-center gap-1 text-xs"
               >
                 <span
                   style={{ color: mission.priority.color }}
@@ -134,21 +130,21 @@ const MissionListItem = ({
             )}
           </div>
         </div>
-        <div className="w-full justify-end flex items-center gap-4">
+        <div className="flex w-full items-center justify-end gap-4">
           <div className="w-1/2">
             <span className="text-xs font-semibold text-neutral-500">
               {missionTasks.length > 0
                 ? `${
-                    missionTasks.filter((t) => t.status?.value === "COMPLETED")
+                    missionTasks.filter((t) => t.status?.value === 'COMPLETED')
                       .length
                   }
               
               / ${missionTasks.length} tasks completed`
-                : "0 tasks"}
+                : '0 tasks'}
             </span>
-            <div className=" h-[4px] bg-neutral-400 rounded-sm">
+            <div className="h-[4px] rounded-sm bg-neutral-400">
               <div
-                className="h-full bg-green-500 rounded-sm"
+                className="h-full rounded-sm bg-green-500"
                 style={{
                   width: `${getMissionProgress(missionTasks)}%`,
                 }}

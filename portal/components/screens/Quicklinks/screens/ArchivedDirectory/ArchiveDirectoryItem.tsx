@@ -1,14 +1,15 @@
-import { DirectoryList } from "@prisma/client";
-import { useQuickLinkDirectory } from "../../hooks/useQuickLinkDirectory";
-import { useState } from "react";
-import { Modal } from "@mui/material";
+import type { DirectoryList } from '@db/client';
+import { Modal } from '@mui/material';
+import { useState } from 'react';
 
-import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
-import { useAppDispatch } from "@/utils/redux/store";
-import { ToastSeverity } from "@/components/elements/Toast";
-import { revalidateRoot } from "@/utils/actions";
-import { updateDirectory } from "@/utils/redux/quicklinks/slices/quicklinks.directory.slice";
-import { setToast } from "@/utils/redux/quicklinks/slices/quicklinks.ui.slice";
+import { ToastSeverity } from '@/components/elements/Toast';
+import { revalidateRoot } from '@/utils/actions';
+import { updateDirectory } from '@/utils/redux/quicklinks/slices/quicklinks.directory.slice';
+import { setToast } from '@/utils/redux/quicklinks/slices/quicklinks.ui.slice';
+import { useAppDispatch } from '@/utils/redux/store';
+import { QuicklinksSdk } from '@/utils/services/QuicklinksSdk';
+
+import { useQuickLinkDirectory } from '../../hooks/useQuickLinkDirectory';
 
 const ArchiveDirectoryItem = ({
   directory,
@@ -43,19 +44,19 @@ const ArchiveDirectoryItem = ({
       dispatch(updateDirectory(updatedDirectory));
       const response = await QuicklinksSdk.updateData(
         `/api/quicklinks/directory-list`,
-        updatedDirectory
+        updatedDirectory,
       );
       dispatch(
-        setToast({ toastMsg: "Done!", toastSev: ToastSeverity.success })
+        setToast({ toastMsg: 'Done!', toastSev: ToastSeverity.success }),
       );
 
       revalidateRoot();
     } catch (error) {
       dispatch(
         setToast({
-          toastMsg: "Something went wrong. Please try again.",
+          toastMsg: 'Something went wrong. Please try again.',
           toastSev: ToastSeverity.error,
-        })
+        }),
       );
       dispatch(updateDirectory(directory));
       console.log(error);
@@ -68,14 +69,14 @@ const ArchiveDirectoryItem = ({
     <>
       {directory.isArchive && (
         <button
-          className="flex flex-col items-center justify-center hover:bg-gray-200 transition-all rounded-md cursor-pointer p-2"
+          className="flex cursor-pointer flex-col items-center justify-center rounded-md p-2 transition-all hover:bg-gray-200"
           onClick={() => {
             setShowRestoreModal(true);
           }}
         >
           <span
             className="material-symbols-outlined !font-extralight"
-            style={{ fontSize: "4rem" }}
+            style={{ fontSize: '4rem' }}
           >
             folder
           </span>
@@ -85,7 +86,7 @@ const ArchiveDirectoryItem = ({
       {directories
         .filter(
           (subdirectory: DirectoryList) =>
-            subdirectory.parentDirId === directory.id
+            subdirectory.parentDirId === directory.id,
         )
         .map((subdirectory: DirectoryList) => (
           <ArchiveDirectoryItem
@@ -97,19 +98,19 @@ const ArchiveDirectoryItem = ({
       <Modal
         onClose={onCancel}
         open={showRestoreModal}
-        className=" text-black p-5 rounded-lg shadow-lg drop-shadow-sm flex items-center justify-center"
+        className="flex items-center justify-center rounded-lg p-5 text-black shadow-lg drop-shadow-sm"
       >
-        <div className="bg-white p-4 rounded-md">
+        <div className="rounded-md bg-white p-4">
           <h1>Do you want to restore {name}?</h1>
-          <div className="flex mt-5 gap-10">
+          <div className="mt-5 flex gap-10">
             <button
-              className="w-full px-2 py-2 border border-gray-500 text-gray-800 rounded-xl text-lg cursor-pointer hover:bg-gray-300 transition-all"
+              className="w-full cursor-pointer rounded-xl border border-gray-500 p-2 text-lg text-gray-800 transition-all hover:bg-gray-300"
               onClick={onCancel}
             >
               Cancel
             </button>
             <button
-              className="w-full px-5 py-3 bg-gray-900 text-white rounded-xl cursor-pointer disabled:opacity-50 hover:bg-gray-600 transition-all"
+              className="w-full cursor-pointer rounded-xl bg-gray-900 px-5 py-3 text-white transition-all hover:bg-gray-600 disabled:opacity-50"
               onClick={handleRestore}
             >
               Restore

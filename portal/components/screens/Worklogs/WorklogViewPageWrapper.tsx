@@ -1,17 +1,17 @@
 'use client';
 
-import { useSearchParams } from 'next/navigation';
-import { WorklogView } from './WorklogView';
+import type { WorkLogs } from '@db/client';
 import { useMediaQuery } from '@mui/material';
-import media from '@/styles/media';
 import dayjs from 'dayjs';
+import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import store from '@/utils/redux/store';
-import { PortalSdk } from '@/utils/services/PortalSdk';
-import { WorkLogsHelper } from './WorklogsHelper';
-import { WorkLogs } from '@prisma/client';
+
 import { Bottombar } from '@/components/global/Bottombar';
-import { PrivateWorklogView } from './PrivateWorklogView';
+import media from '@/styles/media';
+import store from '@/utils/redux/store';
+
+import { WorkLogsHelper } from './WorklogsHelper';
+import { WorklogView } from './WorklogView';
 
 export const WorklogViewPageWrapper = ({ id }: { id: string }) => {
   const queryParams = useSearchParams();
@@ -80,10 +80,6 @@ export const WorklogViewPageWrapper = ({ id }: { id: string }) => {
             date={centerdate.format('YYYY-MM-DD')}
             logType={_logType}
           />
-          <PrivateWorklogView
-            date={centerdate.format('YYYY-MM-DD')}
-            logType={'privateWorklogs'}
-          />
         </div>
         {/* <div className="my-4 h-[90vh] bg-white">
           <WorklogView
@@ -103,10 +99,6 @@ export const WorklogViewPageWrapper = ({ id }: { id: string }) => {
           id={id}
           date={dayjs(_date).format('YYYY-MM-DD')}
           logType={_logType}
-        />
-        <PrivateWorklogView
-          date={dayjs(_date)?.format('YYYY-MM-DD')}
-          logType={'privateWorklogs'}
         />
       </div>
       <Bottombar visible={true} />

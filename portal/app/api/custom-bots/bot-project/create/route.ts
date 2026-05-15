@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/prisma/prisma';
+
+import { db } from '@/lib/mongodb/db-client';
 import {
   TEMPLATE_REPO,
   TEMPLATE_REPO_OWNER,
@@ -8,7 +9,7 @@ import { GithubSdk } from '@/utils/services/githubSdk';
 
 export async function POST(request: Request) {
   const body = await request.json();
-  let { clientId, projectName, projectDescription } = body;
+  const { clientId, projectName, projectDescription } = body;
 
   if (!projectName || !clientId) {
     return NextResponse.json(
@@ -84,7 +85,7 @@ export async function POST(request: Request) {
       body: prBody,
     });
 
-    const botProject = await prisma.botProject.create({
+    const botProject = await db.botProject.create({
       data: {
         clientId,
         name: projectName,

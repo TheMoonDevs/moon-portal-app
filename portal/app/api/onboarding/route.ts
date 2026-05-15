@@ -1,8 +1,10 @@
-import { prisma } from "@/prisma/prisma";
-import { sheetMap, spreadsheetId } from "@/utils/constants/spreadsheetData";
-import GoogleSheetsAPI from "@/utils/services/googleSheetSdk";
-import { USERROLE } from "@prisma/client";
-import { NextResponse, NextRequest } from "next/server";
+import { USERROLE } from '@db/client';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
+import { db } from '@/lib/mongodb/db-client';
+import { sheetMap, spreadsheetId } from '@/utils/constants/spreadsheetData';
+import GoogleSheetsAPI from '@/utils/services/googleSheetSdk';
 
 export async function POST(request: NextRequest) {
   let error_response: any;
@@ -30,12 +32,12 @@ export async function POST(request: NextRequest) {
     } = await request.json();
 
     const currentDate = new Date()
-      .toLocaleDateString("en-GB")
-      .split("/")
+      .toLocaleDateString('en-GB')
+      .split('/')
       .reverse()
-      .join("-");
+      .join('-');
 
-    const user = await prisma.user.create({
+    const user = await db.user.create({
       data: {
         name,
         email,
@@ -47,11 +49,11 @@ export async function POST(request: NextRequest) {
         role: USERROLE.TRIAL_CANDIDATE,
         workData: {
           joining: startDate ? startDate : currentDate,
-          workHours: "",
+          workHours: '',
           positionPublic: position,
-          positionInternal: "",
+          positionInternal: '',
           grade: 0,
-          gradeTag: "",
+          gradeTag: '',
         },
         personalData: {
           dateOfBirth: dateOfBirth,
@@ -64,18 +66,18 @@ export async function POST(request: NextRequest) {
         },
         payData: {
           upiId: upiId,
-          payMethod: "",
-          walletAddress: "",
-          stipendWalletAddress: "",
-          stipendAmount: "",
-          stipendCurrency: "",
+          payMethod: '',
+          walletAddress: '',
+          stipendWalletAddress: '',
+          stipendAmount: '',
+          stipendCurrency: '',
         },
       },
     });
 
     const sheetConfig = {
-      clientEmail: process.env.GIAM_CLIENT_EMAIL || "",
-      privateKey: process.env.GIAM_PRIVATE_KEY || "",
+      clientEmail: process.env.GIAM_CLIENT_EMAIL || '',
+      privateKey: process.env.GIAM_PRIVATE_KEY || '',
     };
 
     const sheetSDK = new GoogleSheetsAPI(sheetConfig);
@@ -98,7 +100,7 @@ export async function POST(request: NextRequest) {
     //   address,
     // ];
     const sheetData = [
-      "=NOW()",
+      '=NOW()',
       `${username}${passcode}`,
       name,
       email,
@@ -117,19 +119,19 @@ export async function POST(request: NextRequest) {
       spreadsheetId,
       targetId: sheetMap.Trial,
       values: [sheetData],
-      range: "A:A",
-      majorDimension: "ROWS",
+      range: 'A:A',
+      majorDimension: 'ROWS',
     });
 
     if (error_response) {
       return new NextResponse(JSON.stringify(error_response), {
         status: 404,
-        headers: { "Content-Type": "application/json" },
+        headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    let json_response = {
-      status: "success",
+    const json_response = {
+      status: 'success',
       data: {
         user,
       },
@@ -138,31 +140,31 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(json_response);
   } catch (e) {
     error_response = {
-      status: "error",
-      message: "Failed to create user",
+      status: 'error',
+      message: 'Failed to create user',
       error: e,
     };
     return new NextResponse(JSON.stringify(error_response), {
       status: 500,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const username = searchParams.get("username");
-  const password = searchParams.get("password");
+  const username = searchParams.get('username');
+  const password = searchParams.get('password');
 
   if (!username || !password) {
     return NextResponse.json(
-      { message: "Username is required" },
-      { status: 400 }
+      { message: 'Username is required' },
+      { status: 400 },
     );
   }
 
   try {
-    const user = await prisma.user.findFirst({
+    const user = await db.user.findFirst({
       where: {
         username: username,
         password,
@@ -171,13 +173,13 @@ export async function GET(request: NextRequest) {
 
     if (user) {
       return NextResponse.json(
-        { message: "Username is already taken" },
-        { status: 409 }
+        { message: 'Username is already taken' },
+        { status: 409 },
       );
     } else {
       return NextResponse.json(
-        { message: "Username is available" },
-        { status: 200 }
+        { message: 'Username is available' },
+        { status: 200 },
       );
     }
   } catch (e: any) {

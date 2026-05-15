@@ -1,16 +1,18 @@
-import Input from '@/components/elements/Input';
-import Label from '@/components/elements/Label';
-import Textarea from '@/components/elements/Textarea';
-import { PortalSdk } from '@/utils/services/PortalSdk';
+import type { PROJECTS } from '@db/client';
 import { Autocomplete, TextField } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
 import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
-import { styles } from './ExperienceForm';
-import { PROJECTS } from '@prisma/client';
 import { toast } from 'sonner';
+
+import Input from '@/components/elements/Input';
+import Label from '@/components/elements/Label';
+import Textarea from '@/components/elements/Textarea';
+import { PortalSdk } from '@/utils/services/PortalSdk';
+
 import { formatDate, linkRegex } from '.';
+import { styles } from './ExperienceForm';
 import ProjectCard from './ProjectCard';
 
 const defaultFields = {
@@ -138,7 +140,7 @@ const ProjectsForm = () => {
 
   return (
     <div
-      className={`flex h-full w-full ${projectsValues.length === 0 ? 'items-center' : 'items-start'} gap-4 max-sm:flex-col`}
+      className={`flex size-full ${projectsValues.length === 0 ? 'items-center' : 'items-start'} gap-4 max-sm:flex-col`}
     >
       <div className="flex w-1/2 flex-col gap-2 max-sm:w-full">
         <Input

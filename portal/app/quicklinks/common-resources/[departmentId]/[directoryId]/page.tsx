@@ -1,19 +1,21 @@
-import { CommonLinksByDirId } from "@/components/screens/Quicklinks/screens/CommonLinks/CommonLinksByDirId";
-import { APP_BASE_URL } from "@/utils/constants/appInfo";
-import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
-import { DirectoryList, ROOTTYPE } from "@prisma/client";
-import { notFound } from "next/navigation";
+import type { DirectoryList } from '@db/client';
+import { ROOTTYPE } from '@db/client';
+import { notFound } from 'next/navigation';
+
+import { CommonLinksByDirId } from '@/components/screens/Quicklinks/screens/CommonLinks/CommonLinksByDirId';
+import { APP_BASE_URL } from '@/utils/constants/appInfo';
+import { QuicklinksSdk } from '@/utils/services/QuicklinksSdk';
 
 async function slugToIdConversion(slug: string) {
   try {
-    const slugString = slug.substring(0, slug.lastIndexOf("-"));
+    const slugString = slug.substring(0, slug.lastIndexOf('-'));
     const response = await QuicklinksSdk.getData(
-      `${APP_BASE_URL}/api/quicklinks/directory-list?slug=${slugString}&tabType=${ROOTTYPE.COMMON_RESOURCES}`
+      `${APP_BASE_URL}/api/quicklinks/directory-list?slug=${slugString}&tabType=${ROOTTYPE.COMMON_RESOURCES}`,
     );
     return response.data.directoryList.find((directory: DirectoryList) => {
       return (
         directory.slug +
-          "-" +
+          '-' +
           new Date(directory.timestamp as Date)
             .getTime()
             .toString()

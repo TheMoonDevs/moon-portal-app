@@ -1,6 +1,7 @@
+import type { Link as Quicklink } from '@db/client';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Link as Quicklink } from '@prisma/client';
+
 import { LinkActions } from '../LinkActions';
 export const CardView = ({
   link,
@@ -27,7 +28,7 @@ export const CardView = ({
                 src={link.image! || link.logo!}
                 layout="fill"
                 objectFit="cover"
-                className="transform transition duration-500 ease-in-out group-hover:scale-105"
+                className="transition duration-500 ease-in-out group-hover:scale-105"
                 alt={link.title}
               />
             ) : (
@@ -35,7 +36,7 @@ export const CardView = ({
                 src="/logo/logo.png"
                 layout="fill"
                 objectFit="cover"
-                className="transform transition duration-500 ease-in-out group-hover:scale-105"
+                className="transition duration-500 ease-in-out group-hover:scale-105"
                 alt=""
               />
             )}
@@ -45,7 +46,7 @@ export const CardView = ({
               ? link.title.substring(0, 50) + ' ...'
               : link.title}
           </p>
-          <p className="font-regular max-w-[250px] truncate text-[14px] opacity-[0.5]">
+          <p className="font-regular max-w-[250px] truncate text-[14px] opacity-50">
             {link.url?.replace('https://', '')}
           </p>
           <p className="text-sm">

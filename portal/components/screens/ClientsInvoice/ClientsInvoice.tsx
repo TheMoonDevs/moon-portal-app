@@ -1,12 +1,14 @@
 'use client';
+import type { Invoice, User } from '@db/client';
+import { Cancel, DoNotDisturbOn } from '@mui/icons-material';
+import { Avatar, Box, Tooltip } from '@mui/material';
+import type { GridColDef } from '@mui/x-data-grid';
+import { DataGrid, GridCheckCircleIcon } from '@mui/x-data-grid';
+import { useEffect, useState } from 'react';
+
 import { prettyPrintDateInMMMDD } from '@/utils/helpers/prettyprint';
 import { useUser } from '@/utils/hooks/useUser';
 import { PortalSdk } from '@/utils/services/PortalSdk';
-import { Cancel, DoNotDisturbOn } from '@mui/icons-material';
-import { Avatar, Box, Paper, Tooltip } from '@mui/material';
-import { DataGrid, GridCheckCircleIcon, GridColDef } from '@mui/x-data-grid';
-import { Invoice, User } from '@prisma/client';
-import { useEffect, useState } from 'react';
 const ClientsInvoice = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const { user } = useUser();
@@ -76,13 +78,13 @@ const ClientsInvoice = () => {
         return (
           <div className="flex flex-col justify-start gap-2 py-3">
             {developers.map((dev) => (
-              <div className="flex items-center gap-2">
+              <div key={dev.id} className="flex items-center gap-2">
                 <Avatar
                   src={dev.avatar || '/images/avatar.png'}
                   alt={dev.name || ''}
                   sx={{ width: 24, height: 24 }}
                 />
-                <span key={dev.id}>{dev.name}</span>
+                <span>{dev.name}</span>
               </div>
             ))}
           </div>

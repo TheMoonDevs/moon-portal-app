@@ -1,5 +1,5 @@
 import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
-import { DirectoryList, ROOTTYPE } from "@prisma/client";
+import { DirectoryList, ROOTTYPE } from "@db/client";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
 import { ToastSeverity } from "@/components/elements/Toast";

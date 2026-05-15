@@ -1,7 +1,9 @@
-import { APP_ROUTES } from '@/utils/constants/appInfo';
 import Link from 'next/link';
-import DevProfileLayout from './DevProfileLayout';
 import { Toaster } from 'sonner';
+
+import { APP_ROUTES } from '@/utils/constants/appInfo';
+
+import DevProfileLayout from './DevProfileLayout';
 
 const DevProfile = () => {
   return (
@@ -27,7 +29,12 @@ const DevProfile = () => {
         </div>
       </div>
       <div className="relative z-50">
-        <Toaster richColors duration={3000} closeButton position="bottom-right" />
+        <Toaster
+          richColors
+          duration={3000}
+          closeButton
+          position="bottom-right"
+        />
       </div>
       <DevProfileLayout />
     </div>

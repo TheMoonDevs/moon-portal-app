@@ -1,27 +1,30 @@
-import { prisma } from "@/prisma/prisma";
-import { NextResponse, NextRequest } from "next/server";
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
+import { db } from '@/lib/mongodb/db-client';
+import { parseCreateInput, parseUpdateInput } from '@/lib/mongodb/validation';
 
 export async function GET(request: NextRequest) {
-  const missionId = request.nextUrl.searchParams.get("missionId") as string;
+  const missionId = request.nextUrl.searchParams.get('missionId') as string;
 
   try {
-    const tasks = await prisma.missionTask.findMany({
+    const tasks = await db.missionTask.findMany({
       where: {
         ...(missionId && { missionId }),
       },
       orderBy: {
-        createdAt: "desc",
+        createdAt: 'desc',
       },
     });
 
     return NextResponse.json({
-      status: "success",
+      status: 'success',
       data: { tasks },
     });
   } catch (e) {
     return new NextResponse(JSON.stringify(e), {
       status: 404,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }
@@ -29,19 +32,20 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
+    const createData = parseCreateInput('missionTask', data);
 
-    const task = await prisma.missionTask.create({
-      data: data,
+    const task = await db.missionTask.create({
+      data: createData,
     });
 
     return NextResponse.json({
-      status: "success",
+      status: 'success',
       data: { task },
     });
   } catch (e) {
     return new NextResponse(JSON.stringify(e), {
       status: 404,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }
@@ -49,17 +53,19 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const { id, ...rest } = await request.json();
+    const parsedCreate = parseCreateInput('missionTask', { ...rest, id });
+    const parsedUpdate = parseUpdateInput('missionTask', rest);
 
-    const task = await prisma.missionTask.upsert({
+    const task = await db.missionTask.upsert({
       where: {
         id,
       },
-      create: { ...rest },
-      update: { ...rest },
+      create: parsedCreate,
+      update: parsedUpdate,
     });
 
     const json_response = {
-      status: "success",
+      status: 'success',
       data: {
         task,
       },
@@ -70,32 +76,32 @@ export async function PUT(request: NextRequest) {
     console.log(e);
     return new NextResponse(JSON.stringify(e), {
       status: 404,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }
 
 export async function DELETE(request: NextRequest) {
   try {
-    const id = request.nextUrl.searchParams.get("id") as string;
+    const id = request.nextUrl.searchParams.get('id') as string;
     if (!id) {
-      return new NextResponse(JSON.stringify({ error: "Missing id" }), {
+      return new NextResponse(JSON.stringify({ error: 'Missing id' }), {
         status: 404,
-        headers: { "Content-Type": "application/json" },
+        headers: { 'Content-Type': 'application/json' },
       });
     }
-    const task = await prisma.missionTask.delete({
+    const task = await db.missionTask.delete({
       where: { id },
     });
 
     return NextResponse.json({
-      status: "success",
+      status: 'success',
       data: { task },
     });
   } catch (e) {
     return new NextResponse(JSON.stringify(e), {
       status: 404,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }

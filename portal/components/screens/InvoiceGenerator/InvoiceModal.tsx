@@ -1,39 +1,41 @@
-import React from "react";
 import {
-  TextField,
+  AccountBalance as BankIcon,
+  AccountBalanceWallet as WalletIcon,
+} from '@mui/icons-material';
+import BadgeIcon from '@mui/icons-material/Badge';
+import BusinessIcon from '@mui/icons-material/Business';
+import CurrencyBitcoinIcon from '@mui/icons-material/CurrencyBitcoin';
+import NumbersIcon from '@mui/icons-material/Numbers';
+import PersonIcon from '@mui/icons-material/Person';
+import {
+  FormControl,
+  Grid,
+  IconButton,
+  InputAdornment,
   MenuItem,
   Select,
-  FormControl,
-  IconButton,
+  TextField,
   Tooltip,
-  Grid,
-  InputAdornment,
-} from "@mui/material";
-import {
-  AccountBalanceWallet as WalletIcon,
-  AccountBalance as BankIcon,
-} from "@mui/icons-material";
-import BusinessIcon from "@mui/icons-material/Business";
-import PersonIcon from "@mui/icons-material/Person";
-import BadgeIcon from "@mui/icons-material/Badge";
-import NumbersIcon from "@mui/icons-material/Numbers";
-import CurrencyBitcoinIcon from "@mui/icons-material/CurrencyBitcoin";
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import { Button } from "@/components/elements/Button";
-import { InvoiceData } from "./InvoicePage";
-import { Spinner } from "@/components/elements/Loaders";
+} from '@mui/material';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import React from 'react';
+
+import { Button } from '@/components/elements/Button';
+import { Spinner } from '@/components/elements/Loaders';
+
+import type { InvoiceData } from './InvoicePage';
 
 interface InvoiceModalProps {
   invoiceData: InvoiceData;
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleDateChange: (
-    fieldName: "invoiceDate" | "dueDate",
-    newValue: Date | null
+    fieldName: 'invoiceDate' | 'dueDate',
+    newValue: Date | null,
   ) => void;
   handlePaymentMethodChange: (
-    event: React.ChangeEvent<{ value: unknown }>
+    event: React.ChangeEvent<{ value: unknown }>,
   ) => void;
   handleOwnerInfoChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleUpdatePaymentInfo: () => Promise<void>;
@@ -54,19 +56,19 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
   dataLoad,
 }) => {
   return (
-    <div className="p-6 rounded-lg shadow-lg border-2 w-full mb-8 max-md:mb-0 md:mt-4 overflow-y-scroll max-w-lg mx-auto">
-      <h2 className="text-2xl font-medium font-serif mb-6 text-center">
+    <div className="mx-auto mb-8 w-full max-w-lg overflow-y-scroll rounded-lg border-2 p-6 shadow-lg max-md:mb-0 md:mt-4">
+      <h2 className="mb-6 text-center font-serif text-2xl font-medium">
         Invoice Details
       </h2>
       {dataLoad ? (
-        <div className="w-full h-[50vh] flex justify-center items-center ">
+        <div className="flex h-[50vh] w-full items-center justify-center">
           <Spinner className="text-green-600" />
         </div>
       ) : (
         <>
           <LocalizationProvider dateAdapter={AdapterDateFns}>
-            <div className="mb-4 flex flex-col w-full">
-              <span className="text-sm font-semibold mb-2 leading-none text-gray-700">
+            <div className="mb-4 flex w-full flex-col">
+              <span className="mb-2 text-sm font-semibold leading-none text-gray-700">
                 *Invoice Id
               </span>
               <TextField
@@ -86,47 +88,47 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
 
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>
-                <div className="mb-4 flex flex-col w-full">
-                  <span className="text-sm font-semibold mb-2 leading-none text-gray-700">
+                <div className="mb-4 flex w-full flex-col">
+                  <span className="mb-2 text-sm font-semibold leading-none text-gray-700">
                     *Invoice Issued
                   </span>
                   <DatePicker
                     slotProps={{
                       textField: {
-                        size: "small",
-                        variant: "outlined",
-                        color: "info",
+                        size: 'small',
+                        variant: 'outlined',
+                        color: 'info',
                       },
                     }}
                     className="w-full border-black"
                     value={invoiceData.invoiceDate}
-                    onChange={(date) => handleDateChange("invoiceDate", date)}
+                    onChange={(date) => handleDateChange('invoiceDate', date)}
                   />
                 </div>
               </Grid>
               <Grid item xs={12} sm={6}>
-                <div className="mb-4 flex flex-col w-full">
-                  <span className="text-sm font-semibold mb-2 leading-none text-gray-700">
+                <div className="mb-4 flex w-full flex-col">
+                  <span className="mb-2 text-sm font-semibold leading-none text-gray-700">
                     *Invoice Due Date
                   </span>
                   <DatePicker
                     slotProps={{
                       textField: {
-                        size: "small",
-                        variant: "outlined",
-                        color: "info",
+                        size: 'small',
+                        variant: 'outlined',
+                        color: 'info',
                       },
                     }}
                     className="w-full border-black"
                     value={invoiceData.dueDate}
-                    onChange={(date) => handleDateChange("dueDate", date)}
+                    onChange={(date) => handleDateChange('dueDate', date)}
                   />
                 </div>
               </Grid>
             </Grid>
 
             <FormControl fullWidth className="mb-4">
-              <span className="text-sm font-semibold mb-2 leading-none text-gray-700">
+              <span className="mb-2 text-sm font-semibold leading-none text-gray-700">
                 *Payment Id
               </span>
               <Select
@@ -134,12 +136,12 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                 onChange={handlePaymentMethodChange as any}
                 className="mb-4"
                 style={{
-                  color: "#4A5568",
-                  fontWeight: "500",
-                  height: "40px",
-                  borderRadius: "4px",
-                  fontSize: "14px",
-                  paddingRight: "30px",
+                  color: '#4A5568',
+                  fontWeight: '500',
+                  height: '40px',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  paddingRight: '30px',
                 }}
               >
                 <MenuItem value="crypto">
@@ -153,9 +155,9 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
               </Select>
             </FormControl>
 
-            {invoiceData.paymentMethod === "crypto" ? (
-              <div className="mb-4 flex flex-col w-full">
-                <span className="text-sm font-semibold mb-2 leading-none text-gray-700">
+            {invoiceData.paymentMethod === 'crypto' ? (
+              <div className="mb-4 flex w-full flex-col">
+                <span className="mb-2 text-sm font-semibold leading-none text-gray-700">
                   *Wallet Address
                 </span>
                 <TextField
@@ -182,8 +184,8 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
               </div>
             ) : (
               <>
-                <div className="mb-4 flex flex-col w-full">
-                  <span className="text-sm font-semibold mb-2 leading-none text-gray-700">
+                <div className="mb-4 flex w-full flex-col">
+                  <span className="mb-2 text-sm font-semibold leading-none text-gray-700">
                     *Name
                   </span>
                   <TextField
@@ -207,9 +209,9 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                   />
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <div className="mb-4 flex flex-col w-full">
-                    <span className="text-sm font-semibold mb-2 leading-none text-gray-700">
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <div className="mb-4 flex w-full flex-col">
+                    <span className="mb-2 text-sm font-semibold leading-none text-gray-700">
                       *A/c No
                     </span>
                     <TextField
@@ -233,8 +235,8 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     />
                   </div>
 
-                  <div className="mb-4 flex flex-col w-full">
-                    <span className="text-sm font-semibold mb-2 leading-none text-gray-700">
+                  <div className="mb-4 flex w-full flex-col">
+                    <span className="mb-2 text-sm font-semibold leading-none text-gray-700">
                       *IFSC
                     </span>
                     <TextField
@@ -260,9 +262,9 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                 </div>
               </>
             )}
-            <div className="flex flex-col sm:flex-row gap-2">
-              <div className="mb-4 flex flex-col w-full">
-                <span className="text-sm font-semibold mb-2 leading-none text-gray-700">
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <div className="mb-4 flex w-full flex-col">
+                <span className="mb-2 text-sm font-semibold leading-none text-gray-700">
                   *Paying To
                 </span>
                 <TextField
@@ -286,8 +288,8 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                 />
               </div>
 
-              <div className="mb-4 flex flex-col w-full">
-                <span className="text-sm font-semibold mb-2 leading-none text-gray-700">
+              <div className="mb-4 flex w-full flex-col">
+                <span className="mb-2 text-sm font-semibold leading-none text-gray-700">
                   *Company Name
                 </span>
                 <TextField
@@ -312,8 +314,8 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
               </div>
             </div>
           </LocalizationProvider>
-          <div className="flex justify-end md:mt-2 items-center gap-2">
-            <Tooltip title={"Update Payment Info"} arrow>
+          <div className="flex items-center justify-end gap-2 md:mt-2">
+            <Tooltip title={'Update Payment Info'} arrow>
               <span>
                 {showUpdateButton && (
                   <Button
@@ -321,9 +323,9 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     onClick={handleUpdatePaymentInfo}
                   >
                     {!loading ? (
-                      "Update Payment Info"
+                      'Update Payment Info'
                     ) : (
-                      <Spinner className="w-4 h-6 text-green-600" />
+                      <Spinner className="h-6 w-4 text-green-600" />
                     )}
                   </Button>
                 )}

@@ -1,8 +1,6 @@
-import { Bottombar } from "@/components/global/Bottombar";
-import { PageAccess } from "@/components/global/PageAccess";
-import { HomePage } from "@/components/screens/Home/HomePage";
-import { MissionsPage } from "@/components/screens/Missions/MissionsPage";
-import Image from "next/image";
+import { Bottombar } from '@/components/global/Bottombar';
+import { PageAccess } from '@/components/global/PageAccess';
+import { MissionsPage } from '@/components/screens/Missions/MissionsPage';
 
 export default function Home() {
   return (
