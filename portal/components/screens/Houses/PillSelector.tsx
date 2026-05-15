@@ -13,14 +13,14 @@ export const PillSelector = ({
 }) => {
   return (
     <div>
-      <label className='text-sm font-medium text-black'>{label}</label>
-      <div className='flex gap-2 mt-2'>
+      <label className="text-sm font-medium text-black">{label}</label>
+      <div className="mt-2 flex gap-2">
         {options.map((option) => (
           <Button
             key={option.value}
             variant={selectedValue === option.value ? 'contained' : 'outlined'}
             onClick={() => onChange(option.value)}
-            className={`pill-btn px-4 py-1 rounded-full ${
+            className={`pill-btn rounded-full px-4 py-1 ${
               selectedValue === option.value ? 'selected' : ''
             }`}
             aria-label={`Select ${option.label}`}
