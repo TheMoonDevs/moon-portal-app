@@ -1,16 +1,20 @@
 'use client';
-import React, { ChangeEvent, useState, useEffect } from 'react';
-import { MobileBox } from '../Login/Login';
-import { toast, Toaster } from 'sonner';
-import { PortalSdk } from '@/utils/services/PortalSdk';
-import { ClientUtilityLink, User } from '@prisma/client';
-import { Spinner } from '@/components/elements/Loaders';
-import { loadingState } from './Events/EventForm';
-import ToolTip from '@/components/elements/ToolTip';
+import type { ClientUtilityLink, User } from '@db/client';
 import { IconButton } from '@mui/material';
-import ClientShortcuts, { GroupedClientUtilityLink } from './ClientShortcuts';
-import { EmojiPopOver } from '../Worklogs/WorklogSummary/ChatCard';
 import { Theme } from 'emoji-picker-react';
+import type { ChangeEvent } from 'react';
+import React, { useEffect, useState } from 'react';
+import { toast, Toaster } from 'sonner';
+
+import { Spinner } from '@/components/elements/Loaders';
+import ToolTip from '@/components/elements/ToolTip';
+import { PortalSdk } from '@/utils/services/PortalSdk';
+
+import { MobileBox } from '../Login/Login';
+import { EmojiPopOver } from '../Worklogs/WorklogSummary/ChatCard';
+import type { GroupedClientUtilityLink } from './ClientShortcuts';
+import ClientShortcuts from './ClientShortcuts';
+import type { loadingState } from './Events/EventForm';
 
 export const INITIAL_LOADING_STATE = {
   addNew: false,
@@ -167,7 +171,7 @@ const ClientShortcutsManager = () => {
               <Spinner />
             </div>
           ) : (
-            <div className="relative h-full w-full">
+            <div className="relative size-full">
               {loadingState.addNew || loadingState.updating ? (
                 <>
                   <ToolTip title="Back to Previous Slide">
@@ -194,9 +198,9 @@ const ClientShortcutsManager = () => {
                         ? handleUpdateShortcut
                         : handleFormSubmit
                     }
-                    className="relative my-2 flex h-full w-full flex-grow flex-col"
+                    className="relative my-2 flex size-full grow flex-col"
                   >
-                    <div className="flex-grow">
+                    <div className="grow">
                       <div className="mb-5">
                         <label
                           htmlFor="user"
@@ -292,7 +296,7 @@ const ClientShortcutsManager = () => {
                         >
                           {loadingState.adding ||
                           loadingState.updateUploading ? (
-                            <Spinner className="h-4 w-4" />
+                            <Spinner className="size-4" />
                           ) : (
                             <>
                               {loadingState.updating
@@ -313,7 +317,7 @@ const ClientShortcutsManager = () => {
                   <p className="text-neutral-400">No Shortcuts found.</p>
                 </div>
               ) : (
-                <div className="no-scrollbar flex h-[80%] flex-col gap-2 overflow-y-scroll">
+                <div className="no-scrollbar flex h-4/5 flex-col gap-2 overflow-y-scroll">
                   {clientShortcuts?.map(
                     (shortcut: GroupedClientUtilityLink, index) => {
                       return (

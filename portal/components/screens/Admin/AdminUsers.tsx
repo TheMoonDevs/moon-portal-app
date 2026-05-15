@@ -1,14 +1,16 @@
 /* eslint-disable @next/next/no-img-element */
-"use client";
+'use client';
 
-import { MobileBox } from "../Login/Login";
-import Link from "next/link";
-import { GreyButton } from "@/components/elements/Button";
-import { APP_ROUTES } from "@/utils/constants/appInfo";
-import { useRouter } from "next/navigation";
-import { PortalSdk } from "@/utils/services/PortalSdk";
-import { User, USERTYPE } from "@prisma/client";
-import { Spinner } from "@/components/elements/Loaders";
+import type { User } from '@db/client';
+import { USERTYPE } from '@db/client';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+
+import { GreyButton } from '@/components/elements/Button';
+import { Spinner } from '@/components/elements/Loaders';
+import { APP_ROUTES } from '@/utils/constants/appInfo';
+
+import { MobileBox } from '../Login/Login';
 
 export const AdminUsers = ({
   users,
@@ -29,13 +31,13 @@ export const AdminUsers = ({
         </div>
       ) : (
         <>
-          <div className="absolute right-0 top-0 flex flex-col items-center justify-center gap-4 ">
+          <div className="absolute right-0 top-0 flex flex-col items-center justify-center gap-4">
             <Link href={APP_ROUTES.userEditor}>
-              <GreyButton rightIcon={"add"}>Add New User</GreyButton>
+              <GreyButton rightIcon={'add'}>Add New User</GreyButton>
             </Link>
           </div>
           <>
-            {["CLIENT", "MEMBER"].map((type) => {
+            {['CLIENT', 'MEMBER'].map((type) => {
               const filteredUsers = users.filter(
                 (user) =>
                   user.userType === USERTYPE[type as keyof typeof USERTYPE],
@@ -44,11 +46,14 @@ export const AdminUsers = ({
               if (filteredUsers.length === 0) return null;
 
               return (
-                <MobileBox key={type} customClass="!w-full mt-6 custom-scrollbar ">
+                <MobileBox
+                  key={type}
+                  customClass="!w-full mt-6 custom-scrollbar "
+                >
                   <p className="mb-4 text-center text-xs uppercase tracking-[0.5em] text-neutral-400">
-                    {type === "CLIENT" ? "CLIENTS" : "MEMBERS"}
+                    {type === 'CLIENT' ? 'CLIENTS' : 'MEMBERS'}
                   </p>
-                  <div className=" my-2 flex max-h-full w-[90%] grow flex-col justify-start gap-4 ">
+                  <div className="my-2 flex max-h-full w-[90%] grow flex-col justify-start gap-4">
                     {filteredUsers.map((user) => (
                       <Link
                         key={user.id}
@@ -59,8 +64,8 @@ export const AdminUsers = ({
                           <div className="rounded-full p-1">
                             <img
                               src={user?.avatar || undefined}
-                              alt={user?.name || ""}
-                              className="h-12 w-12 rounded-full object-cover object-center"
+                              alt={user?.name || ''}
+                              className="size-12 rounded-full object-cover object-center"
                             />
                           </div>
                           <div>
