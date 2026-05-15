@@ -1,13 +1,14 @@
-import { useAppDispatch } from "@/utils/redux/store";
+import type { User, ZeroRecords } from '@db/client';
+import { CircularProgress } from '@mui/material';
+import { useEffect, useState } from 'react';
+
+import { useAppDispatch } from '@/utils/redux/store';
+import type { IMeetingData } from '@/utils/redux/zerotracker/zerotracker.slice';
 import {
-  IMeetingData,
   deleteLoggedInUserMeetingRecord,
   setLoggedInUserMeetingRecord,
-} from "@/utils/redux/zerotracker/zerotracker.slice";
-import { PortalSdk } from "@/utils/services/PortalSdk";
-import { CircularProgress } from "@mui/material";
-import { User, ZeroRecords } from "@prisma/client";
-import { useEffect, useState } from "react";
+} from '@/utils/redux/zerotracker/zerotracker.slice';
+import { PortalSdk } from '@/utils/services/PortalSdk';
 
 interface MeetingModalProps {
   setIsMeetingModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -38,7 +39,7 @@ export const MeetingModal = ({
     user,
   ]);
   const [removedUsers, setRemovedUsers] = useState<any[]>([]);
-  const [meetingTitle, setMeetingTitle] = useState<string>("");
+  const [meetingTitle, setMeetingTitle] = useState<string>('');
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const dispatch = useAppDispatch();
@@ -54,7 +55,7 @@ export const MeetingModal = ({
     setIsDeleting(true);
     try {
       const setOfSelectedMembers = new Set(
-        selectedMeetingMembers.map((member: User) => member.id)
+        selectedMeetingMembers.map((member: User) => member.id),
       );
 
       const updateMeetings = [...allMeetingRecords];
@@ -62,7 +63,7 @@ export const MeetingModal = ({
       updateMeetings.forEach((record: ZeroRecords) => {
         if (record?.userId && setOfSelectedMembers.has(record?.userId)) {
           record.allMeetings = record.allMeetings?.filter(
-            (m: any) => m.id !== meeting.id
+            (m: any) => m.id !== meeting.id,
           );
         }
       });
@@ -71,8 +72,8 @@ export const MeetingModal = ({
         updateMeetings
           .filter((record: any) => setOfSelectedMembers.has(record.userId))
           .map((record: any) =>
-            PortalSdk.putData(`/api/user/zeros`, { data: record })
-          )
+            PortalSdk.putData(`/api/user/zeros`, { data: record }),
+          ),
       );
       dispatch(deleteLoggedInUserMeetingRecord(meeting));
       setAllMeetingRecords(updateMeetings);
@@ -84,16 +85,16 @@ export const MeetingModal = ({
   };
 
   const handleMeetingFormSubmit = async (
-    e: React.FormEvent<HTMLFormElement>
+    e: React.FormEvent<HTMLFormElement>,
   ) => {
     e.preventDefault();
     setIsSaving(true);
 
     const meetingData = {
       id: meetingToUpdate ? meetingToUpdate.id : meetingTitle + meetingDate,
-      title: meetingTitle === "" ? "(No Title)" : meetingTitle,
+      title: meetingTitle === '' ? '(No Title)' : meetingTitle,
       date: meetingDate,
-      type: "meeting",
+      type: 'meeting',
       members: selectedMeetingMembers,
     };
 
@@ -115,9 +116,9 @@ export const MeetingModal = ({
   };
 
   const updateMeetingRecords = (meetingData: any) => {
-    let updatedRecords = allMeetingRecords.map((record) => {
+    const updatedRecords = allMeetingRecords.map((record) => {
       const targetMember = selectedMeetingMembers.some(
-        (member) => member.id === record.userId
+        (member) => member.id === record.userId,
       );
 
       if (meetingToUpdate) {
@@ -158,7 +159,7 @@ export const MeetingModal = ({
     });
 
     const updatedLoggedInUserMeetingRecord = updatedRecords.find(
-      (record) => record.userId === user?.id
+      (record) => record.userId === user?.id,
     );
 
     setAllMeetingRecords(updatedRecords);
@@ -171,29 +172,31 @@ export const MeetingModal = ({
     await Promise.all(
       updatedRecords
         .filter((record) =>
-          selectedMeetingMembers.some((member) => member.id === record.userId)
+          selectedMeetingMembers.some((member) => member.id === record.userId),
         )
-        .map((record) => PortalSdk.putData(`/api/user/zeros`, { data: record }))
+        .map((record) =>
+          PortalSdk.putData(`/api/user/zeros`, { data: record }),
+        ),
     );
   };
 
   const createNewMembersMeetingRecord = async (meetingData: any) => {
     const newMembers = selectedMeetingMembers.filter(
       (member) =>
-        !allMeetingRecords.some((record) => record.userId === member.id)
+        !allMeetingRecords.some((record) => record.userId === member.id),
     );
 
     const newRecords = newMembers.map((member) => ({
       userId: member.id,
       year: new Date().getFullYear().toString(),
-      config: "meeting",
+      config: 'meeting',
       allMeetings: [meetingData],
     }));
 
     const response = await Promise.all(
       newRecords.map((record) =>
-        PortalSdk.putData(`/api/user/zeros`, { data: record })
-      )
+        PortalSdk.putData(`/api/user/zeros`, { data: record }),
+      ),
     );
 
     setAllMeetingRecords([
@@ -203,28 +206,28 @@ export const MeetingModal = ({
   };
 
   const deleteRemovedMembersMeetingData = async (
-    updatedRecords: ZeroRecords[]
+    updatedRecords: ZeroRecords[],
   ) => {
     const meetingToRemoveFromRecords = allMeetingRecords.filter((record) =>
-      removedUsers.some((id) => id === record.userId)
+      removedUsers.some((id) => id === record.userId),
     );
 
     const updatedRecordsToRemove = meetingToRemoveFromRecords.map((record) => {
       record.allMeetings = record.allMeetings?.filter(
-        (meeting) => (meeting as any)?.id !== meetingToUpdate?.id
+        (meeting: any) => (meeting as any)?.id !== meetingToUpdate?.id,
       );
       return record;
     });
     await Promise.all(
       updatedRecordsToRemove.map((record) =>
-        PortalSdk.putData(`/api/user/zeros`, { data: record })
-      )
+        PortalSdk.putData(`/api/user/zeros`, { data: record }),
+      ),
     );
   };
   return (
-    <div className="absolute z-10 top-0 left-0 w-full h-full bg-white flex flex-col justify-center items-center">
+    <div className="absolute left-0 top-0 z-10 flex size-full flex-col items-center justify-center bg-white">
       <form
-        className="flex flex-col gap-10 w-full"
+        className="flex w-full flex-col gap-10"
         onSubmit={handleMeetingFormSubmit}
       >
         <input
@@ -236,24 +239,24 @@ export const MeetingModal = ({
             setMeetingTitle(e.target.value);
           }}
           placeholder="Enter meeting title"
-          className="w-full py-4 border-b border-b-neutral-200  focus:border-b-neutral-900 outline-none transition-all"
+          className="w-full border-b border-b-neutral-200 py-4 outline-none transition-all focus:border-b-neutral-900"
         />
         <input
           type="date"
           name="meeting_date"
           value={
-            meetingDate !== ""
+            meetingDate !== ''
               ? meetingDate
               : meetingToUpdate
-              ? meetingToUpdate.date
-              : new Date().toISOString().split("T")[0]
+                ? meetingToUpdate.date
+                : new Date().toISOString().split('T')[0]
           }
           onChange={(e) => {
             setMeetingDate(e.target.value);
           }}
           id="meeting_date"
           placeholder="Enter meeting date"
-          className="w-full py-4 border-b border-b-neutral-200  focus:border-b-neutral-900 outline-none transition-all"
+          className="w-full border-b border-b-neutral-200 py-4 outline-none transition-all focus:border-b-neutral-900"
         />
         <div className="relative">
           <input
@@ -261,7 +264,7 @@ export const MeetingModal = ({
             name="members"
             id="members"
             placeholder="Add members"
-            className="w-full py-4 border-b border-b-neutral-200  focus:border-b-neutral-900 outline-none transition-all "
+            className="w-full border-b border-b-neutral-200 py-4 outline-none transition-all focus:border-b-neutral-900"
             value={typedUser}
             onChange={(e) => {
               setShowDropdown(e.target.value.trim().length > 0);
@@ -269,7 +272,7 @@ export const MeetingModal = ({
             }}
           />
           {showDropdown && (
-            <div className="border border-[#B4B4B4] p-2 absolute left-0 right-0 shadow-lg overflow-y-auto z-10 bg-white gap-[-0.5rem] ">
+            <div className="absolute inset-x-0 z-10 gap-[-0.5rem] overflow-y-auto border border-[#B4B4B4] bg-white p-2 shadow-lg">
               {allUsers
                 .filter((user: User) => {
                   if (typedUser && !selectedMeetingMembers.includes(user)) {
@@ -290,14 +293,14 @@ export const MeetingModal = ({
                       setSelectedMeetingMembers((prev) => [...prev, user]);
 
                       setRemovedUsers((prev) =>
-                        prev.filter((id) => id !== user.id)
+                        prev.filter((id) => id !== user.id),
                       );
-                      setTypedUser("");
+                      setTypedUser('');
                       setShowDropdown(false);
                     }}
                     className=""
                   >
-                    <span className="h-[2rem] flex items-center p-2 hover:bg-[#D9D9D9] my-[2px] rounded-sm cursor-pointer">
+                    <span className="my-[2px] flex h-8 cursor-pointer items-center rounded-sm p-2 hover:bg-[#D9D9D9]">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={user.avatar as string}
@@ -313,22 +316,20 @@ export const MeetingModal = ({
             </div>
           )}
           <div className="mt-4">
-            <span className="text-xs  text text-neutral-400">
-              Added Members
-            </span>
-            <div className=" py-2 overflow-y-auto z-10 bg-white gap-[-0.5rem] ">
+            <span className="text text-xs text-neutral-400">Added Members</span>
+            <div className="z-10 gap-[-0.5rem] overflow-y-auto bg-white py-2">
               {selectedMeetingMembers.map((user: User) => (
                 <div
                   key={user?.id}
-                  className="flex items-center p-2 hover:bg-[#D9D9D9] my-[2px] rounded-sm cursor-pointer"
+                  className="my-[2px] flex cursor-pointer items-center rounded-sm p-2 hover:bg-[#D9D9D9]"
                   onClick={() => {
                     setSelectedMeetingMembers((prev) =>
-                      prev.filter((u) => u.id !== user.id)
+                      prev.filter((u) => u.id !== user.id),
                     );
                     setRemovedUsers((prev) => {
                       if (
                         meetingToUpdate.members.find(
-                          (u: User) => u.id === user.id
+                          (u: User) => u.id === user.id,
                         )
                       ) {
                         return [...prev, user.id];
@@ -355,8 +356,8 @@ export const MeetingModal = ({
             type="submit"
             disabled={isSaving || isDeleting}
             className={`${
-              isSaving || isDeleting ? "bg-neutral-300" : "bg-blue-500"
-            } font-bold text-white px-6 py-3 rounded-md flex flex-row items-center justify-center gap-1 text-[0.7em]`}
+              isSaving || isDeleting ? 'bg-neutral-300' : 'bg-blue-500'
+            } flex flex-row items-center justify-center gap-1 rounded-md px-6 py-3 text-[0.7em] font-bold text-white`}
           >
             {!isSaving && (
               <span className="icon_size material-symbols-outlined">
@@ -375,8 +376,8 @@ export const MeetingModal = ({
                 handleDeleteMeeting(meetingToUpdate);
               }}
               className={`${
-                isSaving || isDeleting ? "bg-neutral-300" : "bg-red-400"
-              } font-bold text-white px-6 py-3 rounded-md flex flex-row items-center justify-center gap-1 text-[0.7em]`}
+                isSaving || isDeleting ? 'bg-neutral-300' : 'bg-red-400'
+              } flex flex-row items-center justify-center gap-1 rounded-md px-6 py-3 text-[0.7em] font-bold text-white`}
             >
               {isDeleting && <CircularProgress size={20} color="inherit" />}
               {!isDeleting && (
@@ -397,13 +398,11 @@ export const MeetingModal = ({
             }}
             className={`${
               isSaving || isDeleting
-                ? "bg-neutral-300 text-white"
-                : "bg-neutral-100 text-neutral-900"
-            } font-bold  px-6 py-3 rounded-md flex flex-row items-center justify-center gap-1 text-[0.7em]`}
+                ? 'bg-neutral-300 text-white'
+                : 'bg-neutral-100 text-neutral-900'
+            } flex flex-row items-center justify-center gap-1 rounded-md px-6 py-3 text-[0.7em] font-bold`}
           >
-            <span className="icon_size material-symbols-outlined  ">
-              cancel
-            </span>
+            <span className="icon_size material-symbols-outlined">cancel</span>
             <span className="uppercase tracking-[0.2em]">Cancel</span>
           </button>
         </div>
