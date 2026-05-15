@@ -1,5 +1,7 @@
-import { prisma } from "@/prisma/prisma";
-import { NextResponse, NextRequest } from "next/server";
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
+import { db } from '@/lib/mongodb/db-client';
 
 export async function GET(request: NextRequest) {
   // const role = request.nextUrl.searchParams.get("role") as USERROLE;
@@ -8,21 +10,21 @@ export async function GET(request: NextRequest) {
 
   try {
     //console.log("fetching user on server", id, userType, role);
-    const user = await prisma.user.findMany({
+    const user = await db.user.findMany({
       where: {
-        role: "CORETEAM",
+        role: 'CORETEAM',
       },
     });
 
     if (error_response) {
       return new NextResponse(JSON.stringify(error_response), {
         status: 404,
-        headers: { "Content-Type": "application/json" },
+        headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    let json_response = {
-      status: "success",
+    const json_response = {
+      status: 'success',
       data: {
         user,
       },
@@ -32,7 +34,7 @@ export async function GET(request: NextRequest) {
   } catch (e) {
     return new NextResponse(JSON.stringify(e), {
       status: 404,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }
