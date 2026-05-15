@@ -1,10 +1,8 @@
+import { useMediaQuery } from '@mui/material';
+import CircularProgress from '@mui/material/CircularProgress';
 import Image from 'next/image';
 import React, { useEffect, useState } from 'react';
-import CircularProgress from '@mui/material/CircularProgress';
-import Dialog from '@mui/material/Dialog';
-import DialogContent from '@mui/material/DialogContent';
-import IconButton from '@mui/material/IconButton';
-import { useMediaQuery } from '@mui/material';
+
 import media from '@/styles/media';
 
 interface IOnboardingStepProps {
@@ -45,19 +43,19 @@ const OnboardingStep: React.FC<IOnboardingStepProps> = ({
   };
 
   return (
-    <div className='flex flex-col items-center justify-between h-[calc(100vh-10vh)] p-6 py-7 w-[95%] md:w-[350px] lg:w-1/4 bg-neutral-800 shadow-md rounded-lg text-center max-sm:w-full max-sm:h-full max-sm:justify-center max-sm:gap-8 overflow-y-scroll no-scrollbar'>
+    <div className="no-scrollbar flex h-[calc(100vh-10vh)] w-[95%] flex-col items-center justify-between overflow-y-scroll rounded-lg bg-neutral-800 p-6 py-7 text-center shadow-md max-sm:size-full max-sm:justify-center max-sm:gap-8 md:w-[350px] lg:w-1/4">
       {image && (
         <div
-          className={`relative flex items-center justify-center mb-6 max-sm:mt-8 ${
+          className={`relative mb-6 flex items-center justify-center max-sm:mt-8 ${
             step === 2
-              ? 'w-full h-auto'
-              : 'w-44 h-44 rounded-full border-2 border-[#1E90FF]'
+              ? 'h-auto w-full'
+              : 'size-44 rounded-full border-2 border-[#1E90FF]'
           }`}
           // onClick={handleImageClick}
         >
           <Image
             src={image}
-            alt='Step Image'
+            alt="Step Image"
             {...(step !== 2 && { fill: true })}
             {...(step === 2 && {
               layout: 'responsive',
@@ -70,9 +68,9 @@ const OnboardingStep: React.FC<IOnboardingStepProps> = ({
           />
         </div>
       )}
-      <div className=''>
-        <h1 className='text-xl font-bold mb-2 text-white'>{title}</h1>
-        <p className='text-sm text-gray-300 mb-4 px-2'>{subtitle}</p>
+      <div className="">
+        <h1 className="mb-2 text-xl font-bold text-white">{title}</h1>
+        <p className="mb-4 px-2 text-sm text-gray-300">{subtitle}</p>
         <div>{children}</div>
       </div>
       <div
@@ -81,13 +79,13 @@ const OnboardingStep: React.FC<IOnboardingStepProps> = ({
       >
         <button
           onClick={onNext}
-          className={`bg-[#1E90FF] rounded-full m-2 hover:bg-blue-600 transition flex items-center justify-center h-16 w-16 text-lg font-bold `}
+          className={`m-2 flex size-16 items-center justify-center rounded-full bg-[#1E90FF] text-lg font-bold transition hover:bg-blue-600`}
         >
           {loading ? (
             <CircularProgress size={24} sx={{ color: '#fff' }} />
           ) : (
             <span
-              className='material-symbols-outlined text-gray-900 font-bold'
+              className="material-symbols-outlined font-bold text-gray-900"
               style={{ fontSize: '2.25rem' }}
             >
               arrow_forward
