@@ -1,7 +1,7 @@
 'use server';
 
-import { prisma } from '@/prisma/prisma';
-import { Subscription } from '@prisma/client';
+import { db } from "@/lib/mongodb/db-client";
+import { Subscription } from '@db/client';
 import webpush from 'web-push';
 
 webpush.setVapidDetails(
@@ -19,7 +19,7 @@ export async function sendNotification({
 }) {
   const subscriptionsDocByUserPromises: Promise<Subscription | null>[] =
     userId.map(async (id) =>
-      prisma.subscription.findUnique({
+      db.subscription.findUnique({
         where: {
           userId: id,
         },
