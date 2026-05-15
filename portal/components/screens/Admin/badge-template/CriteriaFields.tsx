@@ -1,6 +1,8 @@
 import React from 'react';
-import { InputField, TextAreaField } from './TextFields';
+
 import ToolTip from '@/components/elements/ToolTip';
+
+import { InputField } from './TextFields';
 
 interface CriteriaFieldsProps {
   criteriaType: string;
@@ -15,7 +17,7 @@ interface CriteriaFieldsProps {
   handleChange: (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    >,
   ) => void;
 }
 
@@ -36,11 +38,11 @@ const CriteriaFields: React.FC<CriteriaFieldsProps> = ({
       return (
         <>
           <InputField
-            id='criteriaLogic'
-            type='text'
+            id="criteriaLogic"
+            type="text"
             title="Specify the logic for awarding this badge, e.g., 'After completing 2 weeks from the date of joining' or '6 months from the date of joining'"
-            label='Add Criteria Logic'
-            placeholder='Criteria logic after which the badge is awarded, e.g., 2 weeks, 6 months'
+            label="Add Criteria Logic"
+            placeholder="Criteria logic after which the badge is awarded, e.g., 2 weeks, 6 months"
             value={formData.criteriaLogic}
             onChange={handleChange}
           />
@@ -52,13 +54,13 @@ const CriteriaFields: React.FC<CriteriaFieldsProps> = ({
         <>
           <div>
             <label
-              htmlFor='streakType'
-              className='text-white font-semibold mb-2 flex items-center gap-2'
+              htmlFor="streakType"
+              className="mb-2 flex items-center gap-2 font-semibold text-white"
             >
               Streak Type
-              <ToolTip title='Specify the type of streak, e.g., Worklogs-based, select from the list.'>
+              <ToolTip title="Specify the type of streak, e.g., Worklogs-based, select from the list.">
                 <span
-                  className='material-symbols-outlined'
+                  className="material-symbols-outlined"
                   style={{ fontSize: '1rem' }}
                 >
                   info
@@ -66,13 +68,13 @@ const CriteriaFields: React.FC<CriteriaFieldsProps> = ({
               </ToolTip>
             </label>
             <select
-              id='streakType'
+              id="streakType"
               value={formData.streakType}
               onChange={handleChange}
-              title='Specify the type of streak, e.g., Worklogs-based'
-              className='p-3 rounded-lg bg-neutral-800 text-white border border-neutral-700 focus:ring-2 focus:ring-white transition w-full'
+              title="Specify the type of streak, e.g., Worklogs-based"
+              className="w-full rounded-lg border border-neutral-700 bg-neutral-800 p-3 text-white transition focus:ring-2 focus:ring-white"
             >
-              <option value=''>Select Streak Type</option>
+              <option value="">Select Streak Type</option>
               {streakTypeTags.map((tag) => (
                 <option value={tag.value} key={`${tag.value}`}>
                   {tag.label}
@@ -81,11 +83,11 @@ const CriteriaFields: React.FC<CriteriaFieldsProps> = ({
             </select>
           </div>
           <InputField
-            id='streakCount'
-            label='Number of Days for Streak'
-            type='number'
-            title='Specify the number of days for streak, e.g - 10'
-            placeholder='e.g., 10'
+            id="streakCount"
+            label="Number of Days for Streak"
+            type="number"
+            title="Specify the number of days for streak, e.g - 10"
+            placeholder="e.g., 10"
             value={formData.streakCount}
             onChange={handleChange}
           />
