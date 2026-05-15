@@ -1,20 +1,23 @@
-import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import { STATUSES } from "../mission.utils";
-import { Avatar, AvatarGroup, Button, Menu, MenuItem } from "@mui/material";
-import { MissionTask, STATUS, User } from "@prisma/client";
-import ToolTip from "@/components/elements/ToolTip";
-import { useEffect, useState } from "react";
-import {
-  setActiveTask,
-  updateTask,
-} from "@/utils/redux/missions/missionsTasks.slice";
-import { PortalSdk } from "@/utils/services/PortalSdk";
+import type { MissionTask, STATUS, User } from '@db/client';
+import { Avatar, AvatarGroup, Button, Menu, MenuItem } from '@mui/material';
+import { useEffect, useState } from 'react';
+
+import ToolTip from '@/components/elements/ToolTip';
 import {
   setActiveTab,
   setEditingMission,
   setEditModalOpen,
-} from "@/utils/redux/missions/mission.ui.slice";
-import { HOUSES_LIST } from "../../HousesList";
+} from '@/utils/redux/missions/mission.ui.slice';
+import {
+  setActiveTask,
+  updateTask,
+} from '@/utils/redux/missions/missionsTasks.slice';
+import type { RootState } from '@/utils/redux/store';
+import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
+import { PortalSdk } from '@/utils/services/PortalSdk';
+
+import { HOUSES_LIST } from '../../HousesList';
+import { STATUSES } from '../mission.utils';
 
 const Tasks = ({
   userList,
@@ -24,10 +27,10 @@ const Tasks = ({
   currentHouseIndex: number;
 }) => {
   const { allMissions, activeMission, missionsLoading } = useAppSelector(
-    (state: RootState) => state.mission
+    (state: RootState) => state.mission,
   );
   const { allTasks } = useAppSelector(
-    (state: RootState) => state.missionsTasks
+    (state: RootState) => state.missionsTasks,
   );
   const dispatch = useAppDispatch();
   const [currentStatus, setCurrentStatus] = useState<STATUS | null>(null);
@@ -37,7 +40,7 @@ const Tasks = ({
 
   useEffect(() => {
     setActiveMissionTasks(
-      allTasks.filter((t) => t?.missionId === activeMission?.id)
+      allTasks.filter((t) => t?.missionId === activeMission?.id),
     );
   }, [allTasks, activeMission?.id]);
 
@@ -53,11 +56,11 @@ const Tasks = ({
           };
         }
         return task;
-      })
+      }),
     );
     try {
       const taskToUpdate = activeMissionTasks.find(
-        (task) => task.status?.value === currentStatus?.value
+        (task) => task.status?.value === currentStatus?.value,
       );
       if (!taskToUpdate) {
         return;
@@ -83,7 +86,7 @@ const Tasks = ({
   ) {
     return (
       <div
-        className={`bg-white rounded-lg shadow-lg p-6 h-[96vh] flex items-center justify-center overflow-y-scroll my-4 border-b border-neutral-200 `}
+        className={`my-4 flex h-[96vh] items-center justify-center overflow-y-scroll rounded-lg border-b border-neutral-200 bg-white p-6 shadow-lg`}
       >
         <Button
           onClick={() => dispatch(setEditModalOpen(true))}
@@ -98,7 +101,7 @@ const Tasks = ({
   if (allMissions && allMissions.length > 0 && !activeMission) {
     return (
       <div
-        className={`bg-white rounded-lg shadow-lg p-6 h-[96vh] flex items-center justify-center overflow-y-scroll my-4 border-b border-neutral-200 `}
+        className={`my-4 flex h-[96vh] items-center justify-center overflow-y-scroll rounded-lg border-b border-neutral-200 bg-white p-6 shadow-lg`}
       >
         Select mission to see details
       </div>
@@ -107,32 +110,31 @@ const Tasks = ({
 
   return (
     <div
-      className={`bg-white rounded-lg shadow-lg p-6 h-[96vh] overflow-y-scroll my-4 border-b border-neutral-200 
-    `}
+      className={`my-4 h-[96vh] overflow-y-scroll rounded-lg border-b border-neutral-200 bg-white p-6 shadow-lg`}
     >
-      <div className="flex items-center justify-between mb-4">
+      <div className="mb-4 flex items-center justify-between">
         <div
-          className="flex items-center gap-2 group cursor-pointer"
+          className="group flex cursor-pointer items-center gap-2"
           onClick={() => {
             dispatch(setEditingMission(activeMission));
             dispatch(setEditModalOpen(true));
-            dispatch(setActiveTab("missions"));
+            dispatch(setActiveTab('missions'));
           }}
         >
-          <ToolTip title={activeMission?.title || ""}>
+          <ToolTip title={activeMission?.title || ''}>
             <h2 className="text-2xl font-bold">
               {activeMission?.title && activeMission?.title.length > 10
-                ? activeMission?.title.slice(0, 10) + "..."
+                ? activeMission?.title.slice(0, 10) + '...'
                 : activeMission?.title}
             </h2>
           </ToolTip>
-          <span className="material-symbols-outlined !text-base !opacity-70 group-hover:!opacity-100 cursor-pointer">
+          <span className="material-symbols-outlined cursor-pointer !text-base !opacity-70 group-hover:!opacity-100">
             Edit
           </span>
         </div>
         <Button
           onClick={() => {
-            dispatch(setActiveTab("tasks"));
+            dispatch(setActiveTab('tasks'));
             dispatch(setEditModalOpen(true));
           }}
         >
@@ -145,9 +147,9 @@ const Tasks = ({
       <div>
         {STATUSES.map((status) => (
           <>
-            <div className="flex items-center gap-2 mt-4">
-              <div className="flex items-center gap-2 cursor-pointer  hover:opacity-70">
-                <span className="icon_size !text-base !font-bold !text-neutral-400  material-icons">
+            <div className="mt-4 flex items-center gap-2">
+              <div className="flex cursor-pointer items-center gap-2 hover:opacity-70">
+                <span className="icon_size material-icons !text-base !font-bold !text-neutral-400">
                   keyboard_arrow_down
                 </span>
                 <span className="text-base font-bold text-neutral-400">
@@ -162,10 +164,10 @@ const Tasks = ({
                   key={task.id}
                   onClick={(e) => {
                     dispatch(setActiveTask(task));
-                    dispatch(setActiveTab("tasks"));
+                    dispatch(setActiveTab('tasks'));
                     dispatch(setEditModalOpen(true));
                   }}
-                  className="cursor-pointer hover:bg-neutral-50 ml-4 mt-2 p-2 shadow-sm border rounded-xl"
+                  className="ml-4 mt-2 cursor-pointer rounded-xl border p-2 shadow-sm hover:bg-neutral-50"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
@@ -176,9 +178,9 @@ const Tasks = ({
                           setCurrentStatus(status);
                         }}
                         style={{ backgroundColor: status.color }}
-                        className="cursor-pointer w-4 h-4 bg-gray-200 rounded-full hover:opacity-70"
+                        className="size-4 cursor-pointer rounded-full bg-gray-200 hover:opacity-70"
                       ></div>
-                      <p className="text-lg w-40 line-clamp-1 font-bold">
+                      <p className="line-clamp-1 w-40 text-lg font-bold">
                         {task.title}
                       </p>
                     </div>
@@ -187,13 +189,13 @@ const Tasks = ({
                         style={{
                           color: task.priority?.color,
                         }}
-                        className="text-sm flex items-center gap-1 font-bold text-neutral-400"
+                        className="flex items-center gap-1 text-sm font-bold text-neutral-400"
                       >
                         <span
                           style={{
                             fill: task.priority?.color,
                           }}
-                          className="icon_size material-icons "
+                          className="icon_size material-icons"
                         >
                           flag
                         </span>
@@ -202,7 +204,7 @@ const Tasks = ({
                     )}
                   </div>
 
-                  <div className="flex items-center justify-between mt-3">
+                  <div className="mt-3 flex items-center justify-between">
                     <div>
                       <span className="text-xs font-bold text-neutral-400">
                         Due Date
@@ -210,14 +212,14 @@ const Tasks = ({
                       <p className="text-xs text-neutral-600">
                         {task.expiresAt
                           ? new Date(task.expiresAt).toDateString().slice(4)
-                          : "N/A"}
+                          : 'N/A'}
                       </p>
                     </div>
                     <div className="flex">
                       <AvatarGroup
                         max={4}
                         sx={{
-                          "& .MuiAvatar-root": {
+                          '& .MuiAvatar-root': {
                             width: 24,
                             height: 24,
                             fontSize: 15,
@@ -227,12 +229,12 @@ const Tasks = ({
                         {userList
                           .filter((user) => task.assignees?.includes(user.id))
                           .map((user) => (
-                            <ToolTip key={user.id} title={user.name || ""}>
+                            <ToolTip key={user.id} title={user.name || ''}>
                               <Avatar
-                                sizes={"20px"}
+                                sizes={'20px'}
                                 key={user.id}
-                                alt={user.name || ""}
-                                src={user.avatar || ""}
+                                alt={user.name || ''}
+                                src={user.avatar || ''}
                               />
                             </ToolTip>
                           ))}
@@ -256,12 +258,12 @@ const Tasks = ({
                 setStatusRef(null);
               }}
             >
-              <div className="flex gap-2 items-center">
+              <div className="flex items-center gap-2">
                 <span
                   style={{
                     background: s.color,
                   }}
-                  className={`w-4 h-4  rounded-full`}
+                  className={`size-4 rounded-full`}
                 ></span>
                 <span>{s.label}</span>
               </div>
@@ -275,34 +277,34 @@ const Tasks = ({
 
 export const MissionDetailsSkeleton = () => {
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6 h-full overflow-y-auto my-4 border-b border-neutral-200">
-      <div className="h-8 bg-gray-200 rounded w-3/4 mb-4"></div>
-      <div className="flex items-center mb-4">
-        <div className="w-10 h-10 bg-gray-200 rounded-full mr-3"></div>
-        <div className="h-6 bg-gray-200 rounded w-24"></div>
+    <div className="my-4 h-full overflow-y-auto rounded-lg border-b border-neutral-200 bg-white p-6 shadow-lg">
+      <div className="mb-4 h-8 w-3/4 rounded bg-gray-200"></div>
+      <div className="mb-4 flex items-center">
+        <div className="mr-3 size-10 rounded-full bg-gray-200"></div>
+        <div className="h-6 w-24 rounded bg-gray-200"></div>
       </div>
       <div className="mb-4">
-        <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
-        <div className="h-4 bg-gray-200 rounded w-2/3 mb-2"></div>
-        <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+        <div className="mb-2 h-4 w-1/2 rounded bg-gray-200"></div>
+        <div className="mb-2 h-4 w-2/3 rounded bg-gray-200"></div>
+        <div className="h-4 w-1/3 rounded bg-gray-200"></div>
       </div>
       <div className="mb-6">
-        <div className="w-full bg-gray-200 rounded-full h-2.5">
-          <div className="bg-gray-400 h-2.5 rounded-full w-1/2"></div>
+        <div className="h-2.5 w-full rounded-full bg-gray-200">
+          <div className="h-2.5 w-1/2 rounded-full bg-gray-400"></div>
         </div>
-        <div className="h-4 bg-gray-200 rounded w-1/3 mt-1"></div>
+        <div className="mt-1 h-4 w-1/3 rounded bg-gray-200"></div>
       </div>
-      <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
+      <div className="mb-4 h-6 w-1/4 rounded bg-gray-200"></div>
       <ul className="space-y-4">
         {[1, 2, 3].map((index) => (
           <li key={index} className="rounded-lg p-4 shadow">
-            <div className="flex items-center mb-2">
-              <div className="w-10 h-10 bg-gray-200 rounded-full mr-3"></div>
-              <div className="h-4 bg-gray-200 rounded w-24"></div>
+            <div className="mb-2 flex items-center">
+              <div className="mr-3 size-10 rounded-full bg-gray-200"></div>
+              <div className="h-4 w-24 rounded bg-gray-200"></div>
             </div>
-            <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-            <div className="h-3 bg-gray-200 rounded w-full mb-2"></div>
-            <div className="h-3 bg-gray-200 rounded w-1/2 ml-auto"></div>
+            <div className="mb-2 h-4 w-3/4 rounded bg-gray-200"></div>
+            <div className="mb-2 h-3 w-full rounded bg-gray-200"></div>
+            <div className="ml-auto h-3 w-1/2 rounded bg-gray-200"></div>
           </li>
         ))}
       </ul>
