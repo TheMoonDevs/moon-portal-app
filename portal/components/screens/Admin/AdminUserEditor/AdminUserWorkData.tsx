@@ -1,14 +1,15 @@
-"use client";
+'use client';
 
-import { LandscapeCard } from "@/components/elements/Cards";
-import { ChangeEvent, Dispatch, SetStateAction } from "react";
-import dayjs from "dayjs";
-import { DatePicker } from "@mui/x-date-pickers";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import { User } from "@prisma/client";
-import { JsonObject } from "@prisma/client/runtime/library";
-import { Spinner } from "@/components/elements/Loaders";
+import type { User } from '@db/client';
+import type { JsonObject } from '@db/runtime';
+import { DatePicker } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import dayjs from 'dayjs';
+import type { ChangeEvent, Dispatch, SetStateAction } from 'react';
+
+import { LandscapeCard } from '@/components/elements/Cards';
+import { Spinner } from '@/components/elements/Loaders';
 
 export const AdminUserWorkData = ({
   user,
@@ -28,7 +29,7 @@ export const AdminUserWorkData = ({
   return (
     <LandscapeCard className="@shadow-lg !h-[90vh] !w-full items-start justify-start !rounded-xl !bg-gray-900 !p-6">
       <div className="mb-6 flex w-full items-center justify-between border-b border-gray-700 pb-4">
-        {" "}
+        {' '}
         <p className="text-sm font-semibold uppercase tracking-widest text-neutral-400">
           WORK DATA
         </p>
@@ -37,7 +38,7 @@ export const AdminUserWorkData = ({
           className="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-white shadow-md transition hover:bg-green-700"
         >
           <>
-            {loading && <Spinner className="h-5 w-5 text-green-600" />}
+            {loading && <Spinner className="size-5 text-green-600" />}
             {!loading && <span className="material-icons">done_all</span>}
           </>
           Save User
@@ -48,7 +49,7 @@ export const AdminUserWorkData = ({
           {/* Left Column */}
           <div className="flex flex-col gap-4 text-white shadow-lg">
             <div className="flex flex-col gap-2">
-              {" "}
+              {' '}
               <p className="text-sm font-medium">Work Hours Per Week</p>
               <input
                 id="workData.workHours"
@@ -59,7 +60,7 @@ export const AdminUserWorkData = ({
               />
             </div>
             <div className="flex flex-col gap-2">
-              {" "}
+              {' '}
               <p className="text-sm font-medium">Position Public</p>
               <input
                 id="workData.positionPublic"
@@ -70,7 +71,7 @@ export const AdminUserWorkData = ({
               />
             </div>
             <div className="flex flex-col gap-2">
-              {" "}
+              {' '}
               <p className="text-sm font-medium">Joining Date</p>
               <DatePicker
                 value={dayjs((user?.workData as any)?.joining)}
@@ -79,30 +80,30 @@ export const AdminUserWorkData = ({
                     ...u,
                     workData: {
                       ...(u.workData as JsonObject),
-                      joining: newValue?.format("YYYY-MM-DD"),
+                      joining: newValue?.format('YYYY-MM-DD'),
                     },
                   }))
                 }
                 sx={{
-                  border: "1px solid #737373",
-                  borderRadius: "4px",
-                  width: "100%",
-                  backgroundColor: "#262626",
-                  "& .MuiPaper-root": {
-                    "& .MuiPickersLayout-root": {
-                      "& MuiDateCalendar-root": {
-                        backgroundColor: "#1f1f1f !important",
+                  border: '1px solid #737373',
+                  borderRadius: '4px',
+                  width: '100%',
+                  backgroundColor: '#262626',
+                  '& .MuiPaper-root': {
+                    '& .MuiPickersLayout-root': {
+                      '& MuiDateCalendar-root': {
+                        backgroundColor: '#1f1f1f !important',
                       },
                     },
                   },
-                  "& .MuiDateCalendar-root": {
-                    backgroundColor: "#1f1f1f !important",
+                  '& .MuiDateCalendar-root': {
+                    backgroundColor: '#1f1f1f !important',
                   },
-                  "& .MuiInputBase-input": {
-                    color: "white !important",
+                  '& .MuiInputBase-input': {
+                    color: 'white !important',
                   },
-                  "& .MuiButtonBase-root": {
-                    color: "white !important",
+                  '& .MuiButtonBase-root': {
+                    color: 'white !important',
                   },
                 }}
               />
@@ -111,7 +112,7 @@ export const AdminUserWorkData = ({
           {/* Right Column */}
           <div className="flex flex-col gap-4 text-white shadow-lg">
             <div className="flex flex-col gap-2">
-              {" "}
+              {' '}
               <p className="text-sm font-medium">Position Internal</p>
               <input
                 id="workData.positionInternal"
@@ -122,7 +123,7 @@ export const AdminUserWorkData = ({
               />
             </div>
             <div className="flex flex-col gap-2">
-              {" "}
+              {' '}
               <p className="text-sm font-medium">Grade</p>
               <input
                 id="workData.grade"
@@ -133,7 +134,7 @@ export const AdminUserWorkData = ({
               />
             </div>
             <div className="flex flex-col gap-2">
-              {" "}
+              {' '}
               <p className="text-sm font-medium">Grade Tag</p>
               <input
                 id="workData.gradeTag"
