@@ -1,6 +1,6 @@
 import React, { createContext, useContext } from 'react';
-import useSWR from 'swr';
 import { toast } from 'sonner';
+import useSWR from 'swr';
 
 export type ClientBot = {
   id: string;
@@ -32,7 +32,7 @@ export const ClientBotProvider: React.FC<{
   // searchParams.append('clientId', clientId);
   searchParams.append('botProjectId', botProjectId);
   // searchParams.append('clientRequestId', clientRequestId);
-  
+
   const { data, error, mutate, isLoading } = useSWR(
     `/api/custom-bots/client-bots?${searchParams.toString()}`,
     (url) => fetch(url).then((res) => res.json()),
@@ -42,7 +42,7 @@ export const ClientBotProvider: React.FC<{
     toast.error('Error fetching client bots.');
     console.error('ClientBot fetch error:', error);
   }
-  
+
   const clientBots: ClientBot[] = data?.clientBots || [];
 
   // Enhanced refreshClientBots function that forces revalidation

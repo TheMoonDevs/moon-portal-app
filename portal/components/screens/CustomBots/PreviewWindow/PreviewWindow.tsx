@@ -1,15 +1,10 @@
-import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Copy, Play, X } from 'lucide-react';
-import API_DOC from './data.json';
-import { useState, useEffect } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+
+import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
@@ -19,10 +14,17 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
+
+import API_DOC from './data.json';
 
 const BASE_URL =
   'https://a1n6ih708c.execute-api.ap-southeast-2.amazonaws.com/latest';
@@ -419,7 +421,7 @@ const PreviewWindow = () => {
 
     // Construct example URL with path parameters
     const baseUrlWithoutPath = BASE_URL.split('/latest')[0];
-    let examplePath = replacePath(currentEndpoint.path, examplePathParams);
+    const examplePath = replacePath(currentEndpoint.path, examplePathParams);
     const exampleUrl = new URL(`/latest${examplePath}`, baseUrlWithoutPath);
 
     // Add example query parameters if they exist
@@ -542,7 +544,7 @@ const PreviewWindow = () => {
         {/* Left Grouping */}
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" disabled={isLoading}>
-            <X className="h-5 w-5" />
+            <X className="size-5" />
           </Button>
 
           <Select
@@ -601,12 +603,12 @@ const PreviewWindow = () => {
           >
             {isLoading ? (
               <>
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                <div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                 Stop
               </>
             ) : (
               <>
-                <Play className="h-4 w-4" />
+                <Play className="size-4" />
                 Trigger
               </>
             )}
@@ -784,12 +786,12 @@ const PreviewWindow = () => {
                       >
                         {isLoading ? (
                           <>
-                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                            <div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                             <span>Stop</span>
                           </>
                         ) : (
                           <>
-                            <Play className="h-4 w-4" />
+                            <Play className="size-4" />
                             <span>Submit</span>
                           </>
                         )}
