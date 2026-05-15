@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/prisma/prisma';
+
+import { db } from '@/lib/mongodb/db-client';
 import { updateClientRequest } from '@/utils/services/customBots/clientRequests/updateClientRequest';
 
 export async function GET(req: Request) {
@@ -12,7 +13,7 @@ export async function GET(req: Request) {
         { status: 400 },
       );
 
-    const clientRequest = await prisma.clientRequest.findUnique({
+    const clientRequest = await db.clientRequest.findUnique({
       where: { id: clientRequestId },
       include: { requestUpdates: true },
     });
