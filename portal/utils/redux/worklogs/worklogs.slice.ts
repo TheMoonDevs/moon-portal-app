@@ -1,4 +1,4 @@
-import { User, WorkLogs, ZeroRecords,Engagement } from "@prisma/client";
+import { User, WorkLogs, ZeroRecords,Engagement } from "@db/client";
 import { createSlice } from "@reduxjs/toolkit";
 
 export const worklogsSlice = createSlice({
