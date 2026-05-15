@@ -1,9 +1,11 @@
 export const dynamic = 'force-dynamic'; // static by default, unless reading the request
-import { prisma } from '@/prisma/prisma';
-import { SlackBotSdk } from '@/utils/services/slackBotSdk';
 import dayjs from 'dayjs';
-import { NextResponse, NextRequest } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
 import { getMissedLogs } from '@/components/screens/Worklogs/WorklogBreakdown/BreakdownMetrics';
+import { db } from '@/lib/mongodb/db-client';
+import { SlackBotSdk } from '@/utils/services/slackBotSdk';
 
 const slackBot = new SlackBotSdk();
 
@@ -60,7 +62,7 @@ export async function GET(request: NextRequest) {
     const startOfMonth = dayjs().startOf('month');
     const endOfMonth = dayjs().endOf('month');
 
-    const users = await prisma.user.findMany({
+    const users = await db.user.findMany({
       where: {
         userType: 'MEMBER',
         role: 'CORETEAM',
@@ -71,8 +73,8 @@ export async function GET(request: NextRequest) {
     //console.log(users);
 
     const usersWithWorkLogs = await Promise.all(
-      users.map(async (user) => {
-        const workLogs = await prisma.workLogs.findMany({
+      users.map(async (user: any) => {
+        const workLogs = await db.workLogs.findMany({
           where: {
             userId: user.id,
             date: {
@@ -83,7 +85,7 @@ export async function GET(request: NextRequest) {
         });
 
         const nonEmptyWorkLogs = workLogs.filter(
-          (workLog) => !isWorklogEmpty(workLog.works),
+          (workLog: any) => !isWorklogEmpty(workLog.works),
         );
         const missedDays = getMissedLogs(nonEmptyWorkLogs, true);
         const missedDaysDayjs = missedDays.map((date) => dayjs(date));
@@ -101,7 +103,7 @@ export async function GET(request: NextRequest) {
     for (const user of usersWithWorkLogs) {
       // Get missed sequences, excluding today
       const missedSequences = getConsecutiveMissedDays(
-        user.missedDays.filter((day) => !day.isSame(dayjs(), 'day')),
+        user.missedDays.filter((day: any) => !day.isSame(dayjs(), 'day')),
         2,
       );
 
@@ -135,7 +137,7 @@ export async function GET(request: NextRequest) {
             startDay !== endDay ? ` to ${endDay}` : ''
           }. Please update your worklogs as soon as possible.`;
           console.log(startDay, endDay);
-          const notification = await prisma.notification.create({
+          const notification = await db.notification.create({
             data: {
               userId: user.user.id,
               title,

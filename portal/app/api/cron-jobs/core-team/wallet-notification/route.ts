@@ -1,36 +1,38 @@
-export const dynamic = "force-dynamic"; // static by default, unless reading the request
-import { prisma } from "@/prisma/prisma";
-import { APP_BASE_URL } from "@/utils/constants/appInfo";
-import { NotificationType } from "@prisma/client";
-import { JsonObject } from "@prisma/client/runtime/library";
-import { NextResponse, NextRequest } from "next/server";
+export const dynamic = 'force-dynamic'; // static by default, unless reading the request
+import type { NotificationType } from '@db/client';
+import type { JsonObject } from '@db/runtime';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
+import { db } from '@/lib/mongodb/db-client';
+import { APP_BASE_URL } from '@/utils/constants/appInfo';
 
 export async function GET(request: NextRequest) {
   try {
-    const users = await prisma.user.findMany({
+    const users = await db.user.findMany({
       where: {
-        userType: "MEMBER",
-        role: "CORETEAM",
-        status: "ACTIVE",
+        userType: 'MEMBER',
+        role: 'CORETEAM',
+        status: 'ACTIVE',
         // id: "665bfefcc58926c7f6935c0c", //remove and add your user id for testing
       },
     });
 
     const usersWithoutWalletAddress = await Promise.all(
-      users.map(async (user) => {
+      users.map(async (user: any) => {
         if (!(user?.payData as JsonObject)?.walletAddres) {
           const matchId = `${user?.id}_onboard_walletAddress`;
           const data = {
             userId: user?.id,
-            title: "Wallet Address Required",
-            description: "Please add your wallet address to continue.",
+            title: 'Wallet Address Required',
+            description: 'Please add your wallet address to continue.',
             matchId: matchId,
-            notificationType: "SELF_GENERATED" as NotificationType,
+            notificationType: 'SELF_GENERATED' as NotificationType,
             notificationData: {
               actions: [
                 {
-                  title: "Add Wallet Address",
-                  trigger_type: "url",
+                  title: 'Add Wallet Address',
+                  trigger_type: 'url',
                   trigger: `${APP_BASE_URL}/member/onboarding/wallet`,
                 },
               ],
@@ -38,7 +40,7 @@ export async function GET(request: NextRequest) {
             },
           };
 
-          const existingNotification = await prisma.notification.findUnique({
+          const existingNotification = await db.notification.findUnique({
             where: { matchId },
           });
 
@@ -46,29 +48,29 @@ export async function GET(request: NextRequest) {
             existingNotification &&
             (existingNotification?.notificationData as JsonObject)?.actionDone
           ) {
-            await prisma.notification.update({
+            await db.notification.update({
               where: { matchId },
               data: { ...data, updatedAt: new Date() },
             });
             return user?.name;
           }
           if (!existingNotification) {
-            await prisma.notification.create({
+            await db.notification.create({
               data,
             });
 
             return user?.name;
           }
         }
-      })
+      }),
     );
 
     const jsonResponse = {
-      status: "success",
+      status: 'success',
       message:
         usersWithoutWalletAddress?.length > 0
-          ? "Created Notifications!"
-          : "No users to notify",
+          ? 'Created Notifications!'
+          : 'No users to notify',
       notifiedUsers:
         usersWithoutWalletAddress?.length > 0
           ? usersWithoutWalletAddress
@@ -77,13 +79,13 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(jsonResponse);
   } catch (error) {
-    console.error("Error fetching CORETEAM users:", error);
+    console.error('Error fetching CORETEAM users:', error);
     return new NextResponse(
-      JSON.stringify({ status: "error", message: "Internal Server Error" }),
+      JSON.stringify({ status: 'error', message: 'Internal Server Error' }),
       {
         status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
+        headers: { 'Content-Type': 'application/json' },
+      },
     );
   }
 }
