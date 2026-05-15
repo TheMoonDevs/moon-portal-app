@@ -1,42 +1,39 @@
 'use client';
 
-import { LOGLINKTYPE, WorkLogPoints } from '@/utils/@types/interfaces';
-import { MdxAppEditor } from '@/utils/configure/MdxAppEditor';
-import { useUser } from '@/utils/hooks/useUser';
-import { PortalSdk } from '@/utils/services/PortalSdk';
-import { Engagement, WorkLogs } from '@prisma/client';
+import type { Engagement, WorkLogs } from '@db/client';
+import type { MDXEditorMethods } from '@mdxeditor/editor';
+import { Dialog, DialogContent, IconButton } from '@mui/material';
 import dayjs from 'dayjs';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import type { RefObject } from 'react';
 import {
   createRef,
-  RefObject,
   useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
 } from 'react';
-import { DEFAULT_MARKDOWN_DATA } from './WorklogsHelper';
-import { useDebouncedEffect } from '@/utils/hooks/useDebouncedHook';
-import store, { useAppDispatch, useAppSelector } from '@/utils/redux/store';
+import { toast } from 'sonner';
+
+import CustomDrawer from '@/components/elements/Drawer';
+import type { WorkLogPoints } from '@/utils/@types/interfaces';
+import { LOGLINKTYPE } from '@/utils/@types/interfaces';
+import { MdxAppEditor } from '@/utils/configure/MdxAppEditor';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
+import { useDebouncedEffect } from '@/utils/hooks/useDebouncedHook';
+import { useUser } from '@/utils/hooks/useUser';
+import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
 import {
   setEdiotrSaving,
   setSelectedEngagement,
   updateLogs,
 } from '@/utils/redux/worklogs/worklogs.slice';
-import {
-  Popover,
-  IconButton,
-  Drawer,
-  Dialog,
-  DialogContent,
-} from '@mui/material';
+import { PortalSdk } from '@/utils/services/PortalSdk';
+
+import { DEFAULT_MARKDOWN_DATA } from './WorklogsHelper';
 import EmojiLegend from './WorklogTabs/EmojiLegend';
 import TodoTab from './WorklogTabs/TodoTab';
-import { MDXEditorMethods } from '@mdxeditor/editor';
-import { toast } from 'sonner';
-import CustomDrawer from '@/components/elements/Drawer';
 
 export const MARKDOWN_PLACHELODER = `* `;
 
@@ -50,8 +47,15 @@ export const getStatsOfContent = (content: string) => {
   return `${checks} / ${points}`;
 };
 
+const getPrivateLineCount = (content: string) => {
+  return content
+    .split('\n')
+    .filter((line) => /^\s*(\*\s*)?p:/i.test(line))
+    .length;
+};
+
 const CustomLoader = () => (
-  <div className="mr-2 h-3 w-3 animate-spin rounded-full border-b-2 border-t-2 border-neutral-800"></div>
+  <div className="mr-2 size-3 animate-spin rounded-full border-y-2 border-neutral-800"></div>
 );
 
 interface StatusDialogProps {
@@ -234,8 +238,9 @@ export const WorklogEditor = ({
       _workLog: { works: WorkLogPoints[] } | null,
       workData?: WorkLogPoints[],
     ) => {
-      const _user = store.getState().auth.user;
-      if (!_user) return;
+      if (!user?.id) return;
+      const worklogToSave = _workLog ?? workLog;
+      if (!worklogToSave) return;
       //   console.log({
       //     ..._workLog,
       //     userId: _user?.id,
@@ -244,9 +249,9 @@ export const WorklogEditor = ({
       setSaving(true);
       //let _worklog: WorkLogs | null = workLog ? { ...workLog } : null;
       PortalSdk.putData(`/api/user/worklogs`, {
-        ...workLog,
+        ...worklogToSave,
         userId: user?.id,
-        works: workData ? workData : markdownDatas,
+        works: workData ? workData : worklogToSave.works || markdownDatas,
         updatedAt: new Date(),
       })
         .then((data) => {
@@ -262,7 +267,7 @@ export const WorklogEditor = ({
           console.log(err);
         });
     },
-    [workLog, markdownDatas],
+    [workLog, markdownDatas, user?.id, dispatch],
   );
 
   const changeMarkData = (
@@ -305,7 +310,7 @@ export const WorklogEditor = ({
       ...wl,
       works: new_md as any[],
     }));
-    markdownRefs.current[bd_index]?.current?.setMarkdown(new_content);
+    isAuotSaving.current = true;
   };
 
   useDebouncedEffect(
@@ -313,9 +318,8 @@ export const WorklogEditor = ({
       if (saving) return;
       if (
         JSON.stringify(serverLog) === JSON.stringify(workLog) ||
-        !editWorkLogs ||
         !workLog ||
-        !isAuotSaving
+        !isAuotSaving.current
       ) {
         return;
       }
@@ -434,6 +438,24 @@ export const WorklogEditor = ({
     };
   }, []);
 
+  useEffect(() => {
+    const handleSaveHotkeys = (event: KeyboardEvent) => {
+      if (!event.ctrlKey) return;
+      const key = event.key.toLowerCase();
+      if (key === 's') {
+        event.preventDefault();
+        saveWorkLog(workLog as any);
+      } else if (key === 'r') {
+        event.preventDefault();
+        refreshWorklogs();
+      }
+    };
+    window.addEventListener('keydown', handleSaveHotkeys);
+    return () => {
+      window.removeEventListener('keydown', handleSaveHotkeys);
+    };
+  }, [saveWorkLog, refreshWorklogs, workLog]);
+
   const filteredEngagements = engagements.filter(
     (engagement) =>
       // engagement.title !== selectedEngagement?.title ||
@@ -509,7 +531,7 @@ export const WorklogEditor = ({
               <span className="icon_size material-icons">✅</span>
             </div> */}
             {loading ? (
-              <div className="mr-2 mt-4 h-5 w-5 animate-spin rounded-full border-b-2 border-t-2 border-neutral-700 p-2"></div>
+              <div className="mr-2 mt-4 size-5 animate-spin rounded-full border-y-2 border-neutral-700 p-2"></div>
             ) : (
               <div
                 onClick={refreshWorklogs}
@@ -643,15 +665,29 @@ export const WorklogEditor = ({
             </span>
           </div>
         </div>
+        <div className="mt-2 flex items-center gap-2 text-[11px] text-neutral-500">
+          <span className="material-symbols-outlined !text-sm">lock</span>
+          <span>
+            Prefix a line with <code>p:</code> to mark it private for other users.
+          </span>
+        </div>
         <div className={`h-[${compactView ? '1em' : '3em'}]`}></div>
       </div>
       {markdownDatas.map((_markdownDat, bd_index) => (
         <div
           key={_markdownDat.link_id}
-          className="flex-grow-1 flex flex-col items-stretch"
+          className="grow-1 flex flex-col items-stretch"
         >
           <p className="mb-2 px-4 text-[0.8em] uppercase tracking-widest text-neutral-500">
             {_markdownDat.title} - {getStatsOfContent(_markdownDat.content)}
+            {getPrivateLineCount(_markdownDat.content) > 0 && (
+              <span className="ml-2 rounded bg-amber-100 px-2 py-0.5 text-[10px] font-semibold tracking-normal text-amber-700">
+                <span className="material-symbols-outlined mr-1 !text-[10px]">
+                  lock
+                </span>
+                {getPrivateLineCount(_markdownDat.content)} private
+              </span>
+            )}
           </p>
           <div
             className="relative mb-3 flex flex-row items-stretch px-4"
@@ -700,7 +736,7 @@ export const WorklogEditor = ({
                     ? _markdownDat.content
                     : MARKDOWN_PLACHELODER
                 }
-                className="h-full flex-grow"
+                className="h-full grow"
                 contentEditableClassName={`mdx_ce ${
                   _markdownDat.content.trim() == MARKDOWN_PLACHELODER.trim()
                     ? ' mdx_uninit '
@@ -733,7 +769,7 @@ export const WorklogEditor = ({
       {!compactView && (
         <div
           id="bottom-bar"
-          className="fixed bottom-[0.5rem] left-0 right-0 mx-3 my-1 flex flex-row gap-3 md:hidden"
+          className="fixed inset-x-0 bottom-2 mx-3 my-1 flex flex-row gap-3 md:hidden"
         >
           {/* <div
             id="input-bar"

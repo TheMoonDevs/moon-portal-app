@@ -1,16 +1,16 @@
 'use client';
 
-import { WorkLogPoints } from '@/utils/@types/interfaces';
+import type { Engagement, WorkLogs } from '@db/client';
+import dayjs from 'dayjs';
+import { usePathname } from 'next/navigation';
+import type { Dispatch, SetStateAction } from 'react';
+import { useEffect, useState } from 'react';
+
 import { useUser } from '@/utils/hooks/useUser';
 import { PortalSdk } from '@/utils/services/PortalSdk';
-import { Engagement, WorkLogs } from '@prisma/client';
-import { usePathname } from 'next/navigation';
-import { Dispatch, SetStateAction, useEffect, useState } from 'react';
+
 import { WorklogEditor } from './WorklogEditor';
-import dayjs from 'dayjs';
 import { WorkLogsHelper } from './WorklogsHelper';
-import store from '@/utils/redux/store';
-import { current } from '@reduxjs/toolkit';
 
 export const WorklogView = ({
   date,
@@ -54,8 +54,8 @@ export const WorklogView = ({
   };
 
   useEffect(() => {
-    if (path?.includes('user/worklogs')) fetchEngagements();
-  }, []);
+    if (path?.includes('user/worklogs') && user?.id) fetchEngagements();
+  }, [path, user?.id]);
 
   const fetchXTasksForDay = async (date: string): Promise<WorkLogs | null> => {
     setLoading(true);
@@ -104,9 +104,12 @@ export const WorklogView = ({
 
   const refreshWorklogs = () => {
     let query = `?id=${id}`;
-    let _id = id && id?.length > 5 ? id : null;
-    if (!_id && date) query = `?date=${date}&userId=${user?.id}`;
-    if (!_id && logType) query = `?logType=${logType}&userId=${user?.id}`;
+    const _id = id && id?.length > 5 ? id : null;
+    // Day logs should always load by date to avoid stale id/date mismatches.
+    if (logType === 'dayLog' && date) query = `?date=${date}&userId=${user?.id}`;
+    else if (_id) query = `?id=${_id}`;
+    else if (logType) query = `?logType=${logType}&userId=${user?.id}`;
+    else if (date) query = `?date=${date}&userId=${user?.id}`;
     setLoading(true);
     PortalSdk.getData(`/api/user/worklogs${query}`, null)
       .then((data) => {
@@ -114,12 +117,7 @@ export const WorklogView = ({
         setLoading(false);
         setWorkLog(
           data?.data?.workLogs?.[0] ||
-            (logType === 'privateLog'
-              ? WorkLogsHelper.defaultPrivateBoard(
-                  dayjs().format('MM-YYYY'),
-                  user,
-                )
-              : WorkLogsHelper.defaultWorklogs(date, user)),
+            WorkLogsHelper.defaultWorklogs(date, user),
         );
       })
       .catch((err) => {
@@ -129,21 +127,29 @@ export const WorklogView = ({
   };
 
   useEffect(() => {
-    const _user = store.getState().auth.user;
-    if (
-      (workLog &&
-        (id ? workLog?.id == id : `${workLog?.date}` === `${date}`)) ||
-      !_user
-    )
+    if (!user?.id) return;
+    const _id = id && id?.length > 5 ? id : null;
+    if (logType === 'dayLog' && date) {
+      setLoading(true);
+      PortalSdk.getData(`/api/user/worklogs?date=${date}&userId=${user.id}`, null)
+        .then((data) => {
+          setWorkLog(
+            data?.data?.workLogs?.[0] ||
+              WorkLogsHelper.defaultWorklogs(date, user),
+          );
+          setLoading(false);
+        })
+        .catch((err) => {
+          setLoading(false);
+          console.log(err);
+        });
       return;
-    // console.log(`${workLog?.id}-${workLog?.date}`, `${id}${date}`);
-    //setMarkdownData(`testing`)
-    let _id = id && id?.length > 5 ? id : null;
+    }
+
     if (_id) {
       setLoading(true);
       PortalSdk.getData(`/api/user/worklogs?id=${_id}`, null)
         .then((data) => {
-          // console.log(data);
           setWorkLog(data?.data?.workLogs?.[0] || null);
           setLoading(false);
         })
@@ -153,31 +159,20 @@ export const WorklogView = ({
         });
     } else {
       let query = '';
-      if (logType === 'dayLog' && date)
-        query = `?date=${date || dayjs().format('YYYY-MM-DD')}&userId=${
-          _user?.id
-        }`;
-      else if (logType) query = `?logType=${logType}&userId=${_user?.id}`;
+      if (logType) query = `?logType=${logType}&userId=${user?.id}`;
       else if (date)
         query = `?date=${date || dayjs().format('YYYY-MM-DD')}&userId=${
-          _user?.id
+          user?.id
         }`;
-      // console.log(query);
       setLoading(true);
       PortalSdk.getData(`/api/user/worklogs${query}`, null)
         .then((data) => {
-          // console.log(data);
           setWorkLog(
             data?.data?.workLogs?.[0] ||
-              (logType === 'privateLog'
-                ? WorkLogsHelper.defaultPrivateBoard(
-                    dayjs().format('MM-YYYY'),
-                    _user,
-                  )
-                : WorkLogsHelper.defaultWorklogs(
-                    date || dayjs().format('YYYY-MM-DD'),
-                    _user,
-                  )),
+              WorkLogsHelper.defaultWorklogs(
+                date || dayjs().format('YYYY-MM-DD'),
+                user,
+              ),
           );
           setLoading(false);
         })
@@ -186,7 +181,7 @@ export const WorklogView = ({
           setLoading(false);
         });
     }
-  }, [id, date, logType]);
+  }, [id, date, logType, user?.id]);
 
   if (!visible) return;
 
