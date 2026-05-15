@@ -1,26 +1,28 @@
 /* eslint-disable @next/next/no-img-element */
 
-import React, { useMemo } from "react";
-import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import { Mission, MissionTask } from "@prisma/client";
-import { IconButton } from "@mui/material";
-import { setActiveMission } from "@/utils/redux/missions/mission.slice";
+import type { Mission, MissionTask } from '@db/client';
+import { IconButton } from '@mui/material';
+import React from 'react';
+
+import { setActiveMission } from '@/utils/redux/missions/mission.slice';
 import {
   setActiveTab,
   setEditModalOpen,
-} from "@/utils/redux/missions/mission.ui.slice";
-import { setActiveTask } from "@/utils/redux/missions/missionsTasks.slice";
+} from '@/utils/redux/missions/mission.ui.slice';
+import { setActiveTask } from '@/utils/redux/missions/missionsTasks.slice';
+import type { RootState } from '@/utils/redux/store';
+import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
 
 export const MissionDetails = ({ loading }: { loading: boolean }) => {
   const dispatch = useAppDispatch();
   const { activeMission, allMissions, missionDetailsOpen, missionsLoading } =
     useAppSelector((state: RootState) => state.mission);
   const { allTasks, tasksLoading } = useAppSelector(
-    (state: RootState) => state.missionsTasks
+    (state: RootState) => state.missionsTasks,
   );
 
   const missionTasks = allTasks?.filter(
-    (t) => t?.missionId === activeMission?.id
+    (t) => t?.missionId === activeMission?.id,
   );
 
   if (tasksLoading || missionsLoading) {
@@ -28,7 +30,7 @@ export const MissionDetails = ({ loading }: { loading: boolean }) => {
   }
 
   if (allMissions?.length === 0) {
-    return <div className="text-center text-lg py-4">No missions found</div>;
+    return <div className="py-4 text-center text-lg">No missions found</div>;
   }
 
   if (allMissions && allMissions.length > 0 && !activeMission) {
@@ -39,30 +41,29 @@ export const MissionDetails = ({ loading }: { loading: boolean }) => {
 
   return (
     <div
-      className={`bg-white rounded-lg shadow-lg p-6 h-[96vh] overflow-y-scroll my-4 border-b border-neutral-200 
-      `}
+      className={`my-4 h-[96vh] overflow-y-scroll rounded-lg border-b border-neutral-200 bg-white p-6 shadow-lg`}
     >
       {missionDetailsOpen ? (
         <div className="flex flex-col gap-6">
           {allMissions?.map((mission: Mission) =>
-            MissionComponent(mission, missionTasks)
+            MissionComponent(mission, missionTasks),
           )}
         </div>
       ) : (
         <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold ">{activeMission?.title}</h2>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-2xl font-bold">{activeMission?.title}</h2>
             <IconButton
               onClick={() => {
                 dispatch(setActiveMission(activeMission));
-                dispatch(setActiveTab("missions"));
+                dispatch(setActiveTab('missions'));
                 dispatch(setEditModalOpen(true));
               }}
             >
-              <span className="material-symbols-outlined">edit_document</span>{" "}
+              <span className="material-symbols-outlined">edit_document</span>{' '}
             </IconButton>
           </div>
-          <h3 className="text-xl font-semibold mb-4">Tasks</h3>
+          <h3 className="mb-4 text-xl font-semibold">Tasks</h3>
           <ul className="space-y-4">
             {missionTasks.length > 0 ? (
               missionTasks?.map((task: any) => (
@@ -70,34 +71,34 @@ export const MissionDetails = ({ loading }: { loading: boolean }) => {
                   key={task.id}
                   className="rounded-lg p-4 shadow shadow-gray-300"
                 >
-                  <div className="flex items-center mb-2">
+                  <div className="mb-2 flex items-center">
                     <img
-                      src={task.avatar || "/icons/placeholderAvatar.svg"}
+                      src={task.avatar || '/icons/placeholderAvatar.svg'}
                       alt={task.name}
-                      className="w-10 h-10 object-cover rounded-full mr-3"
+                      className="mr-3 size-10 rounded-full object-cover"
                     />
                     <span className="font-semibold">
-                      {task.name || "Unknown"}
+                      {task.name || 'Unknown'}
                     </span>
                   </div>
-                  <p className="text-gray-700 mb-2 font-bold">{task.title}</p>
-                  <p className="text-gray-700 mb-2 text-sm line-clamp-3">
+                  <p className="mb-2 font-bold text-gray-700">{task.title}</p>
+                  <p className="mb-2 line-clamp-3 text-sm text-gray-700">
                     {task.description}
                   </p>
                   <div className="flex items-center justify-between gap-4">
-                    <p className="text-right font-medium text-blue-600 text-sm">
+                    <p className="text-right text-sm font-medium text-blue-600">
                       {task.indiePoints} Indie Points
                     </p>
                     <IconButton
                       onClick={() => {
                         dispatch(setActiveTask(task));
                         dispatch(setEditModalOpen(true));
-                        dispatch(setActiveTab("tasks"));
+                        dispatch(setActiveTab('tasks'));
                       }}
                     >
                       <span className="material-symbols-outlined">
                         edit_document
-                      </span>{" "}
+                      </span>{' '}
                     </IconButton>
                   </div>
                 </li>
@@ -114,29 +115,29 @@ export const MissionDetails = ({ loading }: { loading: boolean }) => {
 
 export const MissionComponent = (
   mission: Mission,
-  missionTasks: MissionTask[]
+  missionTasks: MissionTask[],
 ): any => {
   const filteredTasks = missionTasks.filter(
-    (task: any) => task.missionId === mission.id
+    (task: any) => task.missionId === mission.id,
   );
   return (
     <div className="">
-      <h2 className="text-2xl font-bold mb-4">{mission.title}</h2>
+      <h2 className="mb-4 text-2xl font-bold">{mission.title}</h2>
       <ul className="space-y-4">
         {filteredTasks.length > 0 ? (
           filteredTasks?.map((task: any, index: number) => (
-            <li key={`${task.id}-${index}`} className="rounded-lg p-4 shadow ">
-              <div className="flex items-center mb-2">
+            <li key={`${task.id}-${index}`} className="rounded-lg p-4 shadow">
+              <div className="mb-2 flex items-center">
                 <img
-                  src={task.avatar || "/icons/placeholderAvatar.svg"}
+                  src={task.avatar || '/icons/placeholderAvatar.svg'}
                   alt={task.name}
-                  className="w-10 h-10 object-cover rounded-full mr-3"
+                  className="mr-3 size-10 rounded-full object-cover"
                 />
-                <span className="font-semibold">{task.name || "Unknown"}</span>
+                <span className="font-semibold">{task.name || 'Unknown'}</span>
               </div>
-              <p className="text-gray-700 mb-2 font-bold">{task.title}</p>
-              <p className="text-gray-700 mb-2 text-sm">{task.description}</p>
-              <p className="text-right font-medium text-blue-600 text-sm">
+              <p className="mb-2 font-bold text-gray-700">{task.title}</p>
+              <p className="mb-2 text-sm text-gray-700">{task.description}</p>
+              <p className="text-right text-sm font-medium text-blue-600">
                 {task.indiePoints} Indie Points
               </p>
             </li>
@@ -145,41 +146,41 @@ export const MissionComponent = (
           <p className="text-sm font-medium text-black">No tasks found</p>
         )}
       </ul>
-      <hr className="my-5 bg-black " />
+      <hr className="my-5 bg-black" />
     </div>
   );
 };
 
 export const MissionDetailsSkeleton = () => {
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6 h-full overflow-y-auto my-4 border-b border-neutral-200">
-      <div className="h-8 bg-gray-200 rounded w-3/4 mb-4"></div>
-      <div className="flex items-center mb-4">
-        <div className="w-10 h-10 bg-gray-200 rounded-full mr-3"></div>
-        <div className="h-6 bg-gray-200 rounded w-24"></div>
+    <div className="my-4 h-full overflow-y-auto rounded-lg border-b border-neutral-200 bg-white p-6 shadow-lg">
+      <div className="mb-4 h-8 w-3/4 rounded bg-gray-200"></div>
+      <div className="mb-4 flex items-center">
+        <div className="mr-3 size-10 rounded-full bg-gray-200"></div>
+        <div className="h-6 w-24 rounded bg-gray-200"></div>
       </div>
       <div className="mb-4">
-        <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
-        <div className="h-4 bg-gray-200 rounded w-2/3 mb-2"></div>
-        <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+        <div className="mb-2 h-4 w-1/2 rounded bg-gray-200"></div>
+        <div className="mb-2 h-4 w-2/3 rounded bg-gray-200"></div>
+        <div className="h-4 w-1/3 rounded bg-gray-200"></div>
       </div>
       <div className="mb-6">
-        <div className="w-full bg-gray-200 rounded-full h-2.5">
-          <div className="bg-gray-400 h-2.5 rounded-full w-1/2"></div>
+        <div className="h-2.5 w-full rounded-full bg-gray-200">
+          <div className="h-2.5 w-1/2 rounded-full bg-gray-400"></div>
         </div>
-        <div className="h-4 bg-gray-200 rounded w-1/3 mt-1"></div>
+        <div className="mt-1 h-4 w-1/3 rounded bg-gray-200"></div>
       </div>
-      <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
+      <div className="mb-4 h-6 w-1/4 rounded bg-gray-200"></div>
       <ul className="space-y-4">
         {[1, 2, 3].map((index) => (
           <li key={index} className="rounded-lg p-4 shadow">
-            <div className="flex items-center mb-2">
-              <div className="w-10 h-10 bg-gray-200 rounded-full mr-3"></div>
-              <div className="h-4 bg-gray-200 rounded w-24"></div>
+            <div className="mb-2 flex items-center">
+              <div className="mr-3 size-10 rounded-full bg-gray-200"></div>
+              <div className="h-4 w-24 rounded bg-gray-200"></div>
             </div>
-            <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-            <div className="h-3 bg-gray-200 rounded w-full mb-2"></div>
-            <div className="h-3 bg-gray-200 rounded w-1/2 ml-auto"></div>
+            <div className="mb-2 h-4 w-3/4 rounded bg-gray-200"></div>
+            <div className="mb-2 h-3 w-full rounded bg-gray-200"></div>
+            <div className="ml-auto h-3 w-1/2 rounded bg-gray-200"></div>
           </li>
         ))}
       </ul>
