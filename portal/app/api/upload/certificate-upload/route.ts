@@ -1,10 +1,12 @@
-import { prisma } from "@/prisma/prisma";
-import { s3FileUploadSdk } from "@/utils/services/s3FileUploadSdk";
-import { File } from "buffer";
-import { NextRequest, NextResponse } from "next/server";
+import type { File } from 'buffer';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
+import { db } from '@/lib/mongodb/db-client';
+import { s3FileUploadSdk } from '@/utils/services/s3FileUploadSdk';
 
 export async function GET(req: NextRequest) {
-  const loggedInUserId = req.nextUrl.searchParams.get("userId");
+  const loggedInUserId = req.nextUrl.searchParams.get('userId');
   // if (!loggedInUserId) {
   //   return NextResponse.json("User not found", { status: 404 });
   // }
@@ -13,65 +15,65 @@ export async function GET(req: NextRequest) {
     let certificates;
 
     if (loggedInUserId) {
-      certificates = await prisma.certificate.findMany({
+      certificates = await db.certificate.findMany({
         where: {
           userId: loggedInUserId,
         },
         orderBy: {
-          createdAt: "desc",
+          createdAt: 'desc',
         },
       });
     } else {
-      certificates = await prisma.certificate.findMany({
+      certificates = await db.certificate.findMany({
         orderBy: {
-          createdAt: "desc",
+          createdAt: 'desc',
         },
       });
     }
 
     if (!certificates || certificates.length === 0) {
-      return NextResponse.json("Certificate not found", { status: 404 });
+      return NextResponse.json('Certificate not found', { status: 404 });
     }
 
     return NextResponse.json(certificates);
   } catch (error) {
     console.log(error);
-    return NextResponse.json("Something went wrong", { status: 500 });
+    return NextResponse.json('Something went wrong', { status: 500 });
   }
 }
 
 export async function POST(req: Request) {
   try {
     const formData = await req.formData();
-    const files = formData.getAll("file") as unknown as File[];
+    const files = formData.getAll('file') as unknown as File[];
 
     if (!files || files.length === 0) {
-      return NextResponse.json("File not found", { status: 404 });
+      return NextResponse.json('File not found', { status: 404 });
     }
 
-    const userId = formData.get("userId") as string;
-    const uploadedByUserId = formData.get("uploadedByUserId") as string;
-    const certificateTitle = formData.get("certificateTitle") as string;
+    const userId = formData.get('userId') as string;
+    const uploadedByUserId = formData.get('uploadedByUserId') as string;
+    const certificateTitle = formData.get('certificateTitle') as string;
     if (!userId) {
-      return NextResponse.json("User not found", { status: 404 });
+      return NextResponse.json('User not found', { status: 404 });
     }
 
     const filePromises = files.map(async (file) => {
       const s3Response = await s3FileUploadSdk.uploadFile({
         file,
         userId,
-        folder: "certificates",
+        folder: 'certificates',
       });
 
       if (!s3Response || s3Response.$metadata.httpStatusCode !== 200) {
-        throw new Error("Failed to upload file");
+        throw new Error('Failed to upload file');
       }
 
       const fileInfo = {
         fileUrl: s3FileUploadSdk.getPublicFileUrl({
           userId,
           file,
-          folder: "certificates",
+          folder: 'certificates',
         }),
         fileName: file.name,
         mimeType: file.type,
@@ -88,7 +90,7 @@ export async function POST(req: Request) {
     const fileInfo = await Promise.all(filePromises);
 
     //fetch user info
-    const user = await prisma.user.findUnique({
+    const user = await db.user.findUnique({
       where: {
         id: userId,
       },
@@ -96,14 +98,14 @@ export async function POST(req: Request) {
 
     // Save to db
     const uploadFilesToDbPromises = fileInfo.map((file) => {
-      return prisma.fileUpload.create({
+      return db.fileUpload.create({
         data: file,
       });
     });
     const uploadFilesToDB = await Promise.all(uploadFilesToDbPromises);
 
     const addCertificatesToDbPromises = uploadFilesToDB.map((file) => {
-      return prisma.certificate.create({
+      return db.certificate.create({
         data: {
           userId: file.userId,
           title: certificateTitle,
@@ -115,14 +117,14 @@ export async function POST(req: Request) {
       });
     });
     const addCertificatesToDb = await Promise.all(addCertificatesToDbPromises);
-    // const DBresponse = await prisma.certificate.createMany({
+    // const DBresponse = await db.certificate.createMany({
     //   data: fileInfo,
     // });
     // console.log(DBresponse);
     return NextResponse.json({ certificates: addCertificatesToDb });
   } catch (reason) {
     console.log(reason);
-    return NextResponse.json({ message: "failure" });
+    return NextResponse.json({ message: 'failure' });
   }
 }
 
@@ -133,7 +135,7 @@ export async function DELETE(req: Request) {
     const response = await s3FileUploadSdk.deleteFile({
       userId: userId,
       fileName: fileName,
-      folder: "certificates",
+      folder: 'certificates',
     });
 
     console.log(response);
@@ -143,10 +145,10 @@ export async function DELETE(req: Request) {
         response.$metadata.httpStatusCode !== 200)
     ) {
       // return NextResponse.json({ message: "Failed to delete file" });
-      throw new Error("Failed to delete file");
+      throw new Error('Failed to delete file');
     }
 
-    const certificate = await prisma.certificate.findFirst({
+    const certificate = await db.certificate.findFirst({
       where: {
         id: id,
       },
@@ -154,21 +156,21 @@ export async function DELETE(req: Request) {
     const fileId = certificate?.fileId;
 
     if (!fileId) {
-      throw new Error("Certificate file not found");
+      throw new Error('Certificate file not found');
     }
 
-    const deletedCertificateFile = await prisma.fileUpload.delete({
+    const deletedCertificateFile = await db.fileUpload.delete({
       where: {
         id: fileId,
       },
     });
-    const deletedCertificateDoc = await prisma.certificate.delete({
+    const deletedCertificateDoc = await db.certificate.delete({
       where: {
         id: id,
       },
     });
     return NextResponse.json({
-      message: "Certificate deleted successfully",
+      message: 'Certificate deleted successfully',
       certificate: deletedCertificateDoc,
     });
 
@@ -177,7 +179,7 @@ export async function DELETE(req: Request) {
     console.log(e);
     return new NextResponse(JSON.stringify(e), {
       status: 500,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }
@@ -191,7 +193,7 @@ export async function PUT(req: Request) {
       const downloadedFile = await s3FileUploadSdk.downloadFile({
         userId: deleteCertificateFromPrevId,
         fileName: certificateData.file.fileName,
-        folder: "certificates",
+        folder: 'certificates',
       });
 
       if (
@@ -199,11 +201,15 @@ export async function PUT(req: Request) {
         (downloadedFile.$metadata.httpStatusCode !== 200 &&
           downloadedFile.$metadata.httpStatusCode !== 204)
       ) {
-        throw new Error("Error updating the document!");
+        throw new Error('Error updating the document!');
+      }
+
+      if (!downloadedFile.Body) {
+        throw new Error('Error updating the document!');
       }
 
       const fileData = (await s3FileUploadSdk.streamToBuffer(
-        downloadedFile?.Body!
+        downloadedFile.Body,
       )) as Buffer;
 
       const addCertificateToNewIdInSpaces = await s3FileUploadSdk.uploadFile({
@@ -213,7 +219,7 @@ export async function PUT(req: Request) {
           fileBuffer: fileData,
         },
         userId: certificateData.userId,
-        folder: "certificates",
+        folder: 'certificates',
       });
 
       if (
@@ -221,13 +227,13 @@ export async function PUT(req: Request) {
         (addCertificateToNewIdInSpaces.$metadata.httpStatusCode !== 200 &&
           addCertificateToNewIdInSpaces.$metadata.httpStatusCode !== 204)
       ) {
-        throw new Error("Error updating the document!");
+        throw new Error('Error updating the document!');
       }
 
       const response = await s3FileUploadSdk.deleteFile({
         userId: deleteCertificateFromPrevId,
         fileName: certificateData.file.fileName,
-        folder: "certificates",
+        folder: 'certificates',
       });
       if (
         !response ||
@@ -235,10 +241,10 @@ export async function PUT(req: Request) {
           response.$metadata.httpStatusCode !== 200)
       ) {
         // return NextResponse.json({ message: "Failed to delete file" });
-        throw new Error("Error updating the document!");
+        throw new Error('Error updating the document!');
       }
 
-      const updateFileRecord = await prisma.fileUpload.update({
+      const updateFileRecord = await db.fileUpload.update({
         where: {
           id: certificateData.file.id,
         },
@@ -249,7 +255,7 @@ export async function PUT(req: Request) {
       });
     }
     const { id: certificateId, ...certificateDataWithoutId } = certificateData;
-    const certificate = await prisma.certificate.update({
+    const certificate = await db.certificate.update({
       where: {
         id: certificateId,
       },
@@ -260,7 +266,7 @@ export async function PUT(req: Request) {
           fileUrl: s3FileUploadSdk.getPublicFileUrl({
             userId: certificateDataWithoutId.userId,
             file: certificateDataWithoutId.file,
-            folder: "certificates",
+            folder: 'certificates',
           }),
           userId: certificateDataWithoutId.userId,
           userInfo: certificateDataWithoutId.userInfo,
@@ -272,7 +278,7 @@ export async function PUT(req: Request) {
     console.log(e);
     return new NextResponse(JSON.stringify(e), {
       status: 500,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }
