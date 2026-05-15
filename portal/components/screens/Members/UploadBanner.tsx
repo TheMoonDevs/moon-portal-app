@@ -1,16 +1,13 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
+import type { FileWithPath } from '@mantine/dropzone';
 import React, { useState } from 'react';
-import { RootState, useAppDispatch } from '@/utils/redux/store';
 import { useSelector } from 'react-redux';
-import {
-  addFilesToPreview,
-  resetPreview,
-  setUploadedFiles,
-} from '@/utils/redux/filesUpload/fileUpload.slice';
-import { FileWithPath } from '@mantine/dropzone';
-import { useUser } from '@/utils/hooks/useUser';
+
 import { TMD_PORTAL_API_KEY } from '@/utils/constants/appInfo';
+import { useUser } from '@/utils/hooks/useUser';
+import { setUploadedFiles } from '@/utils/redux/filesUpload/fileUpload.slice';
+import type { RootState } from '@/utils/redux/store';
 
 const UploadBanner = () => {
   const { user } = useUser();
