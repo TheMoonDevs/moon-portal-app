@@ -1,11 +1,12 @@
 'use client';
-import { PortalSdk } from '@/utils/services/PortalSdk';
-import React, { useEffect, useRef, useState } from 'react';
-import dayjs from 'dayjs';
-import { Event } from '@prisma/client';
+import type { Event } from '@db/client';
 import { Skeleton } from '@mui/material';
-import Link from 'next/link';
+import dayjs from 'dayjs';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+import Link from 'next/link';
+import React, { useEffect, useRef, useState } from 'react';
+
+import { PortalSdk } from '@/utils/services/PortalSdk';
 
 dayjs.extend(isSameOrBefore);
 
@@ -36,7 +37,7 @@ const Events = () => {
     try {
       const res = await PortalSdk.getData(
         `/api/events?year=${year}&limit=3`,
-        null
+        null,
       );
       setEvents(res.data);
     } catch (error) {
@@ -68,9 +69,9 @@ const Events = () => {
   return (
     <div>
       {loading ? (
-        <div className='px-4'>
+        <div className="px-4">
           <Skeleton
-            animation='wave'
+            animation="wave"
             sx={{
               width: '100%',
               height: '150px',
@@ -80,51 +81,52 @@ const Events = () => {
         </div>
       ) : (
         events.length > 0 && (
-          <div className='h-[120px] bg-black rounded-3xl m-4'>
+          <div className="m-4 h-[120px] rounded-3xl bg-black">
             {/* Header */}
-            <div className='h-5 px-6 py-3 bg-[#FFBE18] text-black text-[10px] w-fit rounded-bl-2xl rounded-br-2xl flex items-center justify-center mx-7'>
+            <div className="mx-7 flex h-5 w-fit items-center justify-center rounded-b-2xl bg-[#FFBE18] px-6 py-3 text-[10px] text-black">
               Upcoming events
             </div>
             <div
-              className={`flex justify-between items-start ${(isEventToday || isEventPast) && 'items-center'
-                }`}
+              className={`flex items-start justify-between ${
+                (isEventToday || isEventPast) && 'items-center'
+              }`}
             >
-              <div className='flex gap-4 items-start'>
+              <div className="flex items-start gap-4">
                 <div
                   ref={eventsContainerRef}
-                  className='flex flex-col overflow-y-scroll no-scrollbar h-[80px] relative top-3'
+                  className="no-scrollbar relative top-3 flex h-[80px] flex-col overflow-y-scroll"
                 >
                   {selectedEvent && (
-                    <div className='flex gap-3 items-center pb-2'>
+                    <div className="flex items-center gap-3 pb-2">
                       {/* Line */}
-                      <div className=''>
-                        <div className='h-[1px] w-5 bg-white' />
+                      <div className="">
+                        <div className="h-px w-5 bg-white" />
                       </div>
-                      <div className='text-lg font-bold text-white max-w-1/2'>
+                      <div className="max-w-1/2 text-lg font-bold text-white">
                         {selectedEvent.name} -{' '}
                         {dayjs(selectedEvent.date, 'YYYY-MM-DD').format(
-                          'MMM D'
+                          'MMM D',
                         )}
                         {getDaySuffix(
-                          dayjs(selectedEvent.date, 'YYYY-MM-DD').date()
+                          dayjs(selectedEvent.date, 'YYYY-MM-DD').date(),
                         )}
                       </div>
                     </div>
                   )}
                   {/* Events */}
-                  <div className='pl-8'>
+                  <div className="pl-8">
                     {events
                       ?.filter((event) => event.id !== selectedEvent?.id)
                       ?.map((event: Event, index: number) => {
                         const formattedDate = dayjs(
                           event.date,
-                          'YYYY-MM-DD'
+                          'YYYY-MM-DD',
                         ).format('MMM D');
                         const day = dayjs(event.date, 'YYYY-MM-DD').date();
                         return (
                           <div
                             key={event.id}
-                            className={`max-w-1/2 text-[10px] text-neutral-500 pb-1 cursor-pointer `}
+                            className={`max-w-1/2 cursor-pointer pb-1 text-[10px] text-neutral-500`}
                           >
                             <p
                               className={`whitespace-wrap`}
@@ -146,7 +148,7 @@ const Events = () => {
                 </div>
               </div>
               {/* Days to go section */}
-              <div className='text-[10px] text-neutral-500 px-4'>
+              <div className="px-4 text-[10px] text-neutral-500">
                 {isEventPast ? (
                   <span className="flex flex-col items-center font-normal text-red-500">
                     <span>Event</span>
