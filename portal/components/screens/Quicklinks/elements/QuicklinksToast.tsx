@@ -1,38 +1,39 @@
-import { setToast } from "@/utils/redux/quicklinks/slices/quicklinks.ui.slice";
-import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import { Alert, Snackbar } from "@mui/material";
-import { SyntheticEvent } from "react";
+import { Alert, Snackbar } from '@mui/material';
+import type { SyntheticEvent } from 'react';
+
+import { setToast } from '@/utils/redux/quicklinks/slices/quicklinks.ui.slice';
+import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
 
 export const QuicklinksToast = ({
   message,
   action,
   position,
   duration = 2000,
-  severity = "success",
+  severity = 'success',
 }: {
   message: string;
   action?: string;
   duration?: number;
   position: {
-    vertical: "top" | "bottom";
-    horizontal: "left" | "center" | "right";
+    vertical: 'top' | 'bottom';
+    horizontal: 'left' | 'center' | 'right';
   };
-  severity: "success" | "info" | "warning" | "error" | undefined;
+  severity: 'success' | 'info' | 'warning' | 'error' | undefined;
 }) => {
   const dispatch = useAppDispatch();
   const { toast } = useAppSelector((state) => state.quicklinksUi);
 
   const handleClose = (event: SyntheticEvent | Event, reason?: string) => {
-    if (reason === "clickaway") {
+    if (reason === 'clickaway') {
       return;
     }
 
     dispatch(
       setToast({
         showToast: false,
-        message: "",
+        message: '',
         severity: undefined,
-      })
+      }),
     );
   };
 
@@ -44,7 +45,7 @@ export const QuicklinksToast = ({
       action={action}
       anchorOrigin={position}
     >
-      <Alert onClose={handleClose} severity={severity} sx={{ width: "100%" }}>
+      <Alert onClose={handleClose} severity={severity} sx={{ width: '100%' }}>
         {message}
       </Alert>
     </Snackbar>
