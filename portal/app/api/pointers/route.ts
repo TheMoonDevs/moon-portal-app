@@ -1,9 +1,11 @@
-import { prisma } from "@/prisma/prisma";
-import { NextRequest, NextResponse } from "next/server";
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
+import { db } from '@/lib/mongodb/db-client';
 
 export async function POST(req: NextRequest) {
   if (!req.body) {
-    return new NextResponse(JSON.stringify({ error: "Body not found" }), {
+    return new NextResponse(JSON.stringify({ error: 'Body not found' }), {
       status: 400,
     });
   }
@@ -13,12 +15,12 @@ export async function POST(req: NextRequest) {
 
     if (!userId || !targetUserId || !content) {
       return new NextResponse(
-        JSON.stringify({ error: "Required fields are missing" }),
-        { status: 400 }
+        JSON.stringify({ error: 'Required fields are missing' }),
+        { status: 400 },
       );
     }
 
-    const pointer = await prisma.pointer.create({
+    const pointer = await db.pointer.create({
       data: {
         userId,
         targetUserId,
@@ -27,11 +29,11 @@ export async function POST(req: NextRequest) {
     });
 
     return new NextResponse(
-      JSON.stringify({ status: "success", data: pointer }),
-      { status: 200 }
+      JSON.stringify({ status: 'success', data: pointer }),
+      { status: 200 },
     );
   } catch (error: any) {
-    console.error("Error creating pointer:", error);
+    console.error('Error creating pointer:', error);
     return new NextResponse(JSON.stringify({ error: error.message }), {
       status: 500,
     });
@@ -40,7 +42,7 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   if (!req.body) {
-    return new NextResponse(JSON.stringify({ error: "Body not found" }), {
+    return new NextResponse(JSON.stringify({ error: 'Body not found' }), {
       status: 400,
     });
   }
@@ -50,12 +52,14 @@ export async function PUT(req: NextRequest) {
 
     if (!pointerId || !reply || !reply.userId || !reply.content) {
       return new NextResponse(
-        JSON.stringify({ error: "Pointer ID, user ID, and reply content are required" }),
-        { status: 400 }
+        JSON.stringify({
+          error: 'Pointer ID, user ID, and reply content are required',
+        }),
+        { status: 400 },
       );
     }
 
-    const newReply = await prisma.reply.create({
+    const newReply = await db.reply.create({
       data: {
         pointerId,
         userId: reply.userId,
@@ -63,7 +67,7 @@ export async function PUT(req: NextRequest) {
       },
     });
 
-    const updatedPointer = await prisma.pointer.update({
+    const updatedPointer = await db.pointer.update({
       where: { id: pointerId },
       data: {
         replies: {
@@ -74,11 +78,11 @@ export async function PUT(req: NextRequest) {
     });
 
     return new NextResponse(
-      JSON.stringify({ status: "success", data: updatedPointer }),
-      { status: 200 }
+      JSON.stringify({ status: 'success', data: updatedPointer }),
+      { status: 200 },
     );
   } catch (error: any) {
-    console.error("Error updating pointer:", error);
+    console.error('Error updating pointer:', error);
     return new NextResponse(JSON.stringify({ error: error.message }), {
       status: 500,
     });
@@ -88,32 +92,32 @@ export async function PUT(req: NextRequest) {
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const userId = searchParams.get("userId");
+    const userId = searchParams.get('userId');
 
     if (!userId) {
       return new NextResponse(
-        JSON.stringify({ error: "User ID is required" }),
-        { status: 400 }
+        JSON.stringify({ error: 'User ID is required' }),
+        { status: 400 },
       );
     }
 
-    const pointers = await prisma.pointer.findMany({
+    const pointers = await db.pointer.findMany({
       where: { userId },
       include: {
         replies: {
           orderBy: {
-            createdAt: 'desc', 
+            createdAt: 'desc',
           },
         },
       },
     });
 
     return new NextResponse(
-      JSON.stringify({ status: "success", data: pointers }),
-      { status: 200 }
+      JSON.stringify({ status: 'success', data: pointers }),
+      { status: 200 },
     );
   } catch (error: any) {
-    console.error("Error getting pointers:", error);
+    console.error('Error getting pointers:', error);
     return new NextResponse(JSON.stringify({ error: error.message }), {
       status: 500,
     });
