@@ -60,7 +60,7 @@ export const PortalSdk = {
         // console.log(await res.json());
         if (res.ok) {
           const result = await res.json();
-          if (result?.data?.user) {
+          if (result?.latestUser) {
             localStorage.setItem(
               LOCAL_STORAGE.user,
               JSON.stringify(result?.latestUser),
