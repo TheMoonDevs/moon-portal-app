@@ -1,12 +1,14 @@
-export const dynamic = "force-dynamic"; // static by default, unless reading the request
-import { prisma } from "@/prisma/prisma";
+export const dynamic = 'force-dynamic'; // static by default, unless reading the request
+import type { JsonObject } from '@db/runtime';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
+import { db } from '@/lib/mongodb/db-client';
 import {
   SlackBotSdk,
   SlackChannels,
   SlackUsers,
-} from "@/utils/services/slackBotSdk";
-import { JsonObject } from "@prisma/client/runtime/library";
-import { NextResponse, NextRequest } from "next/server";
+} from '@/utils/services/slackBotSdk';
 
 function getUserDuration(joiningDate: string): string | null {
   const joinDate = new Date(joiningDate);
@@ -23,32 +25,32 @@ function getUserDuration(joiningDate: string): string | null {
     monthsDifference += 12;
   }
 
-  const yearText = yearsDifference === 1 ? "year" : "years";
-  const monthText = monthsDifference === 1 ? "month" : "months";
+  const yearText = yearsDifference === 1 ? 'year' : 'years';
+  const monthText = monthsDifference === 1 ? 'month' : 'months';
 
   const durationText = `${
-    yearsDifference > 0 ? `${yearsDifference} ${yearText} ` : ""
-  }${monthsDifference > 0 ? `${monthsDifference} ${monthText}` : ""}`.trim();
+    yearsDifference > 0 ? `${yearsDifference} ${yearText} ` : ''
+  }${monthsDifference > 0 ? `${monthsDifference} ${monthText}` : ''}`.trim();
 
-  return durationText || "[error in calculating duration]";
+  return durationText || '[error in calculating duration]';
 }
 
 const slackBot = new SlackBotSdk();
 
 export async function GET(request: NextRequest) {
   try {
-    const users = await prisma.user.findMany({
+    const users = await db.user.findMany({
       where: {
-        userType: "MEMBER",
-        role: "CORETEAM",
-        status: "ACTIVE",
+        userType: 'MEMBER',
+        role: 'CORETEAM',
+        status: 'ACTIVE',
       },
     });
 
     const today = new Date();
     const todayDate = today.getDate();
 
-    const filteredUsers = users.filter((user) => {
+    const filteredUsers = users.filter((user: any) => {
       const joiningDate = (user.workData as JsonObject)?.joining;
       if (!joiningDate) return false;
 
@@ -57,7 +59,11 @@ export async function GET(request: NextRequest) {
         return true;
       }
 
-      if (todayDate === 1 && new Date(today.getFullYear(), today.getMonth(), 0).getDate() < joinDate.getDate()) {
+      if (
+        todayDate === 1 &&
+        new Date(today.getFullYear(), today.getMonth(), 0).getDate() <
+          joinDate.getDate()
+      ) {
         return true;
       }
 
@@ -71,7 +77,7 @@ export async function GET(request: NextRequest) {
 
       const joiningDate = (workData as JsonObject)?.joining;
       const userDuration = getUserDuration(joiningDate as string);
-      const upiId = ((payData as JsonObject)?.upiId as string) || "";
+      const upiId = ((payData as JsonObject)?.upiId as string) || '';
 
       const upiText = upiId
         ? ` It's time to pay them through UPI - ${upiId}`
@@ -79,49 +85,49 @@ export async function GET(request: NextRequest) {
 
       const msgBlock = [
         {
-          type: "section",
+          type: 'section',
           text: {
-            type: "mrkdwn",
+            type: 'mrkdwn',
             text: `Hey <@${SlackUsers.subhakar}>! ${
               slackId ? `<@${slackId}>` : name
             } has just completed ${userDuration} with us.${upiText}`,
           },
         },
         {
-          type: "section",
+          type: 'section',
           text: {
-            type: "mrkdwn",
-            text: "Please confirm if the payment is done.",
+            type: 'mrkdwn',
+            text: 'Please confirm if the payment is done.',
           },
         },
         {
-          type: "actions",
-          block_id: "confirm-payment",
+          type: 'actions',
+          block_id: 'confirm-payment',
           elements: [
             {
-              type: "button",
-              action_id: "confirm",
+              type: 'button',
+              action_id: 'confirm',
               text: {
-                type: "plain_text",
-                text: "Yes",
+                type: 'plain_text',
+                text: 'Yes',
                 emoji: true,
               },
-              style: "primary",
+              style: 'primary',
               value: JSON.stringify({
                 slackId: slackId,
                 userDuration: userDuration,
               }),
             },
             {
-              type: "button",
-              action_id: "deny",
-              style: "danger",
+              type: 'button',
+              action_id: 'deny',
+              style: 'danger',
               text: {
-                type: "plain_text",
-                text: "No",
+                type: 'plain_text',
+                text: 'No',
                 emoji: true,
               },
-              value: "no",
+              value: 'no',
             },
           ],
         },
@@ -134,19 +140,19 @@ export async function GET(request: NextRequest) {
     }
 
     const jsonResponse = {
-      status: "success",
-      message: "Reminders Sent!",
+      status: 'success',
+      message: 'Reminders Sent!',
     };
 
     return NextResponse.json(jsonResponse);
   } catch (error) {
-    console.error("Error fetching CORETEAM users:", error);
+    console.error('Error fetching CORETEAM users:', error);
     return new NextResponse(
-      JSON.stringify({ status: "error", message: "Internal Server Error" }),
+      JSON.stringify({ status: 'error', message: 'Internal Server Error' }),
       {
         status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
+        headers: { 'Content-Type': 'application/json' },
+      },
     );
   }
 }

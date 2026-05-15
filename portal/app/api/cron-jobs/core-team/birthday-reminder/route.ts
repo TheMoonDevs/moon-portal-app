@@ -1,30 +1,32 @@
-export const dynamic = "force-dynamic"; // static by default, unless reading the request
-import { prisma } from "@/prisma/prisma";
-import { SlackBotSdk, SlackChannels } from "@/utils/services/slackBotSdk";
-import { JsonObject } from "@prisma/client/runtime/library";
-import { NextResponse, NextRequest } from "next/server";
+export const dynamic = 'force-dynamic'; // static by default, unless reading the request
+import type { JsonObject } from '@db/runtime';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
+import { db } from '@/lib/mongodb/db-client';
+import { SlackBotSdk, SlackChannels } from '@/utils/services/slackBotSdk';
 
 const slackBot = new SlackBotSdk();
 
 const extractMonthDay = (dateStr: string): string => {
   const date = new Date(dateStr);
-  const month = ("0" + (date.getMonth() + 1)).slice(-2);
-  const day = ("0" + date.getDate()).slice(-2);
+  const month = ('0' + (date.getMonth() + 1)).slice(-2);
+  const day = ('0' + date.getDate()).slice(-2);
   return `${month}-${day}`;
 };
 
 const currentDateStr = extractMonthDay(new Date().toISOString());
 const dateInFourDaysStr = extractMonthDay(
-  new Date(new Date().setDate(new Date().getDate() + 4)).toISOString()
+  new Date(new Date().setDate(new Date().getDate() + 4)).toISOString(),
 );
 
 export async function GET(request: NextRequest) {
   try {
-    const users = await prisma.user.findMany({
+    const users = await db.user.findMany({
       where: {
-        userType: "MEMBER",
-        role: "CORETEAM",
-        status: "ACTIVE",
+        userType: 'MEMBER',
+        role: 'CORETEAM',
+        status: 'ACTIVE',
       },
     });
 
@@ -33,7 +35,7 @@ export async function GET(request: NextRequest) {
       const dobStr = (personalData as JsonObject)?.dateOfBirth as string;
 
       if (!dobStr) {
-        console.log("No date of birth found for user:", name);
+        console.log('No date of birth found for user:', name);
         continue;
       }
 
@@ -49,7 +51,7 @@ export async function GET(request: NextRequest) {
             channel: SlackChannels.executive_channel,
           });
         } else {
-          console.log("No slackId found for user:", name);
+          console.log('No slackId found for user:', name);
         }
       }
 
@@ -67,19 +69,19 @@ export async function GET(request: NextRequest) {
     }
 
     const jsonResponse = {
-      status: "success",
-      message: "Reminders Sent!",
+      status: 'success',
+      message: 'Reminders Sent!',
     };
 
     return NextResponse.json(jsonResponse);
   } catch (error) {
-    console.error("Error in GET route:", error);
+    console.error('Error in GET route:', error);
     return new NextResponse(
-      JSON.stringify({ status: "error", message: "Internal Server Error" }),
+      JSON.stringify({ status: 'error', message: 'Internal Server Error' }),
       {
         status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
+        headers: { 'Content-Type': 'application/json' },
+      },
     );
   }
 }
