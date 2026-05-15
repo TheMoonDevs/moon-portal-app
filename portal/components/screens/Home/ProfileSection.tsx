@@ -1,14 +1,11 @@
 /* eslint-disable @next/next/no-img-element */
-import { User } from '@prisma/client';
+import type { User } from '@db/client';
 import BoringAvatar from 'boring-avatars';
-import PushSubscriptionToggleButton from '@/components/global/PushSubscriptionToggleButton';
-import { CircleAlert, CirclePower } from 'lucide-react';
-import { useState } from 'react';
-import LogoutConfirmationDialog from '@/components/global/LogoutConfirmationDialog';
-import { useAppDispatch } from '@/utils/redux/store';
-import { selectMember } from '@/utils/redux/coreTeam/coreTeam.slice';
 import Link from 'next/link';
+
 import { APP_ROUTES } from '@/utils/constants/appInfo';
+import { selectMember } from '@/utils/redux/coreTeam/coreTeam.slice';
+import { useAppDispatch } from '@/utils/redux/store';
 export const ProfileSection = ({ user }: { user: User }) => {
   const dispatch = useAppDispatch();
 
@@ -25,7 +22,7 @@ export const ProfileSection = ({ user }: { user: User }) => {
           onClick={() => handleOpenSlideIn(user)}
         >
           {!user?.avatar || user?.avatar === '' ? (
-            <div className="relative h-24 w-24">
+            <div className="relative size-24">
               <BoringAvatar
                 size={'100%'}
                 name={user?.name || 'S'}
@@ -40,7 +37,7 @@ export const ProfileSection = ({ user }: { user: User }) => {
             <img
               src={user?.avatar || ''}
               alt={user?.name || ''}
-              className="h-16 w-16 cursor-pointer rounded-full object-cover object-center md:h-[4.5rem] md:w-[4.5rem]"
+              className="size-16 cursor-pointer rounded-full object-cover object-center md:size-[4.5rem]"
             />
           )}
         </div>
@@ -51,7 +48,7 @@ export const ProfileSection = ({ user }: { user: User }) => {
           {user?.userType !== 'CLIENT' && (
             <Link
               href={APP_ROUTES.devProfile}
-              className="mt-2 flex items-center justify-center gap-1 rounded-lg bg-black px-2 py-2 text-xs text-white transition hover:bg-neutral-700"
+              className="mt-2 flex items-center justify-center gap-1 rounded-lg bg-black p-2 text-xs text-white transition hover:bg-neutral-700"
             >
               Dev Profile{' '}
               <span className="material-symbols-outlined !text-xs">

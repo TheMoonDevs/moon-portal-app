@@ -1,51 +1,40 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
-import React, { useCallback, useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import {
-  Drawer,
-  Box,
-  Fab,
-  IconButton,
-  useMediaQuery,
-  Divider,
-} from '@mui/material';
-import { RootState, useAppDispatch, useAppSelector } from '@/utils/redux/store';
-import { useUser } from '@/utils/hooks/useUser';
-import { User, USERROLE, USERVERTICAL, WorkLogs } from '@prisma/client';
+import type { User, USERROLE, USERVERTICAL, WorkLogs } from '@db/client';
+import type { FileWithPath } from '@mantine/dropzone';
+import { Divider } from '@mui/material';
+import dayjs from 'dayjs';
+import Image from 'next/image';
 import Link from 'next/link';
-import { updateAvatarUrl } from '@/utils/redux/onboarding/onboarding.slice';
+import React, { useCallback, useEffect, useState } from 'react';
+
+import DrawerComponent from '@/components/elements/DrawerComponent';
+import { LoadingSkeleton } from '@/components/elements/LoadingSkeleton';
+import ToolTip from '@/components/elements/ToolTip';
+import { APP_ROUTES, TMD_PORTAL_API_KEY } from '@/utils/constants/appInfo';
+import { ArrayHelper } from '@/utils/helpers/array';
+import { getBuffLevelAndTitle } from '@/utils/helpers/badges';
+import useAsyncState from '@/utils/hooks/useAsyncState';
+import { useUser } from '@/utils/hooks/useUser';
+import { setReduxUser } from '@/utils/redux/auth/auth.slice';
 import {
   closeDrawer,
-  updateMember,
   setEditModalOpen,
+  updateMember,
 } from '@/utils/redux/coreTeam/coreTeam.slice';
 import {
   addFilesToPreview,
   setUploadedFiles,
 } from '@/utils/redux/filesUpload/fileUpload.slice';
-import { FileWithPath } from '@mantine/dropzone';
-import { WorklogSummaryView } from '../Worklogs/WorklogSummary/WorklogSummaryView';
+import type { RootState } from '@/utils/redux/store';
+import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
 import { PortalSdk } from '@/utils/services/PortalSdk';
-import useAsyncState from '@/utils/hooks/useAsyncState';
-import { LoadingSkeleton } from '@/components/elements/LoadingSkeleton';
-import { APP_ROUTES, TMD_PORTAL_API_KEY } from '@/utils/constants/appInfo';
-import { setReduxUser } from '@/utils/redux/auth/auth.slice';
-import media from '@/styles/media';
-import DrawerComponent from '@/components/elements/DrawerComponent';
-import dayjs from 'dayjs';
-import { ArrayHelper } from '@/utils/helpers/array';
-import Image from 'next/image';
-import ToolTip from '@/components/elements/ToolTip';
+
+import { WorklogSummaryView } from '../Worklogs/WorklogSummary/WorklogSummaryView';
+import AdminTasksTab from '../Worklogs/WorklogTabs/AdminTasksTab';
 import ReactActivityCalendar from './ActivityCalendar';
 import EditUser from './EditUser';
-import { useTasks } from '@/utils/hooks/useTasks';
-import { filterTasksByPerson } from '@/utils/clickup/helper';
-import ClickupTask from '../Worklogs/WorklogTabs/ClickupTasks';
 import EarnedBadges from './profile-drawer-components/EarnedBadges';
-import { PayDataUI } from './profile-drawer-components/PayDataUI';
-import { getBuffLevelAndTitle } from '@/utils/helpers/badges';
-import AdminTasksTab from '../Worklogs/WorklogTabs/AdminTasksTab';
 
 export interface LoggedInUser {
   user: User;
@@ -132,7 +121,8 @@ export const UserProfileDrawer: React.FC = () => {
     setLoading(true);
     try {
       const response = await PortalSdk.getData(
-        `/api/user/worklogs/summary?userId=${selectedUser?.id
+        `/api/user/worklogs/summary?userId=${
+          selectedUser?.id
         }&year=${dayjs().year()}&month=${dayjs()
           .month(dayjs().month())
           .format('MM')}`,
@@ -296,7 +286,7 @@ export const WorkLogSection = ({
             ).slice(0, 5)}
             isDrawer={true}
           />
-          <div className="absolute bottom-0 left-0 right-0 flex h-[30vh] flex-col justify-end bg-gradient-to-b from-transparent to-white">
+          <div className="absolute inset-x-0 bottom-0 flex h-[30vh] flex-col justify-end bg-gradient-to-b from-transparent to-white">
             <p className="p-2 text-center text-xs font-semibold text-neutral-500"></p>
           </div>
         </div>
@@ -327,29 +317,30 @@ const ProfileImagesSection = ({
   avatarLoading: boolean;
 }) => {
   const badges = (selectedUser as any).buffBadge;
-  const badge = badges.length > 0 ? badges[0] : [{ points: 1, title: 'Newbie' }];
+  const badge =
+    badges?.length > 0 ? badges[0] : { points: 1, title: 'Newbie' };
 
   return (
     <div className="relative h-[120px]">
       {bannerLoading ? (
-        <div className="h-full w-full animate-pulse bg-gray-300" />
+        <div className="size-full animate-pulse bg-gray-300" />
       ) : (
         <img
           src={selectedUser?.banner || '/images/gradientBanner.jpg'}
-          className="absolute h-full w-full object-cover"
+          className="absolute size-full object-cover"
           alt="Profile Banner"
         />
       )}
-      <div className="absolute -bottom-[3.25rem] left-5 h-24 w-24 rounded-full border-4 border-white">
+      <div className="absolute -bottom-[3.25rem] left-5 size-24 rounded-full border-4 border-white">
         {avatarLoading ? (
           <div className="rounded-full bg-white">
-            <div className="h-24 w-24 animate-pulse rounded-full bg-gray-300" />
+            <div className="size-24 animate-pulse rounded-full bg-gray-300" />
           </div>
         ) : (
           <img
             src={selectedUser?.avatar || '/icons/placeholderAvatar.svg'}
             alt={selectedUser?.name?.charAt(0) || ''}
-            className="h-full w-full rounded-full bg-white object-cover"
+            className="size-full rounded-full bg-white object-cover"
           />
         )}
 
@@ -369,26 +360,29 @@ const ProfileImagesSection = ({
             />
           </label>
         )}
-
       </div>
 
-      <div className='absolute top-0 right-0 left-0'>
+      <div className="absolute inset-x-0 top-0">
         {selectedUser?.timezone && (
-          <div className='h-[120px] w-[50%] ml-auto bg-gradient-to-l from-black to-transparent [rgba(0,0,0,0.1)]'>
-            <div className='p-2 pr-4'>
-              <p className='text-white text-2xl font-bold text-right'>{new Date().toLocaleString(`en-US`, {
-                timeZone: selectedUser?.timezone,
-                hour: 'numeric',
-                minute: 'numeric',
-              })}</p>
-              <p className='text-white text-xs text-right'>{selectedUser?.timezone}</p>
+          <div className="[rgba(0,0,0,0.1)] ml-auto h-[120px] w-[50%] bg-gradient-to-l from-black to-transparent">
+            <div className="p-2 pr-4">
+              <p className="text-right text-2xl font-bold text-white">
+                {new Date().toLocaleString(`en-US`, {
+                  timeZone: selectedUser?.timezone,
+                  hour: 'numeric',
+                  minute: 'numeric',
+                })}
+              </p>
+              <p className="text-right text-xs text-white">
+                {selectedUser?.timezone}
+              </p>
             </div>
           </div>
         )}
       </div>
 
       {loggedinUser.user.id === selectedUser?.id && (
-        <label className="absolute right-0 left-0 -bottom-2 flex cursor-pointer items-center justify-center rounded-full bg-white">
+        <label className="absolute inset-x-0 -bottom-2 flex cursor-pointer items-center justify-center rounded-full bg-white">
           <span
             className="material-symbols-outlined absolute -bottom-2 cursor-pointer rounded-full bg-neutral-100 p-[6px]"
             style={{ fontSize: '16px' }}
@@ -404,21 +398,22 @@ const ProfileImagesSection = ({
         </label>
       )}
 
-      <div className="absolute -bottom-[2.5rem] flex items-center w-full justify-end gap-4 pr-4">
+      <div className="absolute -bottom-10 flex w-full items-center justify-end gap-4 pr-4">
         <div className="flex items-center gap-2">
-          <div className="h-8 w-8 overflow-hidden rounded-full">
+          <div className="size-8 overflow-hidden rounded-full">
             <img
               src={getBuffLevelAndTitle(badge.points).src}
               alt="user-vertical"
-              className="h-full w-full object-cover"
+              className="size-full object-cover"
             />
           </div>
-          <div className='flex flex-col items-start'>
+          <div className="flex flex-col items-start">
             <h4 className="text-center text-xs font-bold capitalize">
               {getBuffLevelAndTitle(badge.points).title}
             </h4>
-            <p className='text-center text-xs text-gray-500'>{badge.points} Pts</p>
-
+            <p className="text-center text-xs text-gray-500">
+              {badge.points} Pts
+            </p>
           </div>
         </div>
       </div>
@@ -446,15 +441,17 @@ const AboutUserSections = ({
         </div>
         <p className="text-sm text-gray-700">
           {/* @{selectedUser?.username + selectedUser?.password}{' '} */}
-          {selectedUser.positionTitle ? `${selectedUser.positionTitle} ` : `${translateUserVertical(selectedUser?.vertical || '')}`}
+          {selectedUser.positionTitle
+            ? `${selectedUser.positionTitle} `
+            : `${translateUserVertical(selectedUser?.vertical || '')}`}
           - {selectedUser?.role?.toLowerCase()}
         </p>
       </div>
       {/* <h6 className="font-bold py-2"> Profile</h6> */}
-      <div className="flex w-full gap-4 py-2 mt-3">
+      <div className="mt-3 flex w-full gap-4 py-2">
         <Link
           href={`${APP_ROUTES.userWorklogSummary}/${selectedUser?.id}`}
-          className="flex flex-grow items-center justify-center gap-2 rounded-lg border border-gray-300 bg-black px-4 py-2 text-sm text-white shadow-md transition duration-300 hover:bg-gray-800"
+          className="flex grow items-center justify-center gap-2 rounded-lg border border-gray-300 bg-black px-4 py-2 text-sm text-white shadow-md transition duration-300 hover:bg-gray-800"
           onClick={() => {
             dispatch(closeDrawer());
           }}
@@ -470,7 +467,7 @@ const AboutUserSections = ({
         <Link
           href={`https://slack.com/app_redirect?channel=${selectedUser?.slackId}`}
           target="_blank"
-          className="flex flex-grow items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm text-black shadow-md transition duration-300 hover:bg-gray-200"
+          className="flex grow items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm text-black shadow-md transition duration-300 hover:bg-gray-200"
         >
           <Image
             src="/images/thirdparty/slack-new.svg"
@@ -483,7 +480,7 @@ const AboutUserSections = ({
         {loggedinUser.user.id === selectedUser?.id && (
           <ToolTip title="Edit Profile">
             <button
-              className="flex w-auto flex-grow-0 items-center justify-center gap-2 rounded-lg border border-gray-300 p-2 text-black shadow-md transition duration-300 hover:bg-gray-200"
+              className="flex w-auto grow-0 items-center justify-center gap-2 rounded-lg border border-gray-300 p-2 text-black shadow-md transition duration-300 hover:bg-gray-200"
               onClick={() => {
                 dispatch(setEditModalOpen(true));
                 dispatch(closeDrawer());
@@ -503,7 +500,7 @@ const AboutUserSections = ({
 
       {selectedUser?.description && (
         <>
-          <p className="mt-4 text-sm line-clamp-3">
+          <p className="mt-4 line-clamp-3 text-sm">
             {selectedUser?.description || 'Description not available.'}
           </p>
         </>
