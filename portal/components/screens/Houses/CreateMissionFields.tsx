@@ -1,31 +1,33 @@
-import { Grid } from "@mui/material";
-import React, { useCallback, useRef } from "react";
-import { MdxAppEditor } from "@/utils/configure/MdxAppEditor";
-import { useUser } from "@/utils/hooks/useUser";
-import { MARKDOWN_PLACEHOLDER } from "../Worklogs/WorklogTabs/TodoTab";
-import { DatePicker } from "@mui/x-date-pickers";
-import dayjs, { Dayjs } from "dayjs";
-import { MDXEditorMethods } from "@mdxeditor/editor";
-import { PillSelector } from "./PillSelector";
-import { HOUSEID, Mission, MissionTask } from "@prisma/client";
-import { initialMissionState } from "./state";
+import type { HOUSEID, Mission, MissionTask } from '@db/client';
+import type { MDXEditorMethods } from '@mdxeditor/editor';
+import { Grid } from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers';
+import dayjs from 'dayjs';
+import React, { useCallback, useRef } from 'react';
+
+import { MdxAppEditor } from '@/utils/configure/MdxAppEditor';
+import { useUser } from '@/utils/hooks/useUser';
+
+import { MARKDOWN_PLACEHOLDER } from '../Worklogs/WorklogTabs/TodoTab';
+import { PillSelector } from './PillSelector';
+import { initialMissionState } from './state';
 
 export const pillOptions = [
   {
-    label: "yes",
+    label: 'yes',
     value: true,
   },
   {
-    label: "no",
+    label: 'no',
     value: false,
   },
 ];
 
 const housesList = [
-  { label: "Management", value: "MANAGEMENT" },
-  { label: "Growth", value: "GROWTH" },
-  { label: "Product Tech", value: "PRODUCT_TECH" },
-  { label: "Executive", value: "EXECUTIVE" },
+  { label: 'Management', value: 'MANAGEMENT' },
+  { label: 'Growth', value: 'GROWTH' },
+  { label: 'Product Tech', value: 'PRODUCT_TECH' },
+  { label: 'Executive', value: 'EXECUTIVE' },
 ];
 
 type CreateMissionFieldsProps = {
@@ -46,14 +48,14 @@ const CreateMissionFields = ({
       mdRef?.current?.setMarkdown(newContent);
       setState((prev: any) => ({ ...prev, description: content }));
     },
-    [setState]
+    [setState],
   );
 
   return (
     <Grid container spacing={4} className="py-4">
       <Grid item xs={12}>
         <label
-          className="text-sm font-medium text-gray-700 mb-2 block"
+          className="mb-2 block text-sm font-medium text-gray-700"
           htmlFor="title"
         >
           Mission Title
@@ -63,18 +65,18 @@ const CreateMissionFields = ({
           id="title"
           value={state.title}
           onChange={(e) => setState({ ...state, title: e.target.value })}
-          className="w-full px-4 py-3 border border-gray-300 rounded-md"
+          className="w-full rounded-md border border-gray-300 px-4 py-3"
           placeholder="Enter the mission title"
         />
       </Grid>
       <Grid item xs={12}>
         <label
           htmlFor="description"
-          className="text-sm font-medium text-gray-700 mb-2 block"
+          className="mb-2 block text-sm font-medium text-gray-700"
         >
           Mission Description
         </label>
-        <div className="h-[180px] overflow-y-scroll border border-gray-300 rounded-md p-3 bg-white">
+        <div className="h-[180px] overflow-y-scroll rounded-md border border-gray-300 bg-white p-3">
           <MdxAppEditor
             ref={mdRef}
             key={`${user?.id}`}
@@ -82,13 +84,13 @@ const CreateMissionFields = ({
             markdown={
               state.description?.trim().length === 0
                 ? MARKDOWN_PLACEHOLDER
-                : state.description || ""
+                : state.description || ''
             }
-            className="w-full h-full"
+            className="size-full"
             contentEditableClassName={`mdx_ce ${
               state.description?.trim() === MARKDOWN_PLACEHOLDER.trim()
-                ? "mdx_uninit"
-                : ""
+                ? 'mdx_uninit'
+                : ''
             } leading-tight w-full h-full`}
             onChange={handleMarkdownChange}
           />
@@ -96,7 +98,7 @@ const CreateMissionFields = ({
       </Grid>
       <Grid item xs={12} sm={6}>
         <label
-          className="text-sm font-medium text-gray-700 mb-2 block"
+          className="mb-2 block text-sm font-medium text-gray-700"
           htmlFor="select-house"
         >
           Select House
@@ -107,7 +109,7 @@ const CreateMissionFields = ({
           onChange={(e) =>
             setState({ ...state, house: e.target.value as HOUSEID })
           }
-          className="w-full px-4 py-3 border border-gray-300 rounded-md"
+          className="w-full rounded-md border border-gray-300 px-4 py-3"
         >
           <option value="" disabled>
             Select House
@@ -121,7 +123,7 @@ const CreateMissionFields = ({
       </Grid>
       <Grid item xs={12} sm={6}>
         <label
-          className="text-sm font-medium text-gray-700 mb-2 block"
+          className="mb-2 block text-sm font-medium text-gray-700"
           htmlFor="house-points"
         >
           House Points
@@ -137,12 +139,12 @@ const CreateMissionFields = ({
               indiePoints: parseInt(e.target.value, 10) * 100,
             })
           }
-          className="w-full px-4 py-3 border border-gray-300 rounded-md"
+          className="w-full rounded-md border border-gray-300 px-4 py-3"
         />
       </Grid>
       <Grid item xs={12} sm={6}>
         <label
-          className="text-sm font-medium text-gray-700 mb-2 block"
+          className="mb-2 block text-sm font-medium text-gray-700"
           htmlFor="indie-points"
         >
           Indie Points
@@ -157,18 +159,18 @@ const CreateMissionFields = ({
               indiePoints: parseInt(e.target.value, 10),
             })
           }
-          className="w-full px-4 py-3 border border-gray-300 rounded-md"
+          className="w-full rounded-md border border-gray-300 px-4 py-3"
         />
       </Grid>
       <Grid item xs={12} sm={6}>
         <p className="text-sm font-medium text-gray-700">Indie Balance</p>
-        <p className="text-lg font-semibold text-black mt-1">
+        <p className="mt-1 text-lg font-semibold text-black">
           {(state.indiePoints || 0) -
             (
               (state as Mission & { tasks?: MissionTask[] })?.tasks || []
             ).reduce(
               (acc: number, task: MissionTask) => acc + task.indiePoints,
-              0
+              0,
             )}
         </p>
       </Grid>

@@ -1,12 +1,15 @@
 /* eslint-disable @next/next/no-img-element */
 
-import React, { useCallback, useMemo } from "react";
-import { Spinner } from "@/components/elements/Loaders";
-import { Tooltip, Avatar, AvatarGroup } from "@mui/material";
-import { HOUSEID, Mission, User } from "@prisma/client";
-import { ChevronDown, ChevronUp } from "lucide-react";
-import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import { setActiveMission } from "@/utils/redux/missions/mission.slice";
+import type { Mission, User } from '@db/client';
+import { HOUSEID } from '@db/client';
+import { Avatar, AvatarGroup, Tooltip } from '@mui/material';
+import { ChevronDown, ChevronUp } from 'lucide-react';
+import React, { useCallback, useMemo } from 'react';
+
+import { Spinner } from '@/components/elements/Loaders';
+import { setActiveMission } from '@/utils/redux/missions/mission.slice';
+import type { RootState } from '@/utils/redux/store';
+import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
 
 interface House {
   id: HOUSEID;
@@ -19,29 +22,29 @@ interface House {
 export const HOUSES_LIST: House[] = [
   {
     id: HOUSEID.MANAGEMENT,
-    name: "Management",
-    description: "Management House",
+    name: 'Management',
+    description: 'Management House',
     image: `images/houses/${HOUSEID.MANAGEMENT}.png`,
     background: `linear-gradient(180deg, #D40000, #000000)`,
   },
   {
     id: HOUSEID.GROWTH,
-    name: "Growth",
-    description: "Growth House",
+    name: 'Growth',
+    description: 'Growth House',
     image: `images/houses/${HOUSEID.GROWTH}.png`,
     background: `linear-gradient(180deg, #540907, #060405)`,
   },
   {
     id: HOUSEID.EXECUTIVE,
-    name: "Executive",
-    description: "Executive House",
+    name: 'Executive',
+    description: 'Executive House',
     image: `images/houses/${HOUSEID.EXECUTIVE}.png`,
     background: `linear-gradient(180deg, #0A95A8, #10303C)`,
   },
   {
     id: HOUSEID.PRODUCT_TECH,
-    name: "Product",
-    description: "Product House",
+    name: 'Product',
+    description: 'Product House',
     image: `images/houses/${HOUSEID.PRODUCT_TECH}.png`,
     background: `linear-gradient(180deg, #62368D, #291643)`,
   },
@@ -75,7 +78,7 @@ export const HousesList = ({
     (index: number) => {
       setCurrentHouseIndex(currentHouseIndex === index ? -1 : index);
     },
-    [currentHouseIndex, setCurrentHouseIndex]
+    [currentHouseIndex, setCurrentHouseIndex],
   );
 
   const housePoints = useMemo(() => {
@@ -91,7 +94,7 @@ export const HousesList = ({
   };
 
   return (
-    <div className="flex flex-col gap-4 p-4 pr-0 overflow-y-auto">
+    <div className="flex flex-col gap-4 overflow-y-auto p-4 pr-0">
       {HOUSES_LIST.map((house, index) => (
         <div
           key={house.id}
@@ -102,10 +105,10 @@ export const HousesList = ({
             dispatch(setActiveMission(null));
             toggleHouse(index);
           }}
-          className="flex flex-col border border-neutral-200 text-white rounded-xl overflow-hidden transition-all duration-1000 ease-in-out"
+          className="flex flex-col overflow-hidden rounded-xl border border-neutral-200 text-white transition-all duration-1000 ease-in-out"
         >
           <div className="relative">
-            <div className="absolute top-9 right-4 cursor-pointer">
+            <div className="absolute right-4 top-9 cursor-pointer">
               {currentHouseIndex === index ? (
                 <ChevronUp size={24} />
               ) : (
@@ -113,33 +116,33 @@ export const HousesList = ({
               )}
             </div>
             <div
-              className={`flex flex-row items-center gap-2 p-4 px-8 border-b border-white/20 transition-all duration-300 ease-in-out ${
+              className={`flex flex-row items-center gap-2 border-b border-white/20 p-4 px-8 transition-all duration-300 ease-in-out ${
                 currentHouseIndex === index
-                  ? ""
-                  : "items-center justify-between"
+                  ? ''
+                  : 'items-center justify-between'
               }`}
             >
               <img
                 src={house.image}
                 alt={house.name}
-                className={`object-cover object-center  transition-all duration-300 ease-in-out  ${
+                className={`object-cover object-center transition-all duration-300 ease-in-out ${
                   currentHouseIndex === index
-                    ? "h-44 w-44 rounded-full"
-                    : "h-16 w-16 rounded-full overflow-y-hidden "
+                    ? 'size-44 rounded-full'
+                    : 'size-16 overflow-y-hidden rounded-full'
                 }`}
               />
               <div
                 className={`p-4 transition-all duration-300 ease-in-out ${
                   currentHouseIndex === index
-                    ? ""
-                    : "flex items-center justify-between flex-1"
+                    ? ''
+                    : 'flex flex-1 items-center justify-between'
                 }`}
               >
-                <h3 className="text-xl font-regular tracking-widest uppercase">
+                <h3 className="font-regular text-xl uppercase tracking-widest">
                   {house.name}
                 </h3>
                 {currentHouseIndex === index ? (
-                  <div className="flex flex-col ">
+                  <div className="flex flex-col">
                     <h1 className="text-[3em] font-bold">
                       {houseMembersLoading ? (
                         <Spinner />
@@ -150,21 +153,21 @@ export const HousesList = ({
                     <div>
                       <p className="text-sm">House Members</p>
                       {houseMembersLoading ? (
-                        <div className="w-12 h-12 bg-gray-300 animate-pulse rounded-full mt-2 pt-2"></div>
+                        <div className="mt-2 size-12 animate-pulse rounded-full bg-gray-300 pt-2"></div>
                       ) : (
-                        <div className="flex flex-wrap gap-2 mt-2 overflow-x-auto">
+                        <div className="mt-2 flex flex-wrap gap-2 overflow-x-auto">
                           <AvatarGroup max={4}>
                             {houseMembers
                               .filter((member) => member.house === house.id)
                               .map((member) => (
                                 <Tooltip
                                   key={member.id}
-                                  title={member.name || ""}
+                                  title={member.name || ''}
                                 >
                                   <Avatar
-                                    src={member.avatar || ""}
-                                    alt={member.name || ""}
-                                    className="w-12 h-12 rounded-full"
+                                    src={member.avatar || ''}
+                                    alt={member.name || ''}
+                                    className="size-12 rounded-full"
                                   />
                                 </Tooltip>
                               ))}
@@ -191,7 +194,7 @@ export const HousesList = ({
 
           {currentHouseIndex === index && (
             <div className="p-4">
-              <p className="text-sm ">{house.description}</p>
+              <p className="text-sm">{house.description}</p>
             </div>
           )}
         </div>

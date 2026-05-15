@@ -1,11 +1,15 @@
-import { Grid } from "@mui/material";
-import React, { useCallback } from "react";
-import dayjs, { Dayjs } from "dayjs";
-import { Mission, MissionTask, User } from "@prisma/client";
-import { DatePicker } from "@mui/x-date-pickers";
-import { pillOptions } from "./CreateMissionFields";
-import { PillSelector } from "./PillSelector";
-import { RootState, useAppDispatch, useAppSelector } from "@/utils/redux/store";
+import type { Mission, MissionTask, User } from '@db/client';
+import { Grid } from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers';
+import type { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
+import React, { useCallback } from 'react';
+
+import type { RootState } from '@/utils/redux/store';
+import { useAppSelector } from '@/utils/redux/store';
+
+import { pillOptions } from './CreateMissionFields';
+import { PillSelector } from './PillSelector';
 
 type taskState = {
   missionId: string;
@@ -42,31 +46,31 @@ const CreateTask = ({
         setTaskState((prevState) => ({
           ...prevState,
           [key]:
-            key === "indiePoints"
+            key === 'indiePoints'
               ? parseInt(e.target.value, 10)
               : e.target.value,
         }));
       },
-    [setTaskState]
+    [setTaskState],
   );
 
   const handleUserChange = useCallback(
     (e: React.ChangeEvent<HTMLSelectElement>) => {
       const selectedUserId = e.target.value;
       const selectedUser = houseMembers.find(
-        (user) => user.id === selectedUserId
+        (user) => user.id === selectedUserId,
       );
 
       setTaskState((prevState) => ({
         ...prevState,
         userId: selectedUserId,
-        avatar: selectedUser?.avatar || "",
-        name: selectedUser?.name || "",
-        email: selectedUser?.email || "",
-        userInfoId: selectedUser?.id || "",
+        avatar: selectedUser?.avatar || '',
+        name: selectedUser?.name || '',
+        email: selectedUser?.email || '',
+        userInfoId: selectedUser?.id || '',
       }));
     },
-    [setTaskState, houseMembers]
+    [setTaskState, houseMembers],
   );
 
   const handleMissionChange = useCallback(
@@ -78,7 +82,7 @@ const CreateTask = ({
         missionId: selectedMissionId,
       }));
     },
-    [setTaskState]
+    [setTaskState],
   );
 
   return (
@@ -95,7 +99,7 @@ const CreateTask = ({
             id="select-mission"
             value={taskState.missionId}
             onChange={handleMissionChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md"
+            className="w-full rounded-md border border-gray-300 px-4 py-2"
             aria-label="Select a mission"
             required
           >
@@ -116,9 +120,9 @@ const CreateTask = ({
           <input
             type="text"
             id="title"
-            value={taskState.title || ""}
-            onChange={handleInputChange("title")}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md"
+            value={taskState.title || ''}
+            onChange={handleInputChange('title')}
+            className="w-full rounded-md border border-gray-300 px-4 py-2"
             aria-label="Enter task title"
             required
           />
@@ -132,10 +136,10 @@ const CreateTask = ({
           </label>
           <textarea
             id="description"
-            value={taskState.description || ""}
-            onChange={handleInputChange("description")}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md h-[150px] max-h-[200px]"
-            style={{ resize: "none" }}
+            value={taskState.description || ''}
+            onChange={handleInputChange('description')}
+            className="h-[150px] max-h-[200px] w-full rounded-md border border-gray-300 px-4 py-2"
+            style={{ resize: 'none' }}
             aria-label="Enter task description"
             required
           />
@@ -151,8 +155,8 @@ const CreateTask = ({
             type="number"
             id="indie-points"
             value={taskState.indiePoints}
-            onChange={handleInputChange("indiePoints")}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md"
+            onChange={handleInputChange('indiePoints')}
+            className="w-full rounded-md border border-gray-300 px-4 py-2"
             aria-label="Enter indie points"
           />
         </Grid>
@@ -165,9 +169,9 @@ const CreateTask = ({
           </label>
           <select
             id="select-user"
-            value={taskState.userId || ""}
+            value={taskState.userId || ''}
             onChange={handleUserChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md"
+            className="w-full rounded-md border border-gray-300 px-4 py-2"
             aria-label="Select a user"
             required
           >
