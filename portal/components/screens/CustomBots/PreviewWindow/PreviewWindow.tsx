@@ -33,7 +33,7 @@ const BASE_URL =
 const endpoints = API_DOC.endpoints.map((endpoint) => endpoint.path);
 
 // Type for form values
-type FormValues = Record<string, string>;
+type FormValues = Record<string, string | undefined>;
 
 interface RequestQueryParam {
   type: string;
@@ -135,45 +135,48 @@ const PreviewWindow = () => {
 
   // Create form schema based on request parameters
   const createFormSchema = () => {
-    if (!currentEndpoint) return z.object({});
+    const schema = z.record(z.string(), z.string().optional());
 
-    const schemaFields: Record<string, z.ZodType<any>> = {};
+    if (!currentEndpoint) return schema;
 
-    // Add path parameters
-    const pathParams = getPathParams(currentEndpoint.path);
-    pathParams.forEach((param) => {
-      schemaFields[param.name] = z
-        .string()
-        .min(1, { message: 'This field is required' });
+    return schema.superRefine((values, ctx) => {
+      const requireNonEmpty = (key: string) => {
+        const value = values[key];
+        if (typeof value !== 'string' || value.trim().length === 0) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [key],
+            message: 'This field is required',
+          });
+        }
+      };
+
+      // Path params are always required
+      getPathParams(currentEndpoint.path).forEach((param) =>
+        requireNonEmpty(param.name),
+      );
+
+      // Required query params
+      if (currentEndpoint.requestQuery) {
+        Object.entries(
+          currentEndpoint.requestQuery as Record<string, RequestQueryParam>,
+        ).forEach(([key, value]) => {
+          if (value?.isRequired === true) requireNonEmpty(key);
+        });
+      }
+
+      // Required body params (non-GET only)
+      if (currentEndpoint.requestBody && selectedMethod !== 'GET') {
+        Object.entries(
+          currentEndpoint.requestBody.schema as Record<
+            string,
+            RequestBodySchema
+          >,
+        ).forEach(([key, value]) => {
+          if (value?.isRequired === true) requireNonEmpty(key);
+        });
+      }
     });
-
-    // Add query parameters
-    if (currentEndpoint.requestQuery) {
-      Object.entries(
-        currentEndpoint.requestQuery as Record<string, RequestQueryParam>,
-      ).forEach(([key, value]) => {
-        const isRequired = value?.isRequired === true;
-        const schema = z.string();
-        schemaFields[key] = isRequired
-          ? schema.min(1, { message: 'This field is required' })
-          : schema.optional();
-      });
-    }
-
-    // Add body parameters if it's not a GET request
-    if (currentEndpoint.requestBody && selectedMethod !== 'GET') {
-      Object.entries(
-        currentEndpoint.requestBody.schema as Record<string, RequestBodySchema>,
-      ).forEach(([key, value]) => {
-        const isRequired = value.isRequired === true;
-        const schema = z.string();
-        schemaFields[key] = isRequired
-          ? schema.min(1, { message: 'This field is required' })
-          : schema.optional();
-      });
-    }
-
-    return z.object(schemaFields);
   };
 
   const form = useForm<FormValues>({
@@ -219,7 +222,7 @@ const PreviewWindow = () => {
             key in currentEndpoint.requestQuery &&
             !pathParams.find((p) => p.name === key) // Exclude path parameters
           ) {
-            url.searchParams.append(key, value);
+            if (typeof value === 'string') url.searchParams.append(key, value);
           }
         });
       }
