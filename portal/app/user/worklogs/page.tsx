@@ -1,11 +1,12 @@
-import { Bottombar } from "@/components/global/Bottombar";
-import { PageAccess } from "@/components/global/PageAccess";
-import { WorklogsPage } from "@/components/screens/Worklogs/WorklogsPage";
-import { Metadata } from "next";
+import type { Metadata } from 'next';
+
+import { Bottombar } from '@/components/global/Bottombar';
+import { PageAccess } from '@/components/global/PageAccess';
+import { WorklogsPage } from '@/components/screens/Worklogs/WorklogsPage';
 
 export const metadata: Metadata = {
-  manifest: "/manifest.json", // we are accessing our manifest file here
-  title: "My Worklogs - TheMoonDevs",
+  manifest: '/manifest.json', // we are accessing our manifest file here
+  title: 'My Worklogs - TheMoonDevs',
   // TODO - change favicon to check icon on green circle
   // icon: "/favicon.ico",
 };
