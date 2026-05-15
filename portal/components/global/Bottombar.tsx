@@ -1,19 +1,20 @@
 'use client';
 
-import { APP_ROUTES, AppRoutesHelper } from '@/utils/constants/appInfo';
-import { useUser } from '@/utils/hooks/useUser';
-import { USERTYPE } from '@prisma/client';
-import { usePathname, useRouter } from 'next/navigation';
-import { PortalSdk } from '@/utils/services/PortalSdk';
+import { USERTYPE } from '@db/client';
+import { Badge, useMediaQuery } from '@mui/material';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useMediaQuery, Badge } from '@mui/material';
-import media from '@/styles/media';
-import { useNotifications } from '@/utils/hooks/useNotifications';
-import { useEffect, useRef, useState } from 'react';
-import NotificationModal from './NotificationModal';
+import { usePathname, useRouter } from 'next/navigation';
+import { useState } from 'react';
 import Ripples from 'react-ripples';
+
+import media from '@/styles/media';
+import { APP_ROUTES } from '@/utils/constants/appInfo';
+import { useNotifications } from '@/utils/hooks/useNotifications';
+import { useUser } from '@/utils/hooks/useUser';
+
 import LogoutConfirmationDialog from './LogoutConfirmationDialog';
+import NotificationModal from './NotificationModal';
 
 const NAVIGATION_OPTIONS = [
   {
@@ -129,12 +130,12 @@ export const Bottombar = ({
     user?.userType === USERTYPE.CLIENT
       ? CLIENT_NAVIGATION_OPTIONS
       : NAVIGATION_OPTIONS.filter(
-        (option) =>
-          !(
-            option.name === 'Admin' &&
-            (!user?.isAdmin || isMobile || isTablet)
-          ),
-      );
+          (option) =>
+            !(
+              option.name === 'Admin' &&
+              (!user?.isAdmin || isMobile || isTablet)
+            ),
+        );
   if (!visible && !visibleOnlyOn) return null;
   if (visibleOnlyOn && !visibleOnlyOnResponsiveSizes) return null;
   //if (!AppRoutesHelper.bottomBarShown(path)) return null;
@@ -169,7 +170,7 @@ export const Bottombar = ({
   };
   return (
     <div
-      className={`md:fixed-none bottombar fixed bottom-0 left-0 right-0 z-10 flex flex-row gap-6 bg-neutral-900 px-2 py-2 max-md:mx-1 max-md:my-1 max-md:rounded-2xl md:bottom-auto md:left-0 md:top-0 md:h-full md:w-24 md:flex-col md:px-2 md:py-1`}
+      className={`md:fixed-none bottombar fixed inset-x-0 bottom-0 z-10 flex flex-row gap-6 bg-neutral-900 p-2 max-md:m-1 max-md:rounded-2xl md:bottom-auto md:left-0 md:top-0 md:h-full md:w-24 md:flex-col md:px-2 md:py-1`}
       id="home-bottombar"
     >
       <Link href={APP_ROUTES.home} className="hidden md:block">
@@ -178,7 +179,7 @@ export const Bottombar = ({
           alt="Moon Portal Logo"
           width={100}
           height={100}
-          className="mx-auto my-4 h-12 w-12 rounded max-md:hidden"
+          className="mx-auto my-4 size-12 rounded max-md:hidden"
         />
       </Link>
       {options.map((option) => {
@@ -189,8 +190,9 @@ export const Bottombar = ({
           <div
             onClick={() => handleTabClick(option)}
             key={option.path}
-            className={` ${isActive ? 'bg-white text-black' : 'bg-black text-white'
-              } relative flex w-1/3 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-2xl px-2 py-1 pt-2 text-xl transition-all duration-300 ${option.path !== path && 'hover:bg-neutral-700'} md:w-full`}
+            className={` ${
+              isActive ? 'bg-white text-black' : 'bg-black text-white'
+            } relative flex w-1/3 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-2xl px-2 py-1 pt-2 text-xl transition-all duration-300 ${option.path !== path && 'hover:bg-neutral-700'} md:w-full`}
           >
             {option.path !== path && (
               <Ripples
@@ -199,7 +201,7 @@ export const Bottombar = ({
                 onPointerEnterCapture={() => handleTabClick(option)}
                 onPointerLeaveCapture={() => handleTabClick(option)}
                 color="white"
-                className="!absolute top-0 z-50 h-full w-full"
+                className="!absolute top-0 z-50 size-full"
               ></Ripples>
             )}
 
@@ -212,8 +214,9 @@ export const Bottombar = ({
               invisible={!unreadNotificationsCount}
             >
               <span
-                className={` ${isActive ? 'text-black' : 'text-white'
-                  } material-icons-outlined text-md font-thin`}
+                className={` ${
+                  isActive ? 'text-black' : 'text-white'
+                } material-icons-outlined text-md font-thin`}
               >
                 {option.icon}
               </span>
