@@ -1,8 +1,10 @@
 export const dynamic = 'force-dynamic'; // static by default, unless reading the request
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/prisma/prisma';
+import type { Task } from '@db/client';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
+import { db } from '@/lib/mongodb/db-client';
 import { filterTasks } from '@/utils/clickup/helper';
-import { Task } from '@prisma/client';
 export const revalidate = 0;
 
 export async function GET(request: NextRequest) {
@@ -25,15 +27,18 @@ export async function GET(request: NextRequest) {
 
     const data = await response.json();
     const filteredData: Task[] = filterTasks(data.tasks);
-    await prisma.$transaction(async (prisma) => {
-      await prisma.task.deleteMany();
+    await db.$transaction(async (_tx: any) => {
+      await db.task.deleteMany();
 
-      await prisma.task.createMany({
+      await db.task.createMany({
         data: filteredData,
       });
     });
 
-    return NextResponse.json({status: "success", message: `Synced ${filteredData.length} Tasks`}, { status: 200 });
+    return NextResponse.json(
+      { status: 'success', message: `Synced ${filteredData.length} Tasks` },
+      { status: 200 },
+    );
   } catch (error) {
     return NextResponse.json({ error: error }, { status: 500 });
   }
