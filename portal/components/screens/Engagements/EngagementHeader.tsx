@@ -1,19 +1,21 @@
-import ToolTip from '@/components/elements/ToolTip';
-import { Engagement, User, WorkLogs } from '@prisma/client';
+import type { Engagement, User, WorkLogs } from '@db/client';
 import React from 'react';
 import generatePDF, { Margin } from 'react-to-pdf';
+
+import ToolTip from '@/components/elements/ToolTip';
+
 import { EngagementTeam } from './EngagementTeam';
 
 const EngagementHeader = ({
   activeEngagement,
   workLogs,
   pdfTargetRef,
-  team
+  team,
 }: {
   activeEngagement: Engagement | null;
   workLogs: WorkLogs[];
   pdfTargetRef: React.RefObject<HTMLDivElement>;
-  team: User[]
+  team: User[];
 }) => {
   return (
     <div className="sticky top-0 z-10 flex items-center justify-start gap-4 bg-white p-8 py-4 shadow-md max-sm:px-2 max-sm:py-4">
