@@ -1,31 +1,31 @@
-import React from "react";
+import React from 'react';
 
 const TableLoader = () => {
   return (
     <div
       role="status"
-      className="w-full  p-4 space-y-8 border border-gray-200 divide-y divide-gray-200 rounded shadow animate-pulse  md:p-6 "
+      className="w-full animate-pulse space-y-8 divide-y divide-gray-200 rounded border border-gray-200 p-4 shadow md:p-6"
     >
       <div className="flex items-center justify-between">
         <div>
-          <div className="h-2.5 bg-gray-300 rounded-full  w-24 mb-2.5"></div>
-          <div className="w-32 h-2 bg-gray-200 rounded-full "></div>
+          <div className="mb-2.5 h-2.5 w-24 rounded-full bg-gray-300"></div>
+          <div className="h-2 w-32 rounded-full bg-gray-200"></div>
         </div>
-        <div className="h-2.5 bg-gray-300 rounded-full  w-12"></div>
+        <div className="h-2.5 w-12 rounded-full bg-gray-300"></div>
       </div>
       <div className="flex items-center justify-between pt-4">
         <div>
-          <div className="h-2.5 bg-gray-300 rounded-full  w-24 mb-2.5"></div>
-          <div className="w-32 h-2 bg-gray-200 rounded-full "></div>
+          <div className="mb-2.5 h-2.5 w-24 rounded-full bg-gray-300"></div>
+          <div className="h-2 w-32 rounded-full bg-gray-200"></div>
         </div>
-        <div className="h-2.5 bg-gray-300 rounded-full  w-12"></div>
+        <div className="h-2.5 w-12 rounded-full bg-gray-300"></div>
       </div>
       <div className="flex items-center justify-between pt-4">
         <div>
-          <div className="h-2.5 bg-gray-300 rounded-full  w-24 mb-2.5"></div>
-          <div className="w-32 h-2 bg-gray-200 rounded-full "></div>
+          <div className="mb-2.5 h-2.5 w-24 rounded-full bg-gray-300"></div>
+          <div className="h-2 w-32 rounded-full bg-gray-200"></div>
         </div>
-        <div className="h-2.5 bg-gray-300 rounded-full  w-12"></div>
+        <div className="h-2.5 w-12 rounded-full bg-gray-300"></div>
       </div>
       <span className="sr-only">Loading...</span>
     </div>
