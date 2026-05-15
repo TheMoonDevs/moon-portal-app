@@ -1,5 +1,5 @@
-import React from 'react';
 import { Tooltip } from '@mui/material';
+import React from 'react';
 
 interface MetricCardProps {
   title: string;
@@ -20,7 +20,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
 }) => (
   <Tooltip title={tooltip || ''} arrow>
     <div
-      className={`flex w-full flex-col justify-between rounded-lg bg-gradient-to-br from-white to-gray-50 p-5 shadow-md ${isClickAble && 'transform cursor-pointer transition-all duration-300 hover:scale-105 hover:border-l-4 hover:border-blue-500 hover:from-blue-50'}`}
+      className={`flex w-full flex-col justify-between rounded-lg bg-gradient-to-br from-white to-gray-50 p-5 shadow-md ${isClickAble && 'cursor-pointer transition-all duration-300 hover:scale-105 hover:border-l-4 hover:border-blue-500 hover:from-blue-50'}`}
       onClick={onClick}
     >
       <div className="mb-3 flex items-start justify-between gap-2">
@@ -55,11 +55,11 @@ export const SquareCard = ({
   onClick?: () => void;
 }) => (
   <div
-  className="flex flex-col rounded-lg border border-gray-200 bg-white p-2 shadow-md transform cursor-pointer transition-all duration-300 hover:scale-105 hover:border-l-4 hover:border-blue-500 hover:bg-gradient-to-br hover:from-blue-50"
+    className="flex cursor-pointer flex-col rounded-lg border border-gray-200 bg-white p-2 shadow-md transition-all duration-300 hover:scale-105 hover:border-l-4 hover:border-blue-500 hover:bg-gradient-to-br hover:from-blue-50"
     onClick={onClick}
   >
     <div className="self-end">{icon}</div>
     <div className="mt-2 text-2xl font-bold">{content}</div>
-    <div className="mt-1 text-xs text-gray-600 max-w-[80%]">{title}</div>
+    <div className="mt-1 max-w-[80%] text-xs text-gray-600">{title}</div>
   </div>
 );
