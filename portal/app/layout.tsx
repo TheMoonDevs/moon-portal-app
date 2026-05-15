@@ -1,26 +1,24 @@
 /* eslint-disable @next/next/no-page-custom-font */
 /* eslint-disable @next/next/google-font-display */
-import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
 import '@mantine/core/styles.css';
 import './globals.css';
 import '@mdxeditor/editor/style.css';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
-import { MUIThemeRegistry } from '@/styles/provider';
-import { ReduxProvider } from '@/utils/redux/provider';
-import { ToastsContainer } from '@/components/elements/Toast';
-import { SessionProvider, useSession } from 'next-auth/react';
-import type { Session } from 'next-auth';
-import NextAuthProvider from '@/utils/services/NextAuthProvider';
-import { usePathname, useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-import { APP_ROUTES } from '@/utils/constants/appInfo';
-import { AppLayout } from '@/components/global/AppLayout';
+
 import { MantineProvider } from '@mantine/core';
-import { UpdatePWA } from '@/components/global/UpdatePWA';
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import type { Session } from 'next-auth';
+
+import { ToastsContainer } from '@/components/elements/Toast';
+import { AppLayout } from '@/components/global/AppLayout';
 import PushServiceRegistration from '@/components/global/PushServiceRegistration';
 import RedirectWrapperProvider from '@/components/global/RedirectWrapperProvider';
+import { UpdatePWA } from '@/components/global/UpdatePWA';
+import { MUIThemeRegistry } from '@/styles/provider';
+import { ReduxProvider } from '@/utils/redux/provider';
+import NextAuthProvider from '@/utils/services/NextAuthProvider';
 
 const inter = Inter({ subsets: ['latin'] });
 
