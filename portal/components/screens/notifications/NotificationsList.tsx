@@ -1,11 +1,12 @@
 'use client';
-import { Notification } from '@prisma/client';
-import React, { useState } from 'react';
+import type { Notification } from '@db/client';
 import formatDistanceToNow from 'date-fns/formatDistanceToNow';
 import Link from 'next/link';
+import React, { useState } from 'react';
+
 import ToolTip from '@/components/elements/ToolTip';
-import { useUser } from '@/utils/hooks/useUser';
 import { useNotifications } from '@/utils/hooks/useNotifications';
+import { useUser } from '@/utils/hooks/useUser';
 
 export interface INotification extends Omit<Notification, 'notificationData'> {
   notificationData: INotificationData;
