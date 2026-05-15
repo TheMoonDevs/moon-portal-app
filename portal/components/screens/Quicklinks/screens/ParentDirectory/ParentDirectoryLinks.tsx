@@ -1,13 +1,14 @@
 'use client';
 
-import LinkList from "../../LinkList/LinkList";
-import { useAppSelector } from "@/utils/redux/store";
-import { ViewButtonGroup } from "../../LinkList/ViewButtonGroup";
-import QuicklinksTabs from "../../elements/Tabs";
-import { useQuickLinkDirectory } from "../../hooks/useQuickLinkDirectory";
-import { useQuickLinkDirs } from "../../hooks/useQuickLinksDirs";
-import { Link } from "@prisma/client";
+import type { Link } from '@db/client';
 
+import { useAppSelector } from '@/utils/redux/store';
+
+import QuicklinksTabs from '../../elements/Tabs';
+import { useQuickLinkDirectory } from '../../hooks/useQuickLinkDirectory';
+import { useQuickLinkDirs } from '../../hooks/useQuickLinksDirs';
+import LinkList from '../../LinkList/LinkList';
+import { ViewButtonGroup } from '../../LinkList/ViewButtonGroup';
 
 export const ParentDirectoryLinks = ({ loading }: { loading: boolean }) => {
   const { allQuicklinks, topUsedLinksList } = useAppSelector(
@@ -18,11 +19,11 @@ export const ParentDirectoryLinks = ({ loading }: { loading: boolean }) => {
 
   const filterLinks = (
     searchQuery: string | undefined,
-    links: Link[]
+    links: Link[],
   ): Link[] => {
     if (!searchQuery) return allQuicklinks;
     return links.filter((link) =>
-      link.title.toLowerCase().includes(searchQuery)
+      link.title.toLowerCase().includes(searchQuery),
     );
   };
 
