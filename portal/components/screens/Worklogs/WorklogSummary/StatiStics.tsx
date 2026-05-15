@@ -1,6 +1,7 @@
 'use client';
-import { WorkLogs } from '@prisma/client';
+import type { WorkLogs } from '@db/client';
 import React from 'react';
+
 import {
   calculatePercentageChange,
   getWeekData,

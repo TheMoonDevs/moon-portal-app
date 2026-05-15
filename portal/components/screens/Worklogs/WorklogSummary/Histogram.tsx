@@ -1,11 +1,16 @@
 'use client';
-import { WorkLogs } from '@prisma/client';
-import React from 'react';
+import type { WorkLogs } from '@db/client';
 import { ResponsiveBar } from '@nivo/bar';
 import dayjs from 'dayjs';
+import React from 'react';
 
-const Histogram = ({ worklogSummary, gridVisible }: { worklogSummary: WorkLogs[], gridVisible: boolean }) => {
-
+const Histogram = ({
+  worklogSummary,
+  gridVisible,
+}: {
+  worklogSummary: WorkLogs[];
+  gridVisible: boolean;
+}) => {
   // Function to prepare the data for the histogram
   const prepareHistogramData = (worklogs: WorkLogs[]) => {
     const summaryMap: Record<

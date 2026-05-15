@@ -1,7 +1,8 @@
 'use client';
+import type { WorkLogs } from '@db/client';
 import { ResponsiveLine } from '@nivo/line';
 import dayjs from 'dayjs';
-import { WorkLogs } from '@prisma/client';
+
 import { ArrayHelper } from '@/utils/helpers/array';
 
 export const getStatsOfContent = (content: string) => {
@@ -19,7 +20,7 @@ const Pattern = ({
 }) => {
   const sortedWorklogSummary = ArrayHelper.forwardSortByDate(
     worklogSummary,
-    'date'
+    'date',
   );
 
   const formattedWorklogData = sortedWorklogSummary.map((log) => {
@@ -31,7 +32,7 @@ const Pattern = ({
       const { checks, points } = getStatsOfContent(
         (typeof work === 'object' && work !== null && 'content' in work
           ? work.content
-          : '') as string
+          : '') as string,
       );
       totalTasks += points;
       completedTasks += checks;
@@ -72,8 +73,8 @@ const Pattern = ({
         stacked: true,
         reverse: false,
       }}
-      yFormat=' >-.2f'
-      curve='natural'
+      yFormat=" >-.2f"
+      curve="natural"
       axisTop={null}
       axisRight={null}
       axisBottom={{
@@ -100,7 +101,7 @@ const Pattern = ({
       pointColor={{ theme: 'background' }}
       pointBorderWidth={2}
       pointBorderColor={{ from: 'serieColor' }}
-      pointLabel='data.yFormatted'
+      pointLabel="data.yFormatted"
       pointLabelYOffset={-12}
       enableTouchCrosshair={true}
       useMesh={true}
