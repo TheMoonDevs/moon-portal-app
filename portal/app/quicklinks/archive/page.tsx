@@ -1,4 +1,4 @@
-import ArchiveDirectory from "@/components/screens/Quicklinks/screens/ArchivedDirectory/ArchiveDirectory";
+import ArchiveDirectory from '@/components/screens/Quicklinks/screens/ArchivedDirectory/ArchiveDirectory';
 
 const QuickLinkArchive = () => {
   return <ArchiveDirectory />;
