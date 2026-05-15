@@ -1,4 +1,4 @@
-import UserRecentlyUsedDirectories from "@/components/screens/Quicklinks/screens/User/UserRecentlyUsed/UserRecentlyUsedDirectories";
+import UserRecentlyUsedDirectories from '@/components/screens/Quicklinks/screens/User/UserRecentlyUsed/UserRecentlyUsedDirectories';
 
 const UserRecentlyUsedFolders = () => {
   return (
