@@ -1,15 +1,17 @@
-import { prisma } from "@/prisma/prisma";
-import { NextRequest, NextResponse } from "next/server";
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
+import { db } from '@/lib/mongodb/db-client';
 
 export async function DELETE(request: NextRequest) {
-  const id = request.nextUrl.searchParams.get("id");
+  const id = request.nextUrl.searchParams.get('id');
   try {
     if (!id) {
-      return new NextResponse(JSON.stringify({ error: "Missing id" }), {
+      return new NextResponse(JSON.stringify({ error: 'Missing id' }), {
         status: 400,
       });
     }
-    const deleted = await prisma.shortLink.delete({
+    const deleted = await db.shortLink.delete({
       where: {
         id,
       },

@@ -1,21 +1,23 @@
-import { prisma } from "@/prisma/prisma";
-import { NextRequest, NextResponse } from "next/server";
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
+import { db } from '@/lib/mongodb/db-client';
 
 export async function POST(req: NextRequest) {
   // Check if the slug already exists
   const { url, slug, params } = await req.json();
 
-  if (!slug.match("^[-a-zA-Z0-9]+$")) {
+  if (!slug.match('^[-a-zA-Z0-9]+$')) {
     return NextResponse.json(
-      "Invalid slug! Only alphanumeric characters and hyphens are allowed. No spaces.",
+      'Invalid slug! Only alphanumeric characters and hyphens are allowed. No spaces.',
       {
         status: 400,
-      }
+      },
     );
   }
 
   try {
-    const slugCount = await prisma.shortLink.count({
+    const slugCount = await db.shortLink.count({
       where: {
         slug: {
           equals: slug,
@@ -23,7 +25,7 @@ export async function POST(req: NextRequest) {
       },
     });
     if (slugCount > 0) {
-      return NextResponse.json("Slug already exists!", {
+      return NextResponse.json('Slug already exists!', {
         status: 409,
       });
     }
@@ -37,7 +39,7 @@ export async function POST(req: NextRequest) {
   //if not then store the slug and url in db
 
   try {
-    const shortLink = await prisma.shortLink.create({
+    const shortLink = await db.shortLink.create({
       data: {
         slug,
         redirectTo: url,
