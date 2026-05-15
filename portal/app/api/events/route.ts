@@ -1,6 +1,8 @@
-import { prisma } from '@/prisma/prisma';
-import { NextRequest, NextResponse } from 'next/server';
 import { startOfToday } from 'date-fns';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
+import { db } from '@/lib/mongodb/db-client';
 
 const formatDate = (date: any) => {
   const day = String(date.getDate()).padStart(2, '0');
@@ -31,7 +33,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const newEvent = await prisma.event.create({
+    const newEvent = await db.event.create({
       data: {
         name: title,
         subTitle,
@@ -65,7 +67,7 @@ export async function GET(req: NextRequest) {
 
     const todayFormatted = formatDate(startOfToday());
 
-    const events = await prisma.event.findMany({
+    const events = await db.event.findMany({
       where: {
         month: month ? parseInt(month) : undefined,
         year: year ? parseInt(year) : undefined,
@@ -129,7 +131,7 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    const updatedEvent = await prisma.event.update({
+    const updatedEvent = await db.event.update({
       where: { id },
       data: {
         name: title,
@@ -159,11 +161,11 @@ export async function DELETE(request: Request) {
   try {
     const { id, ...rest } = await request.json();
 
-    const deletedEvent = await prisma.event.delete({
+    const deletedEvent = await db.event.delete({
       where: { id },
     });
 
-    let json_response = {
+    const json_response = {
       status: 'success',
       data: {
         deletedEvent,
