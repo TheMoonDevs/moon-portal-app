@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { User } from '@prisma/client';
+import { User } from '@db/client';
 
 interface CoreTeamState {
   members: User[];
