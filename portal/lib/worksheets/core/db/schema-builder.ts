@@ -1,8 +1,10 @@
-import { z } from "zod";
-import type { WorksheetConfig } from "../types";
-import { getWorksheetCollection } from "./mongo";
-import { getWorksheetConfig } from "@/lib/worksheets";
-import type { WorksheetFieldMeta } from "./zod-meta";
+import type { z } from 'zod';
+
+import { getWorksheetConfig } from '@/lib/worksheets';
+
+import type { WorksheetConfig } from '../types';
+import { getWorksheetCollection } from './mongo';
+import type { WorksheetFieldMeta } from './zod-meta';
 
 export interface BuiltRowSchema {
   schema: z.ZodObject<z.ZodRawShape>;
@@ -33,17 +35,17 @@ export async function ensureIndexes(worksheetId: string): Promise<void> {
   const config = getWorksheetConfig(worksheetId);
   if (!config) return;
 
-  const collection = getWorksheetCollection(worksheetId);
+  const collection = await getWorksheetCollection(worksheetId);
 
   await collection
-    .createIndex({ createdAt: -1 }, { name: "idx_createdAt" })
+    .createIndex({ createdAt: -1 }, { name: 'idx_createdAt' })
     .catch(() => {});
 
   const shape = (config.rowSchema as any).shape as Record<string, z.ZodTypeAny>;
   for (const [field, fieldSchema] of Object.entries(shape)) {
-    const meta = (fieldSchema as unknown as { meta?: () => unknown }).meta?.() as
-      | WorksheetFieldMeta
-      | undefined;
+    const meta = (
+      fieldSchema as unknown as { meta?: () => unknown }
+    ).meta?.() as WorksheetFieldMeta | undefined;
     const dbMeta = meta?.db;
     if (!dbMeta?.index && !dbMeta?.unique) continue;
 

@@ -1,12 +1,12 @@
-import type { ColumnType, GoogleFormQuestionType } from "../types";
+import type { ColumnType, GoogleFormQuestionType } from '../types';
 
 export type WorksheetUiMeta = {
   type?: ColumnType;
   validationHint?: string;
   width?: number;
-  pinned?: "left" | "right";
+  pinned?: 'left' | 'right';
   hidden?: boolean;
-  align?: "left" | "center" | "right";
+  align?: 'left' | 'center' | 'right';
 };
 
 export type WorksheetComputedMeta = {
@@ -29,7 +29,10 @@ export type WorksheetOptionsMeta =
       queryParam?: string;
       fnKey?: string;
     }
-  | { staticOptions: { label: string; value: string | number }[]; fnKey?: string };
+  | {
+      staticOptions: { label: string; value: string | number }[];
+      fnKey?: string;
+    };
 
 export type WorksheetGoogleFormMeta = {
   questionTitle: string;
@@ -49,9 +52,9 @@ export type WorksheetUiColumnMeta = {
   label?: string;
   type?: ColumnType;
   width?: number;
-  pinned?: "left" | "right";
+  pinned?: 'left' | 'right';
   hidden?: boolean;
-  align?: "left" | "center" | "right";
+  align?: 'left' | 'center' | 'right';
   order?: number;
   before?: string;
   after?: string;
