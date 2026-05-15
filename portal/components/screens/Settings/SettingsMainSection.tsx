@@ -1,9 +1,8 @@
 'use client';
-import DrawerComponent from '@/components/elements/DrawerComponent';
+import { Drawer, useMediaQuery } from '@mui/material';
+
 import PushSubscriptionToggleButton from '@/components/global/PushSubscriptionToggleButton';
 import media from '@/styles/media';
-import { Drawer, useMediaQuery } from '@mui/material';
-import { useState } from 'react';
 
 const NotificationSection = ({ title }: { title: string }) => {
   return (
