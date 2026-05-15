@@ -1,13 +1,15 @@
 'use client';
+import { CircularProgress } from '@mui/material';
+import { useEffect, useState } from 'react';
+import { toast, Toaster } from 'sonner';
+
 import { useUser } from '@/utils/hooks/useUser';
 import {
   getCurrentPushSubscription,
   registerPushNotification,
   unregisterPushNotification,
 } from '@/utils/services/notifications/pushService';
-import { CircularProgress } from '@mui/material';
-import { useEffect, useState } from 'react';
-import { toast, Toaster } from 'sonner';
+
 import IOSSwitch from '../elements/SwitchComponent';
 
 const PushSubscriptionToggleButton = ({ type }: { type?: 'switch' }) => {
