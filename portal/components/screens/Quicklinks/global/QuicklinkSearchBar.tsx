@@ -1,7 +1,9 @@
+import type { Link as Quicklink } from '@db/client';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Link as Quicklink } from '@prisma/client';
-import { QuicklinksSdk } from '@/utils/services/QuicklinksSdk';
+
 import { debounce } from '@/utils/helpers/functions';
+import { QuicklinksSdk } from '@/utils/services/QuicklinksSdk';
+
 import LinkList from '../LinkList/LinkList';
 
 const QuicklinkSearchBar: React.FC = () => {
@@ -52,7 +54,7 @@ const QuicklinkSearchBar: React.FC = () => {
         <div className="grid h-full w-12 place-items-center text-gray-300">
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6"
+            className="size-6"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -67,7 +69,7 @@ const QuicklinkSearchBar: React.FC = () => {
         </div>
 
         <input
-          className="peer h-full w-full bg-white p-[0.65rem] pr-2 text-sm text-gray-700 outline-none"
+          className="peer size-full bg-white p-[0.65rem] pr-2 text-sm text-gray-700 outline-none"
           type="text"
           id="search"
           value={query}
@@ -82,26 +84,24 @@ const QuicklinkSearchBar: React.FC = () => {
       </div>
 
       {showResults && (
-        <div className="absolute top-full z-10 mt-2 h-72 w-full overflow-y-scroll rounded-b-lg bg-white px-4 py-4 pl-2 pt-2 shadow-lg">
-          {loading ? (
-            Array(5)
-            .fill(null)
-            .map((_, index) => (
-              <div
-                key={index}
-                className="h-10 w-full animate-pulse rounded-md bg-gray-200 mb-2 "
-              ></div>
-            ))
-          ) : (
-            query && (
-              <LinkList
-                inSearchBar
-                allQuicklinks={results}
-                isLoading={loading}
-                withView="line"
-              />
-            )
-          )}
+        <div className="absolute top-full z-10 mt-2 h-72 w-full overflow-y-scroll rounded-b-lg bg-white p-4 pl-2 pt-2 shadow-lg">
+          {loading
+            ? Array(5)
+                .fill(null)
+                .map((_, index) => (
+                  <div
+                    key={index}
+                    className="mb-2 h-10 w-full animate-pulse rounded-md bg-gray-200"
+                  ></div>
+                ))
+            : query && (
+                <LinkList
+                  inSearchBar
+                  allQuicklinks={results}
+                  isLoading={loading}
+                  withView="line"
+                />
+              )}
         </div>
       )}
     </div>

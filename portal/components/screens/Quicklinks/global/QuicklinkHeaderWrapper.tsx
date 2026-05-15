@@ -1,7 +1,7 @@
-import { Chip } from "@mui/material";
-import { BreadCrumbs } from "../elements/BreadCrumbs";
-import { ROOTTYPE } from "@prisma/client";
-import { ViewButtonGroup } from "../LinkList/ViewButtonGroup";
+import type { ROOTTYPE } from '@db/client';
+
+import { BreadCrumbs } from '../elements/BreadCrumbs';
+import { ViewButtonGroup } from '../LinkList/ViewButtonGroup';
 
 export default function QuicklinkHeaderWrapper({
   children,
@@ -18,21 +18,21 @@ export default function QuicklinkHeaderWrapper({
     rootType: ROOTTYPE;
   };
   icon?: string;
-  type?: "folder" | "link";
+  type?: 'folder' | 'link';
 }) {
   return (
-    <header className="flex justify-between items-center">
+    <header className="flex items-center justify-between">
       {custom && children}
       {!custom &&
         (!withBreadcrumb ? (
-          <div className="flex justify-between items-start w-full max-sm:items-center">
-            <h1 className="text-3xl font-bold flex items-start gap-4 max-sm:text-xl max-sm:items-center">
-              {icon && icon !== "" ? (
-                <span className="material-symbols-outlined border border-neutral-200 rounded-full p-2">
+          <div className="flex w-full items-start justify-between max-sm:items-center">
+            <h1 className="flex items-start gap-4 text-3xl font-bold max-sm:items-center max-sm:text-xl">
+              {icon && icon !== '' ? (
+                <span className="material-symbols-outlined rounded-full border border-neutral-200 p-2">
                   {icon}
                 </span>
               ) : (
-                <span className="material-symbols-outlined border border-neutral-200 rounded-full p-2 uppercase">
+                <span className="material-symbols-outlined rounded-full border border-neutral-200 p-2 uppercase">
                   folder
                 </span>
               )}
@@ -40,17 +40,17 @@ export default function QuicklinkHeaderWrapper({
                 <span>{title.toUpperCase()}</span>
               </div>
             </h1>
-            {type === "link" && <ViewButtonGroup />}
+            {type === 'link' && <ViewButtonGroup />}
           </div>
         ) : (
-          <div className="flex flex-col justify-start items-start">
-            <h1 className="text-3xl font-bold flex items-start gap-4 max-sm:text-2xl">
-              {icon && icon !== "" ? (
-                <span className="material-symbols-outlined border border-neutral-200 rounded-full p-2">
+          <div className="flex flex-col items-start justify-start">
+            <h1 className="flex items-start gap-4 text-3xl font-bold max-sm:text-2xl">
+              {icon && icon !== '' ? (
+                <span className="material-symbols-outlined rounded-full border border-neutral-200 p-2">
                   {icon}
                 </span>
               ) : (
-                <span className="material-symbols-outlined border border-neutral-200 rounded-full p-2">
+                <span className="material-symbols-outlined rounded-full border border-neutral-200 p-2">
                   folder
                 </span>
               )}

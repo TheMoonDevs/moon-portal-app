@@ -1,26 +1,26 @@
 'use client';
-import { useAppSelector } from '@/utils/redux/store';
-import { QuicklinksToast } from '../elements/QuicklinksToast';
-
-import { useStore } from 'react-redux';
+import type { DirectoryList } from '@db/client';
+import { useMediaQuery } from '@mui/material';
+import clsx from 'clsx';
 import { useRef } from 'react';
-import { DirectoryList } from '@prisma/client';
-import { CreateLinkPopup } from '../CreateLinkPopup';
-import CreateLinkOnPaste from '../CreateLinkOnPaste';
-import QuicklinkSidebar from './QuicklinksSidebar/QuicklinkSidebar';
-import QuicklinksGlobalHeader from './QuicklinksGlobalHeader';
-import { PopoverFolderEdit } from '../elements/Popovers';
-import { MoveModal } from '../elements/modals/Movemodal';
-import RenameModal from '../elements/modals/RenameModal';
-import CreateDirectoryModal from '../elements/modals/CreateModal';
+import { useStore } from 'react-redux';
+
+import media from '@/styles/media';
 import {
   setDirectoryList,
   setParentDirsList,
   setRootDirList,
 } from '@/utils/redux/quicklinks/slices/quicklinks.directory.slice';
-import clsx from 'clsx';
-import { useMediaQuery } from '@mui/material';
-import media from '@/styles/media';
+import { useAppSelector } from '@/utils/redux/store';
+
+import CreateLinkOnPaste from '../CreateLinkOnPaste';
+import { CreateLinkPopup } from '../CreateLinkPopup';
+import CreateDirectoryModal from '../elements/modals/CreateModal';
+import { MoveModal } from '../elements/modals/Movemodal';
+import RenameModal from '../elements/modals/RenameModal';
+import { PopoverFolderEdit } from '../elements/Popovers';
+import QuicklinksGlobalHeader from './QuicklinksGlobalHeader';
+import QuicklinkSidebar from './QuicklinksSidebar/QuicklinkSidebar';
 
 // BAD PATTERN OF SLUG IS USED, WE CANT CHANGE IT BECAUSE IT IS USED IN THE MULTIPLE COMPONENTS
 const ROOT_DIRECTORIES: Omit<DirectoryList, 'timestamp'>[] = [

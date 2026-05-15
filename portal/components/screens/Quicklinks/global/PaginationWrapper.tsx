@@ -1,5 +1,6 @@
-import { Link } from "@prisma/client";
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import type { Link } from '@db/client';
+import type { Dispatch, SetStateAction } from 'react';
+import { useEffect, useState } from 'react';
 
 interface IPaginationWrapperProps {
   items: Link[];
@@ -14,7 +15,7 @@ interface IPaginationWrapperProps {
     loading: boolean,
     hasMore: boolean,
     displayCount: number,
-    showLess: () => void
+    showLess: () => void,
   ) => JSX.Element;
 }
 const PaginationWrapper = ({
@@ -73,7 +74,7 @@ const PaginationWrapper = ({
         loading,
         hasMore,
         displayCount,
-        showLess
+        showLess,
       )}
     </div>
   );

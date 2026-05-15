@@ -1,33 +1,32 @@
 'use client';
-import { APP_ROUTES, QUICKLINK_ROUTES } from '@/utils/constants/appInfo';
-import Link from 'next/link';
-import { useQuickLinkDirectory } from '../../hooks/useQuickLinkDirectory';
-import { useState, FC, ReactNode, MouseEvent, useEffect } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
-import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
+import type { DirectoryList } from '@db/client';
+import { ROOTTYPE } from '@db/client';
 import {
-  Divider,
-  Tooltip,
   Box,
+  Divider,
   Drawer,
-  Fab,
-  useMediaQuery,
   IconButton,
+  Tooltip,
+  useMediaQuery,
 } from '@mui/material';
+import clsx from 'clsx';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import type { FC, MouseEvent, ReactNode } from 'react';
+import { useState } from 'react';
+
+import media from '@/styles/media';
+import { APP_ROUTES, QUICKLINK_ROUTES } from '@/utils/constants/appInfo';
 import { useUser } from '@/utils/hooks/useUser';
+import { handleDeleteDirectory } from '@/utils/redux/quicklinks/quicklinks.thunks';
 import {
   setHamburgerOpen,
   setModal,
   setToggleSidebar,
 } from '@/utils/redux/quicklinks/slices/quicklinks.ui.slice';
-import { DirectoryList, ROOTTYPE } from '@prisma/client';
-import {
-  deleteDirectory,
-  updateDirectory,
-} from '@/utils/redux/quicklinks/slices/quicklinks.directory.slice';
-import { handleDeleteDirectory } from '@/utils/redux/quicklinks/quicklinks.thunks';
-import clsx from 'clsx';
-import media from '@/styles/media';
+import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
+
+import { useQuickLinkDirectory } from '../../hooks/useQuickLinkDirectory';
 
 // Types
 interface NavItem {
@@ -193,7 +192,7 @@ const QuicklinkSidebar: FC = () => {
           >
             {!isCollapsed && (
               <>
-                {nav.title === "Departments" && (
+                {nav.title === 'Departments' && (
                   <SidebarSubNav
                     dirs={departmentDir}
                     user={user}
@@ -205,7 +204,7 @@ const QuicklinkSidebar: FC = () => {
                     isTablet={isTablet}
                   />
                 )}
-                {nav.title === "Team Resources" && (
+                {nav.title === 'Team Resources' && (
                   <SidebarSubNav
                     dirs={commonResourcesDir}
                     user={user}
@@ -252,12 +251,12 @@ const QuicklinkSidebar: FC = () => {
 
         {/* Bottom Navigation */}
         <nav
-          className={`${!isTablet && 'sticky bottom-0'} max-sm:mt-0 mt-6 w-full border-t bg-white py-2`}
+          className={`${!isTablet && 'sticky bottom-0'} mt-6 w-full border-t bg-white py-2 max-sm:mt-0`}
         >
           <Link href={QUICKLINK_ROUTES.archive}>
             <div
               className={clsx(
-                'flex items-center gap-4 rounded-2xl px-3 py-2  hover:bg-neutral-100 text-sm',
+                'flex items-center gap-4 rounded-2xl px-3 py-2 text-sm hover:bg-neutral-100',
                 pathname?.includes(QUICKLINK_ROUTES.archive) &&
                   'bg-neutral-100',
                 isCollapsed && 'justify-center',
@@ -326,8 +325,7 @@ const QuicklinkSidebar: FC = () => {
               href={APP_ROUTES.home}
               className="mb-2 flex cursor-pointer items-center gap-4 rounded-3xl px-3 py-2"
             >
-              <span className="material-symbols-outlined">home</span>Go To
-              Home
+              <span className="material-symbols-outlined">home</span>Go To Home
             </Link>
             <Divider />
             {sidebarContent()}
@@ -363,13 +361,13 @@ const SidebarNavItem: FC<SidebarNavItemProps> = ({
   >
     <div
       className={clsx(
-        'flex items-center rounded-3xl px-3 py-2 hover:bg-neutral-100 text-sm',
+        'flex items-center rounded-3xl px-3 py-2 text-sm hover:bg-neutral-100',
         isActive && 'bg-neutral-100',
         isCollapsed ? 'w-11 justify-center' : 'w-full justify-between',
       )}
       onClick={onClick}
     >
-      <div className={clsx('flex gap-4 items-center', isCollapsed && 'gap-0')}>
+      <div className={clsx('flex items-center gap-4', isCollapsed && 'gap-0')}>
         <span className="material-symbols-outlined">{nav.icon}</span>
         {!isCollapsed && <span>{nav.title}</span>}
       </div>
@@ -524,7 +522,7 @@ const NavSection: FC<NavSectionProps> = ({
           >
             <li
               className={clsx(
-                'flex items-center gap-4 rounded-2xl px-3 py-2 hover:bg-neutral-100 !text-sm',
+                'flex items-center gap-4 rounded-2xl px-3 py-2 !text-sm hover:bg-neutral-100',
                 pathname?.includes(nav.route) && 'bg-neutral-100',
               )}
             >
