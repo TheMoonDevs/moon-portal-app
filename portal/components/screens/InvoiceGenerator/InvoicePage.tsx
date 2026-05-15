@@ -1,9 +1,12 @@
-"use client";
-import { ChangeEvent, useEffect, useRef, useState } from "react";
-import Invoice from "./Invoice";
-import InvoiceModal from "./InvoiceModal";
-import InvoiceHeader from "./InvoiceHeader";
-import { PortalSdk } from "@/utils/services/PortalSdk";
+'use client';
+import type { ChangeEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
+
+import { PortalSdk } from '@/utils/services/PortalSdk';
+
+import Invoice from './Invoice';
+import InvoiceHeader from './InvoiceHeader';
+import InvoiceModal from './InvoiceModal';
 
 export interface InvoiceData {
   invoiceId: string;
@@ -34,7 +37,7 @@ export interface InvoicePaymentData {
 const InvoicePage = () => {
   const [showInput, setShowInput] = useState<boolean>(false);
   const [dbPaymentInfo, setDBPaymentInfo] = useState<InvoicePaymentData | null>(
-    null
+    null,
   );
   const [showUpdateButton, setShowUpdateButton] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
@@ -44,17 +47,17 @@ const InvoicePage = () => {
   dueDate.setDate(dueDate.getDate() + 7);
 
   const [invoiceData, setInvoiceData] = useState<InvoiceData>({
-    invoiceId: "",
+    invoiceId: '',
     invoiceDate: today,
     dueDate: dueDate,
-    paymentMethod: "bank",
-    cryptoAddress: "",
-    payingTo: "Subhakar Tikkireddy",
-    companyName: "TheMoonDevs",
+    paymentMethod: 'bank',
+    cryptoAddress: '',
+    payingTo: 'Subhakar Tikkireddy',
+    companyName: 'TheMoonDevs',
     bankDetails: {
-      name: "",
-      account: "",
-      ifsc: "",
+      name: '',
+      account: '',
+      ifsc: '',
     },
   });
 
@@ -68,8 +71,8 @@ const InvoicePage = () => {
     const { name, value } = e.target;
     let updatedData: InvoiceData;
 
-    if (name.includes("bank")) {
-      const field = name.split("-")[1];
+    if (name.includes('bank')) {
+      const field = name.split('-')[1];
       updatedData = {
         ...invoiceData,
         bankDetails: { ...invoiceData.bankDetails, [field]: value },
@@ -101,20 +104,20 @@ const InvoicePage = () => {
     ).some((key) =>
       (
         Object.keys(
-          currentPaymentInfo[key]
+          currentPaymentInfo[key],
         ) as (keyof (typeof currentPaymentInfo)[typeof key])[]
       ).some(
         (subKey) =>
-          currentPaymentInfo[key][subKey] !== dbPaymentInfo[key][subKey]
-      )
+          currentPaymentInfo[key][subKey] !== dbPaymentInfo[key][subKey],
+      ),
     );
 
     setShowUpdateButton(isEdited);
   };
 
   const handleDateChange = (
-    fieldName: "invoiceDate" | "dueDate",
-    newValue: Date | null
+    fieldName: 'invoiceDate' | 'dueDate',
+    newValue: Date | null,
   ) => {
     setInvoiceData({
       ...invoiceData,
@@ -137,7 +140,7 @@ const InvoicePage = () => {
   const fetchInvoicePaymentData = async () => {
     setDataLoad(true);
     try {
-      const response = await PortalSdk.getData("/api/invoice", null);
+      const response = await PortalSdk.getData('/api/invoice', null);
       if (response && response) {
         setDBPaymentInfo(response.configData);
         setInvoiceData({
@@ -151,7 +154,7 @@ const InvoicePage = () => {
         });
       }
     } catch (error) {
-      console.error("Error fetching invoice payment data:", error);
+      console.error('Error fetching invoice payment data:', error);
     } finally {
       setDataLoad(false);
     }
@@ -175,8 +178,8 @@ const InvoicePage = () => {
     };
 
     try {
-      const response = await PortalSdk.putData("/api/invoice", data);
-      console.log("Update successful", response);
+      const response = await PortalSdk.putData('/api/invoice', data);
+      console.log('Update successful', response);
       if (response && response.configData) {
         setDBPaymentInfo(response.configData);
         setInvoiceData({
@@ -191,7 +194,7 @@ const InvoicePage = () => {
       }
       setShowUpdateButton(false);
     } catch (error) {
-      console.error("Error updating payment info", error);
+      console.error('Error updating payment info', error);
     } finally {
       setLoading(false);
     }
@@ -206,11 +209,11 @@ const InvoicePage = () => {
           showInput={showInput}
         />
       </header>
-      <main className="flex flex-col md:flex-row h-full overflow-hidden">
-        <div className="flex flex-col md:flex-row w-full h-full">
-          <div className="block md:hidden bg-[#F5F5EF] h-auto">
+      <main className="flex h-full flex-col overflow-hidden md:flex-row">
+        <div className="flex size-full flex-col md:flex-row">
+          <div className="block h-auto bg-[#F5F5EF] md:hidden">
             {showInput && (
-              <div className="overflow-y-auto h-full">
+              <div className="h-full overflow-y-auto">
                 <InvoiceModal
                   invoiceData={invoiceData}
                   handleInputChange={handleInputChange}
@@ -225,11 +228,11 @@ const InvoicePage = () => {
               </div>
             )}
           </div>
-          <section className="w-full md:w-1/2 p-4 border-dashed border mb-14 overflow-y-auto shadow-lg rounded-lg">
+          <section className="mb-14 w-full overflow-y-auto rounded-lg border border-dashed p-4 shadow-lg md:w-1/2">
             <Invoice pdfTargetRef={pdfTargetRef} invoiceData={invoiceData} />
           </section>
-          <section className="w-full md:w-1/2 p-4">
-            <div className="hidden md:block overflow-y-auto mb-10 rounded-lg h-full">
+          <section className="w-full p-4 md:w-1/2">
+            <div className="mb-10 hidden h-full overflow-y-auto rounded-lg md:block">
               <InvoiceModal
                 invoiceData={invoiceData}
                 handleInputChange={handleInputChange}

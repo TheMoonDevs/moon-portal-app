@@ -1,7 +1,8 @@
-import Image from "next/image";
-import { InvoiceData } from "./InvoicePage";
-import InvoiceTable from "./InvoiceTable";
-import EditableText from "./EditableText";
+import Image from 'next/image';
+
+import EditableText from './EditableText';
+import type { InvoiceData } from './InvoicePage';
+import InvoiceTable from './InvoiceTable';
 
 interface InvoiceProps {
   pdfTargetRef: React.MutableRefObject<HTMLElement | any>;
@@ -12,19 +13,19 @@ const Invoice: React.FC<InvoiceProps> = ({ pdfTargetRef, invoiceData }) => {
   function formatDate(dateString: any) {
     const date = new Date(dateString);
     const day = date.getDate(); // Get day of the month (1-31)
-    const month = date.toLocaleString("en-US", { month: "long" }); // Get full month name
+    const month = date.toLocaleString('en-US', { month: 'long' }); // Get full month name
     const year = date.getFullYear(); // Get full year
 
     // Determine the day suffix (st, nd, rd, th)
     let daySuffix;
     if (day === 1 || day === 21 || day === 31) {
-      daySuffix = "st";
+      daySuffix = 'st';
     } else if (day === 2 || day === 22) {
-      daySuffix = "nd";
+      daySuffix = 'nd';
     } else if (day === 3 || day === 23) {
-      daySuffix = "rd";
+      daySuffix = 'rd';
     } else {
-      daySuffix = "th";
+      daySuffix = 'th';
     }
 
     return `${day}${daySuffix} ${month} ${year}`;
@@ -32,23 +33,23 @@ const Invoice: React.FC<InvoiceProps> = ({ pdfTargetRef, invoiceData }) => {
 
   return (
     <section ref={pdfTargetRef} className="bg-[#F5F5Ef]">
-      <div className="p-8 shadow-md ">
-        <div className="flex justify-between items-center mb-8">
+      <div className="p-8 shadow-md">
+        <div className="mb-8 flex items-center justify-between">
           <div className="flex">
             <Image
               src="/icon-512x512.png"
               width={100}
               height={100}
               alt="logo"
-              className="aspect-square -ml-2 pointer-events-none"
+              className="pointer-events-none -ml-2 aspect-square"
             />
           </div>
-          <h1 className="text-4xl md:text-5xl font-normal font-serif">
+          <h1 className="font-serif text-4xl font-normal md:text-5xl">
             INVOICE
           </h1>
         </div>
 
-        <div className="flex justify-between mb-8">
+        <div className="mb-8 flex justify-between">
           <div>
             <h2 className="text-sm font-bold">BILLED TO:</h2>
             <p className="text-sm">
@@ -66,18 +67,18 @@ const Invoice: React.FC<InvoiceProps> = ({ pdfTargetRef, invoiceData }) => {
           <InvoiceTable />
         </div>
 
-        <p className="text-sm mb-4 mt-4 md:mt-0 text-neutral-500">
-          Please finish the payment by the due date:{" "}
-          {invoiceData.dueDate ? formatDate(invoiceData.dueDate) : ""}
+        <p className="my-4 text-sm text-neutral-500 md:mt-0">
+          Please finish the payment by the due date:{' '}
+          {invoiceData.dueDate ? formatDate(invoiceData.dueDate) : ''}
         </p>
-        <p className="text-3xl mb-8">Thank you!</p>
+        <p className="mb-8 text-3xl">Thank you!</p>
 
-        <div className="flex flex-col sm:flex-row mt-24">
+        <div className="mt-24 flex flex-col sm:flex-row">
           <div className="md:w-1/2 md:pr-8">
-            <h2 className="text-sm font-bold mb-2">PAYMENT INFORMATION</h2>
-            <p className="text-sm break-words">
+            <h2 className="mb-2 text-sm font-bold">PAYMENT INFORMATION</h2>
+            <p className="break-words text-sm">
               Crypto Wallet Address: <br />
-              <span className="whitespace-normal flex-wrap">
+              <span className="flex-wrap whitespace-normal">
                 {invoiceData.cryptoAddress}
               </span>
               <br />
@@ -88,8 +89,8 @@ const Invoice: React.FC<InvoiceProps> = ({ pdfTargetRef, invoiceData }) => {
               IFSC - {invoiceData.bankDetails.ifsc}
             </p>
           </div>
-          <div className="md:w-1/2 mt-8 md:mt-0 w-full sm:text-right flex justify-end gap-2  flex-col">
-            <p className="text-xl font-normal sm:text-[22px] md:text-[25px] font-serif">
+          <div className="mt-8 flex w-full flex-col justify-end gap-2 sm:text-right md:mt-0 md:w-1/2">
+            <p className="font-serif text-xl font-normal sm:text-[22px] md:text-[25px]">
               {invoiceData.payingTo}
             </p>
             <p className="sm:text-base">{invoiceData.companyName}</p>
