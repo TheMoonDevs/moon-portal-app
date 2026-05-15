@@ -1,26 +1,31 @@
-import type { WorksheetConfig } from "@/lib/worksheets/core/types";
-import type { WorksheetFieldMeta } from "@/lib/worksheets/core/db/zod-meta";
+import type { WorksheetFieldMeta } from '@/lib/worksheets/core/db/zod-meta';
 import {
   deriveColumns,
   deriveWorksheetConfigFromSchema,
-} from "@/lib/worksheets/core/schema-first";
+} from '@/lib/worksheets/core/schema-first';
+import type { WorksheetConfig } from '@/lib/worksheets/core/types';
 import {
   ACTION_FNS,
-  COMPUTE_FNS,
-  OPTIONS_FNS,
-  OPTIONS_TYPE_FNS,
   type ActionContext,
   type ActionFn,
   type ActionResult,
+  COMPUTE_FNS,
   type ComputeContext,
   type ComputeFn,
+  OPTIONS_FNS,
+  OPTIONS_TYPE_FNS,
   type OptionsContext,
   type OptionsFn,
-} from "@/lib/worksheets/functions";
-import { worksheets, type ActionKey, type ComputeKey, type OptionsFnKey } from "@/lib/worksheets/registry";
+} from '@/lib/worksheets/functions';
+import {
+  type ActionKey,
+  type ComputeKey,
+  type OptionsFnKey,
+  worksheets,
+} from '@/lib/worksheets/registry';
 
-const baseConfigs: WorksheetConfig[] = Object.values(worksheets).map((worksheet) =>
-  deriveWorksheetConfigFromSchema(worksheet.schema),
+const baseConfigs: WorksheetConfig[] = Object.values(worksheets).map(
+  (worksheet) => deriveWorksheetConfigFromSchema(worksheet.schema),
 );
 
 const configRegistry: Record<string, WorksheetConfig> = Object.fromEntries(
@@ -40,7 +45,9 @@ function withDerivedColumns(config: WorksheetConfig): WorksheetConfig {
   return derived;
 }
 
-export function getWorksheetConfig(idOrSlug: string): WorksheetConfig | undefined {
+export function getWorksheetConfig(
+  idOrSlug: string,
+): WorksheetConfig | undefined {
   const byId = configRegistry[idOrSlug];
   if (byId) return withDerivedColumns(byId);
   const found = Object.values(configRegistry).find((f) => f.slug === idOrSlug);
@@ -48,7 +55,9 @@ export function getWorksheetConfig(idOrSlug: string): WorksheetConfig | undefine
 }
 
 export function getAllWorksheetConfigs(): WorksheetConfig[] {
-  return Object.values(configRegistry).map((config) => withDerivedColumns(config));
+  return Object.values(configRegistry).map((config) =>
+    withDerivedColumns(config),
+  );
 }
 
 export type { ActionContext, ActionFn, ActionResult };
@@ -83,14 +92,16 @@ export function getOptionsFetcher(
   if (!column) return null;
 
   const zodSchema =
-    "zodSchema" in column ? (column as { zodSchema?: any }).zodSchema : undefined;
-  const meta = (zodSchema as unknown as { meta?: () => unknown } | undefined)?.meta?.() as
-    | WorksheetFieldMeta
-    | undefined;
+    'zodSchema' in column
+      ? (column as { zodSchema?: any }).zodSchema
+      : undefined;
+  const meta = (
+    zodSchema as unknown as { meta?: () => unknown } | undefined
+  )?.meta?.() as WorksheetFieldMeta | undefined;
   const options = meta?.options;
   if (!options) return null;
 
-  if ("fnKey" in options && options.fnKey) {
+  if ('fnKey' in options && options.fnKey) {
     const fn = OPTIONS_FNS[options.fnKey as keyof typeof OPTIONS_FNS];
     if (fn) {
       return async (query: string) =>
@@ -101,7 +112,7 @@ export function getOptionsFetcher(
     }
   }
 
-  if ("staticOptions" in options && options.staticOptions) {
+  if ('staticOptions' in options && options.staticOptions) {
     const base = options.staticOptions;
     return async (query: string) => {
       const q = query.toLowerCase();
@@ -109,27 +120,28 @@ export function getOptionsFetcher(
     };
   }
 
-  if ("type" in options && options.type) {
-    const handler = OPTIONS_TYPE_FNS[options.type as keyof typeof OPTIONS_TYPE_FNS];
+  if ('type' in options && options.type) {
+    const handler =
+      OPTIONS_TYPE_FNS[options.type as keyof typeof OPTIONS_TYPE_FNS];
     if (handler) return handler;
     return null;
   }
 
-  if ("url" in options && options.url) {
+  if ('url' in options && options.url) {
     return async (query: string) => {
       const url = new URL(options.url!);
-      const qp = options.queryParam || "query";
+      const qp = options.queryParam || 'query';
       url.searchParams.set(qp, query);
       const res = await fetch(url.toString());
-      if (!res.ok) throw new Error("Failed to fetch options");
+      if (!res.ok) throw new Error('Failed to fetch options');
       const data = await res.json();
 
       let items: any = data;
-      const path = options.itemsPath || "options";
+      const path = options.itemsPath || 'options';
       if (path) {
-        const parts = path.split(".").filter(Boolean);
+        const parts = path.split('.').filter(Boolean);
         for (const p of parts) {
-          if (items && typeof items === "object" && p in items) {
+          if (items && typeof items === 'object' && p in items) {
             items = (items as any)[p];
           } else {
             items = [];
@@ -138,10 +150,10 @@ export function getOptionsFetcher(
         }
       }
       if (!Array.isArray(items)) items = [];
-      const labelKey = options.labelKey || "label";
-      const valueKey = options.valueKey || "value";
+      const labelKey = options.labelKey || 'label';
+      const valueKey = options.valueKey || 'value';
       return (items as any[]).map((it) => ({
-        label: String((it as any)[labelKey] ?? ""),
+        label: String((it as any)[labelKey] ?? ''),
         value: (it as any)[valueKey],
       })) as OptionsResult;
     };
