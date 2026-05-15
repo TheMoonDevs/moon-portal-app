@@ -1,18 +1,18 @@
-"use client";
+'use client';
 
-import {OnboardingPage} from "@/components/screens/Members/OnboardingPage";
-import { useUser } from "@/utils/hooks/useUser";
-import { redirect } from "next/navigation";
-import React from "react";
+import React from 'react';
+
+import { OnboardingPage } from '@/components/screens/Members/OnboardingPage';
+import { useUser } from '@/utils/hooks/useUser';
 
 const OnboardingSignup = () => {
   const { user } = useUser();
-  console.log("user", user);
+  console.log('user', user);
   // if (user?.status !== "INACTIVE") redirect("/");
   // else {
   return (
-    <main className="flex-col items-center gap-4 mt-10 justify-center">
-      <h1 className="text-3xl font-semibold text-center">
+    <main className="mt-10 flex-col items-center justify-center gap-4">
+      <h1 className="text-center text-3xl font-semibold">
         Member Onboarding Page
       </h1>
       <OnboardingPage />;
