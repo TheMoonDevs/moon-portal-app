@@ -1,9 +1,10 @@
-import { prisma } from "@/prisma/prisma";
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
+
+import { db } from '@/lib/mongodb/db-client';
 
 export async function GET(
   request: Request,
-  { params }: { params: { job_id: string } }
+  { params }: { params: { job_id: string } },
 ) {
   {
     const { job_id } = params;
@@ -12,13 +13,13 @@ export async function GET(
 
     if (!job_id) {
       error_response = {
-        status: "fail",
-        message: "Job ID is required",
+        status: 'fail',
+        message: 'Job ID is required',
       };
     }
 
     try {
-      const candidates = await prisma.candidate.findMany({
+      const candidates = await db.candidate.findMany({
         where: {
           jobPostId: job_id,
         },
@@ -27,12 +28,12 @@ export async function GET(
       if (error_response) {
         return new NextResponse(JSON.stringify(error_response), {
           status: 404,
-          headers: { "Content-Type": "application/json" },
+          headers: { 'Content-Type': 'application/json' },
         });
       }
 
-      let json_response = {
-        status: "success",
+      const json_response = {
+        status: 'success',
         data: {
           candidates,
         },
@@ -40,12 +41,12 @@ export async function GET(
 
       return new NextResponse(JSON.stringify(json_response), {
         status: 200,
-        headers: { "Content-Type": "application/json" },
+        headers: { 'Content-Type': 'application/json' },
       });
     } catch (e) {
       return new NextResponse(JSON.stringify(e), {
         status: 404,
-        headers: { "Content-Type": "application/json" },
+        headers: { 'Content-Type': 'application/json' },
       });
     }
   }
