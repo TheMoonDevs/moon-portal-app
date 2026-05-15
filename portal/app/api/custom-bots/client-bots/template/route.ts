@@ -1,6 +1,8 @@
 // api/custom-bots/client-bots/template/route.ts
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/prisma/prisma';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
+import { db } from '@/lib/mongodb/db-client';
 
 // Get all BotTemplates (predefined + custom)
 export async function GET(req: NextRequest) {
@@ -10,7 +12,7 @@ export async function GET(req: NextRequest) {
 
     // If a clientId is provided, include templates with a null clientId (predefined) or matching clientId.
     const filters = clientId ? { OR: [{ clientId: null }, { clientId }] } : {};
-    const templates = await prisma.clientBotTemplate.findMany({
+    const templates = await db.clientBotTemplate.findMany({
       where: filters,
     });
     return NextResponse.json(templates, { status: 200 });
@@ -29,7 +31,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { clientId, type, name, requiredKeys } = body;
 
-    const newTemplate = await prisma.clientBotTemplate.create({
+    const newTemplate = await db.clientBotTemplate.create({
       data: { clientId, type, name, requiredKeys },
     });
     return NextResponse.json(newTemplate, { status: 201 });
@@ -49,7 +51,7 @@ export async function PUT(req: NextRequest) {
 
     if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
 
-    const updatedTemplate = await prisma.clientBotTemplate.update({
+    const updatedTemplate = await db.clientBotTemplate.update({
       where: { id },
       data: { requiredKeys },
     });
@@ -69,7 +71,7 @@ export async function DELETE(req: NextRequest) {
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
 
-    await prisma.clientBotTemplate.delete({ where: { id } });
+    await db.clientBotTemplate.delete({ where: { id } });
     return NextResponse.json(
       { message: 'Deleted successfully' },
       { status: 200 },
