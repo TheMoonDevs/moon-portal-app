@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { Mission, MissionTask } from "@prisma/client";
+import { Mission, MissionTask } from "@db/client";
 
 interface IMissionUiState {
   isEditModalOpen: boolean;
