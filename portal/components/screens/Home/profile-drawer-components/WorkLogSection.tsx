@@ -1,6 +1,8 @@
-import { User, WorkLogs } from '@prisma/client';
-import { WorklogSummaryView } from '../../Worklogs/WorklogSummary/WorklogSummaryView';
+import type { User, WorkLogs } from '@db/client';
+
 import { ArrayHelper } from '@/utils/helpers/array';
+
+import { WorklogSummaryView } from '../../Worklogs/WorklogSummary/WorklogSummaryView';
 
 export const WorkLogSection = ({
   selectedUser,
@@ -22,7 +24,7 @@ export const WorkLogSection = ({
             ).slice(0, 5)}
             isDrawer={true}
           />
-          <div className="absolute bottom-0 left-0 right-0 flex h-[30vh] flex-col justify-end bg-gradient-to-b from-transparent to-white">
+          <div className="absolute inset-x-0 bottom-0 flex h-[30vh] flex-col justify-end bg-gradient-to-b from-transparent to-white">
             <p className="p-2 text-center text-xs font-semibold text-neutral-500"></p>
           </div>
         </div>

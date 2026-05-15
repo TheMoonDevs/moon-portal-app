@@ -1,5 +1,5 @@
+import type { PayData } from '../ProfileDrawer';
 import { truncateAddress } from '.';
-import { PayData } from '../ProfileDrawer';
 
 export const PayDataUI = ({ payData }: { payData: PayData }) => {
   return (
