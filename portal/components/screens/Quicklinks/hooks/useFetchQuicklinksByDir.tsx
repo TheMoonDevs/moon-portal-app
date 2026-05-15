@@ -1,12 +1,14 @@
+import type { Link } from '@db/client';
+import { useEffect, useState } from 'react';
+
 import {
   setAllQuicklinks,
   setTopUsedLinksList,
-} from "@/utils/redux/quicklinks/slices/quicklinks.links.slice";
-import { useAppDispatch } from "@/utils/redux/store";
-import { QuicklinksSdk } from "@/utils/services/QuicklinksSdk";
-import { useEffect, useState } from "react";
-import { useQuickLinkDirectory } from "./useQuickLinkDirectory";
-import { Link } from "@prisma/client";
+} from '@/utils/redux/quicklinks/slices/quicklinks.links.slice';
+import { useAppDispatch } from '@/utils/redux/store';
+import { QuicklinksSdk } from '@/utils/services/QuicklinksSdk';
+
+import { useQuickLinkDirectory } from './useQuickLinkDirectory';
 
 const useFetchQuicklinksByDir = ({
   isRootDirectory,
@@ -28,7 +30,7 @@ const useFetchQuicklinksByDir = ({
         // console.log("sent", activeDirectoryId);
         const response = await QuicklinksSdk.getData(apiPath);
 
-        let quicklinks: Link[] = response.data.links;
+        const quicklinks: Link[] = response.data.links;
         dispatch(setAllQuicklinks(quicklinks));
 
         if (isRootDirectory) {

@@ -1,6 +1,7 @@
-import { useMemo } from "react";
-import { useQuickLinkDirectory } from "./useQuickLinkDirectory";
-import { DirectoryList } from "@prisma/client";
+import type { DirectoryList } from '@db/client';
+import { useMemo } from 'react';
+
+import { useQuickLinkDirectory } from './useQuickLinkDirectory';
 
 export const useQuickLinkDirs = (directoryId?: string | null) => {
   const { parentDirs, directories } = useQuickLinkDirectory();
@@ -10,7 +11,7 @@ export const useQuickLinkDirs = (directoryId?: string | null) => {
     directories.find((dir) => dir.id === directoryId) ||
     null;
   const parentDirecotry =
-    thisDirectory && "parentDirId" in thisDirectory
+    thisDirectory && 'parentDirId' in thisDirectory
       ? parentDirs.find((dir) => dir.id === thisDirectory?.parentDirId)
       : null;
 
@@ -18,7 +19,7 @@ export const useQuickLinkDirs = (directoryId?: string | null) => {
     const getParentDir = (dir?: DirectoryList | null): DirectoryList | null => {
       if (!dir) return null;
 
-      if (dir.parentDirId && "parentDirId" in dir) {
+      if (dir.parentDirId && 'parentDirId' in dir) {
         const _parentDir =
           directories.find((_dir) => _dir.id === dir.parentDirId) ||
           parentDirs.find((_dir) => _dir.id === dir.parentDirId);
@@ -35,10 +36,10 @@ export const useQuickLinkDirs = (directoryId?: string | null) => {
     rootParent: rootParentDirectory
       ? rootParentDirectory
       : parentDirecotry
-      ? parentDirecotry
-      : thisDirectory
-      ? thisDirectory
-      : null,
+        ? parentDirecotry
+        : thisDirectory
+          ? thisDirectory
+          : null,
     thisDirectory,
     parentDirecotry,
   };
