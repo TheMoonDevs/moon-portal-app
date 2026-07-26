@@ -33,7 +33,11 @@ export const LoginScreen = () => {
       setTab(InstallState.SPLASH);
       //router.push(APP_ROUTES.home);
     }
-  }, [user, status, router]);
+    // `user` intentionally excluded: every Redux dispatch creates a new object
+    // reference for `user`, which would retrigger this effect infinitely.
+    // `status` is the only value that should drive the tab flip.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status]);
 
   useEffect(() => {
     const passkey = searchParams?.get('passkey');
