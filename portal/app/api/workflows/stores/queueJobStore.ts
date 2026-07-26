@@ -15,7 +15,7 @@ import { getWorkflowDb } from './mongoAdapter';
 export interface QueueJobStep {
   workerId: string;
   workerJobId: string;
-  status: 'queued' | 'running' | 'completed' | 'failed';
+  status: 'queued' | 'running' | 'awaiting_approval' | 'completed' | 'failed';
   input?: unknown;
   output?: unknown;
   error?: { message: string };
@@ -36,9 +36,16 @@ export interface QueueJobRecord {
 
 // === Backend selection ===
 
-function getStoreType(): 'mongodb' | 'upstash-redis' {
+function getStoreType(): 'mongodb' | 'upstash-redis' | 'local' {
   const t = (process.env.WORKER_DATABASE_TYPE || 'upstash-redis').toLowerCase();
-  return t === 'mongodb' ? 'mongodb' : 'upstash-redis';
+  if (t === 'mongodb') return 'mongodb';
+  if (t === 'local') return 'local';
+  return 'upstash-redis';
+}
+
+/** DEV ONLY: proxy reads/writes to a running `ai-worker dev` server (WORKER_BASE_URL). */
+function preferLocal(): boolean {
+  return getStoreType() === 'local';
 }
 
 function preferMongo(): boolean {
@@ -46,7 +53,7 @@ function preferMongo(): boolean {
 }
 
 function preferRedis(): boolean {
-  return getStoreType() !== 'mongodb';
+  return getStoreType() === 'upstash-redis';
 }
 
 // === MongoDB backend ===
@@ -147,6 +154,10 @@ export async function createQueueJob(
   firstStep: { workerId: string; workerJobId: string },
   metadata?: Record<string, unknown>
 ): Promise<void> {
+  if (preferLocal()) {
+    const { createQueueJobLocal } = require('./localDevAdapter');
+    return createQueueJobLocal(id, queueId, firstStep, metadata);
+  }
   const now = new Date().toISOString();
   const record: QueueJobRecord = {
     id,
@@ -201,7 +212,7 @@ export async function updateQueueStep(
   queueJobId: string,
   stepIndex: number,
   update: {
-    status?: 'queued' | 'running' | 'completed' | 'failed';
+    status?: 'queued' | 'running' | 'awaiting_approval' | 'completed' | 'failed';
     input?: unknown;
     output?: unknown;
     error?: { message: string };
@@ -209,6 +220,50 @@ export async function updateQueueStep(
     completedAt?: string;
   }
 ): Promise<void> {
+  if (preferLocal()) {
+    const { updateQueueStepLocal } = require('./localDevAdapter');
+    return updateQueueStepLocal(queueJobId, stepIndex, update);
+  }
+  if (preferRedis()) {
+    const redis = getRedis();
+    const key = queueKey(queueJobId);
+    const existing = await loadQueueJobRedis(queueJobId);
+    if (!existing) {
+      throw new Error(`Queue job ${queueJobId} not found`);
+    }
+    const step = existing.steps[stepIndex];
+    if (!step) {
+      throw new Error(`Queue job ${queueJobId} has no step at index ${stepIndex}`);
+    }
+    const now = new Date().toISOString();
+    const mergedStep: QueueJobStep = {
+      ...step,
+      ...(update.status !== undefined && { status: update.status }),
+      ...(update.input !== undefined && { input: update.input }),
+      ...(update.output !== undefined && { output: update.output }),
+      ...(update.error !== undefined && { error: update.error }),
+      startedAt: update.startedAt ?? (update.status === 'running' ? now : step.startedAt),
+      completedAt:
+        update.completedAt ??
+        (['completed', 'failed'].includes(update.status ?? '') ? now : step.completedAt),
+    };
+    const steps = [...existing.steps];
+    steps[stepIndex] = mergedStep;
+    const toSet: Record<string, string> = {
+      steps: JSON.stringify(steps),
+      updatedAt: now,
+    };
+    if (update.status === 'failed') {
+      toSet.status = 'failed';
+      if (!existing.completedAt) toSet.completedAt = now;
+    } else if (update.status === 'completed' && stepIndex === steps.length - 1) {
+      toSet.status = 'completed';
+      if (!existing.completedAt) toSet.completedAt = now;
+    }
+    await redis.hset(key, toSet);
+    return;
+  }
+
   const collection = await getCollection();
   const now = new Date().toISOString();
   const setKey = `steps.${stepIndex}`;
@@ -251,6 +306,29 @@ export async function appendQueueStep(
   queueJobId: string,
   step: { workerId: string; workerJobId: string }
 ): Promise<void> {
+  if (preferLocal()) {
+    const { appendQueueStepLocal } = require('./localDevAdapter');
+    return appendQueueStepLocal(queueJobId, step);
+  }
+  if (preferRedis()) {
+    const redis = getRedis();
+    const key = queueKey(queueJobId);
+    const existing = await loadQueueJobRedis(queueJobId);
+    if (!existing) {
+      throw new Error(`Queue job ${queueJobId} not found`);
+    }
+    const steps = [...(existing.steps || []), {
+      workerId: step.workerId,
+      workerJobId: step.workerJobId,
+      status: 'queued' as const,
+    }];
+    await redis.hset(key, {
+      steps: JSON.stringify(steps),
+      updatedAt: new Date().toISOString(),
+    });
+    return;
+  }
+
   const collection = await getCollection();
   const now = new Date().toISOString();
   await collection.updateOne(
@@ -275,6 +353,10 @@ export async function updateQueueJob(
   queueJobId: string,
   update: { status?: QueueJobRecord['status']; completedAt?: string }
 ): Promise<void> {
+  if (preferLocal()) {
+    const { updateQueueJobLocal } = require('./localDevAdapter');
+    return updateQueueJobLocal(queueJobId, update);
+  }
   const now = new Date().toISOString();
   if (preferRedis()) {
     const redis = getRedis();
@@ -297,6 +379,10 @@ export async function updateQueueJob(
 }
 
 export async function getQueueJob(queueJobId: string): Promise<QueueJobRecord | null> {
+  if (preferLocal()) {
+    const { getQueueJobLocal } = require('./localDevAdapter');
+    return getQueueJobLocal(queueJobId);
+  }
   if (preferRedis()) {
     return loadQueueJobRedis(queueJobId);
   }
@@ -311,6 +397,10 @@ export async function listQueueJobs(
   queueId?: string,
   limit = 50
 ): Promise<QueueJobRecord[]> {
+  if (preferLocal()) {
+    const { listQueueJobsLocal } = require('./localDevAdapter');
+    return listQueueJobsLocal(queueId, limit);
+  }
   if (preferRedis()) {
     // Redis: scan for keys matching prefix, then load each
     // Note: This is less efficient than MongoDB queries, but acceptable for small datasets

@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useEffect } from 'react';
 
 import { setRedirectUri, setReduxUser } from '@/utils/redux/auth/auth.slice';
-import { useAppDispatch } from '@/utils/redux/store';
+import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
 
 const PUBLIC_ROUTES = ['/', '/login', '/logout', '/api/auth', '/api'];
 
@@ -18,9 +18,19 @@ export default function RedirectWrapperProvider({
   const dispatch = useAppDispatch();
   const router = useRouter();
   const pathname = usePathname();
+  const currentReduxUser = useAppSelector((state) => state.auth.user);
   useEffect(() => {
     if (status === 'authenticated' && session?.user) {
-      dispatch(setReduxUser(session.user));
+      // session.user only contains basic fields (name, email, id) from NextAuth —
+      // it does NOT include isAdmin or other detailed fields.
+      // Merge session fields *under* the existing Redux user so the detailed
+      // fields (isAdmin, userType, etc.) are never overwritten, even momentarily.
+      const sessionUser = session.user as any;
+      const mergedUser =
+        currentReduxUser?.id && currentReduxUser.id === sessionUser?.id
+          ? { ...sessionUser, ...currentReduxUser } // currentReduxUser wins on all shared keys
+          : sessionUser;
+      dispatch(setReduxUser(mergedUser));
       return;
     }
     if (status === 'loading') return;
@@ -52,7 +62,7 @@ export default function RedirectWrapperProvider({
       router.replace(`/login?uri=${callbackurl}`);
       console.log('Redirecting to login page');
     }
-  }, [session, status, dispatch, pathname, router]);
+  }, [session, status, dispatch, pathname, router, currentReduxUser]);
 
   return <>{children}</>;
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { dispatchQueue } from '@microfox/ai-worker';
+import { dispatchQueue, dispatchWorker } from '@microfox/ai-worker';
+import { authorizeWorkflowRequest } from '../../auth';
 import {
   getQueueJob,
   listQueueJobs,
@@ -7,7 +8,6 @@ import {
   updateQueueStep,
   appendQueueStep,
 } from '../../stores/queueJobStore';
-
 export const dynamic = 'force-dynamic';
 
 const LOG = '[Queues]';
@@ -32,11 +32,22 @@ export async function POST(
     slug = slugParam ?? [];
     const [queueId, action] = slug;
 
+    // SECURITY: every mutating queue route requires a user session, the internal
+    // shared secret (Lambda callbacks), or an explicit public opt-out.
+    const auth = await authorizeWorkflowRequest(req);
+    if (!auth.ok) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+    const userId = auth.userId;
+
     if (action === 'update') {
       return handleQueueJobUpdate(req, queueId);
     }
     if (action === 'webhook') {
       return handleQueueWebhook(req, queueId);
+    }
+    if (action === 'approve') {
+      return handleQueueApprove(req, queueId);
     }
 
     if (!queueId) {
@@ -57,6 +68,7 @@ export async function POST(
     const result = await dispatchQueue(queueId, input as Record<string, unknown>, {
       metadata: metadata ?? { source: 'queues-api' },
       ...(typeof providedJobId === 'string' && providedJobId.trim() ? { jobId: providedJobId.trim() } : {}),
+      ...(userId ? { userId } : {}),
     });
 
     console.log(`${LOG} Queue triggered`, {
@@ -192,6 +204,21 @@ async function handleQueueJobUpdate(req: NextRequest, queueId: string) {
     return NextResponse.json({ ok: true, action: 'complete' });
   }
 
+  if (action === 'awaiting_approval') {
+    if (typeof stepIndex !== 'number' || !workerJobId) {
+      return NextResponse.json(
+        { error: 'awaiting_approval requires stepIndex and workerJobId' },
+        { status: 400 }
+      );
+    }
+    await updateQueueStep(id, stepIndex, {
+      status: 'awaiting_approval',
+      ...(input !== undefined && { input }),
+    });
+    console.log(`${LOG} Step awaiting approval`, { queueJobId: id, stepIndex, workerJobId });
+    return NextResponse.json({ ok: true, action: 'awaiting_approval' });
+  }
+
   if (action === 'fail') {
     if (typeof stepIndex !== 'number' || !workerJobId) {
       return NextResponse.json(
@@ -209,9 +236,191 @@ async function handleQueueJobUpdate(req: NextRequest, queueId: string) {
   }
 
   return NextResponse.json(
-    { error: `Unknown action: ${action}. Use start|complete|fail|append` },
+    { error: `Unknown action: ${action}. Use start|awaiting_approval|complete|fail|append` },
     { status: 400 }
   );
+}
+
+/**
+ * Prototype + runtime endpoint for HITL queue approval/rejection.
+ * POST /api/workflows/queues/:queueId/approve
+ */
+async function handleQueueApprove(req: NextRequest, queueId: string) {
+  if (!queueId) {
+    return NextResponse.json({ error: 'Queue ID is required' }, { status: 400 });
+  }
+  const body = await req.json().catch(() => ({}));
+  const {
+    queueJobId,
+    jobId,
+    stepIndex,
+    decision = 'approve',
+    input,
+    comment,
+    reviewerId,
+  } = body ?? {};
+
+  const id = queueJobId ?? jobId;
+  if (!id) {
+    return NextResponse.json(
+      { error: 'queueJobId or jobId is required in request body' },
+      { status: 400 }
+    );
+  }
+
+  const queueJob = await getQueueJob(id);
+  if (!queueJob) {
+    return NextResponse.json({ error: 'Queue job not found' }, { status: 404 });
+  }
+  if (queueJob.queueId !== queueId) {
+    return NextResponse.json({ error: 'Queue job does not belong to this queue' }, { status: 400 });
+  }
+
+  const targetStepIndex =
+    typeof stepIndex === 'number'
+      ? stepIndex
+      : queueJob.steps.findIndex((s) => s.status === 'awaiting_approval');
+  if (targetStepIndex < 0) {
+    return NextResponse.json(
+      { error: 'No awaiting_approval step found for this queue job' },
+      { status: 400 }
+    );
+  }
+
+  const targetStep = queueJob.steps[targetStepIndex];
+  if (!targetStep) {
+    return NextResponse.json({ error: 'Invalid stepIndex' }, { status: 400 });
+  }
+  if (targetStep.status !== 'awaiting_approval') {
+    if (
+      decision === 'approve' &&
+      (targetStep.status === 'running' || targetStep.status === 'completed')
+    ) {
+      return NextResponse.json({
+        ok: true,
+        idempotent: true,
+        decision: 'approve',
+        queueJobId: id,
+        queueId,
+        stepIndex: targetStepIndex,
+        workerId: targetStep.workerId,
+        workerJobId: targetStep.workerJobId,
+        status: targetStep.status,
+      });
+    }
+    if (decision === 'reject' && targetStep.status === 'failed') {
+      return NextResponse.json({
+        ok: true,
+        idempotent: true,
+        decision: 'reject',
+        queueJobId: id,
+        queueId,
+        stepIndex: targetStepIndex,
+        status: 'failed',
+      });
+    }
+    return NextResponse.json(
+      { error: `Step ${targetStepIndex} is not awaiting approval` },
+      { status: 400 }
+    );
+  }
+
+  if (decision === 'reject') {
+    await updateQueueStep(id, targetStepIndex, {
+      status: 'failed',
+      error: { message: comment || 'Rejected by reviewer' },
+      completedAt: new Date().toISOString(),
+    });
+    return NextResponse.json({
+      ok: true,
+      decision,
+      queueJobId: id,
+      queueId,
+      stepIndex: targetStepIndex,
+      status: 'failed',
+    });
+  }
+
+  const pendingInput =
+    targetStep.input && typeof targetStep.input === 'object'
+      ? (targetStep.input as Record<string, unknown>)
+      : {};
+  let reviewerInput =
+    input && typeof input === 'object'
+      ? (input as Record<string, unknown>)
+      : {};
+
+  // SEC-5: validate reviewer-supplied input against the step's HITL schema BEFORE it is
+  // dispatched into the next pipeline step. Without this, an approver could inject arbitrary
+  // fields into the resumed worker's input.
+  try {
+    const { getStepHitlInputSchema } = await import('../../registry/workers');
+    const schema = getStepHitlInputSchema(queueId, targetStepIndex);
+    if (schema) {
+      const parsed = schema.safeParse(reviewerInput);
+      if (!parsed.success) {
+        return NextResponse.json(
+          { error: 'Reviewer input failed HITL schema validation', details: parsed.error },
+          { status: 400 }
+        );
+      }
+      // Use the validated/coerced value (strips unknown keys when the schema does).
+      reviewerInput = parsed.data as Record<string, unknown>;
+    }
+  } catch (validationSetupError: unknown) {
+    const e = validationSetupError instanceof Error ? validationSetupError : new Error(String(validationSetupError));
+    console.error(`${LOG} HITL schema validation could not run:`, e.message);
+    // Fail closed: if we intended to validate but couldn't load the schema resolver, reject.
+    return NextResponse.json(
+      { error: 'Unable to validate reviewer input' },
+      { status: 500 }
+    );
+  }
+
+  const decisionMeta = {
+    decision: 'approve' as const,
+    reviewerId: reviewerId ?? null,
+    comment: comment ?? null,
+    reviewedAt: new Date().toISOString(),
+  };
+
+  /** Forward pending domain input + HITL envelope; `resume` runs in the worker runtime (not here). */
+  const dispatchInput = {
+    ...pendingInput,
+    __hitlInput: reviewerInput,
+    __hitlDecision: decisionMeta,
+  };
+  const stepInputForStore = dispatchInput;
+
+  // Write step status BEFORE dispatching so the Lambda cannot start and append/overwrite
+  // the steps array before this read-modify-write completes (race condition fix).
+  await updateQueueStep(id, targetStepIndex, {
+    status: 'running',
+    startedAt: new Date().toISOString(),
+    input: stepInputForStore,
+  });
+
+  await dispatchWorker(targetStep.workerId, dispatchInput, {
+    jobId: targetStep.workerJobId,
+    metadata: {
+      source: 'queue-hitl-approve',
+      queueId,
+      queueJobId: id,
+      stepIndex: targetStepIndex,
+      reviewerId: reviewerId ?? null,
+    },
+  });
+
+  return NextResponse.json({
+    ok: true,
+    decision: 'approve',
+    queueJobId: id,
+    queueId,
+    stepIndex: targetStepIndex,
+    workerId: targetStep.workerId,
+    workerJobId: targetStep.workerJobId,
+    status: 'running',
+  });
 }
 
 /**
