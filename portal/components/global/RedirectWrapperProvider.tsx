@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 import { setRedirectUri, setReduxUser } from '@/utils/redux/auth/auth.slice';
 import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
@@ -18,7 +18,14 @@ export default function RedirectWrapperProvider({
   const dispatch = useAppDispatch();
   const router = useRouter();
   const pathname = usePathname();
+
+  // Read current Redux user into a ref so the effect can access the latest
+  // value without `currentReduxUser` being a reactive dependency.
+  // Making it a dep caused: dispatch → Redux updates → effect re-runs → dispatch → ∞
   const currentReduxUser = useAppSelector((state) => state.auth.user);
+  const currentReduxUserRef = useRef(currentReduxUser);
+  currentReduxUserRef.current = currentReduxUser; // always keep ref in sync
+
   useEffect(() => {
     if (status === 'authenticated' && session?.user) {
       // session.user only contains basic fields (name, email, id) from NextAuth —
@@ -26,9 +33,10 @@ export default function RedirectWrapperProvider({
       // Merge session fields *under* the existing Redux user so the detailed
       // fields (isAdmin, userType, etc.) are never overwritten, even momentarily.
       const sessionUser = session.user as any;
+      const existingUser = currentReduxUserRef.current;
       const mergedUser =
-        currentReduxUser?.id && currentReduxUser.id === sessionUser?.id
-          ? { ...sessionUser, ...currentReduxUser } // currentReduxUser wins on all shared keys
+        existingUser?.id && existingUser.id === sessionUser?.id
+          ? { ...sessionUser, ...existingUser } // existingUser wins on all shared keys
           : sessionUser;
       dispatch(setReduxUser(mergedUser));
       return;
@@ -62,7 +70,10 @@ export default function RedirectWrapperProvider({
       router.replace(`/login?uri=${callbackurl}`);
       console.log('Redirecting to login page');
     }
-  }, [session, status, dispatch, pathname, router, currentReduxUser]);
+  // currentReduxUser intentionally excluded — read via ref to avoid the
+  // dispatch → Redux update → effect retrigger → dispatch infinite loop.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session, status, dispatch, pathname, router]);
 
   return <>{children}</>;
 }
