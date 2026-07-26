@@ -9,13 +9,28 @@
  * - getQueueRegistry(): returns QueueRegistry from config (for dispatchQueue)
  */
 
-import type { WorkerAgent, WorkerQueueRegistry } from '@microfox/ai-worker';
+import {
+  defaultMapChainContinueFromPrevious,
+  defaultMapChainPassthrough,
+  resolveWorkersConfigKey,
+  resolveWorkersTriggerKey,
+  type ChainContext,
+  type LoopContext,
+  type SmartRetryConfig,
+  type WorkerAgent,
+  type WorkerQueueRegistry,
+} from '@microfox/ai-worker';
 
 /** Queue step config (matches WorkerQueueStep from @microfox/ai-worker). */
 export interface QueueStepConfig {
   workerId: string;
   delaySeconds?: number;
-  mapInputFromPrev?: string;
+  requiresApproval?: boolean;
+  hasChain?: boolean;
+  hasResume?: boolean;
+  hasLoop?: boolean;
+  hitl?: unknown;
+  retry?: SmartRetryConfig;
 }
 
 /** Queue config from workers/config API (matches WorkerQueueConfig structure). */
@@ -30,6 +45,8 @@ export interface WorkersConfig {
   stage?: string;
   region?: string;
   workers: Record<string, { queueUrl: string; region: string }>;
+  /** JSON Schemas for each worker's input, keyed by worker ID. Embedded at CLI build time. */
+  schemas?: Record<string, unknown>;
   queues?: QueueConfig[];
 }
 
@@ -53,13 +70,11 @@ function getConfigBaseUrl(): string {
 }
 
 function getConfigUrl(): string {
-  const base = getConfigBaseUrl();
-  return `${base}/workers/config`;
+  return `${getConfigBaseUrl()}/workers/config`;
 }
 
 function getTriggerUrl(): string {
-  const base = getConfigBaseUrl();
-  return `${base}/workers/trigger`;
+  return `${getConfigBaseUrl()}/workers/trigger`;
 }
 
 /**
@@ -71,7 +86,7 @@ export async function fetchWorkersConfig(): Promise<WorkersConfig> {
   }
   const configUrl = getConfigUrl();
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  const apiKey = process.env.WORKERS_CONFIG_API_KEY;
+  const apiKey = resolveWorkersConfigKey();
   if (apiKey) {
     headers['x-workers-config-key'] = apiKey;
   }
@@ -96,7 +111,6 @@ export async function fetchWorkersConfig(): Promise<WorkersConfig> {
 
 /**
  * Build a synthetic WorkerAgent that dispatches via POST /workers/trigger.
- * Matches the trigger API contract used by @microfox/ai-worker.
  */
 function createSyntheticAgent(workerId: string): WorkerAgent<any, any> {
   return {
@@ -117,10 +131,8 @@ function createSyntheticAgent(workerId: string): WorkerAgent<any, any> {
         metadata,
         timestamp: new Date().toISOString(),
       };
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-      const key = process.env.WORKERS_TRIGGER_API_KEY;
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      const key = resolveWorkersTriggerKey();
       if (key) {
         headers['x-workers-trigger-key'] = key;
       }
@@ -164,6 +176,8 @@ export async function getWorker(
   return createSyntheticAgent(workerId);
 }
 
+type QueueModuleMap = Record<string, { default?: { steps?: Array<{ chain?: unknown; resume?: unknown; hitl?: unknown; loop?: { shouldContinue?: unknown } }> } }>;
+
 /** Webpack require.context – auto-discovers app/ai/queues/*.queue.ts (Next.js). */
 function getQueueModuleContext(): { keys(): string[]; (key: string): unknown } | null {
   try {
@@ -180,18 +194,18 @@ function getQueueModuleContext(): { keys(): string[]; (key: string): unknown } |
 }
 
 /**
- * Auto-discover queue modules from app/ai/queues/*.queue.ts (no per-queue registration).
+ * Auto-discover queue modules from app/ai/queues/*.queue.ts.
  * Uses require.context when available (Next.js/webpack).
  */
-function buildQueueModules(): Record<string, Record<string, (initial: unknown, prevOutputs: unknown[]) => unknown>> {
+function buildQueueModules(): QueueModuleMap {
   const ctx = getQueueModuleContext();
   if (!ctx) return {};
-  const out: Record<string, Record<string, (initial: unknown, prevOutputs: unknown[]) => unknown>> = {};
+  const out: QueueModuleMap = {};
   for (const key of ctx.keys()) {
-    const mod = ctx(key) as { default?: { id?: string }; [k: string]: unknown };
+    const mod = ctx(key) as { default?: { id?: string } };
     const id = mod?.default?.id;
     if (id && typeof id === 'string') {
-      out[id] = mod as Record<string, (initial: unknown, prevOutputs: unknown[]) => unknown>;
+      out[id] = mod as QueueModuleMap[string];
     }
   }
   return out;
@@ -199,9 +213,17 @@ function buildQueueModules(): Record<string, Record<string, (initial: unknown, p
 
 const queueModules = buildQueueModules();
 
+function resolveModuleStep(queueId: string, stepIndex: number) {
+  return queueModules[queueId]?.default?.steps?.[stepIndex];
+}
+
+function resolveStepHitl(queueId: string, stepIndex: number, stepFromConfig: QueueStepConfig | undefined): unknown {
+  return resolveModuleStep(queueId, stepIndex)?.hitl ?? stepFromConfig?.hitl;
+}
+
 /**
  * Returns a registry compatible with dispatchQueue. Queue definitions come from
- * GET /workers/config; mapInputFromPrev is resolved from app/ai/queues/*.queue.ts
+ * GET /workers/config; chain/resume functions are resolved from app/ai/queues/*.queue.ts
  * automatically (no manual registration per queue).
  */
 export async function getQueueRegistry(): Promise<WorkerQueueRegistry> {
@@ -212,26 +234,79 @@ export async function getQueueRegistry(): Promise<WorkerQueueRegistry> {
     getQueueById(queueId: string) {
       return queues.find((q) => q.id === queueId);
     },
-    invokeMapInput(
-      queueId: string,
-      stepIndex: number,
-      initialInput: unknown,
-      previousOutputs: Array<{ stepIndex: number; workerId: string; output: unknown }>
-    ): unknown {
+    getStepAt(queueId: string, stepIndex: number) {
       const queue = queues.find((q) => q.id === queueId);
       const step = queue?.steps?.[stepIndex];
-      const fnName = step?.mapInputFromPrev;
-      if (!fnName) {
-        return previousOutputs.length > 0 ? previousOutputs[previousOutputs.length - 1].output : initialInput;
-      }
-      const mod = queueModules[queueId];
-      if (!mod || typeof mod[fnName] !== 'function') {
-        return previousOutputs.length > 0 ? previousOutputs[previousOutputs.length - 1].output : initialInput;
-      }
-      return mod[fnName](initialInput, previousOutputs);
+      const hitl = resolveStepHitl(queueId, stepIndex, step);
+      // Resolve retry config from the local queue module (not from API config).
+      const moduleStep = resolveModuleStep(queueId, stepIndex);
+      const retry = (moduleStep as any)?.retry as SmartRetryConfig | undefined;
+      return step
+        ? {
+            workerId: step.workerId,
+            requiresApproval: step.requiresApproval,
+            hasChain: step.hasChain,
+            hasResume: step.hasResume,
+            ...(hitl !== undefined ? { hitl } : {}),
+            ...(retry !== undefined ? { retry } : {}),
+          }
+        : undefined;
+    },
+    invokeChain(queueId: string, stepIndex: number, context: ChainContext): unknown {
+      const moduleStep = resolveModuleStep(queueId, stepIndex);
+      const chain = moduleStep?.chain;
+      if (typeof chain === 'function') return (chain as (c: ChainContext) => unknown)(context);
+      if (chain === 'passthrough') return defaultMapChainPassthrough(context);
+      if (chain === 'continueFromPrevious') return defaultMapChainContinueFromPrevious(context);
+      const { initialInput, previousOutputs } = context;
+      return previousOutputs.length > 0 ? previousOutputs[previousOutputs.length - 1].output : initialInput;
+    },
+    invokeResume(queueId: string, stepIndex: number, context: { initialInput: unknown; previousOutputs: unknown[]; reviewerInput: unknown; pendingInput: Record<string, unknown> }): unknown {
+      const moduleStep = resolveModuleStep(queueId, stepIndex);
+      const resume = moduleStep?.resume;
+      if (typeof resume === 'function') return (resume as (c: typeof context) => unknown)(context);
+      return { ...context.pendingInput, ...(context.reviewerInput !== null && typeof context.reviewerInput === 'object' ? context.reviewerInput as object : {}) };
+    },
+    invokeLoop(queueId: string, stepIndex: number, context: LoopContext): boolean {
+      const moduleStep = resolveModuleStep(queueId, stepIndex);
+      const shouldContinue = moduleStep?.loop?.shouldContinue;
+      if (typeof shouldContinue === 'function') return !!(shouldContinue as (c: LoopContext) => boolean)(context);
+      return false;
     },
   };
   return registry as WorkerQueueRegistry;
+}
+
+/** A Zod-like schema (anything exposing safeParse), used for runtime validation. */
+export interface ParsableSchema {
+  safeParse(input: unknown): { success: true; data: unknown } | { success: false; error: unknown };
+}
+
+/**
+ * Resolves the HITL reviewer-input Zod schema (`hitl.inputSchema`) for a queue step
+ * from the local `app/ai/queues/*.queue.ts` modules. Returns null when the step has no
+ * HITL schema. Used to validate reviewer-supplied input before it is dispatched into the
+ * next pipeline step (SEC-5). Resolves locally (no network) since Zod schemas don't
+ * survive the JSON workers/config round-trip.
+ */
+export function getStepHitlInputSchema(queueId: string, stepIndex: number): ParsableSchema | null {
+  const hitl = resolveModuleStep(queueId, stepIndex)?.hitl as
+    | { inputSchema?: unknown }
+    | undefined;
+  const schema = hitl?.inputSchema;
+  if (schema && typeof (schema as ParsableSchema).safeParse === 'function') {
+    return schema as ParsableSchema;
+  }
+  return null;
+}
+
+/**
+ * Returns the JSON Schema for a worker's input, or null if not available.
+ * Schema is embedded in the workers-config response at CLI build time — no dynamic imports needed.
+ */
+export async function getWorkerSchema(workerId: string): Promise<unknown | null> {
+  const config = await fetchWorkersConfig();
+  return config.schemas?.[workerId] ?? null;
 }
 
 /**
