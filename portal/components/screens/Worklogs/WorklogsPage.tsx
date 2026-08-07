@@ -27,10 +27,7 @@ import {
   setCompletedTargets,
   setIncompleteTargets,
 } from '@/utils/redux/worklogs/monthlyTargets.slice';
-import {
-  setLogsList,
-  setSelectedEngagement,
-} from '@/utils/redux/worklogs/worklogs.slice';
+import { setLogsList } from '@/utils/redux/worklogs/worklogs.slice';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import { SummarizeButton } from './SummarizeButton';
@@ -428,7 +425,10 @@ export const WorklogsPage = () => {
                 setMonthTab(month_tab);
                 setSelectedID(undefined);
                 setSelectedDate(
-                  dayjs().month(month_tab).startOf('month').format('YYYY-MM-DD'),
+                  dayjs()
+                    .month(month_tab)
+                    .startOf('month')
+                    .format('YYYY-MM-DD'),
                 );
               }}
               className={`shrink-0 cursor-pointer rounded-3xl p-1 md:p-0 ${
@@ -471,10 +471,7 @@ export const WorklogsPage = () => {
                   key={data.id + '-' + data.date + '-' + data.userId}
                   data={data}
                   selected={selectedDate === data.date}
-                  onClick={() => {
-                    handleWorkLogItemClick(data, isEditorSaving);
-                    dispatch(setSelectedEngagement(null));
-                  }}
+                  onClick={() => handleWorkLogItemClick(data, isEditorSaving)}
                 />
               ),
               //)

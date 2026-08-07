@@ -1,12 +1,11 @@
-import { User, WorkLogs, ZeroRecords,Engagement } from "@db/client";
-import { createSlice } from "@reduxjs/toolkit";
+import type { WorkLogs } from '@db/client';
+import { createSlice } from '@reduxjs/toolkit';
 
 export const worklogsSlice = createSlice({
-  name: "worklogs",
+  name: 'worklogs',
   initialState: {
     isEditorSaving: false,
     logsList: [] as WorkLogs[],
-    selectedEngagement: null as Engagement | null
   },
   reducers: {
     setEdiotrSaving: (state, action) => {
@@ -17,22 +16,15 @@ export const worklogsSlice = createSlice({
     },
     updateLogs: (state, action) => {
       state.logsList = state.logsList.map((log) => {
-        if (log.id === action.payload.id) {
-          return action.payload;
-        }
-        if (log.date === action.payload.date) {
-          return action.payload;
-        }
+        if (log.id === action.payload.id) return action.payload;
+        if (log.date === action.payload.date) return action.payload;
         return log;
       });
     },
-    setSelectedEngagement: (state, action) => {
-      state.selectedEngagement = action.payload;
-    }
   },
 });
 
-export const { setEdiotrSaving, setLogsList, updateLogs, setSelectedEngagement } =
+export const { setEdiotrSaving, setLogsList, updateLogs } =
   worklogsSlice.actions;
 
 export default worklogsSlice.reducer;
