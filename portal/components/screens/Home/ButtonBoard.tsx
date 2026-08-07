@@ -1,238 +1,140 @@
 import type { BadgeRewarded, BadgeTemplate } from '@db/client';
 import type { JsonObject } from '@db/runtime';
 import dayjs from 'dayjs';
-import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import DrawerComponent from '@/components/elements/DrawerComponent';
 import { Spinner } from '@/components/elements/Loaders';
-import { APP_ROUTES } from '@/utils/constants/appInfo';
 import { useUser } from '@/utils/hooks/useUser';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import BadgeCard from './BadgeCard';
 
+const TILE_CLASS =
+  'relative flex size-[5em] flex-col items-center justify-center gap-1 rounded-[1.15em] bg-white text-neutral-900';
+
+const Tile = ({
+  icon,
+  label,
+  onClick,
+}: {
+  icon: string;
+  label: string;
+  onClick?: () => void;
+}) => (
+  <button type="button" onClick={onClick} className={TILE_CLASS}>
+    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-2xl">
+      <span className="icon_size material-symbols-outlined font-light">
+        {icon}
+      </span>
+      <span className="text-[0.4em] leading-none tracking-[0.2em]">
+        {label}
+      </span>
+    </div>
+  </button>
+);
+
+// Time-based badges unlock purely from the joining date, so the client resolves
+// them on load and tells the server which ones are now earned.
+const targetDateFor = (criteriaLogic: string, joining: dayjs.Dayjs) => {
+  const [rawAmount, unit] = criteriaLogic.split(' ');
+  const amount = parseInt(rawAmount, 10);
+  if (Number.isNaN(amount)) return null;
+  if (unit?.includes('day')) return joining.add(amount, 'day');
+  if (unit?.includes('month')) return joining.add(amount, 'month');
+  if (unit?.includes('year')) return joining.add(amount, 'year');
+  return null;
+};
+
 export const ButtonBoard = ({
-  isCoreTeamDrawerOpen,
   setCoreTeamDrawerOpen,
 }: {
   isCoreTeamDrawerOpen: boolean;
   setCoreTeamDrawerOpen: (value: boolean) => void;
 }) => {
-  const [badges, setBadges] = useState<BadgeTemplate[]>();
-  const [isOpen, setIsOpen] = useState<boolean>(false);
-  const [badgeRewarded, setBadgeRewarded] = useState<BadgeRewarded[]>();
-  const [loading, setLoading] = useState<boolean>(false);
   const { user } = useUser();
-
-  const handleClose = () => {
-    setIsOpen(false);
-  };
-
-  useEffect(() => {
-    const fetchBadges = async () => {
-      try {
-        const res = await PortalSdk.getData(
-          '/api/badges?badgeType=TIME_BASED',
-          null,
-        );
-        setBadges(res.data);
-      } catch (error) {
-        console.error('Error fetching badges:', error);
-      }
-    };
-
-    fetchBadges();
-  }, []);
+  const [isBadgeDrawerOpen, setBadgeDrawerOpen] = useState(false);
+  const [badgesRewarded, setBadgesRewarded] = useState<BadgeRewarded[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchBadgesRewarded = async () => {
-      setLoading(true);
-
-      try {
-        const res = await PortalSdk.getData(
-          `/api/user/badge-rewarded?id=${user?.id}`,
-          null,
-        );
-        const data = await res.data;
-        setBadgeRewarded(data);
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching badges:', error);
-        setLoading(false);
-      }
-    };
-
-    fetchBadgesRewarded();
+    if (!user?.id) return;
+    setLoading(true);
+    PortalSdk.getData(`/api/user/badge-rewarded?id=${user.id}`, null)
+      .then((res) => setBadgesRewarded(res?.data ?? []))
+      .catch((error) => console.error('Error fetching badges:', error))
+      .finally(() => setLoading(false));
   }, [user?.id]);
 
-  const sendBadgeRequest = async (
-    status: string,
-    showsCounter: boolean,
-    badge: BadgeTemplate,
-    date?: string,
-  ) => {
-    const badgePayload = {
-      userId: user?.id,
-      badgeTemplateId: badge.id,
-      name: badge.name,
-      sequence: 'voyagers',
-      imageUrl: badge.imageurl,
-      status,
-      showsCounter,
-      ...(date && { date }),
-    };
+  const claimTimeBasedBadges = useCallback(async () => {
+    const joining = dayjs((user?.workData as any)?.joining);
+    if (!user?.id || !joining.isValid()) return;
 
-    try {
-      const res = await PortalSdk.postData(
-        '/api/user/badge-rewarded',
-        badgePayload,
-      );
-      // console.log(`Badge ${status.toLowerCase()} successfully:`, res.data);
-    } catch (error) {
-      console.error(`Error ${status.toLowerCase()} badge:`, error);
-    }
-  };
+    const res = await PortalSdk.getData(
+      '/api/badges?badgeType=TIME_BASED',
+      null,
+    );
+    const badges: BadgeTemplate[] = res?.data ?? [];
 
-  const checkAndRewardBadge = async ({ badge }: { badge: BadgeTemplate }) => {
-    const { criteria } = badge;
-    const criteriaLogic = (criteria as JsonObject)?.criteriaLogic as string;
-    const joiningDate = dayjs((user?.workData as any)?.joining);
-    if (!criteria || !criteriaLogic || !joiningDate.isValid()) {
-      return;
-    }
+    await Promise.all(
+      badges.map((badge) => {
+        const criteriaLogic = (badge.criteria as JsonObject)
+          ?.criteriaLogic as string;
+        if (!criteriaLogic) return null;
 
-    const today = dayjs();
-    let targetDate;
+        const targetDate = targetDateFor(criteriaLogic, joining);
+        if (!targetDate) return null;
 
-    if (criteriaLogic.includes('days')) {
-      const days = parseInt(criteriaLogic.split(' ')[0], 10);
-      targetDate = joiningDate.add(days, 'day');
-    } else if (criteriaLogic.includes('months')) {
-      const months = parseInt(criteriaLogic.split(' ')[0], 10);
-      targetDate = joiningDate.add(months, 'month');
-    } else if (criteriaLogic.includes('year')) {
-      const years = parseInt(criteriaLogic.split(' ')[0], 10);
-      targetDate = joiningDate.add(years, 'year');
-    }
-    const formattedTargetDate = targetDate?.format('YYYY-MM-DD');
-
-    if (
-      targetDate &&
-      (today.isAfter(targetDate) || today.isSame(targetDate, 'day'))
-    ) {
-      await sendBadgeRequest('REWARDED', false, badge, formattedTargetDate);
-    } else {
-      await sendBadgeRequest('ACTIVATED', true, badge, formattedTargetDate);
-    }
-  };
+        const earned = !dayjs().isBefore(targetDate, 'day');
+        return PortalSdk.postData('/api/user/badge-rewarded', {
+          userId: user.id,
+          badgeTemplateId: badge.id,
+          name: badge.name,
+          sequence: 'voyagers',
+          imageUrl: badge.imageurl,
+          status: earned ? 'REWARDED' : 'ACTIVATED',
+          showsCounter: !earned,
+          date: targetDate.format('YYYY-MM-DD'),
+        });
+      }),
+    );
+  }, [user?.id, user?.workData]);
 
   useEffect(() => {
-    if (badges) {
-      badges?.forEach((badge: BadgeTemplate) => {
-        checkAndRewardBadge({ badge });
-      });
-    }
-  }, [badges]);
+    claimTimeBasedBadges().catch((error) =>
+      console.error('Error claiming badges:', error),
+    );
+  }, [claimTimeBasedBadges]);
 
   return (
     <div className="flex w-full select-none flex-row justify-between px-3 py-2">
-      <Link
+      <Tile
+        icon="groups"
+        label="TEAMS"
         onClick={() => setCoreTeamDrawerOpen(true)}
-        href=""
-        className="relative flex size-[5em] flex-col items-center justify-center gap-1 rounded-[1.15em] bg-white text-neutral-900"
+      />
+      <Tile icon="rocket_launch" label="GOALS" />
+      <Tile
+        icon="editor_choice"
+        label="BADGES"
+        onClick={() => setBadgeDrawerOpen(true)}
+      />
+      <Tile icon="monitoring" label="EARN" />
+      <DrawerComponent
+        isOpen={isBadgeDrawerOpen}
+        handleClose={() => setBadgeDrawerOpen(false)}
       >
-        {/* <Image
-          width={100}
-          height={500}
-          src={"/images/lexica/zeros_sun.jpg"}
-          alt={""}
-          className="static w-full h-full opacity-[0.9] object-cover object-center rounded-lg"
-        /> */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-2xl">
-          <span className="icon_size material-symbols-outlined font-light">
-            groups
-          </span>
-          <span className="text-[0.4em] leading-none tracking-[0.2em]">
-            TEAMS
-          </span>
-        </div>
-      </Link>
-      <Link
-        href={APP_ROUTES.home}
-        className="relative flex size-[5em] flex-col items-center justify-center gap-1 rounded-[1.15em] bg-white text-neutral-900"
-      >
-        {/* <Image
-          width={100}
-          height={500}
-          src={"/images/lexica/zeros_sun.jpg"}
-          alt={""}
-          className="static w-full h-full opacity-[0.9] object-cover object-center rounded-lg"
-        /> */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-2xl">
-          <span className="icon_size material-symbols-outlined font-light">
-            rocket_launch
-          </span>
-          <span className="text-[0.4em] leading-none tracking-[0.2em]">
-            GOALS
-          </span>
-        </div>
-      </Link>
-      <Link
-        href={APP_ROUTES.home}
-        className="relative flex size-[5em] flex-col items-center justify-center gap-1 rounded-[1.15em] bg-white text-neutral-900"
-      >
-        {/* <Image
-          width={100}
-          height={500}
-          src={"/images/lexica/zeros_sun.jpg"}
-          alt={""}
-          className="static w-full h-full opacity-[0.9] object-cover object-center rounded-lg"
-        /> */}
-        <div
-          className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-2xl"
-          onClick={() => setIsOpen(!isOpen)}
-        >
-          <span className="icon_size material-symbols-outlined font-light">
-            editor_choice
-          </span>
-          <span className="text-[0.4em] leading-none tracking-[0.2em]">
-            BADGES
-          </span>
-        </div>
-      </Link>
-      <Link
-        href={APP_ROUTES.home}
-        className="relative flex size-[5em] flex-col items-center justify-center gap-1 rounded-[1.15em] bg-white text-neutral-900"
-      >
-        {/* <Image
-          width={100}
-          height={500}
-          src={"/images/lexica/zeros_sun.jpg"}
-          alt={""}
-          className="static w-full h-full opacity-[0.9] object-cover object-center rounded-lg"
-        /> */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-2xl">
-          <span className="icon_size material-symbols-outlined font-light">
-            monitoring
-          </span>
-          <span className="text-[0.4em] leading-none tracking-[0.2em]">
-            EARN
-          </span>
-        </div>
-      </Link>
-      <DrawerComponent isOpen={isOpen} handleClose={handleClose}>
         <div className="p-4">
           <h2 className="mb-6 text-center text-xl font-bold">
             Your Earned Badges
           </h2>
           {loading ? (
             <div className="flex h-screen items-center justify-center">
-              <Spinner className="size-10" />{' '}
+              <Spinner className="size-10" />
             </div>
-          ) : (badgeRewarded?.length ?? 0 > 0) ? (
+          ) : badgesRewarded.length > 0 ? (
             <div className="flex flex-col gap-4">
-              {badgeRewarded?.map((badge: BadgeRewarded) => (
+              {badgesRewarded.map((badge) => (
                 <BadgeCard key={badge.id} badge={badge} />
               ))}
             </div>
