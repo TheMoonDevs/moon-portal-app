@@ -7,67 +7,57 @@ import { APP_ROUTES } from '@/utils/constants/appInfo';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import { AdminUsers } from './AdminUsers';
-import BadgeTemplate from './badge-template/AdminBadges';
-import ClientShortcutsManager from './ClientShortcutsManager';
-import Engagements from './Engagements';
+import AdminBadges from './badge-template/AdminBadges';
 import EventForm from './Events/EventForm';
-import InvoicesTab from './InvoicesTab';
 import SendNotifications from './SendNotifications';
 
-const menuItems = [
-  { name: 'AdminUsers', label: 'Manage Users', icon: 'group' },
+type TabProps = { users: User[]; loading: boolean };
+
+const TABS = [
   {
-    name: 'SendNotifications',
+    name: 'users',
+    label: 'Manage Users',
+    icon: 'group',
+    render: ({ users, loading }: TabProps) => (
+      <AdminUsers users={users} loading={loading} />
+    ),
+  },
+  {
+    name: 'notifications',
     label: 'Send Notifications',
     icon: 'notifications',
+    render: ({ users, loading }: TabProps) => (
+      <SendNotifications users={users} loading={loading} />
+    ),
   },
-  { name: 'BadgeTemplate', label: 'Badge Template', icon: 'badge' },
-  { name: 'EventForm', label: 'Event Form', icon: 'event' },
-  { name: 'Shortcuts', label: 'Client Shortcuts', icon: 'bolt' },
-  { name: 'Engagements', label: 'Engagements', icon: 'handshake' },
-  { name: 'Invoices', label: 'Invoices', icon: 'receipt_long' },
-];
+  {
+    name: 'badges',
+    label: 'Badge Template',
+    icon: 'badge',
+    render: () => <AdminBadges />,
+  },
+  {
+    name: 'events',
+    label: 'Event Form',
+    icon: 'event',
+    render: () => <EventForm />,
+  },
+] as const;
 
 export const AdminPage = () => {
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(false);
   const router = useRouter();
-
-  const [activeComponent, setActiveComponent] = useState('AdminUsers');
-
-  const renderComponent = () => {
-    switch (activeComponent) {
-      case 'AdminUsers':
-        return <AdminUsers users={users} loading={loading} />;
-      case 'SendNotifications':
-        return <SendNotifications users={users} loading={loading} />;
-      case 'BadgeTemplate':
-        return <BadgeTemplate />;
-      case 'EventForm':
-        return <EventForm />;
-      case 'Shortcuts':
-        return <ClientShortcutsManager />;
-      case 'Engagements':
-        return <Engagements users={users} />;
-      case 'Invoices':
-        return <InvoicesTab users={users} loading={loading} />;
-      default:
-        return <AdminUsers users={users} loading={loading} />;
-    }
-  };
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<string>(TABS[0].name);
 
   useEffect(() => {
-    setLoading(true);
     PortalSdk.getData('/api/user', null)
-      .then((data) => {
-        setUsers(data?.data?.user || []);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.log(err);
-        setLoading(false);
-      });
+      .then((data) => setUsers(data?.data?.user ?? []))
+      .catch((err) => console.error('Failed to load users', err))
+      .finally(() => setLoading(false));
   }, []);
+
+  const tab = TABS.find((t) => t.name === activeTab) ?? TABS[0];
 
   return (
     <div className="flex h-screen bg-neutral-700">
@@ -91,15 +81,15 @@ export const AdminPage = () => {
         </div>
 
         <div className="mt-10 flex flex-col gap-4">
-          {menuItems.map((item) => (
+          {TABS.map((item) => (
             <button
               key={item.name}
               className={`flex items-center gap-2 rounded-lg p-2 text-white transition-opacity hover:bg-neutral-800 ${
-                activeComponent === item.name
+                activeTab === item.name
                   ? 'bg-neutral-800 font-semibold opacity-100'
                   : 'opacity-60'
               }`}
-              onClick={() => setActiveComponent(item.name)}
+              onClick={() => setActiveTab(item.name)}
             >
               <span className="material-symbols-outlined">{item.icon}</span>
               {item.label}
@@ -109,7 +99,7 @@ export const AdminPage = () => {
       </div>
 
       <div className="flex flex-1 items-center justify-center overflow-y-auto px-5">
-        {renderComponent()}
+        {tab.render({ users, loading })}
       </div>
     </div>
   );
