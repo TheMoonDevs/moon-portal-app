@@ -4,7 +4,11 @@ import BadgeEditor from '@/components/screens/Admin/badge-template/BadgeEditor';
 
 export default function BadgeEditorPage() {
   return (
-    <PageAccess isAuthRequired={true} isAdminRequired={true}>
+    <PageAccess
+      isAuthRequired={true}
+      isAdminRequired={true}
+      hasBottombar={false}
+    >
       <BadgeEditor />
       <Bottombar visible={false} />
     </PageAccess>

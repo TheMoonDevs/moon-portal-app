@@ -4,7 +4,11 @@ import { AdminUserEditor } from '@/components/screens/Admin/AdminUserEditor/Admi
 
 export default function Home() {
   return (
-    <PageAccess isAuthRequired={true} isAdminRequired={true}>
+    <PageAccess
+      isAuthRequired={true}
+      isAdminRequired={true}
+      hasBottombar={false}
+    >
       <AdminUserEditor />
       <Bottombar visible={false} />
     </PageAccess>

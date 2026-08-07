@@ -4,7 +4,11 @@ import { AdminPage } from '@/components/screens/Admin/AdminPage';
 
 export default function Home() {
   return (
-    <PageAccess isAuthRequired={true} isAdminRequired={true}>
+    <PageAccess
+      isAuthRequired={true}
+      isAdminRequired={true}
+      hasBottombar={false}
+    >
       <AdminPage />
       <Bottombar visible={false} />
     </PageAccess>
