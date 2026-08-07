@@ -1,96 +1,60 @@
 'use client';
 
-import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 import { APP_ROUTES } from '@/utils/constants/appInfo';
 import { useUser } from '@/utils/hooks/useUser';
-import { useAppSelector } from '@/utils/redux/store';
 
-export const usePageAccess = () => {};
+const Interstitial = ({ message }: { message: string }) => (
+  <div className="flex h-screen flex-col items-center justify-center bg-neutral-700 py-2 md:bg-neutral-900">
+    <div className="flex flex-row items-center justify-center gap-2">
+      <div className="size-5 animate-spin rounded-full border-y-2 border-neutral-100"></div>
+      <p className="text-neutral-100">{message}</p>
+    </div>
+  </div>
+);
+
 export const PageAccess = ({
   isAuthRequired,
   isAdminRequired,
+  hasBottombar = true,
   children,
 }: {
-  children: any;
+  children: React.ReactNode;
   isAuthRequired?: boolean;
   isAdminRequired?: boolean;
+  hasBottombar?: boolean;
 }) => {
   const { user, status, verifiedUserEmail } = useUser();
   const router = useRouter();
-  const path = usePathname();
-  const [bottomBarShown, setBottomBarShown] = useState(false);
-  const { redirectUri } = useAppSelector((state) => state.auth);
+
+  const isGuarded = Boolean(isAuthRequired || isAdminRequired);
+  const isGoogleVerified = !!user?.email && verifiedUserEmail === user.email;
+  const isAdminSatisfied = !isAdminRequired || Boolean(user?.isAdmin);
+
   useEffect(() => {
-    if (status === 'unauthenticated' && isAuthRequired) {
-      router.push(APP_ROUTES.login);
+    if (!isGuarded || status === 'loading') return;
+
+    if (status === 'unauthenticated' || !isGoogleVerified) {
+      router.replace(APP_ROUTES.login);
       return;
     }
-    if (status === 'authenticated' && isAdminRequired && !user?.isAdmin) {
-      router.push(APP_ROUTES.home);
-      return;
-    }
+    if (!isAdminSatisfied) router.replace(APP_ROUTES.home);
+  }, [isGuarded, status, isGoogleVerified, isAdminSatisfied, router]);
 
-    if (status === 'authenticated' && verifiedUserEmail !== user?.email) {
-      router.push(redirectUri || APP_ROUTES.login);
-      return;
-    }
+  const content = hasBottombar ? (
+    <div className="md:pl-24">{children}</div>
+  ) : (
+    <>{children}</>
+  );
 
-    setBottomBarShown(document.getElementById('home-bottombar') != null);
-  }, [
-    user,
-    status,
-    isAuthRequired,
-    isAdminRequired,
-    router,
-    verifiedUserEmail,
-  ]);
-
-  // useEffect(() => {
-  //   if(typeof window !== undefined){
-  //     document?.querySelector('html')?.classList.remove('dark')
-  //   }
-  // },[])
-
-  if (status === 'loading') {
-    if (isAuthRequired || isAdminRequired)
-      return (
-        <div className="flex h-screen flex-col items-center justify-center bg-neutral-700 py-2 md:bg-neutral-900">
-          <div className="flex flex-row items-center justify-center gap-2">
-            <div className="size-5 animate-spin rounded-full border-y-2 border-neutral-100"></div>
-            <p className="text-neutral-100">Verifying Connection...</p>
-          </div>
-        </div>
-      );
-    else return children;
+  if (!isGuarded) return content;
+  if (status === 'loading')
+    return <Interstitial message="Verifying Connection..." />;
+  if (status === 'unauthenticated' || !isGoogleVerified || !isAdminSatisfied) {
+    return <Interstitial message="Redirecting..." />;
   }
 
-  if (isAuthRequired && verifiedUserEmail !== user?.email) {
-    return (
-      <div className="flex h-screen flex-col items-center justify-center bg-neutral-700 py-2 md:bg-neutral-900">
-        <div className="flex flex-row items-center justify-center gap-2">
-          <div className="size-5 animate-spin rounded-full border-y-2 border-neutral-100"></div>
-          <p className="text-neutral-100">Redirecting...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (isAdminRequired && !user?.isAdmin) {
-    return (
-      <div className="flex h-screen flex-col items-center justify-center bg-neutral-700 py-2 md:bg-neutral-900">
-        <div className="flex flex-row items-center justify-center gap-2">
-          <div className="size-5 animate-spin rounded-full border-y-2 border-neutral-100"></div>
-          <p className="text-neutral-100">Redirecting...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (bottomBarShown)
-    return (
-      <div className={`${bottomBarShown ? 'md:pl-24' : ''}`}>{children}</div>
-    );
-  else return <>{children}</>;
+  return content;
 };

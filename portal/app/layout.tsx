@@ -9,12 +9,9 @@ import 'slick-carousel/slick/slick-theme.css';
 import { MantineProvider } from '@mantine/core';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import type { Session } from 'next-auth';
 
 import { ToastsContainer } from '@/components/elements/Toast';
-import { AppLayout } from '@/components/global/AppLayout';
 import PushServiceRegistration from '@/components/global/PushServiceRegistration';
-import RedirectWrapperProvider from '@/components/global/RedirectWrapperProvider';
 import { UpdatePWA } from '@/components/global/UpdatePWA';
 import { MUIThemeRegistry } from '@/styles/provider';
 import { ReduxProvider } from '@/utils/redux/provider';
@@ -31,10 +28,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-  session,
 }: {
   children: React.ReactNode;
-  session: Session;
 }) {
   return (
     <html lang="en">
@@ -53,18 +48,14 @@ export default function RootLayout({
         ></link>
       </head>
       <body className={inter.className}>
-        <NextAuthProvider session={session}>
+        <NextAuthProvider>
           <MUIThemeRegistry options={{ key: 'mui' }}>
             <MantineProvider>
               <ReduxProvider>
-                <RedirectWrapperProvider>
-                  <PushServiceRegistration>
-                    <UpdatePWA>
-                      <AppLayout>{children}</AppLayout>
-                    </UpdatePWA>
-                  </PushServiceRegistration>
-                  <ToastsContainer />
-                </RedirectWrapperProvider>
+                <PushServiceRegistration>
+                  <UpdatePWA>{children}</UpdatePWA>
+                </PushServiceRegistration>
+                <ToastsContainer />
               </ReduxProvider>
             </MantineProvider>
           </MUIThemeRegistry>
