@@ -21,7 +21,11 @@ type QueryArgs = {
   data?: AnyDoc;
 };
 
-function withMongoId(meta: ModelMeta, input?: AnyDoc, forFilter = false): AnyDoc {
+function withMongoId(
+  meta: ModelMeta,
+  input?: AnyDoc,
+  forFilter = false,
+): AnyDoc {
   const obj = { ...(input ?? {}) };
   if (meta.idField === 'id' && 'id' in obj) {
     const raw = obj.id;

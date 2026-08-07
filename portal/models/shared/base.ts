@@ -19,7 +19,11 @@ export interface BaseModel {
 // Generic schema helper for schemaless collections.
 export const objectSchema = <T>() => z.object({}).passthrough() as z.ZodType<T>;
 
-export const createCrudSchemas = <TEntity, TCreate = Partial<TEntity>, TUpdate = Partial<TEntity>>() => ({
+export const createCrudSchemas = <
+  TEntity,
+  TCreate = Partial<TEntity>,
+  TUpdate = Partial<TEntity>,
+>() => ({
   entity: objectSchema<TEntity>(),
   create: objectSchema<TCreate>(),
   update: objectSchema<TUpdate>(),
