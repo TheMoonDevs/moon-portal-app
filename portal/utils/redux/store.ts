@@ -1,70 +1,42 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { useDispatch, useSelector } from 'react-redux';
-import { TypedUseSelectorHook } from 'react-redux/es/types';
+import type { TypedUseSelectorHook } from 'react-redux/es/types';
 
-import uiReducer from './ui/ui.slice';
-import shortUrlReducer from './shortUrl/shortUrl.slice';
 import authReducer from './auth/auth.slice';
-import zerotrackerReducer from './zerotracker/zerotracker.slice';
-import searchTermReducer from './searchTerm/search.slice';
-import tasksReducer from './tasks/tasks.slice';
+import coreTeamReducer from './coreTeam/coreTeam.slice';
 import filesUploadReducer from './filesUpload/fileUpload.slice';
-import onboardingFormReducer from './onboarding/onboarding.slice';
-import worklogsReducer from './worklogs/worklogs.slice';
-import missionReducer from './missions/mission.slice';
-import missionTasksReducer from './missions/missionsTasks.slice';
-import missionUiSlice from './missions/mission.ui.slice';
+import notificationsReducer from './notification/notification.slice';
+import shortUrlReducer from './shortUrl/shortUrl.slice';
+import tasksReducer from './tasks/tasks.slice';
+import uiReducer from './ui/ui.slice';
+import adminTasksReducer from './worklogs/adminTasks.slice';
 import laterTodosReducer from './worklogs/laterTodos.slice';
 import monthlyTargetsReducer from './worklogs/monthlyTargets.slice';
-import adminTasksReducer from './worklogs/adminTasks.slice';
-//import suggestionsReducer from './suggestions/suggestions.slice';
-import notificationsReducer from './notification/notification.slice';
-import coreTeamSlice from './coreTeam/coreTeam.slice';
-import quicklinksLinksReducer from './quicklinks/slices/quicklinks.links.slice';
-import quicklinksDirectoryReducer from './quicklinks/slices/quicklinks.directory.slice';
-import quicklinksUiReducer from './quicklinks/slices/quicklinks.ui.slice';
-import statsActionSlice from './worklogsSummary/statsAction.slice';
+import worklogsReducer from './worklogs/worklogs.slice';
+import statsActionReducer from './worklogsSummary/statsAction.slice';
 
 const store = configureStore({
   reducer: {
     auth: authReducer,
-    quicklinksLinks: quicklinksLinksReducer,
-    quicklinksDirectory: quicklinksDirectoryReducer,
-    quicklinksUi: quicklinksUiReducer,
-    ui: uiReducer,
-    shortUrl: shortUrlReducer,
-    zerotracker: zerotrackerReducer,
+    coreTeam: coreTeamReducer,
     filesUpload: filesUploadReducer,
+    notifications: notificationsReducer,
+    shortUrl: shortUrlReducer,
+    tasks: tasksReducer,
+    ui: uiReducer,
     worklogs: worklogsReducer,
+    adminTasks: adminTasksReducer,
     laterTodos: laterTodosReducer,
     monthlyTargets: monthlyTargetsReducer,
-    adminTasks: adminTasksReducer,
-    searchTerm: searchTermReducer,
-    onboardingForm: onboardingFormReducer,
-    mission: missionReducer,
-    missionsTasks: missionTasksReducer,
-    missionUi: missionUiSlice,
-    coreTeam: coreTeamSlice,
-    //suggestions: suggestionsReducer,
-    notifications: notificationsReducer,
-    tasks: tasksReducer,
-    statsAction: statsActionSlice,
+    statsAction: statsActionReducer,
   },
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware({
-      serializableCheck: false,
-      // serializableCheck: {
-      //   ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
-      // },
-    }),
+    getDefaultMiddleware({ serializableCheck: false }),
 });
 
-// Infer the `RootState` and `AppDispatch` types from the store itself
 export type RootState = ReturnType<typeof store.getState>;
-// Inferred type: {posts: PostsState, comments: CommentsState, users: UsersState}
 export type AppDispatch = typeof store.dispatch;
 
-// Use throughout your app instead of plain `useDispatch` and `useSelector`
 export const useAppDispatch: () => AppDispatch = useDispatch<AppDispatch>;
 export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;
 
