@@ -317,8 +317,7 @@ const ProfileImagesSection = ({
   avatarLoading: boolean;
 }) => {
   const badges = (selectedUser as any).buffBadge;
-  const badge =
-    badges?.length > 0 ? badges[0] : { points: 1, title: 'Newbie' };
+  const badge = badges?.length > 0 ? badges[0] : { points: 1, title: 'Newbie' };
 
   return (
     <div className="relative h-[120px]">

@@ -25,7 +25,7 @@ export const LoginScreen = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  const { data, status, user, verifiedUserEmail, signOutUser } = useUser(false);
+  const { status, user, verifiedUserEmail, signOutUser } = useUser();
   const [enteredPasscode, setEnteredPasscode] = useState<string | null>('');
 
   useEffect(() => {
@@ -164,11 +164,7 @@ export const LoginScreen = () => {
             />
           )}
           {tab === LoginState.SELECT_USER_TYPE && (
-            <LoginButtons
-              onSelectUserType={(_type) => {
-                setTab(LoginState.LOGIN_CODE);
-              }}
-            />
+            <LoginButtons onContinue={() => setTab(LoginState.LOGIN_CODE)} />
           )}
           {status === 'authenticated' &&
             user &&

@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
+import { enforcePermission } from '@/lib/permissions/server';
 import { getWorksheetConfig } from '@/lib/worksheets';
 import {
   createRow,
@@ -14,6 +15,9 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ worksheetId: string }> },
 ) {
+  const denied = await enforcePermission('worksheets:read');
+  if (denied) return denied;
+
   try {
     const { worksheetId } = await params;
     const url = new URL(request.url);
@@ -69,6 +73,9 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ worksheetId: string }> },
 ) {
+  const denied = await enforcePermission('worksheets:append');
+  if (denied) return denied;
+
   try {
     const { worksheetId } = await params;
     const worksheetConfig = getWorksheetConfig(worksheetId);

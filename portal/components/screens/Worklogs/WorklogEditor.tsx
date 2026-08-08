@@ -1,6 +1,6 @@
 'use client';
 
-import type { Engagement, WorkLogs } from '@db/client';
+import type { WorkLogs } from '@db/client';
 import type { MDXEditorMethods } from '@mdxeditor/editor';
 import { Dialog, DialogContent, IconButton } from '@mui/material';
 import dayjs from 'dayjs';
@@ -26,7 +26,6 @@ import { useUser } from '@/utils/hooks/useUser';
 import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
 import {
   setEdiotrSaving,
-  setSelectedEngagement,
   updateLogs,
 } from '@/utils/redux/worklogs/worklogs.slice';
 import { PortalSdk } from '@/utils/services/PortalSdk';
@@ -48,9 +47,7 @@ export const getStatsOfContent = (content: string) => {
 };
 
 const getPrivateLineCount = (content: string) => {
-  return content
-    .split('\n')
-    .filter((line) => /^\s*(\*\s*)?p:/i.test(line))
+  return content.split('\n').filter((line) => /^\s*(\*\s*)?p:/i.test(line))
     .length;
 };
 
@@ -133,7 +130,6 @@ export const WorklogEditor = ({
   handleNextMonthClick,
   fetchXTasksForDay,
   fetchOptions,
-  engagements,
 }: {
   loading: boolean;
   editWorkLogs: WorkLogs | null;
@@ -144,7 +140,6 @@ export const WorklogEditor = ({
   handleNextMonthClick?: () => void;
   fetchXTasksForDay: (date: string) => Promise<WorkLogs | null>;
   fetchOptions: { label: string; dateIdx: number }[];
-  engagements: Engagement[];
 }) => {
   const dispatch = useAppDispatch();
   const { user } = useUser();
@@ -169,8 +164,6 @@ export const WorklogEditor = ({
     importing: false,
     loader: false,
   });
-  const [isSelectOpen, setIsSelectOpen] = useState(false);
-  const { selectedEngagement } = useAppSelector((state) => state.worklogs);
 
   const path = usePathname();
   useEffect(() => {
@@ -407,7 +400,6 @@ export const WorklogEditor = ({
     setShowPopup(!showPopup);
   };
   const popupRef = useRef<HTMLDivElement | null>(null);
-  const selectRef = useRef<HTMLDivElement | null>(null);
 
   const handleClickOutside = (event: MouseEvent) => {
     if (popupRef.current && !popupRef.current.contains(event.target as Node)) {
@@ -415,26 +407,10 @@ export const WorklogEditor = ({
     }
   };
 
-  const handleClickOutsideSelect = (event: MouseEvent) => {
-    if (
-      selectRef.current &&
-      !selectRef.current.contains(event.target as Node)
-    ) {
-      setIsSelectOpen(false);
-    }
-  };
-
   useEffect(() => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
-  useEffect(() => {
-    document.addEventListener('mousedown', handleClickOutsideSelect);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutsideSelect);
     };
   }, []);
 
@@ -455,12 +431,6 @@ export const WorklogEditor = ({
       window.removeEventListener('keydown', handleSaveHotkeys);
     };
   }, [saveWorkLog, refreshWorklogs, workLog]);
-
-  const filteredEngagements = engagements.filter(
-    (engagement) =>
-      // engagement.title !== selectedEngagement?.title ||
-      !markdownDatas.some((data) => data.title === engagement.title),
-  );
 
   return (
     <div
@@ -668,7 +638,8 @@ export const WorklogEditor = ({
         <div className="mt-2 flex items-center gap-2 text-[11px] text-neutral-500">
           <span className="material-symbols-outlined !text-sm">lock</span>
           <span>
-            Prefix a line with <code>p:</code> to mark it private for other users.
+            Prefix a line with <code>p:</code> to mark it private for other
+            users.
           </span>
         </div>
         <div className={`h-[${compactView ? '1em' : '3em'}]`}></div>
@@ -801,64 +772,6 @@ export const WorklogEditor = ({
           </div> */}
         </div>
       )}
-      <div className="relative px-2 pb-1">
-        {path?.includes('user/worklogs') && engagements.length > 0 && (
-          <>
-            <button
-              className={`flex w-fit cursor-pointer items-start justify-start rounded-md bg-transparent px-3 py-1 text-[0.8em] uppercase tracking-widest text-neutral-300 transition-all duration-300 hover:border hover:border-neutral-400 hover:text-neutral-500 ${isSelectOpen && 'border border-neutral-400 text-neutral-500'}`}
-              onClick={() => setIsSelectOpen(!isSelectOpen)}
-            >
-              <p className="flex items-center gap-2 font-medium">
-                <span
-                  className={`material-symbols-outlined transition-transform duration-300 ${
-                    isSelectOpen ? 'rotate-180' : 'rotate-0'
-                  }`}
-                >
-                  {!isSelectOpen ? 'add' : 'remove'}
-                </span>
-                Engagement
-              </p>
-            </button>
-
-            <div
-              ref={selectRef}
-              className={`absolute left-2 top-full z-20 mt-0 w-fit rounded-md border border-neutral-400 bg-white shadow-lg transition-all duration-300 ease-in-out ${
-                isSelectOpen ? 'max-h-60 opacity-100' : 'max-h-0 opacity-0'
-              } overflow-hidden`}
-            >
-              <div className="no-scrollbar max-h-60 overflow-y-auto">
-                {filteredEngagements.length > 0 ? (
-                  filteredEngagements.map((eng: Engagement) => (
-                    <div
-                      key={eng.id}
-                      onClick={() => {
-                        dispatch(setSelectedEngagement(eng));
-                        if (selectedEngagement)
-                          addNewProject({
-                            type: LOGLINKTYPE.ENGAGEMENT,
-                            projectTitle: eng.title,
-                            id: selectedEngagement?.id,
-                          });
-                        setIsSelectOpen(false);
-                      }}
-                      className="block w-full cursor-pointer px-4 py-2 text-left text-xs transition-colors duration-300 hover:bg-neutral-100 focus:bg-neutral-100"
-                    >
-                      {eng.title}
-                    </div>
-                  ))
-                ) : (
-                  <div
-                    className="block w-full cursor-pointer px-4 py-2 text-left text-xs transition-colors duration-300 hover:bg-neutral-100 focus:bg-neutral-100"
-                    onClick={() => setIsSelectOpen(false)}
-                  >
-                    No Engagements
-                  </div>
-                )}
-              </div>
-            </div>
-          </>
-        )}
-      </div>
 
       <SavingDialog
         open={isSavingModalOpen}

@@ -1,10 +1,15 @@
+import type { UIMessage } from 'ai';
+import type { NextRequest } from 'next/server';
+
 import { aiMainRouter } from '@/app/ai';
-import { UIMessage } from 'ai';
-import { NextRequest } from 'next/server';
+import { enforcePermission } from '@/lib/permissions/server';
 
 //get example: http://localhost:3000/api/studio/chat/agent/thinker/questions?userIntent=
 
 export async function GET(req: NextRequest) {
+  const denied = await enforcePermission('studio:read');
+  if (denied) return denied;
+
   const agentFullPath = req.nextUrl.href.split('/api/studio/chat/agent')[1];
   const agentPath = agentFullPath.includes('?')
     ? agentFullPath.split('?')[0]
@@ -31,6 +36,9 @@ export async function GET(req: NextRequest) {
 //      -d '{"messages": [{"role": "user", "content": "What is the capital of France?"}]}'
 
 export async function POST(req: NextRequest) {
+  const denied = await enforcePermission('studio:edit');
+  if (denied) return denied;
+
   const body = await req.json();
 
   const agentFullPath = req.nextUrl.href.split('/api/studio/chat/agent')[1];

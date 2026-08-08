@@ -1,6 +1,5 @@
 'use client';
 
-import { USERTYPE } from '@db/client';
 import { Badge, useMediaQuery } from '@mui/material';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -17,89 +16,16 @@ import LogoutConfirmationDialog from './LogoutConfirmationDialog';
 import NotificationModal from './NotificationModal';
 
 const NAVIGATION_OPTIONS = [
-  {
-    name: 'Home',
-    path: APP_ROUTES.home,
-    icon: 'perm_identity',
-  },
-  {
-    name: 'Worklogs',
-    path: APP_ROUTES.userWorklogs,
-    icon: 'task_alt',
-  },
-  // {
-  //   name: 'Houses',
-  //   path: APP_ROUTES.houses,
-  //   icon: 'category',
-  // },
-  // {
-  //   name: "Teams",
-  //   path: APP_ROUTES.teams,
-  //   icon: "workspaces",
-  // },
-  // {
-  //   name: "Growth",
-  //   path: APP_ROUTES.growth,
-  //   icon: "trending_up",
-  // },
+  { name: 'Home', path: APP_ROUTES.home, icon: 'perm_identity' },
+  { name: 'Worklogs', path: APP_ROUTES.userWorklogs, icon: 'task_alt' },
   {
     name: 'Notifications',
     path: APP_ROUTES.notifications,
     icon: 'notifications',
   },
-  {
-    name: 'Worksheets',
-    path: APP_ROUTES.worksheets,
-    icon: 'description',
-  },
-  {
-    name: 'Admin',
-    path: APP_ROUTES.admin,
-    icon: 'admin_panel_settings',
-  },
-  {
-    name: 'Settings',
-    path: APP_ROUTES.settings,
-    icon: 'settings',
-  },
-];
-
-const CLIENT_NAVIGATION_OPTIONS = [
-  {
-    name: 'Home',
-    path: APP_ROUTES.home,
-    icon: 'perm_identity',
-  },
-  {
-    name: 'Engagements',
-    path: APP_ROUTES.engagements,
-    icon: 'task_alt',
-  },
-  {
-    name: 'Invoices',
-    path: APP_ROUTES.invoices,
-    icon: 'receipt_long',
-  },
-  // {
-  //   name: 'Referrals',
-  //   path: APP_ROUTES.referrals,
-  //   icon: 'group_add',
-  // },
-  // {
-  //   name: "Growth",
-  //   path: APP_ROUTES.growth,
-  //   icon: "trending_up",
-  // },
-  {
-    name: 'Notifications',
-    path: APP_ROUTES.notifications,
-    icon: 'notifications',
-  },
-  {
-    name: 'Worksheets',
-    path: APP_ROUTES.worksheets,
-    icon: 'description',
-  },
+  { name: 'Worksheets', path: APP_ROUTES.worksheets, icon: 'description' },
+  { name: 'Admin', path: APP_ROUTES.admin, icon: 'admin_panel_settings' },
+  { name: 'Settings', path: APP_ROUTES.settings, icon: 'settings' },
 ];
 
 export const Bottombar = ({
@@ -112,62 +38,32 @@ export const Bottombar = ({
   const path = usePathname();
   const router = useRouter();
   const { user } = useUser();
-  const visibleOnlyOnResponsiveSizes = useMediaQuery(
-    visibleOnlyOn ? visibleOnlyOn : media.default,
-  );
+  const { unreadNotificationsCount } = useNotifications();
+
+  const matchesVisibleOnlyOn = useMediaQuery(visibleOnlyOn ?? media.default);
   const isMobile = useMediaQuery(media.largeMobile);
   const isTablet = useMediaQuery(media.tablet);
-  const isMobileOrTablet = isMobile || isTablet;
-  const { unreadNotificationsCount } = useNotifications();
-  const [isOpen, setIsOpen] = useState<boolean>(false);
-  const [open, setOpen] = useState(false);
 
-  const handleLogoutDialogOpen = () => {
-    setOpen(true);
-  };
+  const [isNotificationModalOpen, setNotificationModalOpen] = useState(false);
+  const [isLogoutDialogOpen, setLogoutDialogOpen] = useState(false);
 
-  const options =
-    user?.userType === USERTYPE.CLIENT
-      ? CLIENT_NAVIGATION_OPTIONS
-      : NAVIGATION_OPTIONS.filter(
-          (option) =>
-            !(
-              option.name === 'Admin' &&
-              (!user?.isAdmin || isMobile || isTablet)
-            ),
-        );
   if (!visible && !visibleOnlyOn) return null;
-  if (visibleOnlyOn && !visibleOnlyOnResponsiveSizes) return null;
-  //if (!AppRoutesHelper.bottomBarShown(path)) return null;
+  if (visibleOnlyOn && !matchesVisibleOnlyOn) return null;
 
-  const handleNotificationClick = () => {
-    if (isMobile) {
-      router.push(APP_ROUTES.notifications);
-    } else {
-      setIsOpen(!isOpen);
-    }
-  };
-
-  const workLogClick = (path: string) => {
-    router.push(APP_ROUTES.userWorklogs);
-    // if (isMobile && workLogId && !loadingWorkLog) {
-    //   // Check for loading state
-    //   const currentDate = new Date().toISOString().split('T')[0];
-    //   router.push(`${path}/${workLogId}?logType=dayLog&date=${currentDate}`);
-    // } else {
-    //   router.push(APP_ROUTES.userWorklogs);
-    // }
-  };
+  const canSeeAdmin = user?.isAdmin && !isMobile && !isTablet;
+  const options = NAVIGATION_OPTIONS.filter(
+    (option) => option.name !== 'Admin' || canSeeAdmin,
+  );
 
   const handleTabClick = (option: { name: string; path: string }) => {
-    if (option.name === 'Notifications') {
-      handleNotificationClick();
-    } else if (option.name === 'Worklogs') {
-      workLogClick(option.path);
-    } else {
+    if (option.name !== 'Notifications') {
       router.push(option.path);
+      return;
     }
+    if (isMobile) router.push(APP_ROUTES.notifications);
+    else setNotificationModalOpen((open) => !open);
   };
+
   return (
     <div
       className={`md:fixed-none bottombar fixed inset-x-0 bottom-0 z-10 flex flex-row gap-6 bg-neutral-900 p-2 max-md:m-1 max-md:rounded-2xl md:bottom-auto md:left-0 md:top-0 md:h-full md:w-24 md:flex-col md:px-2 md:py-1`}
@@ -226,7 +122,7 @@ export const Bottombar = ({
         );
       })}{' '}
       <button
-        onClick={handleLogoutDialogOpen}
+        onClick={() => setLogoutDialogOpen(true)}
         className={`absolute bottom-5 flex w-[85%] cursor-pointer flex-col items-center justify-center rounded-2xl bg-black py-1 pt-2 text-xl hover:bg-neutral-700 max-md:hidden`}
       >
         <span className="material-symbols-outlined text-white">logout</span>
@@ -235,10 +131,13 @@ export const Bottombar = ({
         </span>
       </button>
       <LogoutConfirmationDialog
-        open={open}
-        handleClose={() => setOpen(false)}
+        open={isLogoutDialogOpen}
+        handleClose={() => setLogoutDialogOpen(false)}
       />
-      <NotificationModal open={isOpen} onClose={() => setIsOpen(false)} />
+      <NotificationModal
+        open={isNotificationModalOpen}
+        onClose={() => setNotificationModalOpen(false)}
+      />
     </div>
   );
 };

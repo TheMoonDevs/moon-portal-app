@@ -1,54 +1,66 @@
-import { LOCAL_STORAGE } from '@/utils/constants/appInfo';
-import { User } from '@db/client';
+import type { User } from '@db/client';
 import { createSlice } from '@reduxjs/toolkit';
 
-const getInitialUser = (): User | null => {
+import { LOCAL_STORAGE } from '@/utils/constants/appInfo';
+
+const VERIFIED_EMAIL_KEY = 'verifiedUserEmail';
+
+// The cached profile is a render-speed optimisation only. It is never treated
+// as proof of a session — useUser discards it unless NextAuth agrees.
+const readCachedUser = (): User | null => {
   if (typeof window === 'undefined') return null;
-  const rawUser = localStorage.getItem(LOCAL_STORAGE.user);
-  if (!rawUser) return null;
+  const raw = localStorage.getItem(LOCAL_STORAGE.user);
+  if (!raw) return null;
   try {
-    const parsed = JSON.parse(rawUser) as User;
+    const parsed = JSON.parse(raw) as User;
     return parsed?.id ? parsed : null;
-  } catch (error) {
-    console.log('Invalid auth user in localStorage, clearing it', error);
+  } catch {
     localStorage.removeItem(LOCAL_STORAGE.user);
     return null;
   }
 };
 
-export const uiSlice = createSlice({
-  name: 'ui',
+const readVerifiedEmail = (): string | null =>
+  typeof window === 'undefined'
+    ? null
+    : localStorage.getItem(VERIFIED_EMAIL_KEY);
+
+export const authSlice = createSlice({
+  name: 'auth',
   initialState: {
-    user: getInitialUser(),
-    verifiedUserEmail:
-      typeof window !== 'undefined'
-        ? localStorage.getItem('verifiedUserEmail')
-        : null,
-    redirectUri: null,
+    user: readCachedUser(),
+    verifiedUserEmail: readVerifiedEmail(),
   },
   reducers: {
-    setRedirectUri: (state, action) => {
-      state.redirectUri = action.payload;
-    },
-
-    setReduxUser: (state, action) => {
+    setReduxUser: (state, action: { payload: User | null }) => {
       state.user = action.payload ?? null;
+      if (typeof window === 'undefined') return;
       if (action.payload?.id) {
-        localStorage.setItem(LOCAL_STORAGE.user, JSON.stringify(action.payload));
+        localStorage.setItem(
+          LOCAL_STORAGE.user,
+          JSON.stringify(action.payload),
+        );
+      } else {
+        localStorage.removeItem(LOCAL_STORAGE.user);
       }
     },
-    setGoogleVerificationEmail: (state, action) => {
-      if (typeof window !== 'undefined')
-        localStorage.setItem('verifiedUserEmail', action.payload);
+    clearReduxUser: (state) => {
+      state.user = null;
+      state.verifiedUserEmail = null;
+      if (typeof window === 'undefined') return;
+      localStorage.removeItem(LOCAL_STORAGE.user);
+      localStorage.removeItem(VERIFIED_EMAIL_KEY);
+    },
+    setGoogleVerificationEmail: (state, action: { payload: string }) => {
       state.verifiedUserEmail = action.payload;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(VERIFIED_EMAIL_KEY, action.payload);
+      }
     },
   },
 });
 
-const { actions, reducer } = uiSlice;
+export const { setReduxUser, clearReduxUser, setGoogleVerificationEmail } =
+  authSlice.actions;
 
-// Only Slice Actions are generated here, refer sharedActions for others.
-export const { setReduxUser, setGoogleVerificationEmail, setRedirectUri } =
-  actions;
-
-export default reducer;
+export default authSlice.reducer;

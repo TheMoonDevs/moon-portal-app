@@ -1,23 +1,24 @@
-import type { PayData, personalData, workData } from '@/models/domains/user-profile';
+import type {
+  PayData,
+  personalData,
+  workData,
+} from '@/models/domains/user-profile';
 
-import { createCrudSchemas, type BaseModel, type JsonObject, type Loose, type Nullable, type OptionalNullable } from './shared/base';
 import {
-  type Category,
-  type ContactDetails,
-  type Frequency,
-  type HOUSEID,
-  type Preferences,
-  type PROJECTS,
-  type SOCIALLINK,
-  type SubscriptionStatus,
-  type USERTYPE,
-  type USERINDUSTRY,
-  type USERROLE,
-  type USERSTATUS,
-  type USERVERTICAL,
-  type UserType,
-  type WORKEXPERIENCE,
-  type PUSHNOTIFICATION,
+  type BaseModel,
+  createCrudSchemas,
+  type JsonObject,
+  type Loose,
+  type Nullable,
+  type OptionalNullable,
+} from './shared/base';
+import type {
+  HOUSEID,
+  USERINDUSTRY,
+  USERROLE,
+  USERSTATUS,
+  USERTYPE,
+  USERVERTICAL,
 } from './shared/enums';
 
 export type User = Loose<
@@ -37,6 +38,20 @@ export type User = Loose<
     status: USERSTATUS;
     industry?: Nullable<USERINDUSTRY>;
     isAdmin?: boolean;
+    /**
+     * Access-control policies granted to this user, expressed as
+     * `resource:action` strings (e.g. `worksheets:read`, `users:edit`).
+     * These are ADDED on top of the user's role defaults. Managed via
+     * /api/user/permissions.
+     */
+    permissions?: Nullable<string[]>;
+    /**
+     * Policies explicitly REMOVED from this user, overriding both their role
+     * defaults and (for admins) the implicit wildcard. A permission listed here
+     * is denied even if it would otherwise be granted — this is how a default
+     * is taken away or a specific admin capability is disabled.
+     */
+    deniedPermissions?: Nullable<string[]>;
     timezone?: Nullable<string>;
     country?: Nullable<string>;
     workData?: OptionalNullable<workData & { overlap?: unknown[] }>;
@@ -49,58 +64,4 @@ export type User = Loose<
   }
 >;
 
-export type Survey = Loose<
-  BaseModel & {
-    username: string;
-    password: string;
-    name?: Nullable<string>;
-  }
->;
-
-export type Subscription = Loose<
-  BaseModel & {
-    userId: string;
-    subscriptions: PUSHNOTIFICATION[];
-  }
->;
-
-export type DevProfile = Loose<
-  BaseModel & {
-    userId: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-    avatar: string;
-    bio: string;
-    address: string;
-    city: string;
-    state: string;
-    country: string;
-    profession: string;
-    availability?: Nullable<string>;
-    expertise: string[];
-    workExperience: WORKEXPERIENCE[];
-    projects: PROJECTS[];
-    socialLinks: SOCIALLINK[];
-  }
->;
-
-export type EmailSubscriber = Loose<
-  BaseModel & {
-    email: string;
-    name?: Nullable<string>;
-    userType?: OptionalNullable<UserType>;
-    source?: Nullable<string>;
-    subscriptionStatus?: OptionalNullable<SubscriptionStatus>;
-    timeZone?: Nullable<string>;
-    preferences?: OptionalNullable<Preferences>;
-    contactDetails?: OptionalNullable<ContactDetails>;
-    context?: Nullable<string>;
-  }
->;
-
 export const userSchemas = createCrudSchemas<User>();
-export const surveySchemas = createCrudSchemas<Survey>();
-export const subscriptionSchemas = createCrudSchemas<Subscription>();
-export const devProfileSchemas = createCrudSchemas<DevProfile>();
-export const emailSubscriberSchemas = createCrudSchemas<EmailSubscriber>();

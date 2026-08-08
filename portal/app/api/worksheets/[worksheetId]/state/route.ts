@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
+import { enforcePermission } from '@/lib/permissions/server';
 import {
   getUiState,
   setUiState,
@@ -10,6 +11,9 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ worksheetId: string }> },
 ) {
+  const denied = await enforcePermission('worksheets:read');
+  if (denied) return denied;
+
   try {
     const { worksheetId } = await params;
     const uiState = await getUiState(worksheetId);
@@ -31,6 +35,9 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ worksheetId: string }> },
 ) {
+  const denied = await enforcePermission('worksheets:edit');
+  if (denied) return denied;
+
   try {
     const { worksheetId } = await params;
     const body = (await request.json()) as { uiState: Record<string, unknown> };

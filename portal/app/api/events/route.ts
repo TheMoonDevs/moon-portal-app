@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/mongodb/db-client';
+import { enforcePermission } from '@/lib/permissions/server';
 
 const formatDate = (date: any) => {
   const day = String(date.getDate()).padStart(2, '0');
@@ -12,6 +13,9 @@ const formatDate = (date: any) => {
 };
 
 export async function POST(req: NextRequest) {
+  const denied = await enforcePermission('events:create');
+  if (denied) return denied;
+
   if (!req.body) {
     return new NextResponse(JSON.stringify({ error: 'Body not found' }), {
       status: 400,
@@ -59,6 +63,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
+  const denied = await enforcePermission('events:read');
+  if (denied) return denied;
+
   try {
     const { searchParams } = new URL(req.url);
     const month = searchParams.get('month');
@@ -101,6 +108,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
+  const denied = await enforcePermission('events:edit');
+  if (denied) return denied;
+
   if (!req.body) {
     return new NextResponse(JSON.stringify({ error: 'Body not found' }), {
       status: 400,
@@ -158,6 +168,9 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function DELETE(request: Request) {
+  const denied = await enforcePermission('events:delete');
+  if (denied) return denied;
+
   try {
     const { id, ...rest } = await request.json();
 

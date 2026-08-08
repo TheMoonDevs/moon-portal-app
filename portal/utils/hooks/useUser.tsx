@@ -1,107 +1,92 @@
 'use client';
-import { useSession, signOut } from 'next-auth/react';
-import { useEffect, useMemo, useState } from 'react';
-import { PortalSdk } from '../services/PortalSdk';
-import { APP_ROUTES, LOCAL_STORAGE } from '../constants/appInfo';
-import { User } from '@db/client';
-import { useAppDispatch, useAppSelector } from '../redux/store';
-import { setReduxUser } from '../redux/auth/auth.slice';
 
-export const useUser = (newfetch?: boolean) => {
-  const { data, status } = useSession();
+import type { User } from '@db/client';
+import { signOut, useSession } from 'next-auth/react';
+import { useCallback, useEffect } from 'react';
+
+import { APP_ROUTES } from '@/utils/constants/appInfo';
+import { clearReduxUser, setReduxUser } from '@/utils/redux/auth/auth.slice';
+import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
+import { PortalSdk } from '@/utils/services/PortalSdk';
+
+export type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
+
+// Client-side caches holding one user's data. Left behind, they leak to the
+// next person who signs in on the same browser.
+const PER_USER_CACHE_KEYS = ['notifications', 'passcode'];
+
+const clearPerUserCaches = () => {
+  if (typeof window === 'undefined') return;
+  PER_USER_CACHE_KEYS.forEach((key) => localStorage.removeItem(key));
+};
+
+/**
+ * NextAuth is the single source of truth for whether someone is signed in.
+ * Redux/localStorage only cache the full user record, which the session does
+ * not carry — they can never make an expired session look valid.
+ */
+export const useUser = () => {
+  const { data: session, status } = useSession();
   const dispatch = useAppDispatch();
-  const sessionUser = useMemo(() => (data?.user as User) || {}, [data]);
-  const fetchedUser = useAppSelector((state) => state.auth.user);
-  const [localUser, setLocalUser] = useState<User | null>(null);
+  const cachedUser = useAppSelector((state) => state.auth.user);
   const verifiedUserEmail = useAppSelector(
     (state) => state.auth.verifiedUserEmail,
   );
 
-  const getParsedLocalUser = (): User | null => {
-    const rawUser = localStorage.getItem(LOCAL_STORAGE.user);
-    if (!rawUser) return null;
-    try {
-      const parsed = JSON.parse(rawUser) as User;
-      return parsed?.id ? parsed : null;
-    } catch {
-      localStorage.removeItem(LOCAL_STORAGE.user);
-      return null;
-    }
-  };
+  const sessionUser = session?.user as (User & { id?: string }) | undefined;
+  const sessionUserId = sessionUser?.id;
 
-  const refetchUser = () => {
-    try {
-      PortalSdk.getData('/api/user?id=' + sessionUser.id, null)
-        .then((data) => {
-          if (data?.users?.length === 0) {
-            if (sessionUser.id) {
-              console.log('No user found');
-              localStorage.removeItem(LOCAL_STORAGE.user);
-              signOut({
-                callbackUrl: APP_ROUTES.login,
-              });
-            }
-            return;
-          }
-          if (data?.data?.user?.[0]) {
-            dispatch(setReduxUser(data?.data?.user?.[0]));
-          }
-        })
-        .catch((err) => {
-          console.log(err);
-        });
-      console.log('User data updated successfully');
-    } catch (err) {
-      console.log('Error fetching or updating user', err);
-    }
-  };
+  const isCacheForSession = !!sessionUserId && cachedUser?.id === sessionUserId;
 
-  // fetch from local storage
-  useEffect(() => {
-    const localStorageUser = getParsedLocalUser();
-    if (localStorageUser?.id) {
-      setLocalUser(localStorageUser);
-      // only promote to Redux if it's a full user record (has userType)
-      if (localStorageUser?.userType) {
-        dispatch(setReduxUser(localStorageUser));
+  const fetchProfile = useCallback(
+    async (userId: string) => {
+      const res = await PortalSdk.getData(`/api/user?id=${userId}`, null);
+      const profile: User | undefined = res?.data?.user?.[0];
+
+      if (!profile) {
+        await signOut({ callbackUrl: APP_ROUTES.login });
+        return;
       }
-    }
-  }, [dispatch]);
+      dispatch(setReduxUser(profile));
+    },
+    [dispatch],
+  );
 
   useEffect(() => {
-    if (fetchedUser?.userType) return;
-    const _local_user = getParsedLocalUser();
-    if (!sessionUser?.id) return;
-    // use cached local user only if it has full data (userType present)
-    if (_local_user?.userType) {
-      dispatch(setReduxUser(_local_user));
-      return;
-    }
-    refetchUser();
-  }, [newfetch, sessionUser, fetchedUser, dispatch]);
+    if (status !== 'authenticated' || !sessionUserId) return;
+    if (isCacheForSession && cachedUser?.userType) return;
+
+    fetchProfile(sessionUserId).catch((err) =>
+      console.error('Failed to load user profile', err),
+    );
+  }, [
+    status,
+    sessionUserId,
+    isCacheForSession,
+    cachedUser?.userType,
+    fetchProfile,
+  ]);
+
+  useEffect(() => {
+    if (status !== 'unauthenticated' || !cachedUser) return;
+    dispatch(clearReduxUser());
+    clearPerUserCaches();
+  }, [status, cachedUser, dispatch]);
+
+  const user =
+    status === 'authenticated'
+      ? ((isCacheForSession ? cachedUser : sessionUser) ?? null)
+      : null;
 
   return {
-    user: fetchedUser?.id
-      ? fetchedUser
-      : localUser?.id
-        ? localUser
-        : sessionUser?.id
-          ? sessionUser
-          : null,
-    verifiedUserEmail: verifiedUserEmail,
-    status: fetchedUser?.id != null ? 'authenticated' : status,
-    data,
+    user,
+    status: status as AuthStatus,
+    verifiedUserEmail,
+    refetchUser: () => sessionUserId && fetchProfile(sessionUserId),
     signOutUser: () => {
-      signOut({
-        callbackUrl: APP_ROUTES.login,
-      })
-        .then(() => {
-          localStorage.removeItem(LOCAL_STORAGE.user);
-        })
-        .catch((err: any) => {
-          console.log('signout error', err);
-        });
+      dispatch(clearReduxUser());
+      clearPerUserCaches();
+      return signOut({ callbackUrl: APP_ROUTES.login });
     },
-    refetchUser,
   };
 };

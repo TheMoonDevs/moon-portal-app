@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
+import { enforcePermission } from '@/lib/permissions/server';
 import { getWorksheetConfig } from '@/lib/worksheets';
 import {
   deleteRow,
@@ -11,6 +12,9 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ worksheetId: string; id: string }> },
 ) {
+  const denied = await enforcePermission('worksheets:edit');
+  if (denied) return denied;
+
   try {
     const { worksheetId: worksheetIdOrSlug, id } = await params;
     const worksheetConfig = getWorksheetConfig(worksheetIdOrSlug);
@@ -57,6 +61,9 @@ export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ worksheetId: string; id: string }> },
 ) {
+  const denied = await enforcePermission('worksheets:delete');
+  if (denied) return denied;
+
   try {
     const { worksheetId: worksheetIdOrSlug, id } = await params;
     const worksheetConfig = getWorksheetConfig(worksheetIdOrSlug);

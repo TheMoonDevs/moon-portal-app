@@ -1,29 +1,9 @@
-import {
-  botProjectSchemas,
-  certificateSchemas,
-  clientBotSchemas,
-  clientRequestSchemas,
-  directoryListSchemas,
-  fileUploadSchemas,
-  missionTaskSchemas,
-  notificationSchemas,
-  requestMessageSchemas,
-  requestUpdateSchemas,
-  userSchemas,
-} from '@/models';
+import { fileUploadSchemas, notificationSchemas, userSchemas } from '@/models';
 
 const modelCrudSchemas = {
   user: userSchemas,
-  directoryList: directoryListSchemas,
-  missionTask: missionTaskSchemas,
-  clientRequest: clientRequestSchemas,
-  requestUpdate: requestUpdateSchemas,
-  requestMessage: requestMessageSchemas,
-  botProject: botProjectSchemas,
-  clientBot: clientBotSchemas,
   notification: notificationSchemas,
   fileUpload: fileUploadSchemas,
-  certificate: certificateSchemas,
 } as const;
 
 export type ValidatableModel = keyof typeof modelCrudSchemas;

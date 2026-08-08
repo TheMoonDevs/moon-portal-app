@@ -1,16 +1,17 @@
-import {
-  messageStore,
-  sessionStore,
-} from '@/app/api/studio/chat/sessions/chatSessionUpstash';
-import {
-  ChatSessionData,
-  sesionLocalStore,
-} from '@/app/api/studio/chat/sessions/chatSessionLocal';
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
+import type { ChatSessionData } from '@/app/api/studio/chat/sessions/chatSessionLocal';
+import { sesionLocalStore } from '@/app/api/studio/chat/sessions/chatSessionLocal';
+import { messageStore } from '@/app/api/studio/chat/sessions/chatSessionUpstash';
+import { enforcePermission } from '@/lib/permissions/server';
 import { StudioConfig } from '@/microfox.config';
 
 // Create Chat message
 export async function POST(req: NextRequest) {
+  const denied = await enforcePermission('studio:edit');
+  if (denied) return denied;
+
   try {
     const body = await req.json();
     //console.log("body", body);
@@ -57,6 +58,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
+  const denied = await enforcePermission('studio:edit');
+  if (denied) return denied;
+
   const body = await req.json();
   if (StudioConfig.studioSettings.database.type === 'upstash-redis') {
     const message = await messageStore.update(body.id, body);
@@ -83,6 +87,9 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
+  const denied = await enforcePermission('studio:read');
+  if (denied) return denied;
+
   const { searchParams } = new URL(req.url);
   const id = searchParams.get('id');
   const sessionId = searchParams.get('sessionId');
@@ -134,6 +141,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const denied = await enforcePermission('studio:edit');
+  if (denied) return denied;
+
   const { searchParams } = new URL(req.url);
   const ids = searchParams.get('ids');
   let sessionId = searchParams.get('sessionId');

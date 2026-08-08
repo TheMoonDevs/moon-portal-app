@@ -1,7 +1,12 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
+import { enforcePermission } from '@/lib/permissions/server';
+
 export async function GET(req: NextRequest, res: NextResponse) {
+  const denied = await enforcePermission('files:read');
+  if (denied) return denied;
+
   const fileUrl = req.nextUrl.searchParams.get('fileUrl');
 
   if (!fileUrl) {

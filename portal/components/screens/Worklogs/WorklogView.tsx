@@ -1,8 +1,7 @@
 'use client';
 
-import type { Engagement, WorkLogs } from '@db/client';
+import type { WorkLogs } from '@db/client';
 import dayjs from 'dayjs';
-import { usePathname } from 'next/navigation';
 import type { Dispatch, SetStateAction } from 'react';
 import { useEffect, useState } from 'react';
 
@@ -38,25 +37,6 @@ export const WorklogView = ({
     dateIdx: i + 1,
   }));
   const [loading, setLoading] = useState(false);
-  const path = usePathname();
-  const [engagements, setEngagements] = useState<Engagement[]>([]);
-
-  const fetchEngagements = async () => {
-    try {
-      const res = await PortalSdk.getData(
-        `/api/engagement/user/${user?.id}`,
-        null,
-      );
-      setEngagements(res.data);
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
-  useEffect(() => {
-    if (path?.includes('user/worklogs') && user?.id) fetchEngagements();
-  }, [path, user?.id]);
-
   const fetchXTasksForDay = async (date: string): Promise<WorkLogs | null> => {
     setLoading(true);
 
@@ -106,7 +86,8 @@ export const WorklogView = ({
     let query = `?id=${id}`;
     const _id = id && id?.length > 5 ? id : null;
     // Day logs should always load by date to avoid stale id/date mismatches.
-    if (logType === 'dayLog' && date) query = `?date=${date}&userId=${user?.id}`;
+    if (logType === 'dayLog' && date)
+      query = `?date=${date}&userId=${user?.id}`;
     else if (_id) query = `?id=${_id}`;
     else if (logType) query = `?logType=${logType}&userId=${user?.id}`;
     else if (date) query = `?date=${date}&userId=${user?.id}`;
@@ -131,7 +112,10 @@ export const WorklogView = ({
     const _id = id && id?.length > 5 ? id : null;
     if (logType === 'dayLog' && date) {
       setLoading(true);
-      PortalSdk.getData(`/api/user/worklogs?date=${date}&userId=${user.id}`, null)
+      PortalSdk.getData(
+        `/api/user/worklogs?date=${date}&userId=${user.id}`,
+        null,
+      )
         .then((data) => {
           setWorkLog(
             data?.data?.workLogs?.[0] ||
@@ -196,7 +180,6 @@ export const WorklogView = ({
       handleNextMonthClick={handleNextMonthClick}
       fetchXTasksForDay={fetchXTasksForDay}
       fetchOptions={fetchOptions}
-      engagements={engagements}
     />
   );
 };

@@ -2,8 +2,12 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/mongodb/db-client';
+import { enforcePermission } from '@/lib/permissions/server';
 
 export async function POST(req: NextRequest) {
+  const denied = await enforcePermission('shortlinks:create');
+  if (denied) return denied;
+
   // Check if the slug already exists
   const { url, slug, params } = await req.json();
 

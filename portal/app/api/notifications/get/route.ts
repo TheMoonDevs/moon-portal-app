@@ -2,8 +2,12 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/mongodb/db-client';
+import { enforcePermission } from '@/lib/permissions/server';
 
 export async function GET(request: NextRequest) {
+  const denied = await enforcePermission('notifications:read');
+  if (denied) return denied;
+
   const userId = request.nextUrl.searchParams.get('userId') as string;
   const ifModifiedSince = request.headers.get('If-Modified-Since');
 

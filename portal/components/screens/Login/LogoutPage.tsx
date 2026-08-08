@@ -7,7 +7,7 @@ import { MobileBox } from './Login';
 import { Logout } from './Logout';
 
 export const LogoutPage = () => {
-  const { status, user, signOutUser } = useUser(false);
+  const { status, user, signOutUser } = useUser();
 
   return (
     <div className="flex h-screen flex-col items-center justify-center bg-neutral-700 py-2 md:bg-neutral-900">
