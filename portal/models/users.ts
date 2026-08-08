@@ -5,8 +5,8 @@ import type {
 } from '@/models/domains/user-profile';
 
 import {
-  createCrudSchemas,
   type BaseModel,
+  createCrudSchemas,
   type JsonObject,
   type Loose,
   type Nullable,
@@ -38,6 +38,20 @@ export type User = Loose<
     status: USERSTATUS;
     industry?: Nullable<USERINDUSTRY>;
     isAdmin?: boolean;
+    /**
+     * Access-control policies granted to this user, expressed as
+     * `resource:action` strings (e.g. `worksheets:read`, `users:edit`).
+     * These are ADDED on top of the user's role defaults. Managed via
+     * /api/user/permissions.
+     */
+    permissions?: Nullable<string[]>;
+    /**
+     * Policies explicitly REMOVED from this user, overriding both their role
+     * defaults and (for admins) the implicit wildcard. A permission listed here
+     * is denied even if it would otherwise be granted — this is how a default
+     * is taken away or a specific admin capability is disabled.
+     */
+    deniedPermissions?: Nullable<string[]>;
     timezone?: Nullable<string>;
     country?: Nullable<string>;
     workData?: OptionalNullable<workData & { overlap?: unknown[] }>;
