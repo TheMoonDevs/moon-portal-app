@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
+import { enforcePermission } from '@/lib/permissions/server';
 import { getWorksheetConfig } from '@/lib/worksheets';
 import { bulkUpdateRows } from '@/lib/worksheets/core/db/worksheet-repository';
 
@@ -8,6 +9,9 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ worksheetId: string }> },
 ) {
+  const denied = await enforcePermission('worksheets:edit');
+  if (denied) return denied;
+
   try {
     const { worksheetId } = await params;
     const worksheetConfig = getWorksheetConfig(worksheetId);

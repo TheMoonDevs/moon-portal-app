@@ -1,11 +1,15 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
+import { enforcePermission } from '@/lib/permissions/server';
 import { resolveOptionsFetcher } from '@/lib/worksheets';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
+  const denied = await enforcePermission('worksheets:read');
+  if (denied) return denied;
+
   try {
     const url = new URL(request.url);
     const type = url.searchParams.get('type') ?? '';

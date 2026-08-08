@@ -1,6 +1,8 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
+import { enforcePermission } from '@/lib/permissions/server';
+
 async function sendEmailAction(row: Record<string, any>) {
   console.log(`Sending email to ${row.email} for row ${row.id}...`);
   // Simulate email sending
@@ -9,6 +11,9 @@ async function sendEmailAction(row: Record<string, any>) {
 }
 
 export async function POST(request: NextRequest) {
+  const denied = await enforcePermission('worksheets:execute');
+  if (denied) return denied;
+
   try {
     const body = await request.json();
     const row = body?.row;
