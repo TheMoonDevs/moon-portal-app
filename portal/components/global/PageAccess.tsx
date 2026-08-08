@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
+import { isAllowed } from '@/lib/permissions';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
 import { useUser } from '@/utils/hooks/useUser';
 
@@ -18,20 +19,33 @@ const Interstitial = ({ message }: { message: string }) => (
 export const PageAccess = ({
   isAuthRequired,
   isAdminRequired,
+  requiredPermission,
   hasBottombar = true,
   children,
 }: {
   children: React.ReactNode;
   isAuthRequired?: boolean;
   isAdminRequired?: boolean;
+  /**
+   * Gate the page on a specific policy (e.g. `users:edit`) instead of, or in
+   * addition to, full-admin status. A non-admin holding this policy — or an
+   * admin who has not had it denied — may open the page. Enforcement of the
+   * underlying data still happens on the API; this only controls page entry.
+   */
+  requiredPermission?: string;
   hasBottombar?: boolean;
 }) => {
   const { user, status, verifiedUserEmail } = useUser();
   const router = useRouter();
 
-  const isGuarded = Boolean(isAuthRequired || isAdminRequired);
+  const isGuarded = Boolean(
+    isAuthRequired || isAdminRequired || requiredPermission,
+  );
   const isGoogleVerified = !!user?.email && verifiedUserEmail === user.email;
   const isAdminSatisfied = !isAdminRequired || Boolean(user?.isAdmin);
+  const isPermissionSatisfied =
+    !requiredPermission || isAllowed(user ?? undefined, requiredPermission);
+  const isAccessSatisfied = isAdminSatisfied && isPermissionSatisfied;
 
   useEffect(() => {
     if (!isGuarded || status === 'loading') return;
@@ -40,8 +54,8 @@ export const PageAccess = ({
       router.replace(APP_ROUTES.login);
       return;
     }
-    if (!isAdminSatisfied) router.replace(APP_ROUTES.home);
-  }, [isGuarded, status, isGoogleVerified, isAdminSatisfied, router]);
+    if (!isAccessSatisfied) router.replace(APP_ROUTES.home);
+  }, [isGuarded, status, isGoogleVerified, isAccessSatisfied, router]);
 
   const content = hasBottombar ? (
     <div className="md:pl-24">{children}</div>
@@ -52,7 +66,7 @@ export const PageAccess = ({
   if (!isGuarded) return content;
   if (status === 'loading')
     return <Interstitial message="Verifying Connection..." />;
-  if (status === 'unauthenticated' || !isGoogleVerified || !isAdminSatisfied) {
+  if (status === 'unauthenticated' || !isGoogleVerified || !isAccessSatisfied) {
     return <Interstitial message="Redirecting..." />;
   }
 
