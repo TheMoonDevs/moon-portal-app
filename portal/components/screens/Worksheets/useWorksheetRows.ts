@@ -3,6 +3,7 @@
 import { useCallback, useState } from 'react';
 
 import { TMD_PORTAL_API_KEY } from '@/utils/constants/appInfo';
+import { permissionErrorFromResponse } from '@/utils/permissions/clientPermissions';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
 export interface WorksheetRowData {
@@ -57,6 +58,10 @@ export function useWorksheetRows(): UseWorksheetRowsResult {
   };
 
   const readApiError = async (res: Response, fallback: string) => {
+    // Surface permission denials to the PermissionErrorBoundary (via a global
+    // event) while still returning a readable message for inline display.
+    const permissionError = await permissionErrorFromResponse(res);
+    if (permissionError) return permissionError.message;
     try {
       const json = await res.json();
       return normalizeApiError((json?.error as string) || '', fallback);

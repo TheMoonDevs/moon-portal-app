@@ -1,4 +1,21 @@
 import { LOCAL_STORAGE, TMD_PORTAL_API_KEY } from '../constants/appInfo';
+import { toPermissionError } from '../permissions/clientPermissions';
+
+/**
+ * When a response is a 403 permission denial, broadcast the global event and
+ * return a `PermissionError` to reject with; otherwise return the raw payload
+ * so existing error handling is unchanged.
+ */
+const asRejection = async (res: Response): Promise<unknown> => {
+  let payload: unknown;
+  try {
+    payload = await res.clone().json();
+  } catch {
+    payload = res.status;
+  }
+  const permissionError = toPermissionError(payload);
+  return permissionError ?? payload;
+};
 
 export const PortalSdk = {
   getData: (url: string, body: any) => {
@@ -15,7 +32,7 @@ export const PortalSdk = {
           const result = await res.json();
           return resolve(result as any);
         } else {
-          return reject((await res.json()) as any);
+          return reject(await asRejection(res));
         }
       } catch (e) {
         console.log(e);
@@ -38,7 +55,7 @@ export const PortalSdk = {
           const result = await res.json();
           return resolve(result);
         } else {
-          return reject((await res.json()) as any);
+          return reject(await asRejection(res));
         }
       } catch (e) {
         console.log(e);
@@ -77,7 +94,7 @@ export const PortalSdk = {
           }
           throw result.error;
         } else {
-          return reject(res.status as any);
+          return reject(await asRejection(res));
         }
       } catch (e) {
         console.log(e);
@@ -101,7 +118,7 @@ export const PortalSdk = {
           const result = await res.json();
           return resolve(result);
         } else {
-          return reject(res.status as any);
+          return reject(await asRejection(res));
         }
       } catch (e) {
         console.log(e);

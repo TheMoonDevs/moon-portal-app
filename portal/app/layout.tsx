@@ -11,6 +11,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 
 import { ToastsContainer } from '@/components/elements/Toast';
+import { PermissionDeniedToaster } from '@/components/global/PermissionDeniedToaster';
 import PushServiceRegistration from '@/components/global/PushServiceRegistration';
 import { UpdatePWA } from '@/components/global/UpdatePWA';
 import { MUIThemeRegistry } from '@/styles/provider';
@@ -56,6 +57,7 @@ export default function RootLayout({
                   <UpdatePWA>{children}</UpdatePWA>
                 </PushServiceRegistration>
                 <ToastsContainer />
+                <PermissionDeniedToaster />
               </ReduxProvider>
             </MantineProvider>
           </MUIThemeRegistry>
