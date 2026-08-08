@@ -4,9 +4,13 @@ import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/mongodb/db-client';
 import { parseCreateInput } from '@/lib/mongodb/validation';
+import { enforcePermission } from '@/lib/permissions/server';
 import { s3FileUploadSdk } from '@/utils/services/s3FileUploadSdk';
 
 export async function GET(req: NextRequest) {
+  const denied = await enforcePermission('files:read');
+  if (denied) return denied;
+
   const loggedInUserId = req.nextUrl.searchParams.get('userId');
   // if (!loggedInUserId) {
   //   return NextResponse.json("User not found", { status: 404 });
@@ -45,6 +49,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: Request) {
+  const denied = await enforcePermission('files:create');
+  if (denied) return denied;
+
   try {
     const formData = await req.formData();
     const files = formData.getAll('file') as unknown as File[];
@@ -110,6 +117,9 @@ export async function POST(req: Request) {
 }
 
 export async function DELETE(req: Request) {
+  const denied = await enforcePermission('files:create');
+  if (denied) return denied;
+
   try {
     const { id } = await req.json();
 

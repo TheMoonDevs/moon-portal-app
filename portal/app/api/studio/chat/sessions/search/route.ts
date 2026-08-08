@@ -1,13 +1,19 @@
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
+import type { ChatSessionData } from '@/app/api/studio/chat/sessions/chatSessionLocal';
 import {
-  ChatSessionData,
   sesionLocalStore,
   sessionLocalListOut,
 } from '@/app/api/studio/chat/sessions/chatSessionLocal';
 import { sessionStore } from '@/app/api/studio/chat/sessions/chatSessionUpstash';
+import { enforcePermission } from '@/lib/permissions/server';
 import { StudioConfig } from '@/microfox.config';
-import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(req: NextRequest) {
+  const denied = await enforcePermission('studio:read');
+  if (denied) return denied;
+
   const { searchParams } = new URL(req.url);
   const query = searchParams.get('q');
   if (StudioConfig.studioSettings.database.type === 'upstash-redis') {
