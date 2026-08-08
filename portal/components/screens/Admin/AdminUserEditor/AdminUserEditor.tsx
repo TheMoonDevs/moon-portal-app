@@ -24,6 +24,7 @@ import { PortalSdk } from '@/utils/services/PortalSdk';
 import { AdminHeader } from '../AdminHeader';
 import { AdminUserBasicData } from './AdimUserBasicData';
 import { AdminUserPayData } from './AdminUserPayData';
+import { AdminUserPermissions } from './AdminUserPermissions';
 import { AdminUserPersonalData } from './AdminUserPersonalData';
 import { AdminUserWorkData } from './AdminUserWorkData';
 const initialUserState: User = {
@@ -63,6 +64,7 @@ const sidebarItems = [
   { name: 'AdminUserWorkData', label: 'Work Details', icon: 'work' },
   { name: 'AdminUserPayData', label: 'Payment Details', icon: 'payments' },
   { name: 'AdminUserPersonalData', label: 'Personal Details', icon: 'badge' },
+  { name: 'AdminUserPermissions', label: 'Access & Policies', icon: 'lock' },
 ];
 
 export const AdminUserEditor = () => {
@@ -120,6 +122,8 @@ export const AdminUserEditor = () => {
             updateField={updateField}
           />
         );
+      case 'AdminUserPermissions':
+        return <AdminUserPermissions user={user} />;
       default:
         return (
           <AdminUserBasicData
