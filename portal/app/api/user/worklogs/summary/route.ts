@@ -1,8 +1,9 @@
-import { getServerSession } from 'next-auth';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { db } from '@/lib/mongodb/db-client';
+import { enforcePermission } from '@/lib/permissions/server';
 import { authOptions } from '@/pages/api/auth/[...nextauth]';
 
 function sanitizePrivateLines(content: string): string {
@@ -33,7 +34,9 @@ function sanitizeWorklogsForViewer(
 
 async function resolveViewerUserId(): Promise<string | null> {
   const session = (await getServerSession(authOptions as any)) as any;
-  const sessionUser = session?.user as { id?: string; email?: string } | undefined;
+  const sessionUser = session?.user as
+    | { id?: string; email?: string }
+    | undefined;
   if (!sessionUser) return null;
   if (sessionUser.id) {
     const byId = await db.user.findFirst({ where: { id: sessionUser.id } });
@@ -44,13 +47,18 @@ async function resolveViewerUserId(): Promise<string | null> {
     if (byUsername?.id) return byUsername.id;
   }
   if (sessionUser.email) {
-    const byEmail = await db.user.findFirst({ where: { email: sessionUser.email } });
+    const byEmail = await db.user.findFirst({
+      where: { email: sessionUser.email },
+    });
     if (byEmail?.id) return byEmail.id;
   }
   return null;
 }
 
 export async function GET(request: NextRequest) {
+  const denied = await enforcePermission('worklogs:read');
+  if (denied) return denied;
+
   const id = request.nextUrl.searchParams.get('id') as string;
   const userId = request.nextUrl.searchParams.get('userId') as string;
   const logType = request.nextUrl.searchParams.get('logType') as string;

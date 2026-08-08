@@ -6,6 +6,7 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/mongodb/db-client';
+import { checkPermission, enforcePermission } from '@/lib/permissions/server';
 import {
   ADMIN_EMAIL,
   passcodeEmailTemplate,
@@ -20,6 +21,9 @@ import {
 // const sheetSDK = new GoogleSheetsAPI(sheetConfig);
 
 export async function GET(request: NextRequest) {
+  const denied = await enforcePermission('users:read');
+  if (denied) return denied;
+
   const id = request.nextUrl.searchParams.get('id') as string;
   const userType = request.nextUrl.searchParams.get('userType') as USERTYPE;
   const role = request.nextUrl.searchParams.get('role') as USERROLE;
@@ -39,7 +43,9 @@ export async function GET(request: NextRequest) {
         ...(role && { role }),
         ...(house && { house }),
         // skip status filter when fetching a specific user by id
-        ...(!id && { status: status ? (status as USERSTATUS) : USERSTATUS.ACTIVE }),
+        ...(!id && {
+          status: status ? (status as USERSTATUS) : USERSTATUS.ACTIVE,
+        }),
         ...(id && status && { status: status as USERSTATUS }),
       },
       include: {
@@ -90,6 +96,9 @@ export async function GET(request: NextRequest) {
 
 // DATA is restricted to created from onboarding page or admin page (ONLY)
 export async function POST(request: Request) {
+  const denied = await enforcePermission('users:create');
+  if (denied) return denied;
+
   try {
     const { id, ...rest } = await request.json();
     const user = await db.user.create({
@@ -193,6 +202,29 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     const { id, ...rest } = await request.json();
+
+    // Owner-scoped: a user may edit their own record; editing anyone else's
+    // requires `users:edit`.
+    const {
+      user: actor,
+      allowed,
+      response,
+    } = await checkPermission('users:edit');
+    const isSelf = !!actor && !!id && actor.id === id;
+    if (!allowed && !isSelf && response) {
+      return response;
+    }
+
+    // Privilege-escalation guard: only full admins may change access-control
+    // fields through this generic endpoint. Policies are managed via
+    // /api/user/permissions. (When there is no session — internal/service
+    // call — `actor` is null and we leave the payload untouched.)
+    if (actor && !actor.isAdmin) {
+      delete (rest as Record<string, unknown>).permissions;
+      delete (rest as Record<string, unknown>).deniedPermissions;
+      delete (rest as Record<string, unknown>).isAdmin;
+    }
+
     const oldUser = await db.user.findFirst({
       where: {
         id,

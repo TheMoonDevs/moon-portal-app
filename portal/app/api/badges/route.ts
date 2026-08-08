@@ -3,8 +3,12 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/mongodb/db-client';
+import { enforcePermission } from '@/lib/permissions/server';
 
 export async function POST(req: NextRequest) {
+  const denied = await enforcePermission('badges:create');
+  if (denied) return denied;
+
   if (!req.body) {
     return new NextResponse(JSON.stringify({ error: 'Body not found' }), {
       status: 400,
@@ -56,6 +60,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
+  const denied = await enforcePermission('badges:read');
+  if (denied) return denied;
+
   try {
     const { searchParams } = new URL(req.url);
     const badgeType = searchParams.get('badgeType') as BadgeType | null;

@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/mongodb/db-client';
+import { enforcePermission } from '@/lib/permissions/server';
 import { APP_BASE_URL, IN_DEV } from '@/utils/constants/appInfo';
 import { getBuffLevelAndTitle } from '@/utils/helpers/badges';
 import { SlackBotSdk, SlackChannels } from '@/utils/services/slackBotSdk';
@@ -10,6 +11,9 @@ import { SlackBotSdk, SlackChannels } from '@/utils/services/slackBotSdk';
 const slackBotSdk = new SlackBotSdk();
 
 export async function POST(req: NextRequest) {
+  const denied = await enforcePermission('badges:award');
+  if (denied) return denied;
+
   try {
     const body = await req.json();
     const { userId, title, points, buffLevel, month } = body;
@@ -59,6 +63,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
+  const denied = await enforcePermission('badges:read');
+  if (denied) return denied;
+
   try {
     const { searchParams } = new URL(req.url);
     const userId = searchParams.get('userId');
@@ -88,6 +95,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
+  const denied = await enforcePermission('badges:award');
+  if (denied) return denied;
+
   try {
     const body = await req.json();
     const { id, userId, title, points, buffLevel, month: badgeMonth } = body;
@@ -110,7 +120,8 @@ export async function PUT(req: NextRequest) {
     }
     const updatedPoints = points && points > 0 ? points : 0;
     const updatedBuffBadge = await db.buffBadge.upsert({
-      where: id && String(id).length > 2 ? { id } : { userId, month: badgeMonth },
+      where:
+        id && String(id).length > 2 ? { id } : { userId, month: badgeMonth },
       update: {
         userId,
         title,

@@ -2,8 +2,12 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/mongodb/db-client';
+import { enforcePermission } from '@/lib/permissions/server';
 
 export async function GET(request: NextRequest) {
+  const denied = await enforcePermission('worklogs:read');
+  if (denied) return denied;
+
   try {
     const userId = request.nextUrl.searchParams.get('userId') as string;
     const month = request.nextUrl.searchParams.get('month') as string;
@@ -60,6 +64,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  const denied = await enforcePermission('worklogs:edit');
+  if (denied) return denied;
+
   try {
     const body = await request.json();
     const { userId, logType, markdown, month, year } = body;
