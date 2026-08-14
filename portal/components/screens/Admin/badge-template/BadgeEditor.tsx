@@ -1,19 +1,47 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
-import { ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
+
 import { useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import type { FormEvent } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast, Toaster } from 'sonner';
 
-import { Spinner } from '@/components/elements/Loaders';
-import ToolTip from '@/components/elements/ToolTip';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
 import useBadgeForm from '@/utils/hooks/useBadgeForm';
 import { useUser } from '@/utils/hooks/useUser';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
+import { AdminEditorShell } from '../shared/AdminEditorShell';
+import {
+  AdminButton,
+  Field,
+  Icon,
+  NativeSelect,
+  Panel,
+  PanelHeader,
+  Pill,
+  TextArea,
+  TextInput,
+} from '../shared/AdminUI';
 import CriteriaFields from './CriteriaFields';
-import { InputField, TextAreaField } from './TextFields';
+
+const CRITERIA_TYPES = [
+  {
+    value: 'TIME_BASED',
+    label: 'Time based',
+    hint: 'Unlocks a set period after the member joins.',
+  },
+  {
+    value: 'STREAK',
+    label: 'Streak based',
+    hint: 'Unlocks after a run of consecutive active days.',
+  },
+  {
+    value: 'CUSTOM',
+    label: 'Custom',
+    hint: 'Awarded manually by an admin.',
+  },
+];
 
 const BadgeEditor = () => {
   const { formData, handleChange, resetForm, getCriteria, setFormData } =
@@ -30,194 +58,319 @@ const BadgeEditor = () => {
       setLoading(false);
       return;
     }
-    const fetchBadgeById = async (id: string) => {
+    const fetchBadgeById = async (badgeId: string) => {
       try {
-        const response = await PortalSdk.getData(`/api/badges/${id}`, null);
+        const response = await PortalSdk.getData(
+          `/api/badges/${badgeId}`,
+          null,
+        );
         const badge = response.data;
-        const fetchedData = {
+        setFormData({
           badgeName: badge.name,
           badgeDescription: badge.description,
           imageFile: null,
           criteriaType: badge.badgeType,
+          streakType: '',
+          streakTitle: '',
+          streakCount: '',
+          criteriaLogic: '',
+          customTitle: '',
+          customDescription: '',
           ...badge.criteria,
-        };
-        setFormData(fetchedData);
+        });
         setFetchedImg(badge.imageurl);
-        setLoading(false);
       } catch (error) {
         console.error('Error fetching badge:', error);
+        toast.error('Could not load this badge');
+      } finally {
         setLoading(false);
       }
     };
 
     setLoading(true);
     fetchBadgeById(id);
-  }, [query, setFormData, id]);
+  }, [setFormData, id]);
+
+  /* Preview the selected file before it is uploaded. */
+  const localPreview = useMemo(() => {
+    if (!formData.imageFile) return '';
+    return URL.createObjectURL(formData.imageFile as File);
+  }, [formData.imageFile]);
+
+  useEffect(
+    () => () => {
+      if (localPreview) URL.revokeObjectURL(localPreview);
+    },
+    [localPreview],
+  );
+
+  const previewImage = localPreview || fetchedImg;
 
   const uploadImage = async (file: File) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    if (user) {
-      formData.append('userId', user.id);
-    }
-    try {
-      const response = await fetch('/api/upload/file-upload', {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await response.json();
-      return data.fileInfo[0].fileUrl;
-    } catch (error) {
-      console.error('Error uploading image:', error);
-      return null;
-    }
+    const body = new FormData();
+    body.append('file', file);
+    if (user) body.append('userId', user.id);
+
+    const response = await fetch('/api/upload/file-upload', {
+      method: 'POST',
+      body,
+    });
+    if (!response.ok) throw new Error('Image upload failed');
+    const data = await response.json();
+    return data?.fileInfo?.[0]?.fileUrl || '';
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const criteriaComplete =
+    formData.criteriaType === 'TIME_BASED'
+      ? formData.criteriaLogic.trim() !== ''
+      : formData.criteriaType === 'STREAK'
+        ? formData.streakType !== '' && String(formData.streakCount) !== ''
+        : formData.criteriaType === 'CUSTOM';
+
+  const isValid =
+    formData.badgeName.trim() !== '' &&
+    formData.badgeDescription.trim() !== '' &&
+    !!(formData.imageFile || fetchedImg) &&
+    criteriaComplete;
+
+  const handleSubmit = async (event?: FormEvent) => {
+    event?.preventDefault();
+    if (!isValid || isSubmitting) return;
+
     setIsSubmitting(true);
-
-    const imageUrl = formData.imageFile
-      ? await uploadImage(formData.imageFile as File)
-      : fetchedImg;
-    if (!imageUrl) {
-      setIsSubmitting(false);
-      return;
-    }
-
-    const badgeData = {
-      badgeName: formData.badgeName,
-      badgeDescription: formData.badgeDescription,
-      badgeType: formData.criteriaType,
-      imageurl: imageUrl,
-      criteria: getCriteria(),
-    };
-
     try {
+      const imageUrl = formData.imageFile
+        ? await uploadImage(formData.imageFile as File)
+        : fetchedImg;
+      if (!imageUrl) throw new Error('No badge image available');
+
+      const badgeData = {
+        badgeName: formData.badgeName,
+        badgeDescription: formData.badgeDescription,
+        badgeType: formData.criteriaType,
+        imageurl: imageUrl,
+        criteria: getCriteria(),
+      };
+
       if (id) {
-        await updateBadge(badgeData);
-        setIsSubmitting(false);
-        toast.success('Badge updated successfully');
+        await PortalSdk.putData(`/api/badges/${id}`, badgeData);
+        setFetchedImg(imageUrl);
+        toast.success('Badge updated');
       } else {
-        const response = await PortalSdk.postData('/api/badges', badgeData);
-        console.log('Badge saved successfully:', response.data);
+        await PortalSdk.postData('/api/badges', badgeData);
         resetForm();
-        setIsSubmitting(false);
-        toast.success('Badge created successfully');
+        setFetchedImg('');
+        toast.success('Badge created');
       }
     } catch (error) {
       console.error('Error saving badge:', error);
+      toast.error(
+        id ? 'Could not update the badge' : 'Could not create the badge',
+      );
+    } finally {
       setIsSubmitting(false);
-      toast.error('Error saving badge');
-    }
-  };
-
-  const updateBadge = async (badgeData: any) => {
-    try {
-      const response = await PortalSdk.putData(`/api/badges/${id}`, badgeData);
-      console.log('Badge updated successfully:', response);
-    } catch (error) {
-      console.error('Error updating badge:', error);
     }
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-neutral-900 p-8">
-      <div className="w-full max-w-4xl rounded-lg bg-black p-8 shadow-lg">
-        <div className="mb-6">
-          <Link
-            href={APP_ROUTES.admin}
-            className="flex items-center text-white hover:text-gray-400"
+    <>
+      <AdminEditorShell
+        backHref={`${APP_ROUTES.admin}?tab=badges`}
+        backLabel="Badges"
+        title={id ? 'Edit badge' : 'New badge'}
+        description="Badges are achievements members unlock on their profile."
+        meta={
+          formData.criteriaType ? (
+            <Pill tone="warning">
+              {CRITERIA_TYPES.find(
+                (type) => type.value === formData.criteriaType,
+              )?.label ?? formData.criteriaType}
+            </Pill>
+          ) : undefined
+        }
+        actions={
+          <AdminButton
+            tone="primary"
+            icon="check"
+            loading={isSubmitting}
+            disabled={loading || !isValid}
+            onClick={() => handleSubmit()}
           >
-            <ArrowLeft className="mr-2 text-lg" />
-            Back to Admin Page
-          </Link>
-        </div>
-        {loading && id ? (
-          <div className="flex h-[80vh] w-full items-center justify-center">
-            <Spinner />
+            {id ? 'Save badge' : 'Create badge'}
+          </AdminButton>
+        }
+      >
+        {loading ? (
+          <div className="grid gap-4 lg:grid-cols-5">
+            <div className="h-96 animate-pulse rounded-2xl bg-white/[0.03] lg:col-span-3" />
+            <div className="h-64 animate-pulse rounded-2xl bg-white/[0.03] lg:col-span-2" />
           </div>
         ) : (
-          <>
-            <h1 className="mb-6 text-3xl font-bold text-white">
-              {id ? 'Update Badge' : 'Create Badge'}
-            </h1>
-            <form className="space-y-6">
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                <InputField
-                  id="badgeName"
-                  type="text"
-                  label="Badge Name"
-                  placeholder="Enter badge name"
-                  value={formData.badgeName}
-                  onChange={handleChange}
+          <form onSubmit={handleSubmit} className="grid gap-4 lg:grid-cols-5">
+            <div className="flex flex-col gap-4 lg:col-span-3">
+              <Panel>
+                <PanelHeader
+                  title="Badge details"
+                  description="Name and description shown to members."
+                  icon="workspace_premium"
                 />
-                <InputField
-                  id="imageFile"
-                  label="Image Upload"
-                  type="file"
-                  onChange={handleChange}
-                  placeholder="Upload badge image"
+                <div className="flex flex-col gap-4 p-4">
+                  <Field label="Badge name" htmlFor="badgeName" required>
+                    <TextInput
+                      id="badgeName"
+                      value={formData.badgeName}
+                      onChange={handleChange}
+                      placeholder="e.g. Six month streak"
+                    />
+                  </Field>
+
+                  <Field
+                    label="Description"
+                    htmlFor="badgeDescription"
+                    required
+                  >
+                    <TextArea
+                      id="badgeDescription"
+                      value={formData.badgeDescription}
+                      onChange={handleChange}
+                      placeholder="What does earning this badge mean…"
+                    />
+                  </Field>
+                </div>
+              </Panel>
+
+              <Panel>
+                <PanelHeader
+                  title="Unlock criteria"
+                  description="How members earn this badge."
+                  icon="rule"
                 />
-              </div>
-              <TextAreaField
-                id="badgeDescription"
-                label="Description"
-                placeholder="Enter badge description"
-                value={formData.badgeDescription}
-                onChange={handleChange}
-              />
-              <div className="flex flex-col">
-                <label
-                  htmlFor="criteriaType"
-                  className="mb-2 flex items-center gap-2 font-semibold text-white"
-                >
-                  Criteria Type
-                  <ToolTip title="Choose the type of badge, such as time-based, streak-based, or custom">
-                    <span
-                      className="material-symbols-outlined"
-                      style={{ fontSize: '1rem' }}
+                <div className="flex flex-col gap-4 p-4">
+                  <Field
+                    label="Criteria type"
+                    htmlFor="criteriaType"
+                    required
+                    hint={
+                      CRITERIA_TYPES.find(
+                        (type) => type.value === formData.criteriaType,
+                      )?.hint
+                    }
+                  >
+                    <NativeSelect
+                      id="criteriaType"
+                      value={formData.criteriaType}
+                      onChange={handleChange}
                     >
-                      info
+                      <option value="">Select a criteria type…</option>
+                      {CRITERIA_TYPES.map((type) => (
+                        <option key={type.value} value={type.value}>
+                          {type.label}
+                        </option>
+                      ))}
+                    </NativeSelect>
+                  </Field>
+
+                  <CriteriaFields
+                    criteriaType={formData.criteriaType}
+                    formData={formData}
+                    handleChange={handleChange}
+                  />
+                </div>
+              </Panel>
+            </div>
+
+            {/* Artwork & preview */}
+            <div className="flex flex-col gap-4 lg:col-span-2">
+              <Panel>
+                <PanelHeader
+                  title="Artwork"
+                  description="Wide images work best."
+                  icon="image"
+                />
+                <div className="flex flex-col gap-3 p-4">
+                  <label
+                    htmlFor="imageFile"
+                    className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-white/15 bg-white/[0.02] px-4 py-6 text-center transition-colors hover:border-white/30 hover:bg-white/[0.05]"
+                  >
+                    <Icon
+                      name="upload_file"
+                      className="text-[26px] text-neutral-500"
+                    />
+                    <span className="text-sm text-neutral-300">
+                      {formData.imageFile
+                        ? (formData.imageFile as File).name
+                        : previewImage
+                          ? 'Replace the badge image'
+                          : 'Choose a badge image'}
                     </span>
-                  </ToolTip>
-                </label>
-                <select
-                  id="criteriaType"
-                  value={formData.criteriaType}
-                  onChange={handleChange}
-                  className="rounded-lg border border-neutral-700 bg-neutral-800 p-3 text-white transition focus:ring-2 focus:ring-white"
-                >
-                  <option value="">Select Criteria Type</option>
-                  <option value="TIME_BASED">Time based</option>
-                  <option value="STREAK">Streak based</option>
-                  <option value="CUSTOM">Custom</option>
-                </select>
-              </div>
-              <CriteriaFields
-                criteriaType={formData.criteriaType}
-                formData={formData}
-                handleChange={handleChange}
-              />
-              <button
-                type="submit"
-                className={`flex items-center justify-center rounded-lg bg-neutral-900 px-6 py-3 font-bold text-white transition hover:bg-neutral-800 ${
-                  isSubmitting ? 'cursor-not-allowed opacity-50' : ''
-                } `}
-                onClick={handleSubmit}
-              >
-                {!isSubmitting ? (
-                  `${id ? 'Update Badge' : 'Save Badge'}`
-                ) : (
-                  <Spinner className="mr-2 size-5" />
-                )}
-              </button>
-            </form>
-          </>
+                    <span className="text-xs text-neutral-600">
+                      PNG or JPG, click to browse
+                    </span>
+                  </label>
+                  <input
+                    id="imageFile"
+                    type="file"
+                    accept="image/*"
+                    hidden
+                    onChange={handleChange}
+                  />
+                </div>
+              </Panel>
+
+              <Panel>
+                <PanelHeader
+                  title="Preview"
+                  description="How the badge appears in the list."
+                  icon="visibility"
+                />
+                <div className="p-4">
+                  <div className="overflow-hidden rounded-xl border border-white/[0.07] bg-white/[0.02]">
+                    <div className="aspect-[5/2] w-full bg-neutral-900">
+                      {previewImage ? (
+                        <img
+                          src={previewImage}
+                          alt={formData.badgeName || 'Badge preview'}
+                          className="size-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex size-full items-center justify-center text-[28px] text-neutral-700">
+                          <Icon name="workspace_premium" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-4">
+                      <h3 className="truncate text-sm font-semibold text-neutral-100">
+                        {formData.badgeName || 'Badge name'}
+                      </h3>
+                      <p className="mt-1 line-clamp-2 text-xs text-neutral-500">
+                        {formData.badgeDescription ||
+                          'The badge description appears here.'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {!isValid && (
+                    <p className="mt-3 flex items-start gap-1.5 text-xs text-neutral-500">
+                      <Icon name="info" className="mt-px text-[14px]" />
+                      Add a name, description, image and complete criteria to
+                      save.
+                    </p>
+                  )}
+                </div>
+              </Panel>
+            </div>
+          </form>
         )}
-      </div>
-      <Toaster richColors duration={3000} closeButton position="bottom-left" />
-    </div>
+      </AdminEditorShell>
+
+      <Toaster
+        theme="dark"
+        richColors
+        duration={3000}
+        closeButton
+        position="bottom-right"
+      />
+    </>
   );
 };
 
