@@ -1,67 +1,93 @@
+'use client';
+
 import type { Event } from '@db/client';
-import { IconButton } from '@mui/material';
-import dayjs from 'dayjs';
-import { useState } from 'react';
-import { toast } from 'sonner';
+import Link from 'next/link';
 
-import { Spinner } from '@/components/elements/Loaders';
-import { PortalSdk } from '@/utils/services/PortalSdk';
+import { cn } from '@/lib/utils';
 
-import type { loadingState } from './EventForm';
+import { Icon, IconAction, Pill } from '../shared/AdminUI';
+
+const formatTime = (time?: string) => {
+  if (!time) return '';
+  const [hours, minutes] = time.split(':').map(Number);
+  if (Number.isNaN(hours)) return time;
+  const period = hours >= 12 ? 'PM' : 'AM';
+  const hour12 = hours % 12 || 12;
+  return `${hour12}:${String(minutes || 0).padStart(2, '0')} ${period}`;
+};
 
 export const EventCard = ({
   event,
-  setEvents,
-  setSelectedEvent,
-  setLoadingState,
-  loadingState,
+  isPast,
+  onEdit,
+  onDelete,
 }: {
   event: Event;
-  setEvents: React.Dispatch<React.SetStateAction<Event[]>>;
-  setSelectedEvent: React.Dispatch<React.SetStateAction<Event | null>>;
-  setLoadingState: React.Dispatch<React.SetStateAction<loadingState>>;
-  loadingState: loadingState;
+  isPast: boolean;
+  onEdit: (event: Event) => void;
+  onDelete: (event: Event) => void;
 }) => {
-  const [deleting, setDeleting] = useState(false);
-  const time = dayjs(event.time, 'HH:mm').format('h:mm A');
-
-  const deleteEvent = async (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation();
-    setDeleting(true);
-    try {
-      await PortalSdk.deleteData('/api/events', event);
-      toast.success('Event deleted successfully!');
-      setEvents((prevEvents) => prevEvents.filter((e) => e.id !== event.id));
-    } catch (error) {
-      console.error('Error deleting event:', error);
-      toast.error('Failed to delete event. Please try again.');
-    } finally {
-      setDeleting(false);
-    }
-  };
+  const date = new Date(event.date);
 
   return (
-    <div
-      className="flex cursor-pointer items-center justify-between border-b border-neutral-800 py-2 text-white"
-      onClick={(e) => {
-        e.stopPropagation();
-        setSelectedEvent(event);
-        setLoadingState({ ...loadingState, updating: true });
-      }}
-    >
-      <div className="flex flex-col items-start gap-1">
-        <p className="text-sm text-neutral-300">{event.name}</p>
-        <p className="text-xs text-neutral-500">
-          {dayjs(event.date).format('MMMM D, YYYY')} - {time}
+    <li className="flex flex-wrap items-center gap-4 px-4 py-3.5 transition-colors hover:bg-white/[0.02]">
+      <div
+        className={cn(
+          'flex size-12 shrink-0 flex-col items-center justify-center rounded-xl border',
+          isPast
+            ? 'border-white/[0.05] bg-white/[0.02] text-neutral-500'
+            : 'border-white/[0.09] bg-white/[0.05] text-neutral-100',
+        )}
+      >
+        <span className="text-[10px] uppercase tracking-wide opacity-70">
+          {date.toLocaleDateString(undefined, { month: 'short' })}
+        </span>
+        <span className="text-base font-semibold leading-none">
+          {date.getDate()}
+        </span>
+      </div>
+
+      <div className="min-w-[180px] flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="truncate text-sm font-medium text-neutral-100">
+            {event.name}
+          </p>
+          {isPast ? <Pill>Past</Pill> : <Pill tone="positive">Upcoming</Pill>}
+        </div>
+        <p className="mt-0.5 line-clamp-1 text-xs text-neutral-500">
+          {event.subTitle}
         </p>
       </div>
-      {deleting ? (
-        <Spinner className="mr-2 size-5" />
-      ) : (
-        <IconButton sx={{ backgroundColor: '#1b1b1b' }} onClick={deleteEvent}>
-          <span className="material-symbols-outlined text-red-600">delete</span>
-        </IconButton>
-      )}
-    </div>
+
+      <div className="hidden w-28 shrink-0 items-center gap-1.5 text-xs text-neutral-400 sm:flex">
+        <Icon name="schedule" className="text-[16px]" />
+        {formatTime(event.time)}
+      </div>
+
+      <div className="flex shrink-0 items-center gap-1">
+        {event.link && (
+          <Link
+            href={event.link}
+            target="_blank"
+            rel="noreferrer"
+            title="Open event link"
+            className="flex size-8 items-center justify-center rounded-lg text-[18px] text-neutral-400 transition-colors hover:bg-white/10 hover:text-white"
+          >
+            <Icon name="open_in_new" />
+          </Link>
+        )}
+        <IconAction
+          icon="edit"
+          label="Edit event"
+          onClick={() => onEdit(event)}
+        />
+        <IconAction
+          icon="delete"
+          label="Delete event"
+          tone="danger"
+          onClick={() => onDelete(event)}
+        />
+      </div>
+    </li>
   );
 };

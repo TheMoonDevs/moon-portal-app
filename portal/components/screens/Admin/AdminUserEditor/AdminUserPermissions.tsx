@@ -5,7 +5,20 @@ import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import type { ResourceDefinition } from '@/lib/permissions';
+import { cn } from '@/lib/utils';
 import { PortalSdk } from '@/utils/services/PortalSdk';
+
+import {
+  AdminButton,
+  CheckBox,
+  EmptyState,
+  Icon,
+  Panel,
+  PanelHeader,
+  Pill,
+  SearchInput,
+  SkeletonRows,
+} from '../shared/AdminUI';
 
 interface AdminUserPermissionsProps {
   user: User;
@@ -34,6 +47,7 @@ export const AdminUserPermissions = ({ user }: AdminUserPermissionsProps) => {
   const [isAdmin, setIsAdmin] = useState<boolean>(!!user?.isAdmin);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     if (!userId) return;
@@ -124,172 +138,220 @@ export const AdminUserPermissions = ({ user }: AdminUserPermissionsProps) => {
     [checked, baseline],
   );
 
+  const visibleResources = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    if (!catalog) return [];
+    if (!term) return catalog.resources;
+    return catalog.resources.filter((resource) =>
+      [resource.key, resource.label, resource.description, ...resource.actions]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(term)),
+    );
+  }, [catalog, search]);
+
   if (!userId) {
     return (
-      <div className="w-full max-w-3xl rounded-lg bg-neutral-800 p-6 text-neutral-200">
-        <h2 className="text-lg font-semibold text-white">Access & Policies</h2>
-        <p className="mt-2 text-sm text-neutral-400">
-          Save this user first, then reopen this tab to grant access policies.
-        </p>
-      </div>
+      <Panel>
+        <EmptyState
+          icon="lock"
+          title="Save this user first"
+          description="Access policies can be granted once the account exists."
+        />
+      </Panel>
     );
   }
 
   return (
-    <div className="flex size-full max-w-3xl flex-col gap-4 overflow-y-auto rounded-lg bg-neutral-800 p-6 text-neutral-200">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-white">
-            Access &amp; Policies
-          </h2>
-          <p className="text-sm text-neutral-400">
-            A checked box means the permission is in effect. Boxes tagged{' '}
-            <span className="rounded bg-neutral-700 px-1 text-[10px] uppercase">
-              default
-            </span>{' '}
-            come from the role — uncheck one to remove it.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={save}
-          disabled={saving || loading}
-          className="rounded bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-50"
-        >
-          {saving ? 'Saving…' : 'Save changes'}
-        </button>
-      </div>
+    <div className="flex flex-col gap-4">
+      <Panel>
+        <PanelHeader
+          title="Access & policies"
+          description="A checked box means the permission is in effect."
+          icon="lock"
+          actions={
+            <AdminButton
+              size="sm"
+              tone="primary"
+              icon="check"
+              onClick={save}
+              loading={saving}
+              disabled={loading}
+            >
+              Save policies
+            </AdminButton>
+          }
+        />
 
-      {isAdmin && (
-        <div className="rounded border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
-          This user is a full admin, so every permission is on by default.
-          Uncheck any box to disable that specific capability for them.
+        <div className="flex flex-col gap-3 border-b border-white/[0.07] p-4">
+          <SearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Search resources or actions…"
+          />
+          <div className="flex flex-wrap items-center gap-2 text-xs text-neutral-500">
+            <Pill tone="positive" icon="check">
+              {checked.size} in effect
+            </Pill>
+            {grantList.length > 0 && (
+              <Pill tone="info">{grantList.length} extra</Pill>
+            )}
+            {deniedList.length > 0 && (
+              <Pill tone="danger">{deniedList.length} denied</Pill>
+            )}
+            <span>
+              Boxes tagged{' '}
+              <span className="rounded bg-white/10 px-1 text-[10px] uppercase text-neutral-300">
+                default
+              </span>{' '}
+              come from the role — uncheck one to remove it.
+            </span>
+          </div>
         </div>
-      )}
 
-      {loading ? (
-        <p className="text-sm text-neutral-400">Loading policies…</p>
-      ) : !catalog ? (
-        <p className="text-sm text-neutral-400">No catalog available.</p>
-      ) : (
-        <div className="flex flex-col gap-5">
-          {catalog.resources.map((resource) => {
-            const allOn = resource.actions.every((a) =>
-              checked.has(`${resource.key}:${a}`),
-            );
-            return (
-              <div
-                key={resource.key}
-                className="rounded-lg border border-neutral-700 bg-neutral-900/60 p-4"
-              >
-                <div className="mb-3 flex items-center justify-between">
-                  <div>
-                    <h3 className="font-medium text-white">
-                      {resource.label}{' '}
-                      <span className="font-mono text-xs text-neutral-500">
-                        {resource.key}
-                      </span>
-                    </h3>
-                    <p className="text-xs text-neutral-500">
-                      {resource.description}
-                    </p>
+        {isAdmin && (
+          <div className="flex items-start gap-2 border-b border-white/[0.07] bg-amber-500/[0.07] px-4 py-3 text-xs text-amber-200">
+            <Icon name="shield_person" className="text-[18px]" />
+            This user is a full admin, so every permission is on by default.
+            Uncheck any box to disable that specific capability for them.
+          </div>
+        )}
+
+        {loading ? (
+          <SkeletonRows rows={4} />
+        ) : !catalog ? (
+          <EmptyState
+            icon="error"
+            title="No catalog available"
+            description="The permission catalog could not be loaded."
+          />
+        ) : visibleResources.length === 0 ? (
+          <EmptyState
+            icon="search_off"
+            title="No resources match your search"
+            description="Try another resource or action name."
+          />
+        ) : (
+          <div className="flex flex-col gap-3 p-4">
+            {visibleResources.map((resource) => {
+              const allOn = resource.actions.every((action) =>
+                checked.has(`${resource.key}:${action}`),
+              );
+              return (
+                <div
+                  key={resource.key}
+                  className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-4"
+                >
+                  <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h3 className="flex items-center gap-2 text-sm font-medium text-neutral-100">
+                        {resource.label}
+                        <span className="font-mono text-[11px] text-neutral-600">
+                          {resource.key}
+                        </span>
+                      </h3>
+                      <p className="mt-0.5 text-xs text-neutral-500">
+                        {resource.description}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => toggleResourceAll(resource, !allOn)}
+                      className="flex shrink-0 items-center gap-2 rounded-lg border border-white/10 px-2.5 py-1.5 text-xs text-neutral-400 transition-colors hover:bg-white/[0.06] hover:text-neutral-100"
+                    >
+                      <CheckBox checked={allOn} size="sm" />
+                      All
+                    </button>
                   </div>
-                  <label className="flex cursor-pointer items-center gap-2 text-xs text-neutral-400">
-                    <input
-                      type="checkbox"
-                      checked={allOn}
-                      onChange={(e) =>
-                        toggleResourceAll(resource, e.target.checked)
-                      }
-                    />
-                    All
-                  </label>
+
+                  <div className="flex flex-wrap gap-2">
+                    {resource.actions.map((action) => {
+                      const permission = `${resource.key}:${action}`;
+                      const isOn = checked.has(permission);
+                      const isBaseline = baseline.has(permission);
+                      // A baseline permission switched off = an explicit denial.
+                      const isDenied = isBaseline && !isOn;
+                      return (
+                        <button
+                          key={permission}
+                          type="button"
+                          onClick={() => toggle(permission)}
+                          className={cn(
+                            'flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs transition-colors',
+                            isOn
+                              ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-200'
+                              : isDenied
+                                ? 'border-rose-500/40 bg-rose-500/10 text-rose-200'
+                                : 'border-white/10 bg-white/[0.03] text-neutral-400 hover:border-white/25 hover:text-neutral-100',
+                          )}
+                        >
+                          <CheckBox checked={isOn} size="sm" />
+                          <span className="font-mono">{action}</span>
+                          {isBaseline && !isAdmin && (
+                            <span
+                              title="Granted by the user's role"
+                              className="rounded bg-white/10 px-1 text-[10px] uppercase text-neutral-300"
+                            >
+                              default
+                            </span>
+                          )}
+                          {isDenied && (
+                            <span
+                              title="This default is being removed"
+                              className="rounded bg-rose-500/25 px-1 text-[10px] uppercase text-rose-100"
+                            >
+                              denied
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {resource.actions.map((action) => {
-                    const permission = `${resource.key}:${action}`;
-                    const isOn = checked.has(permission);
-                    const isBaseline = baseline.has(permission);
-                    // A baseline permission switched off = an explicit denial.
-                    const isDenied = isBaseline && !isOn;
-                    return (
-                      <label
-                        key={permission}
-                        className={`flex cursor-pointer items-center gap-2 rounded border px-3 py-1.5 text-sm transition-colors ${
-                          isOn
-                            ? 'border-emerald-500 bg-emerald-500/10 text-emerald-300'
-                            : isDenied
-                              ? 'border-red-500/60 bg-red-500/10 text-red-300'
-                              : 'border-neutral-700 bg-neutral-800 text-neutral-300 hover:border-neutral-600'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isOn}
-                          onChange={() => toggle(permission)}
-                        />
-                        <span className="font-mono text-xs">{action}</span>
-                        {isBaseline && !isAdmin && (
-                          <span
-                            title="Granted by the user's role"
-                            className="rounded bg-neutral-700 px-1 text-[10px] uppercase text-neutral-300"
-                          >
-                            default
-                          </span>
-                        )}
-                        {isDenied && (
-                          <span
-                            title="This default is being removed"
-                            className="rounded bg-red-500/30 px-1 text-[10px] uppercase text-red-200"
-                          >
-                            denied
-                          </span>
-                        )}
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        )}
+      </Panel>
 
       {(grantList.length > 0 || deniedList.length > 0) && (
-        <div className="mt-2 grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2">
           {grantList.length > 0 && (
-            <div className="rounded border border-neutral-700 bg-neutral-900/60 p-3">
-              <p className="mb-1 text-xs uppercase tracking-wide text-emerald-400">
-                Extra grants
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {grantList.map((p) => (
+            <Panel>
+              <PanelHeader
+                title="Extra grants"
+                description="Permissions beyond what the role provides."
+                icon="add_circle"
+              />
+              <div className="flex flex-wrap gap-1.5 p-4">
+                {grantList.map((permission) => (
                   <code
-                    key={p}
-                    className="rounded bg-neutral-700 px-1.5 py-0.5 font-mono text-xs text-neutral-200"
+                    key={permission}
+                    className="rounded bg-emerald-500/10 px-1.5 py-0.5 font-mono text-xs text-emerald-200"
                   >
-                    {p}
+                    {permission}
                   </code>
                 ))}
               </div>
-            </div>
+            </Panel>
           )}
           {deniedList.length > 0 && (
-            <div className="rounded border border-red-500/40 bg-red-500/5 p-3">
-              <p className="mb-1 text-xs uppercase tracking-wide text-red-400">
-                Removed / denied
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {deniedList.map((p) => (
+            <Panel>
+              <PanelHeader
+                title="Removed / denied"
+                description="Role defaults switched off for this user."
+                icon="do_not_disturb_on"
+              />
+              <div className="flex flex-wrap gap-1.5 p-4">
+                {deniedList.map((permission) => (
                   <code
-                    key={p}
-                    className="rounded bg-red-500/20 px-1.5 py-0.5 font-mono text-xs text-red-200"
+                    key={permission}
+                    className="rounded bg-rose-500/10 px-1.5 py-0.5 font-mono text-xs text-rose-200"
                   >
-                    {p}
+                    {permission}
                   </code>
                 ))}
               </div>
-            </div>
+            </Panel>
           )}
         </div>
       )}

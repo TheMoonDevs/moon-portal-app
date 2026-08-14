@@ -1,363 +1,406 @@
 'use client';
-import type { Event } from '@db/client';
-import { IconButton } from '@mui/material';
-import { DatePicker, TimePicker } from '@mui/x-date-pickers';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import type { Dayjs } from 'dayjs';
-import dayjs from 'dayjs';
-import React, { useEffect, useState } from 'react';
-import { toast, Toaster } from 'sonner';
 
-import { Spinner } from '@/components/elements/Loaders';
-import ToolTip from '@/components/elements/ToolTip';
+import type { Event } from '@db/client';
+import type { FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
+
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
-import { MobileBox } from '../../Login/Login';
+import {
+  AdminButton,
+  AdminModal,
+  ConfirmDialog,
+  DateInput,
+  EmptyState,
+  Field,
+  formatDate,
+  Panel,
+  SearchInput,
+  Segmented,
+  SkeletonRows,
+  StatCard,
+  TextArea,
+  TextInput,
+} from '../shared/AdminUI';
 import { EventCard } from './EventCard';
 
-export type loadingState = {
-  addNew: boolean;
-  fetching: boolean;
-  adding: boolean;
-  updating: boolean;
-  updateUploading: boolean;
-  deleting?: boolean;
+type EventFormState = {
+  title: string;
+  subTitle: string;
+  link: string;
+  date: string;
+  time: string;
+};
+
+const EMPTY_FORM: EventFormState = {
+  title: '',
+  subTitle: '',
+  link: '',
+  date: '',
+  time: '',
+};
+
+type EventFilter = 'UPCOMING' | 'PAST' | 'ALL';
+
+const startOfToday = () => {
+  const date = new Date();
+  date.setHours(0, 0, 0, 0);
+  return date;
 };
 
 const EventForm = () => {
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-  const [title, setTitle] = useState('');
-  const [subTitle, setSubTitle] = useState('');
-  const [link, setLink] = useState('');
-  const [date, setDate] = useState<Dayjs | null>(null);
   const [events, setEvents] = useState<Event[]>([]);
-  const [time, setTime] = useState<Dayjs | null>(null);
-  const [loadingState, setLoadingState] = useState<loadingState>({
-    addNew: false,
-    fetching: false,
-    adding: false,
-    updating: false,
-    updateUploading: false,
-  });
+  const [fetching, setFetching] = useState(true);
+  const [filter, setFilter] = useState<EventFilter>('UPCOMING');
+  const [search, setSearch] = useState('');
 
-  const resetForm = () => {
-    setTitle('');
-    setSubTitle('');
-    setLink('');
-    setDate(null);
-    setTime(null);
-  };
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState<EventFormState>(EMPTY_FORM);
+  const [saving, setSaving] = useState(false);
 
-  const getEvents = async () => {
-    setLoadingState({ ...loadingState, fetching: true });
+  const [deleteTarget, setDeleteTarget] = useState<Event | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  /* --------------------------------- fetch --------------------------------- */
+
+  const fetchEvents = useCallback(async () => {
+    setFetching(true);
     try {
-      const res = await PortalSdk.getData('/api/events', null);
-      setEvents(res.data);
-      console.log('Events:', res.data);
+      const response = await PortalSdk.getData('/api/events', null);
+      setEvents(response?.data || []);
     } catch (error) {
-      console.log(error);
+      console.error(error);
+      toast.error('Could not load events');
     } finally {
-      setLoadingState({ ...loadingState, fetching: false });
+      setFetching(false);
     }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!date || !title || !subTitle || !link || !time) return;
-    const formattedDate = date.format('YYYY-MM-DD');
-    const formattedTime = time.format('HH:mm');
-    const year = date.year();
-    const month = Number(date.format('M'));
-    const eventData = {
-      title,
-      subTitle,
-      link,
-      date: formattedDate,
-      time: formattedTime,
-      month,
-      year,
-    };
-    setLoadingState({ ...loadingState, adding: true });
-    console.log(eventData);
-
-    try {
-      await PortalSdk.postData('api/events', eventData);
-      getEvents();
-      toast.success('Event added successfully!');
-      resetForm();
-    } catch (error) {
-      console.error('Error creating event:', error);
-      toast.error('Failed to add event. Please try again.');
-    } finally {
-      setLoadingState({ ...loadingState, adding: false });
-    }
-  };
-
-  const handleUpdate = async (event: Event, e: React.FormEvent) => {
-    e.preventDefault();
-    setLoadingState((prev) => ({ ...prev, updateUploading: true }));
-    if (!date || !title || !subTitle || !link || !time) return;
-    const formattedDate = date.format('YYYY-MM-DD');
-    const formattedTime = time.format('HH:mm');
-    const year = date.year();
-    const month = Number(date.format('M'));
-    const eventData = {
-      id: event.id,
-      title,
-      subTitle,
-      link,
-      date: formattedDate,
-      time: formattedTime,
-      month,
-      year,
-    };
-
-    try {
-      await PortalSdk.putData('api/events', eventData);
-      toast.success('Event updated successfully!');
-      resetForm();
-      setLoadingState((prev) => ({ ...prev, updating: true }));
-      getEvents();
-    } catch (error) {
-      console.error('Error updating event:', error);
-      toast.error('Failed to update event. Please try again.');
-    } finally {
-      setLoadingState((prev) => ({ ...prev, updateUploading: false }));
-    }
-  };
-
-  const handleFormSubmit = (e: React.FormEvent) => {
-    if (loadingState.updating) {
-      handleUpdate(selectedEvent as Event, e);
-    } else {
-      handleSubmit(e);
-    }
-  };
-
-  useEffect(() => {
-    if (selectedEvent) {
-      setTitle(selectedEvent.name || '');
-      setSubTitle(selectedEvent.subTitle || '');
-      setLink(selectedEvent.link || '');
-      setDate(dayjs(selectedEvent.date) || null);
-      setTime(dayjs(selectedEvent.time, 'HH:mm') || null);
-    }
-  }, [selectedEvent]);
-
-  useEffect(() => {
-    getEvents();
   }, []);
 
+  useEffect(() => {
+    fetchEvents();
+  }, [fetchEvents]);
+
+  /* -------------------------------- derived -------------------------------- */
+
+  const { upcoming, past } = useMemo(() => {
+    const today = startOfToday();
+    return {
+      upcoming: events.filter((event) => new Date(event.date) >= today),
+      past: events.filter((event) => new Date(event.date) < today),
+    };
+  }, [events]);
+
+  const visibleEvents = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    const base =
+      filter === 'UPCOMING' ? upcoming : filter === 'PAST' ? past : events;
+
+    return base
+      .filter((event) =>
+        term
+          ? [event.name, event.subTitle]
+              .filter(Boolean)
+              .some((value) => String(value).toLowerCase().includes(term))
+          : true,
+      )
+      .sort((a, b) => {
+        const diff = new Date(a.date).getTime() - new Date(b.date).getTime();
+        return filter === 'PAST' ? -diff : diff;
+      });
+  }, [filter, search, upcoming, past, events]);
+
+  /* ---------------------------------- form ---------------------------------- */
+
+  const openCreate = () => {
+    setForm(EMPTY_FORM);
+    setEditingId(null);
+    setFormOpen(true);
+  };
+
+  const openEdit = (event: Event) => {
+    setForm({
+      title: event.name || '',
+      subTitle: event.subTitle || '',
+      link: event.link || '',
+      date: event.date || '',
+      time: event.time || '',
+    });
+    setEditingId(event.id);
+    setFormOpen(true);
+  };
+
+  const isValid =
+    form.title.trim() !== '' &&
+    form.subTitle.trim() !== '' &&
+    form.link.trim() !== '' &&
+    form.date !== '' &&
+    form.time !== '';
+
+  const handleSubmit = async (event?: FormEvent) => {
+    event?.preventDefault();
+    if (!isValid || saving) return;
+
+    const date = new Date(form.date);
+    const payload = {
+      title: form.title.trim(),
+      subTitle: form.subTitle.trim(),
+      link: form.link.trim(),
+      date: form.date,
+      time: form.time,
+      month: date.getMonth() + 1,
+      year: date.getFullYear(),
+    };
+
+    setSaving(true);
+    try {
+      if (editingId) {
+        await PortalSdk.putData('/api/events', { ...payload, id: editingId });
+        toast.success('Event updated');
+      } else {
+        await PortalSdk.postData('/api/events', payload);
+        toast.success('Event added');
+      }
+      setFormOpen(false);
+      setForm(EMPTY_FORM);
+      setEditingId(null);
+      fetchEvents();
+    } catch (error) {
+      console.error(error);
+      toast.error(editingId ? 'Could not update event' : 'Could not add event');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await PortalSdk.deleteData('/api/events', { id: deleteTarget.id });
+      setEvents((previous) =>
+        previous.filter((event) => event.id !== deleteTarget.id),
+      );
+      toast.success('Event deleted');
+      setDeleteTarget(null);
+    } catch (error) {
+      console.error(error);
+      toast.error('Could not delete event');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  /* --------------------------------- render --------------------------------- */
+
   return (
-    <>
-      <MobileBox
-        customClass={`${loadingState.addNew || loadingState.updating ? 'overflow-y-scroll' : 'overflow-hidden'} !w-[50%]`}
-      >
-        <p className="mb-6 text-center text-xs uppercase tracking-[0.5em] text-neutral-400">
-          Add Event
-        </p>
-        {loadingState.fetching ? (
-          <div className="flex h-full items-center justify-center">
-            <Spinner />
-          </div>
-        ) : (
-          <div className="relative size-full">
-            {loadingState.addNew || loadingState.updating ? (
-              <>
-                <ToolTip title="Back to Previous Slide">
-                  <IconButton
-                    onClick={() => {
-                      loadingState.updating
-                        ? setLoadingState({ ...loadingState, updating: false })
-                        : setLoadingState({ ...loadingState, addNew: false });
-                      resetForm();
-                    }}
-                    sx={{ backgroundColor: '#1b1b1b', mb: 2 }}
-                  >
-                    <span className="material-symbols-outlined !text-white">
-                      arrow_back
-                    </span>
-                  </IconButton>
-                </ToolTip>
-                <form
-                  onSubmit={handleFormSubmit}
-                  className="relative my-2 flex size-full grow flex-col"
+    <div className="flex flex-col gap-5">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <StatCard
+          label="All events"
+          value={events.length}
+          icon="event"
+          loading={fetching}
+        />
+        <StatCard
+          label="Upcoming"
+          value={upcoming.length}
+          icon="event_upcoming"
+          tone="positive"
+          hint={
+            upcoming.length > 0
+              ? `Next on ${formatDate(upcoming[0]?.date)}`
+              : 'Nothing scheduled'
+          }
+          loading={fetching}
+        />
+        <StatCard
+          label="Past"
+          value={past.length}
+          icon="history"
+          tone="neutral"
+          loading={fetching}
+        />
+      </div>
+
+      <Panel>
+        <div className="flex flex-wrap items-center gap-3 border-b border-white/[0.07] p-4">
+          <SearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Search events…"
+            className="min-w-[220px] flex-1"
+          />
+          <Segmented<EventFilter>
+            value={filter}
+            onChange={setFilter}
+            options={[
+              { value: 'UPCOMING', label: 'Upcoming', count: upcoming.length },
+              { value: 'PAST', label: 'Past', count: past.length },
+              { value: 'ALL', label: 'All', count: events.length },
+            ]}
+          />
+          <AdminButton tone="primary" icon="add" onClick={openCreate}>
+            New event
+          </AdminButton>
+        </div>
+
+        {fetching ? (
+          <SkeletonRows rows={5} />
+        ) : visibleEvents.length === 0 ? (
+          <EmptyState
+            icon={search ? 'search_off' : 'event_busy'}
+            title={
+              search
+                ? 'No events match your search'
+                : filter === 'UPCOMING'
+                  ? 'No upcoming events'
+                  : 'No events yet'
+            }
+            description={
+              search
+                ? 'Try a different title or subtitle.'
+                : 'Schedule an event to show it on the portal calendar.'
+            }
+            action={
+              !search ? (
+                <AdminButton
+                  size="sm"
+                  tone="primary"
+                  icon="add"
+                  onClick={openCreate}
                 >
-                  <div className="grow">
-                    <div className="mb-5">
-                      <label
-                        htmlFor="eventTitle"
-                        className="mb-1 block text-sm font-medium text-neutral-300"
-                      >
-                        Event Title
-                      </label>
-                      <input
-                        type="text"
-                        id="eventTitle"
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        className="w-full rounded border border-neutral-500 bg-neutral-800 p-2 text-neutral-200"
-                        placeholder="Enter event title..."
-                      />
-                    </div>
-                    <div className="mb-5">
-                      <label
-                        htmlFor="subTitle"
-                        className="mb-1 block text-sm font-medium text-neutral-300"
-                      >
-                        Add Subtitle
-                      </label>
-                      <textarea
-                        id="subTitle"
-                        value={subTitle}
-                        onChange={(e) => setSubTitle(e.target.value)}
-                        className="w-full rounded border border-neutral-500 bg-neutral-800 p-2 text-neutral-200"
-                        placeholder="Enter Subtitle..."
-                        style={{ resize: 'none' }}
-                      />
-                    </div>
-                    <LocalizationProvider dateAdapter={AdapterDayjs}>
-                      <div className="mb-5">
-                        <label
-                          htmlFor="date"
-                          className="mb-1 block text-sm font-medium text-neutral-300"
-                        >
-                          Add Event Date
-                        </label>
-                        <DatePicker
-                          value={date}
-                          onChange={(newValue) => setDate(newValue)}
-                          sx={{
-                            border: '1px solid #737373',
-                            borderRadius: '4px',
-                            width: '100%',
-                            backgroundColor: '#262626',
-                            '& .MuiPaper-root': {
-                              '& .MuiPickersLayout-root': {
-                                '& MuiDateCalendar-root': {
-                                  backgroundColor: '#1f1f1f !important',
-                                },
-                              },
-                            },
-                            '& .MuiDateCalendar-root': {
-                              backgroundColor: '#1f1f1f !important',
-                            },
-                            '& .MuiInputBase-input': {
-                              color: 'white !important',
-                            },
-                            '& .MuiButtonBase-root': {
-                              color: 'white !important',
-                            },
-                          }}
-                          format="DD-MM-YYYY"
-                        />
-                      </div>
-                      <div className="mb-5">
-                        <label
-                          htmlFor="time"
-                          className="mb-1 block text-sm font-medium text-neutral-300"
-                        >
-                          Add Event Time
-                        </label>
-                        <TimePicker
-                          value={time}
-                          onChange={(newValue) => setTime(newValue)}
-                          sx={{
-                            border: '1px solid #737373',
-                            borderRadius: '4px',
-                            width: '100%',
-                            backgroundColor: '#262626',
-                            '& .MuiInputBase-input': {
-                              color: 'white !important',
-                            },
-                            '& .MuiButtonBase-root': {
-                              color: 'white !important',
-                            },
-                          }}
-                          format="HH:mm"
-                        />
-                      </div>
-                    </LocalizationProvider>
-                    <div className="mb-5">
-                      <label
-                        htmlFor="link"
-                        className="mb-1 block text-sm font-medium text-neutral-300"
-                      >
-                        Link for event
-                      </label>
-                      <input
-                        type="url"
-                        id="link"
-                        value={link}
-                        onChange={(e) => setLink(e.target.value)}
-                        className="w-full rounded border border-neutral-500 bg-neutral-800 p-2 text-neutral-200"
-                        placeholder="Enter event link..."
-                      />
-                    </div>
-                    <div className="mt-auto">
-                      <button
-                        type="submit"
-                        className="mb-5 flex w-full items-center justify-center rounded-lg bg-neutral-800 px-5 py-2 text-white shadow-md hover:bg-neutral-700"
-                        disabled={!title || !subTitle || !date || !link}
-                      >
-                        {loadingState.adding || loadingState.updateUploading ? (
-                          <Spinner className="size-4" />
-                        ) : (
-                          <>
-                            {selectedEvent ? 'Update Event' : 'Add Event'}
-                            <span className="material-symbols-outlined ml-2">
-                              {selectedEvent
-                                ? 'edit_calendar'
-                                : 'calendar_add_on'}
-                            </span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                </form>
-              </>
-            ) : events.length === 0 ? (
-              <div className="flex h-full flex-col items-center justify-center">
-                <p className="text-neutral-400">No Events found.</p>
-              </div>
-            ) : (
-              <div className="flex w-full items-center justify-center">
-                <div className="scrollbar no-scrollbar flex h-4/5 w-full flex-col gap-2 overflow-y-scroll">
-                  {events.map((event: Event) => {
-                    return (
-                      <EventCard
-                        event={event}
-                        key={event.id}
-                        setEvents={setEvents}
-                        setSelectedEvent={setSelectedEvent}
-                        setLoadingState={setLoadingState}
-                        loadingState={loadingState}
-                      />
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-            {!loadingState.addNew && !loadingState.updating && (
-              <button
-                className="absolute bottom-0 flex w-full items-center justify-center gap-2 rounded-lg bg-neutral-800 px-5 py-2 text-white shadow-md hover:bg-neutral-700"
-                onClick={() =>
-                  setLoadingState({ ...loadingState, addNew: true })
-                }
-              >
-                <span className="material-symbols-outlined">
-                  calendar_add_on
-                </span>
-                Add New Event
-              </button>
-            )}
-          </div>
+                  New event
+                </AdminButton>
+              ) : undefined
+            }
+          />
+        ) : (
+          <ul className="divide-y divide-white/[0.05]">
+            {visibleEvents.map((event) => (
+              <EventCard
+                key={event.id}
+                event={event}
+                isPast={new Date(event.date) < startOfToday()}
+                onEdit={openEdit}
+                onDelete={setDeleteTarget}
+              />
+            ))}
+          </ul>
         )}
-      </MobileBox>
-      <Toaster richColors duration={3000} closeButton position="bottom-right" />
-    </>
+      </Panel>
+
+      <AdminModal
+        open={formOpen}
+        onOpenChange={(open) => {
+          setFormOpen(open);
+          if (!open) {
+            setForm(EMPTY_FORM);
+            setEditingId(null);
+          }
+        }}
+        title={editingId ? 'Edit event' : 'New event'}
+        description="Events appear on the portal calendar for everyone."
+        icon="event"
+        footer={
+          <>
+            <AdminButton
+              tone="ghost"
+              size="sm"
+              onClick={() => setFormOpen(false)}
+              disabled={saving}
+            >
+              Cancel
+            </AdminButton>
+            <AdminButton
+              tone="primary"
+              size="sm"
+              icon="check"
+              loading={saving}
+              disabled={!isValid}
+              onClick={() => handleSubmit()}
+            >
+              {editingId ? 'Save changes' : 'Add event'}
+            </AdminButton>
+          </>
+        }
+      >
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <Field label="Title" htmlFor="event-title" required>
+            <TextInput
+              id="event-title"
+              value={form.title}
+              onChange={(event) =>
+                setForm({ ...form, title: event.target.value })
+              }
+              placeholder="e.g. Monthly all-hands"
+            />
+          </Field>
+
+          <Field label="Subtitle" htmlFor="event-subtitle" required>
+            <TextArea
+              id="event-subtitle"
+              value={form.subTitle}
+              onChange={(event) =>
+                setForm({ ...form, subTitle: event.target.value })
+              }
+              placeholder="A short line describing the event…"
+              className="min-h-[80px]"
+            />
+          </Field>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Date" htmlFor="event-date" required>
+              <DateInput
+                id="event-date"
+                value={form.date}
+                onChange={(event) =>
+                  setForm({ ...form, date: event.target.value })
+                }
+              />
+            </Field>
+            <Field label="Time" htmlFor="event-time" required>
+              <TextInput
+                id="event-time"
+                type="time"
+                value={form.time}
+                onChange={(event) =>
+                  setForm({ ...form, time: event.target.value })
+                }
+                className="[color-scheme:dark]"
+              />
+            </Field>
+          </div>
+
+          <Field
+            label="Link"
+            htmlFor="event-link"
+            required
+            hint="Meeting or details link shown with the event."
+          >
+            <TextInput
+              id="event-link"
+              type="url"
+              value={form.link}
+              onChange={(event) =>
+                setForm({ ...form, link: event.target.value })
+              }
+              placeholder="https://…"
+            />
+          </Field>
+        </form>
+      </AdminModal>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title={`Delete “${deleteTarget?.name ?? ''}”?`}
+        description="The event will be removed from the portal calendar."
+        loading={deleting}
+        onConfirm={handleDelete}
+      />
+    </div>
   );
 };
 

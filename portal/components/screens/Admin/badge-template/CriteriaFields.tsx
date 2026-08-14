@@ -1,8 +1,8 @@
+'use client';
+
 import React from 'react';
 
-import ToolTip from '@/components/elements/ToolTip';
-
-import { InputField } from './TextFields';
+import { Field, NativeSelect, TextInput } from '../shared/AdminUI';
 
 interface CriteriaFieldsProps {
   criteriaType: string;
@@ -36,66 +36,68 @@ const CriteriaFields: React.FC<CriteriaFieldsProps> = ({
   switch (criteriaType) {
     case 'TIME_BASED':
       return (
-        <>
-          <InputField
+        <Field
+          label="Criteria logic"
+          htmlFor="criteriaLogic"
+          required
+          hint="How long after joining the badge unlocks, e.g. 2 weeks or 6 months."
+        >
+          <TextInput
             id="criteriaLogic"
-            type="text"
-            title="Specify the logic for awarding this badge, e.g., 'After completing 2 weeks from the date of joining' or '6 months from the date of joining'"
-            label="Add Criteria Logic"
-            placeholder="Criteria logic after which the badge is awarded, e.g., 2 weeks, 6 months"
             value={formData.criteriaLogic}
             onChange={handleChange}
+            placeholder="e.g. 6 months"
           />
-        </>
+        </Field>
       );
 
     case 'STREAK':
       return (
-        <>
-          <div>
-            <label
-              htmlFor="streakType"
-              className="mb-2 flex items-center gap-2 font-semibold text-white"
-            >
-              Streak Type
-              <ToolTip title="Specify the type of streak, e.g., Worklogs-based, select from the list.">
-                <span
-                  className="material-symbols-outlined"
-                  style={{ fontSize: '1rem' }}
-                >
-                  info
-                </span>
-              </ToolTip>
-            </label>
-            <select
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field
+            label="Streak type"
+            htmlFor="streakType"
+            required
+            hint="What activity the streak counts."
+          >
+            <NativeSelect
               id="streakType"
               value={formData.streakType}
               onChange={handleChange}
-              title="Specify the type of streak, e.g., Worklogs-based"
-              className="w-full rounded-lg border border-neutral-700 bg-neutral-800 p-3 text-white transition focus:ring-2 focus:ring-white"
             >
-              <option value="">Select Streak Type</option>
+              <option value="">Select a streak type…</option>
               {streakTypeTags.map((tag) => (
-                <option value={tag.value} key={`${tag.value}`}>
+                <option key={tag.value} value={tag.value}>
                   {tag.label}
                 </option>
               ))}
-            </select>
-          </div>
-          <InputField
-            id="streakCount"
-            label="Number of Days for Streak"
-            type="number"
-            title="Specify the number of days for streak, e.g - 10"
-            placeholder="e.g., 10"
-            value={formData.streakCount}
-            onChange={handleChange}
-          />
-        </>
+            </NativeSelect>
+          </Field>
+
+          <Field
+            label="Days for the streak"
+            htmlFor="streakCount"
+            required
+            hint="Consecutive days needed to unlock the badge."
+          >
+            <TextInput
+              id="streakCount"
+              type="number"
+              min={1}
+              value={formData.streakCount}
+              onChange={handleChange}
+              placeholder="10"
+            />
+          </Field>
+        </div>
       );
 
     case 'CUSTOM':
-      return null;
+      return (
+        <p className="rounded-lg border border-white/[0.07] bg-white/[0.02] px-3 py-2.5 text-xs text-neutral-500">
+          Custom badges are awarded manually — no automatic criteria is stored.
+        </p>
+      );
 
     default:
       return null;

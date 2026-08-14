@@ -9,24 +9,32 @@ import {
   USERTYPE,
   USERVERTICAL,
 } from '@db/client';
-import type { JsonArray, JsonObject } from '@db/runtime';
 import dayjs from 'dayjs';
-import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import type { ChangeEvent } from 'react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast, Toaster } from 'sonner';
 
-import { LoaderScreen } from '@/components/elements/Loaders';
 import { APP_ROUTES, TMD_PORTAL_API_KEY } from '@/utils/constants/appInfo';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
-import { AdminHeader } from '../AdminHeader';
-import { AdminUserBasicData } from './AdimUserBasicData';
+import type { EditorTab } from '../shared/AdminEditorShell';
+import { AdminEditorShell } from '../shared/AdminEditorShell';
+import {
+  AdminButton,
+  formatDate,
+  Icon,
+  Panel,
+  Pill,
+  SkeletonRows,
+  UserAvatar,
+} from '../shared/AdminUI';
+import { AdminUserBasicData } from './AdminUserBasicData';
 import { AdminUserPayData } from './AdminUserPayData';
 import { AdminUserPermissions } from './AdminUserPermissions';
 import { AdminUserPersonalData } from './AdminUserPersonalData';
 import { AdminUserWorkData } from './AdminUserWorkData';
+
 const initialUserState: User = {
   id: '',
   name: '',
@@ -50,8 +58,8 @@ const initialUserState: User = {
     joining: dayjs().format('YYYY-MM-DD'),
     overlap: [],
   },
-  personalData: null, // Add the missing property
-  payData: null, // Add the missing property
+  personalData: null,
+  payData: null,
   slackId: '',
   thirdPartyData: null,
   banner: '',
@@ -59,253 +67,251 @@ const initialUserState: User = {
   positionTitle: '',
 };
 
-const sidebarItems = [
-  { name: 'AdminUserBasicData', label: 'Basic Details', icon: 'person' },
-  { name: 'AdminUserWorkData', label: 'Work Details', icon: 'work' },
-  { name: 'AdminUserPayData', label: 'Payment Details', icon: 'payments' },
-  { name: 'AdminUserPersonalData', label: 'Personal Details', icon: 'badge' },
-  { name: 'AdminUserPermissions', label: 'Access & Policies', icon: 'lock' },
+const TABS: EditorTab[] = [
+  { id: 'basic', label: 'Basic', icon: 'person' },
+  { id: 'work', label: 'Work', icon: 'work' },
+  { id: 'pay', label: 'Payments', icon: 'payments' },
+  { id: 'personal', label: 'Personal', icon: 'badge' },
+  { id: 'access', label: 'Access & policies', icon: 'lock' },
 ];
+
+const statusTone = (status?: string | null) => {
+  switch (status) {
+    case 'ACTIVE':
+      return 'positive' as const;
+    case 'INACTIVE':
+      return 'warning' as const;
+    case 'BLOCKED':
+      return 'danger' as const;
+    default:
+      return 'neutral' as const;
+  }
+};
 
 export const AdminUserEditor = () => {
   const query = useSearchParams();
-  const [loading, setLoading] = useState(false);
+  const userId = query?.get('id') ?? null;
 
-  const router = useRouter();
   const [user, setUser] = useState<User>(initialUserState);
-  const [activeComponent, setActiveComponent] = useState('AdminUserBasicData');
+  const [savedSnapshot, setSavedSnapshot] = useState<string>('');
+  const [fetching, setFetching] = useState(!!userId);
+  const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState('basic');
 
-  const renderComponent = () => {
-    switch (activeComponent) {
-      case 'AdminUserBasicData':
-        return (
-          <AdminUserBasicData
-            user={user}
-            setUser={setUser}
-            saveUser={saveUser}
-            updateField={updateField}
-            loading={loading}
-            updateOverlap={updateOverlap}
-            updateTextareaField={updateTextareaField}
-          />
-        );
-      case 'AdminUserWorkData':
-        return (
-          <AdminUserWorkData
-            user={user}
-            setUser={setUser}
-            saveUser={saveUser}
-            loading={loading}
-            updateOverlap={updateOverlap}
-            updateField={updateField}
-          />
-        );
-      case 'AdminUserPayData':
-        return (
-          <AdminUserPayData
-            user={user}
-            saveUser={saveUser}
-            loading={loading}
-            setUser={setUser}
-            updateOverlap={updateOverlap}
-            updateField={updateField}
-          />
-        );
-      case 'AdminUserPersonalData':
-        return (
-          <AdminUserPersonalData
-            user={user}
-            setUser={setUser}
-            saveUser={saveUser}
-            loading={loading}
-            updateOverlap={updateOverlap}
-            updateField={updateField}
-          />
-        );
-      case 'AdminUserPermissions':
-        return <AdminUserPermissions user={user} />;
-      default:
-        return (
-          <AdminUserBasicData
-            user={user}
-            setUser={setUser}
-            saveUser={saveUser}
-            updateField={updateField}
-            loading={loading}
-            updateOverlap={updateOverlap}
-            updateTextareaField={updateTextareaField}
-          />
-        );
-    }
-  };
+  /* --------------------------------- loading -------------------------------- */
 
   useEffect(() => {
-    const id = query?.get('id');
-    if (id) {
-      setLoading(true);
-
-      PortalSdk.getData(`/api/user?id=${id}`, null)
-        .then(({ data, status }) => {
-          console.log(data);
-          if (data.user.length > 0) setUser(data.user[0]);
-          setLoading(false);
-        })
-        .catch((err) => {
-          console.log(err);
-          setLoading(false);
-        });
-    } else {
+    if (!userId) {
       setUser(initialUserState);
-      router.refresh();
+      setSavedSnapshot(JSON.stringify(initialUserState));
+      setFetching(false);
+      return;
     }
-  }, [query, router]);
 
-  const updateOverlap = (index: number, field: string, value: any) => {
-    setUser((u) => ({
-      ...u,
-      workData: {
-        ...(u.workData as JsonObject),
-        overlap:
-          ((u?.workData as JsonObject)?.overlap as JsonArray)?.map(
-            (overlap: any, i: number) => {
-              if (i === index) {
-                return {
-                  ...overlap,
-                  [field]: value,
-                };
-              }
-              return overlap;
-            },
-          ) || [],
-      },
-    }));
-  };
+    setFetching(true);
+    PortalSdk.getData(`/api/user?id=${userId}`, null)
+      .then(({ data }) => {
+        if (data?.user?.length > 0) {
+          setUser(data.user[0]);
+          setSavedSnapshot(JSON.stringify(data.user[0]));
+        } else {
+          toast.error('We could not find that user');
+        }
+      })
+      .catch((error) => {
+        console.error(error);
+        toast.error('Failed to load the user');
+      })
+      .finally(() => setFetching(false));
+  }, [userId]);
 
-  const updateField = (
-    e: ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-  ) => {
-    let id: string | string[] = e.target.id;
-    id = id.indexOf('.') > -1 ? id.split('.') : id;
-    const _value =
-      e.target instanceof HTMLInputElement
-        ? e.target.type == 'checkbox'
-          ? e.target.checked
-          : e.target.type == 'date'
-            ? new Date(e.target.value).toISOString()
-            : e.target.value
-        : e.target instanceof HTMLSelectElement
-          ? e.target.value
-          : '';
+  const isDirty = useMemo(
+    () => JSON.stringify(user) !== savedSnapshot,
+    [user, savedSnapshot],
+  );
 
-    if (id instanceof Array) {
-      setUser((u) => ({
-        ...u,
-        [id[0]]: {
-          ...(u[id[0] as keyof typeof u] as Record<string, any>),
-          [id[1]]: _value,
-        },
-      }));
-    } else {
-      setUser((u) => ({
-        ...u,
-        [id as keyof typeof user]: _value,
-      }));
-    }
-  };
+  /* -------------------------------- mutations ------------------------------- */
 
-  const updateTextareaField = (e: ChangeEvent<HTMLTextAreaElement>) => {
-    const { id, value } = e.target;
-    setUser((u) => ({
-      ...u,
-      [id]: value,
-    }));
-  };
-  const saveUser = () => {
-    setLoading(true);
+  const updateField = useCallback(
+    (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+      const rawId = event.target.id;
+      const path = rawId.includes('.') ? rawId.split('.') : rawId;
+      const target = event.target;
+      const value =
+        target instanceof HTMLInputElement
+          ? target.type === 'checkbox'
+            ? target.checked
+            : target.type === 'date'
+              ? new Date(target.value).toISOString()
+              : target.value
+          : target.value;
+
+      if (Array.isArray(path)) {
+        setUser((previous) => ({
+          ...previous,
+          [path[0]]: {
+            ...((previous[path[0] as keyof User] as Record<string, unknown>) ??
+              {}),
+            [path[1]]: value,
+          },
+        }));
+      } else {
+        setUser((previous) => ({ ...previous, [path]: value }));
+      }
+    },
+    [],
+  );
+
+  const updateTextareaField = useCallback(
+    (event: ChangeEvent<HTMLTextAreaElement>) => {
+      const { id, value } = event.target;
+      setUser((previous) => ({ ...previous, [id]: value }));
+    },
+    [],
+  );
+
+  const saveUser = useCallback(() => {
+    setSaving(true);
     fetch('/api/user', {
       method: user.id.length > 0 ? 'PUT' : 'POST',
       body: JSON.stringify(user),
-      headers: {
-        tmd_portal_api_key: TMD_PORTAL_API_KEY,
-      },
+      headers: { tmd_portal_api_key: TMD_PORTAL_API_KEY },
     })
       .then((res) => res.json())
       .then((data) => {
-        setLoading(false);
-        console.log(data);
         if (data.status === 'success') {
-          toast.success('User Successfully Saved');
+          toast.success('User saved');
           setUser(data.data.user);
+          setSavedSnapshot(JSON.stringify(data.data.user));
+          // Keep a freshly created user addressable if the page is reloaded.
+          if (!userId && data.data.user?.id) {
+            window.history.replaceState(
+              null,
+              '',
+              `${APP_ROUTES.userEditor}?id=${data.data.user.id}`,
+            );
+          }
         } else if (data.latestUser) {
-          toast.warning(
-            'Outdated User Data. Updating to latest. Please Try Again',
-          );
+          toast.warning('Outdated user data — reloaded the latest. Try again.');
           setUser(data.latestUser);
+          setSavedSnapshot(JSON.stringify(data.latestUser));
         } else {
           toast.error('Something went wrong');
         }
       })
-      .catch((err) => {
-        setLoading(false);
+      .catch((error) => {
+        console.error(error);
         toast.error('Something went wrong');
-        console.log(err);
-      });
+      })
+      .finally(() => setSaving(false));
+  }, [user, userId]);
+
+  /* Guard against losing edits on accidental navigation away. */
+  useEffect(() => {
+    if (!isDirty) return;
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [isDirty]);
+
+  /* --------------------------------- render --------------------------------- */
+
+  const sectionProps = { user, setUser, updateField, updateTextareaField };
+
+  const renderSection = () => {
+    if (fetching) {
+      return (
+        <Panel>
+          <SkeletonRows rows={6} />
+        </Panel>
+      );
+    }
+    switch (activeTab) {
+      case 'work':
+        return <AdminUserWorkData {...sectionProps} />;
+      case 'pay':
+        return <AdminUserPayData {...sectionProps} />;
+      case 'personal':
+        return <AdminUserPersonalData {...sectionProps} />;
+      case 'access':
+        return <AdminUserPermissions user={user} />;
+      default:
+        return <AdminUserBasicData {...sectionProps} />;
+    }
   };
 
-  const user_id = query?.get('id');
-  const showLoader = user_id && !user?.id;
-
-  if (showLoader) return <LoaderScreen text="Loading User Data" />;
+  const isNew = !userId;
 
   return (
-    <div
-      className={`flex ${query?.get('id') ? 'h-full' : 'h-screen'} w-full bg-neutral-700`}
-    >
-      <div className="flex w-64 flex-col justify-start bg-neutral-900 p-5">
-        <Link href={APP_ROUTES.home}>
-          <img
-            src="/logo/logo_white.png"
-            alt="Company Logo"
-            className="mx-auto w-32 cursor-pointer"
-          />
-        </Link>
-        <div className="mt-10 flex flex-col gap-4">
-          <Link
-            href={APP_ROUTES.admin}
-            className={`} flex items-center gap-2 rounded-lg p-2 text-white hover:bg-neutral-800`}
-          >
-            <span className="material-symbols-outlined">dashboard</span>
-            Dashboard
-          </Link>
-          {sidebarItems.map((item) => (
-            <button
-              key={item.name}
-              className={`flex items-center gap-2 rounded-lg p-2 text-white hover:bg-neutral-800 ${
-                activeComponent === item.name
-                  ? 'bg-neutral-800 font-semibold opacity-100'
-                  : 'opacity-60'
-              }`}
-              onClick={() => setActiveComponent(item.name)}
+    <>
+      <AdminEditorShell
+        backHref={`${APP_ROUTES.admin}?tab=users`}
+        backLabel="Users"
+        title={isNew ? 'New user' : user.name || user.username || 'User'}
+        description={
+          isNew
+            ? 'Create a member or client account.'
+            : `@${user.username} · joined ${formatDate(user.createdAt)}`
+        }
+        media={
+          !isNew && <UserAvatar src={user.avatar} name={user.name} size={48} />
+        }
+        meta={
+          !isNew && (
+            <>
+              <Pill tone={user.userType === 'CLIENT' ? 'info' : 'purple'}>
+                {user.userType}
+              </Pill>
+              {user.status && (
+                <Pill tone={statusTone(user.status)}>{user.status}</Pill>
+              )}
+              {user.role && user.userType === 'MEMBER' && (
+                <Pill>{String(user.role).replace(/_/g, ' ')}</Pill>
+              )}
+              {user.isAdmin && (
+                <Pill tone="warning" icon="shield_person">
+                  Admin
+                </Pill>
+              )}
+            </>
+          )
+        }
+        actions={
+          <>
+            {isDirty && !fetching && (
+              <span className="hidden items-center gap-1.5 text-xs text-amber-400 sm:flex">
+                <Icon name="edit" className="text-[15px]" />
+                Unsaved changes
+              </span>
+            )}
+            <AdminButton
+              tone="primary"
+              icon="check"
+              onClick={saveUser}
+              loading={saving}
+              disabled={fetching || !isDirty}
             >
-              <span className="material-symbols-outlined">{item.icon}</span>
-              {item.label}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div className="flex w-full flex-col items-center justify-center gap-2">
-        {query?.get('id') && <AdminHeader user={user} />}
-        <div className="flex w-[90%] flex-1 items-center justify-center p-5">
-          {renderComponent()}
-        </div>
-      </div>
+              {isNew ? 'Create user' : 'Save changes'}
+            </AdminButton>
+          </>
+        }
+        tabs={TABS}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+      >
+        {renderSection()}
+      </AdminEditorShell>
+
       <Toaster
-        richColors
-        position="top-right"
-        duration={2000}
-        closeButton
         theme="dark"
+        richColors
+        position="bottom-right"
+        duration={2500}
+        closeButton
       />
-    </div>
+    </>
   );
 };
