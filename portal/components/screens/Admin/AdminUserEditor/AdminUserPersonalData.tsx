@@ -1,166 +1,122 @@
 'use client';
 
-import type { User } from '@db/client';
 import type { JsonObject } from '@db/runtime';
-import { DatePicker } from '@mui/x-date-pickers';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import dayjs from 'dayjs';
-import type { ChangeEvent, Dispatch, SetStateAction } from 'react';
+import Link from 'next/link';
 
-import { LandscapeCard } from '@/components/elements/Cards';
-import { Spinner } from '@/components/elements/Loaders';
-import type { personalData } from '@/types/db/user-profile';
+import {
+  DateInput,
+  Field,
+  Icon,
+  Panel,
+  PanelHeader,
+  TextInput,
+} from '../shared/AdminUI';
+import type { UserSectionProps } from './types';
 
 export const AdminUserPersonalData = ({
   user,
-  loading,
   setUser,
   updateField,
-  updateOverlap,
-  saveUser,
-}: {
-  user: User;
-  loading: boolean;
-  setUser: Dispatch<SetStateAction<User>>;
-  updateField: (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
-  updateOverlap: (index: number, field: string, value: any) => void;
-  saveUser: () => void;
-}) => {
+}: UserSectionProps) => {
+  const personalData = (user?.personalData || {}) as Record<string, unknown>;
+  const govtId = (personalData.govtId as string) ?? '';
+
   return (
-    <LandscapeCard className="@shadow-lg !h-[90vh] !w-full items-start justify-start !rounded-xl !bg-gray-900 !p-6">
-      <div className="mb-6 flex w-full items-center justify-between border-b border-gray-700 pb-4">
-        <p className="text-sm font-semibold uppercase tracking-widest text-neutral-400">
-          Personal DATA
-        </p>
-        <button
-          onClick={saveUser}
-          className="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-white shadow-md transition hover:bg-green-700"
+    <Panel>
+      <PanelHeader
+        title="Personal details"
+        description="Contact information kept for internal records only."
+        icon="badge"
+      />
+      <div className="grid gap-4 p-4 sm:grid-cols-2">
+        <Field label="Phone" htmlFor="personalData.phone">
+          <TextInput
+            id="personalData.phone"
+            value={(personalData.phone as string) ?? ''}
+            onChange={updateField}
+            placeholder="+91 90000 00000"
+          />
+        </Field>
+
+        <Field label="Date of birth" htmlFor="personalData.dateOfBirth">
+          <DateInput
+            id="personalData.dateOfBirth"
+            value={(personalData.dateOfBirth as string) ?? ''}
+            onChange={(event) =>
+              setUser((previous) => ({
+                ...previous,
+                personalData: {
+                  ...(previous.personalData as JsonObject),
+                  dateOfBirth: event.target.value,
+                },
+              }))
+            }
+          />
+        </Field>
+
+        <Field
+          label="Address"
+          htmlFor="personalData.address"
+          className="sm:col-span-2"
         >
-          <>
-            {loading && <Spinner className="size-5 text-green-600" />}
-            {!loading && <span className="material-icons">done_all</span>}
-          </>
-          Save User
-        </button>
+          <TextInput
+            id="personalData.address"
+            value={(personalData.address as string) ?? ''}
+            onChange={updateField}
+            placeholder="Street, area…"
+          />
+        </Field>
+
+        <Field label="City" htmlFor="personalData.city">
+          <TextInput
+            id="personalData.city"
+            value={(personalData.city as string) ?? ''}
+            onChange={updateField}
+            placeholder="Bengaluru"
+          />
+        </Field>
+
+        <Field
+          label="Work hour overlap"
+          htmlFor="personalData.workHourOverlap"
+          hint="Hours this person overlaps with the core team."
+        >
+          <TextInput
+            id="personalData.workHourOverlap"
+            value={(personalData.workHourOverlap as string) ?? ''}
+            onChange={updateField}
+            placeholder="4 hours (IST 2pm–6pm)"
+          />
+        </Field>
+
+        <Field
+          label="Government ID"
+          htmlFor="personalData.govtId"
+          className="sm:col-span-2"
+          hint="Link to the stored identity document."
+        >
+          <div className="flex items-center gap-2">
+            <TextInput
+              id="personalData.govtId"
+              type="url"
+              value={govtId}
+              onChange={updateField}
+              placeholder="https://…"
+            />
+            {govtId && (
+              <Link
+                href={govtId}
+                target="_blank"
+                rel="noreferrer"
+                title="Open document"
+                className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] text-[18px] text-neutral-400 transition-colors hover:bg-white/[0.09] hover:text-white"
+              >
+                <Icon name="open_in_new" />
+              </Link>
+            )}
+          </div>
+        </Field>
       </div>
-      <LocalizationProvider dateAdapter={AdapterDayjs}>
-        <div className="grid w-full grid-cols-2 gap-8">
-          {/* Left Column */}
-          <div className="flex flex-col gap-4 text-white shadow-lg">
-            <div className="flex flex-col gap-2">
-              <p className="text-sm font-medium">Phone</p>
-              <input
-                id="personalData.phone"
-                type="text"
-                value={
-                  user.personalData
-                    ? (user?.personalData as personalData)?.phone
-                    : ''
-                }
-                onChange={updateField}
-                className="w-full rounded-md border border-gray-600 bg-neutral-800 p-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <p className="text-sm font-medium">Address</p>
-              <input
-                id="personalData.address"
-                type="text"
-                value={
-                  user.personalData
-                    ? (user?.personalData as personalData)?.address
-                    : ''
-                }
-                onChange={updateField}
-                className="w-full rounded-md border border-gray-600 bg-neutral-800 p-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <p className="text-sm font-medium">Date of Birth</p>
-              <DatePicker
-                value={dayjs((user?.personalData as any)?.dateOfBirth)}
-                onChange={(newValue) =>
-                  setUser((u) => ({
-                    ...u,
-                    personalData: {
-                      ...(u.personalData as JsonObject),
-                      dateOfBirth: newValue?.format('YYYY-MM-DD'),
-                    },
-                  }))
-                }
-                sx={{
-                  border: '1px solid #737373',
-                  borderRadius: '4px',
-                  width: '100%',
-                  backgroundColor: '#262626',
-                  '& .MuiPaper-root': {
-                    '& .MuiPickersLayout-root': {
-                      '& MuiDateCalendar-root': {
-                        backgroundColor: '#1f1f1f !important',
-                      },
-                    },
-                  },
-                  '& .MuiDateCalendar-root': {
-                    backgroundColor: '#1f1f1f !important',
-                  },
-                  '& .MuiInputBase-input': {
-                    color: 'white !important',
-                  },
-                  '& .MuiButtonBase-root': {
-                    color: 'white !important',
-                  },
-                }}
-              />
-            </div>
-          </div>
-          {/* Right Column */}
-          <div className="flex flex-col gap-4 text-white shadow-lg">
-            <div className="flex flex-col gap-2">
-              <p className="text-sm font-medium">City</p>
-              <input
-                id="personalData.city"
-                type="text"
-                value={
-                  user.personalData
-                    ? (user?.personalData as personalData)?.city
-                    : ''
-                }
-                onChange={updateField}
-                className="w-full rounded-md border border-gray-600 bg-neutral-800 p-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <p className="text-sm font-medium">Work Hour Overlap</p>
-              <input
-                id="personalData.workHourOverlap"
-                type="text"
-                value={
-                  user.personalData
-                    ? (user?.personalData as personalData)?.workHourOverlap
-                    : ''
-                }
-                onChange={updateField}
-                className="w-full rounded-md border border-gray-600 bg-neutral-800 p-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <p className="text-sm font-medium">Government Id</p>
-              <input
-                id="personalData.govtId"
-                type="url"
-                value={
-                  user.personalData
-                    ? (user?.personalData as personalData)?.govtId
-                    : ''
-                }
-                onChange={updateField}
-                className="w-full rounded-md border border-gray-600 bg-neutral-800 p-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-        </div>
-      </LocalizationProvider>
-    </LandscapeCard>
+    </Panel>
   );
 };

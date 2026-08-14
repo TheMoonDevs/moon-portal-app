@@ -1,152 +1,105 @@
 'use client';
 
-import type { User } from '@db/client';
 import type { JsonObject } from '@db/runtime';
-import { DatePicker } from '@mui/x-date-pickers';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import dayjs from 'dayjs';
-import type { ChangeEvent, Dispatch, SetStateAction } from 'react';
 
-import { LandscapeCard } from '@/components/elements/Cards';
-import { Spinner } from '@/components/elements/Loaders';
+import {
+  DateInput,
+  Field,
+  Panel,
+  PanelHeader,
+  TextInput,
+} from '../shared/AdminUI';
+import type { UserSectionProps } from './types';
 
 export const AdminUserWorkData = ({
   user,
-  loading,
   setUser,
   updateField,
-  updateOverlap,
-  saveUser,
-}: {
-  user: User;
-  loading: boolean;
-  setUser: Dispatch<SetStateAction<User>>;
-  updateField: (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
-  updateOverlap: (index: number, field: string, value: any) => void;
-  saveUser: () => void;
-}) => {
+}: UserSectionProps) => {
+  const workData = (user?.workData || {}) as Record<string, unknown>;
+
   return (
-    <LandscapeCard className="@shadow-lg !h-[90vh] !w-full items-start justify-start !rounded-xl !bg-gray-900 !p-6">
-      <div className="mb-6 flex w-full items-center justify-between border-b border-gray-700 pb-4">
-        {' '}
-        <p className="text-sm font-semibold uppercase tracking-widest text-neutral-400">
-          WORK DATA
-        </p>
-        <button
-          onClick={saveUser}
-          className="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-white shadow-md transition hover:bg-green-700"
+    <Panel>
+      <PanelHeader
+        title="Work details"
+        description="Engagement terms, seniority and joining date."
+        icon="work"
+      />
+      <div className="grid gap-4 p-4 sm:grid-cols-2">
+        <Field
+          label="Work hours per week"
+          htmlFor="workData.workHours"
+          hint="Hours this person is expected to log each week."
         >
-          <>
-            {loading && <Spinner className="size-5 text-green-600" />}
-            {!loading && <span className="material-icons">done_all</span>}
-          </>
-          Save User
-        </button>
+          <TextInput
+            id="workData.workHours"
+            value={(workData.workHours as string) ?? ''}
+            onChange={updateField}
+            placeholder="40"
+          />
+        </Field>
+
+        <Field label="Joining date" htmlFor="workData.joining">
+          <DateInput
+            id="workData.joining"
+            value={(workData.joining as string) ?? ''}
+            onChange={(event) =>
+              setUser((previous) => ({
+                ...previous,
+                workData: {
+                  ...(previous.workData as JsonObject),
+                  joining: event.target.value,
+                },
+              }))
+            }
+          />
+        </Field>
+
+        <Field
+          label="Position (public)"
+          htmlFor="workData.positionPublic"
+          hint="Shown on public profiles and certificates."
+        >
+          <TextInput
+            id="workData.positionPublic"
+            value={(workData.positionPublic as string) ?? ''}
+            onChange={updateField}
+            placeholder="Software Engineer"
+          />
+        </Field>
+
+        <Field
+          label="Position (internal)"
+          htmlFor="workData.positionInternal"
+          hint="Used internally only."
+        >
+          <TextInput
+            id="workData.positionInternal"
+            value={(workData.positionInternal as string) ?? ''}
+            onChange={updateField}
+            placeholder="Engineer II"
+          />
+        </Field>
+
+        <Field label="Grade" htmlFor="workData.grade">
+          <TextInput
+            id="workData.grade"
+            type="number"
+            value={(workData.grade as number) ?? ''}
+            onChange={updateField}
+            placeholder="3"
+          />
+        </Field>
+
+        <Field label="Grade tag" htmlFor="workData.gradeTag">
+          <TextInput
+            id="workData.gradeTag"
+            value={(workData.gradeTag as string) ?? ''}
+            onChange={updateField}
+            placeholder="A3"
+          />
+        </Field>
       </div>
-      <LocalizationProvider dateAdapter={AdapterDayjs}>
-        <div className="grid w-full grid-cols-2 gap-8">
-          {/* Left Column */}
-          <div className="flex flex-col gap-4 text-white shadow-lg">
-            <div className="flex flex-col gap-2">
-              {' '}
-              <p className="text-sm font-medium">Work Hours Per Week</p>
-              <input
-                id="workData.workHours"
-                type="text"
-                value={(user?.workData as any)?.workHours}
-                onChange={updateField}
-                className="w-full rounded-md border border-gray-600 bg-neutral-800 p-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              {' '}
-              <p className="text-sm font-medium">Position Public</p>
-              <input
-                id="workData.positionPublic"
-                type="text"
-                value={(user?.workData as any)?.positionPublic}
-                onChange={updateField}
-                className="w-full rounded-md border border-gray-600 bg-neutral-800 p-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              {' '}
-              <p className="text-sm font-medium">Joining Date</p>
-              <DatePicker
-                value={dayjs((user?.workData as any)?.joining)}
-                onChange={(newValue) =>
-                  setUser((u) => ({
-                    ...u,
-                    workData: {
-                      ...(u.workData as JsonObject),
-                      joining: newValue?.format('YYYY-MM-DD'),
-                    },
-                  }))
-                }
-                sx={{
-                  border: '1px solid #737373',
-                  borderRadius: '4px',
-                  width: '100%',
-                  backgroundColor: '#262626',
-                  '& .MuiPaper-root': {
-                    '& .MuiPickersLayout-root': {
-                      '& MuiDateCalendar-root': {
-                        backgroundColor: '#1f1f1f !important',
-                      },
-                    },
-                  },
-                  '& .MuiDateCalendar-root': {
-                    backgroundColor: '#1f1f1f !important',
-                  },
-                  '& .MuiInputBase-input': {
-                    color: 'white !important',
-                  },
-                  '& .MuiButtonBase-root': {
-                    color: 'white !important',
-                  },
-                }}
-              />
-            </div>
-          </div>
-          {/* Right Column */}
-          <div className="flex flex-col gap-4 text-white shadow-lg">
-            <div className="flex flex-col gap-2">
-              {' '}
-              <p className="text-sm font-medium">Position Internal</p>
-              <input
-                id="workData.positionInternal"
-                type="text"
-                value={(user?.workData as any)?.positionInternal}
-                onChange={updateField}
-                className="w-full rounded-md border border-gray-600 bg-neutral-800 p-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              {' '}
-              <p className="text-sm font-medium">Grade</p>
-              <input
-                id="workData.grade"
-                type="number"
-                value={(user?.workData as any)?.grade}
-                onChange={updateField}
-                className="w-full rounded-md border border-gray-600 bg-neutral-800 p-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              {' '}
-              <p className="text-sm font-medium">Grade Tag</p>
-              <input
-                id="workData.gradeTag"
-                type="text"
-                value={(user?.workData as any)?.gradeTag}
-                onChange={updateField}
-                className="w-full rounded-md border border-gray-600 bg-neutral-800 p-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-        </div>
-      </LocalizationProvider>
-    </LandscapeCard>
+    </Panel>
   );
 };

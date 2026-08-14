@@ -1,126 +1,108 @@
 'use client';
 
-import type { User } from '@db/client';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import type { ChangeEvent, Dispatch, SetStateAction } from 'react';
+import {
+  Field,
+  NativeSelect,
+  Panel,
+  PanelHeader,
+  TextInput,
+} from '../shared/AdminUI';
+import type { UserSectionProps } from './types';
 
-import { LandscapeCard } from '@/components/elements/Cards';
-import { Spinner } from '@/components/elements/Loaders';
+const CURRENCIES = ['INR', 'USD', 'EUR', 'GBP', 'AED', 'SGD'];
 
-export const AdminUserPayData = ({
-  user,
-  setUser,
-  updateField,
-  updateOverlap,
-  saveUser,
-  loading,
-}: {
-  user: User;
-  setUser: Dispatch<SetStateAction<User>>;
-  updateField: (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
-  updateOverlap: (index: number, field: string, value: any) => void;
-  saveUser: () => void;
-  loading: boolean;
-}) => {
+export const AdminUserPayData = ({ user, updateField }: UserSectionProps) => {
+  const payData = (user?.payData || {}) as Record<string, unknown>;
+
   return (
-    <LandscapeCard className="@shadow-lg !h-[90vh] !w-full items-start justify-start !rounded-xl !bg-gray-900 !p-6">
-      {' '}
-      <div className="mb-6 flex w-full items-center justify-between border-b border-gray-700 pb-4">
-        {' '}
-        <p className="text-sm font-semibold uppercase tracking-widest text-neutral-400">
-          PAY DATA
-        </p>
-        <button
-          onClick={saveUser}
-          className="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-white shadow-md transition hover:bg-green-700"
-        >
-          {loading && <Spinner className="size-5 text-green-600" />}
-          {!loading && <span className="material-icons">done_all</span>}
-          Save User
-        </button>
-      </div>
-      <LocalizationProvider dateAdapter={AdapterDayjs}>
-        <div className="grid w-full grid-cols-2 gap-8">
-          {' '}
-          {/* Left Column */}
-          <div className="flex flex-col gap-4 text-white shadow-lg">
-            {' '}
-            <div className="flex flex-col gap-2">
-              {' '}
-              <p className="mb-1 text-sm text-gray-300">UPI ID</p>
-              <input
-                id="payData.upiId"
-                type="text"
-                value={(user?.payData as any)?.upiId}
-                onChange={updateField}
-                className="w-full rounded-md border border-gray-600 bg-neutral-800 p-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              {' '}
-              <p className="mb-1 text-sm text-gray-300">Pay Method</p>
-              <input
-                id="payData.payMethod"
-                type="text"
-                value={(user?.payData as any)?.payMethod}
-                onChange={updateField}
-                className="w-full rounded-md border border-gray-600 bg-neutral-800 p-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              {' '}
-              <p className="mb-1 text-sm text-gray-300">Wallet Address</p>
-              <input
-                id="payData.walletAddress"
-                type="text"
-                value={(user?.payData as any)?.walletAddress}
-                onChange={updateField}
-                className="w-full rounded-md border border-gray-600 bg-neutral-800 p-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-          {/* Right Column */}
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
-              {' '}
-              <p className="mb-1 text-sm text-gray-300">
-                Stipend Wallet Address
-              </p>
-              <input
-                id="payData.stipendWalletAddress"
-                type="text"
-                value={(user?.payData as any)?.stipendWalletAddress}
-                onChange={updateField}
-                className="w-full rounded-md border border-gray-600 bg-neutral-800 p-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              {' '}
-              <p className="mb-1 text-sm text-gray-300">Stipend Amount</p>
-              <input
-                id="payData.stipendAmount"
-                type="text"
-                value={(user?.payData as any)?.stipendAmount}
-                onChange={updateField}
-                className="w-full rounded-md border border-gray-600 bg-neutral-800 p-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              {' '}
-              <p className="mb-1 text-sm text-gray-300">Stipend Currency</p>
-              <input
-                id="payData.stipendCurrency"
-                type="text"
-                defaultValue="INR"
-                value={(user?.payData as any)?.stipendCurrency}
-                onChange={updateField}
-                className="w-full rounded-md border border-gray-600 bg-neutral-800 p-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-          </div>
+    <div className="flex flex-col gap-4">
+      <Panel>
+        <PanelHeader
+          title="Payout method"
+          description="Where payouts for this person are sent."
+          icon="account_balance"
+        />
+        <div className="grid gap-4 p-4 sm:grid-cols-2">
+          <Field label="Pay method" htmlFor="payData.payMethod">
+            <TextInput
+              id="payData.payMethod"
+              value={(payData.payMethod as string) ?? ''}
+              onChange={updateField}
+              placeholder="UPI, bank transfer, crypto…"
+            />
+          </Field>
+
+          <Field label="UPI ID" htmlFor="payData.upiId">
+            <TextInput
+              id="payData.upiId"
+              value={(payData.upiId as string) ?? ''}
+              onChange={updateField}
+              placeholder="name@bank"
+            />
+          </Field>
+
+          <Field
+            label="Wallet address"
+            htmlFor="payData.walletAddress"
+            className="sm:col-span-2"
+          >
+            <TextInput
+              id="payData.walletAddress"
+              value={(payData.walletAddress as string) ?? ''}
+              onChange={updateField}
+              placeholder="0x…"
+              className="font-mono text-xs"
+            />
+          </Field>
         </div>
-      </LocalizationProvider>
-    </LandscapeCard>
+      </Panel>
+
+      <Panel>
+        <PanelHeader
+          title="Stipend"
+          description="Recurring stipend paid to this person."
+          icon="payments"
+        />
+        <div className="grid gap-4 p-4 sm:grid-cols-2">
+          <Field label="Stipend amount" htmlFor="payData.stipendAmount">
+            <TextInput
+              id="payData.stipendAmount"
+              type="number"
+              value={(payData.stipendAmount as string) ?? ''}
+              onChange={updateField}
+              placeholder="0"
+            />
+          </Field>
+
+          <Field label="Stipend currency" htmlFor="payData.stipendCurrency">
+            <NativeSelect
+              id="payData.stipendCurrency"
+              value={(payData.stipendCurrency as string) ?? 'INR'}
+              onChange={updateField}
+            >
+              {CURRENCIES.map((currency) => (
+                <option key={currency} value={currency}>
+                  {currency}
+                </option>
+              ))}
+            </NativeSelect>
+          </Field>
+
+          <Field
+            label="Stipend wallet address"
+            htmlFor="payData.stipendWalletAddress"
+            className="sm:col-span-2"
+          >
+            <TextInput
+              id="payData.stipendWalletAddress"
+              value={(payData.stipendWalletAddress as string) ?? ''}
+              onChange={updateField}
+              placeholder="0x…"
+              className="font-mono text-xs"
+            />
+          </Field>
+        </div>
+      </Panel>
+    </div>
   );
 };
