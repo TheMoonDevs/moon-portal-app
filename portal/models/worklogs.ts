@@ -1,12 +1,11 @@
 import {
-  createCrudSchemas,
   type BaseModel,
+  createCrudSchemas,
   type DateValue,
   type JsonArray,
   type JsonValue,
   type Loose,
   type Nullable,
-  type OptionalNullable,
 } from './shared/base';
 
 export type WorkLogs = Loose<
@@ -30,17 +29,6 @@ export type DocMarkdown = Loose<
     markdown: JsonValue;
   }
 >;
-
-export type Task = Loose<{
-  taskId: string;
-  name: string;
-  status: string;
-  priority?: Nullable<string>;
-  assignees: string[];
-  url: string;
-  startDate?: OptionalNullable<DateValue>;
-  dueDate?: OptionalNullable<DateValue>;
-}>;
 
 export type Pointer = Loose<
   BaseModel & {
@@ -66,6 +54,5 @@ export type Reply = Loose<
 
 export const workLogSchemas = createCrudSchemas<WorkLogs>();
 export const docMarkdownSchemas = createCrudSchemas<DocMarkdown>();
-export const taskSchemas = createCrudSchemas<Task>();
 export const pointerSchemas = createCrudSchemas<Pointer>();
 export const replySchemas = createCrudSchemas<Reply>();

@@ -32,8 +32,6 @@ export const BASE_MEMBER_POLICIES: string[] = [
   'pointers:edit',
   // Read-only surfaces.
   'events:read',
-  'tasks:read',
-  'tasks:edit',
   // Badges: members read and EARN badges through activity (worklog streaks,
   // buff levels); creating/editing badge templates stays admin-only.
   'badges:read',
