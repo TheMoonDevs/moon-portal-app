@@ -23,7 +23,6 @@ const NAVIGATION_OPTIONS = [
     path: APP_ROUTES.notifications,
     icon: 'notifications',
   },
-  { name: 'Worksheets', path: APP_ROUTES.worksheets, icon: 'description' },
   { name: 'Admin', path: APP_ROUTES.admin, icon: 'admin_panel_settings' },
   { name: 'Settings', path: APP_ROUTES.settings, icon: 'settings' },
 ];
