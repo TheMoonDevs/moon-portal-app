@@ -248,13 +248,6 @@ export const UserProfileDrawer: React.FC = () => {
           ) : (
             <LoadingSkeleton />
           )}
-          {/* TODO: replace with Notion Tasks API or soemthing similar
-          <div className="pb-4">
-            <h6 className="pb-2 font-bold">Missions/Task</h6>
-            <ul className="mt-1 flex list-none flex-col gap-1 rounded-xl border-2 border-gray-300 p-3">
-              {<ClickupTask email={selectedUser?.email as string} />}
-            </ul>
-          </div> */}
           {/* TODO: replace with proper payments & earnign section
           {loggedinUser.user.id === selectedUser?.id && (
             <PayDataUI payData={payData} />

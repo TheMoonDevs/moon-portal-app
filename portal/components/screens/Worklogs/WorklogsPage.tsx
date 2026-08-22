@@ -349,7 +349,6 @@ export const WorklogsPage = () => {
       ),
       content: <AdminTasksTab userId={user?.id as string} />,
     },
-    // { label: 'Tasks', content: <ClickupTasks email={user?.email as string} /> },
     { label: 'Tips', content: <WorklogTips /> },
   ];
 

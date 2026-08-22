@@ -52,7 +52,6 @@ export const modelMetaMap = defineModelRegistry({
   user: { collection: 'User' },
   workLogs: { collection: 'WorkLogs', objectIdFields: ['userId'] },
   docMarkdown: { collection: 'DocMarkdown' },
-  task: { collection: 'Task', idField: 'taskId', usesObjectIdId: false },
   pointer: {
     collection: 'Pointer',
     objectIdFields: ['userId', 'targetUserId'],

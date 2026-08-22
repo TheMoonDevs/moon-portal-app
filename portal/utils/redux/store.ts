@@ -7,7 +7,6 @@ import coreTeamReducer from './coreTeam/coreTeam.slice';
 import filesUploadReducer from './filesUpload/fileUpload.slice';
 import notificationsReducer from './notification/notification.slice';
 import shortUrlReducer from './shortUrl/shortUrl.slice';
-import tasksReducer from './tasks/tasks.slice';
 import uiReducer from './ui/ui.slice';
 import adminTasksReducer from './worklogs/adminTasks.slice';
 import laterTodosReducer from './worklogs/laterTodos.slice';
@@ -22,7 +21,6 @@ const store = configureStore({
     filesUpload: filesUploadReducer,
     notifications: notificationsReducer,
     shortUrl: shortUrlReducer,
-    tasks: tasksReducer,
     ui: uiReducer,
     worklogs: worklogsReducer,
     adminTasks: adminTasksReducer,

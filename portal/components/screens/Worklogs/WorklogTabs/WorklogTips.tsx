@@ -5,10 +5,6 @@ import EmojiLegend from './EmojiLegend';
 const WorklogTips = () => {
   return (
     <div className="p-3">
-      {/* <p className="text-lg font-bold mb-4">Tasks from clickup</p>
-      <ul className=" font-mono text-sm tracking-widest">
-        <li className="">Something...</li>
-      </ul> */}
       <p className="mb-4 text-lg font-bold">Worklog tips</p>
       <ul className="ml-3 list-decimal font-mono text-sm tracking-widest">
         <li className="">Use Short Bulletin points</li>

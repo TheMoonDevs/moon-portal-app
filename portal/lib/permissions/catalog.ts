@@ -88,12 +88,6 @@ export const PERMISSION_RESOURCES: ResourceDefinition[] = [
     actions: ['read', 'create', 'edit', 'delete'],
   },
   {
-    key: 'tasks',
-    label: 'Tasks',
-    description: 'ClickUp-synced tasks.',
-    actions: ['read', 'edit'],
-  },
-  {
     key: 'shortlinks',
     label: 'Short links',
     description: 'Short-URL links.',

@@ -11,6 +11,12 @@ const LINKS = [
     color: 'green',
   },
   {
+    icon: 'description',
+    title: 'Worksheets',
+    route: APP_ROUTES.worksheets,
+    color: 'sky',
+  },
+  {
     icon: 'open_in_new',
     title: 'URL Shortener',
     route: APP_ROUTES.urlShortener,
@@ -24,10 +30,10 @@ const LINKS = [
     openNew: true,
   },
   {
-    icon: '/images/thirdparty/clickup.webp',
-    title: 'Assign Tasks to Team',
-    route: APP_SOCIAL.clickup,
-    color: 'fuchsia',
+    icon: '/images/thirdparty/notion.png',
+    title: 'Team Notion',
+    route: APP_SOCIAL.notion,
+    color: 'neutral',
     openNew: true,
   },
 ];
@@ -65,7 +71,7 @@ export const ActionsSection = () => {
           </Link>
         ))}
       </div>
-      <span className="hidden text-fuchsia-500 text-rose-500"></span>
+      <span className="hidden text-fuchsia-500 text-rose-500 text-sky-500"></span>
     </div>
   );
 };
