@@ -11,7 +11,6 @@ import { APP_ROUTES } from '@/utils/constants/appInfo';
 import { useUser } from '@/utils/hooks/useUser';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
-import { BadgesSection } from './BadgesSection';
 import { CompaniesSection } from './CompaniesSection';
 import { DailySection } from './DailySection';
 import { InWorkSection } from './InWorkSection';
@@ -82,7 +81,6 @@ export const HomePage = () => {
       <div className="grid w-full grid-cols-3 max-sm:grid-cols-1">
         <div className="pt-8">
           <CompaniesSection />
-          <BadgesSection />
         </div>
         <div className="flex w-full flex-col pt-8">
           {isTabletOrMore && <FocusMode />}

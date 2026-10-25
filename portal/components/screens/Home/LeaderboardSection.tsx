@@ -17,6 +17,7 @@ interface Row {
   points: number;
   tasksDone: number;
   worklogDays: number;
+  buff: { title: string; src: string } | null;
 }
 
 const MEDALS = ['🥇', '🥈', '🥉'];
@@ -52,32 +53,30 @@ export const LeaderboardSection = () => {
         </span>
       </h4>
 
-      {companies.length > 1 && (
-        <div className="mx-4 mt-3 flex gap-1.5 overflow-x-auto pb-1">
-          {companies.map(({ company }) => (
-            <button
-              key={company.id}
-              onClick={() => setCompanyId(company.id)}
-              className={cn(
-                'inline-flex shrink-0 items-center gap-1.5 rounded-full py-0.5 pl-0.5 pr-2.5 text-xs font-medium transition-colors',
-                company.id === companyId
-                  ? 'bg-neutral-900 text-white'
-                  : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200',
-              )}
-            >
-              <CompanyMark
-                name={company.name}
-                color={company.color}
-                logo={company.logo}
-                size={20}
-              />
-              {company.name}
-            </button>
-          ))}
-        </div>
-      )}
+      <div className="m-4 mb-0 mt-3 flex gap-1 overflow-x-auto border-b border-neutral-200">
+        {companies.map(({ company }) => (
+          <button
+            key={company.id}
+            onClick={() => setCompanyId(company.id)}
+            className={cn(
+              '-mb-px inline-flex shrink-0 items-center gap-1.5 border-b-2 px-2.5 pb-2 pt-1 text-xs font-semibold transition-colors',
+              company.id === companyId
+                ? 'border-neutral-900 text-neutral-900'
+                : 'border-transparent text-neutral-500 hover:text-neutral-800',
+            )}
+          >
+            <CompanyMark
+              name={company.name}
+              color={company.color}
+              logo={company.logo}
+              size={18}
+            />
+            {company.name}
+          </button>
+        ))}
+      </div>
 
-      <div className="m-4 mt-3 overflow-hidden rounded-xl bg-white shadow-md">
+      <div className="m-4 mt-0 overflow-hidden rounded-b-xl bg-white shadow-md">
         {!rows ? (
           <div className="space-y-2 p-3">
             {[0, 1, 2].map((i) => (
@@ -90,8 +89,8 @@ export const LeaderboardSection = () => {
         ) : rows.length === 0 ? (
           <p className="p-4 text-sm text-neutral-500">No one here yet.</p>
         ) : (
-          <ol className="divide-y divide-neutral-100">
-            {rows.slice(0, 10).map((row) => (
+          <ol className="max-h-[70vh] divide-y divide-neutral-100 overflow-y-auto">
+            {rows.map((row) => (
               <li
                 key={row.user.id}
                 className={cn(

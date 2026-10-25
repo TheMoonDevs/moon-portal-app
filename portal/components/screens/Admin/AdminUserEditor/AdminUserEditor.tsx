@@ -215,7 +215,21 @@ export const AdminUserEditor = () => {
           </div>
         );
       default:
-        return <AdminUserBasicData {...sectionProps} />;
+        return (
+          <AdminUserBasicData
+            {...sectionProps}
+            onAvatarSaved={(avatar, updatedAt) => {
+              // Saved on the server already: keep other unsaved edits.
+              const patch = updatedAt ? { avatar, updatedAt } : { avatar };
+              setUser((previous) => ({ ...previous, ...patch }));
+              setSavedSnapshot((snapshot) =>
+                snapshot
+                  ? JSON.stringify({ ...JSON.parse(snapshot), ...patch })
+                  : snapshot,
+              );
+            }}
+          />
+        );
     }
   };
 
