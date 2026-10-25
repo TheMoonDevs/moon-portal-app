@@ -57,6 +57,11 @@ export const AdminPage = () => {
   );
 
   const [users, setUsers] = useState<User[]>([]);
+  // Inactive people only show up where you look for them (the Users tab).
+  const activeUsers = useMemo(
+    () => users.filter((u) => u.status === 'ACTIVE'),
+    [users],
+  );
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -179,13 +184,13 @@ export const AdminPage = () => {
           <AdminUsers users={users} loading={loading} onRefresh={fetchUsers} />
         );
       case 'notifications':
-        return <SendNotifications users={users} loading={loading} />;
+        return <SendNotifications users={activeUsers} loading={loading} />;
       case 'badges':
         return <AdminBadges />;
       case 'companies':
         return (
           <AdminCompanies
-            users={users}
+            users={activeUsers}
             selectedCompanyId={companyId}
             onSelectCompany={selectCompany}
           />
@@ -193,7 +198,7 @@ export const AdminPage = () => {
       case 'projects':
         return (
           <AdminProjects
-            users={users}
+            users={activeUsers}
             selectedCompanyId={companyId}
             onSelectCompany={selectCompany}
             onOpenTasks={(id) => {
@@ -205,7 +210,7 @@ export const AdminPage = () => {
       case 'tasks':
         return (
           <AdminTasks
-            users={users}
+            users={activeUsers}
             selectedCompanyId={companyId}
             onSelectCompany={selectCompany}
             selectedProjectId={projectId}
@@ -446,7 +451,7 @@ export const AdminPage = () => {
         <AdminCommandPalette
           open={paletteOpen}
           onOpenChange={setPaletteOpen}
-          users={users}
+          users={activeUsers}
           onNavigate={goToTab}
         />
       )}

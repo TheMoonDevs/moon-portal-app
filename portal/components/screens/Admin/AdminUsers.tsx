@@ -147,6 +147,20 @@ export const AdminUsers = ({
     });
   }, [users, search, statusFilter, roleFilter, sortKey]);
 
+  // Inactive people are hidden by default; a search that only finds them
+  // says so instead of coming back empty.
+  const inactiveMatches = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    if (!term || statusFilter !== 'ACTIVE') return 0;
+    return users.filter(
+      (u) =>
+        u.status !== 'ACTIVE' &&
+        [u.name, u.username, u.email, ...(u.linkedEmails ?? [])]
+          .filter(Boolean)
+          .some((v) => String(v).toLowerCase().includes(term)),
+    ).length;
+  }, [users, search, statusFilter]);
+
   const hasFilters =
     search.trim() !== '' || statusFilter !== 'ACTIVE' || roleFilter !== 'ALL';
 
@@ -432,6 +446,20 @@ export const AdminUsers = ({
               </Link>
             ))}
           </div>
+        )}
+
+        {!loading && inactiveMatches > 0 && (
+          <button
+            type="button"
+            onClick={() => setStatusFilter('ALL')}
+            className="w-full border-t border-white/[0.07] px-4 py-2.5 text-left text-xs text-neutral-400 hover:text-white"
+          >
+            {inactiveMatches} inactive{' '}
+            {inactiveMatches === 1
+              ? 'person also matches'
+              : 'people also match'}
+            . Show them
+          </button>
         )}
 
         {!loading && visibleUsers.length > 0 && (

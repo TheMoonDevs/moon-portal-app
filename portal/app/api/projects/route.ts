@@ -2,6 +2,9 @@ import type { NextRequest } from 'next/server';
 
 import { db } from '@/lib/mongodb/db-client';
 import { hasPermission } from '@/lib/permissions/matching';
+import { sanitizeGoals } from '@/lib/workspace/projects';
+import { withProjectStats } from '@/lib/workspace/projectStats';
+import { runDueSchedules } from '@/lib/workspace/schedules';
 import {
   asStringArray,
   fail,
@@ -11,7 +14,6 @@ import {
   requireCompanyPermission,
   requireUser,
   slugify,
-  summarizeTasks,
 } from '@/lib/workspace/server';
 import type { Project } from '@/models/workspace';
 import { PROJECT_STATUS } from '@/models/workspace';
@@ -53,26 +55,8 @@ export async function GET(request: NextRequest) {
     },
     orderBy: { createdAt: 'desc' },
   });
-  const tasks = projects.length
-    ? await db.task.findMany({
-        where: { projectId: { in: projects.map((p) => p.id) } },
-        select: { projectId: true, status: true, size: true },
-      })
-    : [];
-  const progress = summarizeTasks(tasks);
-
-  return ok({
-    projects: projects.map((p) => ({
-      ...p,
-      progress: progress[p.id] ?? {
-        total: 0,
-        done: 0,
-        major: 0,
-        majorDone: 0,
-        percent: 0,
-      },
-    })),
-  });
+  await runDueSchedules({ projectId: { in: projects.map((p) => p.id) } });
+  return ok({ projects: await withProjectStats(projects) });
 }
 
 export async function POST(request: Request) {
@@ -105,8 +89,7 @@ export async function POST(request: Request) {
       logo: typeof body.logo === 'string' && body.logo ? body.logo : null,
       leadIds: asStringArray(body.leadIds),
       memberIds: asStringArray(body.memberIds),
-      startDate: body.startDate ?? null,
-      dueDate: body.dueDate ?? null,
+      goals: sanitizeGoals(body.goals),
       createdById: user.id,
       createdAt: now,
       updatedAt: now,

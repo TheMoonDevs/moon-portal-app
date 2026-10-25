@@ -1,3 +1,4 @@
+import type { BrandKit } from '../lib/brandKit';
 import {
   type BaseModel,
   createCrudSchemas,
@@ -5,7 +6,6 @@ import {
   type Loose,
   type Nullable,
 } from './shared/base';
-import type { BrandKit } from '../lib/brandKit';
 
 /*
  * Multi-company workspace: Company → Projects → Tasks.
@@ -37,7 +37,33 @@ export enum TASK_STATUS {
   IN_PROGRESS = 'IN_PROGRESS',
   IN_REVIEW = 'IN_REVIEW',
   DONE = 'DONE',
+  /** Decided not to do it. */
+  IGNORED = 'IGNORED',
+  /** Put away; no longer counts anywhere. */
+  ARCHIVED = 'ARCHIVED',
 }
+
+/** Statuses that still need someone to act. */
+export const OPEN_TASK_STATUSES = [
+  TASK_STATUS.TODO,
+  TASK_STATUS.IN_PROGRESS,
+  TASK_STATUS.IN_REVIEW,
+];
+
+export type GoalPeriod = 'day' | 'week' | 'month';
+
+/**
+ * A standing target for a project, e.g. "2 songs released per week".
+ * Progress is the number of done tasks linked to it in the current period.
+ * `parts` splits the target, e.g. 9 shorts as 3 + 3 + 3 across channels.
+ */
+export type ProjectGoal = {
+  id: string;
+  title: string;
+  target: number;
+  period: GoalPeriod;
+  parts?: { id: string; label: string; target: number }[];
+};
 
 export enum TASK_SIZE {
   MAJOR = 'MAJOR',
@@ -93,10 +119,9 @@ export type Project = Loose<
     icon?: Nullable<string>;
     logo?: Nullable<string>;
     brandKit?: Nullable<BrandKit>;
+    goals?: ProjectGoal[];
     leadIds: string[];
     memberIds: string[];
-    startDate?: Nullable<string>;
-    dueDate?: Nullable<string>;
     createdById: string;
   }
 >;
@@ -112,6 +137,56 @@ export type Task = Loose<
     assigneeIds: string[];
     dueDate?: Nullable<string>;
     completedAt?: Nullable<DateValue>;
+    /** The project goal this task counts towards. */
+    goalId?: Nullable<string>;
+    goalPartId?: Nullable<string>;
+    /** Set when a schedule created the task. */
+    scheduleId?: Nullable<string>;
+    createdById: string;
+  }
+>;
+
+export type ScheduleEvery = 'day' | 'week' | 'month';
+
+/** Creates the same task(s) on a repeating schedule. */
+export type TaskSchedule = Loose<
+  BaseModel & {
+    companyId: string;
+    projectId: string;
+    title: string;
+    description?: Nullable<string>;
+    size: TASK_SIZE;
+    assigneeIds: string[];
+    goalId?: Nullable<string>;
+    goalPartId?: Nullable<string>;
+    every: ScheduleEvery;
+    /** For weekly schedules: 0 (Sunday) to 6. */
+    weekdays?: number[];
+    /** For monthly schedules: 1 to 28. */
+    monthDay?: Nullable<number>;
+    /** How many tasks each run creates (e.g. 3 shorts). */
+    count: number;
+    /** Days after the run date that each task is due; empty for none. */
+    dueInDays?: Nullable<number>;
+    active: boolean;
+    /** Next run date, YYYY-MM-DD. */
+    nextRunOn: string;
+    lastRunOn?: Nullable<string>;
+    createdById: string;
+  }
+>;
+
+/** One reading of a project's results, e.g. subscribers on a date. */
+export type ProjectResult = Loose<
+  BaseModel & {
+    companyId: string;
+    projectId: string;
+    /** earnings, subscribers, views, followers, streams or a custom name. */
+    metric: string;
+    value: number;
+    /** YYYY-MM-DD */
+    date: string;
+    note?: Nullable<string>;
     createdById: string;
   }
 >;
@@ -121,3 +196,5 @@ export const companyRoleSchemas = createCrudSchemas<CompanyRole>();
 export const companyMemberSchemas = createCrudSchemas<CompanyMember>();
 export const projectSchemas = createCrudSchemas<Project>();
 export const taskSchemas = createCrudSchemas<Task>();
+export const taskScheduleSchemas = createCrudSchemas<TaskSchedule>();
+export const projectResultSchemas = createCrudSchemas<ProjectResult>();
