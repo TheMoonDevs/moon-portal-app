@@ -24,6 +24,7 @@ import { PortalSdk } from '@/utils/services/PortalSdk';
 import { SummarizeButton } from './SummarizeButton';
 import { WorkLogsHelper } from './WorklogsHelper';
 import TodoTab from './WorklogTabs/TodoTab';
+import WorklogBuff from './WorklogTabs/WorklogBuff';
 import WorklogTips from './WorklogTabs/WorklogTips';
 import { WorklogView } from './WorklogView';
 
@@ -359,6 +360,7 @@ export const WorklogsPage = () => {
 
         <div className="flex w-full flex-row-reverse max-lg:flex-col">
           <div className="invisible hidden max-h-[80vh] w-2/5 overflow-y-scroll p-3 max-lg:w-full md:visible md:block">
+            <WorklogBuff filteredLogs={filteredLogs} monthTab={monthTab} />
             <SimpleTabs tabs={tabs} />
           </div>
           <div className="invisible m-3 hidden max-h-[80vh] w-[50%] overflow-y-scroll rounded-lg border border-neutral-200 p-2 max-lg:w-full md:visible md:block">

@@ -3,7 +3,7 @@
 import BoringAvatar from 'boring-avatars';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import TimezoneSelect from 'react-timezone-select';
 import { toast, Toaster } from 'sonner';
 
@@ -11,6 +11,7 @@ import LogoutConfirmationDialog from '@/components/global/LogoutConfirmationDial
 import PushSubscriptionToggleButton from '@/components/global/PushSubscriptionToggleButton';
 import { cn } from '@/lib/utils';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
+import { uploadAvatar } from '@/utils/helpers/uploadAvatar';
 import { useUser } from '@/utils/hooks/useUser';
 import { useWorkspace } from '@/utils/hooks/useWorkspace';
 import { PortalSdk } from '@/utils/services/PortalSdk';
@@ -91,7 +92,25 @@ const ProfileCard = () => {
     timezone: '',
   });
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
+  const onUpload = async (file: File) => {
+    if (!user) return;
+    setUploading(true);
+    try {
+      const { avatar } = await uploadAvatar(user.id, file);
+      setForm((f) => ({ ...f, avatar }));
+      await refetchUser();
+      toast.success('Photo updated');
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Fill the form once per person, so a refresh never wipes unsaved edits.
   useEffect(() => {
     if (!user) return;
     setForm({
@@ -101,7 +120,8 @@ const ProfileCard = () => {
       timezone:
         user.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
     });
-  }, [user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   const dirty =
     !!user &&
@@ -133,15 +153,30 @@ const ProfileCard = () => {
       <div className="flex flex-col gap-4">
         <div className="flex items-center gap-4">
           <Avatar src={form.avatar} name={form.name} />
-          <label className="min-w-0 flex-1">
-            <Label>Photo URL</Label>
+          <div className="min-w-0 flex-1">
             <input
-              className={inputClass}
-              value={form.avatar}
-              onChange={(e) => setForm({ ...form, avatar: e.target.value })}
-              placeholder="https://…"
+              ref={fileRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/gif"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = '';
+                if (file) onUpload(file);
+              }}
             />
-          </label>
+            <button
+              type="button"
+              disabled={uploading}
+              onClick={() => fileRef.current?.click()}
+              className="rounded-lg border border-neutral-200 px-3 py-2 text-sm font-medium text-neutral-900 transition-colors hover:bg-neutral-50 disabled:opacity-50"
+            >
+              {uploading ? 'Uploading…' : 'Change photo'}
+            </button>
+            <p className="mt-1 text-xs text-neutral-500">
+              PNG, JPG, WebP or GIF, up to 5 MB.
+            </p>
+          </div>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <label>

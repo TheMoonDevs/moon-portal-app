@@ -1,8 +1,11 @@
 'use client';
 
 import { USERSTATUS } from '@db/client';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import TimezoneSelect from 'react-timezone-select';
+import { toast } from 'sonner';
+
+import { uploadAvatar } from '@/utils/helpers/uploadAvatar';
 
 import {
   Field,
@@ -120,8 +123,27 @@ export const AdminUserBasicData = ({
   user,
   setUser,
   updateField,
-}: UserSectionProps) => {
+  onAvatarSaved,
+}: UserSectionProps & {
+  /** Called after an upload has saved a new photo on the server. */
+  onAvatarSaved?: (avatar: string, updatedAt?: string) => void;
+}) => {
   const [showPasscode, setShowPasscode] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const onUpload = async (file: File) => {
+    setUploading(true);
+    try {
+      const { avatar, updatedAt } = await uploadAvatar(user.id, file);
+      onAvatarSaved?.(avatar, updatedAt);
+      toast.success('Photo updated');
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const passcode = `${user.username || ''}${user.password || ''}`;
 
@@ -153,18 +175,42 @@ export const AdminUserBasicData = ({
           </Field>
 
           <Field
-            label="Avatar URL"
+            label="Photo"
             htmlFor="avatar"
             className="sm:col-span-2"
-            hint="Paste a direct image link; the preview updates as you type."
+            hint={
+              user.id
+                ? 'Upload a PNG, JPG, WebP or GIF up to 5 MB. It saves straight away. You can also paste a link.'
+                : 'Create the user first to upload a photo, or paste a link now.'
+            }
           >
             <div className="flex items-center gap-3">
-              <UserAvatar src={user.avatar} name={user.name} size={40} />
+              <UserAvatar src={user.avatar} name={user.name} size={48} />
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = '';
+                  if (file) onUpload(file);
+                }}
+              />
+              <button
+                type="button"
+                disabled={!user.id || uploading}
+                onClick={() => fileRef.current?.click()}
+                className="flex h-10 shrink-0 items-center gap-2 rounded-lg border border-white/10 bg-white/[0.06] px-3 text-sm text-neutral-200 transition-colors hover:bg-white/[0.1] disabled:opacity-40"
+              >
+                <Icon name="upload" />
+                {uploading ? 'Uploading…' : 'Upload'}
+              </button>
               <TextInput
                 id="avatar"
                 value={user.avatar || ''}
                 onChange={updateField}
-                placeholder="https://…"
+                placeholder="or paste https://…"
               />
             </div>
           </Field>

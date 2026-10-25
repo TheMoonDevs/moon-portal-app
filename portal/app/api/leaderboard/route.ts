@@ -2,6 +2,7 @@ import dayjs from 'dayjs';
 import type { NextRequest } from 'next/server';
 
 import { db } from '@/lib/mongodb/db-client';
+import { getBuffLevelAndTitle, worklogPoints } from '@/lib/progress/buff';
 import { hasContent } from '@/lib/progress/server';
 import {
   fail,
@@ -17,8 +18,9 @@ export const dynamic = 'force-dynamic';
 
 /**
  * A company's leaderboard for one month (`?companyId=&month=YYYY-MM`, this
- * month by default): every active member with the points they earned in that
- * company, tasks finished and days they wrote a worklog.
+ * month by default): every active member with their points (worklog lines
+ * plus tasks finished in that company), their monthly worklog buff, tasks
+ * finished and days they wrote a worklog.
  */
 export async function GET(request: NextRequest) {
   const companyId = request.nextUrl.searchParams.get('companyId');
@@ -64,23 +66,29 @@ export async function GET(request: NextRequest) {
   type Row = {
     user: { id: string };
     points: number;
+    taskPoints: number;
+    worklogPoints: number;
     tasksDone: number;
     worklogDays: number;
+    buff: { title: string; src: string } | null;
   };
   const rows = users
     .map((user: { id: string }): Row => {
       const mine = entries.filter((e) => e.userId === user.id);
-      const days = new Set(
-        logs
-          .filter(
-            (l: { userId: string; works?: unknown }) =>
-              l.userId === user.id && hasContent(l),
-          )
-          .map((l: { date: string }) => l.date),
+      const myLogs = logs.filter(
+        (l: { userId: string; works?: unknown }) =>
+          l.userId === user.id && hasContent(l),
       );
+      const days = new Set(myLogs.map((l: { date: string }) => l.date));
+      const taskPoints = mine.reduce((sum, e) => sum + (e.points || 0), 0);
+      const fromWorklogs = worklogPoints(myLogs);
+      const buff = fromWorklogs > 0 ? getBuffLevelAndTitle(fromWorklogs) : null;
       return {
         user,
-        points: mine.reduce((sum, e) => sum + (e.points || 0), 0),
+        points: taskPoints + fromWorklogs,
+        taskPoints,
+        worklogPoints: fromWorklogs,
+        buff: buff && { title: buff.title, src: buff.src },
         tasksDone: new Set(mine.filter((e) => e.taskId).map((e) => e.taskId))
           .size,
         worklogDays: days.size,
