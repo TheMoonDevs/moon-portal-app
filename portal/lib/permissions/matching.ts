@@ -5,7 +5,7 @@ import { WILDCARD_PERMISSION } from './catalog';
  *
  * Matching rules (in order):
  *   - `*`             matches anything
- *   - exact match     (`worksheets:read` === `worksheets:read`)
+ *   - exact match     (`projects:read` === `projects:read`)
  *   - `resource:*`    matches any action on that resource
  */
 export function permissionMatches(granted: string, required: string): boolean {

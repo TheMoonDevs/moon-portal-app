@@ -7,11 +7,8 @@ export enum APP_ROUTES {
   badgeEditor = '/admin/badge/editor',
   notifications = '/notifications',
   settings = '/settings',
-  studio = '/studio',
-  urlShortener = '/url-shortener',
   userWorklogs = '/user/worklogs',
   userWorklogSummary = '/user/worklogs/summary',
-  worksheets = '/worksheets',
 }
 
 export enum APP_SOCIAL {

@@ -25,6 +25,59 @@ import {
 } from '../shared/AdminUI';
 import type { UserSectionProps } from './types';
 
+const LinkedEmailsInput = ({
+  value,
+  onChange,
+}: {
+  value: string[];
+  onChange: (emails: string[]) => void;
+}) => {
+  const [draft, setDraft] = useState('');
+  const add = () => {
+    const email = draft.trim().toLowerCase();
+    if (!email.includes('@') || value.includes(email)) return;
+    onChange([...value, email]);
+    setDraft('');
+  };
+  return (
+    <div className="flex flex-col gap-2">
+      {value.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {value.map((email) => (
+            <span
+              key={email}
+              className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.06] py-0.5 pl-3 pr-1 text-xs text-neutral-200"
+            >
+              {email}
+              <button
+                type="button"
+                aria-label={`Unlink ${email}`}
+                onClick={() => onChange(value.filter((e) => e !== email))}
+                className="flex size-5 items-center justify-center rounded-full text-[14px] text-neutral-500 hover:bg-white/10 hover:text-neutral-200"
+              >
+                <Icon name="close" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+      <TextInput
+        type="email"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            add();
+          }
+        }}
+        onBlur={add}
+        placeholder="Add a Google account and press Enter"
+      />
+    </div>
+  );
+};
+
 const titleCase = (value: string) =>
   value.charAt(0) + value.slice(1).toLowerCase().replace(/_/g, ' ');
 
@@ -140,6 +193,19 @@ export const AdminUserBasicData = ({
               value={user.email || ''}
               onChange={updateField}
               placeholder="jane@themoondevs.com"
+            />
+          </Field>
+
+          <Field
+            label="Other Google accounts"
+            hint="They can sign in with their code plus any of these accounts."
+            className="sm:col-span-2"
+          >
+            <LinkedEmailsInput
+              value={user.linkedEmails ?? []}
+              onChange={(linkedEmails) =>
+                setUser((prev) => ({ ...prev, linkedEmails }))
+              }
             />
           </Field>
 

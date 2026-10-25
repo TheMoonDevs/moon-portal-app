@@ -2,9 +2,9 @@
  * Catalog of access-control resources and the actions each supports.
  *
  * A permission (a.k.a. "policy" / "rule") is a `resource:action` string such as
- * `worksheets:read` or `users:edit`. Wildcards are supported when matching:
+ * `worklogs:read` or `users:edit`. Wildcards are supported when matching:
  *   - `*`            → every permission (super-admin)
- *   - `worksheets:*` → every action on the worksheets resource
+ *   - `projects:*`   → every action on the projects resource
  *
  * This module is intentionally free of any server-only imports so it can be
  * shared by API route handlers, the admin UI, and the client error boundary.
@@ -33,15 +33,50 @@ export interface ResourceDefinition {
   description: string;
   /** Actions that make sense for this resource. */
   actions: PermissionAction[];
+  /**
+   * `company` resources can also be granted through a company role, which
+   * applies them inside that company only. A grant on the user record applies
+   * to every company.
+   */
+  scope?: 'global' | 'company';
 }
 
 export const PERMISSION_RESOURCES: ResourceDefinition[] = [
   {
-    key: 'worksheets',
-    label: 'Worksheets',
+    key: 'companies',
+    label: 'Companies',
     description:
-      'Spreadsheet-style worksheets, their rows and saved state. `execute` gates server-side actions (e.g. sending email).',
-    actions: ['read', 'append', 'edit', 'delete', 'execute'],
+      'Company profiles. `read` on the user record lists every company; `edit` inside a company role edits that company. Creating companies is reserved for the super admin and cannot be granted.',
+    actions: ['read', 'edit'],
+    scope: 'company',
+  },
+  {
+    key: 'members',
+    label: 'Company members',
+    description: 'Who belongs to a company and which roles they hold.',
+    actions: ['read', 'create', 'edit', 'delete'],
+    scope: 'company',
+  },
+  {
+    key: 'roles',
+    label: 'Company roles',
+    description: 'The roles a company defines and the permissions in each.',
+    actions: ['read', 'create', 'edit', 'delete'],
+    scope: 'company',
+  },
+  {
+    key: 'projects',
+    label: 'Projects',
+    description: 'Projects inside a company.',
+    actions: ['read', 'create', 'edit', 'delete'],
+    scope: 'company',
+  },
+  {
+    key: 'tasks',
+    label: 'Tasks',
+    description: 'Major and minor tasks inside a project.',
+    actions: ['read', 'create', 'edit', 'delete'],
+    scope: 'company',
   },
   {
     key: 'users',
@@ -88,24 +123,23 @@ export const PERMISSION_RESOURCES: ResourceDefinition[] = [
     actions: ['read', 'create', 'edit', 'delete'],
   },
   {
-    key: 'shortlinks',
-    label: 'Short links',
-    description: 'Short-URL links.',
-    actions: ['read', 'create', 'delete'],
-  },
-  {
     key: 'files',
     label: 'Files',
     description: 'File uploads and blob links.',
     actions: ['read', 'create'],
   },
-  {
-    key: 'studio',
-    label: 'AI Studio',
-    description: 'AI chat sessions, messages and agents.',
-    actions: ['read', 'edit'],
-  },
 ];
+
+/** Resources that a company role can grant. */
+export const COMPANY_PERMISSION_RESOURCES = PERMISSION_RESOURCES.filter(
+  (r) => r.scope === 'company',
+);
+
+/** Every concrete permission a company role can hold. */
+export const ALL_COMPANY_PERMISSIONS: string[] =
+  COMPANY_PERMISSION_RESOURCES.flatMap((r) =>
+    r.actions.map((a) => `${r.key}:${a}`),
+  );
 
 /** Every concrete (non-wildcard) permission string the app knows about. */
 export const ALL_PERMISSIONS: string[] = PERMISSION_RESOURCES.flatMap((r) =>

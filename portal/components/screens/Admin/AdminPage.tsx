@@ -8,6 +8,7 @@ import { Toaster } from 'sonner';
 import { cn } from '@/lib/utils';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
 import { useUser } from '@/utils/hooks/useUser';
+import { useWorkspace } from '@/utils/hooks/useWorkspace';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import { AdminUsers } from './AdminUsers';
@@ -24,15 +25,29 @@ import {
   getAdminTab,
 } from './shared/adminNav';
 import { AdminButton, Icon, IconAction, UserAvatar } from './shared/AdminUI';
+import { AdminCompanies } from './Workspace/AdminCompanies';
+import { AdminProjects } from './Workspace/AdminProjects';
+import { AdminRoles } from './Workspace/AdminRoles';
+import { AdminTasks } from './Workspace/AdminTasks';
 
 const SIDEBAR_STORAGE_KEY = 'tmd-admin-sidebar-collapsed';
 
 /** Tabs that render the shared user list, so a load failure is worth reporting. */
 const TABS_USING_USERS: AdminTabId[] = ['overview', 'users', 'notifications'];
 
+const COMPANY_STORAGE_KEY = 'tmd-admin-company';
+
 export const AdminPage = () => {
   const router = useRouter();
   const { user: adminUser } = useUser();
+  const workspace = useWorkspace();
+  const isAdmin = !!adminUser?.isAdmin;
+
+  // Portal admins see every tab; company managers only the company tabs.
+  const visibleTabs = useMemo(
+    () => ADMIN_TABS.filter((tab) => tab.access === 'company' || isAdmin),
+    [isAdmin],
+  );
 
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,12 +57,46 @@ export const AdminPage = () => {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [activeTabId, setActiveTabId] = useState<AdminTabId>(DEFAULT_ADMIN_TAB);
+  const [companyId, setCompanyId] = useState<string | null>(null);
+  const [projectId, setProjectId] = useState<string | null>(null);
 
-  const activeTab = getAdminTab(activeTabId);
+  const activeTab = visibleTabs.some((tab) => tab.id === activeTabId)
+    ? getAdminTab(activeTabId)
+    : getAdminTab(visibleTabs[0]?.id);
+
+  // Nothing to manage here: send them back to the portal.
+  useEffect(() => {
+    if (!adminUser || workspace.loading) return;
+    if (!isAdmin && !workspace.canOpenAdmin) router.replace(APP_ROUTES.home);
+  }, [adminUser, isAdmin, workspace.loading, workspace.canOpenAdmin, router]);
+
+  // Keep a company selected across the company tabs.
+  useEffect(() => {
+    const ids = workspace.companies.map((c) => c.company.id);
+    if (companyId && ids.includes(companyId)) return;
+    let saved: string | null = null;
+    try {
+      saved = localStorage.getItem(COMPANY_STORAGE_KEY);
+    } catch {
+      /* storage unavailable */
+    }
+    setCompanyId(saved && ids.includes(saved) ? saved : (ids[0] ?? null));
+  }, [workspace.companies, companyId]);
+
+  const selectCompany = useCallback((id: string) => {
+    setCompanyId(id);
+    setProjectId(null);
+    try {
+      localStorage.setItem(COMPANY_STORAGE_KEY, id);
+    } catch {
+      /* storage unavailable */
+    }
+  }, []);
 
   /* ----------------------------- data loading ----------------------------- */
 
   const fetchUsers = useCallback(async () => {
+    if (!adminUser) return;
     setLoading(true);
     setLoadError(null);
     try {
@@ -59,7 +108,7 @@ export const AdminPage = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [adminUser]);
 
   useEffect(() => {
     fetchUsers();
@@ -92,14 +141,18 @@ export const AdminPage = () => {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+      if (
+        isAdmin &&
+        (event.metaKey || event.ctrlKey) &&
+        event.key.toLowerCase() === 'k'
+      ) {
         event.preventDefault();
         setPaletteOpen((open) => !open);
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, []);
+  }, [isAdmin]);
 
   /* -------------------------------- content -------------------------------- */
 
@@ -132,6 +185,43 @@ export const AdminPage = () => {
         return <EventForm />;
       case 'badges':
         return <AdminBadges />;
+      case 'companies':
+        return (
+          <AdminCompanies
+            users={users}
+            selectedCompanyId={companyId}
+            onSelectCompany={selectCompany}
+          />
+        );
+      case 'projects':
+        return (
+          <AdminProjects
+            users={users}
+            selectedCompanyId={companyId}
+            onSelectCompany={selectCompany}
+            onOpenTasks={(id) => {
+              setProjectId(id);
+              goToTab('tasks');
+            }}
+          />
+        );
+      case 'tasks':
+        return (
+          <AdminTasks
+            users={users}
+            selectedCompanyId={companyId}
+            onSelectCompany={selectCompany}
+            selectedProjectId={projectId}
+            onSelectProject={setProjectId}
+          />
+        );
+      case 'roles':
+        return (
+          <AdminRoles
+            selectedCompanyId={companyId}
+            onSelectCompany={selectCompany}
+          />
+        );
       default:
         return null;
     }
@@ -142,7 +232,7 @@ export const AdminPage = () => {
   const navigation = (
     <nav className="flex flex-1 flex-col gap-6 overflow-y-auto px-3 py-4">
       {ADMIN_NAV_GROUPS.map((group) => {
-        const items = ADMIN_TABS.filter((tab) => tab.group === group);
+        const items = visibleTabs.filter((tab) => tab.group === group);
         if (items.length === 0) return null;
         return (
           <div key={group} className="flex flex-col gap-1">
@@ -285,29 +375,36 @@ export const AdminPage = () => {
             </p>
           </div>
 
-          <button
-            onClick={() => setPaletteOpen(true)}
-            className="hidden h-9 items-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-3 text-xs text-neutral-500 transition-colors hover:border-white/20 hover:text-neutral-300 md:flex"
-          >
-            <Icon name="search" className="text-[16px]" />
-            Search everything
-            <kbd className="ml-2 rounded border border-white/10 bg-white/[0.05] px-1.5 py-0.5 text-[10px] text-neutral-400">
-              ⌘K
-            </kbd>
-          </button>
+          {isAdmin && (
+            <>
+              <button
+                onClick={() => setPaletteOpen(true)}
+                className="hidden h-9 items-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-3 text-xs text-neutral-500 transition-colors hover:border-white/20 hover:text-neutral-300 md:flex"
+              >
+                <Icon name="search" className="text-[16px]" />
+                Search everything
+                <kbd className="ml-2 rounded border border-white/10 bg-white/[0.05] px-1.5 py-0.5 text-[10px] text-neutral-400">
+                  ⌘K
+                </kbd>
+              </button>
 
-          <IconAction
-            icon="search"
-            label="Search"
-            className="md:hidden"
-            onClick={() => setPaletteOpen(true)}
-          />
+              <IconAction
+                icon="search"
+                label="Search"
+                className="md:hidden"
+                onClick={() => setPaletteOpen(true)}
+              />
+            </>
+          )}
 
           <IconAction
             icon="refresh"
             label="Refresh data"
             loading={loading}
-            onClick={fetchUsers}
+            onClick={() => {
+              fetchUsers();
+              workspace.refresh();
+            }}
           />
 
           <div className="flex items-center gap-2 border-l border-white/[0.07] pl-3">
@@ -316,7 +413,9 @@ export const AdminPage = () => {
                 {adminUser?.name || 'Admin'}
               </p>
               <p className="text-[10px] uppercase tracking-wider text-neutral-500">
-                {counts.members} members · {counts.clients} clients
+                {isAdmin
+                  ? `${counts.members} members · ${counts.clients} clients`
+                  : `${workspace.managedCompanies.length} companies`}
               </p>
             </div>
             <UserAvatar
@@ -346,12 +445,14 @@ export const AdminPage = () => {
         </main>
       </div>
 
-      <AdminCommandPalette
-        open={paletteOpen}
-        onOpenChange={setPaletteOpen}
-        users={users}
-        onNavigate={goToTab}
-      />
+      {isAdmin && (
+        <AdminCommandPalette
+          open={paletteOpen}
+          onOpenChange={setPaletteOpen}
+          users={users}
+          onNavigate={goToTab}
+        />
+      )}
 
       <Toaster theme="dark" position="bottom-right" richColors closeButton />
     </div>

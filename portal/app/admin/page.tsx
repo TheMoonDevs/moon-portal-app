@@ -4,11 +4,9 @@ import { AdminPage } from '@/components/screens/Admin/AdminPage';
 
 export default function Home() {
   return (
-    <PageAccess
-      isAuthRequired={true}
-      isAdminRequired={true}
-      hasBottombar={false}
-    >
+    // Admins and company managers both use this page; it shows each only the
+    // tabs they can use and sends everyone else home.
+    <PageAccess isAuthRequired={true} hasBottombar={false}>
       <AdminPage />
       <Bottombar visible={false} />
     </PageAccess>

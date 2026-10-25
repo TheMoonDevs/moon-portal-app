@@ -3,6 +3,7 @@ import { createSlice } from '@reduxjs/toolkit';
 
 import { LOCAL_STORAGE } from '@/utils/constants/appInfo';
 
+// Left over from the old client-side Google check; cleared on sign-out.
 const VERIFIED_EMAIL_KEY = 'verifiedUserEmail';
 
 // The cached profile is a render-speed optimisation only. It is never treated
@@ -20,16 +21,10 @@ const readCachedUser = (): User | null => {
   }
 };
 
-const readVerifiedEmail = (): string | null =>
-  typeof window === 'undefined'
-    ? null
-    : localStorage.getItem(VERIFIED_EMAIL_KEY);
-
 export const authSlice = createSlice({
   name: 'auth',
   initialState: {
     user: readCachedUser(),
-    verifiedUserEmail: readVerifiedEmail(),
   },
   reducers: {
     setReduxUser: (state, action: { payload: User | null }) => {
@@ -46,21 +41,13 @@ export const authSlice = createSlice({
     },
     clearReduxUser: (state) => {
       state.user = null;
-      state.verifiedUserEmail = null;
       if (typeof window === 'undefined') return;
       localStorage.removeItem(LOCAL_STORAGE.user);
       localStorage.removeItem(VERIFIED_EMAIL_KEY);
     },
-    setGoogleVerificationEmail: (state, action: { payload: string }) => {
-      state.verifiedUserEmail = action.payload;
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(VERIFIED_EMAIL_KEY, action.payload);
-      }
-    },
   },
 });
 
-export const { setReduxUser, clearReduxUser, setGoogleVerificationEmail } =
-  authSlice.actions;
+export const { setReduxUser, clearReduxUser } = authSlice.actions;
 
 export default authSlice.reducer;

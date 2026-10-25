@@ -11,6 +11,7 @@ import media from '@/styles/media';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
 import { useNotifications } from '@/utils/hooks/useNotifications';
 import { useUser } from '@/utils/hooks/useUser';
+import { useWorkspace } from '@/utils/hooks/useWorkspace';
 
 import LogoutConfirmationDialog from './LogoutConfirmationDialog';
 import NotificationModal from './NotificationModal';
@@ -38,6 +39,7 @@ export const Bottombar = ({
   const router = useRouter();
   const { user } = useUser();
   const { unreadNotificationsCount } = useNotifications();
+  const { canOpenAdmin } = useWorkspace();
 
   const matchesVisibleOnlyOn = useMediaQuery(visibleOnlyOn ?? media.default);
   const isMobile = useMediaQuery(media.largeMobile);
@@ -49,7 +51,7 @@ export const Bottombar = ({
   if (!visible && !visibleOnlyOn) return null;
   if (visibleOnlyOn && !matchesVisibleOnlyOn) return null;
 
-  const canSeeAdmin = user?.isAdmin && !isMobile && !isTablet;
+  const canSeeAdmin = canOpenAdmin && !isMobile && !isTablet;
   const options = NAVIGATION_OPTIONS.filter(
     (option) => option.name !== 'Admin' || canSeeAdmin,
   );

@@ -7,6 +7,8 @@
  * client-safe.
  */
 export * from './catalog';
+export * from './company';
 export * from './defaults';
 export * from './matching';
 export * from './PermissionError';
+export * from './superAdmin';
