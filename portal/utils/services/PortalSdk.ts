@@ -126,4 +126,27 @@ export const PortalSdk = {
       }
     });
   },
+  patchData: (url: string, data: any) => {
+    return new Promise<any>(async (resolve, reject) => {
+      try {
+        const res = await fetch(url, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            tmd_portal_api_key: TMD_PORTAL_API_KEY,
+          },
+          body: JSON.stringify(data),
+        });
+        if (res.ok) {
+          const result = await res.json();
+          return resolve(result);
+        } else {
+          return reject(await asRejection(res));
+        }
+      } catch (e) {
+        console.log(e);
+        return reject(e as any);
+      }
+    });
+  },
 };

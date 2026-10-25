@@ -7,11 +7,11 @@ import Ripples from 'react-ripples';
 import LogoutConfirmationDialog from '@/components/global/LogoutConfirmationDialog';
 import media from '@/styles/media';
 
-const NestedSidebarElements = [
-  // {
-  //   title: 'Account Settings',
-  //   items: ['Profile'],
-  // },
+export const NestedSidebarElements = [
+  {
+    title: 'Account Settings',
+    items: ['Sign-in accounts'],
+  },
   {
     title: 'App Settings',
     items: ['Notifications'],
@@ -19,11 +19,14 @@ const NestedSidebarElements = [
 ];
 
 const SettingsSidebar = ({
+  activeTab,
+  setActiveTab,
   setIsDrawerOpen,
 }: {
+  activeTab: string;
+  setActiveTab: (tab: string) => void;
   setIsDrawerOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }) => {
-  const [activeTab, setActiveTab] = useState(NestedSidebarElements[0].items[0]);
   const isSmallerTablets = useMediaQuery(media.custom(640));
   const [open, setOpen] = useState(false);
   const handleLogoutDialogOpen = () => {

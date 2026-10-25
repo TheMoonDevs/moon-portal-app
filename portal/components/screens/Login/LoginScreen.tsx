@@ -98,7 +98,10 @@ export const LoginScreen = () => {
       }
       const code = result?.error ?? '';
       if (code === 'INVALID_CODE') resetToCode(LOGIN_ERROR_MESSAGES[code]);
-      else setError(LOGIN_ERROR_MESSAGES[code] ?? 'Sign-in failed. Please try again.');
+      else
+        setError(
+          LOGIN_ERROR_MESSAGES[code] ?? 'Sign-in failed. Please try again.',
+        );
     } catch (err) {
       console.error(err);
       setError('Network error. Please try again.');
@@ -181,12 +184,7 @@ export const LoginScreen = () => {
                 onClick={continueWithGoogle}
                 className="flex w-full flex-row items-center justify-center gap-2 rounded-[0.5rem] bg-white px-4 py-2 font-medium text-black hover:bg-neutral-200"
               >
-                <Image
-                  src="/icons/google.svg"
-                  alt=""
-                  width={20}
-                  height={20}
-                />
+                <Image src="/icons/google.svg" alt="" width={20} height={20} />
                 <span>Continue with Google</span>
               </button>
               <button
@@ -208,9 +206,7 @@ export const LoginScreen = () => {
               Enter App
             </GreyButton>
           )}
-          {error && (
-            <p className="text-center text-xs text-red-500">{error}</p>
-          )}
+          {error && <p className="text-center text-xs text-red-500">{error}</p>}
         </div>
       </MobileBox>
     </div>

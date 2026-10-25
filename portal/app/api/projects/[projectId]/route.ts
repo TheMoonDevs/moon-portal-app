@@ -32,14 +32,18 @@ export async function GET(_request: Request, { params }: Params) {
     params.projectId,
     'projects:read',
   );
-  if (response || !project) return response;
+  if (response || !project)
+    return response ?? fail(401, 'Authentication required.');
 
   const tasks = await db.task.findMany({
     where: { projectId: project.id },
     orderBy: { createdAt: 'asc' },
   });
   return ok({
-    project: { ...project, progress: summarizeTasks(tasks)[project.id] ?? null },
+    project: {
+      ...project,
+      progress: summarizeTasks(tasks)[project.id] ?? null,
+    },
     tasks,
   });
 }
@@ -49,7 +53,8 @@ export async function PATCH(request: Request, { params }: Params) {
     params.projectId,
     'projects:edit',
   );
-  if (response || !project) return response;
+  if (response || !project)
+    return response ?? fail(401, 'Authentication required.');
 
   const body = await request.json().catch(() => ({}));
   const data: Record<string, unknown> = pick(body, EDITABLE);
@@ -60,7 +65,10 @@ export async function PATCH(request: Request, { params }: Params) {
     data.name = name;
     data.slug = slugify(name);
   }
-  if ('status' in data && !Object.values(PROJECT_STATUS).includes(data.status as PROJECT_STATUS)) {
+  if (
+    'status' in data &&
+    !Object.values(PROJECT_STATUS).includes(data.status as PROJECT_STATUS)
+  ) {
     return fail(400, 'Unknown project status.');
   }
   if ('leadIds' in data) data.leadIds = asStringArray(data.leadIds);
@@ -79,7 +87,8 @@ export async function DELETE(_request: Request, { params }: Params) {
     params.projectId,
     'projects:delete',
   );
-  if (response || !project) return response;
+  if (response || !project)
+    return response ?? fail(401, 'Authentication required.');
 
   const updated = await db.project.update({
     where: { id: project.id },

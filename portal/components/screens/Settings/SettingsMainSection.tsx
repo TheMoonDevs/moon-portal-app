@@ -4,6 +4,8 @@ import { Drawer, useMediaQuery } from '@mui/material';
 import PushSubscriptionToggleButton from '@/components/global/PushSubscriptionToggleButton';
 import media from '@/styles/media';
 
+import { SignInAccountsSection } from './SignInAccountsSection';
+
 const NotificationSection = ({ title }: { title: string }) => {
   return (
     <>
@@ -24,6 +26,8 @@ const NotificationSection = ({ title }: { title: string }) => {
 };
 
 const GroupedNotificationSection = ({ title }: { title: string }) => {
+  if (title === 'Sign-in accounts')
+    return <SignInAccountsSection title={title} />;
   return title === 'Notifications' && <NotificationSection title={title} />;
 };
 const SettingsMainSection = ({

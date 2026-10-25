@@ -18,7 +18,8 @@ export const dynamic = 'force-dynamic';
 /** Companies the caller can see (all of them for admins). */
 export async function GET(request: NextRequest) {
   const { response, user } = await requireUser();
-  if (response || !user) return response;
+  if (response || !user)
+    return response ?? fail(401, 'Authentication required.');
 
   const includeArchived =
     request.nextUrl.searchParams.get('includeArchived') === 'true';
@@ -32,7 +33,8 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: Request) {
   const { response, user } = await requireSuperAdmin();
-  if (response || !user) return response;
+  if (response || !user)
+    return response ?? fail(401, 'Authentication required.');
 
   const body = await request.json().catch(() => ({}));
   const name = typeof body.name === 'string' ? body.name.trim() : '';

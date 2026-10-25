@@ -66,7 +66,12 @@ export const DEFAULT_COMPANY_ROLES: CompanyRoleDefinition[] = [
     key: 'viewer',
     name: 'Viewer',
     description: 'Read-only access to the company’s projects and tasks.',
-    permissions: ['companies:read', 'members:read', 'projects:read', 'tasks:read'],
+    permissions: [
+      'companies:read',
+      'members:read',
+      'projects:read',
+      'tasks:read',
+    ],
   },
 ];
 

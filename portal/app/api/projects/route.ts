@@ -37,7 +37,8 @@ export async function GET(request: NextRequest) {
     companyIds = [companyId];
   } else {
     const { response, user } = await requireUser();
-    if (response || !user) return response;
+    if (response || !user)
+      return response ?? fail(401, 'Authentication required.');
     const workspace = await getWorkspaceForUser(user);
     companyIds = workspace
       .filter((w) => hasPermission(w.permissions, 'projects:read'))
@@ -81,7 +82,8 @@ export async function POST(request: Request) {
     companyId,
     'projects:create',
   );
-  if (response || !user) return response;
+  if (response || !user)
+    return response ?? fail(401, 'Authentication required.');
 
   const name = typeof body.name === 'string' ? body.name.trim() : '';
   if (!name) return fail(400, 'Project name is required.');

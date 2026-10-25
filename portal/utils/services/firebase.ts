@@ -1,12 +1,11 @@
 // Import the functions you need from the SDKs you need
-import { getApp, getApps, initializeApp } from "firebase/app";
-import { getAnalytics, isSupported, logEvent } from "firebase/analytics";
-import { GoogleAuthProvider, getAuth } from "firebase/auth";
+import { getAnalytics, isSupported, logEvent } from 'firebase/analytics';
+import { getApp, getApps, initializeApp } from 'firebase/app';
+import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 
-import { firebaseConfig } from "./firebaseConfig";
+import { firebaseConfig } from './firebaseConfig';
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
-
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
@@ -46,9 +45,9 @@ export const logEvents = (eventName: string, params?: any) => {
 const logScreenView = (
   firebase_screen: string,
   firebase_screen_class: string,
-  params?: any
+  params?: any,
 ) => {
-  return FirebaseSDK.logEvents("screen_view", {
+  return FirebaseSDK.logEvents('screen_view', {
     firebase_screen,
     firebase_screen_class,
     ...params,

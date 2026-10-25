@@ -12,11 +12,7 @@ import {
   permissionDeniedResponse,
   type SessionUser,
 } from '@/lib/permissions/server';
-import type {
-  Company,
-  CompanyMember,
-  CompanyRole,
-} from '@/models/workspace';
+import type { Company, CompanyMember, CompanyRole } from '@/models/workspace';
 import { COMPANY_STATUS, MEMBER_STATUS } from '@/models/workspace';
 
 /* ------------------------------- responses ------------------------------- */
@@ -105,7 +101,11 @@ export async function requireCompanyPermission(
   const user = await getSessionUser();
   if (!user) return { response: unauthenticated(), user: null, access: null };
   if (!companyId) {
-    return { response: fail(400, 'companyId is required.'), user, access: null };
+    return {
+      response: fail(400, 'companyId is required.'),
+      user,
+      access: null,
+    };
   }
   const company = await db.company.findFirst({ where: { id: companyId } });
   if (!company) {
@@ -149,11 +149,12 @@ export async function getWorkspaceForUser(
   });
   const seesAll = isAllowedInCompany(user, null, 'companies:read');
 
-  const statusFilter = includeArchived
-    ? {}
-    : { status: COMPANY_STATUS.ACTIVE };
+  const statusFilter = includeArchived ? {} : { status: COMPANY_STATUS.ACTIVE };
   const companies: Company[] = seesAll
-    ? await db.company.findMany({ where: statusFilter, orderBy: { name: 'asc' } })
+    ? await db.company.findMany({
+        where: statusFilter,
+        orderBy: { name: 'asc' },
+      })
     : memberships.length
       ? await db.company.findMany({
           where: {
@@ -166,7 +167,9 @@ export async function getWorkspaceForUser(
 
   const companyIds = companies.map((c) => c.id);
   const roles: CompanyRole[] = companyIds.length
-    ? await db.companyRole.findMany({ where: { companyId: { in: companyIds } } })
+    ? await db.companyRole.findMany({
+        where: { companyId: { in: companyIds } },
+      })
     : [];
 
   return companies.map((company) => {

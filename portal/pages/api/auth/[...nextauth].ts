@@ -7,8 +7,8 @@ import {
   verifyGoogleIdToken,
 } from '@/lib/auth/googleIdToken';
 import { LOGIN_ERRORS } from '@/lib/auth/loginErrors';
-import { isSuperAdminEmail } from '@/lib/permissions/superAdmin';
 import { db } from '@/lib/mongodb/db-client';
+import { isSuperAdminEmail } from '@/lib/permissions/superAdmin';
 
 /*
  * Sign-in needs two things together:

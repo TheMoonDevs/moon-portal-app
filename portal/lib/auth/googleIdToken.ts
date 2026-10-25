@@ -31,12 +31,15 @@ export async function verifyGoogleIdToken(idToken: string): Promise<string> {
     throw new GoogleTokenError('Google sign-in could not be verified.');
   }
 
-  const provider = (payload.firebase as { sign_in_provider?: string } | undefined)
-    ?.sign_in_provider;
+  const provider = (
+    payload.firebase as { sign_in_provider?: string } | undefined
+  )?.sign_in_provider;
   const email = typeof payload.email === 'string' ? payload.email : '';
 
   if (provider !== 'google.com' || !email || payload.email_verified !== true) {
-    throw new GoogleTokenError('Please sign in with a verified Google account.');
+    throw new GoogleTokenError(
+      'Please sign in with a verified Google account.',
+    );
   }
   return email.trim().toLowerCase();
 }

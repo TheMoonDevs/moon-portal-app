@@ -20,10 +20,16 @@ export async function GET(request: NextRequest) {
   const assigneeId = request.nextUrl.searchParams.get('assigneeId');
 
   if (projectId) {
-    const { response } = await requireProjectPermission(projectId, 'tasks:read');
+    const { response } = await requireProjectPermission(
+      projectId,
+      'tasks:read',
+    );
     if (response) return response;
   } else {
-    const { response } = await requireCompanyPermission(companyId, 'tasks:read');
+    const { response } = await requireCompanyPermission(
+      companyId,
+      'tasks:read',
+    );
     if (response) return response;
   }
 
@@ -46,7 +52,8 @@ export async function POST(request: Request) {
     projectId,
     'tasks:create',
   );
-  if (response || !user || !project) return response;
+  if (response || !user || !project)
+    return response ?? fail(401, 'Authentication required.');
 
   const title = typeof body.title === 'string' ? body.title.trim() : '';
   if (!title) return fail(400, 'Task title is required.');

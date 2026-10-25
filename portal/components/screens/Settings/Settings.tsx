@@ -3,16 +3,21 @@
 import { useState } from 'react';
 
 import SettingsMainSection from './SettingsMainSection';
-import SettingsSidebar from './SettingsSidebar';
+import SettingsSidebar, { NestedSidebarElements } from './SettingsSidebar';
 
 const Settings = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState(NestedSidebarElements[0].items[0]);
 
   return (
     <div className="flex h-screen text-neutral-800">
-      <SettingsSidebar setIsDrawerOpen={setIsDrawerOpen} />
+      <SettingsSidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        setIsDrawerOpen={setIsDrawerOpen}
+      />
       <SettingsMainSection
-        title="Notifications"
+        title={activeTab}
         isDrawerOpen={isDrawerOpen}
         setDrawerOpen={setIsDrawerOpen}
       />

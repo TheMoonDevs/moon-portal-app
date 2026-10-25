@@ -1,4 +1,9 @@
-import { getWorkspaceForUser, ok, requireUser } from '@/lib/workspace/server';
+import {
+  fail,
+  getWorkspaceForUser,
+  ok,
+  requireUser,
+} from '@/lib/workspace/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,7 +13,8 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET() {
   const { response, user } = await requireUser();
-  if (response || !user) return response;
+  if (response || !user)
+    return response ?? fail(401, 'Authentication required.');
 
   const companies = await getWorkspaceForUser(user);
   return ok({

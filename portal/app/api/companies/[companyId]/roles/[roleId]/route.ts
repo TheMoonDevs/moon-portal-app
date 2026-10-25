@@ -24,7 +24,8 @@ export async function PATCH(request: Request, { params }: Params) {
     params.companyId,
     'roles:edit',
   );
-  if (response || !user) return response;
+  if (response || !user)
+    return response ?? fail(401, 'Authentication required.');
 
   const role = await loadRole(params.companyId, params.roleId);
   if (!role) return fail(404, 'Role not found.');
@@ -62,7 +63,8 @@ export async function DELETE(_request: Request, { params }: Params) {
     params.companyId,
     'roles:delete',
   );
-  if (response || !user) return response;
+  if (response || !user)
+    return response ?? fail(401, 'Authentication required.');
 
   const role = await loadRole(params.companyId, params.roleId);
   if (!role) return fail(404, 'Role not found.');

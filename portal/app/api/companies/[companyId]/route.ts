@@ -21,7 +21,9 @@ export async function GET(_request: Request, { params }: Params) {
     'companies:read',
   );
   if (response) return response;
-  const company = await db.company.findFirst({ where: { id: params.companyId } });
+  const company = await db.company.findFirst({
+    where: { id: params.companyId },
+  });
   return ok({ company });
 }
 

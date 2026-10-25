@@ -40,7 +40,8 @@ export async function PATCH(request: Request, { params }: Params) {
     params.companyId,
     'members:edit',
   );
-  if (response || !user) return response;
+  if (response || !user)
+    return response ?? fail(401, 'Authentication required.');
 
   const member = await loadMember(params.companyId, params.memberId);
   if (!member) return fail(404, 'Member not found.');
@@ -86,13 +87,20 @@ export async function DELETE(_request: Request, { params }: Params) {
     params.companyId,
     'members:delete',
   );
-  if (response || !user) return response;
+  if (response || !user)
+    return response ?? fail(401, 'Authentication required.');
 
   const member = await loadMember(params.companyId, params.memberId);
   if (!member) return fail(404, 'Member not found.');
 
   const roles = await rolesForKeys(params.companyId, member.roleKeys ?? []);
-  if (missingForGrant(user, access, roles.flatMap((r) => r.permissions)).length) {
+  if (
+    missingForGrant(
+      user,
+      access,
+      roles.flatMap((r) => r.permissions),
+    ).length
+  ) {
     return fail(403, 'You cannot remove someone with more access than you.');
   }
   if (await wouldRemoveLastOwner(member, [])) {

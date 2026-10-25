@@ -31,7 +31,8 @@ export async function POST(request: Request, { params }: Params) {
     params.companyId,
     'roles:create',
   );
-  if (response || !user) return response;
+  if (response || !user)
+    return response ?? fail(401, 'Authentication required.');
 
   const body = await request.json().catch(() => ({}));
   const name = typeof body.name === 'string' ? body.name.trim() : '';

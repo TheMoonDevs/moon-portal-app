@@ -806,6 +806,7 @@ export const ConfirmDialog = ({
   confirmLabel = 'Delete',
   onConfirm,
   loading,
+  message = 'This action cannot be undone. Please confirm you want to continue.',
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -814,6 +815,7 @@ export const ConfirmDialog = ({
   confirmLabel?: string;
   onConfirm: () => void;
   loading?: boolean;
+  message?: string;
 }) => (
   <AdminModal
     open={open}
@@ -844,9 +846,7 @@ export const ConfirmDialog = ({
       </>
     }
   >
-    <p className="text-sm text-neutral-400">
-      This action cannot be undone. Please confirm you want to continue.
-    </p>
+    <p className="text-sm text-neutral-400">{message}</p>
   </AdminModal>
 );
 
