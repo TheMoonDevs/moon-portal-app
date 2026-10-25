@@ -1,4 +1,5 @@
 import { db } from '@/lib/mongodb/db-client';
+import { syncTaskPoints } from '@/lib/progress/server';
 import {
   asStringArray,
   fail,
@@ -67,6 +68,7 @@ export async function PATCH(request: Request, { params }: Params) {
     where: { id: task.id },
     data: { ...data, updatedAt: nowIso() },
   });
+  await syncTaskPoints(updated);
   return ok({ task: updated });
 }
 
@@ -75,5 +77,6 @@ export async function DELETE(_request: Request, { params }: Params) {
   if (response || !task)
     return response ?? fail(401, 'Authentication required.');
   await db.task.delete({ where: { id: task.id } });
+  await syncTaskPoints(null, task.id);
   return ok({ task });
 }

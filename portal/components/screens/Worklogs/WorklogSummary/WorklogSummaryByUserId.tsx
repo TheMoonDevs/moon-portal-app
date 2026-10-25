@@ -27,7 +27,7 @@ export const WorklogSummaryByUserId: React.FC<WorklogSummaryByUserIdProps> = ({
   const [selectedMonth, setSelectedMonth] = useState<number | null>(month);
 
   const [onlyYearSummary, setOnlyYearSummary] = useState<boolean>(!month);
-  const joiningDate = (userData?.workData as any)?.joining;
+  const joiningDate = userData?.createdAt;
 
   const summaryTitle = `${
     !onlyYearSummary && selectedMonth !== null

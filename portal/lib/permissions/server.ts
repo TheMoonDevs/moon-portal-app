@@ -13,7 +13,9 @@ export interface SessionUser {
   username?: string;
   email?: string | null;
   isAdmin?: boolean;
-  userType?: string;
+  roleKeys?: string[];
+  /** Permissions from the user's portal roles. */
+  rolePermissions?: string[];
   permissions?: string[] | null;
   deniedPermissions?: string[] | null;
   /** The Google account verified at sign-in. */
@@ -30,14 +32,27 @@ function getMode(): PermissionMode {
   return 'enforce';
 }
 
+/** Every permission held through the given portal roles. */
+export async function rolePermissionsFor(
+  roleKeys: string[] | null | undefined,
+): Promise<string[]> {
+  if (!Array.isArray(roleKeys) || roleKeys.length === 0) return [];
+  const roles = await db.role.findMany({ where: { key: { in: roleKeys } } });
+  return Array.from(
+    new Set(
+      roles.flatMap((r: { permissions?: string[] }) =>
+        Array.isArray(r.permissions) ? r.permissions : [],
+      ),
+    ),
+  );
+}
+
 /**
  * Resolve the acting user from the NextAuth session, hydrated with the fields
- * needed for permission checks (isAdmin, userType, permissions).
+ * needed for permission checks (isAdmin, roles, permissions).
  *
- * Returns null when there is no user session — this is the case for
- * server-to-server calls (cron jobs, Slack, external webhooks) which
- * authenticate via the shared API key and are intentionally not subject to
- * per-user permission checks.
+ * Returns null when there is no session, or when the user was deleted or is
+ * no longer active, so their old session stops working straight away.
  */
 export async function getSessionUser(): Promise<SessionUser | null> {
   const session = (await getServerSession(authOptions as any)) as any;
@@ -59,13 +74,19 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     record = await db.user.findFirst({ where: { email: sessionUser.email } });
   }
   if (!record) return null;
+  if (record.status && record.status !== 'ACTIVE') return null;
+
+  const roleKeys: string[] = Array.isArray(record.roleKeys)
+    ? record.roleKeys
+    : [];
 
   return {
     id: record.id,
     username: record.username,
     email: record.email ?? null,
     isAdmin: !!record.isAdmin,
-    userType: record.userType,
+    roleKeys,
+    rolePermissions: await rolePermissionsFor(roleKeys),
     permissions: Array.isArray(record.permissions) ? record.permissions : [],
     deniedPermissions: Array.isArray(record.deniedPermissions)
       ? record.deniedPermissions
@@ -106,8 +127,9 @@ export interface EnforceResult {
  *   - audit  → logs denials but allows the request through
  *   - enforce→ returns a 403 response on denial (default)
  *
- * Sessionless requests (no logged-in user) are treated as trusted service
- * calls and always allowed.
+ * Requests without a signed-in user are rejected with 401. (The portal no
+ * longer has server-to-server callers, and the API key ships in the browser,
+ * so it is not proof of anything.)
  */
 export async function checkPermission(
   requiredPermission: string,
@@ -119,9 +141,15 @@ export async function checkPermission(
 
   const user = await getSessionUser();
 
-  // No user session → server-to-server / public call; not user-permission gated.
   if (!user) {
-    return { response: null, user: null, allowed: true };
+    return {
+      response: NextResponse.json(
+        { status: 'fail', error: 'Authentication required.' },
+        { status: 401 },
+      ),
+      user: null,
+      allowed: false,
+    };
   }
 
   const allowed = isAllowed(user, requiredPermission);

@@ -61,7 +61,7 @@ export const AdminCommandPalette = ({
         label: 'Create a new badge',
         icon: 'add_circle',
         group: 'Actions',
-        run: () => router.push(APP_ROUTES.badgeEditor),
+        run: () => onNavigate('badges'),
       },
       {
         id: 'action-home',
@@ -75,7 +75,7 @@ export const AdminCommandPalette = ({
     const userCommands: Command[] = users.map((user) => ({
       id: `user-${user.id}`,
       label: user.name || user.username,
-      hint: `${user.userType} · @${user.username}`,
+      hint: [user.positionTitle, user.email].filter(Boolean).join(' · '),
       icon: 'person',
       avatar: user.avatar,
       group: 'Users',

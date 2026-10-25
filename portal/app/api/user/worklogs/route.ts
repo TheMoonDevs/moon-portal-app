@@ -109,6 +109,21 @@ export async function PUT(request: Request) {
     const { id, ...rest } = await request.json();
     const { userId, logType, date } = rest ?? {};
 
+    // People write their own worklogs only.
+    const viewerUserId = await resolveViewerUserId();
+    const existing =
+      id && id.length > 2
+        ? await db.workLogs.findFirst({ where: { id } })
+        : null;
+    const ownerId = existing?.userId ?? userId;
+    if (!viewerUserId || (ownerId && ownerId !== viewerUserId)) {
+      return NextResponse.json(
+        { status: 'fail', error: 'You can only edit your own worklogs.' },
+        { status: 403 },
+      );
+    }
+    rest.userId = ownerId ?? viewerUserId;
+
     //console.log("updating worklogs on server", id, rest);
     let workLogs;
     if (logType === 'dayLog') {

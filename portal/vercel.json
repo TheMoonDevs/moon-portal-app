@@ -1,12 +1,1 @@
-{
-  "crons": [
-    {
-      "path": "/api/cron-jobs/sync/slack-users",
-      "schedule": "30 3 * * *"
-    },
-    {
-      "path": "/api/cron-jobs/core-team/worklog-summary-reminder",
-      "schedule": "30 3 * * *"
-    }
-  ]
-}
+{}

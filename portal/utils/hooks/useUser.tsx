@@ -57,7 +57,7 @@ export const useUser = () => {
 
   useEffect(() => {
     if (status !== 'authenticated' || !sessionUserId) return;
-    if (isCacheForSession && cachedUser?.userType) return;
+    if (isCacheForSession && cachedUser?.status) return;
 
     fetchProfile(sessionUserId).catch((err) =>
       console.error('Failed to load user profile', err),
@@ -66,7 +66,7 @@ export const useUser = () => {
     status,
     sessionUserId,
     isCacheForSession,
-    cachedUser?.userType,
+    cachedUser?.status,
     fetchProfile,
   ]);
 

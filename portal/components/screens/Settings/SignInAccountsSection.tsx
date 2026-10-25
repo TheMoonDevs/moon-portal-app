@@ -10,7 +10,7 @@ import { PortalSdk } from '@/utils/services/PortalSdk';
  * Lets people link extra Google accounts to sign in with. Linking opens the
  * Google chooser, so only accounts they actually own can be added.
  */
-export const SignInAccountsSection = ({ title }: { title: string }) => {
+export const SignInAccountsSection = () => {
   const { user, googleEmail, refetchUser } = useUser();
   const { getGoogleIdToken } = useAuthSession();
   const [busy, setBusy] = useState<string | null>(null);
@@ -51,7 +51,7 @@ export const SignInAccountsSection = ({ title }: { title: string }) => {
   };
 
   const Row = ({ email, tag }: { email: string; tag?: string }) => (
-    <li className="flex items-center justify-between gap-3 rounded-lg bg-white px-3 py-2">
+    <li className="flex items-center justify-between gap-3 rounded-lg border border-neutral-200 px-3 py-2">
       <span className="min-w-0 truncate text-sm">{email}</span>
       <span className="flex shrink-0 items-center gap-2">
         {email === googleEmail && (
@@ -76,12 +76,6 @@ export const SignInAccountsSection = ({ title }: { title: string }) => {
 
   return (
     <>
-      <div className="mb-2 text-xl font-bold">
-        <span>{title}</span>
-      </div>
-      <p className="mb-6 text-sm text-gray-500">
-        Sign in with your code and any of these Google accounts.
-      </p>
       <ul className="mb-4 flex flex-col gap-2">
         {primary && <Row email={primary} tag="Main" />}
         {linked.map((email) => (

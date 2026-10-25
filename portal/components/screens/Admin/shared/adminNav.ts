@@ -2,7 +2,6 @@ export type AdminTabId =
   | 'overview'
   | 'users'
   | 'notifications'
-  | 'events'
   | 'badges'
   | 'companies'
   | 'projects'
@@ -23,6 +22,8 @@ export type AdminTab = {
    * who manage a company; the data inside is scoped to their companies.
    */
   access: 'admin' | 'company';
+  /** A portal permission that also opens an `admin` tab without full admin. */
+  permission?: string;
 };
 
 export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
@@ -46,9 +47,10 @@ export const ADMIN_TABS: AdminTab[] = [
     label: 'Users',
     icon: 'group',
     title: 'Manage users',
-    description: 'Members and clients, their access, roles and credentials.',
+    description: 'Everyone who can sign in, their roles and sign-in codes.',
     group: 'Workspace',
     access: 'admin',
+    permission: 'users:edit',
   },
   {
     id: 'companies',
@@ -82,7 +84,7 @@ export const ADMIN_TABS: AdminTab[] = [
     label: 'Roles',
     icon: 'badge',
     title: 'Roles & access',
-    description: 'What each role can do inside a company.',
+    description: 'What each role can do, in the portal and inside a company.',
     group: 'Companies',
     access: 'company',
   },
@@ -91,16 +93,7 @@ export const ADMIN_TABS: AdminTab[] = [
     label: 'Notifications',
     icon: 'notifications',
     title: 'Send notifications',
-    description: 'Broadcast announcements to members and clients.',
-    group: 'Community',
-    access: 'admin',
-  },
-  {
-    id: 'events',
-    label: 'Events',
-    icon: 'event',
-    title: 'Events',
-    description: 'Schedule the events shown across the portal calendar.',
+    description: 'Send an announcement to everyone or to a few people.',
     group: 'Community',
     access: 'admin',
   },
@@ -108,10 +101,11 @@ export const ADMIN_TABS: AdminTab[] = [
     id: 'badges',
     label: 'Badges',
     icon: 'workspace_premium',
-    title: 'Badge templates',
-    description: 'Achievement badges members can unlock.',
+    title: 'Badges',
+    description: 'Badges people unlock automatically from their work.',
     group: 'Community',
     access: 'admin',
+    permission: 'badges:create',
   },
 ];
 
