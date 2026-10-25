@@ -51,7 +51,9 @@ function convertField(meta: ModelMeta, key: string, value: unknown): unknown {
   if (Array.isArray(value)) {
     return value.map((v) => convertField(meta, key, v));
   }
-  if (meta.objectIdFields.has(key)) {
+  // `_id` shows up here when a filter on `id` uses operators ({ in: [...] }).
+  const isIdKey = key === '_id' && meta.objectIdFields.has(meta.idField);
+  if (meta.objectIdFields.has(key) || isIdKey) {
     return toObjectIdIfNeeded(value);
   }
   return value;

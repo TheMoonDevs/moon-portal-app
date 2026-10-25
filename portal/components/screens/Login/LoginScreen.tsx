@@ -3,19 +3,31 @@
 
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { signIn } from 'next-auth/react';
+import { signIn, signOut } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 
 import { GreyButton } from '@/components/elements/Button';
 import { SparklesCore } from '@/components/ui/sparkles';
+import { LOGIN_ERROR_MESSAGES } from '@/lib/auth/loginErrors';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
+import { useAuthSession } from '@/utils/hooks/useAuthSession';
 import { useUser } from '@/utils/hooks/useUser';
 
-import GoogleVerifyPage from './GoogleVerifyPage';
 import { InstallButton, InstallState } from './Install';
 import { LoginButtons, LoginState, MobileBox } from './Login';
 import { LoginPassCode } from './LoginPassCode';
 
+const Spinner = ({ label }: { label: string }) => (
+  <div className="flex flex-row items-center justify-center gap-2">
+    <div className="size-5 animate-spin rounded-full border-y-2 border-neutral-100"></div>
+    <p className="text-neutral-100">{label}</p>
+  </div>
+);
+
+/**
+ * Sign-in is two short steps: type your portal code, then pick any Google
+ * account linked to you. Both are checked together on the server.
+ */
 export const LoginScreen = () => {
   const [tab, setTab] = useState<InstallState | LoginState>(
     LoginState.SELECT_USER_TYPE,
@@ -24,61 +36,75 @@ export const LoginScreen = () => {
   const uri = searchParams?.get('uri');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [passCode, setPassCode] = useState<string | null>(null);
   const router = useRouter();
-  const { status, user, verifiedUserEmail, signOutUser } = useUser();
-  const [enteredPasscode, setEnteredPasscode] = useState<string | null>('');
+  const { status, user, googleEmail } = useUser();
+  const { getGoogleIdToken } = useAuthSession();
+
+  const isSignedIn = status === 'authenticated' && !!googleEmail;
+
+  // A session from before Google became part of sign-in is not enough any
+  // more: end it quietly so the person can sign in the new way.
+  useEffect(() => {
+    if (status === 'authenticated' && !googleEmail) {
+      signOut({ redirect: false });
+    }
+  }, [status, googleEmail]);
 
   useEffect(() => {
-    if (status === 'authenticated') {
-      setTab(InstallState.SPLASH);
-      //router.push(APP_ROUTES.home);
-    }
-    // `user` intentionally excluded: every Redux dispatch creates a new object
-    // reference for `user`, which would retrigger this effect infinitely.
-    // `status` is the only value that should drive the tab flip.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status]);
+    if (isSignedIn) setTab(InstallState.SPLASH);
+  }, [isSignedIn]);
 
   useEffect(() => {
     const passkey = searchParams?.get('passkey');
-    if (passkey) {
-      setTab(LoginState.LOGIN_CODE);
-      setEnteredPasscode(passkey);
-      loginWithPassCode(passkey);
+    if (passkey && passkey.length === 6) {
+      setPassCode(passkey.toUpperCase());
+      setTab(LoginState.GOOGLE);
     }
   }, [searchParams]);
 
-  const loginWithPassCode = (passCode: string) => {
-    setLoading(true);
+  const resetToCode = (message: string | null) => {
+    setError(message);
+    setPassCode(null);
+    setTab(LoginState.LOGIN_CODE);
+  };
+
+  const continueWithGoogle = async () => {
+    if (!passCode) return;
     setError(null);
-    console.log('Logging in with passcode', passCode);
-    signIn('credentials', {
-      username: passCode.substring(0, 3).toUpperCase(),
-      password: passCode.substring(3).toUpperCase(),
-      redirect: false,
-      callbackUrl: uri || APP_ROUTES.home,
-      // callbackUrl: (redirectUri as string) || APP_ROUTES.home,
-      // redirect: true,
-    })
-      .then((data) => {
-        setLoading(false);
-        console.log('signIn callback', data);
-        if (data?.ok) {
-          console.log('Logged in!', data);
-          localStorage.setItem('passcode', passCode);
-        } else {
-          console.log('Failed to login!', data);
-          setError('Invalid passcode!');
-          setTab(LoginState.SELECT_USER_TYPE);
-        }
-      })
-      .catch((err) => {
-        console.log(err);
-        setLoading(false);
-        console.log('Failed to login!');
-        setError('Network Error!');
-        setTab(LoginState.SELECT_USER_TYPE);
+
+    let idToken: string;
+    try {
+      idToken = await getGoogleIdToken();
+    } catch (err: any) {
+      if (err?.code !== 'auth/popup-closed-by-user') {
+        setError(LOGIN_ERROR_MESSAGES.GOOGLE_FAILED);
+      }
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const result = await signIn('credentials', {
+        username: passCode.substring(0, 3).toUpperCase(),
+        password: passCode.substring(3).toUpperCase(),
+        idToken,
+        redirect: false,
+        callbackUrl: uri || APP_ROUTES.home,
       });
+      if (result?.ok) {
+        router.replace(uri || APP_ROUTES.home);
+        return;
+      }
+      const code = result?.error ?? '';
+      if (code === 'INVALID_CODE') resetToCode(LOGIN_ERROR_MESSAGES[code]);
+      else setError(LOGIN_ERROR_MESSAGES[code] ?? 'Sign-in failed. Please try again.');
+    } catch (err) {
+      console.error(err);
+      setError('Network error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -123,79 +149,70 @@ export const LoginScreen = () => {
               </div>
             </div>
 
-            {loading && (
-              <div className="flex flex-row items-center justify-center gap-2">
-                <div className="size-5 animate-spin rounded-full border-y-2 border-neutral-100"></div>
-                <p className="text-neutral-100">Logging in...</p>
-              </div>
-            )}
-            {status === 'authenticated' &&
-              (!user ? (
-                <div className="flex flex-row items-center justify-center gap-2">
-                  <div className="size-5 animate-spin rounded-full border-y-2 border-neutral-100"></div>
-                  <p className="text-neutral-100">Verifying...</p>
-                </div>
-              ) : (
-                verifiedUserEmail !== user?.email && (
-                  <div>
-                    <p className="text-center text-xs text-neutral-400">
-                      Are you{' '}
-                      <span className="font-medium text-neutral-100">
-                        {user?.email}?
-                      </span>{' '}
-                      Please verify by signing in via google.
-                    </p>{' '}
-                  </div>
-                )
-              ))}
+            {loading && <Spinner label="Signing in..." />}
           </div>
           <InstallButton
             onInstallUpdate={(inst) => {
               if (inst) setTab(InstallState.INSTALL_CHECK);
             }}
           />
-          {tab === LoginState.LOGIN_CODE && (
-            <LoginPassCode
-              onPassCodeFilled={(passCode) => {
-                loginWithPassCode(passCode);
-                setEnteredPasscode(passCode);
-                setTab(InstallState.SPLASH);
-              }}
-            />
-          )}
           {tab === LoginState.SELECT_USER_TYPE && (
             <LoginButtons onContinue={() => setTab(LoginState.LOGIN_CODE)} />
           )}
-          {status === 'authenticated' &&
-            user &&
-            verifiedUserEmail !== user?.email && (
-              <GoogleVerifyPage
-                signOutUser={signOutUser}
-                setError={setError}
-                passcode={enteredPasscode}
-              />
-            )}
-          {status === 'authenticated' &&
-            verifiedUserEmail === user?.email &&
-            user && (
-              <GreyButton
-                onClick={(e: React.MouseEvent) => {
-                  e.preventDefault();
-                  if (uri) router.replace(uri);
-                  else router.push(APP_ROUTES.home);
-                }}
+          {tab === LoginState.LOGIN_CODE && (
+            <LoginPassCode
+              onPassCodeFilled={(code) => {
+                setError(null);
+                setPassCode(code.toUpperCase());
+                setTab(LoginState.GOOGLE);
+              }}
+            />
+          )}
+          {tab === LoginState.GOOGLE && passCode && !loading && (
+            <div className="flex w-3/4 flex-col items-center gap-3">
+              <p className="text-center text-xs text-neutral-400">
+                Code{' '}
+                <span className="font-mono tracking-[0.3em] text-neutral-100">
+                  {passCode.slice(0, 3)}•••
+                </span>
+                . Now sign in with any Google account linked to you.
+              </p>
+              <button
+                onClick={continueWithGoogle}
+                className="flex w-full flex-row items-center justify-center gap-2 rounded-[0.5rem] bg-white px-4 py-2 font-medium text-black hover:bg-neutral-200"
               >
-                Enter App
-              </GreyButton>
-            )}
-          {/* {status === "authenticated" && <Logout user={user} signOut={signOut} />} */}
+                <Image
+                  src="/icons/google.svg"
+                  alt=""
+                  width={20}
+                  height={20}
+                />
+                <span>Continue with Google</span>
+              </button>
+              <button
+                onClick={() => resetToCode(null)}
+                className="text-xs text-neutral-500 hover:text-neutral-300"
+              >
+                Use a different code
+              </button>
+            </div>
+          )}
+          {isSignedIn && user && (
+            <GreyButton
+              onClick={(e: React.MouseEvent) => {
+                e.preventDefault();
+                if (uri) router.replace(uri);
+                else router.push(APP_ROUTES.home);
+              }}
+            >
+              Enter App
+            </GreyButton>
+          )}
           {error && (
-            <p className="mt-4 text-center text-xs text-red-500">{error}</p>
+            <p className="text-center text-xs text-red-500">{error}</p>
           )}
         </div>
       </MobileBox>
     </div>
-
-    // </div>
   );
 };

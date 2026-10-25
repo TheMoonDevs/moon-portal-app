@@ -1,79 +1,93 @@
-import NextAuth from 'next-auth';
+import NextAuth, { type NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 
+import {
+  getSignInEmails,
+  GoogleTokenError,
+  verifyGoogleIdToken,
+} from '@/lib/auth/googleIdToken';
+import { LOGIN_ERRORS } from '@/lib/auth/loginErrors';
+import { isSuperAdminEmail } from '@/lib/permissions/superAdmin';
 import { db } from '@/lib/mongodb/db-client';
 
-export const authOptions = {
-  // Configure one or more authentication providers
+/*
+ * Sign-in needs two things together:
+ *   1. the person's portal code (username + password, e.g. ABC123), and
+ *   2. a Google sign-in with ANY Google account linked to that user
+ *      (their primary email or one of `linkedEmails`).
+ * The Google token is verified on the server, so a code alone never opens a
+ * session.
+ */
+export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
-      // The name to display on the sign in form (e.g. 'Sign in with...')
-      name: 'Credentials',
-      // The credentials is used to generate a suitable form on the sign in page.
-      // You can specify whatever fields you are expecting to be submitted.
-      // e.g. domain, username, password, 2FA token, etc.
-      // You can pass any HTML attribute to the <input> tag through the object.
+      name: 'Passcode + Google',
       credentials: {
-        username: { label: 'username', type: 'text', placeholder: 'jsmith' },
+        username: { label: 'username', type: 'text' },
         password: { label: 'password', type: 'password' },
+        idToken: { label: 'idToken', type: 'text' },
       },
-      async authorize(credentials, req) {
-        //console.log(credentials);
+      async authorize(credentials) {
         if (!credentials?.username || !credentials?.password) {
-          // Any object returned will be saved in `user` property of the JWT
-          return null;
+          throw new Error(LOGIN_ERRORS.INVALID_CODE);
+        }
+        if (!credentials.idToken) {
+          throw new Error(LOGIN_ERRORS.GOOGLE_FAILED);
         }
 
-        // You need to provide your own logic here that takes the credentials
-        // submitted and returns either a object representing a user or value
-        // that is false/null if the credentials are invalid.
-        // e.g. return { id: 1, name: 'J Smith', email: 'jsmith@example.com' }
-        // You can also use the `req` object to obtain additional parameters
-        // (i.e., the request IP address)
-        //console.log("credentials", credentials);
-        try {
-          const user = await db.user.findFirst({
-            where: {
-              username: credentials.username,
-              password: credentials.password,
-            },
-          });
-          console.log('authorise user', user);
-          if (user) {
-            return user;
-          }
-          return null;
-        } catch (e) {
-          console.log('error', e);
-          return null;
+        const user = await db.user.findFirst({
+          where: {
+            username: credentials.username,
+            password: credentials.password,
+          },
+        });
+        if (!user) throw new Error(LOGIN_ERRORS.INVALID_CODE);
+        if (user.status && user.status !== 'ACTIVE') {
+          throw new Error(LOGIN_ERRORS.INACTIVE);
         }
+
+        let googleEmail: string;
+        try {
+          googleEmail = await verifyGoogleIdToken(credentials.idToken);
+        } catch (e) {
+          if (e instanceof GoogleTokenError) {
+            throw new Error(LOGIN_ERRORS.GOOGLE_FAILED);
+          }
+          throw e;
+        }
+
+        if (!getSignInEmails(user).includes(googleEmail)) {
+          throw new Error(LOGIN_ERRORS.EMAIL_NOT_LINKED);
+        }
+
+        return {
+          id: String(user.id),
+          name: user.name ?? user.username,
+          email: user.email ?? googleEmail,
+          googleEmail,
+        } as any;
       },
     }),
-    // ...add more providers here
   ],
   callbacks: {
-    async session({ session, user, token }: any) {
-      //console.log('session', session, user, token)
+    async session({ session, token }: any) {
       if (token) {
-        // session.accountId = token.accountId;
-
-        // const _user = await db.user.findFirst({
-        //   where: { id: token.accountId },
-        // });
-        // console.log("session user", token, user);
         session.user = {
           name: token?.name,
           email: token?.email,
           id: token?.accountId,
+          googleEmail: token?.googleEmail ?? null,
+          isSuperAdmin: isSuperAdminEmail(token?.googleEmail),
         };
       }
       return session;
     },
-    async jwt({ token, user, account, profile, isNewUser }: any) {
-      //console.log('jwt', user, account, profile, isNewUser)
+    async jwt({ token, user, account }: any) {
       if (account) {
         token.accountId = account.providerAccountId;
-        token.isAdmin = account.isAdmin;
+      }
+      if (user?.googleEmail) {
+        token.googleEmail = user.googleEmail;
       }
       return token;
     },

@@ -224,6 +224,20 @@ export async function PUT(request: Request) {
       delete (rest as Record<string, unknown>).deniedPermissions;
       delete (rest as Record<string, unknown>).isAdmin;
     }
+    // People link their own Google accounts through /api/user/linked-emails,
+    // which proves they own the account. Only user editors set it directly.
+    if (actor && !allowed) {
+      delete (rest as Record<string, unknown>).linkedEmails;
+    }
+    if (Array.isArray(rest.linkedEmails)) {
+      rest.linkedEmails = Array.from(
+        new Set(
+          rest.linkedEmails
+            .filter((e: unknown) => typeof e === 'string' && e.includes('@'))
+            .map((e: string) => e.trim().toLowerCase()),
+        ),
+      );
+    }
 
     const oldUser = await db.user.findFirst({
       where: {

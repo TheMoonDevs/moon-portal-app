@@ -1,4 +1,4 @@
-import { GoogleAuthProvider, User, signInWithPopup } from "firebase/auth"
+import { GoogleAuthProvider, User, signInWithPopup, signOut } from "firebase/auth"
 import { FirebaseSDK } from "../services/firebase";
 
 export const useAuthSession = () => {
@@ -19,7 +19,7 @@ export const useAuthSession = () => {
           const errorCode = error.code;
           const errorMessage = error.message;
           // The email of the user's account used.
-          const email = error.customData.email;
+          const email = error.customData?.email;
           // The AuthCredential type that was used.
           const credential = GoogleAuthProvider.credentialFromError(error);
           console.log("google sign in error", errorCode, errorMessage, email);
@@ -27,6 +27,18 @@ export const useAuthSession = () => {
         });
       })
     }
+
+    /**
+     * Opens the Google account chooser and returns a Firebase ID token for the
+     * chosen account. The server verifies the token; the Firebase session
+     * itself is not kept.
+     */
+    const getGoogleIdToken = async (): Promise<string> => {
+      const user = await signInWithSocial();
+      const idToken = await user.getIdToken();
+      await signOut(FirebaseSDK.getFirebaseAuth()).catch(() => undefined);
+      return idToken;
+    }
       
-    return { signInWithSocial }
+    return { signInWithSocial, getGoogleIdToken }
 }

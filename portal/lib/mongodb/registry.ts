@@ -82,6 +82,11 @@ export const modelMetaMap = defineModelRegistry({
     objectIdFields: ['userId', 'uploadedByUserId'],
   },
   configData: { collection: 'ConfigData' },
+  company: { collection: 'Company' },
+  companyRole: { collection: 'CompanyRole' },
+  companyMember: { collection: 'CompanyMember' },
+  project: { collection: 'Project' },
+  task: { collection: 'Task' },
 });
 
 export type ModelName = keyof typeof modelMetaMap;

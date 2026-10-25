@@ -10,3 +10,5 @@ export * from './catalog';
 export * from './defaults';
 export * from './matching';
 export * from './PermissionError';
+export * from './company';
+export * from './superAdmin';

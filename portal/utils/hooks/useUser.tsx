@@ -29,11 +29,14 @@ export const useUser = () => {
   const { data: session, status } = useSession();
   const dispatch = useAppDispatch();
   const cachedUser = useAppSelector((state) => state.auth.user);
-  const verifiedUserEmail = useAppSelector(
-    (state) => state.auth.verifiedUserEmail,
-  );
 
-  const sessionUser = session?.user as (User & { id?: string }) | undefined;
+  const sessionUser = session?.user as
+    | (User & {
+        id?: string;
+        googleEmail?: string | null;
+        isSuperAdmin?: boolean;
+      })
+    | undefined;
   const sessionUserId = sessionUser?.id;
 
   const isCacheForSession = !!sessionUserId && cachedUser?.id === sessionUserId;
@@ -81,7 +84,9 @@ export const useUser = () => {
   return {
     user,
     status: status as AuthStatus,
-    verifiedUserEmail,
+    /** The Google account verified at sign-in; null for old sessions. */
+    googleEmail: sessionUser?.googleEmail ?? null,
+    isSuperAdmin: !!sessionUser?.isSuperAdmin,
     refetchUser: () => sessionUserId && fetchProfile(sessionUserId),
     signOutUser: () => {
       dispatch(clearReduxUser());

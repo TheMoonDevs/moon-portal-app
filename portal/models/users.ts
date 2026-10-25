@@ -27,6 +27,11 @@ export type User = Loose<
     password: string;
     passphrase?: Nullable<string>;
     email?: Nullable<string>;
+    /**
+     * Extra Google accounts that may be used to sign in, on top of `email`.
+     * Stored lower-cased.
+     */
+    linkedEmails?: Nullable<string[]>;
     name?: Nullable<string>;
     avatar?: Nullable<string>;
     banner?: Nullable<string>;

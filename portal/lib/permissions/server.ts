@@ -6,6 +6,7 @@ import { authOptions } from '@/pages/api/auth/[...nextauth]';
 
 import { isAllowed } from './defaults';
 import { PERMISSION_DENIED_CODE } from './PermissionError';
+import { isSuperAdminEmail } from './superAdmin';
 
 export interface SessionUser {
   id: string;
@@ -15,6 +16,10 @@ export interface SessionUser {
   userType?: string;
   permissions?: string[] | null;
   deniedPermissions?: string[] | null;
+  /** The Google account verified at sign-in. */
+  googleEmail?: string | null;
+  /** Only true for the hard-coded super admin, see ./superAdmin. */
+  isSuperAdmin?: boolean;
 }
 
 type PermissionMode = 'enforce' | 'audit' | 'off';
@@ -37,7 +42,7 @@ function getMode(): PermissionMode {
 export async function getSessionUser(): Promise<SessionUser | null> {
   const session = (await getServerSession(authOptions as any)) as any;
   const sessionUser = session?.user as
-    | { id?: string; email?: string }
+    | { id?: string; email?: string; googleEmail?: string | null }
     | undefined;
   if (!sessionUser) return null;
 
@@ -65,6 +70,8 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     deniedPermissions: Array.isArray(record.deniedPermissions)
       ? record.deniedPermissions
       : [],
+    googleEmail: sessionUser.googleEmail ?? null,
+    isSuperAdmin: isSuperAdminEmail(sessionUser.googleEmail),
   };
 }
 
@@ -143,7 +150,7 @@ export async function checkPermission(
  * from the handler when the acting user lacks `requiredPermission`, or `null`
  * when the request may proceed.
  *
- *   const denied = await enforcePermission('worksheets:edit');
+ *   const denied = await enforcePermission('projects:edit');
  *   if (denied) return denied;
  */
 export async function enforcePermission(
@@ -182,6 +189,32 @@ export async function requireAuthedPermission(permission: string): Promise<{
   }
   if (!isAllowed(user, permission)) {
     return { response: permissionDeniedResponse(permission), user };
+  }
+  return { response: null, user };
+}
+
+/**
+ * Guard for super-admin-only actions (creating or archiving companies). Needs a
+ * signed-in session whose Google-verified email is on the super-admin list. It
+ * ignores PERMISSIONS_MODE and every grant, so it cannot be bypassed by an API
+ * key, a sessionless call or a permission edit.
+ */
+export async function requireSuperAdmin(): Promise<{
+  response: NextResponse | null;
+  user: SessionUser | null;
+}> {
+  const user = await getSessionUser();
+  if (!user) {
+    return {
+      response: NextResponse.json(
+        { status: 'fail', error: 'Authentication required.' },
+        { status: 401 },
+      ),
+      user: null,
+    };
+  }
+  if (!user.isSuperAdmin) {
+    return { response: permissionDeniedResponse('companies:create'), user };
   }
   return { response: null, user };
 }

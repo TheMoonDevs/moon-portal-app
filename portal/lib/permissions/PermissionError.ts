@@ -6,7 +6,7 @@
 export const PERMISSION_DENIED_CODE = 'PERMISSION_DENIED';
 
 export interface PermissionErrorDetail {
-  /** The permission the caller was missing, e.g. `worksheets:edit`. */
+  /** The permission the caller was missing, e.g. `projects:edit`. */
   requiredPermission?: string;
   /** Human-readable message. */
   message?: string;

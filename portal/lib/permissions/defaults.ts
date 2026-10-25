@@ -13,12 +13,6 @@ import { hasPermission } from './matching';
  * absent and must be granted explicitly by an admin.
  */
 export const BASE_MEMBER_POLICIES: string[] = [
-  // Worksheets: members read/append/edit and run server-side actions;
-  // delete is reserved.
-  'worksheets:read',
-  'worksheets:append',
-  'worksheets:edit',
-  'worksheets:execute',
   // Worklogs are self-service.
   'worklogs:read',
   'worklogs:edit',
@@ -36,15 +30,9 @@ export const BASE_MEMBER_POLICIES: string[] = [
   // buff levels); creating/editing badge templates stays admin-only.
   'badges:read',
   'badges:award',
-  // Short links (delete reserved).
-  'shortlinks:read',
-  'shortlinks:create',
   // Files.
   'files:read',
   'files:create',
-  // AI studio.
-  'studio:read',
-  'studio:edit',
   // Reading user records is needed to load one's own profile & team directory.
   'users:read',
 ];
@@ -53,14 +41,12 @@ export const BASE_MEMBER_POLICIES: string[] = [
  * Clients are external users with a much smaller surface — mostly read access.
  */
 export const BASE_CLIENT_POLICIES: string[] = [
-  'worksheets:read',
   'notifications:read',
   'notifications:edit',
   'events:read',
   'files:read',
   'files:create',
   'users:read',
-  'studio:read',
 ];
 
 /**
@@ -68,13 +54,13 @@ export const BASE_CLIENT_POLICIES: string[] = [
  * for documentation only — an admin must grant these explicitly (or the user
  * must be a full admin). Kept in sync with the catalog by review.
  *
- *   worksheets:delete
  *   users:create, users:edit, users:delete
  *   permissions:read, permissions:grant, permissions:revoke
  *   badges:create, badges:edit, badges:delete (badges:award is a default)
  *   pointers:delete
  *   events:create, events:edit, events:delete
- *   shortlinks:delete
+ *   companies:*, members:*, roles:*, projects:*, tasks:* (granted per
+ *   company through company roles, see ./company)
  */
 
 export interface PermissionUser {

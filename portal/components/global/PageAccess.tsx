@@ -35,13 +35,15 @@ export const PageAccess = ({
   requiredPermission?: string;
   hasBottombar?: boolean;
 }) => {
-  const { user, status, verifiedUserEmail } = useUser();
+  const { user, status, googleEmail } = useUser();
   const router = useRouter();
 
   const isGuarded = Boolean(
     isAuthRequired || isAdminRequired || requiredPermission,
   );
-  const isGoogleVerified = !!user?.email && verifiedUserEmail === user.email;
+  // Sessions from before Google sign-in became part of login carry no
+  // googleEmail and are sent back through the login screen.
+  const isGoogleVerified = !!googleEmail;
   const isAdminSatisfied = !isAdminRequired || Boolean(user?.isAdmin);
   const isPermissionSatisfied =
     !requiredPermission || isAllowed(user ?? undefined, requiredPermission);

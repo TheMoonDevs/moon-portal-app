@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 export enum LoginState {
   SELECT_USER_TYPE = 'SELECT_USER_TYPE',
   LOGIN_CODE = 'LOGIN_CODE',
+  GOOGLE = 'GOOGLE',
 }
 
 export const MobileBox = ({
