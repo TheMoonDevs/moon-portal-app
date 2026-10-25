@@ -40,7 +40,7 @@ export type User = Loose<
     isAdmin?: boolean;
     /**
      * Access-control policies granted to this user, expressed as
-     * `resource:action` strings (e.g. `worksheets:read`, `users:edit`).
+     * `resource:action` strings (e.g. `worklogs:read`, `users:edit`).
      * These are ADDED on top of the user's role defaults. Managed via
      * /api/user/permissions.
      */

@@ -11,18 +11,6 @@ const LINKS = [
     color: 'green',
   },
   {
-    icon: 'description',
-    title: 'Worksheets',
-    route: APP_ROUTES.worksheets,
-    color: 'sky',
-  },
-  {
-    icon: 'open_in_new',
-    title: 'URL Shortener',
-    route: APP_ROUTES.urlShortener,
-    color: 'rose',
-  },
-  {
     icon: '/images/thirdparty/slack.png',
     title: 'Chat with the Team',
     route: APP_SOCIAL.slack,

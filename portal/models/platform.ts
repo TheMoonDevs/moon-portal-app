@@ -33,14 +33,6 @@ export type FileUpload = Loose<
   }
 >;
 
-export type ShortLink = Loose<
-  BaseModel & {
-    slug: string;
-    redirectTo: string;
-    params?: OptionalNullable<JsonObject>;
-  }
->;
-
 export type ConfigData = Loose<
   BaseModel & {
     configId: string;
@@ -53,5 +45,4 @@ export type ConfigData = Loose<
 
 export const eventSchemas = createCrudSchemas<Event>();
 export const fileUploadSchemas = createCrudSchemas<FileUpload>();
-export const shortLinkSchemas = createCrudSchemas<ShortLink>();
 export const configDataSchemas = createCrudSchemas<ConfigData>();

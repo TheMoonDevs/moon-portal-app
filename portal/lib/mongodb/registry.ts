@@ -81,7 +81,6 @@ export const modelMetaMap = defineModelRegistry({
     collection: 'FileUpload',
     objectIdFields: ['userId', 'uploadedByUserId'],
   },
-  shortLink: { collection: 'ShortLink' },
   configData: { collection: 'ConfigData' },
 });
 
