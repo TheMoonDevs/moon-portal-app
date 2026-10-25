@@ -25,9 +25,12 @@ import {
   TextArea,
   TextInput,
 } from '../shared/AdminUI';
+import { ImageField } from '../shared/ImageField';
+import { BrandKitEditor } from './BrandKitEditor';
 import {
   AvatarStack,
   ColorPicker,
+  CompanyMark,
   CompanyPicker,
   errorText,
   NeedsCompany,
@@ -51,6 +54,7 @@ const emptyDraft = {
   description: '',
   status: 'ACTIVE',
   color: '#0ea5e9',
+  logo: '',
   startDate: '',
   dueDate: '',
   leadIds: [] as string[],
@@ -84,6 +88,7 @@ const ProjectForm = ({
             description: project.description ?? '',
             status: project.status,
             color: project.color ?? '#0ea5e9',
+            logo: project.logo ?? '',
             startDate: project.startDate ?? '',
             dueDate: project.dueDate ?? '',
             leadIds: project.leadIds ?? [],
@@ -104,6 +109,7 @@ const ProjectForm = ({
     try {
       const payload = {
         ...draft,
+        logo: draft.logo || null,
         startDate: draft.startDate || null,
         dueDate: draft.dueDate || null,
       };
@@ -156,6 +162,13 @@ const ProjectForm = ({
             value={draft.description}
             onChange={(e) => set('description', e.target.value)}
           />
+        </Field>
+        <Field
+          label="Logo"
+          hint="Optional. A square image works best."
+          className="md:col-span-2"
+        >
+          <ImageField value={draft.logo} onChange={(url) => set('logo', url)} />
         </Field>
         <Field label="Status">
           <NativeSelect
@@ -223,6 +236,7 @@ export const AdminProjects = ({
   const [editing, setEditing] = useState<ProjectRow | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [archiving, setArchiving] = useState<ProjectRow | null>(null);
+  const [branding, setBranding] = useState<ProjectRow | null>(null);
   const [busy, setBusy] = useState(false);
 
   const companyId = selectedCompanyId;
@@ -327,10 +341,18 @@ export const AdminProjects = ({
             return (
               <Panel key={project.id} className="flex flex-col gap-4 p-4">
                 <div className="flex items-start gap-3">
-                  <span
-                    className="mt-1 size-3 shrink-0 rounded-full"
-                    style={{ backgroundColor: project.color || '#0ea5e9' }}
-                  />
+                  {project.logo ? (
+                    <CompanyMark
+                      name={project.name}
+                      logo={project.logo}
+                      size={32}
+                    />
+                  ) : (
+                    <span
+                      className="mt-1 size-3 shrink-0 rounded-full"
+                      style={{ backgroundColor: project.color || '#0ea5e9' }}
+                    />
+                  )}
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold text-white">
                       {project.name}
@@ -375,6 +397,13 @@ export const AdminProjects = ({
                     />
                     {can(project.companyId, 'projects:edit') && (
                       <IconAction
+                        icon="palette"
+                        label="Brand kit"
+                        onClick={() => setBranding(project)}
+                      />
+                    )}
+                    {can(project.companyId, 'projects:edit') && (
+                      <IconAction
                         icon="edit"
                         label="Edit project"
                         onClick={() => {
@@ -409,6 +438,14 @@ export const AdminProjects = ({
           onSaved={load}
         />
       )}
+      <BrandKitEditor
+        open={!!branding}
+        onOpenChange={(open) => !open && setBranding(null)}
+        name={branding?.name ?? 'Project'}
+        endpoint={`/api/projects/${branding?.id}`}
+        initial={branding?.brandKit}
+        onSaved={load}
+      />
       <ConfirmDialog
         open={!!archiving}
         onOpenChange={(open) => !open && setArchiving(null)}

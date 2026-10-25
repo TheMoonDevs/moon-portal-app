@@ -5,6 +5,7 @@ import {
   type Loose,
   type Nullable,
 } from './shared/base';
+import type { BrandKit } from '../lib/brandKit';
 
 /*
  * Multi-company workspace: Company → Projects → Tasks.
@@ -50,6 +51,8 @@ export type Company = Loose<
     description?: Nullable<string>;
     logo?: Nullable<string>;
     color?: Nullable<string>;
+    /** Logos, colors, fonts, guide and other brand files. */
+    brandKit?: Nullable<BrandKit>;
     status: COMPANY_STATUS;
     createdById: string;
   }
@@ -88,6 +91,8 @@ export type Project = Loose<
     status: PROJECT_STATUS;
     color?: Nullable<string>;
     icon?: Nullable<string>;
+    logo?: Nullable<string>;
+    brandKit?: Nullable<BrandKit>;
     leadIds: string[];
     memberIds: string[];
     startDate?: Nullable<string>;
