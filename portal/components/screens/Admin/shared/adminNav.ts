@@ -7,7 +7,8 @@ export type AdminTabId =
   | 'companies'
   | 'projects'
   | 'tasks'
-  | 'roles';
+  | 'roles'
+  | 'hiring';
 
 export type AdminNavGroup = 'Workspace' | 'Companies' | 'Community';
 
@@ -23,6 +24,11 @@ export type AdminTab = {
    * who manage a company; the data inside is scoped to their companies.
    */
   access: 'admin' | 'company';
+  /**
+   * For `company` tabs: the company permission needed in at least one company
+   * to see the tab. Without it, the tab is shown to company managers.
+   */
+  permission?: string;
 };
 
 export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
@@ -76,6 +82,17 @@ export const ADMIN_TABS: AdminTab[] = [
     description: 'Major and minor tasks for each project.',
     group: 'Companies',
     access: 'company',
+  },
+  {
+    id: 'hiring',
+    label: 'Hiring',
+    icon: 'person_search',
+    title: 'Hiring',
+    description:
+      'Openings, their application forms and the people who applied.',
+    group: 'Companies',
+    access: 'company',
+    permission: 'hiring:read',
   },
   {
     id: 'roles',

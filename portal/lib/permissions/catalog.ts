@@ -79,6 +79,14 @@ export const PERMISSION_RESOURCES: ResourceDefinition[] = [
     scope: 'company',
   },
   {
+    key: 'hiring',
+    label: 'Hiring',
+    description:
+      'Job openings, their application forms and the candidates who applied. Only people with `hiring:read` see the hiring tab.',
+    actions: ['read', 'create', 'edit', 'delete'],
+    scope: 'company',
+  },
+  {
     key: 'users',
     label: 'Users',
     description: 'Team & client user records and profiles.',

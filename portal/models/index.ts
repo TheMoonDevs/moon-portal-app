@@ -1,4 +1,5 @@
 export * from './badges';
+export * from './hiring';
 export * from './notifications';
 export * from './platform';
 export * from './shared/base';

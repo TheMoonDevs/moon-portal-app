@@ -1,6 +1,7 @@
 export class DbClient {}
 
 export * from '@/models/badges';
+export * from '@/models/hiring';
 export * from '@/models/notifications';
 export * from '@/models/platform';
 export * from '@/models/shared/base';

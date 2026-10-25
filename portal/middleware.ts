@@ -5,7 +5,8 @@ import { NextResponse } from 'next/server';
 import { rejectIfApiKeyMissing } from '@/middlewares/apiKey';
 import { applyCorsHeaders } from '@/middlewares/cors';
 
-const PUBLIC_PAGES = ['/login', '/logout'];
+// `/apply/<slug>` is where candidates fill in a job application.
+const PUBLIC_PAGES = ['/login', '/logout', '/apply'];
 
 const isPublicPage = (pathname: string) =>
   PUBLIC_PAGES.some(

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Toaster } from 'sonner';
 
+import { hasPermission } from '@/lib/permissions/matching';
 import { cn } from '@/lib/utils';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
 import { useUser } from '@/utils/hooks/useUser';
@@ -14,6 +15,7 @@ import { PortalSdk } from '@/utils/services/PortalSdk';
 import { AdminUsers } from './AdminUsers';
 import AdminBadges from './badge-template/AdminBadges';
 import EventForm from './Events/EventForm';
+import { AdminHiring } from './Hiring/AdminHiring';
 import { AdminOverview } from './Overview/AdminOverview';
 import SendNotifications from './SendNotifications';
 import { AdminCommandPalette } from './shared/AdminCommandPalette';
@@ -43,10 +45,28 @@ export const AdminPage = () => {
   const workspace = useWorkspace();
   const isAdmin = !!adminUser?.isAdmin;
 
-  // Portal admins see every tab; company managers only the company tabs.
+  // Portal admins see every tab. Everyone else sees the company tabs they
+  // hold the access for: managers the management tabs, and anyone with a tab's
+  // own permission (such as hiring) in some company that tab.
   const visibleTabs = useMemo(
-    () => ADMIN_TABS.filter((tab) => tab.access === 'company' || isAdmin),
-    [isAdmin],
+    () =>
+      ADMIN_TABS.filter((tab) => {
+        if (isAdmin) return true;
+        if (tab.access !== 'company') return false;
+        if (tab.permission) {
+          const permission = tab.permission;
+          return workspace.companies.some((c) =>
+            hasPermission(c.permissions, permission),
+          );
+        }
+        return workspace.isSuperAdmin || workspace.managedCompanies.length > 0;
+      }),
+    [
+      isAdmin,
+      workspace.companies,
+      workspace.isSuperAdmin,
+      workspace.managedCompanies.length,
+    ],
   );
 
   const [users, setUsers] = useState<User[]>([]);
@@ -164,6 +184,13 @@ export const AdminPage = () => {
     [users],
   );
 
+  const companyCount = new Set(
+    [...workspace.managedCompanies, ...workspace.hiringCompanies].map(
+      (c) => c.company.id,
+    ),
+  ).size;
+  const companyCountLabel = `${companyCount} ${companyCount === 1 ? 'company' : 'companies'}`;
+
   const renderTab = () => {
     switch (activeTab.id) {
       case 'overview':
@@ -213,6 +240,14 @@ export const AdminPage = () => {
             onSelectCompany={selectCompany}
             selectedProjectId={projectId}
             onSelectProject={setProjectId}
+          />
+        );
+      case 'hiring':
+        return (
+          <AdminHiring
+            users={users}
+            selectedCompanyId={companyId}
+            onSelectCompany={selectCompany}
           />
         );
       case 'roles':
@@ -415,7 +450,7 @@ export const AdminPage = () => {
               <p className="text-[10px] uppercase tracking-wider text-neutral-500">
                 {isAdmin
                   ? `${counts.members} members · ${counts.clients} clients`
-                  : `${workspace.managedCompanies.length} companies`}
+                  : companyCountLabel}
               </p>
             </div>
             <UserAvatar

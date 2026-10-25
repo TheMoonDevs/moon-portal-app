@@ -102,15 +102,23 @@ export const useWorkspace = () => {
   const managedCompanies = companies.filter((c) =>
     MANAGE_PERMISSIONS.some((p) => hasPermission(c.permissions, p)),
   );
+  const hiringCompanies = companies.filter((c) =>
+    hasPermission(c.permissions, 'hiring:read'),
+  );
 
   return {
     loading,
     companies,
     managedCompanies,
+    /** Companies where the user can see hiring. */
+    hiringCompanies,
     isSuperAdmin: !!data?.isSuperAdmin,
     /** Whether the admin console has anything for this user. */
     canOpenAdmin:
-      !!user?.isAdmin || !!data?.isSuperAdmin || managedCompanies.length > 0,
+      !!user?.isAdmin ||
+      !!data?.isSuperAdmin ||
+      managedCompanies.length > 0 ||
+      hiringCompanies.length > 0,
     can,
     refresh,
   };

@@ -59,7 +59,7 @@ export const BASE_CLIENT_POLICIES: string[] = [
  *   badges:create, badges:edit, badges:delete (badges:award is a default)
  *   pointers:delete
  *   events:create, events:edit, events:delete
- *   companies:*, members:*, roles:*, projects:*, tasks:* (granted per
+ *   companies:*, members:*, roles:*, projects:*, tasks:*, hiring:* (granted per
  *   company through company roles, see ./company)
  */
 
