@@ -6,7 +6,7 @@ import { WorklogsPage } from '@/components/screens/Worklogs/WorklogsPage';
 
 export const metadata: Metadata = {
   manifest: '/manifest.json', // we are accessing our manifest file here
-  title: 'My Worklogs - TheMoonDevs',
+  title: 'My Worklogs - Portal',
   // TODO - change favicon to check icon on green circle
   // icon: "/favicon.ico",
 };

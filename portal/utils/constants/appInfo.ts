@@ -4,16 +4,10 @@ export enum APP_ROUTES {
   logout = '/logout',
   admin = '/admin',
   userEditor = '/admin/user/editor',
-  badgeEditor = '/admin/badge/editor',
   notifications = '/notifications',
   settings = '/settings',
   userWorklogs = '/user/worklogs',
   userWorklogSummary = '/user/worklogs/summary',
-}
-
-export enum APP_SOCIAL {
-  slack = 'https://app.slack.com/client/T01J1LR0YDN',
-  notion = 'https://app.notion.com/p/498fa11b889482e9b3fd81ee536c5964?v=941fa11b88948238b81288f1b4348172&source=copy_link',
 }
 
 export enum LOCAL_STORAGE {

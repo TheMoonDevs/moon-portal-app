@@ -8,18 +8,6 @@ import {
   type OptionalNullable,
 } from './shared/base';
 
-export type Event = Loose<
-  BaseModel & {
-    name: string;
-    subTitle: string;
-    link: string;
-    date: string;
-    month: number;
-    year: number;
-    time: string;
-  }
->;
-
 export type FileUpload = Loose<
   BaseModel & {
     userId?: Nullable<string>;
@@ -43,6 +31,5 @@ export type ConfigData = Loose<
   }
 >;
 
-export const eventSchemas = createCrudSchemas<Event>();
 export const fileUploadSchemas = createCrudSchemas<FileUpload>();
 export const configDataSchemas = createCrudSchemas<ConfigData>();

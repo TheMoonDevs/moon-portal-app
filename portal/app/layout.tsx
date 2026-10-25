@@ -22,9 +22,9 @@ const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   manifest: '/manifest.json', // we are accessing our manifest file here
-  title: 'The Moon Devs',
+  title: 'Portal',
   description:
-    'A community of developers and designers building the future of the web',
+    'Worklogs, projects and progress for every company you work with.',
 };
 
 export default function RootLayout({

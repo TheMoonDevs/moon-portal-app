@@ -45,7 +45,6 @@ import {
   getUpdatedLogsLater,
 } from '../WorklogBreakdown/BreakdownMetrics';
 import MetricCard, { SquareCard } from '../WorklogBreakdown/MetricCard';
-import Pointers from './Pointers';
 import { getLatestWorklogPerDate } from './WorklogSummaryView';
 
 const Pattern = dynamic(() => import('./Pattern'), {
@@ -80,7 +79,7 @@ const BarChart = dynamic(() => import('./Histogram'), {
   ),
 });
 
-const tabs: string[] = ['POINTERS', 'ANALYTICS', 'STATS', 'GROWTH', 'MISSIONS'];
+const tabs: string[] = ['ANALYTICS', 'STATS'];
 const icons = [
   { icon: 'show_chart', label: 'Show Lines Chart' },
   { icon: 'bar_chart', label: 'Show Histogram' },
@@ -98,7 +97,7 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
   isYearly,
 }) => {
   const metrics = calculateMetrics(worklogSummary, isMonthly, isYearly);
-  const [activeTab, setActiveTab] = useState('POINTERS');
+  const [activeTab, setActiveTab] = useState('ANALYTICS');
   const [activeIndex, setActiveIndex] = useState(0);
   const [gridVisible, setGridVisible] = useState(true);
   const dispatch = useAppDispatch();
@@ -398,24 +397,6 @@ const WorklogBreakdown: React.FC<WorklogBreakdownProps> = ({
               </table>
             </div>
           </>
-        )}
-        {/* POINTERS */}
-        {activeTab === 'POINTERS' && (
-          <div className="h-full">
-            <Pointers />
-          </div>
-        )}
-        {/* GROWTH */}
-        {activeTab === 'GROWTH' && (
-          <div className="flex items-center justify-center p-4">
-            Coming soon, Stay tuned!
-          </div>
-        )}{' '}
-        {/* MISSIONS */}
-        {activeTab === 'MISSIONS' && (
-          <div className="flex items-center justify-center p-4">
-            Coming soon, Stay tuned!
-          </div>
         )}
       </div>
     </main>

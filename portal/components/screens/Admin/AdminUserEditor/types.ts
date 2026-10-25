@@ -5,7 +5,6 @@ import type { ChangeEvent, Dispatch, SetStateAction } from 'react';
 export type UserSectionProps = {
   user: User;
   setUser: Dispatch<SetStateAction<User>>;
-  /** Handles inputs whose id maps to a field, `nested.field` included. */
+  /** Handles inputs whose id is the field name. */
   updateField: (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
-  updateTextareaField: (e: ChangeEvent<HTMLTextAreaElement>) => void;
 };

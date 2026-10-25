@@ -1,90 +1,55 @@
-import type { BadgeType } from '@db/client';
-import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
-
 import { db } from '@/lib/mongodb/db-client';
-import { enforcePermission } from '@/lib/permissions/server';
+import { isAllowed } from '@/lib/permissions/defaults';
+import { requireAuthedPermission } from '@/lib/permissions/server';
+import { readBadgeBody } from '@/lib/progress/badgeInput';
+import { fail, nowIso, ok } from '@/lib/workspace/server';
 
-export async function POST(req: NextRequest) {
-  const denied = await enforcePermission('badges:create');
-  if (denied) return denied;
+export const dynamic = 'force-dynamic';
 
-  if (!req.body) {
-    return new NextResponse(JSON.stringify({ error: 'Body not found' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
+/** Badge definitions, with how many people hold each. Editors also see inactive ones. */
+export async function GET() {
+  const { response, user } = await requireAuthedPermission('badges:read');
+  if (response || !user)
+    return response ?? fail(401, 'Authentication required.');
 
-  try {
-    const body = await req.json();
-    const { badgeName, badgeDescription, imageurl, criteria, badgeType } = body;
-
-    if (!badgeName || !badgeDescription || !criteria) {
-      return new NextResponse(
-        JSON.stringify({ error: 'Required fields are missing' }),
-        {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' },
-        },
-      );
-    }
-
-    const newBadge = await db.badgeTemplate.create({
-      data: {
-        name: badgeName,
-        description: badgeDescription,
-        imageurl,
-        criteria,
-        badgeType,
-      },
-    });
-
-    return new NextResponse(
-      JSON.stringify({
-        status: 'success',
-        data: newBadge,
-      }),
-      {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      },
-    );
-  } catch (error: any) {
-    console.error('Error creating badge details:', error);
-    return new NextResponse(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
+  const editor = isAllowed(user, 'badges:edit');
+  const badges = await db.badge.findMany({
+    where: editor ? {} : { isActive: true },
+    orderBy: [{ metric: 'asc' }, { threshold: 'asc' }],
+  });
+  const holders = await Promise.all(
+    badges.map((b: { id: string }) =>
+      db.userBadge.count({ where: { badgeId: b.id } }),
+    ),
+  );
+  return ok({
+    badges: badges.map((b: Record<string, unknown>, i: number) => ({
+      ...b,
+      holderCount: holders[i],
+    })),
+  });
 }
 
-export async function GET(req: NextRequest) {
-  const denied = await enforcePermission('badges:read');
-  if (denied) return denied;
+export async function POST(request: Request) {
+  const { response, user } = await requireAuthedPermission('badges:create');
+  if (response || !user)
+    return response ?? fail(401, 'Authentication required.');
 
-  try {
-    const { searchParams } = new URL(req.url);
-    const badgeType = searchParams.get('badgeType') as BadgeType | null;
-    const badges = await db.badgeTemplate.findMany({
-      where: badgeType ? { badgeType } : {},
-    });
+  const body = await request.json().catch(() => ({}));
+  const { data, error } = readBadgeBody(body);
+  if (error) return fail(400, error);
 
-    return new NextResponse(
-      JSON.stringify({
-        status: 'success',
-        data: badges,
-      }),
-      {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      },
-    );
-  } catch (error: any) {
-    console.error('Error fetching badges:', error);
-    return new NextResponse(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
+  const now = nowIso();
+  const badge = await db.badge.create({
+    data: {
+      isActive: true,
+      description: null,
+      imageUrl: null,
+      ...data,
+      createdById: user.id,
+      createdAt: now,
+      updatedAt: now,
+    },
+  });
+  return ok({ badge }, { status: 201 });
 }

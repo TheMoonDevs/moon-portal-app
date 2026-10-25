@@ -4,7 +4,11 @@ import type { CompanyRole } from '@db/client';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
-import { COMPANY_PERMISSION_RESOURCES } from '@/lib/permissions/catalog';
+import {
+  COMPANY_PERMISSION_RESOURCES,
+  PERMISSION_RESOURCES,
+  type ResourceDefinition,
+} from '@/lib/permissions/catalog';
 import { hasPermission } from '@/lib/permissions/matching';
 import { cn } from '@/lib/utils';
 import { useWorkspace } from '@/utils/hooks/useWorkspace';
@@ -21,6 +25,7 @@ import {
   Panel,
   PanelHeader,
   Pill,
+  Segmented,
   SkeletonRows,
   TextInput,
 } from '../shared/AdminUI';
@@ -31,15 +36,27 @@ const ACTION_LABELS: Record<string, string> = {
   create: 'Add',
   edit: 'Edit',
   delete: 'Remove',
+  grant: 'Give',
+  revoke: 'Take away',
 };
+
+type Scope = 'portal' | 'company';
+
+/** Portal and company roles share one shape. */
+type AnyRole = Pick<
+  CompanyRole,
+  'id' | 'key' | 'name' | 'description' | 'permissions' | 'isSystem'
+> & { memberCount?: number };
 
 /** A grid of resources × actions; one click toggles one permission. */
 const PermissionGrid = ({
+  resources,
   value,
   onChange,
   readOnly,
   canGrant,
 }: {
+  resources: ResourceDefinition[];
   value: string[];
   onChange: (permissions: string[]) => void;
   readOnly?: boolean;
@@ -56,13 +73,16 @@ const PermissionGrid = ({
 
   return (
     <div className="divide-y divide-white/[0.05] rounded-xl border border-white/[0.07]">
-      {COMPANY_PERMISSION_RESOURCES.map((resource) => (
+      {resources.map((resource) => (
         <div
           key={resource.key}
           className="flex flex-wrap items-center gap-3 px-4 py-3"
         >
           <div className="min-w-[140px] flex-1">
             <p className="text-sm text-neutral-200">{resource.label}</p>
+            {resource.scope === 'company' && resources.length > 5 && (
+              <p className="text-[11px] text-neutral-600">In every company</p>
+            )}
           </div>
           <div className="flex flex-wrap gap-2">
             {resource.actions.map((action) => {
@@ -105,31 +125,49 @@ export const AdminRoles = ({
   selectedCompanyId: string | null;
   onSelectCompany: (companyId: string) => void;
 }) => {
-  const { companies, can } = useWorkspace();
-  const [roles, setRoles] = useState<CompanyRole[]>([]);
+  const { companies, can, canPortal } = useWorkspace();
+  const portalAllowed = canPortal('permissions:read');
+  const [scope, setScope] = useState<Scope>('company');
+  const [roles, setRoles] = useState<AnyRole[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const [draft, setDraft] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState('');
-  const [deleting, setDeleting] = useState<CompanyRole | null>(null);
+  const [deleting, setDeleting] = useState<AnyRole | null>(null);
 
+  // People who only manage portal roles start on the portal side.
+  useEffect(() => {
+    if (portalAllowed && companies.length === 0) setScope('portal');
+  }, [portalAllowed, companies.length]);
+
+  const isPortal = scope === 'portal';
   const companyId = selectedCompanyId;
+  const base = isPortal ? '/api/roles' : `/api/companies/${companyId}/roles`;
   const myPermissions =
     companies.find((c) => c.company.id === companyId)?.permissions ?? [];
   const canGrant = (permission: string) =>
-    hasPermission(myPermissions, permission);
+    isPortal ? canPortal(permission) : hasPermission(myPermissions, permission);
+  const allowed = {
+    create: isPortal
+      ? canPortal('permissions:grant')
+      : !!companyId && can(companyId, 'roles:create'),
+    edit: isPortal
+      ? canPortal('permissions:grant')
+      : !!companyId && can(companyId, 'roles:edit'),
+    remove: isPortal
+      ? canPortal('permissions:revoke')
+      : !!companyId && can(companyId, 'roles:delete'),
+  };
+  const ready = isPortal || !!companyId;
 
   const load = useCallback(async () => {
-    if (!companyId) return;
+    if (!ready) return;
     setLoading(true);
     try {
-      const res = await PortalSdk.getData(
-        `/api/companies/${companyId}/roles`,
-        null,
-      );
-      const list: CompanyRole[] = res?.data?.roles ?? [];
+      const res = await PortalSdk.getData(base, null);
+      const list: AnyRole[] = res?.data?.roles ?? [];
       setRoles(list);
       setActiveKey((key) =>
         list.some((r) => r.key === key) ? key : (list[0]?.key ?? null),
@@ -139,7 +177,7 @@ export const AdminRoles = ({
     } finally {
       setLoading(false);
     }
-  }, [companyId]);
+  }, [base, ready]);
 
   useEffect(() => {
     setRoles([]);
@@ -155,19 +193,16 @@ export const AdminRoles = ({
     !!active &&
     (draft.length !== active.permissions.length ||
       draft.some((p) => !active.permissions.includes(p)));
-  const readOnly =
-    !companyId || !can(companyId, 'roles:edit') || active?.key === 'owner';
+  const isOwner = !isPortal && active?.key === 'owner';
+  const readOnly = !ready || !allowed.edit || isOwner;
 
   const save = async () => {
     if (!active) return;
     setSaving(true);
     try {
-      await PortalSdk.patchData(
-        `/api/companies/${companyId}/roles/${active.id}`,
-        {
-          permissions: draft,
-        },
-      );
+      await PortalSdk.patchData(`${base}/${active.id}`, {
+        permissions: draft,
+      });
       toast.success(`${active.name} updated`);
       load();
     } catch (err) {
@@ -181,15 +216,12 @@ export const AdminRoles = ({
     if (!newName.trim()) return;
     setSaving(true);
     try {
-      const res = await PortalSdk.postData(
-        `/api/companies/${companyId}/roles`,
-        {
-          name: newName,
-          permissions: ['companies:read', 'projects:read', 'tasks:read'].filter(
-            canGrant,
-          ),
-        },
-      );
+      const res = await PortalSdk.postData(base, {
+        name: newName,
+        permissions: isPortal
+          ? []
+          : ['companies:read', 'projects:read', 'tasks:read'].filter(canGrant),
+      });
       toast.success('Role created');
       setCreating(false);
       setNewName('');
@@ -206,10 +238,7 @@ export const AdminRoles = ({
     if (!deleting) return;
     setSaving(true);
     try {
-      await PortalSdk.deleteData(
-        `/api/companies/${companyId}/roles/${deleting.id}`,
-        {},
-      );
+      await PortalSdk.deleteData(`${base}/${deleting.id}`, {});
       toast.success('Role deleted');
       setDeleting(null);
       load();
@@ -223,13 +252,25 @@ export const AdminRoles = ({
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center gap-3">
-        <CompanyPicker
-          companies={companies}
-          value={companyId}
-          onChange={onSelectCompany}
-        />
+        {portalAllowed && (
+          <Segmented<Scope>
+            value={scope}
+            onChange={setScope}
+            options={[
+              { value: 'company', label: 'Company roles', icon: 'domain' },
+              { value: 'portal', label: 'Portal roles', icon: 'public' },
+            ]}
+          />
+        )}
+        {!isPortal && (
+          <CompanyPicker
+            companies={companies}
+            value={companyId}
+            onChange={onSelectCompany}
+          />
+        )}
         <div className="flex-1" />
-        {companyId && can(companyId, 'roles:create') && (
+        {ready && allowed.create && (
           <AdminButton
             tone="primary"
             icon="add"
@@ -240,7 +281,14 @@ export const AdminRoles = ({
         )}
       </div>
 
-      {!companyId ? (
+      {isPortal && (
+        <p className="-mt-2 text-xs text-neutral-500">
+          Portal roles apply everywhere. Give one to a person from their page in
+          Users. Everyone can already write worklogs and see their companies.
+        </p>
+      )}
+
+      {!ready ? (
         <NeedsCompany text="Choose a company to manage its roles." />
       ) : loading && !roles.length ? (
         <SkeletonRows rows={4} />
@@ -263,7 +311,14 @@ export const AdminRoles = ({
                 )}
               >
                 <span className="truncate">{role.name}</span>
-                {role.isSystem && <Pill>Built-in</Pill>}
+                <span className="flex items-center gap-1.5">
+                  {typeof role.memberCount === 'number' && (
+                    <span className="text-[11px] text-neutral-600">
+                      {role.memberCount}
+                    </span>
+                  )}
+                  {role.isSystem && <Pill>Built-in</Pill>}
+                </span>
               </button>
             ))}
           </Panel>
@@ -274,13 +329,13 @@ export const AdminRoles = ({
                 icon="badge"
                 title={active.name}
                 description={
-                  active.key === 'owner'
+                  isOwner
                     ? 'Owners always have full access to the company.'
                     : active.description || undefined
                 }
                 actions={
                   <>
-                    {!active.isSystem && can(companyId, 'roles:delete') && (
+                    {!active.isSystem && allowed.remove && (
                       <IconAction
                         icon="delete"
                         label="Delete role"
@@ -304,6 +359,11 @@ export const AdminRoles = ({
               />
               <div className="p-4">
                 <PermissionGrid
+                  resources={
+                    isPortal
+                      ? PERMISSION_RESOURCES
+                      : COMPANY_PERMISSION_RESOURCES
+                  }
                   value={draft}
                   onChange={setDraft}
                   readOnly={readOnly}
@@ -314,7 +374,6 @@ export const AdminRoles = ({
           )}
         </div>
       )}
-
       <AdminModal
         open={creating}
         onOpenChange={setCreating}

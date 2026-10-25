@@ -22,7 +22,7 @@ const WelcomeScreen = ({ onComplete }: { onComplete: () => void }) => {
       </div>
 
       <div className="mt-8 animate-fadeInTopUp text-sm font-light italic tracking-widest text-gray-200 opacity-0 delay-1000 md:text-xl">
-        to The Moon Devs Portal
+        to the Portal
       </div>
 
       {/* <div className="animate-fadeInTopUp opacity-0 delay-1000">

@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server';
 
 import { db } from '@/lib/mongodb/db-client';
+import { syncTaskPoints } from '@/lib/progress/server';
 import {
   asStringArray,
   fail,
@@ -78,5 +79,6 @@ export async function POST(request: Request) {
       updatedAt: now,
     },
   });
+  await syncTaskPoints(task);
   return ok({ task }, { status: 201 });
 }

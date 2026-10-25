@@ -2,10 +2,11 @@
 
 import type { User } from '@db/client';
 import type { FormEvent } from 'react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import { cn } from '@/lib/utils';
+import { useWorkspace } from '@/utils/hooks/useWorkspace';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import {
@@ -13,18 +14,19 @@ import {
   EmptyState,
   Field,
   Icon,
+  NativeSelect,
   Panel,
   PanelHeader,
   Pill,
   SearchInput,
-  Segmented,
   SkeletonRows,
   TextArea,
   TextInput,
   UserAvatar,
 } from './shared/AdminUI';
 
-type Audience = 'ALL' | 'MEMBER' | 'CLIENT';
+/** Everyone, or the members of one company (by id). */
+type Audience = 'ALL' | string;
 
 const TITLE_LIMIT = 80;
 const DESCRIPTION_LIMIT = 320;
@@ -43,12 +45,32 @@ const SendNotifications = ({
   const [description, setDescription] = useState('');
   const [sending, setSending] = useState(false);
 
+  const { companies } = useWorkspace();
+  const [companyUserIds, setCompanyUserIds] = useState<string[] | null>(null);
+
+  useEffect(() => {
+    if (audience === 'ALL') {
+      setCompanyUserIds(null);
+      return;
+    }
+    setCompanyUserIds(null);
+    PortalSdk.getData(`/api/companies/${audience}/members`, null)
+      .then((res) =>
+        setCompanyUserIds(
+          (res?.data?.members ?? []).map((m: { userId: string }) => m.userId),
+        ),
+      )
+      .catch(() => setCompanyUserIds([]));
+  }, [audience]);
+
   const audienceUsers = useMemo(
     () =>
-      users.filter((user) =>
-        audience === 'ALL' ? true : user.userType === audience,
+      users.filter(
+        (user) =>
+          user.status === 'ACTIVE' &&
+          (audience === 'ALL' || (companyUserIds ?? []).includes(user.id)),
       ),
-    [users, audience],
+    [users, audience, companyUserIds],
   );
 
   const visibleUsers = useMemo(() => {
@@ -159,16 +181,21 @@ const SendNotifications = ({
         />
 
         <div className="flex flex-col gap-3 border-b border-white/[0.07] p-4">
-          <Segmented<Audience>
+          <NativeSelect
+            aria-label="Audience"
             value={audience}
-            onChange={setAudience}
-            className="w-full"
-            options={[
-              { value: 'ALL', label: 'Everyone' },
-              { value: 'MEMBER', label: 'Members' },
-              { value: 'CLIENT', label: 'Clients' },
-            ]}
-          />
+            onChange={(e) => {
+              setAudience(e.target.value);
+              setSelectedIds([]);
+            }}
+          >
+            <option value="ALL">Everyone</option>
+            {companies.map(({ company }) => (
+              <option key={company.id} value={company.id}>
+                {company.name}
+              </option>
+            ))}
+          </NativeSelect>
           <SearchInput
             value={search}
             onChange={setSearch}
@@ -236,11 +263,6 @@ const SendNotifications = ({
                           @{user.username}
                         </span>
                       </span>
-                      <Pill
-                        tone={user.userType === 'CLIENT' ? 'info' : 'purple'}
-                      >
-                        {user.userType}
-                      </Pill>
                     </button>
                   </li>
                 );

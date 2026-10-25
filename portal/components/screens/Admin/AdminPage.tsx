@@ -12,8 +12,7 @@ import { useWorkspace } from '@/utils/hooks/useWorkspace';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import { AdminUsers } from './AdminUsers';
-import AdminBadges from './badge-template/AdminBadges';
-import EventForm from './Events/EventForm';
+import { AdminBadges } from './Badges/AdminBadges';
 import { AdminOverview } from './Overview/AdminOverview';
 import SendNotifications from './SendNotifications';
 import { AdminCommandPalette } from './shared/AdminCommandPalette';
@@ -43,10 +42,18 @@ export const AdminPage = () => {
   const workspace = useWorkspace();
   const isAdmin = !!adminUser?.isAdmin;
 
-  // Portal admins see every tab; company managers only the company tabs.
+  // Portal admins see every tab; others see the company tabs plus any tab
+  // their portal roles open.
+  const { canPortal } = workspace;
   const visibleTabs = useMemo(
-    () => ADMIN_TABS.filter((tab) => tab.access === 'company' || isAdmin),
-    [isAdmin],
+    () =>
+      ADMIN_TABS.filter(
+        (tab) =>
+          tab.access === 'company' ||
+          isAdmin ||
+          (!!tab.permission && canPortal(tab.permission)),
+      ),
+    [isAdmin, canPortal],
   );
 
   const [users, setUsers] = useState<User[]>([]);
@@ -100,7 +107,7 @@ export const AdminPage = () => {
     setLoading(true);
     setLoadError(null);
     try {
-      const data = await PortalSdk.getData('/api/user', null);
+      const data = await PortalSdk.getData('/api/user?status=ALL', null);
       setUsers(data?.data?.user || []);
     } catch (error) {
       console.error(error);
@@ -156,14 +163,6 @@ export const AdminPage = () => {
 
   /* -------------------------------- content -------------------------------- */
 
-  const counts = useMemo(
-    () => ({
-      members: users.filter((user) => user.userType === 'MEMBER').length,
-      clients: users.filter((user) => user.userType === 'CLIENT').length,
-    }),
-    [users],
-  );
-
   const renderTab = () => {
     switch (activeTab.id) {
       case 'overview':
@@ -181,8 +180,6 @@ export const AdminPage = () => {
         );
       case 'notifications':
         return <SendNotifications users={users} loading={loading} />;
-      case 'events':
-        return <EventForm />;
       case 'badges':
         return <AdminBadges />;
       case 'companies':
@@ -281,13 +278,13 @@ export const AdminPage = () => {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/logo/logo_white.png"
-          alt="TheMoonDevs"
+          alt="Portal"
           className="size-8 shrink-0 object-contain"
         />
         {!collapsed && (
           <div className="min-w-0">
             <p className="truncate text-xs font-bold tracking-[0.2em] text-white">
-              THEMOONDEVS
+              PORTAL
             </p>
             <p className="text-[10px] uppercase tracking-wider text-neutral-500">
               Admin console
@@ -414,7 +411,7 @@ export const AdminPage = () => {
               </p>
               <p className="text-[10px] uppercase tracking-wider text-neutral-500">
                 {isAdmin
-                  ? `${counts.members} members · ${counts.clients} clients`
+                  ? `${users.length} people · ${workspace.companies.length} companies`
                   : `${workspace.managedCompanies.length} companies`}
               </p>
             </div>

@@ -17,7 +17,6 @@ export const PERMISSION_ACTIONS = [
   'edit',
   'delete',
   'execute',
-  'award',
   'grant',
   'revoke',
 ] as const;
@@ -81,27 +80,27 @@ export const PERMISSION_RESOURCES: ResourceDefinition[] = [
   {
     key: 'users',
     label: 'Users',
-    description: 'Team & client user records and profiles.',
+    description: 'People who can sign in to the Portal.',
     actions: ['read', 'create', 'edit', 'delete'],
   },
   {
     key: 'permissions',
     label: 'Access policies',
     description:
-      "Viewing and changing other users' access policies (grant / revoke).",
+      'Portal roles and the extra permissions given to individual users.',
     actions: ['read', 'grant', 'revoke'],
   },
   {
     key: 'badges',
     label: 'Badges',
     description:
-      'Badge templates (create/edit/delete are admin) and `award`, the self-generated earning of badges through activity like worklogs.',
-    actions: ['read', 'award', 'create', 'edit', 'delete'],
+      'Badge definitions. Badges are awarded automatically from points, worklogs and tasks.',
+    actions: ['read', 'create', 'edit', 'delete'],
   },
   {
     key: 'worklogs',
     label: 'Worklogs',
-    description: 'Daily worklogs, monthly targets and admin tasks.',
+    description: 'Daily worklogs, private notes and later-todos.',
     actions: ['read', 'edit'],
   },
   {
@@ -109,18 +108,6 @@ export const PERMISSION_RESOURCES: ResourceDefinition[] = [
     label: 'Notifications',
     description: 'In-app notifications and push subscriptions.',
     actions: ['read', 'create', 'edit'],
-  },
-  {
-    key: 'pointers',
-    label: 'Pointers',
-    description: 'Pointers and their replies.',
-    actions: ['read', 'create', 'edit', 'delete'],
-  },
-  {
-    key: 'events',
-    label: 'Events',
-    description: 'Calendar / activity events.',
-    actions: ['read', 'create', 'edit', 'delete'],
   },
   {
     key: 'files',
