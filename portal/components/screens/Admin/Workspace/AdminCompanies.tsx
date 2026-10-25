@@ -25,6 +25,8 @@ import {
   TextInput,
   UserAvatar,
 } from '../shared/AdminUI';
+import { ImageField } from '../shared/ImageField';
+import { BrandKitEditor, BrandKitSummary } from './BrandKitEditor';
 import { ColorPicker, CompanyMark, errorText, PeoplePicker } from './shared';
 
 type MemberRow = CompanyMember & {
@@ -133,8 +135,8 @@ const CompanyForm = ({
             placeholder="What does this company do?"
           />
         </Field>
-        <Field label="Logo URL" hint="Optional. A square image works best.">
-          <TextInput value={logo} onChange={(e) => setLogo(e.target.value)} />
+        <Field label="Logo" hint="Optional. A square image works best.">
+          <ImageField value={logo} onChange={setLogo} />
         </Field>
         <Field label="Color">
           <ColorPicker value={color} onChange={setColor} />
@@ -429,6 +431,7 @@ export const AdminCompanies = ({
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [archiving, setArchiving] = useState(false);
+  const [brandOpen, setBrandOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const selected = useMemo(
@@ -567,6 +570,12 @@ export const AdminCompanies = ({
                 {selected.company.description}
               </p>
             )}
+            {can(selected.company.id, 'companies:edit') && (
+              <BrandKitSummary
+                kit={selected.company.brandKit}
+                onOpen={() => setBrandOpen(true)}
+              />
+            )}
           </Panel>
           {can(selected.company.id, 'members:read') && (
             <CompanyMembers companyId={selected.company.id} users={users} />
@@ -590,6 +599,16 @@ export const AdminCompanies = ({
         initial={selected?.company}
         onSaved={() => refresh()}
       />
+      {selected && (
+        <BrandKitEditor
+          open={brandOpen}
+          onOpenChange={setBrandOpen}
+          name={selected.company.name}
+          endpoint={`/api/companies/${selected.company.id}`}
+          initial={selected.company.brandKit}
+          onSaved={() => refresh()}
+        />
+      )}
       <ConfirmDialog
         open={archiving}
         onOpenChange={setArchiving}

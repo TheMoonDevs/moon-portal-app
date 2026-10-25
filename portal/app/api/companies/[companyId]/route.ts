@@ -1,3 +1,4 @@
+import { brandKitDefaults, sanitizeBrandKit } from '@/lib/brandKit';
 import { db } from '@/lib/mongodb/db-client';
 import { requireSuperAdmin } from '@/lib/permissions/server';
 import {
@@ -13,7 +14,7 @@ export const dynamic = 'force-dynamic';
 
 type Params = { params: { companyId: string } };
 
-const EDITABLE = ['name', 'description', 'logo', 'color'] as const;
+const EDITABLE = ['name', 'description', 'logo', 'color', 'brandKit'] as const;
 
 export async function GET(_request: Request, { params }: Params) {
   const { response } = await requireCompanyPermission(
@@ -49,6 +50,19 @@ export async function PATCH(request: Request, { params }: Params) {
   if ('status' in body) data.status = body.status;
   if (typeof data.name === 'string' && !data.name.trim()) {
     return fail(400, 'Company name is required.');
+  }
+  if ('brandKit' in data) {
+    const kit = sanitizeBrandKit(data.brandKit);
+    data.brandKit = kit;
+    // A kit fills in the logo and color when the company has none yet.
+    const current = await db.company.findFirst({
+      where: { id: params.companyId },
+    });
+    const defaults = brandKitDefaults(kit);
+    if (!(data.logo ?? current?.logo) && defaults.logo)
+      data.logo = defaults.logo;
+    if (!(data.color ?? current?.color) && defaults.color)
+      data.color = defaults.color;
   }
 
   const company = await db.company.update({

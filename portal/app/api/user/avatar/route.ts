@@ -7,7 +7,7 @@ import { s3FileUploadSdk } from '@/utils/services/s3FileUploadSdk';
 
 export const dynamic = 'force-dynamic';
 
-const MAX_BYTES = 5 * 1024 * 1024;
+const MAX_BYTES = 4 * 1024 * 1024;
 const TYPES: Record<string, string> = {
   'image/png': 'png',
   'image/jpeg': 'jpg',
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
   }
   const ext = TYPES[file.type];
   if (!ext) return fail(400, 'Use a PNG, JPG, WebP or GIF image.');
-  if (file.size > MAX_BYTES) return fail(400, 'Images must be under 5 MB.');
+  if (file.size > MAX_BYTES) return fail(400, 'Images must be under 4 MB.');
 
   const user = await db.user.findFirst({ where: { id: userId } });
   if (!user) return fail(404, 'User not found.');

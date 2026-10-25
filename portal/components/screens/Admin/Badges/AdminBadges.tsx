@@ -24,6 +24,7 @@ import {
   TextInput,
   ToggleSwitch,
 } from '../shared/AdminUI';
+import { ImageField } from '../shared/ImageField';
 import { errorText } from '../Workspace/shared';
 
 type AdminBadge = Badge & { holderCount?: number };
@@ -368,16 +369,14 @@ export const AdminBadges = () => {
               />
             </Field>
             <Field
-              label="Image URL"
-              hint="Optional. A square image works best."
+              label="Image"
+              hint="Optional. A square image works best; it is shown as a hexagon."
               className="sm:col-span-2"
             >
-              <TextInput
+              <ImageField
+                shape="hex"
                 value={draft.imageUrl}
-                onChange={(e) =>
-                  setDraft({ ...draft, imageUrl: e.target.value })
-                }
-                placeholder="https://…"
+                onChange={(imageUrl) => setDraft({ ...draft, imageUrl })}
               />
             </Field>
             <ToggleSwitch

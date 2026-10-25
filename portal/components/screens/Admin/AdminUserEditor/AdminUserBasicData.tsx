@@ -5,7 +5,7 @@ import { useRef, useState } from 'react';
 import TimezoneSelect from 'react-timezone-select';
 import { toast } from 'sonner';
 
-import { uploadAvatar } from '@/utils/helpers/uploadAvatar';
+import { uploadAvatar } from '@/utils/helpers/uploads';
 
 import {
   Field,

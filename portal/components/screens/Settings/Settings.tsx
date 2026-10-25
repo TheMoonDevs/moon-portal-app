@@ -11,7 +11,7 @@ import LogoutConfirmationDialog from '@/components/global/LogoutConfirmationDial
 import PushSubscriptionToggleButton from '@/components/global/PushSubscriptionToggleButton';
 import { cn } from '@/lib/utils';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
-import { uploadAvatar } from '@/utils/helpers/uploadAvatar';
+import { uploadAvatar } from '@/utils/helpers/uploads';
 import { useUser } from '@/utils/hooks/useUser';
 import { useWorkspace } from '@/utils/hooks/useWorkspace';
 import { PortalSdk } from '@/utils/services/PortalSdk';

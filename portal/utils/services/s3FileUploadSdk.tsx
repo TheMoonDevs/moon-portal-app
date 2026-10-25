@@ -175,6 +175,39 @@ export const s3FileUploadSdk = {
   },
 
   /**
+   * A short-lived URL the browser can PUT a file to directly, for files too
+   * big to pass through a serverless function. The browser must send the
+   * same Content-Type, and the bucket's CORS rules must allow PUT from the
+   * portal.
+   */
+  getUploadUrl: async ({
+    userId,
+    folder,
+    fileName,
+    fileType,
+  }: {
+    userId: string;
+    folder: string;
+    fileName: string;
+    fileType: string;
+  }): Promise<string | undefined> => {
+    try {
+      return await getSignedUrl(
+        config.s3Client,
+        new PutObjectCommand({
+          Bucket: config.bucket,
+          Key: `${folder}/${userId}/${fileName}`,
+          ACL: "public-read",
+          ContentType: fileType,
+        }),
+        { expiresIn: 60 * 15 }
+      );
+    } catch (error) {
+      console.log(error);
+    }
+  },
+
+  /**
    * Deletes a file from the specified bucket on digital ocean.
    *
    * @param {Object} params - The parameters for the file deletion.

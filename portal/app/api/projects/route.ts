@@ -102,6 +102,7 @@ export async function POST(request: Request) {
       status,
       color: body.color ?? null,
       icon: body.icon ?? null,
+      logo: typeof body.logo === 'string' && body.logo ? body.logo : null,
       leadIds: asStringArray(body.leadIds),
       memberIds: asStringArray(body.memberIds),
       startDate: body.startDate ?? null,
