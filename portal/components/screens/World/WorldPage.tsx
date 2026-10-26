@@ -1,11 +1,17 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { cn } from '@/lib/utils';
-import type { BotState, LeaderRow, World, WorldBot } from '@/lib/world/state';
+import type {
+  BotState,
+  LeaderRow,
+  World,
+  WorldBot,
+  WorldBrand,
+} from '@/lib/world/state';
 import {
   BOT_STATE_COLOR,
   BOT_STATE_LABEL,
@@ -23,6 +29,64 @@ const WorldScene = dynamic(
 
 const REFRESH_MS = 30000;
 
+const accentOf = (item?: {
+  brand?: WorldBrand;
+  color: string | null;
+}): string => item?.brand?.primary ?? item?.color ?? '#4f46e5';
+
+/** A logo or avatar, or initials on the brand colour when there is none. */
+const Badge = ({
+  src,
+  name,
+  color,
+  size = 20,
+  round = true,
+}: {
+  src?: string | null;
+  name: string;
+  color: string;
+  size?: number;
+  round?: boolean;
+}) => {
+  const [failed, setFailed] = useState(false);
+  const initials =
+    name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => Array.from(w)[0])
+      .join('')
+      .toUpperCase() || '?';
+  return (
+    <span
+      className={cn(
+        'relative inline-flex shrink-0 items-center justify-center overflow-hidden font-bold text-white',
+        round ? 'rounded-full' : 'rounded-lg',
+      )}
+      style={{
+        width: size,
+        height: size,
+        fontSize: Math.round(size * 0.4),
+        backgroundColor: color,
+      }}
+    >
+      {initials}
+      {src && !failed && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={src}
+          alt=""
+          onError={() => setFailed(true)}
+          className={cn(
+            'absolute inset-0 size-full bg-white',
+            round ? 'object-cover' : 'object-contain p-[10%]',
+          )}
+        />
+      )}
+    </span>
+  );
+};
+
 const Dot = ({ state }: { state: BotState }) => (
   <span
     className="inline-block size-2 shrink-0 rounded-full"
@@ -33,12 +97,15 @@ const Dot = ({ state }: { state: BotState }) => (
 const Card = ({
   children,
   className,
+  style,
 }: {
   children: ReactNode;
   className?: string;
+  style?: CSSProperties;
 }) => (
   <div
     className={cn('rounded-2xl bg-white/90 shadow-lg backdrop-blur', className)}
+    style={style}
   >
     {children}
   </div>
@@ -63,9 +130,11 @@ const Progress = ({ bot }: { bot: WorldBot }) => {
 
 const Leaderboard = ({
   rows,
+  color,
   unit = 'pts',
 }: {
   rows: LeaderRow[];
+  color: string;
   unit?: string;
 }) =>
   rows.length ? (
@@ -75,6 +144,7 @@ const Leaderboard = ({
           <span className="w-5 text-center">
             {['🥇', '🥈', '🥉'][i] ?? i + 1}
           </span>
+          <Badge src={r.avatar} name={r.name} color={color} size={20} />
           <span className="min-w-0 flex-1 truncate">{r.name}</span>
           <span className="text-xs text-neutral-500">
             {Math.round(r.points)} {unit}
@@ -193,9 +263,24 @@ export const WorldPage = () => {
         (person ? person.townIds[0] : undefined),
     );
   const crumbBuilding = building ?? (bot ? buildingOf(bot.projectId) : null);
+  // The card wears the town's colours.
+  const cardColor = accentOf(crumbTown);
+  const cardBadge = town
+    ? { src: town.brand?.logo ?? town.logo, name: town.name, round: false }
+    : building
+      ? {
+          src: building.brand?.logo ?? building.logo,
+          name: building.name,
+          round: false,
+        }
+      : bot
+        ? { src: bot.ownerAvatar, name: bot.ownerName, round: true }
+        : person
+          ? { src: person.avatar, name: person.name, round: true }
+          : null;
 
   return (
-    <div className="fixed inset-0 bg-sky-100 pb-[72px] md:left-24 md:pb-0">
+    <div className="fixed inset-0 bg-[#eef1f5] pb-[72px] md:left-24 md:pb-0">
       <div className="relative size-full">
         {world && world.towns.length > 0 && (
           <WorldScene
@@ -256,11 +341,17 @@ export const WorldPage = () => {
                   key={t.id}
                   onClick={() => go({ type: 'town', id: t.id })}
                   className={cn(
-                    'shrink-0 rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-neutral-800 shadow hover:bg-white',
-                    crumbTown?.id === t.id && 'ring-2 ring-neutral-900',
+                    'flex shrink-0 items-center gap-1.5 rounded-full bg-white/90 py-0.5 pl-0.5 pr-3 text-xs font-medium text-neutral-800 shadow hover:bg-white',
+                    crumbTown?.id === t.id && 'ring-2',
                   )}
+                  style={{ ['--tw-ring-color' as any]: accentOf(t) }}
                 >
-                  🏝️ {t.name}
+                  <Badge
+                    src={t.brand?.logo ?? t.logo}
+                    name={t.name}
+                    color={accentOf(t)}
+                  />
+                  {t.name}
                 </button>
               ))}
             </div>
@@ -308,9 +399,21 @@ export const WorldPage = () => {
 
         {/* The selected thing. */}
         {(town || building || bot || person) && (
-          <Card className="absolute inset-x-3 bottom-3 max-h-[55%] overflow-y-auto p-4 md:inset-x-auto md:bottom-auto md:right-4 md:top-4 md:max-h-[calc(100%-2rem)] md:w-80">
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
+          <Card
+            className="absolute inset-x-3 bottom-3 max-h-[55%] overflow-y-auto border-t-4 p-4 md:inset-x-auto md:bottom-auto md:right-4 md:top-4 md:max-h-[calc(100%-2rem)] md:w-80"
+            style={{ borderColor: cardColor }}
+          >
+            <div className="-mt-1 flex items-start justify-between gap-2">
+              {cardBadge && (
+                <Badge
+                  src={cardBadge.src}
+                  name={cardBadge.name}
+                  color={cardColor}
+                  size={40}
+                  round={cardBadge.round}
+                />
+              )}
+              <div className="min-w-0 flex-1">
                 <p className="truncate text-base font-bold text-neutral-900">
                   {town?.name ??
                     building?.name ??
@@ -342,7 +445,7 @@ export const WorldPage = () => {
             {town && (
               <>
                 <Section title="Leaderboard this week">
-                  <Leaderboard rows={town.leaderboard} />
+                  <Leaderboard rows={town.leaderboard} color={cardColor} />
                   <p className="mt-1 text-[11px] text-neutral-400">
                     Guiding a waiting bot counts {GUIDANCE_WEIGHT}×.
                   </p>
@@ -360,6 +463,12 @@ export const WorldPage = () => {
                             <span className="w-6 text-xs text-neutral-500">
                               #{b.rank}
                             </span>
+                            <Badge
+                              src={b.brand?.logo ?? b.logo}
+                              name={b.name}
+                              color={accentOf(b)}
+                              round={false}
+                            />
                             <span className="min-w-0 flex-1 truncate">
                               {b.name}
                             </span>
@@ -384,7 +493,7 @@ export const WorldPage = () => {
             {building && (
               <>
                 <Section title="Leaderboard this week">
-                  <Leaderboard rows={building.leaderboard} />
+                  <Leaderboard rows={building.leaderboard} color={cardColor} />
                 </Section>
                 <Section title="Bots here today">
                   <div className="flex flex-col gap-1.5">

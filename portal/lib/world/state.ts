@@ -10,13 +10,27 @@ export type PointStatus = 'doing' | 'done' | 'not_done' | 'blocked' | 'waiting';
 
 export type BotPoint = { text: string; status: PointStatus | null };
 
-export type LeaderRow = { id: string; name: string; points: number };
+export type LeaderRow = {
+  id: string;
+  name: string;
+  avatar: string | null;
+  points: number;
+};
+
+/** Colours and logo from a company's or project's brand kit. */
+export type WorldBrand = {
+  primary: string;
+  secondary: string;
+  logo: string | null;
+  font: string | null;
+};
 
 export type WorldBot = {
   /** ownerId:projectId */
   id: string;
   ownerId: string;
   ownerName: string;
+  ownerAvatar: string | null;
   townId: string;
   /** null: work not tied to a project, done around the town hall. */
   projectId: string | null;
@@ -45,6 +59,7 @@ export type WorldBuilding = {
   name: string;
   color: string | null;
   logo: string | null;
+  brand: WorldBrand;
   townId: string;
   /** Position in the town's ranking, 1 is best. */
   rank: number;
@@ -59,6 +74,7 @@ export type WorldTown = {
   name: string;
   color: string | null;
   logo: string | null;
+  brand: WorldBrand;
   weekPoints: number;
   leaderboard: LeaderRow[];
 };

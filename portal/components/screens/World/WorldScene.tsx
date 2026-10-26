@@ -3,76 +3,69 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { MapControls } from 'three/examples/jsm/controls/MapControls.js';
-import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import {
   CSS2DObject,
   CSS2DRenderer,
 } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
-import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 
-import type { World, WorldBot } from '@/lib/world/state';
+import type {
+  World,
+  WorldBot,
+  WorldBrand,
+  WorldBuilding,
+  WorldTown,
+} from '@/lib/world/state';
 import { BOT_STATE_COLOR, goesToOwner, STATUS_EMOJI } from '@/lib/world/state';
 
-import { layoutWorld, seeded } from './layout';
+import * as art from './art';
+import { layoutWorld, LOT, PLAZA, ROAD, seeded } from './layout';
 
 /*
  * The world in plain three.js (no React renderer, whose JSX types clash with
- * MUI's). Companies are islands with a town on them, projects are buildings
- * around the town's plaza, people stand on the plaza and their bots work at
- * the buildings. A bot that is done or needs permission flies back to its
- * owner. Models: Kenney (CC0), see public/world/CREDITS.md.
+ * MUI's), seen from above at an angle like a strategy game. Companies are
+ * towns in their brand colours, joined by highways; projects are buildings
+ * around the town square, where the town hall and the leaderboards stand
+ * and the people wait for their bots. A bot that is done or needs
+ * permission flies back to its owner. Everything is drawn from simple
+ * shapes in art.ts, so there are no models to download.
  */
 
 export type Pick = { type: 'town' | 'building' | 'person' | 'bot'; id: string };
 
-const MODELS = {
-  buildings: [
-    '/world/city/building-small-a.glb',
-    '/world/city/building-small-b.glb',
-    '/world/city/building-small-c.glb',
-    '/world/city/building-small-d.glb',
-    '/world/city/building-garage.glb',
-  ],
-  trees: ['/world/props/tree.glb'],
-  fountain: '/world/city/pavement-fountain.glb',
-  statue: '/world/props/statue.glb',
-  trophy: '/world/props/trophy.glb',
-  person: '/world/people/character-soldier.glb',
-  bot: '/world/bots/enemy-flying.glb',
-};
+/** World units from top to bottom of the screen at zoom 1. */
+const VIEW = 60;
+const SKY = '#eef1f5';
+const SUN = new THREE.Vector3(-22, 60, 48).normalize();
+const AZIMUTH = Math.PI / 4;
+const POLAR = 0.88;
 
-const SKY = '#cfe9ff';
-const WATER = '#7cc4e4';
-const GRASS = '#9fd67a';
-const SAND = '#ecdcae';
-const PLAZA = '#efe6d2';
+const brandOf = (item: {
+  brand?: WorldBrand;
+  color: string | null;
+  logo: string | null;
+}): WorldBrand =>
+  item.brand ?? {
+    primary: item.color || '#4f46e5',
+    secondary: '#111827',
+    logo: item.logo,
+    font: null,
+  };
 
-const hash = (s: string) =>
-  Array.from(s).reduce((n, c) => (n * 31 + c.charCodeAt(0)) | 0, 7) >>> 0;
+const escape = (s: string) =>
+  s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
-/** Scales a model so its footprint is `size` wide and stands it on y = 0. */
-function fit(
-  object: THREE.Object3D,
+/** A logo or avatar for a label: the image, or initials if it won't load. */
+const badge = (
+  url: string | null,
+  name: string,
+  hex: string,
   size: number,
-  by: 'width' | 'height' = 'width',
-) {
-  const box = new THREE.Box3().setFromObject(object);
-  const dims = box.getSize(new THREE.Vector3());
-  const current = by === 'width' ? Math.max(dims.x, dims.z) : dims.y;
-  object.scale.multiplyScalar(size / (current || 1));
-  const after = new THREE.Box3().setFromObject(object);
-  object.position.y -= after.min.y;
-  return object;
-}
-
-const shadows = (o: THREE.Object3D) =>
-  o.traverse((m) => {
-    if ((m as THREE.Mesh).isMesh) {
-      m.castShadow = true;
-      m.receiveShadow = true;
-    }
-  });
+  round = true,
+  cover = false,
+) => {
+  const src = art.safeUrl(url);
+  return `<span class="relative inline-flex shrink-0 items-center justify-center overflow-hidden ${round ? 'rounded-full' : 'rounded-lg'} font-extrabold text-white" style="width:${size}px;height:${size}px;background:${hex};font-size:${Math.round(size * 0.4)}px">${escape(art.initials(name))}${src ? `<img src="${escape(src)}" alt="" draggable="false" class="absolute inset-0 size-full bg-white ${cover ? 'object-cover' : 'object-contain p-[12%]'}" onerror="this.remove()">` : ''}</span>`;
+};
 
 const tag = (className: string, html = '') => {
   const outer = document.createElement('div');
@@ -80,33 +73,39 @@ const tag = (className: string, html = '') => {
   inner.className = className;
   inner.innerHTML = html;
   outer.appendChild(inner);
-  const obj = new CSS2DObject(outer);
-  return { obj, inner };
+  return { obj: new CSS2DObject(outer), inner };
 };
 
-const escape = (s: string) =>
-  s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+const botEmoji = (bot: WorldBot) =>
+  bot.state === 'waiting'
+    ? '❓'
+    : bot.state === 'blocked'
+      ? STATUS_EMOJI.blocked
+      : bot.state === 'done'
+        ? STATUS_EMOJI.done
+        : bot.state === 'working'
+          ? STATUS_EMOJI.doing
+          : '💤';
 
-const botTagHtml = (bot: WorldBot) => {
+const botTagHtml = (bot: WorldBot, hex: string) => {
   const pct = bot.progress.total
     ? Math.round((bot.progress.done / bot.progress.total) * 100)
     : 0;
-  const emoji =
-    bot.state === 'waiting'
-      ? '❓'
-      : bot.state === 'blocked'
-        ? STATUS_EMOJI.blocked
-        : bot.state === 'done'
-          ? STATUS_EMOJI.done
-          : bot.state === 'working'
-            ? STATUS_EMOJI.doing
-            : '💤';
-  return `<div class="flex items-center gap-1 whitespace-nowrap"><span>${emoji}</span><span class="font-semibold">${escape(bot.ownerName)}</span><span class="text-neutral-500">${bot.progress.done}/${bot.progress.total}</span></div><div class="mt-0.5 h-1 w-full overflow-hidden rounded-full bg-neutral-200"><div class="h-full rounded-full" style="width:${pct}%;background:${BOT_STATE_COLOR[bot.state]}"></div></div>`;
+  return `<div class="flex items-center gap-1 whitespace-nowrap">${badge(bot.ownerAvatar ?? null, bot.ownerName, hex, 18, true, true)}<span>${botEmoji(bot)}</span><span class="font-semibold">${escape(bot.ownerName)}</span><span class="text-neutral-500">${bot.progress.done}/${bot.progress.total}</span></div><div class="mt-1 h-1 w-full overflow-hidden rounded-full bg-neutral-200"><div class="h-full rounded-full" style="width:${pct}%;background:${BOT_STATE_COLOR[bot.state]}"></div></div>`;
+};
+
+/** Turns `o` toward `angle` the short way round. */
+const turn = (o: THREE.Object3D, angle: number, k: number) => {
+  let d = angle - o.rotation.y;
+  d = Math.atan2(Math.sin(d), Math.cos(d));
+  o.rotation.y += d * Math.min(1, k);
 };
 
 type BotEntity = {
   bot: WorldBot;
   group: THREE.Group;
+  light: THREE.MeshStandardMaterial;
+  rotors: THREE.Object3D[];
   label: { obj: CSS2DObject; inner: HTMLDivElement };
   target: THREE.Vector3;
   seed: number;
@@ -114,19 +113,26 @@ type BotEntity = {
 
 type PersonEntity = {
   key: string;
-  group: THREE.Group;
-  mixer: THREE.AnimationMixer | null;
-  actions: Record<string, THREE.AnimationAction>;
-  playing: string;
+  townId: string;
+  personId: string;
+  art: art.Person;
+  home: THREE.Vector3;
+  goal: THREE.Vector3;
+  timer: number;
+  phase: number;
+  rand: () => number;
+  calling: boolean;
 };
 
 type Fly = {
   fromTarget: THREE.Vector3;
   toTarget: THREE.Vector3;
-  fromCam: THREE.Vector3;
-  toCam: THREE.Vector3;
+  fromZoom: number;
+  toZoom: number;
   t: number;
 };
+
+type Board = ReturnType<typeof art.billboard>;
 
 export const WorldScene = ({
   world,
@@ -143,17 +149,18 @@ export const WorldScene = ({
   const mount = useRef<HTMLDivElement>(null);
   const state = useRef<{
     scene: THREE.Scene;
-    camera: THREE.PerspectiveCamera;
+    camera: THREE.OrthographicCamera;
     controls: MapControls;
     statics: THREE.Group;
-    models: Record<string, GLTF>;
     bots: Map<string, BotEntity>;
     people: Map<string, PersonEntity>;
+    boards: Map<string, { people: Board; projects: Board }>;
+    anims: art.Animated[];
     layout: ReturnType<typeof layoutWorld> | null;
     labels: { obj: CSS2DObject; kind: 'town' | 'building' | 'near' }[];
     fly: Fly | null;
     ring: THREE.Mesh;
-    ready: boolean;
+    aspect: number;
     placed: boolean;
   } | null>(null);
   const onPickRef = useRef(onPick);
@@ -161,17 +168,24 @@ export const WorldScene = ({
   const worldRef = useRef(world);
   worldRef.current = world;
 
+  /** The zoom that fits `size` world units on screen. */
+  const fitZoom = (size: number) => {
+    const aspect = state.current?.aspect ?? 1.6;
+    return Math.min((VIEW * aspect) / (size * 1.25), VIEW / (size * 0.95));
+  };
+
   /* --------------------------- renderer, once --------------------------- */
   useEffect(() => {
     const el = mount.current;
     if (!el) return;
-    let disposed = false;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.NeutralToneMapping;
+    renderer.toneMappingExposure = 1.05;
     el.appendChild(renderer.domElement);
     const css = new CSS2DRenderer();
     css.domElement.style.position = 'absolute';
@@ -181,57 +195,55 @@ export const WorldScene = ({
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(SKY);
-    scene.fog = new THREE.Fog(SKY, 160, 420);
-    const camera = new THREE.PerspectiveCamera(40, 1, 0.5, 1200);
-    camera.position.set(60, 70, 80);
+    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 3000);
+    camera.position.setFromSphericalCoords(600, POLAR, AZIMUTH);
 
-    scene.add(new THREE.HemisphereLight('#ffffff', '#8fb87a', 1.2));
-    const sun = new THREE.DirectionalLight('#fff4e0', 2.2);
-    sun.position.set(60, 90, 40);
+    scene.add(new THREE.HemisphereLight('#ffffff', '#c9d1dc', 1.6));
+    const sun = new THREE.DirectionalLight('#fffaf0', 2.4);
     sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048);
-    sun.shadow.bias = -0.0005;
-    sun.shadow.normalBias = 0.05;
-    const sc = sun.shadow.camera;
-    sc.left = sc.bottom = -120;
-    sc.right = sc.top = 120;
-    sc.far = 300;
+    sun.shadow.bias = -0.0004;
+    sun.shadow.normalBias = 0.04;
+    sun.shadow.radius = 4;
+    sun.shadow.camera.near = 1;
+    sun.shadow.camera.far = 700;
     scene.add(sun, sun.target);
 
-    const sea = new THREE.Mesh(
-      new THREE.CircleGeometry(900, 64),
-      new THREE.MeshStandardMaterial({ color: WATER, roughness: 0.6 }),
+    const ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(6000, 6000),
+      new THREE.MeshStandardMaterial({ color: art.GROUND, roughness: 1 }),
     );
-    sea.rotation.x = -Math.PI / 2;
-    sea.position.y = -0.6;
-    sea.receiveShadow = true;
-    scene.add(sea);
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.y = -0.6;
+    ground.receiveShadow = true;
+    scene.add(ground);
 
     const statics = new THREE.Group();
     scene.add(statics);
 
     const ring = new THREE.Mesh(
-      new THREE.RingGeometry(1, 1.25, 48),
+      new THREE.RingGeometry(1, 1.3, 64),
       new THREE.MeshBasicMaterial({
-        color: '#ffffff',
+        color: art.INK,
         transparent: true,
-        opacity: 0.9,
+        opacity: 0.55,
+        depthWrite: false,
       }),
     );
     ring.rotation.x = -Math.PI / 2;
     ring.visible = false;
     scene.add(ring);
 
-    // Age of Empires style: drag to pan, right-drag (or two fingers) to
-    // turn, wheel or pinch to zoom.
+    // Like a strategy game: drag to pan, right-drag (or two fingers) to
+    // turn, wheel or pinch to zoom toward the pointer.
     const controls = new MapControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.08;
     controls.screenSpacePanning = false;
-    controls.minDistance = 12;
-    controls.maxDistance = 320;
-    controls.minPolarAngle = 0.35;
-    controls.maxPolarAngle = 1.15;
+    controls.minZoom = 0.2;
+    controls.maxZoom = 6;
+    controls.minPolarAngle = 0.55;
+    controls.maxPolarAngle = 1.1;
     controls.zoomToCursor = true;
 
     state.current = {
@@ -239,14 +251,15 @@ export const WorldScene = ({
       camera,
       controls,
       statics,
-      models: {},
       bots: new Map(),
       people: new Map(),
+      boards: new Map(),
+      anims: [],
       layout: null,
       labels: [],
       fly: null,
       ring,
-      ready: false,
+      aspect: 1.6,
       placed: false,
     };
 
@@ -254,36 +267,17 @@ export const WorldScene = ({
       const { clientWidth: w, clientHeight: h } = el;
       renderer.setSize(w, h);
       css.setSize(w, h);
-      camera.aspect = w / Math.max(h, 1);
+      const aspect = w / Math.max(h, 1);
+      state.current!.aspect = aspect;
+      camera.left = (-VIEW * aspect) / 2;
+      camera.right = (VIEW * aspect) / 2;
+      camera.top = VIEW / 2;
+      camera.bottom = -VIEW / 2;
       camera.updateProjectionMatrix();
     };
     const observer = new ResizeObserver(resize);
     observer.observe(el);
     resize();
-
-    // Load every model once, then build.
-    const loader = new GLTFLoader();
-    const urls = Array.from(
-      new Set([
-        ...MODELS.buildings,
-        ...MODELS.trees,
-        MODELS.fountain,
-        MODELS.statue,
-        MODELS.trophy,
-        MODELS.person,
-        MODELS.bot,
-      ]),
-    );
-    Promise.all(
-      urls.map((u) => loader.loadAsync(u).then((g) => [u, g] as const)),
-    )
-      .then((loaded) => {
-        if (disposed || !state.current) return;
-        state.current.models = Object.fromEntries(loaded);
-        state.current.ready = true;
-        build();
-      })
-      .catch((err) => console.error('World models failed to load', err));
 
     // Click to pick; a drag is not a click.
     const ray = new THREE.Raycaster();
@@ -300,8 +294,7 @@ export const WorldScene = ({
         ),
         camera,
       );
-      const hits = ray.intersectObjects(scene.children, true);
-      for (const hit of hits) {
+      for (const hit of ray.intersectObjects(scene.children, true)) {
         let o: THREE.Object3D | null = hit.object;
         while (o && !o.userData.pick) o = o.parent;
         if (o) return onPickRef.current(o.userData.pick as Pick);
@@ -313,6 +306,7 @@ export const WorldScene = ({
 
     const clock = new THREE.Clock();
     const tmp = new THREE.Vector3();
+    let shadowSize = 0;
     renderer.setAnimationLoop(() => {
       const s = state.current;
       if (!s) return;
@@ -322,22 +316,58 @@ export const WorldScene = ({
       if (s.fly) {
         s.fly.t = Math.min(1, s.fly.t + dt / 0.9);
         const k = 1 - Math.pow(1 - s.fly.t, 3);
+        const offset = camera.position.clone().sub(controls.target);
         controls.target.lerpVectors(s.fly.fromTarget, s.fly.toTarget, k);
-        camera.position.lerpVectors(s.fly.fromCam, s.fly.toCam, k);
+        camera.position.copy(controls.target).add(offset);
+        camera.zoom = s.fly.fromZoom + (s.fly.toZoom - s.fly.fromZoom) * k;
+        camera.updateProjectionMatrix();
         if (s.fly.t >= 1) s.fly = null;
       }
 
-      for (const p of Array.from(s.people.values())) p.mixer?.update(dt);
+      for (const a of s.anims) a(t, dt);
+
+      // People stroll about their spot, and wave when a bot waits on them.
+      for (const p of Array.from(s.people.values())) {
+        const g = p.art.group;
+        if (p.calling) p.goal.copy(p.home);
+        else if ((p.timer -= dt) <= 0) {
+          p.timer = 2.5 + p.rand() * 5;
+          const a = p.rand() * Math.PI * 2;
+          const r = p.rand() * 1.1;
+          p.goal.set(p.home.x + Math.cos(a) * r, 0, p.home.z + Math.sin(a) * r);
+        }
+        const dx = p.goal.x - g.position.x;
+        const dz = p.goal.z - g.position.z;
+        const dist = Math.hypot(dx, dz);
+        const walking = dist > 0.05;
+        if (walking) {
+          const step = Math.min(dist, dt * 1.2);
+          g.position.x += (dx / dist) * step;
+          g.position.z += (dz / dist) * step;
+          turn(g, Math.atan2(dx, dz), dt * 8);
+          p.phase += dt * 9;
+        } else turn(g, AZIMUTH, dt * 3);
+        const swing = walking ? Math.sin(p.phase) : 0;
+        const { legs, arms, body } = p.art;
+        legs[0].rotation.x = swing * 0.6;
+        legs[1].rotation.x = -swing * 0.6;
+        arms[0].rotation.x = -swing * 0.5;
+        arms[1].rotation.x = p.calling ? 0 : swing * 0.5;
+        arms[1].rotation.z = p.calling ? -2.7 + Math.sin(t * 9) * 0.35 : 0;
+        body.position.y = walking
+          ? Math.abs(Math.sin(p.phase)) * 0.07
+          : Math.sin(t * 2 + p.phase) * 0.015;
+      }
 
       for (const b of Array.from(s.bots.values())) {
         const g = b.group;
         // Fly toward where the bot should be, then hover there.
         tmp.copy(b.target);
         if (b.bot.state === 'working') {
-          tmp.x += Math.cos(t * 0.8 + b.seed) * 1.2;
-          tmp.z += Math.sin(t * 0.8 + b.seed) * 1.2;
+          tmp.x += Math.cos(t * 0.8 + b.seed) * 1.4;
+          tmp.z += Math.sin(t * 0.8 + b.seed) * 1.4;
         }
-        const speed = 1 - Math.pow(0.02, dt);
+        const speed = 1 - Math.pow(0.03, dt);
         g.position.x += (tmp.x - g.position.x) * speed;
         g.position.z += (tmp.z - g.position.z) * speed;
         const bob =
@@ -347,22 +377,35 @@ export const WorldScene = ({
         g.position.y += (tmp.y + bob - g.position.y) * speed;
         const dx = tmp.x - g.position.x;
         const dz = tmp.z - g.position.z;
-        if (Math.hypot(dx, dz) > 0.2) g.rotation.y = Math.atan2(dx, dz);
+        if (Math.hypot(dx, dz) > 0.2) turn(g, Math.atan2(dx, dz), dt * 6);
+        g.rotation.z = -dx * 0.04;
+        const spin = b.bot.state === 'asleep' ? 4 : 30;
+        for (const r of b.rotors) r.rotation.y += dt * spin;
       }
 
-      // Show detail as you zoom in.
-      const zoom = camera.position.distanceTo(controls.target);
-      for (const l of s.labels) {
-        const show =
+      // More detail the closer you are.
+      const view = VIEW / camera.zoom;
+      for (const l of s.labels)
+        l.obj.visible =
           l.kind === 'town'
-            ? zoom > 80
+            ? view > 105
             : l.kind === 'building'
-              ? zoom < 140
-              : zoom < 80;
-        l.obj.visible = show;
-      }
+              ? view < 150
+              : view < 60;
       for (const b of Array.from(s.bots.values()))
-        b.label.obj.visible = zoom < 80;
+        b.label.obj.visible = view < 60;
+
+      // Shadows cover what's on screen.
+      const size = Math.min(320, (view * Math.max(s.aspect, 1)) / 2 + 20);
+      if (Math.abs(size - shadowSize) > shadowSize * 0.15) {
+        shadowSize = size;
+        const sc = sun.shadow.camera;
+        sc.left = sc.bottom = -size;
+        sc.right = sc.top = size;
+        sc.updateProjectionMatrix();
+      }
+      sun.target.position.copy(controls.target);
+      sun.position.copy(controls.target).addScaledVector(SUN, 300);
 
       if (s.ring.visible) s.ring.rotation.z = t * 0.5;
       controls.update();
@@ -371,7 +414,6 @@ export const WorldScene = ({
     });
 
     return () => {
-      disposed = true;
       renderer.setAnimationLoop(null);
       observer.disconnect();
       controls.dispose();
@@ -385,246 +427,468 @@ export const WorldScene = ({
   /* ------------------------- towns and buildings ------------------------ */
   const build = () => {
     const s = state.current;
-    if (!s?.ready) return;
+    if (!s) return;
     const w = worldRef.current;
     const layout = layoutWorld(w);
     s.layout = layout;
-    const model = (url: string) => s.models[url].scene.clone(true);
 
-    // Rebuild the static world.
     s.statics.traverse((o) => {
       if (o instanceof CSS2DObject) o.element.remove();
     });
     s.statics.clear();
     s.labels = [];
-    for (const p of Array.from(s.people.values())) p.mixer?.stopAllAction();
+    s.anims = [];
+    s.boards.clear();
     s.people.clear();
 
-    for (const town of w.towns) {
-      const spot = layout.towns.get(town.id)!;
-      const g = new THREE.Group();
-      g.position.set(spot.x, 0, spot.z);
-      g.userData.pick = { type: 'town', id: town.id };
-      s.statics.add(g);
+    const townRank = new Map(
+      [...w.towns]
+        .sort((a, b) => b.weekPoints - a.weekPoints)
+        .map((t, i) => [t.id, i + 1]),
+    );
 
-      // The island: grass on a sandy shore.
-      const shore = new THREE.Mesh(
-        new THREE.CylinderGeometry(spot.radius + 1.5, spot.radius + 3, 1.2, 64),
-        new THREE.MeshStandardMaterial({ color: SAND, roughness: 1 }),
+    // Highways between the towns, with cars.
+    for (const [i, r] of layout.roads.entries()) {
+      const along = r.x1 !== r.x2;
+      const length = Math.abs(along ? r.x2 - r.x1 : r.z2 - r.z1);
+      if (length < 1) continue;
+      const cx = (r.x1 + r.x2) / 2;
+      const cz = (r.z1 + r.z2) / 2;
+      const y = -0.58;
+      art.strip(
+        s.statics,
+        along ? length : 4.4,
+        along ? 4.4 : length,
+        art.ASPHALT,
+        cx,
+        cz,
+        y,
       );
-      shore.position.y = -0.75;
-      shore.receiveShadow = true;
-      const grass = new THREE.Mesh(
-        new THREE.CylinderGeometry(spot.radius, spot.radius + 0.6, 0.4, 64),
-        new THREE.MeshStandardMaterial({ color: GRASS, roughness: 1 }),
-      );
-      grass.position.y = -0.2;
-      grass.receiveShadow = true;
-      const plaza = new THREE.Mesh(
-        new THREE.CircleGeometry(7.5, 48),
-        new THREE.MeshStandardMaterial({ color: PLAZA, roughness: 1 }),
-      );
-      plaza.rotation.x = -Math.PI / 2;
-      plaza.position.y = 0.01;
-      plaza.receiveShadow = true;
-      g.add(shore, grass, plaza);
-
-      // Paths from the plaza to each ring.
-      const path = new THREE.MeshStandardMaterial({
-        color: PLAZA,
-        roughness: 1,
-      });
-      const rings = new Set(
-        w.buildings
-          .filter((b) => b.townId === town.id)
-          .map((b) =>
-            Math.round(
-              Math.hypot(
-                layout.buildings.get(b.id)!.x - spot.x,
-                layout.buildings.get(b.id)!.z - spot.z,
+      for (let d = 2; d < length - 1; d += 4) {
+        const at = (along ? Math.min(r.x1, r.x2) : Math.min(r.z1, r.z2)) + d;
+        art.strip(
+          s.statics,
+          along ? 1.6 : 0.22,
+          along ? 0.22 : 1.6,
+          '#ffffff',
+          along ? at : cx,
+          along ? cz : at,
+          y + 0.01,
+        );
+      }
+      const rand = seeded(`road${i}`);
+      for (let k = 0; k < Math.max(1, Math.floor(length / 25)); k++) {
+        const car = art.car(
+          rand() < 0.5
+            ? '#ffffff'
+            : art.tint(
+                ['#60a5fa', '#f87171', '#fbbf24', '#34d399'][
+                  Math.floor(rand() * 4)
+                ],
+                0.2,
               ),
-            ),
-          ),
-      );
-      for (const r of Array.from(rings)) {
-        const road = new THREE.Mesh(
-          new THREE.RingGeometry(r - 4.2, r - 3, 96),
-          path,
         );
-        road.rotation.x = -Math.PI / 2;
-        road.position.y = 0.012;
-        road.receiveShadow = true;
-        g.add(road);
-      }
-
-      // Town hall: a fountain with the company's banner.
-      const fountain = fit(model(MODELS.fountain), 6);
-      shadows(fountain);
-      g.add(fountain);
-      const pole = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.08, 0.08, 6, 8),
-        new THREE.MeshStandardMaterial({ color: '#6b5b4a' }),
-      );
-      pole.position.set(0, 3, -3.6);
-      const flag = new THREE.Mesh(
-        new THREE.PlaneGeometry(2, 1.2),
-        new THREE.MeshStandardMaterial({
-          color: town.color || '#6366f1',
-          side: THREE.DoubleSide,
-        }),
-      );
-      flag.position.set(1, 5.3, -3.6);
-      g.add(pole, flag);
-
-      const name = tag(
-        'pointer-events-none whitespace-nowrap rounded-2xl bg-white/90 px-4 py-2 text-lg font-bold text-neutral-900 shadow-lg',
-        escape(town.name),
-      );
-      name.obj.position.set(0, 9, 0);
-      g.add(name.obj);
-      s.labels.push({ obj: name.obj, kind: 'town' });
-      const small = tag(
-        'pointer-events-none whitespace-nowrap rounded-full bg-white/90 px-2.5 py-0.5 text-xs font-semibold text-neutral-800 shadow',
-        `🏛️ ${escape(town.name)}`,
-      );
-      small.obj.position.set(0, 7, 0);
-      g.add(small.obj);
-      s.labels.push({ obj: small.obj, kind: 'near' });
-
-      // Trees around the edge, clear of buildings.
-      const rand = seeded(town.id);
-      const taken = w.buildings
-        .filter((b) => b.townId === town.id)
-        .map((b) => layout.buildings.get(b.id)!);
-      for (let i = 0; i < 18 + spot.radius; i++) {
-        const angle = rand() * Math.PI * 2;
-        const r = spot.radius - 1.5 - rand() * 4;
-        const x = Math.cos(angle) * r;
-        const z = Math.sin(angle) * r;
-        if (
-          taken.some((b) => Math.hypot(b.x - spot.x - x, b.z - spot.z - z) < 5)
-        )
-          continue;
-        const tree = fit(
-          model(MODELS.trees[Math.floor(rand() * MODELS.trees.length)]),
-          3 + rand() * 2.5,
-          'height',
-        );
-        tree.position.x = x;
-        tree.position.z = z;
-        tree.rotation.y = rand() * Math.PI * 2;
-        shadows(tree);
-        g.add(tree);
+        car.position.y = y;
+        s.statics.add(car);
+        const dir = k % 2 ? 1 : -1;
+        const offset = rand();
+        const speed = 3.5 + rand() * 2;
+        const lane = dir * 1.05;
+        car.rotation.y = along
+          ? dir > 0
+            ? 0
+            : Math.PI
+          : dir > 0
+            ? -Math.PI / 2
+            : Math.PI / 2;
+        s.anims.push((t) => {
+          let f = (offset + (t * speed) / length) % 1;
+          if (dir < 0) f = 1 - f;
+          const p =
+            (along ? Math.min(r.x1, r.x2) : Math.min(r.z1, r.z2)) + f * length;
+          if (along) car.position.set(p, y, cz + lane);
+          else car.position.set(cx - lane, y, p);
+        });
       }
     }
 
-    // Buildings: one per project, the best ranked biggest and nearest.
-    for (const b of w.buildings) {
-      const spot = layout.buildings.get(b.id)!;
-      const g = new THREE.Group();
-      g.position.set(spot.x, 0, spot.z);
-      g.rotation.y = spot.angle;
-      g.userData.pick = { type: 'building', id: b.id };
-      const size = b.rank === 1 ? 6.5 : b.rank <= 3 ? 5.5 : 4.6;
-      const house = fit(
-        model(MODELS.buildings[hash(b.id) % MODELS.buildings.length]),
-        size,
-      );
-      shadows(house);
-      g.add(house);
-      const height = new THREE.Box3().setFromObject(house).max.y;
-      // A flag in the project's colour on the roof.
-      const pole = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.05, 0.05, 1.6, 6),
-        new THREE.MeshStandardMaterial({ color: '#57534e' }),
-      );
-      pole.position.set(0, height + 0.8, 0);
-      const flag = new THREE.Mesh(
-        new THREE.PlaneGeometry(1, 0.6),
-        new THREE.MeshStandardMaterial({
-          color: b.color || '#f59e0b',
-          side: THREE.DoubleSide,
-        }),
-      );
-      flag.position.set(0.5, height + 1.3, 0);
-      g.add(pole, flag);
-      if (b.rank === 1 && b.weekPoints > 0) {
-        const trophy = fit(model(MODELS.trophy), 0.9);
-        trophy.position.set(-1, height, 0);
-        g.add(trophy);
-      }
-      const label = tag(
-        'pointer-events-none whitespace-nowrap rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-neutral-800 shadow',
-        `<span class="mr-1 rounded-full bg-neutral-900 px-1.5 text-[10px] text-white">#${b.rank}</span>${escape(b.name)}`,
-      );
-      label.obj.position.set(0, height + 2.6, 0);
-      g.add(label.obj);
-      s.labels.push({ obj: label.obj, kind: 'building' });
-      s.statics.add(g);
-    }
+    for (const town of w.towns) buildTown(town, layout, townRank.get(town.id)!);
+    for (const b of w.buildings) buildBuilding(b, layout);
 
-    // People on the plaza of every town they belong to.
-    const personGltf = s.models[MODELS.person];
-    for (const person of w.people) {
-      for (const townId of person.townIds) {
-        const key = `${townId}:${person.id}`;
-        const spot = layout.people.get(key);
-        if (!spot) continue;
-        const g = new THREE.Group();
-        g.position.set(spot.x, 0, spot.z);
-        g.userData.pick = { type: 'person', id: person.id };
-        const body = fit(cloneSkinned(personGltf.scene), 2.8, 'height');
-        body.rotation.y = spot.angle + Math.PI;
-        shadows(body);
-        g.add(body);
-        if (person.isMe) {
-          const mark = new THREE.Mesh(
-            new THREE.CircleGeometry(0.8, 32),
-            new THREE.MeshBasicMaterial({
-              color: '#facc15',
-              transparent: true,
-              opacity: 0.7,
-            }),
-          );
-          mark.rotation.x = -Math.PI / 2;
-          mark.position.y = 0.02;
-          g.add(mark);
-        }
-        const label = tag(
-          `pointer-events-none whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold shadow ${person.isMe ? 'bg-yellow-300 text-neutral-900' : 'bg-neutral-900/80 text-white'}`,
-          escape(person.isMe ? 'You' : person.name),
-        );
-        label.obj.position.set(0, 3.4, 0);
-        g.add(label.obj);
-        s.labels.push({ obj: label.obj, kind: 'near' });
-        s.statics.add(g);
-
-        const mixer = new THREE.AnimationMixer(body);
-        const actions: Record<string, THREE.AnimationAction> = {};
-        for (const clip of personGltf.animations)
-          actions[clip.name] = mixer.clipAction(clip);
-        const entity: PersonEntity = {
-          key,
-          group: g,
-          mixer,
-          actions,
-          playing: '',
-        };
-        s.people.set(key, entity);
-      }
-    }
-
+    drawBoards();
     syncBots();
+    s.controls.minZoom = Math.min(0.5, fitZoom(layout.extent) * 0.6);
     if (!s.placed) {
       s.placed = true;
-      frame('all', false);
+      frame(
+        w.towns.length > 1 ? 'all' : { type: 'town', id: w.towns[0].id },
+        false,
+      );
+    }
+  };
+
+  const buildTown = (
+    town: WorldTown,
+    layout: ReturnType<typeof layoutWorld>,
+    rank: number,
+  ) => {
+    const s = state.current!;
+    const w = worldRef.current;
+    const spot = layout.towns.get(town.id)!;
+    const brand = brandOf(town);
+    const accent = brand.primary;
+    const half = spot.half;
+    const rand = seeded(town.id);
+    const g = new THREE.Group();
+    g.position.set(spot.x, 0, spot.z);
+    g.userData.pick = { type: 'town', id: town.id };
+    s.statics.add(g);
+
+    // The block, edged in the company's colour.
+    art.block(
+      g,
+      half * 2 + 0.5,
+      0.3,
+      half * 2 + 0.5,
+      accent,
+      0,
+      -0.55,
+      0,
+      0.12,
+    );
+    art.block(g, half * 2, 0.6, half * 2, art.CLAY, 0, -0.6, 0, 0.3);
+
+    // Roads: rings around the square and the lots, and two cross roads.
+    const road = art.tint(accent, 0.62);
+    for (const r of spot.rings) {
+      art.strip(g, r * 2 + ROAD, ROAD, road, 0, r, 0.025);
+      art.strip(g, r * 2 + ROAD, ROAD, road, 0, -r, 0.025);
+      art.strip(g, ROAD, r * 2 + ROAD, road, r, 0, 0.025);
+      art.strip(g, ROAD, r * 2 + ROAD, road, -r, 0, 0.025);
+    }
+    const crossLength = half - PLAZA;
+    const crossMid = PLAZA + crossLength / 2;
+    for (const [x, z, horizontal] of [
+      [crossMid, 0, true],
+      [-crossMid, 0, true],
+      [0, crossMid, false],
+      [0, -crossMid, false],
+    ] as const) {
+      art.strip(
+        g,
+        horizontal ? crossLength : ROAD,
+        horizontal ? ROAD : crossLength,
+        accent,
+        x,
+        z,
+        0.028,
+      );
+      // White arrows pointing out of town.
+      for (let d = PLAZA + 3.5; d < half - 1; d += 5) {
+        const sign = (horizontal ? x : z) > 0 ? 1 : -1;
+        const arrow = new THREE.Mesh(
+          new THREE.ShapeGeometry(
+            new THREE.Shape([
+              new THREE.Vector2(-0.6, -0.5),
+              new THREE.Vector2(0, 0.5),
+              new THREE.Vector2(0.6, -0.5),
+              new THREE.Vector2(0.3, -0.5),
+              new THREE.Vector2(0, 0),
+              new THREE.Vector2(-0.3, -0.5),
+            ]),
+          ),
+          art.clay('#ffffff', { rough: 1 }),
+        );
+        arrow.rotation.x = -Math.PI / 2;
+        arrow.rotation.z = horizontal
+          ? -sign * (Math.PI / 2)
+          : sign > 0
+            ? Math.PI
+            : 0;
+        arrow.position.set(
+          horizontal ? sign * d : 0,
+          0.035,
+          horizontal ? 0 : sign * d,
+        );
+        g.add(arrow);
+      }
+    }
+
+    // The square: paving, a brand border and the logo in the middle.
+    art.strip(g, PLAZA * 2, PLAZA * 2, '#fbfbfc', 0, 0, 0.018);
+    const edge = PLAZA - 0.5;
+    art.strip(g, PLAZA * 2 - 1, 0.35, accent, 0, edge, 0.03);
+    art.strip(g, PLAZA * 2 - 1, 0.35, accent, 0, -edge, 0.03);
+    art.strip(g, 0.35, PLAZA * 2 - 1, accent, edge, 0, 0.03);
+    art.strip(g, 0.35, PLAZA * 2 - 1, accent, -edge, 0, 0.03);
+    art.groundLogo(g, town.name, brand.logo, brand, 3.6);
+
+    const sign = art.logoSign(town.name, brand.logo, brand);
+    const flag = art.flagMaterial(town.name, brand.logo, brand);
+    const hall = art.townHall(sign, flag, accent);
+    hall.group.position.set(-9, 0, -9);
+    hall.group.rotation.y = AZIMUTH;
+    g.add(hall.group);
+    s.anims.push(...hall.anims);
+
+    // Leaderboards on the square, facing the usual view.
+    const people = art.billboard(g, 10, 6.25);
+    people.group.position.set(-PLAZA + 1.8, 0, 4.6);
+    people.group.rotation.y = Math.PI / 2;
+    const projects = art.billboard(g, 10, 6.25);
+    projects.group.position.set(4.6, 0, -PLAZA + 1.8);
+    s.boards.set(town.id, { people, projects });
+
+    for (const [x, z] of [
+      [2.4, PLAZA - 0.8],
+      [-2.4, PLAZA - 0.8],
+      [PLAZA - 0.8, 2.4],
+      [PLAZA - 0.8, -2.4],
+    ])
+      s.anims.push(art.flagPole(g, flag, x, z, rand() * 6));
+    for (const [x, z] of [
+      [-PLAZA + 1.4, PLAZA - 1.4],
+      [PLAZA - 1.4, -PLAZA + 1.4],
+      [-PLAZA + 1.4, PLAZA - 3.6],
+      [PLAZA - 3.6, -PLAZA + 1.4],
+    ])
+      art.tree(g, accent, x, z, rand);
+
+    // Trees round the edge, clear of the cross roads.
+    const margin = half - 1.9;
+    for (let d = -margin; d <= margin; d += 3.2)
+      for (const [x, z] of [
+        [d, margin],
+        [d, -margin],
+        [margin, d],
+        [-margin, d],
+      ]) {
+        if (Math.abs(z) < 3.5 || Math.abs(x) < 3.5) continue;
+        if (rand() < 0.3) continue;
+        art.tree(g, accent, x + (rand() - 0.5), z + (rand() - 0.5), rand);
+      }
+
+    // Empty lots are little parks.
+    for (const park of spot.parks) {
+      art.strip(
+        s.statics,
+        LOT - 1,
+        LOT - 1,
+        art.tint(accent, 0.86),
+        park.x,
+        park.z,
+        0.015,
+      );
+      for (let i = 0; i < 4; i++)
+        art.tree(
+          s.statics,
+          accent,
+          park.x + (rand() - 0.5) * 6,
+          park.z + (rand() - 0.5) * 6,
+          rand,
+        );
+    }
+
+    // Wind turbines out in the fields.
+    for (const [sx, sz] of [
+      [-1, -1],
+      [1, -1],
+      [-1, 1],
+      [1, 1],
+    ]) {
+      if (rand() < 0.45) continue;
+      const x = spot.x + sx * (half + 8 + rand() * 4);
+      const z = spot.z + sz * (half + 8 + rand() * 4);
+      s.anims.push(art.turbine(s.statics, x, z, rand() * 6));
+      for (let i = 0; i < 3; i++)
+        art.tree(
+          s.statics,
+          '#cbd5e1',
+          x + (rand() - 0.5) * 9,
+          z + (rand() - 0.5) * 9,
+          rand,
+        ).position.y = -0.6;
+    }
+
+    // Labels: the town's name from afar, its hall up close.
+    const label = tag(
+      'pointer-events-none flex items-center gap-2 whitespace-nowrap rounded-2xl bg-white py-1.5 pl-1.5 pr-4 shadow-xl',
+      `${badge(brand.logo, town.name, accent, 40, false)}<div><div class="text-base font-extrabold leading-tight text-neutral-900">${escape(town.name)}</div><div class="text-[11px] font-medium text-neutral-500">🏆 #${rank} · ${Math.round(town.weekPoints)} pts this week</div></div>`,
+    );
+    label.inner.style.borderBottom = `4px solid ${accent}`;
+    label.obj.position.set(0, 16, 0);
+    g.add(label.obj);
+    s.labels.push({ obj: label.obj, kind: 'town' });
+    const hallLabel = tag(
+      'pointer-events-none flex items-center gap-1.5 whitespace-nowrap rounded-full bg-white/95 py-0.5 pl-0.5 pr-2.5 text-xs font-bold text-neutral-900 shadow',
+      `${badge(brand.logo, town.name, accent, 20)}${escape(town.name)} Town Hall`,
+    );
+    hallLabel.obj.position.set(-9, 11, -9);
+    g.add(hallLabel.obj);
+    s.labels.push({ obj: hallLabel.obj, kind: 'near' });
+
+    // People on the square, in the company's colours.
+    const here = w.people.filter((p) => p.townIds.includes(town.id));
+    for (const person of here) {
+      const key = `${town.id}:${person.id}`;
+      const at = layout.people.get(key);
+      if (!at) continue;
+      const figure = art.person(person.id, brand, sign);
+      figure.group.position.set(at.x, 0, at.z);
+      figure.group.rotation.y = at.angle;
+      figure.group.userData.pick = { type: 'person', id: person.id };
+      s.statics.add(figure.group);
+      if (person.isMe) {
+        const mark = new THREE.Mesh(
+          new THREE.RingGeometry(0.62, 0.8, 32),
+          new THREE.MeshBasicMaterial({ color: '#facc15', depthWrite: false }),
+        );
+        mark.rotation.x = -Math.PI / 2;
+        mark.position.y = 0.05;
+        figure.group.add(mark);
+      }
+      const name = person.isMe ? 'You' : person.name.split(' ')[0];
+      const label = tag(
+        'pointer-events-none flex flex-col items-center',
+        `<span class="rounded-full p-[2px] shadow-md" style="background:${person.isMe ? '#facc15' : accent}">${badge(person.avatar, person.name, art.shade(accent, 0.2), 20, true, true)}</span><span class="mt-0.5 whitespace-nowrap rounded-full bg-neutral-900/80 px-1.5 text-[10px] font-semibold text-white">${escape(name)}</span>`,
+      );
+      label.obj.position.set(0, 3.5, 0);
+      figure.group.add(label.obj);
+      s.labels.push({ obj: label.obj, kind: 'near' });
+      const prand = seeded(key);
+      s.people.set(key, {
+        key,
+        townId: town.id,
+        personId: person.id,
+        art: figure,
+        home: new THREE.Vector3(at.x, 0, at.z),
+        goal: new THREE.Vector3(at.x, 0, at.z),
+        timer: prand() * 4,
+        phase: prand() * 6,
+        rand: prand,
+        calling: false,
+      });
+    }
+  };
+
+  const buildBuilding = (
+    b: WorldBuilding,
+    layout: ReturnType<typeof layoutWorld>,
+  ) => {
+    const s = state.current!;
+    const w = worldRef.current;
+    const spot = layout.buildings.get(b.id);
+    const town = w.towns.find((t) => t.id === b.townId);
+    if (!spot || !town) return;
+    const townBrand = brandOf(town);
+    const brand = brandOf(b);
+    const g = new THREE.Group();
+    g.position.set(spot.x, 0, spot.z);
+    g.rotation.y = spot.angle;
+    g.userData.pick = { type: 'building', id: b.id };
+    s.statics.add(g);
+    art.strip(g, LOT - 1, LOT - 1, '#eef0f4', 0, 0, 0.015);
+    const height =
+      b.rank === 1 ? 13 : b.rank <= 3 ? 10 : 7 + (art.hash(b.id) % 3);
+    const kind = art.buildingKind(b.id, b.rank);
+    const made = art.building(
+      kind,
+      height,
+      townBrand.primary,
+      art.logoSign(b.name, brand.logo, brand),
+      (art.hash(b.id) % 100) / 10,
+    );
+    g.add(made.group);
+    s.anims.push(...made.anims);
+    const top = new THREE.Box3().setFromObject(made.group).max.y;
+    if (b.rank === 1 && b.weekPoints > 0) {
+      const gold = art.clay('#f5b301', { metal: 0.5, rough: 0.35 });
+      const cup = new THREE.Group();
+      cup.position.set(-1.4, kind === 'tower' ? height + 1.65 : top, 1.2);
+      g.add(cup);
+      art.mesh(
+        cup,
+        new THREE.CylinderGeometry(0.15, 0.3, 0.25, 16),
+        gold,
+        0,
+        0.12,
+        0,
+      );
+      art.mesh(
+        cup,
+        new THREE.CylinderGeometry(0.07, 0.07, 0.35, 10),
+        gold,
+        0,
+        0.4,
+        0,
+      );
+      art.mesh(
+        cup,
+        new THREE.CylinderGeometry(0.5, 0.18, 0.6, 20),
+        gold,
+        0,
+        0.85,
+        0,
+      );
+      s.anims.push((t) => (cup.rotation.y = t * 0.8));
+    }
+    const label = tag(
+      'pointer-events-none flex items-center gap-1.5 whitespace-nowrap rounded-full bg-white/95 py-0.5 pl-0.5 pr-2.5 text-xs font-semibold text-neutral-800 shadow-md',
+      `${badge(brand.logo, b.name, brand.primary, 22)}<span class="rounded-full px-1.5 text-[10px] font-bold text-white" style="background:${townBrand.primary}">#${b.rank}</span>${escape(b.name)}`,
+    );
+    label.obj.position.set(0, top + 2.4, 0);
+    g.add(label.obj);
+    s.labels.push({ obj: label.obj, kind: 'building' });
+  };
+
+  /* ---------------------------- leaderboards ---------------------------- */
+  const drawBoards = () => {
+    const s = state.current;
+    if (!s) return;
+    const w = worldRef.current;
+    for (const town of w.towns) {
+      const boards = s.boards.get(town.id);
+      if (!boards) continue;
+      const brand = brandOf(town);
+      const mine = w.buildings
+        .filter((b) => b.townId === town.id)
+        .sort((a, b) => a.rank - b.rank);
+      boards.people.draw({
+        brand,
+        name: town.name,
+        logo: brand.logo,
+        title: 'Top people',
+        subtitle: `${town.name} · this week`,
+        rows: town.leaderboard.map((r) => ({
+          label: r.name,
+          value: r.points,
+          hex: brand.primary,
+          image: r.avatar,
+        })),
+        empty: 'No points yet this week',
+      });
+      boards.projects.draw({
+        brand,
+        name: town.name,
+        logo: brand.logo,
+        title: 'Project ranking',
+        subtitle: `By ${(mine[0]?.rankedBy ?? 'points this week').toLowerCase()}`,
+        rows: mine.map((b) => ({
+          label: b.name,
+          value: b.weekPoints,
+          hex: brandOf(b).primary,
+          image: brandOf(b).logo,
+          note: `#${b.rank} · ${Math.round(b.weekPoints)} pts`,
+        })),
+        empty: 'No projects yet',
+      });
     }
   };
 
   /* -------------------------------- bots -------------------------------- */
   const syncBots = () => {
     const s = state.current;
-    if (!s?.ready || !s.layout) return;
+    if (!s?.layout) return;
     const w = worldRef.current;
     const layout = s.layout;
     const seen = new Set<string>();
@@ -638,28 +902,32 @@ export const WorldScene = ({
     };
 
     for (const bot of w.bots) {
-      seen.add(bot.id);
       const town = layout.towns.get(bot.townId);
-      if (!town) continue;
+      const worldTown = w.towns.find((t) => t.id === bot.townId);
+      if (!town || !worldTown) continue;
+      seen.add(bot.id);
+      const accent = brandOf(worldTown).primary;
       const building = bot.projectId
         ? layout.buildings.get(bot.projectId)
         : null;
+      // Bots work over the road in front of their building.
       const workSpot = building
         ? new THREE.Vector3(
-            building.x + (town.x - building.x) * 0.3,
-            3.4,
-            building.z + (town.z - building.z) * 0.3,
+            building.x + Math.sin(building.angle) * (LOT / 2 + 0.8),
+            5,
+            building.z + Math.cos(building.angle) * (LOT / 2 + 0.8),
           )
-        : new THREE.Vector3(town.x + 2.5, 3.4, town.z + 2.5);
+        : new THREE.Vector3(town.x - 3, 5, town.z + 3);
       const owner = layout.people.get(`${bot.townId}:${bot.ownerId}`);
-      let target = workSpot;
+      let target: THREE.Vector3;
       if (goesToOwner(bot.state) && owner) {
         const i = slot(`owner:${bot.townId}:${bot.ownerId}`);
-        const a = i * 1.1 + 0.6;
+        // Behind and above them, so they stay in sight.
+        const a = -AZIMUTH * 3 + (i % 2 ? 1 : -1) * Math.ceil(i / 2) * 0.8;
         target = new THREE.Vector3(
-          owner.x + Math.cos(a) * 2.2,
-          3 + i * 0.35,
-          owner.z + Math.sin(a) * 2.2,
+          owner.x + Math.cos(a) * 1.9,
+          4 + i * 0.3,
+          owner.z + Math.sin(a) * 1.9,
         );
       } else {
         const i = slot(`work:${bot.projectId ?? bot.townId}`);
@@ -668,52 +936,41 @@ export const WorldScene = ({
           .clone()
           .add(
             new THREE.Vector3(
-              Math.cos(a) * i * 0.9,
-              i * 0.15,
-              Math.sin(a) * i * 0.9,
+              Math.cos(a) * i * 1.1,
+              i * 0.3,
+              Math.sin(a) * i * 1.1,
             ),
           );
       }
 
       let entity = s.bots.get(bot.id);
       if (!entity) {
-        const g = new THREE.Group();
-        g.userData.pick = { type: 'bot', id: bot.id };
-        const drone = fit(s.models[MODELS.bot].scene.clone(true), 1.8);
-        drone.position.y = 0;
-        shadows(drone);
-        g.add(drone);
-        const light = new THREE.Mesh(
-          new THREE.SphereGeometry(0.12, 12, 12),
-          new THREE.MeshBasicMaterial({ color: BOT_STATE_COLOR[bot.state] }),
-        );
-        light.name = 'light';
-        light.position.y = 1.7;
-        g.add(light);
+        const drone = art.bot(accent);
+        drone.group.userData.pick = { type: 'bot', id: bot.id };
         const label = tag(
-          'pointer-events-none min-w-[84px] rounded-lg bg-white/95 px-2 py-1 text-[11px] text-neutral-800 shadow',
+          'pointer-events-none min-w-[96px] rounded-xl bg-white/95 px-2 py-1 text-[11px] text-neutral-800 shadow-md',
         );
-        label.obj.position.set(0, 2.8, 0);
-        g.add(label.obj);
+        label.obj.position.set(0, 1.9, 0);
+        drone.group.add(label.obj);
         // New bots start at their work, so finished ones are seen flying home.
-        g.position.copy(workSpot);
-        s.scene.add(g);
+        drone.group.position.copy(workSpot);
+        s.scene.add(drone.group);
         entity = {
           bot,
-          group: g,
+          group: drone.group,
+          light: drone.light,
+          rotors: drone.rotors,
           label,
           target,
-          seed: (hash(bot.id) % 1000) / 100,
+          seed: (art.hash(bot.id) % 1000) / 100,
         };
         s.bots.set(bot.id, entity);
       }
       entity.bot = bot;
       entity.target = target;
-      entity.label.inner.innerHTML = botTagHtml(bot);
-      const light = entity.group.getObjectByName('light') as THREE.Mesh;
-      (light.material as THREE.MeshBasicMaterial).color.set(
-        BOT_STATE_COLOR[bot.state],
-      );
+      entity.label.inner.innerHTML = botTagHtml(bot, accent);
+      entity.light.color.set(BOT_STATE_COLOR[bot.state]);
+      entity.light.emissive.set(BOT_STATE_COLOR[bot.state]);
     }
 
     for (const [id, entity] of Array.from(s.bots.entries())) {
@@ -723,23 +980,14 @@ export const WorldScene = ({
       s.bots.delete(id);
     }
 
-    // People with a bot waiting on them reach out; everyone else idles.
-    for (const p of Array.from(s.people.values())) {
-      const [townId, personId] = p.key.split(':');
-      const calling = w.bots.some(
+    // People with a bot waiting on them wave; everyone else strolls.
+    for (const p of Array.from(s.people.values()))
+      p.calling = w.bots.some(
         (b) =>
-          b.ownerId === personId &&
-          b.townId === townId &&
+          b.ownerId === p.personId &&
+          b.townId === p.townId &&
           b.state === 'waiting',
       );
-      const want =
-        calling && p.actions['interact-right'] ? 'interact-right' : 'idle';
-      if (p.playing !== want && p.actions[want]) {
-        p.actions[p.playing]?.fadeOut(0.3);
-        p.actions[want].reset().fadeIn(0.3).play();
-        p.playing = want;
-      }
-    }
   };
 
   /* ------------------------------ camera -------------------------------- */
@@ -748,79 +996,74 @@ export const WorldScene = ({
     if (!s?.layout) return;
     const L = s.layout;
     let target: THREE.Vector3;
-    let distance: number;
+    let size: number;
     if (to === 'all') {
-      const span = Math.max(L.cols, L.rows) * L.spacing;
       target = new THREE.Vector3(0, 0, 0);
-      distance = Math.max(80, span * 1.25);
+      size = L.extent * 1.05;
     } else if (to.type === 'town') {
       const t = L.towns.get(to.id);
       if (!t) return;
       target = new THREE.Vector3(t.x, 0, t.z);
-      distance = t.radius * 2.6;
+      size = t.half * 2 + 6;
     } else if (to.type === 'building') {
       const b = L.buildings.get(to.id);
       if (!b) return;
-      target = new THREE.Vector3(b.x, 1, b.z);
-      distance = 36;
+      target = new THREE.Vector3(b.x, 3, b.z);
+      size = 26;
     } else if (to.type === 'bot') {
       const b = s.bots.get(to.id);
       if (!b) return;
-      target = b.target.clone().setY(1);
-      distance = 30;
+      target = b.target.clone().setY(2);
+      size = 20;
     } else {
-      const p = Array.from(s.people.values()).find((x) =>
-        x.key.endsWith(`:${to.id}`),
-      );
+      const p = Array.from(s.people.values()).find((x) => x.personId === to.id);
       if (!p) return;
-      target = p.group.position.clone().setY(1);
-      distance = 30;
+      target = p.home.clone().setY(1.5);
+      size = 18;
     }
-    // Keep the current heading, look down at a pleasant angle.
-    const dir = s.camera.position
-      .clone()
-      .sub(s.controls.target)
-      .setY(0)
-      .normalize();
-    if (!dir.lengthSq()) dir.set(0.6, 0, 0.8);
-    const cam = target
-      .clone()
-      .add(dir.multiplyScalar(distance * 0.62))
-      .add(new THREE.Vector3(0, distance * 0.78, 0));
+    const zoom = Math.max(
+      s.controls.minZoom,
+      Math.min(s.controls.maxZoom, fitZoom(size)),
+    );
     if (!animate) {
+      const offset = s.camera.position.clone().sub(s.controls.target);
       s.controls.target.copy(target);
-      s.camera.position.copy(cam);
+      s.camera.position.copy(target).add(offset);
+      s.camera.zoom = zoom;
+      s.camera.updateProjectionMatrix();
       return;
     }
     s.fly = {
       fromTarget: s.controls.target.clone(),
       toTarget: target,
-      fromCam: s.camera.position.clone(),
-      toCam: cam,
+      fromZoom: s.camera.zoom,
+      toZoom: zoom,
       t: 0,
     };
   };
 
-  // Rebuild when the shape of the world changes; otherwise just move bots.
+  // Rebuild when the shape of the world changes; otherwise move bots and
+  // repaint the boards.
   const shape = JSON.stringify([
-    world.towns.map((t) => [t.id, t.name, t.color]),
+    world.towns.map((t) => [t.id, t.name, t.brand, t.weekPoints]),
     world.buildings.map((b) => [
       b.id,
       b.name,
       b.rank,
-      b.color,
+      b.brand,
       b.weekPoints > 0,
     ]),
-    world.people.map((p) => [p.id, p.townIds]),
+    world.people.map((p) => [p.id, p.name, p.avatar, p.townIds]),
   ]);
   useEffect(() => {
-    build();
+    if (state.current) build();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shape]);
   useEffect(() => {
     syncBots();
+    drawBoards();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [world.bots]);
+  }, [world]);
 
   useEffect(() => {
     if (focus) frame(focus);
@@ -835,20 +1078,18 @@ export const WorldScene = ({
     let at: { x: number; z: number; r: number } | null = null;
     if (selected?.type === 'building') {
       const b = L.buildings.get(selected.id);
-      if (b) at = { x: b.x, z: b.z, r: 4.2 };
-    } else if (selected?.type === 'town') {
-      const t = L.towns.get(selected.id);
-      if (t) at = { x: t.x, z: t.z, r: 8 };
+      if (b) at = { x: b.x, z: b.z, r: 5.6 };
     } else if (selected?.type === 'person') {
-      const p = Array.from(s.people.values()).find((x) =>
-        x.key.endsWith(`:${selected.id}`),
+      const p = Array.from(s.people.values()).find(
+        (x) => x.personId === selected.id,
       );
-      if (p) at = { x: p.group.position.x, z: p.group.position.z, r: 1.2 };
+      if (p) at = { x: p.home.x, z: p.home.z, r: 1.3 };
     }
     s.ring.visible = !!at;
     if (at) {
-      s.ring.position.set(at.x, 0.05, at.z);
-      s.ring.scale.setScalar(at.r);
+      s.ring.position.set(at.x, 0.06, at.z);
+      s.ring.geometry.dispose();
+      s.ring.geometry = new THREE.RingGeometry(at.r, at.r + 0.3, 64);
     }
   }, [selected, shape]);
 

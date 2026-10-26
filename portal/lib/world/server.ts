@@ -1,3 +1,4 @@
+import { brandKitDefaults } from '@/lib/brandKit';
 import { CLAUDE_SECTION_ID, statusOf, todayFor } from '@/lib/mcp/worklog';
 import { db } from '@/lib/mongodb/db-client';
 import type { SessionUser } from '@/lib/permissions/server';
@@ -19,6 +20,7 @@ import type {
   LeaderRow,
   World,
   WorldBot,
+  WorldBrand,
   WorldBuilding,
   WorldPerson,
   WorldTown,
@@ -26,6 +28,55 @@ import type {
 import { botProgress, botState, currentPoint, GUIDANCE_WEIGHT } from './state';
 
 const LEADERS = 5;
+
+const PALETTE = [
+  '#2563eb',
+  '#dc2626',
+  '#7c3aed',
+  '#059669',
+  '#ea580c',
+  '#0891b2',
+  '#db2777',
+];
+
+/** A town's or building's look, from its brand kit with sensible fallbacks. */
+function brandOf(
+  item: {
+    id: string;
+    color?: string | null;
+    logo?: string | null;
+    brandKit?: any;
+  },
+  fallback?: WorldBrand,
+): WorldBrand {
+  const kit = item.brandKit;
+  const defaults = brandKitDefaults(kit);
+  const hex = (v?: string | null) =>
+    v && /^#[0-9a-f]{6}/i.test(v) ? v.slice(0, 7) : '';
+  const primary =
+    hex(defaults.color) ||
+    hex(item.color) ||
+    fallback?.primary ||
+    PALETTE[
+      Array.from(item.id).reduce((n, c) => n + c.charCodeAt(0), 0) %
+        PALETTE.length
+    ];
+  const secondary =
+    hex(
+      kit?.colors?.find(
+        (c: any) =>
+          hex(c.hex) && hex(c.hex).toLowerCase() !== primary.toLowerCase(),
+      )?.hex,
+    ) ||
+    fallback?.secondary ||
+    '#111827';
+  return {
+    primary,
+    secondary,
+    logo: item.logo || defaults.logo || null,
+    font: kit?.fonts?.[0]?.family || fallback?.font || null,
+  };
+}
 
 const meaningful = (line: string) =>
   normalizeLine(line).replace(/[^\p{L}\p{N}]/gu, '').length >= 3;
@@ -48,12 +99,20 @@ const bump = (
 const top = (
   scores: Map<string, number> | undefined,
   names: Map<string, string>,
+  avatars: Map<string, string | null>,
 ) =>
   Array.from(scores?.entries() ?? [])
     .filter(([id, points]) => points > 0 && names.has(id))
     .sort((a, b) => b[1] - a[1])
     .slice(0, LEADERS)
-    .map(([id, points]): LeaderRow => ({ id, name: names.get(id)!, points }));
+    .map(
+      ([id, points]): LeaderRow => ({
+        id,
+        name: names.get(id)!,
+        avatar: avatars.get(id) ?? null,
+        points,
+      }),
+    );
 
 /**
  * The world as the viewer sees it: the companies they belong to as towns,
@@ -97,6 +156,9 @@ export async function buildWorld(viewer: SessionUser): Promise<World> {
   });
   const names = new Map<string, string>(
     users.map((u: any) => [u.id, u.name || u.username]),
+  );
+  const avatars = new Map<string, string | null>(
+    users.map((u: any) => [u.id, u.avatar ?? null]),
   );
   const userIds = Array.from(names.keys());
   const today = todayFor(users.find((u: any) => u.id === viewer.id)?.timezone);
@@ -154,6 +216,7 @@ export async function buildWorld(viewer: SessionUser): Promise<World> {
 
   // Buildings, ranked in their town on their latest result if any project
   // has one, else on this week's points.
+  const townBrand = new Map(companies.map((c) => [c.id, brandOf(c as any)]));
   const buildings: WorldBuilding[] = [];
   for (const town of companies) {
     const inTown = projects.filter((p) => p.companyId === town.id);
@@ -171,11 +234,15 @@ export async function buildWorld(viewer: SessionUser): Promise<World> {
         name: p.name,
         color: p.color ?? null,
         logo: p.logo ?? null,
+        brand: brandOf(p as any, {
+          ...townBrand.get(town.id)!,
+          logo: null,
+        }),
         townId: town.id,
         rank: i + 1,
         weekPoints: total(byProject.get(p.id)),
         rankedBy: metric ? metricLabel(metric) : 'Points this week',
-        leaderboard: top(byProject.get(p.id), names),
+        leaderboard: top(byProject.get(p.id), names, avatars),
       }),
     );
   }
@@ -197,8 +264,9 @@ export async function buildWorld(viewer: SessionUser): Promise<World> {
       name: c.name,
       color: c.color ?? null,
       logo: c.logo ?? null,
+      brand: townBrand.get(c.id)!,
       weekPoints: total(scores),
-      leaderboard: top(scores, names),
+      leaderboard: top(scores, names, avatars),
     };
   });
 
@@ -248,6 +316,7 @@ export async function buildWorld(viewer: SessionUser): Promise<World> {
         id: `${u.id}:${projectId || 'town'}`,
         ownerId: u.id,
         ownerName: names.get(u.id)!,
+        ownerAvatar: u.avatar ?? null,
         townId: project?.companyId ?? homes[0],
         projectId: project?.id ?? null,
         state,
