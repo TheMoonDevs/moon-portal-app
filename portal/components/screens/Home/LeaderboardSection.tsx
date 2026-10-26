@@ -10,15 +10,8 @@ import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import { UserAvatar } from '../Admin/shared/AdminUI';
 import { CompanyMark } from '../Admin/Workspace/shared';
-
-interface Row {
-  rank: number;
-  user: { id: string; name?: string | null; avatar?: string | null };
-  points: number;
-  tasksDone: number;
-  worklogDays: number;
-  buff: { title: string; src: string } | null;
-}
+import type { LeaderboardPerson as Row } from './PersonWorklogsDrawer';
+import { PersonWorklogsDrawer } from './PersonWorklogsDrawer';
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 
@@ -28,6 +21,7 @@ export const LeaderboardSection = () => {
   const { companies } = useWorkspace();
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [rows, setRows] = useState<Row[] | null>(null);
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   useEffect(() => {
     if (companyId && companies.some((c) => c.company.id === companyId)) return;
@@ -37,6 +31,7 @@ export const LeaderboardSection = () => {
   useEffect(() => {
     if (!companyId) return;
     setRows(null);
+    setOpenIndex(null);
     PortalSdk.getData(`/api/leaderboard?companyId=${companyId}`, null)
       .then((res) => setRows(res?.data?.rows ?? []))
       .catch(() => setRows([]));
@@ -90,43 +85,60 @@ export const LeaderboardSection = () => {
           <p className="p-4 text-sm text-neutral-500">No one here yet.</p>
         ) : (
           <ol className="max-h-[70vh] divide-y divide-neutral-100 overflow-y-auto">
-            {rows.map((row) => (
-              <li
-                key={row.user.id}
-                className={cn(
-                  'flex items-center gap-3 px-3 py-2.5',
-                  row.user.id === user?.id && 'bg-amber-50',
-                )}
-              >
-                <span className="w-6 text-center text-sm font-semibold text-neutral-500">
-                  {MEDALS[row.rank - 1] ?? row.rank}
-                </span>
-                <UserAvatar
-                  src={row.user.avatar}
-                  name={row.user.name}
-                  size={32}
-                />
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium text-neutral-900">
-                    {row.user.name}
+            {rows.map((row, i) => (
+              <li key={row.user.id}>
+                <button
+                  type="button"
+                  onClick={() => setOpenIndex(i)}
+                  title={`See ${row.user.name ?? 'their'}'s worklogs`}
+                  className={cn(
+                    'group flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-neutral-50',
+                    row.user.id === user?.id &&
+                      'bg-amber-50 hover:bg-amber-100',
+                    openIndex === i && 'bg-neutral-100',
+                  )}
+                >
+                  <span className="w-6 text-center text-sm font-semibold text-neutral-500">
+                    {MEDALS[row.rank - 1] ?? row.rank}
                   </span>
-                  <span className="block text-xs text-neutral-500">
-                    {row.worklogDays} days logged · {row.tasksDone} tasks done
+                  <UserAvatar
+                    src={row.user.avatar}
+                    name={row.user.name}
+                    size={32}
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium text-neutral-900">
+                      {row.user.name}
+                    </span>
+                    <span className="block text-xs text-neutral-500">
+                      {row.worklogDays} days logged · {row.tasksDone} tasks done
+                    </span>
                   </span>
-                </span>
-                <span className="text-right">
-                  <span className="block text-sm font-bold text-neutral-900">
-                    {row.points}
+                  <span className="text-right">
+                    <span className="block text-sm font-bold text-neutral-900">
+                      {row.points}
+                    </span>
+                    <span className="block text-[10px] uppercase tracking-wider text-neutral-400">
+                      pts
+                    </span>
                   </span>
-                  <span className="block text-[10px] uppercase tracking-wider text-neutral-400">
-                    pts
+                  <span className="material-symbols-outlined -mr-1 !text-lg text-neutral-300 transition-colors group-hover:text-neutral-600">
+                    chevron_right
                   </span>
-                </span>
+                </button>
               </li>
             ))}
           </ol>
         )}
       </div>
+
+      <PersonWorklogsDrawer
+        people={rows ?? []}
+        index={openIndex}
+        onIndexChange={setOpenIndex}
+        onClose={() => setOpenIndex(null)}
+        isMe={(id) => id === user?.id}
+      />
     </div>
   );
 };
