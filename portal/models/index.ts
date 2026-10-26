@@ -1,4 +1,6 @@
+export * from './connections';
 export * from './hiring';
+export * from './meet';
 export * from './notifications';
 export * from './platform';
 export * from './progress';
@@ -7,4 +9,3 @@ export * from './shared/enums';
 export * from './users';
 export * from './worklogs';
 export * from './workspace';
-export * from './connections';

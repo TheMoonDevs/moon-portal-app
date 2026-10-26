@@ -1,6 +1,6 @@
-import { getToken } from 'next-auth/jwt';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
+import { getToken } from 'next-auth/jwt';
 
 import { rejectIfApiKeyMissing } from '@/middlewares/apiKey';
 import { applyCorsHeaders } from '@/middlewares/cors';
@@ -8,11 +8,14 @@ import { applyCorsHeaders } from '@/middlewares/cors';
 // `/apply/<slug>` is where candidates fill in a job application.
 // `/~offline` is cached by the service worker for when there's no network.
 const PUBLIC_PAGES = ['/login', '/logout', '/apply', '/~offline'];
+// Booking links (`/meet/<code>`) and guests' manage links are open to anyone;
+// `/meet` itself, where people set up their link, is not.
+const PUBLIC_PREFIXES = ['/meet/'];
 
 const isPublicPage = (pathname: string) =>
   PUBLIC_PAGES.some(
     (route) => pathname === route || pathname.startsWith(`${route}/`),
-  );
+  ) || PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 
 export default async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

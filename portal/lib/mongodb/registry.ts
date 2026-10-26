@@ -80,6 +80,8 @@ export const modelMetaMap = defineModelRegistry({
   jobApplication: { collection: 'JobApplication' },
   hiringEmailTemplate: { collection: 'HiringEmailTemplate' },
   hiringEmail: { collection: 'HiringEmail' },
+  meetProfile: { collection: 'MeetProfile' },
+  meetBooking: { collection: 'MeetBooking' },
 });
 
 export type ModelName = keyof typeof modelMetaMap;

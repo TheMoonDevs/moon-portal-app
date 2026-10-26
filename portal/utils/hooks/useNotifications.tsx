@@ -115,5 +115,7 @@ export const useNotifications = () => {
     handleMarkAllAsRead,
     removeNotification,
     clearAllNotifications,
+    /** Reload from the server, e.g. after acting on a notification. */
+    refresh: () => mutate(),
   };
 };
