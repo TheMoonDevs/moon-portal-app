@@ -47,8 +47,12 @@ export const ProfileSection = ({ user }: { user: User }) => {
         <div className="min-w-0 text-left">
           <p className="text-md font-bold text-black">Hello, </p>
           <h4 className="text-xl text-neutral-900">{user?.name}</h4>
-          {user?.positionTitle && (
-            <p className="text-xs text-neutral-500">{user.positionTitle}</p>
+          {(user?.username || user?.positionTitle) && (
+            <p className="text-xs text-neutral-500">
+              {[user.username && `@${user.username}`, user.positionTitle]
+                .filter(Boolean)
+                .join(' · ')}
+            </p>
           )}
           <CompanyChips className="mt-2" />
         </div>

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 
 import { db } from '@/lib/mongodb/db-client';
+import { ensureUserAccounts } from '@/lib/users/server';
 import { authOptions } from '@/pages/api/auth/[...nextauth]';
 
 import { isAllowed } from './defaults';
@@ -11,6 +12,7 @@ import { isSuperAdminEmail } from './superAdmin';
 export interface SessionUser {
   id: string;
   username?: string;
+  name?: string | null;
   email?: string | null;
   isAdmin?: boolean;
   roleKeys?: string[];
@@ -61,14 +63,10 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     | undefined;
   if (!sessionUser) return null;
 
+  await ensureUserAccounts();
   let record: any = null;
   if (sessionUser.id) {
     record = await db.user.findFirst({ where: { id: sessionUser.id } });
-    if (!record) {
-      record = await db.user.findFirst({
-        where: { username: sessionUser.id },
-      });
-    }
   }
   if (!record && sessionUser.email) {
     record = await db.user.findFirst({ where: { email: sessionUser.email } });
@@ -95,6 +93,7 @@ export async function sessionUserFromRecord(
   return {
     id: record.id,
     username: record.username,
+    name: record.name ?? null,
     email: record.email ?? null,
     isAdmin: !!record.isAdmin,
     roleKeys,

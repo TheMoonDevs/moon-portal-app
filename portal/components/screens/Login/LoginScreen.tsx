@@ -86,8 +86,7 @@ export const LoginScreen = () => {
     setLoading(true);
     try {
       const result = await signIn('credentials', {
-        username: passCode.substring(0, 3).toUpperCase(),
-        password: passCode.substring(3).toUpperCase(),
+        code: passCode.toUpperCase(),
         idToken,
         redirect: false,
         callbackUrl: uri || APP_ROUTES.home,

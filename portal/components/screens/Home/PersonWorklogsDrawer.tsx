@@ -21,6 +21,7 @@ export interface LeaderboardPerson {
   user: {
     id: string;
     name?: string | null;
+    username?: string | null;
     avatar?: string | null;
     positionTitle?: string | null;
   };
@@ -302,9 +303,14 @@ export const PersonWorklogsDrawer = ({
                     </span>
                   )}
                 </h3>
-                {person.user.positionTitle && (
+                {(person.user.username || person.user.positionTitle) && (
                   <p className="truncate text-xs text-neutral-500">
-                    {person.user.positionTitle}
+                    {[
+                      person.user.username && `@${person.user.username}`,
+                      person.user.positionTitle,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
                   </p>
                 )}
               </div>

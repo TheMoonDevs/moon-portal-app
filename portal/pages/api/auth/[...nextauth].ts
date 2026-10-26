@@ -7,12 +7,12 @@ import {
   verifyGoogleIdToken,
 } from '@/lib/auth/googleIdToken';
 import { LOGIN_ERRORS } from '@/lib/auth/loginErrors';
-import { db } from '@/lib/mongodb/db-client';
 import { isSuperAdminEmail } from '@/lib/permissions/superAdmin';
+import { findUserBySignInCode } from '@/lib/users/server';
 
 /*
  * Sign-in needs two things together:
- *   1. the person's portal code (username + password, e.g. ABC123), and
+ *   1. the person's six-character sign-in code (e.g. ABC123), and
  *   2. a Google sign-in with ANY Google account linked to that user
  *      (their primary email or one of `linkedEmails`).
  * The Google token is verified on the server, so a code alone never opens a
@@ -23,24 +23,16 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: 'Passcode + Google',
       credentials: {
-        username: { label: 'username', type: 'text' },
-        password: { label: 'password', type: 'password' },
+        code: { label: 'code', type: 'password' },
         idToken: { label: 'idToken', type: 'text' },
       },
       async authorize(credentials) {
-        if (!credentials?.username || !credentials?.password) {
-          throw new Error(LOGIN_ERRORS.INVALID_CODE);
-        }
+        if (!credentials?.code) throw new Error(LOGIN_ERRORS.INVALID_CODE);
         if (!credentials.idToken) {
           throw new Error(LOGIN_ERRORS.GOOGLE_FAILED);
         }
 
-        const user = await db.user.findFirst({
-          where: {
-            username: credentials.username,
-            password: credentials.password,
-          },
-        });
+        const user = await findUserBySignInCode(credentials.code);
         if (!user) throw new Error(LOGIN_ERRORS.INVALID_CODE);
         if (user.status && user.status !== 'ACTIVE') {
           throw new Error(LOGIN_ERRORS.INACTIVE);
@@ -62,7 +54,7 @@ export const authOptions: NextAuthOptions = {
 
         return {
           id: String(user.id),
-          name: user.name ?? user.username,
+          name: user.name || user.username,
           email: user.email ?? googleEmail,
           googleEmail,
         } as any;

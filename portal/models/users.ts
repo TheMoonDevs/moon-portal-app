@@ -15,10 +15,20 @@ import type { USERSTATUS } from './shared/enums';
  */
 export type User = Loose<
   BaseModel & {
-    /** First three characters of the sign-in code. */
+    /**
+     * Public handle (`@jane`): unique, lower-case, editable. Not used to sign
+     * in. See lib/users/username.ts for the rules.
+     */
     username: string;
-    /** Last three characters of the sign-in code. */
-    password: string;
+    /** The private six-character sign-in code, upper-case. Unique. */
+    code?: Nullable<string>;
+    /**
+     * Before usernames, the code was split across `username` (first three
+     * characters) and `password` (last three). Migrated records keep the old
+     * pair in `legacyUsername` and `password`; nothing reads them.
+     */
+    legacyUsername?: Nullable<string>;
+    password?: Nullable<string>;
     email?: Nullable<string>;
     /**
      * Extra Google accounts that may be used to sign in, on top of `email`.
