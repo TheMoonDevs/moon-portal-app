@@ -1,4 +1,6 @@
+import { brandKitDefaults, sanitizeBrandKit } from '@/lib/brandKit';
 import { db } from '@/lib/mongodb/db-client';
+import { sanitizeGoals } from '@/lib/workspace/projects';
 import {
   asStringArray,
   fail,
@@ -21,10 +23,11 @@ const EDITABLE = [
   'status',
   'color',
   'icon',
+  'logo',
+  'brandKit',
   'leadIds',
   'memberIds',
-  'startDate',
-  'dueDate',
+  'goals',
 ] as const;
 
 export async function GET(_request: Request, { params }: Params) {
@@ -71,6 +74,15 @@ export async function PATCH(request: Request, { params }: Params) {
   ) {
     return fail(400, 'Unknown project status.');
   }
+  if ('brandKit' in data) {
+    const kit = sanitizeBrandKit(data.brandKit);
+    data.brandKit = kit;
+    // A kit fills in the logo when the project has none yet.
+    const defaults = brandKitDefaults(kit);
+    if (!(data.logo ?? project.logo) && defaults.logo)
+      data.logo = defaults.logo;
+  }
+  if ('goals' in data) data.goals = sanitizeGoals(data.goals);
   if ('leadIds' in data) data.leadIds = asStringArray(data.leadIds);
   if ('memberIds' in data) data.memberIds = asStringArray(data.memberIds);
 

@@ -1,3 +1,4 @@
+import { getEffectivePermissions } from '@/lib/permissions/defaults';
 import {
   fail,
   getWorkspaceForUser,
@@ -20,6 +21,8 @@ export async function GET() {
   return ok({
     isSuperAdmin: !!user.isSuperAdmin,
     isAdmin: !!user.isAdmin,
+    /** Portal-wide permissions (base, roles and grants, minus denials). */
+    permissions: getEffectivePermissions(user),
     companies,
   });
 }

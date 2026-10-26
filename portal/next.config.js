@@ -40,6 +40,39 @@ const nextConfig = {
     ],
   },
   output: "standalone",
+  // The approval screen for AI assistants must never be framed.
+  async headers() {
+    return [
+      {
+        source: "/oauth/:path*",
+        headers: [
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+        ],
+      },
+    ];
+  },
+  // OAuth discovery for AI assistants connecting to /api/mcp.
+  async rewrites() {
+    return [
+      {
+        source: "/.well-known/oauth-authorization-server",
+        destination: "/api/oauth/metadata",
+      },
+      {
+        source: "/.well-known/oauth-authorization-server/:path*",
+        destination: "/api/oauth/metadata",
+      },
+      {
+        source: "/.well-known/oauth-protected-resource",
+        destination: "/api/oauth/resource",
+      },
+      {
+        source: "/.well-known/oauth-protected-resource/:path*",
+        destination: "/api/oauth/resource",
+      },
+    ];
+  },
   swcMinify: true,
   productionBrowserSourceMaps: false,
   experimental: {

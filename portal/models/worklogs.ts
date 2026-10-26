@@ -8,6 +8,23 @@ import {
   type Nullable,
 } from './shared/base';
 
+/**
+ * Where one worklog line belongs. `source` is how it was decided: `auto` by
+ * the linker, `user` by the person, `none` when the linker could not tell and
+ * the person has not answered yet.
+ */
+export type WorklogLink = {
+  key: string;
+  text: string;
+  /** A `p:` line: its link is only shown to the owner. */
+  isPrivate?: boolean;
+  companyId: string | null;
+  projectId: string | null;
+  taskId: string | null;
+  confidence: number;
+  source: 'auto' | 'user' | 'none';
+};
+
 export type WorkLogs = Loose<
   BaseModel & {
     logType?: Nullable<string>;
@@ -17,6 +34,8 @@ export type WorkLogs = Loose<
     createdAt: DateValue;
     updatedAt: DateValue;
     works: JsonArray;
+    /** One entry per line, kept in step with `works` by the linker. */
+    links?: WorklogLink[];
   }
 >;
 
@@ -30,29 +49,5 @@ export type DocMarkdown = Loose<
   }
 >;
 
-export type Pointer = Loose<
-  BaseModel & {
-    createdAt: Date;
-    updatedAt: Date;
-    userId: string;
-    targetUserId: string;
-    content: string;
-    replies?: Reply[];
-  }
->;
-
-export type Reply = Loose<
-  BaseModel & {
-    createdAt: Date;
-    updatedAt: Date;
-    pointerId: string;
-    pointer?: Pointer;
-    userId: string;
-    content: string;
-  }
->;
-
 export const workLogSchemas = createCrudSchemas<WorkLogs>();
 export const docMarkdownSchemas = createCrudSchemas<DocMarkdown>();
-export const pointerSchemas = createCrudSchemas<Pointer>();
-export const replySchemas = createCrudSchemas<Reply>();

@@ -14,26 +14,15 @@ import { APP_ROUTES } from '@/utils/constants/appInfo';
 import { useUser } from '@/utils/hooks/useUser';
 import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
 import {
-  setAdminTasksMarkdown,
-  setCompletedTasks,
-  setIncompleteTasks,
-} from '@/utils/redux/worklogs/adminTasks.slice';
-import {
   setCompletedTodos,
   setIncompleteTodos,
   setTodoMarkdown,
 } from '@/utils/redux/worklogs/laterTodos.slice';
-import {
-  setCompletedTargets,
-  setIncompleteTargets,
-} from '@/utils/redux/worklogs/monthlyTargets.slice';
 import { setLogsList } from '@/utils/redux/worklogs/worklogs.slice';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import { SummarizeButton } from './SummarizeButton';
 import { WorkLogsHelper } from './WorklogsHelper';
-import AdminTasksTab from './WorklogTabs/AdminTasksTab';
-import MonthlyTargetsTab from './WorklogTabs/MonthlyTargetsTab';
 import TodoTab from './WorklogTabs/TodoTab';
 import WorklogBuff from './WorklogTabs/WorklogBuff';
 import WorklogTips from './WorklogTabs/WorklogTips';
@@ -146,16 +135,9 @@ export const WorklogsPage = () => {
 
   const thisYear = dayjs().year();
   const thisMonth = dayjs().month();
-  const thisDate = dayjs().date();
   const dispatch = useAppDispatch();
   const { todoMarkdown, incompleteTodos } = useAppSelector(
     (state) => state.laterTodos,
-  );
-  const { targetsMarkdown, incompleteTargets } = useAppSelector(
-    (state) => state.monthlyTargets,
-  );
-  const { adminTasksMarkdown, incompleteTasks } = useAppSelector(
-    (state) => state.adminTasks,
   );
   const [monthTab, setMonthTab] = useState<number>(thisMonth);
   const logsList = useAppSelector((state) => state.worklogs.logsList);
@@ -176,18 +158,6 @@ export const WorklogsPage = () => {
       });
   };
 
-  const fetchAdminTasks = (userId: string) => {
-    if (!userId) return;
-    PortalSdk.getData(`/api/user/admintasks?userId=${userId}`, null)
-      .then((data) => {
-        const content = data?.data?.markdown?.content || '';
-        dispatch(setAdminTasksMarkdown(content));
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  };
-
   useEffect(() => {
     if (todoMarkdown) {
       if (todoMarkdown.trim() === '*' || todoMarkdown.trim() === '') {
@@ -202,39 +172,8 @@ export const WorklogsPage = () => {
   }, [todoMarkdown]);
 
   useEffect(() => {
-    if (targetsMarkdown) {
-      if (targetsMarkdown.trim() === '*' || targetsMarkdown.trim() === '') {
-        dispatch(setIncompleteTargets(0));
-      } else {
-        const total = (targetsMarkdown.match(/\n/g) || []).length + 1;
-        const completed = (targetsMarkdown.match(/✅/g) || []).length;
-        dispatch(setIncompleteTargets(total - completed));
-        dispatch(setCompletedTargets(completed));
-      }
-    }
-  }, [targetsMarkdown]);
-
-  useEffect(() => {
-    if (adminTasksMarkdown) {
-      if (
-        adminTasksMarkdown.trim() === '*' ||
-        adminTasksMarkdown.trim() === ''
-      ) {
-        dispatch(setIncompleteTasks(0));
-      } else {
-        const total = (adminTasksMarkdown.match(/\n/g) || []).length + 1;
-        const completed = (adminTasksMarkdown.match(/✅/g) || []).length;
-        dispatch(setIncompleteTasks(total - completed));
-        dispatch(setCompletedTasks(completed));
-      }
-    }
-  }, [adminTasksMarkdown, dispatch]);
-
-  useEffect(() => {
     if (user?.id) {
       fetchLaterToDo(user?.id);
-      // Fetch admin tasks for the current user (they're user-specific)
-      fetchAdminTasks(user.id);
     }
   }, [user?.id]);
 
@@ -321,34 +260,6 @@ export const WorklogsPage = () => {
       ),
       content: <TodoTab userId={user?.id as string} />,
     },
-    {
-      label: (
-        <div className="flex items-center gap-2 p-3">
-          Monthly
-          {incompleteTargets > 0 && (
-            <div className="size-2 animate-pulse rounded-full bg-blue-500"></div>
-          )}
-        </div>
-      ),
-      content: (
-        <MonthlyTargetsTab
-          userId={user?.id as string}
-          month={selectedDate ? centerdate.month() : monthTab}
-          year={selectedDate ? centerdate.year() : thisYear}
-        />
-      ),
-    },
-    {
-      label: (
-        <div className="flex items-center gap-2 p-3">
-          Assigned
-          {incompleteTasks > 0 && (
-            <div className="size-2 animate-pulse rounded-full bg-blue-500"></div>
-          )}
-        </div>
-      ),
-      content: <AdminTasksTab userId={user?.id as string} />,
-    },
     { label: 'Tips', content: <WorklogTips /> },
   ];
 
@@ -389,7 +300,7 @@ export const WorklogsPage = () => {
         <div className="flex items-center">
           <Link href={APP_ROUTES.home}>
             <h1 className="mr-3 cursor-pointer whitespace-nowrap border-r-2 pr-3 text-sm font-extrabold md:text-lg">
-              The Moon Devs
+              PORTAL
             </h1>
           </Link>
           <h1 className="font-regular hidden text-xs tracking-widest sm:block sm:text-sm">

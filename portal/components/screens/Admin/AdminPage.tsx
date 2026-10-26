@@ -13,8 +13,7 @@ import { useWorkspace } from '@/utils/hooks/useWorkspace';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import { AdminUsers } from './AdminUsers';
-import AdminBadges from './badge-template/AdminBadges';
-import EventForm from './Events/EventForm';
+import { AdminBadges } from './Badges/AdminBadges';
 import { AdminHiring } from './Hiring/AdminHiring';
 import { AdminOverview } from './Overview/AdminOverview';
 import SendNotifications from './SendNotifications';
@@ -45,31 +44,38 @@ export const AdminPage = () => {
   const workspace = useWorkspace();
   const isAdmin = !!adminUser?.isAdmin;
 
-  // Portal admins see every tab. Everyone else sees the company tabs they
-  // hold the access for: managers the management tabs, and anyone with a tab's
-  // own permission (such as hiring) in some company that tab.
+  // Portal admins see every tab; others see the admin tabs their portal roles
+  // open, and the company tabs. A company tab with its own permission (such as
+  // hiring) only shows to people who hold it in some company, and the other
+  // company tabs are left out for people who are here only for hiring.
+  const { canPortal } = workspace;
+  const hiringOnly =
+    !workspace.isSuperAdmin &&
+    !workspace.managesPortal &&
+    workspace.managedCompanies.length === 0;
   const visibleTabs = useMemo(
     () =>
       ADMIN_TABS.filter((tab) => {
         if (isAdmin) return true;
-        if (tab.access !== 'company') return false;
+        if (tab.access === 'admin')
+          return !!tab.permission && canPortal(tab.permission);
         if (tab.permission) {
           const permission = tab.permission;
           return workspace.companies.some((c) =>
             hasPermission(c.permissions, permission),
           );
         }
-        return workspace.isSuperAdmin || workspace.managedCompanies.length > 0;
+        return !hiringOnly;
       }),
-    [
-      isAdmin,
-      workspace.companies,
-      workspace.isSuperAdmin,
-      workspace.managedCompanies.length,
-    ],
+    [isAdmin, canPortal, workspace.companies, hiringOnly],
   );
 
   const [users, setUsers] = useState<User[]>([]);
+  // Inactive people only show up where you look for them (the Users tab).
+  const activeUsers = useMemo(
+    () => users.filter((u) => u.status === 'ACTIVE'),
+    [users],
+  );
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -120,7 +126,7 @@ export const AdminPage = () => {
     setLoading(true);
     setLoadError(null);
     try {
-      const data = await PortalSdk.getData('/api/user', null);
+      const data = await PortalSdk.getData('/api/user?status=ALL', null);
       setUsers(data?.data?.user || []);
     } catch (error) {
       console.error(error);
@@ -176,14 +182,6 @@ export const AdminPage = () => {
 
   /* -------------------------------- content -------------------------------- */
 
-  const counts = useMemo(
-    () => ({
-      members: users.filter((user) => user.userType === 'MEMBER').length,
-      clients: users.filter((user) => user.userType === 'CLIENT').length,
-    }),
-    [users],
-  );
-
   const companyCount = new Set(
     [...workspace.managedCompanies, ...workspace.hiringCompanies].map(
       (c) => c.company.id,
@@ -207,15 +205,13 @@ export const AdminPage = () => {
           <AdminUsers users={users} loading={loading} onRefresh={fetchUsers} />
         );
       case 'notifications':
-        return <SendNotifications users={users} loading={loading} />;
-      case 'events':
-        return <EventForm />;
+        return <SendNotifications users={activeUsers} loading={loading} />;
       case 'badges':
         return <AdminBadges />;
       case 'companies':
         return (
           <AdminCompanies
-            users={users}
+            users={activeUsers}
             selectedCompanyId={companyId}
             onSelectCompany={selectCompany}
           />
@@ -223,7 +219,7 @@ export const AdminPage = () => {
       case 'projects':
         return (
           <AdminProjects
-            users={users}
+            users={activeUsers}
             selectedCompanyId={companyId}
             onSelectCompany={selectCompany}
             onOpenTasks={(id) => {
@@ -235,7 +231,7 @@ export const AdminPage = () => {
       case 'tasks':
         return (
           <AdminTasks
-            users={users}
+            users={activeUsers}
             selectedCompanyId={companyId}
             onSelectCompany={selectCompany}
             selectedProjectId={projectId}
@@ -316,13 +312,13 @@ export const AdminPage = () => {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/logo/logo_white.png"
-          alt="TheMoonDevs"
+          alt="Portal"
           className="size-8 shrink-0 object-contain"
         />
         {!collapsed && (
           <div className="min-w-0">
             <p className="truncate text-xs font-bold tracking-[0.2em] text-white">
-              THEMOONDEVS
+              PORTAL
             </p>
             <p className="text-[10px] uppercase tracking-wider text-neutral-500">
               Admin console
@@ -449,7 +445,7 @@ export const AdminPage = () => {
               </p>
               <p className="text-[10px] uppercase tracking-wider text-neutral-500">
                 {isAdmin
-                  ? `${counts.members} members · ${counts.clients} clients`
+                  ? `${users.length} people · ${workspace.companies.length} companies`
                   : companyCountLabel}
               </p>
             </div>
@@ -484,7 +480,7 @@ export const AdminPage = () => {
         <AdminCommandPalette
           open={paletteOpen}
           onOpenChange={setPaletteOpen}
-          users={users}
+          users={activeUsers}
           onNavigate={goToTab}
         />
       )}

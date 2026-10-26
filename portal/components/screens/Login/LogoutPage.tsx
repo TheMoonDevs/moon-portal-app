@@ -16,7 +16,7 @@ export const LogoutPage = () => {
           <div className="rounded-full p-4">
             <Image
               src="/logo/logo_white.png"
-              alt="The Moon Devs"
+              alt="Portal"
               width={80}
               height={80}
             />

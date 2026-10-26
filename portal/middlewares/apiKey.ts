@@ -3,8 +3,15 @@ import { NextResponse } from 'next/server';
 
 const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
-// Routes called by external systems that authenticate themselves differently.
-const EXEMPT_PREFIXES = ['/api/auth', '/api/slack'];
+// Routes called by external systems that authenticate themselves differently:
+// sign-in, and AI assistants (bearer tokens, OAuth). Approving an assistant
+// at /api/oauth/authorize still needs the key.
+const EXEMPT_PREFIXES = [
+  '/api/auth',
+  '/api/mcp',
+  '/api/oauth/token',
+  '/api/oauth/register',
+];
 
 export const rejectIfApiKeyMissing = (request: NextRequest) => {
   if (!MUTATING_METHODS.has(request.method.toUpperCase())) return null;

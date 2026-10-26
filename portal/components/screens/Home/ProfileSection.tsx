@@ -1,23 +1,28 @@
 /* eslint-disable @next/next/no-img-element */
 import type { User } from '@db/client';
 import BoringAvatar from 'boring-avatars';
+import Link from 'next/link';
 
-import { selectMember } from '@/utils/redux/coreTeam/coreTeam.slice';
-import { useAppDispatch } from '@/utils/redux/store';
+import { APP_ROUTES } from '@/utils/constants/appInfo';
+
+import { CompanyChips } from './CompaniesSection';
+
 export const ProfileSection = ({ user }: { user: User }) => {
-  const dispatch = useAppDispatch();
-
-  const handleOpenSlideIn = (user: User) => {
-    dispatch(selectMember(user));
-  };
-
   if (!user?.id) return null;
   return (
     <div className="flex w-full flex-col items-center justify-between px-2 pt-4 md:static md:items-center">
+      <div className="flex w-full items-center gap-2 px-2">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo/logo.png" alt="" className="size-6 object-contain" />
+        <span className="text-xs font-bold tracking-[0.3em] text-neutral-900">
+          PORTAL
+        </span>
+      </div>
       <div className="my-3 flex w-full flex-row items-center justify-start gap-4">
-        <div
+        <Link
+          href={APP_ROUTES.settings}
+          title="Your settings"
           className="rounded-full p-1"
-          onClick={() => handleOpenSlideIn(user)}
         >
           {!user?.avatar || user?.avatar === '' ? (
             <div className="relative size-24">
@@ -38,26 +43,16 @@ export const ProfileSection = ({ user }: { user: User }) => {
               className="size-16 cursor-pointer rounded-full object-cover object-center md:size-[4.5rem]"
             />
           )}
-        </div>
-        <div className="text-left">
+        </Link>
+        <div className="min-w-0 text-left">
           <p className="text-md font-bold text-black">Hello, </p>
           <h4 className="text-xl text-neutral-900">{user?.name}</h4>
-          <p className="text-xs text-neutral-500">{user?.email}</p>
+          {user?.positionTitle && (
+            <p className="text-xs text-neutral-500">{user.positionTitle}</p>
+          )}
+          <CompanyChips className="mt-2" />
         </div>
       </div>
-
-      {/* <div className="mb-4 grid w-full select-none grid-cols-[1.5fr_1fr] items-center justify-center divide-x-2 overflow-hidden rounded-2xl bg-white">
-        <div className="overflow-hidden hover:bg-neutral-100">
-          <PushSubscriptionToggleButton />
-        </div>
-        <div
-          className="flex w-full cursor-pointer flex-row items-center justify-center gap-2 py-4 hover:bg-neutral-100"
-          onClick={handleLogoutDialogOpen}
-        >
-          <CirclePower className="text-red-400" />
-          <span>Logout</span>
-        </div>
-      </div> */}
     </div>
   );
 };

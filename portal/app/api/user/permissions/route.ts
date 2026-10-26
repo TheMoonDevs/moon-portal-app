@@ -13,6 +13,7 @@ import {
 import {
   permissionDeniedResponse,
   requireAuthedPermission,
+  rolePermissionsFor,
 } from '@/lib/permissions/server';
 
 export const dynamic = 'force-dynamic';
@@ -30,13 +31,17 @@ function isValidPermission(value: unknown): value is string {
   return action === '*' && KNOWN_RESOURCES.has(resource);
 }
 
-function summarize(user: {
+async function summarize(record: {
   id: string;
   isAdmin?: boolean | null;
+  roleKeys?: string[] | null;
   permissions?: string[] | null;
   deniedPermissions?: string[] | null;
-  userType?: string | null;
 }) {
+  const user = {
+    ...record,
+    rolePermissions: await rolePermissionsFor(record.roleKeys),
+  };
   return {
     userId: user.id,
     isAdmin: !!user.isAdmin,
@@ -44,7 +49,7 @@ function summarize(user: {
     deniedPermissions: Array.isArray(user.deniedPermissions)
       ? user.deniedPermissions
       : [],
-    // Concrete baseline (role defaults, or everything for an admin) and the
+    // Concrete baseline (base policies plus roles, or everything for an admin) and the
     // concrete set currently in effect — the UI checks against `effective` and
     // badges anything in `baseline`.
     baseline: getBaselinePermissions(user),
@@ -77,7 +82,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  return NextResponse.json({ status: 'success', data: summarize(user) });
+  return NextResponse.json({ status: 'success', data: await summarize(user) });
 }
 
 /**
@@ -146,7 +151,10 @@ export async function PUT(request: NextRequest) {
   }
 
   const desired = new Set(body.effective as string[]);
-  const baseline = getBaselinePermissions(target);
+  const baseline = getBaselinePermissions({
+    ...target,
+    rolePermissions: await rolePermissionsFor(target.roleKeys),
+  });
   const baselineSet = new Set(baseline);
 
   // Diff the desired set against the baseline.
@@ -189,5 +197,8 @@ export async function PUT(request: NextRequest) {
     },
   });
 
-  return NextResponse.json({ status: 'success', data: summarize(updated) });
+  return NextResponse.json({
+    status: 'success',
+    data: await summarize(updated),
+  });
 }

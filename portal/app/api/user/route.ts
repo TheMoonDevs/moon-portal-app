@@ -1,472 +1,316 @@
-// import GoogleSheetsAPI from "@/utils/services/googleSheetSdk";
-import type { HOUSEID, USERROLE, USERTYPE } from '@db/client';
 import { USERSTATUS } from '@db/client';
-import dayjs from 'dayjs';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/mongodb/db-client';
-import { checkPermission, enforcePermission } from '@/lib/permissions/server';
+import { isAllowed } from '@/lib/permissions/defaults';
+import {
+  checkPermission,
+  enforcePermission,
+  getSessionUser,
+  type SessionUser,
+} from '@/lib/permissions/server';
+import { isSuperAdminEmail } from '@/lib/permissions/superAdmin';
 import {
   ADMIN_EMAIL,
   passcodeEmailTemplate,
   POST_EMAIL_API,
 } from '@/utils/helpers/emailTemplates';
 
-// const sheetConfig = {
-//   clientEmail: process.env.GIAM_CLIENT_EMAIL || "",
-//   privateKey: process.env.GIAM_PRIVATE_KEY || "",
-// };
+const fail = (status: number, error: string) =>
+  NextResponse.json({ status: 'fail', error }, { status });
 
-// const sheetSDK = new GoogleSheetsAPI(sheetConfig);
+/** Fields anyone may change on their own record. */
+const SELF_EDITABLE = ['name', 'avatar', 'timezone', 'positionTitle'];
+
+/** Fields a user editor (`users:edit`) may change on anyone's record. */
+const EDITOR_EDITABLE = [
+  ...SELF_EDITABLE,
+  'email',
+  'linkedEmails',
+  'status',
+  'username',
+  'password',
+];
+
+const pickFields = (body: Record<string, unknown>, keys: string[]) =>
+  Object.fromEntries(Object.entries(body).filter(([k]) => keys.includes(k)));
+
+const normalizeEmails = (value: unknown): string[] =>
+  Array.isArray(value)
+    ? Array.from(
+        new Set(
+          value
+            .filter(
+              (e): e is string => typeof e === 'string' && e.includes('@'),
+            )
+            .map((e) => e.trim().toLowerCase()),
+        ),
+      )
+    : [];
+
+/** The sign-in code is only shown to people who can edit users. */
+const withoutSecrets = (
+  user: Record<string, any>,
+  actor: SessionUser | null,
+) => {
+  if (actor && (isAllowed(actor, 'users:edit') || actor.id === user.id)) {
+    return user;
+  }
+  const { password: _password, ...rest } = user;
+  return rest;
+};
+
+const sameKeys = (a: unknown, b: unknown) => {
+  const x = Array.isArray(a) ? [...a].sort() : [];
+  const y = Array.isArray(b) ? [...b].sort() : [];
+  return x.length === y.length && x.every((v, i) => v === y[i]);
+};
+
+/**
+ * Admin and role changes go through here so the same no-escalation rule
+ * applies everywhere: you can only hand out access you already have. Values
+ * equal to what is stored are not changes. Per-user grants and denials are
+ * edited through /api/user/permissions.
+ */
+async function accessChanges(
+  actor: SessionUser,
+  body: Record<string, unknown>,
+  existing: { isAdmin?: boolean | null; roleKeys?: string[] | null } = {},
+): Promise<{ data: Record<string, unknown>; error?: NextResponse }> {
+  const data: Record<string, unknown> = {};
+  const adminChanged =
+    'isAdmin' in body && !!body.isAdmin !== !!existing.isAdmin;
+  const rolesChanged =
+    'roleKeys' in body && !sameKeys(body.roleKeys, existing.roleKeys);
+  if (!adminChanged && !rolesChanged) return { data };
+
+  if (!isAllowed(actor, 'permissions:grant')) {
+    return { data, error: fail(403, 'You cannot change who has access.') };
+  }
+  if (adminChanged) {
+    if (!actor.isAdmin) {
+      return { data, error: fail(403, 'Only admins can change admin access.') };
+    }
+    data.isAdmin = !!body.isAdmin;
+  }
+  if (rolesChanged) {
+    const roleKeys = Array.isArray(body.roleKeys)
+      ? Array.from(
+          new Set(
+            body.roleKeys.filter((k): k is string => typeof k === 'string'),
+          ),
+        )
+      : [];
+    const roles = roleKeys.length
+      ? await db.role.findMany({ where: { key: { in: roleKeys } } })
+      : [];
+    if (roles.length !== roleKeys.length) {
+      return { data, error: fail(400, 'Unknown role.') };
+    }
+    // Both the roles added and the roles taken away must be within your reach.
+    const before = Array.isArray(existing.roleKeys) ? existing.roleKeys : [];
+    const changedKeys = [
+      ...roleKeys.filter((k) => !before.includes(k)),
+      ...before.filter((k) => !roleKeys.includes(k)),
+    ];
+    const changedRoles = changedKeys.length
+      ? await db.role.findMany({ where: { key: { in: changedKeys } } })
+      : [];
+    const tooMuch = changedRoles
+      .flatMap((r: { permissions: string[] }) => r.permissions ?? [])
+      .some((p: string) => !isAllowed(actor, p));
+    if (tooMuch) {
+      return {
+        data,
+        error: fail(
+          403,
+          'You cannot change a role with more access than you have.',
+        ),
+      };
+    }
+    data.roleKeys = roleKeys;
+  }
+  return { data };
+}
 
 export async function GET(request: NextRequest) {
-  const denied = await enforcePermission('users:read');
-  if (denied) return denied;
+  const { response, user: actor } = await checkPermission('users:read');
+  if (response) return response;
 
-  const id = request.nextUrl.searchParams.get('id') as string;
-  const userType = request.nextUrl.searchParams.get('userType') as USERTYPE;
-  const role = request.nextUrl.searchParams.get('role') as USERROLE;
-  const house = request.nextUrl.searchParams.get('house') as HOUSEID;
+  const id = request.nextUrl.searchParams.get('id');
   const status = request.nextUrl.searchParams.get('status');
-  const month = request.nextUrl.searchParams.get('month');
-  const currentMonth = month ?? dayjs().format('MMMM');
-  const cache = request.nextUrl.searchParams.get('cache');
-
-  let error_response: any;
 
   try {
-    const user = await db.user.findMany({
+    const users = await db.user.findMany({
       where: {
         ...(id && { id }),
-        ...(userType && { userType }),
-        ...(role && { role }),
-        ...(house && { house }),
-        // skip status filter when fetching a specific user by id
-        ...(!id && {
-          status: status ? (status as USERSTATUS) : USERSTATUS.ACTIVE,
-        }),
-        ...(id && status && { status: status as USERSTATUS }),
+        // A specific user is returned whatever their status; `status=ALL`
+        // lists everyone.
+        ...(!id && status !== 'ALL' && { status: status || USERSTATUS.ACTIVE }),
       },
-      include: {
-        ...(month && {
-          buffBadge: {
-            where: {
-              month: currentMonth,
-            },
-          },
-        }),
-      },
+      orderBy: { name: 'asc' },
     });
-
-    // console.log(user);
-
-    if (error_response) {
-      return new NextResponse(JSON.stringify(error_response), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    const json_response = {
+    return NextResponse.json({
       status: 'success',
       data: {
-        user,
+        user: users.map((u: Record<string, any>) => withoutSecrets(u, actor)),
       },
-    };
-
-    const response = NextResponse.json(json_response);
-
-    if (cache) {
-      response.headers.set(
-        'Cache-Control',
-        'public, max-age=600, stale-while-revalidate=59',
-      );
-    }
-
-    return response;
-  } catch (e) {
-    console.log(e);
-    return new NextResponse(JSON.stringify(e), {
-      status: 404,
-      headers: { 'Content-Type': 'application/json' },
     });
+  } catch (e) {
+    console.error(e);
+    return fail(500, 'Could not load users.');
   }
 }
 
-// DATA is restricted to created from onboarding page or admin page (ONLY)
+/** Create a user and email them their sign-in code. */
 export async function POST(request: Request) {
-  const denied = await enforcePermission('users:create');
-  if (denied) return denied;
+  const { response, user: actor } = await checkPermission('users:create');
+  if (response || !actor)
+    return response ?? fail(401, 'Authentication required.');
+
+  const body = await request.json().catch(() => ({}));
+  const data: Record<string, unknown> = pickFields(body, EDITOR_EDITABLE);
+  if (!data.name || !data.email)
+    return fail(400, 'Name and email are required.');
+  if (!data.username || !data.password) {
+    return fail(400, 'A six-character sign-in code is required.');
+  }
+  data.username = String(data.username).toUpperCase();
+  data.password = String(data.password).toUpperCase();
+  data.email = String(data.email).trim().toLowerCase();
+  data.linkedEmails = normalizeEmails(data.linkedEmails);
+  data.status = data.status || USERSTATUS.ACTIVE;
+
+  const clash = await db.user.findFirst({
+    where: { username: data.username, password: data.password },
+  });
+  if (clash) return fail(409, 'That sign-in code is already taken.');
+
+  const access = await accessChanges(actor, body);
+  if (access.error) return access.error;
+
+  const now = new Date();
+  const user = await db.user.create({
+    data: { ...data, ...access.data, createdAt: now, updatedAt: now },
+  });
 
   try {
-    const { id, ...rest } = await request.json();
-    const user = await db.user.create({
-      data: {
-        ...rest,
-      },
-    });
-
-    const response = await fetch(POST_EMAIL_API, {
+    await fetch(POST_EMAIL_API, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        to: rest.email,
+        to: data.email,
         sender: ADMIN_EMAIL,
-        subject: 'Your Passcode for The Moon Devs Portal',
+        subject: 'Your Portal sign-in code',
         body: passcodeEmailTemplate(
-          rest.name,
-          `${rest.username} - ${rest.password}`,
+          String(data.name),
+          `${data.username}${data.password}`,
         ),
-        displayName: 'The Moon Devs',
+        displayName: 'Portal',
       }),
     });
-    console.log('Email sent successfully:', await response.json());
-    if (!response.ok) {
-      return new NextResponse(
-        JSON.stringify({ error: 'Failed to send Passcode email' }),
-        {
-          status: 500,
-          headers: { 'Content-Type': 'application/json' },
-        },
-      );
-    }
-    // const currentDate = new Date()
-    //   .toLocaleDateString("en-GB")
-    //   .split("/")
-    //   .reverse()
-    //   .join("-");
-
-    // const sheetData =
-    //   rest.role == USERROLE.TRIAL_CANDIDATE
-    //     ? [
-    //         "=NOW()",
-    //         `${rest.username}${rest.password}`,
-    //         rest.name,
-    //         rest.email,
-    //         rest.personalData.phone,
-    //         rest.personalData.dateOfBirth,
-    //         rest.personalData.city,
-    //         rest.workData?.positionInternal,
-    //         rest.workData?.joining ? rest.workData.joining : currentDate,
-    //         rest.personalData?.workHourOverlap,
-    //         rest.personalData?.address,
-    //         rest.personalData.govtId ? rest.personalData.govtId : "---",
-    //         rest.payData?.upiId,
-    //       ]
-    //     : [
-    //         `${rest.username}${rest.password}`,
-    //         rest.name,
-    //         rest.email,
-    //         rest.personalData.phone,
-    //         rest.payData.upiId,
-    //         `=(YEAR(NOW())-YEAR(INDIRECT("G" & ROW())))`,
-    //         rest.personalData.dateOfBirth,
-    //         rest.personalData.city,
-    //         rest.vertical,
-    //         rest.workData.positionInternal,
-    //         rest.personalData.workHourOverlap,
-    //         rest.workData.workHours,
-    //         currentDate,
-    //         "---", //office email
-    //         rest.personalData.address,
-    //       ];
-
-    // await sheetSDK.appendSheetData({
-    //   spreadsheetId,
-    //   targetId:
-    //     rest.role == USERROLE.TRIAL_CANDIDATE
-    //       ? sheetMap.Trial
-    //       : sheetMap.CoreTeam,
-    //   values: [sheetData],
-    //   range: "A:A",
-    //   majorDimension: "ROWS",
-    // });
-    const json_response = {
-      status: 'success',
-      data: {
-        user,
-      },
-    };
-
-    return NextResponse.json(json_response);
   } catch (e) {
-    return new NextResponse(JSON.stringify(e), {
-      status: 500,
-      statusText: JSON.stringify(e),
-      headers: { 'Content-Type': 'application/json' },
-    });
+    // The user exists; the code can be shared by hand from the editor.
+    console.error('Failed to send sign-in code email', e);
   }
+
+  return NextResponse.json({ status: 'success', data: { user } });
 }
 
+/**
+ * Update a user. People can edit their own name, avatar, timezone and title;
+ * `users:edit` covers everyone else's details; access changes need
+ * `permissions:grant`.
+ */
 export async function PUT(request: Request) {
-  try {
-    const { id, ...rest } = await request.json();
+  const actor = await getSessionUser();
+  if (!actor) return fail(401, 'Authentication required.');
 
-    // Owner-scoped: a user may edit their own record; editing anyone else's
-    // requires `users:edit`.
-    const {
-      user: actor,
-      allowed,
-      response,
-    } = await checkPermission('users:edit');
-    const isSelf = !!actor && !!id && actor.id === id;
-    if (!allowed && !isSelf && response) {
-      return response;
-    }
+  const body = await request.json().catch(() => ({}));
+  const id = typeof body.id === 'string' ? body.id : '';
+  if (!id) return fail(400, 'id is required.');
 
-    // Privilege-escalation guard: only full admins may change access-control
-    // fields through this generic endpoint. Policies are managed via
-    // /api/user/permissions. (When there is no session — internal/service
-    // call — `actor` is null and we leave the payload untouched.)
-    if (actor && !actor.isAdmin) {
-      delete (rest as Record<string, unknown>).permissions;
-      delete (rest as Record<string, unknown>).deniedPermissions;
-      delete (rest as Record<string, unknown>).isAdmin;
-    }
-    // People link their own Google accounts through /api/user/linked-emails,
-    // which proves they own the account. Only user editors set it directly.
-    if (actor && !allowed) {
-      delete (rest as Record<string, unknown>).linkedEmails;
-    }
-    if (Array.isArray(rest.linkedEmails)) {
-      rest.linkedEmails = Array.from(
-        new Set(
-          rest.linkedEmails
-            .filter((e: unknown) => typeof e === 'string' && e.includes('@'))
-            .map((e: string) => e.trim().toLowerCase()),
-        ),
-      );
-    }
-
-    const oldUser = await db.user.findFirst({
-      where: {
-        id,
-      },
-    });
-
-    if (
-      rest.updatedAt &&
-      oldUser?.updatedAt &&
-      new Date(rest.updatedAt) < new Date(oldUser.updatedAt)
-    ) {
-      return new NextResponse(
-        JSON.stringify({ error: 'User Data is outdated', latestUser: oldUser }),
-        {
-          status: 409,
-          headers: { 'Content-Type': 'application/json' },
-        },
-      );
-    }
-    // console.log("old user", oldUser);
-    // console.log("rest ", rest);
-    const user = await db.user.update({
-      where: {
-        id,
-      },
-      data: { ...rest, updatedAt: new Date() },
-    });
-    // const currentDate = new Date()
-    //   .toLocaleDateString("en-GB")
-    //   .split("/")
-    //   .reverse()
-    //   .join("-");
-    // const sheetDataTrial = [
-    //   "=NOW()",
-    //   `${rest.username}${rest.password}`,
-    //   rest.name,
-    //   rest.email,
-    //   rest.personalData?.phone,
-    //   rest.personalData?.dateOfBirth,
-    //   rest.personalData?.city,
-    //   rest.workData?.positionInternal,
-    //   rest.workData?.joining ? rest.workData.joining : currentDate,
-    //   rest.personalData?.workHourOverlap,
-    //   rest.personalData?.address,
-    //   rest.personalData?.govtId ? rest.personalData.govtId : "---",
-    //   rest.payData?.upiId,
-    // ];
-    // const sheetDataCore = [
-    //   `${rest.username}${rest.password}`,
-    //   rest.name,
-    //   rest.email,
-    //   rest.personalData?.phone,
-    //   rest.payData?.upiId,
-    //   `=(YEAR(NOW())-YEAR(INDIRECT("G" & ROW())))`,
-    //   rest.personalData?.dateOfBirth,
-    //   rest.vertical,
-    //   rest.personalData?.city,
-    //   rest.workData?.positionInternal,
-    //   rest.personalData?.workHourOverlap,
-    //   rest.workData?.workHours,
-    //   rest.workData?.joining ? rest.workData.joining : currentDate,
-    //   "---", //office email
-    //   rest.personalData?.address,
-    // ];
-    // const sheetData =
-    //   rest.role == USERROLE.TRIAL_CANDIDATE
-    //     ? [
-    //         "=NOW()",
-    //         `${rest.username}${rest.password}`,
-    //         rest.name,
-    //         rest.email,
-    //         rest.personalData.phone,
-    //         rest.personalData.dateOfBirth,
-    //         rest.personalData.city,
-    //         rest.workData?.positionInternal,
-    //         rest.workData.joining ? rest.workData.joining : currentDate,
-    //         rest.personalData?.workHourOverlap,
-    //         rest.personalData?.address,
-    //         rest.personalData.govtId ? rest.personalData.govtId : "---",
-    //         rest.payData?.upiId,
-    //       ]
-    //     : [
-    //         `${rest.username}${rest.password}`,
-    //         rest.name,
-    //         rest.email,
-    //         rest.personalData?.phone,
-    //         rest.payData?.upiId,
-    //         "=(YEAR(NOW())-YEAR(G14))",
-    //         rest.personalData?.dateOfBirth,
-    //         rest.vertical,
-    //         rest.personalData?.city,
-    //         rest.workData?.positionInternal,
-    //         rest.personalData?.workHourOverlap,
-    //         rest.workData?.workHours,
-    //         currentDate,
-    //         "---", //office email
-    //         rest.personalData?.address,
-    //       ];
-
-    // const newSheet = await sheetSDK.getSheetData({
-    //   spreadsheetId,
-    //   targetId:
-    //     rest.status === "ACTIVE"
-    //       ? rest.role == USERROLE.TRIAL_CANDIDATE
-    //         ? sheetMap.Trial
-    //         : sheetMap.CoreTeam
-    //       : sheetMap.Archive,
-    //   range: "A:Z",
-    //   majorDimension: "ROWS",
-    // });
-    // const oldSheet = await sheetSDK.getSheetData({
-    //   spreadsheetId,
-    //   targetId:
-    //     oldUser?.status === "ACTIVE"
-    //       ? oldUser?.role == USERROLE.TRIAL_CANDIDATE
-    //         ? sheetMap.Trial
-    //         : sheetMap.CoreTeam
-    //       : sheetMap.Archive,
-    //   range: "A:Z",
-    //   majorDimension: "ROWS",
-    // });
-    // let isSheetDataUpdated = false;
-    // let deleteOldData = false;
-    // await Promise.all(
-    //   newSheet.values.map(async (row: any, index: number) => {
-    //     if (
-    //       row[rest.role == USERROLE.TRIAL_CANDIDATE ? 1 : 0] ===
-    //       `${rest.username}${rest.password}`
-    //     ) {
-    //       if (oldUser?.role == rest.role && oldUser?.status == rest.status) {
-    //         await sheetSDK.updateSheetData({
-    //           spreadsheetId,
-    //           targetId:
-    //             rest.role == USERROLE.TRIAL_CANDIDATE
-    //               ? sheetMap.Trial
-    //               : sheetMap.CoreTeam,
-    //           values: [
-    //             oldUser?.role == USERROLE.TRIAL_CANDIDATE
-    //               ? sheetDataTrial
-    //               : sheetDataCore,
-    //           ],
-    //           range: `A${index + 1}`,
-    //           majorDimension: "ROWS",
-    //         });
-    //       } else if (
-    //         oldUser?.role != rest.role &&
-    //         oldUser?.status == rest.status
-    //       ) {
-    //         await sheetSDK.updateSheetData({
-    //           spreadsheetId,
-    //           targetId:
-    //             rest.role == USERROLE.TRIAL_CANDIDATE
-    //               ? sheetMap.Trial
-    //               : sheetMap.CoreTeam,
-    //           values: [
-    //             rest.role == USERROLE.TRIAL_CANDIDATE
-    //               ? sheetDataTrial
-    //               : sheetDataCore,
-    //           ],
-    //           range: `A${index + 1}`,
-    //           majorDimension: "ROWS",
-    //         });
-    //         deleteOldData = true;
-    //       }
-    //       isSheetDataUpdated = true;
-    //     }
-    //   })
-    // );
-
-    // if (!isSheetDataUpdated) {
-    //   await sheetSDK.appendSheetData({
-    //     spreadsheetId,
-    //     targetId:
-    //       rest.status === "ACTIVE"
-    //         ? rest.role == USERROLE.TRIAL_CANDIDATE
-    //           ? sheetMap.Trial
-    //           : sheetMap.CoreTeam
-    //         : sheetMap.Archive,
-    //     values: [
-    //       rest.role == USERROLE.TRIAL_CANDIDATE
-    //         ? sheetDataTrial
-    //         : sheetDataCore,
-    //     ],
-    //     range: "A:A",
-    //     majorDimension: "ROWS",
-    //   });
-    //   if (oldUser?.role != rest.role && oldUser?.status == rest.status) {
-    //     deleteOldData = true;
-    //   } else if (oldUser?.status != rest.status) {
-    //     deleteOldData = true;
-    //   }
-    // }
-    // if (deleteOldData) {
-    //   await Promise.all(
-    //     oldSheet.values.map(async (row: any, index1: number) => {
-    //       if (
-    //         row[oldUser?.role == USERROLE.TRIAL_CANDIDATE ? 1 : 0] ===
-    //         `${rest.username}${rest.password}`
-    //       ) {
-    //         await sheetSDK.deleteRowOrColumn({
-    //           spreadsheetId,
-    //           targetId:
-    //             oldUser?.status === "ACTIVE"
-    //               ? oldUser?.role == USERROLE.TRIAL_CANDIDATE
-    //                 ? sheetMap.Trial
-    //                 : sheetMap.CoreTeam
-    //               : sheetMap.Archive,
-    //           majorDimension: "ROWS",
-    //           indexes: [index1],
-    //         });
-    //       }
-    //     })
-    //   );
-    // }
-    const json_response = {
-      status: 'success',
-      data: {
-        user,
-      },
-    };
-
-    return NextResponse.json(json_response);
-  } catch (e) {
-    console.log('error', e);
-    return new NextResponse(JSON.stringify(e), {
-      status: 500,
-      statusText: JSON.stringify(e),
-      headers: { 'Content-Type': 'application/json' },
-    });
+  const isSelf = actor.id === id;
+  const canEdit = isAllowed(actor, 'users:edit');
+  if (!isSelf && !canEdit) {
+    const denied = await enforcePermission('users:edit');
+    if (denied) return denied;
   }
+
+  const existing = await db.user.findFirst({ where: { id } });
+  if (!existing) return fail(404, 'User not found.');
+
+  if (
+    body.updatedAt &&
+    existing.updatedAt &&
+    new Date(body.updatedAt) < new Date(existing.updatedAt)
+  ) {
+    return NextResponse.json(
+      { error: 'User Data is outdated', latestUser: existing },
+      { status: 409 },
+    );
+  }
+
+  const data: Record<string, unknown> = pickFields(
+    body,
+    canEdit ? EDITOR_EDITABLE : SELF_EDITABLE,
+  );
+  if ('linkedEmails' in data)
+    data.linkedEmails = normalizeEmails(data.linkedEmails);
+  if (typeof data.email === 'string')
+    data.email = data.email.trim().toLowerCase();
+  if (typeof data.username === 'string')
+    data.username = data.username.toUpperCase();
+  if (typeof data.password === 'string')
+    data.password = data.password.toUpperCase();
+  if ('status' in data && isSelf) delete data.status;
+
+  if (isSelf && ('roleKeys' in body || 'isAdmin' in body)) {
+    // Nobody changes their own access; drop it rather than fail the save.
+    delete body.roleKeys;
+    delete body.isAdmin;
+  }
+  const access = await accessChanges(actor, body, existing);
+  if (access.error) return access.error;
+
+  const user = await db.user.update({
+    where: { id },
+    data: { ...data, ...access.data, updatedAt: new Date() },
+  });
+  return NextResponse.json({ status: 'success', data: { user } });
+}
+
+/**
+ * Delete a user for good. Their company memberships go with them; their
+ * worklogs stay, so company history keeps its numbers.
+ */
+export async function DELETE(request: NextRequest) {
+  const { response, user: actor } = await checkPermission('users:delete');
+  if (response || !actor)
+    return response ?? fail(401, 'Authentication required.');
+
+  const body = await request.json().catch(() => ({}));
+  const id =
+    request.nextUrl.searchParams.get('id') ||
+    (typeof body.id === 'string' ? body.id : '');
+  if (!id) return fail(400, 'id is required.');
+  if (id === actor.id) return fail(400, 'You cannot delete yourself.');
+
+  const target = await db.user.findFirst({ where: { id } });
+  if (!target) return fail(404, 'User not found.');
+  if (
+    isSuperAdminEmail(target.email) ||
+    (target.linkedEmails ?? []).some((e: string) => isSuperAdminEmail(e))
+  ) {
+    return fail(403, 'The super admin cannot be deleted.');
+  }
+  if (target.isAdmin && !actor.isAdmin) {
+    return fail(403, 'Only admins can delete an admin.');
+  }
+
+  await db.companyMember.deleteMany({ where: { userId: id } });
+  await db.userBadge.deleteMany({ where: { userId: id } });
+  await db.user.delete({ where: { id } });
+  return NextResponse.json({ status: 'success', data: { id } });
 }

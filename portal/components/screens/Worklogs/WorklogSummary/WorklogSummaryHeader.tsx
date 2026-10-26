@@ -1,6 +1,5 @@
 'use client';
 import type { User } from '@db/client';
-import { USERROLE, USERTYPE } from '@db/client';
 import { Fade } from '@mui/material';
 import dayjs from 'dayjs';
 import Image from 'next/image';
@@ -10,9 +9,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { APP_ROUTES } from '@/utils/constants/appInfo';
 import useOutsideClick from '@/utils/hooks/useOutsideClick';
-import { setMembers } from '@/utils/redux/coreTeam/coreTeam.slice';
-import type { RootState } from '@/utils/redux/store';
-import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
 interface MonthTableProps {
@@ -168,7 +164,7 @@ const SelectUser = ({
 };
 
 interface WorklogSummaryHeaderProps {
-  joiningDate: Date;
+  joiningDate?: Date | string | null;
   setOnlyYearSummary: React.Dispatch<React.SetStateAction<boolean>>;
   setSelectedYear: React.Dispatch<React.SetStateAction<number>>;
   setSelectedMonth: React.Dispatch<React.SetStateAction<number | null>>;
@@ -185,7 +181,6 @@ export const WorklogSummaryHeader = ({
   selectedMonth,
   selectedYear,
 }: WorklogSummaryHeaderProps) => {
-  const dispatch = useAppDispatch();
   const pathName = usePathname();
   const [isYearDropdownOpen, setIsYearDropdownOpen] = useState<boolean>(false);
   const [isMonthDropdownOpen, setIsMonthDropdownOpen] =
@@ -197,7 +192,7 @@ export const WorklogSummaryHeader = ({
   const joiningMonth = Number(dayjs(joiningDate).format('M')) - 1;
   const currentYear = Number(dayjs().format('YYYY'));
   const currentMonth = Number(dayjs().format('M'));
-  const coreTeam = useAppSelector((state: RootState) => state.coreTeam.members);
+  const [coreTeam, setCoreTeam] = useState<User[]>([]);
   const [isSelectOpen, setIsSelectOpen] = useState(false);
 
   useOutsideClick([monthDropdownRef, yearDropdownRef], () => {
@@ -240,30 +235,17 @@ export const WorklogSummaryHeader = ({
   };
 
   useEffect(() => {
-    if (coreTeam.length === 0) {
-      PortalSdk.getData(
-        '/api/user?role=' +
-          USERROLE.CORETEAM +
-          '&userType=' +
-          USERTYPE.MEMBER +
-          '&status=ACTIVE',
-        null,
-      )
-        .then((data) => {
-          dispatch(setMembers(data?.data?.user));
-        })
-        .catch((err) => {
-          console.log(err);
-        });
-    }
-  }, [dispatch, coreTeam.length]);
+    PortalSdk.getData('/api/user?status=ACTIVE', null)
+      .then((data) => setCoreTeam(data?.data?.user ?? []))
+      .catch((err) => console.log(err));
+  }, []);
 
   return (
     <div className="flex flex-row items-center justify-between gap-3 border-neutral-400 bg-white px-3 py-4 max-sm:w-full max-sm:flex-col max-sm:items-start max-sm:gap-4">
       <div className="flex w-full items-center justify-between sm:w-[unset] sm:justify-start">
         <Link href={APP_ROUTES.home} className="flex items-center">
           <h1 className="mr-3 hidden cursor-pointer whitespace-nowrap border-r-2 pr-3 text-sm font-extrabold sm:block md:text-lg">
-            The Moon Devs
+            PORTAL
           </h1>
           <Image
             src="/logo/logo.png"

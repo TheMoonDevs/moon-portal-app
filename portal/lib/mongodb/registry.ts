@@ -50,33 +50,14 @@ function defineModelRegistry<T extends Record<string, ModelDefinition>>(
 
 export const modelMetaMap = defineModelRegistry({
   user: { collection: 'User' },
+  role: { collection: 'Role' },
   workLogs: { collection: 'WorkLogs', objectIdFields: ['userId'] },
   docMarkdown: { collection: 'DocMarkdown' },
-  pointer: {
-    collection: 'Pointer',
-    objectIdFields: ['userId', 'targetUserId'],
-    relations: {
-      replies: {
-        model: 'reply',
-        localField: 'id',
-        foreignField: 'pointerId',
-        many: true,
-      },
-    },
-  },
-  reply: { collection: 'Reply', objectIdFields: ['pointerId', 'userId'] },
-  badgeTemplate: { collection: 'BadgeTemplate' },
-  badgeRewarded: {
-    collection: 'BadgeRewarded',
-    objectIdFields: ['badgeTemplateId'],
-  },
-  buffBadge: { collection: 'BuffBadge', objectIdFields: ['userId'] },
   notification: {
     collection: 'Notification',
     objectIdFields: ['userId', 'matchId'],
   },
   subscription: { collection: 'Subscription', objectIdFields: ['userId'] },
-  event: { collection: 'Event' },
   fileUpload: {
     collection: 'FileUpload',
     objectIdFields: ['userId', 'uploadedByUserId'],
@@ -87,6 +68,14 @@ export const modelMetaMap = defineModelRegistry({
   companyMember: { collection: 'CompanyMember' },
   project: { collection: 'Project' },
   task: { collection: 'Task' },
+  taskSchedule: { collection: 'TaskSchedule' },
+  projectResult: { collection: 'ProjectResult' },
+  apiToken: { collection: 'ApiToken' },
+  oauthClient: { collection: 'OAuthClient' },
+  oauthCode: { collection: 'OAuthCode' },
+  pointEntry: { collection: 'PointEntry' },
+  badge: { collection: 'Badge' },
+  userBadge: { collection: 'UserBadge' },
   jobOpening: { collection: 'JobOpening' },
   jobApplication: { collection: 'JobApplication' },
 });

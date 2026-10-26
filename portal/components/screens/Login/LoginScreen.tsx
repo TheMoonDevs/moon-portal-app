@@ -131,7 +131,7 @@ export const LoginScreen = () => {
               <div className="rounded-full p-4">
                 <Image
                   src="/logo/logo_white.png"
-                  alt="The Moon Devs"
+                  alt="Portal"
                   width={80}
                   height={80}
                 />
@@ -142,7 +142,7 @@ export const LoginScreen = () => {
 
               <div className="relative w-full">
                 <h4 className="mb-4 text-center text-3xl font-bold text-neutral-100">
-                  The Moon Devs
+                  Portal
                 </h4>
                 {/* Gradients */}
                 <div className="absolute inset-x-20 -bottom-[2px] left-1/2 right-0 h-[5px] w-3/4 -translate-x-1/2 bg-gradient-to-r from-transparent via-indigo-500 to-transparent blur-sm" />

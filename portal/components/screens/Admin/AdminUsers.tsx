@@ -3,16 +3,23 @@
 import type { User } from '@db/client';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
+import { toast } from 'sonner';
 
+import { isSuperAdminEmail } from '@/lib/permissions/superAdmin';
 import { cn } from '@/lib/utils';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
+import { useUser } from '@/utils/hooks/useUser';
+import { useWorkspace } from '@/utils/hooks/useWorkspace';
+import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import {
   AdminButton,
+  ConfirmDialog,
   CopyButton,
   EmptyState,
   formatDate,
   Icon,
+  IconAction,
   NativeSelect,
   Panel,
   Pill,
@@ -22,8 +29,9 @@ import {
   StatCard,
   UserAvatar,
 } from './shared/AdminUI';
+import { errorText } from './Workspace/shared';
 
-type TypeFilter = 'ALL' | 'MEMBER' | 'CLIENT';
+type StatusFilter = 'ALL' | 'ACTIVE' | 'INACTIVE';
 type SortKey = 'name' | 'newest' | 'status';
 type ViewMode = 'list' | 'grid';
 
@@ -49,37 +57,55 @@ export const AdminUsers = ({
   loading: boolean;
   onRefresh?: () => void;
 }) => {
+  const { user: me } = useUser();
+  const { canPortal } = useWorkspace();
   const [search, setSearch] = useState('');
-  const [typeFilter, setTypeFilter] = useState<TypeFilter>('ALL');
-  const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('ACTIVE');
   const [roleFilter, setRoleFilter] = useState<string>('ALL');
+  const [deleting, setDeleting] = useState<User | null>(null);
+  const [removing, setRemoving] = useState(false);
+
+  const canDelete = (user: User) =>
+    canPortal('users:delete') &&
+    user.id !== me?.id &&
+    !isSuperAdminEmail(user.email) &&
+    !(user.linkedEmails ?? []).some((e) => isSuperAdminEmail(e)) &&
+    (!user.isAdmin || !!me?.isAdmin);
+
+  const removeUser = async () => {
+    if (!deleting) return;
+    setRemoving(true);
+    try {
+      await PortalSdk.deleteData(`/api/user?id=${deleting.id}`, {
+        id: deleting.id,
+      });
+      toast.success(`${deleting.name || 'User'} deleted`);
+      setDeleting(null);
+      onRefresh?.();
+    } catch (err) {
+      toast.error(errorText(err));
+    } finally {
+      setRemoving(false);
+    }
+  };
   const [sortKey, setSortKey] = useState<SortKey>('name');
   const [view, setView] = useState<ViewMode>('list');
   const [showCredentials, setShowCredentials] = useState(false);
 
   const roles = useMemo(
     () =>
-      Array.from(
-        new Set(users.map((user) => user.role).filter(Boolean) as string[]),
-      ).sort(),
-    [users],
-  );
-
-  const statuses = useMemo(
-    () =>
-      Array.from(
-        new Set(users.map((user) => user.status).filter(Boolean) as string[]),
-      ).sort(),
+      Array.from(new Set(users.flatMap((user) => user.roleKeys ?? []))).sort(),
     [users],
   );
 
   const counts = useMemo(
     () => ({
       all: users.length,
-      members: users.filter((user) => user.userType === 'MEMBER').length,
-      clients: users.filter((user) => user.userType === 'CLIENT').length,
-      admins: users.filter((user) => user.isAdmin).length,
       active: users.filter((user) => user.status === 'ACTIVE').length,
+      inactive: users.filter((user) => user.status !== 'ACTIVE').length,
+      admins: users.filter((user) => user.isAdmin).length,
+      withRoles: users.filter((user) => (user.roleKeys ?? []).length > 0)
+        .length,
     }),
     [users],
   );
@@ -88,16 +114,17 @@ export const AdminUsers = ({
     const term = search.trim().toLowerCase();
 
     const filtered = users.filter((user) => {
-      if (typeFilter !== 'ALL' && user.userType !== typeFilter) return false;
-      if (statusFilter !== 'ALL' && user.status !== statusFilter) return false;
-      if (roleFilter !== 'ALL' && user.role !== roleFilter) return false;
+      if (statusFilter === 'ACTIVE' && user.status !== 'ACTIVE') return false;
+      if (statusFilter === 'INACTIVE' && user.status === 'ACTIVE') return false;
+      if (roleFilter !== 'ALL' && !(user.roleKeys ?? []).includes(roleFilter))
+        return false;
       if (!term) return true;
       return [
         user.name,
         user.username,
         user.email,
-        user.role,
-        user.vertical,
+        ...(user.linkedEmails ?? []),
+        ...(user.roleKeys ?? []),
         user.positionTitle,
       ]
         .filter(Boolean)
@@ -118,18 +145,28 @@ export const AdminUsers = ({
         String(b.name || b.username),
       );
     });
-  }, [users, search, typeFilter, statusFilter, roleFilter, sortKey]);
+  }, [users, search, statusFilter, roleFilter, sortKey]);
+
+  // Inactive people are hidden by default; a search that only finds them
+  // says so instead of coming back empty.
+  const inactiveMatches = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    if (!term || statusFilter !== 'ACTIVE') return 0;
+    return users.filter(
+      (u) =>
+        u.status !== 'ACTIVE' &&
+        [u.name, u.username, u.email, ...(u.linkedEmails ?? [])]
+          .filter(Boolean)
+          .some((v) => String(v).toLowerCase().includes(term)),
+    ).length;
+  }, [users, search, statusFilter]);
 
   const hasFilters =
-    search.trim() !== '' ||
-    typeFilter !== 'ALL' ||
-    statusFilter !== 'ALL' ||
-    roleFilter !== 'ALL';
+    search.trim() !== '' || statusFilter !== 'ACTIVE' || roleFilter !== 'ALL';
 
   const resetFilters = () => {
     setSearch('');
-    setTypeFilter('ALL');
-    setStatusFilter('ALL');
+    setStatusFilter('ACTIVE');
     setRoleFilter('ALL');
   };
 
@@ -151,11 +188,12 @@ export const AdminUsers = ({
 
   const userMeta = (user: User) => (
     <div className="flex flex-wrap items-center gap-1.5">
-      <Pill tone={user.userType === 'CLIENT' ? 'info' : 'purple'}>
-        {user.userType}
-      </Pill>
-      {user.status && <Pill tone={statusTone(user.status)}>{user.status}</Pill>}
-      {user.role && <Pill>{String(user.role).replace(/_/g, ' ')}</Pill>}
+      {user.status && user.status !== 'ACTIVE' && (
+        <Pill tone={statusTone(user.status)}>{user.status}</Pill>
+      )}
+      {(user.roleKeys ?? []).map((key) => (
+        <Pill key={key}>{key.replace(/-/g, ' ')}</Pill>
+      ))}
       {user.isAdmin && (
         <Pill tone="warning" icon="shield_person">
           Admin
@@ -175,17 +213,17 @@ export const AdminUsers = ({
           loading={loading}
         />
         <StatCard
-          label="Members"
-          value={counts.members}
-          icon="engineering"
-          tone="info"
+          label="Active"
+          value={counts.active}
+          icon="how_to_reg"
+          tone="positive"
           loading={loading}
         />
         <StatCard
-          label="Clients"
-          value={counts.clients}
-          icon="business_center"
-          tone="positive"
+          label="With a portal role"
+          value={counts.withRoles}
+          icon="badge"
+          tone="info"
           loading={loading}
         />
         <StatCard
@@ -193,7 +231,7 @@ export const AdminUsers = ({
           value={counts.admins}
           icon="shield_person"
           tone="warning"
-          hint={`${counts.active} active accounts`}
+          hint={`${counts.inactive} inactive accounts`}
           loading={loading}
         />
       </div>
@@ -205,16 +243,20 @@ export const AdminUsers = ({
             <SearchInput
               value={search}
               onChange={setSearch}
-              placeholder="Search by name, username, email or role…"
+              placeholder="Search by name, email, title or role…"
               className="min-w-[220px] flex-1"
             />
-            <Segmented<TypeFilter>
-              value={typeFilter}
-              onChange={setTypeFilter}
+            <Segmented<StatusFilter>
+              value={statusFilter}
+              onChange={setStatusFilter}
               options={[
+                { value: 'ACTIVE', label: 'Active', count: counts.active },
+                {
+                  value: 'INACTIVE',
+                  label: 'Inactive',
+                  count: counts.inactive,
+                },
                 { value: 'ALL', label: 'All', count: counts.all },
-                { value: 'MEMBER', label: 'Members', count: counts.members },
-                { value: 'CLIENT', label: 'Clients', count: counts.clients },
               ]}
             />
             <Link href={APP_ROUTES.userEditor}>
@@ -226,29 +268,15 @@ export const AdminUsers = ({
 
           <div className="flex flex-wrap items-center gap-2">
             <NativeSelect
-              value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value)}
-              className="h-9 w-auto min-w-[130px] text-xs"
-              aria-label="Filter by status"
-            >
-              <option value="ALL">All statuses</option>
-              {statuses.map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
-              ))}
-            </NativeSelect>
-
-            <NativeSelect
               value={roleFilter}
               onChange={(event) => setRoleFilter(event.target.value)}
               className="h-9 w-auto min-w-[130px] text-xs"
               aria-label="Filter by role"
             >
-              <option value="ALL">All roles</option>
+              <option value="ALL">All portal roles</option>
               {roles.map((role) => (
                 <option key={role} value={role}>
-                  {role.replace(/_/g, ' ')}
+                  {role.replace(/-/g, ' ')}
                 </option>
               ))}
             </NativeSelect>
@@ -331,7 +359,7 @@ export const AdminUsers = ({
             description={
               hasFilters
                 ? 'Try a different search term or clear the filters.'
-                : 'Add your first member or client to get started.'
+                : 'Add the first person to get started.'
             }
             action={
               hasFilters ? (
@@ -354,10 +382,13 @@ export const AdminUsers = ({
         ) : view === 'list' ? (
           <ul className="divide-y divide-white/[0.05]">
             {visibleUsers.map((user) => (
-              <li key={user.id}>
+              <li
+                key={user.id}
+                className="group flex items-center transition-colors hover:bg-white/[0.03]"
+              >
                 <Link
                   href={`${APP_ROUTES.userEditor}?id=${user.id}`}
-                  className="flex items-center gap-4 px-4 py-3 transition-colors hover:bg-white/[0.03]"
+                  className="flex min-w-0 flex-1 items-center gap-4 py-3 pl-4"
                 >
                   <UserAvatar src={user.avatar} name={user.name} size={40} />
                   <div className="min-w-0 flex-1">
@@ -375,6 +406,17 @@ export const AdminUsers = ({
                     className="text-[20px] text-neutral-600"
                   />
                 </Link>
+                <div className="w-12 shrink-0 pr-3 text-right">
+                  {canDelete(user) && (
+                    <IconAction
+                      icon="delete"
+                      label={`Delete ${user.name || user.username}`}
+                      tone="danger"
+                      className="opacity-60 transition-opacity group-hover:opacity-100"
+                      onClick={() => setDeleting(user)}
+                    />
+                  )}
+                </div>
               </li>
             ))}
           </ul>
@@ -406,6 +448,20 @@ export const AdminUsers = ({
           </div>
         )}
 
+        {!loading && inactiveMatches > 0 && (
+          <button
+            type="button"
+            onClick={() => setStatusFilter('ALL')}
+            className="w-full border-t border-white/[0.07] px-4 py-2.5 text-left text-xs text-neutral-400 hover:text-white"
+          >
+            {inactiveMatches} inactive{' '}
+            {inactiveMatches === 1
+              ? 'person also matches'
+              : 'people also match'}
+            . Show them
+          </button>
+        )}
+
         {!loading && visibleUsers.length > 0 && (
           <div className="flex items-center justify-between border-t border-white/[0.07] px-4 py-2.5 text-xs text-neutral-500">
             <span>
@@ -420,6 +476,15 @@ export const AdminUsers = ({
           </div>
         )}
       </Panel>
+
+      <ConfirmDialog
+        open={!!deleting}
+        onOpenChange={(open) => !open && setDeleting(null)}
+        title={`Delete ${deleting?.name || deleting?.username || 'this user'}?`}
+        message="They lose access straight away and leave every company. Their worklogs stay, so company history keeps its numbers. This cannot be undone."
+        loading={removing}
+        onConfirm={removeUser}
+      />
     </div>
   );
 };

@@ -1,16 +1,11 @@
 'use client';
 
-import {
-  HOUSEID,
-  USERINDUSTRY,
-  USERROLE,
-  USERSTATUS,
-  USERTYPE,
-  USERVERTICAL,
-} from '@db/client';
-import { getCountryDataList } from 'countries-list';
-import { useMemo, useState } from 'react';
+import { USERSTATUS } from '@db/client';
+import { useRef, useState } from 'react';
 import TimezoneSelect from 'react-timezone-select';
+import { toast } from 'sonner';
+
+import { uploadAvatar } from '@/utils/helpers/uploads';
 
 import {
   Field,
@@ -18,9 +13,7 @@ import {
   NativeSelect,
   Panel,
   PanelHeader,
-  TextArea,
   TextInput,
-  ToggleSwitch,
   UserAvatar,
 } from '../shared/AdminUI';
 import type { UserSectionProps } from './types';
@@ -130,10 +123,27 @@ export const AdminUserBasicData = ({
   user,
   setUser,
   updateField,
-  updateTextareaField,
-}: UserSectionProps) => {
-  const countryData = useMemo(() => getCountryDataList(), []);
+  onAvatarSaved,
+}: UserSectionProps & {
+  /** Called after an upload has saved a new photo on the server. */
+  onAvatarSaved?: (avatar: string, updatedAt?: string) => void;
+}) => {
   const [showPasscode, setShowPasscode] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const onUpload = async (file: File) => {
+    setUploading(true);
+    try {
+      const { avatar, updatedAt } = await uploadAvatar(user.id, file);
+      onAvatarSaved?.(avatar, updatedAt);
+      toast.success('Photo updated');
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const passcode = `${user.username || ''}${user.password || ''}`;
 
@@ -141,43 +151,12 @@ export const AdminUserBasicData = ({
     <div className="flex flex-col gap-4">
       <Panel>
         <PanelHeader
-          title="Identity"
+          title="Profile"
           description="How this person appears across the portal."
           icon="person"
         />
         <div className="grid gap-4 p-4 sm:grid-cols-2">
-          <Field
-            label="Passcode"
-            htmlFor="passcode"
-            hint="First 3 characters become the username, the rest the password."
-            className="sm:col-span-2"
-          >
-            <div className="flex gap-2">
-              <TextInput
-                id="passcode"
-                type={showPasscode ? 'text' : 'password'}
-                autoComplete="off"
-                value={passcode}
-                onChange={(event) =>
-                  setUser((previous) => ({
-                    ...previous,
-                    username: event.target.value.substring(0, 3),
-                    password: event.target.value.substring(3),
-                  }))
-                }
-              />
-              <button
-                type="button"
-                onClick={() => setShowPasscode((value) => !value)}
-                aria-label={showPasscode ? 'Hide passcode' : 'Show passcode'}
-                className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] text-[18px] text-neutral-400 transition-colors hover:bg-white/[0.09] hover:text-white"
-              >
-                <Icon name={showPasscode ? 'visibility_off' : 'visibility'} />
-              </button>
-            </div>
-          </Field>
-
-          <Field label="Display name" htmlFor="name">
+          <Field label="Name" htmlFor="name">
             <TextInput
               id="name"
               value={user.name || ''}
@@ -186,30 +165,7 @@ export const AdminUserBasicData = ({
             />
           </Field>
 
-          <Field label="Email" htmlFor="email">
-            <TextInput
-              id="email"
-              type="email"
-              value={user.email || ''}
-              onChange={updateField}
-              placeholder="jane@themoondevs.com"
-            />
-          </Field>
-
-          <Field
-            label="Other Google accounts"
-            hint="They can sign in with their code plus any of these accounts."
-            className="sm:col-span-2"
-          >
-            <LinkedEmailsInput
-              value={user.linkedEmails ?? []}
-              onChange={(linkedEmails) =>
-                setUser((prev) => ({ ...prev, linkedEmails }))
-              }
-            />
-          </Field>
-
-          <Field label="Position title" htmlFor="positionTitle">
+          <Field label="Title" htmlFor="positionTitle">
             <TextInput
               id="positionTitle"
               value={user.positionTitle || ''}
@@ -218,164 +174,47 @@ export const AdminUserBasicData = ({
             />
           </Field>
 
-          <Field label="Slack ID" htmlFor="slackId">
-            <TextInput
-              id="slackId"
-              value={user.slackId || ''}
-              onChange={updateField}
-              placeholder="U01ABC23DEF"
-            />
-          </Field>
-
           <Field
-            label="Description"
-            htmlFor="description"
-            className="sm:col-span-2"
-          >
-            <TextArea
-              id="description"
-              value={user.description || ''}
-              onChange={updateTextareaField}
-              placeholder="A short bio shown on the profile…"
-            />
-          </Field>
-
-          <Field
-            label="Avatar URL"
+            label="Photo"
             htmlFor="avatar"
             className="sm:col-span-2"
-            hint="Paste a direct image link; the preview updates as you type."
+            hint={
+              user.id
+                ? 'Upload a PNG, JPG, WebP or GIF up to 5 MB. It saves straight away. You can also paste a link.'
+                : 'Create the user first to upload a photo, or paste a link now.'
+            }
           >
             <div className="flex items-center gap-3">
-              <UserAvatar src={user.avatar} name={user.name} size={40} />
+              <UserAvatar src={user.avatar} name={user.name} size={48} />
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = '';
+                  if (file) onUpload(file);
+                }}
+              />
+              <button
+                type="button"
+                disabled={!user.id || uploading}
+                onClick={() => fileRef.current?.click()}
+                className="flex h-10 shrink-0 items-center gap-2 rounded-lg border border-white/10 bg-white/[0.06] px-3 text-sm text-neutral-200 transition-colors hover:bg-white/[0.1] disabled:opacity-40"
+              >
+                <Icon name="upload" />
+                {uploading ? 'Uploading…' : 'Upload'}
+              </button>
               <TextInput
                 id="avatar"
                 value={user.avatar || ''}
                 onChange={updateField}
-                placeholder="https://…"
+                placeholder="or paste https://…"
               />
             </div>
           </Field>
-        </div>
-      </Panel>
 
-      <Panel>
-        <PanelHeader
-          title="Classification"
-          description="Determines what this account can see and where it belongs."
-          icon="category"
-        />
-        <div className="grid gap-4 p-4 sm:grid-cols-2">
-          <Field label="Type" htmlFor="userType">
-            <NativeSelect
-              id="userType"
-              value={user.userType || ''}
-              onChange={updateField}
-            >
-              {Object.values(USERTYPE).map((type) => (
-                <option key={type} value={type}>
-                  {titleCase(type)}
-                </option>
-              ))}
-            </NativeSelect>
-          </Field>
-
-          <Field label="Status" htmlFor="status">
-            <NativeSelect
-              id="status"
-              value={user.status || ''}
-              onChange={updateField}
-            >
-              {Object.values(USERSTATUS).map((status) => (
-                <option key={status} value={status}>
-                  {titleCase(status)}
-                </option>
-              ))}
-            </NativeSelect>
-          </Field>
-
-          {user.userType === USERTYPE.MEMBER && (
-            <>
-              <Field label="Role" htmlFor="role">
-                <NativeSelect
-                  id="role"
-                  value={user.role || ''}
-                  onChange={updateField}
-                >
-                  {Object.values(USERROLE).map((role) => (
-                    <option key={role} value={role}>
-                      {titleCase(role)}
-                    </option>
-                  ))}
-                </NativeSelect>
-              </Field>
-
-              <Field label="Vertical" htmlFor="vertical">
-                <NativeSelect
-                  id="vertical"
-                  value={user.vertical || ''}
-                  onChange={updateField}
-                >
-                  {Object.values(USERVERTICAL).map((vertical) => (
-                    <option key={vertical} value={vertical}>
-                      {titleCase(vertical)}
-                    </option>
-                  ))}
-                </NativeSelect>
-              </Field>
-
-              <Field label="House" htmlFor="house">
-                <NativeSelect
-                  id="house"
-                  value={user.house || ''}
-                  onChange={updateField}
-                >
-                  {Object.values(HOUSEID).map((house) => (
-                    <option key={house} value={house}>
-                      {titleCase(house)}
-                    </option>
-                  ))}
-                </NativeSelect>
-              </Field>
-            </>
-          )}
-
-          {user.userType === USERTYPE.CLIENT && (
-            <Field label="Industry" htmlFor="industry">
-              <NativeSelect
-                id="industry"
-                value={user.industry || ''}
-                onChange={updateField}
-              >
-                {Object.values(USERINDUSTRY).map((industry) => (
-                  <option key={industry} value={industry}>
-                    {titleCase(industry)}
-                  </option>
-                ))}
-              </NativeSelect>
-            </Field>
-          )}
-
-          <Field label="Admin access" className="sm:col-span-2">
-            <ToggleSwitch
-              checked={!!user.isAdmin}
-              onChange={(value) =>
-                setUser((previous) => ({ ...previous, isAdmin: value }))
-              }
-              label="Full admin"
-              description="Grants every permission unless denied in Access & policies."
-            />
-          </Field>
-        </div>
-      </Panel>
-
-      <Panel>
-        <PanelHeader
-          title="Location"
-          description="Used for overlap hours and regional formatting."
-          icon="public"
-        />
-        <div className="grid gap-4 p-4 sm:grid-cols-2">
           <Field label="Timezone" htmlFor="timezone">
             <TimezoneSelect
               inputId="timezone"
@@ -391,19 +230,82 @@ export const AdminUserBasicData = ({
             />
           </Field>
 
-          <Field label="Country" htmlFor="country">
+          <Field label="Status" htmlFor="status">
             <NativeSelect
-              id="country"
-              value={user.country || ''}
+              id="status"
+              value={user.status || ''}
               onChange={updateField}
             >
-              <option value="">Select a country…</option>
-              {countryData.map((country) => (
-                <option key={country.iso2} value={country.iso2}>
-                  {country.name}
+              {Object.values(USERSTATUS).map((status) => (
+                <option key={status} value={status}>
+                  {titleCase(status)}
                 </option>
               ))}
             </NativeSelect>
+          </Field>
+        </div>
+      </Panel>
+
+      <Panel>
+        <PanelHeader
+          title="Sign-in"
+          description="A six-character code, then any of their Google accounts."
+          icon="key"
+        />
+        <div className="grid gap-4 p-4 sm:grid-cols-2">
+          <Field
+            label="Sign-in code"
+            htmlFor="passcode"
+            hint="Six letters or numbers. It is emailed to them when you create the account."
+          >
+            <div className="flex gap-2">
+              <TextInput
+                id="passcode"
+                type={showPasscode ? 'text' : 'password'}
+                autoComplete="off"
+                maxLength={6}
+                value={passcode}
+                onChange={(event) => {
+                  const code = event.target.value.toUpperCase();
+                  setUser((previous) => ({
+                    ...previous,
+                    username: code.substring(0, 3),
+                    password: code.substring(3),
+                  }));
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPasscode((value) => !value)}
+                aria-label={showPasscode ? 'Hide code' : 'Show code'}
+                className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] text-[18px] text-neutral-400 transition-colors hover:bg-white/[0.09] hover:text-white"
+              >
+                <Icon name={showPasscode ? 'visibility_off' : 'visibility'} />
+              </button>
+            </div>
+          </Field>
+
+          <Field label="Main email" htmlFor="email">
+            <TextInput
+              id="email"
+              type="email"
+              value={user.email || ''}
+              onChange={updateField}
+              placeholder="jane@company.com"
+            />
+          </Field>
+
+          <Field
+            label="Other Google accounts"
+            hint="They can sign in with their code plus any of these accounts."
+            className="sm:col-span-2"
+          >
+            <LinkedEmailsInput
+              value={user.linkedEmails ?? []}
+              onChange={(linkedEmails) =>
+                setUser((prev) => ({ ...prev, linkedEmails }))
+              }
+            />
           </Field>
         </div>
       </Panel>

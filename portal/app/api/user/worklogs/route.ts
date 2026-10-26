@@ -2,14 +2,16 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 
+import { keepClaudeSection } from '@/lib/mcp/worklog';
 import { db } from '@/lib/mongodb/db-client';
 import { enforcePermission } from '@/lib/permissions/server';
+import { PRIVATE_LINE } from '@/lib/worklogs/lines';
 import { authOptions } from '@/pages/api/auth/[...nextauth]';
 
 function sanitizePrivateLines(content: string): string {
   const sanitized = content
     .split('\n')
-    .filter((line) => !/^\s*(\*\s*)?p:/i.test(line))
+    .filter((line) => !PRIVATE_LINE.test(line))
     .join('\n')
     .trim();
   return sanitized.length > 0 ? sanitized : '*';
@@ -30,7 +32,15 @@ function sanitizeWorklogsForViewer(
         })
       : worklog.works;
 
-    return { ...worklog, works };
+    // Links carry line text, so others see where work went but not the
+    // words, and nothing at all about private lines.
+    const links = Array.isArray(worklog.links)
+      ? worklog.links
+          .filter((link: Record<string, any>) => !link.isPrivate)
+          .map(({ text: _text, ...link }: Record<string, any>) => link)
+      : worklog.links;
+
+    return { ...worklog, works, links };
   });
 }
 
@@ -106,8 +116,36 @@ export async function PUT(request: Request) {
   if (denied) return denied;
 
   try {
-    const { id, ...rest } = await request.json();
+    // Links are kept up to date by /api/user/worklogs/links, never here, so an
+    // autosave with an older copy cannot undo them.
+    const { id, links: _links, ...rest } = await request.json();
     const { userId, logType, date } = rest ?? {};
+
+    // People write their own worklogs only.
+    const viewerUserId = await resolveViewerUserId();
+    const existing =
+      id && id.length > 2
+        ? await db.workLogs.findFirst({ where: { id } })
+        : null;
+    const ownerId = existing?.userId ?? userId;
+    if (!viewerUserId || (ownerId && ownerId !== viewerUserId)) {
+      return NextResponse.json(
+        { status: 'fail', error: 'You can only edit your own worklogs.' },
+        { status: 403 },
+      );
+    }
+    rest.userId = ownerId ?? viewerUserId;
+
+    // Keep what the person's assistant logged since this copy was loaded.
+    const stored =
+      existing ??
+      (logType && date
+        ? await db.workLogs.findFirst({
+            where: { userId: rest.userId, logType, date },
+          })
+        : null);
+    if (stored && 'works' in rest)
+      rest.works = keepClaudeSection(rest.works, stored.works);
 
     //console.log("updating worklogs on server", id, rest);
     let workLogs;

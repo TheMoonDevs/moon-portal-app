@@ -1,7 +1,9 @@
 import { db } from '@/lib/mongodb/db-client';
+import { syncTaskPoints } from '@/lib/progress/server';
 import {
   asStringArray,
   fail,
+  goalLink,
   nowIso,
   ok,
   pick,
@@ -21,6 +23,8 @@ const EDITABLE = [
   'status',
   'assigneeIds',
   'dueDate',
+  'goalId',
+  'goalPartId',
 ] as const;
 
 async function guard(taskId: string, permission: string) {
@@ -62,11 +66,25 @@ export async function PATCH(request: Request, { params }: Params) {
     if (!nowDone) data.completedAt = null;
   }
   if ('assigneeIds' in data) data.assigneeIds = asStringArray(data.assigneeIds);
+  if ('dueDate' in data) data.dueDate = data.dueDate || null;
+  if ('goalId' in data || 'goalPartId' in data) {
+    const project = await db.project.findFirst({
+      where: { id: task.projectId },
+    });
+    Object.assign(
+      data,
+      goalLink(project, {
+        goalId: 'goalId' in data ? data.goalId : task.goalId,
+        goalPartId: 'goalPartId' in data ? data.goalPartId : task.goalPartId,
+      }),
+    );
+  }
 
   const updated = await db.task.update({
     where: { id: task.id },
     data: { ...data, updatedAt: nowIso() },
   });
+  await syncTaskPoints(updated);
   return ok({ task: updated });
 }
 
@@ -75,5 +93,6 @@ export async function DELETE(_request: Request, { params }: Params) {
   if (response || !task)
     return response ?? fail(401, 'Authentication required.');
   await db.task.delete({ where: { id: task.id } });
+  await syncTaskPoints(null, task.id);
   return ok({ task });
 }

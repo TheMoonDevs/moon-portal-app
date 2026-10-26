@@ -1,10 +1,11 @@
 'use client';
 
-import type { Task, User } from '@db/client';
+import type { ProjectGoal, Task, User } from '@db/client';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import { cn } from '@/lib/utils';
+import { PERIOD_LABELS } from '@/lib/workspace/projects';
 import { useWorkspace } from '@/utils/hooks/useWorkspace';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
@@ -32,6 +33,7 @@ import {
   AvatarStack,
   CompanyPicker,
   errorText,
+  GoalPicker,
   NeedsCompany,
   PeoplePicker,
   ProgressBar,
@@ -39,6 +41,9 @@ import {
 } from './shared';
 
 const STATUS_ORDER = ['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE'];
+/** Tasks taken off the board without being done. */
+const SET_ASIDE = ['IGNORED', 'ARCHIVED'];
+const ALL_STATUSES = [...STATUS_ORDER, ...SET_ASIDE];
 
 const emptyDraft = {
   title: '',
@@ -46,6 +51,7 @@ const emptyDraft = {
   size: 'MINOR',
   status: 'TODO',
   dueDate: '',
+  goal: '',
   assigneeIds: [] as string[],
 };
 
@@ -53,6 +59,7 @@ const TaskForm = ({
   open,
   onOpenChange,
   projectId,
+  goals,
   task,
   users,
   onSaved,
@@ -60,6 +67,7 @@ const TaskForm = ({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   projectId: string;
+  goals: ProjectGoal[];
   task: Task | null;
   users: User[];
   onSaved: () => void;
@@ -77,6 +85,7 @@ const TaskForm = ({
             size: task.size,
             status: task.status,
             dueDate: task.dueDate ?? '',
+            goal: task.goalId ? `${task.goalId}:${task.goalPartId ?? ''}` : '',
             assigneeIds: task.assigneeIds ?? [],
           }
         : emptyDraft,
@@ -92,7 +101,14 @@ const TaskForm = ({
     if (!draft.title.trim()) return toast.error('Give the task a title.');
     setSaving(true);
     try {
-      const payload = { ...draft, dueDate: draft.dueDate || null };
+      const { goal, ...rest } = draft;
+      const [goalId, goalPartId] = goal.split(':');
+      const payload = {
+        ...rest,
+        dueDate: draft.dueDate || null,
+        goalId: goalId || null,
+        goalPartId: goalPartId || null,
+      };
       if (task) await PortalSdk.patchData(`/api/tasks/${task.id}`, payload);
       else await PortalSdk.postData('/api/tasks', { ...payload, projectId });
       toast.success(task ? 'Task updated' : 'Task created');
@@ -154,20 +170,29 @@ const TaskForm = ({
               value={draft.status}
               onChange={(e) => set('status', e.target.value)}
             >
-              {STATUS_ORDER.map((key) => (
+              {ALL_STATUSES.map((key) => (
                 <option key={key} value={key}>
                   {TASK_STATUS_META[key].label}
                 </option>
               ))}
             </NativeSelect>
           </Field>
-          <Field label="Due date">
+          <Field label="Due date" hint="Optional">
             <DateInput
               value={draft.dueDate}
               onChange={(e) => set('dueDate', e.target.value)}
             />
           </Field>
         </div>
+        {goals.length > 0 && (
+          <Field label="Counts towards">
+            <GoalPicker
+              goals={goals}
+              value={draft.goal}
+              onChange={(goal) => set('goal', goal)}
+            />
+          </Field>
+        )}
         <Field label="Details">
           <TextArea
             value={draft.description}
@@ -207,29 +232,40 @@ export const AdminTasks = ({
   const [editing, setEditing] = useState<Task | null>(null);
   const [deleting, setDeleting] = useState<Task | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [showSetAside, setShowSetAside] = useState(false);
 
   const companyId = selectedCompanyId;
 
-  useEffect(() => {
-    if (!companyId) return;
-    PortalSdk.getData(`/api/projects?companyId=${companyId}`, null)
-      .then((res) => {
-        const list: ProjectRow[] = res?.data?.projects ?? [];
-        setProjects(list);
-        if (!list.some((p) => p.id === selectedProjectId)) {
-          onSelectProject(list[0]?.id ?? null);
-        }
-      })
-      .catch((err) => toast.error(errorText(err, 'Could not load projects.')));
+  // Projects carry goal progress, so they are reloaded when tasks change.
+  const loadProjects = useCallback(
+    (pickFirst = false) => {
+      if (!companyId) return;
+      PortalSdk.getData(`/api/projects?companyId=${companyId}`, null)
+        .then((res) => {
+          const list: ProjectRow[] = res?.data?.projects ?? [];
+          setProjects(list);
+          if (pickFirst && !list.some((p) => p.id === selectedProjectId)) {
+            onSelectProject(list[0]?.id ?? null);
+          }
+        })
+        .catch((err) =>
+          toast.error(errorText(err, 'Could not load projects.')),
+        );
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [companyId]);
+    [companyId],
+  );
+
+  useEffect(() => {
+    loadProjects(true);
+  }, [loadProjects]);
 
   const loadTasks = useCallback(async () => {
     if (!selectedProjectId) return setTasks([]);
     setLoading(true);
     try {
       const res = await PortalSdk.getData(
-        `/api/tasks?projectId=${selectedProjectId}`,
+        `/api/tasks?projectId=${selectedProjectId}${showSetAside ? '&includeArchived=true' : ''}`,
         null,
       );
       setTasks(res?.data?.tasks ?? []);
@@ -238,7 +274,7 @@ export const AdminTasks = ({
     } finally {
       setLoading(false);
     }
-  }, [selectedProjectId]);
+  }, [selectedProjectId, showSetAside]);
 
   useEffect(() => {
     loadTasks();
@@ -248,12 +284,14 @@ export const AdminTasks = ({
   const byId = useMemo(() => new Map(users.map((u) => [u.id, u])), [users]);
   const canEdit = !!companyId && can(companyId, 'tasks:edit');
 
-  const done = tasks.filter((t) => t.status === 'DONE');
-  const weight = (list: Task[]) =>
-    list.reduce((sum, t) => sum + (t.size === 'MAJOR' ? 3 : 1), 0);
-  const percent = tasks.length
-    ? Math.round((weight(done) / weight(tasks)) * 100)
-    : 0;
+  const counted = tasks.filter((t) => !SET_ASIDE.includes(t.status));
+  const open = counted.filter((t) => t.status !== 'DONE');
+  const setAside = tasks.filter((t) => SET_ASIDE.includes(t.status));
+  const goalName = (task: Task) => {
+    const goal = project?.goals?.find((g) => g.id === task.goalId);
+    const part = goal?.parts?.find((p) => p.id === task.goalPartId);
+    return goal ? (part ? part.label : goal.title) : null;
+  };
 
   const setStatus = async (task: Task, status: string) => {
     setBusyId(task.id);
@@ -265,6 +303,7 @@ export const AdminTasks = ({
     );
     try {
       await PortalSdk.patchData(`/api/tasks/${task.id}`, { status });
+      loadProjects();
     } catch (err) {
       toast.error(errorText(err));
       loadTasks();
@@ -332,20 +371,44 @@ export const AdminTasks = ({
         <NeedsCompany text="Create a project first, then add tasks to it." />
       ) : (
         <>
-          <Panel className="p-4">
-            <div className="mb-2 flex items-center justify-between text-xs text-neutral-400">
+          <Panel className="flex flex-col gap-3 p-4">
+            <div className="flex items-center justify-between text-xs text-neutral-400">
               <span>
-                {done.length} of {tasks.length} tasks done
+                <span className="text-sm font-semibold text-white">
+                  {open.length}
+                </span>{' '}
+                open · {counted.length - open.length} done
               </span>
-              <span className="text-sm font-semibold text-white">
-                {percent}%
-              </span>
+              <button
+                type="button"
+                onClick={() => setShowSetAside((v) => !v)}
+                className="hover:text-neutral-200"
+              >
+                {showSetAside ? 'Hide set-aside tasks' : 'Show set-aside tasks'}
+              </button>
             </div>
-            <ProgressBar
-              percent={percent}
-              color={project.color}
-              className="h-2"
-            />
+            {(project.goals ?? []).map((goal) => {
+              const p = project.goalProgress?.find((g) => g.goalId === goal.id);
+              return (
+                <div key={goal.id}>
+                  <div className="mb-1 flex items-center justify-between text-xs">
+                    <span className="text-neutral-300">
+                      {goal.target} {goal.title}{' '}
+                      <span className="text-neutral-500">
+                        {PERIOD_LABELS[goal.period]}
+                      </span>
+                    </span>
+                    <span className="font-semibold text-neutral-200">
+                      {p?.done ?? 0}/{goal.target}
+                    </span>
+                  </div>
+                  <ProgressBar
+                    percent={p?.percent ?? 0}
+                    color={project.color}
+                  />
+                </div>
+              );
+            })}
           </Panel>
 
           {loading && !tasks.length ? (
@@ -355,112 +418,136 @@ export const AdminTasks = ({
               <EmptyState
                 icon="checklist"
                 title="No tasks yet"
-                description="Break the project into major and minor tasks."
+                description="Add tasks as they come up, or schedule the ones that repeat."
               />
             </Panel>
           ) : (
             <div className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-4">
-              {STATUS_ORDER.map((status) => {
-                const meta = TASK_STATUS_META[status];
-                const column = tasks.filter((t) => t.status === status);
-                return (
-                  <Panel key={status} className="flex flex-col">
-                    <PanelHeader
-                      icon={meta.icon}
-                      title={meta.label}
-                      description={`${column.length}`}
-                    />
-                    <ul className="flex flex-col gap-2 p-3">
-                      {column.length === 0 && (
-                        <li className="px-2 py-3 text-center text-xs text-neutral-600">
-                          Nothing here
-                        </li>
-                      )}
-                      {column.map((task) => {
-                        const assignees = (task.assigneeIds ?? [])
-                          .map((id) => byId.get(id))
-                          .filter(Boolean) as User[];
-                        return (
-                          <li
-                            key={task.id}
-                            className={cn(
-                              'group rounded-xl border border-white/[0.07] bg-white/[0.02] p-3',
-                              busyId === task.id && 'opacity-60',
-                            )}
-                          >
-                            <div className="flex items-start gap-2">
-                              <p
-                                className={cn(
-                                  'flex-1 text-sm text-neutral-100',
-                                  task.status === 'DONE' &&
-                                    'text-neutral-500 line-through',
-                                )}
-                              >
-                                {task.title}
-                              </p>
-                              {task.size === 'MAJOR' && (
-                                <Pill tone="warning" icon="stars">
-                                  Major
-                                </Pill>
+              {[...STATUS_ORDER, ...(showSetAside ? ['SET_ASIDE'] : [])].map(
+                (status) => {
+                  const meta =
+                    status === 'SET_ASIDE'
+                      ? { label: 'Set aside', icon: 'inventory_2' }
+                      : TASK_STATUS_META[status];
+                  const column =
+                    status === 'SET_ASIDE'
+                      ? setAside
+                      : tasks.filter((t) => t.status === status);
+                  return (
+                    <Panel key={status} className="flex flex-col">
+                      <PanelHeader
+                        icon={meta.icon}
+                        title={meta.label}
+                        description={`${column.length}`}
+                      />
+                      <ul className="flex flex-col gap-2 p-3">
+                        {column.length === 0 && (
+                          <li className="px-2 py-3 text-center text-xs text-neutral-600">
+                            Nothing here
+                          </li>
+                        )}
+                        {column.map((task) => {
+                          const assignees = (task.assigneeIds ?? [])
+                            .map((id) => byId.get(id))
+                            .filter(Boolean) as User[];
+                          return (
+                            <li
+                              key={task.id}
+                              className={cn(
+                                'group rounded-xl border border-white/[0.07] bg-white/[0.02] p-3',
+                                busyId === task.id && 'opacity-60',
                               )}
-                            </div>
-                            <div className="mt-2 flex items-center justify-between gap-2">
-                              <div className="flex items-center gap-2 text-[11px] text-neutral-500">
-                                {assignees.length > 0 && (
-                                  <AvatarStack users={assignees} max={3} />
-                                )}
-                                {task.dueDate && (
-                                  <span className="flex items-center gap-1">
+                            >
+                              <div className="flex items-start gap-2">
+                                <p
+                                  className={cn(
+                                    'flex-1 text-sm text-neutral-100',
+                                    (task.status === 'DONE' ||
+                                      SET_ASIDE.includes(task.status)) &&
+                                      'text-neutral-500 line-through',
+                                  )}
+                                >
+                                  {task.scheduleId && (
                                     <Icon
-                                      name="event"
-                                      className="text-[13px]"
-                                    />
-                                    {formatDate(task.dueDate)}
-                                  </span>
-                                )}
-                              </div>
-                              {canEdit && (
-                                <div className="flex items-center opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100">
-                                  <NativeSelect
-                                    aria-label="Move task"
-                                    className="h-7 w-28 py-0 text-[11px]"
-                                    value={task.status}
-                                    onChange={(e) =>
-                                      setStatus(task, e.target.value)
-                                    }
-                                  >
-                                    {STATUS_ORDER.map((key) => (
-                                      <option key={key} value={key}>
-                                        {TASK_STATUS_META[key].label}
-                                      </option>
-                                    ))}
-                                  </NativeSelect>
-                                  <IconAction
-                                    icon="edit"
-                                    label="Edit task"
-                                    onClick={() => {
-                                      setEditing(task);
-                                      setFormOpen(true);
-                                    }}
-                                  />
-                                  {can(task.companyId, 'tasks:delete') && (
-                                    <IconAction
-                                      icon="delete"
-                                      label="Delete task"
-                                      tone="danger"
-                                      onClick={() => setDeleting(task)}
+                                      name="event_repeat"
+                                      className="mr-1 align-[-2px] text-[14px] text-neutral-500"
                                     />
                                   )}
+                                  {task.title}
+                                </p>
+                                {task.size === 'MAJOR' && (
+                                  <Pill tone="warning" icon="stars">
+                                    Major
+                                  </Pill>
+                                )}
+                              </div>
+                              <div className="mt-2 flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2 text-[11px] text-neutral-500">
+                                  {assignees.length > 0 && (
+                                    <AvatarStack users={assignees} max={3} />
+                                  )}
+                                  {goalName(task) && (
+                                    <span className="flex items-center gap-1">
+                                      <Icon
+                                        name="flag"
+                                        className="text-[13px]"
+                                      />
+                                      {goalName(task)}
+                                    </span>
+                                  )}
+                                  {task.dueDate && (
+                                    <span className="flex items-center gap-1">
+                                      <Icon
+                                        name="event"
+                                        className="text-[13px]"
+                                      />
+                                      {formatDate(task.dueDate)}
+                                    </span>
+                                  )}
                                 </div>
-                              )}
-                            </div>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </Panel>
-                );
-              })}
+                                {canEdit && (
+                                  <div className="flex items-center opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100">
+                                    <NativeSelect
+                                      aria-label="Move task"
+                                      className="h-7 w-28 py-0 text-[11px]"
+                                      value={task.status}
+                                      onChange={(e) =>
+                                        setStatus(task, e.target.value)
+                                      }
+                                    >
+                                      {ALL_STATUSES.map((key) => (
+                                        <option key={key} value={key}>
+                                          {TASK_STATUS_META[key].label}
+                                        </option>
+                                      ))}
+                                    </NativeSelect>
+                                    <IconAction
+                                      icon="edit"
+                                      label="Edit task"
+                                      onClick={() => {
+                                        setEditing(task);
+                                        setFormOpen(true);
+                                      }}
+                                    />
+                                    {can(task.companyId, 'tasks:delete') && (
+                                      <IconAction
+                                        icon="delete"
+                                        label="Delete task"
+                                        tone="danger"
+                                        onClick={() => setDeleting(task)}
+                                      />
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </Panel>
+                  );
+                },
+              )}
             </div>
           )}
         </>
@@ -471,9 +558,13 @@ export const AdminTasks = ({
           open={formOpen}
           onOpenChange={setFormOpen}
           projectId={project.id}
+          goals={project.goals ?? []}
           task={editing}
           users={users}
-          onSaved={loadTasks}
+          onSaved={() => {
+            loadTasks();
+            loadProjects();
+          }}
         />
       )}
       <ConfirmDialog

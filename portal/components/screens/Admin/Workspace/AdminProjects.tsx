@@ -4,6 +4,13 @@ import type { Project, User } from '@db/client';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
+import {
+  formatMetric,
+  type GoalProgress,
+  metricLabel,
+  PERIOD_LABELS,
+  type ProjectStanding,
+} from '@/lib/workspace/projects';
 import { useWorkspace } from '@/utils/hooks/useWorkspace';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
@@ -12,11 +19,8 @@ import {
   AdminModal,
   CardSkeletons,
   ConfirmDialog,
-  DateInput,
   EmptyState,
   Field,
-  formatDate,
-  Icon,
   IconAction,
   NativeSelect,
   Panel,
@@ -25,9 +29,15 @@ import {
   TextArea,
   TextInput,
 } from '../shared/AdminUI';
+import { ImageField } from '../shared/ImageField';
+import { BrandKitEditor } from './BrandKitEditor';
+import { type GoalDraft, GoalsEditor, goalsForSave } from './GoalsEditor';
+import { ProjectRanking, ProjectResults } from './ProjectResults';
+import { ProjectSchedules } from './ProjectSchedules';
 import {
   AvatarStack,
   ColorPicker,
+  CompanyMark,
   CompanyPicker,
   errorText,
   NeedsCompany,
@@ -44,6 +54,8 @@ export type ProjectRow = Project & {
     majorDone: number;
     percent: number;
   };
+  goalProgress: GoalProgress[];
+  standings: (ProjectStanding & { metric: string; of: number })[];
 };
 
 const emptyDraft = {
@@ -51,8 +63,8 @@ const emptyDraft = {
   description: '',
   status: 'ACTIVE',
   color: '#0ea5e9',
-  startDate: '',
-  dueDate: '',
+  logo: '',
+  goals: [] as GoalDraft[],
   leadIds: [] as string[],
   memberIds: [] as string[],
 };
@@ -84,8 +96,8 @@ const ProjectForm = ({
             description: project.description ?? '',
             status: project.status,
             color: project.color ?? '#0ea5e9',
-            startDate: project.startDate ?? '',
-            dueDate: project.dueDate ?? '',
+            logo: project.logo ?? '',
+            goals: project.goals ?? [],
             leadIds: project.leadIds ?? [],
             memberIds: project.memberIds ?? [],
           }
@@ -104,8 +116,8 @@ const ProjectForm = ({
     try {
       const payload = {
         ...draft,
-        startDate: draft.startDate || null,
-        dueDate: draft.dueDate || null,
+        logo: draft.logo || null,
+        goals: goalsForSave(draft.goals),
       };
       if (project)
         await PortalSdk.patchData(`/api/projects/${project.id}`, payload);
@@ -157,6 +169,13 @@ const ProjectForm = ({
             onChange={(e) => set('description', e.target.value)}
           />
         </Field>
+        <Field
+          label="Logo"
+          hint="Optional. A square image works best."
+          className="md:col-span-2"
+        >
+          <ImageField value={draft.logo} onChange={(url) => set('logo', url)} />
+        </Field>
         <Field label="Status">
           <NativeSelect
             value={draft.status}
@@ -174,16 +193,14 @@ const ProjectForm = ({
         <Field label="Color">
           <ColorPicker value={draft.color} onChange={(c) => set('color', c)} />
         </Field>
-        <Field label="Start date">
-          <DateInput
-            value={draft.startDate}
-            onChange={(e) => set('startDate', e.target.value)}
-          />
-        </Field>
-        <Field label="Due date">
-          <DateInput
-            value={draft.dueDate}
-            onChange={(e) => set('dueDate', e.target.value)}
+        <Field
+          label="Goals"
+          hint="What the project must deliver, again and again. Tasks linked to a goal fill it up."
+          className="md:col-span-2"
+        >
+          <GoalsEditor
+            value={draft.goals}
+            onChange={(goals) => set('goals', goals)}
           />
         </Field>
         <Field label="Leads">
@@ -223,6 +240,9 @@ export const AdminProjects = ({
   const [editing, setEditing] = useState<ProjectRow | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [archiving, setArchiving] = useState<ProjectRow | null>(null);
+  const [branding, setBranding] = useState<ProjectRow | null>(null);
+  const [resultsFor, setResultsFor] = useState<ProjectRow | null>(null);
+  const [schedulesFor, setSchedulesFor] = useState<ProjectRow | null>(null);
   const [busy, setBusy] = useState(false);
 
   const companyId = selectedCompanyId;
@@ -313,90 +333,175 @@ export const AdminProjects = ({
           />
         </Panel>
       ) : (
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {filtered.map((project) => {
-            const meta =
-              PROJECT_STATUS_META[project.status] ?? PROJECT_STATUS_META.ACTIVE;
-            const team = [
-              ...(project.leadIds ?? []),
-              ...(project.memberIds ?? []),
-            ]
-              .filter((id, i, all) => all.indexOf(id) === i)
-              .map((id) => byId.get(id))
-              .filter(Boolean) as User[];
-            return (
-              <Panel key={project.id} className="flex flex-col gap-4 p-4">
-                <div className="flex items-start gap-3">
-                  <span
-                    className="mt-1 size-3 shrink-0 rounded-full"
-                    style={{ backgroundColor: project.color || '#0ea5e9' }}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-white">
-                      {project.name}
-                    </p>
-                    <p className="line-clamp-2 text-xs text-neutral-500">
-                      {project.description || 'No description'}
-                    </p>
-                  </div>
-                  <Pill tone={meta.tone}>{meta.label}</Pill>
-                </div>
-                <div>
-                  <div className="mb-1.5 flex items-center justify-between text-xs text-neutral-400">
-                    <span>
-                      {project.progress.done}/{project.progress.total} tasks
-                      {project.progress.major > 0 &&
-                        ` · ${project.progress.majorDone}/${project.progress.major} major`}
-                    </span>
-                    <span className="font-semibold text-neutral-200">
-                      {project.progress.percent}%
-                    </span>
-                  </div>
-                  <ProgressBar
-                    percent={project.progress.percent}
-                    color={project.color}
-                  />
-                </div>
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 text-xs text-neutral-500">
-                    {team.length > 0 && <AvatarStack users={team} />}
-                    {project.dueDate && (
-                      <span className="flex items-center gap-1">
-                        <Icon name="event" className="text-[14px]" />
-                        {formatDate(project.dueDate)}
-                      </span>
+        <>
+          {!search && (
+            <ProjectRanking projects={projects} onOpen={setResultsFor} />
+          )}
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {filtered.map((project) => {
+              const meta =
+                PROJECT_STATUS_META[project.status] ??
+                PROJECT_STATUS_META.ACTIVE;
+              const team = [
+                ...(project.leadIds ?? []),
+                ...(project.memberIds ?? []),
+              ]
+                .filter((id, i, all) => all.indexOf(id) === i)
+                .map((id) => byId.get(id))
+                .filter(Boolean) as User[];
+              return (
+                <Panel key={project.id} className="flex flex-col gap-4 p-4">
+                  <div className="flex items-start gap-3">
+                    {project.logo ? (
+                      <CompanyMark
+                        name={project.name}
+                        logo={project.logo}
+                        size={32}
+                      />
+                    ) : (
+                      <span
+                        className="mt-1 size-3 shrink-0 rounded-full"
+                        style={{ backgroundColor: project.color || '#0ea5e9' }}
+                      />
                     )}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-white">
+                        {project.name}
+                      </p>
+                      <p className="line-clamp-2 text-xs text-neutral-500">
+                        {project.description || 'No description'}
+                      </p>
+                    </div>
+                    <Pill tone={meta.tone}>{meta.label}</Pill>
                   </div>
-                  <div className="flex items-center">
-                    <IconAction
-                      icon="checklist"
-                      label="Open tasks"
-                      onClick={() => onOpenTasks(project.id)}
-                    />
-                    {can(project.companyId, 'projects:edit') && (
-                      <IconAction
-                        icon="edit"
-                        label="Edit project"
+                  {(project.goals ?? []).length > 0 ? (
+                    <div className="flex flex-col gap-2.5">
+                      {(project.goals ?? []).map((goal) => {
+                        const p = project.goalProgress?.find(
+                          (g) => g.goalId === goal.id,
+                        );
+                        return (
+                          <div key={goal.id}>
+                            <div className="mb-1 flex items-center justify-between gap-2 text-xs">
+                              <span className="truncate text-neutral-300">
+                                {goal.target} {goal.title}{' '}
+                                <span className="text-neutral-500">
+                                  {PERIOD_LABELS[goal.period]}
+                                </span>
+                              </span>
+                              <span
+                                className={
+                                  p && p.percent >= 100
+                                    ? 'font-semibold text-emerald-400'
+                                    : 'font-semibold text-neutral-200'
+                                }
+                              >
+                                {p?.done ?? 0}/{goal.target}
+                              </span>
+                            </div>
+                            <ProgressBar
+                              percent={p?.percent ?? 0}
+                              color={project.color}
+                            />
+                            {p?.parts && (
+                              <p className="mt-1 truncate text-[11px] text-neutral-500">
+                                {p.parts
+                                  .map(
+                                    (part) =>
+                                      `${part.label} ${part.done}/${part.target}`,
+                                  )
+                                  .join(' · ')}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    can(project.companyId, 'projects:edit') && (
+                      <button
+                        type="button"
                         onClick={() => {
                           setEditing(project);
                           setFormOpen(true);
                         }}
-                      />
-                    )}
-                    {can(project.companyId, 'projects:delete') && (
-                      <IconAction
-                        icon="archive"
-                        label="Archive project"
-                        tone="danger"
-                        onClick={() => setArchiving(project)}
-                      />
-                    )}
+                        className="rounded-lg border border-dashed border-white/10 px-3 py-2 text-left text-xs text-neutral-500 hover:border-white/20 hover:text-neutral-300"
+                      >
+                        Set the goals, like “2 songs released a week”
+                      </button>
+                    )
+                  )}
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-neutral-500">
+                    <span>
+                      {project.progress.total - project.progress.done} open{' '}
+                      {project.progress.total - project.progress.done === 1
+                        ? 'task'
+                        : 'tasks'}
+                    </span>
+                    {(project.standings ?? []).slice(0, 2).map((st) => (
+                      <button
+                        key={st.metric}
+                        type="button"
+                        onClick={() => setResultsFor(project)}
+                        className="rounded-full bg-white/[0.06] px-2 py-0.5 text-neutral-300 hover:bg-white/[0.1]"
+                      >
+                        #{st.rank} {metricLabel(st.metric)} ·{' '}
+                        {formatMetric(st.metric, st.value)}
+                      </button>
+                    ))}
                   </div>
-                </div>
-              </Panel>
-            );
-          })}
-        </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 text-xs text-neutral-500">
+                      {team.length > 0 && <AvatarStack users={team} />}
+                    </div>
+                    <div className="flex items-center">
+                      <IconAction
+                        icon="checklist"
+                        label="Open tasks"
+                        onClick={() => onOpenTasks(project.id)}
+                      />
+                      <IconAction
+                        icon="event_repeat"
+                        label="Scheduled tasks"
+                        onClick={() => setSchedulesFor(project)}
+                      />
+                      <IconAction
+                        icon="insights"
+                        label="Results"
+                        onClick={() => setResultsFor(project)}
+                      />
+                      {can(project.companyId, 'projects:edit') && (
+                        <IconAction
+                          icon="palette"
+                          label="Brand kit"
+                          onClick={() => setBranding(project)}
+                        />
+                      )}
+                      {can(project.companyId, 'projects:edit') && (
+                        <IconAction
+                          icon="edit"
+                          label="Edit project"
+                          onClick={() => {
+                            setEditing(project);
+                            setFormOpen(true);
+                          }}
+                        />
+                      )}
+                      {can(project.companyId, 'projects:delete') && (
+                        <IconAction
+                          icon="archive"
+                          label="Archive project"
+                          tone="danger"
+                          onClick={() => setArchiving(project)}
+                        />
+                      )}
+                    </div>
+                  </div>
+                </Panel>
+              );
+            })}
+          </div>
+        </>
       )}
 
       {companyId && (
@@ -409,6 +514,32 @@ export const AdminProjects = ({
           onSaved={load}
         />
       )}
+      <ProjectResults
+        project={projects.find((p) => p.id === resultsFor?.id) ?? resultsFor}
+        canEdit={!!resultsFor && can(resultsFor.companyId, 'projects:edit')}
+        onOpenChange={(open) => !open && setResultsFor(null)}
+        onSaved={load}
+      />
+      <ProjectSchedules
+        project={
+          projects.find((p) => p.id === schedulesFor?.id) ?? schedulesFor
+        }
+        users={users}
+        canEdit={!!schedulesFor && can(schedulesFor.companyId, 'tasks:create')}
+        canDelete={
+          !!schedulesFor && can(schedulesFor.companyId, 'tasks:delete')
+        }
+        onOpenChange={(open) => !open && setSchedulesFor(null)}
+        onSaved={load}
+      />
+      <BrandKitEditor
+        open={!!branding}
+        onOpenChange={(open) => !open && setBranding(null)}
+        name={branding?.name ?? 'Project'}
+        endpoint={`/api/projects/${branding?.id}`}
+        initial={branding?.brandKit}
+        onSaved={load}
+      />
       <ConfirmDialog
         open={!!archiving}
         onOpenChange={(open) => !open && setArchiving(null)}

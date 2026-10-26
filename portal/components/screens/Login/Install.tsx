@@ -87,9 +87,8 @@ export const InstallButton = ({
   return (
     <div className="mb-5 flex flex-col">
       <p className="mt-4 text-center text-xs text-neutral-400">
-        The Moon Devs Portal supports Progressive Web App, one of the latest
-        trends in web development. Click quick install to experience the portal
-        as an offline Mobile App.
+        The Portal can be installed as an app. Click quick install to add it to
+        your home screen.
       </p>
       <button
         onClick={installApp}

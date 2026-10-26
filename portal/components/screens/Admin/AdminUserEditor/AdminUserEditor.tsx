@@ -1,27 +1,23 @@
 'use client';
 
 import type { User } from '@db/client';
-import {
-  HOUSEID,
-  USERINDUSTRY,
-  USERROLE,
-  USERSTATUS,
-  USERTYPE,
-  USERVERTICAL,
-} from '@db/client';
-import dayjs from 'dayjs';
-import { useSearchParams } from 'next/navigation';
+import { USERSTATUS } from '@db/client';
+import { useRouter, useSearchParams } from 'next/navigation';
 import type { ChangeEvent } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast, Toaster } from 'sonner';
 
+import { isSuperAdminEmail } from '@/lib/permissions/superAdmin';
 import { APP_ROUTES, TMD_PORTAL_API_KEY } from '@/utils/constants/appInfo';
+import { useUser } from '@/utils/hooks/useUser';
+import { useWorkspace } from '@/utils/hooks/useWorkspace';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import type { EditorTab } from '../shared/AdminEditorShell';
 import { AdminEditorShell } from '../shared/AdminEditorShell';
 import {
   AdminButton,
+  ConfirmDialog,
   formatDate,
   Icon,
   Panel,
@@ -29,50 +25,31 @@ import {
   SkeletonRows,
   UserAvatar,
 } from '../shared/AdminUI';
+import { errorText } from '../Workspace/shared';
 import { AdminUserBasicData } from './AdminUserBasicData';
-import { AdminUserPayData } from './AdminUserPayData';
 import { AdminUserPermissions } from './AdminUserPermissions';
-import { AdminUserPersonalData } from './AdminUserPersonalData';
-import { AdminUserWorkData } from './AdminUserWorkData';
+import { AdminUserRoles } from './AdminUserRoles';
 
 const initialUserState: User = {
   id: '',
   name: '',
   username: '',
   password: '',
-  passphrase: '',
   email: '',
+  linkedEmails: [],
   avatar: '',
-  house: HOUSEID.PRODUCT_TECH,
-  userType: USERTYPE.MEMBER,
-  role: USERROLE.CORETEAM,
-  vertical: USERVERTICAL.DEV,
-  industry: USERINDUSTRY.OTHERS,
+  positionTitle: '',
   timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-  country: '',
-  createdAt: new Date(),
-  updatedAt: new Date(),
   status: USERSTATUS.ACTIVE,
   isAdmin: false,
-  workData: {
-    joining: dayjs().format('YYYY-MM-DD'),
-    overlap: [],
-  },
-  personalData: null,
-  payData: null,
-  slackId: '',
-  thirdPartyData: null,
-  banner: '',
-  description: '',
-  positionTitle: '',
+  roleKeys: [],
+  createdAt: new Date(),
+  updatedAt: new Date(),
 };
 
 const TABS: EditorTab[] = [
-  { id: 'basic', label: 'Basic', icon: 'person' },
-  { id: 'work', label: 'Work', icon: 'work' },
-  { id: 'pay', label: 'Payments', icon: 'payments' },
-  { id: 'personal', label: 'Personal', icon: 'badge' },
-  { id: 'access', label: 'Access & policies', icon: 'lock' },
+  { id: 'basic', label: 'Profile', icon: 'person' },
+  { id: 'access', label: 'Access', icon: 'lock' },
 ];
 
 const statusTone = (status?: string | null) => {
@@ -89,14 +66,19 @@ const statusTone = (status?: string | null) => {
 };
 
 export const AdminUserEditor = () => {
+  const router = useRouter();
   const query = useSearchParams();
   const userId = query?.get('id') ?? null;
+  const { user: me } = useUser();
+  const { canPortal } = useWorkspace();
 
   const [user, setUser] = useState<User>(initialUserState);
   const [savedSnapshot, setSavedSnapshot] = useState<string>('');
   const [fetching, setFetching] = useState(!!userId);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('basic');
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   /* --------------------------------- loading -------------------------------- */
 
@@ -134,77 +116,72 @@ export const AdminUserEditor = () => {
 
   const updateField = useCallback(
     (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-      const rawId = event.target.id;
-      const path = rawId.includes('.') ? rawId.split('.') : rawId;
-      const target = event.target;
-      const value =
-        target instanceof HTMLInputElement
-          ? target.type === 'checkbox'
-            ? target.checked
-            : target.type === 'date'
-              ? new Date(target.value).toISOString()
-              : target.value
-          : target.value;
-
-      if (Array.isArray(path)) {
-        setUser((previous) => ({
-          ...previous,
-          [path[0]]: {
-            ...((previous[path[0] as keyof User] as Record<string, unknown>) ??
-              {}),
-            [path[1]]: value,
-          },
-        }));
-      } else {
-        setUser((previous) => ({ ...previous, [path]: value }));
-      }
-    },
-    [],
-  );
-
-  const updateTextareaField = useCallback(
-    (event: ChangeEvent<HTMLTextAreaElement>) => {
       const { id, value } = event.target;
       setUser((previous) => ({ ...previous, [id]: value }));
     },
     [],
   );
 
-  const saveUser = useCallback(() => {
+  const saveUser = useCallback(async () => {
     setSaving(true);
-    fetch('/api/user', {
-      method: user.id.length > 0 ? 'PUT' : 'POST',
-      body: JSON.stringify(user),
-      headers: { tmd_portal_api_key: TMD_PORTAL_API_KEY },
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.status === 'success') {
-          toast.success('User saved');
-          setUser(data.data.user);
-          setSavedSnapshot(JSON.stringify(data.data.user));
-          // Keep a freshly created user addressable if the page is reloaded.
-          if (!userId && data.data.user?.id) {
-            window.history.replaceState(
-              null,
-              '',
-              `${APP_ROUTES.userEditor}?id=${data.data.user.id}`,
-            );
-          }
-        } else if (data.latestUser) {
-          toast.warning('Outdated user data — reloaded the latest. Try again.');
-          setUser(data.latestUser);
-          setSavedSnapshot(JSON.stringify(data.latestUser));
-        } else {
-          toast.error('Something went wrong');
-        }
-      })
-      .catch((error) => {
-        console.error(error);
-        toast.error('Something went wrong');
-      })
-      .finally(() => setSaving(false));
+    try {
+      // Plain fetch: PortalSdk.putData treats a 409 as the signed-in user's
+      // own record, and this may be someone else.
+      const res = await fetch('/api/user', {
+        method: user.id ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          tmd_portal_api_key: TMD_PORTAL_API_KEY,
+        },
+        body: JSON.stringify(user),
+      }).then((r) => r.json());
+      if (res?.latestUser) throw res;
+      const saved = res?.data?.user;
+      if (!saved) throw res;
+      toast.success(user.id ? 'Saved' : 'User created and emailed their code');
+      setUser(saved);
+      setSavedSnapshot(JSON.stringify(saved));
+      // Keep a freshly created user addressable if the page is reloaded.
+      if (!userId && saved.id) {
+        window.history.replaceState(
+          null,
+          '',
+          `${APP_ROUTES.userEditor}?id=${saved.id}`,
+        );
+      }
+    } catch (error: any) {
+      if (error?.latestUser) {
+        toast.warning('Someone else just saved this user. Reloaded it.');
+        setUser(error.latestUser);
+        setSavedSnapshot(JSON.stringify(error.latestUser));
+      } else {
+        toast.error(errorText(error));
+      }
+    } finally {
+      setSaving(false);
+    }
   }, [user, userId]);
+
+  const deleteUser = useCallback(async () => {
+    setDeleting(true);
+    try {
+      await PortalSdk.deleteData(`/api/user?id=${user.id}`, { id: user.id });
+      toast.success(`${user.name || 'User'} deleted`);
+      setSavedSnapshot(JSON.stringify(user));
+      router.push(`${APP_ROUTES.admin}?tab=users`);
+    } catch (error) {
+      toast.error(errorText(error));
+      setDeleting(false);
+    }
+  }, [user, router]);
+
+  const canDelete =
+    !!user.id &&
+    canPortal('users:delete') &&
+    user.id !== me?.id &&
+    !isSuperAdminEmail(user.email) &&
+    !(user.linkedEmails ?? []).some((e) => isSuperAdminEmail(e)) &&
+    (!user.isAdmin || !!me?.isAdmin);
 
   /* Guard against losing edits on accidental navigation away. */
   useEffect(() => {
@@ -219,7 +196,7 @@ export const AdminUserEditor = () => {
 
   /* --------------------------------- render --------------------------------- */
 
-  const sectionProps = { user, setUser, updateField, updateTextareaField };
+  const sectionProps = { user, setUser, updateField };
 
   const renderSection = () => {
     if (fetching) {
@@ -230,16 +207,29 @@ export const AdminUserEditor = () => {
       );
     }
     switch (activeTab) {
-      case 'work':
-        return <AdminUserWorkData {...sectionProps} />;
-      case 'pay':
-        return <AdminUserPayData {...sectionProps} />;
-      case 'personal':
-        return <AdminUserPersonalData {...sectionProps} />;
       case 'access':
-        return <AdminUserPermissions user={user} />;
+        return (
+          <div className="flex flex-col gap-4">
+            <AdminUserRoles user={user} setUser={setUser} />
+            <AdminUserPermissions user={user} />
+          </div>
+        );
       default:
-        return <AdminUserBasicData {...sectionProps} />;
+        return (
+          <AdminUserBasicData
+            {...sectionProps}
+            onAvatarSaved={(avatar, updatedAt) => {
+              // Saved on the server already: keep other unsaved edits.
+              const patch = updatedAt ? { avatar, updatedAt } : { avatar };
+              setUser((previous) => ({ ...previous, ...patch }));
+              setSavedSnapshot((snapshot) =>
+                snapshot
+                  ? JSON.stringify({ ...JSON.parse(snapshot), ...patch })
+                  : snapshot,
+              );
+            }}
+          />
+        );
     }
   };
 
@@ -253,7 +243,7 @@ export const AdminUserEditor = () => {
         title={isNew ? 'New user' : user.name || user.username || 'User'}
         description={
           isNew
-            ? 'Create a member or client account.'
+            ? 'They get an email with their sign-in code.'
             : `@${user.username} · joined ${formatDate(user.createdAt)}`
         }
         media={
@@ -262,15 +252,12 @@ export const AdminUserEditor = () => {
         meta={
           !isNew && (
             <>
-              <Pill tone={user.userType === 'CLIENT' ? 'info' : 'purple'}>
-                {user.userType}
-              </Pill>
               {user.status && (
                 <Pill tone={statusTone(user.status)}>{user.status}</Pill>
               )}
-              {user.role && user.userType === 'MEMBER' && (
-                <Pill>{String(user.role).replace(/_/g, ' ')}</Pill>
-              )}
+              {(user.roleKeys ?? []).map((key) => (
+                <Pill key={key}>{key.replace(/-/g, ' ')}</Pill>
+              ))}
               {user.isAdmin && (
                 <Pill tone="warning" icon="shield_person">
                   Admin
@@ -286,6 +273,16 @@ export const AdminUserEditor = () => {
                 <Icon name="edit" className="text-[15px]" />
                 Unsaved changes
               </span>
+            )}
+            {canDelete && (
+              <AdminButton
+                tone="ghost"
+                icon="delete"
+                onClick={() => setConfirmDelete(true)}
+                disabled={fetching}
+              >
+                Delete
+              </AdminButton>
             )}
             <AdminButton
               tone="primary"
@@ -304,6 +301,15 @@ export const AdminUserEditor = () => {
       >
         {renderSection()}
       </AdminEditorShell>
+
+      <ConfirmDialog
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        title={`Delete ${user.name || 'this user'}?`}
+        message="They lose access straight away and leave every company. Their worklogs stay, so company history keeps its numbers. This cannot be undone."
+        loading={deleting}
+        onConfirm={deleteUser}
+      />
 
       <Toaster
         theme="dark"

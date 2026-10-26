@@ -17,6 +17,7 @@ export interface WorkspaceCompany {
 export interface WorkspaceData {
   isSuperAdmin: boolean;
   isAdmin: boolean;
+  permissions: string[];
   companies: WorkspaceCompany[];
 }
 
@@ -27,6 +28,15 @@ const MANAGE_PERMISSIONS = [
   'roles:edit',
   'projects:create',
   'projects:edit',
+];
+
+/** Portal permissions that open the admin console. */
+const PORTAL_ADMIN_PERMISSIONS = [
+  'users:create',
+  'users:edit',
+  'users:delete',
+  'permissions:read',
+  'badges:create',
 ];
 
 // One request shared by every component on the page.
@@ -42,6 +52,7 @@ const load = (userId: string, force = false): Promise<WorkspaceData> => {
       const data: WorkspaceData = res?.data ?? {
         isSuperAdmin: false,
         isAdmin: false,
+        permissions: [],
         companies: [],
       };
       cache = { userId, data };
@@ -99,11 +110,21 @@ export const useWorkspace = () => {
     [companies],
   );
 
+  const portalPermissions = data?.permissions ?? [];
+  /** A portal-wide permission, e.g. `users:delete`. */
+  const canPortal = useCallback(
+    (permission: string) => hasPermission(portalPermissions, permission),
+    [portalPermissions],
+  );
+
   const managedCompanies = companies.filter((c) =>
     MANAGE_PERMISSIONS.some((p) => hasPermission(c.permissions, p)),
   );
   const hiringCompanies = companies.filter((c) =>
     hasPermission(c.permissions, 'hiring:read'),
+  );
+  const managesPortal = PORTAL_ADMIN_PERMISSIONS.some((p) =>
+    hasPermission(portalPermissions, p),
   );
 
   return {
@@ -112,14 +133,18 @@ export const useWorkspace = () => {
     managedCompanies,
     /** Companies where the user can see hiring. */
     hiringCompanies,
+    /** Whether portal roles give the user an admin tab of their own. */
+    managesPortal,
     isSuperAdmin: !!data?.isSuperAdmin,
     /** Whether the admin console has anything for this user. */
     canOpenAdmin:
       !!user?.isAdmin ||
       !!data?.isSuperAdmin ||
+      managesPortal ||
       managedCompanies.length > 0 ||
       hiringCompanies.length > 0,
     can,
+    canPortal,
     refresh,
   };
 };

@@ -1,16 +1,10 @@
-import { USERTYPE } from '@/models/shared/enums';
-
 import { ALL_PERMISSIONS, WILDCARD_PERMISSION } from './catalog';
 import { hasPermission } from './matching';
 
 /**
- * Baseline policies granted to EVERY authenticated user, regardless of role.
- *
- * The portal historically enforced no per-user permissions, so every signed-in
- * user could exercise these day-to-day features. Keeping them as defaults means
- * turning on enforcement does not lock existing users out of normal workflows.
- * Genuinely privileged actions (see reserved list below) are intentionally
- * absent and must be granted explicitly by an admin.
+ * Policies every signed-in person has. Everything else comes from their portal
+ * roles, extra grants on their user record, or (inside a company) their
+ * company roles.
  */
 export const BASE_MEMBER_POLICIES: string[] = [
   // Worklogs are self-service.
@@ -20,70 +14,75 @@ export const BASE_MEMBER_POLICIES: string[] = [
   'notifications:read',
   'notifications:create',
   'notifications:edit',
-  // Pointers (delete reserved).
-  'pointers:read',
-  'pointers:create',
-  'pointers:edit',
-  // Read-only surfaces.
-  'events:read',
-  // Badges: members read and EARN badges through activity (worklog streaks,
-  // buff levels); creating/editing badge templates stays admin-only.
+  // Badges are earned automatically; everyone can see them.
   'badges:read',
-  'badges:award',
-  // Files.
+  // Files (avatars).
   'files:read',
   'files:create',
-  // Reading user records is needed to load one's own profile & team directory.
+  // Reading user records is needed for one's own profile and team lists.
   'users:read',
 ];
 
-/**
- * Clients are external users with a much smaller surface — mostly read access.
- */
-export const BASE_CLIENT_POLICIES: string[] = [
-  'notifications:read',
-  'notifications:edit',
-  'events:read',
-  'files:read',
-  'files:create',
-  'users:read',
-];
+export interface PortalRoleDefinition {
+  key: string;
+  name: string;
+  description: string;
+  permissions: string[];
+}
 
-/**
- * Reserved actions intentionally excluded from the defaults above. Listed here
- * for documentation only — an admin must grant these explicitly (or the user
- * must be a full admin). Kept in sync with the catalog by review.
- *
- *   users:create, users:edit, users:delete
- *   permissions:read, permissions:grant, permissions:revoke
- *   badges:create, badges:edit, badges:delete (badges:award is a default)
- *   pointers:delete
- *   events:create, events:edit, events:delete
- *   companies:*, members:*, roles:*, projects:*, tasks:*, hiring:* (granted per
- *   company through company roles, see ./company)
- */
+/** Portal roles created the first time roles are listed. */
+export const DEFAULT_PORTAL_ROLES: PortalRoleDefinition[] = [
+  {
+    key: 'member',
+    name: 'Member',
+    description: 'Everyone. Writes worklogs and works inside their companies.',
+    permissions: [],
+  },
+  {
+    key: 'people-manager',
+    name: 'People manager',
+    description: 'Adds, edits and removes people, and sends notifications.',
+    permissions: [
+      'users:read',
+      'users:create',
+      'users:edit',
+      'users:delete',
+      'notifications:create',
+    ],
+  },
+  {
+    key: 'access-manager',
+    name: 'Access manager',
+    description: 'Manages portal roles and who holds them.',
+    permissions: [
+      'permissions:read',
+      'permissions:grant',
+      'permissions:revoke',
+    ],
+  },
+];
 
 export interface PermissionUser {
   isAdmin?: boolean | null;
-  userType?: string | null;
+  /** Permissions from the user's portal roles, resolved on the server. */
+  rolePermissions?: string[] | null;
   permissions?: string[] | null;
   deniedPermissions?: string[] | null;
 }
 
 /**
- * The BASELINE policies a user has purely from who they are, before any
- * explicit grant or denial: every catalog permission for an admin, otherwise
- * the role/type defaults. Used to render the "default" badges and to compute
- * grant/deny diffs when policies are saved.
+ * The BASELINE policies a user has before per-user grants and denials: every
+ * permission for an admin, otherwise the base policies plus their roles.
  */
 export function getBaselinePermissions(
   user: PermissionUser | null | undefined,
 ): string[] {
   if (!user) return [];
   if (user.isAdmin) return [...ALL_PERMISSIONS];
-  return user.userType === USERTYPE.CLIENT
-    ? [...BASE_CLIENT_POLICIES]
-    : [...BASE_MEMBER_POLICIES];
+  const fromRoles = Array.isArray(user.rolePermissions)
+    ? user.rolePermissions
+    : [];
+  return Array.from(new Set([...BASE_MEMBER_POLICIES, ...fromRoles]));
 }
 
 /** The set of policies that GRANT access (may include wildcards for admins). */
@@ -96,8 +95,7 @@ function grantSet(user: PermissionUser): string[] {
 }
 
 /**
- * Whether `permission` is allowed for `user`. A denial always wins, so this is
- * how a role default is taken away or a specific admin capability is disabled:
+ * Whether `permission` is allowed for `user`. A denial always wins:
  *
  *   allowed = (baseline ∪ grants) covers it  AND  denials do NOT cover it
  */
@@ -114,14 +112,25 @@ export function isAllowed(
 }
 
 /**
- * The concrete set of catalog permissions currently in effect for a user —
- * baseline plus grants, minus denials. Admins with no denials get everything.
- * Kept in exact lock-step with `isAllowed` so the admin UI's checkboxes match
- * what the server actually enforces.
+ * The concrete set of catalog permissions currently in effect for a user.
+ * Kept in lock-step with `isAllowed` so the admin UI matches the server.
  */
 export function getEffectivePermissions(
   user: PermissionUser | null | undefined,
 ): string[] {
   if (!user) return [];
   return ALL_PERMISSIONS.filter((permission) => isAllowed(user, permission));
+}
+
+/** Keeps only real, non-wildcard permissions. */
+export function sanitizePermissions(permissions: unknown): string[] {
+  if (!Array.isArray(permissions)) return [];
+  const valid = new Set(ALL_PERMISSIONS);
+  return Array.from(
+    new Set(
+      permissions.filter(
+        (p): p is string => typeof p === 'string' && valid.has(p),
+      ),
+    ),
+  );
 }

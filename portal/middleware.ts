@@ -18,7 +18,9 @@ export default async function middleware(request: NextRequest) {
   const response = NextResponse.next();
 
   if (pathname.startsWith('/api')) {
-    applyCorsHeaders(request, response);
+    // Assistant endpoints set their own CORS headers.
+    if (!pathname.startsWith('/api/mcp') && !pathname.startsWith('/api/oauth'))
+      applyCorsHeaders(request, response);
     return rejectIfApiKeyMissing(request) ?? response;
   }
 

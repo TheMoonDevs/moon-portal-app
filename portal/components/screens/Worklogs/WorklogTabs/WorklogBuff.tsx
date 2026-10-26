@@ -1,23 +1,18 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
-import type { BuffBadge, WorkLogs } from '@db/client';
-import { BUFF_LEVEL } from '@db/client';
-import { Box } from '@mui/material';
-import { Skeleton } from '@mui/material';
+import type { WorkLogs } from '@db/client';
 import dayjs from 'dayjs';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 
 import {
   getBuffLevelAndTitle,
   getColorsForBuffLevel,
-  getPoints,
-  isValidContent,
-} from '@/utils/helpers/badges';
-import { useUser } from '@/utils/hooks/useUser';
-import { PortalSdk } from '@/utils/services/PortalSdk';
+  worklogPoints,
+} from '@/lib/progress/buff';
 
 import MultiColorProgressBar from './MultiColorProgressBar';
 
+/** This month's worklog buff: level, points and progress to the next one. */
 const WorklogBuff = ({
   filteredLogs,
   monthTab,
@@ -25,197 +20,65 @@ const WorklogBuff = ({
   filteredLogs: WorkLogs[];
   monthTab: number;
 }) => {
-  const [buffBadge, setBuffBadge] = useState<BuffBadge[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const { user } = useUser();
   const selectedMonth = dayjs().month(monthTab).format('MMMM');
 
-  const totalPoints = useMemo(() => {
-    return filteredLogs.reduce((total, log: WorkLogs) => {
-      const logPoints = log.works.reduce((sum: number, work: any) => {
-        const workContent = (
-          typeof work === 'object' && work !== null && 'content' in work
-            ? work.content
-            : ''
-        ) as string;
+  const totalPoints = useMemo(
+    () => worklogPoints(filteredLogs),
+    [filteredLogs],
+  );
 
-        if (isValidContent(workContent)) {
-          return sum + getPoints(workContent);
-        }
-        return sum;
-      }, 0);
-      return total + logPoints;
-    }, 0);
-  }, [filteredLogs]);
+  const loggedDays = useMemo(
+    () =>
+      filteredLogs.filter((wl) =>
+        wl.works.length > 0 ? (wl.works[0] as any)?.content?.length > 3 : false,
+      ).length,
+    [filteredLogs],
+  );
 
-  const loggedDays = useMemo(() => {
-    return filteredLogs.filter((wl) =>
-      wl.works.length > 0 ? (wl.works[0] as any)?.content?.length > 3 : false,
-    ).length;
-  }, [filteredLogs]);
+  if (!filteredLogs || totalPoints <= 0) return null;
 
-  //console.log('loggedDays:', filteredLogs.filter((wl) => wl.works.length > 0 ? (wl.works[0] as any)?.content?.length > 3 : false));
-
-  const getBuffBadges = async () => {
-    if (!user?.id) return;
-    setLoading(true);
-    try {
-      const params = new URLSearchParams({
-        userId: user?.id ?? '',
-        month: selectedMonth,
-      }).toString();
-
-      const res = await PortalSdk.getData(
-        `/api/badges/buff-badges?${params}`,
-        null,
-      );
-      setBuffBadge(res.data);
-      // console.log(res.data)
-    } catch (error) {
-      console.log(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const createBadge = async (title: string, buffLevel: BUFF_LEVEL) => {
-    if (!user?.id) return;
-    try {
-      const res = await PortalSdk.postData('/api/badges/buff-badges', {
-        userId: user?.id,
-        title,
-        points: totalPoints,
-        buffLevel,
-        month: selectedMonth,
-      });
-      setBuffBadge([res.data]);
-    } catch (error) {
-      console.error('Error creating buff badge:', error);
-    }
-  };
-
-  const updateBadge = async (
-    badgeId: string,
-    title: string,
-    buffLevel: BUFF_LEVEL,
-  ) => {
-    if (!user?.id) return;
-    try {
-      const res = await PortalSdk.putData(`/api/badges/buff-badges`, {
-        id: badgeId,
-        userId: user?.id,
-        title,
-        points: totalPoints,
-        buffLevel,
-      });
-      setBuffBadge([res.data]);
-    } catch (error) {
-      console.error('Error updating buff badge:', error);
-    }
-  };
-
-  useEffect(() => {
-    getBuffBadges();
-  }, []);
-
-  useEffect(() => {
-    const { level, title } = getBuffLevelAndTitle(totalPoints);
-    if (buffBadge.length === 0 && totalPoints > 0 && !loading) {
-      createBadge(title, level);
-    } else if (buffBadge.length > 0 && !loading) {
-      if (
-        buffBadge[0].buffLevel !== level ||
-        buffBadge[0].title !== title ||
-        totalPoints !== buffBadge[0].points
-      ) {
-        updateBadge(buffBadge[0].id, title, level);
-      }
-    }
-  }, [totalPoints, buffBadge, loading]);
-
-  const { level } = getBuffLevelAndTitle(totalPoints);
-
-  const nextLevelPoints =
-    level === BUFF_LEVEL.TRUTH_SEEKER
-      ? 10
-      : level === BUFF_LEVEL.BABY_GROOT
-        ? 25
-        : level === BUFF_LEVEL.WORK_HULK
-          ? 100
-          : level === BUFF_LEVEL.VAMPIRE_LORD
-            ? 150
-            : level === BUFF_LEVEL.ALIEN_PREDATOR
-              ? 200
-              : 250;
+  const buff = getBuffLevelAndTitle(totalPoints);
+  const nextLevelPoints = buff.next;
 
   return (
-    <>
-      {loading ? (
-        <Box
-          sx={{
-            bgcolor: '#121212',
-          }}
-          className="rounded-xl"
-        >
-          <Skeleton
-            variant="rectangular"
-            animation="pulse"
-            sx={{
-              borderRadius: 2,
-              bgcolor: 'grey.800',
-            }}
-            height={150}
+    <div className="mx-auto w-full max-w-lg rounded-xl border border-neutral-700 bg-black text-white shadow-xl">
+      <div className="flex flex-row items-center justify-between border-b-2 border-neutral-700 px-6 py-3 text-xs">
+        <h2 className="text-center text-xs uppercase tracking-[1em]">
+          {selectedMonth}
+        </h2>
+        <h2 className="text-center text-xs uppercase tracking-widest">
+          {loggedDays}{' '}
+          <span className="text-neutral-500">
+            {' '}
+            / {dayjs().month(monthTab).daysInMonth()} days{' '}
+          </span>
+        </h2>
+      </div>
+      <div className="flex flex-row items-center justify-start gap-4 p-6 pt-4">
+        <img
+          src={buff.src}
+          alt={buff.title.charAt(0)}
+          className="w-24 rounded-full border border-white p-1 shadow-md"
+        />
+        <div className="flex grow flex-col">
+          <div className="flex flex-row items-center justify-between">
+            <h3 className="text-xl">{buff.title}</h3>
+            <p className="text-xs text-neutral-400">
+              <span className="font-bold">
+                {Math.max(nextLevelPoints - totalPoints, 0)} pts till `
+                {getBuffLevelAndTitle(nextLevelPoints).title}`{' '}
+              </span>
+            </p>
+          </div>
+          <MultiColorProgressBar
+            currentPoints={totalPoints}
+            nextLevelPoints={nextLevelPoints}
+            colors={getColorsForBuffLevel(buff.level)}
+            height={8}
           />
-        </Box>
-      ) : filteredLogs && buffBadge.length > 0 && buffBadge[0].points > 0 ? (
-        <>
-          {
-            <div className="mx-auto w-full max-w-lg rounded-xl border border-neutral-700 bg-black text-white shadow-xl">
-              <div className="flex flex-row items-center justify-between border-b-2 border-neutral-700 px-6 py-3 text-xs">
-                <h2 className="text-center text-xs uppercase tracking-[1em]">
-                  {selectedMonth}
-                </h2>
-                <h2 className="text-center text-xs uppercase tracking-widest">
-                  {loggedDays}{' '}
-                  <span className="text-neutral-500">
-                    {' '}
-                    / {dayjs().daysInMonth()} days{' '}
-                  </span>
-                </h2>
-              </div>
-              <div className="flex flex-row items-center justify-start gap-4 p-6 pt-4">
-                <img
-                  src={getBuffLevelAndTitle(buffBadge[0].points).src}
-                  alt={buffBadge[0].title.charAt(0)}
-                  className="w-24 rounded-full border border-white p-1 shadow-md"
-                />
-                <div className="flex grow flex-col">
-                  <div className="flex flex-row items-center justify-between">
-                    <h3 className="text-xl">
-                      {getBuffLevelAndTitle(buffBadge[0].points).title}
-                    </h3>
-                    <p className="text-base text-xs text-neutral-400">
-                      <span className="font-bold">
-                        {nextLevelPoints - totalPoints} pts till `
-                        {getBuffLevelAndTitle(nextLevelPoints).title}`{' '}
-                      </span>
-                    </p>
-                  </div>
-                  <MultiColorProgressBar
-                    currentPoints={totalPoints}
-                    nextLevelPoints={nextLevelPoints}
-                    colors={getColorsForBuffLevel(
-                      getBuffLevelAndTitle(buffBadge[0]?.points).level,
-                    )}
-                    height={8}
-                  />
-                </div>
-              </div>
-            </div>
-          }
-        </>
-      ) : null}
-    </>
+        </div>
+      </div>
+    </div>
   );
 };
 export default WorklogBuff;
