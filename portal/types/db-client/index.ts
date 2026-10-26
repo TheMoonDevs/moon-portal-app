@@ -8,3 +8,4 @@ export * from '@/models/shared/enums';
 export * from '@/models/users';
 export * from '@/models/worklogs';
 export * from '@/models/workspace';
+export * from '@/models/connections';

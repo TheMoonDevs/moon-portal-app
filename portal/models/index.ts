@@ -6,3 +6,4 @@ export * from './shared/enums';
 export * from './users';
 export * from './worklogs';
 export * from './workspace';
+export * from './connections';

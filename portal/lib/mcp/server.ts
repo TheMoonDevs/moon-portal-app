@@ -1,0 +1,106 @@
+import { NextResponse } from 'next/server';
+
+import type { SessionUser } from '@/lib/permissions/server';
+
+import { originOf } from './tokens';
+import { ToolError, toolList, TOOLS } from './tools';
+
+const PROTOCOL_VERSIONS = ['2025-06-18', '2025-03-26', '2024-11-05'];
+
+const INSTRUCTIONS = `This is the person's work portal. Log what you do for them with log_work: a point when you start something (doing) and the same text again when it ends (done, not_done or blocked). Use waiting when you need their permission or input. Call get_context first to learn their projects and tasks, and name the project when you log.`;
+
+type RpcMessage = {
+  jsonrpc?: string;
+  id?: string | number | null;
+  method?: string;
+  params?: any;
+};
+
+const result = (id: RpcMessage['id'], value: unknown) => ({
+  jsonrpc: '2.0',
+  id,
+  result: value,
+});
+
+const error = (id: RpcMessage['id'], code: number, message: string) => ({
+  jsonrpc: '2.0',
+  id: id ?? null,
+  error: { code, message },
+});
+
+/** One JSON-RPC message. Returns null for notifications. */
+export async function handleRpc(user: SessionUser, message: RpcMessage) {
+  if (!message || typeof message !== 'object' || !message.method)
+    return error(message?.id, -32600, 'Invalid request');
+  const { id, method, params } = message;
+  const isNotification = id === undefined || id === null;
+  if (isNotification) return null;
+
+  switch (method) {
+    case 'initialize': {
+      const asked = params?.protocolVersion;
+      return result(id, {
+        protocolVersion: PROTOCOL_VERSIONS.includes(asked)
+          ? asked
+          : PROTOCOL_VERSIONS[0],
+        capabilities: { tools: { listChanged: false } },
+        serverInfo: { name: 'portal', title: 'Portal', version: '1.0.0' },
+        instructions: INSTRUCTIONS,
+      });
+    }
+    case 'ping':
+      return result(id, {});
+    case 'tools/list':
+      return result(id, { tools: toolList() });
+    case 'tools/call': {
+      const tool = TOOLS.find((t) => t.name === params?.name);
+      if (!tool) return error(id, -32602, `Unknown tool: ${params?.name}`);
+      try {
+        const value = await tool.run(user, params?.arguments ?? {});
+        return result(id, {
+          content: [{ type: 'text', text: JSON.stringify(value, null, 2) }],
+          structuredContent: value,
+        });
+      } catch (err) {
+        if (!(err instanceof ToolError))
+          console.error(`MCP tool ${tool.name} failed`, err);
+        return result(id, {
+          content: [
+            {
+              type: 'text',
+              text:
+                err instanceof ToolError
+                  ? err.message
+                  : 'Something went wrong in the portal. Try again.',
+            },
+          ],
+          isError: true,
+        });
+      }
+    }
+    case 'resources/list':
+      return result(id, { resources: [] });
+    case 'prompts/list':
+      return result(id, { prompts: [] });
+    default:
+      return error(id, -32601, `Method not found: ${method}`);
+  }
+}
+
+/** Tells the client where to sign the person in. */
+export function unauthorized(
+  request: Request,
+  headers: Record<string, string>,
+) {
+  const origin = originOf(request);
+  return NextResponse.json(
+    error(null, -32001, 'Connect your portal account first.'),
+    {
+      status: 401,
+      headers: {
+        ...headers,
+        'WWW-Authenticate': `Bearer resource_metadata="${origin}/.well-known/oauth-protected-resource"`,
+      },
+    },
+  );
+}
