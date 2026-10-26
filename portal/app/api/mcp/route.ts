@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { handleRpc, unauthorized } from '@/lib/mcp/server';
-import { userFromBearer } from '@/lib/mcp/tokens';
+import { originOf, userFromBearer } from '@/lib/mcp/tokens';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,8 +30,9 @@ export async function POST(request: Request) {
     );
 
   const messages = Array.isArray(body) ? body : [body];
+  const context = { origin: originOf(request) };
   const replies = (
-    await Promise.all(messages.map((m) => handleRpc(auth.user, m)))
+    await Promise.all(messages.map((m) => handleRpc(auth.user, m, context)))
   ).filter(Boolean);
   // Only notifications: nothing to say back.
   if (!replies.length)

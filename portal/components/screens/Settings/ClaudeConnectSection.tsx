@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import { cn } from '@/lib/utils';
+import { useWorkspace } from '@/utils/hooks/useWorkspace';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
 type Connection = {
@@ -61,11 +62,15 @@ export const ClaudeConnectSection = () => {
   const [newToken, setNewToken] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
+  // People who hire also get the hiring tools and skill.
+  const hires = useWorkspace().hiringCompanies.length > 0;
+
   useEffect(() => setOrigin(window.location.origin), []);
   const mcpUrl = `${origin}/api/mcp`;
   const skillUrl = `${origin}/claude/portal-worklog/SKILL.md`;
+  const hiringSkillUrl = `${origin}/claude/portal-hiring/SKILL.md`;
   const codeCommand = `claude mcp add --transport http portal ${mcpUrl}`;
-  const setupText = `Set up my work portal: run \`${codeCommand}\`, then download ${skillUrl} and save it as ~/.claude/skills/portal-worklog/SKILL.md. After that, tell me to run /mcp to sign in to "portal".`;
+  const setupText = `Set up my work portal: run \`${codeCommand}\`, then download ${skillUrl} and save it as ~/.claude/skills/portal-worklog/SKILL.md${hires ? `, and download ${hiringSkillUrl} and save it as ~/.claude/skills/portal-hiring/SKILL.md` : ''}. After that, tell me to run /mcp to sign in to "portal".`;
 
   const load = useCallback(async () => {
     try {
@@ -169,6 +174,21 @@ export const ClaudeConnectSection = () => {
           </a>{' '}
           tells Claude when to log.
         </p>
+        {hires && (
+          <p className="mt-2 text-xs text-neutral-500">
+            You hire, so Claude can also create job openings and their forms,
+            review and shortlist applicants, and email them after you approve a
+            preview.{' '}
+            <a
+              href="/claude/portal-hiring/SKILL.md"
+              target="_blank"
+              className="font-medium text-neutral-900 hover:underline"
+            >
+              The hiring skill
+            </a>{' '}
+            shows Claude how.
+          </p>
+        )}
       </div>
 
       <div>
