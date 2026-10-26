@@ -35,8 +35,8 @@ const EmojiLegend = () => {
         ))}
       </ul>
       <p className="mt-3 text-xs text-neutral-500">
-        <Kbd>Ctrl</Kbd> <Kbd>Space</Kbd> also adds ✅ and <Kbd>Ctrl</Kbd>{' '}
-        <Kbd>Q</Kbd> adds ❌.
+        <Kbd>Ctrl</Kbd> <Kbd>Space</Kbd> also adds ✅, <Kbd>Ctrl</Kbd>{' '}
+        <Kbd>Q</Kbd> adds ❌ and <Kbd>Ctrl</Kbd> <Kbd>P</Kbd> adds 🟡.
       </p>
     </>
   );

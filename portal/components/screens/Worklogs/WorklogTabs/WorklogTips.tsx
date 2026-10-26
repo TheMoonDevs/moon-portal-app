@@ -18,6 +18,7 @@ const WorklogTips = () => {
         <li className="">+ and Spacebar === • (For Bullet Points)</li>
         <li className="">Ctrl+Spacebar === ✅</li>
         <li className="">Ctrl+Q === ❌ </li>
+        <li className="">Ctrl+P === 🟡</li>
         <li className="">
           Select-Text+Ctrl+B === <strong>Bold Text</strong>
         </li>

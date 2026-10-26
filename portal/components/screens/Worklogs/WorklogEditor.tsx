@@ -649,8 +649,8 @@ export const WorklogEditor = ({
           <div
             className="relative mb-3 flex flex-row items-stretch px-4"
             onKeyDown={(e) => {
-              // Alt+1…9 for every emoji in the legend, Ctrl+Space and Ctrl+Q
-              // for ✅ and ❌.
+              // Alt+1…9 for every emoji in the legend, Ctrl+Space, Ctrl+Q and
+              // Ctrl+P for ✅, ❌ and 🟡.
               const emoji = emojiForShortcut(e);
               if (emoji) {
                 e.preventDefault();
