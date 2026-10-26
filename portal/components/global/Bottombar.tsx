@@ -68,7 +68,7 @@ export const Bottombar = ({
 
   return (
     <div
-      className={`md:fixed-none bottombar fixed inset-x-0 bottom-0 z-10 flex flex-row gap-6 bg-neutral-900 p-2 max-md:m-1 max-md:rounded-2xl md:bottom-auto md:left-0 md:top-0 md:h-full md:w-24 md:flex-col md:px-2 md:py-1`}
+      className={`md:fixed-none bottombar fixed inset-x-0 bottom-0 z-10 flex flex-row gap-2 bg-neutral-900 p-2 max-md:m-1 max-md:rounded-2xl md:bottom-auto md:left-0 md:top-0 md:h-full md:w-24 md:flex-col md:gap-6 md:px-2 md:py-1`}
       id="home-bottombar"
     >
       <Link href={APP_ROUTES.home} className="hidden md:block">

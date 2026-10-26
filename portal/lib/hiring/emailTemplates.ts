@@ -19,6 +19,7 @@ export const EMAIL_VARIABLES = [
   { key: 'role', label: 'Role' },
   { key: 'company', label: 'Company' },
   { key: 'sender', label: 'Your name' },
+  { key: 'meetingLink', label: 'Your meeting link' },
 ] as const;
 
 export type EmailVariable = (typeof EMAIL_VARIABLES)[number]['key'];
@@ -81,9 +82,9 @@ Please reply to this email with your work by [deadline]. If anything is unclear,
 
 Thanks for your interest in the {{role}} role at {{company}}. We'd like to invite you to an interview.
 
-[Add a scheduling link, or a few times that work for you]
+Pick a time that suits you here: {{meetingLink}}
 
-The conversation takes about [30 minutes]. Reply to this email if none of the times work.
+The conversation takes about 30 minutes. Reply to this email if none of the times work.
 
 Looking forward to it,
 {{sender}}
@@ -121,11 +122,17 @@ export function emailVariables({
   role,
   company,
   sender,
+  email,
+  meetingLink,
 }: {
   name: string;
   role: string;
   company: string;
   sender: string;
+  /** The candidate's email, filled in on the booking page for them. */
+  email?: string | null;
+  /** The sender's booking link (/meet/<code>), see lib/meet. */
+  meetingLink?: string | null;
 }): EmailVariables {
   const fullName = name.trim();
   return {
@@ -134,8 +141,18 @@ export function emailVariables({
     role: role.trim(),
     company: company.trim(),
     sender: sender.trim(),
+    meetingLink: meetingLink
+      ? `${meetingLink}?${new URLSearchParams({
+          name: fullName,
+          ...(email ? { email } : {}),
+        }).toString()}`
+      : '',
   };
 }
+
+/** Whether a template uses the sender's booking link. */
+export const usesMeetingLink = (...texts: string[]) =>
+  texts.some((text) => /\{\{\s*meetingLink\s*\}\}/.test(text));
 
 const PLACEHOLDER = /\{\{\s*([a-zA-Z]+)\s*\}\}/g;
 

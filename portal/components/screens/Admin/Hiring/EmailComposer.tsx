@@ -42,6 +42,8 @@ interface SendingSettings {
   configured: boolean;
   from: string | null;
   tracksDelivery: boolean;
+  /** The sender's booking link, for {{meetingLink}}. */
+  meetingLink?: string | null;
 }
 
 export interface SendResult {
@@ -270,10 +272,20 @@ export const EmailComposer = ({
               role,
               company: companyName,
               sender: user?.name ?? '',
+              email: previewFor.email,
+              meetingLink: settings?.meetingLink,
             }),
           )
         : null,
-    [previewFor, subject, body, role, companyName, user?.name],
+    [
+      previewFor,
+      subject,
+      body,
+      role,
+      companyName,
+      user?.name,
+      settings?.meetingLink,
+    ],
   );
   const fromLine = settings?.from
     ? companyName
