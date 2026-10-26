@@ -1,6 +1,10 @@
 import type { JobApplication, JobOpening } from '@db/client';
 
-import { type APPLICATION_STAGE, FORM_FIELD_TYPE } from '@/models/hiring';
+import {
+  type APPLICATION_STAGE,
+  FORM_FIELD_TYPE,
+  type HIRING_EMAIL_STATUS,
+} from '@/models/hiring';
 
 import type { PillTone } from '../shared/AdminUI';
 
@@ -51,6 +55,60 @@ export const STAGE_META: Record<
     tone: 'danger',
     icon: 'block',
     color: '#f43f5e',
+  },
+};
+
+export const EMAIL_STATUS_META: Record<
+  HIRING_EMAIL_STATUS,
+  { label: string; tone: PillTone; icon: string; hint: string }
+> = {
+  SENT: {
+    label: 'Sent',
+    tone: 'neutral',
+    icon: 'send',
+    hint: 'Handed to the email service.',
+  },
+  DELAYED: {
+    label: 'Delayed',
+    tone: 'warning',
+    icon: 'schedule',
+    hint: 'Their mail server hasn’t accepted it yet. It will keep trying.',
+  },
+  DELIVERED: {
+    label: 'Delivered',
+    tone: 'info',
+    icon: 'mark_email_unread',
+    hint: 'In their inbox.',
+  },
+  OPENED: {
+    label: 'Opened',
+    tone: 'positive',
+    icon: 'mark_email_read',
+    hint: 'They opened it.',
+  },
+  CLICKED: {
+    label: 'Clicked',
+    tone: 'positive',
+    icon: 'ads_click',
+    hint: 'They opened it and clicked a link.',
+  },
+  BOUNCED: {
+    label: 'Bounced',
+    tone: 'danger',
+    icon: 'unsubscribe',
+    hint: 'Their address rejected it. Check the email address.',
+  },
+  COMPLAINED: {
+    label: 'Marked as spam',
+    tone: 'danger',
+    icon: 'report',
+    hint: 'They marked it as spam.',
+  },
+  FAILED: {
+    label: 'Failed',
+    tone: 'danger',
+    icon: 'error',
+    hint: 'It was not sent.',
   },
 };
 
