@@ -57,7 +57,8 @@ export const WorklogSummaryContent = ({
       year: string | number | undefined | null;
       month?: string | number | undefined | null;
     }) => {
-      // console.log(userData?.id);
+      // Without a person this would ask for everyone's worklogs.
+      if (!userData?.id) return;
       setLoading(true);
       try {
         const response = await PortalSdk.getData(
