@@ -12,8 +12,15 @@ tab, so anything you change shows up there.
 ## Openings and forms
 
 - `list_job_openings` shows each opening with applicant counts per stage and
-  its apply link. `get_job_opening` adds the description and the form.
-- To create one, draft the title, description and questions with the user
+  its apply link. `get_job_opening` adds its texts and the form.
+- An opening has three texts. `description` is a short summary at the top
+  of the apply page (who you are and what the role is, in a few lines).
+  `details` holds the rest of the job post (requirements, responsibilities,
+  pay, perks) further down the page; use "- " bullets and a short heading
+  line above each list. `notes` is private to the hiring team (budget, who
+  interviews, what to look for). When the user pastes a whole job post,
+  split it this way and show them the split.
+- To create one, draft the title, texts and questions with the user
   first, then call `create_job_opening`. Name and email are always asked, so
   don't add them. Use FILE for a resume, SELECT or MULTI_SELECT with options
   for fixed choices, URL for LinkedIn or portfolio links.
@@ -45,7 +52,8 @@ tab, so anything you change shows up there.
 
 - `list_applicants` takes a stage filter and returns answers, shortened.
   `get_applicant` has the full answers, notes, history and emails.
-- When asked to shortlist, compare answers with what the opening asks for,
+- When asked to shortlist, compare answers with what the opening asks for
+  (its details and the team's notes, from `get_job_opening`),
   and give the user a short ranked list with a reason for each before
   moving anyone. Say what you couldn't judge (for example a resume file,
   which you can't open; give its link instead).

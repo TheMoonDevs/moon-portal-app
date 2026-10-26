@@ -287,7 +287,17 @@ const openingProperties = {
   description: {
     type: 'string',
     description:
-      'The job description shown on the apply page. Plain text; blank lines separate paragraphs.',
+      'A short summary at the top of the apply page: who you are and what the role is, in a few lines. Plain text; blank lines separate paragraphs.',
+  },
+  details: {
+    type: 'string',
+    description:
+      'The rest of the job post, shown below the summary: requirements, responsibilities, nice-to-haves, pay and perks. Plain text; lines starting with "- " or "* " become bullets, and a short line before them becomes a heading.',
+  },
+  notes: {
+    type: 'string',
+    description:
+      'Private notes for the hiring team, e.g. budget, who interviews, what to look for. Candidates never see them.',
   },
   questions: {
     type: 'array',
@@ -384,7 +394,7 @@ export const HIRING_TOOLS: Tool[] = [
     name: 'get_job_opening',
     title: 'Get a job opening',
     description:
-      'One opening with its description and every question on its application form (with ids), plus applicant counts per stage.',
+      'One opening with its summary, full details and private notes, every question on its application form (with ids), and applicant counts per stage.',
     inputSchema: {
       type: 'object',
       properties: { openingId: { type: 'string' } },
@@ -407,6 +417,8 @@ export const HIRING_TOOLS: Tool[] = [
           context,
         ),
         description: opening.description ?? null,
+        details: opening.details ?? null,
+        notes: opening.notes ?? null,
         questions: (opening.fields ?? []).map(fieldView),
       };
     },
@@ -415,7 +427,7 @@ export const HIRING_TOOLS: Tool[] = [
     name: 'create_job_opening',
     title: 'Create a job opening',
     description:
-      'Creates a job opening with its application form. It starts as a draft, which only the hiring team sees. Show the person the title, description and questions, and set publish to true only when they want it live; publishing makes the apply link work for anyone who has it.',
+      'Creates a job opening with its application form. It starts as a draft, which only the hiring team sees. Show the person the title, summary, details and questions, and set publish to true only when they want it live; publishing makes the apply link work for anyone who has it.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -442,6 +454,8 @@ export const HIRING_TOOLS: Tool[] = [
         location: args?.location,
         employmentType: args?.employmentType,
         description: args?.description,
+        details: args?.details,
+        notes: args?.notes,
         fields: args?.questions ?? [],
         status: args?.publish
           ? JOB_OPENING_STATUS.OPEN
@@ -460,6 +474,8 @@ export const HIRING_TOOLS: Tool[] = [
           location: data.location ?? null,
           employmentType: data.employmentType ?? null,
           description: data.description ?? null,
+          details: data.details ?? null,
+          notes: data.notes ?? null,
           status: data.status,
           fields: data.fields ?? [],
           createdById: user.id,
@@ -516,6 +532,8 @@ export const HIRING_TOOLS: Tool[] = [
         'location',
         'employmentType',
         'description',
+        'details',
+        'notes',
         'status',
       ])
         if (args?.[key] !== undefined) input[key] = args[key];

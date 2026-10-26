@@ -97,6 +97,8 @@ export async function POST(request: Request) {
       location: data.location ?? null,
       employmentType: data.employmentType ?? null,
       description: data.description ?? null,
+      details: data.details ?? null,
+      notes: data.notes ?? null,
       status: data.status,
       fields: data.fields ?? [],
       createdById: user.id,

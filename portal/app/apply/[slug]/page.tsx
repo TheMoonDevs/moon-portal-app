@@ -37,6 +37,7 @@ const loadOpening = cache(
       location: opening.location ?? null,
       employmentType: opening.employmentType ?? null,
       description: opening.description ?? null,
+      details: opening.details ?? null,
       isOpen: opening.status === JOB_OPENING_STATUS.OPEN,
       fields: opening.fields ?? [],
       company: {

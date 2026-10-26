@@ -222,6 +222,8 @@ const OPENING_TEXT_LIMITS = {
   location: 120,
   employmentType: 40,
   description: MAX_DESCRIPTION_LENGTH,
+  details: MAX_DESCRIPTION_LENGTH,
+  notes: MAX_DESCRIPTION_LENGTH,
 } as const;
 
 /**
