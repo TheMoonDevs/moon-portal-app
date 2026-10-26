@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server';
 
-import { emailSettings } from '@/lib/hiring/email';
+import { hiringEmailSettings } from '@/lib/hiring/email';
 import { parseTemplateInput } from '@/lib/hiring/emailServer';
 import { db } from '@/lib/mongodb/db-client';
 import {
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
       where: { companyId },
       orderBy: { name: 'asc' },
     });
-  const { configured, from, tracksDelivery } = emailSettings();
+  const { configured, from, tracksDelivery } = hiringEmailSettings();
   return ok({ templates, sending: { configured, from, tracksDelivery } });
 }
 

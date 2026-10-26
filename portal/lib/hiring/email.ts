@@ -1,166 +1,32 @@
-import { createHmac, timingSafeEqual } from 'crypto';
-
+import {
+  fromHeader,
+  isResendConfigured,
+  isResendWebhookConfigured,
+  senderAddress,
+} from '@/lib/email/resend';
 import { HIRING_EMAIL_STATUS } from '@/models/hiring';
 
 /*
- * Sending candidate emails through Resend's REST API.
- *
- *   RESEND_API_KEY         API key with sending access
- *   HIRING_EMAIL_FROM      sender on a verified domain, e.g. careers@acme.com
- *                          or "Acme Careers <careers@acme.com>"
- *   RESEND_WEBHOOK_SECRET  optional, signing secret of a webhook pointed at
- *                          /api/hiring/emails/webhook for delivery updates
- *   RESEND_API_URL         optional, only to point at a mock while testing
+ * Candidate emails go out from careers@<RESEND_DOMAIN> with the company's
+ * name as the sender. Sending itself lives in lib/email/resend.
  */
 
-const BATCH_SIZE = 100;
+const HIRING_SENDER = 'careers';
 
-export function emailSettings() {
-  const from = process.env.HIRING_EMAIL_FROM?.trim() || null;
+export function hiringEmailSettings() {
   return {
-    configured: !!process.env.RESEND_API_KEY && !!from,
-    from,
-    tracksDelivery: !!process.env.RESEND_WEBHOOK_SECRET,
+    configured: isResendConfigured(),
+    from: senderAddress(HIRING_SENDER),
+    tracksDelivery: isResendWebhookConfigured(),
   };
 }
 
-/**
- * The From header. When HIRING_EMAIL_FROM is a bare address the company's
- * name is shown as the sender.
- */
-export function fromHeader(companyName: string) {
-  const from = emailSettings().from ?? '';
-  if (from.includes('<')) return from;
-  const name = companyName.replace(/["\\<>,;:@\r\n]/g, '').trim();
-  return name ? `${name} <${from}>` : from;
-}
+/** The From header for a company's candidate emails. */
+export const hiringFrom = (companyName: string) =>
+  fromHeader(senderAddress(HIRING_SENDER) ?? '', companyName);
 
-export interface OutgoingEmail {
-  from: string;
-  to: string;
-  replyTo?: string | null;
-  subject: string;
-  text: string;
-  html: string;
-}
-
-export type SendResult =
-  | { id: string; error?: never }
-  | { id?: never; error: string };
-
-const apiUrl = () =>
-  (process.env.RESEND_API_URL || 'https://api.resend.com').replace(/\/$/, '');
-
-const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-async function postBatch(
-  emails: OutgoingEmail[],
-  idempotencyKey: string,
-): Promise<SendResult[]> {
-  const payload = emails.map((email) => ({
-    from: email.from,
-    to: [email.to],
-    subject: email.subject,
-    text: email.text,
-    html: email.html,
-    ...(email.replyTo ? { reply_to: email.replyTo } : {}),
-    tags: [{ name: 'source', value: 'portal-hiring' }],
-  }));
-
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    let res: Response;
-    try {
-      res = await fetch(`${apiUrl()}/emails/batch`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-          'Content-Type': 'application/json',
-          // Resend answers a repeat of the same key with the first result
-          // instead of sending again, so a retry can't double send.
-          'Idempotency-Key': idempotencyKey,
-        },
-        body: JSON.stringify(payload),
-      });
-    } catch {
-      if (attempt < 2) {
-        await wait(1000 * (attempt + 1));
-        continue;
-      }
-      return emails.map(() => ({
-        error: 'Could not reach the email service.',
-      }));
-    }
-
-    const body = await res.json().catch(() => null);
-    if (res.ok) {
-      const ids: Array<{ id?: string }> = body?.data ?? [];
-      return emails.map((_, i) =>
-        ids[i]?.id ? { id: ids[i].id as string } : { error: 'No id returned.' },
-      );
-    }
-    if ((res.status === 429 || res.status >= 500) && attempt < 2) {
-      const retryAfter = Number(res.headers.get('retry-after'));
-      await wait(
-        Number.isFinite(retryAfter) && retryAfter > 0
-          ? Math.min(retryAfter, 5) * 1000
-          : 1000 * (attempt + 1),
-      );
-      continue;
-    }
-    const message =
-      (typeof body?.message === 'string' && body.message) ||
-      `The email service answered ${res.status}.`;
-    return emails.map(() => ({ error: message }));
-  }
-  return emails.map(() => ({ error: 'The email service is busy.' }));
-}
-
-/**
- * Sends one email per entry, in batches of 100. Results come back in the
- * same order. `sendId` makes the call safe to repeat.
- */
-export async function sendEmails(
-  emails: OutgoingEmail[],
-  sendId: string,
-): Promise<SendResult[]> {
-  const results: SendResult[] = [];
-  for (let start = 0; start < emails.length; start += BATCH_SIZE) {
-    const chunk = emails.slice(start, start + BATCH_SIZE);
-    results.push(
-      ...(await postBatch(chunk, `hiring-${sendId}-${start / BATCH_SIZE}`)),
-    );
-  }
-  return results;
-}
-
-/* --------------------------------- webhook -------------------------------- */
-
-/**
- * Checks a Resend (Svix) webhook signature: an HMAC of
- * `<id>.<timestamp>.<body>` keyed with the base64 part of `whsec_…`.
- */
-export function verifyWebhook(rawBody: string, headers: Headers): boolean {
-  const secret = process.env.RESEND_WEBHOOK_SECRET;
-  const id = headers.get('svix-id');
-  const timestamp = headers.get('svix-timestamp');
-  const signatures = headers.get('svix-signature');
-  if (!secret || !id || !timestamp || !signatures) return false;
-
-  const age = Math.abs(Date.now() / 1000 - Number(timestamp));
-  if (!Number.isFinite(age) || age > 5 * 60) return false;
-
-  const key = Buffer.from(secret.replace(/^whsec_/, ''), 'base64');
-  const expected = createHmac('sha256', key)
-    .update(`${id}.${timestamp}.${rawBody}`)
-    .digest();
-
-  return signatures.split(' ').some((entry) => {
-    const [version, signature] = entry.split(',');
-    if (version !== 'v1' || !signature) return false;
-    const given = Buffer.from(signature, 'base64');
-    return given.length === expected.length && timingSafeEqual(given, expected);
-  });
-}
+/** Tag on every hiring email, so Resend's logs show where it came from. */
+export const HIRING_EMAIL_TAGS = [{ name: 'source', value: 'portal-hiring' }];
 
 /** Resend event types and the status each one means. */
 export const WEBHOOK_STATUS: Record<string, HIRING_EMAIL_STATUS> = {

@@ -1,10 +1,10 @@
 import type { NextRequest } from 'next/server';
 
+import { type OutgoingEmail, sendEmails } from '@/lib/email/resend';
 import {
-  emailSettings,
-  fromHeader,
-  type OutgoingEmail,
-  sendEmails,
+  HIRING_EMAIL_TAGS,
+  hiringEmailSettings,
+  hiringFrom,
 } from '@/lib/hiring/email';
 import {
   emailVariables,
@@ -109,10 +109,10 @@ export async function POST(request: Request) {
   if (response || !user)
     return response ?? fail(401, 'Authentication required.');
 
-  if (!emailSettings().configured)
+  if (!hiringEmailSettings().configured)
     return fail(
       503,
-      'Email isn’t set up yet. Add RESEND_API_KEY and HIRING_EMAIL_FROM to the portal’s environment.',
+      'Email isn’t set up yet. Add RESEND_API_KEY and RESEND_DOMAIN to the portal’s environment.',
     );
 
   if (
@@ -134,7 +134,7 @@ export async function POST(request: Request) {
     ]);
     const companyName: string = company?.name ?? '';
     const roleOf = new Map(openings.map((o) => [o.id, o.title]));
-    const from = fromHeader(companyName);
+    const from = hiringFrom(companyName);
     const reply = replyTo || sender?.email || user.email || null;
 
     const outgoing: OutgoingEmail[] = applications.map((application) => {
@@ -147,10 +147,16 @@ export async function POST(request: Request) {
           sender: sender?.name || '',
         }),
       );
-      return { from, to: application.email, replyTo: reply, ...rendered };
+      return {
+        from,
+        to: application.email,
+        replyTo: reply,
+        tags: HIRING_EMAIL_TAGS,
+        ...rendered,
+      };
     });
 
-    const results = await sendEmails(outgoing, sendId);
+    const results = await sendEmails(outgoing, `hiring-${sendId}`);
     const sentAt = nowIso();
 
     const records: HiringEmail[] = await Promise.all(

@@ -1,9 +1,8 @@
 import {
-  emailSettings,
-  isStatusAhead,
-  verifyWebhook,
-  WEBHOOK_STATUS,
-} from '@/lib/hiring/email';
+  isResendWebhookConfigured,
+  verifyResendWebhook,
+} from '@/lib/email/resend';
+import { isStatusAhead, WEBHOOK_STATUS } from '@/lib/hiring/email';
 import { db } from '@/lib/mongodb/db-client';
 import { fail, nowIso, ok } from '@/lib/workspace/server';
 import type { HiringEmail } from '@/models/hiring';
@@ -16,11 +15,11 @@ export const dynamic = 'force-dynamic';
  * its signing secret in RESEND_WEBHOOK_SECRET.
  */
 export async function POST(request: Request) {
-  if (!emailSettings().tracksDelivery)
+  if (!isResendWebhookConfigured())
     return fail(404, 'Delivery tracking is not set up.');
 
   const raw = await request.text();
-  if (!verifyWebhook(raw, request.headers))
+  if (!verifyResendWebhook(raw, request.headers))
     return fail(401, 'Invalid signature.');
 
   let event: {

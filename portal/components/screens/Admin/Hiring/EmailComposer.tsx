@@ -276,9 +276,9 @@ export const EmailComposer = ({
     [previewFor, subject, body, role, companyName, user?.name],
   );
   const fromLine = settings?.from
-    ? settings.from.includes('<')
-      ? settings.from
-      : `${companyName} <${settings.from}>`
+    ? companyName
+      ? `${companyName} <${settings.from}>`
+      : settings.from
     : 'Not set up yet';
 
   /* -------------------------------- warnings -------------------------------- */
@@ -742,8 +742,7 @@ export const EmailComposer = ({
               {settings && !settings.configured && (
                 <Warning tone="danger">
                   Email isn’t set up yet. A portal admin needs to add
-                  RESEND_API_KEY and HIRING_EMAIL_FROM to the portal’s
-                  environment.
+                  RESEND_API_KEY and RESEND_DOMAIN to the portal’s environment.
                 </Warning>
               )}
               {hasBracketNotes(body) && (
