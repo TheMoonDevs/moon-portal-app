@@ -4,6 +4,8 @@
  * leaderboard. Pure, so the browser and the server agree.
  */
 
+import { lineKey } from '@/lib/worklogs/lines';
+
 export enum BUFF_LEVEL {
   TRUTH_SEEKER = 'TRUTH_SEEKER',
   BABY_GROOT = 'BABY_GROOT',
@@ -108,6 +110,39 @@ export const worklogPoints = (logs: { works?: unknown }[]) =>
       works.reduce((sum: number, work: any) => {
         const content = typeof work?.content === 'string' ? work.content : '';
         return isValidContent(content) ? sum + getPoints(content) : sum;
+      }, 0)
+    );
+  }, 0);
+
+/**
+ * Points for one company's leaderboard. A line linked to another company
+ * counts there instead; lines not linked yet count everywhere, as before.
+ */
+export const worklogPointsForCompany = (
+  logs: {
+    works?: unknown;
+    links?: { key: string; companyId: string | null }[] | null;
+  }[],
+  companyId: string,
+) =>
+  logs.reduce((total, log) => {
+    const elsewhere = new Set(
+      (log.links ?? [])
+        .filter((l) => l.companyId && l.companyId !== companyId)
+        .map((l) => l.key),
+    );
+    const works = Array.isArray(log.works) ? log.works : [];
+    return (
+      total +
+      works.reduce((sum: number, work: any) => {
+        const content = typeof work?.content === 'string' ? work.content : '';
+        if (!isValidContent(content)) return sum;
+        const skipped = elsewhere.size
+          ? content
+              .split('\n')
+              .filter((line: string) => elsewhere.has(lineKey(line))).length
+          : 0;
+        return sum + Math.max(0, getPoints(content) - skipped);
       }, 0)
     );
   }, 0);
