@@ -2,12 +2,13 @@ import { NextResponse } from 'next/server';
 
 import type { SessionUser } from '@/lib/permissions/server';
 
+import type { ToolContext } from './shared';
 import { originOf } from './tokens';
 import { ToolError, toolList, TOOLS } from './tools';
 
 const PROTOCOL_VERSIONS = ['2025-06-18', '2025-03-26', '2024-11-05'];
 
-const INSTRUCTIONS = `This is the person's work portal. Log what you do for them with log_work: a point when you start something (doing) and the same text again when it ends (done, not_done or blocked). Use waiting when you need their permission or input. Call get_context first to learn their projects and tasks, and name the project when you log.`;
+const INSTRUCTIONS = `This is the person's work portal. Log what you do for them with log_work: a point when you start something (doing) and the same text again when it ends (done, not_done or blocked). Use waiting when you need their permission or input. Call get_context first to learn their projects and tasks, and name the project when you log. People who hire also get job opening, applicant and email tools: show them an email with email_applicants (dryRun) and wait for their OK before sending it.`;
 
 type RpcMessage = {
   jsonrpc?: string;
@@ -29,7 +30,11 @@ const error = (id: RpcMessage['id'], code: number, message: string) => ({
 });
 
 /** One JSON-RPC message. Returns null for notifications. */
-export async function handleRpc(user: SessionUser, message: RpcMessage) {
+export async function handleRpc(
+  user: SessionUser,
+  message: RpcMessage,
+  context: ToolContext,
+) {
   if (!message || typeof message !== 'object' || !message.method)
     return error(message?.id, -32600, 'Invalid request');
   const { id, method, params } = message;
@@ -51,12 +56,14 @@ export async function handleRpc(user: SessionUser, message: RpcMessage) {
     case 'ping':
       return result(id, {});
     case 'tools/list':
-      return result(id, { tools: toolList() });
+      return result(id, { tools: await toolList(user) });
     case 'tools/call': {
       const tool = TOOLS.find((t) => t.name === params?.name);
       if (!tool) return error(id, -32602, `Unknown tool: ${params?.name}`);
       try {
-        const value = await tool.run(user, params?.arguments ?? {});
+        if (tool.visible && !(await tool.visible(user)))
+          return error(id, -32602, `Unknown tool: ${params?.name}`);
+        const value = await tool.run(user, params?.arguments ?? {}, context);
         return result(id, {
           content: [{ type: 'text', text: JSON.stringify(value, null, 2) }],
           structuredContent: value,
