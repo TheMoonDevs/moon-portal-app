@@ -7,6 +7,7 @@ import {
   ok,
   requireCompanyPermission,
   slugify,
+  syncCompanyRoles,
 } from '@/lib/workspace/server';
 
 export const dynamic = 'force-dynamic';
@@ -19,10 +20,13 @@ export async function GET(_request: Request, { params }: Params) {
     'roles:read',
   );
   if (response) return response;
-  const roles = await db.companyRole.findMany({
-    where: { companyId: params.companyId },
-    orderBy: { createdAt: 'asc' },
-  });
+  const list = () =>
+    db.companyRole.findMany({
+      where: { companyId: params.companyId },
+      orderBy: { createdAt: 'asc' },
+    });
+  let roles = await list();
+  if (await syncCompanyRoles(params.companyId, roles)) roles = await list();
   return ok({ roles });
 }
 
