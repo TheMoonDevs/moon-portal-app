@@ -7,7 +7,7 @@ import { TASK_STATUS } from '@/models/workspace';
 import { sendPushToUsers } from './server';
 
 /*
- * Daily push reminders, run every 30 minutes by /api/cron/day-reminders.
+ * Daily push reminders, run by /api/cron/day-reminders (see vercel.json).
  * A day is the person's own calendar day (midnight to midnight in their
  * timezone), the same day the worklog page writes to.
  *
