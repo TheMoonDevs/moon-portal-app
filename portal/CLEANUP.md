@@ -51,8 +51,8 @@ The `USERTYPE.CLIENT` code paths were removed (the enum value stays for existing
 
 - **`fileUpload` Redux slice** — the File Uploads page is gone, but Home's profile drawer uses this slice for avatar/banner upload.
 - **`/api/events` + Admin Event Form** — this is the Home dashboard Events widget, separate from Zero-Tracker.
-- **Cron jobs** (`/api/cron-jobs/*`, `cron/`, `worker/index.js`) — live infrastructure driven by `vercel.json` and PM2, not referenced from the frontend. `worklog-summary-reminder` posts the daily Worklogs digest to Slack. Only the Medium-articles cron was dropped.
-- **`worker/index.js`** — the push-notification service worker loaded by `next-pwa`.
+- **Cron jobs** (`/api/cron-jobs/*`, `cron/`) — live infrastructure driven by `vercel.json` and PM2, not referenced from the frontend. `worklog-summary-reminder` posts the daily Worklogs digest to Slack. Only the Medium-articles cron was dropped.
+- **`app/sw.ts`** — the service worker (Serwist): offline page, caching and push notifications. Replaced `worker/index.js` + `next-pwa`.
 
 ---
 
