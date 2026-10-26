@@ -1,5 +1,6 @@
 export class DbClient {}
 
+export * from '@/models/hiring';
 export * from '@/models/notifications';
 export * from '@/models/platform';
 export * from '@/models/progress';

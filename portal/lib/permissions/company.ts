@@ -63,6 +63,19 @@ export const DEFAULT_COMPANY_ROLES: CompanyRoleDefinition[] = [
     ],
   },
   {
+    key: 'recruiter',
+    name: 'Recruiter',
+    description: 'Runs hiring: openings, application forms and candidates.',
+    permissions: [
+      'companies:read',
+      'members:read',
+      'hiring:read',
+      'hiring:create',
+      'hiring:edit',
+      'hiring:delete',
+    ],
+  },
+  {
     key: 'viewer',
     name: 'Viewer',
     description: 'Read-only access to the company’s projects and tasks.',

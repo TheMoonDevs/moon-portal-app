@@ -76,6 +76,8 @@ export const modelMetaMap = defineModelRegistry({
   pointEntry: { collection: 'PointEntry' },
   badge: { collection: 'Badge' },
   userBadge: { collection: 'UserBadge' },
+  jobOpening: { collection: 'JobOpening' },
+  jobApplication: { collection: 'JobApplication' },
 });
 
 export type ModelName = keyof typeof modelMetaMap;

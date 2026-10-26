@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Toaster } from 'sonner';
 
+import { hasPermission } from '@/lib/permissions/matching';
 import { cn } from '@/lib/utils';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
 import { useUser } from '@/utils/hooks/useUser';
@@ -13,6 +14,7 @@ import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import { AdminUsers } from './AdminUsers';
 import { AdminBadges } from './Badges/AdminBadges';
+import { AdminHiring } from './Hiring/AdminHiring';
 import { AdminOverview } from './Overview/AdminOverview';
 import SendNotifications from './SendNotifications';
 import { AdminCommandPalette } from './shared/AdminCommandPalette';
@@ -42,18 +44,30 @@ export const AdminPage = () => {
   const workspace = useWorkspace();
   const isAdmin = !!adminUser?.isAdmin;
 
-  // Portal admins see every tab; others see the company tabs plus any tab
-  // their portal roles open.
+  // Portal admins see every tab; others see the admin tabs their portal roles
+  // open, and the company tabs. A company tab with its own permission (such as
+  // hiring) only shows to people who hold it in some company, and the other
+  // company tabs are left out for people who are here only for hiring.
   const { canPortal } = workspace;
+  const hiringOnly =
+    !workspace.isSuperAdmin &&
+    !workspace.managesPortal &&
+    workspace.managedCompanies.length === 0;
   const visibleTabs = useMemo(
     () =>
-      ADMIN_TABS.filter(
-        (tab) =>
-          tab.access === 'company' ||
-          isAdmin ||
-          (!!tab.permission && canPortal(tab.permission)),
-      ),
-    [isAdmin, canPortal],
+      ADMIN_TABS.filter((tab) => {
+        if (isAdmin) return true;
+        if (tab.access === 'admin')
+          return !!tab.permission && canPortal(tab.permission);
+        if (tab.permission) {
+          const permission = tab.permission;
+          return workspace.companies.some((c) =>
+            hasPermission(c.permissions, permission),
+          );
+        }
+        return !hiringOnly;
+      }),
+    [isAdmin, canPortal, workspace.companies, hiringOnly],
   );
 
   const [users, setUsers] = useState<User[]>([]);
@@ -168,6 +182,13 @@ export const AdminPage = () => {
 
   /* -------------------------------- content -------------------------------- */
 
+  const companyCount = new Set(
+    [...workspace.managedCompanies, ...workspace.hiringCompanies].map(
+      (c) => c.company.id,
+    ),
+  ).size;
+  const companyCountLabel = `${companyCount} ${companyCount === 1 ? 'company' : 'companies'}`;
+
   const renderTab = () => {
     switch (activeTab.id) {
       case 'overview':
@@ -215,6 +236,14 @@ export const AdminPage = () => {
             onSelectCompany={selectCompany}
             selectedProjectId={projectId}
             onSelectProject={setProjectId}
+          />
+        );
+      case 'hiring':
+        return (
+          <AdminHiring
+            users={users}
+            selectedCompanyId={companyId}
+            onSelectCompany={selectCompany}
           />
         );
       case 'roles':
@@ -417,7 +446,7 @@ export const AdminPage = () => {
               <p className="text-[10px] uppercase tracking-wider text-neutral-500">
                 {isAdmin
                   ? `${users.length} people · ${workspace.companies.length} companies`
-                  : `${workspace.managedCompanies.length} companies`}
+                  : companyCountLabel}
               </p>
             </div>
             <UserAvatar

@@ -1,3 +1,4 @@
+export * from './hiring';
 export * from './notifications';
 export * from './platform';
 export * from './progress';

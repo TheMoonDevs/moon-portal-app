@@ -120,6 +120,9 @@ export const useWorkspace = () => {
   const managedCompanies = companies.filter((c) =>
     MANAGE_PERMISSIONS.some((p) => hasPermission(c.permissions, p)),
   );
+  const hiringCompanies = companies.filter((c) =>
+    hasPermission(c.permissions, 'hiring:read'),
+  );
   const managesPortal = PORTAL_ADMIN_PERMISSIONS.some((p) =>
     hasPermission(portalPermissions, p),
   );
@@ -128,13 +131,18 @@ export const useWorkspace = () => {
     loading,
     companies,
     managedCompanies,
+    /** Companies where the user can see hiring. */
+    hiringCompanies,
+    /** Whether portal roles give the user an admin tab of their own. */
+    managesPortal,
     isSuperAdmin: !!data?.isSuperAdmin,
     /** Whether the admin console has anything for this user. */
     canOpenAdmin:
       !!user?.isAdmin ||
       !!data?.isSuperAdmin ||
       managesPortal ||
-      managedCompanies.length > 0,
+      managedCompanies.length > 0 ||
+      hiringCompanies.length > 0,
     can,
     canPortal,
     refresh,
