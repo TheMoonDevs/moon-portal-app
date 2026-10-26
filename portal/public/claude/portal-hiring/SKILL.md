@@ -1,6 +1,6 @@
 ---
 name: portal-hiring
-description: Run hiring in the user's portal - create job openings with their application forms, review and shortlist applicants, move them through stages and email them (rejections, tasks, interviews, offers). Use when the user talks about hiring, a job opening, candidates or applicants and the portal MCP server is connected.
+description: Run hiring in the user's portal - create job openings with their application forms, copy Google Forms and import their response sheets, review and shortlist applicants, move them through stages and email them (rejections, tasks, interviews, offers). Use when the user talks about hiring, a job opening, candidates or applicants and the portal MCP server is connected.
 ---
 
 # Portal hiring
@@ -22,6 +22,24 @@ tab, so anything you change shows up there.
 - `update_job_opening` with `questions` replaces the whole form: pass every
   question to keep, with its `id`, or answers lose their question.
 - CLOSED stops new applications; the applicants stay.
+
+## Moving over from Google Forms
+
+- To copy a Google Form, open its link and recreate it with
+  `create_job_opening`. Keep every question's wording exactly, so the
+  form's response sheet lines up later. Leave out the name and email
+  questions. Types: Short answer → SHORT_TEXT, Paragraph → LONG_TEXT,
+  Multiple choice or Dropdown → SELECT, Checkboxes → MULTI_SELECT (or
+  CHECKBOX for a single "I agree" box), Date → DATE, File upload → FILE,
+  Linear scale → SELECT with its numbers. Say what didn't carry over (grids,
+  sections, quiz scores). Keep it a draft until the user swaps their links.
+- To bring in the responses, read the sheet (or the CSV the user shares)
+  and call `import_applicants` in batches of up to 500 rows. First show the
+  user how the columns map to the questions and how many rows there are.
+  Pass the Timestamp column as `appliedAt` with the right day/month order,
+  and their status column as `stage` if they kept one. Nobody is emailed.
+- People can also do this themselves: the opening's "Import from a sheet"
+  button in the Hiring tab takes a CSV download of the sheet.
 
 ## Reviewing applicants
 
