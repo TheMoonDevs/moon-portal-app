@@ -11,8 +11,9 @@ export async function POST(request: Request) {
   try {
     const data = parseCreateInput('notification', await request.json());
 
+    const now = new Date();
     const newNotification = await db.notification.create({
-      data,
+      data: { ...data, isRead: false, createdAt: now, updatedAt: now },
     });
 
     return NextResponse.json(newNotification, { status: 200 });

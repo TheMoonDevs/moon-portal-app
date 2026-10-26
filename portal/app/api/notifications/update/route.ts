@@ -2,33 +2,46 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/mongodb/db-client';
-import { enforcePermission } from '@/lib/permissions/server';
+import { requireAuthedPermission } from '@/lib/permissions/server';
 
+/**
+ * Mark the signed-in user's notifications read or unread.
+ * Body: `{ isRead: boolean, ids: string[] }` or `{ isRead: boolean, all: true }`.
+ */
 export async function PUT(request: NextRequest) {
-  const denied = await enforcePermission('notifications:edit');
-  if (denied) return denied;
+  const { response, user } =
+    await requireAuthedPermission('notifications:edit');
+  if (response) return response;
+  if (!user) {
+    return NextResponse.json(
+      { status: 'fail', error: 'Authentication required.' },
+      { status: 401 },
+    );
+  }
 
   try {
-    const { id, ...data } = await request.json();
+    const body = await request.json().catch(() => ({}));
+    const ids: string[] = Array.isArray(body?.ids)
+      ? body.ids.filter((id: unknown) => typeof id === 'string')
+      : [];
+    if (typeof body?.isRead !== 'boolean' || (!body.all && !ids.length)) {
+      return NextResponse.json(
+        { status: 'fail', error: 'Send isRead and either ids or all.' },
+        { status: 400 },
+      );
+    }
 
-    const updatedNotification = await db.notification.upsert({
+    const { count } = await db.notification.updateMany({
       where: {
-        id,
+        userId: user.id,
+        ...(body.all ? {} : { id: { in: ids } }),
       },
-      create: { id, ...data },
-      update: { ...data, updatedAt: new Date() },
+      data: { isRead: body.isRead, updatedAt: new Date() },
     });
 
-    const json_response = {
-      status: 'success',
-      data: {
-        notification: updatedNotification,
-      },
-    };
-
-    return NextResponse.json(json_response, { status: 200 });
+    return NextResponse.json({ status: 'success', data: { count } });
   } catch (error: any) {
-    console.error('Error updating notification:', error);
+    console.error('Error updating notifications:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
