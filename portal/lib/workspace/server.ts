@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/mongodb/db-client';
+import { ALL_COMPANY_PERMISSIONS } from '@/lib/permissions/catalog';
 import {
   type CompanyAccess,
+  companyRolePermissions,
   DEFAULT_COMPANY_ROLES,
   getEffectiveCompanyPermissions,
   isAllowedInCompany,
@@ -85,7 +87,7 @@ export async function getCompanyAccess(
     : [];
   return {
     member,
-    rolePermissions: roles.flatMap((r) => r.permissions ?? []),
+    rolePermissions: roles.flatMap((r) => companyRolePermissions(r)),
   };
 }
 
@@ -183,7 +185,7 @@ export async function getWorkspaceForUser(
       .filter(
         (r) => r.companyId === company.id && member?.roleKeys?.includes(r.key),
       )
-      .flatMap((r) => r.permissions ?? []);
+      .flatMap((r) => companyRolePermissions(r));
     return {
       company,
       member,
@@ -192,21 +194,57 @@ export async function getWorkspaceForUser(
   });
 }
 
+const defaultRoleData = (
+  companyId: string,
+  roles: typeof DEFAULT_COMPANY_ROLES,
+) => {
+  const createdAt = nowIso();
+  return roles.map((role) => ({
+    companyId,
+    key: role.key,
+    name: role.name,
+    description: role.description,
+    permissions: role.permissions,
+    isSystem: true,
+    createdAt,
+    updatedAt: createdAt,
+  }));
+};
+
 /** Creates the default roles for a freshly created company. */
 export async function seedCompanyRoles(companyId: string) {
-  const createdAt = nowIso();
   await db.companyRole.createMany({
-    data: DEFAULT_COMPANY_ROLES.map((role) => ({
-      companyId,
-      key: role.key,
-      name: role.name,
-      description: role.description,
-      permissions: role.permissions,
-      isSystem: true,
-      createdAt,
-      updatedAt: createdAt,
-    })),
+    data: defaultRoleData(companyId, DEFAULT_COMPANY_ROLES),
   });
+}
+
+/**
+ * Brings an older company's roles up to date: adds built-in roles that came
+ * out after it was created (such as Recruiter) and fills in the Owner role's
+ * list. Returns whether anything changed.
+ */
+export async function syncCompanyRoles(
+  companyId: string,
+  roles: CompanyRole[],
+): Promise<boolean> {
+  const missing = DEFAULT_COMPANY_ROLES.filter(
+    (role) => !roles.some((r) => r.key === role.key),
+  );
+  if (missing.length)
+    await db.companyRole.createMany({
+      data: defaultRoleData(companyId, missing),
+    });
+
+  const owner = roles.find((r) => r.key === 'owner');
+  const ownerBehind =
+    !!owner &&
+    ALL_COMPANY_PERMISSIONS.some((p) => !owner.permissions?.includes(p));
+  if (owner && ownerBehind)
+    await db.companyRole.update({
+      where: { id: owner.id },
+      data: { permissions: [...ALL_COMPANY_PERMISSIONS], updatedAt: nowIso() },
+    });
+  return missing.length > 0 || ownerBehind;
 }
 
 /* ------------------------------- escalation ------------------------------ */
@@ -229,9 +267,13 @@ export async function rolesForKeys(
   roleKeys: string[],
 ): Promise<CompanyRole[]> {
   if (!roleKeys.length) return [];
-  return db.companyRole.findMany({
+  const roles: CompanyRole[] = await db.companyRole.findMany({
     where: { companyId, key: { in: roleKeys } },
   });
+  return roles.map((role) => ({
+    ...role,
+    permissions: companyRolePermissions(role),
+  }));
 }
 
 /* --------------------------------- people -------------------------------- */
