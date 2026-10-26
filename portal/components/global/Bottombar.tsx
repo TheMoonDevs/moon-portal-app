@@ -20,7 +20,6 @@ const NAVIGATION_OPTIONS = [
   { name: 'Home', path: APP_ROUTES.home, icon: 'perm_identity' },
   { name: 'Worklogs', path: APP_ROUTES.userWorklogs, icon: 'task_alt' },
   { name: 'World', path: APP_ROUTES.world, icon: 'public' },
-  { name: 'Meet', path: APP_ROUTES.meet, icon: 'calendar_month' },
   {
     name: 'Notifications',
     path: APP_ROUTES.notifications,
