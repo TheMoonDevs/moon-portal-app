@@ -534,10 +534,16 @@ export function billboard(parent: THREE.Object3D, w: number, h: number) {
 
 export type Animated = (t: number, dt: number) => void;
 export type BuildingKind = 'tower' | 'factory' | 'warehouse' | 'silos' | 'lab';
-const KINDS: BuildingKind[] = ['factory', 'warehouse', 'silos', 'lab', 'tower'];
 
-export const buildingKind = (id: string, rank: number): BuildingKind =>
-  rank === 1 ? 'tower' : KINDS[hash(id) % KINDS.length];
+/** What a task building looks like at each tier: it changes on upgrade. */
+const TIER_KINDS: BuildingKind[][] = [
+  [],
+  ['lab', 'tower', 'silos'],
+  ['factory', 'silos', 'tower'],
+  ['tower'],
+];
+/** How wide it stands on its lot, by tier. */
+const TIER_SCALE = [0, 0.56, 0.74, 0.9];
 
 /** Logo signs on the front and the back, so it shows from either side. */
 function signs2(
@@ -689,6 +695,100 @@ export function building(
     anims.push((t) => (dish.rotation.y = Math.sin(t * 0.3 + seed) * 1.2));
   }
   return { group: g, anims };
+}
+
+/** A lot being built on: a slab, scaffolding and a crane. */
+function construction(accent: string, seed: number) {
+  const g = new THREE.Group();
+  const anims: Animated[] = [];
+  block(g, 6, 0.3, 6, CLAY_SHADE, 0, 0, 0, 0.08);
+  block(g, 4, 1.4, 4, CLAY, 0, 0.3, 0, 0.06);
+  const pole = clay(tint(accent, 0.25));
+  for (const [x, z] of [
+    [-2.4, -2.4],
+    [2.4, -2.4],
+    [-2.4, 2.4],
+    [2.4, 2.4],
+  ])
+    block(g, 0.12, 3, 0.12, accent, x, 0.3, z, 0.02);
+  for (const y of [1.4, 2.8])
+    for (const [w, d, x, z] of [
+      [4.9, 0.1, 0, -2.4],
+      [4.9, 0.1, 0, 2.4],
+      [0.1, 4.9, -2.4, 0],
+      [0.1, 4.9, 2.4, 0],
+    ])
+      mesh(g, roundBox(w, 0.1, d, 0.02), pole, x, y + 0.3, z);
+  // A crane, turning slowly.
+  mesh(g, cylinder(0.14, 0.14, 7, 8), clay(accent), 2.8, 3.5, -2.8);
+  const jib = new THREE.Group();
+  jib.position.set(2.8, 7, -2.8);
+  g.add(jib);
+  block(jib, 6, 0.25, 0.25, accent, -1.6, 0, 0, 0.04);
+  block(jib, 0.8, 0.6, 0.6, CLAY_SHADE, 1.2, -0.3, 0, 0.08);
+  mesh(jib, cylinder(0.02, 0.02, 2.4, 4), clay(INK), -3.8, -1.2, 0);
+  block(jib, 0.5, 0.5, 0.5, tint(accent, 0.4), -3.8, -2.9, 0, 0.06);
+  anims.push((t) => (jib.rotation.y = Math.sin(t * 0.25 + seed) * 1.4));
+  return { group: g, anims };
+}
+
+/**
+ * A task building: taller with every level, and a new, bigger look at
+ * every tier. Tier 0 is still being built. Tier 3 and up wear gold.
+ */
+export function site(
+  id: string,
+  tier: number,
+  level: number,
+  accent: string,
+  sign: THREE.Material,
+) {
+  const seed = (hash(id) % 100) / 10;
+  if (tier <= 0) return { ...construction(accent, seed), height: 7.5 };
+  const t = Math.min(tier, 3);
+  const kinds = TIER_KINDS[t];
+  const kind = kinds[hash(id) % kinds.length];
+  const scale = TIER_SCALE[t];
+  // World height grows a floor per level.
+  const height = [0, 2.4, 3.6, 5.2][t] + level * [0, 0.85, 1.1, 1.35][t];
+  const made = building(kind, height / scale, accent, sign, seed);
+  made.group.scale.setScalar(scale);
+  const g = new THREE.Group();
+  g.add(made.group);
+  const top = new THREE.Box3().setFromObject(g).max.y;
+  if (tier >= 3) {
+    const gold = clay('#f5b301', { metal: 0.5, rough: 0.35 });
+    const crown = new THREE.Group();
+    crown.position.set(0, top, 0);
+    g.add(crown);
+    mesh(crown, cylinder(0.5, 0.7, 0.4, 8), gold, 0, 0.2, 0);
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      mesh(
+        crown,
+        cylinder(0.01, 0.12, 0.45, 6),
+        gold,
+        Math.cos(a) * 0.55,
+        0.6,
+        Math.sin(a) * 0.55,
+      );
+    }
+    if (tier >= 4) {
+      const beacon = mesh(
+        crown,
+        sphere(0.3, 14),
+        clay('#fde68a', { glow: 1.2 }),
+        0,
+        1.1,
+        0,
+      );
+      made.anims.push((tt) =>
+        beacon.scale.setScalar(1 + Math.sin(tt * 3 + seed) * 0.2),
+      );
+    }
+    made.anims.push((tt) => (crown.rotation.y = tt * 0.6));
+  }
+  return { group: g, anims: made.anims, height: top + (tier >= 3 ? 1.4 : 0) };
 }
 
 /** The town hall at the back of the square, facing +z. */
@@ -1072,4 +1172,137 @@ export function bot(accent: string) {
   glow.position.y = -0.4;
   g.add(glow);
   return { group: g, light, rotors };
+}
+
+/* ------------------------------ directions ------------------------------ */
+
+const glowMaterials = new Map<string, THREE.MeshBasicMaterial>();
+const glow = (hex: string, opacity = 0.9) => {
+  const key = `${hex}|${opacity}`;
+  let m = glowMaterials.get(key);
+  if (!m) {
+    m = new THREE.MeshBasicMaterial({
+      color: hex,
+      transparent: true,
+      opacity,
+      depthWrite: false,
+      toneMapped: false,
+    });
+    glowMaterials.set(key, m);
+  }
+  return m;
+};
+
+type Point = { x: number; z: number };
+const lengthOf = (points: Point[]) =>
+  points.reduce(
+    (n, p, i) =>
+      i ? n + Math.hypot(p.x - points[i - 1].x, p.z - points[i - 1].z) : 0,
+    0,
+  );
+
+/** Where along `points` you are after `d` world units. */
+export function along(points: Point[], d: number) {
+  for (let i = 1; i < points.length; i++) {
+    const a = points[i - 1];
+    const b = points[i];
+    const len = Math.hypot(b.x - a.x, b.z - a.z);
+    if (d <= len || i === points.length - 1) {
+      const k = len ? Math.min(1, d / len) : 1;
+      return {
+        x: a.x + (b.x - a.x) * k,
+        z: a.z + (b.z - a.z) * k,
+        angle: Math.atan2(b.x - a.x, b.z - a.z),
+      };
+    }
+    d -= len;
+  }
+  return { x: points[0].x, z: points[0].z, angle: 0 };
+}
+
+/**
+ * A route on the roads: a glowing band with dots flowing along it toward
+ * the end, like directions on a map.
+ */
+export function routeLine(points: Point[], hex: string, width = 0.7) {
+  const g = new THREE.Group();
+  const y = 0.14;
+  for (let i = 1; i < points.length; i++) {
+    const a = points[i - 1];
+    const b = points[i];
+    const len = Math.hypot(b.x - a.x, b.z - a.z);
+    if (len < 0.01) continue;
+    const band = new THREE.Mesh(
+      shape(`band${r2(width)}`, () => {
+        const geo = new THREE.PlaneGeometry(width, 1);
+        geo.rotateX(-Math.PI / 2);
+        return geo;
+      }),
+      glow(hex, 0.55),
+    );
+    band.scale.z = len;
+    band.position.set((a.x + b.x) / 2, y, (a.z + b.z) / 2);
+    band.rotation.y = Math.atan2(b.x - a.x, b.z - a.z);
+    g.add(band);
+  }
+  for (const p of points.slice(1, -1)) {
+    const joint = new THREE.Mesh(
+      shape(`joint${r2(width)}`, () => {
+        const geo = new THREE.CircleGeometry(width / 2, 16);
+        geo.rotateX(-Math.PI / 2);
+        return geo;
+      }),
+      glow(hex, 0.55),
+    );
+    joint.position.set(p.x, y, p.z);
+    g.add(joint);
+  }
+  const total = lengthOf(points);
+  const dots = Array.from(
+    { length: Math.max(2, Math.floor(total / 3)) },
+    () => {
+      const dot = new THREE.Mesh(sphere(width * 0.45, 10), glow('#ffffff', 1));
+      g.add(dot);
+      return dot;
+    },
+  );
+  const anim: Animated = (t) =>
+    dots.forEach((dot, i) => {
+      const at = along(
+        points,
+        (t * 6 + (i * total) / dots.length) % total || 0,
+      );
+      dot.position.set(at.x, y + 0.08, at.z);
+    });
+  return { group: g, anim };
+}
+
+/** Rings spreading out from a spot, like a ping on a map. */
+export function ripple(x: number, z: number, hex: string, size = 3) {
+  const g = new THREE.Group();
+  g.position.set(x, 0.16, z);
+  const rings = [0, 1, 2].map(() => {
+    const ring = new THREE.Mesh(
+      shape('ripple', () => {
+        const geo = new THREE.RingGeometry(0.86, 1, 48);
+        geo.rotateX(-Math.PI / 2);
+        return geo;
+      }),
+      new THREE.MeshBasicMaterial({
+        color: hex,
+        transparent: true,
+        depthWrite: false,
+        toneMapped: false,
+      }),
+    );
+    g.add(ring);
+    return ring;
+  });
+  const anim: Animated = (t) =>
+    rings.forEach((ring, i) => {
+      const k = (t * 0.7 + i / rings.length) % 1;
+      ring.scale.setScalar(0.4 + k * size);
+      (ring.material as THREE.MeshBasicMaterial).opacity = 1 - k;
+    });
+  return { group: g, anim };
 }

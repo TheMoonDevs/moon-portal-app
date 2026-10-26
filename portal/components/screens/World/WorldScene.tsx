@@ -12,25 +12,40 @@ import type {
   World,
   WorldBot,
   WorldBrand,
-  WorldBuilding,
+  WorldProject,
   WorldTown,
 } from '@/lib/world/state';
-import { BOT_STATE_COLOR, goesToOwner, STATUS_EMOJI } from '@/lib/world/state';
+import {
+  BOT_STATE_COLOR,
+  goesToOwner,
+  siteLevel,
+  STATUS_EMOJI,
+} from '@/lib/world/state';
 
 import * as art from './art';
-import { layoutWorld, LOT, PLAZA, ROAD, seeded } from './layout';
+import type { TownSpot } from './layout';
+import { BLOCK, layoutWorld, LOT, LOTS, route, seeded } from './layout';
 
 /*
  * The world in plain three.js (no React renderer, whose JSX types clash with
  * MUI's), seen from above at an angle like a strategy game. Companies are
- * towns in their brand colours, joined by highways; projects are buildings
- * around the town square, where the town hall and the leaderboards stand
- * and the people wait for their bots. A bot that is done or needs
- * permission flies back to its owner. Everything is drawn from simple
- * shapes in art.ts, so there are no models to download.
+ * towns in their brand colours, joined by highways. A town grows square by
+ * square: the town square, where the people stand with the town hall and
+ * the leaderboards, then a square of four task buildings per four kinds of
+ * task in each project. Bots travel the roads (glowing blue while they do)
+ * to the building they work at, and back to their owner when they are done
+ * or need permission. Everything is drawn from simple shapes in art.ts, so
+ * there are no models to download.
  */
 
-export type Pick = { type: 'town' | 'building' | 'person' | 'bot'; id: string };
+export type Pick = {
+  type: 'town' | 'project' | 'site' | 'person' | 'bot';
+  id: string;
+};
+
+/** Bots glow this while they travel. */
+const TRANSIT = '#2563eb';
+const TRANSIT_SPEED = 24;
 
 /** World units from top to bottom of the screen at zoom 1. */
 const VIEW = 60;
@@ -94,6 +109,13 @@ const botTagHtml = (bot: WorldBot, hex: string) => {
   return `<div class="flex items-center gap-1 whitespace-nowrap">${badge(bot.ownerAvatar ?? null, bot.ownerName, hex, 18, true, true)}<span>${botEmoji(bot)}</span><span class="font-semibold">${escape(bot.ownerName)}</span><span class="text-neutral-500">${bot.progress.done}/${bot.progress.total}</span></div><div class="mt-1 h-1 w-full overflow-hidden rounded-full bg-neutral-200"><div class="h-full rounded-full" style="width:${pct}%;background:${BOT_STATE_COLOR[bot.state]}"></div></div>`;
 };
 
+const pathLength = (points: { x: number; z: number }[]) =>
+  points.reduce(
+    (n, p, i) =>
+      i ? n + Math.hypot(p.x - points[i - 1].x, p.z - points[i - 1].z) : 0,
+    0,
+  );
+
 /** Turns `o` toward `angle` the short way round. */
 const turn = (o: THREE.Object3D, angle: number, k: number) => {
   let d = angle - o.rotation.y;
@@ -107,7 +129,12 @@ type BotEntity = {
   light: THREE.MeshStandardMaterial;
   rotors: THREE.Object3D[];
   label: { obj: CSS2DObject; inner: HTMLDivElement };
+  /** Where it hovers once it gets there. */
   target: THREE.Vector3;
+  /** The roads it is travelling, while it travels. */
+  path: { x: number; z: number }[] | null;
+  travelled: number;
+  trail: THREE.Object3D | null;
   seed: number;
 };
 
@@ -157,7 +184,10 @@ export const WorldScene = ({
     boards: Map<string, { people: Board; projects: Board }>;
     anims: art.Animated[];
     layout: ReturnType<typeof layoutWorld> | null;
-    labels: { obj: CSS2DObject; kind: 'town' | 'building' | 'near' }[];
+    labels: { obj: CSS2DObject; kind: 'town' | 'project' | 'site' | 'near' }[];
+    /** Routes and pings for what is selected. */
+    overlay: THREE.Group;
+    overlayAnims: art.Animated[];
     fly: Fly | null;
     ring: THREE.Mesh;
     aspect: number;
@@ -167,6 +197,8 @@ export const WorldScene = ({
   onPickRef.current = onPick;
   const worldRef = useRef(world);
   worldRef.current = world;
+  const selectedRef = useRef(selected);
+  selectedRef.current = selected;
 
   /** The zoom that fits `size` world units on screen. */
   const fitZoom = (size: number) => {
@@ -219,7 +251,8 @@ export const WorldScene = ({
     scene.add(ground);
 
     const statics = new THREE.Group();
-    scene.add(statics);
+    const overlay = new THREE.Group();
+    scene.add(statics, overlay);
 
     const ring = new THREE.Mesh(
       new THREE.RingGeometry(1, 1.3, 64),
@@ -257,6 +290,8 @@ export const WorldScene = ({
       anims: [],
       layout: null,
       labels: [],
+      overlay,
+      overlayAnims: [],
       fly: null,
       ring,
       aspect: 1.6,
@@ -325,6 +360,7 @@ export const WorldScene = ({
       }
 
       for (const a of s.anims) a(t, dt);
+      for (const a of s.overlayAnims) a(t, dt);
 
       // People stroll about their spot, and wave when a bot waits on them.
       for (const p of Array.from(s.people.values())) {
@@ -361,13 +397,27 @@ export const WorldScene = ({
 
       for (const b of Array.from(s.bots.values())) {
         const g = b.group;
-        // Fly toward where the bot should be, then hover there.
+        const spin = b.bot.state === 'asleep' ? 4 : 30;
+        for (const r of b.rotors) r.rotation.y += dt * spin;
+        if (b.path) {
+          // Racing along the roads, low and glowing blue.
+          b.travelled += dt * TRANSIT_SPEED;
+          const at = art.along(b.path, b.travelled);
+          g.position.x = at.x;
+          g.position.z = at.z;
+          g.position.y += (1.6 - g.position.y) * Math.min(1, dt * 6);
+          turn(g, at.angle, dt * 12);
+          g.rotation.z = 0;
+          if (b.travelled >= pathLength(b.path)) arrive(b);
+          continue;
+        }
+        // There: hover where it works, or by its owner.
         tmp.copy(b.target);
         if (b.bot.state === 'working') {
-          tmp.x += Math.cos(t * 0.8 + b.seed) * 1.4;
-          tmp.z += Math.sin(t * 0.8 + b.seed) * 1.4;
+          tmp.x += Math.cos(t * 0.8 + b.seed) * 1.2;
+          tmp.z += Math.sin(t * 0.8 + b.seed) * 1.2;
         }
-        const speed = 1 - Math.pow(0.03, dt);
+        const speed = 1 - Math.pow(0.05, dt);
         g.position.x += (tmp.x - g.position.x) * speed;
         g.position.z += (tmp.z - g.position.z) * speed;
         const bob =
@@ -379,8 +429,6 @@ export const WorldScene = ({
         const dz = tmp.z - g.position.z;
         if (Math.hypot(dx, dz) > 0.2) turn(g, Math.atan2(dx, dz), dt * 6);
         g.rotation.z = -dx * 0.04;
-        const spin = b.bot.state === 'asleep' ? 4 : 30;
-        for (const r of b.rotors) r.rotation.y += dt * spin;
       }
 
       // More detail the closer you are.
@@ -388,10 +436,12 @@ export const WorldScene = ({
       for (const l of s.labels)
         l.obj.visible =
           l.kind === 'town'
-            ? view > 105
-            : l.kind === 'building'
-              ? view < 150
-              : view < 60;
+            ? view > 120
+            : l.kind === 'project'
+              ? view < 170
+              : l.kind === 'site'
+                ? view < 70
+                : view < 60;
       for (const b of Array.from(s.bots.values()))
         b.label.obj.visible = view < 60;
 
@@ -424,7 +474,7 @@ export const WorldScene = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /* ------------------------- towns and buildings ------------------------ */
+  /* ----------------------------- the world ------------------------------ */
   const build = () => {
     const s = state.current;
     if (!s) return;
@@ -449,33 +499,32 @@ export const WorldScene = ({
 
     // Highways between the towns, with cars.
     for (const [i, r] of layout.roads.entries()) {
-      const along = r.x1 !== r.x2;
-      const length = Math.abs(along ? r.x2 - r.x1 : r.z2 - r.z1);
+      const horizontal = r.x1 !== r.x2;
+      const length = Math.abs(horizontal ? r.x2 - r.x1 : r.z2 - r.z1);
       if (length < 1) continue;
       const cx = (r.x1 + r.x2) / 2;
       const cz = (r.z1 + r.z2) / 2;
       const y = -0.58;
       art.strip(
         s.statics,
-        along ? length : 4.4,
-        along ? 4.4 : length,
+        horizontal ? length : 4.4,
+        horizontal ? 4.4 : length,
         art.ASPHALT,
         cx,
         cz,
         y,
       );
-      for (let d = 2; d < length - 1; d += 4) {
-        const at = (along ? Math.min(r.x1, r.x2) : Math.min(r.z1, r.z2)) + d;
+      const from = horizontal ? Math.min(r.x1, r.x2) : Math.min(r.z1, r.z2);
+      for (let d = 2; d < length - 1; d += 4)
         art.strip(
           s.statics,
-          along ? 1.6 : 0.22,
-          along ? 0.22 : 1.6,
+          horizontal ? 1.6 : 0.22,
+          horizontal ? 0.22 : 1.6,
           '#ffffff',
-          along ? at : cx,
-          along ? cz : at,
+          horizontal ? from + d : cx,
+          horizontal ? cz : from + d,
           y + 0.01,
         );
-      }
       const rand = seeded(`road${i}`);
       for (let k = 0; k < Math.max(1, Math.floor(length / 25)); k++) {
         const car = art.car(
@@ -488,13 +537,12 @@ export const WorldScene = ({
                 0.2,
               ),
         );
-        car.position.y = y;
         s.statics.add(car);
         const dir = k % 2 ? 1 : -1;
         const offset = rand();
         const speed = 3.5 + rand() * 2;
         const lane = dir * 1.05;
-        car.rotation.y = along
+        car.rotation.y = horizontal
           ? dir > 0
             ? 0
             : Math.PI
@@ -504,19 +552,19 @@ export const WorldScene = ({
         s.anims.push((t) => {
           let f = (offset + (t * speed) / length) % 1;
           if (dir < 0) f = 1 - f;
-          const p =
-            (along ? Math.min(r.x1, r.x2) : Math.min(r.z1, r.z2)) + f * length;
-          if (along) car.position.set(p, y, cz + lane);
+          const p = from + f * length;
+          if (horizontal) car.position.set(p, y, cz + lane);
           else car.position.set(cx - lane, y, p);
         });
       }
     }
 
     for (const town of w.towns) buildTown(town, layout, townRank.get(town.id)!);
-    for (const b of w.buildings) buildBuilding(b, layout);
+    for (const p of w.projects) buildProject(p, layout);
 
     drawBoards();
     syncBots();
+    drawOverlay();
     s.controls.minZoom = Math.min(0.5, fitZoom(layout.extent) * 0.6);
     if (!s.placed) {
       s.placed = true;
@@ -537,157 +585,141 @@ export const WorldScene = ({
     const spot = layout.towns.get(town.id)!;
     const brand = brandOf(town);
     const accent = brand.primary;
-    const half = spot.half;
     const rand = seeded(town.id);
     const g = new THREE.Group();
-    g.position.set(spot.x, 0, spot.z);
     g.userData.pick = { type: 'town', id: town.id };
     s.statics.add(g);
 
-    // The block, edged in the company's colour.
-    art.block(
-      g,
-      half * 2 + 0.5,
-      0.3,
-      half * 2 + 0.5,
-      accent,
-      0,
-      -0.55,
-      0,
-      0.12,
-    );
-    art.block(g, half * 2, 0.6, half * 2, art.CLAY, 0, -0.6, 0, 0.3);
+    // The ground, edged in the company's colour.
+    const pad = 3.5;
+    const width = spot.maxX - spot.minX + pad * 2;
+    const depth = spot.maxZ - spot.minZ + pad * 2;
+    const cx = (spot.minX + spot.maxX) / 2;
+    const cz = (spot.minZ + spot.maxZ) / 2;
+    art.block(g, width + 0.5, 0.3, depth + 0.5, accent, cx, -0.55, cz, 0.12);
+    art.block(g, width, 0.6, depth, art.CLAY, cx, -0.6, cz, 0.3);
 
-    // Roads: rings around the square and the lots, and two cross roads.
-    const road = art.tint(accent, 0.62);
-    for (const r of spot.rings) {
-      art.strip(g, r * 2 + ROAD, ROAD, road, 0, r, 0.025);
-      art.strip(g, r * 2 + ROAD, ROAD, road, 0, -r, 0.025);
-      art.strip(g, ROAD, r * 2 + ROAD, road, r, 0, 0.025);
-      art.strip(g, ROAD, r * 2 + ROAD, road, -r, 0, 0.025);
-    }
-    const crossLength = half - PLAZA;
-    const crossMid = PLAZA + crossLength / 2;
-    for (const [x, z, horizontal] of [
-      [crossMid, 0, true],
-      [-crossMid, 0, true],
-      [0, crossMid, false],
-      [0, -crossMid, false],
-    ] as const) {
+    // Roads between the squares: the ones between bigger squares are wider
+    // and in the company's colour, with a dashed middle line.
+    const light = art.tint(accent, 0.62);
+    const roads = [
+      ...spot.streetsX.map((r) => ({ ...r, vertical: true })),
+      ...spot.streetsZ.map((r) => ({ ...r, vertical: false })),
+    ];
+    for (const r of roads) {
+      const length = r.vertical ? spot.maxZ - spot.minZ : spot.maxX - spot.minX;
+      const big = r.width > 4;
       art.strip(
         g,
-        horizontal ? crossLength : ROAD,
-        horizontal ? ROAD : crossLength,
-        accent,
-        x,
-        z,
-        0.028,
+        r.vertical ? r.width : length,
+        r.vertical ? length : r.width,
+        big ? accent : light,
+        r.vertical ? r.at : cx,
+        r.vertical ? cz : r.at,
+        big ? 0.026 : 0.022,
       );
-      // White arrows pointing out of town.
-      for (let d = PLAZA + 3.5; d < half - 1; d += 5) {
-        const sign = (horizontal ? x : z) > 0 ? 1 : -1;
-        const arrow = new THREE.Mesh(
-          new THREE.ShapeGeometry(
-            new THREE.Shape([
-              new THREE.Vector2(-0.6, -0.5),
-              new THREE.Vector2(0, 0.5),
-              new THREE.Vector2(0.6, -0.5),
-              new THREE.Vector2(0.3, -0.5),
-              new THREE.Vector2(0, 0),
-              new THREE.Vector2(-0.3, -0.5),
-            ]),
-          ),
-          art.clay('#ffffff', { rough: 1 }),
+      if (!big) continue;
+      const from = r.vertical ? spot.minZ : spot.minX;
+      for (let d = 2; d < length - 1; d += 4)
+        art.strip(
+          g,
+          r.vertical ? 0.22 : 1.6,
+          r.vertical ? 1.6 : 0.22,
+          '#ffffff',
+          r.vertical ? r.at : from + d,
+          r.vertical ? from + d : r.at,
+          0.03,
         );
-        arrow.rotation.x = -Math.PI / 2;
-        arrow.rotation.z = horizontal
-          ? -sign * (Math.PI / 2)
-          : sign > 0
-            ? Math.PI
-            : 0;
-        arrow.position.set(
-          horizontal ? sign * d : 0,
-          0.035,
-          horizontal ? 0 : sign * d,
+    }
+
+    // Trees round the edge.
+    for (const [x0, z0, x1, z1] of [
+      [spot.minX - 1.8, spot.minZ - 1.8, spot.maxX + 1.8, spot.minZ - 1.8],
+      [spot.minX - 1.8, spot.maxZ + 1.8, spot.maxX + 1.8, spot.maxZ + 1.8],
+      [spot.minX - 1.8, spot.minZ - 1.8, spot.minX - 1.8, spot.maxZ + 1.8],
+      [spot.maxX + 1.8, spot.minZ - 1.8, spot.maxX + 1.8, spot.maxZ + 1.8],
+    ]) {
+      const length = Math.hypot(x1 - x0, z1 - z0);
+      for (let d = 0; d <= length; d += 3.4) {
+        const x = x0 + ((x1 - x0) * d) / length;
+        const z = z0 + ((z1 - z0) * d) / length;
+        // Leave the highways clear.
+        if (Math.abs(x - spot.x) < 4 || Math.abs(z - spot.z) < 4) continue;
+        if (rand() < 0.3) continue;
+        art.tree(
+          g,
+          accent,
+          x + (rand() - 0.5) * 0.6,
+          z + (rand() - 0.5) * 0.6,
+          rand,
         );
-        g.add(arrow);
       }
     }
 
-    // The square: paving, a brand border and the logo in the middle.
-    art.strip(g, PLAZA * 2, PLAZA * 2, '#fbfbfc', 0, 0, 0.018);
-    const edge = PLAZA - 0.5;
-    art.strip(g, PLAZA * 2 - 1, 0.35, accent, 0, edge, 0.03);
-    art.strip(g, PLAZA * 2 - 1, 0.35, accent, 0, -edge, 0.03);
-    art.strip(g, 0.35, PLAZA * 2 - 1, accent, edge, 0, 0.03);
-    art.strip(g, 0.35, PLAZA * 2 - 1, accent, -edge, 0, 0.03);
-    art.groundLogo(g, town.name, brand.logo, brand, 3.6);
+    // Spare squares are parks.
+    for (const cell of spot.cells.filter((c) => c.kind === 'park')) {
+      art.strip(
+        g,
+        BLOCK - 1,
+        BLOCK - 1,
+        art.tint(accent, 0.86),
+        cell.x,
+        cell.z,
+        0.015,
+      );
+      for (let i = 0; i < 7; i++)
+        art.tree(
+          g,
+          accent,
+          cell.x + (rand() - 0.5) * (BLOCK - 4),
+          cell.z + (rand() - 0.5) * (BLOCK - 4),
+          rand,
+        );
+    }
+
+    // The town square: paving, a brand border and the logo in the middle.
+    const plaza = new THREE.Group();
+    plaza.position.set(spot.plaza.x, 0, spot.plaza.z);
+    g.add(plaza);
+    const half = spot.plaza.half;
+    art.strip(plaza, half * 2, half * 2, '#fbfbfc', 0, 0, 0.034);
+    const edge = half - 0.5;
+    art.strip(plaza, half * 2 - 1, 0.4, accent, 0, edge, 0.04);
+    art.strip(plaza, half * 2 - 1, 0.4, accent, 0, -edge, 0.04);
+    art.strip(plaza, 0.4, half * 2 - 1, accent, edge, 0, 0.04);
+    art.strip(plaza, 0.4, half * 2 - 1, accent, -edge, 0, 0.04);
+    art.groundLogo(plaza, town.name, brand.logo, brand, 3.8);
 
     const sign = art.logoSign(town.name, brand.logo, brand);
     const flag = art.flagMaterial(town.name, brand.logo, brand);
     const hall = art.townHall(sign, flag, accent);
-    hall.group.position.set(-9, 0, -9);
+    hall.group.position.set(-half + 9, 0, -half + 9);
     hall.group.rotation.y = AZIMUTH;
-    g.add(hall.group);
+    plaza.add(hall.group);
     s.anims.push(...hall.anims);
 
     // Leaderboards on the square, facing the usual view.
-    const people = art.billboard(g, 10, 6.25);
-    people.group.position.set(-PLAZA + 1.8, 0, 4.6);
+    const people = art.billboard(plaza, 12, 7.5);
+    people.group.position.set(-half + 2.2, 0, 8);
     people.group.rotation.y = Math.PI / 2;
-    const projects = art.billboard(g, 10, 6.25);
-    projects.group.position.set(4.6, 0, -PLAZA + 1.8);
+    const projects = art.billboard(plaza, 12, 7.5);
+    projects.group.position.set(8, 0, -half + 2.2);
     s.boards.set(town.id, { people, projects });
 
     for (const [x, z] of [
-      [2.4, PLAZA - 0.8],
-      [-2.4, PLAZA - 0.8],
-      [PLAZA - 0.8, 2.4],
-      [PLAZA - 0.8, -2.4],
+      [half - 1.2, -7],
+      [half - 1.2, 7],
+      [-7, half - 1.2],
+      [7, half - 1.2],
     ])
-      s.anims.push(art.flagPole(g, flag, x, z, rand() * 6));
+      s.anims.push(art.flagPole(plaza, flag, x, z, rand() * 6));
     for (const [x, z] of [
-      [-PLAZA + 1.4, PLAZA - 1.4],
-      [PLAZA - 1.4, -PLAZA + 1.4],
-      [-PLAZA + 1.4, PLAZA - 3.6],
-      [PLAZA - 3.6, -PLAZA + 1.4],
+      [-half + 2, half - 2],
+      [-half + 2, half - 4.6],
+      [half - 2, -half + 2],
+      [half - 4.6, -half + 2],
     ])
-      art.tree(g, accent, x, z, rand);
-
-    // Trees round the edge, clear of the cross roads.
-    const margin = half - 1.9;
-    for (let d = -margin; d <= margin; d += 3.2)
-      for (const [x, z] of [
-        [d, margin],
-        [d, -margin],
-        [margin, d],
-        [-margin, d],
-      ]) {
-        if (Math.abs(z) < 3.5 || Math.abs(x) < 3.5) continue;
-        if (rand() < 0.3) continue;
-        art.tree(g, accent, x + (rand() - 0.5), z + (rand() - 0.5), rand);
-      }
-
-    // Empty lots are little parks.
-    for (const park of spot.parks) {
-      art.strip(
-        s.statics,
-        LOT - 1,
-        LOT - 1,
-        art.tint(accent, 0.86),
-        park.x,
-        park.z,
-        0.015,
-      );
-      for (let i = 0; i < 4; i++)
-        art.tree(
-          s.statics,
-          accent,
-          park.x + (rand() - 0.5) * 6,
-          park.z + (rand() - 0.5) * 6,
-          rand,
-        );
-    }
+      art.tree(plaza, accent, x, z, rand);
 
     // Wind turbines out in the fields.
     for (const [sx, sz] of [
@@ -697,8 +729,8 @@ export const WorldScene = ({
       [1, 1],
     ]) {
       if (rand() < 0.45) continue;
-      const x = spot.x + sx * (half + 8 + rand() * 4);
-      const z = spot.z + sz * (half + 8 + rand() * 4);
+      const x = (sx < 0 ? spot.minX : spot.maxX) + sx * (12 + rand() * 4);
+      const z = (sz < 0 ? spot.minZ : spot.maxZ) + sz * (12 + rand() * 4);
       s.anims.push(art.turbine(s.statics, x, z, rand() * 6));
       for (let i = 0; i < 3; i++)
         art.tree(
@@ -716,20 +748,19 @@ export const WorldScene = ({
       `${badge(brand.logo, town.name, accent, 40, false)}<div><div class="text-base font-extrabold leading-tight text-neutral-900">${escape(town.name)}</div><div class="text-[11px] font-medium text-neutral-500">🏆 #${rank} · ${Math.round(town.weekPoints)} pts this week</div></div>`,
     );
     label.inner.style.borderBottom = `4px solid ${accent}`;
-    label.obj.position.set(0, 16, 0);
+    label.obj.position.set(cx, 22, cz);
     g.add(label.obj);
     s.labels.push({ obj: label.obj, kind: 'town' });
     const hallLabel = tag(
       'pointer-events-none flex items-center gap-1.5 whitespace-nowrap rounded-full bg-white/95 py-0.5 pl-0.5 pr-2.5 text-xs font-bold text-neutral-900 shadow',
       `${badge(brand.logo, town.name, accent, 20)}${escape(town.name)} Town Hall`,
     );
-    hallLabel.obj.position.set(-9, 11, -9);
-    g.add(hallLabel.obj);
+    hallLabel.obj.position.set(-half + 9, 11, -half + 9);
+    plaza.add(hallLabel.obj);
     s.labels.push({ obj: hallLabel.obj, kind: 'near' });
 
-    // People on the square, in the company's colours.
-    const here = w.people.filter((p) => p.townIds.includes(town.id));
-    for (const person of here) {
+    // People in the middle of the square, in the company's colours.
+    for (const person of w.people.filter((p) => p.townIds.includes(town.id))) {
       const key = `${town.id}:${person.id}`;
       const at = layout.people.get(key);
       if (!at) continue;
@@ -744,17 +775,17 @@ export const WorldScene = ({
           new THREE.MeshBasicMaterial({ color: '#facc15', depthWrite: false }),
         );
         mark.rotation.x = -Math.PI / 2;
-        mark.position.y = 0.05;
+        mark.position.y = 0.06;
         figure.group.add(mark);
       }
       const name = person.isMe ? 'You' : person.name.split(' ')[0];
-      const label = tag(
+      const tagged = tag(
         'pointer-events-none flex flex-col items-center',
         `<span class="rounded-full p-[2px] shadow-md" style="background:${person.isMe ? '#facc15' : accent}">${badge(person.avatar, person.name, art.shade(accent, 0.2), 20, true, true)}</span><span class="mt-0.5 whitespace-nowrap rounded-full bg-neutral-900/80 px-1.5 text-[10px] font-semibold text-white">${escape(name)}</span>`,
       );
-      label.obj.position.set(0, 3.5, 0);
-      figure.group.add(label.obj);
-      s.labels.push({ obj: label.obj, kind: 'near' });
+      tagged.obj.position.set(0, 3.5, 0);
+      figure.group.add(tagged.obj);
+      s.labels.push({ obj: tagged.obj, kind: 'near' });
       const prand = seeded(key);
       s.people.set(key, {
         key,
@@ -771,74 +802,91 @@ export const WorldScene = ({
     }
   };
 
-  const buildBuilding = (
-    b: WorldBuilding,
+  /** A project: its squares, and a building for each kind of task. */
+  const buildProject = (
+    project: WorldProject,
     layout: ReturnType<typeof layoutWorld>,
   ) => {
     const s = state.current!;
     const w = worldRef.current;
-    const spot = layout.buildings.get(b.id);
-    const town = w.towns.find((t) => t.id === b.townId);
-    if (!spot || !town) return;
-    const townBrand = brandOf(town);
-    const brand = brandOf(b);
+    const area = layout.projects.get(project.id);
+    const town = w.towns.find((t) => t.id === project.townId);
+    if (!area || !town) return;
+    const accent = brandOf(town).primary;
+    const brand = brandOf(project);
+    const sign = art.logoSign(project.name, brand.logo, brand);
+    const rand = seeded(project.id);
     const g = new THREE.Group();
-    g.position.set(spot.x, 0, spot.z);
-    g.rotation.y = spot.angle;
-    g.userData.pick = { type: 'building', id: b.id };
+    g.userData.pick = { type: 'project', id: project.id };
     s.statics.add(g);
-    art.strip(g, LOT - 1, LOT - 1, '#eef0f4', 0, 0, 0.015);
-    const height =
-      b.rank === 1 ? 13 : b.rank <= 3 ? 10 : 7 + (art.hash(b.id) % 3);
-    const kind = art.buildingKind(b.id, b.rank);
-    const made = art.building(
-      kind,
-      height,
-      townBrand.primary,
-      art.logoSign(b.name, brand.logo, brand),
-      (art.hash(b.id) % 100) / 10,
+
+    // The project's ground, edged in its own colour.
+    const width = area.maxX - area.minX;
+    const depth = area.maxZ - area.minZ;
+    const x = (area.minX + area.maxX) / 2;
+    const z = (area.minZ + area.maxZ) / 2;
+    art.strip(g, width + 0.8, depth + 0.8, brand.primary, x, z, 0.024);
+    art.strip(g, width, depth, '#f1f3f6', x, z, 0.028);
+    // Its flag at the front corner.
+    s.anims.push(
+      art.flagPole(
+        g,
+        art.flagMaterial(project.name, brand.logo, brand),
+        area.maxX - 0.8,
+        area.maxZ - 0.8,
+        rand() * 6,
+      ),
     );
-    g.add(made.group);
-    s.anims.push(...made.anims);
-    const top = new THREE.Box3().setFromObject(made.group).max.y;
-    if (b.rank === 1 && b.weekPoints > 0) {
-      const gold = art.clay('#f5b301', { metal: 0.5, rough: 0.35 });
-      const cup = new THREE.Group();
-      cup.position.set(-1.4, kind === 'tower' ? height + 1.65 : top, 1.2);
-      g.add(cup);
-      art.mesh(
-        cup,
-        new THREE.CylinderGeometry(0.15, 0.3, 0.25, 16),
-        gold,
-        0,
-        0.12,
-        0,
+
+    let tallest = 0;
+    project.sites.forEach((site) => {
+      const spot = layout.sites.get(site.id);
+      if (!spot) return;
+      const { tier, level } = siteLevel(site.done);
+      const lot = new THREE.Group();
+      lot.position.set(spot.x, 0, spot.z);
+      lot.rotation.y = spot.angle;
+      lot.userData.pick = { type: 'site', id: site.id };
+      g.add(lot);
+      art.strip(lot, LOT - 1.2, LOT - 1.2, '#fafbfc', 0, 0, 0.032);
+      const made = art.site(site.id, tier, level, accent, sign);
+      lot.add(made.group);
+      s.anims.push(...made.anims);
+      tallest = Math.max(tallest, made.height);
+      const stars = '★'.repeat(Math.min(tier, 4));
+      const label = tag(
+        'pointer-events-none whitespace-nowrap rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-semibold text-neutral-800 shadow',
+        `${escape(site.name)} <span class="ml-0.5 rounded-full px-1 text-white" style="background:${accent}">${tier ? `Lv ${level}` : 'Building'}</span>${stars ? ` <span class="text-amber-500">${stars}</span>` : ''}`,
       );
-      art.mesh(
-        cup,
-        new THREE.CylinderGeometry(0.07, 0.07, 0.35, 10),
-        gold,
-        0,
-        0.4,
-        0,
-      );
-      art.mesh(
-        cup,
-        new THREE.CylinderGeometry(0.5, 0.18, 0.6, 20),
-        gold,
-        0,
-        0.85,
-        0,
-      );
-      s.anims.push((t) => (cup.rotation.y = t * 0.8));
-    }
+      label.obj.position.set(0, made.height + 1.2, 0);
+      lot.add(label.obj);
+      s.labels.push({ obj: label.obj, kind: 'site' });
+    });
+
+    // Empty lots get a few trees.
+    const used = project.sites.length;
+    area.cells.forEach((cell, ci) => {
+      for (let k = 0; k < LOTS.length; k++) {
+        const index = ci * LOTS.length + k;
+        if (index < used) continue;
+        for (let i = 0; i < 2; i++)
+          art.tree(
+            g,
+            accent,
+            cell.x + LOTS[k].dx + (rand() - 0.5) * 5,
+            cell.z + LOTS[k].dz + (rand() - 0.5) * 5,
+            rand,
+          );
+      }
+    });
+
     const label = tag(
       'pointer-events-none flex items-center gap-1.5 whitespace-nowrap rounded-full bg-white/95 py-0.5 pl-0.5 pr-2.5 text-xs font-semibold text-neutral-800 shadow-md',
-      `${badge(brand.logo, b.name, brand.primary, 22)}<span class="rounded-full px-1.5 text-[10px] font-bold text-white" style="background:${townBrand.primary}">#${b.rank}</span>${escape(b.name)}`,
+      `${badge(brand.logo, project.name, brand.primary, 22)}<span class="rounded-full px-1.5 text-[10px] font-bold text-white" style="background:${accent}">#${project.rank}</span>${escape(project.name)}`,
     );
-    label.obj.position.set(0, top + 2.4, 0);
+    label.obj.position.set(x, Math.max(tallest, 6) + 3.5, z);
     g.add(label.obj);
-    s.labels.push({ obj: label.obj, kind: 'building' });
+    s.labels.push({ obj: label.obj, kind: 'project' });
   };
 
   /* ---------------------------- leaderboards ---------------------------- */
@@ -850,8 +898,8 @@ export const WorldScene = ({
       const boards = s.boards.get(town.id);
       if (!boards) continue;
       const brand = brandOf(town);
-      const mine = w.buildings
-        .filter((b) => b.townId === town.id)
+      const mine = w.projects
+        .filter((p) => p.townId === town.id)
         .sort((a, b) => a.rank - b.rank);
       boards.people.draw({
         brand,
@@ -873,12 +921,12 @@ export const WorldScene = ({
         logo: brand.logo,
         title: 'Project ranking',
         subtitle: `By ${(mine[0]?.rankedBy ?? 'points this week').toLowerCase()}`,
-        rows: mine.map((b) => ({
-          label: b.name,
-          value: b.weekPoints,
-          hex: brandOf(b).primary,
-          image: brandOf(b).logo,
-          note: `#${b.rank} · ${Math.round(b.weekPoints)} pts`,
+        rows: mine.map((p) => ({
+          label: p.name,
+          value: p.weekPoints,
+          hex: brandOf(p).primary,
+          image: brandOf(p).logo,
+          note: `#${p.rank} · ${Math.round(p.weekPoints)} pts`,
         })),
         empty: 'No projects yet',
       });
@@ -886,6 +934,57 @@ export const WorldScene = ({
   };
 
   /* -------------------------------- bots -------------------------------- */
+
+  /** Where a bot works, on the ground: in front of its building. */
+  const workGround = (bot: WorldBot) => {
+    const L = state.current!.layout!;
+    const site = bot.siteId ? L.sites.get(bot.siteId) : null;
+    if (site)
+      return {
+        x: site.x + Math.sin(site.angle) * (LOT / 2 + 1),
+        z: site.z + Math.cos(site.angle) * (LOT / 2 + 1),
+        high: 4.5,
+      };
+    const project = bot.projectId ? L.projects.get(bot.projectId) : null;
+    if (project) {
+      // The middle of its first square, between the four buildings.
+      const cell = project.cells[0];
+      return { x: cell.x, z: cell.z, high: 8 };
+    }
+    const town = L.towns.get(bot.townId)!;
+    return { x: town.plaza.x - 6, z: town.plaza.z - 6, high: 6 };
+  };
+
+  const ownerHome = (bot: WorldBot) =>
+    state.current!.layout!.people.get(`${bot.townId}:${bot.ownerId}`) ?? null;
+
+  /** A bot reached the end of its road. */
+  const arrive = (b: BotEntity) => {
+    b.path = null;
+    if (b.trail) {
+      state.current?.scene.remove(b.trail);
+      b.trail = null;
+    }
+    b.light.color.set(BOT_STATE_COLOR[b.bot.state]);
+    b.light.emissive.set(BOT_STATE_COLOR[b.bot.state]);
+  };
+
+  /** Sends a bot along the roads to its target, glowing blue on the way. */
+  const travel = (b: BotEntity, town: TownSpot) => {
+    const s = state.current!;
+    const from = { x: b.group.position.x, z: b.group.position.z };
+    const to = { x: b.target.x, z: b.target.z };
+    if (Math.hypot(from.x - to.x, from.z - to.z) < 2) return;
+    if (b.trail) s.scene.remove(b.trail);
+    b.path = route(town, from, to);
+    b.travelled = 0;
+    const line = art.routeLine(b.path, TRANSIT, 0.45);
+    b.trail = line.group;
+    s.scene.add(line.group);
+    b.light.color.set(TRANSIT);
+    b.light.emissive.set(TRANSIT);
+  };
+
   const syncBots = () => {
     const s = state.current;
     if (!s?.layout) return;
@@ -907,18 +1006,8 @@ export const WorldScene = ({
       if (!town || !worldTown) continue;
       seen.add(bot.id);
       const accent = brandOf(worldTown).primary;
-      const building = bot.projectId
-        ? layout.buildings.get(bot.projectId)
-        : null;
-      // Bots work over the road in front of their building.
-      const workSpot = building
-        ? new THREE.Vector3(
-            building.x + Math.sin(building.angle) * (LOT / 2 + 0.8),
-            5,
-            building.z + Math.cos(building.angle) * (LOT / 2 + 0.8),
-          )
-        : new THREE.Vector3(town.x - 3, 5, town.z + 3);
-      const owner = layout.people.get(`${bot.townId}:${bot.ownerId}`);
+      const work = workGround(bot);
+      const owner = ownerHome(bot);
       let target: THREE.Vector3;
       if (goesToOwner(bot.state) && owner) {
         const i = slot(`owner:${bot.townId}:${bot.ownerId}`);
@@ -930,17 +1019,13 @@ export const WorldScene = ({
           owner.z + Math.sin(a) * 1.9,
         );
       } else {
-        const i = slot(`work:${bot.projectId ?? bot.townId}`);
+        const i = slot(`work:${bot.siteId ?? bot.projectId ?? bot.townId}`);
         const a = i * 1.3;
-        target = workSpot
-          .clone()
-          .add(
-            new THREE.Vector3(
-              Math.cos(a) * i * 1.1,
-              i * 0.3,
-              Math.sin(a) * i * 1.1,
-            ),
-          );
+        target = new THREE.Vector3(
+          work.x + Math.cos(a) * i * 1.1,
+          work.high + i * 0.3,
+          work.z + Math.sin(a) * i * 1.1,
+        );
       }
 
       let entity = s.bots.get(bot.id);
@@ -952,8 +1037,9 @@ export const WorldScene = ({
         );
         label.obj.position.set(0, 1.9, 0);
         drone.group.add(label.obj);
-        // New bots start at their work, so finished ones are seen flying home.
-        drone.group.position.copy(workSpot);
+        // New bots set off from their owner, so you see them go to work.
+        const start = owner ?? work;
+        drone.group.position.set(start.x, 2, start.z);
         s.scene.add(drone.group);
         entity = {
           bot,
@@ -962,20 +1048,29 @@ export const WorldScene = ({
           rotors: drone.rotors,
           label,
           target,
+          path: null,
+          travelled: 0,
+          trail: null,
           seed: (art.hash(bot.id) % 1000) / 100,
         };
         s.bots.set(bot.id, entity);
       }
+      const moved =
+        entity.target.distanceTo(target) > 2 || entity.bot.state !== bot.state;
       entity.bot = bot;
       entity.target = target;
       entity.label.inner.innerHTML = botTagHtml(bot, accent);
-      entity.light.color.set(BOT_STATE_COLOR[bot.state]);
-      entity.light.emissive.set(BOT_STATE_COLOR[bot.state]);
+      if (!entity.path) {
+        entity.light.color.set(BOT_STATE_COLOR[bot.state]);
+        entity.light.emissive.set(BOT_STATE_COLOR[bot.state]);
+      }
+      if (moved || !entity.path) travel(entity, town);
     }
 
     for (const [id, entity] of Array.from(s.bots.entries())) {
       if (seen.has(id)) continue;
       entity.label.obj.element.remove();
+      if (entity.trail) s.scene.remove(entity.trail);
       s.scene.remove(entity.group);
       s.bots.delete(id);
     }
@@ -988,6 +1083,74 @@ export const WorldScene = ({
           b.townId === p.townId &&
           b.state === 'waiting',
       );
+  };
+
+  /* ------------------------ routes and directions ----------------------- */
+
+  /**
+   * For a person: blue routes from them to all their bots' work at once,
+   * with pings where each works. For a project, task building or bot: the
+   * way there from you.
+   */
+  const drawOverlay = () => {
+    const s = state.current;
+    if (!s?.layout) return;
+    const L = s.layout;
+    const w = worldRef.current;
+    s.overlay.clear();
+    s.overlayAnims = [];
+    const sel = selectedRef.current;
+    if (!sel) return;
+    const add = (made: { group: THREE.Object3D; anim: art.Animated }) => {
+      s.overlay.add(made.group);
+      s.overlayAnims.push(made.anim);
+    };
+
+    if (sel.type === 'person') {
+      for (const bot of w.bots.filter((b) => b.ownerId === sel.id)) {
+        const town = L.towns.get(bot.townId);
+        const home = ownerHome(bot);
+        if (!town || !home) continue;
+        const work = workGround(bot);
+        add(art.routeLine(route(town, home, work), TRANSIT, 0.6));
+        add(art.ripple(work.x, work.z, TRANSIT, 3.2));
+      }
+      return;
+    }
+
+    // Directions: from you (or the town square) to what you picked.
+    let to: { x: number; z: number } | null = null;
+    let townId: string | null = null;
+    if (sel.type === 'project') {
+      const area = L.projects.get(sel.id);
+      const project = w.projects.find((p) => p.id === sel.id);
+      if (area && project) {
+        to = { x: area.cells[0].x, z: area.cells[0].z };
+        townId = project.townId;
+      }
+    } else if (sel.type === 'site') {
+      const spot = L.sites.get(sel.id);
+      const project = w.projects.find((p) => p.id === spot?.projectId);
+      if (spot && project) {
+        to = {
+          x: spot.x + Math.sin(spot.angle) * (LOT / 2 + 1),
+          z: spot.z + Math.cos(spot.angle) * (LOT / 2 + 1),
+        };
+        townId = project.townId;
+      }
+    } else if (sel.type === 'bot') {
+      const bot = w.bots.find((b) => b.id === sel.id);
+      if (bot) {
+        to = workGround(bot);
+        townId = bot.townId;
+      }
+    }
+    if (!to || !townId) return;
+    const town = L.towns.get(townId)!;
+    const me = w.people.find((p) => p.isMe);
+    const from = (me && L.people.get(`${townId}:${me.id}`)) ?? town.plaza;
+    add(art.routeLine(route(town, from, to), TRANSIT, 0.6));
+    add(art.ripple(to.x, to.z, TRANSIT, 3.2));
   };
 
   /* ------------------------------ camera -------------------------------- */
@@ -1003,23 +1166,49 @@ export const WorldScene = ({
     } else if (to.type === 'town') {
       const t = L.towns.get(to.id);
       if (!t) return;
-      target = new THREE.Vector3(t.x, 0, t.z);
-      size = t.half * 2 + 6;
-    } else if (to.type === 'building') {
-      const b = L.buildings.get(to.id);
-      if (!b) return;
-      target = new THREE.Vector3(b.x, 3, b.z);
-      size = 26;
+      target = new THREE.Vector3(
+        (t.minX + t.maxX) / 2,
+        0,
+        (t.minZ + t.maxZ) / 2,
+      );
+      size = Math.max(t.maxX - t.minX, t.maxZ - t.minZ) + 10;
+    } else if (to.type === 'project') {
+      const p = L.projects.get(to.id);
+      if (!p) return;
+      target = new THREE.Vector3(p.x, 3, p.z);
+      size = Math.max(p.maxX - p.minX, p.maxZ - p.minZ) + 16;
+    } else if (to.type === 'site') {
+      const p = L.sites.get(to.id);
+      if (!p) return;
+      target = new THREE.Vector3(p.x, 3, p.z);
+      size = 22;
     } else if (to.type === 'bot') {
       const b = s.bots.get(to.id);
       if (!b) return;
       target = b.target.clone().setY(2);
-      size = 20;
+      size = 22;
     } else {
       const p = Array.from(s.people.values()).find((x) => x.personId === to.id);
       if (!p) return;
-      target = p.home.clone().setY(1.5);
-      size = 18;
+      // Them and everywhere their bots are working.
+      const spots = [
+        p.home,
+        ...worldRef.current.bots
+          .filter((b) => b.ownerId === to.id && b.townId === p.townId)
+          .map(workGround),
+      ];
+      const xs = spots.map((v) => v.x);
+      const zs = spots.map((v) => v.z);
+      target = new THREE.Vector3(
+        (Math.min(...xs) + Math.max(...xs)) / 2,
+        1.5,
+        (Math.min(...zs) + Math.max(...zs)) / 2,
+      );
+      size = Math.max(
+        20,
+        Math.max(...xs) - Math.min(...xs) + 16,
+        Math.max(...zs) - Math.min(...zs) + 16,
+      );
     }
     const zoom = Math.max(
       s.controls.minZoom,
@@ -1046,12 +1235,12 @@ export const WorldScene = ({
   // repaint the boards.
   const shape = JSON.stringify([
     world.towns.map((t) => [t.id, t.name, t.brand, t.weekPoints]),
-    world.buildings.map((b) => [
-      b.id,
-      b.name,
-      b.rank,
-      b.brand,
-      b.weekPoints > 0,
+    world.projects.map((p) => [
+      p.id,
+      p.name,
+      p.rank,
+      p.brand,
+      p.sites.map((x) => [x.id, x.name, siteLevel(x.done).level]),
     ]),
     world.people.map((p) => [p.id, p.name, p.avatar, p.townIds]),
   ]);
@@ -1062,6 +1251,7 @@ export const WorldScene = ({
   useEffect(() => {
     syncBots();
     drawBoards();
+    drawOverlay();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [world]);
 
@@ -1070,15 +1260,15 @@ export const WorldScene = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focus]);
 
-  // A ring under whatever is selected.
+  // A ring under whatever is selected, and its routes.
   useEffect(() => {
     const s = state.current;
     if (!s?.layout) return;
     const L = s.layout;
     let at: { x: number; z: number; r: number } | null = null;
-    if (selected?.type === 'building') {
-      const b = L.buildings.get(selected.id);
-      if (b) at = { x: b.x, z: b.z, r: 5.6 };
+    if (selected?.type === 'site') {
+      const b = L.sites.get(selected.id);
+      if (b) at = { x: b.x, z: b.z, r: 4.6 };
     } else if (selected?.type === 'person') {
       const p = Array.from(s.people.values()).find(
         (x) => x.personId === selected.id,
@@ -1087,11 +1277,15 @@ export const WorldScene = ({
     }
     s.ring.visible = !!at;
     if (at) {
-      s.ring.position.set(at.x, 0.06, at.z);
+      s.ring.position.set(at.x, 0.08, at.z);
       s.ring.geometry.dispose();
       s.ring.geometry = new THREE.RingGeometry(at.r, at.r + 0.3, 64);
     }
+    drawOverlay();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected, shape]);
 
-  return <div ref={mount} className="relative size-full overflow-hidden" />;
+  return (
+    <div ref={mount} className="relative isolate size-full overflow-hidden" />
+  );
 };

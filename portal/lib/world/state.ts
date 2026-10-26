@@ -1,7 +1,8 @@
 /*
- * The world: companies are towns, projects are buildings, and every person
- * has a bot for each project their Claude worked on today. Pure: used by the
- * API and by the 3D scene.
+ * The world: companies are towns, projects are squares in them, and each
+ * kind of task in a project is a building that grows a level every time the
+ * task is done. Every person has a bot for each project their Claude worked
+ * on today. Pure: used by the API and by the 3D scene.
  */
 
 export type BotState = 'waiting' | 'blocked' | 'working' | 'done' | 'asleep';
@@ -34,6 +35,8 @@ export type WorldBot = {
   townId: string;
   /** null: work not tied to a project, done around the town hall. */
   projectId: string | null;
+  /** The task building it works at, when its work is linked to a task. */
+  siteId: string | null;
   state: BotState;
   current: string | null;
   points: BotPoint[];
@@ -54,7 +57,20 @@ export type WorldPerson = {
   guidance: number;
 };
 
-export type WorldBuilding = {
+/**
+ * One kind of task in a project, e.g. "Publish a lyric video": the same task
+ * done again and again is one building that grows with every time.
+ */
+export type WorldSite = {
+  id: string;
+  name: string;
+  /** Times done, ever. */
+  done: number;
+  /** Open right now. */
+  open: number;
+};
+
+export type WorldProject = {
   id: string;
   name: string;
   color: string | null;
@@ -67,6 +83,8 @@ export type WorldBuilding = {
   weekPoints: number;
   rankedBy: string;
   leaderboard: LeaderRow[];
+  /** Its kinds of task, most done first. */
+  sites: WorldSite[];
 };
 
 export type WorldTown = {
@@ -82,10 +100,34 @@ export type WorldTown = {
 export type World = {
   date: string;
   towns: WorldTown[];
-  buildings: WorldBuilding[];
+  projects: WorldProject[];
   people: WorldPerson[];
   bots: WorldBot[];
 };
+
+/** Task buildings to a project square. */
+export const SITES_PER_SQUARE = 4;
+
+/** Levels in a tier: past this a building upgrades, and levels cost 10×. */
+export const LEVEL_STEP = 10;
+
+/**
+ * A task building's tier and level from the times it was done: 1 to 9 is
+ * tier 1, levels 1 to 9. At 10 it upgrades to tier 2 and every level then
+ * takes 10 more (20, 30, …), at 100 tier 3 and so on. 0 is still being
+ * built.
+ */
+export function siteLevel(done: number) {
+  if (done <= 0) return { tier: 0, level: 0, nextAt: 1 };
+  let tier = 1;
+  let unit = 1;
+  while (done >= unit * LEVEL_STEP) {
+    unit *= LEVEL_STEP;
+    tier += 1;
+  }
+  const level = Math.floor(done / unit);
+  return { tier, level, nextAt: (level + 1) * unit };
+}
 
 /** Answering a waiting bot is high-effort work, so it counts for more. */
 export const GUIDANCE_WEIGHT = 3;

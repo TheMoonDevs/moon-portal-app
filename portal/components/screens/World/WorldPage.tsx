@@ -11,11 +11,15 @@ import type {
   World,
   WorldBot,
   WorldBrand,
+  WorldProject,
+  WorldSite,
 } from '@/lib/world/state';
 import {
   BOT_STATE_COLOR,
   BOT_STATE_LABEL,
   GUIDANCE_WEIGHT,
+  LEVEL_STEP,
+  siteLevel,
   STATUS_EMOJI,
 } from '@/lib/world/state';
 import { PortalSdk } from '@/utils/services/PortalSdk';
@@ -190,16 +194,202 @@ const Section = ({
   </div>
 );
 
+const BotList = ({
+  bots,
+  onOpen,
+}: {
+  bots: WorldBot[];
+  onOpen: (id: string) => void;
+}) => (
+  <div className="flex flex-col gap-1.5">
+    {bots.map((b) => (
+      <BotRow key={b.id} bot={b} onOpen={() => onOpen(b.id)} />
+    ))}
+    {!bots.length && <p className="text-sm text-neutral-500">No bots today.</p>}
+  </div>
+);
+
+const LevelTag = ({ done, color }: { done: number; color: string }) => {
+  const { tier, level } = siteLevel(done);
+  return (
+    <span className="flex shrink-0 items-center gap-1 text-xs">
+      <span
+        className="rounded-full px-1.5 font-semibold text-white"
+        style={{ backgroundColor: color }}
+      >
+        {tier ? `Lv ${level}` : 'Building'}
+      </span>
+      {tier > 0 && (
+        <span className="text-amber-500">{'★'.repeat(Math.min(tier, 4))}</span>
+      )}
+    </span>
+  );
+};
+
+/** A project's task buildings, busiest first. */
+const SiteList = ({
+  project,
+  color,
+  onOpen,
+}: {
+  project: WorldProject;
+  color: string;
+  onOpen: (id: string) => void;
+}) =>
+  project.sites.length ? (
+    <ul className="flex flex-col gap-0.5">
+      {project.sites.map((x) => (
+        <li key={x.id}>
+          <button
+            onClick={() => onOpen(x.id)}
+            className="flex w-full items-center gap-2 rounded-lg p-1 text-left text-sm hover:bg-neutral-100"
+          >
+            <span className="min-w-0 flex-1 truncate">{x.name}</span>
+            <span className="text-xs text-neutral-400">{x.done}×</span>
+            <LevelTag done={x.done} color={color} />
+          </button>
+        </li>
+      ))}
+    </ul>
+  ) : (
+    <p className="text-sm text-neutral-500">
+      No tasks yet. Each kind of task becomes a building here.
+    </p>
+  );
+
+/** A task building: its level, and how far to the next. */
+const SiteCard = ({ site, color }: { site: WorldSite; color: string }) => {
+  const { tier, level, nextAt } = siteLevel(site.done);
+  const unit = tier ? LEVEL_STEP ** (tier - 1) : 1;
+  const from = tier ? level * unit : 0;
+  const pct = ((site.done - from) / Math.max(nextAt - from, 1)) * 100;
+  const upgrade = tier && level === LEVEL_STEP - 1;
+  return (
+    <div className="mt-3">
+      <div className="flex items-center justify-between">
+        <LevelTag done={site.done} color={color} />
+        <span className="text-xs text-neutral-500">
+          Done {site.done}× · {site.open} open
+        </span>
+      </div>
+      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-neutral-200">
+        <div
+          className="h-full rounded-full"
+          style={{ width: `${pct}%`, backgroundColor: color }}
+        />
+      </div>
+      <p className="mt-1 text-[11px] text-neutral-500">
+        {nextAt - site.done} more to{' '}
+        {upgrade
+          ? `upgrade to ${'★'.repeat(tier + 1)}`
+          : `level ${tier ? level + 1 : 1}`}
+        {tier > 1 && ` · each level is ${unit} now`}
+      </p>
+      <p className="mt-2 text-[11px] text-neutral-400">
+        The same task done again is the same building: every time adds to its
+        height. The blue line is the way there from you.
+      </p>
+    </div>
+  );
+};
+
+/** Find any town, project, task building or person and fly there. */
+const GoTo = ({
+  world,
+  onPick,
+}: {
+  world: World;
+  onPick: (pick: Pick) => void;
+}) => {
+  const [q, setQ] = useState('');
+  const town = (id: string) => world.towns.find((t) => t.id === id);
+  const entries: { pick: Pick; title: string; hint: string; icon: string }[] = [
+    ...world.towns.map((t) => ({
+      pick: { type: 'town' as const, id: t.id },
+      title: t.name,
+      hint: 'Town',
+      icon: 'location_city',
+    })),
+    ...world.projects.map((p) => ({
+      pick: { type: 'project' as const, id: p.id },
+      title: p.name,
+      hint: `Project · ${town(p.townId)?.name ?? ''}`,
+      icon: 'grid_view',
+    })),
+    ...world.projects.flatMap((p) =>
+      p.sites.map((x) => {
+        const { tier, level } = siteLevel(x.done);
+        return {
+          pick: { type: 'site' as const, id: x.id },
+          title: x.name,
+          hint: `${p.name} · ${tier ? `Lv ${level}` : 'being built'}`,
+          icon: 'apartment',
+        };
+      }),
+    ),
+    ...world.people.map((p) => ({
+      pick: { type: 'person' as const, id: p.id },
+      title: p.isMe ? `${p.name} (you)` : p.name,
+      hint: 'Person',
+      icon: 'person',
+    })),
+  ];
+  const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+  const found = entries
+    .filter((e) =>
+      words.every((w) => `${e.title} ${e.hint}`.toLowerCase().includes(w)),
+    )
+    .slice(0, 40);
+  return (
+    <Card className="pointer-events-auto flex max-h-[50vh] w-full max-w-sm flex-col overflow-hidden">
+      <input
+        autoFocus
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        placeholder="Go to a project, task or person…"
+        className="border-b border-neutral-200 bg-transparent px-3 py-2.5 text-sm outline-none"
+      />
+      <ul className="overflow-y-auto p-1">
+        {found.map((e) => (
+          <li key={`${e.pick.type}:${e.pick.id}`}>
+            <button
+              onClick={() => onPick(e.pick)}
+              className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-neutral-100"
+            >
+              <span className="material-icons !text-base text-neutral-400">
+                {e.icon}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm text-neutral-900">
+                  {e.title}
+                </span>
+                <span className="block truncate text-[11px] text-neutral-500">
+                  {e.hint}
+                </span>
+              </span>
+            </button>
+          </li>
+        ))}
+        {!found.length && (
+          <li className="px-2 py-3 text-sm text-neutral-500">Nothing found.</li>
+        )}
+      </ul>
+    </Card>
+  );
+};
+
 /**
- * The World: companies are towns, projects are buildings, and every person's
- * Claude works as bots at the buildings. Finished bots and bots that need
- * permission fly back to their owner.
+ * The World: companies are towns that grow square by square, projects are
+ * squares of task buildings, and every person's Claude works as bots at the
+ * buildings, travelling the roads to get there. Finished bots and bots that
+ * need permission come back to their owner.
  */
 export const WorldPage = () => {
   const [world, setWorld] = useState<World | null>(null);
   const [error, setError] = useState(false);
   const [selected, setSelected] = useState<Pick | null>(null);
   const [focus, setFocus] = useState<Pick | 'all' | null>(null);
+  const [finding, setFinding] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -238,9 +428,18 @@ export const WorldPage = () => {
     selected?.type === 'town'
       ? world?.towns.find((t) => t.id === selected.id)
       : null;
-  const building =
-    selected?.type === 'building'
-      ? world?.buildings.find((b) => b.id === selected.id)
+  const site =
+    selected?.type === 'site'
+      ? world?.projects
+          .flatMap((p) => p.sites)
+          .find((x) => x.id === selected.id)
+      : null;
+  const siteProject = site
+    ? world?.projects.find((p) => p.sites.some((x) => x.id === site.id))
+    : null;
+  const project =
+    selected?.type === 'project'
+      ? world?.projects.find((p) => p.id === selected.id)
       : null;
   const bot =
     selected?.type === 'bot'
@@ -251,26 +450,32 @@ export const WorldPage = () => {
       ? world?.people.find((p) => p.id === selected.id)
       : null;
   const townOf = (id?: string) => world?.towns.find((t) => t.id === id);
-  const buildingOf = (id?: string | null) =>
-    world?.buildings.find((b) => b.id === id);
+  const projectOf = (id?: string | null) =>
+    world?.projects.find((p) => p.id === id);
+  const siteOf = (id?: string | null) =>
+    world?.projects.flatMap((p) => p.sites).find((x) => x.id === id);
 
-  // Breadcrumb: World › Town › Building.
+  // Breadcrumb: World › Town › Project › Task.
+  const crumbProject =
+    project ?? siteProject ?? (bot ? projectOf(bot.projectId) : null);
+  const crumbSite = site ?? (bot ? siteOf(bot.siteId) : null);
   const crumbTown =
     town ??
     townOf(
-      building?.townId ??
+      crumbProject?.townId ??
         bot?.townId ??
         (person ? person.townIds[0] : undefined),
     );
-  const crumbBuilding = building ?? (bot ? buildingOf(bot.projectId) : null);
   // The card wears the town's colours.
   const cardColor = accentOf(crumbTown);
   const cardBadge = town
     ? { src: town.brand?.logo ?? town.logo, name: town.name, round: false }
-    : building
+    : project || siteProject
       ? {
-          src: building.brand?.logo ?? building.logo,
-          name: building.name,
+          src:
+            (project ?? siteProject)!.brand?.logo ??
+            (project ?? siteProject)!.logo,
+          name: (project ?? siteProject)!.name,
           round: false,
         }
       : bot
@@ -314,14 +519,25 @@ export const WorldPage = () => {
                 </button>
               </>
             )}
-            {crumbBuilding && (
+            {crumbProject && (
               <>
                 <span className="text-neutral-400">›</span>
                 <button
-                  onClick={() => go({ type: 'building', id: crumbBuilding.id })}
+                  onClick={() => go({ type: 'project', id: crumbProject.id })}
                   className="font-medium text-neutral-800 hover:underline"
                 >
-                  {crumbBuilding.name}
+                  {crumbProject.name}
+                </button>
+              </>
+            )}
+            {crumbSite && (
+              <>
+                <span className="text-neutral-400">›</span>
+                <button
+                  onClick={() => go({ type: 'site', id: crumbSite.id })}
+                  className="font-medium text-neutral-800 hover:underline"
+                >
+                  {crumbSite.name}
                 </button>
               </>
             )}
@@ -332,7 +548,26 @@ export const WorldPage = () => {
                   ? 'Could not load the world.'
                   : 'Loading…'}
             </span>
+            {world && world.towns.length > 0 && (
+              <button
+                onClick={() => setFinding((v) => !v)}
+                className="ml-2 flex items-center gap-1 rounded-full bg-neutral-900 px-2.5 py-0.5 text-xs font-semibold text-white hover:bg-neutral-700"
+              >
+                <span className="material-icons !text-sm">near_me</span>
+                Go to
+              </button>
+            )}
           </Card>
+
+          {finding && world && (
+            <GoTo
+              world={world}
+              onPick={(pick) => {
+                setFinding(false);
+                go(pick);
+              }}
+            />
+          )}
 
           {world && world.towns.length > 1 && (
             <div className="pointer-events-auto flex gap-1.5 overflow-x-auto pb-1">
@@ -366,8 +601,8 @@ export const WorldPage = () => {
                   className="truncate rounded-xl bg-sky-500 px-3 py-2 text-left text-xs font-medium text-white shadow-lg hover:bg-sky-600"
                 >
                   ❓ Your bot
-                  {buildingOf(b.projectId)
-                    ? ` at ${buildingOf(b.projectId)!.name}`
+                  {projectOf(b.projectId)
+                    ? ` at ${siteOf(b.siteId)?.name ?? projectOf(b.projectId)!.name}`
                     : ''}{' '}
                   is waiting: {b.current ?? 'needs you'}
                 </button>
@@ -385,6 +620,10 @@ export const WorldPage = () => {
                 {BOT_STATE_LABEL[s]}
               </span>
             ))}
+            <span className="flex items-center gap-1">
+              <span className="inline-block size-2 rounded-full bg-blue-600" />
+              On the road
+            </span>
           </div>
           <p className="mt-1 text-neutral-500">
             Drag to move · right-drag to turn · scroll to zoom · click anything
@@ -398,7 +637,7 @@ export const WorldPage = () => {
         )}
 
         {/* The selected thing. */}
-        {(town || building || bot || person) && (
+        {(town || project || site || bot || person) && (
           <Card
             className="absolute inset-x-3 bottom-3 max-h-[55%] overflow-y-auto border-t-4 p-4 md:inset-x-auto md:bottom-auto md:right-4 md:top-4 md:max-h-[calc(100%-2rem)] md:w-80"
             style={{ borderColor: cardColor }}
@@ -416,7 +655,8 @@ export const WorldPage = () => {
               <div className="min-w-0 flex-1">
                 <p className="truncate text-base font-bold text-neutral-900">
                   {town?.name ??
-                    building?.name ??
+                    project?.name ??
+                    site?.name ??
                     (bot
                       ? `${bot.ownerName}'s bot`
                       : person?.isMe
@@ -426,10 +666,11 @@ export const WorldPage = () => {
                 <p className="text-xs text-neutral-500">
                   {town &&
                     `Town · ${Math.round(town.weekPoints)} points this week`}
-                  {building &&
-                    `#${building.rank} in ${townOf(building.townId)?.name} · by ${building.rankedBy.toLowerCase()}`}
+                  {project &&
+                    `#${project.rank} in ${townOf(project.townId)?.name} · by ${project.rankedBy.toLowerCase()}`}
+                  {site && siteProject && `Task building · ${siteProject.name}`}
                   {bot &&
-                    `${BOT_STATE_LABEL[bot.state]}${buildingOf(bot.projectId) ? ` · ${buildingOf(bot.projectId)!.name}` : ''}`}
+                    `${BOT_STATE_LABEL[bot.state]}${projectOf(bot.projectId) ? ` · ${siteOf(bot.siteId)?.name ?? projectOf(bot.projectId)!.name}` : ''}`}
                   {person && (person.title ?? 'Person')}
                 </p>
               </div>
@@ -450,14 +691,14 @@ export const WorldPage = () => {
                     Guiding a waiting bot counts {GUIDANCE_WEIGHT}×.
                   </p>
                 </Section>
-                <Section title="Buildings">
+                <Section title="Projects">
                   <ol className="flex flex-col gap-1">
-                    {world!.buildings
+                    {world!.projects
                       .filter((b) => b.townId === town.id)
                       .map((b) => (
                         <li key={b.id}>
                           <button
-                            onClick={() => go({ type: 'building', id: b.id })}
+                            onClick={() => go({ type: 'project', id: b.id })}
                             className="flex w-full items-center gap-2 rounded-lg px-1 py-0.5 text-left text-sm hover:bg-neutral-100"
                           >
                             <span className="w-6 text-xs text-neutral-500">
@@ -490,30 +731,38 @@ export const WorldPage = () => {
               </>
             )}
 
-            {building && (
+            {project && (
               <>
+                <Section title="Task buildings">
+                  <SiteList
+                    project={project}
+                    color={cardColor}
+                    onOpen={(id) => go({ type: 'site', id })}
+                  />
+                </Section>
                 <Section title="Leaderboard this week">
-                  <Leaderboard rows={building.leaderboard} color={cardColor} />
+                  <Leaderboard rows={project.leaderboard} color={cardColor} />
                 </Section>
                 <Section title="Bots here today">
-                  <div className="flex flex-col gap-1.5">
-                    {world!.bots
-                      .filter((b) => b.projectId === building.id)
-                      .map((b) => (
-                        <BotRow
-                          key={b.id}
-                          bot={b}
-                          onOpen={() => go({ type: 'bot', id: b.id })}
-                        />
-                      ))}
-                    {!world!.bots.some((b) => b.projectId === building.id) && (
-                      <p className="text-sm text-neutral-500">
-                        No bots here today.
-                      </p>
-                    )}
-                  </div>
+                  <BotList
+                    bots={world!.bots.filter((b) => b.projectId === project.id)}
+                    onOpen={(id) => go({ type: 'bot', id })}
+                  />
                 </Section>
+                <p className="mt-3 text-[11px] text-neutral-400">
+                  The blue line is the way there from you.
+                </p>
               </>
+            )}
+
+            {site && <SiteCard site={site} color={cardColor} />}
+            {site && (
+              <Section title="Bots here today">
+                <BotList
+                  bots={world!.bots.filter((b) => b.siteId === site.id)}
+                  onOpen={(id) => go({ type: 'bot', id })}
+                />
+              </Section>
             )}
 
             {bot && (
@@ -566,20 +815,15 @@ export const WorldPage = () => {
                   </div>
                 </div>
                 <Section title="Bots today">
-                  <div className="flex flex-col gap-1.5">
-                    {world!.bots
-                      .filter((b) => b.ownerId === person.id)
-                      .map((b) => (
-                        <BotRow
-                          key={b.id}
-                          bot={b}
-                          onOpen={() => go({ type: 'bot', id: b.id })}
-                        />
-                      ))}
-                    {!world!.bots.some((b) => b.ownerId === person.id) && (
-                      <p className="text-sm text-neutral-500">No bots today.</p>
-                    )}
-                  </div>
+                  <BotList
+                    bots={world!.bots.filter((b) => b.ownerId === person.id)}
+                    onOpen={(id) => go({ type: 'bot', id })}
+                  />
+                  {world!.bots.some((b) => b.ownerId === person.id) && (
+                    <p className="mt-2 text-[11px] text-neutral-400">
+                      Blue lines show where each bot is working.
+                    </p>
+                  )}
                 </Section>
               </>
             )}

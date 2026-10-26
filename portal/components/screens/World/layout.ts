@@ -1,74 +1,103 @@
 import type { World } from '@/lib/world/state';
+import { SITES_PER_SQUARE } from '@/lib/world/state';
 
 /*
- * Where everything stands. Towns are square blocks on a grid, joined by
- * highways. Each town has its square in the middle (people, the town hall
- * and the leaderboards), a road around it, and its buildings on lots in
- * rings around the square, best ranked first. Two cross roads run from the
- * square out to the highways.
+ * Where everything stands. A town grows square by square: the town square
+ * first, then each project's squares (four task buildings to a square), and
+ * every four squares join into a bigger square, which is the next size up's
+ * building block (Z-order). The roads between bigger squares are wider.
+ * Square 0 sits at the front corner of the usual view, so the town grows
+ * away from it and the square is never hidden. Towns sit on a grid, joined
+ * by highways.
  */
 
 export type Spot = { x: number; z: number; angle: number };
-export type TownSpot = Spot & {
-  /** Half the width of the town's square block. */
-  half: number;
-  /** Centre lines of the town's ring roads, as distances from the middle. */
-  rings: number[];
-  /** Lots no building took, for parks. */
-  parks: Spot[];
+export type Cell = {
+  x: number;
+  z: number;
+  kind: 'plaza' | 'project' | 'park';
+  projectId?: string;
+};
+export type Area = {
+  x: number;
+  z: number;
+  minX: number;
+  maxX: number;
+  minZ: number;
+  maxZ: number;
+};
+export type TownSpot = Area & {
+  /** The town square: its middle and half its width. */
+  plaza: { x: number; z: number; half: number };
+  cells: Cell[];
+  /** Road centre lines across the whole town, with their widths. */
+  streetsX: { at: number; width: number }[];
+  streetsZ: { at: number; width: number }[];
 };
 export type Road = { x1: number; z1: number; x2: number; z2: number };
 
-/** Half the width of the town square. */
-export const PLAZA = 14;
-export const ROAD = 3;
+/** One task building's lot. */
 export const LOT = 10;
-const GAP = 30;
+/** One square: two lots by two. */
+export const BLOCK = LOT * 2;
+const EDGE = 4;
+const GAP = 34;
 
-const ringRadius = (n: number) => PLAZA + ROAD + LOT / 2 + n * (LOT + ROAD);
-
-/** The lots on ring `n`, walking the square around the middle. */
-function lotsOnRing(n: number): Spot[] {
-  const r = ringRadius(n);
-  const k = Math.max(2, Math.floor((2 * r) / LOT));
-  const step = (2 * r) / k;
-  const clear = (LOT + ROAD) / 2;
-  const out: Spot[] = [];
-  for (let i = 0; i < k; i++) {
-    const d = i * step;
-    // Each lot faces the road on its inner side.
-    const sides: Spot[] = [
-      { x: r - d, z: r, angle: Math.PI },
-      { x: -r, z: r - d, angle: Math.PI / 2 },
-      { x: -r + d, z: -r, angle: 0 },
-      { x: r, z: -r + d, angle: -Math.PI / 2 },
-    ];
-    for (const s of sides) {
-      const onCross =
-        s.angle === 0 || s.angle === Math.PI
-          ? Math.abs(s.x) < clear
-          : Math.abs(s.z) < clear;
-      if (!onCross) out.push(s);
-    }
+/** How deep in the squares-of-squares a road is: wider the deeper. */
+const depth = (i: number) => {
+  let n = 0;
+  while (i > 0 && i % 2 === 0) {
+    i /= 2;
+    n += 1;
   }
-  // Furthest back first: the best ranked stand at the back, tallest, and
-  // don't hide the square from the usual view.
-  return out.sort((a, b) => a.x + a.z - (b.x + b.z) || a.x - b.x);
+  return n;
+};
+const streetWidth = (i: number) => 4 + depth(i) * 2;
+
+/** Where square `i` starts along one side, from the town's edge. */
+const startOf = (i: number) => {
+  let at = EDGE;
+  for (let j = 1; j <= i; j++) at += BLOCK + streetWidth(j);
+  return at;
+};
+
+/** The n-th square in Z-order. */
+function zOrder(n: number) {
+  let x = 0;
+  let y = 0;
+  for (let bit = 0; n >> (bit * 2); bit++) {
+    x |= ((n >> (bit * 2)) & 1) << bit;
+    y |= ((n >> (bit * 2 + 1)) & 1) << bit;
+  }
+  return { x, y };
 }
 
-function lotsFor(count: number) {
-  const lots: Spot[] = [];
-  let ring = 0;
-  while (lots.length < Math.max(count, 1)) lots.push(...lotsOnRing(ring++));
-  return { lots, rings: ring };
+/** The squares a project needs for its task buildings. */
+export const squaresFor = (sites: number) =>
+  Math.max(1, Math.ceil(sites / SITES_PER_SQUARE));
+
+/** The town's squares in Z-order: the town square, then each project. */
+function plan(projects: { id: string; squares: number }[]) {
+  const owner: (string | null)[] = ['plaza', 'plaza', 'plaza', 'plaza'];
+  for (const p of projects) {
+    // Line projects up so two squares sit side by side and three or more
+    // fill a square of squares.
+    const align = p.squares >= 3 ? 4 : p.squares;
+    while (owner.length % align) owner.push(null);
+    for (let i = 0; i < p.squares; i++) owner.push(p.id);
+  }
+  return owner;
 }
 
-export const townHalf = (buildings: number) =>
-  buildings
-    ? ringRadius(lotsFor(buildings).rings - 1) + LOT / 2 + ROAD + 4
-    : PLAZA + ROAD + 6;
+/** Lots in a square, back first: the busiest building stands at the back. */
+export const LOTS = [
+  { dx: -LOT / 2, dz: -LOT / 2, angle: Math.PI },
+  { dx: LOT / 2, dz: -LOT / 2, angle: Math.PI },
+  { dx: -LOT / 2, dz: LOT / 2, angle: 0 },
+  { dx: LOT / 2, dz: LOT / 2, angle: 0 },
+];
 
-/** The people's places on the square: rows facing the usual view. */
+/** People's places on the square: rows facing the usual view. */
 function crowd(n: number) {
   const perRow = n > 18 ? 8 : 6;
   return Array.from({ length: n }, (_, i) => {
@@ -84,93 +113,176 @@ function crowd(n: number) {
   });
 }
 
-export function layoutWorld(world: World) {
-  const counts = world.towns.map(
-    (t) => world.buildings.filter((b) => b.townId === t.id).length,
+function layoutTown(world: World, townId: string) {
+  const projects = world.projects
+    .filter((p) => p.townId === townId)
+    .sort((a, b) => a.rank - b.rank);
+  const owner = plan(
+    projects.map((p) => ({ id: p.id, squares: squaresFor(p.sites.length) })),
   );
-  const halves = counts.map(townHalf);
-  const spacing = Math.max(...halves, 0) * 2 + GAP;
+  const grid = owner.map((_, n) => zOrder(n));
+  const nx = Math.max(...grid.map((g) => g.x)) + 1;
+  const nz = Math.max(...grid.map((g) => g.y)) + 1;
+
+  // Down the middle runs the widest road: the town is centred on it, and
+  // the highways meet the town there.
+  const middle = (n: number) => {
+    const half = 2 ** Math.max(0, Math.ceil(Math.log2(n)) - 1);
+    return startOf(half) - streetWidth(half) / 2;
+  };
+  const ux = middle(nx);
+  const uz = middle(nz);
+  // Square 0 at the front (+x, +z); the town grows toward -x and -z.
+  const toX = (u: number) => ux - u;
+  const toZ = (v: number) => uz - v;
+
+  const byIndex = new Map(grid.map((g, n) => [`${g.x},${g.y}`, n]));
+  const cells: Cell[] = [];
+  for (let gx = 0; gx < nx; gx++)
+    for (let gz = 0; gz < nz; gz++) {
+      const n = byIndex.get(`${gx},${gz}`);
+      const who = n === undefined ? null : owner[n];
+      if (who === 'plaza') continue;
+      cells.push({
+        x: toX(startOf(gx) + BLOCK / 2),
+        z: toZ(startOf(gz) + BLOCK / 2),
+        kind: who ? 'project' : 'park',
+        projectId: who ?? undefined,
+      });
+    }
+  const plazaFar = startOf(1) + BLOCK;
+  const plaza = {
+    x: toX((EDGE + plazaFar) / 2),
+    z: toZ((EDGE + plazaFar) / 2),
+    half: (plazaFar - EDGE) / 2,
+  };
+  cells.unshift({ x: plaza.x, z: plaza.z, kind: 'plaza' });
+
+  const lines = (n: number, to: (u: number) => number) => [
+    { at: to(EDGE / 2), width: EDGE },
+    ...Array.from({ length: n - 1 }, (_, k) => ({
+      at: to(startOf(k + 1) - streetWidth(k + 1) / 2),
+      width: streetWidth(k + 1),
+    })),
+    { at: to(startOf(n - 1) + BLOCK + EDGE / 2), width: EDGE },
+  ];
+  const far = (n: number) => startOf(n - 1) + BLOCK + EDGE;
+  return {
+    projects,
+    cells,
+    plaza,
+    streetsX: lines(nx, toX),
+    streetsZ: lines(nz, toZ),
+    minX: toX(far(nx)),
+    maxX: toX(0),
+    minZ: toZ(far(nz)),
+    maxZ: toZ(0),
+  };
+}
+
+export function layoutWorld(world: World) {
+  const plans = world.towns.map((t) => layoutTown(world, t.id));
+  const reach = Math.max(
+    ...plans.map((p) => Math.max(-p.minX, p.maxX, -p.minZ, p.maxZ)),
+  );
+  const spacing = reach * 2 + GAP;
   const cols = Math.max(1, Math.ceil(Math.sqrt(world.towns.length)));
   const rows = Math.max(1, Math.ceil(world.towns.length / cols));
 
   const towns = new Map<string, TownSpot>();
-  const buildings = new Map<string, Spot>();
+  const projects = new Map<string, Area & { cells: Cell[] }>();
+  const sites = new Map<string, Spot & { projectId: string }>();
   const people = new Map<string, Spot>();
 
   world.towns.forEach((t, i) => {
     const x = ((i % cols) - (cols - 1) / 2) * spacing;
     const z = (Math.floor(i / cols) - (rows - 1) / 2) * spacing;
-    const { lots, rings } = lotsFor(counts[i]);
-    const mine = world.buildings
-      .filter((b) => b.townId === t.id)
-      .sort((a, b) => a.rank - b.rank);
-    mine.forEach((b, j) =>
-      buildings.set(b.id, {
-        x: x + lots[j].x,
-        z: z + lots[j].z,
-        angle: lots[j].angle,
-      }),
-    );
+    const p = plans[i];
+    const cells = p.cells.map((c) => ({ ...c, x: x + c.x, z: z + c.z }));
+    const plaza = { ...p.plaza, x: x + p.plaza.x, z: z + p.plaza.z };
     towns.set(t.id, {
       x,
       z,
-      angle: 0,
-      half: halves[i],
-      rings: [
-        PLAZA + ROAD / 2,
-        ...Array.from(
-          { length: counts[i] ? rings : 0 },
-          (_, n) => ringRadius(n) + LOT / 2 + ROAD / 2,
-        ),
-      ],
-      parks: lots
-        .slice(mine.length)
-        .map((l) => ({ ...l, x: x + l.x, z: z + l.z })),
+      minX: x + p.minX,
+      maxX: x + p.maxX,
+      minZ: z + p.minZ,
+      maxZ: z + p.maxZ,
+      plaza,
+      cells,
+      streetsX: p.streetsX.map((s) => ({ ...s, at: x + s.at })),
+      streetsZ: p.streetsZ.map((s) => ({ ...s, at: z + s.at })),
     });
 
-    const here = world.people.filter((p) => p.townIds.includes(t.id));
+    for (const project of p.projects) {
+      const mine = cells.filter((c) => c.projectId === project.id);
+      const xs = mine.map((c) => c.x);
+      const zs = mine.map((c) => c.z);
+      projects.set(project.id, {
+        x: (Math.min(...xs) + Math.max(...xs)) / 2,
+        z: (Math.min(...zs) + Math.max(...zs)) / 2,
+        minX: Math.min(...xs) - BLOCK / 2,
+        maxX: Math.max(...xs) + BLOCK / 2,
+        minZ: Math.min(...zs) - BLOCK / 2,
+        maxZ: Math.max(...zs) + BLOCK / 2,
+        cells: mine,
+      });
+      // Busiest buildings in the back squares, four to a square.
+      const ordered = [...mine].sort((a, b) => a.x + a.z - (b.x + b.z));
+      project.sites.forEach((site, k) => {
+        const cell = ordered[Math.floor(k / SITES_PER_SQUARE)];
+        const lot = LOTS[k % SITES_PER_SQUARE];
+        if (!cell) return;
+        sites.set(site.id, {
+          x: cell.x + lot.dx,
+          z: cell.z + lot.dz,
+          angle: lot.angle,
+          projectId: project.id,
+        });
+      });
+    }
+
+    const here = world.people.filter((person) => person.townIds.includes(t.id));
     crowd(here.length).forEach((spot, j) =>
       people.set(`${t.id}:${here[j].id}`, {
-        x: x + spot.x,
-        z: z + spot.z,
+        x: plaza.x + spot.x,
+        z: plaza.z + spot.z,
         angle: spot.angle,
       }),
     );
   });
 
-  // Highways along every row and column of towns, between their edges and
-  // out past the last town.
+  // Highways along every row and column of towns, meeting each town on its
+  // middle road, and out past the last town.
   const roads: Road[] = [];
-  const reach = GAP + 20;
+  const out = GAP + 24;
   const line = (
-    stops: { at: number; half: number }[],
+    stops: { from: number; to: number }[],
     put: (a: number, b: number) => Road,
   ) => {
-    stops.sort((a, b) => a.at - b.at);
-    const first = stops[0];
-    const last = stops[stops.length - 1];
-    roads.push(put(first.at - first.half - reach, first.at - first.half));
+    stops.sort((a, b) => a.from - b.from);
+    roads.push(put(stops[0].from - out, stops[0].from));
     for (let i = 0; i + 1 < stops.length; i++)
-      roads.push(
-        put(stops[i].at + stops[i].half, stops[i + 1].at - stops[i + 1].half),
-      );
-    roads.push(put(last.at + last.half, last.at + last.half + reach));
+      roads.push(put(stops[i].to, stops[i + 1].from));
+    roads.push(
+      put(stops[stops.length - 1].to, stops[stops.length - 1].to + out),
+    );
   };
   const all = Array.from(towns.values());
   for (const z of Array.from(new Set(all.map((t) => t.z))))
     line(
-      all.filter((t) => t.z === z).map((t) => ({ at: t.x, half: t.half })),
+      all.filter((t) => t.z === z).map((t) => ({ from: t.minX, to: t.maxX })),
       (a, b) => ({ x1: a, z1: z, x2: b, z2: z }),
     );
   for (const x of Array.from(new Set(all.map((t) => t.x))))
     line(
-      all.filter((t) => t.x === x).map((t) => ({ at: t.z, half: t.half })),
+      all.filter((t) => t.x === x).map((t) => ({ from: t.minZ, to: t.maxZ })),
       (a, b) => ({ x1: x, z1: a, x2: x, z2: b }),
     );
 
   return {
     towns,
-    buildings,
+    projects,
+    sites,
     people,
     roads,
     spacing,
@@ -179,6 +291,40 @@ export function layoutWorld(world: World) {
     /** How wide the whole world is, edge to edge. */
     extent: Math.max(cols, rows) * spacing,
   };
+}
+
+/**
+ * The way along the roads from `a` to `b` in a town: out to the nearest
+ * road, along it, across on a cross road, and in again.
+ */
+export function route(
+  town: TownSpot,
+  a: { x: number; z: number },
+  b: { x: number; z: number },
+) {
+  const nearest = (lines: { at: number }[], v: number) =>
+    lines.reduce(
+      (best, l) => (Math.abs(l.at - v) < Math.abs(best - v) ? l.at : best),
+      lines[0].at,
+    );
+  const za = nearest(town.streetsZ, a.z);
+  const zb = nearest(town.streetsZ, b.z);
+  const points = [
+    { x: a.x, z: a.z },
+    { x: a.x, z: za },
+  ];
+  if (Math.abs(za - zb) < 0.01) points.push({ x: b.x, z: za });
+  else {
+    const xv = nearest(town.streetsX, (a.x + b.x) / 2);
+    points.push({ x: xv, z: za }, { x: xv, z: zb }, { x: b.x, z: zb });
+  }
+  points.push({ x: b.x, z: b.z });
+  // Drop steps that go nowhere.
+  return points.filter(
+    (p, i) =>
+      i === 0 ||
+      Math.hypot(p.x - points[i - 1].x, p.z - points[i - 1].z) > 0.05,
+  );
 }
 
 /** Small deterministic random numbers, so trees stay where they grew. */

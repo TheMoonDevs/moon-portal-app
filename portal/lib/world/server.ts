@@ -12,8 +12,14 @@ import {
 import { getWorkspaceForUser } from '@/lib/workspace/server';
 import type { PointEntry } from '@/models/progress';
 import type { WorklogLink, WorkLogs } from '@/models/worklogs';
-import type { CompanyMember, Project, ProjectResult } from '@/models/workspace';
-import { MEMBER_STATUS, PROJECT_STATUS } from '@/models/workspace';
+import type {
+  CompanyMember,
+  Project,
+  ProjectResult,
+  Task,
+  TaskSchedule,
+} from '@/models/workspace';
+import { MEMBER_STATUS, PROJECT_STATUS, TASK_STATUS } from '@/models/workspace';
 
 import type {
   BotPoint,
@@ -21,13 +27,66 @@ import type {
   World,
   WorldBot,
   WorldBrand,
-  WorldBuilding,
   WorldPerson,
+  WorldProject,
+  WorldSite,
   WorldTown,
 } from './state';
 import { botProgress, botState, currentPoint, GUIDANCE_WEIGHT } from './state';
 
 const LEADERS = 5;
+/** Task buildings shown per project, the most done first. */
+const MAX_SITES = 36;
+
+/**
+ * Which kind of task this is: tasks from the same schedule or for the same
+ * goal are one kind, and otherwise tasks with the same title once numbers
+ * are left out ("Lyric video 12" and "Lyric video 13").
+ */
+const kindOf = (
+  t: Pick<Task, 'scheduleId' | 'goalId' | 'goalPartId' | 'title'>,
+) =>
+  t.scheduleId
+    ? `s-${t.scheduleId}`
+    : t.goalId
+      ? `g-${t.goalId}-${t.goalPartId ?? ''}`
+      : `t-${(t.title ?? '')
+          .toLowerCase()
+          .replace(/[^\p{L}]+/gu, ' ')
+          .trim()}`;
+
+/** A project's kinds of task as buildings, most done first. */
+function sitesOf(
+  project: Project,
+  tasks: Task[],
+  schedules: Map<string, string>,
+): WorldSite[] {
+  const sites = new Map<string, WorldSite>();
+  for (const t of tasks) {
+    const id = `${project.id}:${kindOf(t)}`;
+    let site = sites.get(id);
+    if (!site) {
+      const goal = project.goals?.find((g) => g.id === t.goalId);
+      const part = goal?.parts?.find((p) => p.id === t.goalPartId);
+      site = {
+        id,
+        name:
+          (t.scheduleId && schedules.get(t.scheduleId)) ||
+          (goal ? `${goal.title}${part ? ` · ${part.label}` : ''}` : '') ||
+          t.title.replace(/\s*#?\d+\s*$/, '') ||
+          'Task',
+        done: 0,
+        open: 0,
+      };
+      sites.set(id, site);
+    }
+    if (t.status === TASK_STATUS.DONE) site.done += 1;
+    else site.open += 1;
+  }
+  return Array.from(sites.values())
+    .sort((a, b) => b.done - a.done || b.open - a.open)
+    .slice(0, MAX_SITES);
+}
 
 const PALETTE = [
   '#2563eb',
@@ -116,15 +175,16 @@ const top = (
 
 /**
  * The world as the viewer sees it: the companies they belong to as towns,
- * their projects as buildings, everyone in them, and today's bots. Private
- * lines are never included, and other people's own lines are only counted.
+ * their projects as squares of task buildings, everyone in them, and today's
+ * bots. Private lines are never included, and other people's own lines are
+ * only counted.
  */
 export async function buildWorld(viewer: SessionUser): Promise<World> {
   const workspace = await getWorkspaceForUser(viewer);
   const mine = workspace.filter((w) => w.member);
   const companies = (mine.length ? mine : workspace).map((w) => w.company);
   const companyIds = companies.map((c) => c.id);
-  const empty = { towns: [], buildings: [], people: [], bots: [] };
+  const empty = { towns: [], projects: [], people: [], bots: [] };
   if (!companyIds.length) return { date: todayFor(null), ...empty };
 
   const [projects, members]: [Project[], CompanyMember[]] = await Promise.all([
@@ -164,30 +224,62 @@ export async function buildWorld(viewer: SessionUser): Promise<World> {
   const today = todayFor(users.find((u: any) => u.id === viewer.id)?.timezone);
   const week = periodRange('week', today);
 
-  const [logs, entries, results]: [WorkLogs[], PointEntry[], ProjectResult[]] =
-    await Promise.all([
-      db.workLogs.findMany({
-        where: {
-          userId: { in: userIds },
-          logType: 'dayLog',
-          date: { gte: week.from, lte: today },
-        },
-      }),
-      db.pointEntry.findMany({
-        where: {
-          userId: { in: userIds },
-          projectId: { in: projects.map((p) => p.id) },
-          date: { gte: week.from, lte: today },
-        },
-      }),
-      projects.length
-        ? db.projectResult.findMany({
-            where: { projectId: { in: projects.map((p) => p.id) } },
-          })
-        : [],
-    ]);
+  const projectIds = projects.map((p) => p.id);
+  const [logs, entries, results, tasks, schedules]: [
+    WorkLogs[],
+    PointEntry[],
+    ProjectResult[],
+    Task[],
+    TaskSchedule[],
+  ] = await Promise.all([
+    db.workLogs.findMany({
+      where: {
+        userId: { in: userIds },
+        logType: 'dayLog',
+        date: { gte: week.from, lte: today },
+      },
+    }),
+    db.pointEntry.findMany({
+      where: {
+        userId: { in: userIds },
+        projectId: { in: projects.map((p) => p.id) },
+        date: { gte: week.from, lte: today },
+      },
+    }),
+    projects.length
+      ? db.projectResult.findMany({
+          where: { projectId: { in: projects.map((p) => p.id) } },
+        })
+      : [],
+    projectIds.length
+      ? db.task.findMany({
+          where: {
+            projectId: { in: projectIds },
+            status: {
+              notIn: [TASK_STATUS.ARCHIVED, TASK_STATUS.IGNORED],
+            },
+          },
+          select: {
+            projectId: true,
+            title: true,
+            status: true,
+            scheduleId: true,
+            goalId: true,
+            goalPartId: true,
+          },
+        })
+      : [],
+    projectIds.length
+      ? db.taskSchedule.findMany({
+          where: { projectId: { in: projectIds } },
+          select: { title: true },
+        })
+      : [],
+  ]);
 
   const projectById = new Map(projects.map((p) => [p.id, p]));
+  const scheduleTitles = new Map(schedules.map((s) => [s.id, s.title]));
+  const taskById = new Map(tasks.map((t) => [t.id, t]));
   const townsOf = (userId: string) =>
     companyIds.filter((id) =>
       members.some((m) => m.userId === userId && m.companyId === id),
@@ -214,10 +306,10 @@ export async function buildWorld(viewer: SessionUser): Promise<World> {
   const total = (scores?: Map<string, number>) =>
     Array.from(scores?.values() ?? []).reduce((n, v) => n + v, 0);
 
-  // Buildings, ranked in their town on their latest result if any project
+  // Projects, ranked in their town on their latest result if any project
   // has one, else on this week's points.
   const townBrand = new Map(companies.map((c) => [c.id, brandOf(c as any)]));
-  const buildings: WorldBuilding[] = [];
+  const worldProjects: WorldProject[] = [];
   for (const town of companies) {
     const inTown = projects.filter((p) => p.companyId === town.id);
     const townResults = results.filter((r) => r.companyId === town.id);
@@ -229,7 +321,7 @@ export async function buildWorld(viewer: SessionUser): Promise<World> {
       return ra - rb || total(byProject.get(b.id)) - total(byProject.get(a.id));
     });
     ordered.forEach((p, i) =>
-      buildings.push({
+      worldProjects.push({
         id: p.id,
         name: p.name,
         color: p.color ?? null,
@@ -243,6 +335,11 @@ export async function buildWorld(viewer: SessionUser): Promise<World> {
         weekPoints: total(byProject.get(p.id)),
         rankedBy: metric ? metricLabel(metric) : 'Points this week',
         leaderboard: top(byProject.get(p.id), names, avatars),
+        sites: sitesOf(
+          p,
+          tasks.filter((t) => t.projectId === p.id),
+          scheduleTitles,
+        ),
       }),
     );
   }
@@ -298,20 +395,31 @@ export async function buildWorld(viewer: SessionUser): Promise<World> {
 
     const links = (log?.links ?? []) as WorklogLink[];
     const groups = new Map<string, BotPoint[]>();
+    const siteOfLine = new Map<BotPoint, string>();
     for (const raw of sectionLines(
       works.find((w) => w?.link_id === CLAUDE_SECTION_ID)?.content,
     )) {
       if (PRIVATE_LINE.test(raw)) continue;
-      const projectId = links.find((l) => l.key === lineKey(raw))?.projectId;
+      const link = links.find((l) => l.key === lineKey(raw));
+      const projectId = link?.projectId;
       const key = projectId && projectById.has(projectId) ? projectId : '';
-      groups.set(key, [
-        ...(groups.get(key) ?? []),
-        { text: normalizeLine(raw), status: statusOf(raw) },
-      ]);
+      const point: BotPoint = {
+        text: normalizeLine(raw),
+        status: statusOf(raw),
+      };
+      const task = link?.taskId ? taskById.get(link.taskId) : undefined;
+      if (task && task.projectId === key)
+        siteOfLine.set(point, `${key}:${kindOf(task)}`);
+      groups.set(key, [...(groups.get(key) ?? []), point]);
     }
     for (const [projectId, points] of Array.from(groups.entries())) {
       const project = projectById.get(projectId);
       const state = botState(points);
+      const current = currentPoint(points, state);
+      // Its building: the one its current step is for, else its latest.
+      const linked = points.filter((pt) => siteOfLine.has(pt));
+      const at =
+        linked.find((pt) => pt.text === current) ?? linked[linked.length - 1];
       bots.push({
         id: `${u.id}:${projectId || 'town'}`,
         ownerId: u.id,
@@ -319,13 +427,14 @@ export async function buildWorld(viewer: SessionUser): Promise<World> {
         ownerAvatar: u.avatar ?? null,
         townId: project?.companyId ?? homes[0],
         projectId: project?.id ?? null,
+        siteId: at ? siteOfLine.get(at)! : null,
         state,
-        current: currentPoint(points, state),
+        current,
         points,
         progress: botProgress(points),
       });
     }
   }
 
-  return { date: today, towns, buildings, people, bots };
+  return { date: today, towns, projects: worldProjects, people, bots };
 }
