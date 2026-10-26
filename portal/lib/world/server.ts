@@ -345,9 +345,17 @@ export async function buildWorld(viewer: SessionUser): Promise<World> {
       look: lookOf(u.id, u.look),
       isMe: u.id === viewer.id,
       townIds: homes,
+      // Private (p:) lines count only for their writer.
       ownPoints: works
         .filter((w) => w?.link_id !== CLAUDE_SECTION_ID)
-        .reduce((n, w) => n + sectionLines(w?.content).length, 0),
+        .reduce(
+          (n, w) =>
+            n +
+            sectionLines(w?.content).filter(
+              (line) => u.id === viewer.id || !PRIVATE_LINE.test(line),
+            ).length,
+          0,
+        ),
       guidance: log?.guidance ?? 0,
     });
 
