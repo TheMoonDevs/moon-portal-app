@@ -17,12 +17,14 @@ import { useWorkspace } from '@/utils/hooks/useWorkspace';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import { CompanyMark } from '../Admin/Workspace/shared';
+import { ClaudeConnectSection } from './ClaudeConnectSection';
 import { SignInAccountsSection } from './SignInAccountsSection';
 
 const SECTIONS = [
   { id: 'profile', label: 'Profile', icon: 'person' },
   { id: 'sign-in', label: 'Sign-in', icon: 'key' },
   { id: 'companies', label: 'Companies', icon: 'domain' },
+  { id: 'claude', label: 'Claude', icon: 'smart_toy' },
   { id: 'notifications', label: 'Notifications', icon: 'notifications' },
 ];
 
@@ -306,6 +308,16 @@ const CompaniesCard = () => {
   );
 };
 
+const ClaudeCard = () => (
+  <Card
+    id="claude"
+    title="Claude"
+    description="Connect Claude so it logs the work it does for you, as it goes."
+  >
+    <ClaudeConnectSection />
+  </Card>
+);
+
 const NotificationsCard = () => (
   <Card id="notifications" title="Notifications">
     <div className="flex items-start justify-between gap-4">
@@ -390,6 +402,7 @@ const Settings = () => {
           <ProfileCard />
           <SignInCard />
           <CompaniesCard />
+          <ClaudeCard />
           <NotificationsCard />
 
           <button

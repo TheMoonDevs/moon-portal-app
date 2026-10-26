@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 
+import { keepClaudeSection } from '@/lib/mcp/worklog';
 import { db } from '@/lib/mongodb/db-client';
 import { enforcePermission } from '@/lib/permissions/server';
 import { PRIVATE_LINE } from '@/lib/worklogs/lines';
@@ -134,6 +135,17 @@ export async function PUT(request: Request) {
       );
     }
     rest.userId = ownerId ?? viewerUserId;
+
+    // Keep what the person's assistant logged since this copy was loaded.
+    const stored =
+      existing ??
+      (logType && date
+        ? await db.workLogs.findFirst({
+            where: { userId: rest.userId, logType, date },
+          })
+        : null);
+    if (stored && 'works' in rest)
+      rest.works = keepClaudeSection(rest.works, stored.works);
 
     //console.log("updating worklogs on server", id, rest);
     let workLogs;

@@ -73,6 +73,18 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   if (!record && sessionUser.email) {
     record = await db.user.findFirst({ where: { email: sessionUser.email } });
   }
+  return sessionUserFromRecord(record, sessionUser.googleEmail ?? null);
+}
+
+/**
+ * A user record hydrated for permission checks, or null when it is missing
+ * or not active. `googleEmail` is the Google account verified at sign-in;
+ * callers without one (API tokens) never get super-admin powers.
+ */
+export async function sessionUserFromRecord(
+  record: any,
+  googleEmail: string | null = null,
+): Promise<SessionUser | null> {
   if (!record) return null;
   if (record.status && record.status !== 'ACTIVE') return null;
 
@@ -91,8 +103,8 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     deniedPermissions: Array.isArray(record.deniedPermissions)
       ? record.deniedPermissions
       : [],
-    googleEmail: sessionUser.googleEmail ?? null,
-    isSuperAdmin: isSuperAdminEmail(sessionUser.googleEmail),
+    googleEmail,
+    isSuperAdmin: isSuperAdminEmail(googleEmail),
   };
 }
 
