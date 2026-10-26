@@ -11,6 +11,7 @@ import {
   type ApplicationFile,
   FORM_FIELD_TYPE,
   type FormField,
+  type HiringEmail,
 } from '@/models/hiring';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
@@ -25,7 +26,12 @@ import {
   TextArea,
 } from '../shared/AdminUI';
 import { errorText } from '../Workspace/shared';
-import { type ApplicationRow, STAGE_META, timeAgo } from './hiringMeta';
+import {
+  type ApplicationRow,
+  EMAIL_STATUS_META,
+  STAGE_META,
+  timeAgo,
+} from './hiringMeta';
 
 const isUrl = (value: string) => /^https?:\/\//i.test(value);
 
@@ -70,6 +76,86 @@ const Answer = ({
   return <span className="whitespace-pre-wrap break-words">{text}</span>;
 };
 
+const EmailLog = ({
+  application,
+  nameOf,
+}: {
+  application: ApplicationRow;
+  nameOf: (id?: string | null) => string;
+}) => {
+  const [emails, setEmails] = useState<HiringEmail[] | null>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const lastEmail = application.lastEmail;
+
+  // Reloads when a new email goes out or its delivery status changes.
+  useEffect(() => {
+    let cancelled = false;
+    PortalSdk.getData(
+      `/api/hiring/emails?applicationId=${application.id}`,
+      null,
+    )
+      .then((res) => !cancelled && setEmails(res?.data?.emails ?? []))
+      .catch(() => !cancelled && setEmails([]));
+    return () => {
+      cancelled = true;
+    };
+  }, [application.id, lastEmail?.id, lastEmail?.status]);
+
+  if (!emails?.length) return null;
+
+  return (
+    <Field label="Emails">
+      <ul className="flex flex-col divide-y divide-white/[0.05] rounded-xl border border-white/[0.07]">
+        {emails.map((email) => {
+          const status = EMAIL_STATUS_META[email.status];
+          const expanded = openId === email.id;
+          return (
+            <li key={email.id}>
+              <button
+                type="button"
+                onClick={() => setOpenId(expanded ? null : email.id)}
+                className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-white/[0.03]"
+              >
+                <Icon
+                  name={expanded ? 'expand_less' : 'expand_more'}
+                  className="text-[18px] text-neutral-500"
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm text-neutral-100">
+                    {email.subject}
+                  </span>
+                  <span className="block text-[11px] text-neutral-500">
+                    {nameOf(email.sentById)} · {timeAgo(email.sentAt)}
+                  </span>
+                </span>
+                <span title={email.error || status?.hint}>
+                  <Pill tone={status?.tone} icon={status?.icon}>
+                    {status?.label ?? email.status}
+                  </Pill>
+                </span>
+              </button>
+              {expanded && (
+                <div className="flex flex-col gap-2 px-3 pb-3 pl-10">
+                  {email.error && (
+                    <p className="text-xs text-rose-300">{email.error}</p>
+                  )}
+                  <p className="text-[11px] text-neutral-500">
+                    From {email.from} to {email.to}
+                    {email.replyTo ? `, replies to ${email.replyTo}` : ''}
+                  </p>
+                  <p className="whitespace-pre-wrap break-words rounded-lg bg-white/[0.03] p-3 text-xs leading-relaxed text-neutral-300">
+                    {email.text}
+                  </p>
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </Field>
+  );
+};
+
 export const ApplicantDetail = ({
   application,
   fields,
@@ -77,6 +163,7 @@ export const ApplicantDetail = ({
   canEdit,
   onClose,
   onUpdated,
+  onEmail,
 }: {
   application: ApplicationRow | null;
   fields: FormField[];
@@ -84,6 +171,8 @@ export const ApplicantDetail = ({
   canEdit: boolean;
   onClose: () => void;
   onUpdated: (application: ApplicationRow) => void;
+  /** Opens the composer for this applicant. */
+  onEmail?: () => void;
 }) => {
   const [notes, setNotes] = useState('');
   const [savingNotes, setSavingNotes] = useState(false);
@@ -151,6 +240,16 @@ export const ApplicantDetail = ({
             </a>
             <CopyButton value={application.email} label="Copy email" />
           </span>
+          {canEdit && onEmail && (
+            <AdminButton
+              size="sm"
+              icon="mail"
+              className="ml-auto"
+              onClick={onEmail}
+            >
+              Email
+            </AdminButton>
+          )}
         </div>
 
         {canEdit && (
@@ -216,6 +315,8 @@ export const ApplicantDetail = ({
           )}
         </Field>
 
+        <EmailLog application={application} nameOf={nameOf} />
+
         <Field label="History">
           <ol className="flex flex-col gap-2">
             {[...(application.history ?? [])].reverse().map((event, i) => (
@@ -226,7 +327,11 @@ export const ApplicantDetail = ({
                 <span
                   className={cn(
                     'size-2 shrink-0 rounded-full',
-                    event.type === 'SUBMITTED' ? 'bg-sky-400' : 'bg-white/30',
+                    event.type === 'SUBMITTED'
+                      ? 'bg-sky-400'
+                      : event.type === 'EMAIL'
+                        ? 'bg-violet-400'
+                        : 'bg-white/30',
                   )}
                 />
                 <span className="flex-1">
@@ -234,7 +339,9 @@ export const ApplicantDetail = ({
                     ? 'Applied'
                     : event.type === 'STAGE_CHANGED' && event.to
                       ? `${nameOf(event.byUserId)} moved them to ${STAGE_META[event.to]?.label ?? event.to}`
-                      : event.text}
+                      : event.type === 'EMAIL'
+                        ? `${nameOf(event.byUserId)} emailed “${event.text}”`
+                        : event.text}
                 </span>
                 <span className="text-neutral-600">{timeAgo(event.at)}</span>
               </li>

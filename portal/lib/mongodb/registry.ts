@@ -78,6 +78,8 @@ export const modelMetaMap = defineModelRegistry({
   userBadge: { collection: 'UserBadge' },
   jobOpening: { collection: 'JobOpening' },
   jobApplication: { collection: 'JobApplication' },
+  hiringEmailTemplate: { collection: 'HiringEmailTemplate' },
+  hiringEmail: { collection: 'HiringEmail' },
 });
 
 export type ModelName = keyof typeof modelMetaMap;

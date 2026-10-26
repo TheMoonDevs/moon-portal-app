@@ -83,12 +83,40 @@ export type ApplicationAnswer =
   | ApplicationFile;
 
 export interface ApplicationEvent {
-  type: 'SUBMITTED' | 'STAGE_CHANGED' | 'NOTE';
+  type: 'SUBMITTED' | 'STAGE_CHANGED' | 'NOTE' | 'EMAIL';
   at: string;
   byUserId?: Nullable<string>;
   from?: Nullable<APPLICATION_STAGE>;
   to?: Nullable<APPLICATION_STAGE>;
+  /** The note, or the subject of an email. */
   text?: Nullable<string>;
+  /** EMAIL only: the HiringEmail record and the template it came from. */
+  emailId?: Nullable<string>;
+  templateId?: Nullable<string>;
+}
+
+/**
+ * Where an email to a candidate got to. Resend reports the later states
+ * through its webhook, when one is set up.
+ */
+export enum HIRING_EMAIL_STATUS {
+  SENT = 'SENT',
+  DELAYED = 'DELAYED',
+  DELIVERED = 'DELIVERED',
+  OPENED = 'OPENED',
+  CLICKED = 'CLICKED',
+  BOUNCED = 'BOUNCED',
+  COMPLAINED = 'COMPLAINED',
+  FAILED = 'FAILED',
+}
+
+/** The latest email to a candidate, kept on the application for the board. */
+export interface ApplicationLastEmail {
+  id: string;
+  subject: string;
+  status: HIRING_EMAIL_STATUS;
+  at: string;
+  templateId?: Nullable<string>;
 }
 
 export type JobOpening = Loose<
@@ -122,8 +150,52 @@ export type JobApplication = Loose<
     notes?: Nullable<string>;
     history: ApplicationEvent[];
     submittedAt: DateValue;
+    lastEmail?: Nullable<ApplicationLastEmail>;
+  }
+>;
+
+/** A reusable email a company writes for its candidates. */
+export type HiringEmailTemplate = Loose<
+  BaseModel & {
+    companyId: string;
+    name: string;
+    subject: string;
+    /** Plain text with {{placeholders}}, see lib/hiring/emailTemplates. */
+    body: string;
+    /** Stage to suggest moving candidates to after sending. */
+    moveTo?: Nullable<APPLICATION_STAGE>;
+    createdById: string;
+    updatedById?: Nullable<string>;
+  }
+>;
+
+/** One email sent to one candidate. */
+export type HiringEmail = Loose<
+  BaseModel & {
+    companyId: string;
+    openingId: string;
+    applicationId: string;
+    /** Shared by every email sent in one go; also stops a double send. */
+    sendId: string;
+    to: string;
+    from: string;
+    replyTo?: Nullable<string>;
+    subject: string;
+    /** The text as sent, with placeholders filled in. */
+    text: string;
+    templateId?: Nullable<string>;
+    status: HIRING_EMAIL_STATUS;
+    /** Resend's id for the email, used to match webhook events. */
+    resendId?: Nullable<string>;
+    error?: Nullable<string>;
+    sentById: string;
+    sentAt: DateValue;
+    events?: Array<{ type: string; at: string }>;
   }
 >;
 
 export const jobOpeningSchemas = createCrudSchemas<JobOpening>();
 export const jobApplicationSchemas = createCrudSchemas<JobApplication>();
+export const hiringEmailTemplateSchemas =
+  createCrudSchemas<HiringEmailTemplate>();
+export const hiringEmailSchemas = createCrudSchemas<HiringEmail>();

@@ -31,9 +31,11 @@ import {
 } from '../shared/AdminUI';
 import { CompanyPicker, errorText, NeedsCompany } from '../Workspace/shared';
 import { ApplicantDetail } from './ApplicantDetail';
+import { EmailComposer } from './EmailComposer';
 import {
   type ApplicationRow,
   applyUrl,
+  EMAIL_STATUS_META,
   OPENING_STATUS_META,
   type OpeningRow,
   STAGE_META,
@@ -134,12 +136,34 @@ const ApplicantCard = ({
       <p className="truncate text-[11px] text-neutral-500">
         {application.email}
       </p>
-      <p className="mt-1 text-[10px] text-neutral-600">
+      <p className="mt-1 flex items-center gap-2 text-[10px] text-neutral-600">
         {timeAgo(application.submittedAt)}
+        {application.lastEmail && <EmailMark email={application.lastEmail} />}
       </p>
     </button>
   </div>
 );
+
+/** A small mark for the latest email, red when it didn't arrive. */
+const EmailMark = ({
+  email,
+}: {
+  email: NonNullable<ApplicationRow['lastEmail']>;
+}) => {
+  const meta = EMAIL_STATUS_META[email.status];
+  return (
+    <span
+      title={`Emailed “${email.subject}” ${timeAgo(email.at)}: ${meta?.label ?? email.status}`}
+      className={cn(
+        'inline-flex items-center gap-0.5',
+        meta?.tone === 'danger' ? 'text-rose-400' : 'text-neutral-500',
+      )}
+    >
+      <Icon name={meta?.icon ?? 'mail'} className="text-[12px]" />
+      {meta?.tone === 'danger' ? meta.label : 'Emailed'}
+    </span>
+  );
+};
 
 export const AdminHiring = ({
   users,
@@ -175,6 +199,7 @@ export const AdminHiring = ({
   const [editing, setEditing] = useState<OpeningRow | null>(null);
   const [archiving, setArchiving] = useState<OpeningRow | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
+  const [composeIds, setComposeIds] = useState<string[] | null>(null);
 
   const knownIds = useRef<Set<string> | null>(null);
   const currentOpeningId = useRef<string | null>(null);
@@ -374,6 +399,14 @@ export const AdminHiring = ({
     for (const a of searched) counts[a.stage] = (counts[a.stage] ?? 0) + 1;
     return counts;
   }, [searched]);
+
+  const companyName =
+    hiringCompanies.find((c) => c.company.id === companyId)?.company.name ?? '';
+  const composeRecipients = useMemo(
+    () =>
+      composeIds ? applications.filter((a) => composeIds.includes(a.id)) : [],
+    [applications, composeIds],
+  );
 
   const listFields = (opening?.fields ?? [])
     .filter((f) => f.type !== FORM_FIELD_TYPE.FILE)
@@ -610,6 +643,14 @@ export const AdminHiring = ({
                   >
                     Move
                   </AdminButton>
+                  <span className="h-5 w-px bg-white/10" />
+                  <AdminButton
+                    size="sm"
+                    icon="mail"
+                    onClick={() => setComposeIds(Array.from(selected))}
+                  >
+                    Email
+                  </AdminButton>
                   <AdminButton
                     size="sm"
                     tone="ghost"
@@ -657,6 +698,28 @@ export const AdminHiring = ({
                         className="flex w-60 shrink-0 flex-col gap-2 rounded-xl border border-white/[0.07] bg-white/[0.02] p-2"
                       >
                         <div className="flex items-center gap-2 p-1">
+                          {canEdit && rows.length > 0 ? (
+                            <button
+                              type="button"
+                              aria-label={`Select everyone in ${meta.label}`}
+                              title={`Select everyone in ${meta.label}`}
+                              onClick={() =>
+                                setSelected((current) => {
+                                  const next = new Set(current);
+                                  const all = rows.every((a) => next.has(a.id));
+                                  rows.forEach((a) =>
+                                    all ? next.delete(a.id) : next.add(a.id),
+                                  );
+                                  return next;
+                                })
+                              }
+                            >
+                              <CheckBox
+                                size="sm"
+                                checked={rows.every((a) => selected.has(a.id))}
+                              />
+                            </button>
+                          ) : null}
                           <span
                             className="size-2 rounded-full"
                             style={{ backgroundColor: meta.color }}
@@ -825,7 +888,23 @@ export const AdminHiring = ({
         canEdit={canEdit}
         onClose={() => setDetailId(null)}
         onUpdated={(updated) => replaceApplications([updated])}
+        onEmail={detail ? () => setComposeIds([detail.id]) : undefined}
       />
+      {companyId && opening && (
+        <EmailComposer
+          open={!!composeIds && composeRecipients.length > 0}
+          onOpenChange={(open) => !open && setComposeIds(null)}
+          companyId={companyId}
+          companyName={companyName}
+          role={opening.title}
+          recipients={composeRecipients}
+          canEditTemplates={canEdit}
+          onSent={(result) => {
+            replaceApplications(result.applications);
+            if (!result.failed) setSelected(new Set());
+          }}
+        />
+      )}
       <ConfirmDialog
         open={!!archiving}
         onOpenChange={(open) => !open && setArchiving(null)}

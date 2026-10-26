@@ -81,7 +81,7 @@ export const PERMISSION_RESOURCES: ResourceDefinition[] = [
     key: 'hiring',
     label: 'Hiring',
     description:
-      'Job openings, their application forms and the candidates who applied. Only people with `hiring:read` see the hiring tab.',
+      'Job openings, their application forms and the candidates who applied. Only people with `hiring:read` see the hiring tab; `edit` also lets them email candidates.',
     actions: ['read', 'create', 'edit', 'delete'],
     scope: 'company',
   },
