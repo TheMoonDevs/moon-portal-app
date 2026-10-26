@@ -1,3 +1,5 @@
+import type { Look } from '@/lib/avatar/look';
+
 import {
   type BaseModel,
   createCrudSchemas,
@@ -39,6 +41,10 @@ export type User = Loose<
     avatar?: Nullable<string>;
     positionTitle?: Nullable<string>;
     timezone?: Nullable<string>;
+    /** Their character in the World (see `lib/avatar/look.ts`). */
+    look?: Nullable<Partial<Look>>;
+    /** When they last saved a look; the next change waits (see the lock). */
+    lookSetAt?: Nullable<Date | string>;
     status: USERSTATUS;
     /** Full access to everything (the `*` permission). */
     isAdmin?: boolean;

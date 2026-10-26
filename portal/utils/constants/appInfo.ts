@@ -7,6 +7,7 @@ export enum APP_ROUTES {
   notifications = '/notifications',
   settings = '/settings',
   userWorklogs = '/user/worklogs',
+  world = '/world',
   userWorklogSummary = '/user/worklogs/summary',
 }
 

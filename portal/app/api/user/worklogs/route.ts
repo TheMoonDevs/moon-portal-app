@@ -112,9 +112,15 @@ export async function PUT(request: Request) {
   if (denied) return denied;
 
   try {
-    // Links are kept up to date by /api/user/worklogs/links, never here, so an
-    // autosave with an older copy cannot undo them.
-    const { id, links: _links, ...rest } = await request.json();
+    // Links (kept by /api/user/worklogs/links) and the guidance count (kept
+    // by the MCP server) are never written here, so an autosave with an older
+    // copy cannot undo them.
+    const {
+      id,
+      links: _links,
+      guidance: _guidance,
+      ...rest
+    } = await request.json();
     const { userId, logType, date } = rest ?? {};
 
     // People write their own worklogs only.

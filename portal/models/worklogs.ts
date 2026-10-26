@@ -36,6 +36,8 @@ export type WorkLogs = Loose<
     works: JsonArray;
     /** One entry per line, kept in step with `works` by the linker. */
     links?: WorklogLink[];
+    /** Times the person answered their assistant when it was waiting on them. */
+    guidance?: number;
   }
 >;
 
