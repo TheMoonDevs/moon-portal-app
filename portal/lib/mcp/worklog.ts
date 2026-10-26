@@ -161,6 +161,9 @@ export async function logPoints(
     works.find((w) => w?.link_id === CLAUDE_SECTION_ID) ?? emptySection();
 
   const lines = splitLines(section.content ?? '');
+  // Each point that was waiting on the person and has moved on is a time
+  // they guided their assistant.
+  let guided = 0;
   const results: {
     text: string;
     status: PointStatus;
@@ -170,6 +173,12 @@ export async function logPoints(
   for (const point of points) {
     const key = lineKey(point.text);
     const at = lines.findIndex((l) => lineKey(l) === key);
+    if (
+      at >= 0 &&
+      statusOf(lines[at]) === 'waiting' &&
+      point.status !== 'waiting'
+    )
+      guided += 1;
     // A personal point stays personal when its status moves on.
     const personal =
       !!point.personal || (at >= 0 && PRIVATE_LINE.test(lines[at]));
@@ -209,13 +218,18 @@ export async function logPoints(
   const saved: WorkLogs = existing
     ? await db.workLogs.update({
         where: { id: existing.id },
-        data: { works: nextWorks, updatedAt: now },
+        data: {
+          works: nextWorks,
+          guidance: (existing.guidance ?? 0) + guided,
+          updatedAt: now,
+        },
       })
     : await db.workLogs.create({
         data: {
           ...where,
           title: dayTitle(date),
           works: nextWorks,
+          guidance: 0,
           createdAt: now,
           updatedAt: now,
         },

@@ -12,6 +12,18 @@ import {
 } from '@/lib/permissions/server';
 import { isSuperAdminEmail } from '@/lib/permissions/superAdmin';
 import {
+  checkUsername,
+  ensureUserAccounts,
+  signInCodeTaken,
+  suggestUsername,
+  USERNAME_TAKEN,
+} from '@/lib/users/server';
+import {
+  isValidSignInCode,
+  normalizeSignInCode,
+  normalizeUsername,
+} from '@/lib/users/username';
+import {
   ADMIN_EMAIL,
   passcodeEmailTemplate,
   POST_EMAIL_API,
@@ -21,7 +33,13 @@ const fail = (status: number, error: string) =>
   NextResponse.json({ status: 'fail', error }, { status });
 
 /** Fields anyone may change on their own record. */
-const SELF_EDITABLE = ['name', 'avatar', 'timezone', 'positionTitle'];
+const SELF_EDITABLE = [
+  'name',
+  'avatar',
+  'timezone',
+  'positionTitle',
+  'username',
+];
 
 /** Fields a user editor (`users:edit`) may change on anyone's record. */
 const EDITOR_EDITABLE = [
@@ -29,8 +47,7 @@ const EDITOR_EDITABLE = [
   'email',
   'linkedEmails',
   'status',
-  'username',
-  'password',
+  'code',
 ];
 
 const pickFields = (body: Record<string, unknown>, keys: string[]) =>
@@ -49,17 +66,50 @@ const normalizeEmails = (value: unknown): string[] =>
       )
     : [];
 
-/** The sign-in code is only shown to people who can edit users. */
+/**
+ * The sign-in code is only shown to the person themselves and to people who
+ * can edit users. The pre-username leftovers are never sent.
+ */
 const withoutSecrets = (
   user: Record<string, any>,
   actor: SessionUser | null,
 ) => {
+  const {
+    password: _password,
+    legacyUsername: _legacyUsername,
+    code,
+    ...rest
+  } = user;
   if (actor && (isAllowed(actor, 'users:edit') || actor.id === user.id)) {
-    return user;
+    return { ...rest, code };
   }
-  const { password: _password, ...rest } = user;
   return rest;
 };
+
+/**
+ * Validate and normalize `username` and `code` in an incoming change. Returns
+ * an error response when one is invalid or taken by someone else.
+ */
+async function identityChanges(
+  data: Record<string, unknown>,
+  userId?: string,
+): Promise<NextResponse | null> {
+  if ('username' in data) {
+    data.username = normalizeUsername(data.username);
+    const problem = await checkUsername(String(data.username), userId);
+    if (problem) return fail(problem === USERNAME_TAKEN ? 409 : 400, problem);
+  }
+  if ('code' in data) {
+    data.code = normalizeSignInCode(data.code);
+    if (!isValidSignInCode(String(data.code))) {
+      return fail(400, 'The sign-in code must be six letters or numbers.');
+    }
+    if (await signInCodeTaken(String(data.code), userId)) {
+      return fail(409, 'That sign-in code is already taken.');
+    }
+  }
+  return null;
+}
 
 const sameKeys = (a: unknown, b: unknown) => {
   const x = Array.isArray(a) ? [...a].sort() : [];
@@ -139,15 +189,22 @@ export async function GET(request: NextRequest) {
   if (response) return response;
 
   const id = request.nextUrl.searchParams.get('id');
+  const username = normalizeUsername(
+    request.nextUrl.searchParams.get('username'),
+  );
   const status = request.nextUrl.searchParams.get('status');
 
   try {
+    await ensureUserAccounts();
     const users = await db.user.findMany({
       where: {
         ...(id && { id }),
+        ...(username && { username }),
         // A specific user is returned whatever their status; `status=ALL`
         // lists everyone.
-        ...(!id && status !== 'ALL' && { status: status || USERSTATUS.ACTIVE }),
+        ...(!id &&
+          !username &&
+          status !== 'ALL' && { status: status || USERSTATUS.ACTIVE }),
       },
       orderBy: { name: 'asc' },
     });
@@ -173,19 +230,23 @@ export async function POST(request: Request) {
   const data: Record<string, unknown> = pickFields(body, EDITOR_EDITABLE);
   if (!data.name || !data.email)
     return fail(400, 'Name and email are required.');
-  if (!data.username || !data.password) {
+  if (!data.code) {
     return fail(400, 'A six-character sign-in code is required.');
   }
-  data.username = String(data.username).toUpperCase();
-  data.password = String(data.password).toUpperCase();
   data.email = String(data.email).trim().toLowerCase();
   data.linkedEmails = normalizeEmails(data.linkedEmails);
   data.status = data.status || USERSTATUS.ACTIVE;
 
-  const clash = await db.user.findFirst({
-    where: { username: data.username, password: data.password },
-  });
-  if (clash) return fail(409, 'That sign-in code is already taken.');
+  await ensureUserAccounts();
+  // No username given: pick a free one from their name or email.
+  if (!normalizeUsername(data.username)) {
+    data.username = await suggestUsername(
+      String(data.name),
+      String(data.email),
+    );
+  }
+  const invalid = await identityChanges(data);
+  if (invalid) return invalid;
 
   const access = await accessChanges(actor, body);
   if (access.error) return access.error;
@@ -203,10 +264,7 @@ export async function POST(request: Request) {
         to: data.email,
         sender: ADMIN_EMAIL,
         subject: 'Your Portal sign-in code',
-        body: passcodeEmailTemplate(
-          String(data.name),
-          `${data.username}${data.password}`,
-        ),
+        body: passcodeEmailTemplate(String(data.name), String(data.code)),
         displayName: 'Portal',
       }),
     });
@@ -215,11 +273,15 @@ export async function POST(request: Request) {
     console.error('Failed to send sign-in code email', e);
   }
 
-  return NextResponse.json({ status: 'success', data: { user } });
+  return NextResponse.json({
+    status: 'success',
+    data: { user: withoutSecrets(user, actor) },
+  });
 }
 
 /**
- * Update a user. People can edit their own name, avatar, timezone and title;
+ * Update a user. People can edit their own name, username, avatar, timezone
+ * and title;
  * `users:edit` covers everyone else's details; access changes need
  * `permissions:grant`.
  */
@@ -247,7 +309,10 @@ export async function PUT(request: Request) {
     new Date(body.updatedAt) < new Date(existing.updatedAt)
   ) {
     return NextResponse.json(
-      { error: 'User Data is outdated', latestUser: existing },
+      {
+        error: 'User Data is outdated',
+        latestUser: withoutSecrets(existing, actor),
+      },
       { status: 409 },
     );
   }
@@ -260,11 +325,18 @@ export async function PUT(request: Request) {
     data.linkedEmails = normalizeEmails(data.linkedEmails);
   if (typeof data.email === 'string')
     data.email = data.email.trim().toLowerCase();
-  if (typeof data.username === 'string')
-    data.username = data.username.toUpperCase();
-  if (typeof data.password === 'string')
-    data.password = data.password.toUpperCase();
   if ('status' in data && isSelf) delete data.status;
+  // Only validate what actually changes, so saving an old record never fails
+  // on a field nobody touched.
+  if (
+    'username' in data &&
+    normalizeUsername(data.username) === existing.username
+  )
+    delete data.username;
+  if ('code' in data && normalizeSignInCode(data.code) === existing.code)
+    delete data.code;
+  const invalid = await identityChanges(data, id);
+  if (invalid) return invalid;
 
   if (isSelf && ('roleKeys' in body || 'isAdmin' in body)) {
     // Nobody changes their own access; drop it rather than fail the save.
@@ -278,7 +350,10 @@ export async function PUT(request: Request) {
     where: { id },
     data: { ...data, ...access.data, updatedAt: new Date() },
   });
-  return NextResponse.json({ status: 'success', data: { user } });
+  return NextResponse.json({
+    status: 'success',
+    data: { user: withoutSecrets(user, actor) },
+  });
 }
 
 /**

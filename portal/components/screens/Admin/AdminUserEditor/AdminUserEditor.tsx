@@ -34,7 +34,7 @@ const initialUserState: User = {
   id: '',
   name: '',
   username: '',
-  password: '',
+  code: '',
   email: '',
   linkedEmails: [],
   avatar: '',

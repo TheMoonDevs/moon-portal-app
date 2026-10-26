@@ -16,10 +16,6 @@ async function resolveViewerUserId(): Promise<string | null> {
   if (sessionUser.id) {
     const byId = await db.user.findFirst({ where: { id: sessionUser.id } });
     if (byId?.id) return byId.id;
-    const byUsername = await db.user.findFirst({
-      where: { username: sessionUser.id },
-    });
-    if (byUsername?.id) return byUsername.id;
   }
   if (sessionUser.email) {
     const byEmail = await db.user.findFirst({
