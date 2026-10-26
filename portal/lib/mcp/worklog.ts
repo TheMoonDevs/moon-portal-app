@@ -146,11 +146,20 @@ export async function logPoints(
     works.find((w) => w?.link_id === CLAUDE_SECTION_ID) ?? emptySection();
 
   const lines = splitLines(section.content ?? '');
+  // Each point that was waiting on the person and has moved on is a time
+  // they guided their assistant.
+  let guided = 0;
   const results: { text: string; status: PointStatus; updated: boolean }[] = [];
   for (const point of points) {
     const line = formatPoint(point.text, point.status);
     const key = lineKey(line);
     const at = lines.findIndex((l) => lineKey(l) === key);
+    if (
+      at >= 0 &&
+      statusOf(lines[at]) === 'waiting' &&
+      point.status !== 'waiting'
+    )
+      guided += 1;
     if (at >= 0) lines[at] = line;
     else lines.push(line);
     results.push({
@@ -184,13 +193,18 @@ export async function logPoints(
   const saved: WorkLogs = existing
     ? await db.workLogs.update({
         where: { id: existing.id },
-        data: { works: nextWorks, updatedAt: now },
+        data: {
+          works: nextWorks,
+          guidance: (existing.guidance ?? 0) + guided,
+          updatedAt: now,
+        },
       })
     : await db.workLogs.create({
         data: {
           ...where,
           title: dayTitle(date),
           works: nextWorks,
+          guidance: 0,
           createdAt: now,
           updatedAt: now,
         },
