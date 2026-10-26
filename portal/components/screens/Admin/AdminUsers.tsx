@@ -176,11 +176,11 @@ export const AdminUsers = ({
     <span className="flex items-center gap-1 text-xs text-neutral-500">
       <span className="truncate font-mono">
         @{user.username}
-        {showCredentials && user.password ? ` · ${user.password}` : ''}
+        {showCredentials && user.code ? ` · ${user.code}` : ''}
       </span>
       <CopyButton
-        value={`${user.username} / ${user.password ?? ''}`}
-        label="Copy credentials"
+        value={user.code ?? ''}
+        label="Copy sign-in code"
         className="size-6 text-[14px]"
       />
     </span>
@@ -310,7 +310,7 @@ export const AdminUsers = ({
                 icon={showCredentials ? 'visibility_off' : 'visibility'}
                 onClick={() => setShowCredentials((value) => !value)}
               >
-                {showCredentials ? 'Hide passwords' : 'Show passwords'}
+                {showCredentials ? 'Hide codes' : 'Show codes'}
               </AdminButton>
               {onRefresh && (
                 <AdminButton
@@ -470,7 +470,7 @@ export const AdminUsers = ({
             {showCredentials && (
               <span className="flex items-center gap-1 text-amber-400/80">
                 <Icon name="warning" className="text-[14px]" />
-                Passwords are visible on screen
+                Sign-in codes are visible on screen
               </span>
             )}
           </div>

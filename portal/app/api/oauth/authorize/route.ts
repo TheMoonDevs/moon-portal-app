@@ -32,7 +32,10 @@ export async function GET(request: Request) {
   if (!client) return fail(400, 'This connection link is not valid.');
   return NextResponse.json({
     status: 'success',
-    data: { client: { name: client.name }, user: { name: user.username } },
+    data: {
+      client: { name: client.name },
+      user: { name: user.name || `@${user.username}` },
+    },
   });
 }
 

@@ -9,10 +9,12 @@ import { toast, Toaster } from 'sonner';
 
 import LogoutConfirmationDialog from '@/components/global/LogoutConfirmationDialog';
 import PushSubscriptionToggleButton from '@/components/global/PushSubscriptionToggleButton';
+import { normalizeUsername } from '@/lib/users/username';
 import { cn } from '@/lib/utils';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
 import { uploadAvatar } from '@/utils/helpers/uploads';
 import { useUser } from '@/utils/hooks/useUser';
+import { useUsernameCheck } from '@/utils/hooks/useUsernameCheck';
 import { useWorkspace } from '@/utils/hooks/useWorkspace';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
@@ -89,6 +91,7 @@ const ProfileCard = () => {
   const { user, refetchUser } = useUser();
   const [form, setForm] = useState({
     name: '',
+    username: '',
     positionTitle: '',
     avatar: '',
     timezone: '',
@@ -117,6 +120,7 @@ const ProfileCard = () => {
     if (!user) return;
     setForm({
       name: user.name ?? '',
+      username: user.username ?? '',
       positionTitle: user.positionTitle ?? '',
       avatar: user.avatar ?? '',
       timezone:
@@ -125,9 +129,20 @@ const ProfileCard = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
+  const usernameCheck = useUsernameCheck(
+    form.username,
+    user?.username,
+    user?.id,
+  );
+  const usernameBlocked =
+    usernameCheck.state === 'invalid' ||
+    usernameCheck.state === 'taken' ||
+    usernameCheck.state === 'checking';
+
   const dirty =
     !!user &&
     (form.name !== (user.name ?? '') ||
+      normalizeUsername(form.username) !== (user.username ?? '') ||
       form.positionTitle !== (user.positionTitle ?? '') ||
       form.avatar !== (user.avatar ?? '') ||
       form.timezone !== (user.timezone ?? ''));
@@ -136,7 +151,11 @@ const ProfileCard = () => {
     if (!user) return;
     setSaving(true);
     try {
-      await PortalSdk.putData('/api/user', { id: user.id, ...form });
+      await PortalSdk.putData('/api/user', {
+        id: user.id,
+        ...form,
+        username: normalizeUsername(form.username),
+      });
       await refetchUser();
       toast.success('Profile saved');
     } catch (err: any) {
@@ -190,6 +209,44 @@ const ProfileCard = () => {
             />
           </label>
           <label>
+            <Label>Username</Label>
+            <div className="relative">
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-neutral-400">
+                @
+              </span>
+              <input
+                className={cn(
+                  inputClass,
+                  'pl-7',
+                  (usernameCheck.state === 'invalid' ||
+                    usernameCheck.state === 'taken') &&
+                    'border-red-400 focus:border-red-500',
+                )}
+                value={form.username}
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                maxLength={21}
+                onChange={(e) =>
+                  setForm({ ...form, username: e.target.value.toLowerCase() })
+                }
+              />
+            </div>
+            <span
+              className={cn(
+                'mt-1 block text-xs',
+                usernameCheck.message ? 'text-red-600' : 'text-neutral-500',
+              )}
+            >
+              {usernameCheck.message ??
+                (usernameCheck.state === 'checking'
+                  ? 'Checking…'
+                  : usernameCheck.state === 'available'
+                    ? 'Available.'
+                    : 'How people find and mention you. Not used to sign in.')}
+            </span>
+          </label>
+          <label>
             <Label>Title</Label>
             <input
               className={inputClass}
@@ -216,7 +273,7 @@ const ProfileCard = () => {
         <div className="flex justify-end">
           <button
             onClick={save}
-            disabled={!dirty || saving}
+            disabled={!dirty || saving || usernameBlocked}
             className="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-neutral-700 disabled:opacity-40"
           >
             {saving ? 'Saving…' : 'Save'}
@@ -230,7 +287,7 @@ const ProfileCard = () => {
 const SignInCard = () => {
   const { user } = useUser();
   const [shown, setShown] = useState(false);
-  const code = `${user?.username ?? ''}${user?.password ?? ''}`;
+  const code = user?.code ?? '';
 
   return (
     <Card

@@ -6,6 +6,7 @@ import TimezoneSelect from 'react-timezone-select';
 import { toast } from 'sonner';
 
 import { uploadAvatar } from '@/utils/helpers/uploads';
+import { useUsernameCheck } from '@/utils/hooks/useUsernameCheck';
 
 import {
   Field,
@@ -145,7 +146,7 @@ export const AdminUserBasicData = ({
     }
   };
 
-  const passcode = `${user.username || ''}${user.password || ''}`;
+  const usernameCheck = useUsernameCheck(user.username || '', null, user.id);
 
   return (
     <div className="flex flex-col gap-4">
@@ -162,6 +163,34 @@ export const AdminUserBasicData = ({
               value={user.name || ''}
               onChange={updateField}
               placeholder="Jane Doe"
+            />
+          </Field>
+
+          <Field
+            label="Username"
+            htmlFor="username"
+            error={usernameCheck.message}
+            hint={
+              usernameCheck.state === 'checking'
+                ? 'Checking…'
+                : usernameCheck.state === 'available'
+                  ? 'Available.'
+                  : user.id
+                    ? 'Their public handle. They can change it in Settings.'
+                    : 'Leave blank to make one from their name.'
+            }
+          >
+            <TextInput
+              id="username"
+              value={user.username || ''}
+              autoComplete="off"
+              spellCheck={false}
+              maxLength={21}
+              onChange={(event) => {
+                const username = event.target.value.toLowerCase();
+                setUser((previous) => ({ ...previous, username }));
+              }}
+              placeholder="jane"
             />
           </Field>
 
@@ -256,7 +285,7 @@ export const AdminUserBasicData = ({
           <Field
             label="Sign-in code"
             htmlFor="passcode"
-            hint="Six letters or numbers. It is emailed to them when you create the account."
+            hint="Six letters or numbers, private to them. It is emailed to them when you create the account."
           >
             <div className="flex gap-2">
               <TextInput
@@ -264,14 +293,10 @@ export const AdminUserBasicData = ({
                 type={showPasscode ? 'text' : 'password'}
                 autoComplete="off"
                 maxLength={6}
-                value={passcode}
+                value={user.code || ''}
                 onChange={(event) => {
                   const code = event.target.value.toUpperCase();
-                  setUser((previous) => ({
-                    ...previous,
-                    username: code.substring(0, 3),
-                    password: code.substring(3),
-                  }));
+                  setUser((previous) => ({ ...previous, code }));
                 }}
               />
               <button
