@@ -163,6 +163,13 @@ export function suggestTargets(
     if (first >= 0) targets[first] = 'name';
     if (first >= 0 && last >= 0) targets[last] = 'name';
   }
+  if (!targets.includes('name')) {
+    // Longer wordings, like "Your Full Legal Name".
+    const index = keys.findIndex(
+      (key, i) => targets[i] === 'skip' && /fullname|legalname/.test(key),
+    );
+    if (index >= 0) targets[index] = 'name';
+  }
   claim('submittedAt', DATE_HEADERS);
   claim('stage', STAGE_HEADERS);
   headers.forEach((header, i) => {
