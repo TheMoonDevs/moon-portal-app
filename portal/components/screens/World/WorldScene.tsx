@@ -109,6 +109,120 @@ const botTagHtml = (bot: WorldBot, hex: string) => {
   return `<div class="flex items-center gap-1 whitespace-nowrap">${badge(bot.ownerAvatar ?? null, bot.ownerName, hex, 18, true, true)}<span>${botEmoji(bot)}</span><span class="font-semibold">${escape(bot.ownerName)}</span><span class="text-neutral-500">${bot.progress.done}/${bot.progress.total}</span></div><div class="mt-1 h-1 w-full overflow-hidden rounded-full bg-neutral-200"><div class="h-full rounded-full" style="width:${pct}%;background:${BOT_STATE_COLOR[bot.state]}"></div></div>`;
 };
 
+/**
+ * A bot's little life: it hops along the roads, types away at its
+ * building, now and then spins or looks around, jumps and waves when it
+ * needs its owner, dances when done, shakes its head when blocked and
+ * dozes when asleep. And it blinks.
+ */
+/** True when it has just reached the end of its road. */
+function act(b: BotEntity, t: number, dt: number) {
+  let arrived = false;
+  const { group: g, parts: P } = b;
+  const k = t + b.seed;
+  let y = 0.12 + Math.sin(k * 2.2) * 0.05;
+  let spin = 0;
+  let lean = 0;
+  let sway = 0;
+  let arms = [0, 0.15, 0, -0.15]; // left x, left z, right x, right z
+  let look = 0;
+  let nod = 0;
+  let tilt = 0;
+  let squint = 1;
+  let wiggle = Math.sin(k * 3) * 0.15;
+
+  if (b.path) {
+    // Racing along the roads in little hops, glowing blue.
+    b.travelled += dt * TRANSIT_SPEED;
+    const at = art.along(b.path, b.travelled);
+    g.position.set(at.x, 0, at.z);
+    turn(g, at.angle, dt * 12);
+    y = 0.15 + Math.abs(Math.sin(b.travelled * 0.9)) * 0.55;
+    lean = 0.28;
+    arms = [0.7, 0.2, 0.7, -0.2];
+    wiggle = Math.sin(k * 14) * 0.3;
+    arrived = b.travelled >= pathLength(b.path);
+  } else {
+    const dx = b.target.x - g.position.x;
+    const dz = b.target.z - g.position.z;
+    const dist = Math.hypot(dx, dz);
+    if (dist > 0.05) {
+      const step = Math.min(dist, dt * 3);
+      g.position.x += (dx / dist) * step;
+      g.position.z += (dz / dist) * step;
+    }
+    g.position.y = 0;
+    if (dist > 0.4) turn(g, Math.atan2(dx, dz), dt * 8);
+    else turn(g, b.face, dt * 4);
+
+    const state = b.bot.state;
+    if (state === 'working') {
+      // Busy at the building, with a hop and a spin now and then.
+      const phase = k % 7;
+      arms = [
+        -1.1 + Math.sin(k * 12) * 0.35,
+        0.15,
+        -1.1 + Math.sin(k * 12 + Math.PI) * 0.35,
+        -0.15,
+      ];
+      nod = Math.sin(k * 6) * 0.06;
+      if (phase < 0.7) {
+        y += Math.sin((phase / 0.7) * Math.PI) * 0.6;
+        spin = (phase / 0.7) * Math.PI * 2;
+        arms = [0, 1.2, 0, -1.2];
+      } else if (phase > 3 && phase < 4.6)
+        look = Math.sin((phase - 3) * 4) * 0.7;
+    } else if (state === 'waiting') {
+      // Jumping and waving: over here!
+      y = 0.12 + Math.abs(Math.sin(k * 5)) * 0.42;
+      arms = [
+        0,
+        2.6 + Math.sin(k * 10) * 0.3,
+        0,
+        -2.6 - Math.sin(k * 10 + 1) * 0.3,
+      ];
+      tilt = Math.sin(k * 2) * 0.15;
+      wiggle = Math.sin(k * 12) * 0.4;
+    } else if (state === 'done') {
+      // Happy: a little dance and a twirl.
+      squint = 0.4;
+      const phase = k % 4;
+      sway = Math.sin(k * 4) * 0.12;
+      arms = [0, 0.6 + Math.sin(k * 4) * 0.4, 0, -0.6 - Math.sin(k * 4) * 0.4];
+      if (phase < 0.8) {
+        spin = (phase / 0.8) * Math.PI * 2;
+        y += Math.sin((phase / 0.8) * Math.PI) * 0.5;
+        arms = [0, 2.5, 0, -2.5];
+      }
+    } else if (state === 'blocked') {
+      // Stuck: slumps, shakes its head, scratches it.
+      const phase = k % 5;
+      lean = 0.18;
+      squint = 0.75;
+      arms = [0.25, 0.1, 0.25, -0.1];
+      if (phase < 1.4) look = Math.sin(k * 9) * 0.35;
+      else if (phase < 2.6)
+        arms = [0.25, 0.1, 0, -2.3 + Math.sin(k * 14) * 0.2];
+    } else {
+      // Asleep: eyes shut, head on one side, breathing slowly.
+      y = 0.05 + Math.sin(k * 1.2) * 0.03;
+      tilt = 0.35;
+      squint = 0.1;
+      wiggle = 0.25;
+    }
+  }
+
+  if (squint > 0.2 && k % 3.7 < 0.12) squint = 0.1;
+  P.body.position.y = y;
+  P.body.rotation.set(lean, spin, sway);
+  P.head.rotation.set(nod, look, tilt);
+  P.arms[0].rotation.set(arms[0], 0, arms[1]);
+  P.arms[1].rotation.set(arms[2], 0, arms[3]);
+  P.antenna.rotation.z = wiggle;
+  for (const eye of P.eyes) eye.scale.y = 1.45 * squint;
+  return arrived;
+}
+
 const pathLength = (points: { x: number; z: number }[]) =>
   points.reduce(
     (n, p, i) =>
@@ -127,10 +241,11 @@ type BotEntity = {
   bot: WorldBot;
   group: THREE.Group;
   light: THREE.MeshStandardMaterial;
-  rotors: THREE.Object3D[];
+  parts: art.Bot;
   label: { obj: CSS2DObject; inner: HTMLDivElement };
-  /** Where it hovers once it gets there. */
+  /** Where it stands once it gets there, and which way it looks. */
   target: THREE.Vector3;
+  face: number;
   /** The roads it is travelling, while it travels. */
   path: { x: number; z: number }[] | null;
   travelled: number;
@@ -395,41 +510,7 @@ export const WorldScene = ({
           : Math.sin(t * 2 + p.phase) * 0.015;
       }
 
-      for (const b of Array.from(s.bots.values())) {
-        const g = b.group;
-        const spin = b.bot.state === 'asleep' ? 4 : 30;
-        for (const r of b.rotors) r.rotation.y += dt * spin;
-        if (b.path) {
-          // Racing along the roads, low and glowing blue.
-          b.travelled += dt * TRANSIT_SPEED;
-          const at = art.along(b.path, b.travelled);
-          g.position.x = at.x;
-          g.position.z = at.z;
-          g.position.y += (1.6 - g.position.y) * Math.min(1, dt * 6);
-          turn(g, at.angle, dt * 12);
-          g.rotation.z = 0;
-          if (b.travelled >= pathLength(b.path)) arrive(b);
-          continue;
-        }
-        // There: hover where it works, or by its owner.
-        tmp.copy(b.target);
-        if (b.bot.state === 'working') {
-          tmp.x += Math.cos(t * 0.8 + b.seed) * 1.2;
-          tmp.z += Math.sin(t * 0.8 + b.seed) * 1.2;
-        }
-        const speed = 1 - Math.pow(0.05, dt);
-        g.position.x += (tmp.x - g.position.x) * speed;
-        g.position.z += (tmp.z - g.position.z) * speed;
-        const bob =
-          b.bot.state === 'blocked'
-            ? Math.sin(t * 14 + b.seed) * 0.05
-            : Math.sin(t * 2.4 + b.seed) * 0.25;
-        g.position.y += (tmp.y + bob - g.position.y) * speed;
-        const dx = tmp.x - g.position.x;
-        const dz = tmp.z - g.position.z;
-        if (Math.hypot(dx, dz) > 0.2) turn(g, Math.atan2(dx, dz), dt * 6);
-        g.rotation.z = -dx * 0.04;
-      }
+      for (const b of Array.from(s.bots.values())) if (act(b, t, dt)) arrive(b);
 
       // More detail the closer you are.
       const view = VIEW / camera.zoom;
@@ -943,16 +1024,17 @@ export const WorldScene = ({
       return {
         x: site.x + Math.sin(site.angle) * (LOT / 2 + 1),
         z: site.z + Math.cos(site.angle) * (LOT / 2 + 1),
-        high: 4.5,
+        // Facing its building.
+        face: site.angle + Math.PI,
       };
     const project = bot.projectId ? L.projects.get(bot.projectId) : null;
     if (project) {
       // The middle of its first square, between the four buildings.
       const cell = project.cells[0];
-      return { x: cell.x, z: cell.z, high: 8 };
+      return { x: cell.x, z: cell.z, face: AZIMUTH };
     }
     const town = L.towns.get(bot.townId)!;
-    return { x: town.plaza.x - 6, z: town.plaza.z - 6, high: 6 };
+    return { x: town.plaza.x - 6, z: town.plaza.z - 6, face: AZIMUTH };
   };
 
   const ownerHome = (bot: WorldBot) =>
@@ -1009,45 +1091,55 @@ export const WorldScene = ({
       const work = workGround(bot);
       const owner = ownerHome(bot);
       let target: THREE.Vector3;
+      let face = work.face;
       if (goesToOwner(bot.state) && owner) {
         const i = slot(`owner:${bot.townId}:${bot.ownerId}`);
-        // Behind and above them, so they stay in sight.
-        const a = -AZIMUTH * 3 + (i % 2 ? 1 : -1) * Math.ceil(i / 2) * 0.8;
+        // Just in front of them, left and right as you look, turned to
+        // you so you see it jump and wave.
+        const side = i % 2 ? -1 : 1;
+        const d = 0.8 + Math.floor(i / 2) * 1.2;
         target = new THREE.Vector3(
-          owner.x + Math.cos(a) * 1.9,
-          4 + i * 0.3,
-          owner.z + Math.sin(a) * 1.9,
+          owner.x + 1.1 / Math.SQRT2 + (side * d) / Math.SQRT2,
+          0,
+          owner.z + 1.1 / Math.SQRT2 - (side * d) / Math.SQRT2,
         );
+        face = AZIMUTH;
       } else {
         const i = slot(`work:${bot.siteId ?? bot.projectId ?? bot.townId}`);
         const a = i * 1.3;
         target = new THREE.Vector3(
-          work.x + Math.cos(a) * i * 1.1,
-          work.high + i * 0.3,
-          work.z + Math.sin(a) * i * 1.1,
+          work.x + Math.cos(a) * i * 1.2,
+          0,
+          work.z + Math.sin(a) * i * 1.2,
         );
       }
 
       let entity = s.bots.get(bot.id);
       if (!entity) {
-        const drone = art.bot(accent);
+        const brand = brandOf(worldTown);
+        const drone = art.bot(
+          accent,
+          art.logoSign(worldTown.name, brand.logo, brand),
+        );
         drone.group.userData.pick = { type: 'bot', id: bot.id };
+        drone.group.scale.setScalar(1.25);
         const label = tag(
           'pointer-events-none min-w-[96px] rounded-xl bg-white/95 px-2 py-1 text-[11px] text-neutral-800 shadow-md',
         );
-        label.obj.position.set(0, 1.9, 0);
+        label.obj.position.set(0, 2.1, 0);
         drone.group.add(label.obj);
         // New bots set off from their owner, so you see them go to work.
         const start = owner ?? work;
-        drone.group.position.set(start.x, 2, start.z);
+        drone.group.position.set(start.x, 0, start.z);
         s.scene.add(drone.group);
         entity = {
           bot,
           group: drone.group,
           light: drone.light,
-          rotors: drone.rotors,
+          parts: drone,
           label,
           target,
+          face,
           path: null,
           travelled: 0,
           trail: null,
@@ -1059,6 +1151,7 @@ export const WorldScene = ({
         entity.target.distanceTo(target) > 2 || entity.bot.state !== bot.state;
       entity.bot = bot;
       entity.target = target;
+      entity.face = face;
       entity.label.inner.innerHTML = botTagHtml(bot, accent);
       if (!entity.path) {
         entity.light.color.set(BOT_STATE_COLOR[bot.state]);

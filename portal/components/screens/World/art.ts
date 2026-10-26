@@ -1104,74 +1104,127 @@ export function person(
 
 /* --------------------------------- bots --------------------------------- */
 
-export function bot(accent: string) {
-  const g = new THREE.Group();
-  const shell = mesh(
-    g,
-    sphere(0.62, 24),
-    clay('#ffffff', { rough: 0.5 }),
-    0,
-    0,
-    0,
+export type Bot = {
+  group: THREE.Group;
+  /** Everything above the ground shadow: hops, leans and spins. */
+  body: THREE.Group;
+  head: THREE.Group;
+  eyes: THREE.Mesh[];
+  arms: [THREE.Group, THREE.Group];
+  antenna: THREE.Group;
+  /** The eyes' glow: the bot's state colour, blue on the road. */
+  light: THREE.MeshStandardMaterial;
+};
+
+/**
+ * A little white robot: a round body and a big round head with a dark
+ * face, two glowing eyes, ear pods and an antenna in the company colour,
+ * and its logo on the chest. It floats just off the ground.
+ */
+export function bot(accent: string, badge?: THREE.Material): Bot {
+  const white = clay('#ffffff', { rough: 0.42 });
+  const group = new THREE.Group();
+  const shadow = new THREE.Mesh(
+    shape('botShadow', () => new THREE.CircleGeometry(0.5, 24)),
+    new THREE.MeshBasicMaterial({
+      color: '#000000',
+      transparent: true,
+      opacity: 0.14,
+      depthWrite: false,
+    }),
   );
-  shell.scale.set(1, 0.62, 1);
-  mesh(g, cylinder(0.64, 0.64, 0.12, 28), clay(accent), 0, 0, 0);
-  const visor = mesh(
-    g,
-    roundBox(0.62, 0.2, 0.2, 0.08),
-    clay('#111827', { rough: 0.3 }),
-    0,
-    0.12,
-    0.5,
-  );
-  visor.castShadow = false;
+  shadow.rotation.x = -Math.PI / 2;
+  shadow.position.y = 0.03;
+  group.add(shadow);
+  const body = new THREE.Group();
+  group.add(body);
+
+  const torso = mesh(body, sphere(0.46, 24), white, 0, 0.6, 0);
+  torso.scale.set(1, 1.12, 0.95);
+  mesh(body, cylinder(0.455, 0.455, 0.07, 28), clay(accent), 0, 0.5, 0);
+  if (badge) {
+    const pin = new THREE.Mesh(
+      shape('botPin', () => new THREE.PlaneGeometry(0.26, 0.26)),
+      badge,
+    );
+    pin.position.set(0, 0.74, 0.43);
+    pin.rotation.x = -0.15;
+    body.add(pin);
+  }
+
   const light = new THREE.MeshStandardMaterial({
     color: '#ffffff',
     emissive: '#ffffff',
-    emissiveIntensity: 1.4,
+    emissiveIntensity: 1.6,
   });
-  const eye = new THREE.Mesh(roundBox(0.42, 0.07, 0.05, 0.02), light);
-  eye.position.set(0, 0.12, 0.61);
-  g.add(eye);
-  const rotors: THREE.Object3D[] = [];
-  for (let i = 0; i < 4; i++) {
-    const a = Math.PI / 4 + (i * Math.PI) / 2;
-    const arm = mesh(
-      g,
-      roundBox(1.1, 0.08, 0.12, 0.03),
-      clay(CLAY),
-      Math.cos(a) * 0.75,
-      0.18,
-      Math.sin(a) * 0.75,
-    );
-    arm.rotation.y = -a;
-    const rotor = new THREE.Group();
-    rotor.position.set(Math.cos(a) * 1.25, 0.28, Math.sin(a) * 1.25);
-    g.add(rotor);
-    mesh(rotor, cylinder(0.08, 0.08, 0.14, 10), clay(accent), 0, 0, 0);
-    const blades = mesh(
-      rotor,
-      shape('blade', () => new THREE.CylinderGeometry(0.42, 0.42, 0.02, 24)),
-      new THREE.MeshStandardMaterial({
-        color: '#94a3b8',
-        transparent: true,
-        opacity: 0.35,
-      }),
-      0,
-      0.08,
-      0,
-    );
-    blades.castShadow = false;
-    rotors.push(rotor);
-  }
-  const glow = new THREE.Mesh(
-    shape('glow', () => new THREE.CircleGeometry(0.35, 20)),
+  // A soft glow under it, where it floats.
+  const under = new THREE.Mesh(
+    shape('botGlow', () => new THREE.CircleGeometry(0.22, 20)),
     light,
   );
-  glow.rotation.x = Math.PI / 2;
-  glow.position.y = -0.4;
-  g.add(glow);
-  return { group: g, light, rotors };
+  under.rotation.x = Math.PI / 2;
+  under.position.y = 0.12;
+  body.add(under);
+
+  const arm = (x: number) => {
+    const pivot = new THREE.Group();
+    pivot.position.set(x, 0.86, 0);
+    body.add(pivot);
+    mesh(
+      pivot,
+      shape('botArm', () => new THREE.CapsuleGeometry(0.085, 0.26, 4, 10)),
+      white,
+      0,
+      -0.2,
+      0,
+    );
+    mesh(pivot, sphere(0.1, 12), clay(tint(accent, 0.2)), 0, -0.42, 0);
+    return pivot;
+  };
+  const arms: [THREE.Group, THREE.Group] = [arm(0.5), arm(-0.5)];
+
+  const head = new THREE.Group();
+  head.position.y = 1.32;
+  body.add(head);
+  const skull = mesh(head, sphere(0.5, 28), white, 0, 0, 0);
+  skull.scale.set(1.15, 0.86, 1);
+  const face = mesh(
+    head,
+    sphere(0.42, 24),
+    clay('#0f172a', { rough: 0.2 }),
+    0,
+    -0.02,
+    0.3,
+  );
+  face.scale.set(1.04, 0.7, 0.6);
+  const eyes = [-0.16, 0.16].map((x) => {
+    const eye = new THREE.Mesh(sphere(0.075, 14), light);
+    eye.position.set(x, 0.0, 0.54);
+    eye.scale.set(1, 1.45, 0.45);
+    head.add(eye);
+    return eye;
+  });
+  for (const x of [-0.58, 0.58]) {
+    const pod = mesh(
+      head,
+      cylinder(0.14, 0.14, 0.1, 18),
+      clay(accent),
+      x,
+      0,
+      0,
+    );
+    pod.rotation.z = Math.PI / 2;
+  }
+  const antenna = new THREE.Group();
+  antenna.position.y = 0.4;
+  head.add(antenna);
+  mesh(antenna, cylinder(0.022, 0.03, 0.32, 8), clay(CLAY_SHADE), 0, 0.16, 0);
+  mesh(antenna, sphere(0.085, 12), clay(accent, { glow: 0.7 }), 0, 0.36, 0);
+
+  group.traverse((o) => {
+    if (o !== shadow && (o as THREE.Mesh).isMesh) o.castShadow = true;
+  });
+  return { group, body, head, eyes, arms, antenna, light };
 }
 
 /* ------------------------------ directions ------------------------------ */
