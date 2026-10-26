@@ -1,8 +1,14 @@
 import { db } from '@/lib/mongodb/db-client';
 import type { SessionUser } from '@/lib/permissions/server';
-import { lineKey, normalizeLine, worklogLines } from '@/lib/worklogs/lines';
+import {
+  lineKey,
+  normalizeLine,
+  PRIVATE_LINE,
+  worklogLines,
+} from '@/lib/worklogs/lines';
 import type { LinkCandidates } from '@/lib/worklogs/linker';
 import { linkCandidates, linkLines } from '@/lib/worklogs/linker';
+import { PERSONAL_COMPANY } from '@/lib/worklogs/personal';
 import type { WorklogLink, WorkLogs } from '@/models/worklogs';
 import type { WorkLogPoints } from '@/utils/@types/interfaces';
 import { LOGLINKTYPE } from '@/utils/@types/interfaces';
@@ -30,14 +36,21 @@ const STATUS_BY_EMOJI = Object.fromEntries(
 
 /** The status a line is tagged with, from its leading emoji. */
 export function statusOf(line: string): PointStatus | null {
-  const emoji = Object.keys(STATUS_BY_EMOJI).find((e) =>
-    line.replace(/^\s*[*\-+]\s*/, '').startsWith(e),
-  );
+  const words = line
+    .replace(PRIVATE_LINE, '')
+    .replace(/^\s*[*\-+]\s*/, '')
+    .trimStart();
+  const emoji = Object.keys(STATUS_BY_EMOJI).find((e) => words.startsWith(e));
   return emoji ? STATUS_BY_EMOJI[emoji] : null;
 }
 
-export const formatPoint = (text: string, status: PointStatus) =>
-  `* ${POINT_STATUSES[status].emoji} ${normalizeLine(text)}`;
+/** A Claude line; a personal one carries the `p:` marker, so only its writer sees it. */
+export const formatPoint = (
+  text: string,
+  status: PointStatus,
+  personal = false,
+) =>
+  `* ${personal ? 'p: ' : ''}${POINT_STATUSES[status].emoji} ${normalizeLine(text)}`;
 
 const emptySection = (): WorkLogPoints => ({
   link_type: LOGLINKTYPE.GENERAL,
@@ -103,6 +116,8 @@ export type PointInput = {
   status: PointStatus;
   project?: string;
   task?: string;
+  /** Personal work: private to the person, under their Personal company. */
+  personal?: boolean;
 };
 
 /** Finds a project or task by id or by name (case and spacing ignored). */
@@ -149,10 +164,14 @@ export async function logPoints(
   // Each point that was waiting on the person and has moved on is a time
   // they guided their assistant.
   let guided = 0;
-  const results: { text: string; status: PointStatus; updated: boolean }[] = [];
+  const results: {
+    text: string;
+    status: PointStatus;
+    updated: boolean;
+    personal: boolean;
+  }[] = [];
   for (const point of points) {
-    const line = formatPoint(point.text, point.status);
-    const key = lineKey(line);
+    const key = lineKey(point.text);
     const at = lines.findIndex((l) => lineKey(l) === key);
     if (
       at >= 0 &&
@@ -160,12 +179,18 @@ export async function logPoints(
       point.status !== 'waiting'
     )
       guided += 1;
+    // A personal point stays personal when its status moves on.
+    const personal =
+      !!point.personal || (at >= 0 && PRIVATE_LINE.test(lines[at]));
+    point.personal = personal;
+    const line = formatPoint(point.text, point.status, personal);
     if (at >= 0) lines[at] = line;
     else lines.push(line);
     results.push({
       text: normalizeLine(point.text),
       status: point.status,
       updated: at >= 0,
+      personal,
     });
   }
 
@@ -219,6 +244,7 @@ export async function logPoints(
   );
   const placed = new Map<string, ReturnType<typeof resolvePlace>>();
   for (const point of points) {
+    if (point.personal) continue;
     const place = resolvePlace(point, candidates);
     if (place) placed.set(lineKey(point.text), place);
   }
@@ -231,7 +257,10 @@ export async function logPoints(
   return results.map((r) => {
     const link = links.find((l) => l.key === lineKey(r.text));
     const project = candidates.projects.find((p) => p.id === link?.projectId);
-    return { ...r, project: project?.name ?? null };
+    return {
+      ...r,
+      project: r.personal ? PERSONAL_COMPANY.name : (project?.name ?? null),
+    };
   });
 }
 
@@ -248,5 +277,6 @@ export async function claudeLines(userId: string, date: string) {
   return splitLines(section?.content ?? '').map((l) => ({
     text: normalizeLine(l),
     status: statusOf(l),
+    ...(PRIVATE_LINE.test(l) && { personal: true }),
   }));
 }

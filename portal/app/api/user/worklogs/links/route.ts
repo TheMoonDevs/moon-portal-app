@@ -4,6 +4,7 @@ import { db } from '@/lib/mongodb/db-client';
 import { enforcePermission, getSessionUser } from '@/lib/permissions/server';
 import { worklogLines } from '@/lib/worklogs/lines';
 import { linkCandidates, linkLines } from '@/lib/worklogs/linker';
+import { isPersonalLink } from '@/lib/worklogs/personal';
 import type { WorklogLink, WorkLogs } from '@/models/worklogs';
 
 export const dynamic = 'force-dynamic';
@@ -63,6 +64,11 @@ export async function PATCH(request: Request) {
   const links = (worklog.links ?? []) as WorklogLink[];
   const link = links.find((l) => l.key === body.key);
   if (!link) return fail(404, 'That line has changed. Try again.');
+  if (isPersonalLink(link))
+    return fail(
+      400,
+      'Private lines stay in Personal. Remove "p:" to link it to a project.',
+    );
 
   const candidates = await linkCandidates(user);
   const project = candidates.projects.find((p) => p.id === body.projectId);

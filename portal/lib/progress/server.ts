@@ -1,6 +1,7 @@
 import dayjs from 'dayjs';
 
 import { db } from '@/lib/mongodb/db-client';
+import { publicWorklog } from '@/lib/worklogs/personal';
 import type { Badge, PointEntry, UserBadge } from '@/models/progress';
 import { BADGE_METRIC, POINT_SOURCE } from '@/models/progress';
 import type { Task } from '@/models/workspace';
@@ -69,7 +70,10 @@ export function longestStreak(dates: string[]): number {
   return best;
 }
 
-/** Sorted unique days on which the user wrote something in their worklog. */
+/**
+ * Sorted unique days on which the user wrote something in their worklog.
+ * Badges are public, so personal (`p:`) lines alone do not make a day.
+ */
 export async function worklogDays(userId: string): Promise<string[]> {
   const logs = await db.workLogs.findMany({
     where: { userId, logType: 'dayLog' },
@@ -80,7 +84,7 @@ export async function worklogDays(userId: string): Promise<string[]> {
       logs
         .filter(
           (l: { date?: string | null; works?: unknown }) =>
-            !!l.date && hasContent(l),
+            !!l.date && hasContent(publicWorklog(l)),
         )
         .map((l: { date: string }) => l.date),
     ),

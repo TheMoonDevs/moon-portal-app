@@ -3,6 +3,7 @@ import { CLAUDE_SECTION_ID, statusOf, todayFor } from '@/lib/mcp/worklog';
 import { db } from '@/lib/mongodb/db-client';
 import type { SessionUser } from '@/lib/permissions/server';
 import { lineKey, normalizeLine, PRIVATE_LINE } from '@/lib/worklogs/lines';
+import { isPersonalLink } from '@/lib/worklogs/personal';
 import {
   metricLabel,
   metricsWithData,
@@ -252,7 +253,11 @@ export async function buildWorld(viewer: SessionUser): Promise<World> {
       (guidanceByUser.get(userId) ?? 0) + (log.guidance ?? 0),
     );
     for (const link of (log.links ?? []) as WorklogLink[]) {
-      if (link.isPrivate || !link.projectId || !projectById.has(link.projectId))
+      if (
+        isPersonalLink(link) ||
+        !link.projectId ||
+        !projectById.has(link.projectId)
+      )
         continue;
       bump(byProject, link.projectId, userId, 1);
     }

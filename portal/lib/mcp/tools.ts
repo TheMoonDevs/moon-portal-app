@@ -8,6 +8,7 @@ import { getLook, saveLook } from '@/lib/avatar/server';
 import { db } from '@/lib/mongodb/db-client';
 import type { SessionUser } from '@/lib/permissions/server';
 import { syncTaskPoints } from '@/lib/progress/server';
+import { PERSONAL_COMPANY } from '@/lib/worklogs/personal';
 import { goalProgress, PERIOD_LABELS } from '@/lib/workspace/projects';
 import { runDueSchedules } from '@/lib/workspace/schedules';
 import { getWorkspaceForUser } from '@/lib/workspace/server';
@@ -95,7 +96,7 @@ export const TOOLS: Tool[] = [
     name: 'get_context',
     title: 'Get my portal context',
     description:
-      "The person's companies, projects (with goals and this period's progress), their open tasks, and what has been logged in the Claude section today. Call this first in a session so you can link work to the right project and task.",
+      "The person's companies, projects (with goals and this period's progress), their open tasks, and what has been logged in the Claude section today. Everyone also has a Personal company for private work only they can see. Call this first in a session so you can link work to the right project and task.",
     inputSchema: { type: 'object', properties: {} },
     annotations: { readOnlyHint: true },
     run: async (user) => {
@@ -107,7 +108,7 @@ export const TOOLS: Tool[] = [
       if (!companyIds.length)
         return {
           today,
-          companies: [],
+          companies: [PERSONAL_COMPANY],
           projects: [],
           myTasks: [],
           loggedToday: await claudeLines(user.id, today),
@@ -148,7 +149,10 @@ export const TOOLS: Tool[] = [
 
       return {
         today,
-        companies: companies.map((c) => ({ id: c.id, name: c.name })),
+        companies: [
+          ...companies.map((c) => ({ id: c.id, name: c.name })),
+          PERSONAL_COMPANY,
+        ],
         projects: projects.map((p) => {
           const progress = goalProgress(p.goals ?? [], goalTasks);
           return {
@@ -172,7 +176,7 @@ export const TOOLS: Tool[] = [
   {
     name: 'log_work',
     title: 'Log work points',
-    description: `Writes work points into the "Claude" section of the person's worklog for the day, so they can follow progress in the portal. Log a point when you start a piece of work (doing) and log it again with the same text when it ends (done, not_done or blocked); same text updates the line instead of adding another. Use waiting when you need the person's permission or input. Keep each point one short line about the outcome, in plain words, never secrets or credentials. Name the project (and task) when you know it; otherwise the portal links it.`,
+    description: `Writes work points into the "Claude" section of the person's worklog for the day, so they can follow progress in the portal. Log a point when you start a piece of work (doing) and log it again with the same text when it ends (done, not_done or blocked); same text updates the line instead of adding another. Use waiting when you need the person's permission or input. Keep each point one short line about the outcome, in plain words, never secrets or credentials. Name the project (and task) when you know it; otherwise the portal links it. Set personal for the person's own private work (not for any company): only they will ever see it.`,
     inputSchema: {
       type: 'object',
       properties: {
@@ -201,6 +205,11 @@ export const TOOLS: Tool[] = [
                 type: 'string',
                 description: 'Task id or exact title (optional).',
               },
+              personal: {
+                type: 'boolean',
+                description:
+                  "True for the person's own private work. It goes under their Personal company and no one else sees it.",
+              },
             },
             required: ['text', 'status'],
           },
@@ -224,6 +233,7 @@ export const TOOLS: Tool[] = [
           status: STATUS_KEYS.includes(p?.status) ? p.status : 'done',
           project: typeof p?.project === 'string' ? p.project : undefined,
           task: typeof p?.task === 'string' ? p.task : undefined,
+          personal: p?.personal === true,
         }))
         .filter(
           (p: PointInput) => p.text.replace(/[^\p{L}\p{N}]/gu, '').length >= 3,
