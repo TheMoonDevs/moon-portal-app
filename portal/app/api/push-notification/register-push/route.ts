@@ -1,119 +1,62 @@
 import { NextResponse } from 'next/server';
 
-import { db } from '@/lib/mongodb/db-client';
-import { enforcePermission } from '@/lib/permissions/server';
+import { enforcePermission, getSessionUser } from '@/lib/permissions/server';
+import {
+  removePushSubscriptions,
+  savePushSubscription,
+} from '@/lib/push/server';
 
+const isSubscription = (value: any) =>
+  typeof value?.endpoint === 'string' &&
+  typeof value?.keys?.p256dh === 'string' &&
+  typeof value?.keys?.auth === 'string';
+
+/** Save this browser's push subscription for the signed-in user. */
 export async function POST(request: Request) {
   const denied = await enforcePermission('notifications:read');
   if (denied) return denied;
+  const user = await getSessionUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Not signed in' }, { status: 401 });
+  }
 
-  try {
-    const { userId, newSubscription } = await request.json();
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'User not authenticated' },
-        { status: 401 },
-      );
-    }
-    if (!newSubscription) {
-      return NextResponse.json(
-        { error: 'Missing push subscription in body' },
-        { status: 400 },
-      );
-    }
-    console.log('Received push subscription to add', newSubscription);
-    const userSubscription = await db.subscription.findUnique({
-      where: {
-        userId,
-      },
-    });
-
-    const updatedSubscription = userSubscription?.subscriptions.filter(
-      (subscription: any) => subscription.endpoint !== newSubscription.endpoint,
-    );
-    updatedSubscription?.push(newSubscription);
-
-    await db.subscription.upsert({
-      where: {
-        userId,
-      },
-      update: {
-        subscriptions: updatedSubscription,
-      },
-      create: {
-        userId,
-        subscriptions: [newSubscription],
-      },
-    });
-
+  const { newSubscription, oldEndpoint } = await request.json();
+  if (!isSubscription(newSubscription)) {
     return NextResponse.json(
-      { message: 'Push Subscription Saved!' },
-      { status: 200 },
-    );
-  } catch (error) {
-    console.log(error);
-    return NextResponse.json(
-      { error: 'Internal Server Error' },
-      { status: 500 },
+      { error: 'Missing push subscription in body' },
+      { status: 400 },
     );
   }
+
+  await savePushSubscription(
+    user.id,
+    {
+      endpoint: newSubscription.endpoint,
+      expirationTime: newSubscription.expirationTime ?? null,
+      keys: newSubscription.keys,
+    },
+    typeof oldEndpoint === 'string' ? oldEndpoint : undefined,
+  );
+  return NextResponse.json({ message: 'Push Subscription Saved!' });
 }
 
+/** Forget this browser's push subscription for the signed-in user. */
 export async function DELETE(request: Request) {
   const denied = await enforcePermission('notifications:read');
   if (denied) return denied;
+  const user = await getSessionUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Not signed in' }, { status: 401 });
+  }
 
-  try {
-    const {
-      userId,
-      subscriptionToDelete,
-    }: { userId: string; subscriptionToDelete: PushSubscription | undefined } =
-      await request.json();
-
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'User not authenticated' },
-        { status: 401 },
-      );
-    }
-
-    if (!subscriptionToDelete) {
-      return NextResponse.json(
-        { error: 'Missing push subscription in body' },
-        { status: 400 },
-      );
-    }
-    console.log('Received push subscription to delete', subscriptionToDelete);
-
-    const userSubscription = await db.subscription.findUnique({
-      where: {
-        userId,
-      },
-    });
-
-    const updatedSubscription = userSubscription?.subscriptions.filter(
-      (subscription: any) =>
-        subscription.endpoint !== subscriptionToDelete.endpoint,
-    );
-
-    await db.subscription.update({
-      where: {
-        userId,
-      },
-      data: {
-        subscriptions: updatedSubscription,
-      },
-    });
-
+  const { subscriptionToDelete } = await request.json();
+  if (typeof subscriptionToDelete?.endpoint !== 'string') {
     return NextResponse.json(
-      { message: 'Push Subscription Deleted!' },
-      { status: 200 },
-    );
-  } catch (error) {
-    console.log(error);
-    return NextResponse.json(
-      { error: 'Internal Server Error' },
-      { status: 500 },
+      { error: 'Missing push subscription in body' },
+      { status: 400 },
     );
   }
+
+  await removePushSubscriptions(user.id, [subscriptionToDelete.endpoint]);
+  return NextResponse.json({ message: 'Push Subscription Deleted!' });
 }

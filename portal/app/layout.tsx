@@ -12,8 +12,7 @@ import { Inter } from 'next/font/google';
 
 import { ToastsContainer } from '@/components/elements/Toast';
 import { PermissionDeniedToaster } from '@/components/global/PermissionDeniedToaster';
-import PushServiceRegistration from '@/components/global/PushServiceRegistration';
-import { UpdatePWA } from '@/components/global/UpdatePWA';
+import { ServiceWorkerProvider } from '@/components/global/ServiceWorkerProvider';
 import { MUIThemeRegistry } from '@/styles/provider';
 import { ReduxProvider } from '@/utils/redux/provider';
 import NextAuthProvider from '@/utils/services/NextAuthProvider';
@@ -21,7 +20,6 @@ import NextAuthProvider from '@/utils/services/NextAuthProvider';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  manifest: '/manifest.json', // we are accessing our manifest file here
   title: 'Portal',
   description:
     'Worklogs, projects and progress for every company you work with.',
@@ -53,9 +51,8 @@ export default function RootLayout({
           <MUIThemeRegistry options={{ key: 'mui' }}>
             <MantineProvider>
               <ReduxProvider>
-                <PushServiceRegistration>
-                  <UpdatePWA>{children}</UpdatePWA>
-                </PushServiceRegistration>
+                <ServiceWorkerProvider />
+                {children}
                 <ToastsContainer />
                 <PermissionDeniedToaster />
               </ReduxProvider>

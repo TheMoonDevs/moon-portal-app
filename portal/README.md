@@ -42,9 +42,9 @@ The DB contract is now split so schema/type changes are easy to find:
 
 # Tools, Deps & Links
 
-- PWA <https://ducanh-next-pwa.vercel.app/docs> Deprecated
+- PWA / service worker: Serwist <https://serwist.pages.dev/docs/next> (source in `app/sw.ts`)
+- Next.js PWA guide <https://nextjs.org/docs/app/guides/progressive-web-apps>
 - Manifest Generator <https://www.simicart.com/manifest-generator.html/>
 - Push payload <https://github.com/mdn/serviceworker-cookbook/tree/master/push-payload>
 - Offline <https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Tutorials/js13kGames/Offline_Service_workers>
-- Next-PWA <https://github.com/shadowwalker/next-pwa>
 - PWA Notifications <https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Tutorials/js13kGames/Re-engageable_Notifications_Push>

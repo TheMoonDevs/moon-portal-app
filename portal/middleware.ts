@@ -6,7 +6,8 @@ import { rejectIfApiKeyMissing } from '@/middlewares/apiKey';
 import { applyCorsHeaders } from '@/middlewares/cors';
 
 // `/apply/<slug>` is where candidates fill in a job application.
-const PUBLIC_PAGES = ['/login', '/logout', '/apply'];
+// `/~offline` is cached by the service worker for when there's no network.
+const PUBLIC_PAGES = ['/login', '/logout', '/apply', '/~offline'];
 
 const isPublicPage = (pathname: string) =>
   PUBLIC_PAGES.some(
@@ -48,7 +49,7 @@ export const config = {
   matcher: [
     '/api/:path*',
     // every page except Next internals and files with an extension
-    // (manifest.json, sw.js, images, fonts, …)
+    // (manifest.webmanifest, sw.js, images, fonts, …)
     '/((?!api|_next/static|_next/image|.*\\.).*)',
   ],
 };

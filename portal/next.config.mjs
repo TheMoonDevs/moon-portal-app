@@ -1,32 +1,28 @@
-const runtimeCaching = require("next-pwa/cache");
-const withBundleAnalyzer = require('@next/bundle-analyzer')({
+import bundleAnalyzer from '@next/bundle-analyzer';
+import withSerwistInit from '@serwist/next';
+import { randomUUID } from 'node:crypto';
+
+const withBundleAnalyzer = bundleAnalyzer({
   enabled: process.env.ANALYZE === 'true',
 })
 
-const withPWA = require("next-pwa")({
-  //dest: "public",
-  //reactStrictMode: true,
-  dest: "public",
-  register: true,
-  disable: process.env.NODE_ENV !== "production",
-  skipWaiting: false,
-  clientsClaim: false,
-  runtimeCaching,
-  buildExcludes: [
-    /middleware-manifest.json$/,
-    /app-build-manifest.json$/,
-    /build-manifest.json$/,
+// Service worker (offline support + push notifications), built from app/sw.ts.
+// It updates itself silently on every deploy (no "new version" popup).
+const withSerwist = withSerwistInit({
+  swSrc: "app/sw.ts",
+  swDest: "public/sw.js",
+  // The page shown when there's no connection (app/~offline/page.tsx).
+  additionalPrecacheEntries: [
+    {
+      url: "/~offline",
+      revision: process.env.VERCEL_GIT_COMMIT_SHA || randomUUID(),
+    },
   ],
-  runtimeCaching,
-
-  // cacheOnFrontEndNav: true,
-  // aggressiveFrontEndNavCaching: true,
-  // reloadOnOnline: true,
-  // swcMinify: true,
-  // workboxOptions: {
-  //     disableDevLogs: true,
-  // },
-  // ... other options you like
+  // We register it ourselves in components/global/ServiceWorkerProvider.tsx.
+  register: false,
+  // Don't reload the page whenever the browser comes back online.
+  reloadOnOnline: false,
+  disable: process.env.NODE_ENV !== "production",
 });
 
 /** @type {import('next').NextConfig} */
@@ -43,6 +39,14 @@ const nextConfig = {
   // The approval screen for AI assistants must never be framed.
   async headers() {
     return [
+      {
+        // Browsers must always check for a fresh service worker.
+        source: "/sw.js",
+        headers: [
+          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+          { key: "Content-Type", value: "application/javascript; charset=utf-8" },
+        ],
+      },
       {
         source: "/oauth/:path*",
         headers: [
@@ -110,4 +114,4 @@ const nextConfig = {
   },
 };
 
-module.exports = withBundleAnalyzer(withPWA(nextConfig));
+export default withBundleAnalyzer(withSerwist(nextConfig));
