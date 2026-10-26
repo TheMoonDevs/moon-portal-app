@@ -46,10 +46,11 @@ next-env.d.ts
 # Generated Google Apps Scripts (run npm run generate:gs to regenerate)
 lib/worksheets/*/GoogleAppsScript-*.gs
 
-sw.*
-workbox-*
-worker*.js
-swe-worker-*
+# service worker built from app/sw.ts (plus files left by the old next-pwa setup)
+/public/sw.js*
+/public/swe-worker-*
+/public/workbox-*
+/public/worker-*.js
 certificates
 
 .flaskenv*

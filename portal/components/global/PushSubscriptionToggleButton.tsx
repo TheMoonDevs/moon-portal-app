@@ -6,7 +6,11 @@ import { toast, Toaster } from 'sonner';
 import { useUser } from '@/utils/hooks/useUser';
 import {
   getCurrentPushSubscription,
+  isPushSupported,
+  needsHomeScreenInstall,
+  PushPermissionError,
   registerPushNotification,
+  sendTestPushNotification,
   unregisterPushNotification,
 } from '@/utils/services/notifications/pushService';
 
@@ -16,11 +20,17 @@ const PushSubscriptionToggleButton = ({ type }: { type?: 'switch' }) => {
   const [hasActivePushSubscription, setHasActivePushSubscription] =
     useState<boolean>();
   const [loading, setLoading] = useState<boolean>(false);
+  const [installHint, setInstallHint] = useState(false);
 
   const { user } = useUser();
 
   useEffect(() => {
     const getActivePushSubscription = async () => {
+      if (needsHomeScreenInstall()) {
+        setInstallHint(true);
+        return;
+      }
+      if (!isPushSupported()) return;
       try {
         const subscription = await getCurrentPushSubscription();
         setHasActivePushSubscription(!!subscription);
@@ -37,17 +47,9 @@ const PushSubscriptionToggleButton = ({ type }: { type?: 'switch' }) => {
     try {
       setLoading(true);
       if (enabled) {
-        try {
-          await registerPushNotification(user?.id);
-        } catch (error) {
-          const activeSubscription = await getCurrentPushSubscription();
-          if (activeSubscription) {
-            activeSubscription.unsubscribe();
-          }
-          throw error;
-        }
+        await registerPushNotification();
       } else {
-        await unregisterPushNotification(user?.id);
+        await unregisterPushNotification();
       }
       setHasActivePushSubscription(enabled);
       if (enabled) {
@@ -57,7 +59,7 @@ const PushSubscriptionToggleButton = ({ type }: { type?: 'switch' }) => {
       }
     } catch (error) {
       console.error(error);
-      if (enabled && Notification.permission === 'denied') {
+      if (error instanceof PushPermissionError) {
         toast.error(
           'Please enable push notifications in your browser settings.',
         );
@@ -69,17 +71,46 @@ const PushSubscriptionToggleButton = ({ type }: { type?: 'switch' }) => {
     }
   };
 
+  const sendTest = async () => {
+    try {
+      const { sent } = await sendTestPushNotification();
+      if (!sent)
+        toast.error('No device received it. Try turning push off and on.');
+    } catch (error) {
+      console.error(error);
+      toast.error('Could not send a test notification.');
+    }
+  };
+
+  if (installHint) {
+    return (
+      <p className="max-w-48 text-right text-xs text-neutral-500">
+        Add Portal to your home screen (Share, then Add to Home Screen) to get
+        notifications.
+      </p>
+    );
+  }
+
   if (hasActivePushSubscription === undefined) return null;
 
   if (type === 'switch') {
     return (
-      <div className="relative">
+      <div className="relative flex flex-col items-end gap-1">
         <IOSSwitch
           onChange={(e) => setPushNotificationsEnabled(e.target.checked)}
           disabled={loading}
           checked={hasActivePushSubscription}
           className={`${hasActivePushSubscription ? 'bg-green-500' : 'bg-gray-600'} ${loading ? 'opacity-50' : ''} relative inline-flex h-6 w-11 items-center rounded-full`}
         ></IOSSwitch>
+        {hasActivePushSubscription && (
+          <button
+            type="button"
+            onClick={sendTest}
+            className="text-xs text-neutral-500 underline-offset-2 hover:underline"
+          >
+            Send a test
+          </button>
+        )}
 
         <Toaster position="bottom-left" richColors duration={3000} />
       </div>

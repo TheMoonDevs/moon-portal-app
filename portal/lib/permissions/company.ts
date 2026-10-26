@@ -90,6 +90,18 @@ export const DEFAULT_COMPANY_ROLES: CompanyRoleDefinition[] = [
 
 export const DEFAULT_MEMBER_ROLE_KEY = 'member';
 
+/**
+ * What a company role grants. The Owner role always has every company
+ * permission, including ones added after the company was created.
+ */
+export function companyRolePermissions(role: {
+  key: string;
+  permissions?: string[] | null;
+}): string[] {
+  if (role.key === 'owner') return [...ALL_COMPANY_PERMISSIONS];
+  return role.permissions ?? [];
+}
+
 export interface CompanyAccess {
   /** Permissions granted by the user's roles in this company. */
   rolePermissions: string[];

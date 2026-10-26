@@ -5,7 +5,7 @@ import { originOf } from '@/lib/mcp/tokens';
 
 export const dynamic = 'force-dynamic';
 
-/** Served at /.well-known/oauth-protected-resource (see next.config.js). */
+/** Served at /.well-known/oauth-protected-resource (see next.config.mjs). */
 export async function GET(request: Request) {
   const origin = originOf(request);
   return NextResponse.json(
