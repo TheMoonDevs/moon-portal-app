@@ -8,6 +8,7 @@ import type { Project, Task } from '@/models/workspace';
 import { OPEN_TASK_STATUSES, PROJECT_STATUS } from '@/models/workspace';
 
 import type { WorklogLine } from './lines';
+import { isPersonalLink, PERSONAL_COMPANY_ID } from './personal';
 
 /** Below this the line is left for the person to place. */
 const MIN_CONFIDENCE = 0.6;
@@ -104,6 +105,15 @@ const overlap = (line: string, title: string) => {
 };
 
 type Guess = Omit<WorklogLink, 'key' | 'text' | 'isPrivate'>;
+
+/** Where every private line goes: the person's own Personal company. */
+const PERSONAL: Guess = {
+  companyId: PERSONAL_COMPANY_ID,
+  projectId: null,
+  taskId: null,
+  confidence: 1,
+  source: 'auto',
+};
 
 const NONE: Guess = {
   companyId: null,
@@ -230,15 +240,24 @@ For every line return its project id, the task id if the line is clearly about t
 /**
  * Links for the current lines of a worklog. Lines already linked keep their
  * link (and anything the person chose always stays); new lines are matched
- * by name first and by Gemini after.
+ * by name first and by Gemini after. Private lines always go to Personal.
  */
 export async function linkLines(
   lines: WorklogLine[],
   existing: WorklogLink[],
   candidates: LinkCandidates,
 ): Promise<WorklogLink[]> {
-  const known = new Map(existing.map((l) => [l.key, l]));
-  const fresh = lines.filter((l) => !known.has(l.key));
+  // A line that stopped being private is placed again from scratch.
+  const known = new Map(
+    existing
+      .filter((l) => {
+        const line = lines.find((x) => x.key === l.key);
+        return !line || line.isPrivate || !isPersonalLink(l);
+      })
+      .map((l) => [l.key, l]),
+  );
+  // Private lines are never matched, and never sent to Gemini.
+  const fresh = lines.filter((l) => !l.isPrivate && !known.has(l.key));
 
   const guesses = new Map<string, Guess>();
   const unsure: WorklogLine[] = [];
@@ -250,13 +269,15 @@ export async function linkLines(
   const fromAi = await matchWithGemini(unsure, candidates);
 
   return lines.map((line) => {
+    if (line.isPrivate)
+      return { key: line.key, text: line.text, isPrivate: true, ...PERSONAL };
     const kept = known.get(line.key);
-    if (kept) return { ...kept, text: line.text, isPrivate: line.isPrivate };
+    if (kept) return { ...kept, text: line.text, isPrivate: false };
     const guess = guesses.get(line.key) ?? fromAi.get(line.key) ?? NONE;
     return {
       key: line.key,
       text: line.text,
-      isPrivate: line.isPrivate,
+      isPrivate: false,
       ...guess,
     };
   });

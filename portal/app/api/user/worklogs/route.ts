@@ -5,44 +5,8 @@ import { getServerSession } from 'next-auth';
 import { keepClaudeSection } from '@/lib/mcp/worklog';
 import { db } from '@/lib/mongodb/db-client';
 import { enforcePermission } from '@/lib/permissions/server';
-import { PRIVATE_LINE } from '@/lib/worklogs/lines';
+import { worklogsForViewer } from '@/lib/worklogs/personal';
 import { authOptions } from '@/pages/api/auth/[...nextauth]';
-
-function sanitizePrivateLines(content: string): string {
-  const sanitized = content
-    .split('\n')
-    .filter((line) => !PRIVATE_LINE.test(line))
-    .join('\n')
-    .trim();
-  return sanitized.length > 0 ? sanitized : '*';
-}
-
-function sanitizeWorklogsForViewer(
-  workLogs: Array<Record<string, any>>,
-  viewerUserId: string | null,
-): Array<Record<string, any>> {
-  return workLogs.map((worklog) => {
-    const isOwner = viewerUserId && worklog.userId === viewerUserId;
-    if (isOwner) return worklog;
-
-    const works = Array.isArray(worklog.works)
-      ? worklog.works.map((work: Record<string, any>) => {
-          if (!work || typeof work.content !== 'string') return work;
-          return { ...work, content: sanitizePrivateLines(work.content) };
-        })
-      : worklog.works;
-
-    // Links carry line text, so others see where work went but not the
-    // words, and nothing at all about private lines.
-    const links = Array.isArray(worklog.links)
-      ? worklog.links
-          .filter((link: Record<string, any>) => !link.isPrivate)
-          .map(({ text: _text, ...link }: Record<string, any>) => link)
-      : worklog.links;
-
-    return { ...worklog, works, links };
-  });
-}
 
 async function resolveViewerUserId(): Promise<string | null> {
   const session = (await getServerSession(authOptions as any)) as any;
@@ -92,7 +56,7 @@ export async function GET(request: NextRequest) {
         updatedAt: 'desc',
       },
     });
-    const sanitizedLogs = sanitizeWorklogsForViewer(_workLogs, viewerUserId);
+    const sanitizedLogs = worklogsForViewer(_workLogs, viewerUserId);
 
     const json_response = {
       status: 'success',

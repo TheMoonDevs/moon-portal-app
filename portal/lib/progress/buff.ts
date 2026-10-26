@@ -4,7 +4,7 @@
  * leaderboard. Pure, so the browser and the server agree.
  */
 
-import { lineKey } from '@/lib/worklogs/lines';
+import { lineKey, PRIVATE_LINE } from '@/lib/worklogs/lines';
 
 export enum BUFF_LEVEL {
   TRUTH_SEEKER = 'TRUTH_SEEKER',
@@ -117,6 +117,7 @@ export const worklogPoints = (logs: { works?: unknown }[]) =>
 /**
  * Points for one company's leaderboard. A line linked to another company
  * counts there instead; lines not linked yet count everywhere, as before.
+ * Private (`p:`) lines are Personal and never count for a company.
  */
 export const worklogPointsForCompany = (
   logs: {
@@ -137,11 +138,13 @@ export const worklogPointsForCompany = (
       works.reduce((sum: number, work: any) => {
         const content = typeof work?.content === 'string' ? work.content : '';
         if (!isValidContent(content)) return sum;
-        const skipped = elsewhere.size
-          ? content
-              .split('\n')
-              .filter((line: string) => elsewhere.has(lineKey(line))).length
-          : 0;
+        const skipped = content
+          .split('\n')
+          .filter(
+            (line: string) =>
+              PRIVATE_LINE.test(line) ||
+              (elsewhere.size > 0 && elsewhere.has(lineKey(line))),
+          ).length;
         return sum + Math.max(0, getPoints(content) - skipped);
       }, 0)
     );

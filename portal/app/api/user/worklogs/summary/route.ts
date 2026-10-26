@@ -4,33 +4,8 @@ import { getServerSession } from 'next-auth';
 
 import { db } from '@/lib/mongodb/db-client';
 import { enforcePermission } from '@/lib/permissions/server';
+import { worklogsForViewer } from '@/lib/worklogs/personal';
 import { authOptions } from '@/pages/api/auth/[...nextauth]';
-
-function sanitizePrivateLines(content: string): string {
-  const sanitized = content
-    .split('\n')
-    .filter((line) => !/^\s*(\*\s*)?p:/i.test(line))
-    .join('\n')
-    .trim();
-  return sanitized.length > 0 ? sanitized : '*';
-}
-
-function sanitizeWorklogsForViewer(
-  workLogs: Array<Record<string, any>>,
-  viewerUserId: string | null,
-): Array<Record<string, any>> {
-  return workLogs.map((worklog) => {
-    const isOwner = viewerUserId && worklog.userId === viewerUserId;
-    if (isOwner) return worklog;
-    const works = Array.isArray(worklog.works)
-      ? worklog.works.map((work: Record<string, any>) => {
-          if (!work || typeof work.content !== 'string') return work;
-          return { ...work, content: sanitizePrivateLines(work.content) };
-        })
-      : worklog.works;
-    return { ...worklog, works };
-  });
-}
 
 async function resolveViewerUserId(): Promise<string | null> {
   const session = (await getServerSession(authOptions as any)) as any;
@@ -100,7 +75,7 @@ export async function GET(request: NextRequest) {
         date: 'asc',
       },
     });
-    const sanitizedLogs = sanitizeWorklogsForViewer(_workLogs, viewerUserId);
+    const sanitizedLogs = worklogsForViewer(_workLogs, viewerUserId);
 
     // console.log(_workLogs);
 

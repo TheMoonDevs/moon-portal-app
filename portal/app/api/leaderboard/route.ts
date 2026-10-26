@@ -7,6 +7,7 @@ import {
   worklogPointsForCompany,
 } from '@/lib/progress/buff';
 import { hasContent } from '@/lib/progress/server';
+import { publicWorklog } from '@/lib/worklogs/personal';
 import {
   fail,
   getPublicUsers,
@@ -51,7 +52,7 @@ export async function GET(request: NextRequest) {
     return ok({ month: month.format('YYYY-MM'), rows: [] });
   }
 
-  const [entries, logs, users] = await Promise.all([
+  const [entries, allLogs, users] = await Promise.all([
     db.pointEntry.findMany({
       where: { companyId, date: { gte: from, lte: to } },
     }) as Promise<PointEntry[]>,
@@ -65,6 +66,10 @@ export async function GET(request: NextRequest) {
     }),
     getPublicUsers(userIds),
   ]);
+
+  // Personal (`p:`) lines are only their writer's: they add no points and
+  // a day with nothing else on it is not a worklog day here.
+  const logs = allLogs.map(publicWorklog);
 
   type Row = {
     user: { id: string };

@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 
 import { cn } from '@/lib/utils';
 import type { LinkCandidates } from '@/lib/worklogs/linker';
+import { isPersonalLink, PERSONAL_COMPANY } from '@/lib/worklogs/personal';
 import type { WorklogLink } from '@/models/worklogs';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
@@ -167,17 +168,17 @@ export const WorklogLinks = ({
     }
   };
 
-  // No projects to link to: nothing to show.
-  if (!candidates.projects.length) return null;
-
-  const unplaced = links.filter((l) => l.source === 'none');
+  const personal = links.filter(isPersonalLink);
+  const unplaced = links.filter(
+    (l) => l.source === 'none' && !isPersonalLink(l),
+  );
   const byProject = candidates.projects
     .map((project) => ({
       project,
       lines: links.filter((l) => l.projectId === project.id),
     }))
     .filter((g) => g.lines.length);
-  if (!byProject.length && !unplaced.length) return null;
+  if (!byProject.length && !unplaced.length && !personal.length) return null;
 
   const openGroup = byProject.find((g) => g.project.id === open);
 
@@ -205,7 +206,42 @@ export const WorklogLinks = ({
             <span className="text-neutral-400">{lines.length}</span>
           </button>
         ))}
+        {personal.length > 0 && (
+          <button
+            type="button"
+            onClick={() =>
+              setOpen(open === PERSONAL_COMPANY.id ? null : PERSONAL_COMPANY.id)
+            }
+            title="Your p: lines. Only you can see them."
+            className={cn(
+              'flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors',
+              open === PERSONAL_COMPANY.id
+                ? 'border-neutral-400 bg-neutral-100 text-neutral-900'
+                : 'border-neutral-200 text-neutral-600 hover:border-neutral-300',
+            )}
+          >
+            <span className="material-symbols-outlined !text-sm text-neutral-500">
+              lock
+            </span>
+            {PERSONAL_COMPANY.name}
+            <span className="text-neutral-400">{personal.length}</span>
+          </button>
+        )}
       </div>
+
+      {open === PERSONAL_COMPANY.id && personal.length > 0 && (
+        <ul className="flex flex-col gap-1.5 rounded-lg bg-neutral-50 p-2">
+          <li className="text-[11px] text-neutral-400">
+            Only you can see these. Remove “p:” from a line to link it to a
+            project.
+          </li>
+          {personal.map((link) => (
+            <li key={link.key} className="truncate text-xs text-neutral-600">
+              {link.text}
+            </li>
+          ))}
+        </ul>
+      )}
 
       {openGroup && (
         <ul className="flex flex-col gap-1.5 rounded-lg bg-neutral-50 p-2">
