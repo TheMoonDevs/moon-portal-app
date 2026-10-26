@@ -2,7 +2,10 @@ import dayjs from 'dayjs';
 import type { NextRequest } from 'next/server';
 
 import { db } from '@/lib/mongodb/db-client';
-import { getBuffLevelAndTitle, worklogPoints } from '@/lib/progress/buff';
+import {
+  getBuffLevelAndTitle,
+  worklogPointsForCompany,
+} from '@/lib/progress/buff';
 import { hasContent } from '@/lib/progress/server';
 import {
   fail,
@@ -58,7 +61,7 @@ export async function GET(request: NextRequest) {
         logType: 'dayLog',
         date: { gte: from, lte: to },
       },
-      select: { userId: true, date: true, works: true },
+      select: { userId: true, date: true, works: true, links: true },
     }),
     getPublicUsers(userIds),
   ]);
@@ -83,7 +86,7 @@ export async function GET(request: NextRequest) {
       );
       const days = new Set(myLogs.map((l: { date: string }) => l.date));
       const taskPoints = mine.reduce((sum, e) => sum + (e.points || 0), 0);
-      const fromWorklogs = worklogPoints(myLogs);
+      const fromWorklogs = worklogPointsForCompany(myLogs, companyId);
       const buff = fromWorklogs > 0 ? getBuffLevelAndTitle(fromWorklogs) : null;
       return {
         user,

@@ -17,19 +17,21 @@ import {
 import { toast } from 'sonner';
 
 import CustomDrawer from '@/components/elements/Drawer';
+import { emojiForShortcut, replaceEmojiCodes } from '@/lib/worklogs/emoji';
 import type { WorkLogPoints } from '@/utils/@types/interfaces';
-import { LOGLINKTYPE } from '@/utils/@types/interfaces';
+import type { LOGLINKTYPE } from '@/utils/@types/interfaces';
 import { MdxAppEditor } from '@/utils/configure/MdxAppEditor';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
 import { useDebouncedEffect } from '@/utils/hooks/useDebouncedHook';
 import { useUser } from '@/utils/hooks/useUser';
-import { useAppDispatch, useAppSelector } from '@/utils/redux/store';
+import { useAppDispatch } from '@/utils/redux/store';
 import {
   setEdiotrSaving,
   updateLogs,
 } from '@/utils/redux/worklogs/worklogs.slice';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
+import { WorklogLinks } from './WorklogLinks';
 import { DEFAULT_MARKDOWN_DATA } from './WorklogsHelper';
 import EmojiLegend from './WorklogTabs/EmojiLegend';
 import TodoTab from './WorklogTabs/TodoTab';
@@ -270,23 +272,7 @@ export const WorklogEditor = ({
     _fullpoints: WorkLogPoints[],
   ) => {
     // console.log(content);
-    const emojiMap: { [key: string]: string } = {
-      ':check:': '✅',
-      ':cross:': '❌',
-      ':yellow:': '🟡',
-      ':red:': '🔴',
-      ':calendar:': '📅',
-      ':pencil:': '✏️',
-      ':bulb:': '💡',
-      ':question:': '❓',
-      ':star:': '⭐',
-    };
-
-    let new_content = content;
-
-    for (const text in emojiMap) {
-      new_content = new_content.replaceAll(text, emojiMap[text]);
-    }
+    const new_content = replaceEmojiCodes(content);
     const new_md = _fullpoints.map((_md) => {
       if (_md.link_id === _markdownDat.link_id) {
         return {
@@ -663,16 +649,12 @@ export const WorklogEditor = ({
           <div
             className="relative mb-3 flex flex-row items-stretch px-4"
             onKeyDown={(e) => {
-              //console.log("keyup", e.key);
-              // detect ctrl + space
-              if (e.ctrlKey && e.key === ' ') {
+              // Alt+1…9 for every emoji in the legend, Ctrl+Space and Ctrl+Q
+              // for ✅ and ❌.
+              const emoji = emojiForShortcut(e);
+              if (emoji) {
                 e.preventDefault();
-                // console.log("✅ pressed");
-                insertToContent('✅', bd_index);
-              }
-              if (e.ctrlKey && e.key === 'q') {
-                e.preventDefault();
-                insertToContent('❌', bd_index);
+                insertToContent(emoji, bd_index);
               }
             }}
           >
@@ -737,6 +719,12 @@ export const WorklogEditor = ({
           </div>
         </div>
       ))}
+      {serverLog?.id && (
+        <WorklogLinks
+          worklogId={serverLog.id}
+          version={String(serverLog.updatedAt ?? '')}
+        />
+      )}
       {!compactView && (
         <div
           id="bottom-bar"
