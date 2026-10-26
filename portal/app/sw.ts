@@ -65,6 +65,9 @@ type PushPayload = {
   url?: string;
   tag?: string;
   icon?: string;
+  actions?: { action: string; title: string }[];
+  /** Where each action button goes, by its `action`. */
+  actionUrls?: Record<string, string>;
 };
 
 const readPayload = (event: PushEvent): PushPayload => {
@@ -101,16 +104,20 @@ self.addEventListener('push', (event) => {
         icon: data.icon || '/icon-192x192.png',
         badge: '/icon-192x192.png',
         tag: data.tag,
-        data: { url: data.url || '/' },
-      })
+        data: { url: data.url || '/', actionUrls: data.actionUrls ?? {} },
+        // `actions` is missing from TypeScript's NotificationOptions.
+        ...(data.actions?.length && { actions: data.actions }),
+      } as NotificationOptions)
       .then(syncAppBadge),
   );
 });
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
+  const data = event.notification.data ?? {};
+  // A button press goes to that button's page, a tap anywhere else to `url`.
   const target = new URL(
-    event.notification.data?.url || '/',
+    (event.action && data.actionUrls?.[event.action]) || data.url || '/',
     self.location.origin,
   ).href;
 

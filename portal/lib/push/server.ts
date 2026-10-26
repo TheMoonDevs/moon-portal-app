@@ -10,6 +10,10 @@ export type PushMessage = {
   url?: string;
   /** Notifications with the same tag replace each other. */
   tag?: string;
+  /** Buttons under the notification (Chrome, Edge, Android; not Safari). */
+  actions?: { action: string; title: string }[];
+  /** Where each button goes, by its `action`. */
+  actionUrls?: Record<string, string>;
 };
 
 type StoredSubscription = {
