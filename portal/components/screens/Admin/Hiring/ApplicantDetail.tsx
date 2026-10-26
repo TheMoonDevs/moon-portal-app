@@ -62,6 +62,24 @@ const Answer = ({
     );
   }
   const text = answerText(value);
+  // Imported Google Forms uploads are Drive links, several joined by commas.
+  const urls = text.split(/,\s*/);
+  if (urls.length > 1 && urls.every(isUrl))
+    return (
+      <span className="flex flex-col gap-1">
+        {urls.map((url) => (
+          <a
+            key={url}
+            href={url}
+            target="_blank"
+            rel="noreferrer"
+            className="break-all text-sky-300 hover:underline"
+          >
+            {url}
+          </a>
+        ))}
+      </span>
+    );
   if (isUrl(text))
     return (
       <a
@@ -336,7 +354,9 @@ export const ApplicantDetail = ({
                 />
                 <span className="flex-1">
                   {event.type === 'SUBMITTED'
-                    ? 'Applied'
+                    ? event.byUserId
+                      ? `Applied, imported by ${nameOf(event.byUserId)}${event.text ? ` from ${event.text}` : ''}`
+                      : 'Applied'
                     : event.type === 'STAGE_CHANGED' && event.to
                       ? `${nameOf(event.byUserId)} moved them to ${STAGE_META[event.to]?.label ?? event.to}`
                       : event.type === 'EMAIL'

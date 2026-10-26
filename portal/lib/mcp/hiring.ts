@@ -10,6 +10,8 @@ import {
   APPLICATION_STAGES,
   EMPLOYMENT_TYPES,
 } from '@/lib/hiring/forms';
+import { importApplications } from '@/lib/hiring/importApplications';
+import { MAX_IMPORT_ROWS } from '@/lib/hiring/importRows';
 import {
   deliverHiringEmails,
   HiringSendError,
@@ -37,7 +39,11 @@ import type {
   JobApplication,
   JobOpening,
 } from '@/models/hiring';
-import { FORM_FIELD_TYPE, JOB_OPENING_STATUS } from '@/models/hiring';
+import {
+  APPLICATION_STAGE,
+  FORM_FIELD_TYPE,
+  JOB_OPENING_STATUS,
+} from '@/models/hiring';
 import type { Company } from '@/models/workspace';
 
 import {
@@ -737,6 +743,97 @@ export const HIRING_TOOLS: Tool[] = [
         data: { notes, updatedAt: at, history: { push: event } },
       });
       return { id: application.id, notes };
+    },
+  },
+  {
+    name: 'import_applicants',
+    title: 'Import applicants from a sheet',
+    description: `Adds people who applied earlier, e.g. the rows of a Google Form's response sheet, to an opening. Nobody is emailed. Before importing, show the person how the sheet's columns map to the opening's questions and how many rows there are. Send up to ${MAX_IMPORT_ROWS} rows per call. People already in the opening are skipped, and when someone appears twice the later row is kept.`,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        openingId: { type: 'string' },
+        rows: {
+          type: 'array',
+          maxItems: MAX_IMPORT_ROWS,
+          items: {
+            type: 'object',
+            properties: {
+              name: { type: 'string' },
+              email: { type: 'string' },
+              appliedAt: {
+                type: 'string',
+                description:
+                  'When they applied, ISO 8601 with the sheet’s time zone, e.g. 2025-03-15T14:45:00+05:30. Read the sheet’s date order (day or month first) from its values.',
+              },
+              stage: {
+                type: 'string',
+                description: `${STAGES.join(', ')}, or the sheet's own status words such as "Rejected" or "HR round".`,
+              },
+              notes: { type: 'string', description: 'Private notes.' },
+              answers: {
+                type: 'object',
+                additionalProperties: true,
+                description:
+                  'Answers by question id or label. Columns that match no question are added to the notes.',
+              },
+            },
+            required: ['email'],
+          },
+        },
+        stage: {
+          type: 'string',
+          enum: STAGES,
+          description: 'Stage for rows without their own. Default APPLIED.',
+        },
+        source: {
+          type: 'string',
+          description:
+            'Where the rows came from, e.g. the sheet’s name. Shown in their history.',
+        },
+      },
+      required: ['openingId', 'rows'],
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false },
+    visible: canHire,
+    run: async (user, args, context) => {
+      const { opening } = await findOpening(
+        user,
+        args?.openingId,
+        'hiring:edit',
+      );
+      if (opening.status === JOB_OPENING_STATUS.ARCHIVED)
+        throw new ToolError('This opening is archived.');
+      if (!Array.isArray(args?.rows) || !args.rows.length)
+        throw new ToolError('Give the rows to import.');
+      if (args.rows.length > MAX_IMPORT_ROWS)
+        throw new ToolError(
+          `Send at most ${MAX_IMPORT_ROWS} rows per call, then the next ones.`,
+        );
+      if (args?.stage !== undefined && !isStage(args.stage))
+        throw new ToolError(`Stage is one of ${STAGES.join(', ')}.`);
+
+      const result = await importApplications(
+        user.id,
+        opening,
+        args.rows.map((r: Record<string, unknown>) => ({
+          ...r,
+          submittedAt: r?.appliedAt ?? r?.submittedAt,
+        })),
+        {
+          defaultStage: args?.stage ?? APPLICATION_STAGE.APPLIED,
+          source:
+            typeof args?.source === 'string'
+              ? args.source.trim().slice(0, 120) || null
+              : null,
+        },
+      );
+      return {
+        opening: { id: opening.id, title: opening.title },
+        imported: result.imported,
+        skipped: result.skipped,
+        hiringTab: links(context.origin).hiringTab,
+      };
     },
   },
   {
