@@ -23,6 +23,7 @@ import {
   TextArea,
   TextInput,
 } from '../Admin/shared/AdminUI';
+import { JobDetails, JobText } from './JobText';
 
 /** What a candidate may see of an opening. */
 export interface PublicOpening {
@@ -31,7 +32,10 @@ export interface PublicOpening {
   department: string | null;
   location: string | null;
   employmentType: string | null;
+  /** A short summary, shown in the header. */
   description: string | null;
+  /** The rest of the job post, shown below the header. */
+  details: string | null;
   isOpen: boolean;
   fields: FormField[];
   company: { name: string; logo: string | null; color: string | null };
@@ -356,12 +360,10 @@ export const ApplyPage = ({ opening }: { opening: PublicOpening }) => {
               </p>
             )}
           </div>
-          {opening.description && (
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-neutral-300">
-              {opening.description}
-            </p>
-          )}
+          {opening.description && <JobText text={opening.description} />}
         </header>
+
+        {opening.details && <JobDetails text={opening.details} />}
 
         {submitted ? (
           <section className="flex flex-col items-center gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.06] px-6 py-12 text-center">

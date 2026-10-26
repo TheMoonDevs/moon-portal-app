@@ -43,6 +43,8 @@ const emptyDraft = {
   location: '',
   employmentType: 'Full-time',
   description: '',
+  details: '',
+  notes: '',
   status: JOB_OPENING_STATUS.DRAFT as JOB_OPENING_STATUS,
   fields: [] as DraftField[],
 };
@@ -207,6 +209,8 @@ export const OpeningEditor = ({
             location: opening.location ?? '',
             employmentType: opening.employmentType ?? '',
             description: opening.description ?? '',
+            details: opening.details ?? '',
+            notes: opening.notes ?? '',
             status: opening.status,
             fields: (opening.fields ?? []).map(toDraftField),
           }
@@ -389,15 +393,45 @@ export const OpeningEditor = ({
               </NativeSelect>
             </Field>
             <Field
-              label="Description"
+              label="Summary"
               className="md:col-span-2"
-              hint="Shown at the top of the apply page."
+              hint="A few lines at the top of the apply page."
             >
               <TextArea
                 value={draft.description}
                 onChange={(e) => set('description', e.target.value)}
-                placeholder="What the role is, what they will work on, and what you are looking for."
-                className="min-h-[180px]"
+                placeholder="Who you are and what the role is, in two or three sentences."
+                className="min-h-[110px]"
+              />
+            </Field>
+            <Field
+              label="Full details"
+              className="md:col-span-2"
+              hint="Shown below the summary, where candidates can read more. Start lines with - or * for bullets; a short line above them becomes a heading."
+            >
+              <TextArea
+                value={draft.details}
+                onChange={(e) => set('details', e.target.value)}
+                placeholder={
+                  'Requirements\n- …\n\nResponsibilities\n- …\n\nPay and perks\n- …'
+                }
+                className="min-h-[200px]"
+              />
+            </Field>
+            <Field
+              label={
+                <>
+                  <Icon name="lock" className="text-[14px]" />
+                  Internal notes
+                </>
+              }
+              className="md:col-span-2"
+              hint="Only the hiring team sees these: budget, who interviews, what to look for."
+            >
+              <TextArea
+                value={draft.notes}
+                onChange={(e) => set('notes', e.target.value)}
+                className="min-h-[110px]"
               />
             </Field>
           </div>

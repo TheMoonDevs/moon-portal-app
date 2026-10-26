@@ -128,7 +128,12 @@ export type JobOpening = Loose<
     department?: Nullable<string>;
     location?: Nullable<string>;
     employmentType?: Nullable<string>;
+    /** A short summary, shown at the top of the apply page. */
     description?: Nullable<string>;
+    /** The rest of the job post, shown further down the apply page. */
+    details?: Nullable<string>;
+    /** The hiring team's own notes. Candidates never see them. */
+    notes?: Nullable<string>;
     status: JOB_OPENING_STATUS;
     fields: FormField[];
     createdById: string;
