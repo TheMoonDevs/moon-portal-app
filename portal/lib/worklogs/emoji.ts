@@ -2,8 +2,8 @@
  * The emoji legend used in worklogs: what each emoji means, the text code
  * that turns into it, and its keyboard shortcut. Shortcuts use Alt (Option on
  * a Mac) with a number key, matched by physical key so they work on every
- * keyboard layout. Ctrl+Space and Ctrl+Q stay as the long-standing shortcuts
- * for ✅ and ❌.
+ * keyboard layout. Ctrl+Space, Ctrl+Q and Ctrl+P are quick shortcuts for ✅,
+ * ❌ and 🟡.
  */
 export const EMOJI_LEGEND = [
   { code: ':check:', emoji: '✅', label: 'Task completed', key: '1' },
@@ -36,6 +36,7 @@ export function emojiForShortcut(e: {
   if (e.ctrlKey && !e.altKey && !e.metaKey) {
     if (e.key === ' ') return '✅';
     if (e.key.toLowerCase() === 'q') return '❌';
+    if (e.key.toLowerCase() === 'p') return '🟡';
   }
   if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
     const digit = e.code.match(/^(?:Digit|Numpad)(\d)$/)?.[1];
