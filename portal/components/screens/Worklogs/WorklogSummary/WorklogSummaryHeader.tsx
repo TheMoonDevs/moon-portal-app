@@ -11,6 +11,8 @@ import { APP_ROUTES } from '@/utils/constants/appInfo';
 import useOutsideClick from '@/utils/hooks/useOutsideClick';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
+import { UserAvatar } from '../../Admin/shared/AdminUI';
+
 interface MonthTableProps {
   selectedYear: number;
   joiningYear: number;
@@ -121,49 +123,86 @@ const SelectUser = ({
   isSelectOpen,
   setIsSelectOpen,
   coreTeam,
+  person,
 }: {
   isSelectOpen: boolean;
   setIsSelectOpen: React.Dispatch<React.SetStateAction<boolean>>;
   coreTeam: User[];
+  person?: User | null;
 }) => {
+  const [query, setQuery] = useState('');
+  const ref = useRef(null);
+  useOutsideClick([ref], () => setIsSelectOpen(false));
+
+  const matches = coreTeam.filter((u) =>
+    `${u.name ?? ''} ${u.positionTitle ?? ''}`
+      .toLowerCase()
+      .includes(query.trim().toLowerCase()),
+  );
+
   return (
-    <div className="relative">
+    <div ref={ref} className="relative w-full sm:w-64">
       <button
-        className="flex cursor-pointer items-center gap-2 rounded-md border border-neutral-400 bg-white px-4 py-2 text-sm shadow-lg transition-colors duration-300 hover:bg-neutral-100"
+        className="flex w-full cursor-pointer items-center gap-2 rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm shadow-sm transition-colors duration-300 hover:bg-neutral-100"
         onClick={() => setIsSelectOpen(!isSelectOpen)}
       >
-        <span className="font-medium">Select Team Member</span>
+        <UserAvatar src={person?.avatar} name={person?.name} size={24} />
+        <span className="min-w-0 flex-1 truncate text-left font-medium">
+          {person?.name ?? 'Select a teammate'}
+        </span>
+        <span className="text-xs text-neutral-400">Switch</span>
         <span
-          className={`material-symbols-outlined transition-transform duration-300 ${
+          className={`material-symbols-outlined !text-lg transition-transform duration-300 ${
             isSelectOpen ? 'rotate-180' : 'rotate-0'
           }`}
         >
-          {isSelectOpen ? 'expand_less' : 'expand_more'}
+          expand_more
         </span>
       </button>
-      <div
-        className={`absolute left-0 top-full z-20 w-full rounded-md border border-neutral-400 bg-white shadow-lg transition-all duration-300 ease-in-out ${
-          isSelectOpen ? 'max-h-60 opacity-100' : 'max-h-0 opacity-0'
-        } overflow-hidden`}
-      >
-        <div className="no-scrollbar max-h-60 overflow-y-auto">
-          {coreTeam.map((user: User) => (
-            <Link
-              href={`${APP_ROUTES.userWorklogSummary}/${user.id}`}
-              key={user.id}
-              onClick={() => setIsSelectOpen(false)}
-              className="block w-full px-4 py-2 text-left text-xs transition-colors duration-300 hover:bg-neutral-100 focus:bg-neutral-100"
-            >
-              {user.name}
-            </Link>
-          ))}
+      {isSelectOpen && (
+        <div className="absolute right-0 top-full z-30 mt-1 w-full overflow-hidden rounded-md border border-neutral-200 bg-white shadow-lg">
+          <input
+            autoFocus
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search people"
+            className="w-full border-b border-neutral-200 px-3 py-2 text-sm outline-none"
+          />
+          <div className="no-scrollbar max-h-72 overflow-y-auto">
+            {matches.map((user: User) => (
+              <Link
+                href={`${APP_ROUTES.userWorklogSummary}/${user.id}`}
+                key={user.id}
+                onClick={() => setIsSelectOpen(false)}
+                className={`flex items-center gap-2 px-3 py-2 text-left text-sm transition-colors duration-300 hover:bg-neutral-100 ${
+                  user.id === person?.id ? 'bg-neutral-100 font-semibold' : ''
+                }`}
+              >
+                <UserAvatar src={user.avatar} name={user.name} size={24} />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate">{user.name}</span>
+                  {user.positionTitle && (
+                    <span className="block truncate text-xs text-neutral-500">
+                      {user.positionTitle}
+                    </span>
+                  )}
+                </span>
+              </Link>
+            ))}
+            {matches.length === 0 && (
+              <p className="p-3 text-xs text-neutral-500">
+                No one found.
+              </p>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
 
 interface WorklogSummaryHeaderProps {
+  person?: User | null;
   joiningDate?: Date | string | null;
   setOnlyYearSummary: React.Dispatch<React.SetStateAction<boolean>>;
   setSelectedYear: React.Dispatch<React.SetStateAction<number>>;
@@ -173,6 +212,7 @@ interface WorklogSummaryHeaderProps {
   selectedYear: number;
 }
 export const WorklogSummaryHeader = ({
+  person,
   joiningDate,
   setOnlyYearSummary,
   setSelectedYear,
@@ -335,6 +375,7 @@ export const WorklogSummaryHeader = ({
           isSelectOpen={isSelectOpen}
           setIsSelectOpen={setIsSelectOpen}
           coreTeam={coreTeam}
+          person={person}
         />
       )}
     </div>

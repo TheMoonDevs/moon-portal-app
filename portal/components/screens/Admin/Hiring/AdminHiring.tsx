@@ -41,6 +41,7 @@ import {
   STAGE_META,
   timeAgo,
 } from './hiringMeta';
+import { ImportApplicants } from './ImportApplicants';
 import { OpeningEditor } from './OpeningEditor';
 
 /** How often the board checks for new applicants while the tab is visible. */
@@ -200,6 +201,7 @@ export const AdminHiring = ({
   const [archiving, setArchiving] = useState<OpeningRow | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [composeIds, setComposeIds] = useState<string[] | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   const knownIds = useRef<Set<string> | null>(null);
   const currentOpeningId = useRef<string | null>(null);
@@ -532,6 +534,13 @@ export const AdminHiring = ({
                     )}
                     {canEdit && (
                       <IconAction
+                        icon="upload_file"
+                        label="Import applicants from a sheet"
+                        onClick={() => setImportOpen(true)}
+                      />
+                    )}
+                    {canEdit && (
+                      <IconAction
                         icon="edit"
                         label="Edit opening and form"
                         onClick={() => {
@@ -674,6 +683,17 @@ export const AdminHiring = ({
                       opening.status === JOB_OPENING_STATUS.OPEN
                         ? 'Share the apply link. New applicants appear here on their own.'
                         : 'Publish the opening and share its link to start receiving applications.'
+                    }
+                    action={
+                      canEdit && (
+                        <AdminButton
+                          size="sm"
+                          icon="upload_file"
+                          onClick={() => setImportOpen(true)}
+                        >
+                          Import from a sheet
+                        </AdminButton>
+                      )
                     }
                   />
                 </Panel>
@@ -902,6 +922,22 @@ export const AdminHiring = ({
           onSent={(result) => {
             replaceApplications(result.applications);
             if (!result.failed) setSelected(new Set());
+          }}
+        />
+      )}
+      {opening && canEdit && (
+        <ImportApplicants
+          open={importOpen}
+          onOpenChange={setImportOpen}
+          openingId={opening.id}
+          openingTitle={opening.title}
+          fields={opening.fields ?? []}
+          existingEmails={applications.map((a) => a.email)}
+          onImported={() => {
+            // They're not new applicants, so skip the "just applied" toast.
+            knownIds.current = null;
+            loadApplications(true);
+            loadOpenings(true);
           }}
         />
       )}

@@ -1,7 +1,6 @@
 import { LOOK_OPTIONS, LOOK_PARTS } from '@/lib/avatar/look';
 import { getLook, saveLook } from '@/lib/avatar/server';
 import { db } from '@/lib/mongodb/db-client';
-import { hasPermission } from '@/lib/permissions/matching';
 import type { SessionUser } from '@/lib/permissions/server';
 import { syncTaskPoints } from '@/lib/progress/server';
 import { goalProgress, PERIOD_LABELS } from '@/lib/workspace/projects';
@@ -15,6 +14,8 @@ import {
   TASK_STATUS,
 } from '@/models/workspace';
 
+import { HIRING_TOOLS } from './hiring';
+import { companiesWith, type Tool, ToolError } from './shared';
 import type { PointInput, PointStatus } from './worklog';
 import { claudeLines, logPoints, POINT_STATUSES, todayFor } from './worklog';
 
@@ -23,16 +24,7 @@ import { claudeLines, logPoints, POINT_STATUSES, todayFor } from './worklog';
  * person. Every tool works with that person's own permissions.
  */
 
-export class ToolError extends Error {}
-
-type Tool = {
-  name: string;
-  title: string;
-  description: string;
-  inputSchema: Record<string, unknown>;
-  annotations?: Record<string, boolean>;
-  run: (user: SessionUser, args: any) => Promise<unknown>;
-};
+export { ToolError };
 
 const STATUS_KEYS = Object.keys(POINT_STATUSES) as PointStatus[];
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
@@ -40,16 +32,6 @@ const DAY = /^\d{4}-\d{2}-\d{2}$/;
 async function userToday(user: SessionUser) {
   const record = await db.user.findFirst({ where: { id: user.id } });
   return todayFor(record?.timezone);
-}
-
-/** Companies where the person holds `permission`, by id. */
-async function companiesWith(user: SessionUser, permission: string) {
-  const workspace = await getWorkspaceForUser(user);
-  return new Map(
-    workspace
-      .filter((w) => hasPermission(w.permissions, permission))
-      .map((w) => [w.company.id, w.company]),
-  );
 }
 
 async function findTask(user: SessionUser, ref: unknown, permission: string) {
@@ -449,7 +431,15 @@ export const TOOLS: Tool[] = [
       return { look: result.look };
     },
   },
+  ...HIRING_TOOLS,
 ];
 
-/** What tools/list returns. */
-export const toolList = () => TOOLS.map(({ run: _run, ...tool }) => tool);
+/** What tools/list returns: the tools this person can use. */
+export async function toolList(user: SessionUser) {
+  const visible = await Promise.all(
+    TOOLS.map((t) => (t.visible ? t.visible(user) : true)),
+  );
+  return TOOLS.filter((_, i) => visible[i]).map(
+    ({ run: _run, visible: _visible, ...tool }) => tool,
+  );
+}
