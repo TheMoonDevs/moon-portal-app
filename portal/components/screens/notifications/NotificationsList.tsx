@@ -6,7 +6,6 @@ import React, { useState } from 'react';
 
 import ToolTip from '@/components/elements/ToolTip';
 import { useNotifications } from '@/utils/hooks/useNotifications';
-import { useUser } from '@/utils/hooks/useUser';
 
 export interface INotification extends Omit<Notification, 'notificationData'> {
   notificationData: INotificationData;
@@ -23,106 +22,136 @@ export interface IAction {
   trigger: string;
 }
 
-export const timeAgo = (timestamp: string) => {
-  return formatDistanceToNow(new Date(timestamp), { addSuffix: true });
+export const timeAgo = (timestamp?: string | Date | null) => {
+  const date = timestamp ? new Date(timestamp) : null;
+  if (!date || Number.isNaN(date.getTime())) return '';
+  return formatDistanceToNow(date, { addSuffix: true });
 };
 
 const NotificationsList = () => {
-  const { notifications, toggleNotificationRead, handleMarkAllAsRead } =
-    useNotifications();
-  // console.log(notifications);
+  const {
+    notifications,
+    unreadNotificationsCount,
+    isLoading,
+    toggleNotificationRead,
+    markAsRead,
+    handleMarkAllAsRead,
+    removeNotification,
+    clearAllNotifications,
+  } = useNotifications();
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const hasUnreadNotifications = notifications.some(
-    (notification: INotification) => !notification?.isRead,
-  );
-  const { user } = useUser();
+  const [confirmingClear, setConfirmingClear] = useState(false);
 
   const toggleDescription = (notification: INotification) => {
     if (expandedId === notification.id) {
       setExpandedId(null);
-    } else {
-      setExpandedId(notification.id);
-
-      if (!notification.isRead) {
-        toggleNotificationRead(notification);
-      }
+      return;
     }
+    setExpandedId(notification.id);
+    markAsRead(notification);
+  };
+
+  const clearAll = () => {
+    if (!confirmingClear) {
+      setConfirmingClear(true);
+      return;
+    }
+    setConfirmingClear(false);
+    setExpandedId(null);
+    clearAllNotifications();
   };
 
   return (
     <div className="">
       <div className="sticky top-0 z-10 bg-white p-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <h4 className="text-lg font-bold">Notifications</h4>
-          <button
-            className={`flex items-center gap-1 p-2 text-xs text-gray-600 ${
-              !hasUnreadNotifications ? 'cursor-not-allowed opacity-50' : ''
-            }`}
-            onClick={handleMarkAllAsRead}
-            disabled={!hasUnreadNotifications}
-          >
-            <span
-              className="material-symbols-outlined"
-              style={{ fontSize: '16px' }}
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              className="flex items-center gap-1 rounded p-2 text-xs text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+              onClick={handleMarkAllAsRead}
+              disabled={unreadNotificationsCount === 0}
             >
-              done_all
-            </span>
-            Mark all as read
-          </button>
+              <span
+                className="material-symbols-outlined"
+                style={{ fontSize: '16px' }}
+              >
+                done_all
+              </span>
+              Mark all as read
+            </button>
+            <button
+              type="button"
+              className={`flex items-center gap-1 rounded p-2 text-xs hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 ${
+                confirmingClear ? 'font-semibold text-red-600' : 'text-gray-600'
+              }`}
+              onClick={clearAll}
+              onBlur={() => setConfirmingClear(false)}
+              disabled={notifications.length === 0}
+            >
+              <span
+                className="material-symbols-outlined"
+                style={{ fontSize: '16px' }}
+              >
+                delete_sweep
+              </span>
+              {confirmingClear ? 'Tap again to clear' : 'Clear all'}
+            </button>
+          </div>
         </div>
       </div>
       {notifications.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-gray-200 bg-gray-50 p-6">
+        <div className="mx-4 flex flex-col items-center justify-center rounded-lg border border-gray-200 bg-gray-50 p-6">
           <span className="material-symbols-outlined mb-2 text-4xl text-gray-600">
             notifications
           </span>
-          <span className="text-lg text-gray-500">No notifications</span>
+          <span className="text-lg text-gray-500">
+            {isLoading ? 'Loading…' : 'No notifications'}
+          </span>
         </div>
       ) : (
         <div className="space-y-2 p-4">
           {notifications.map((notification: INotification) => (
             <div
               key={notification.id}
-              className={`flex flex-col p-3 ${
-                (!notification.isRead ||
-                  !notification?.notificationData?.actionDone) &&
-                'bg-gray-100'
-              } cursor-pointer rounded-lg shadow transition hover:bg-gray-200`}
+              className={`flex cursor-pointer flex-col rounded-lg p-3 shadow transition hover:bg-gray-200 ${
+                notification.isRead ? 'bg-white' : 'bg-gray-100'
+              }`}
               onClick={() => toggleDescription(notification)}
             >
               <div className="flex items-start">
                 <span
-                  className={`material-symbols-outlined ${
-                    !notification.isRead ||
-                    !notification?.notificationData?.actionDone
-                      ? 'text-blue-500'
-                      : ''
-                  } mr-2`}
+                  className={`material-symbols-outlined mr-2 ${
+                    notification.isRead ? 'text-gray-400' : 'text-blue-500'
+                  }`}
                 >
                   circle_notifications
                 </span>
 
-                <div className="flex w-full flex-col">
-                  <div className="flex justify-between">
-                    <div>
+                <div className="flex w-full min-w-0 flex-col">
+                  <div className="flex justify-between gap-2">
+                    <div className="min-w-0">
                       <p
-                        className={`text-sm font-semibold ${
-                          !notification.isRead && 'text-blue-700'
-                        } first-letter:capitalize`}
+                        className={`text-sm font-semibold first-letter:capitalize ${
+                          notification.isRead ? '' : 'text-blue-700'
+                        }`}
                       >
                         {notification.title}
                       </p>
                       <p className="mt-1 text-xs text-gray-500">
-                        {timeAgo(notification.updatedAt.toString())}
+                        {timeAgo(
+                          (notification.createdAt ??
+                            notification.updatedAt) as string,
+                        )}
                       </p>
                     </div>
-                    {notification?.notificationData?.actionDone && (
-                      <span className="material-symbols-outlined text-green-500">
-                        done
-                      </span>
-                    )}
-                    {notification.matchId !==
-                      `${user?.id}_onboard_walletAddress` && (
+                    <div className="flex shrink-0 items-start gap-1">
+                      {notification?.notificationData?.actionDone && (
+                        <span className="material-symbols-outlined text-green-500">
+                          done
+                        </span>
+                      )}
                       <ToolTip
                         title={
                           notification.isRead
@@ -130,11 +159,19 @@ const NotificationsList = () => {
                             : 'Mark as read'
                         }
                       >
-                        <span
-                          className={`material-symbols-outlined ${
-                            notification.isRead ? '' : 'text-blue-500'
+                        <button
+                          type="button"
+                          aria-label={
+                            notification.isRead
+                              ? 'Mark as unread'
+                              : 'Mark as read'
+                          }
+                          className={`material-symbols-outlined rounded p-0.5 hover:bg-gray-300 ${
+                            notification.isRead
+                              ? 'text-gray-500'
+                              : 'text-blue-500'
                           }`}
-                          style={{ fontSize: '20px', cursor: 'pointer' }}
+                          style={{ fontSize: '20px' }}
                           onClick={(e) => {
                             e.stopPropagation();
                             toggleNotificationRead(notification);
@@ -143,20 +180,35 @@ const NotificationsList = () => {
                           {notification.isRead
                             ? 'mark_chat_read'
                             : 'mark_chat_unread'}
-                        </span>
+                        </button>
                       </ToolTip>
-                    )}
+                      <ToolTip title="Remove">
+                        <button
+                          type="button"
+                          aria-label="Remove notification"
+                          className="material-symbols-outlined rounded p-0.5 text-gray-500 hover:bg-gray-300 hover:text-red-600"
+                          style={{ fontSize: '20px' }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (expandedId === notification.id)
+                              setExpandedId(null);
+                            removeNotification(notification);
+                          }}
+                        >
+                          close
+                        </button>
+                      </ToolTip>
+                    </div>
                   </div>
                   {expandedId === notification.id && (
                     <div className="mt-2 flex flex-col space-y-2">
-                      <p className="text-sm text-gray-500">
+                      <p className="whitespace-pre-wrap text-sm text-gray-500">
                         {notification.description}
                       </p>
-                      <div className="flex flex-wrap gap-2">
-                        {notification.notificationData?.actions?.map(
-                          (action: IAction, index: number) => {
-                            return notification.notificationData
-                              .actionDone ? null : (
+                      {!notification.notificationData?.actionDone && (
+                        <div className="flex flex-wrap gap-2">
+                          {notification.notificationData?.actions?.map(
+                            (action: IAction, index: number) => (
                               <Link
                                 key={`${index}-${notification.id}-action`}
                                 className="rounded bg-blue-600 px-3 py-1 text-sm text-white transition hover:bg-blue-700"
@@ -165,10 +217,10 @@ const NotificationsList = () => {
                               >
                                 {action.title}
                               </Link>
-                            );
-                          },
-                        )}
-                      </div>
+                            ),
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

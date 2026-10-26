@@ -1,186 +1,119 @@
-"use client";
-import { useEffect } from "react";
-import useSWR, { SWRResponse } from "swr";
-import { setNotifications } from "@/utils/redux/notification/notification.slice";
-import { useAppDispatch, useAppSelector } from "@/utils/redux/store";
-import { INotification } from "@/components/screens/notifications/NotificationsList";
-import { PortalSdk } from "../services/PortalSdk";
+'use client';
+import { useEffect } from 'react';
+import useSWR from 'swr';
 
-const NOTIFICATIONS_KEY = "notifications";
-const ONE_MINUTE = 60 * 1000;
+import type { INotification } from '@/components/screens/notifications/NotificationsList';
+import { useAppSelector } from '@/utils/redux/store';
 
-// Fetch notifications and lastModified from localStorage
-const getNotificationsFromLocalStorage = () => {
-  const storedData = localStorage.getItem(NOTIFICATIONS_KEY);
-  if (!storedData)
-    return {
-      notifications: [],
-      lastModified: new Date("1970-01-01").toUTCString(),
-    };
+import { PortalSdk } from '../services/PortalSdk';
 
-  const parsedData = JSON.parse(storedData);
+const NOTIFICATIONS_URL = '/api/notifications/get';
+// Notifications used to be cached in the browser under this key.
+const LEGACY_STORAGE_KEY = 'notifications';
 
-  return {
-    notifications: parsedData?.notifications || [],
-    lastModified:
-      parsedData?.lastModified || new Date("1970-01-01").toUTCString(),
-  };
+const fetchNotifications = async (url: string): Promise<INotification[]> => {
+  const response = await fetch(url, { cache: 'no-store' });
+  if (!response.ok) throw new Error('Could not load notifications');
+  const body = await response.json();
+  return body?.data?.notifications ?? [];
 };
 
-// Save notifications and lastModified to localStorage
-const saveNotificationsToLocalStorage = (
-  notifications: INotification[],
-  lastModified: string | null
-) => {
-  const dataToStore = { notifications, lastModified };
-  localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(dataToStore));
-};
-
-// Check if lastModified is within the past 1 minute
-const isLastModifiedTooRecent = (lastModified: string | null): boolean => {
-  if (!lastModified) return false;
-  const lastModifiedDate = new Date(lastModified).getTime();
-  const currentTime = new Date().getTime();
-  return currentTime - lastModifiedDate < ONE_MINUTE; // true if less than 1 minute ago
-};
-
+/**
+ * The signed-in user's notifications, always read from the server. Changes are
+ * shown straight away and rolled back if the server refuses them.
+ */
 export const useNotifications = () => {
-  const dispatch = useAppDispatch();
   const user = useAppSelector((state) => state.auth.user);
-  const notifications = useAppSelector(
-    (state) => state.notifications.notifications
+  const { data, error, isLoading, mutate } = useSWR<INotification[]>(
+    user ? [NOTIFICATIONS_URL, user.id] : null,
+    ([url]: [string]) => fetchNotifications(url),
+    { refreshInterval: 3 * 60 * 1000, revalidateOnFocus: true },
   );
-  const notificationsCount = useAppSelector(
-    (state) => state.notifications.notificationsCount
-  );
-  const unreadNotifications = notifications.filter(
-    (notification: INotification) => !notification?.isRead
-  );
-
-  const toggleNotificationRead = async (notification: INotification) => {
-    const { lastModified } = getNotificationsFromLocalStorage();
-    try {
-      const updatedNotifications = notifications.map((n: INotification) =>
-        n.id === notification.id ? { ...n, isRead: !n.isRead } : n
-      );
-      dispatch(setNotifications(updatedNotifications));
-      saveNotificationsToLocalStorage(updatedNotifications, lastModified);
-      await PortalSdk.putData("/api/notifications/update", {
-        ...notification,
-        isRead: !notification.isRead,
-      });
-    } catch (error) {
-      dispatch(setNotifications(notifications));
-      saveNotificationsToLocalStorage(notifications, lastModified);
-      console.error("Error marking notification as read", error);
-    }
-  };
-
-  const handleMarkAllAsRead = async () => {
-    if (unreadNotifications.length === 0) return;
-    const { lastModified } = getNotificationsFromLocalStorage();
-    try {
-      const updatedNotifications = notifications.map(
-        (notification: INotification) => ({
-          ...notification,
-          isRead: true,
-        })
-      );
-      dispatch(setNotifications(updatedNotifications));
-      await Promise.all(
-        unreadNotifications.map((notification: INotification) =>
-          PortalSdk.putData("/api/notifications/update", {
-            ...notification,
-            isRead: true,
-          })
-        )
-      );
-    } catch (error) {
-      dispatch(setNotifications(notifications));
-      saveNotificationsToLocalStorage(notifications, lastModified);
-      console.error("Error marking all notifications as read", error);
-    }
-  };
-
-  const { data, error }: SWRResponse<any, Error> = useSWR(
-    user ? `/api/notifications/get?userId=${user.id}` : null,
-    async (url) => {
-      const { lastModified } = getNotificationsFromLocalStorage();
-      // Skip the fetch if the last modified is less than a minute ago
-      if (isLastModifiedTooRecent(lastModified)) {
-        console.log("Skipping fetch, data is fresh");
-        return { newNotifications: [], lastModified };
-      }
-
-      // Set the If-Modified-Since header to get only new or updated notifications
-      const headers: Record<string, string> = {};
-      if (lastModified) {
-        headers["If-Modified-Since"] = lastModified;
-      }
-
-      // Fetch only modified notifications from the server
-      const response = await fetch(url, { headers });
-
-      const newLastModified = response.headers.get("Last-Modified");
-
-      if (response.status === 304) {
-        return { newNotifications: [], lastModified: newLastModified }; // No updates, return an empty array
-      }
-
-      const data = await response.json();
-      return {
-        newNotifications: data.data.notifications,
-        lastModified: newLastModified,
-      };
-    },
-    {
-      refreshInterval: 3 * 60 * 1000, // Refetch every 3 minutes
-    }
-  );
+  const notifications = data ?? [];
+  const unreadNotifications = notifications.filter((n) => !n?.isRead);
 
   useEffect(() => {
-    const { newNotifications, lastModified: newLastModified } = data || {};
-    const { notifications: storedNotifications } =
-      getNotificationsFromLocalStorage();
-
-    if (newNotifications && newNotifications.length > 0) {
-      // Update existing notifications or add new ones
-      const updatedNotifications = storedNotifications.map(
-        (notification: any) => {
-          const updated = newNotifications.find(
-            (n: any) => n.id === notification.id
-          );
-          return updated ? updated : notification;
-        }
-      );
-      // Append any new notifications that do not already exist
-      newNotifications.forEach((notification: any) => {
-        if (!updatedNotifications.find((n: any) => n.id === notification.id)) {
-          updatedNotifications.push(notification);
-        }
-      });
-
-      dispatch(setNotifications(updatedNotifications));
-
-      // Save the new notifications and the new Last-Modified timestamp
-      saveNotificationsToLocalStorage(updatedNotifications, newLastModified);
+    try {
+      localStorage.removeItem(LEGACY_STORAGE_KEY);
+    } catch {
+      // Storage can be blocked; nothing to clean up then.
     }
-  }, [data?.newNotifications]);
-
-  useEffect(() => {
-    const { notifications: storedNotifications } =
-      getNotificationsFromLocalStorage();
-    dispatch(setNotifications(storedNotifications));
   }, []);
+
+  /** Apply `change` locally, send `request`, then resync with the server. */
+  const optimistic = async (
+    change: (list: INotification[]) => INotification[],
+    request: () => Promise<unknown>,
+  ) => {
+    try {
+      await mutate(
+        async () => {
+          await request();
+          return fetchNotifications(NOTIFICATIONS_URL);
+        },
+        {
+          optimisticData: (current?: INotification[]) => change(current ?? []),
+          rollbackOnError: true,
+          revalidate: false,
+        },
+      );
+    } catch (e) {
+      console.error('Notification update failed', e);
+    }
+  };
+
+  const setRead = (ids: string[], isRead: boolean) =>
+    optimistic(
+      (list) => list.map((n) => (ids.includes(n.id) ? { ...n, isRead } : n)),
+      () => PortalSdk.putData('/api/notifications/update', { ids, isRead }),
+    );
+
+  const toggleNotificationRead = (notification: INotification) =>
+    setRead([notification.id], !notification.isRead);
+
+  const markAsRead = (notification: INotification) =>
+    notification.isRead ? Promise.resolve() : setRead([notification.id], true);
+
+  const handleMarkAllAsRead = () => {
+    if (unreadNotifications.length === 0) return Promise.resolve();
+    return optimistic(
+      (list) => list.map((n) => ({ ...n, isRead: true })),
+      () =>
+        PortalSdk.putData('/api/notifications/update', {
+          all: true,
+          isRead: true,
+        }),
+    );
+  };
+
+  const removeNotification = (notification: INotification) =>
+    optimistic(
+      (list) => list.filter((n) => n.id !== notification.id),
+      () =>
+        PortalSdk.deleteData('/api/notifications/delete', {
+          ids: [notification.id],
+        }),
+    );
+
+  const clearAllNotifications = () => {
+    if (notifications.length === 0) return Promise.resolve();
+    return optimistic(
+      () => [],
+      () => PortalSdk.deleteData('/api/notifications/delete', { all: true }),
+    );
+  };
 
   return {
     notifications,
-    notificationsCount,
-    unreadNotifications: unreadNotifications,
+    notificationsCount: notifications.length,
+    unreadNotifications,
     unreadNotificationsCount: unreadNotifications.length,
-    isLoading: !error && !data?.notifications,
+    isLoading,
     isError: error,
     toggleNotificationRead,
+    markAsRead,
     handleMarkAllAsRead,
+    removeNotification,
+    clearAllNotifications,
   };
 };

@@ -4,7 +4,6 @@ import type { TypedUseSelectorHook } from 'react-redux/es/types';
 
 import authReducer from './auth/auth.slice';
 import filesUploadReducer from './filesUpload/fileUpload.slice';
-import notificationsReducer from './notification/notification.slice';
 import uiReducer from './ui/ui.slice';
 import laterTodosReducer from './worklogs/laterTodos.slice';
 import worklogsReducer from './worklogs/worklogs.slice';
@@ -14,7 +13,6 @@ const store = configureStore({
   reducer: {
     auth: authReducer,
     filesUpload: filesUploadReducer,
-    notifications: notificationsReducer,
     ui: uiReducer,
     worklogs: worklogsReducer,
     laterTodos: laterTodosReducer,
