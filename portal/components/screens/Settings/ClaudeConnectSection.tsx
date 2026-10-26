@@ -45,6 +45,15 @@ const CopyRow = ({ value, label }: { value: string; label: string }) => (
   </div>
 );
 
+// Works pasted into any Claude chat, and also reads fine as saved
+// instructions. Keep the statuses in step with log_work's.
+const WORKLOG_INSTRUCTIONS = `Log my work to the PORTAL work portal connector.
+- When you start a task, call get_context, then log_work a short point with status "doing", under the matching project.
+- When it ends, log the same text again as "done", "not_done" or "blocked". Use "waiting" when you need my input or approval.
+- Keep each point to one short line about the outcome. Never include secrets or passwords.
+
+Follow this from now on in this chat. If the PORTAL connector isn't available here, tell me to turn it on first. If you can edit ~/.claude/CLAUDE.md (as in Claude Code), add these instructions there so every session follows them. Otherwise remind me once to paste them into my custom instructions or a Project's instructions so they stick.`;
+
 const ago = (iso: string | null) => {
   if (!iso) return 'not used yet';
   const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
@@ -189,6 +198,37 @@ export const ClaudeConnectSection = () => {
             shows Claude how.
           </p>
         )}
+      </div>
+
+      <div>
+        <span className="mb-1 block text-xs font-semibold text-neutral-600">
+          Tell Claude to log your work
+        </span>
+        <p className="mb-2 text-sm text-neutral-700">
+          Copy this message and paste it into a Claude chat. Claude starts
+          logging right away.
+        </p>
+        <div className="relative rounded-lg bg-neutral-50 px-3 py-2">
+          <pre className="whitespace-pre-wrap break-words pr-14 font-mono text-xs text-neutral-800">
+            {WORKLOG_INSTRUCTIONS}
+          </pre>
+          <button
+            onClick={() =>
+              copy(WORKLOG_INSTRUCTIONS, 'Copied. Paste it into Claude.')
+            }
+            className="absolute right-2 top-2 rounded-md px-2 py-1 text-xs font-medium text-neutral-900 hover:bg-neutral-200"
+            aria-label="Copy instructions"
+          >
+            Copy
+          </button>
+        </div>
+        <p className="mt-2 text-xs text-neutral-500">
+          To keep it for every chat, save it as custom instructions: on
+          claude.ai that&apos;s Settings, Profile, personal preferences, or a
+          Project&apos;s instructions. In Claude Code it goes in{' '}
+          <code>~/.claude/CLAUDE.md</code>. Turn on the Portal connector
+          wherever you use Claude too; without it the instructions do nothing.
+        </p>
       </div>
 
       <div>
