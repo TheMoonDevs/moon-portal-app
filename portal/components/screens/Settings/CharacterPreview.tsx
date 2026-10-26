@@ -109,6 +109,7 @@ export default function CharacterPreview({
         f.head.rotation.z = Math.sin(t * 1.3) * 0.1;
         f.arms[1].rotation.z = waving ? -2.1 + Math.sin(t * 10) * 0.35 : 0;
         f.arms[0].rotation.z = waving ? 0 : Math.sin(t * 2.4) * 0.08;
+        if (f.aura) f.aura.rotation.y = t * 0.8;
         if (f.pet) f.pet.position.y = Math.max(0, Math.sin(t * 4)) * 0.12;
       }
       renderer.render(scene, camera);

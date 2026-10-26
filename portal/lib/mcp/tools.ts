@@ -1,4 +1,9 @@
-import { LOOK_OPTIONS, LOOK_PARTS } from '@/lib/avatar/look';
+import {
+  lockMessage,
+  LOOK_OPTIONS,
+  LOOK_PARTS,
+  LOOK_STYLES,
+} from '@/lib/avatar/look';
 import { getLook, saveLook } from '@/lib/avatar/server';
 import { db } from '@/lib/mongodb/db-client';
 import type { SessionUser } from '@/lib/permissions/server';
@@ -402,33 +407,45 @@ export const TOOLS: Tool[] = [
     name: 'get_avatar',
     title: 'See my character',
     description:
-      "How the person's little character in the portal's World looks now, and every choice for each part. Call this before set_avatar.",
+      "How the person's little character in the portal's World looks now, every choice for each part, the anime styles, and whether they can change it yet (a saved look stays for 30 days, or until they earn 100 more work points). Call this before set_avatar.",
     inputSchema: { type: 'object', properties: {} },
     annotations: { readOnlyHint: true },
-    run: async (user) => ({
-      look: await getLook(user.id),
-      options: LOOK_OPTIONS,
-    }),
+    run: async (user) => {
+      const { look, lock } = await getLook(user.id);
+      return {
+        look,
+        lock: { ...lock, message: lockMessage(lock) },
+        options: LOOK_OPTIONS,
+        styles: LOOK_STYLES.map((s) => s.name),
+      };
+    },
   },
   {
     name: 'set_avatar',
     title: 'Restyle my character',
     description:
-      'Changes how the person\'s character in the portal\'s World looks. Turn what they ask for into these choices: "make me a pink-haired wizard with a cat" could be hairColor pink, hat party hat, extra cape, pet cat. Only the parts you pass change. Outfit colour "brand" is their company\'s colour. Tell the person what you picked; they see it in the World and in Settings › Character.',
+      'Changes how the person\'s character in the portal\'s World looks. Turn what they ask for into these choices: "make me a pink-haired wizard with a cat" could be style Wizard with hairColor pink and pet cat. A style (anime looks such as Ninja, Samurai, Pop idol, Magical girl) sets the whole look first; parts you pass then change on top of it, and parts you leave out stay. Outfit colour "brand" is their company\'s colour. Once saved, the look is set for 30 days unless they earn 100 more work points, so describe what you will pick and get their OK before calling this. They see it in the World and in Settings › Character.',
     inputSchema: {
       type: 'object',
-      properties: Object.fromEntries(
-        LOOK_PARTS.map((part) => [
-          part,
-          { type: 'string', enum: [...LOOK_OPTIONS[part]] },
-        ]),
-      ),
+      properties: {
+        style: {
+          type: 'string',
+          enum: LOOK_STYLES.map((s) => s.name),
+          description: 'An anime style to start from.',
+        },
+        ...Object.fromEntries(
+          LOOK_PARTS.map((part) => [
+            part,
+            { type: 'string', enum: [...LOOK_OPTIONS[part]] },
+          ]),
+        ),
+      },
     },
     annotations: { readOnlyHint: false, destructiveHint: false },
     run: async (user, args) => {
       const result = await saveLook(user.id, args);
       if (result.errors) throw new ToolError(result.errors.join(' '));
-      return { look: result.look };
+      return { look: result.look, lock: lockMessage(result.lock!) };
     },
   },
   ...HIRING_TOOLS,

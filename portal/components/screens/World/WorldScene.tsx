@@ -511,6 +511,7 @@ export const WorldScene = ({
           : Math.sin(t * 2 + p.phase) * 0.015;
         // A little head tilt now and then, and the pet hops along.
         p.art.head.rotation.z = Math.sin(t * 0.7 + p.phase) * 0.08;
+        if (p.art.aura) p.art.aura.rotation.y = t * 0.8;
         if (p.art.pet)
           p.art.pet.position.y = walking
             ? Math.abs(Math.sin(p.phase * 0.8)) * 0.14

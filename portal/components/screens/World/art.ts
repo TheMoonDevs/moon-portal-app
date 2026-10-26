@@ -2,7 +2,14 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 
 import type { Look } from '@/lib/avatar/look';
-import { defaultLook, HAIR_HEX, OUTFIT_HEX, SKIN_HEX } from '@/lib/avatar/look';
+import {
+  defaultLook,
+  EYE_HEX,
+  HAIR_HEX,
+  OUTFIT_HEX,
+  SHOE_HEX,
+  SKIN_HEX,
+} from '@/lib/avatar/look';
 import type { WorldBrand } from '@/lib/world/state';
 
 /*
@@ -941,38 +948,61 @@ const torus = (r: number, tube: number, arc = Math.PI * 2, sides = 24) =>
     `torus${r2(r)},${r2(tube)},${r2(arc)},${sides}`,
     () => new THREE.TorusGeometry(r, tube, 8, sides, arc),
   );
-const heart = () =>
-  shape('heart', () => {
-    const s = new THREE.Shape();
-    s.moveTo(0, -0.1);
-    s.bezierCurveTo(-0.16, 0.02, -0.1, 0.13, 0, 0.05);
-    s.bezierCurveTo(0.1, 0.13, 0.16, 0.02, 0, -0.1);
-    const g = new THREE.ExtrudeGeometry(s, {
-      depth: 0.03,
-      bevelEnabled: false,
-    });
-    g.translate(0, 0, -0.015);
+const flat = (key: string, s: THREE.Shape, depth = 0.03) =>
+  shape(key, () => {
+    const g = new THREE.ExtrudeGeometry(s, { depth, bevelEnabled: false });
+    g.translate(0, 0, -depth / 2);
     return g;
   });
+const heart = () => {
+  const s = new THREE.Shape();
+  s.moveTo(0, -0.1);
+  s.bezierCurveTo(-0.16, 0.02, -0.1, 0.13, 0, 0.05);
+  s.bezierCurveTo(0.1, 0.13, 0.16, 0.02, 0, -0.1);
+  return flat('heart', s);
+};
+const star = () => {
+  const s = new THREE.Shape();
+  for (let i = 0; i < 10; i++) {
+    const a = Math.PI / 2 + (i * Math.PI) / 5;
+    const r = i % 2 ? 0.045 : 0.11;
+    if (i) s.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+    else s.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+  }
+  return flat('star', s);
+};
+/** A half disc, flat side up: a grin. */
+const halfDisc = (r: number) =>
+  shape(
+    `half${r2(r)}`,
+    () => new THREE.CircleGeometry(r, 16, Math.PI, Math.PI),
+  );
 
 const EYE = '#1f1a17';
 const GOLD = '#facc15';
+const PINK = '#f9a8d4';
 const PET_HEX: Record<Exclude<Look['pet'], 'none'>, string> = {
   cat: '#f6a65a',
   dog: '#d6a774',
   bunny: '#ffffff',
   chick: '#fde047',
+  fox: '#f97316',
+  panda: '#ffffff',
+  dragon: '#4ade80',
+  slime: '#60a5fa',
 };
 
 export type Person = {
   group: THREE.Group;
-  /** Everything but the shadow and the pet: bobs as they walk. */
+  /** Everything but the shadow, pet and aura: bobs as they walk. */
   body: THREE.Group;
   head: THREE.Group;
   legs: [THREE.Group, THREE.Group];
   arms: [THREE.Group, THREE.Group];
   /** Their pet, at their feet, or null. */
   pet: THREE.Group | null;
+  /** Sparkles or hearts that circle them, or a glow: spin it. */
+  aura: THREE.Group | null;
 };
 
 /**
@@ -988,32 +1018,35 @@ export function person(
 ): Person {
   const skinHex = SKIN_HEX[look.skin];
   const skin = clay(skinHex);
-  const hair = clay(HAIR_HEX[look.hairColor]);
+  const hairHex = HAIR_HEX[look.hairColor];
+  const hair = clay(hairHex);
   const ownColour = look.outfitColor !== 'brand';
   const outfitHex =
     look.outfitColor === 'brand' ? brand.primary : OUTFIT_HEX[look.outfitColor];
   const outfit = clay(outfitHex);
-  // Hats, scarves and capes: the company colour, or its second colour when
-  // the outfit already is the company colour (a cheery pink if that one is
-  // nearly black or white).
+  // Hats, scarves, belts and capes: the company colour, or its second
+  // colour when the outfit already is the company colour (a cheery pink if
+  // that one is nearly black or white).
   const second = new THREE.Color(brand.secondary).getHSL({ h: 0, s: 0, l: 0 });
-  const accent = clay(
-    ownColour
-      ? brand.primary
-      : second.l > 0.2 && second.l < 0.85
-        ? brand.secondary
-        : '#f472b6',
-  );
+  const accentHex = ownColour
+    ? brand.primary
+    : second.l > 0.2 && second.l < 0.85
+      ? brand.secondary
+      : '#f472b6';
+  const accent = clay(accentHex);
   const ink = clay(EYE, { rough: 0.3 });
   const white = clay('#ffffff');
+  const metal = clay('#cbd5e1', { rough: 0.35, metal: 0.5 });
+  const o = look.outfit;
   const pants = clay(
-    look.outfit === 'overalls' || look.outfit === 'suit'
+    ['overalls', 'suit', 'ninja', 'kimono', 'robe', 'armor'].includes(o)
       ? outfitHex
-      : look.outfit === 'dress'
+      : o === 'dress' || o === 'sailor'
         ? skinHex
         : '#3b4a63',
   );
-  const shirt = look.outfit === 'overalls' ? white : outfit;
+  const shirt =
+    o === 'overalls' || o === 'sailor' ? white : o === 'armor' ? metal : outfit;
 
   const group = new THREE.Group();
   const body = new THREE.Group();
@@ -1031,28 +1064,31 @@ export function person(
   shadow.position.y = 0.03;
   group.add(shadow);
 
-  // Short legs and little white shoes.
+  // Short legs and little shoes (or boots).
+  const shoe = clay(SHOE_HEX[look.shoes]);
   const leg = (x: number) => {
     const pivot = new THREE.Group();
     pivot.position.set(x, 0.5, 0);
     body.add(pivot);
     mesh(pivot, capsule(0.12, 0.2), pants, 0, -0.2, 0);
-    mesh(pivot, roundBox(0.24, 0.14, 0.32, 0.07), white, 0, -0.42, 0.05);
+    if (look.shoes === 'boots')
+      mesh(pivot, roundBox(0.26, 0.3, 0.32, 0.08), shoe, 0, -0.34, 0.03);
+    else mesh(pivot, roundBox(0.24, 0.14, 0.32, 0.07), shoe, 0, -0.42, 0.05);
     return pivot;
   };
   const legs: [THREE.Group, THREE.Group] = [leg(0.14), leg(-0.14)];
 
-  // A round little body.
+  // A round little body, then the outfit's own pieces.
   mesh(body, capsule(0.3, 0.28), shirt, 0, 0.88, 0);
-  if (look.outfit === 'dress')
+  if (o === 'dress')
     mesh(body, cylinder(0.3, 0.48, 0.42, 24), outfit, 0, 0.64, 0);
-  if (look.outfit === 'overalls') {
+  if (o === 'overalls') {
     mesh(body, cylinder(0.315, 0.315, 0.3, 24), outfit, 0, 0.62, 0);
     mesh(body, roundBox(0.36, 0.3, 0.1, 0.04), outfit, 0, 0.92, 0.25);
     for (const x of [-0.12, 0.12])
       mesh(body, sphere(0.035, 8), clay(GOLD), x, 1.02, 0.31);
   }
-  if (look.outfit === 'hoodie') {
+  if (o === 'hoodie') {
     const hood = mesh(body, torus(0.26, 0.1), outfit, 0, 1.26, -0.12);
     hood.rotation.x = Math.PI / 2 - 0.3;
     mesh(
@@ -1066,16 +1102,97 @@ export function person(
     for (const x of [-0.07, 0.07])
       mesh(body, capsule(0.015, 0.12), white, x, 1.08, 0.3);
   }
-  if (look.outfit === 'suit') {
+  if (o === 'jacket') {
+    mesh(body, roundBox(0.16, 0.5, 0.06, 0.03), white, 0, 0.9, 0.28);
+    for (const s of [-1, 1]) {
+      const lapel = mesh(
+        body,
+        roundBox(0.08, 0.22, 0.05, 0.02),
+        clay(shade(outfitHex, 0.15)),
+        s * 0.12,
+        1.08,
+        0.28,
+      );
+      lapel.rotation.z = s * 0.35;
+    }
+  }
+  if (o === 'suit') {
     mesh(body, roundBox(0.2, 0.32, 0.06, 0.03), white, 0, 1.04, 0.27);
     mesh(body, roundBox(0.07, 0.26, 0.04, 0.02), accent, 0, 1.0, 0.31);
+  }
+  if (o === 'sailor') {
+    mesh(body, roundBox(0.66, 0.06, 0.56, 0.03), outfit, 0, 1.24, -0.04);
+    for (const s of [-1, 1]) {
+      const bow = mesh(
+        body,
+        sphere(0.07, 10),
+        clay('#ef4444'),
+        s * 0.07,
+        1.1,
+        0.3,
+      );
+      bow.scale.set(1.2, 0.8, 0.5);
+    }
+    mesh(body, cylinder(0.3, 0.46, 0.34, 24), outfit, 0, 0.62, 0);
+  }
+  if (o === 'ninja') {
+    mesh(body, cylinder(0.315, 0.315, 0.1, 24), accent, 0, 0.7, 0);
+    const wrap = mesh(
+      body,
+      roundBox(0.12, 0.6, 0.62, 0.04),
+      clay(shade(outfitHex, 0.25)),
+      0,
+      0.98,
+      0,
+    );
+    wrap.rotation.z = 0.6;
+  }
+  if (o === 'kimono' || o === 'robe') {
+    for (const s of [-1, 1]) {
+      const fold = mesh(
+        body,
+        roundBox(0.06, 0.4, 0.04, 0.02),
+        white,
+        s * 0.07,
+        1.08,
+        0.29,
+      );
+      fold.rotation.z = s * 0.45;
+    }
+    if (o === 'kimono')
+      mesh(body, cylinder(0.32, 0.32, 0.16, 24), accent, 0, 0.76, 0);
+    mesh(
+      body,
+      cylinder(0.31, o === 'robe' ? 0.5 : 0.4, o === 'robe' ? 0.62 : 0.5, 24),
+      outfit,
+      0,
+      o === 'robe' ? 0.42 : 0.52,
+      0,
+    );
+    if (o === 'robe') {
+      const hood = mesh(body, torus(0.26, 0.1), outfit, 0, 1.26, -0.12);
+      hood.rotation.x = Math.PI / 2 - 0.3;
+      mesh(body, star(), clay(GOLD), 0.12, 1.0, 0.31);
+    }
+  }
+  if (o === 'armor') {
+    mesh(body, cylinder(0.32, 0.32, 0.1, 24), outfit, 0, 0.7, 0);
+    for (const s of [-1, 1])
+      mesh(body, sphere(0.17, 14), metal, s * 0.34, 1.14, 0);
   }
 
   const arm = (x: number) => {
     const pivot = new THREE.Group();
     pivot.position.set(x, 1.12, 0);
     body.add(pivot);
-    mesh(pivot, capsule(0.09, 0.2), shirt, 0, -0.17, 0);
+    mesh(
+      pivot,
+      capsule(0.09, 0.2),
+      o === 'armor' ? outfit : shirt,
+      0,
+      -0.17,
+      0,
+    );
     mesh(pivot, sphere(0.1, 12), skin, 0, -0.36, 0);
     return pivot;
   };
@@ -1086,36 +1203,38 @@ export function person(
       shape('pin', () => new THREE.PlaneGeometry(0.22, 0.22)),
       badge,
     );
-    pin.position.set(0.12, look.outfit === 'overalls' ? 0.92 : 1.0, 0.32);
+    pin.position.set(0.13, o === 'overalls' ? 0.92 : 0.96, 0.32);
     body.add(pin);
   }
 
-  // Extras on the body.
-  if (look.extra === 'backpack')
+  // Extras on the body, or in the hand.
+  const e = look.extra;
+  const hand = arms[0];
+  if (e === 'backpack')
     mesh(body, roundBox(0.46, 0.5, 0.24, 0.1), accent, 0, 0.9, -0.33);
-  if (look.extra === 'scarf') {
+  if (e === 'scarf') {
     const scarf = mesh(body, torus(0.26, 0.09), accent, 0, 1.27, 0);
     scarf.rotation.x = Math.PI / 2;
     mesh(body, roundBox(0.14, 0.32, 0.06, 0.03), accent, 0.13, 1.08, 0.3);
   }
-  if (look.extra === 'cape') {
+  if (e === 'cape') {
     const cape = mesh(
       body,
       roundBox(0.62, 0.92, 0.05, 0.03),
-      accent,
+      o === 'armor' ? clay('#b91c1c') : accent,
       0,
       0.8,
       -0.34,
     );
     cape.rotation.x = 0.14;
   }
-  if (look.extra === 'wings')
+  if (e === 'wings')
     for (const s of [-1, 1]) {
       const wing = mesh(body, sphere(0.4, 16), white, s * 0.3, 1.0, -0.36);
       wing.scale.set(0.5, 0.8, 0.14);
       wing.rotation.z = s * 0.7;
     }
-  if (look.extra === 'balloon') {
+  if (e === 'balloon') {
     mesh(body, cylinder(0.008, 0.008, 1.7, 4), clay('#9ca3af'), 0.5, 1.6, 0);
     const balloon = mesh(
       body,
@@ -1127,6 +1246,25 @@ export function person(
     );
     balloon.scale.y = 1.15;
   }
+  if (e === 'katana') {
+    const sword = new THREE.Group();
+    sword.position.set(0, 0.95, -0.36);
+    sword.rotation.z = 0.75;
+    body.add(sword);
+    mesh(sword, cylinder(0.045, 0.045, 1.0, 10), clay('#1f2937'), 0, -0.1, 0);
+    mesh(sword, cylinder(0.1, 0.1, 0.03, 16), clay(GOLD), 0, 0.42, 0);
+    mesh(sword, cylinder(0.04, 0.04, 0.28, 10), accent, 0, 0.58, 0);
+  }
+  if (e === 'staff') {
+    mesh(hand, cylinder(0.035, 0.035, 1.5, 8), clay('#a16207'), 0, -0.25, 0.06);
+    mesh(hand, sphere(0.11, 14), clay(accentHex, { glow: 0.5 }), 0, 0.52, 0.06);
+  }
+  if (e === 'book')
+    mesh(hand, roundBox(0.22, 0.28, 0.08, 0.02), accent, 0, -0.4, 0.14);
+  if (e === 'coffee') {
+    mesh(hand, cylinder(0.07, 0.06, 0.16, 14), white, 0, -0.36, 0.14);
+    mesh(hand, cylinder(0.072, 0.07, 0.06, 14), accent, 0, -0.37, 0.14);
+  }
 
   // The big round head.
   const head = new THREE.Group();
@@ -1134,10 +1272,12 @@ export function person(
   body.add(head);
   const R = 0.6;
   mesh(head, sphere(R, 32), skin);
-  /** A point on the face, just off its surface. */
+  /** How far out the face is at (x, y), plus `lift`. */
   const face = (x: number, y: number, lift = 0) =>
     Math.sqrt(Math.max(0, R * R - x * x - y * y)) + lift;
-  const hiddenEars = look.hair === 'bob' || look.hair === 'long';
+  const h = look.hair;
+  const hiddenEars =
+    h === 'bob' || h === 'long' || h === 'afro' || h === 'twin tails';
   if (!hiddenEars && look.hat !== 'headphones')
     for (const s of [-1, 1])
       mesh(head, sphere(0.12, 12), skin, s * 0.59, -0.04, 0);
@@ -1158,6 +1298,33 @@ export function person(
     if (big)
       mesh(head, sphere(0.018, 6), white, x - 0.03, -0.06, face(x, 0) + 0.01);
   };
+  const anime = (x: number) => {
+    const z = face(x, 0);
+    const outer = mesh(head, sphere(0.13, 16), ink, x, -0.03, z - 0.035);
+    outer.scale.set(0.95, 1.4, 0.4);
+    const iris = mesh(
+      head,
+      sphere(0.1, 16),
+      clay(EYE_HEX[look.eyeColor], { rough: 0.3 }),
+      x,
+      -0.06,
+      z - 0.015,
+    );
+    iris.scale.set(0.85, 1.15, 0.4);
+    const pupil = mesh(head, sphere(0.05, 10), ink, x, -0.07, z);
+    pupil.scale.set(1, 1.3, 0.4);
+    mesh(head, sphere(0.045, 10), white, x + 0.035, 0.05, z + 0.015);
+    mesh(head, sphere(0.02, 6), white, x - 0.03, -0.12, z + 0.01);
+    const lash = mesh(
+      head,
+      torus(0.11, 0.022, Math.PI, 12),
+      ink,
+      x,
+      0.02,
+      z - 0.01,
+    );
+    lash.scale.y = 0.9;
+  };
   const arc = (x: number, up: boolean) => {
     const a = mesh(
       head,
@@ -1173,18 +1340,82 @@ export function person(
     if (look.eyes === 'happy' || (look.eyes === 'wink' && i === 1))
       arc(x, true);
     else if (look.eyes === 'sleepy') arc(x, false);
-    else dot(x, look.eyes === 'big');
+    else if (look.eyes === 'anime') anime(x);
+    else if (look.eyes === 'stars') {
+      const st = mesh(
+        head,
+        star(),
+        clay('#fbbf24', { glow: 0.3 }),
+        x,
+        -0.02,
+        face(x, 0),
+      );
+      st.scale.setScalar(0.95);
+    } else dot(x, look.eyes === 'big');
   }
-  const smile = mesh(
-    head,
-    torus(0.07, 0.02, Math.PI, 12),
-    clay('#9f2d2d'),
-    0,
-    -0.18,
-    face(0, -0.18),
-  );
-  smile.rotation.z = Math.PI;
 
+  // Mouth.
+  const my = -0.19;
+  const mz = face(0, my);
+  const lips = clay('#9f2d2d');
+  if (look.mouth === 'smile' || look.mouth === 'tongue') {
+    const smile = mesh(
+      head,
+      torus(0.07, 0.02, Math.PI, 12),
+      lips,
+      0,
+      my + 0.02,
+      mz,
+    );
+    smile.rotation.z = Math.PI;
+    if (look.mouth === 'tongue') {
+      const t = mesh(
+        head,
+        sphere(0.04, 10),
+        clay('#f87171'),
+        0.02,
+        my - 0.06,
+        mz - 0.01,
+      );
+      t.scale.set(1, 1.2, 0.5);
+    }
+  }
+  if (look.mouth === 'grin') {
+    const g = mesh(
+      head,
+      halfDisc(0.085),
+      clay('#7f1d1d'),
+      0,
+      my + 0.02,
+      mz + 0.005,
+    );
+    g.rotation.x = -0.15;
+  }
+  if (look.mouth === 'open') {
+    const m = mesh(
+      head,
+      sphere(0.05, 12),
+      clay('#7f1d1d'),
+      0,
+      my - 0.01,
+      mz - 0.02,
+    );
+    m.scale.set(0.9, 1.15, 0.35);
+  }
+  if (look.mouth === 'cat')
+    for (const s of [-1, 1]) {
+      const w = mesh(
+        head,
+        torus(0.04, 0.016, Math.PI, 10),
+        lips,
+        s * 0.04,
+        my + 0.01,
+        mz,
+      );
+      w.rotation.z = Math.PI;
+    }
+
+  // Cheeks and face marks.
   if (look.cheeks === 'rosy')
     for (const s of [-1, 1]) {
       const c = mesh(
@@ -1205,6 +1436,65 @@ export function person(
         [0.31, -0.18],
       ])
         mesh(head, sphere(0.018, 6), clay('#b77a52'), s * x, y, face(x, y));
+  if (look.marks === 'blush lines')
+    for (const s of [-1, 1])
+      for (const k of [-1, 0, 1]) {
+        const x = 0.34 + k * 0.05;
+        const l = mesh(
+          head,
+          roundBox(0.014, 0.08, 0.01, 0.005),
+          clay('#f472b6'),
+          s * x,
+          -0.13,
+          face(x, -0.13) + 0.005,
+        );
+        l.rotation.z = s * 0.45;
+      }
+  if (look.marks === 'whiskers')
+    for (const s of [-1, 1])
+      for (const k of [-1, 0, 1]) {
+        const y = -0.13 + k * 0.05;
+        const w = mesh(
+          head,
+          roundBox(0.13, 0.014, 0.01, 0.005),
+          clay('#3f2a1d'),
+          s * 0.36,
+          y,
+          face(0.36, y) + 0.005,
+        );
+        w.rotation.y = s * 0.55;
+      }
+  if (look.marks === 'scar') {
+    const sc = mesh(
+      head,
+      roundBox(0.14, 0.02, 0.01, 0.005),
+      clay('#9f2d2d'),
+      -0.24,
+      -0.15,
+      face(0.24, -0.15) + 0.005,
+    );
+    sc.rotation.z = -0.2;
+    for (const x of [-0.28, -0.2])
+      mesh(
+        head,
+        roundBox(0.012, 0.06, 0.01, 0.004),
+        clay('#9f2d2d'),
+        x,
+        -0.15,
+        face(x, -0.15) + 0.008,
+      );
+  }
+  if (look.marks === 'star') {
+    const st = mesh(
+      head,
+      star(),
+      clay(GOLD),
+      0.3,
+      -0.18,
+      face(0.3, -0.18) + 0.005,
+    );
+    st.scale.setScalar(0.5);
+  }
 
   // Hair.
   const cap = () => {
@@ -1222,19 +1512,72 @@ export function person(
       -0.04,
     );
     b.rotation.x = -Math.PI / 2;
-    b.scale.set(1.04, 1, stretch);
     // After the turn, the dome's height runs along y as its z scale.
+    b.scale.set(1.04, 1, stretch);
   };
-  if (look.hair !== 'bald' && look.hair !== 'mohawk') cap();
-  if (look.hair === 'bob') back(1);
-  if (look.hair === 'long') back(1.45);
-  if (look.hair === 'bun') mesh(head, sphere(0.24, 16), hair, 0, 0.6, -0.22);
-  if (look.hair === 'pigtails')
+  const up = new THREE.Vector3(0, 1, 0);
+  const spikes = (list: number[][], r: number, len: number, at = 0.6) => {
+    for (const [az, el] of list) {
+      const d = new THREE.Vector3(
+        Math.sin(az) * Math.cos(el),
+        Math.sin(el),
+        Math.cos(az) * Math.cos(el) - 0.1,
+      ).normalize();
+      const spike = mesh(
+        head,
+        cone(r, len, 10),
+        hair,
+        d.x * at,
+        d.y * at,
+        d.z * at,
+      );
+      spike.quaternion.setFromUnitVectors(up, d);
+    }
+  };
+  if (h !== 'bald' && h !== 'mohawk' && h !== 'afro') cap();
+  if (h === 'bob') back(1);
+  if (h === 'long') back(1.45);
+  if (h === 'bun') mesh(head, sphere(0.24, 16), hair, 0, 0.6, -0.22);
+  if (h === 'topknot') {
+    mesh(head, sphere(0.16, 14), hair, 0, 0.7, -0.08);
+    mesh(head, cylinder(0.09, 0.09, 0.08, 12), accent, 0, 0.6, -0.06);
+  }
+  if (h === 'ponytail') {
+    mesh(head, sphere(0.08, 10), accent, 0, 0.12, -0.62);
+    const tail = mesh(head, capsule(0.14, 0.45), hair, 0, -0.2, -0.72);
+    tail.rotation.x = 0.35;
+  }
+  if (h === 'pigtails')
     for (const s of [-1, 1]) {
       mesh(head, sphere(0.2, 16), hair, s * 0.68, 0.0, -0.12);
       mesh(head, sphere(0.07, 8), accent, s * 0.56, 0.08, -0.1);
     }
-  if (look.hair === 'curly')
+  if (h === 'twin tails')
+    for (const s of [-1, 1]) {
+      mesh(head, sphere(0.09, 10), accent, s * 0.5, 0.38, -0.22);
+      const tail = mesh(head, capsule(0.15, 1.0), hair, s * 0.78, -0.32, -0.24);
+      tail.rotation.z = s * 0.22;
+    }
+  if (h === 'side bangs') {
+    for (const [x, len, tilt] of [
+      [-0.32, 0.3, 0.5],
+      [-0.14, 0.34, 0.45],
+      [0.04, 0.32, 0.4],
+      [0.22, 0.26, 0.35],
+    ]) {
+      const y = 0.32;
+      const fringe = mesh(
+        head,
+        cone(0.13, len, 10),
+        hair,
+        x,
+        y - len / 3,
+        face(x, y) - 0.04,
+      );
+      fringe.rotation.set(-0.35, 0, Math.PI - tilt);
+    }
+  }
+  if (h === 'curly')
     for (let i = 0; i < 14; i++) {
       const a = (i / 14) * Math.PI * 2;
       if (Math.cos(a) > 0.55) continue;
@@ -1248,41 +1591,65 @@ export function person(
         Math.cos(a) * ring - 0.04,
       );
     }
-  if (look.hair === 'spiky') {
-    const up = new THREE.Vector3(0, 1, 0);
-    for (const [az, el] of [
-      [0, 1.35],
-      [0.9, 1.0],
-      [-0.9, 1.0],
-      [2.2, 0.9],
-      [-2.2, 0.9],
-      [Math.PI, 1.0],
-      [0.3, 0.95],
-      [-0.3, 0.95],
-    ]) {
-      const d = new THREE.Vector3(
-        Math.sin(az) * Math.cos(el),
-        Math.sin(el),
-        Math.cos(az) * Math.cos(el) - 0.1,
-      ).normalize();
-      const spike = mesh(
+  if (h === 'afro') {
+    const puff = mesh(head, sphere(0.86, 28, true), hair, 0, -0.08, -0.1);
+    puff.rotation.x = -0.55;
+    puff.scale.set(1.05, 1.05, 1.05);
+    for (let i = 0; i < 10; i++) {
+      const a = (i / 10) * Math.PI * 2;
+      if (Math.cos(a) > 0.4) continue;
+      mesh(
         head,
-        cone(0.13, 0.34, 10),
+        sphere(0.26, 12),
         hair,
-        d.x * 0.6,
-        d.y * 0.6,
-        d.z * 0.6,
+        Math.sin(a) * 0.7,
+        0.35,
+        Math.cos(a) * 0.6 - 0.15,
       );
-      spike.quaternion.setFromUnitVectors(up, d);
     }
   }
-  if (look.hair === 'mohawk') {
+  if (h === 'spiky')
+    spikes(
+      [
+        [0, 1.35],
+        [0.9, 1.0],
+        [-0.9, 1.0],
+        [2.2, 0.9],
+        [-2.2, 0.9],
+        [Math.PI, 1.0],
+        [0.3, 0.95],
+        [-0.3, 0.95],
+      ],
+      0.13,
+      0.34,
+    );
+  if (h === 'hero spikes')
+    spikes(
+      [
+        [0, 1.45],
+        [0.5, 1.2],
+        [-0.5, 1.2],
+        [1.2, 0.95],
+        [-1.2, 0.95],
+        [2.0, 0.85],
+        [-2.0, 0.85],
+        [2.8, 0.9],
+        [-2.8, 0.9],
+        [0.2, 0.75],
+        [-0.25, 0.8],
+      ],
+      0.19,
+      0.62,
+      0.55,
+    );
+  if (h === 'mohawk') {
     const m = mesh(head, roundBox(0.16, 0.32, 0.95, 0.07), hair, 0, 0.56, -0.1);
     m.rotation.x = -0.2;
   }
 
   // On the head.
-  if (look.hat === 'cap') {
+  const hat = look.hat;
+  if (hat === 'cap') {
     const crown = mesh(head, sphere(0.65, 32, true), accent, 0, 0.04, -0.02);
     crown.rotation.x = -0.25;
     const brim = mesh(
@@ -1296,7 +1663,7 @@ export function person(
     brim.scale.z = 0.9;
     mesh(head, sphere(0.06, 8), white, 0, 0.68, -0.14);
   }
-  if (look.hat === 'beanie') {
+  if (hat === 'beanie') {
     const b = mesh(head, sphere(0.66, 32, true), accent, 0, 0.06, -0.02);
     b.rotation.x = -0.2;
     b.scale.y = 1.08;
@@ -1304,12 +1671,12 @@ export function person(
     rim.rotation.x = Math.PI / 2 - 0.2;
     mesh(head, sphere(0.15, 12), white, 0, 0.82, -0.14);
   }
-  if (look.hat === 'party hat') {
+  if (hat === 'party hat') {
     const p = mesh(head, cone(0.28, 0.62, 20), accent, 0.08, 0.84, -0.04);
     p.rotation.z = -0.18;
     mesh(head, sphere(0.09, 10), clay(GOLD), 0.14, 1.15, -0.04);
   }
-  if (look.hat === 'crown') {
+  if (hat === 'crown') {
     const gold = clay(GOLD, { rough: 0.35, metal: 0.4 });
     mesh(head, cylinder(0.32, 0.34, 0.16, 20), gold, 0, 0.62, 0);
     for (let i = 0; i < 5; i++) {
@@ -1332,7 +1699,7 @@ export function person(
       );
     }
   }
-  if (look.hat === 'headphones') {
+  if (hat === 'headphones') {
     mesh(head, torus(0.66, 0.05, Math.PI, 20), ink, 0, 0.02, 0);
     for (const s of [-1, 1]) {
       const cup = mesh(
@@ -1346,14 +1713,14 @@ export function person(
       cup.rotation.z = Math.PI / 2;
     }
   }
-  if (look.hat === 'flower') {
+  if (hat === 'flower') {
     const at = new THREE.Vector3(0.36, 0.42, face(0.36, 0.42) - 0.05);
     for (let i = 0; i < 5; i++) {
       const a = (i / 5) * Math.PI * 2;
       mesh(
         head,
         sphere(0.08, 10),
-        clay('#f9a8d4'),
+        clay(PINK),
         at.x + Math.cos(a) * 0.1,
         at.y + Math.sin(a) * 0.1,
         at.z,
@@ -1361,7 +1728,18 @@ export function person(
     }
     mesh(head, sphere(0.06, 10), clay(GOLD), at.x, at.y, at.z + 0.04);
   }
-  if (look.hat === 'cat ears')
+  if (hat === 'ahoge') {
+    const strand = mesh(
+      head,
+      torus(0.13, 0.03, Math.PI * 1.3, 14),
+      hair,
+      0.04,
+      0.74,
+      -0.02,
+    );
+    strand.rotation.set(0, Math.PI / 2, -0.4);
+  }
+  if (hat === 'cat ears')
     for (const s of [-1, 1]) {
       const ear = mesh(head, cone(0.18, 0.34, 4), hair, s * 0.36, 0.62, -0.04);
       ear.rotation.z = -s * 0.45;
@@ -1375,22 +1753,34 @@ export function person(
       );
       inner.rotation.z = -s * 0.45;
     }
-  if (look.hat === 'bunny ears')
+  if (hat === 'bunny ears')
     for (const s of [-1, 1]) {
       const ear = mesh(head, capsule(0.09, 0.42), white, s * 0.2, 0.86, -0.08);
       ear.rotation.z = -s * 0.15;
       const inner = mesh(
         head,
         capsule(0.045, 0.3),
-        clay('#f9a8d4'),
+        clay(PINK),
         s * 0.205,
         0.86,
         -0.0,
       );
       inner.rotation.z = -s * 0.15;
     }
-  if (look.hat === 'halo') {
-    const h = mesh(
+  if (hat === 'horns')
+    for (const s of [-1, 1]) {
+      const horn = mesh(
+        head,
+        cone(0.1, 0.36, 12),
+        clay('#3f3f46', { rough: 0.4 }),
+        s * 0.34,
+        0.62,
+        0,
+      );
+      horn.rotation.z = -s * 0.5;
+    }
+  if (hat === 'halo') {
+    const ring = mesh(
       head,
       torus(0.34, 0.045),
       clay(GOLD, { glow: 0.6 }),
@@ -1398,7 +1788,60 @@ export function person(
       0.92,
       0,
     );
-    h.rotation.x = Math.PI / 2;
+    ring.rotation.x = Math.PI / 2;
+  }
+  if (hat === 'ninja headband') {
+    const band = mesh(
+      head,
+      torus(0.615, 0.06, Math.PI * 2, 32),
+      clay('#1e3a8a'),
+      0,
+      0.22,
+      -0.02,
+    );
+    band.rotation.x = Math.PI / 2 + 0.15;
+    band.scale.z = 1.6;
+    const plate = mesh(
+      head,
+      roundBox(0.32, 0.15, 0.04, 0.03),
+      metal,
+      0,
+      0.26,
+      face(0, 0.26) + 0.02,
+    );
+    plate.rotation.x = -0.4;
+    for (const s of [-1, 1]) {
+      const tail = mesh(
+        head,
+        roundBox(0.07, 0.4, 0.02, 0.01),
+        clay('#1e3a8a'),
+        s * 0.1,
+        0.0,
+        -0.64,
+      );
+      tail.rotation.z = s * 0.25;
+    }
+  }
+  if (hat === 'straw hat') {
+    const straw = clay('#e8c872');
+    const g = new THREE.Group();
+    g.position.y = 0.42;
+    g.rotation.x = -0.18;
+    head.add(g);
+    mesh(g, cylinder(0.95, 0.95, 0.04, 32), straw, 0, 0, 0);
+    mesh(g, cylinder(0.44, 0.48, 0.32, 24), straw, 0, 0.18, 0);
+    mesh(g, cylinder(0.485, 0.485, 0.08, 24), clay('#dc2626'), 0, 0.07, 0);
+  }
+  if (hat === 'wizard hat') {
+    const wiz = clay(ownColour ? outfitHex : '#6d28d9');
+    const g = new THREE.Group();
+    g.position.y = 0.45;
+    g.rotation.x = -0.15;
+    head.add(g);
+    mesh(g, cylinder(0.85, 0.85, 0.04, 32), wiz, 0, 0, 0);
+    const tip = mesh(g, cone(0.42, 1.0, 24), wiz, 0.05, 0.5, 0);
+    tip.rotation.z = -0.15;
+    mesh(g, star(), clay(GOLD), 0.05, 0.35, 0.33);
   }
 
   // Glasses.
@@ -1428,7 +1871,7 @@ export function person(
           z,
         );
       if (look.glasses === 'hearts') {
-        const h = mesh(
+        const ht = mesh(
           head,
           heart(),
           clay('#f43f5e', { rough: 0.3 }),
@@ -1436,7 +1879,7 @@ export function person(
           -0.01,
           z,
         );
-        h.scale.setScalar(1.15);
+        ht.scale.setScalar(1.15);
       }
     }
     mesh(head, roundBox(0.12, 0.025, 0.025, 0.01), ink, 0, 0.0, z + 0.01);
@@ -1445,85 +1888,217 @@ export function person(
   // A pet at their feet.
   let pet: THREE.Group | null = null;
   if (look.pet !== 'none') {
+    const kind = look.pet;
     pet = new THREE.Group();
     pet.position.set(0.85, 0, 0.45);
     group.add(pet);
-    const fur = clay(PET_HEX[look.pet]);
-    const isChick = look.pet === 'chick';
-    const torso = mesh(pet, sphere(isChick ? 0.2 : 0.18, 16), fur, 0, 0.2, 0);
-    torso.scale.set(1, 0.9, isChick ? 1 : 1.3);
-    const hy = isChick ? 0.42 : 0.4;
-    mesh(
-      pet,
-      sphere(isChick ? 0.15 : 0.16, 16),
-      fur,
-      0,
-      hy,
-      isChick ? 0.04 : 0.2,
-    );
-    const hz = isChick ? 0.04 : 0.2;
-    for (const s of [-1, 1])
-      mesh(pet, sphere(0.025, 6), ink, s * 0.06, hy + 0.02, hz + 0.14);
-    if (look.pet === 'cat')
+    const fur = clay(PET_HEX[kind]);
+    const dark = clay('#27272a');
+    if (kind === 'slime') {
+      const blob = mesh(
+        pet,
+        sphere(0.24, 20, true),
+        clay(PET_HEX.slime, { rough: 0.2 }),
+        0,
+        0.02,
+        0,
+      );
+      blob.scale.set(1, 1.15, 1);
+      for (const s of [-1, 1])
+        mesh(pet, sphere(0.03, 8), ink, s * 0.07, 0.14, 0.2);
+      mesh(pet, sphere(0.05, 8), white, 0.08, 0.22, 0.12);
+    } else {
+      const round = kind === 'chick';
+      const torso = mesh(pet, sphere(round ? 0.2 : 0.18, 16), fur, 0, 0.2, 0);
+      torso.scale.set(1, 0.9, round ? 1 : 1.3);
+      const hy = round ? 0.42 : 0.4;
+      const hz = round ? 0.04 : 0.2;
+      mesh(pet, sphere(round ? 0.15 : 0.16, 16), fur, 0, hy, hz);
       for (const s of [-1, 1]) {
-        const ear = mesh(
-          pet,
-          cone(0.06, 0.12, 4),
-          fur,
-          s * 0.09,
-          hy + 0.15,
-          hz,
-        );
-        ear.rotation.z = -s * 0.3;
+        if (kind === 'panda') {
+          const patch = mesh(
+            pet,
+            sphere(0.045, 8),
+            dark,
+            s * 0.06,
+            hy + 0.02,
+            hz + 0.12,
+          );
+          patch.scale.set(1, 1.3, 0.6);
+          mesh(pet, sphere(0.015, 6), white, s * 0.06, hy + 0.03, hz + 0.15);
+        } else mesh(pet, sphere(0.025, 6), ink, s * 0.06, hy + 0.02, hz + 0.14);
       }
-    if (look.pet === 'dog')
-      for (const s of [-1, 1]) {
-        const ear = mesh(
+      if (kind === 'cat' || kind === 'fox')
+        for (const s of [-1, 1]) {
+          const ear = mesh(
+            pet,
+            cone(kind === 'fox' ? 0.07 : 0.06, kind === 'fox' ? 0.16 : 0.12, 4),
+            fur,
+            s * 0.09,
+            hy + 0.15,
+            hz,
+          );
+          ear.rotation.z = -s * 0.3;
+        }
+      if (kind === 'dog')
+        for (const s of [-1, 1]) {
+          const ear = mesh(
+            pet,
+            sphere(0.07, 10),
+            clay(shade(PET_HEX.dog, 0.3)),
+            s * 0.15,
+            hy,
+            hz - 0.02,
+          );
+          ear.scale.set(0.5, 1.2, 0.8);
+        }
+      if (kind === 'dog' || kind === 'fox')
+        mesh(
+          pet,
+          sphere(0.06, 10),
+          kind === 'fox' ? white : fur,
+          0,
+          hy - 0.05,
+          hz + 0.15,
+        );
+      if (kind === 'panda')
+        for (const s of [-1, 1])
+          mesh(pet, sphere(0.06, 10), dark, s * 0.12, hy + 0.13, hz - 0.02);
+      if (kind === 'bunny')
+        for (const s of [-1, 1]) {
+          const ear = mesh(
+            pet,
+            capsule(0.04, 0.2),
+            fur,
+            s * 0.06,
+            hy + 0.24,
+            hz - 0.03,
+          );
+          ear.rotation.z = -s * 0.12;
+        }
+      if (kind === 'chick') {
+        const beak = mesh(
+          pet,
+          cone(0.04, 0.09, 8),
+          clay('#fb923c'),
+          0,
+          hy - 0.03,
+          hz + 0.17,
+        );
+        beak.rotation.x = Math.PI / 2;
+      }
+      if (kind === 'dragon') {
+        for (const s of [-1, 1]) {
+          const horn = mesh(
+            pet,
+            cone(0.03, 0.1, 8),
+            clay(GOLD),
+            s * 0.07,
+            hy + 0.16,
+            hz - 0.02,
+          );
+          horn.rotation.z = -s * 0.3;
+          const wing = mesh(
+            pet,
+            sphere(0.14, 10),
+            clay(shade(PET_HEX.dragon, 0.2)),
+            s * 0.18,
+            0.32,
+            -0.05,
+          );
+          wing.scale.set(0.9, 0.6, 0.15);
+          wing.rotation.z = s * 0.6;
+        }
+        mesh(pet, sphere(0.06, 10), fur, 0, hy - 0.05, hz + 0.14);
+      }
+      if (
+        kind === 'cat' ||
+        kind === 'dog' ||
+        kind === 'fox' ||
+        kind === 'dragon'
+      ) {
+        const tail = mesh(
+          pet,
+          capsule(kind === 'fox' ? 0.07 : 0.035, 0.24),
+          fur,
+          0,
+          0.32,
+          -0.26,
+        );
+        tail.rotation.x = -0.6;
+        if (kind === 'fox') mesh(pet, sphere(0.06, 8), white, 0, 0.45, -0.36);
+      }
+      if (kind === 'bunny' || kind === 'panda')
+        mesh(
           pet,
           sphere(0.07, 10),
-          clay(shade(PET_HEX.dog, 0.3)),
-          s * 0.15,
-          hy,
-          hz - 0.02,
+          kind === 'panda' ? dark : fur,
+          0,
+          0.2,
+          -0.24,
         );
-        ear.scale.set(0.5, 1.2, 0.8);
-      }
-    if (look.pet === 'dog')
-      mesh(pet, sphere(0.06, 10), fur, 0, hy - 0.05, hz + 0.15);
-    if (look.pet === 'bunny')
-      for (const s of [-1, 1]) {
-        const ear = mesh(
-          pet,
-          capsule(0.04, 0.2),
-          fur,
-          s * 0.06,
-          hy + 0.24,
-          hz - 0.03,
-        );
-        ear.rotation.z = -s * 0.12;
-      }
-    if (look.pet === 'chick') {
-      const beak = mesh(
-        pet,
-        cone(0.04, 0.09, 8),
-        clay('#fb923c'),
-        0,
-        hy - 0.03,
-        hz + 0.17,
-      );
-      beak.rotation.x = Math.PI / 2;
+      if (kind === 'panda')
+        for (const s of [-1, 1])
+          mesh(pet, sphere(0.07, 8), dark, s * 0.12, 0.1, 0.12);
     }
-    if (look.pet === 'cat' || look.pet === 'dog') {
-      const tail = mesh(pet, capsule(0.035, 0.24), fur, 0, 0.32, -0.26);
-      tail.rotation.x = -0.6;
-    }
-    if (look.pet === 'bunny') mesh(pet, sphere(0.07, 10), fur, 0, 0.2, -0.24);
   }
 
-  group.traverse((o) => {
-    if (o !== shadow && (o as THREE.Mesh).isMesh) o.castShadow = true;
+  // An aura that circles them.
+  let aura: THREE.Group | null = null;
+  if (look.aura !== 'none') {
+    aura = new THREE.Group();
+    group.add(aura);
+    if (look.aura === 'glow') {
+      const ring = new THREE.Mesh(
+        torus(0.72, 0.05, Math.PI * 2, 40),
+        new THREE.MeshBasicMaterial({
+          color: accentHex,
+          transparent: true,
+          opacity: 0.8,
+        }),
+      );
+      ring.rotation.x = Math.PI / 2;
+      ring.position.y = 0.06;
+      aura.add(ring);
+      const glow = new THREE.Mesh(
+        shape(
+          'auraGlow',
+          () => new THREE.CylinderGeometry(0.72, 0.72, 2.6, 32, 1, true),
+        ),
+        new THREE.MeshBasicMaterial({
+          color: accentHex,
+          transparent: true,
+          opacity: 0.07,
+          depthWrite: false,
+          side: THREE.DoubleSide,
+        }),
+      );
+      glow.position.y = 1.3;
+      aura.add(glow);
+    } else {
+      const item = look.aura === 'hearts' ? heart() : star();
+      const mat = clay(look.aura === 'hearts' ? '#f472b6' : GOLD, {
+        glow: 0.5,
+      });
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2;
+        const m = new THREE.Mesh(item, mat);
+        m.position.set(
+          Math.cos(a) * 0.95,
+          0.6 + (i % 3) * 0.7,
+          Math.sin(a) * 0.95,
+        );
+        m.scale.setScalar(1.3);
+        aura.add(m);
+      }
+    }
+  }
+
+  group.traverse((x) => {
+    if (x !== shadow && (x as THREE.Mesh).isMesh) x.castShadow = true;
   });
-  return { group, body, head, legs, arms, pet };
+  aura?.traverse((x) => (x.castShadow = false));
+  return { group, body, head, legs, arms, pet, aura };
 }
 
 /* --------------------------------- bots --------------------------------- */
