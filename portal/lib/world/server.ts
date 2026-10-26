@@ -1,4 +1,4 @@
-import { brandKitDefaults } from '@/lib/brandKit';
+import { lookOf } from '@/lib/avatar/look';
 import { CLAUDE_SECTION_ID, statusOf, todayFor } from '@/lib/mcp/worklog';
 import { db } from '@/lib/mongodb/db-client';
 import type { SessionUser } from '@/lib/permissions/server';
@@ -26,13 +26,18 @@ import type {
   LeaderRow,
   World,
   WorldBot,
-  WorldBrand,
   WorldPerson,
   WorldProject,
   WorldSite,
   WorldTown,
 } from './state';
-import { botProgress, botState, currentPoint, GUIDANCE_WEIGHT } from './state';
+import {
+  botProgress,
+  botState,
+  brandOf,
+  currentPoint,
+  GUIDANCE_WEIGHT,
+} from './state';
 
 const LEADERS = 5;
 /** Task buildings shown per project, the most done first. */
@@ -86,55 +91,6 @@ function sitesOf(
   return Array.from(sites.values())
     .sort((a, b) => b.done - a.done || b.open - a.open)
     .slice(0, MAX_SITES);
-}
-
-const PALETTE = [
-  '#2563eb',
-  '#dc2626',
-  '#7c3aed',
-  '#059669',
-  '#ea580c',
-  '#0891b2',
-  '#db2777',
-];
-
-/** A town's or building's look, from its brand kit with sensible fallbacks. */
-function brandOf(
-  item: {
-    id: string;
-    color?: string | null;
-    logo?: string | null;
-    brandKit?: any;
-  },
-  fallback?: WorldBrand,
-): WorldBrand {
-  const kit = item.brandKit;
-  const defaults = brandKitDefaults(kit);
-  const hex = (v?: string | null) =>
-    v && /^#[0-9a-f]{6}/i.test(v) ? v.slice(0, 7) : '';
-  const primary =
-    hex(defaults.color) ||
-    hex(item.color) ||
-    fallback?.primary ||
-    PALETTE[
-      Array.from(item.id).reduce((n, c) => n + c.charCodeAt(0), 0) %
-        PALETTE.length
-    ];
-  const secondary =
-    hex(
-      kit?.colors?.find(
-        (c: any) =>
-          hex(c.hex) && hex(c.hex).toLowerCase() !== primary.toLowerCase(),
-      )?.hex,
-    ) ||
-    fallback?.secondary ||
-    '#111827';
-  return {
-    primary,
-    secondary,
-    logo: item.logo || defaults.logo || null,
-    font: kit?.fonts?.[0]?.family || fallback?.font || null,
-  };
 }
 
 const meaningful = (line: string) =>
@@ -212,6 +168,7 @@ export async function buildWorld(viewer: SessionUser): Promise<World> {
       avatar: true,
       positionTitle: true,
       timezone: true,
+      look: true,
     },
   });
   const names = new Map<string, string>(
@@ -385,6 +342,7 @@ export async function buildWorld(viewer: SessionUser): Promise<World> {
       name: names.get(u.id)!,
       avatar: u.avatar ?? null,
       title: u.positionTitle ?? null,
+      look: lookOf(u.id, u.look),
       isMe: u.id === viewer.id,
       townIds: homes,
       ownPoints: works

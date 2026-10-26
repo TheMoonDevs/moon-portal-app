@@ -17,11 +17,13 @@ import { useWorkspace } from '@/utils/hooks/useWorkspace';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import { CompanyMark } from '../Admin/Workspace/shared';
+import { CharacterSection } from './CharacterSection';
 import { ClaudeConnectSection } from './ClaudeConnectSection';
 import { SignInAccountsSection } from './SignInAccountsSection';
 
 const SECTIONS = [
   { id: 'profile', label: 'Profile', icon: 'person' },
+  { id: 'character', label: 'Character', icon: 'checkroom' },
   { id: 'sign-in', label: 'Sign-in', icon: 'key' },
   { id: 'companies', label: 'Companies', icon: 'domain' },
   { id: 'claude', label: 'Claude', icon: 'smart_toy' },
@@ -227,6 +229,16 @@ const ProfileCard = () => {
   );
 };
 
+const CharacterCard = () => (
+  <Card
+    id="character"
+    title="Character"
+    description="How you look in the World. Pick anything; it shows up right away."
+  >
+    <CharacterSection />
+  </Card>
+);
+
 const SignInCard = () => {
   const { user } = useUser();
   const [shown, setShown] = useState(false);
@@ -400,6 +412,7 @@ const Settings = () => {
           </div>
 
           <ProfileCard />
+          <CharacterCard />
           <SignInCard />
           <CompaniesCard />
           <ClaudeCard />

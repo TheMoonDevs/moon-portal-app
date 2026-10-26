@@ -1,3 +1,5 @@
+import { LOOK_OPTIONS, LOOK_PARTS } from '@/lib/avatar/look';
+import { getLook, saveLook } from '@/lib/avatar/server';
 import { db } from '@/lib/mongodb/db-client';
 import { hasPermission } from '@/lib/permissions/matching';
 import type { SessionUser } from '@/lib/permissions/server';
@@ -412,6 +414,39 @@ export const TOOLS: Tool[] = [
       return {
         task: { id: task.id, title: task.title, project: project.name },
       };
+    },
+  },
+  {
+    name: 'get_avatar',
+    title: 'See my character',
+    description:
+      "How the person's little character in the portal's World looks now, and every choice for each part. Call this before set_avatar.",
+    inputSchema: { type: 'object', properties: {} },
+    annotations: { readOnlyHint: true },
+    run: async (user) => ({
+      look: await getLook(user.id),
+      options: LOOK_OPTIONS,
+    }),
+  },
+  {
+    name: 'set_avatar',
+    title: 'Restyle my character',
+    description:
+      'Changes how the person\'s character in the portal\'s World looks. Turn what they ask for into these choices: "make me a pink-haired wizard with a cat" could be hairColor pink, hat party hat, extra cape, pet cat. Only the parts you pass change. Outfit colour "brand" is their company\'s colour. Tell the person what you picked; they see it in the World and in Settings › Character.',
+    inputSchema: {
+      type: 'object',
+      properties: Object.fromEntries(
+        LOOK_PARTS.map((part) => [
+          part,
+          { type: 'string', enum: [...LOOK_OPTIONS[part]] },
+        ]),
+      ),
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false },
+    run: async (user, args) => {
+      const result = await saveLook(user.id, args);
+      if (result.errors) throw new ToolError(result.errors.join(' '));
+      return { look: result.look };
     },
   },
 ];

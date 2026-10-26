@@ -7,7 +7,7 @@ import { ToolError, toolList, TOOLS } from './tools';
 
 const PROTOCOL_VERSIONS = ['2025-06-18', '2025-03-26', '2024-11-05'];
 
-const INSTRUCTIONS = `This is the person's work portal. Log what you do for them with log_work: a point when you start something (doing) and the same text again when it ends (done, not_done or blocked). Use waiting when you need their permission or input. Call get_context first to learn their projects and tasks, and name the project when you log.`;
+const INSTRUCTIONS = `This is the person's work portal. Log what you do for them with log_work: a point when you start something (doing) and the same text again when it ends (done, not_done or blocked). Use waiting when you need their permission or input. Call get_context first to learn their projects and tasks, and name the project when you log. When they ask to change how their character in the World looks, use get_avatar and set_avatar.`;
 
 type RpcMessage = {
   jsonrpc?: string;

@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import type { CSSProperties, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -22,6 +23,7 @@ import {
   siteLevel,
   STATUS_EMOJI,
 } from '@/lib/world/state';
+import { APP_ROUTES } from '@/utils/constants/appInfo';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import type { Pick } from './WorldScene';
@@ -825,6 +827,17 @@ export const WorldPage = () => {
                     </p>
                   )}
                 </Section>
+                {person.isMe && (
+                  <Link
+                    href={`${APP_ROUTES.settings}#character`}
+                    className="mt-3 flex items-center justify-center gap-1.5 rounded-xl bg-neutral-900 px-3 py-2 text-sm font-semibold text-white hover:bg-neutral-700"
+                  >
+                    <span className="material-symbols-outlined !text-base">
+                      checkroom
+                    </span>
+                    Dress up your character
+                  </Link>
+                )}
               </>
             )}
           </Card>

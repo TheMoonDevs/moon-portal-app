@@ -8,6 +8,7 @@ import {
   CSS2DRenderer,
 } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 
+import { lookOf } from '@/lib/avatar/look';
 import type {
   World,
   WorldBot,
@@ -504,10 +505,16 @@ export const WorldScene = ({
         legs[1].rotation.x = -swing * 0.6;
         arms[0].rotation.x = -swing * 0.5;
         arms[1].rotation.x = p.calling ? 0 : swing * 0.5;
-        arms[1].rotation.z = p.calling ? -2.7 + Math.sin(t * 9) * 0.35 : 0;
+        arms[1].rotation.z = p.calling ? -2.1 + Math.sin(t * 9) * 0.35 : 0;
         body.position.y = walking
           ? Math.abs(Math.sin(p.phase)) * 0.07
           : Math.sin(t * 2 + p.phase) * 0.015;
+        // A little head tilt now and then, and the pet hops along.
+        p.art.head.rotation.z = Math.sin(t * 0.7 + p.phase) * 0.08;
+        if (p.art.pet)
+          p.art.pet.position.y = walking
+            ? Math.abs(Math.sin(p.phase * 0.8)) * 0.14
+            : Math.max(0, Math.sin(t * 3 + p.phase)) * 0.04;
       }
 
       for (const b of Array.from(s.bots.values())) if (act(b, t, dt)) arrive(b);
@@ -845,7 +852,12 @@ export const WorldScene = ({
       const key = `${town.id}:${person.id}`;
       const at = layout.people.get(key);
       if (!at) continue;
-      const figure = art.person(person.id, brand, sign);
+      const figure = art.person(
+        person.id,
+        brand,
+        sign,
+        lookOf(person.id, person.look),
+      );
       figure.group.position.set(at.x, 0, at.z);
       figure.group.rotation.y = at.angle;
       figure.group.userData.pick = { type: 'person', id: person.id };
@@ -1335,7 +1347,7 @@ export const WorldScene = ({
       p.brand,
       p.sites.map((x) => [x.id, x.name, siteLevel(x.done).level]),
     ]),
-    world.people.map((p) => [p.id, p.name, p.avatar, p.townIds]),
+    world.people.map((p) => [p.id, p.name, p.avatar, p.townIds, p.look]),
   ]);
   useEffect(() => {
     if (state.current) build();

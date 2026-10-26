@@ -1,3 +1,6 @@
+import type { Look } from '@/lib/avatar/look';
+import { brandKitDefaults } from '@/lib/brandKit';
+
 /*
  * The world: companies are towns, projects are squares in them, and each
  * kind of task in a project is a building that grows a level every time the
@@ -49,6 +52,8 @@ export type WorldPerson = {
   name: string;
   avatar: string | null;
   title: string | null;
+  /** How their character looks. */
+  look: Look;
   isMe: boolean;
   townIds: string[];
   /** Lines the person wrote themselves today. */
@@ -187,3 +192,52 @@ export const STATUS_EMOJI: Record<PointStatus, string> = {
   blocked: '🔴',
   waiting: '❓',
 };
+
+const PALETTE = [
+  '#2563eb',
+  '#dc2626',
+  '#7c3aed',
+  '#059669',
+  '#ea580c',
+  '#0891b2',
+  '#db2777',
+];
+
+/** A town's or building's look, from its brand kit with sensible fallbacks. */
+export function brandOf(
+  item: {
+    id: string;
+    color?: string | null;
+    logo?: string | null;
+    brandKit?: any;
+  },
+  fallback?: WorldBrand,
+): WorldBrand {
+  const kit = item.brandKit;
+  const defaults = brandKitDefaults(kit);
+  const hex = (v?: string | null) =>
+    v && /^#[0-9a-f]{6}/i.test(v) ? v.slice(0, 7) : '';
+  const primary =
+    hex(defaults.color) ||
+    hex(item.color) ||
+    fallback?.primary ||
+    PALETTE[
+      Array.from(item.id).reduce((n, c) => n + c.charCodeAt(0), 0) %
+        PALETTE.length
+    ];
+  const secondary =
+    hex(
+      kit?.colors?.find(
+        (c: any) =>
+          hex(c.hex) && hex(c.hex).toLowerCase() !== primary.toLowerCase(),
+      )?.hex,
+    ) ||
+    fallback?.secondary ||
+    '#111827';
+  return {
+    primary,
+    secondary,
+    logo: item.logo || defaults.logo || null,
+    font: kit?.fonts?.[0]?.family || fallback?.font || null,
+  };
+}
