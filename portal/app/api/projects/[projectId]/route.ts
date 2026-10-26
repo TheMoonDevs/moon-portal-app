@@ -1,5 +1,6 @@
 import { brandKitDefaults, sanitizeBrandKit } from '@/lib/brandKit';
 import { db } from '@/lib/mongodb/db-client';
+import { sanitizeGoals } from '@/lib/workspace/projects';
 import {
   asStringArray,
   fail,
@@ -26,8 +27,7 @@ const EDITABLE = [
   'brandKit',
   'leadIds',
   'memberIds',
-  'startDate',
-  'dueDate',
+  'goals',
 ] as const;
 
 export async function GET(_request: Request, { params }: Params) {
@@ -82,6 +82,7 @@ export async function PATCH(request: Request, { params }: Params) {
     if (!(data.logo ?? project.logo) && defaults.logo)
       data.logo = defaults.logo;
   }
+  if ('goals' in data) data.goals = sanitizeGoals(data.goals);
   if ('leadIds' in data) data.leadIds = asStringArray(data.leadIds);
   if ('memberIds' in data) data.memberIds = asStringArray(data.memberIds);
 

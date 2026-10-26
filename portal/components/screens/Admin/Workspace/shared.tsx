@@ -1,6 +1,6 @@
 'use client';
 
-import type { User } from '@db/client';
+import type { ProjectGoal, User } from '@db/client';
 import { useMemo, useState } from 'react';
 
 import { cn } from '@/lib/utils';
@@ -166,7 +166,49 @@ export const TASK_STATUS_META: Record<
   },
   IN_REVIEW: { label: 'In review', tone: 'warning', icon: 'rate_review' },
   DONE: { label: 'Done', tone: 'positive', icon: 'check_circle' },
+  IGNORED: { label: 'Won’t do', tone: 'neutral', icon: 'block' },
+  ARCHIVED: { label: 'Archived', tone: 'neutral', icon: 'inventory_2' },
 };
+
+/**
+ * Picks the goal (or one part of a goal) a task counts towards. The value is
+ * `goalId:partId`, with an empty part for the whole goal and '' for none.
+ */
+export const GoalPicker = ({
+  goals,
+  value,
+  onChange,
+  className,
+}: {
+  goals: ProjectGoal[];
+  value: string;
+  onChange: (value: string) => void;
+  className?: string;
+}) => (
+  <NativeSelect
+    aria-label="Goal"
+    value={value}
+    onChange={(e) => onChange(e.target.value)}
+    className={className}
+  >
+    <option value="">No goal</option>
+    {goals.map((goal) =>
+      goal.parts?.length ? (
+        <optgroup key={goal.id} label={goal.title}>
+          {goal.parts.map((part) => (
+            <option key={part.id} value={`${goal.id}:${part.id}`}>
+              {goal.title} · {part.label}
+            </option>
+          ))}
+        </optgroup>
+      ) : (
+        <option key={goal.id} value={`${goal.id}:`}>
+          {goal.title}
+        </option>
+      ),
+    )}
+  </NativeSelect>
+);
 
 /** Searchable multi-select of people. */
 export const PeoplePicker = ({

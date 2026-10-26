@@ -73,6 +73,8 @@ export async function GET(request: NextRequest) {
     buff: { title: string; src: string } | null;
   };
   const rows = users
+    // Inactive people are not ranked.
+    .filter((user: { status?: string }) => user.status === 'ACTIVE')
     .map((user: { id: string }): Row => {
       const mine = entries.filter((e) => e.userId === user.id);
       const myLogs = logs.filter(

@@ -1,0 +1,277 @@
+/*
+ * Project goals, task schedules and result rankings. Pure: safe on client and
+ * server. Dates are plain `YYYY-MM-DD` strings in UTC.
+ */
+
+import type {
+  GoalPeriod,
+  ProjectGoal,
+  ScheduleEvery,
+} from '@/models/workspace';
+
+/* ---------------------------------- Dates --------------------------------- */
+
+export const toDay = (d: Date = new Date()) => d.toISOString().slice(0, 10);
+
+const parseDay = (day: string) => new Date(`${day}T00:00:00Z`);
+
+export const addDays = (day: string, n: number) => {
+  const d = parseDay(day);
+  d.setUTCDate(d.getUTCDate() + n);
+  return toDay(d);
+};
+
+/** First and last day of the period that contains `day` (weeks start Monday). */
+export function periodRange(period: GoalPeriod, day: string = toDay()) {
+  const d = parseDay(day);
+  if (period === 'day') return { from: day, to: day };
+  if (period === 'week') {
+    const from = addDays(day, -((d.getUTCDay() + 6) % 7));
+    return { from, to: addDays(from, 6) };
+  }
+  const from = `${day.slice(0, 7)}-01`;
+  const next = parseDay(from);
+  next.setUTCMonth(next.getUTCMonth() + 1);
+  return { from, to: addDays(toDay(next), -1) };
+}
+
+export const PERIOD_LABELS: Record<GoalPeriod, string> = {
+  day: 'a day',
+  week: 'a week',
+  month: 'a month',
+};
+
+/* ---------------------------------- Goals --------------------------------- */
+
+const shortId = () => Math.random().toString(36).slice(2, 10);
+
+const clampInt = (v: unknown, min: number, max: number, fallback: number) => {
+  const n = Math.round(Number(v));
+  return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : fallback;
+};
+
+const PERIODS: GoalPeriod[] = ['day', 'week', 'month'];
+
+/** Keeps well-formed goals only; gives new goals and parts an id. */
+export function sanitizeGoals(input: unknown): ProjectGoal[] {
+  if (!Array.isArray(input)) return [];
+  return input
+    .slice(0, 20)
+    .map((g): ProjectGoal | null => {
+      const title = typeof g?.title === 'string' ? g.title.trim() : '';
+      if (!title) return null;
+      const parts = Array.isArray(g.parts)
+        ? g.parts
+            .slice(0, 12)
+            .map((p: any) => {
+              const label =
+                typeof p?.label === 'string' ? p.label.trim().slice(0, 60) : '';
+              return label
+                ? {
+                    id: typeof p.id === 'string' && p.id ? p.id : shortId(),
+                    label,
+                    target: clampInt(p.target, 1, 10000, 1),
+                  }
+                : null;
+            })
+            .filter(Boolean)
+        : [];
+      return {
+        id: typeof g.id === 'string' && g.id ? g.id : shortId(),
+        title: title.slice(0, 120),
+        period: PERIODS.includes(g.period) ? g.period : 'week',
+        // With parts, the target is their sum.
+        target: parts.length
+          ? parts.reduce((n: number, p: { target: number }) => n + p.target, 0)
+          : clampInt(g.target, 1, 10000, 1),
+        ...(parts.length && { parts }),
+      };
+    })
+    .filter((g): g is ProjectGoal => !!g);
+}
+
+export type GoalProgress = {
+  goalId: string;
+  done: number;
+  target: number;
+  percent: number;
+  from: string;
+  to: string;
+  parts?: { id: string; label: string; done: number; target: number }[];
+};
+
+type DoneTask = {
+  status: string;
+  goalId?: string | null;
+  goalPartId?: string | null;
+  completedAt?: unknown;
+};
+
+/** Done tasks linked to each goal within that goal's current period. */
+export function goalProgress(
+  goals: ProjectGoal[] = [],
+  tasks: DoneTask[],
+  today: string = toDay(),
+): GoalProgress[] {
+  return goals.map((goal) => {
+    const { from, to } = periodRange(goal.period, today);
+    const inPeriod = tasks.filter((t) => {
+      if (t.status !== 'DONE' || t.goalId !== goal.id || !t.completedAt)
+        return false;
+      const day = toDay(new Date(t.completedAt as string));
+      return day >= from && day <= to;
+    });
+    const parts = goal.parts?.map((p) => ({
+      ...p,
+      done: inPeriod.filter((t) => t.goalPartId === p.id).length,
+    }));
+    // With parts, extra work on one part does not make up for another.
+    const done = parts
+      ? parts.reduce((n, p) => n + Math.min(p.done, p.target), 0)
+      : inPeriod.length;
+    return {
+      goalId: goal.id,
+      done,
+      target: goal.target,
+      percent: Math.min(100, Math.round((done / goal.target) * 100)),
+      from,
+      to,
+      ...(parts && { parts }),
+    };
+  });
+}
+
+/* -------------------------------- Schedules ------------------------------- */
+
+export const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+type ScheduleRule = {
+  every: ScheduleEvery;
+  weekdays?: number[] | null;
+  monthDay?: number | null;
+};
+
+/** Whether the schedule runs on `day`. */
+export function runsOn(rule: ScheduleRule, day: string) {
+  const d = parseDay(day);
+  if (rule.every === 'day') return true;
+  if (rule.every === 'week') {
+    const days = rule.weekdays?.length ? rule.weekdays : [1];
+    return days.includes(d.getUTCDay());
+  }
+  return d.getUTCDate() === (rule.monthDay || 1);
+}
+
+/** The first run date on or after `day`. */
+export function nextRunOnOrAfter(rule: ScheduleRule, day: string) {
+  for (let i = 0; i < 62; i++) {
+    const candidate = addDays(day, i);
+    if (runsOn(rule, candidate)) return candidate;
+  }
+  return addDays(day, 1);
+}
+
+export function describeSchedule(rule: ScheduleRule & { count?: number }) {
+  const count = rule.count && rule.count > 1 ? `${rule.count} tasks ` : '';
+  if (rule.every === 'day') return `${count}every day`;
+  if (rule.every === 'week') {
+    const days = (rule.weekdays?.length ? rule.weekdays : [1])
+      .slice()
+      .sort()
+      .map((d) => WEEKDAYS[d]);
+    return `${count}every ${days.join(', ')}`;
+  }
+  const n = rule.monthDay || 1;
+  const suffix =
+    n % 10 === 1 && n !== 11
+      ? 'st'
+      : n % 10 === 2 && n !== 12
+        ? 'nd'
+        : n % 10 === 3 && n !== 13
+          ? 'rd'
+          : 'th';
+  return `${count}on the ${n}${suffix} of every month`;
+}
+
+/* --------------------------------- Results -------------------------------- */
+
+export const RESULT_METRICS: { key: string; label: string; money?: boolean }[] =
+  [
+    { key: 'earnings', label: 'Earnings', money: true },
+    { key: 'subscribers', label: 'Subscribers' },
+    { key: 'views', label: 'Views' },
+    { key: 'followers', label: 'Followers' },
+    { key: 'streams', label: 'Streams' },
+  ];
+
+export const metricLabel = (key: string) =>
+  RESULT_METRICS.find((m) => m.key === key)?.label ??
+  key.charAt(0).toUpperCase() + key.slice(1);
+
+export const formatMetric = (key: string, value: number) => {
+  const money = RESULT_METRICS.find((m) => m.key === key)?.money;
+  const n = Intl.NumberFormat('en', {
+    notation: Math.abs(value) >= 10000 ? 'compact' : 'standard',
+    maximumFractionDigits: 1,
+  }).format(value);
+  return money ? `$${n}` : n;
+};
+
+type ResultRow = {
+  projectId: string;
+  metric: string;
+  value: number;
+  date: string;
+};
+
+export type ProjectStanding = {
+  projectId: string;
+  value: number;
+  /** Change against the latest reading at least 30 days older. */
+  change: number | null;
+  rank: number;
+};
+
+/**
+ * Ranks projects on one metric by their latest reading. Projects with no
+ * reading for it are left out.
+ */
+export function rankProjects(
+  results: ResultRow[],
+  metric: string,
+): ProjectStanding[] {
+  const byProject = new Map<string, ResultRow[]>();
+  for (const r of results) {
+    if (r.metric !== metric) continue;
+    byProject.set(r.projectId, [...(byProject.get(r.projectId) ?? []), r]);
+  }
+  const rows = Array.from(byProject.entries()).map(([projectId, list]) => {
+    const sorted = list.sort((a, b) => b.date.localeCompare(a.date));
+    const latest = sorted[0];
+    const monthBefore = addDays(latest.date, -30);
+    const older = sorted.find((r) => r.date <= monthBefore);
+    return {
+      projectId,
+      value: latest.value,
+      change: older ? latest.value - older.value : null,
+      rank: 0,
+    };
+  });
+  rows.sort((a, b) => b.value - a.value);
+  rows.forEach((r, i) => {
+    // Ties share a rank.
+    r.rank = i > 0 && rows[i - 1].value === r.value ? rows[i - 1].rank : i + 1;
+  });
+  return rows;
+}
+
+/** Metrics that have at least one reading, in a stable order. */
+export function metricsWithData(results: { metric: string }[]) {
+  const present = new Set(results.map((r) => r.metric));
+  return [
+    ...RESULT_METRICS.map((m) => m.key).filter((k) => present.has(k)),
+    ...Array.from(present)
+      .filter((k) => !RESULT_METRICS.some((m) => m.key === k))
+      .sort(),
+  ];
+}

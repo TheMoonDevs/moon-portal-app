@@ -12,7 +12,12 @@ import {
   permissionDeniedResponse,
   type SessionUser,
 } from '@/lib/permissions/server';
-import type { Company, CompanyMember, CompanyRole } from '@/models/workspace';
+import type {
+  Company,
+  CompanyMember,
+  CompanyRole,
+  ProjectGoal,
+} from '@/models/workspace';
 import { COMPANY_STATUS, MEMBER_STATUS } from '@/models/workspace';
 
 /* ------------------------------- responses ------------------------------- */
@@ -269,6 +274,8 @@ export function summarizeTasks(
 ) {
   const byProject: Record<string, ProgressCounts & { percent: number }> = {};
   for (const task of tasks) {
+    // Tasks set aside do not count towards progress.
+    if (task.status === 'IGNORED' || task.status === 'ARCHIVED') continue;
     const row = (byProject[task.projectId] ??= {
       total: 0,
       done: 0,
@@ -311,4 +318,17 @@ export async function requireProjectPermission(
   }
   const guard = await requireCompanyPermission(project.companyId, permission);
   return { ...guard, project };
+}
+
+/**
+ * The goal (and part) a task may link to: only goals of its own project,
+ * and only parts of that goal. Anything else is cleared.
+ */
+export function goalLink(
+  project: { goals?: ProjectGoal[] | null } | null,
+  body: { goalId?: unknown; goalPartId?: unknown },
+) {
+  const goal = (project?.goals ?? []).find((g) => g.id === body.goalId);
+  const part = goal?.parts?.find((p) => p.id === body.goalPartId);
+  return { goalId: goal?.id ?? null, goalPartId: part?.id ?? null };
 }

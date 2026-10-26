@@ -2,9 +2,11 @@ import type { NextRequest } from 'next/server';
 
 import { db } from '@/lib/mongodb/db-client';
 import { syncTaskPoints } from '@/lib/progress/server';
+import { runDueSchedules } from '@/lib/workspace/schedules';
 import {
   asStringArray,
   fail,
+  goalLink,
   nowIso,
   ok,
   requireCompanyPermission,
@@ -19,6 +21,8 @@ export async function GET(request: NextRequest) {
   const projectId = request.nextUrl.searchParams.get('projectId');
   const companyId = request.nextUrl.searchParams.get('companyId');
   const assigneeId = request.nextUrl.searchParams.get('assigneeId');
+  const includeArchived =
+    request.nextUrl.searchParams.get('includeArchived') === 'true';
 
   if (projectId) {
     const { response } = await requireProjectPermission(
@@ -34,10 +38,12 @@ export async function GET(request: NextRequest) {
     if (response) return response;
   }
 
+  if (projectId) await runDueSchedules({ projectId: { in: [projectId] } });
   const tasks = await db.task.findMany({
     where: {
       ...(projectId ? { projectId } : { companyId }),
       ...(assigneeId && { assigneeIds: assigneeId }),
+      ...(!includeArchived && { status: { notIn: [TASK_STATUS.ARCHIVED] } }),
     },
     orderBy: { createdAt: 'asc' },
   });
@@ -72,7 +78,8 @@ export async function POST(request: Request) {
       size: body.size === TASK_SIZE.MAJOR ? TASK_SIZE.MAJOR : TASK_SIZE.MINOR,
       status,
       assigneeIds: asStringArray(body.assigneeIds),
-      dueDate: body.dueDate ?? null,
+      dueDate: body.dueDate || null,
+      ...goalLink(project, body),
       completedAt: status === TASK_STATUS.DONE ? now : null,
       createdById: user.id,
       createdAt: now,

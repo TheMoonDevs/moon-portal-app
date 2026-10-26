@@ -16,7 +16,9 @@ import { DailySection } from './DailySection';
 import { InWorkSection } from './InWorkSection';
 import { LeaderboardSection } from './LeaderboardSection';
 import { ProfileSection } from './ProfileSection';
+import { ProjectsSection } from './ProjectsSection';
 import { StartSection } from './StartSection';
+import { TasksSection } from './TasksSection';
 
 const today = () => new Date().toISOString().split('T')[0];
 
@@ -81,6 +83,8 @@ export const HomePage = () => {
       <div className="grid w-full grid-cols-3 max-sm:grid-cols-1">
         <div className="pt-8">
           <CompaniesSection />
+          <ProjectsSection />
+          <TasksSection />
         </div>
         <div className="flex w-full flex-col pt-8">
           {isTabletOrMore && <FocusMode />}

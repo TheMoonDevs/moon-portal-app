@@ -68,6 +68,8 @@ export const modelMetaMap = defineModelRegistry({
   companyMember: { collection: 'CompanyMember' },
   project: { collection: 'Project' },
   task: { collection: 'Task' },
+  taskSchedule: { collection: 'TaskSchedule' },
+  projectResult: { collection: 'ProjectResult' },
   pointEntry: { collection: 'PointEntry' },
   badge: { collection: 'Badge' },
   userBadge: { collection: 'UserBadge' },

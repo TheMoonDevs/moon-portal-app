@@ -30,7 +30,7 @@ import { BrandKitEditor, BrandKitSummary } from './BrandKitEditor';
 import { ColorPicker, CompanyMark, errorText, PeoplePicker } from './shared';
 
 type MemberRow = CompanyMember & {
-  user: Pick<User, 'id' | 'name' | 'avatar' | 'email'> | null;
+  user: Pick<User, 'id' | 'name' | 'avatar' | 'email' | 'status'> | null;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -176,6 +176,7 @@ const CompanyMembers = ({
   const [newRole, setNewRole] = useState('member');
   const [busyId, setBusyId] = useState<string | null>(null);
   const [removing, setRemoving] = useState<MemberRow | null>(null);
+  const [showInactive, setShowInactive] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -200,6 +201,13 @@ const CompanyMembers = ({
   }, [load]);
 
   const memberIds = new Set(members.map((m) => m.userId));
+  // Inactive people stay members but are hidden unless asked for.
+  const isInactive = (m: MemberRow) =>
+    !!m.user?.status && m.user.status !== 'ACTIVE';
+  const inactiveCount = members.filter(isInactive).length;
+  const shownMembers = showInactive
+    ? members
+    : members.filter((m) => !isInactive(m));
   const candidates = users.filter((u) => !memberIds.has(u.id));
   const roleName = (key: string) =>
     roles.find((r) => r.key === key)?.name ?? key;
@@ -267,7 +275,7 @@ const CompanyMembers = ({
       <PanelHeader
         icon="group"
         title="Members"
-        description={`${members.length} ${members.length === 1 ? 'person' : 'people'}`}
+        description={`${members.length - inactiveCount} ${members.length - inactiveCount === 1 ? 'person' : 'people'}`}
         actions={
           can(companyId, 'members:create') && (
             <AdminButton
@@ -290,7 +298,7 @@ const CompanyMembers = ({
         />
       ) : (
         <ul className="divide-y divide-white/[0.05]">
-          {members.map((member) => (
+          {shownMembers.map((member) => (
             <li
               key={member.id}
               className="flex flex-wrap items-center gap-3 px-5 py-3"
@@ -347,6 +355,17 @@ const CompanyMembers = ({
             </li>
           ))}
         </ul>
+      )}
+      {inactiveCount > 0 && (
+        <button
+          type="button"
+          onClick={() => setShowInactive((v) => !v)}
+          className="w-full border-t border-white/[0.05] px-5 py-2.5 text-left text-xs text-neutral-500 hover:text-neutral-300"
+        >
+          {showInactive
+            ? 'Hide inactive people'
+            : `Show ${inactiveCount} inactive ${inactiveCount === 1 ? 'person' : 'people'}`}
+        </button>
       )}
 
       <AdminModal
