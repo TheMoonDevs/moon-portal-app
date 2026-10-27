@@ -10,6 +10,7 @@ import {
   type BrandKit,
   emptyBrandKit,
   extOf,
+  isBrandAssetFile,
   isBrandKitEmpty,
   isIgnoredBrandPath,
   kindOf,
@@ -17,6 +18,8 @@ import {
   normalizeHex,
   parseColorsJson,
   parseFontFileName,
+  skippedBrandFolder,
+  skippedFolderOf,
 } from '@/lib/brandKit';
 import { cn } from '@/lib/utils';
 import { uploadBrandFile } from '@/utils/helpers/uploads';
@@ -72,29 +75,96 @@ async function uploadAll<T>(
   return { urls, failed };
 }
 
+/** A file of a picked brand folder, its path relative to that folder. */
+type FolderFile = { file: File; rel: string };
+
+/** Files from an <input webkitdirectory>, with the picked folder's own name dropped. */
+const folderFilesOf = (files: File[]): FolderFile[] =>
+  files.map((file) => {
+    const parts = (file.webkitRelativePath || file.name).split('/');
+    return {
+      file,
+      rel: parts.length > 1 ? parts.slice(1).join('/') : parts[0],
+    };
+  });
+
+type DirHandle = {
+  kind: 'directory';
+  name: string;
+  values: () => AsyncIterable<DirHandle | FileHandle>;
+};
+type FileHandle = { kind: 'file'; name: string; getFile: () => Promise<File> };
+type PickerWindow = Window & {
+  showDirectoryPicker?: (options?: {
+    id?: string;
+    mode?: 'read';
+  }) => Promise<DirHandle>;
+};
+
+/**
+ * Files of a brand folder picked with the File System Access API (Chromium),
+ * without opening the folders a kit never uses (graphics/, node_modules/,
+ * hidden ones), so a brand whose source holds thousands of frames reads as
+ * just its kit. Each of those folders comes back as one skipped line.
+ */
+async function walkBrandFolder(dir: DirHandle, prefix = '') {
+  const files: FolderFile[] = [];
+  const skipped: string[] = [];
+  for await (const entry of dir.values()) {
+    const rel = `${prefix}${entry.name}`;
+    if (entry.kind === 'directory') {
+      const reason = skippedBrandFolder(entry.name);
+      if (reason) skipped.push(`${rel}/ (${reason})`);
+      else {
+        const sub = await walkBrandFolder(entry, `${rel}/`);
+        files.push(...sub.files);
+        skipped.push(...sub.skipped);
+      }
+    } else {
+      files.push({ file: await entry.getFile(), rel });
+    }
+  }
+  return { files, skipped };
+}
+
 /**
  * Turns a picked brand folder (colors.json, brandguide.md, fonts/, logo/,
- * intros/, …) into a brand kit, uploading every file it keeps.
+ * intros/, …) into a brand kit. Only images, video, audio and fonts are
+ * uploaded; graphics/ (the source) and code are left out.
  */
 async function importFolder(
-  files: File[],
+  files: FolderFile[],
   onProgress: (text: string) => void,
-): Promise<{ kit: Partial<BrandKit>; failed: string[] }> {
-  type Entry = { file: File; rel: string; dir: string; sub: string };
-  const entries: Entry[] = files
-    .map((file) => {
-      const parts = (file.webkitRelativePath || file.name).split('/');
-      // Drop the picked folder's own name.
-      const rel = parts.length > 1 ? parts.slice(1).join('/') : parts[0];
-      const dirs = rel.split('/').slice(0, -1);
-      return {
-        file,
-        rel,
-        dir: (dirs[0] ?? '').toLowerCase(),
-        sub: (dirs[1] ?? '').toLowerCase(),
-      };
-    })
-    .filter((e) => !isIgnoredBrandPath(e.rel));
+): Promise<{
+  kit: Partial<BrandKit>;
+  failed: string[];
+  uploaded: number;
+  skipped: string[];
+}> {
+  type Entry = FolderFile & { dir: string; sub: string };
+  const skipped: string[] = [];
+  const folders = new Map<string, { reason: string; count: number }>();
+  const entries: Entry[] = [];
+  for (const { file, rel } of files) {
+    const folder = skippedFolderOf(rel);
+    if (folder) {
+      const seen = folders.get(folder.dir);
+      if (seen) seen.count++;
+      else folders.set(folder.dir, { reason: folder.reason, count: 1 });
+      continue;
+    }
+    if (isIgnoredBrandPath(rel)) continue;
+    const dirs = rel.split('/').slice(0, -1);
+    entries.push({
+      file,
+      rel,
+      dir: (dirs[0] ?? '').toLowerCase(),
+      sub: (dirs[1] ?? '').toLowerCase(),
+    });
+  }
+  folders.forEach(({ reason, count }, dir) =>
+    skipped.push(`${dir} (${reason}, ${count} file${count === 1 ? '' : 's'})`),
+  );
 
   const kit: Partial<BrandKit> = {
     logos: [],
@@ -113,13 +183,20 @@ async function importFolder(
     entries.find((e) => !e.dir && extOf(e.file.name) === 'md');
   if (guideFile) kit.guide = await guideFile.file.text();
 
-  const toUpload = entries.filter(
-    (e) =>
-      e !== colorsFile &&
-      e !== guideFile &&
-      // colors.css repeats colors.json.
-      !(!e.dir && /^colors\.css$/i.test(e.file.name)),
-  );
+  const paths = new Set(entries.map((e) => e.rel.toLowerCase()));
+  const toUpload = entries.filter((e) => {
+    if (!isBrandAssetFile(e.file.name)) {
+      if (e !== colorsFile && e !== guideFile) skipped.push(e.rel);
+      return false;
+    }
+    // A ProRes .mov master has a .webm with alpha next to it.
+    const webm = e.rel.replace(/\.mov$/i, '.webm').toLowerCase();
+    if (webm !== e.rel.toLowerCase() && paths.has(webm)) {
+      skipped.push(`${e.rel} (ProRes master)`);
+      return false;
+    }
+    return true;
+  });
 
   onProgress(`Uploading 0 of ${toUpload.length}…`);
   const { urls, failed } = await uploadAll(
@@ -150,7 +227,7 @@ async function importFolder(
       });
     }
   }
-  return { kit, failed };
+  return { kit, failed, uploaded: urls.size, skipped };
 }
 
 /** Lets a font from the kit render its own preview. */
@@ -229,6 +306,7 @@ const PickFiles = ({
   folder,
   busy,
   tone = 'ghost',
+  onPick,
   onFiles,
 }: {
   label: string;
@@ -238,6 +316,8 @@ const PickFiles = ({
   folder?: boolean;
   busy?: boolean;
   tone?: 'ghost' | 'primary' | 'secondary';
+  /** Opens its own picker instead; resolves false to fall back to the input. */
+  onPick?: () => Promise<boolean>;
   onFiles: (files: File[]) => void;
 }) => {
   const ref = useRef<HTMLInputElement>(null);
@@ -251,7 +331,9 @@ const PickFiles = ({
         tone={tone}
         icon={icon}
         loading={busy}
-        onClick={() => ref.current?.click()}
+        onClick={async () => {
+          if (!(await onPick?.())) ref.current?.click();
+        }}
       >
         {label}
       </AdminButton>
@@ -329,12 +411,19 @@ export const BrandKitEditor = ({
     if (failed.length) toast.error(failed[0]);
   };
 
-  const importBrandFolder = async (files: File[]) => {
+  const importBrandFolder = async (
+    files: FolderFile[],
+    skippedFolders: string[] = [],
+  ) => {
     setBusy('import');
     try {
-      const { kit: imported, failed } = await importFolder(files, (text) =>
-        setBusy(`import:${text}`),
-      );
+      const {
+        kit: imported,
+        failed,
+        uploaded,
+        skipped,
+      } = await importFolder(files, (text) => setBusy(`import:${text}`));
+      const skippedAll = [...skippedFolders, ...skipped];
       setKit((k) => ({
         ...k,
         name: imported.name ?? k.name,
@@ -351,11 +440,42 @@ export const BrandKitEditor = ({
           `${failed.length} file${failed.length === 1 ? '' : 's'} could not be uploaded. ${failed[0]}`,
         );
       } else {
-        toast.success('Brand folder imported. Review it and press Save.');
+        toast.success(
+          `Brand folder imported: ${uploaded} file${uploaded === 1 ? '' : 's'}. Review it and press Save.`,
+          skippedAll.length
+            ? {
+                description: `Left out: ${skippedAll.slice(0, 4).join(', ')}${skippedAll.length > 4 ? ` and ${skippedAll.length - 4} more` : ''}`,
+              }
+            : undefined,
+        );
       }
     } finally {
       setBusy(null);
     }
+  };
+
+  /** Chromium walks the folder itself and leaves graphics/ shut; other browsers get the folder input. */
+  const pickBrandFolder = async () => {
+    const w = window as PickerWindow;
+    if (typeof w.showDirectoryPicker !== 'function') return false;
+    let dir: DirHandle;
+    try {
+      dir = await w.showDirectoryPicker({
+        id: 'portal-brand-kit',
+        mode: 'read',
+      });
+    } catch {
+      return true; // closed the picker
+    }
+    setBusy('import');
+    try {
+      const { files, skipped } = await walkBrandFolder(dir);
+      await importBrandFolder(files, skipped);
+    } catch (err) {
+      setBusy(null);
+      toast.error(errorText(err));
+    }
+    return true;
   };
 
   const applyPastedColors = () => {
@@ -435,7 +555,8 @@ export const BrandKitEditor = ({
             </p>
             <p className="text-xs text-neutral-500">
               Pick it and everything is filled in: colors.json, brandguide.md,
-              fonts, logos, intros, outros and the rest.
+              fonts, logos, intros, outros and the rest. Its graphics/ source
+              and code files are left out.
             </p>
           </div>
           <PickFiles
@@ -444,7 +565,8 @@ export const BrandKitEditor = ({
             icon="drive_folder_upload"
             label="Import brand folder"
             busy={importing}
-            onFiles={importBrandFolder}
+            onPick={pickBrandFolder}
+            onFiles={(files) => importBrandFolder(folderFilesOf(files))}
           />
         </div>
 

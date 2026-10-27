@@ -216,11 +216,38 @@ export const extOf = (name: string) =>
 export const kindOf = (name: string): BrandAssetKind =>
   EXT_KIND[extOf(name)] ?? 'other';
 
-/** Files a brand folder may hold that are not brand material (source code…). */
+/**
+ * Folders of a brand folder that are never read: hidden ones, the brand's
+ * source (`graphics/`, which can hold thousands of reference frames) and
+ * dependencies. The folder picker doesn't even open them where it can.
+ */
+export function skippedBrandFolder(name: string): string | null {
+  if (name.startsWith('.') || name === '__MACOSX') return 'hidden';
+  if (name.toLowerCase() === 'graphics') return 'source';
+  if (name === 'node_modules') return 'dependency';
+  return null;
+}
+
+/** The first skipped folder a path sits in (`graphics/`, `logo/graphics/`…). */
+export function skippedFolderOf(path: string) {
+  const dirs = path.split('/').slice(0, -1);
+  for (let i = 0; i < dirs.length; i++) {
+    const reason = skippedBrandFolder(dirs[i]);
+    if (reason) return { dir: `${dirs.slice(0, i + 1).join('/')}/`, reason };
+  }
+  return null;
+}
+
+/**
+ * Brand material that is uploaded: images (svg and ico included), video,
+ * audio and font files. Code, html, css, json and the rest never are.
+ */
+export const isBrandAssetFile = (name: string) =>
+  ['image', 'video', 'audio', 'font'].includes(kindOf(name));
+
+/** Files of a brand folder that are never read: skipped folders and hidden files. */
 export const isIgnoredBrandPath = (path: string) =>
-  /(^|\/)(\.|node_modules\/|__MACOSX\/)/.test(path) ||
-  /\.(tsx?|jsx?|mjs|cjs|map|lock|DS_Store)$/i.test(path) ||
-  /(^|\/)(package(-lock)?\.json|tsconfig\.json)$/i.test(path);
+  !!skippedFolderOf(path) || path.split('/').pop()!.startsWith('.');
 
 const WEIGHTS: Record<string, number> = {
   thin: 100,
