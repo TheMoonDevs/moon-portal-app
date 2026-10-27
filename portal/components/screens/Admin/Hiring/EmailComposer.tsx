@@ -274,6 +274,10 @@ export const EmailComposer = ({
               sender: user?.name ?? '',
               email: previewFor.email,
               meetingLink: settings?.meetingLink,
+              taskLink:
+                typeof window === 'undefined'
+                  ? ''
+                  : `${window.location.origin}/task/(their own private link)`,
             }),
           )
         : null,

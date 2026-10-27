@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 
 import { answerText, APPLICATION_STAGES } from '@/lib/hiring/forms';
 import { linkParts, onlyLinks } from '@/lib/hiring/links';
+import { taskDueAt } from '@/lib/hiring/tasks';
 import { cn } from '@/lib/utils';
 import {
   type APPLICATION_STAGE,
@@ -13,6 +14,7 @@ import {
   FORM_FIELD_TYPE,
   type FormField,
   type HiringEmail,
+  type JobTask,
 } from '@/models/hiring';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
@@ -48,11 +50,16 @@ const AnswerLink = ({ href, label }: { href: string; label?: string }) => (
 const Answer = ({
   field,
   application,
+  fromTask = false,
 }: {
   field: FormField;
   application: ApplicationRow;
+  /** Read the answer from their task instead of their application. */
+  fromTask?: boolean;
 }) => {
-  const value = application.answers?.[field.id];
+  const value = (
+    fromTask ? application.taskSubmission?.answers : application.answers
+  )?.[field.id];
   if (value === undefined || value === null || value === '')
     return <span className="text-neutral-600">No answer</span>;
 
@@ -60,7 +67,7 @@ const Answer = ({
     const file = value as ApplicationFile;
     return (
       <a
-        href={`/api/hiring/applications/${application.id}/files/${field.id}`}
+        href={`/api/hiring/applications/${application.id}/files/${field.id}${fromTask ? '?from=task' : ''}`}
         target="_blank"
         rel="noreferrer"
         className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-sm text-neutral-200 hover:border-white/25"
@@ -93,6 +100,73 @@ const Answer = ({
         ),
       )}
     </span>
+  );
+};
+
+/** The task: their private link, when it's due, and what they sent. */
+const TaskSection = ({
+  application,
+  task,
+}: {
+  application: ApplicationRow;
+  task: JobTask;
+}) => {
+  const link =
+    application.taskToken && typeof window !== 'undefined'
+      ? `${window.location.origin}/task/${application.taskToken}`
+      : null;
+  const due = taskDueAt(task, application.taskSentAt);
+  const sent = application.taskSubmission;
+  return (
+    <Field label="Task">
+      <div className="flex flex-col divide-y divide-white/[0.05] rounded-xl border border-white/[0.07]">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 text-xs text-neutral-400">
+          {link ? (
+            <span className="flex items-center gap-1">
+              <a
+                href={link}
+                target="_blank"
+                rel="noreferrer"
+                className="text-sky-300 hover:underline"
+              >
+                Their task page
+              </a>
+              <CopyButton value={link} label="Copy task link" />
+            </span>
+          ) : (
+            <span>
+              No link yet. Email them with {'{{taskLink}}'} to send one.
+            </span>
+          )}
+          {application.taskSentAt && (
+            <span>Sent {formatDate(application.taskSentAt)}</span>
+          )}
+          {due && <span>Due {formatDate(due.toISOString())}</span>}
+          {sent && (
+            <Pill tone="positive" icon="task_alt">
+              Submitted {timeAgo(sent.submittedAt)}
+            </Pill>
+          )}
+        </div>
+        {sent ? (
+          task.fields.map((field) => (
+            <div
+              key={field.id}
+              className="grid gap-1 px-4 py-3 text-sm text-neutral-200 sm:grid-cols-[200px_1fr] sm:gap-4"
+            >
+              <span className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+                {field.label}
+              </span>
+              <Answer field={field} application={application} fromTask />
+            </div>
+          ))
+        ) : (
+          <p className="px-4 py-3 text-sm text-neutral-500">
+            Nothing sent yet.
+          </p>
+        )}
+      </div>
+    </Field>
   );
 };
 
@@ -179,6 +253,7 @@ const EmailLog = ({
 export const ApplicantDetail = ({
   application,
   fields,
+  task,
   users,
   canEdit,
   onClose,
@@ -187,6 +262,8 @@ export const ApplicantDetail = ({
 }: {
   application: ApplicationRow | null;
   fields: FormField[];
+  /** The opening's task, when it has one. */
+  task?: JobTask | null;
   users: User[];
   canEdit: boolean;
   onClose: () => void;
@@ -315,6 +392,8 @@ export const ApplicantDetail = ({
           ))}
         </div>
 
+        {task && <TaskSection application={application} task={task} />}
+
         <Field label="Notes" hint="Only your hiring team sees these.">
           <TextArea
             value={notes}
@@ -351,7 +430,9 @@ export const ApplicantDetail = ({
                       ? 'bg-sky-400'
                       : event.type === 'EMAIL'
                         ? 'bg-violet-400'
-                        : 'bg-white/30',
+                        : event.type === 'TASK_SUBMITTED'
+                          ? 'bg-emerald-400'
+                          : 'bg-white/30',
                   )}
                 />
                 <span className="flex-1">
@@ -363,7 +444,9 @@ export const ApplicantDetail = ({
                       ? `${nameOf(event.byUserId)} moved them to ${STAGE_META[event.to]?.label ?? event.to}`
                       : event.type === 'EMAIL'
                         ? `${nameOf(event.byUserId)} emailed “${event.text}”`
-                        : event.text}
+                        : event.type === 'TASK_SUBMITTED'
+                          ? event.text || 'Sent their task'
+                          : event.text}
                 </span>
                 <span className="text-neutral-600">{timeAgo(event.at)}</span>
               </li>

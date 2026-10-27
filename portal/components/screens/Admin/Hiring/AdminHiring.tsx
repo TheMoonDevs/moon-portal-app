@@ -141,6 +141,12 @@ const ApplicantCard = ({
         {timeAgo(application.submittedAt)}
         {application.lastEmail && <EmailMark email={application.lastEmail} />}
       </p>
+      {application.taskSubmission && (
+        <span className="mt-1.5 inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-[10px] text-emerald-300">
+          <Icon name="task_alt" className="text-[12px]" />
+          Task submitted
+        </span>
+      )}
     </button>
   </div>
 );
@@ -954,6 +960,7 @@ export const AdminHiring = ({
           onOpenChange={setEditorOpen}
           companyId={companyId}
           opening={editing}
+          users={users}
           onSaved={(saved) => {
             setOpenings((rows) =>
               rows.some((o) => o.id === saved.id)
@@ -967,6 +974,7 @@ export const AdminHiring = ({
       <ApplicantDetail
         application={detail}
         fields={opening?.fields ?? []}
+        task={opening?.task ?? null}
         users={users}
         canEdit={canEdit}
         onClose={() => setDetailId(null)}

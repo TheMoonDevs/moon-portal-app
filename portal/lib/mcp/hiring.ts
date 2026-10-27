@@ -21,12 +21,16 @@ import {
 import {
   countByStage,
   emptyStageCounts,
+  hiringLeadProblem,
   isStage,
   moveApplication,
   parseOpeningInput,
   statusTimestamps,
+  taskLinkFor,
   uniqueOpeningSlug,
 } from '@/lib/hiring/server';
+import { TASK_PAGES } from '@/lib/hiring/taskPages';
+import { taskDueAt } from '@/lib/hiring/tasks';
 import { db } from '@/lib/mongodb/db-client';
 import type { SessionUser } from '@/lib/permissions/server';
 import { nowIso } from '@/lib/workspace/server';
@@ -38,13 +42,18 @@ import type {
   HiringEmailTemplate,
   JobApplication,
   JobOpening,
+  JobTask,
 } from '@/models/hiring';
 import {
   APPLICATION_STAGE,
   FORM_FIELD_TYPE,
   JOB_OPENING_STATUS,
 } from '@/models/hiring';
-import type { Company } from '@/models/workspace';
+import {
+  type Company,
+  type CompanyMember,
+  MEMBER_STATUS,
+} from '@/models/workspace';
 
 import {
   companiesWith,
@@ -207,16 +216,20 @@ function answersView(
   fields: FormField[],
   context: ToolContext,
   maxLength: number,
+  fromTask = false,
 ) {
   const out: Record<string, unknown> = {};
+  const answers = fromTask
+    ? application.taskSubmission?.answers
+    : application.answers;
   for (const field of fields) {
-    const value = application.answers?.[field.id];
+    const value = answers?.[field.id];
     if (value === undefined || value === null || value === '') continue;
     if (field.type === FORM_FIELD_TYPE.FILE && typeof value === 'object') {
       out[field.label] = {
         file: (value as ApplicationFile).name,
         // Opens for people signed in to the portal with hiring access.
-        link: `${context.origin}/api/hiring/applications/${application.id}/files/${field.id}`,
+        link: `${context.origin}/api/hiring/applications/${application.id}/files/${field.id}${fromTask ? '?from=task' : ''}`,
       };
       continue;
     }
@@ -244,7 +257,75 @@ const applicantSummary = (
       }
     : null,
   answers: answersView(a, fields, context, 400),
+  task: a.taskToken
+    ? {
+        link: taskLinkFor(context.origin, a.taskToken),
+        sentAt: a.taskSentAt ?? null,
+        submittedAt: a.taskSubmission?.submittedAt ?? null,
+      }
+    : null,
 });
+
+/** The opening's task as Claude reads and writes it. */
+const taskView = (task: JobTask | null | undefined) =>
+  task
+    ? {
+        page: task.page ?? null,
+        brief: task.brief,
+        effort: task.effort ?? null,
+        dueDays: task.dueDays ?? null,
+        deliverables: task.deliverables,
+        closing: task.closing ?? null,
+        questions: task.fields.map(fieldView),
+      }
+    : null;
+
+/** The task from tool input, in the shape parseOpeningInput expects. */
+const taskInput = (raw: unknown) => {
+  if (raw === null) return null;
+  if (!raw || typeof raw !== 'object') return undefined;
+  const t = raw as Record<string, unknown>;
+  return { ...t, fields: t.questions ?? t.fields ?? [] };
+};
+
+/** A company member by user id, name or email, for the hiring lead. */
+async function findLead(companyId: string, ref: unknown) {
+  if (ref === null || ref === '') return null;
+  if (typeof ref !== 'string') return undefined;
+  const members: CompanyMember[] = await db.companyMember.findMany({
+    where: { companyId, status: MEMBER_STATUS.ACTIVE },
+  });
+  const people: Array<{ id: string; name?: string; email?: string }> =
+    await db.user.findMany({
+      where: { id: { in: members.map((m) => m.userId) } },
+      select: { id: true, name: true, email: true },
+    });
+  const wanted = ref.trim().toLowerCase();
+  const match = people.filter(
+    (p) =>
+      p.id === ref.trim() ||
+      p.email?.toLowerCase() === wanted ||
+      p.name?.toLowerCase() === wanted ||
+      p.name?.toLowerCase().split(/\s+/)[0] === wanted,
+  );
+  if (match.length !== 1)
+    throw new ToolError(
+      match.length
+        ? `More than one member matches "${ref}". Use their email.`
+        : `No member "${ref}" in this company. The hiring lead has to be a member.`,
+    );
+  return match[0].id;
+}
+
+const leadName = async (id: string | null | undefined) =>
+  id
+    ? ((
+        (await db.user.findFirst({
+          where: { id },
+          select: { name: true },
+        })) as { name?: string } | null
+      )?.name ?? id)
+    : null;
 
 /* ---------------------------------- input --------------------------------- */
 
@@ -307,6 +388,53 @@ const openingProperties = {
     maxItems: 40,
     description:
       'The application form. Name and email are always asked, so leave them out.',
+  },
+  hiringLead: {
+    type: 'string',
+    description:
+      'The person candidates will work with: a company member by name, email or user id. Empty string to clear.',
+  },
+  task: {
+    type: ['object', 'null'],
+    description:
+      'The take-home task. Each candidate gets it on their own private page, sent with {{taskLink}} in an email (email_applicants). Passing it replaces the whole task, so call get_job_opening first and send every part you want to keep; null removes it.',
+    properties: {
+      page: {
+        type: 'string',
+        enum: Object.keys(TASK_PAGES),
+        description:
+          'A designed intro shown before the brief. Leave out for just the brief.',
+      },
+      brief: {
+        type: 'string',
+        description: 'The brief. Blank lines separate paragraphs.',
+      },
+      effort: { type: 'string', description: 'e.g. "About 3 to 4 hours".' },
+      dueDays: {
+        type: 'number',
+        description:
+          'Days after the first task email that it is due. Candidates can send again until then; without it they send once.',
+      },
+      deliverables: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: { title: { type: 'string' }, body: { type: 'string' } },
+          required: ['title'],
+        },
+        description: 'What to make, in order.',
+      },
+      closing: {
+        type: 'string',
+        description: 'A last line under the deliverables.',
+      },
+      questions: {
+        type: 'array',
+        items: questionSchema,
+        description:
+          'The submission form. Keep existing ids so answers stay linked. Name and email are known from the link.',
+      },
+    },
   },
 };
 
@@ -396,7 +524,7 @@ export const HIRING_TOOLS: Tool[] = [
     name: 'get_job_opening',
     title: 'Get a job opening',
     description:
-      'One opening with its summary, full details and private notes, every question on its application form (with ids), and applicant counts per stage.',
+      'One opening with its summary, full details and private notes, every question on its application form (with ids), its hiring lead, its take-home task (brief, deliverables, due days and submission form), and applicant counts per stage.',
     inputSchema: {
       type: 'object',
       properties: { openingId: { type: 'string' } },
@@ -422,6 +550,8 @@ export const HIRING_TOOLS: Tool[] = [
         details: opening.details ?? null,
         notes: opening.notes ?? null,
         questions: (opening.fields ?? []).map(fieldView),
+        hiringLead: await leadName(opening.hiringLeadId),
+        task: taskView(opening.task),
       };
     },
   },
@@ -459,6 +589,8 @@ export const HIRING_TOOLS: Tool[] = [
         details: args?.details,
         notes: args?.notes,
         fields: args?.questions ?? [],
+        task: taskInput(args?.task) ?? null,
+        hiringLeadId: (await findLead(company.id, args?.hiringLead)) ?? null,
         status: args?.publish
           ? JOB_OPENING_STATUS.OPEN
           : JOB_OPENING_STATUS.DRAFT,
@@ -480,6 +612,8 @@ export const HIRING_TOOLS: Tool[] = [
           notes: data.notes ?? null,
           status: data.status,
           fields: data.fields ?? [],
+          task: data.task ?? null,
+          hiringLeadId: data.hiringLeadId ?? null,
           createdById: user.id,
           publishedAt: null,
           closedAt: null,
@@ -507,7 +641,7 @@ export const HIRING_TOOLS: Tool[] = [
     name: 'update_job_opening',
     title: 'Update a job opening',
     description:
-      'Changes an opening: its details, its form, or its status (DRAFT, OPEN to accept applications, CLOSED to stop them). `questions` replaces the whole form, so pass every question you want to keep, with its id. Call get_job_opening first.',
+      'Changes an opening: its details, its form, its hiring lead, its take-home task, or its status (DRAFT, OPEN to accept applications, CLOSED to stop them). `questions` replaces the whole form and `task` the whole task, so pass every part you want to keep, with question ids. Call get_job_opening first.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -540,11 +674,24 @@ export const HIRING_TOOLS: Tool[] = [
       ])
         if (args?.[key] !== undefined) input[key] = args[key];
       if (args?.questions !== undefined) input.fields = args.questions;
+      if (args?.task !== undefined) {
+        const task = taskInput(args.task);
+        if (task === undefined)
+          throw new ToolError('Pass task as an object, or null to remove it.');
+        input.task = task;
+      }
+      if (args?.hiringLead !== undefined)
+        input.hiringLeadId = await findLead(opening.companyId, args.hiringLead);
       if (!Object.keys(input).length)
         throw new ToolError('Say what to change.');
 
       const { data, error } = parseOpeningInput(input);
       if (error) throw new ToolError(error);
+      const leadProblem = await hiringLeadProblem(
+        opening.companyId,
+        data.hiringLeadId,
+      );
+      if (leadProblem) throw new ToolError(leadProblem);
       const statusChanged = !!data.status && data.status !== opening.status;
       const updated: JobOpening = await db.jobOpening.update({
         where: { id: opening.id },
@@ -564,6 +711,8 @@ export const HIRING_TOOLS: Tool[] = [
             context,
           ),
           questions: (updated.fields ?? []).map(fieldView),
+          hiringLead: await leadName(updated.hiringLeadId),
+          task: taskView(updated.task),
         },
       };
     },
@@ -676,6 +825,29 @@ export const HIRING_TOOLS: Tool[] = [
         opening: opening ? { id: opening.id, title: opening.title } : null,
         appliedAt: application.submittedAt,
         answers: answersView(application, opening?.fields ?? [], context, 5000),
+        task: opening?.task
+          ? {
+              link: application.taskToken
+                ? taskLinkFor(context.origin, application.taskToken)
+                : null,
+              sentAt: application.taskSentAt ?? null,
+              dueAt:
+                taskDueAt(
+                  opening.task,
+                  application.taskSentAt,
+                )?.toISOString() ?? null,
+              submittedAt: application.taskSubmission?.submittedAt ?? null,
+              answers: application.taskSubmission
+                ? answersView(
+                    application,
+                    opening.task.fields,
+                    context,
+                    5000,
+                    true,
+                  )
+                : null,
+            }
+          : null,
         notes: application.notes ?? null,
         history: (application.history ?? []).map((e) => ({
           type: e.type,
@@ -904,7 +1076,7 @@ export const HIRING_TOOLS: Tool[] = [
   {
     name: 'email_applicants',
     title: 'Email applicants',
-    description: `Emails applicants of one company, each their own copy with {{placeholders}} filled in, from careers@ the company's domain with replies going to the person. {{meetingLink}} puts in the person's own booking link (prefilled for each candidate) so candidates can pick an interview time. Give a template (from list_email_templates) or a subject and body; a template's stage suggestion is used unless you set moveTo. ALWAYS call with dryRun true first, show the person the subject, a preview and how many people it goes to, and send (dryRun false) only after they say yes: emails can't be unsent. Anyone sent the same subject in the last 30 minutes is skipped.`,
+    description: `Emails applicants of one company, each their own copy with {{placeholders}} filled in, from careers@ the company's domain with replies going to the person. {{meetingLink}} puts in the person's own booking link (prefilled for each candidate) so candidates can pick an interview time. {{taskLink}} puts in each candidate's own private task page for the opening's task (see get_job_opening); the due date counts from the first email that has it. Give a template (from list_email_templates) or a subject and body; a template's stage suggestion is used unless you set moveTo. ALWAYS call with dryRun true first, show the person the subject, a preview and how many people it goes to, and send (dryRun false) only after they say yes: emails can't be unsent. Anyone sent the same subject in the last 30 minutes is skipped.`,
     inputSchema: {
       type: 'object',
       properties: {

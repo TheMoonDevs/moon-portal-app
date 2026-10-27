@@ -17,6 +17,7 @@ import type {
   JobOpening,
 } from '@/models/hiring';
 import { APPLICATION_STAGE, JOB_OPENING_STATUS } from '@/models/hiring';
+import { MEMBER_STATUS } from '@/models/workspace';
 
 import {
   ALLOWED_FILE_TYPES,
@@ -24,6 +25,7 @@ import {
   MAX_FILE_BYTES,
   sanitizeFields,
 } from './forms';
+import { sanitizeTask } from './tasks';
 
 /* -------------------------------- openings ------------------------------- */
 
@@ -255,9 +257,55 @@ export function parseOpeningInput(body: Record<string, unknown>): {
     data.status = body.status as JOB_OPENING_STATUS;
   }
   if ('fields' in body) data.fields = sanitizeFields(body.fields);
+  if ('task' in body) data.task = sanitizeTask(body.task);
+  if ('hiringLeadId' in body)
+    data.hiringLeadId =
+      typeof body.hiringLeadId === 'string' && body.hiringLeadId.trim()
+        ? body.hiringLeadId.trim().slice(0, 64)
+        : null;
 
   return { data, error: null };
 }
+
+/** Null when `userId` is an active member of the company, else why not. */
+export async function hiringLeadProblem(
+  companyId: string,
+  userId: string | null | undefined,
+): Promise<string | null> {
+  if (!userId) return null;
+  const member = await db.companyMember.count({
+    where: { companyId, userId, status: MEMBER_STATUS.ACTIVE },
+  });
+  return member ? null : 'The hiring lead has to be a member of the company.';
+}
+
+/* ---------------------------------- tasks -------------------------------- */
+
+/**
+ * The application's private task link token, made the first time it is
+ * needed. It is the only key to /task/<token>, so it is long and random.
+ */
+export async function ensureTaskToken(
+  application: Pick<JobApplication, 'id' | 'taskToken'>,
+): Promise<string> {
+  if (application.taskToken) return application.taskToken;
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const token = randomBytes(24).toString('base64url');
+    const taken = await db.jobApplication.count({
+      where: { taskToken: token },
+    });
+    if (taken) continue;
+    await db.jobApplication.update({
+      where: { id: application.id },
+      data: { taskToken: token },
+    });
+    return token;
+  }
+  throw new Error('Could not make a task link.');
+}
+
+export const taskLinkFor = (origin: string, token: string) =>
+  `${origin.replace(/\/$/, '')}/task/${token}`;
 
 /** Publish and close timestamps that follow a status change. */
 export function statusTimestamps(
