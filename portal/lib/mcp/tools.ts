@@ -25,11 +25,12 @@ import { HIRING_TOOLS } from './hiring';
 import { PLAN_TOOLS } from './plans';
 import { SCHEDULE_TOOLS } from './schedules';
 import { companiesWith, type Tool, ToolError } from './shared';
-import type { PointInput, PointStatus } from './worklog';
+import type { PointInput, PointStatus, TidyPoint } from './worklog';
 import {
   claudeLines,
   logPoints,
   POINT_STATUSES,
+  tidyPoints,
   todayFor,
   typedLines,
 } from './worklog';
@@ -327,6 +328,89 @@ export const TOOLS: Tool[] = [
       }
       const logged = await logPoints(user, points, date);
       return { date, ...logged, ...(tasks.length && { tasks }) };
+    },
+  },
+  {
+    name: 'tidy_points',
+    title: 'Tidy a day of work points',
+    description: `Rewrites a day's Claude points as fewer ones, when a day was logged in too many small points (a line per version, round or fix). Each new point lists the existing points it replaces in merge (their keys from loggedToday, or their texts); points that should go entirely are listed in drop. Every existing point must be merged or dropped. Merged points' history moves onto the new point, with their words kept as notes on its timeline. Show the person the new list and get their OK before calling this.`,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        points: {
+          type: 'array',
+          minItems: 1,
+          maxItems: 30,
+          items: {
+            type: 'object',
+            properties: {
+              text: { type: 'string', description: 'The new point, one line.' },
+              status: { type: 'string', enum: STATUS_KEYS },
+              merge: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Keys or texts of the points it replaces.',
+              },
+              project: {
+                type: 'string',
+                description: 'Project id or exact name (optional).',
+              },
+              typedLine: {
+                type: 'string',
+                description:
+                  'Text of a line the person typed for the same work, to link (optional).',
+              },
+            },
+            required: ['text', 'status', 'merge'],
+          },
+        },
+        drop: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Keys or texts of points to remove without merging.',
+        },
+        date: {
+          type: 'string',
+          description:
+            "YYYY-MM-DD. Defaults to today in the person's timezone.",
+        },
+      },
+      required: ['points'],
+    },
+    annotations: { readOnlyHint: false, destructiveHint: true },
+    run: async (user, args) => {
+      const points: TidyPoint[] = (
+        Array.isArray(args?.points) ? args.points : []
+      )
+        .slice(0, 30)
+        .map((p: any) => ({
+          text: typeof p?.text === 'string' ? p.text.trim().slice(0, 300) : '',
+          status: STATUS_KEYS.includes(p?.status) ? p.status : 'done',
+          merge: Array.isArray(p?.merge)
+            ? p.merge.filter((m: unknown) => typeof m === 'string')
+            : [],
+          project: typeof p?.project === 'string' ? p.project : undefined,
+          typedLine:
+            typeof p?.typedLine === 'string'
+              ? p.typedLine.slice(0, 300)
+              : undefined,
+        }));
+      if (
+        !points.length ||
+        points.some((p) => p.text.replace(/[^\p{L}\p{N}]/gu, '').length < 3)
+      )
+        throw new ToolError('Give each new point some text.');
+      const keys = new Set(points.map((p) => p.text.toLowerCase()));
+      if (keys.size < points.length)
+        throw new ToolError('Two new points have the same text.');
+      const drop: string[] = Array.isArray(args?.drop)
+        ? args.drop.filter((d: unknown) => typeof d === 'string')
+        : [];
+      const date =
+        typeof args?.date === 'string' && DAY.test(args.date)
+          ? args.date
+          : await userToday(user);
+      return tidyPoints(user, points, drop, date);
     },
   },
   {

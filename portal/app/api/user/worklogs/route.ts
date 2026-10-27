@@ -84,6 +84,7 @@ export async function PUT(request: Request) {
       links: _links,
       guidance: _guidance,
       timeline: _timeline,
+      removedClaudeKeys: _removed,
       ...rest
     } = await request.json();
     const { userId, logType, date } = rest ?? {};
@@ -112,7 +113,11 @@ export async function PUT(request: Request) {
           })
         : null);
     if (stored && 'works' in rest)
-      rest.works = keepClaudeSection(rest.works, stored.works);
+      rest.works = keepClaudeSection(
+        rest.works,
+        stored.works,
+        stored.removedClaudeKeys,
+      );
 
     //console.log("updating worklogs on server", id, rest);
     let workLogs;
