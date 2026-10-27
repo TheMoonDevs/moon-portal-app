@@ -5,6 +5,7 @@ import {
   asPageTitle,
   PAGE_KINDS,
 } from '@/lib/workspace/projectPages';
+import { readParent } from '@/lib/workspace/projectPageServer';
 import {
   fail,
   nowIso,
@@ -17,7 +18,10 @@ export const dynamic = 'force-dynamic';
 
 type Params = { params: { projectId: string } };
 
-/** The project's objective and its idea drafts, newest idea first. */
+/**
+ * The project's objective and its pages, most recently edited first. Pages
+ * nest through `parentId`.
+ */
 export async function GET(_request: Request, { params }: Params) {
   const { response, project } = await requireProjectPermission(
     params.projectId,
@@ -33,13 +37,14 @@ export async function GET(_request: Request, { params }: Params) {
   return ok({
     objective:
       pages.find((p) => p.kind === PROJECT_PAGE_KIND.OBJECTIVE) ?? null,
-    ideas: pages.filter((p) => p.kind === PROJECT_PAGE_KIND.IDEA),
+    pages: pages.filter((p) => p.kind === PROJECT_PAGE_KIND.IDEA),
   });
 }
 
 /**
- * Adds a page: `{ kind, title?, content? }`. A project has one objective, so
- * asking for another returns the one it has.
+ * Adds a page: `{ kind, title?, emoji?, content?, parentId? }`. A project has
+ * one objective, so asking for another returns the one it has; the objective
+ * sits outside the page tree.
  */
 export async function POST(request: Request, { params }: Params) {
   const { response, user, project } = await requireProjectPermission(
@@ -61,6 +66,11 @@ export async function POST(request: Request, { params }: Params) {
     });
     if (existing) return ok({ page: existing });
   }
+  const parent =
+    kind === PROJECT_PAGE_KIND.IDEA
+      ? await readParent(project.id, body.parentId)
+      : { parentId: null };
+  if (parent.error) return fail(400, parent.error);
 
   const now = nowIso();
   const page = await db.projectPage.create({
@@ -71,6 +81,7 @@ export async function POST(request: Request, { params }: Params) {
       title: asPageTitle(body.title),
       emoji: asEmoji(body.emoji),
       content,
+      parentId: parent.parentId,
       createdById: user.id,
       updatedById: user.id,
       createdAt: now,

@@ -79,6 +79,7 @@ const clip = (value: string, max: number) =>
 
 const links = (origin: string) => ({
   hiringTab: `${origin}/admin?tab=hiring`,
+  applicant: (id: string) => `${origin}/admin?tab=hiring&application=${id}`,
   apply: (slug: string) => `${origin}/apply/${slug}`,
 });
 
@@ -233,6 +234,7 @@ const applicantSummary = (
   name: a.name,
   email: a.email,
   stage: a.stage,
+  url: links(context.origin).applicant(a.id),
   appliedAt: a.submittedAt,
   lastEmail: a.lastEmail
     ? {
@@ -570,7 +572,7 @@ export const HIRING_TOOLS: Tool[] = [
     name: 'list_applicants',
     title: 'List applicants',
     description:
-      'Applicants to one opening, newest first, with their stage, last email and answers (long answers are shortened; get_applicant has them in full). Filter by stage or by words in their name or email.',
+      'Applicants to one opening, newest first, with their stage, last email and answers (long answers are shortened; get_applicant has them in full). Filter by stage or by words in their name or email. Each has a url that opens them in the Hiring panel.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -624,7 +626,7 @@ export const HIRING_TOOLS: Tool[] = [
     name: 'get_applicant',
     title: 'Get an applicant',
     description:
-      "One applicant's full answers, the team's private notes, their history (who moved them and when) and every email they were sent with its delivery status.",
+      "One applicant's full answers, the team's private notes, their history (who moved them and when) and every email they were sent with its delivery status, plus a url that opens them in the Hiring panel.",
     inputSchema: {
       type: 'object',
       properties: { applicationId: { type: 'string' } },
@@ -670,6 +672,7 @@ export const HIRING_TOOLS: Tool[] = [
         name: application.name,
         email: application.email,
         stage: application.stage,
+        url: links(context.origin).applicant(application.id),
         opening: opening ? { id: opening.id, title: opening.title } : null,
         appliedAt: application.submittedAt,
         answers: answersView(application, opening?.fields ?? [], context, 5000),

@@ -22,6 +22,7 @@ import {
 } from '@/models/workspace';
 
 import { HIRING_TOOLS } from './hiring';
+import { PAGE_TOOLS } from './pages';
 import { PLAN_TOOLS } from './plans';
 import { SCHEDULE_TOOLS } from './schedules';
 import { companiesWith, type Tool, ToolError } from './shared';
@@ -617,6 +618,7 @@ export const TOOLS: Tool[] = [
   },
   ...WORKSPACE_TOOLS,
   ...PLAN_TOOLS,
+  ...PAGE_TOOLS,
   ...SCHEDULE_TOOLS,
   ...HIRING_TOOLS,
 ];

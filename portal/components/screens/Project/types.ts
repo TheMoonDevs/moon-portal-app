@@ -16,13 +16,14 @@ export type ProjectData = {
 
 export type PagesData = {
   objective: ProjectPage | null;
-  ideas: ProjectPage[];
+  /** Every page of the project, nested through `parentId`. */
+  pages: ProjectPage[];
 };
 
 export const VIEWS = [
   { key: 'objective', label: 'Objective', icon: 'flag' },
   { key: 'kpi', label: 'KPI', icon: 'monitoring' },
-  { key: 'ideas', label: 'Ideas', icon: 'lightbulb' },
+  { key: 'pages', label: 'Pages', icon: 'description' },
   { key: 'goals', label: 'Goals', icon: 'track_changes' },
   { key: 'schedule', label: 'Task Schedule', icon: 'calendar_month' },
   { key: 'members', label: 'Members', icon: 'group' },
@@ -34,8 +35,12 @@ export type ViewKey = (typeof VIEWS)[number]['key'];
 export const isView = (value: unknown): value is ViewKey =>
   VIEWS.some((v) => v.key === value);
 
-export const ideaTitle = (page: Pick<ProjectPage, 'title'>) =>
-  page.title?.trim() || 'Untitled idea';
+export const pageTitle = (page: Pick<ProjectPage, 'title'>) =>
+  page.title?.trim() || 'Untitled';
+
+/** Oldest first, so a page tree keeps its order as pages are edited. */
+export const byCreation = (a: ProjectPage, b: ProjectPage) =>
+  new Date(a.createdAt ?? 0).getTime() - new Date(b.createdAt ?? 0).getTime();
 
 /** "2 min ago", "Yesterday", "12 Oct". */
 export const ago = (value?: string | Date | null) => {

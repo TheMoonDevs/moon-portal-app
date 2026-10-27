@@ -3,11 +3,12 @@
 import type { WorkLogs } from '@db/client';
 import { useMediaQuery } from '@mui/material';
 import dayjs from 'dayjs';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { Bottombar } from '@/components/global/Bottombar';
 import media from '@/styles/media';
+import { APP_ROUTES } from '@/utils/constants/appInfo';
 import store from '@/utils/redux/store';
 
 import { WorkLogsHelper } from './WorklogsHelper';
@@ -20,6 +21,17 @@ export const WorklogViewPageWrapper = ({ id }: { id: string }) => {
   const isTabletOrMore = useMediaQuery(media.moreTablet);
 
   const [logsList, setLogsList] = useState<WorkLogs[]>([]);
+  const router = useRouter();
+
+  // Step a day back or forward without leaving the editor.
+  const dayLink = (days: number) => {
+    if (_logType !== 'dayLog' || !_date) return undefined;
+    const next = dayjs(_date).add(days, 'day').format('YYYY-MM-DD');
+    return () =>
+      router.replace(
+        `${APP_ROUTES.userWorklogs}/new?logType=dayLog&date=${next}`,
+      );
+  };
 
   useEffect(() => {
     if (!isTabletOrMore) return;
@@ -79,6 +91,8 @@ export const WorklogViewPageWrapper = ({ id }: { id: string }) => {
             id={id}
             date={centerdate.format('YYYY-MM-DD')}
             logType={_logType}
+            onPrevDay={dayLink(-1)}
+            onNextDay={dayLink(1)}
           />
         </div>
         {/* <div className="my-4 h-[90vh] bg-white">
@@ -99,6 +113,8 @@ export const WorklogViewPageWrapper = ({ id }: { id: string }) => {
           id={id}
           date={dayjs(_date).format('YYYY-MM-DD')}
           logType={_logType}
+          onPrevDay={dayLink(-1)}
+          onNextDay={dayLink(1)}
         />
       </div>
       <Bottombar visible={true} />

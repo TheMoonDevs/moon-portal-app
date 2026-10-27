@@ -210,7 +210,8 @@ export const UserPage = ({ userId }: { userId?: string }) => {
       </div>
     );
 
-  const pickDay = (day: string) => setPeriod(periodOf('week', dayjs(day)));
+  // A square in the activity grid opens that day.
+  const pickDay = (day: string) => setPeriod(periodOf('day', dayjs(day)));
 
   return (
     <div className="custom-scrollbar fixed inset-0 overflow-y-auto bg-neutral-950 pb-[72px] text-neutral-100 md:left-16 md:pb-0">

@@ -507,6 +507,7 @@ const TimingCard = ({ points }: { points: WorkPoint[] }) => {
 /* -------------------------------------------------------------------------- */
 
 const PERIODS: { value: PeriodKind; label: string }[] = [
+  { value: 'day', label: 'Day' },
   { value: 'week', label: 'Week' },
   { value: 'month', label: 'Month' },
   { value: 'quarter', label: 'Quarter' },
@@ -518,11 +519,6 @@ const MODES: { value: Mode; label: string; icon: string }[] = [
   { value: 'projects', label: 'Projects', icon: 'folder_open' },
   { value: 'timeline', label: 'Timeline', icon: 'view_timeline' },
 ];
-
-export const usePeriod = () => {
-  const [period, setPeriod] = useState<Period>(() => periodOf('week', dayjs()));
-  return { period, setPeriod };
-};
 
 export const WorkView = ({
   data,
@@ -538,8 +534,21 @@ export const WorkView = ({
   const label = periodLabel(period);
   const isCurrent = periodOf(period.kind, dayjs()).from === period.from;
 
-  const points = data?.points ?? [];
+  const points = useMemo(() => data?.points ?? [], [data]);
   const activeDays = new Set(points.flatMap((p) => p.dates)).size;
+  // On a single day: from the first point's start to the last one's end.
+  const dayHours = useMemo(() => {
+    if (period.kind !== 'day') return null;
+    const timings = points
+      .map((p) => timingOf(p))
+      .filter(Boolean) as NonNullable<ReturnType<typeof timingOf>>[];
+    const onDay = (ms: number) =>
+      dayjs(ms).format('YYYY-MM-DD') === period.from;
+    const starts = timings.map((t) => t.start).filter(onDay);
+    const ends = timings.map((t) => t.end).filter(onDay);
+    if (!starts.length || !ends.length) return null;
+    return { start: Math.min(...starts), end: Math.max(...ends) };
+  }, [points, period]);
   const periodDays = Math.min(
     dayjs().diff(dayjs(period.from), 'day') + 1,
     dayjs(period.to).diff(dayjs(period.from), 'day') + 1,
@@ -608,11 +617,25 @@ export const WorkView = ({
           label="Tasks closed"
           value={data ? data.doneTasks.length : '–'}
         />
-        <Metric
-          label="Active days"
-          value={data ? activeDays : '–'}
-          hint={periodDays > 0 ? `of ${periodDays}` : undefined}
-        />
+        {period.kind === 'day' ? (
+          <Metric
+            label="At work"
+            value={
+              data && dayHours ? formatMs(dayHours.end - dayHours.start) : '–'
+            }
+            hint={
+              dayHours
+                ? `${dayjs(dayHours.start).format('HH:mm')} – ${dayjs(dayHours.end).format('HH:mm')}`
+                : undefined
+            }
+          />
+        ) : (
+          <Metric
+            label="Active days"
+            value={data ? activeDays : '–'}
+            hint={periodDays > 0 ? `of ${periodDays}` : undefined}
+          />
+        )}
       </div>
 
       {data && <TimingCard points={points} />}

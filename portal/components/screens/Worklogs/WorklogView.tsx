@@ -3,13 +3,13 @@
 import type { WorkLogs } from '@db/client';
 import dayjs from 'dayjs';
 import type { Dispatch, SetStateAction } from 'react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useUser } from '@/utils/hooks/useUser';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import { WorklogEditor } from './WorklogEditor';
-import { WorkLogsHelper } from './WorklogsHelper';
+import { worklogSaves, WorkLogsHelper } from './WorklogsHelper';
 
 export const WorklogView = ({
   date,
@@ -20,6 +20,8 @@ export const WorklogView = ({
   monthTab,
   setMonthTab,
   handleNextMonthClick,
+  onPrevDay,
+  onNextDay,
 }: {
   id?: string;
   date?: string | null;
@@ -29,21 +31,41 @@ export const WorklogView = ({
   monthTab?: number;
   setMonthTab?: Dispatch<SetStateAction<number>>;
   handleNextMonthClick?: () => void;
+  onPrevDay?: () => void;
+  onNextDay?: () => void;
 }) => {
   const { user } = useUser();
-  const [workLog, setWorkLog] = useState<WorkLogs | null>(null);
+  const _id = id && id.length > 5 ? id : null;
+  // Which log this view shows. Day logs always load by date, so a stale id
+  // can never point the editor at another day.
+  const viewKey =
+    logType === 'dayLog' && date
+      ? `day:${date}`
+      : _id
+        ? `id:${_id}`
+        : `type:${logType ?? ''}:${date ?? ''}`;
+  // The log is kept with the key it was loaded for, so while the next day is
+  // loading the editor never shows (or saves into) the previous one.
+  const [loaded, setLoaded] = useState<{
+    key: string;
+    log: WorkLogs | null;
+  } | null>(null);
+  const workLog = loaded?.key === viewKey ? loaded.log : null;
+  const [loading, setLoading] = useState(false);
+  // Only the latest request may land; older responses are dropped.
+  const requestSeq = useRef(0);
+
   const fetchOptions = Array.from({ length: 7 }, (_, i) => ({
     label: `Import incomplete tasks from ${i + 1} day${i === 0 ? '' : 's'} ago`,
     dateIdx: i + 1,
   }));
-  const [loading, setLoading] = useState(false);
-  const fetchXTasksForDay = async (date: string): Promise<WorkLogs | null> => {
-    setLoading(true);
 
+  const fetchXTasksForDay = async (
+    fromDate: string,
+  ): Promise<WorkLogs | null> => {
     try {
-      // refreshWorklogs();
       const data = await PortalSdk.getData(
-        `/api/user/worklogs?date=${date}&userId=${user?.id}`,
+        `/api/user/worklogs?date=${fromDate}&userId=${user?.id}`,
         null,
       );
       const xTasks = data?.data?.workLogs?.[0]?.works
@@ -66,112 +88,63 @@ export const WorklogView = ({
           ...(typeof workLog.works[0] === 'object' ? workLog.works[0] : {}),
           content: `${(workLog.works[0] as { content: string }).content ?? ''}\n${xTasks.join('\n')}`,
         },
+        ...workLog.works.slice(1),
       ];
-
-      const newWorkLog = {
-        ...workLog,
-        works: updatedWorks,
-      };
-      setWorkLog(newWorkLog);
-      console.log(newWorkLog?.works);
-      return newWorkLog;
+      return { ...workLog, works: updatedWorks };
     } catch (err) {
       console.error('Error fetching worklogs:', err);
-      setLoading(false);
       return null;
     }
   };
 
-  const refreshWorklogs = () => {
-    let query = `?id=${id}`;
-    const _id = id && id?.length > 5 ? id : null;
-    // Day logs should always load by date to avoid stale id/date mismatches.
-    if (logType === 'dayLog' && date)
-      query = `?date=${date}&userId=${user?.id}`;
+  const refreshWorklogs = useCallback(() => {
+    if (!user?.id) return;
+    const key = viewKey;
+    const fallbackDate = date || dayjs().format('YYYY-MM-DD');
+    let query = '';
+    if (logType === 'dayLog' && date) query = `?date=${date}&userId=${user.id}`;
     else if (_id) query = `?id=${_id}`;
-    else if (logType) query = `?logType=${logType}&userId=${user?.id}`;
-    else if (date) query = `?date=${date}&userId=${user?.id}`;
+    else if (logType) query = `?logType=${logType}&userId=${user.id}`;
+    else query = `?date=${fallbackDate}&userId=${user.id}`;
+
+    const seq = ++requestSeq.current;
     setLoading(true);
-    PortalSdk.getData(`/api/user/worklogs${query}`, null)
+    worklogSaves.queue
+      .catch(() => undefined)
+      .then(() => PortalSdk.getData(`/api/user/worklogs${query}`, null))
       .then((data) => {
-        console.log(data);
+        if (seq !== requestSeq.current) return;
+        const found = data?.data?.workLogs?.[0];
+        setLoaded({
+          key,
+          log:
+            found ||
+            (_id && !(logType === 'dayLog' && date)
+              ? null
+              : WorkLogsHelper.defaultWorklogs(fallbackDate, user)),
+        });
         setLoading(false);
-        setWorkLog(
-          data?.data?.workLogs?.[0] ||
-            WorkLogsHelper.defaultWorklogs(date, user),
-        );
       })
       .catch((err) => {
+        if (seq !== requestSeq.current) return;
         console.log(err);
         setLoading(false);
       });
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewKey, user?.id]);
 
   useEffect(() => {
-    if (!user?.id) return;
-    const _id = id && id?.length > 5 ? id : null;
-    if (logType === 'dayLog' && date) {
-      setLoading(true);
-      PortalSdk.getData(
-        `/api/user/worklogs?date=${date}&userId=${user.id}`,
-        null,
-      )
-        .then((data) => {
-          setWorkLog(
-            data?.data?.workLogs?.[0] ||
-              WorkLogsHelper.defaultWorklogs(date, user),
-          );
-          setLoading(false);
-        })
-        .catch((err) => {
-          setLoading(false);
-          console.log(err);
-        });
-      return;
-    }
-
-    if (_id) {
-      setLoading(true);
-      PortalSdk.getData(`/api/user/worklogs?id=${_id}`, null)
-        .then((data) => {
-          setWorkLog(data?.data?.workLogs?.[0] || null);
-          setLoading(false);
-        })
-        .catch((err) => {
-          setLoading(false);
-          console.log(err);
-        });
-    } else {
-      let query = '';
-      if (logType) query = `?logType=${logType}&userId=${user?.id}`;
-      else if (date)
-        query = `?date=${date || dayjs().format('YYYY-MM-DD')}&userId=${
-          user?.id
-        }`;
-      setLoading(true);
-      PortalSdk.getData(`/api/user/worklogs${query}`, null)
-        .then((data) => {
-          setWorkLog(
-            data?.data?.workLogs?.[0] ||
-              WorkLogsHelper.defaultWorklogs(
-                date || dayjs().format('YYYY-MM-DD'),
-                user,
-              ),
-          );
-          setLoading(false);
-        })
-        .catch((err) => {
-          console.log(err);
-          setLoading(false);
-        });
-    }
-  }, [id, date, logType, user?.id]);
+    refreshWorklogs();
+  }, [refreshWorklogs]);
 
   if (!visible) return;
 
   return (
     <WorklogEditor
-      loading={loading}
+      // A fresh editor per day: nothing typed for one day can leak into the
+      // next. The editor saves anything pending when it is swapped out.
+      key={viewKey}
+      loading={loading || !workLog}
       editWorkLogs={workLog}
       refreshWorklogs={refreshWorklogs}
       compactView={compactView}
@@ -180,6 +153,8 @@ export const WorklogView = ({
       handleNextMonthClick={handleNextMonthClick}
       fetchXTasksForDay={fetchXTasksForDay}
       fetchOptions={fetchOptions}
+      onPrevDay={onPrevDay}
+      onNextDay={onNextDay}
     />
   );
 };

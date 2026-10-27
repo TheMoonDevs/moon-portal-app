@@ -30,3 +30,11 @@ export const WorkLogsHelper = {
     };
   },
 };
+
+/**
+ * Every worklog save, one after another. A day that is opened again waits for
+ * its pending save, so it never loads an older copy than the one just left.
+ */
+export const worklogSaves = {
+  queue: Promise.resolve() as Promise<unknown>,
+};
