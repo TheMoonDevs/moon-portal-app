@@ -265,13 +265,17 @@ export type Plan = Loose<
 export enum PROJECT_PAGE_KIND {
   /** The project's one objective: why it exists and what done looks like. */
   OBJECTIVE = 'OBJECTIVE',
-  /** One of many idea drafts. */
+  /**
+   * One of the project's pages. Stored as IDEA from when pages were called
+   * ideas.
+   */
   IDEA = 'IDEA',
 }
 
 /**
- * A rich-text page of a project (its objective or an idea draft). `content`
- * is the editor's document (Tiptap JSON).
+ * A rich-text page of a project (its objective or one of its pages). `content`
+ * is the editor's document (Tiptap JSON). Pages nest: `parentId` is the page
+ * it sits inside, or empty at the top.
  */
 export type ProjectPage = Loose<
   BaseModel & {
@@ -281,6 +285,7 @@ export type ProjectPage = Loose<
     title: string;
     emoji?: Nullable<string>;
     content?: Nullable<JsonObject>;
+    parentId?: Nullable<string>;
     createdById: string;
     updatedById?: Nullable<string>;
   }
