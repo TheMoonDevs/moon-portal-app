@@ -124,7 +124,11 @@ const Question = ({
   const text = typeof value === 'string' ? value : '';
   const common = {
     id,
-    placeholder: field.placeholder ?? undefined,
+    placeholder:
+      field.placeholder ??
+      (field.type === FORM_FIELD_TYPE.URL
+        ? 'https://… (separate several links with commas)'
+        : undefined),
     'aria-invalid': !!error,
     className: cn(error && 'border-rose-500/40'),
   };

@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import { answerText, APPLICATION_STAGES } from '@/lib/hiring/forms';
+import { linkParts, onlyLinks } from '@/lib/hiring/links';
 import { cn } from '@/lib/utils';
 import {
   type APPLICATION_STAGE,
@@ -33,7 +34,16 @@ import {
   timeAgo,
 } from './hiringMeta';
 
-const isUrl = (value: string) => /^https?:\/\//i.test(value);
+const AnswerLink = ({ href, label }: { href: string; label?: string }) => (
+  <a
+    href={href}
+    target="_blank"
+    rel="noreferrer"
+    className="break-all text-sky-300 hover:underline"
+  >
+    {label ?? href}
+  </a>
+);
 
 const Answer = ({
   field,
@@ -62,36 +72,28 @@ const Answer = ({
     );
   }
   const text = answerText(value);
-  // Imported Google Forms uploads are Drive links, several joined by commas.
-  const urls = text.split(/,\s*/);
-  if (urls.length > 1 && urls.every(isUrl))
+  // Several links may be typed in one answer, separated by spaces, commas or
+  // new lines; imported answers also mix links into sentences.
+  const links = onlyLinks(text);
+  if (links)
     return (
       <span className="flex flex-col gap-1">
-        {urls.map((url) => (
-          <a
-            key={url}
-            href={url}
-            target="_blank"
-            rel="noreferrer"
-            className="break-all text-sky-300 hover:underline"
-          >
-            {url}
-          </a>
+        {links.map((href) => (
+          <AnswerLink key={href} href={href} />
         ))}
       </span>
     );
-  if (isUrl(text))
-    return (
-      <a
-        href={text}
-        target="_blank"
-        rel="noreferrer"
-        className="break-all text-sky-300 hover:underline"
-      >
-        {text}
-      </a>
-    );
-  return <span className="whitespace-pre-wrap break-words">{text}</span>;
+  return (
+    <span className="whitespace-pre-wrap break-words">
+      {linkParts(text).map((part, i) =>
+        part.href ? (
+          <AnswerLink key={i} href={part.href} label={part.text} />
+        ) : (
+          part.text
+        ),
+      )}
+    </span>
+  );
 };
 
 const EmailLog = ({
