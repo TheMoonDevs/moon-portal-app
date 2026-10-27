@@ -863,8 +863,56 @@ export const RadarScene = ({
 
 /* ------------------------------ feed (monsoon) ----------------------------- */
 
+type Rect = { x: number; y: number; w: number; h: number };
+
+const lerpRect = (a: Rect, b: Rect, k: number): Rect => ({
+  x: a.x + (b.x - a.x) * k,
+  y: a.y + (b.y - a.y) * k,
+  w: a.w + (b.w - a.w) * k,
+  h: a.h + (b.h - a.h) * k,
+});
+
 const compact = (n: number) =>
   n >= 1000 ? `${(n / 1000).toFixed(n >= 100000 ? 0 : 1)}K` : `${n}`;
+
+/**
+ * Mumbai at 2 AM, drawn once per size: a skyline of towers with a few lit
+ * windows, on a transparent ground so the water can mirror it.
+ */
+function drawSkyline(w: number, h: number) {
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  const g = c.getContext('2d');
+  if (!g) return c;
+  const rand = seeded(66);
+  const base = h * 0.64;
+  // Two rows of towers: hazy ones far back, darker ones in front.
+  [
+    { tone: '#1d1440', top: 0.18, lit: 0.05 },
+    { tone: '#0b0820', top: 0.3, lit: 0.12 },
+  ].forEach((row) => {
+    let x = -20;
+    while (x < w + 20) {
+      const bw = 18 + rand() * 64;
+      const bh = base * (row.top + rand() * 0.5);
+      g.fillStyle = row.tone;
+      g.fillRect(x, base - bh, bw, bh);
+      if (rand() < 0.18) g.fillRect(x + bw / 2 - 1, base - bh - 18, 2, 18);
+      for (let wy = base - bh + 6; wy < base - 6; wy += 9) {
+        for (let wx = x + 4; wx < x + bw - 6; wx += 8) {
+          if (rand() > row.lit) continue;
+          g.fillStyle = rand() < 0.75 ? '#ffd9a1' : '#9fefff';
+          g.globalAlpha = 0.5 + rand() * 0.5;
+          g.fillRect(wx, wy, 3, 4);
+          g.globalAlpha = 1;
+        }
+      }
+      x += bw + rand() * 6;
+    }
+  });
+  return c;
+}
 
 export const FeedScene = ({
   feed,
@@ -872,65 +920,224 @@ export const FeedScene = ({
   feed: NonNullable<TaskPageConfig['feed']>;
 }) => {
   const sec = useRef<HTMLElement>(null);
+  const pin = useRef<HTMLDivElement>(null);
+  const canvas = useRef<HTMLCanvasElement>(null);
+  const shot = useRef<HTMLDivElement>(null);
+  const phone = useRef<HTMLElement>(null);
   const title = useRef<TypedHandle>(null);
+  const note = useRef<HTMLParagraphElement>(null);
+  const body = useRef<HTMLParagraphElement>(null);
   const counts = useRef<Array<HTMLElement | null>>([]);
+  const ring = useRef<SVGPathElement>(null);
   const comments = useRef<Array<HTMLLIElement | null>>([]);
   const payoff = useRef<HTMLParagraphElement>(null);
-  const live = useRef<HTMLSpanElement>(null);
+  const city = useRef<HTMLCanvasElement | null>(null);
+  const hearts = useRef<Array<{ x: number; y: number; v: number; s: number }>>(
+    [],
+  );
+  const last = useRef(0);
+  const [strike, ...rest] = feed.title.split(' ').reverse();
+  const lead = `${rest.reverse().join(' ')} `;
 
-  useScrollFrame(sec, (p) => {
-    const done = prefersReducedMotion();
-    const at = (a: number, len: number) => (done ? 1 : clamp((p - a) / len));
-    title.current?.type(at(0, 0.18));
-    if (live.current) live.current.style.opacity = `${at(0.2, 0.04)}`;
-    // Numbers climb slowly, then all at once, the way a post takes off.
-    const k = at(0.22, 0.48) ** 2.4;
-    feed.counts.forEach((c, i) => {
-      const el = counts.current[i];
-      if (el) el.textContent = compact(Math.round(c.to * k));
+  useEffect(() => {
+    const path = ring.current;
+    const svg = path?.ownerSVGElement;
+    if (!path || !svg) return;
+    const place = () => {
+      const box = svg.parentElement;
+      if (!box) return;
+      const w = box.offsetWidth + 24;
+      const h = box.offsetHeight + 16;
+      svg.setAttribute('width', `${w}`);
+      svg.setAttribute('height', `${h}`);
+      path.setAttribute('d', scribble('circle', w - 16, h - 12, seeded(9)));
+      primeStroke(path);
+    };
+    place();
+    window.addEventListener('resize', place);
+    return () => window.removeEventListener('resize', place);
+  }, []);
+
+  useScrollFrame(sec, (p, t) => {
+    const el = canvas.current;
+    const g = el?.getContext('2d');
+    const box = pin.current?.getBoundingClientRect();
+    const target = shot.current?.getBoundingClientRect();
+    if (!el || !g || !box || !target) return;
+    const still = prefersReducedMotion();
+    const at = (a: number, len: number) => (still ? 1 : clamp((p - a) / len));
+
+    const dpr = Math.min(window.devicePixelRatio, 2);
+    const W = box.width;
+    const H = box.height;
+    if (el.width !== Math.round(W * dpr) || el.height !== Math.round(H * dpr)) {
+      el.width = Math.round(W * dpr);
+      el.height = Math.round(H * dpr);
+      city.current = drawSkyline(Math.round(W), Math.round(H));
+    }
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, W, H);
+
+    // The city fills the screen, then shrinks into the post on the phone.
+    const m = at(0.16, 0.18);
+    const ease = m * m * (3 - 2 * m);
+    const r = lerpRect(
+      { x: 0, y: 0, w: W, h: H },
+      {
+        x: target.left - box.left,
+        y: target.top - box.top,
+        w: target.width,
+        h: target.height,
+      },
+      ease,
+    );
+    const s = Math.max(r.w / W, r.h / H);
+    g.save();
+    g.beginPath();
+    g.roundRect(r.x, r.y, r.w, r.h, 16 * ease);
+    g.clip();
+    g.translate(r.x + r.w / 2, r.y + r.h / 2);
+    g.scale(s, s);
+    g.translate(-W / 2, -H * 0.56);
+    const base = H * 0.64;
+    const sky = g.createLinearGradient(0, 0, 0, base);
+    sky.addColorStop(0, '#07051a');
+    sky.addColorStop(0.7, '#2a0f45');
+    sky.addColorStop(1, '#5c1557');
+    g.fillStyle = sky;
+    g.fillRect(0, 0, W, base);
+    // A pink haze over the city, like signs bouncing off low cloud.
+    const haze = g.createRadialGradient(W / 2, base, 0, W / 2, base, W * 0.6);
+    haze.addColorStop(0, 'rgba(255, 61, 154, 0.45)');
+    haze.addColorStop(1, 'rgba(255, 61, 154, 0)');
+    g.fillStyle = haze;
+    g.fillRect(0, 0, W, base);
+    if (city.current) g.drawImage(city.current, 0, 0, W, H);
+
+    // The train on its bridge, lit windows sliding across the water.
+    const tx = ((still ? 0.3 : p * 1.6 + t / 9000) % 1.4) * W * 1.3 - W * 0.5;
+    g.fillStyle = '#05030f';
+    g.fillRect(0, base - 6, W, 6);
+    for (let k = 0; k < 9; k += 1) {
+      const cx = tx + k * 64;
+      g.fillStyle = '#120a2a';
+      g.fillRect(cx, base - 22, 60, 16);
+      g.fillStyle = '#fff1c4';
+      for (let j = 0; j < 6; j += 1)
+        g.fillRect(cx + 5 + j * 9, base - 18, 6, 6);
+    }
+
+    // The flood: the city mirrored, rippling in thin strips.
+    const water = g.createLinearGradient(0, base, 0, H);
+    water.addColorStop(0, '#12082b');
+    water.addColorStop(1, '#04020c');
+    g.fillStyle = water;
+    g.fillRect(0, base, W, H * 1.2 - base);
+    for (let y = 0; y < H - base; y += 3) {
+      const wob = Math.sin(y * 0.18 + (still ? 0 : t / 380)) * (1 + y * 0.04);
+      g.globalAlpha = 0.5 * (1 - y / (H - base));
+      if (city.current)
+        g.drawImage(city.current, 0, base - y - 3, W, 3, wob, base + y, W, 3);
+    }
+    g.globalAlpha = 1;
+
+    // Rain, slanted, over everything.
+    const rand = seeded(3);
+    g.strokeStyle = 'rgba(159, 239, 255, 0.35)';
+    g.lineWidth = 1;
+    g.beginPath();
+    for (let k = 0; k < 140; k += 1) {
+      const x0 = rand() * W * 1.2;
+      const y0 = (rand() * H + (still ? 0 : t * (0.6 + rand() * 0.6))) % H;
+      g.moveTo(x0 - y0 * 0.2, y0);
+      g.lineTo(x0 - y0 * 0.2 - 4, y0 + 18);
+    }
+    g.stroke();
+    g.restore();
+
+    // Hearts rise off the post while its numbers climb.
+    const k = at(0.4, 0.34) ** 2.2;
+    const born = Math.max(0, Math.round((k - last.current) * 160));
+    last.current = k;
+    for (let i = 0; i < born && !still; i += 1) {
+      hearts.current.push({
+        x: r.x + r.w * (0.6 + Math.random() * 0.4),
+        y: r.y + r.h,
+        v: 0.6 + Math.random() * 1.2,
+        s: 10 + Math.random() * 12,
+      });
+    }
+    g.font = '700 16px sans-serif';
+    hearts.current = hearts.current.filter((h) => h.y > r.y - 80);
+    hearts.current.forEach((h, i) => {
+      h.y -= h.v * 2;
+      g.globalAlpha = clamp((h.y - (r.y - 80)) / 120);
+      g.fillStyle = i % 3 ? '#ff3d9a' : '#39e6ff';
+      g.font = `700 ${h.s}px sans-serif`;
+      g.fillText('♥', h.x + Math.sin(h.y / 20) * 6, h.y);
     });
+    g.globalAlpha = 1;
+
+    title.current?.type(at(0, 0.12));
+    title.current?.mark(0, at(0.14, 0.05));
+    if (note.current) note.current.style.opacity = `${at(0.2, 0.04)}`;
+    if (body.current) body.current.style.opacity = `${at(0.3, 0.06)}`;
+    // The phone's frame arrives only once the city has shrunk into it.
+    if (phone.current) phone.current.style.opacity = `${at(0.3, 0.04)}`;
+    feed.counts.forEach((c, i) => {
+      const cell = counts.current[i];
+      if (cell) cell.textContent = compact(Math.round(c.to * k));
+    });
+    drawStroke(ring.current, at(0.72, 0.06));
     feed.comments.forEach((_, i) => {
-      const el = comments.current[i];
-      if (!el) return;
-      const c = at(0.36 + i * 0.09, 0.05);
-      el.style.opacity = `${c}`;
-      el.style.transform = `translateY(${(1 - c) * 12}px)`;
+      const li = comments.current[i];
+      if (!li) return;
+      const c = at(0.48 + i * 0.07, 0.04);
+      li.style.opacity = `${c}`;
+      li.style.transform = `translateY(${(1 - c) * 12}px)`;
     });
     if (payoff.current) {
-      const c = at(0.8, 0.08);
+      const c = at(0.84, 0.08);
       payoff.current.style.opacity = `${c}`;
-      payoff.current.style.transform = `translateY(${(1 - c) * 14}px)`;
+      payoff.current.style.transform = `rotate(-3deg) translateY(${(1 - c) * 14}px)`;
     }
   });
 
   return (
-    <section ref={sec} className={styles.sec} style={{ height: '320vh' }}>
-      <div className={styles.pin}>
+    <section ref={sec} className={styles.sec} style={{ height: '420vh' }}>
+      <div ref={pin} className={styles.pin}>
+        <canvas ref={canvas} className={styles.canvasFill} aria-hidden="true" />
         <div className={styles.feed}>
-          <div>
+          <div className={styles.feedTxt}>
             <div className={styles.kicker}>{feed.kicker}</div>
             <Typed
               ref={title}
               as="h2"
               seed={41}
-              segments={[{ text: feed.title }]}
+              segments={[{ text: lead }, { text: strike, mark: 'strike' }]}
             />
-            <p className={styles.feedBody}>{feed.body}</p>
+            <p ref={note} className={styles.handNote} style={{ opacity: 0 }}>
+              {feed.note}
+            </p>
+            <p ref={body} className={styles.feedBody} style={{ opacity: 0 }}>
+              {feed.body}
+            </p>
             <p ref={payoff} className={styles.payoff} style={{ opacity: 0 }}>
               {feed.payoff}
             </p>
           </div>
-          <figure className={styles.phone} aria-label="A post going live">
+          <figure
+            ref={phone}
+            className={styles.phone}
+            aria-label="A post going live"
+            style={{ opacity: 0 }}
+          >
             <header>
               <b>{feed.post.handle}</b>
               <span>{feed.post.time}</span>
-              <span ref={live} className={styles.live} style={{ opacity: 0 }}>
-                live
-              </span>
+              <span className={styles.live}>live</span>
             </header>
-            <div className={styles.shot} aria-hidden="true">
-              <i />
-            </div>
+            <div ref={shot} className={styles.shot} aria-hidden="true" />
             <figcaption>{feed.post.caption}</figcaption>
             <dl>
               {feed.counts.map((c, i) => (
@@ -943,6 +1150,11 @@ export const FeedScene = ({
                   >
                     0
                   </dd>
+                  {i === 0 && (
+                    <svg aria-hidden="true">
+                      <path ref={ring} className={styles.stroke} />
+                    </svg>
+                  )}
                 </div>
               ))}
             </dl>
@@ -976,63 +1188,183 @@ export const PlaylistScene = ({
   firstName: string;
 }) => {
   const sec = useRef<HTMLElement>(null);
-  const bar = useRef<HTMLDivElement>(null);
+  const canvas = useRef<HTMLCanvasElement>(null);
+  const title = useRef<TypedHandle>(null);
   const rows = useRef<Array<HTMLLIElement | null>>([]);
+  const ticks = useRef<Array<SVGPathElement | null>>([]);
   const mine = useRef<HTMLLIElement>(null);
+  const ring = useRef<SVGPathElement>(null);
+  const arrow = useRef<HTMLDivElement>(null);
 
-  useScrollFrame(sec, (p) => {
-    const done = prefersReducedMotion();
-    const at = (a: number, len: number) => (done ? 1 : clamp((p - a) / len));
-    if (bar.current) bar.current.style.transform = `scaleX(${at(0.05, 0.85)})`;
+  useEffect(() => {
+    ticks.current.forEach((t) => t && primeStroke(t));
+    const path = ring.current;
+    const svg = path?.ownerSVGElement;
+    const row = mine.current;
+    if (!path || !svg || !row) return;
+    const place = () => {
+      const w = row.offsetWidth + 28;
+      const h = row.offsetHeight + 22;
+      svg.setAttribute('width', `${w}`);
+      svg.setAttribute('height', `${h}`);
+      path.setAttribute('d', scribble('circle', w - 16, h - 14, seeded(12)));
+      primeStroke(path);
+    };
+    place();
+    window.addEventListener('resize', place);
+    document.fonts?.ready.then(place);
+    return () => window.removeEventListener('resize', place);
+  }, []);
+
+  useScrollFrame(sec, (p, t) => {
+    const still = prefersReducedMotion();
+    const at = (a: number, len: number) => (still ? 1 : clamp((p - a) / len));
+    title.current?.type(at(0, 0.14));
     playlist.rows.forEach((_, i) => {
       const el = rows.current[i];
-      if (!el) return;
-      const k = at(0.18 + i * 0.1, 0.06);
-      el.style.opacity = `${k}`;
-      el.style.transform = `translateX(${(1 - k) * -18}px)`;
+      const k = at(0.2 + i * 0.1, 0.05);
+      if (el) {
+        el.style.opacity = `${0.25 + k * 0.75}`;
+        el.style.transform = `translateX(${(1 - k) * 14}px)`;
+      }
+      drawStroke(ticks.current[i], at(0.23 + i * 0.1, 0.04));
     });
-    if (mine.current) {
-      const k = at(0.66, 0.1);
-      mine.current.style.opacity = `${k}`;
-      mine.current.style.transform = `scale(${0.96 + k * 0.04})`;
+    const k = at(0.66, 0.08);
+    if (mine.current) mine.current.style.opacity = `${0.25 + k * 0.75}`;
+    drawStroke(ring.current, at(0.72, 0.1));
+    if (arrow.current) arrow.current.style.opacity = `${at(0.8, 0.06)}`;
+
+    // A record spinning, its sound drawn as rays around it.
+    const el = canvas.current;
+    const g = el?.getContext('2d');
+    if (!el || !g) return;
+    const dpr = Math.min(window.devicePixelRatio, 2);
+    const size = el.clientWidth;
+    if (el.width !== Math.round(size * dpr)) {
+      el.width = el.height = Math.round(size * dpr);
     }
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, size, size);
+    const c = size / 2;
+    const R = size * 0.27;
+    const time = still ? 0 : t / 1000;
+    // Louder as more playlists pick it up.
+    const loud = 0.25 + at(0.18, 0.6) * 0.75;
+    const bars = 96;
+    for (let i = 0; i < bars; i += 1) {
+      const a = (i / bars) * Math.PI * 2 - Math.PI / 2;
+      const amp =
+        (0.35 +
+          0.35 *
+            Math.sin(i * 0.7 + time * 3.1) *
+            Math.sin(i * 0.23 - time * 1.7) +
+          0.3 * Math.sin(i * 1.9 + time * 5.3) ** 2) *
+        loud;
+      const len = size * 0.04 + Math.abs(amp) * size * 0.17;
+      const mix = (Math.cos(a) + 1) / 2;
+      g.strokeStyle = `rgb(${Math.round(255 * mix + 57 * (1 - mix))},${Math.round(61 * mix + 230 * (1 - mix))},${Math.round(154 * mix + 255 * (1 - mix))})`;
+      g.lineWidth = Math.max(2, size / 180);
+      g.lineCap = 'round';
+      g.beginPath();
+      g.moveTo(c + Math.cos(a) * (R + 10), c + Math.sin(a) * (R + 10));
+      g.lineTo(
+        c + Math.cos(a) * (R + 10 + len),
+        c + Math.sin(a) * (R + 10 + len),
+      );
+      g.stroke();
+    }
+    g.save();
+    g.translate(c, c);
+    g.rotate(still ? 0 : time * 1.4);
+    g.fillStyle = '#05030f';
+    g.beginPath();
+    g.arc(0, 0, R, 0, Math.PI * 2);
+    g.fill();
+    g.strokeStyle = 'rgba(244, 238, 254, 0.07)';
+    g.lineWidth = 1;
+    for (let rr = R * 0.42; rr < R - 3; rr += 4) {
+      g.beginPath();
+      g.arc(0, 0, rr, 0, Math.PI * 2);
+      g.stroke();
+    }
+    // A sheen that turns with the record.
+    g.fillStyle = 'rgba(57, 230, 255, 0.12)';
+    g.beginPath();
+    g.moveTo(0, 0);
+    g.arc(0, 0, R - 2, -0.5, 0.1);
+    g.fill();
+    g.fillStyle = '#ff3d9a';
+    g.beginPath();
+    g.arc(0, 0, R * 0.36, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = '#0d0a1f';
+    g.font = `700 ${Math.round(R * 0.11)}px sans-serif`;
+    g.textAlign = 'center';
+    g.fillText(playlist.track.title.toUpperCase(), 0, -R * 0.08);
+    g.font = `500 ${Math.round(R * 0.07)}px monospace`;
+    g.fillText(playlist.track.artist.toLowerCase(), 0, R * 0.1);
+    g.beginPath();
+    g.arc(0, 0, R * 0.035, 0, Math.PI * 2);
+    g.fill();
+    g.restore();
   });
 
   return (
-    <section ref={sec} className={styles.sec} style={{ height: '260vh' }}>
+    <section ref={sec} className={styles.sec} style={{ height: '300vh' }}>
       <div className={styles.pin}>
         <div className={styles.playlist}>
-          <div className={styles.kicker}>{playlist.kicker}</div>
-          <h2>{playlist.title}</h2>
-          <div className={styles.player}>
-            <span className={styles.disc} aria-hidden="true" />
-            <div>
-              <b>{playlist.track.title}</b>
-              <span>{playlist.track.artist}</span>
-              <div className={styles.progress} aria-hidden="true">
-                <div ref={bar} />
-              </div>
+          <canvas ref={canvas} className={styles.record} aria-hidden="true" />
+          <div>
+            <div className={styles.kicker}>{playlist.kicker}</div>
+            <Typed
+              ref={title}
+              as="h2"
+              seed={53}
+              segments={[{ text: playlist.title }]}
+            />
+            <ol className={styles.lists}>
+              {playlist.rows.map((name, i) => (
+                <li
+                  key={name}
+                  ref={(el) => {
+                    rows.current[i] = el;
+                  }}
+                >
+                  <span>{String(i + 1).padStart(2, '0')}</span>
+                  {name}
+                  <svg viewBox="0 0 24 18" aria-hidden="true">
+                    <path
+                      ref={(el) => {
+                        ticks.current[i] = el;
+                      }}
+                      className={styles.stroke}
+                      d="M2 10 C 5 12, 7 14, 9 16 C 12 10, 16 5, 22 2"
+                    />
+                  </svg>
+                </li>
+              ))}
+              <li ref={mine} data-mine="">
+                <span>{String(playlist.rows.length + 1).padStart(2, '0')}</span>
+                {playlist.slot} {firstName}?
+                <svg className={styles.mineRing} aria-hidden="true">
+                  <path ref={ring} className={styles.stroke} />
+                </svg>
+              </li>
+            </ol>
+            <div
+              ref={arrow}
+              className={styles.arrowNote}
+              style={{ opacity: 0 }}
+            >
+              <svg viewBox="0 0 60 40" aria-hidden="true">
+                <path
+                  className={styles.stroke}
+                  d="M56 36 C 44 30, 30 22, 10 8 M10 8 L 22 9 M10 8 L 13 20"
+                />
+              </svg>
+              your pitch lands here
             </div>
           </div>
-          <ol className={styles.lists}>
-            {playlist.rows.map((name, i) => (
-              <li
-                key={name}
-                ref={(el) => {
-                  rows.current[i] = el;
-                }}
-                style={{ opacity: 0 }}
-              >
-                <span>{String(i + 1).padStart(2, '0')}</span>
-                {name}
-                <small>added</small>
-              </li>
-            ))}
-            <li ref={mine} data-mine="" style={{ opacity: 0 }}>
-              <span>{String(playlist.rows.length + 1).padStart(2, '0')}</span>
-              {playlist.slot} {firstName}?<small>your pitch</small>
-            </li>
-          </ol>
         </div>
       </div>
     </section>

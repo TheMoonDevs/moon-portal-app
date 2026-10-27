@@ -82,7 +82,9 @@ export interface TaskPageConfig {
   /** A post going live, its numbers climbing. Shown by the feed scene. */
   feed?: {
     kicker: string;
+    /** Its last word gets struck through, and the note answers it. */
     title: string;
+    note: string;
     body: string;
     post: { handle: string; caption: string; time: string };
     /** Each counts up from zero as the reader scrolls. */

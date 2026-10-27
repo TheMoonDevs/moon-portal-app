@@ -26,6 +26,7 @@ export const launchNightPage: TaskPageConfig = {
   feed: {
     kicker: 'the job, really',
     title: 'Great work dies quietly.',
+    note: 'Not on your watch.',
     body: 'Every song we make starts at zero plays, zero followers and zero rupees. Someone has to make the city stop scrolling.',
     post: {
       handle: '@you',
