@@ -94,17 +94,20 @@ export interface TaskPageConfig {
   };
   /**
    * A cinema marquee with chaser bulbs, flipping through what the studio
-   * launches. Shown by the marquee scene.
+   * launches, with the cue run backstage for each. Shown by the marquee scene.
    */
   marquee?: {
     kicker: string;
     title: string;
     /** Words in the title circled in marker. */
     circle: string;
-    /** Each board: a small tag over a big line. */
-    boards: Array<{ tag: string; text: string }>;
-    /** The last board's tag, over the candidate's name. */
-    starring: string;
+    /**
+     * Each board: a small tag over a big line, and the cue that was run
+     * backstage to get it there, hand-written under the board.
+     */
+    boards: Array<{ tag: string; text: string; cue: string }>;
+    /** The last board, once the house is full. `{firstName}` in its cue is filled in. */
+    finale: { tag: string; text: string; cue: string };
     /** What the role owns, crawling along the bottom like a news ticker. */
     ticker: string[];
   };

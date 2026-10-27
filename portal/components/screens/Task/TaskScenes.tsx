@@ -890,11 +890,13 @@ export const CrowdScene = ({
   const note = useRef<HTMLParagraphElement>(null);
   const N = 1400;
   // Where each fan wanders before the crowd finds its shape, and its spot
-  // in the moon after. Fan 0 is the first one, who stays in the middle.
+  // in the moon after. Fan 0 is the first one, who stays in the middle and
+  // sends the first messages; everyone after hears it from someone earlier.
   const fans = useMemo(() => {
     const rand = seeded(17);
     const moon = crescent(N);
-    return moon.map((m, i) => ({
+    const out = moon.map((m, i) => ({
+      from: 0,
       sx: i === 0 ? 0 : rand() * 2 - 1,
       sy: i === 0 ? 0 : rand() * 2 - 1,
       mx: m.x,
@@ -902,6 +904,16 @@ export const CrowdScene = ({
       ph: rand() * Math.PI * 2,
       hue: rand(),
     }));
+    // Word of mouth: each fan hears it from the closest of a few earlier ones.
+    out.forEach((f, i) => {
+      let best = Infinity;
+      for (let k = 0; i > 1 && k < 14; k += 1) {
+        const j = Math.floor(rand() * i);
+        const d = (out[j].sx - f.sx) ** 2 + (out[j].sy - f.sy) ** 2;
+        if (d < best) [best, f.from] = [d, j];
+      }
+    });
+    return out;
   }, []);
 
   useScrollFrame(sec, (p, t) => {
@@ -930,13 +942,44 @@ export const CrowdScene = ({
     const k = at(0.62, 0.2);
     const gather = k * k * (3 - 2 * k);
     const time = still ? 0 : t / 1000;
-
-    for (let i = shown - 1; i >= 0; i -= 1) {
+    const pos = (i: number) => {
       const f = fans[i];
       const wx = W / 2 + f.sx * W * 0.5 + Math.sin(time * 0.6 + f.ph) * 14;
       const wy = H / 2 + f.sy * H * 0.45 + Math.cos(time * 0.5 + f.ph) * 10;
-      const x = wx + (cx + f.mx * R - wx) * gather;
-      const y = wy + (cy + f.my * R - wy) * gather;
+      return [
+        wx + (cx + f.mx * R - wx) * gather,
+        wy + (cy + f.my * R - wy) * gather,
+      ];
+    };
+
+    // The newest messages: a line from whoever passed it on, with a dot
+    // still travelling along it. They fade once the crowd takes shape.
+    const reach = 1 - gather;
+    if (reach > 0) {
+      const newest = Math.max(1, shown - 70);
+      g.lineWidth = 1;
+      for (let i = newest; i < shown; i += 1) {
+        const [x0, y0] = pos(fans[i].from);
+        const [x1, y1] = pos(i);
+        const age = (shown - i) / (shown - newest + 1);
+        g.globalAlpha = reach * (1 - age) * 0.5;
+        g.strokeStyle = '#ffc23d';
+        g.beginPath();
+        g.moveTo(x0, y0);
+        g.lineTo(x1, y1);
+        g.stroke();
+        const d = still ? 1 : (time * 0.8 + fans[i].ph) % 1;
+        g.globalAlpha = reach * (1 - age);
+        g.fillStyle = '#f8efe0';
+        g.beginPath();
+        g.arc(x0 + (x1 - x0) * d, y0 + (y1 - y0) * d, 1.4, 0, Math.PI * 2);
+        g.fill();
+      }
+    }
+
+    for (let i = shown - 1; i >= 0; i -= 1) {
+      const f = fans[i];
+      const [x, y] = pos(i);
       const first = i === 0;
       g.globalAlpha = first ? 1 : 0.55 + 0.45 * Math.sin(time * 2 + f.ph) ** 2;
       g.fillStyle = first
@@ -1025,10 +1068,14 @@ export const MarqueeScene = ({
   const ring = useRef<SVGPathElement>(null);
   const flash = useRef<HTMLDivElement>(null);
   const shown = useRef({ board: -1, at: 0 });
+  const cue = useRef<HTMLParagraphElement>(null);
   const boards = useMemo(
     () => [
       ...marquee.boards,
-      { tag: marquee.starring, text: `${firstName.toUpperCase()}?` },
+      {
+        ...marquee.finale,
+        cue: marquee.finale.cue.replace('{firstName}', firstName),
+      },
     ],
     [marquee, firstName],
   );
@@ -1068,6 +1115,14 @@ export const MarqueeScene = ({
     const line = boards[b];
     if (tag.current && tag.current.textContent !== line.tag)
       tag.current.textContent = line.tag;
+    // The cue that got it there, scrawled under the board once it settles.
+    if (cue.current) {
+      if (cue.current.textContent !== line.cue)
+        cue.current.textContent = line.cue;
+      const c = clamp((since - 500) / 400);
+      cue.current.style.opacity = `${c}`;
+      cue.current.style.transform = `rotate(-2deg) translateY(${(1 - c) * 8}px)`;
+    }
     // Centre the line, then let each flap spin a little longer than the last.
     const pad = Math.floor((width - line.text.length) / 2);
     const text = line.text.padStart(line.text.length + pad).padEnd(width);
@@ -1124,7 +1179,9 @@ export const MarqueeScene = ({
               </div>
               <div
                 className={styles.flaps}
-                aria-label={boards.map((x) => `${x.tag}: ${x.text}`).join('. ')}
+                aria-label={boards
+                  .map((x) => `${x.tag}: ${x.text}. ${x.cue}`)
+                  .join(' ')}
               >
                 {Array.from({ length: width }, (_, j) => (
                   <span
@@ -1143,6 +1200,13 @@ export const MarqueeScene = ({
               <path ref={ring} className={styles.stroke} />
             </svg>
           </div>
+          <p
+            ref={cue}
+            className={`${styles.handNote} ${styles.cue}`}
+            style={{ opacity: 0 }}
+          >
+            {boards[0].cue}
+          </p>
         </div>
         <div className={styles.ticker} aria-label={marquee.ticker.join(', ')}>
           <div aria-hidden="true">

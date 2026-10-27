@@ -5,10 +5,11 @@ import type { TaskPageConfig } from './types';
 
 /**
  * The intro for Social & PR Manager (Intern): premiere night for the studio's
- * films, tracks and games, in marquee gold on black velvet. A crowd grows
- * from one fan into a moon, and a marquee flips through everything the
- * studio launches until it reads their name. The brief and the form after it
- * come from the opening, not from here.
+ * films, tracks and games, seen from backstage, in marquee gold on black
+ * velvet. One message is passed on until the crowd becomes a moon, and a
+ * marquee flips through everything the studio launches, each with the cue
+ * they ran behind the curtain, until the house is full. The brief and the
+ * form after it come from the opening, not from here.
  */
 export const studioVoicePage: TaskPageConfig = {
   key: 'studio-voice',
@@ -27,29 +28,53 @@ export const studioVoicePage: TaskPageConfig = {
   studio: conceptArtistPage.studio,
   crowd: {
     kicker: 'the community',
-    title: 'Every crowd starts with one person who cares.',
-    body: 'Our Discord, our subreddits, the comments under every film and track. You turn viewers into a crowd, and a crowd into a community that stays.',
+    title: 'Every crowd starts with one message.',
+    body: 'A DM to a creator. A reply under a comment. A pitch to a curator. You reach out first, people pass it on, and a few viewers become a community that stays.',
     counts: [
-      '1 fan',
-      '12 in the discord',
-      '340 regulars',
+      '1 message',
+      '12 replies',
+      '340 shares',
       '8,000 members',
       'a whole moon',
     ],
-    note: "You'll be that one person first.",
+    note: 'You send the first one.',
   },
   marquee: {
     kicker: "what you'll own",
-    title: 'Films, tracks, games. Every launch needs a voice.',
-    circle: 'a voice.',
+    title: 'Films, tracks, games. Every launch has someone backstage.',
+    circle: 'backstage.',
     boards: [
-      { tag: 'now showing', text: 'AN AI SHORT FILM' },
-      { tag: 'out now', text: 'A NEW SINGLE' },
-      { tag: 'in beta', text: 'A MOBILE GAME' },
-      { tag: 'live tonight', text: 'DISCORD PREMIERE' },
-      { tag: 'in the press', text: 'ZONE STUDIOS' },
+      {
+        tag: 'now showing',
+        text: 'AN AI SHORT FILM',
+        cue: 'cue 1: teaser cut, 40 creators DMed',
+      },
+      {
+        tag: 'out now',
+        text: 'A NEW SINGLE',
+        cue: 'cue 2: 12 playlist curators pitched',
+      },
+      {
+        tag: 'in beta',
+        text: 'A MOBILE GAME',
+        cue: 'cue 3: memes out, beta invites shared',
+      },
+      {
+        tag: 'live tonight',
+        text: 'DISCORD PREMIERE',
+        cue: 'cue 4: countdown on, everyone pinged',
+      },
+      {
+        tag: 'in the press',
+        text: 'ZONE STUDIOS',
+        cue: 'cue 5: press note sent, story pitched',
+      },
     ],
-    starring: 'and starring',
+    finale: {
+      tag: 'tonight',
+      text: 'HOUSEFULL',
+      cue: '{firstName}, that was you. Backstage, running the show.',
+    },
     ticker: [
       'Community',
       'YouTube channels',
