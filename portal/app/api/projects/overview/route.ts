@@ -1,6 +1,5 @@
 import { db } from '@/lib/mongodb/db-client';
 import { hasPermission } from '@/lib/permissions/matching';
-import { lineKey } from '@/lib/worklogs/lines';
 import { isPersonalLink } from '@/lib/worklogs/personal';
 import { addDays, toDay } from '@/lib/workspace/projects';
 import { withProjectStats } from '@/lib/workspace/projectStats';
@@ -23,23 +22,12 @@ const DAYS = 7;
 
 const CLOSED = [TASK_STATUS.DONE, TASK_STATUS.ARCHIVED, TASK_STATUS.IGNORED];
 
-/** Keys of the lines ticked off (✅) in a worklog's sections. */
-const doneKeys = (works: unknown) => {
-  const keys = new Set<string>();
-  if (!Array.isArray(works)) return keys;
-  for (const work of works) {
-    const content = typeof work?.content === 'string' ? work.content : '';
-    for (const raw of content.split('\n'))
-      if (raw.includes('✅')) keys.add(lineKey(raw));
-  }
-  return keys;
-};
-
 /**
  * Every project the caller can read, across their companies, with what is
- * going on in each: the last week of worklog lines, who wrote them, today's
- * scheduled tasks, open and overdue tasks, and goal progress. Private lines
- * never count.
+ * going on in each: how much was logged on each of the last 7 days and by
+ * whom, today's scheduled tasks, open and overdue tasks, and goal progress.
+ * It sends counts only, never the words of a line, and private lines never
+ * count.
  */
 export async function GET() {
   const { response, user } = await requireUser();
@@ -80,7 +68,7 @@ export async function GET() {
         logType: 'dayLog',
         date: { gte: from },
       },
-      select: { userId: true, date: true, works: true, links: true },
+      select: { userId: true, date: true, links: true },
       orderBy: { date: 'desc' },
     }) as Promise<WorkLogs[]>,
     db.task.findMany({
@@ -102,39 +90,18 @@ export async function GET() {
   const overview = withStats.map((project) => {
     const perDay = days.map(() => 0);
     const people: string[] = [];
-    const latest: {
-      text: string;
-      userId: string;
-      date: string;
-      done: boolean;
-    }[] = [];
-    let lines = 0;
-    let done = 0;
     let lastDate: string | null = null;
-    // Logs come newest first, so people and latest lines are in that order.
+    // Logs come newest first, so people are in that order too.
     for (const log of logs) {
-      const ticked = doneKeys(log.works);
-      const mine = ((log.links ?? []) as WorklogLink[]).filter(
+      const lines = ((log.links ?? []) as WorklogLink[]).filter(
         (l) => l.projectId === project.id && !isPersonalLink(l),
-      );
-      if (!mine.length) continue;
+      ).length;
+      if (!lines) continue;
       const userId = log.userId as string;
       lastDate ??= log.date as string;
       const dayIndex = days.indexOf(log.date as string);
-      if (dayIndex >= 0) perDay[dayIndex] += mine.length;
-      lines += mine.length;
+      if (dayIndex >= 0) perDay[dayIndex] += lines;
       if (!people.includes(userId)) people.push(userId);
-      for (const link of mine) {
-        const isDone = ticked.has(link.key);
-        if (isDone) done += 1;
-        if (latest.length < 2)
-          latest.push({
-            text: link.text ?? '',
-            userId,
-            date: log.date as string,
-            done: isDone,
-          });
-      }
     }
 
     const open = openTasks.filter((t) => t.projectId === project.id);
@@ -146,15 +113,7 @@ export async function GET() {
 
     return {
       ...project,
-      activity: {
-        from,
-        days: perDay,
-        lines,
-        done,
-        people,
-        lastDate,
-        latest,
-      },
+      activity: { from, days: perDay, people, lastDate },
       tasks: {
         open: open.length,
         overdue: open.filter((t) => t.dueDate && t.dueDate.slice(0, 10) < today)
