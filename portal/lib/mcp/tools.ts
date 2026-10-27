@@ -186,7 +186,7 @@ export const TOOLS: Tool[] = [
   {
     name: 'log_work',
     title: 'Log work points',
-    description: `Writes work points into the "Claude" section of the person's worklog for the day, so they can follow progress in the portal. Keep it to 2-3 points per session, one per deliverable the person would name in a standup (e.g. "Lyric video for the new song", "Thumbnails and YouTube pack for it"). Never a new point for a revision, version, round, fix or sub-step: update the existing point instead, naming it with point (its key from loggedToday, or its text) and saying what happened in note ("v6 rendered, 3 notes fixed"); every update goes on the point's timeline, which shows how long it took from start to finish. Log a point when you start it (doing), add notes as it moves, and end it with done, not_done or blocked; same text also updates the line instead of adding another. Use waiting when you need the person's permission or input. Keep each point one short line about the outcome, in plain words, never secrets or credentials. Name the project (and task) when you know it; otherwise the portal links it. When the person already typed a line for the same work (typedToday in get_context), set typedLine to its text so the two are linked as one point. Work can only be logged to projects the person leads or is on the team of (onTeam in get_context). When the project has no task for the work yet, name the task (or the goal it counts towards) and the portal creates it, already done for a done point; set completeTask to finish an existing task too. Work done early for a later week: set forDate to the day it was scheduled for, so it counts towards that week's goal (the line is still logged today). A done point about a scheduled task finishes that task's run for its day (or the next run not done yet); set forDate when it was for another day. Set personal for the person's own private work (not for any company): only they will ever see it.`,
+    description: `Writes work points into the "Claude" section of the person's worklog for the day, so they can follow progress in the portal. Keep it to 2-3 points per session, one per deliverable the person would name in a standup (e.g. "Lyric video for the new song", "Thumbnails and YouTube pack for it"). Never a new point for a revision, version, round, fix or sub-step: update the existing point instead, naming it with point (its key from loggedToday, or its text) and saying what happened in note ("v6 rendered, 3 notes fixed"); every update goes on the point's timeline, which shows how long it took from start to finish. Log a point when you start it (doing), add notes as it moves, and end it with done, not_done or blocked; same text also updates the line instead of adding another. Use waiting when you need the person's permission or input. Keep each point one short line about the outcome, in plain words, never secrets or credentials. Name the project (and task) when you know it, or only the company for company work on none of its projects; otherwise the portal links it. When the person already typed a line for the same work (typedToday in get_context), set typedLine to its text so the two are linked as one point. Work can only be logged to projects the person leads or is on the team of (onTeam in get_context). When the project has no task for the work yet, name the task (or the goal it counts towards) and the portal creates it, already done for a done point; set completeTask to finish an existing task too. Work done early for a later week: set forDate to the day it was scheduled for, so it counts towards that week's goal (the line is still logged today). A done point about a scheduled task finishes that task's run for its day (or the next run not done yet); set forDate when it was for another day. Set personal for the person's own private work (not for any company): only they will ever see it.`,
     inputSchema: {
       type: 'object',
       properties: {
@@ -226,6 +226,11 @@ export const TOOLS: Tool[] = [
               project: {
                 type: 'string',
                 description: 'Project id or exact name (optional).',
+              },
+              company: {
+                type: 'string',
+                description:
+                  'Company id or exact name, for company work that is on none of its projects, e.g. hiring or admin (optional).',
               },
               task: {
                 type: 'string',
@@ -286,6 +291,7 @@ export const TOOLS: Tool[] = [
               : undefined,
           status: STATUS_KEYS.includes(p?.status) ? p.status : 'done',
           project: typeof p?.project === 'string' ? p.project : undefined,
+          company: typeof p?.company === 'string' ? p.company : undefined,
           task: typeof p?.task === 'string' ? p.task : undefined,
           personal: p?.personal === true,
           goal: typeof p?.goal === 'string' ? p.goal : undefined,

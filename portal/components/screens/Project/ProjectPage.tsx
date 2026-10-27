@@ -483,7 +483,7 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
       ? 'pages'
       : isView(asked)
         ? (asked as ViewKey)
-        : 'objective';
+        : VIEWS[0].key;
   const pageId =
     view === 'pages'
       ? (params?.get('page') ?? params?.get('idea') ?? null)

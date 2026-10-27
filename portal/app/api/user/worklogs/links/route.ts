@@ -78,6 +78,7 @@ export async function POST(request: Request) {
 
 /**
  * The person places one line: `{ worklogId, key, projectId, taskId }`, or
+ * `{ worklogId, key, companyId }` for company work on none of its projects, or
  * marks a line they typed as the same work as one of their assistant's
  * points: `{ worklogId, key, sameAs }` (null to unlink).
  */
@@ -131,6 +132,11 @@ export async function PATCH(request: Request) {
   const candidates = await linkCandidates(user);
   const project = candidates.projects.find((p) => p.id === body.projectId);
   if (body.projectId && !project) return fail(400, 'Unknown project.');
+  const company = project
+    ? undefined
+    : candidates.companies.find((c) => c.id === body.companyId);
+  if (!project && body.companyId && !company)
+    return fail(400, 'Unknown company.');
   const task = project
     ? candidates.tasks.find(
         (t) => t.id === body.taskId && t.projectId === project.id,
@@ -139,11 +145,11 @@ export async function PATCH(request: Request) {
 
   const updated: WorklogLink = {
     ...link,
-    companyId: project?.companyId ?? null,
+    companyId: project?.companyId ?? company?.id ?? null,
     projectId: project?.id ?? null,
     taskId: task?.id ?? null,
     confidence: 1,
-    // No project means "not project work", which also stops the question.
+    // Neither means "not company work", which also stops the question.
     source: 'user',
   };
   const next = links.map((l) => (l.key === link.key ? updated : l));

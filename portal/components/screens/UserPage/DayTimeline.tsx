@@ -336,6 +336,9 @@ const FocusedPoint = ({
   const task = [...data.tasks, ...data.doneTasks].find(
     (x) => x.id === point.taskId,
   );
+  const company = project
+    ? undefined
+    : data.companies.find((c) => c.id === point.companyId && !c.isPersonal);
   return (
     <>
       <span
@@ -353,7 +356,9 @@ const FocusedPoint = ({
           {point.text}
         </p>
         <p className="truncate text-[11px] text-neutral-500">
-          {[project?.name, task?.title].filter(Boolean).join(' › ') ||
+          {(company
+            ? `${company.name} › General`
+            : [project?.name, task?.title].filter(Boolean).join(' › ')) ||
             'Not on a project'}
           {point.status && ` · ${POINT_STATUSES[point.status].label}`}
         </p>
