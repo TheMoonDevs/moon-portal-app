@@ -9,6 +9,7 @@ export enum APP_ROUTES {
   userWorklogs = '/user/worklogs',
   world = '/world',
   plans = '/plans',
+  projects = '/projects',
   meet = '/meet',
   userWorklogSummary = '/user/worklogs/summary',
 }
