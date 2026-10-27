@@ -1,6 +1,11 @@
 'use client';
 
-import { Caveat, DM_Mono, Plus_Jakarta_Sans } from 'next/font/google';
+import {
+  Caveat,
+  DM_Mono,
+  Plus_Jakarta_Sans,
+  Space_Grotesk,
+} from 'next/font/google';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 
 import {
@@ -8,7 +13,7 @@ import {
   MAX_FILE_BYTES,
   validateAnswers,
 } from '@/lib/hiring/forms';
-import { TASK_PAGES } from '@/lib/hiring/taskPages';
+import { TASK_PAGES, type TaskSceneKey } from '@/lib/hiring/taskPages';
 import {
   FORM_FIELD_TYPE,
   type FormField,
@@ -20,8 +25,10 @@ import styles from './task.module.css';
 import {
   DreamScene,
   FounderScene,
+  HiringScene,
   ManifestoScene,
   MarkScene,
+  RadarScene,
   StudioScene,
   TeamScene,
   TimelineScene,
@@ -41,6 +48,11 @@ const hand = Caveat({
   subsets: ['latin'],
   weight: ['600'],
   variable: '--task-hand',
+});
+const display = Space_Grotesk({
+  subsets: ['latin'],
+  weight: ['400', '500', '700'],
+  variable: '--task-display',
 });
 
 /** What a candidate's private task page may show. */
@@ -81,7 +93,13 @@ const formatDate = (iso: string) =>
     minute: '2-digit',
   });
 
-const Shell = ({ children }: { children: ReactNode }) => {
+const Shell = ({
+  theme = 'sketchbook',
+  children,
+}: {
+  theme?: 'sketchbook' | 'signal';
+  children: ReactNode;
+}) => {
   const grain = useRef<HTMLCanvasElement>(null);
 
   // Animated paper grain, redrawn a dozen times a second.
@@ -111,7 +129,7 @@ const Shell = ({ children }: { children: ReactNode }) => {
 
   return (
     <div
-      className={`${styles.root} ${sans.variable} ${mono.variable} ${hand.variable}`}
+      className={`${styles.root} ${theme === 'signal' ? styles.signal : ''} ${sans.variable} ${mono.variable} ${hand.variable} ${display.variable}`}
     >
       <canvas
         ref={grain}
@@ -556,10 +574,57 @@ const BriefScene = ({ data }: { data: PublicTask }) => {
 
 /* ---------------------------------- page ---------------------------------- */
 
+const DEFAULT_SCENES: TaskSceneKey[] = [
+  'dream',
+  'manifesto',
+  'studio',
+  'mark',
+  'team',
+  'founder',
+  'timeline',
+];
+
 export const TaskPage = ({ data }: { data: PublicTask }) => {
   const intro = data.task.page ? TASK_PAGES[data.task.page] : null;
+  const scene = (key: TaskSceneKey) => {
+    if (!intro) return null;
+    switch (key) {
+      case 'dream':
+        return <DreamScene key={key} firstName={data.firstName} />;
+      case 'manifesto':
+        return <ManifestoScene key={key} />;
+      case 'hiring':
+        return intro.hiring ? (
+          <HiringScene key={key} hiring={intro.hiring} />
+        ) : null;
+      case 'radar':
+        return intro.radar ? (
+          <RadarScene key={key} radar={intro.radar} />
+        ) : null;
+      case 'studio':
+        return <StudioScene key={key} studio={intro.studio} />;
+      case 'mark':
+        return (
+          <MarkScene key={key} mark={intro.mark} firstName={data.firstName} />
+        );
+      case 'team':
+        return (
+          <TeamScene key={key} team={intro.team} firstName={data.firstName} />
+        );
+      case 'founder':
+        return <FounderScene key={key} founder={intro.founder} />;
+      case 'timeline':
+        return (
+          <TimelineScene
+            key={key}
+            timeline={intro.timeline}
+            promises={intro.promises}
+          />
+        );
+    }
+  };
   return (
-    <Shell>
+    <Shell theme={intro?.theme}>
       <header className={styles.top}>
         <span>{data.company.toLowerCase()}</span>
         <span>
@@ -569,13 +634,7 @@ export const TaskPage = ({ data }: { data: PublicTask }) => {
       </header>
       {intro ? (
         <main>
-          <DreamScene firstName={data.firstName} />
-          <ManifestoScene />
-          <StudioScene studio={intro.studio} />
-          <MarkScene mark={intro.mark} firstName={data.firstName} />
-          <TeamScene team={intro.team} firstName={data.firstName} />
-          <FounderScene founder={intro.founder} />
-          <TimelineScene timeline={intro.timeline} promises={intro.promises} />
+          {(intro.scenes ?? DEFAULT_SCENES).map(scene)}
           <BriefScene data={data} />
         </main>
       ) : (

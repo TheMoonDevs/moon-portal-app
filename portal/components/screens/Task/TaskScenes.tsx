@@ -622,3 +622,241 @@ export const TeamScene = ({
       </ul>
     </section>
   ) : null;
+
+/* --------------------------- how we hire (signal) -------------------------- */
+
+export const HiringScene = ({
+  hiring,
+}: {
+  hiring: NonNullable<TaskPageConfig['hiring']>;
+}) => {
+  const sec = useRef<HTMLElement>(null);
+  const title = useRef<TypedHandle>(null);
+  const bubbles = useRef<Array<HTMLLIElement | null>>([]);
+  const because = useRef<HTMLParagraphElement>(null);
+  const [before, after] = hiring.title.split(hiring.strike);
+
+  useScrollFrame(sec, (p) => {
+    const done = prefersReducedMotion();
+    const at = (a: number, len: number) => (done ? 1 : clamp((p - a) / len));
+    title.current?.type(at(0, 0.2));
+    title.current?.mark(0, at(0.22, 0.1));
+    hiring.chat.forEach((_, i) => {
+      const el = bubbles.current[i];
+      if (!el) return;
+      const k = at(0.32 + i * 0.1, 0.06);
+      el.style.opacity = `${k}`;
+      el.style.transform = `translateY(${(1 - k) * 14}px)`;
+    });
+    if (because.current) {
+      const k = at(0.78, 0.1);
+      because.current.style.opacity = `${k}`;
+      because.current.style.transform = `translateY(${(1 - k) * 14}px)`;
+    }
+  });
+
+  return (
+    <section ref={sec} className={styles.sec} style={{ height: '300vh' }}>
+      <div className={styles.pin}>
+        <div className={styles.hiring}>
+          <div>
+            <div className={styles.kicker}>{hiring.kicker}</div>
+            <Typed
+              ref={title}
+              as="h2"
+              seed={31}
+              segments={
+                after === undefined
+                  ? [{ text: hiring.title }]
+                  : [
+                      { text: before },
+                      { text: hiring.strike, mark: 'strike' },
+                      { text: after },
+                    ]
+              }
+            />
+          </div>
+          <ol className={styles.chat} aria-label="A hiring chat">
+            {hiring.chat.map((m, i) => (
+              <li
+                key={i}
+                ref={(el) => {
+                  bubbles.current[i] = el;
+                }}
+                className={m.from === 'ai' ? styles.fromAi : styles.fromThem}
+                style={{ opacity: 0 }}
+              >
+                <small>
+                  {m.from === 'ai' ? 'ai · moon devs' : 'candidate'}
+                </small>
+                {m.text}
+              </li>
+            ))}
+          </ol>
+          <p ref={because} className={styles.because} style={{ opacity: 0 }}>
+            {hiring.because}
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+/* ------------------------------ radar (signal) ----------------------------- */
+
+export const RadarScene = ({
+  radar,
+}: {
+  radar: NonNullable<TaskPageConfig['radar']>;
+}) => {
+  const sec = useRef<HTMLElement>(null);
+  const canvas = useRef<HTMLCanvasElement>(null);
+  const labels = useRef<Array<HTMLDivElement | null>>([]);
+  const ring = useRef<SVGPathElement>(null);
+  const found = useRef<HTMLElement>(null);
+  // Where each blip sits: an angle from 12 o'clock and a share of the radius.
+  const blips = useMemo(() => {
+    const rand = seeded(radar.blips.length * 13);
+    return radar.blips.map((_, i) => ({
+      a: (i / radar.blips.length) * Math.PI * 2 + rand() * 0.7,
+      r: 0.38 + rand() * 0.42,
+    }));
+  }, [radar.blips]);
+  const last = blips.length - 1;
+
+  useEffect(() => {
+    const path = ring.current;
+    if (!path) return;
+    // A loose marker loop around the blip, at the middle of a 40×40 box.
+    const rand = seeded(4);
+    let d = '';
+    for (let i = 0; i <= 40; i += 1) {
+      const a = -2 + (i / 36) * Math.PI * 2.1;
+      const k = 1 + (rand() - 0.5) * 0.12;
+      d += `${i ? ' L ' : 'M '}${(20 + Math.cos(a) * 15 * k).toFixed(1)} ${(20 + Math.sin(a) * 11 * k).toFixed(1)}`;
+    }
+    path.setAttribute('d', d);
+    primeStroke(path);
+  }, []);
+
+  useScrollFrame(sec, (p, t) => {
+    const el = canvas.current;
+    const g = el?.getContext('2d');
+    if (!el || !g) return;
+    const still = prefersReducedMotion();
+    const dpr = Math.min(window.devicePixelRatio, 2);
+    const size = el.clientWidth;
+    if (el.width !== Math.round(size * dpr)) {
+      el.width = el.height = Math.round(size * dpr);
+    }
+    const css = getComputedStyle(el);
+    const ink = css.getPropertyValue('--red').trim() || '#b6ff3b';
+    const c = size / 2;
+    const R = size * 0.48;
+    // The sweep turns on its own and faster as you scroll; it stops at the end.
+    const lock = still ? 1 : clamp((p - 0.72) / 0.12);
+    const sweep =
+      (still ? 0 : t / 2400 + p * 3) * Math.PI * 2 * (1 - lock) +
+      (blips[last].a + 0.25) * lock;
+
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, size, size);
+    g.strokeStyle = ink;
+    g.globalAlpha = 0.18;
+    g.lineWidth = 1;
+    for (let k = 1; k <= 4; k += 1) {
+      g.beginPath();
+      g.arc(c, c, (R * k) / 4, 0, Math.PI * 2);
+      g.stroke();
+    }
+    g.beginPath();
+    g.moveTo(c - R, c);
+    g.lineTo(c + R, c);
+    g.moveTo(c, c - R);
+    g.lineTo(c, c + R);
+    g.stroke();
+
+    // A fading wedge behind the sweep line.
+    const from = sweep - Math.PI / 2;
+    for (let k = 0; k < 24; k += 1) {
+      g.globalAlpha = 0.16 * (1 - k / 24);
+      g.fillStyle = ink;
+      g.beginPath();
+      g.moveTo(c, c);
+      g.arc(c, c, R, from - (k + 1) * 0.03, from - k * 0.03);
+      g.closePath();
+      g.fill();
+    }
+    g.globalAlpha = 0.9;
+    g.lineWidth = 2;
+    g.beginPath();
+    g.moveTo(c, c);
+    g.lineTo(c + Math.cos(from) * R, c + Math.sin(from) * R);
+    g.stroke();
+
+    blips.forEach((b, i) => {
+      // How long ago the sweep passed this blip, as a share of a turn.
+      const since =
+        ((((sweep - b.a) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) /
+        (Math.PI * 2);
+      const glow = still ? 1 : Math.max(1 - since * 1.6, i === last ? lock : 0);
+      const x = c + Math.cos(b.a - Math.PI / 2) * b.r * R;
+      const y = c + Math.sin(b.a - Math.PI / 2) * b.r * R;
+      g.globalAlpha = 0.25 + glow * 0.75;
+      g.fillStyle = ink;
+      g.beginPath();
+      g.arc(x, y, 3 + glow * 3, 0, Math.PI * 2);
+      g.fill();
+      const label = labels.current[i];
+      if (label) {
+        label.style.left = `${(x / size) * 100}%`;
+        label.style.top = `${(y / size) * 100}%`;
+        label.style.opacity = `${
+          i === last ? Math.max(0.2 + glow * 0.8, lock) : 0.2 + glow * 0.8
+        }`;
+      }
+    });
+    g.globalAlpha = 1;
+
+    const k = still ? 1 : clamp((p - 0.82) / 0.08);
+    drawStroke(ring.current, k);
+    if (found.current) found.current.style.opacity = `${k}`;
+  });
+
+  return (
+    <section ref={sec} className={styles.sec} style={{ height: '320vh' }}>
+      <div className={styles.pin}>
+        <div className={styles.radarTxt}>
+          <div className={styles.kicker}>{radar.kicker}</div>
+          <h2>{radar.title}</h2>
+          <p>{radar.body}</p>
+        </div>
+        <div className={styles.radar}>
+          <canvas ref={canvas} aria-hidden="true" />
+          {radar.blips.map((text, i) => (
+            <div
+              key={text}
+              ref={(el) => {
+                labels.current[i] = el;
+              }}
+              className={styles.blip}
+              data-last={i === last ? '' : undefined}
+            >
+              {i === last && (
+                <svg viewBox="0 0 40 40" aria-hidden="true">
+                  <path ref={ring} className={styles.stroke} />
+                </svg>
+              )}
+              <span>{text}</span>
+              {i === last && (
+                <b ref={found} style={{ opacity: 0 }}>
+                  {radar.found}
+                </b>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};

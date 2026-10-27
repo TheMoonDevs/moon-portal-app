@@ -38,7 +38,10 @@
   display: flex;
   justify-content: space-between;
   padding: calc(14px + env(safe-area-inset-top, 0px)) var(--gutter) 14px;
-  font: 500 11px/1 var(--task-mono), ui-monospace, monospace;
+  font:
+    500 11px/1 var(--task-mono),
+    ui-monospace,
+    monospace;
   text-transform: lowercase;
   mix-blend-mode: difference;
   color: #fff;
@@ -102,7 +105,9 @@
   width: min(100%, 760px);
 }
 .hello {
-  font: 500 12px/1 var(--task-mono), monospace;
+  font:
+    500 12px/1 var(--task-mono),
+    monospace;
   color: var(--mute);
   margin-bottom: 26px;
 }
@@ -139,7 +144,9 @@
   top: -20px;
   background: var(--red);
   color: #fff;
-  font: 500 10px/1 var(--task-mono), monospace;
+  font:
+    500 10px/1 var(--task-mono),
+    monospace;
   padding: 4px 6px;
 }
 .t1 {
@@ -203,7 +210,9 @@
   width: min(100%, 980px);
 }
 .kicker {
-  font: 500 11px/1 var(--task-mono), monospace;
+  font:
+    500 11px/1 var(--task-mono),
+    monospace;
   color: var(--mute);
 }
 .manifesto h2 {
@@ -226,7 +235,9 @@
   gap: 8px;
   align-items: center;
   margin-top: 22px;
-  font: 500 12px/1 var(--task-mono), monospace;
+  font:
+    500 12px/1 var(--task-mono),
+    monospace;
   color: var(--ink);
   text-decoration: none;
   border-bottom: 1.5px solid var(--red);
@@ -284,7 +295,9 @@
 }
 .work figcaption {
   margin-top: 6px;
-  font: 500 11px/1.3 var(--task-mono), monospace;
+  font:
+    500 11px/1.3 var(--task-mono),
+    monospace;
   color: var(--mute);
 }
 
@@ -317,9 +330,16 @@
   height: 26vh;
   overflow: hidden;
   text-align: center;
-  font: 500 12px/2.1 var(--task-mono), monospace;
+  font:
+    500 12px/2.1 var(--task-mono),
+    monospace;
   color: var(--mute);
-  -webkit-mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent);
+  -webkit-mask-image: linear-gradient(
+    transparent,
+    #000 30%,
+    #000 70%,
+    transparent
+  );
   mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent);
 }
 .scatter {
@@ -368,7 +388,9 @@
 .meTxt cite {
   display: block;
   margin-top: 18px;
-  font: 500 12px/1 var(--task-mono), monospace;
+  font:
+    500 12px/1 var(--task-mono),
+    monospace;
   font-style: normal;
   color: rgba(242, 241, 236, 0.6);
 }
@@ -397,7 +419,9 @@
   left: 6%;
   bottom: 4%;
   max-width: 60vw;
-  font: 600 clamp(22px, 2.6vw, 32px) / 1.05 var(--task-hand), cursive;
+  font:
+    600 clamp(22px, 2.6vw, 32px) / 1.05 var(--task-hand),
+    cursive;
   color: var(--red);
 }
 @media (min-width: 900px) {
@@ -424,7 +448,9 @@
 .timeline h3 {
   margin: 0 auto;
   max-width: 1000px;
-  font: 600 clamp(26px, 3vw, 36px) / 1.1 var(--task-hand), cursive;
+  font:
+    600 clamp(26px, 3vw, 36px) / 1.1 var(--task-hand),
+    cursive;
   color: var(--red);
 }
 .steps {
@@ -462,7 +488,9 @@
 }
 .steps b {
   display: block;
-  font: 500 12px/1 var(--task-mono), monospace;
+  font:
+    500 12px/1 var(--task-mono),
+    monospace;
   color: var(--red);
 }
 .steps span {
@@ -475,7 +503,9 @@
 .timelineNote {
   max-width: 1000px;
   margin: 26px auto 0;
-  font: 500 12px/1.5 var(--task-mono), monospace;
+  font:
+    500 12px/1.5 var(--task-mono),
+    monospace;
   color: rgba(242, 241, 236, 0.6);
 }
 .promises {
@@ -568,7 +598,9 @@
   flex-wrap: wrap;
   gap: 8px 24px;
   margin-top: 22px;
-  font: 500 12px/1.4 var(--task-mono), monospace;
+  font:
+    500 12px/1.4 var(--task-mono),
+    monospace;
   color: var(--mute);
 }
 .meta b {
@@ -589,7 +621,9 @@
   border-bottom: 1px solid rgba(21, 21, 21, 0.2);
 }
 .dl .n {
-  font: 500 12px/1.9 var(--task-mono), monospace;
+  font:
+    500 12px/1.9 var(--task-mono),
+    monospace;
   color: var(--red);
 }
 .dl h3 {
@@ -607,7 +641,9 @@
 }
 .extra {
   margin: 28px 0 0;
-  font: 600 clamp(24px, 3vw, 32px) / 1.2 var(--task-hand), cursive;
+  font:
+    600 clamp(24px, 3vw, 32px) / 1.2 var(--task-hand),
+    cursive;
   color: var(--red);
 }
 
@@ -746,7 +782,9 @@ textarea.input {
   gap: 12px;
 }
 .received dt {
-  font: 500 11px/1.4 var(--task-mono), monospace;
+  font:
+    500 11px/1.4 var(--task-mono),
+    monospace;
   color: var(--mute);
   text-transform: uppercase;
 }
@@ -757,7 +795,9 @@ textarea.input {
 }
 .foot {
   margin-top: 12vh;
-  font: 500 11px/1.6 var(--task-mono), monospace;
+  font:
+    500 11px/1.6 var(--task-mono),
+    monospace;
   color: var(--mute);
   text-align: center;
 }
@@ -790,5 +830,248 @@ textarea.input {
 @media (max-width: 520px) {
   .top span + span {
     display: none;
+  }
+}
+
+/*
+ * Signal: a talent scout's night radar. Black glass, phosphor-green ink,
+ * scanlines instead of paper grain, mono labels instead of handwriting.
+ */
+.signal {
+  --paper: #07090a;
+  --ink: #e6eee2;
+  --mute: #7c8a83;
+  --red: #b6ff3b;
+  --blue: #2bd9ff;
+  --coal: #030404;
+  --chalk: #e6eee2;
+  --line: rgba(230, 238, 226, 0.18);
+  font-family: var(--task-display), var(--task-sans), sans-serif;
+}
+.signal::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 29;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.025) 0 1px,
+    transparent 1px 3px
+  );
+}
+.signal .grain {
+  mix-blend-mode: screen;
+  opacity: 0.035;
+}
+.signal .tag {
+  color: var(--paper);
+}
+.signal .sel {
+  border-color: var(--line);
+}
+.signal .sel > i {
+  background: var(--red);
+}
+.signal .t2,
+.signal .manifesto p,
+.signal .dl p {
+  color: rgba(230, 238, 226, 0.78);
+}
+.signal .studioTxt p {
+  color: rgba(230, 238, 226, 0.78);
+  text-shadow: none;
+}
+.signal .dl,
+.signal .dl li {
+  border-color: var(--line);
+}
+.signal .input,
+.signal textarea.input,
+.signal .file,
+.signal .choice,
+.signal .received,
+.signal .team li {
+  border-color: rgba(230, 238, 226, 0.3);
+}
+.signal .input:focus {
+  border-color: var(--red);
+}
+.signal .btn {
+  background: var(--red);
+  color: var(--paper);
+}
+.signal .extra,
+.signal .timeline h3,
+.signal .clock {
+  font-family: var(--task-mono), monospace;
+  font-weight: 500;
+  font-size: clamp(16px, 2vw, 22px);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.signal .t1,
+.signal .ready,
+.signal .scatter,
+.signal .meTxt p {
+  font-weight: 700;
+}
+.signal .ready span::after {
+  content: '_';
+  animation: blink 1s steps(1) infinite;
+}
+
+/* how we hire */
+.hiring {
+  width: min(100%, 1080px);
+  display: grid;
+  gap: 28px;
+  align-items: center;
+}
+.hiring h2 {
+  position: relative;
+  margin: 14px 0 0;
+  font-weight: 700;
+  font-size: clamp(32px, 5.6vw, 72px);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  max-width: 14ch;
+}
+.chat {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.chat li {
+  max-width: 34ch;
+  padding: 12px 14px;
+  font-size: clamp(14px, 1.6vw, 17px);
+  line-height: 1.45;
+  border: 1px solid var(--line, rgba(21, 21, 21, 0.2));
+}
+.chat small {
+  display: block;
+  margin-bottom: 4px;
+  font:
+    500 10px/1 var(--task-mono),
+    monospace;
+  color: var(--mute);
+  text-transform: lowercase;
+}
+.fromAi {
+  justify-self: start;
+  border-radius: 2px 14px 14px 14px;
+}
+.fromThem {
+  justify-self: end;
+  border-radius: 14px 2px 14px 14px;
+  background: var(--red);
+  color: var(--paper);
+  border-color: transparent !important;
+}
+.fromThem small {
+  color: inherit;
+  opacity: 0.6;
+}
+.because {
+  margin: 0;
+  max-width: 52ch;
+  font-size: clamp(15px, 1.8vw, 19px);
+  line-height: 1.55;
+  border-left: 2px solid var(--red);
+  padding-left: 14px;
+}
+@media (min-width: 900px) {
+  .hiring {
+    grid-template-columns: 1.1fr 1fr;
+    column-gap: 56px;
+  }
+  .because {
+    grid-column: 1 / -1;
+  }
+}
+
+/* radar */
+.radarTxt {
+  position: absolute;
+  z-index: 2;
+  left: var(--gutter);
+  right: var(--gutter);
+  top: calc(56px + env(safe-area-inset-top, 0px));
+  max-width: 560px;
+  pointer-events: none;
+}
+.radarTxt h2 {
+  margin: 12px 0 0;
+  font-weight: 700;
+  font-size: clamp(22px, 3.4vw, 40px);
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+}
+.radarTxt p {
+  margin: 10px 0 0;
+  font:
+    500 13px/1.4 var(--task-mono),
+    monospace;
+  color: var(--red);
+}
+.radar {
+  position: relative;
+  width: min(92vw, 62vh, 720px);
+  aspect-ratio: 1;
+  margin-top: 22vh;
+}
+.radar canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.blip {
+  position: absolute;
+  transform: translate(10px, -50%);
+  font:
+    500 clamp(10px, 1.2vw, 12px) / 1.2 var(--task-mono),
+    monospace;
+  color: var(--ink);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.blip span {
+  display: inline-block;
+  max-width: 22ch;
+  white-space: normal;
+}
+.blip[data-last] {
+  color: var(--red);
+  padding-left: 14px;
+}
+.blip svg {
+  position: absolute;
+  left: -32px;
+  top: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translateY(-50%);
+  overflow: visible;
+}
+.blip b {
+  display: block;
+  margin-top: 4px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+@media (min-width: 900px) {
+  .radarTxt {
+    top: 50%;
+    transform: translateY(-50%);
+    max-width: 30vw;
+  }
+  .radar {
+    margin: 0 0 0 26vw;
+    width: min(54vw, 82vh, 760px);
   }
 }
