@@ -8,7 +8,7 @@ import {
 } from '@/lib/worklogs/lines';
 import type { LinkCandidates } from '@/lib/worklogs/linker';
 import { linkCandidates, linkLines } from '@/lib/worklogs/linker';
-import { PERSONAL_COMPANY } from '@/lib/worklogs/personal';
+import { isPersonalLink, PERSONAL_COMPANY } from '@/lib/worklogs/personal';
 import type { PointStatus } from '@/lib/worklogs/timeline';
 import type { PointEvent } from '@/lib/worklogs/timeline';
 import {
@@ -22,6 +22,8 @@ import {
 import type { WorklogLink, WorkLogs } from '@/models/worklogs';
 import type { WorkLogPoints } from '@/utils/@types/interfaces';
 import { LOGLINKTYPE } from '@/utils/@types/interfaces';
+
+import { ToolError } from './shared';
 
 /*
  * The "Claude" section of a day's worklog: the lines a person's assistant
@@ -55,7 +57,11 @@ const splitLines = (content: string) =>
  * the day: a line the assistant updated keeps its new status, and a line it
  * added since the editor loaded is kept.
  */
-export function keepClaudeSection(incoming: unknown, stored: unknown): unknown {
+export function keepClaudeSection(
+  incoming: unknown,
+  stored: unknown,
+  removed: string[] = [],
+): unknown {
   if (!Array.isArray(incoming) || !Array.isArray(stored)) return incoming;
   const saved = stored.find((w) => w?.link_id === CLAUDE_SECTION_ID);
   if (!saved?.content) return incoming;
@@ -65,9 +71,11 @@ export function keepClaudeSection(incoming: unknown, stored: unknown): unknown {
 
   const savedLines = splitLines(saved.content);
   const byKey = new Map(savedLines.map((l) => [lineKey(l), l]));
-  const lines = splitLines(current.content ?? '').map(
-    (l) => byKey.get(lineKey(l)) ?? l,
-  );
+  // Points the assistant tidied away stay gone.
+  const gone = new Set(removed);
+  const lines = splitLines(current.content ?? '')
+    .filter((l) => byKey.has(lineKey(l)) || !gone.has(lineKey(l)))
+    .map((l) => byKey.get(lineKey(l)) ?? l);
   const have = new Set(lines.map(lineKey));
   for (const l of savedLines) if (!have.has(lineKey(l))) lines.push(l);
 
@@ -168,6 +176,41 @@ function resolvePlace(point: PointInput, c: LinkCandidates) {
     projectId: project.id,
     taskId: task && task.projectId === project.id ? task.id : null,
   };
+}
+
+/**
+ * Marks lines the person typed (named by each point's `typedLine`) as the
+ * same work as the point, so they take its project and share its timeline.
+ */
+function linkTyped(links: WorklogLink[], works: unknown, points: PointInput[]) {
+  const typed = sectionLines(works).filter((l) => !l.claude);
+  const linked: string[] = [];
+  for (const point of points) {
+    if (!point.typedLine || point.personal) continue;
+    const want = lineKey(point.typedLine);
+    const words = normalizeLine(point.typedLine).toLowerCase();
+    const line =
+      typed.find((l) => l.key === want) ??
+      typed.find((l) => l.text.toLowerCase().includes(words));
+    if (!line || line.isPrivate) continue;
+    const key = lineKey(point.text);
+    const target = links.find((l) => l.key === key);
+    links = links.map((l) =>
+      l.key === line.key
+        ? {
+            ...l,
+            sameAs: key,
+            companyId: target?.companyId ?? l.companyId,
+            projectId: target?.projectId ?? l.projectId,
+            taskId: target?.taskId ?? l.taskId,
+            confidence: 1,
+            source: target?.projectId ? 'user' : l.source,
+          }
+        : l,
+    );
+    linked.push(line.text);
+  }
+  return { links, linked };
 }
 
 /**
@@ -336,33 +379,9 @@ export async function logPoints(
     return place ? { ...l, ...place, confidence: 1, source: 'user' } : l;
   });
   // A line the person typed for the same work joins the point.
-  const typed = sectionLines(nextWorks).filter((l) => !l.claude);
-  const linkedTyped: string[] = [];
-  for (const point of points) {
-    if (!point.typedLine || point.personal) continue;
-    const want = lineKey(point.typedLine);
-    const words = normalizeLine(point.typedLine).toLowerCase();
-    const line =
-      typed.find((l) => l.key === want) ??
-      typed.find((l) => l.text.toLowerCase().includes(words));
-    if (!line || line.isPrivate) continue;
-    const key = lineKey(point.text);
-    const target = links.find((l) => l.key === key);
-    links = links.map((l) =>
-      l.key === line.key
-        ? {
-            ...l,
-            sameAs: key,
-            companyId: target?.companyId ?? l.companyId,
-            projectId: target?.projectId ?? l.projectId,
-            taskId: target?.taskId ?? l.taskId,
-            confidence: 1,
-            source: target?.projectId ? 'user' : l.source,
-          }
-        : l,
-    );
-    linkedTyped.push(line.text);
-  }
+  const typed = linkTyped(links, nextWorks, points);
+  links = typed.links;
+  const linkedTyped = typed.linked;
   await db.workLogs.update({ where: { id: saved.id }, data: { links } });
 
   const total = lines.length;
@@ -380,6 +399,192 @@ export async function logPoints(
       total > POINTS_PER_DAY_HINT && {
         hint: `This day now has ${total} points. Keep it to a few points per session: one per deliverable. Record rounds, versions and fixes as a note on the existing point (point + note) instead of a new point.`,
       }),
+  };
+}
+
+export type TidyPoint = PointInput & {
+  /** Today's points this one replaces: their keys or texts. */
+  merge: string[];
+};
+
+/**
+ * Rewrites a day's Claude section as fewer points. Every existing point must
+ * be merged into one of the new ones or dropped by name, so nothing goes
+ * missing by accident. A merged point's history moves to the new point, its
+ * words kept as a note, and lines the person typed that were linked to it
+ * follow too. The removed keys are remembered so an editor still holding
+ * the old lines cannot save them back.
+ */
+export async function tidyPoints(
+  user: SessionUser,
+  points: TidyPoint[],
+  drop: string[],
+  date: string,
+) {
+  const existing: WorkLogs | null = await db.workLogs.findFirst({
+    where: { userId: user.id, logType: 'dayLog', date },
+  });
+  const works: WorkLogPoints[] = Array.isArray(existing?.works)
+    ? (existing!.works as unknown as WorkLogPoints[])
+    : [];
+  const section = works.find((w) => w?.link_id === CLAUDE_SECTION_ID);
+  if (!existing || !section?.content)
+    throw new ToolError(`Nothing is logged by Claude on ${date}.`);
+
+  const old = splitLines(section.content).map((raw) => ({
+    raw,
+    key: lineKey(raw),
+    text: normalizeLine(raw),
+  }));
+  const find = (ref: string) =>
+    old.find((l) => l.key === ref.trim() || l.key === lineKey(ref));
+
+  const claimed = new Map<string, number>();
+  const unknown: string[] = [];
+  const claim = (ref: string, owner: number) => {
+    const line = find(ref);
+    if (!line) return unknown.push(ref);
+    if (claimed.has(line.key) && claimed.get(line.key) !== owner)
+      throw new ToolError(`"${line.text}" is merged into two points.`);
+    claimed.set(line.key, owner);
+  };
+  points.forEach((p, i) => p.merge.forEach((ref) => claim(ref, i)));
+  drop.forEach((ref) => claim(ref, -1));
+  if (unknown.length)
+    throw new ToolError(
+      `Not a point logged on ${date}: ${unknown.map((u) => `"${u}"`).join(', ')}.`,
+    );
+  const left = old.filter((l) => !claimed.has(l.key));
+  if (left.length)
+    throw new ToolError(
+      `Merge or drop every point. Not covered: ${left
+        .map((l) => `${l.key} "${l.text}"`)
+        .join('; ')}.`,
+    );
+
+  const at = new Date().toISOString();
+  const timeline = (existing.timeline ?? []) as PointEvent[];
+  const oldKeys = new Set(old.map((l) => l.key));
+  const newKeyOf = new Map<string, string | null>();
+  let events = timeline.filter((e) => !oldKeys.has(e.key));
+  const lines: string[] = [];
+  points.forEach((point, i) => {
+    const merged = old.filter((l) => claimed.get(l.key) === i);
+    const personal =
+      !!point.personal || merged.some((l) => PRIVATE_LINE.test(l.raw));
+    point.personal = personal;
+    const key = lineKey(point.text);
+    lines.push(formatPoint(point.text, point.status, personal));
+    for (const line of merged) {
+      newKeyOf.set(line.key, key);
+      const history = eventsFor(timeline, line.key);
+      const same = line.key === key;
+      events.push(
+        ...(history.length
+          ? history
+          : [
+              {
+                key: line.key,
+                at,
+                status: statusOf(line.raw),
+                by: 'claude' as const,
+              },
+            ]
+        ).map((e) => ({
+          ...e,
+          key,
+          // The old words say what happened, unless it is the same point.
+          ...(!same && !e.note && { note: line.text }),
+        })),
+      );
+    }
+    const last = eventsFor(events, key).at(-1);
+    if (last?.status !== point.status)
+      events.push({ key, at, status: point.status, by: 'claude' });
+  });
+  for (const ref of drop) {
+    const line = find(ref);
+    if (line) newKeyOf.set(line.key, null);
+  }
+  events = appendEvents([], events);
+
+  const nextWorks = works.map((w) =>
+    w?.link_id === CLAUDE_SECTION_ID ? { ...w, content: lines.join('\n') } : w,
+  );
+
+  // A new point is placed where its merged points were, or where the
+  // assistant says; lines typed for a merged point now follow the new one.
+  const existingLinks = (existing.links ?? []) as WorklogLink[];
+  const carried: WorklogLink[] = existingLinks
+    .filter((l) => !oldKeys.has(l.key))
+    .map((l) =>
+      l.sameAs && newKeyOf.has(l.sameAs)
+        ? { ...l, sameAs: newKeyOf.get(l.sameAs) ?? null }
+        : l,
+    );
+  points.forEach((point, i) => {
+    const key = lineKey(point.text);
+    const from = existingLinks.find(
+      (l) =>
+        claimed.get(l.key) === i && l.source !== 'none' && !isPersonalLink(l),
+    );
+    if (from && !point.personal)
+      carried.push({ ...from, key, text: normalizeLine(point.text) });
+  });
+  const candidates = await linkCandidates(user);
+  let links = await linkLines(worklogLines(nextWorks), carried, candidates);
+  for (const point of points) {
+    if (point.personal) continue;
+    const place = resolvePlace(point, candidates);
+    if (place)
+      links = links.map((l) =>
+        l.key === lineKey(point.text)
+          ? { ...l, ...place, confidence: 1, source: 'user' }
+          : l,
+      );
+  }
+  const typed = linkTyped(links, nextWorks, points);
+  links = typed.links;
+
+  const removed = Array.from(
+    new Set([
+      ...((existing.removedClaudeKeys ?? []) as string[]),
+      ...old
+        .map((l) => l.key)
+        .filter((k) => !points.some((p) => lineKey(p.text) === k)),
+    ]),
+  );
+  await db.workLogs.update({
+    where: { id: existing.id },
+    data: {
+      works: nextWorks,
+      timeline: events,
+      links,
+      removedClaudeKeys: removed,
+      updatedAt: new Date(),
+    },
+  });
+
+  return {
+    date,
+    before: old.length,
+    after: lines.length,
+    points: points.map((p) => {
+      const key = lineKey(p.text);
+      const link = links.find((l) => l.key === key);
+      return {
+        key,
+        text: normalizeLine(p.text),
+        status: p.status,
+        merged: old.filter((l) => newKeyOf.get(l.key) === key).length,
+        project: p.personal
+          ? PERSONAL_COMPANY.name
+          : (candidates.projects.find((c) => c.id === link?.projectId)?.name ??
+            null),
+      };
+    }),
+    ...(drop.length && { dropped: drop.length }),
+    ...(typed.linked.length && { linkedTyped: typed.linked }),
   };
 }
 

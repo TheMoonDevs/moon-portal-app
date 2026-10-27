@@ -47,6 +47,8 @@ export type WorkLogs = Loose<
     guidance?: number;
     /** What happened to each line and when; see lib/worklogs/timeline. */
     timeline?: PointEvent[];
+    /** Claude points tidied away, so an older editor copy cannot bring them back. */
+    removedClaudeKeys?: string[];
   }
 >;
 
