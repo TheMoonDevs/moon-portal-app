@@ -1,6 +1,6 @@
 'use client';
 
-import { Badge, useMediaQuery } from '@mui/material';
+import { Badge, Tooltip, useMediaQuery } from '@mui/material';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -77,16 +77,13 @@ const MOBILE_TAB_COUNT = 4;
 const isActivePath = (path: string | null, optionPath: string) =>
   path === optionPath || (optionPath !== '/' && !!path?.startsWith(optionPath));
 
-// Active links show the filled icon, the rest the outlined one.
 const NavIcon = ({
   option,
   unreadCount,
-  isActive,
   className,
 }: {
   option: NavOption;
   unreadCount: number;
-  isActive?: boolean;
   className?: string;
 }) => (
   <Badge
@@ -96,16 +93,14 @@ const NavIcon = ({
     invisible={!unreadCount}
     sx={{ '& .MuiBadge-badge': { fontSize: 9, height: 16, minWidth: 16 } }}
   >
-    <span
-      className={`${isActive ? 'material-icons' : 'material-icons-outlined'} ${className ?? ''}`}
-    >
+    <span className={`material-symbols-outlined ${className ?? ''}`}>
       {option.icon}
     </span>
   </Badge>
 );
 
-// A sidebar link: the icon sits in a pill that lights up when the link is
-// active, with its label underneath.
+// A sidebar link, styled like the admin console's nav: an icon on a quiet
+// row, a soft highlight and an edge marker when active, the name on hover.
 const SidebarLink = ({
   option,
   isActive,
@@ -117,35 +112,43 @@ const SidebarLink = ({
   unreadCount: number;
   onClick: () => void;
 }) => (
-  <button
-    onClick={onClick}
+  <Tooltip
     title={option.name}
-    aria-label={option.name}
-    aria-current={isActive ? 'page' : undefined}
-    className={`group flex w-full shrink-0 flex-col items-center gap-1 py-0.5 transition-colors ${
-      isActive ? 'text-white' : 'text-neutral-400 hover:text-white'
-    }`}
+    placement="right"
+    disableInteractive
+    slotProps={{
+      tooltip: {
+        sx: {
+          bgcolor: '#262626',
+          fontSize: 12,
+          fontWeight: 500,
+          px: 1.25,
+          py: 0.75,
+          borderRadius: 1.5,
+        },
+      },
+    }}
   >
-    <span
-      className={`flex h-8 w-11 items-center justify-center rounded-full transition-colors ${
-        isActive ? 'bg-white text-neutral-950' : 'group-hover:bg-white/10'
+    <button
+      onClick={onClick}
+      aria-label={option.name}
+      aria-current={isActive ? 'page' : undefined}
+      className={`relative flex size-10 shrink-0 items-center justify-center rounded-lg transition-colors ${
+        isActive
+          ? 'bg-white/[0.09] text-white'
+          : 'text-neutral-400 hover:bg-white/[0.05] hover:text-neutral-100'
       }`}
     >
+      {isActive && (
+        <span className="absolute inset-y-2 -left-3 w-0.5 rounded-full bg-white" />
+      )}
       <NavIcon
         option={option}
         unreadCount={unreadCount}
-        isActive={isActive}
         className="!text-[20px]"
       />
-    </span>
-    <span
-      className={`max-w-full truncate px-0.5 text-[10px] leading-none ${
-        isActive ? 'font-semibold' : 'font-medium'
-      }`}
-    >
-      {option.label ?? option.name}
-    </span>
-  </button>
+    </button>
+  </Tooltip>
 );
 
 export const Bottombar = ({
@@ -202,16 +205,16 @@ export const Bottombar = ({
 
   return (
     <>
-      {/* Desktop: a slim sidebar in sections, with Settings and Logout at
+      {/* Desktop: a slim icon rail in sections, with Settings and Logout at
           the foot. The links scroll when the window is short. */}
       <nav
-        className="bottombar fixed inset-y-0 left-0 z-10 hidden w-16 flex-col items-center border-r border-white/5 bg-neutral-950 py-3 md:flex"
+        className="bottombar fixed inset-y-0 left-0 z-10 hidden w-16 flex-col items-center border-r border-white/[0.07] bg-neutral-950 md:flex"
         id="home-bottombar"
       >
         <Link
           href={APP_ROUTES.home}
           title="Portal"
-          className="mb-3 shrink-0 rounded-xl transition-opacity hover:opacity-80"
+          className="flex h-16 w-full shrink-0 items-center justify-center border-b border-white/[0.07] transition-opacity hover:opacity-80"
         >
           <Image
             src="/brand/portal-logo.svg"
@@ -221,7 +224,7 @@ export const Bottombar = ({
             className="size-8"
           />
         </Link>
-        <div className="no-scrollbar flex min-h-0 w-full flex-1 flex-col items-center gap-2 overflow-y-auto">
+        <div className="no-scrollbar flex min-h-0 w-full flex-1 flex-col items-center gap-3 overflow-y-auto py-4">
           {SIDEBAR_GROUPS.map((group) => {
             const groupOptions = options.filter(
               (option) => option.group === group,
@@ -230,7 +233,7 @@ export const Bottombar = ({
             return (
               <div
                 key={group}
-                className="flex w-full flex-col items-center gap-1 before:mx-auto before:mb-1 before:h-px before:w-8 before:bg-white/10 first:before:hidden"
+                className="flex w-full flex-col items-center gap-1 before:mx-auto before:mb-2 before:h-px before:w-6 before:bg-white/[0.07] first:before:hidden"
               >
                 {groupOptions.map((option) => (
                   <SidebarLink
@@ -245,7 +248,7 @@ export const Bottombar = ({
             );
           })}
         </div>
-        <div className="flex w-full shrink-0 flex-col items-center gap-1 pt-1 before:mx-auto before:mb-1 before:h-px before:w-8 before:bg-white/10">
+        <div className="flex w-full shrink-0 flex-col items-center gap-1 border-t border-white/[0.07] py-3">
           {options
             .filter((option) => option.group === 'bottom')
             .map((option) => (
@@ -294,7 +297,6 @@ export const Bottombar = ({
                   <NavIcon
                     option={option}
                     unreadCount={unreadNotificationsCount}
-                    isActive={isActive}
                     className="!text-[20px]"
                   />
                   {option.name}
@@ -330,7 +332,6 @@ export const Bottombar = ({
               <NavIcon
                 option={option}
                 unreadCount={unreadNotificationsCount}
-                isActive={isActive}
                 className="!text-[22px]"
               />
               <span className="text-[10px] leading-none opacity-75">
@@ -347,7 +348,7 @@ export const Bottombar = ({
             isMoreActive || isMoreOpen ? 'bg-white text-black' : 'text-white'
           }`}
         >
-          <span className="material-icons-outlined !text-[22px]">
+          <span className="material-symbols-outlined !text-[22px]">
             {isMoreOpen ? 'close' : 'menu'}
           </span>
           <span className="text-[10px] leading-none opacity-75">More</span>
