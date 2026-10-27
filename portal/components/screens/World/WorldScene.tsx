@@ -25,17 +25,27 @@ import {
 
 import * as art from './art';
 import type { TownSpot } from './layout';
-import { BLOCK, layoutWorld, LOT, LOTS, route, seeded } from './layout';
+import {
+  BLOCK,
+  HALL_IN,
+  layoutWorld,
+  LOT,
+  LOTS,
+  PLOT,
+  plotSpot,
+  route,
+  seeded,
+} from './layout';
 
 /*
  * The world in plain three.js (no React renderer, whose JSX types clash with
  * MUI's), seen from above at an angle like a strategy game. Companies are
  * towns in their brand colours, joined by highways. A town grows square by
- * square: the town square, where the people stand with the town hall and
- * the leaderboards, then a square of four task buildings per four kinds of
+ * square: the town square, where everyone has a plot to stand on, with the
+ * town hall and the leaderboards, then a square of four task buildings per four kinds of
  * task in each project. Bots travel the roads (glowing blue while they do)
- * to the building they work at, and back to their owner when they are done
- * or need permission. Everything is drawn from simple shapes in art.ts, so
+ * to the building they work at, and back to their owner's plot when they
+ * are done or need permission. Everything is drawn from simple shapes in art.ts, so
  * there are no models to download.
  */
 
@@ -485,7 +495,7 @@ export const WorldScene = ({
         else if ((p.timer -= dt) <= 0) {
           p.timer = 2.5 + p.rand() * 5;
           const a = p.rand() * Math.PI * 2;
-          const r = p.rand() * 1.1;
+          const r = p.rand() * 0.5;
           p.goal.set(p.home.x + Math.cos(a) * r, 0, p.home.z + Math.sin(a) * r);
         }
         const dx = p.goal.x - g.position.x;
@@ -782,7 +792,7 @@ export const WorldScene = ({
     const sign = art.logoSign(town.name, brand.logo, brand);
     const flag = art.flagMaterial(town.name, brand.logo, brand);
     const hall = art.townHall(sign, flag, accent);
-    hall.group.position.set(-half + 9, 0, -half + 9);
+    hall.group.position.set(-half + HALL_IN, 0, -half + HALL_IN);
     hall.group.rotation.y = AZIMUTH;
     plaza.add(hall.group);
     s.anims.push(...hall.anims);
@@ -844,15 +854,27 @@ export const WorldScene = ({
       'pointer-events-none flex items-center gap-1.5 whitespace-nowrap rounded-full bg-white/95 py-0.5 pl-0.5 pr-2.5 text-xs font-bold text-neutral-900 shadow',
       `${badge(brand.logo, town.name, accent, 20)}${escape(town.name)} Town Hall`,
     );
-    hallLabel.obj.position.set(-half + 9, 11, -half + 9);
+    hallLabel.obj.position.set(-half + HALL_IN, 11, -half + HALL_IN);
     plaza.add(hallLabel.obj);
     s.labels.push({ obj: hallLabel.obj, kind: 'near' });
 
-    // People in the middle of the square, in the company's colours.
+    // Everyone on their own plot, in the company's colours.
     for (const person of w.people.filter((p) => p.townIds.includes(town.id))) {
       const key = `${town.id}:${person.id}`;
       const at = layout.people.get(key);
-      if (!at) continue;
+      const plot = layout.plots.get(key);
+      if (!at || !plot) continue;
+      const rim = person.isMe ? '#facc15' : art.tint(accent, 0.5);
+      art.strip(g, PLOT, PLOT, rim, plot.x, plot.z, 0.036);
+      art.strip(
+        g,
+        PLOT - 0.5,
+        PLOT - 0.5,
+        art.tint(person.isMe ? '#facc15' : accent, 0.88),
+        plot.x,
+        plot.z,
+        0.038,
+      );
       const figure = art.person(
         person.id,
         brand,
@@ -1047,11 +1069,13 @@ export const WorldScene = ({
       return { x: cell.x, z: cell.z, face: AZIMUTH };
     }
     const town = L.towns.get(bot.townId)!;
-    return { x: town.plaza.x - 6, z: town.plaza.z - 6, face: AZIMUTH };
+    return { ...town.yard, face: AZIMUTH };
   };
 
   const ownerHome = (bot: WorldBot) =>
     state.current!.layout!.people.get(`${bot.townId}:${bot.ownerId}`) ?? null;
+  const ownerPlot = (bot: WorldBot) =>
+    state.current!.layout!.plots.get(`${bot.townId}:${bot.ownerId}`) ?? null;
 
   /** A bot reached the end of its road. */
   const arrive = (b: BotEntity) => {
@@ -1103,19 +1127,14 @@ export const WorldScene = ({
       const accent = brandOf(worldTown).primary;
       const work = workGround(bot);
       const owner = ownerHome(bot);
+      const plot = ownerPlot(bot);
       let target: THREE.Vector3;
       let face = work.face;
-      if (goesToOwner(bot.state) && owner) {
-        const i = slot(`owner:${bot.townId}:${bot.ownerId}`);
-        // Just in front of them, left and right as you look, turned to
-        // you so you see it jump and wave.
-        const side = i % 2 ? -1 : 1;
-        const d = 0.8 + Math.floor(i / 2) * 1.2;
-        target = new THREE.Vector3(
-          owner.x + 1.1 / Math.SQRT2 + (side * d) / Math.SQRT2,
-          0,
-          owner.z + 1.1 / Math.SQRT2 - (side * d) / Math.SQRT2,
-        );
+      if (goesToOwner(bot.state) && plot) {
+        // On their owner's plot, each on its own spot, turned to you so you
+        // see it jump and wave.
+        const at = plotSpot(plot, slot(`owner:${bot.townId}:${bot.ownerId}`));
+        target = new THREE.Vector3(at.x, 0, at.z);
         face = AZIMUTH;
       } else {
         const i = slot(`work:${bot.siteId ?? bot.projectId ?? bot.townId}`);
