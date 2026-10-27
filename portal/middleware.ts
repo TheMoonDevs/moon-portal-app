@@ -20,10 +20,15 @@ const PUBLIC_PAGES = [
 // `/meet` itself, where people set up their link, is not.
 const PUBLIC_PREFIXES = ['/meet/'];
 
+// The hiring team's preview of a task page sits under `/task` but needs a login.
+const PRIVATE_PREFIXES = ['/task/preview/'];
+
 const isPublicPage = (pathname: string) =>
-  PUBLIC_PAGES.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`),
-  ) || PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+  (!PRIVATE_PREFIXES.some((prefix) => pathname.startsWith(prefix)) &&
+    PUBLIC_PAGES.some(
+      (route) => pathname === route || pathname.startsWith(`${route}/`),
+    )) ||
+  PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 
 export default async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

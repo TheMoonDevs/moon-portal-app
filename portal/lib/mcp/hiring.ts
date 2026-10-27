@@ -90,6 +90,7 @@ const links = (origin: string) => ({
   hiringTab: `${origin}/admin?tab=hiring`,
   applicant: (id: string) => `${origin}/admin?tab=hiring&application=${id}`,
   apply: (slug: string) => `${origin}/apply/${slug}`,
+  taskPreview: (openingId: string) => `${origin}/task/preview/${openingId}`,
 });
 
 /* -------------------------------- lookups -------------------------------- */
@@ -552,6 +553,9 @@ export const HIRING_TOOLS: Tool[] = [
         questions: (opening.fields ?? []).map(fieldView),
         hiringLead: await leadName(opening.hiringLeadId),
         task: taskView(opening.task),
+        taskPreviewUrl: opening.task
+          ? links(context.origin).taskPreview(opening.id)
+          : null,
       };
     },
   },
@@ -713,6 +717,9 @@ export const HIRING_TOOLS: Tool[] = [
           questions: (updated.fields ?? []).map(fieldView),
           hiringLead: await leadName(updated.hiringLeadId),
           task: taskView(updated.task),
+          taskPreviewUrl: updated.task
+            ? links(context.origin).taskPreview(updated.id)
+            : null,
         },
       };
     },
