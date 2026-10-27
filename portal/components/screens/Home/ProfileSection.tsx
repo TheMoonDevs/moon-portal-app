@@ -13,7 +13,11 @@ export const ProfileSection = ({ user }: { user: User }) => {
     <div className="flex w-full flex-col items-center justify-between px-2 pt-4 md:static md:items-center">
       <div className="flex w-full items-center gap-2 px-2">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo/logo.png" alt="" className="size-6 object-contain" />
+        <img
+          src="/brand/portal-logo-ink.svg"
+          alt=""
+          className="size-6 object-contain"
+        />
         <span className="text-xs font-bold tracking-[0.3em] text-neutral-900">
           PORTAL
         </span>

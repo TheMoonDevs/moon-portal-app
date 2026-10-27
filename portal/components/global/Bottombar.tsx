@@ -114,8 +114,8 @@ export const Bottombar = ({
       >
         <Link href={APP_ROUTES.home} className="mb-2 mt-1 shrink-0">
           <Image
-            src="/logo/logo_white.png"
-            alt="Moon Portal Logo"
+            src="/brand/portal-logo.svg"
+            alt="Portal"
             width={64}
             height={64}
             className="size-9 rounded"

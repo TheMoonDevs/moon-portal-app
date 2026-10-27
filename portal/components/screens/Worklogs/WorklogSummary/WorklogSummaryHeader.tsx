@@ -288,7 +288,7 @@ export const WorklogSummaryHeader = ({
             PORTAL
           </h1>
           <Image
-            src="/logo/logo.png"
+            src="/brand/portal-logo-ink.svg"
             width={30}
             height={30}
             alt="logo"

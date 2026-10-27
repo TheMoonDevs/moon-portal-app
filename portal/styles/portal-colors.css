@@ -1,0 +1,40 @@
+/* Portal: colour tokens (from the Portal brand kit). Dark is the brand's home; light is for light pages.
+ * Use the role tokens (--portal-bg, --portal-text, …) in UI, and the palette tokens only where a
+ * role does not fit. Dark is the default; put data-theme="light" on <html> (or a section) for light. */
+:root {
+  /* palette */
+  --portal-moon: #f2f0e8; /* the mark and the name on dark; primary text on dark */
+  --portal-ink: #0b0c10; /* the mark and the name on light; primary text on light */
+  --portal-black: #000000; /* the dark ground */
+  --portal-space: #0a0a0b; /* raised dark surfaces (header); favicon tile, app icon */
+  --portal-dusk: #151517; /* cards and panels on dark */
+  --portal-slate: #2c2d31; /* hairlines and borders on dark */
+  --portal-silver: #a6a8ae; /* secondary text on dark (never on light) */
+  --portal-paper: #ffffff; /* the light ground */
+  --portal-mist: #f4f4f6; /* cards and panels on light */
+  --portal-line: #e6e6e8; /* hairlines and borders on light */
+  --portal-graphite: #5c5e66; /* secondary text on light */
+}
+
+/* roles: dark (default) */
+:root,
+[data-theme='dark'] {
+  --portal-bg: var(--portal-black);
+  --portal-surface: var(--portal-space);
+  --portal-panel: var(--portal-dusk);
+  --portal-border: var(--portal-slate);
+  --portal-text: var(--portal-moon);
+  --portal-text-muted: var(--portal-silver);
+  --portal-logo: var(--portal-moon); /* portal-logo.svg / portal-lockup.svg */
+}
+
+/* roles: light */
+[data-theme='light'] {
+  --portal-bg: var(--portal-paper);
+  --portal-surface: var(--portal-paper);
+  --portal-panel: var(--portal-mist);
+  --portal-border: var(--portal-line);
+  --portal-text: var(--portal-ink);
+  --portal-text-muted: var(--portal-graphite);
+  --portal-logo: var(--portal-ink); /* portal-logo-ink.svg / portal-lockup-ink.svg */
+}

@@ -78,7 +78,25 @@ const config: Config = {
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
       },
+      fontFamily: {
+        sans: ['var(--portal-font)', 'Montserrat', 'system-ui', 'sans-serif'],
+      },
       colors: {
+        // Portal brand palette (styles/portal-colors.css). Plain hex, so the
+        // color-variables plugin below writes the same --portal-* values.
+        portal: {
+          moon: '#f2f0e8',
+          ink: '#0b0c10',
+          black: '#000000',
+          space: '#0a0a0b',
+          dusk: '#151517',
+          slate: '#2c2d31',
+          silver: '#a6a8ae',
+          paper: '#ffffff',
+          mist: '#f4f4f6',
+          line: '#e6e6e8',
+          graphite: '#5c5e66',
+        },
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         card: {

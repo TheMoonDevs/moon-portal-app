@@ -482,7 +482,7 @@ export const ApplyPage = ({ opening }: { opening: PublicOpening }) => {
 
         <footer className="flex items-center gap-2 text-xs text-neutral-600">
           <img
-            src="/logo/logo_white.png"
+            src="/brand/portal-logo.svg"
             alt=""
             className="size-4 opacity-60"
           />
