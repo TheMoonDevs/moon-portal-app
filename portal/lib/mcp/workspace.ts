@@ -2,8 +2,19 @@ import { db } from '@/lib/mongodb/db-client';
 import type { SessionUser } from '@/lib/permissions/server';
 import { syncTaskPoints } from '@/lib/progress/server';
 import { isOnTeam } from '@/lib/worklogs/linker';
+import { syncGoalSchedules } from '@/lib/workspace/goalSchedules';
 import { moveProject } from '@/lib/workspace/moveProject';
-import { PERIOD_LABELS, runsOn, sanitizeGoals } from '@/lib/workspace/projects';
+import {
+  PERIOD_LABELS,
+  runsOn,
+  sanitizeGoals,
+  toDay,
+} from '@/lib/workspace/projects';
+import {
+  completeScheduleRun,
+  dayMentioned,
+  matchSchedule,
+} from '@/lib/workspace/scheduleRuns';
 import {
   asDay,
   asEffort,
@@ -331,7 +342,11 @@ const goalView = (g: ProjectGoal) => ({
   }),
 });
 
-async function saveGoals(project: Project, goals: unknown[]) {
+async function saveGoals(
+  user: SessionUser,
+  project: Project,
+  goals: unknown[],
+) {
   const created = project.createdAt
     ? new Date(project.createdAt as string).toISOString().slice(0, 10)
     : null;
@@ -342,6 +357,8 @@ async function saveGoals(project: Project, goals: unknown[]) {
       updatedAt: new Date().toISOString(),
     },
   });
+  // New goals set up their scheduled tasks; changed ones update them.
+  await syncGoalSchedules(updated, project.goals ?? [], user.id);
   return updated;
 }
 
@@ -529,7 +546,7 @@ export const WORKSPACE_TOOLS: Tool[] = [
     name: 'set_goal',
     title: 'Set a goal',
     description:
-      'Adds a goal to a project, or changes one (match it by id or title). A goal is a target per day, week or month, e.g. "Release lyrics videos", 3 per week. Every done task linked to the goal counts in the period of the day it was scheduled for, so work done early for next week fills next week. A period that ends short counts as missed. Parts split a target, e.g. 9 shorts as 3 per channel.',
+      'Adds a goal to a project, or changes one (match it by id or title). A goal is a target per day, week or month, e.g. "Release lyrics videos", 3 per week. Every done task linked to the goal counts in the period of the day it was scheduled for, so work done early for next week fills next week. A period that ends short counts as missed. Parts split a target, e.g. 9 shorts as 3 per channel. A new goal also sets up a scheduled task that makes its tasks at the start of each period (one per part); change its days with update_schedule.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -589,6 +606,7 @@ export const WORKSPACE_TOOLS: Tool[] = [
         parts,
       };
       const updated = await saveGoals(
+        user,
         project,
         existing
           ? goals.map((g) => (g.id === existing.id ? next : g))
@@ -623,6 +641,7 @@ export const WORKSPACE_TOOLS: Tool[] = [
       const { goalId } = resolveGoal(project, args?.goal);
       const goal = project.goals?.find((g) => g.id === goalId);
       await saveGoals(
+        user,
         project,
         (project.goals ?? []).filter((g) => g.id !== goalId),
       );
@@ -753,9 +772,14 @@ const STATUS_FOR_POINT: Record<string, TASK_STATUS> = {
  * when the project has it; otherwise, with a project named, the task is
  * created (titled by the point when only a goal was given). A done point
  * finishes its task when `completeTask` is set, and always finishes a task
- * it just created.
+ * it just created. A title matching one of the project's scheduled tasks
+ * finishes that schedule's run for `forDate`, a day the text names, or `day`.
  */
-export async function taskForPoint(user: SessionUser, point: PointTask) {
+export async function taskForPoint(
+  user: SessionUser,
+  point: PointTask,
+  day: string = toDay(),
+) {
   if (!point.task && !point.goal) return null;
   if (!point.project) {
     if (!point.task) throw new ToolError('Name the project the goal is in.');
@@ -778,6 +802,26 @@ export async function taskForPoint(user: SessionUser, point: PointTask) {
       `You are not on the ${project.name} team, so work cannot be logged to it. A lead can add you in the project's settings.`,
     );
   const title = point.task?.trim() || point.text;
+  // Work on a scheduled task counts for one of its runs, not a new task.
+  const schedule = matchSchedule(
+    title,
+    await db.taskSchedule.findMany({
+      where: { projectId: project.id, active: true },
+    }),
+    project.id,
+  );
+  if (schedule) {
+    // Not done yet: the line is linked by words, to an open run if any.
+    if (point.status !== 'done') return null;
+    const when = point.forDate ?? dayMentioned(point.text, day);
+    const run = await completeScheduleRun(
+      schedule,
+      when ?? day,
+      !!when,
+      user.id,
+    );
+    return run ? { task: run, created: false, completed: true, project } : null;
+  }
   const tasks: Task[] = await db.task.findMany({
     where: {
       projectId: project.id,

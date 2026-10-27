@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 
 import { db } from '@/lib/mongodb/db-client';
 import { hasPermission } from '@/lib/permissions/matching';
+import { syncGoalSchedules } from '@/lib/workspace/goalSchedules';
 import { sanitizeGoals } from '@/lib/workspace/projects';
 import { withProjectStats } from '@/lib/workspace/projectStats';
 import { runDueSchedules } from '@/lib/workspace/schedules';
@@ -103,5 +104,6 @@ export async function POST(request: Request) {
       updatedAt: now,
     },
   });
+  await syncGoalSchedules(project, [], user.id);
   return ok({ project }, { status: 201 });
 }

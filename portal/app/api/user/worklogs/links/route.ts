@@ -11,6 +11,8 @@ import {
   sectionLines,
   trackLines,
 } from '@/lib/worklogs/timeline';
+import { toDay } from '@/lib/workspace/projects';
+import { settleScheduledLines } from '@/lib/workspace/scheduleRuns';
 import type { WorklogLink, WorkLogs } from '@/models/worklogs';
 
 export const dynamic = 'force-dynamic';
@@ -49,10 +51,13 @@ export async function POST(request: Request) {
 
   const candidates = await linkCandidates(user);
   const existing = (worklog.links ?? []) as WorklogLink[];
-  const links = await linkLines(
-    worklogLines(worklog.works),
-    existing,
-    candidates,
+  // Done lines about a scheduled task finish it for their day.
+  const links = await settleScheduledLines(
+    user.id,
+    worklog.works,
+    await linkLines(worklogLines(worklog.works), existing, candidates),
+    candidates.projects.map((p) => p.id),
+    /^\d{4}-\d{2}-\d{2}$/.test(worklog.date ?? '') ? worklog.date! : toDay(),
   );
   const events = trackLines(worklog.works, worklog.timeline as PointEvent[]);
   const timeline = appendEvents(worklog.timeline as PointEvent[], events);
