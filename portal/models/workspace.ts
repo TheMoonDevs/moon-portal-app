@@ -3,6 +3,7 @@ import {
   type BaseModel,
   createCrudSchemas,
   type DateValue,
+  type JsonObject,
   type Loose,
   type Nullable,
 } from './shared/base';
@@ -261,6 +262,30 @@ export type Plan = Loose<
   }
 >;
 
+export enum PROJECT_PAGE_KIND {
+  /** The project's one objective: why it exists and what done looks like. */
+  OBJECTIVE = 'OBJECTIVE',
+  /** One of many idea drafts. */
+  IDEA = 'IDEA',
+}
+
+/**
+ * A rich-text page of a project (its objective or an idea draft). `content`
+ * is the editor's document (Tiptap JSON).
+ */
+export type ProjectPage = Loose<
+  BaseModel & {
+    companyId: string;
+    projectId: string;
+    kind: PROJECT_PAGE_KIND;
+    title: string;
+    emoji?: Nullable<string>;
+    content?: Nullable<JsonObject>;
+    createdById: string;
+    updatedById?: Nullable<string>;
+  }
+>;
+
 export const companySchemas = createCrudSchemas<Company>();
 export const companyRoleSchemas = createCrudSchemas<CompanyRole>();
 export const companyMemberSchemas = createCrudSchemas<CompanyMember>();
@@ -269,3 +294,4 @@ export const taskSchemas = createCrudSchemas<Task>();
 export const taskScheduleSchemas = createCrudSchemas<TaskSchedule>();
 export const projectResultSchemas = createCrudSchemas<ProjectResult>();
 export const planSchemas = createCrudSchemas<Plan>();
+export const projectPageSchemas = createCrudSchemas<ProjectPage>();

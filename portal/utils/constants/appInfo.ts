@@ -9,8 +9,10 @@ export enum APP_ROUTES {
   userWorklogs = '/user/worklogs',
   world = '/world',
   plans = '/plans',
+  projects = '/projects',
   meet = '/meet',
-  userWorklogSummary = '/user/worklogs/summary',
+  /** A person's page: /user for your own, /user/<id> for someone's. */
+  user = '/user',
 }
 
 export enum LOCAL_STORAGE {

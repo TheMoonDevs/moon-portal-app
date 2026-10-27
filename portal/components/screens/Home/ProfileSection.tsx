@@ -50,7 +50,16 @@ export const ProfileSection = ({ user }: { user: User }) => {
         </Link>
         <div className="min-w-0 text-left">
           <p className="text-md font-bold text-black">Hello, </p>
-          <h4 className="text-xl text-neutral-900">{user?.name}</h4>
+          <Link
+            href={APP_ROUTES.user}
+            title="Your page: work, plans and calendar"
+            className="group inline-flex items-center gap-1 text-xl text-neutral-900 hover:text-neutral-600"
+          >
+            {user?.name}
+            <span className="material-symbols-outlined !text-base text-neutral-400 transition-transform group-hover:translate-x-0.5">
+              arrow_forward
+            </span>
+          </Link>
           {(user?.username || user?.positionTitle) && (
             <p className="text-xs text-neutral-500">
               {[user.username && `@${user.username}`, user.positionTitle]

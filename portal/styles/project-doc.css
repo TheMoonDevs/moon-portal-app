@@ -1,0 +1,177 @@
+/* Notion-like pages of a project (Objective, Ideas). Dark, like Plans. */
+
+.project-doc {
+  color: #e5e5e5;
+  font-size: 15px;
+  line-height: 1.7;
+  caret-color: #fff;
+}
+
+.project-doc:focus {
+  outline: none;
+}
+
+.project-doc > * + * {
+  margin-top: 0.35em;
+}
+
+.project-doc h1,
+.project-doc h2,
+.project-doc h3 {
+  color: #fff;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+.project-doc h1 {
+  font-size: 1.75em;
+  margin-top: 1.1em;
+}
+
+.project-doc h2 {
+  font-size: 1.4em;
+  margin-top: 1em;
+}
+
+.project-doc h3 {
+  font-size: 1.15em;
+  margin-top: 0.9em;
+}
+
+.project-doc ul,
+.project-doc ol {
+  padding-left: 1.5em;
+}
+
+.project-doc ul {
+  list-style: disc;
+}
+
+.project-doc ol {
+  list-style: decimal;
+}
+
+.project-doc li::marker {
+  color: #737373;
+}
+
+.project-doc li > p {
+  margin: 0;
+}
+
+.project-doc ul[data-type='taskList'] {
+  list-style: none;
+  padding-left: 0.1em;
+}
+
+.project-doc ul[data-type='taskList'] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6em;
+}
+
+.project-doc ul[data-type='taskList'] li > label {
+  margin-top: 0.3em;
+  user-select: none;
+}
+
+.project-doc ul[data-type='taskList'] li > div {
+  flex: 1;
+}
+
+.project-doc ul[data-type='taskList'] input[type='checkbox'] {
+  appearance: none;
+  display: grid;
+  place-content: center;
+  width: 1.05em;
+  height: 1.05em;
+  border: 1.5px solid #525252;
+  border-radius: 0.3em;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+
+.project-doc ul[data-type='taskList'] input[type='checkbox']:checked {
+  background: #10b981;
+  border-color: #10b981;
+}
+
+.project-doc ul[data-type='taskList'] input[type='checkbox']:checked::after {
+  content: '';
+  width: 0.3em;
+  height: 0.55em;
+  border: solid #0a0a0a;
+  border-width: 0 2px 2px 0;
+  transform: translateY(-0.05em) rotate(45deg);
+}
+
+.project-doc li[data-checked='true'] > div {
+  color: #737373;
+  text-decoration: line-through;
+}
+
+.project-doc blockquote {
+  border-left: 3px solid #525252;
+  padding-left: 1em;
+  color: #d4d4d4;
+}
+
+.project-doc code {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  color: #fda4af;
+  font-size: 0.88em;
+  padding: 0.15em 0.35em;
+}
+
+.project-doc pre {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 10px;
+  font-size: 0.88em;
+  padding: 0.9em 1.1em;
+  overflow-x: auto;
+}
+
+.project-doc pre code {
+  background: none;
+  color: #e5e5e5;
+  padding: 0;
+}
+
+.project-doc hr {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin: 1.4em 0;
+}
+
+.project-doc a {
+  color: #7dd3fc;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.project-doc mark {
+  background: rgba(250, 204, 21, 0.28);
+  color: inherit;
+  border-radius: 3px;
+  padding: 0 0.1em;
+}
+
+/* Placeholders: the empty page, and the line being written on. */
+.project-doc .is-empty::before {
+  content: attr(data-placeholder);
+  color: #525252;
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.project-doc .ProseMirror-selectednode {
+  outline: 2px solid rgba(125, 211, 252, 0.4);
+  border-radius: 4px;
+}

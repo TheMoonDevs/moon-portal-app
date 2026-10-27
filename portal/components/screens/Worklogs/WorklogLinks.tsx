@@ -6,6 +6,13 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import type { LinkCandidates } from '@/lib/worklogs/linker';
 import { isPersonalLink, PERSONAL_COMPANY } from '@/lib/worklogs/personal';
+import type { PointEvent } from '@/lib/worklogs/timeline';
+import {
+  eventsFor,
+  formatSpan,
+  POINT_STATUSES,
+  pointSpan,
+} from '@/lib/worklogs/timeline';
 import type { WorklogLink } from '@/models/worklogs';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
@@ -92,6 +99,88 @@ const LinePicker = ({
   );
 };
 
+const timeOf = (iso: string) =>
+  new Date(iso).toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+
+/** A point's events, its own and those of the point it is the same as. */
+const pointEvents = (link: WorklogLink, timeline: PointEvent[]) =>
+  [
+    ...eventsFor(timeline, link.key),
+    ...(link.sameAs ? eventsFor(timeline, link.sameAs) : []),
+  ].sort((a, b) => a.at.localeCompare(b.at));
+
+/** How long a point has taken, and what happened when. */
+const PointTimeline = ({ events }: { events: PointEvent[] }) => {
+  const [open, setOpen] = useState(false);
+  const span = pointSpan(events);
+  if (!span) return null;
+  const summary = span.finishedAt
+    ? `took ${formatSpan(span.startedAt, span.finishedAt)}`
+    : `${formatSpan(span.startedAt, new Date().toISOString())} so far`;
+  return (
+    <div className="flex flex-col gap-1">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1 self-start text-[11px] text-neutral-400 hover:text-neutral-600"
+      >
+        <span className="material-symbols-outlined !text-xs">schedule</span>
+        {summary} · {span.updates} {span.updates === 1 ? 'update' : 'updates'}
+      </button>
+      {open && (
+        <ol className="ml-1 flex flex-col gap-0.5 border-l border-neutral-200 pl-2">
+          {events.map((e, i) => (
+            <li
+              key={`${e.key}${e.at}${i}`}
+              className="text-[11px] text-neutral-500"
+            >
+              <span className="text-neutral-400">{timeOf(e.at)}</span>{' '}
+              {e.status ? `${POINT_STATUSES[e.status].emoji} ` : ''}
+              {e.note ??
+                (i === 0
+                  ? 'Started'
+                  : e.status
+                    ? POINT_STATUSES[e.status].label
+                    : 'Updated')}
+              {e.by === 'claude' ? ' · Claude' : ''}
+            </li>
+          ))}
+        </ol>
+      )}
+    </div>
+  );
+};
+
+/** Links a line the person typed to one of their assistant's points. */
+const SameAsPicker = ({
+  link,
+  points,
+  onPick,
+}: {
+  link: WorklogLink;
+  points: WorklogLink[];
+  onPick: (sameAs: string | null) => void;
+}) => (
+  <select
+    aria-label="Same work as a Claude point"
+    value={link.sameAs ?? ''}
+    onChange={(e) => onPick(e.target.value || null)}
+    className="h-7 max-w-[200px] rounded-md border border-neutral-200 bg-white px-1.5 text-xs text-neutral-700"
+  >
+    <option value="">Not a Claude point</option>
+    {points.map((p) => (
+      <option key={p.key} value={p.key}>
+        Same as: {p.text}
+      </option>
+    ))}
+  </select>
+);
+
 /**
  * Where today's lines went: one chip per project, and a short question for
  * any line the linker could not place. Lines are linked on the server a few
@@ -110,15 +199,25 @@ export const WorklogLinks = ({
     projects: [],
     tasks: [],
   });
+  const [timeline, setTimeline] = useState<PointEvent[]>([]);
+  const [claudeKeys, setClaudeKeys] = useState<string[]>([]);
   const [open, setOpen] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout>>();
+  const loadedFor = useRef<string | null>(null);
+  const latestRequest = useRef(0);
 
   const relink = useCallback(async () => {
+    const request = ++latestRequest.current;
     try {
       const res = await PortalSdk.postData('/api/user/worklogs/links', {
         worklogId,
       });
+      // A newer relink (or another day) has replaced this one.
+      if (request !== latestRequest.current) return;
+      loadedFor.current = worklogId;
       setLinks(res?.data?.links ?? []);
+      setTimeline(res?.data?.timeline ?? []);
+      setClaudeKeys(res?.data?.claudeKeys ?? []);
       setCandidates({
         projects: res?.data?.projects ?? [],
         tasks: res?.data?.tasks ?? [],
@@ -130,9 +229,12 @@ export const WorklogLinks = ({
 
   useEffect(() => {
     clearTimeout(timer.current);
-    timer.current = setTimeout(relink, LINK_DELAY_MS);
+    // A newly opened day shows its links at once; after that, wait for
+    // typing to settle.
+    const delay = loadedFor.current === worklogId ? LINK_DELAY_MS : 0;
+    timer.current = setTimeout(relink, delay);
     return () => clearTimeout(timer.current);
-  }, [relink, version]);
+  }, [relink, version, worklogId]);
 
   const pick = async (
     link: WorklogLink,
@@ -166,6 +268,88 @@ export const WorklogLinks = ({
       setLinks(before);
       toast.error('Could not save that. Try again.');
     }
+  };
+
+  const linkSameAs = async (link: WorklogLink, sameAs: string | null) => {
+    const before = links;
+    const target = links.find((l) => l.key === sameAs);
+    setLinks((all) =>
+      all.map((l) =>
+        l.key === link.key
+          ? {
+              ...l,
+              sameAs,
+              ...(target &&
+                target.source !== 'none' && {
+                  projectId: target.projectId,
+                  companyId: target.companyId,
+                  taskId: target.taskId,
+                  source: 'user' as const,
+                  confidence: 1,
+                }),
+            }
+          : l,
+      ),
+    );
+    try {
+      await PortalSdk.patchData('/api/user/worklogs/links', {
+        worklogId,
+        key: link.key,
+        sameAs,
+      });
+    } catch {
+      setLinks(before);
+      toast.error('Could not link that. Try again.');
+    }
+  };
+
+  const claudePoints = links.filter(
+    (l) => claudeKeys.includes(l.key) && !isPersonalLink(l),
+  );
+
+  /** One line: its words, how long it has taken, and where it goes. */
+  const lineRow = (link: WorklogLink) => {
+    const isClaude = claudeKeys.includes(link.key);
+    const same = link.sameAs
+      ? links.find((l) => l.key === link.sameAs)
+      : undefined;
+    return (
+      <li
+        key={link.key}
+        className="flex flex-wrap items-start justify-between gap-2 text-xs"
+      >
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <span className="truncate text-neutral-600">
+            {isClaude && (
+              <span className="material-symbols-outlined mr-1 align-middle !text-xs text-neutral-400">
+                smart_toy
+              </span>
+            )}
+            {link.text}
+          </span>
+          {same && (
+            <span className="truncate text-[11px] text-neutral-400">
+              Same as Claude point: {same.text}
+            </span>
+          )}
+          <PointTimeline events={pointEvents(link, timeline)} />
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5">
+          {!isClaude && claudePoints.length > 0 && (
+            <SameAsPicker
+              link={link}
+              points={claudePoints}
+              onPick={(sameAs) => linkSameAs(link, sameAs)}
+            />
+          )}
+          <LinePicker
+            link={link}
+            candidates={candidates}
+            onPick={(p, t) => pick(link, p, t)}
+          />
+        </div>
+      </li>
+    );
   };
 
   const personal = links.filter(isPersonalLink);
@@ -245,21 +429,7 @@ export const WorklogLinks = ({
 
       {openGroup && (
         <ul className="flex flex-col gap-1.5 rounded-lg bg-neutral-50 p-2">
-          {openGroup.lines.map((link) => (
-            <li
-              key={link.key}
-              className="flex flex-wrap items-center justify-between gap-2 text-xs"
-            >
-              <span className="min-w-0 flex-1 truncate text-neutral-600">
-                {link.text}
-              </span>
-              <LinePicker
-                link={link}
-                candidates={candidates}
-                onPick={(p, t) => pick(link, p, t)}
-              />
-            </li>
-          ))}
+          {openGroup.lines.map(lineRow)}
         </ul>
       )}
 
@@ -268,21 +438,7 @@ export const WorklogLinks = ({
           <p className="text-xs font-medium text-amber-800">
             Which project {unplaced.length === 1 ? 'is this' : 'are these'} for?
           </p>
-          {unplaced.map((link) => (
-            <div
-              key={link.key}
-              className="flex flex-wrap items-center justify-between gap-2 text-xs"
-            >
-              <span className="min-w-0 flex-1 truncate text-neutral-700">
-                {link.text}
-              </span>
-              <LinePicker
-                link={link}
-                candidates={candidates}
-                onPick={(p, t) => pick(link, p, t)}
-              />
-            </div>
-          ))}
+          <ul className="flex flex-col gap-1.5">{unplaced.map(lineRow)}</ul>
         </div>
       )}
     </div>

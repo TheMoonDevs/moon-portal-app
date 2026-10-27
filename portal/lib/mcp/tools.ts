@@ -25,8 +25,15 @@ import { HIRING_TOOLS } from './hiring';
 import { PLAN_TOOLS } from './plans';
 import { SCHEDULE_TOOLS } from './schedules';
 import { companiesWith, type Tool, ToolError } from './shared';
-import type { PointInput, PointStatus } from './worklog';
-import { claudeLines, logPoints, POINT_STATUSES, todayFor } from './worklog';
+import type { PointInput, PointStatus, TidyPoint } from './worklog';
+import {
+  claudeLines,
+  logPoints,
+  POINT_STATUSES,
+  tidyPoints,
+  todayFor,
+  typedLines,
+} from './worklog';
 import {
   createTask,
   describeTask,
@@ -85,6 +92,7 @@ export const TOOLS: Tool[] = [
           projects: [],
           myTasks: [],
           loggedToday: await claudeLines(user.id, today),
+          typedToday: await typedLines(user.id, today),
         };
 
       await runDueSchedules({ companyId: { in: companyIds } });
@@ -169,13 +177,14 @@ export const TOOLS: Tool[] = [
           .filter((t) => byId.has(t.projectId))
           .map((t) => taskView(t, byId)),
         loggedToday: await claudeLines(user.id, today),
+        typedToday: await typedLines(user.id, today),
       };
     },
   },
   {
     name: 'log_work',
     title: 'Log work points',
-    description: `Writes work points into the "Claude" section of the person's worklog for the day, so they can follow progress in the portal. Log a point when you start a piece of work (doing) and log it again with the same text when it ends (done, not_done or blocked); same text updates the line instead of adding another. Use waiting when you need the person's permission or input. Keep each point one short line about the outcome, in plain words, never secrets or credentials. Name the project (and task) when you know it; otherwise the portal links it. Work can only be logged to projects the person leads or is on the team of (onTeam in get_context). When the project has no task for the work yet, name the task (or the goal it counts towards) and the portal creates it, already done for a done point; set completeTask to finish an existing task too. Work done early for a later week: set forDate to the day it was scheduled for, so it counts towards that week's goal (the line is still logged today). Set personal for the person's own private work (not for any company): only they will ever see it.`,
+    description: `Writes work points into the "Claude" section of the person's worklog for the day, so they can follow progress in the portal. Keep it to 2-3 points per session, one per deliverable the person would name in a standup (e.g. "Lyric video for the new song", "Thumbnails and YouTube pack for it"). Never a new point for a revision, version, round, fix or sub-step: update the existing point instead, naming it with point (its key from loggedToday, or its text) and saying what happened in note ("v6 rendered, 3 notes fixed"); every update goes on the point's timeline, which shows how long it took from start to finish. Log a point when you start it (doing), add notes as it moves, and end it with done, not_done or blocked; same text also updates the line instead of adding another. Use waiting when you need the person's permission or input. Keep each point one short line about the outcome, in plain words, never secrets or credentials. Name the project (and task) when you know it; otherwise the portal links it. When the person already typed a line for the same work (typedToday in get_context), set typedLine to its text so the two are linked as one point. Work can only be logged to projects the person leads or is on the team of (onTeam in get_context). When the project has no task for the work yet, name the task (or the goal it counts towards) and the portal creates it, already done for a done point; set completeTask to finish an existing task too. Work done early for a later week: set forDate to the day it was scheduled for, so it counts towards that week's goal (the line is still logged today). Set personal for the person's own private work (not for any company): only they will ever see it.`,
     inputSchema: {
       type: 'object',
       properties: {
@@ -188,7 +197,23 @@ export const TOOLS: Tool[] = [
             properties: {
               text: {
                 type: 'string',
-                description: 'One line, e.g. "Fix login redirect on Safari".',
+                description:
+                  'One line naming the deliverable, e.g. "Fix login redirect on Safari". Can be left out when point names an existing one.',
+              },
+              point: {
+                type: 'string',
+                description:
+                  'An existing point to update: its key (loggedToday) or text. Keeps its words; use note for what happened.',
+              },
+              note: {
+                type: 'string',
+                description:
+                  'What just happened, for the point\'s timeline, e.g. "v6 rendered" (optional).',
+              },
+              typedLine: {
+                type: 'string',
+                description:
+                  'Text of a line the person typed for the same work (typedToday), to link it to this point (optional).',
               },
               status: {
                 type: 'string',
@@ -229,7 +254,7 @@ export const TOOLS: Tool[] = [
                   "True for the person's own private work. It goes under their Personal company and no one else sees it.",
               },
             },
-            required: ['text', 'status'],
+            required: ['status'],
           },
         },
         date: {
@@ -248,6 +273,15 @@ export const TOOLS: Tool[] = [
         .slice(0, 20)
         .map((p: any) => ({
           text: typeof p?.text === 'string' ? p.text.trim().slice(0, 300) : '',
+          point:
+            typeof p?.point === 'string' && p.point.trim()
+              ? p.point.trim().slice(0, 300)
+              : undefined,
+          note: typeof p?.note === 'string' ? p.note : undefined,
+          typedLine:
+            typeof p?.typedLine === 'string'
+              ? p.typedLine.slice(0, 300)
+              : undefined,
           status: STATUS_KEYS.includes(p?.status) ? p.status : 'done',
           project: typeof p?.project === 'string' ? p.project : undefined,
           task: typeof p?.task === 'string' ? p.task : undefined,
@@ -262,7 +296,7 @@ export const TOOLS: Tool[] = [
         }))
         .filter(
           (p: PointInput & PointTask) =>
-            p.text.replace(/[^\p{L}\p{N}]/gu, '').length >= 3,
+            !!p.point || p.text.replace(/[^\p{L}\p{N}]/gu, '').length >= 3,
         );
       if (!points.length)
         throw new ToolError('Give at least one point with some text.');
@@ -273,7 +307,7 @@ export const TOOLS: Tool[] = [
       // Find or create each point's task first, so the line links to it.
       const tasks: Record<string, unknown>[] = [];
       for (const point of points) {
-        if (point.personal) continue;
+        if (point.personal || !point.text) continue;
         try {
           const found = await taskForPoint(user, point);
           if (!found) continue;
@@ -293,7 +327,90 @@ export const TOOLS: Tool[] = [
         }
       }
       const logged = await logPoints(user, points, date);
-      return { date, logged, ...(tasks.length && { tasks }) };
+      return { date, ...logged, ...(tasks.length && { tasks }) };
+    },
+  },
+  {
+    name: 'tidy_points',
+    title: 'Tidy a day of work points',
+    description: `Rewrites a day's Claude points as fewer ones, when a day was logged in too many small points (a line per version, round or fix). Each new point lists the existing points it replaces in merge (their keys from loggedToday, or their texts); points that should go entirely are listed in drop. Every existing point must be merged or dropped. Merged points' history moves onto the new point, with their words kept as notes on its timeline. Show the person the new list and get their OK before calling this.`,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        points: {
+          type: 'array',
+          minItems: 1,
+          maxItems: 30,
+          items: {
+            type: 'object',
+            properties: {
+              text: { type: 'string', description: 'The new point, one line.' },
+              status: { type: 'string', enum: STATUS_KEYS },
+              merge: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Keys or texts of the points it replaces.',
+              },
+              project: {
+                type: 'string',
+                description: 'Project id or exact name (optional).',
+              },
+              typedLine: {
+                type: 'string',
+                description:
+                  'Text of a line the person typed for the same work, to link (optional).',
+              },
+            },
+            required: ['text', 'status', 'merge'],
+          },
+        },
+        drop: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Keys or texts of points to remove without merging.',
+        },
+        date: {
+          type: 'string',
+          description:
+            "YYYY-MM-DD. Defaults to today in the person's timezone.",
+        },
+      },
+      required: ['points'],
+    },
+    annotations: { readOnlyHint: false, destructiveHint: true },
+    run: async (user, args) => {
+      const points: TidyPoint[] = (
+        Array.isArray(args?.points) ? args.points : []
+      )
+        .slice(0, 30)
+        .map((p: any) => ({
+          text: typeof p?.text === 'string' ? p.text.trim().slice(0, 300) : '',
+          status: STATUS_KEYS.includes(p?.status) ? p.status : 'done',
+          merge: Array.isArray(p?.merge)
+            ? p.merge.filter((m: unknown) => typeof m === 'string')
+            : [],
+          project: typeof p?.project === 'string' ? p.project : undefined,
+          typedLine:
+            typeof p?.typedLine === 'string'
+              ? p.typedLine.slice(0, 300)
+              : undefined,
+        }));
+      if (
+        !points.length ||
+        points.some((p) => p.text.replace(/[^\p{L}\p{N}]/gu, '').length < 3)
+      )
+        throw new ToolError('Give each new point some text.');
+      const keys = new Set(points.map((p) => p.text.toLowerCase()));
+      if (keys.size < points.length)
+        throw new ToolError('Two new points have the same text.');
+      const drop: string[] = Array.isArray(args?.drop)
+        ? args.drop.filter((d: unknown) => typeof d === 'string')
+        : [];
+      const date =
+        typeof args?.date === 'string' && DAY.test(args.date)
+          ? args.date
+          : await userToday(user);
+      return tidyPoints(user, points, drop, date);
     },
   },
   {

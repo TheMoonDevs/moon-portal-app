@@ -1,11 +1,14 @@
 import { brandKitDefaults, sanitizeBrandKit } from '@/lib/brandKit';
 import { db } from '@/lib/mongodb/db-client';
 import { sanitizeGoals } from '@/lib/workspace/projects';
+import { withProjectStats } from '@/lib/workspace/projectStats';
+import { runDueSchedules } from '@/lib/workspace/schedules';
 import {
   asEffort,
   asStringArray,
   checkParent,
   fail,
+  getPublicUsers,
   nowIso,
   ok,
   pick,
@@ -42,16 +45,22 @@ export async function GET(_request: Request, { params }: Params) {
   if (response || !project)
     return response ?? fail(401, 'Authentication required.');
 
-  const tasks = await db.task.findMany({
-    where: { projectId: project.id },
-    orderBy: { createdAt: 'asc' },
-  });
+  await runDueSchedules({ projectId: { in: [project.id] } });
+  const [tasks, [stats], people] = await Promise.all([
+    db.task.findMany({
+      where: { projectId: project.id },
+      orderBy: { createdAt: 'asc' },
+    }),
+    withProjectStats([project]),
+    getPublicUsers([...(project.leadIds ?? []), ...(project.memberIds ?? [])]),
+  ]);
   return ok({
     project: {
-      ...project,
-      progress: summarizeTasks(tasks)[project.id] ?? null,
+      ...stats,
+      progress: summarizeTasks(tasks)[project.id] ?? stats.progress,
     },
     tasks,
+    people,
   });
 }
 

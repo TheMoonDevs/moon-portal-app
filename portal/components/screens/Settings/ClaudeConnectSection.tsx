@@ -47,9 +47,12 @@ const CopyRow = ({ value, label }: { value: string; label: string }) => (
 
 // Works pasted into any Claude chat, and also reads fine as saved
 // instructions. Keep the statuses in step with log_work's.
-const WORKLOG_INSTRUCTIONS = `Log my work to the PORTAL work portal connector.
-- When you start a task, call get_context, then log_work a short point with status "doing", under the matching project.
-- When it ends, log the same text again as "done", "not_done" or "blocked". Use "waiting" when you need my input or approval.
+const WORKLOG_INSTRUCTIONS = `Log my work to the PORTAL work portal connector, simply.
+- At most 2-3 points per session, one per deliverable I'd mention in a standup. For example: making a video is one point, its thumbnails and upload pack is a second.
+- When you start one, call get_context, then log_work it with status "doing", under the matching project.
+- Never add a new point for a revision, version, round or fix. Update the same point instead (point + note, e.g. note "v6 rendered, 3 notes fixed"), so its timeline shows what happened when.
+- When it ends, log it as "done", "not_done" or "blocked". Use "waiting" when you need my input or approval.
+- If I already typed a line for the same work (typedToday), link it with typedLine instead of adding another.
 - Keep each point to one short line about the outcome. Never include secrets or passwords.
 
 Follow this from now on in this chat. If the PORTAL connector isn't available here, tell me to turn it on first. If you can edit ~/.claude/CLAUDE.md (as in Claude Code), add these instructions there so every session follows them. Otherwise remind me once to paste them into my custom instructions or a Project's instructions so they stick.`;

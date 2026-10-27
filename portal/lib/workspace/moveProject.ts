@@ -50,6 +50,7 @@ export async function moveProject(project: Project, companyId: string) {
       data: { companyId, planId: null, updatedAt: now },
     }),
     db.projectResult.updateMany({ where, data: { companyId } }),
+    db.projectPage.updateMany({ where, data: { companyId } }),
     db.pointEntry.updateMany({ where, data: { companyId } }),
   ]);
 

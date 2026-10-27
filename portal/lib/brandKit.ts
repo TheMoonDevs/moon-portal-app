@@ -217,37 +217,19 @@ export const kindOf = (name: string): BrandAssetKind =>
   EXT_KIND[extOf(name)] ?? 'other';
 
 /**
- * Folders of a brand folder that are never read: hidden ones, the brand's
- * source (`graphics/`, which can hold thousands of reference frames) and
- * dependencies. The folder picker doesn't even open them where it can.
+ * Folders a brand folder may hold that are not brand material: `graphics/`
+ * is the kit's source (scenes, reference frames, raw sounds), at any depth.
  */
-export function skippedBrandFolder(name: string): string | null {
-  if (name.startsWith('.') || name === '__MACOSX') return 'hidden';
-  if (name.toLowerCase() === 'graphics') return 'source';
-  if (name === 'node_modules') return 'dependency';
-  return null;
-}
+export const isSkippedBrandDir = (name: string) =>
+  name.startsWith('.') || /^(graphics|node_modules|__MACOSX)$/i.test(name);
 
-/** The first skipped folder a path sits in (`graphics/`, `logo/graphics/`…). */
-export function skippedFolderOf(path: string) {
-  const dirs = path.split('/').slice(0, -1);
-  for (let i = 0; i < dirs.length; i++) {
-    const reason = skippedBrandFolder(dirs[i]);
-    if (reason) return { dir: `${dirs.slice(0, i + 1).join('/')}/`, reason };
-  }
-  return null;
-}
-
-/**
- * Brand material that is uploaded: images (svg and ico included), video,
- * audio and font files. Code, html, css, json and the rest never are.
- */
-export const isBrandAssetFile = (name: string) =>
-  ['image', 'video', 'audio', 'font'].includes(kindOf(name));
-
-/** Files of a brand folder that are never read: skipped folders and hidden files. */
+/** Paths a brand folder import never reads or uploads. */
 export const isIgnoredBrandPath = (path: string) =>
-  !!skippedFolderOf(path) || path.split('/').pop()!.startsWith('.');
+  path.split('/').slice(0, -1).some(isSkippedBrandDir) || /(^|\/)\./.test(path);
+
+/** Only media is uploaded from a brand folder: images, video, audio, fonts. */
+export const isBrandMediaFile = (name: string) =>
+  ['image', 'video', 'audio', 'font'].includes(kindOf(name));
 
 const WEIGHTS: Record<string, number> = {
   thin: 100,

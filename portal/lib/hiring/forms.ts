@@ -9,6 +9,7 @@ import {
   FORM_FIELD_TYPE,
   type FormField,
 } from '@/models/hiring';
+import { isValidLink, splitLinkList, toHref } from './links';
 
 export const MAX_FIELDS = 40;
 export const MAX_OPTIONS = 30;
@@ -129,13 +130,15 @@ const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 export const isValidEmail = (value: string) =>
   value.length <= 254 && EMAIL_PATTERN.test(value);
 
-const isValidUrl = (value: string) => {
-  try {
-    const url = new URL(value);
-    return url.protocol === 'http:' || url.protocol === 'https:';
-  } catch {
-    return false;
-  }
+/**
+ * A link answer may hold several links, separated by spaces, commas or new
+ * lines. Returns them as one comma separated list, with https:// added where
+ * it was left out, or null when any of them is not a link.
+ */
+const cleanLinks = (value: string) => {
+  const links = splitLinkList(value);
+  if (!links.length || !links.every(isValidLink)) return null;
+  return Array.from(new Set(links.map(toHref))).join(', ');
 };
 
 const isEmpty = (value: unknown) =>
@@ -214,9 +217,13 @@ export function validateAnswers(
         }
         if (field.type === FORM_FIELD_TYPE.EMAIL && !isValidEmail(text))
           errors[field.id] = 'Enter a valid email address.';
-        else if (field.type === FORM_FIELD_TYPE.URL && !isValidUrl(text))
-          errors[field.id] = 'Enter a full link, starting with https://';
-        else if (
+        else if (field.type === FORM_FIELD_TYPE.URL) {
+          const links = cleanLinks(text);
+          if (links) answers[field.id] = links;
+          else
+            errors[field.id] =
+              'Enter a valid link, like https://example.com. Separate several links with commas or spaces.';
+        } else if (
           field.type === FORM_FIELD_TYPE.PHONE &&
           !PHONE_PATTERN.test(text)
         )

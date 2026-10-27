@@ -299,6 +299,69 @@ export const AdminHiring = ({
     };
   }, [companyId, loadApplications, loadOpenings]);
 
+  /* ------------------------------ applicant links ----------------------------- */
+
+  // `?tab=hiring&application=<id>` opens that applicant: pick their company,
+  // then their opening, then show them once the opening's applicants load.
+  const [linked, setLinked] = useState<ApplicationRow | null>(null);
+
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get('application');
+    if (!id) return;
+    PortalSdk.getData(`/api/hiring/applications/${id}`, null)
+      .then((res) => {
+        const application: ApplicationRow | undefined = res?.data?.application;
+        if (application) setLinked(application);
+      })
+      .catch((err) =>
+        toast.error(errorText(err, 'Could not open that applicant.')),
+      );
+  }, []);
+
+  useEffect(() => {
+    if (!linked) return;
+    if (companyId !== linked.companyId) {
+      if (hiringCompanies.some((c) => c.company.id === linked.companyId))
+        onSelectCompany(linked.companyId);
+      else setLinked(null);
+      return;
+    }
+    if (openingsLoading) return;
+    if (!openings.some((o) => o.id === linked.openingId)) {
+      if (openings.length) {
+        toast.error("That applicant's opening is archived.");
+        setLinked(null);
+      }
+      return;
+    }
+    if (openingId !== linked.openingId) {
+      setOpeningId(linked.openingId);
+      return;
+    }
+    if (applications.some((a) => a.id === linked.id)) {
+      setDetailId(linked.id);
+      setLinked(null);
+    }
+  }, [
+    linked,
+    companyId,
+    hiringCompanies,
+    onSelectCompany,
+    openings,
+    openingsLoading,
+    openingId,
+    applications,
+  ]);
+
+  // Keep the open applicant in the address bar so the page can be shared.
+  useEffect(() => {
+    if (linked) return;
+    const url = new URL(window.location.href);
+    if (detailId) url.searchParams.set('application', detailId);
+    else url.searchParams.delete('application');
+    window.history.replaceState(null, '', url.toString());
+  }, [detailId, linked]);
+
   /* -------------------------------- actions -------------------------------- */
 
   const replaceApplications = (updated: ApplicationRow[]) => {
