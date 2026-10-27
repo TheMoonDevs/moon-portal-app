@@ -164,6 +164,10 @@ export const QUESTION_PRESETS: Array<{
 export const applyUrl = (slug: string) =>
   `${typeof window === 'undefined' ? '' : window.location.origin}/apply/${slug}`;
 
+/** The hiring team's preview of an opening's task page, as a candidate sees it. */
+export const taskPreviewUrl = (openingId: string) =>
+  `${typeof window === 'undefined' ? '' : window.location.origin}/task/preview/${openingId}`;
+
 export const timeAgo = (value?: string | Date | null) => {
   if (!value) return '';
   const seconds = Math.round((Date.now() - new Date(value).getTime()) / 1000);

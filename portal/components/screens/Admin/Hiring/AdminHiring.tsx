@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { answerText, APPLICATION_STAGES } from '@/lib/hiring/forms';
+import { TASK_PAGES } from '@/lib/hiring/taskPages';
 import { cn } from '@/lib/utils';
 import {
   type APPLICATION_STAGE,
@@ -39,6 +40,7 @@ import {
   OPENING_STATUS_META,
   type OpeningRow,
   STAGE_META,
+  taskPreviewUrl,
   timeAgo,
 } from './hiringMeta';
 import { ImportApplicants } from './ImportApplicants';
@@ -699,6 +701,41 @@ export const AdminHiring = ({
                     <Icon name="info" className="text-[16px]" />
                     Publish the opening to get a link candidates can apply
                     through.
+                  </p>
+                )}
+
+                {opening.task ? (
+                  <div className="flex items-center gap-2 rounded-lg border border-white/[0.07] bg-neutral-900/60 px-3 py-2">
+                    <Icon
+                      name="assignment"
+                      className="text-[18px] text-neutral-500"
+                    />
+                    <span className="shrink-0 text-xs text-neutral-400">
+                      Task page
+                      {opening.task.page && TASK_PAGES[opening.task.page]
+                        ? ` · ${TASK_PAGES[opening.task.page].name}`
+                        : ''}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate font-mono text-xs text-neutral-300">
+                      {taskPreviewUrl(opening.id)}
+                    </span>
+                    <CopyButton
+                      value={taskPreviewUrl(opening.id)}
+                      label="Copy preview link"
+                    />
+                    <IconAction
+                      icon="open_in_new"
+                      label="Preview task page"
+                      onClick={() =>
+                        window.open(taskPreviewUrl(opening.id), '_blank')
+                      }
+                    />
+                  </div>
+                ) : (
+                  <p className="flex items-center gap-2 text-xs text-neutral-500">
+                    <Icon name="info" className="text-[16px]" />
+                    No take-home task yet. Add one in Edit, under Task, to
+                    preview its page here.
                   </p>
                 )}
               </Panel>
