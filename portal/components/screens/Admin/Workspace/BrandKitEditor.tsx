@@ -114,7 +114,12 @@ async function walkFolder(dir: any, prefix = ''): Promise<PickedFile[]> {
 async function importFolder(
   files: PickedFile[],
   onProgress: (text: string) => void,
-): Promise<{ kit: Partial<BrandKit>; failed: string[]; skipped: number }> {
+): Promise<{
+  kit: Partial<BrandKit>;
+  failed: string[];
+  skipped: number;
+  uploaded: number;
+}> {
   type Entry = PickedFile & { dir: string; sub: string };
   const entries: Entry[] = files
     .filter((e) => !isIgnoredBrandPath(e.rel))
@@ -144,7 +149,13 @@ async function importFolder(
     entries.find((e) => !e.dir && extOf(e.file.name) === 'md');
   if (guideFile) kit.guide = await guideFile.file.text();
 
-  const toUpload = entries.filter((e) => isBrandMediaFile(e.file.name));
+  const paths = new Set(entries.map((e) => e.rel.toLowerCase()));
+  const toUpload = entries.filter((e) => {
+    if (!isBrandMediaFile(e.file.name)) return false;
+    // A ProRes .mov master has a .webm with alpha next to it.
+    const webm = e.rel.replace(/\.mov$/i, '.webm').toLowerCase();
+    return webm === e.rel.toLowerCase() || !paths.has(webm);
+  });
   const read = [colorsFile, guideFile].filter(Boolean).length;
   const skipped = files.length - toUpload.length - read;
 
@@ -177,7 +188,7 @@ async function importFolder(
       });
     }
   }
-  return { kit, failed, skipped };
+  return { kit, failed, skipped, uploaded: urls.size };
 }
 
 /** Lets a font from the kit render its own preview. */
@@ -368,6 +379,7 @@ export const BrandKitEditor = ({
         kit: imported,
         failed,
         skipped,
+        uploaded,
       } = await importFolder(files, (text) => setBusy(`import:${text}`));
       setKit((k) => ({
         ...k,
@@ -386,7 +398,7 @@ export const BrandKitEditor = ({
         );
       } else {
         toast.success(
-          `Brand folder imported${skipped ? ` (${skipped} non-media file${skipped === 1 ? '' : 's'} skipped)` : ''}. Review it and press Save.`,
+          `Brand folder imported: ${uploaded} file${uploaded === 1 ? '' : 's'} uploaded${skipped ? `, ${skipped} skipped` : ''}. Review it and press Save.`,
         );
       }
     } finally {
