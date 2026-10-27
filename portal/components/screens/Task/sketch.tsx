@@ -34,14 +34,21 @@ export const prefersReducedMotion = () =>
   typeof window !== 'undefined' &&
   window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-/** A hand-drawn loop around a w×h box, or a double underline beneath it. */
+/**
+ * A hand-drawn loop around a w×h box, a double underline beneath it, or a
+ * double line struck through it.
+ */
 export function scribble(
-  shape: 'circle' | 'under',
+  shape: 'circle' | 'under' | 'strike',
   w: number,
   h: number,
   rand: () => number,
 ) {
   const r = (a: number, b: number) => a + rand() * (b - a);
+  if (shape === 'strike') {
+    const y = h * 0.56;
+    return `M-6 ${y + r(-3, 1)} C ${w * 0.35} ${y + r(-4, 2)}, ${w * 0.65} ${y + r(-2, 4)}, ${w + 6} ${y + r(-3, 1)} M ${w * 0.04} ${y + r(4, 8)} Q ${w * 0.5} ${y + r(0, 6)} ${w + 2} ${y + r(2, 7)}`;
+  }
   if (shape === 'under') {
     // An inline box is taller than its line; the baseline sits about here.
     const y = h * 0.84;
@@ -116,7 +123,7 @@ export function useScrollFrame(
   }, [ref]);
 }
 
-export type Segment = { text: string; mark?: 'circle' | 'under' };
+export type Segment = { text: string; mark?: 'circle' | 'under' | 'strike' };
 
 export interface TypedHandle {
   /** Shows the first k (0 to 1) of the text, with a caret after it. */
@@ -161,7 +168,12 @@ export const Typed = forwardRef<
           : 0;
         path.setAttribute(
           'd',
-          scribble(mark.dataset.shape as 'circle' | 'under', w, h, rand),
+          scribble(
+            mark.dataset.shape as 'circle' | 'under' | 'strike',
+            w,
+            h,
+            rand,
+          ),
         );
         primeStroke(path);
         drawStroke(path, k);
