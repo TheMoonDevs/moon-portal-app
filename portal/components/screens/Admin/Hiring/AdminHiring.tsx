@@ -1032,6 +1032,18 @@ export const AdminHiring = ({
           companyId={companyId}
           companyName={companyName}
           role={opening.title}
+          hiringLead={
+            opening.hiringLeadId
+              ? (() => {
+                  const lead = users.find((u) => u.id === opening.hiringLeadId);
+                  return {
+                    name: lead?.name || 'The hiring lead',
+                    email: lead?.email ?? null,
+                  };
+                })()
+              : null
+          }
+          replyToLead={opening.replyToLead ?? true}
           recipients={composeRecipients}
           canEditTemplates={canEdit}
           onSent={(result) => {

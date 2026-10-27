@@ -12,7 +12,12 @@ import type {
 } from '@/models/hiring';
 import { HIRING_EMAIL_STATUS } from '@/models/hiring';
 
-import { HIRING_EMAIL_TAGS, hiringEmailSettings, hiringFrom } from './email';
+import {
+  HIRING_EMAIL_TAGS,
+  hiringEmailSettings,
+  hiringFrom,
+  HR_REPLY_TO,
+} from './email';
 import {
   emailVariables,
   MAX_BODY,
@@ -53,7 +58,13 @@ export interface HiringSend {
   sendId: string;
   templateId: string | null;
   moveTo: APPLICATION_STAGE | null;
+  /** An exact reply-to address; wins over `replyToLead`. */
   replyTo: string | null;
+  /**
+   * True sends replies to each opening's hiring lead, false to the HR inbox.
+   * Null follows each opening's own setting.
+   */
+  replyToLead: boolean | null;
 }
 
 /** Checks a send from an untrusted body. */
@@ -73,6 +84,7 @@ export function parseHiringSend(raw: Record<string, unknown>): {
       typeof raw.replyTo === 'string'
         ? raw.replyTo.trim().toLowerCase() || null
         : null,
+    replyToLead: typeof raw.replyToLead === 'boolean' ? raw.replyToLead : null,
   };
   const error = !send.ids.length
     ? 'Choose at least one applicant.'
@@ -126,6 +138,26 @@ export async function renderHiringEmails(
   const companyName: string = company?.name ?? '';
   const roleOf = new Map(openings.map((o) => [o.id, o.title]));
 
+  // Replies go to the opening's hiring lead, or the sender when it has none;
+  // with that turned off they go to the HR inbox.
+  const leadIds = Array.from(
+    new Set(openings.map((o) => o.hiringLeadId).filter(Boolean)),
+  ) as string[];
+  const leads: Array<{ id: string; email?: string | null }> = leadIds.length
+    ? await db.user.findMany({ where: { id: { in: leadIds } } })
+    : [];
+  const leadEmail = new Map(leads.map((l) => [l.id, l.email]));
+  const senderEmail = user?.email || sender.email || null;
+  const replyToFor = new Map(
+    openings.map((o) => {
+      if (send.replyTo) return [o.id, send.replyTo];
+      const toLead = send.replyToLead ?? o.replyToLead ?? true;
+      if (!toLead) return [o.id, HR_REPLY_TO];
+      const lead = o.hiringLeadId ? leadEmail.get(o.hiringLeadId) : null;
+      return [o.id, lead || senderEmail];
+    }),
+  );
+
   // Each candidate's own task page; the token is made the first time.
   const withTask = new Set(openings.filter((o) => o.task).map((o) => o.id));
   const taskLinks =
@@ -144,12 +176,11 @@ export async function renderHiringEmails(
       'This opening has no task yet. Add one in the opening editor before sending {{taskLink}}.',
     );
   const from = hiringFrom(companyName);
-  const replyTo = send.replyTo || user?.email || sender.email || null;
 
   return applications.map((application, i) => ({
     from,
     to: application.email,
-    replyTo,
+    replyTo: replyToFor.get(application.openingId) ?? senderEmail,
     tags: HIRING_EMAIL_TAGS,
     ...renderEmail(
       { subject: send.subject, body: send.body },
