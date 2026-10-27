@@ -262,10 +262,10 @@ const Sidebar = ({
     <aside className="hidden w-[272px] shrink-0 flex-col border-r border-white/[0.07] bg-neutral-950 md:flex">
       <div className="px-4 pb-3 pt-4">
         <Link
-          href={APP_ROUTES.home}
+          href={APP_ROUTES.projects}
           className="mb-4 inline-flex items-center gap-1 text-xs text-neutral-500 transition-colors hover:text-neutral-200"
         >
-          <Icon name="arrow_back" className="text-[15px]" /> Home
+          <Icon name="arrow_back" className="text-[15px]" /> Projects
         </Link>
         <div className="flex items-center gap-3">
           <CompanyMark
@@ -623,8 +623,8 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
           title="Project not found"
           description={error}
           action={
-            <Link href={APP_ROUTES.home} className="text-sm text-sky-300">
-              Back home
+            <Link href={APP_ROUTES.projects} className="text-sm text-sky-300">
+              All projects
             </Link>
           }
         />
@@ -757,9 +757,9 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-12 shrink-0 items-center gap-2 border-b border-white/[0.07] px-4 text-sm">
           <Link
-            href={APP_ROUTES.home}
+            href={APP_ROUTES.projects}
             className="text-neutral-500 hover:text-white md:hidden"
-            aria-label="Home"
+            aria-label="All projects"
           >
             <Icon name="arrow_back" className="text-[18px]" />
           </Link>

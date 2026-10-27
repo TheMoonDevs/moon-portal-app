@@ -20,6 +20,7 @@ type NavOption = { name: string; path: string; icon: string; label?: string };
 const NAVIGATION_OPTIONS: NavOption[] = [
   { name: 'Home', path: APP_ROUTES.home, icon: 'perm_identity' },
   { name: 'Worklogs', path: APP_ROUTES.userWorklogs, icon: 'task_alt' },
+  { name: 'Projects', path: APP_ROUTES.projects, icon: 'folder_open' },
   { name: 'Plans', path: APP_ROUTES.plans, icon: 'map' },
   {
     name: 'Notifications',
