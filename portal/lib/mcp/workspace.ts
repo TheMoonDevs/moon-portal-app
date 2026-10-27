@@ -9,6 +9,7 @@ import {
   asEffort,
   checkParent,
   getPublicUsers,
+  getWorkspaceForUser,
   slugify,
 } from '@/lib/workspace/server';
 import type {
@@ -27,7 +28,7 @@ import {
   TASK_STATUS,
 } from '@/models/workspace';
 
-import { companiesWith, type Tool, ToolError } from './shared';
+import { allowsInProject, companiesWith, type Tool, ToolError } from './shared';
 
 /*
  * Tools for running the workspace from a conversation: projects (effort and
@@ -41,7 +42,10 @@ const same = (a: string, b: string) =>
 const text = (value: unknown, max: number) =>
   typeof value === 'string' ? value.trim().slice(0, max) : '';
 
-/** A project by id or name, in a company where the person holds `permission`. */
+/**
+ * A project by id or name where the person may do `permission`: from their
+ * company permissions, or for tasks from being on the project's team.
+ */
 export async function findProject(
   user: SessionUser,
   ref: unknown,
@@ -49,23 +53,31 @@ export async function findProject(
 ) {
   if (typeof ref !== 'string' || !ref.trim())
     throw new ToolError('Give a project id or name.');
-  const allowed = await companiesWith(user, permission);
-  const projects: Project[] = allowed.size
+  const workspace = await getWorkspaceForUser(user);
+  const byCompany = new Map(workspace.map((w) => [w.company.id, w]));
+  const projects: Project[] = byCompany.size
     ? await db.project.findMany({
         where: {
-          companyId: { in: Array.from(allowed.keys()) },
+          companyId: { in: Array.from(byCompany.keys()) },
           status: { notIn: [PROJECT_STATUS.ARCHIVED] },
         },
       })
     : [];
   const matches = projects.filter(
-    (p) => p.id === ref.trim() || same(p.name, ref),
+    (p) =>
+      (p.id === ref.trim() || same(p.name, ref)) &&
+      allowsInProject(
+        byCompany.get(p.companyId)?.permissions,
+        user,
+        p,
+        permission,
+      ),
   );
   if (matches.length === 1) return matches[0];
   if (matches.length > 1)
     throw new ToolError(
       `More than one project is called "${ref}". Use its id: ${matches
-        .map((p) => `${p.id} (${allowed.get(p.companyId)?.name})`)
+        .map((p) => `${p.id} (${byCompany.get(p.companyId)?.company.name})`)
         .join(', ')}.`,
     );
   throw new ToolError(
@@ -73,7 +85,10 @@ export async function findProject(
   );
 }
 
-/** A task by id, in a company where the person holds `permission`. */
+/**
+ * A task by id where the person may do `permission`: from their company
+ * permissions, or from being on its project's team.
+ */
 export async function findTask(
   user: SessionUser,
   ref: unknown,
@@ -81,14 +96,20 @@ export async function findTask(
 ) {
   if (typeof ref !== 'string' || !ref.trim())
     throw new ToolError('Give the task id (from get_context or find_tasks).');
-  const allowed = await companiesWith(user, permission);
   const task: Task | null = await db.task.findFirst({
     where: { id: ref.trim() },
   });
   if (!task) throw new ToolError(`No task with id "${ref}".`);
-  if (!allowed.has(task.companyId))
+  const workspace = await getWorkspaceForUser(user);
+  const permissions = workspace.find(
+    (w) => w.company.id === task.companyId,
+  )?.permissions;
+  const project: Project | null = await db.project.findFirst({
+    where: { id: task.projectId },
+  });
+  if (!project || !allowsInProject(permissions, user, project, permission))
     throw new ToolError(
-      `You do not have permission to change tasks in that company.`,
+      'Only the people on its project (or a manager) can change that task.',
     );
   return task;
 }
@@ -751,7 +772,7 @@ export async function taskForPoint(user: SessionUser, point: PointTask) {
     if (!project || !isOnTeam(project, user.id)) return null;
     return { task, created: false, project };
   }
-  const project = await findProject(user, point.project, 'tasks:create');
+  const project = await findProject(user, point.project, 'tasks:read');
   if (!isOnTeam(project, user.id))
     throw new ToolError(
       `You are not on the ${project.name} team, so work cannot be logged to it. A lead can add you in the project's settings.`,

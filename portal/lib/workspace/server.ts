@@ -3,11 +3,14 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/mongodb/db-client';
 import { ALL_COMPANY_PERMISSIONS } from '@/lib/permissions/catalog';
 import {
+  COMPANY_MEMBER_PERMISSIONS,
   type CompanyAccess,
   companyRolePermissions,
   DEFAULT_COMPANY_ROLES,
   getEffectiveCompanyPermissions,
   isAllowedInCompany,
+  isOldMemberRole,
+  teamAllows,
 } from '@/lib/permissions/company';
 import {
   getSessionUser,
@@ -89,11 +92,17 @@ export async function getCompanyAccess(
         where: { companyId, key: { in: member.roleKeys } },
       })
     : [];
-  return {
-    member,
-    rolePermissions: roles.flatMap((r) => companyRolePermissions(r)),
-  };
+  return { member, rolePermissions: memberPermissions(roles) };
 }
+
+/** What a member holds in a company: the built-in member rights plus their roles. */
+export const memberPermissions = (roles: CompanyRole[]) =>
+  Array.from(
+    new Set([
+      ...COMPANY_MEMBER_PERMISSIONS,
+      ...roles.flatMap((r) => companyRolePermissions(r)),
+    ]),
+  );
 
 export interface CompanyGuardResult {
   response: NextResponse | null;
@@ -104,10 +113,12 @@ export interface CompanyGuardResult {
 /**
  * Requires a signed-in member of `companyId` who holds `permission` there,
  * from their roles in the company or their own user-level permissions.
+ * With a `project`, being on its team also counts (see PROJECT_TEAM_PERMISSIONS).
  */
 export async function requireCompanyPermission(
   companyId: string | null | undefined,
   permission: string,
+  project?: { leadIds?: string[] | null; memberIds?: string[] | null },
 ): Promise<CompanyGuardResult> {
   const user = await getSessionUser();
   if (!user) return { response: unauthenticated(), user: null, access: null };
@@ -124,7 +135,10 @@ export async function requireCompanyPermission(
   if (!company || !access?.member) {
     return { response: fail(404, 'Company not found.'), user, access: null };
   }
-  if (!isAllowedInCompany(user, access, permission)) {
+  if (
+    !isAllowedInCompany(user, access, permission) &&
+    !teamAllows(user, project, permission)
+  ) {
     return { response: permissionDeniedResponse(permission), user, access };
   }
   return { response: null, user, access };
@@ -179,11 +193,11 @@ export async function getWorkspaceForUser(
 
   return companies.map((company) => {
     const member = memberships.find((m) => m.companyId === company.id) ?? null;
-    const rolePermissions = roles
-      .filter(
+    const rolePermissions = memberPermissions(
+      roles.filter(
         (r) => r.companyId === company.id && member?.roleKeys?.includes(r.key),
-      )
-      .flatMap((r) => companyRolePermissions(r));
+      ),
+    );
     return {
       company,
       member,
@@ -218,8 +232,9 @@ export async function seedCompanyRoles(companyId: string) {
 
 /**
  * Brings an older company's roles up to date: adds built-in roles that came
- * out after it was created (such as Recruiter) and fills in the Owner role's
- * list. Returns whether anything changed.
+ * out after it was created (such as Recruiter), fills in the Owner role's
+ * list and moves an unchanged Member role to the built-in member rights.
+ * Returns whether anything changed.
  */
 export async function syncCompanyRoles(
   companyId: string,
@@ -242,7 +257,20 @@ export async function syncCompanyRoles(
       where: { id: owner.id },
       data: { permissions: [...ALL_COMPANY_PERMISSIONS], updatedAt: nowIso() },
     });
-  return missing.length > 0 || ownerBehind;
+
+  // A Member role nobody changed takes the built-in member rights.
+  const member = roles.find(isOldMemberRole);
+  if (member)
+    await db.companyRole.update({
+      where: { id: member.id },
+      data: {
+        permissions: [...COMPANY_MEMBER_PERMISSIONS],
+        description: DEFAULT_COMPANY_ROLES.find((r) => r.key === 'member')
+          ?.description,
+        updatedAt: nowIso(),
+      },
+    });
+  return missing.length > 0 || ownerBehind || !!member;
 }
 
 /* ------------------------------- escalation ------------------------------ */
@@ -341,7 +369,10 @@ export function summarizeTasks(
   return byProject;
 }
 
-/** Loads a project and checks `permission` in the company that owns it. */
+/**
+ * Loads a project and checks `permission` in the company that owns it; the
+ * project's lead and team also get its task permissions.
+ */
 export async function requireProjectPermission(
   projectId: string,
   permission: string,
@@ -356,7 +387,11 @@ export async function requireProjectPermission(
       project: null,
     };
   }
-  const guard = await requireCompanyPermission(project.companyId, permission);
+  const guard = await requireCompanyPermission(
+    project.companyId,
+    permission,
+    project,
+  );
   return { ...guard, project };
 }
 

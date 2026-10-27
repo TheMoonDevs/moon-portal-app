@@ -8,7 +8,7 @@ import {
   nowIso,
   ok,
   pick,
-  requireCompanyPermission,
+  requireProjectPermission,
 } from '@/lib/workspace/server';
 import type { Task } from '@/models/workspace';
 import { TASK_SIZE, TASK_STATUS } from '@/models/workspace';
@@ -32,8 +32,9 @@ const EDITABLE = [
 async function guard(taskId: string, permission: string) {
   const task: Task | null = await db.task.findFirst({ where: { id: taskId } });
   if (!task) return { response: fail(404, 'Task not found.'), task: null };
-  const { response } = await requireCompanyPermission(
-    task.companyId,
+  // The project's lead and team can change its tasks too.
+  const { response } = await requireProjectPermission(
+    task.projectId,
     permission,
   );
   return { response, task };

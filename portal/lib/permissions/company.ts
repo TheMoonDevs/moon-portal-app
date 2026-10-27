@@ -22,6 +22,41 @@ export interface CompanyRoleDefinition {
   permissions: string[];
 }
 
+/**
+ * What every active member of a company may do there, whatever their roles:
+ * see the company, its people, projects and tasks, and add and edit
+ * projects (deleting one needs a role that allows it).
+ */
+export const COMPANY_MEMBER_PERMISSIONS = [
+  'companies:read',
+  'members:read',
+  'projects:read',
+  'projects:create',
+  'projects:edit',
+  'tasks:read',
+];
+
+/**
+ * What the lead and team of a project may do inside it: add, edit and
+ * delete its tasks (plans with a step for the project follow the same rule).
+ */
+export const PROJECT_TEAM_PERMISSIONS = [
+  'tasks:read',
+  'tasks:create',
+  'tasks:edit',
+  'tasks:delete',
+];
+
+/** The Member role's list before members got the rights above built in. */
+export const OLD_MEMBER_ROLE_PERMISSIONS = [
+  'companies:read',
+  'members:read',
+  'projects:read',
+  'tasks:read',
+  'tasks:create',
+  'tasks:edit',
+];
+
 /** Roles seeded into every new company. They can be edited afterwards. */
 export const DEFAULT_COMPANY_ROLES: CompanyRoleDefinition[] = [
   {
@@ -52,15 +87,9 @@ export const DEFAULT_COMPANY_ROLES: CompanyRoleDefinition[] = [
   {
     key: 'member',
     name: 'Member',
-    description: 'Works on projects: sees them and creates or updates tasks.',
-    permissions: [
-      'companies:read',
-      'members:read',
-      'projects:read',
-      'tasks:read',
-      'tasks:create',
-      'tasks:edit',
-    ],
+    description:
+      'Adds and edits projects, and runs the tasks and plans of the projects they are on.',
+    permissions: [...COMPANY_MEMBER_PERMISSIONS],
   },
   {
     key: 'recruiter',
@@ -78,7 +107,8 @@ export const DEFAULT_COMPANY_ROLES: CompanyRoleDefinition[] = [
   {
     key: 'viewer',
     name: 'Viewer',
-    description: 'Read-only access to the company’s projects and tasks.',
+    description:
+      'Sees the company’s projects and tasks. Like every member, can add and edit projects.',
     permissions: [
       'companies:read',
       'members:read',
@@ -97,14 +127,66 @@ export const DEFAULT_MEMBER_ROLE_KEY = 'member';
 export function companyRolePermissions(role: {
   key: string;
   permissions?: string[] | null;
+  isSystem?: boolean | null;
 }): string[] {
   if (role.key === 'owner') return [...ALL_COMPANY_PERMISSIONS];
+  if (isOldMemberRole(role)) return [...COMPANY_MEMBER_PERMISSIONS];
   return role.permissions ?? [];
 }
+
+/**
+ * A built-in Member role nobody has changed since members got their rights
+ * built in. It follows the new list, so tasks belong to each project's team.
+ */
+export const isOldMemberRole = (role: {
+  key: string;
+  permissions?: string[] | null;
+  isSystem?: boolean | null;
+}) => {
+  const list = role.permissions ?? [];
+  return (
+    role.key === 'member' &&
+    !!role.isSystem &&
+    list.length === OLD_MEMBER_ROLE_PERMISSIONS.length &&
+    OLD_MEMBER_ROLE_PERMISSIONS.every((p) => list.includes(p))
+  );
+};
 
 export interface CompanyAccess {
   /** Permissions granted by the user's roles in this company. */
   rolePermissions: string[];
+}
+
+/** Whether the person leads the project or is on its team. */
+export const isOnProjectTeam = (
+  project:
+    | { leadIds?: string[] | null; memberIds?: string[] | null }
+    | null
+    | undefined,
+  userId: string,
+) =>
+  !!project &&
+  ((project.leadIds ?? []).includes(userId) ||
+    (project.memberIds ?? []).includes(userId));
+
+/**
+ * Whether being on the project's team allows `permission` there. A denial
+ * on the person's own record still wins.
+ */
+export function teamAllows(
+  user: { id: string; deniedPermissions?: string[] | null } | null | undefined,
+  project:
+    | { leadIds?: string[] | null; memberIds?: string[] | null }
+    | null
+    | undefined,
+  permission: string,
+): boolean {
+  if (!user || !PROJECT_TEAM_PERMISSIONS.includes(permission)) return false;
+  if (!isOnProjectTeam(project, user.id)) return false;
+  const denied = Array.isArray(user.deniedPermissions)
+    ? user.deniedPermissions
+    : [];
+  return !hasPermission(denied, permission);
 }
 
 export function isAllowedInCompany(

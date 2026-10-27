@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 
 import { db } from '@/lib/mongodb/db-client';
+import { isOnProjectTeam } from '@/lib/permissions/company';
 import type { SessionUser } from '@/lib/permissions/server';
 import { getWorkspaceForUser } from '@/lib/workspace/server';
 import type { WorklogLink } from '@/models/worklogs';
@@ -22,12 +23,7 @@ export type LinkCandidates = {
 };
 
 /** Whether the person leads the project or is on its team. */
-export const isOnTeam = (
-  project: { leadIds?: string[] | null; memberIds?: string[] | null },
-  userId: string,
-) =>
-  (project.leadIds ?? []).includes(userId) ||
-  (project.memberIds ?? []).includes(userId);
+export const isOnTeam = isOnProjectTeam;
 
 /**
  * The projects and open tasks a user's lines may link to: projects they

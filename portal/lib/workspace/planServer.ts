@@ -1,5 +1,5 @@
 import { db } from '@/lib/mongodb/db-client';
-import { isAllowedInCompany } from '@/lib/permissions/company';
+import { isAllowedInCompany, isOnProjectTeam } from '@/lib/permissions/company';
 import { syncTaskPoints } from '@/lib/progress/server';
 import type {
   CompanyMember,
@@ -169,10 +169,36 @@ export async function withTasks(plans: Plan[]): Promise<PlanView[]> {
   }));
 }
 
+/** Ids of the company's projects that the person leads or is on the team of. */
+export async function teamProjectIds(companyId: string, userId: string) {
+  const projects: Project[] = await db.project.findMany({
+    where: { companyId },
+    select: { leadIds: true, memberIds: true },
+  });
+  return projects.filter((p) => isOnProjectTeam(p, userId)).map((p) => p.id);
+}
+
 /**
- * Loads a plan the signed-in person can see (`tasks:read` in its company).
- * `edit` also requires `tasks:edit` there, or being the plan's owner;
- * `delete` requires `tasks:delete` or being the owner.
+ * Whether the person may change (or delete) a plan: its owner, anyone on
+ * the team of a project one of its steps is for, or someone whose company
+ * roles allow it (`companyAllows`), such as the company's owner.
+ */
+export const mayChangePlan = (
+  plan: Pick<Plan, 'ownerId' | 'steps'>,
+  userId: string,
+  companyAllows: boolean,
+  teamIds: string[],
+) =>
+  companyAllows ||
+  plan.ownerId === userId ||
+  (plan.steps ?? []).some(
+    (s) => !!s.projectId && teamIds.includes(s.projectId),
+  );
+
+/**
+ * Loads a plan the signed-in person can see (any member of its company).
+ * `edit` and `delete` follow mayChangePlan, with `tasks:edit` or
+ * `tasks:delete` as the company permission.
  */
 export async function requirePlan(
   planId: string,
@@ -193,14 +219,20 @@ export async function requirePlan(
     return { ...guard, plan: null, response: guard.response };
   if (need !== 'read') {
     const permission = need === 'edit' ? 'tasks:edit' : 'tasks:delete';
-    const allowed =
-      plan.ownerId === guard.user.id ||
-      isAllowedInCompany(guard.user, guard.access, permission);
+    const allowed = mayChangePlan(
+      plan,
+      guard.user.id,
+      isAllowedInCompany(guard.user, guard.access, permission),
+      await teamProjectIds(plan.companyId, guard.user.id),
+    );
     if (!allowed)
       return {
         ...guard,
         plan,
-        response: fail(403, 'Only the plan’s owner or a manager can do that.'),
+        response: fail(
+          403,
+          'Only the plan’s owner, the people on its projects or a manager can do that.',
+        ),
       };
   }
   return { ...guard, plan, response: null };
