@@ -23,11 +23,13 @@ import { TMD_PORTAL_API_KEY } from '@/utils/constants/appInfo';
 
 import styles from './task.module.css';
 import {
+  CrowdScene,
   DreamScene,
   FounderScene,
   HiringScene,
   ManifestoScene,
   MarkScene,
+  MarqueeScene,
   RadarScene,
   StudioScene,
   TeamScene,
@@ -97,7 +99,7 @@ const Shell = ({
   theme = 'sketchbook',
   children,
 }: {
-  theme?: 'sketchbook' | 'signal';
+  theme?: 'sketchbook' | 'signal' | 'premiere';
   children: ReactNode;
 }) => {
   const grain = useRef<HTMLCanvasElement>(null);
@@ -129,7 +131,7 @@ const Shell = ({
 
   return (
     <div
-      className={`${styles.root} ${theme === 'signal' ? styles.signal : ''} ${sans.variable} ${mono.variable} ${hand.variable} ${display.variable}`}
+      className={`${styles.root} ${theme === 'sketchbook' ? '' : styles.signal} ${theme === 'premiere' ? styles.premiere : ''} ${sans.variable} ${mono.variable} ${hand.variable} ${display.variable}`}
     >
       <canvas
         ref={grain}
@@ -600,6 +602,18 @@ export const TaskPage = ({ data }: { data: PublicTask }) => {
       case 'radar':
         return intro.radar ? (
           <RadarScene key={key} radar={intro.radar} />
+        ) : null;
+      case 'crowd':
+        return intro.crowd ? (
+          <CrowdScene key={key} crowd={intro.crowd} />
+        ) : null;
+      case 'marquee':
+        return intro.marquee ? (
+          <MarqueeScene
+            key={key}
+            marquee={intro.marquee}
+            firstName={data.firstName}
+          />
         ) : null;
       case 'studio':
         return <StudioScene key={key} studio={intro.studio} />;

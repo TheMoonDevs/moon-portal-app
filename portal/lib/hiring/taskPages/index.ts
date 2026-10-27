@@ -1,6 +1,7 @@
 import type { JobTask } from '@/models/hiring';
 
 import { conceptArtistPage, conceptArtistStarterTask } from './concept-artist';
+import { studioVoicePage, studioVoiceStarterTask } from './studio-voice';
 import { talentScoutPage, talentScoutStarterTask } from './talent-scout';
 import type { TaskPageConfig } from './types';
 
@@ -10,10 +11,12 @@ export type { TaskPageConfig, TaskSceneKey } from './types';
 export const TASK_PAGES: Record<string, TaskPageConfig> = {
   [conceptArtistPage.key]: conceptArtistPage,
   [talentScoutPage.key]: talentScoutPage,
+  [studioVoicePage.key]: studioVoicePage,
 };
 
 /** A starting brief per intro, offered in the opening editor. */
 export const STARTER_TASKS: Record<string, JobTask> = {
   [conceptArtistPage.key]: conceptArtistStarterTask,
   [talentScoutPage.key]: talentScoutStarterTask,
+  [studioVoicePage.key]: studioVoiceStarterTask,
 };

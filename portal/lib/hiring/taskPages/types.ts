@@ -4,6 +4,8 @@ export type TaskSceneKey =
   | 'manifesto'
   | 'hiring'
   | 'radar'
+  | 'crowd'
+  | 'marquee'
   | 'studio'
   | 'mark'
   | 'team'
@@ -17,9 +19,10 @@ export interface TaskPageConfig {
   name: string;
   /**
    * The look: `sketchbook` is grainy paper and red marker, `signal` a night
-   * radar screen with phosphor-green ink. Defaults to sketchbook.
+   * radar screen with phosphor-green ink, `premiere` a premiere night in
+   * marquee gold on black velvet. Defaults to sketchbook.
    */
-  theme?: 'sketchbook' | 'signal';
+  theme?: 'sketchbook' | 'signal' | 'premiere';
   /** Which scenes to show, in order. Defaults to every scene but hiring and radar. */
   scenes?: TaskSceneKey[];
   studio: {
@@ -75,6 +78,38 @@ export interface TaskPageConfig {
     /** Blips on the screen; the last one gets circled. */
     blips: string[];
     found: string;
+  };
+  /**
+   * One fan becoming a community: dots gather into a crescent moon as the
+   * count climbs. Shown by the crowd scene.
+   */
+  crowd?: {
+    kicker: string;
+    title: string;
+    body: string;
+    /** What the counter reads as the crowd grows, first to last. */
+    counts: string[];
+    /** A hand-written line once the moon has formed. */
+    note: string;
+  };
+  /**
+   * A cinema marquee with chaser bulbs, flipping through what the studio
+   * launches, with the cue run backstage for each. Shown by the marquee scene.
+   */
+  marquee?: {
+    kicker: string;
+    title: string;
+    /** Words in the title circled in marker. */
+    circle: string;
+    /**
+     * Each board: a small tag over a big line, and the cue that was run
+     * backstage to get it there, hand-written under the board.
+     */
+    boards: Array<{ tag: string; text: string; cue: string }>;
+    /** The last board, once the house is full. `{firstName}` in its cue is filled in. */
+    finale: { tag: string; text: string; cue: string };
+    /** What the role owns, crawling along the bottom like a news ticker. */
+    ticker: string[];
   };
   /** Still being confirmed; only enabled ones are shown. */
   promises: Array<{ text: string; enabled: boolean }>;

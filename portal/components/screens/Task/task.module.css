@@ -1075,3 +1075,312 @@ textarea.input {
     width: min(54vw, 82vh, 760px);
   }
 }
+
+/*
+ * Premiere: opening night for the studio's films, tracks and games. Built on
+ * signal's dark base, retinted to black velvet, red curtains at the edges and
+ * marquee gold for the marker.
+ */
+.signal.premiere {
+  --paper: #0c0807;
+  --ink: #f8efe0;
+  --mute: #a09080;
+  --red: #ffc23d;
+  --blue: #ff4f3a;
+  --coal: #070404;
+  --chalk: #f8efe0;
+  --line: rgba(248, 239, 224, 0.16);
+  background: radial-gradient(
+      120% 60% at 50% 120%,
+      rgba(150, 18, 28, 0.35),
+      transparent 60%
+    ),
+    var(--paper);
+  background-attachment: fixed;
+}
+/* Velvet curtains, folded, at the edges of the screen. */
+.signal.premiere::before {
+  background: linear-gradient(
+      90deg,
+      rgba(70, 6, 12, 0.85),
+      transparent 9%,
+      transparent 91%,
+      rgba(70, 6, 12, 0.85)
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.35) 0 14px,
+      rgba(255, 80, 80, 0.06) 14px 28px
+    );
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    #000,
+    transparent 10%,
+    transparent 90%,
+    #000
+  );
+  mask-image: linear-gradient(
+    90deg,
+    #000,
+    transparent 10%,
+    transparent 90%,
+    #000
+  );
+}
+.signal.premiere .t2,
+.signal.premiere .manifesto p,
+.signal.premiere .dl p,
+.signal.premiere .studioTxt p {
+  color: rgba(248, 239, 224, 0.8);
+}
+.signal.premiere .input,
+.signal.premiere textarea.input,
+.signal.premiere .file,
+.signal.premiere .choice,
+.signal.premiere .received,
+.signal.premiere .team li {
+  border-color: rgba(248, 239, 224, 0.28);
+}
+/* Gold handwriting where signal uses mono. */
+.signal.premiere .extra,
+.signal.premiere .timeline h3,
+.signal.premiere .clock,
+.handNote {
+  font:
+    600 clamp(26px, 3.2vw, 40px) / 1.05 var(--task-hand),
+    cursive;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--red);
+  text-shadow: 0 0 16px rgba(255, 194, 61, 0.45);
+}
+
+/* crowd */
+.crowdTxt {
+  position: absolute;
+  z-index: 2;
+  left: var(--gutter);
+  right: var(--gutter);
+  top: calc(56px + env(safe-area-inset-top, 0px));
+  max-width: 520px;
+  pointer-events: none;
+  text-shadow: 0 2px 20px rgba(12, 8, 7, 0.9);
+}
+.crowdTxt h2 {
+  position: relative;
+  margin: 12px 0 0;
+  font-weight: 700;
+  font-size: clamp(28px, 4.6vw, 60px);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+}
+.crowdTxt p {
+  margin: 14px 0 0;
+  font-size: clamp(14px, 1.6vw, 18px);
+  line-height: 1.5;
+  color: rgba(248, 239, 224, 0.8);
+}
+.counter {
+  margin-top: 18px;
+  font:
+    500 13px/1 var(--task-mono),
+    monospace;
+  color: var(--red);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.crowdTxt .handNote {
+  margin-top: 14px;
+  transform: rotate(-4deg);
+}
+@media (min-width: 900px) {
+  .crowdTxt {
+    top: 50%;
+    transform: translateY(-50%);
+    max-width: 34vw;
+  }
+}
+@media (max-width: 899px) {
+  .crowdTxt {
+    bottom: 7vh;
+  }
+  .crowdTxt .handNote {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    text-align: center;
+  }
+}
+
+/* marquee */
+.marquee {
+  width: min(100%, 1080px);
+  text-align: center;
+}
+.marquee h2 {
+  position: relative;
+  margin: 12px auto 0;
+  font-weight: 700;
+  font-size: clamp(28px, 4.6vw, 60px);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  max-width: 18ch;
+}
+.boardWrap {
+  position: relative;
+  display: inline-block;
+  margin-top: clamp(24px, 6vh, 56px);
+}
+.board {
+  position: relative;
+  padding: clamp(26px, 4vw, 44px) clamp(22px, 4vw, 52px);
+  border-radius: 10px;
+  background:
+    linear-gradient(#1a1210, #0e0908) padding-box,
+    linear-gradient(#5a3a10, #2a1a08) border-box;
+  border: 6px solid transparent;
+  box-shadow:
+    0 0 80px rgba(255, 194, 61, 0.18),
+    inset 0 0 40px rgba(0, 0, 0, 0.8);
+}
+.bulbs {
+  position: absolute;
+  display: flex;
+  justify-content: space-between;
+}
+.bulbs[data-side='0'],
+.bulbs[data-side='2'] {
+  left: 8px;
+  right: 8px;
+}
+.bulbs[data-side='0'] {
+  top: 6px;
+}
+.bulbs[data-side='2'] {
+  bottom: 6px;
+}
+.bulbs[data-side='1'],
+.bulbs[data-side='3'] {
+  top: 22px;
+  bottom: 22px;
+  flex-direction: column;
+}
+.bulbs[data-side='1'] {
+  right: 6px;
+}
+.bulbs[data-side='3'] {
+  left: 6px;
+}
+.bulbs i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ffe7a8;
+  box-shadow: 0 0 8px 2px rgba(255, 194, 61, 0.8);
+  animation: chase 0.9s steps(1) infinite;
+}
+@keyframes chase {
+  33% {
+    background: #6b4a12;
+    box-shadow: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bulbs i {
+    animation: none;
+  }
+}
+.boardTag {
+  font:
+    500 clamp(11px, 1.3vw, 14px) / 1 var(--task-mono),
+    monospace;
+  color: var(--blue);
+  text-transform: uppercase;
+  letter-spacing: 0.3em;
+}
+.flaps {
+  display: flex;
+  justify-content: center;
+  gap: clamp(2px, 0.4vw, 5px);
+  margin-top: 14px;
+}
+.flaps span {
+  display: grid;
+  place-items: center;
+  width: clamp(14px, 2.6vw, 34px);
+  height: clamp(22px, 3.8vw, 50px);
+  border-radius: 3px;
+  background: linear-gradient(#211714 50%, #1a1210 50%);
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.6);
+  font:
+    700 clamp(13px, 2.4vw, 32px) / 1 var(--task-display),
+    sans-serif;
+  color: #fff1cc;
+  white-space: pre;
+}
+.cue {
+  margin: 34px auto 0;
+  min-height: 2.2em;
+  max-width: 640px;
+  font-size: clamp(22px, 2.6vw, 32px);
+  text-align: center;
+}
+.boardRing {
+  position: absolute;
+  left: -20px;
+  top: -18px;
+  overflow: visible;
+  pointer-events: none;
+}
+.flash {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    circle at 70% 30%,
+    #fff,
+    rgba(255, 255, 255, 0.4) 30%,
+    transparent 70%
+  );
+}
+.ticker {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  overflow: hidden;
+  border-block: 1px solid var(--line);
+  padding: 10px 0;
+  font:
+    500 12px/1 var(--task-mono),
+    monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--ink);
+}
+.ticker > div {
+  display: flex;
+  width: max-content;
+  animation: crawl 28s linear infinite;
+}
+.ticker span span {
+  margin-right: 22px;
+}
+.ticker b {
+  margin-left: 22px;
+  color: var(--red);
+  font-weight: 400;
+}
+@keyframes crawl {
+  to {
+    transform: translateX(-50%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ticker > div {
+    animation: none;
+  }
+}
