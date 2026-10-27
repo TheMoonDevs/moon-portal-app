@@ -49,6 +49,8 @@ const LIVE_INTERVAL_MS = 15_000;
 
 type StageFilter = 'ALL' | APPLICATION_STAGE;
 
+type ApplicantLink = { id: string; companyId: string; openingId: string };
+
 const OpeningCard = ({
   opening,
   active,
@@ -181,7 +183,7 @@ export const AdminHiring = ({
   selectedCompanyId: string | null;
   onSelectCompany: (companyId: string) => void;
 }) => {
-  const { hiringCompanies, can } = useWorkspace();
+  const { hiringCompanies, can, loading: workspaceLoading } = useWorkspace();
   const companyId = hiringCompanies.some(
     (c) => c.company.id === selectedCompanyId,
   )
@@ -190,6 +192,9 @@ export const AdminHiring = ({
 
   const [openings, setOpenings] = useState<OpeningRow[]>([]);
   const [openingsLoading, setOpeningsLoading] = useState(false);
+  // Which company `openings` and which opening `applications` were loaded for.
+  const [openingsFor, setOpeningsFor] = useState<string | null>(null);
+  const [applicationsFor, setApplicationsFor] = useState<string | null>(null);
   const [openingId, setOpeningId] = useState<string | null>(null);
   const [applications, setApplications] = useState<ApplicationRow[]>([]);
   const [applicationsLoading, setApplicationsLoading] = useState(false);
@@ -229,6 +234,7 @@ export const AdminHiring = ({
         );
         const rows: OpeningRow[] = res?.data?.openings ?? [];
         setOpenings(rows);
+        setOpeningsFor(companyId);
         setOpeningId((current) =>
           current && rows.some((o) => o.id === current)
             ? current
@@ -265,6 +271,7 @@ export const AdminHiring = ({
         }
         knownIds.current = new Set(rows.map((a) => a.id));
         setApplications(rows);
+        setApplicationsFor(openingId);
         setLastSync(new Date());
       } catch (err) {
         if (!silent) toast.error(errorText(err, 'Could not load applicants.'));
@@ -277,6 +284,7 @@ export const AdminHiring = ({
 
   useEffect(() => {
     setOpenings([]);
+    setOpeningsFor(null);
     setOpeningId(null);
     loadOpenings();
   }, [loadOpenings]);
@@ -284,6 +292,7 @@ export const AdminHiring = ({
   useEffect(() => {
     knownIds.current = null;
     setApplications([]);
+    setApplicationsFor(null);
     setSelected(new Set());
     setStageFilter('ALL');
     loadApplications();
@@ -307,66 +316,101 @@ export const AdminHiring = ({
 
   /* ------------------------------ applicant links ----------------------------- */
 
-  // `?tab=hiring&application=<id>` opens that applicant: pick their company,
-  // then their opening, then show them once the opening's applicants load.
-  const [linked, setLinked] = useState<ApplicationRow | null>(null);
+  // `?tab=hiring&company=<id>&opening=<id>&application=<id>` opens that
+  // applicant: pick their company, then their opening, then show them once
+  // the opening's applicants load. Older links carry only the application,
+  // so its company and opening are looked up first.
+  const [linked, setLinked] = useState<ApplicantLink | null>(null);
+  const linkRead = useRef(false);
 
   useEffect(() => {
-    const id = new URLSearchParams(window.location.search).get('application');
-    if (!id) return;
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('application');
+    const linkCompanyId = params.get('company');
+    const linkOpeningId = params.get('opening');
+    if (!id) {
+      linkRead.current = true;
+      return;
+    }
+    if (linkCompanyId && linkOpeningId) {
+      setLinked({ id, companyId: linkCompanyId, openingId: linkOpeningId });
+      linkRead.current = true;
+      return;
+    }
     PortalSdk.getData(`/api/hiring/applications/${id}`, null)
       .then((res) => {
         const application: ApplicationRow | undefined = res?.data?.application;
-        if (application) setLinked(application);
+        if (application)
+          setLinked({
+            id: application.id,
+            companyId: application.companyId,
+            openingId: application.openingId,
+          });
       })
       .catch((err) =>
         toast.error(errorText(err, 'Could not open that applicant.')),
-      );
+      )
+      .finally(() => {
+        linkRead.current = true;
+      });
   }, []);
 
   useEffect(() => {
-    if (!linked) return;
+    if (!linked || workspaceLoading) return;
     if (companyId !== linked.companyId) {
-      if (hiringCompanies.some((c) => c.company.id === linked.companyId))
+      if (hiringCompanies.some((c) => c.company.id === linked.companyId)) {
         onSelectCompany(linked.companyId);
-      else setLinked(null);
-      return;
-    }
-    if (openingsLoading) return;
-    if (!openings.some((o) => o.id === linked.openingId)) {
-      if (openings.length) {
-        toast.error("That applicant's opening is archived.");
+      } else {
+        toast.error(
+          "This account can't see hiring in that applicant's company.",
+        );
         setLinked(null);
       }
+      return;
+    }
+    // Wait for this company's openings, not the ones still on screen.
+    if (openingsLoading || openingsFor !== linked.companyId) return;
+    if (!openings.some((o) => o.id === linked.openingId)) {
+      toast.error("That applicant's opening is archived.");
+      setLinked(null);
       return;
     }
     if (openingId !== linked.openingId) {
       setOpeningId(linked.openingId);
       return;
     }
-    if (applications.some((a) => a.id === linked.id)) {
-      setDetailId(linked.id);
-      setLinked(null);
-    }
+    if (applicationsLoading || applicationsFor !== linked.openingId) return;
+    if (applications.some((a) => a.id === linked.id)) setDetailId(linked.id);
+    else toast.error('That applicant is no longer in this opening.');
+    setLinked(null);
   }, [
     linked,
+    workspaceLoading,
     companyId,
     hiringCompanies,
     onSelectCompany,
     openings,
+    openingsFor,
     openingsLoading,
     openingId,
     applications,
+    applicationsFor,
+    applicationsLoading,
   ]);
 
   // Keep the open applicant in the address bar so the page can be shared.
   useEffect(() => {
-    if (linked) return;
+    if (linked || !linkRead.current) return;
     const url = new URL(window.location.href);
-    if (detailId) url.searchParams.set('application', detailId);
-    else url.searchParams.delete('application');
+    for (const key of ['company', 'opening', 'application'])
+      url.searchParams.delete(key);
+    if (detailId && companyId && openingId) {
+      url.searchParams.set('company', companyId);
+      url.searchParams.set('opening', openingId);
+      url.searchParams.set('application', detailId);
+    }
     window.history.replaceState(null, '', url.toString());
-  }, [detailId, linked]);
+  }, [detailId, linked, companyId, openingId]);
 
   /* -------------------------------- actions -------------------------------- */
 

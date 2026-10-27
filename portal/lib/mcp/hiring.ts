@@ -88,7 +88,8 @@ const clip = (value: string, max: number) =>
 
 const links = (origin: string) => ({
   hiringTab: `${origin}/admin?tab=hiring`,
-  applicant: (id: string) => `${origin}/admin?tab=hiring&application=${id}`,
+  applicant: (a: Pick<JobApplication, 'id' | 'companyId' | 'openingId'>) =>
+    `${origin}/admin?tab=hiring&company=${a.companyId}&opening=${a.openingId}&application=${a.id}`,
   apply: (slug: string) => `${origin}/apply/${slug}`,
   taskPreview: (openingId: string) => `${origin}/task/preview/${openingId}`,
 });
@@ -248,7 +249,7 @@ const applicantSummary = (
   name: a.name,
   email: a.email,
   stage: a.stage,
-  url: links(context.origin).applicant(a.id),
+  url: links(context.origin).applicant(a),
   appliedAt: a.submittedAt,
   lastEmail: a.lastEmail
     ? {
@@ -828,7 +829,7 @@ export const HIRING_TOOLS: Tool[] = [
         name: application.name,
         email: application.email,
         stage: application.stage,
-        url: links(context.origin).applicant(application.id),
+        url: links(context.origin).applicant(application),
         opening: opening ? { id: opening.id, title: opening.title } : null,
         appliedAt: application.submittedAt,
         answers: answersView(application, opening?.fields ?? [], context, 5000),
