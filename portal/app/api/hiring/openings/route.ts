@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server';
 import {
   countByStage,
   emptyStageCounts,
+  hiringLeadProblem,
   parseOpeningInput,
   statusTimestamps,
   uniqueOpeningSlug,
@@ -86,6 +87,8 @@ export async function POST(request: Request) {
   });
   if (error) return fail(400, error);
   if (!data.title) return fail(400, 'Give the opening a title.');
+  const leadProblem = await hiringLeadProblem(companyId, data.hiringLeadId);
+  if (leadProblem) return fail(400, leadProblem);
 
   const now = nowIso();
   const opening = await db.jobOpening.create({
@@ -101,6 +104,8 @@ export async function POST(request: Request) {
       notes: data.notes ?? null,
       status: data.status,
       fields: data.fields ?? [],
+      task: data.task ?? null,
+      hiringLeadId: data.hiringLeadId ?? null,
       createdById: user.id,
       publishedAt: null,
       closedAt: null,

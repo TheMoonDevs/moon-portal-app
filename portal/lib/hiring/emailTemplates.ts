@@ -20,6 +20,7 @@ export const EMAIL_VARIABLES = [
   { key: 'company', label: 'Company' },
   { key: 'sender', label: 'Your name' },
   { key: 'meetingLink', label: 'Your meeting link' },
+  { key: 'taskLink', label: 'Their task link' },
 ] as const;
 
 export type EmailVariable = (typeof EMAIL_VARIABLES)[number]['key'];
@@ -124,6 +125,7 @@ export function emailVariables({
   sender,
   email,
   meetingLink,
+  taskLink,
 }: {
   name: string;
   role: string;
@@ -133,6 +135,8 @@ export function emailVariables({
   email?: string | null;
   /** The sender's booking link (/meet/<code>), see lib/meet. */
   meetingLink?: string | null;
+  /** The candidate's private task page (/task/<token>), see lib/hiring/tasks. */
+  taskLink?: string | null;
 }): EmailVariables {
   const fullName = name.trim();
   return {
@@ -147,12 +151,17 @@ export function emailVariables({
           ...(email ? { email } : {}),
         }).toString()}`
       : '',
+    taskLink: taskLink ?? '',
   };
 }
 
 /** Whether a template uses the sender's booking link. */
 export const usesMeetingLink = (...texts: string[]) =>
   texts.some((text) => /\{\{\s*meetingLink\s*\}\}/.test(text));
+
+/** Whether a template gives each candidate their task link. */
+export const usesTaskLink = (...texts: string[]) =>
+  texts.some((text) => /\{\{\s*taskLink\s*\}\}/.test(text));
 
 const PLACEHOLDER = /\{\{\s*([a-zA-Z]+)\s*\}\}/g;
 

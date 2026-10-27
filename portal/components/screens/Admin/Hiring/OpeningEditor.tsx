@@ -1,5 +1,6 @@
 'use client';
 
+import type { User } from '@db/client';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -9,11 +10,15 @@ import {
   MAX_FIELDS,
   newFieldId,
 } from '@/lib/hiring/forms';
+import { STARTER_TASKS, TASK_PAGES } from '@/lib/hiring/taskPages';
+import { MAX_DELIVERABLES } from '@/lib/hiring/tasks';
 import { cn } from '@/lib/utils';
 import {
   FORM_FIELD_TYPE,
   type FormField,
   JOB_OPENING_STATUS,
+  type JobTask,
+  type TaskDeliverable,
 } from '@/models/hiring';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
@@ -37,6 +42,26 @@ import {
 
 type DraftField = FormField & { optionsText?: string };
 
+type DraftTask = {
+  page: string;
+  brief: string;
+  effort: string;
+  dueDays: string;
+  deliverables: TaskDeliverable[];
+  closing: string;
+  fields: DraftField[];
+};
+
+const toDraftTask = (task: JobTask): DraftTask => ({
+  page: task.page ?? '',
+  brief: task.brief ?? '',
+  effort: task.effort ?? '',
+  dueDays: task.dueDays ? String(task.dueDays) : '',
+  deliverables: task.deliverables ?? [],
+  closing: task.closing ?? '',
+  fields: (task.fields ?? []).map(toDraftField),
+});
+
 const emptyDraft = {
   title: '',
   department: '',
@@ -47,6 +72,30 @@ const emptyDraft = {
   notes: '',
   status: JOB_OPENING_STATUS.DRAFT as JOB_OPENING_STATUS,
   fields: [] as DraftField[],
+  hiringLeadId: '',
+  task: null as DraftTask | null,
+};
+
+/** Turns the editor's questions back into form fields. */
+const toFields = (draft: DraftField[]): FormField[] =>
+  draft.map(({ optionsText, ...field }) => ({
+    ...field,
+    options: FIELD_TYPE_META[field.type].hasOptions
+      ? (optionsText ?? '')
+          .split('\n')
+          .map((o) => o.trim())
+          .filter(Boolean)
+      : undefined,
+  }));
+
+/** Why a form can't be saved yet, or null. */
+const formProblem = (fields: FormField[]) => {
+  const unlabelled = fields.findIndex((f) => !f.label.trim());
+  if (unlabelled >= 0) return `Question ${unlabelled + 1} needs a label.`;
+  const noChoices = fields.find(
+    (f) => FIELD_TYPE_META[f.type].hasOptions && !f.options?.length,
+  );
+  return noChoices ? `Add choices to “${noChoices.label}”.` : null;
 };
 
 const toDraftField = (field: FormField): DraftField => ({
@@ -181,22 +230,292 @@ const QuestionRow = ({
   );
 };
 
+/** An editable list of questions, shared by the application and task forms. */
+const QuestionList = ({
+  fields,
+  setFields,
+  presets,
+}: {
+  fields: DraftField[];
+  setFields: (update: (fields: DraftField[]) => DraftField[]) => void;
+  presets: boolean;
+}) => {
+  const addField = (field: Omit<DraftField, 'id'>) => {
+    if (fields.length >= MAX_FIELDS)
+      return toast.error(`A form can have up to ${MAX_FIELDS} questions.`);
+    setFields((list) => [
+      ...list,
+      toDraftField({ ...field, id: newFieldId() }),
+    ]);
+  };
+  return (
+    <>
+      {fields.map((field, index) => (
+        <QuestionRow
+          key={field.id}
+          field={field}
+          index={index}
+          count={fields.length}
+          onChange={(next) =>
+            setFields((list) => list.map((f) => (f.id === field.id ? next : f)))
+          }
+          onMove={(direction) =>
+            setFields((list) => {
+              const next = [...list];
+              const target = index + direction;
+              [next[index], next[target]] = [next[target], next[index]];
+              return next;
+            })
+          }
+          onRemove={() =>
+            setFields((list) => list.filter((f) => f.id !== field.id))
+          }
+        />
+      ))}
+
+      <div className="flex flex-col gap-2">
+        <AdminButton
+          size="sm"
+          icon="add"
+          className="self-start"
+          onClick={() =>
+            addField({
+              label: '',
+              type: FORM_FIELD_TYPE.SHORT_TEXT,
+              required: false,
+            })
+          }
+        >
+          Add question
+        </AdminButton>
+        {presets && (
+          <>
+            <p className="pt-2 text-xs uppercase tracking-wide text-neutral-500">
+              Common questions
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {QUESTION_PRESETS.filter(
+                (preset) => !fields.some((f) => f.label === preset.label),
+              ).map((preset) => (
+                <button
+                  type="button"
+                  key={preset.label}
+                  onClick={() => addField(preset)}
+                  className="flex items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-1.5 text-xs text-neutral-400 transition-colors hover:border-white/20 hover:text-neutral-100"
+                >
+                  <Icon
+                    name={FIELD_TYPE_META[preset.type].icon}
+                    className="text-[14px]"
+                  />
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </>
+  );
+};
+
+/** The take-home task: its brief, what to make, and the form to send it. */
+const TaskEditor = ({
+  task,
+  onChange,
+}: {
+  task: DraftTask | null;
+  onChange: (task: DraftTask | null) => void;
+}) => {
+  if (!task)
+    return (
+      <div className="flex flex-col items-start gap-3 rounded-xl border border-dashed border-white/10 p-5 text-sm text-neutral-400">
+        <p>
+          No task yet. Each candidate gets the task on their own private page,
+          sent with the <code>{'{{taskLink}}'}</code> placeholder in an email.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {Object.entries(STARTER_TASKS).map(([key, starter]) => (
+            <AdminButton
+              key={key}
+              size="sm"
+              icon="auto_awesome"
+              onClick={() => onChange(toDraftTask(starter))}
+            >
+              Start from the {TASK_PAGES[key]?.name.toLowerCase() ?? key} brief
+            </AdminButton>
+          ))}
+          <AdminButton
+            size="sm"
+            tone="ghost"
+            icon="add"
+            onClick={() =>
+              onChange(toDraftTask({ brief: '', deliverables: [], fields: [] }))
+            }
+          >
+            Write one
+          </AdminButton>
+        </div>
+      </div>
+    );
+
+  const set = <K extends keyof DraftTask>(key: K, value: DraftTask[K]) =>
+    onChange({ ...task, [key]: value });
+  const setDeliverable = (i: number, next: TaskDeliverable | null) =>
+    set(
+      'deliverables',
+      next
+        ? task.deliverables.map((d, j) => (j === i ? next : d))
+        : task.deliverables.filter((_, j) => j !== i),
+    );
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="grid gap-4 md:grid-cols-3">
+        <Field label="Intro" hint="The designed scenes before the brief.">
+          <NativeSelect
+            value={task.page}
+            onChange={(e) => set('page', e.target.value)}
+          >
+            <option value="">None, just the brief</option>
+            {Object.values(TASK_PAGES).map((page) => (
+              <option key={page.key} value={page.key}>
+                {page.name}
+              </option>
+            ))}
+          </NativeSelect>
+        </Field>
+        <Field label="Time it takes">
+          <TextInput
+            value={task.effort}
+            onChange={(e) => set('effort', e.target.value)}
+            placeholder="About 3 to 4 hours"
+          />
+        </Field>
+        <Field
+          label="Due after (days)"
+          hint="Counted from the first task email. They can send again until then."
+        >
+          <TextInput
+            type="number"
+            min={1}
+            value={task.dueDays}
+            onChange={(e) => set('dueDays', e.target.value)}
+            placeholder="4"
+          />
+        </Field>
+      </div>
+      <Field label="Brief" hint="Blank lines separate paragraphs.">
+        <TextArea
+          value={task.brief}
+          onChange={(e) => set('brief', e.target.value)}
+          className="min-h-[120px]"
+        />
+      </Field>
+
+      <Field label="What to make">
+        <div className="flex flex-col gap-2">
+          {task.deliverables.map((d, i) => (
+            <div
+              key={i}
+              className="flex flex-col gap-2 rounded-xl border border-white/[0.07] bg-white/[0.02] p-3"
+            >
+              <div className="flex items-center gap-2">
+                <span className="w-6 text-xs text-neutral-500">{i + 1}</span>
+                <TextInput
+                  value={d.title}
+                  onChange={(e) =>
+                    setDeliverable(i, { ...d, title: e.target.value })
+                  }
+                  placeholder="The storyboard"
+                  className="flex-1"
+                />
+                <IconAction
+                  icon="delete"
+                  label="Remove"
+                  tone="danger"
+                  onClick={() => setDeliverable(i, null)}
+                />
+              </div>
+              <TextArea
+                value={d.body}
+                onChange={(e) =>
+                  setDeliverable(i, { ...d, body: e.target.value })
+                }
+                placeholder="What it is and what good looks like."
+                className="min-h-[72px]"
+              />
+            </div>
+          ))}
+          {task.deliverables.length < MAX_DELIVERABLES && (
+            <AdminButton
+              size="sm"
+              icon="add"
+              className="self-start"
+              onClick={() =>
+                set('deliverables', [
+                  ...task.deliverables,
+                  { title: '', body: '' },
+                ])
+              }
+            >
+              Add something to make
+            </AdminButton>
+          )}
+        </div>
+      </Field>
+      <Field label="Last line" hint="Shown under the list, in handwriting.">
+        <TextInput
+          value={task.closing}
+          onChange={(e) => set('closing', e.target.value)}
+          placeholder="Go further, if you like."
+        />
+      </Field>
+
+      <p className="pt-2 text-xs uppercase tracking-wide text-neutral-500">
+        Submission form · the link already knows their name and email
+      </p>
+      <QuestionList
+        fields={task.fields}
+        setFields={(update) => set('fields', update(task.fields))}
+        presets={false}
+      />
+
+      <AdminButton
+        size="sm"
+        tone="ghost"
+        icon="delete"
+        className="self-start"
+        onClick={() => onChange(null)}
+      >
+        Remove the task
+      </AdminButton>
+    </div>
+  );
+};
+
+type LeadOption = { id: string; name: string };
+
 export const OpeningEditor = ({
   open,
   onOpenChange,
   companyId,
   opening,
+  users,
   onSaved,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   companyId: string;
   opening: OpeningRow | null;
+  users: User[];
   onSaved: (opening: OpeningRow) => void;
 }) => {
   const [draft, setDraft] = useState(emptyDraft);
-  const [section, setSection] = useState<'details' | 'form'>('details');
+  const [section, setSection] = useState<'details' | 'form' | 'task'>(
+    'details',
+  );
   const [saving, setSaving] = useState(false);
+  const [members, setMembers] = useState<LeadOption[] | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -213,6 +532,8 @@ export const OpeningEditor = ({
             notes: opening.notes ?? '',
             status: opening.status,
             fields: (opening.fields ?? []).map(toDraftField),
+            hiringLeadId: opening.hiringLeadId ?? '',
+            task: opening.task ? toDraftTask(opening.task) : null,
           }
         : {
             ...emptyDraft,
@@ -228,6 +549,36 @@ export const OpeningEditor = ({
     );
   }, [open, opening]);
 
+  // The lead is one of the company's members; without access to the member
+  // list, everyone the admin can see is offered and the server checks.
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    PortalSdk.getData(`/api/companies/${companyId}/members`, null)
+      .then((res) => {
+        if (cancelled) return;
+        const list: Array<{ userId: string; user?: { name?: string } }> =
+          res?.data?.members ?? [];
+        setMembers(
+          list.map((m) => ({
+            id: m.userId,
+            name:
+              m.user?.name ||
+              users.find((u) => u.id === m.userId)?.name ||
+              m.userId,
+          })),
+        );
+      })
+      .catch(() => !cancelled && setMembers(null));
+    return () => {
+      cancelled = true;
+    };
+  }, [open, companyId, users]);
+
+  const leadOptions: LeadOption[] =
+    members ??
+    users.map((u) => ({ id: u.id, name: u.name || u.email || u.id }));
+
   const set = <K extends keyof typeof emptyDraft>(
     key: K,
     value: (typeof emptyDraft)[K],
@@ -236,47 +587,42 @@ export const OpeningEditor = ({
   const setFields = (update: (fields: DraftField[]) => DraftField[]) =>
     setDraft((d) => ({ ...d, fields: update(d.fields) }));
 
-  const addField = (field: Omit<DraftField, 'id'>) => {
-    if (draft.fields.length >= MAX_FIELDS)
-      return toast.error(`A form can have up to ${MAX_FIELDS} questions.`);
-    setFields((fields) => [
-      ...fields,
-      toDraftField({ ...field, id: newFieldId() }),
-    ]);
-  };
-
   const save = async () => {
     if (!draft.title.trim()) {
       setSection('details');
       return toast.error('Give the opening a title.');
     }
-    const fields: FormField[] = draft.fields.map(
-      ({ optionsText, ...field }) => ({
-        ...field,
-        options: FIELD_TYPE_META[field.type].hasOptions
-          ? (optionsText ?? '')
-              .split('\n')
-              .map((o) => o.trim())
-              .filter(Boolean)
-          : undefined,
-      }),
-    );
-    const unlabelled = fields.findIndex((f) => !f.label.trim());
-    if (unlabelled >= 0) {
+    const fields = toFields(draft.fields);
+    const problem = formProblem(fields);
+    if (problem) {
       setSection('form');
-      return toast.error(`Question ${unlabelled + 1} needs a label.`);
+      return toast.error(problem);
     }
-    const noChoices = fields.find(
-      (f) => FIELD_TYPE_META[f.type].hasOptions && !f.options?.length,
-    );
-    if (noChoices) {
-      setSection('form');
-      return toast.error(`Add choices to “${noChoices.label}”.`);
+    const task: JobTask | null = draft.task
+      ? {
+          page: draft.task.page || null,
+          brief: draft.task.brief,
+          effort: draft.task.effort || null,
+          dueDays: Number(draft.task.dueDays) || null,
+          deliverables: draft.task.deliverables,
+          closing: draft.task.closing || null,
+          fields: toFields(draft.task.fields),
+        }
+      : null;
+    const taskProblem = task && formProblem(task.fields);
+    if (taskProblem) {
+      setSection('task');
+      return toast.error(`Task form: ${taskProblem}`);
     }
 
     setSaving(true);
     try {
-      const payload = { ...draft, fields };
+      const payload = {
+        ...draft,
+        fields,
+        task,
+        hiringLeadId: draft.hiringLeadId || null,
+      };
       const res = opening
         ? await PortalSdk.patchData(
             `/api/hiring/openings/${opening.id}`,
@@ -331,6 +677,7 @@ export const OpeningEditor = ({
               icon: 'list_alt',
               count: draft.fields.length,
             },
+            { value: 'task', label: 'Task', icon: 'assignment' },
           ]}
         />
 
@@ -393,6 +740,23 @@ export const OpeningEditor = ({
               </NativeSelect>
             </Field>
             <Field
+              label="Hiring lead"
+              className="md:col-span-2"
+              hint="The person candidates will work with."
+            >
+              <NativeSelect
+                value={draft.hiringLeadId}
+                onChange={(e) => set('hiringLeadId', e.target.value)}
+              >
+                <option value="">Nobody yet</option>
+                {leadOptions.map((person) => (
+                  <option key={person.id} value={person.id}>
+                    {person.name}
+                  </option>
+                ))}
+              </NativeSelect>
+            </Field>
+            <Field
               label="Summary"
               className="md:col-span-2"
               hint="A few lines at the top of the apply page."
@@ -435,7 +799,7 @@ export const OpeningEditor = ({
               />
             </Field>
           </div>
-        ) : (
+        ) : section === 'form' ? (
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-2 rounded-xl border border-white/[0.07] bg-white/[0.02] p-3 text-sm text-neutral-400">
               <span className="flex items-center gap-2">
@@ -443,71 +807,13 @@ export const OpeningEditor = ({
                 Full name and email are always asked first.
               </span>
             </div>
-
-            {draft.fields.map((field, index) => (
-              <QuestionRow
-                key={field.id}
-                field={field}
-                index={index}
-                count={draft.fields.length}
-                onChange={(next) =>
-                  setFields((fields) =>
-                    fields.map((f) => (f.id === field.id ? next : f)),
-                  )
-                }
-                onMove={(direction) =>
-                  setFields((fields) => {
-                    const next = [...fields];
-                    const target = index + direction;
-                    [next[index], next[target]] = [next[target], next[index]];
-                    return next;
-                  })
-                }
-                onRemove={() =>
-                  setFields((fields) => fields.filter((f) => f.id !== field.id))
-                }
-              />
-            ))}
-
-            <div className="flex flex-col gap-2">
-              <AdminButton
-                size="sm"
-                icon="add"
-                className="self-start"
-                onClick={() =>
-                  addField({
-                    label: '',
-                    type: FORM_FIELD_TYPE.SHORT_TEXT,
-                    required: false,
-                  })
-                }
-              >
-                Add question
-              </AdminButton>
-              <p className="pt-2 text-xs uppercase tracking-wide text-neutral-500">
-                Common questions
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {QUESTION_PRESETS.filter(
-                  (preset) =>
-                    !draft.fields.some((f) => f.label === preset.label),
-                ).map((preset) => (
-                  <button
-                    type="button"
-                    key={preset.label}
-                    onClick={() => addField(preset)}
-                    className="flex items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-1.5 text-xs text-neutral-400 transition-colors hover:border-white/20 hover:text-neutral-100"
-                  >
-                    <Icon
-                      name={FIELD_TYPE_META[preset.type].icon}
-                      className="text-[14px]"
-                    />
-                    {preset.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <QuestionList fields={draft.fields} setFields={setFields} presets />
           </div>
+        ) : (
+          <TaskEditor
+            task={draft.task}
+            onChange={(task) => set('task', task)}
+          />
         )}
       </div>
     </AdminModal>

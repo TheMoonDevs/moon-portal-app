@@ -1,3 +1,6 @@
+import Link from 'next/link';
+
+import { CODES, CODES_PATH } from '@/lib/company/codes';
 import { QuotesData } from '@/utils/constants/quotesData';
 
 const randomQuote = QuotesData[Math.floor(Math.random() * QuotesData.length)];
@@ -10,6 +13,12 @@ export const StartSection = () => {
       <p className="mt-2 text-left font-serif text-sm text-neutral-700">
         -- {randomQuote.author}
       </p>
+      <Link
+        href={CODES_PATH}
+        className="self-end text-xs text-neutral-400 transition-colors hover:text-neutral-600"
+      >
+        {CODES.length} codes to follow →
+      </Link>
     </div>
   );
 };

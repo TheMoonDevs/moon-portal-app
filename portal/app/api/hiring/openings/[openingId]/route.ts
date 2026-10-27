@@ -1,6 +1,7 @@
 import {
   countByStage,
   emptyStageCounts,
+  hiringLeadProblem,
   parseOpeningInput,
   requireOpeningPermission,
   statusTimestamps,
@@ -38,6 +39,11 @@ export async function PATCH(request: Request, { params }: Params) {
   const body = await request.json().catch(() => ({}));
   const { data, error } = parseOpeningInput(body);
   if (error) return fail(400, error);
+  const leadProblem = await hiringLeadProblem(
+    opening.companyId,
+    data.hiringLeadId,
+  );
+  if (leadProblem) return fail(400, leadProblem);
 
   const statusChanged = !!data.status && data.status !== opening.status;
   const updated = await db.jobOpening.update({

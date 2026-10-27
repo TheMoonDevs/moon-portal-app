@@ -20,9 +20,15 @@ import {
   MAX_SUBJECT,
   renderEmail,
   usesMeetingLink,
+  usesTaskLink,
 } from './emailTemplates';
 import { isValidEmail } from './forms';
-import { isStage, moveApplication } from './server';
+import {
+  ensureTaskToken,
+  isStage,
+  moveApplication,
+  taskLinkFor,
+} from './server';
 
 /*
  * Emailing applicants, shared by the hiring tab's composer and the Claude
@@ -89,7 +95,7 @@ export function parseHiringSend(raw: Record<string, unknown>): {
 type Sender = {
   id: string;
   email?: string | null;
-  /** The portal's public origin, for {{meetingLink}}. */
+  /** The portal's public origin, for {{meetingLink}} and {{taskLink}}. */
   origin?: string;
 };
 
@@ -119,10 +125,28 @@ export async function renderHiringEmails(
   ]);
   const companyName: string = company?.name ?? '';
   const roleOf = new Map(openings.map((o) => [o.id, o.title]));
+
+  // Each candidate's own task page; the token is made the first time.
+  const withTask = new Set(openings.filter((o) => o.task).map((o) => o.id));
+  const taskLinks =
+    sender.origin && usesTaskLink(send.subject, send.body)
+      ? await Promise.all(
+          applications.map(async (a) =>
+            withTask.has(a.openingId)
+              ? taskLinkFor(sender.origin!, await ensureTaskToken(a))
+              : null,
+          ),
+        )
+      : [];
+  if (taskLinks.length && taskLinks.some((link) => !link))
+    throw new HiringSendError(
+      400,
+      'This opening has no task yet. Add one in the opening editor before sending {{taskLink}}.',
+    );
   const from = hiringFrom(companyName);
   const replyTo = send.replyTo || user?.email || sender.email || null;
 
-  return applications.map((application) => ({
+  return applications.map((application, i) => ({
     from,
     to: application.email,
     replyTo,
@@ -136,6 +160,7 @@ export async function renderHiringEmails(
         sender: user?.name || '',
         email: application.email,
         meetingLink,
+        taskLink: taskLinks[i] ?? null,
       }),
     ),
   }));
@@ -259,9 +284,17 @@ export async function deliverHiringEmails(
           at: sentAt,
           templateId: send.templateId,
         };
+        // The due date counts from the first email with the task link.
+        const taskSent =
+          usesTaskLink(send.subject, send.body) && !application.taskSentAt;
         const emailed: JobApplication = await db.jobApplication.update({
           where: { id: application.id },
-          data: { lastEmail, updatedAt: sentAt, history: { push: event } },
+          data: {
+            lastEmail,
+            updatedAt: sentAt,
+            history: { push: event },
+            ...(taskSent && { taskSentAt: sentAt }),
+          },
         });
         return send.moveTo
           ? moveApplication(emailed, send.moveTo, sender.id)

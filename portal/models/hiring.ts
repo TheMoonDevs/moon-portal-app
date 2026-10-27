@@ -83,7 +83,7 @@ export type ApplicationAnswer =
   | ApplicationFile;
 
 export interface ApplicationEvent {
-  type: 'SUBMITTED' | 'STAGE_CHANGED' | 'NOTE' | 'EMAIL';
+  type: 'SUBMITTED' | 'STAGE_CHANGED' | 'NOTE' | 'EMAIL' | 'TASK_SUBMITTED';
   at: string;
   byUserId?: Nullable<string>;
   from?: Nullable<APPLICATION_STAGE>;
@@ -119,6 +119,43 @@ export interface ApplicationLastEmail {
   templateId?: Nullable<string>;
 }
 
+/** One thing a candidate makes for the task. */
+export interface TaskDeliverable {
+  title: string;
+  body: string;
+}
+
+/**
+ * The take-home task for an opening. Each candidate gets it on a private page,
+ * /task/<token>, sent with the {{taskLink}} email placeholder. The hiring team
+ * edits it in the opening editor or through Claude; only the designed intro
+ * before it lives in code (lib/hiring/taskPages).
+ */
+export interface JobTask {
+  /** The designed intro the page opens with, a key of TASK_PAGES. */
+  page?: Nullable<string>;
+  /** The brief. Blank lines separate paragraphs. */
+  brief: string;
+  /** How long it should take, e.g. "About 3 to 4 hours". */
+  effort?: Nullable<string>;
+  /**
+   * Days after the task email that it is due. Candidates can send again until
+   * then; without it they send once.
+   */
+  dueDays?: Nullable<number>;
+  deliverables: TaskDeliverable[];
+  /** A last line under the deliverables. */
+  closing?: Nullable<string>;
+  /** The submission form. The link already says who the candidate is. */
+  fields: FormField[];
+}
+
+/** What a candidate sent back from their task page. */
+export interface TaskSubmission {
+  answers: Record<string, ApplicationAnswer>;
+  submittedAt: string;
+}
+
 export type JobOpening = Loose<
   BaseModel & {
     companyId: string;
@@ -136,6 +173,9 @@ export type JobOpening = Loose<
     notes?: Nullable<string>;
     status: JOB_OPENING_STATUS;
     fields: FormField[];
+    task?: Nullable<JobTask>;
+    /** The person candidates work with, a member of the company. */
+    hiringLeadId?: Nullable<string>;
     createdById: string;
     publishedAt?: Nullable<DateValue>;
     closedAt?: Nullable<DateValue>;
@@ -156,6 +196,11 @@ export type JobApplication = Loose<
     history: ApplicationEvent[];
     submittedAt: DateValue;
     lastEmail?: Nullable<ApplicationLastEmail>;
+    /** Opens /task/<taskToken> without signing in. Made on first use. */
+    taskToken?: Nullable<string>;
+    /** When the task link was first emailed; the due date counts from here. */
+    taskSentAt?: Nullable<string>;
+    taskSubmission?: Nullable<TaskSubmission>;
   }
 >;
 
