@@ -196,6 +196,8 @@ export type TaskSchedule = Loose<
     lastRunOn?: Nullable<string>;
     /** The plan it was set up in; its tasks are linked to that plan. */
     planId?: Nullable<string>;
+    /** Set up for its goal when the goal was added; see goalSchedules. */
+    fromGoal?: boolean;
     createdById: string;
   }
 >;

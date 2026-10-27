@@ -3,6 +3,7 @@ import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 import { db } from '@/lib/mongodb/db-client';
 import { isOnProjectTeam } from '@/lib/permissions/company';
 import type { SessionUser } from '@/lib/permissions/server';
+import { runDueSchedules } from '@/lib/workspace/schedules';
 import { getWorkspaceForUser } from '@/lib/workspace/server';
 import type { WorklogLink } from '@/models/worklogs';
 import type { Project, Task } from '@/models/workspace';
@@ -46,6 +47,9 @@ export async function linkCandidates(
       },
     })
   ).filter((p: Project) => isOnTeam(p, user.id));
+  // Today's scheduled tasks (and the next ones) exist before matching.
+  if (projects.length)
+    await runDueSchedules({ projectId: { in: projects.map((p) => p.id) } });
   const tasks: Task[] = projects.length
     ? await db.task.findMany({
         where: {

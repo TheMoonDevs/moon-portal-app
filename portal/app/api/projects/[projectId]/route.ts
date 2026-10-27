@@ -1,5 +1,6 @@
 import { brandKitDefaults, sanitizeBrandKit } from '@/lib/brandKit';
 import { db } from '@/lib/mongodb/db-client';
+import { syncGoalSchedules } from '@/lib/workspace/goalSchedules';
 import { sanitizeGoals } from '@/lib/workspace/projects';
 import { withProjectStats } from '@/lib/workspace/projectStats';
 import { runDueSchedules } from '@/lib/workspace/schedules';
@@ -65,11 +66,11 @@ export async function GET(_request: Request, { params }: Params) {
 }
 
 export async function PATCH(request: Request, { params }: Params) {
-  const { response, project } = await requireProjectPermission(
+  const { response, project, user } = await requireProjectPermission(
     params.projectId,
     'projects:edit',
   );
-  if (response || !project)
+  if (response || !project || !user)
     return response ?? fail(401, 'Authentication required.');
 
   const body = await request.json().catch(() => ({}));
@@ -125,6 +126,9 @@ export async function PATCH(request: Request, { params }: Params) {
     where: { id: project.id },
     data: { ...data, updatedAt: nowIso() },
   });
+  // New goals set up their scheduled tasks; changed ones update them.
+  if ('goals' in data)
+    await syncGoalSchedules(updated, project.goals ?? [], user.id);
   return ok({ project: updated });
 }
 

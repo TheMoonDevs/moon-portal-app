@@ -9,6 +9,17 @@ import { PortalSdk } from '@/utils/services/PortalSdk';
 
 const SHOW = 6;
 
+/** "Wed 28" for a task scheduled for a day still ahead. */
+const aheadLabel = (day?: string | null) => {
+  const today = new Date().toISOString().slice(0, 10);
+  if (!day || day <= today) return null;
+  return new Date(`${day}T00:00:00Z`).toLocaleDateString(undefined, {
+    weekday: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  });
+};
+
 const dueLabel = (day?: string | null) => {
   if (!day) return null;
   const today = new Date().toISOString().slice(0, 10);
@@ -80,6 +91,7 @@ export const TasksSection = () => {
           shown.map((task) => {
             const project = projectOf(task.projectId);
             const due = dueLabel(task.dueDate);
+            const ahead = aheadLabel(task.forDate);
             const done = doneIds.includes(task.id);
             return (
               <div key={task.id} className="flex items-start gap-3 p-3">
@@ -118,6 +130,7 @@ export const TasksSection = () => {
                       />
                     )}
                     <span className="truncate">{project?.name}</span>
+                    {ahead && <span className="shrink-0">· for {ahead}</span>}
                     {due && (
                       <span
                         className={cn(

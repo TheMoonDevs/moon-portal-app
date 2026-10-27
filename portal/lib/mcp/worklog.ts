@@ -19,6 +19,7 @@ import {
   sectionLines,
   statusOf,
 } from '@/lib/worklogs/timeline';
+import { settleScheduledLines } from '@/lib/workspace/scheduleRuns';
 import type { WorklogLink, WorkLogs } from '@/models/worklogs';
 import type { WorkLogPoints } from '@/utils/@types/interfaces';
 import { LOGLINKTYPE } from '@/utils/@types/interfaces';
@@ -121,6 +122,8 @@ export type PointInput = {
   point?: string;
   /** A line the person typed themselves for the same work. */
   typedLine?: string;
+  /** YYYY-MM-DD: the day the work was scheduled for, when done early or late. */
+  forDate?: string;
 };
 
 /** Days looked back for an open point carried into today. */
@@ -382,6 +385,17 @@ export async function logPoints(
   const typed = linkTyped(links, nextWorks, points);
   links = typed.links;
   const linkedTyped = typed.linked;
+  // Done points about a scheduled task finish it for their day.
+  links = await settleScheduledLines(
+    user.id,
+    nextWorks,
+    links,
+    candidates.projects.map((p) => p.id),
+    date,
+    new Map(
+      points.filter((p) => p.forDate).map((p) => [lineKey(p.text), p.forDate!]),
+    ),
+  );
   await db.workLogs.update({ where: { id: saved.id }, data: { links } });
 
   const total = lines.length;
