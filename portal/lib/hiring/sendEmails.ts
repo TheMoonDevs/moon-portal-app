@@ -1,4 +1,5 @@
 import { type OutgoingEmail, sendEmails } from '@/lib/email/resend';
+import { getOrCreateProfile, meetLink } from '@/lib/meet/server';
 import { db } from '@/lib/mongodb/db-client';
 import { asStringArray, nowIso } from '@/lib/workspace/server';
 import type {
@@ -18,6 +19,7 @@ import {
   MAX_RECIPIENTS,
   MAX_SUBJECT,
   renderEmail,
+  usesMeetingLink,
 } from './emailTemplates';
 import { isValidEmail } from './forms';
 import { isStage, moveApplication } from './server';
@@ -84,7 +86,12 @@ export function parseHiringSend(raw: Record<string, unknown>): {
   return { send, error };
 }
 
-type Sender = { id: string; email?: string | null };
+type Sender = {
+  id: string;
+  email?: string | null;
+  /** The portal's public origin, for {{meetingLink}}. */
+  origin?: string;
+};
 
 /** Every applicant's own copy, rendered but not sent. */
 export async function renderHiringEmails(
@@ -95,6 +102,11 @@ export async function renderHiringEmails(
   const companyIds = Array.from(new Set(applications.map((a) => a.companyId)));
   if (companyIds.length !== 1)
     throw new HiringSendError(400, 'Email one company’s applicants at a time.');
+
+  const meetingLink =
+    sender.origin && usesMeetingLink(send.subject, send.body)
+      ? meetLink(sender.origin, (await getOrCreateProfile(sender.id)).code)
+      : null;
 
   const [company, user, openings] = await Promise.all([
     db.company.findFirst({ where: { id: companyIds[0] } }),
@@ -122,6 +134,8 @@ export async function renderHiringEmails(
         role: roleOf.get(application.openingId) ?? '',
         company: companyName,
         sender: user?.name || '',
+        email: application.email,
+        meetingLink,
       }),
     ),
   }));

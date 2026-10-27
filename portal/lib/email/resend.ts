@@ -46,6 +46,12 @@ export interface OutgoingEmail {
   html: string;
   /** Shown in Resend's logs and sent back with webhook events. */
   tags?: Array<{ name: string; value: string }>;
+  /** Text files such as calendar invites. Only `sendEmail` sends these. */
+  attachments?: Array<{
+    filename: string;
+    content: string;
+    contentType: string;
+  }>;
 }
 
 export type SendResult =
@@ -57,24 +63,16 @@ const apiUrl = () =>
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-async function postBatch(
-  emails: OutgoingEmail[],
+/** Posts to Resend, retrying network errors, rate limits and 5xx. */
+async function postToResend(
+  path: string,
+  payload: unknown,
   idempotencyKey: string,
-): Promise<SendResult[]> {
-  const payload = emails.map((email) => ({
-    from: email.from,
-    to: [email.to],
-    subject: email.subject,
-    text: email.text,
-    html: email.html,
-    ...(email.replyTo ? { reply_to: email.replyTo } : {}),
-    ...(email.tags?.length ? { tags: email.tags } : {}),
-  }));
-
+): Promise<{ body: any; error?: never } | { body?: never; error: string }> {
   for (let attempt = 0; attempt < 3; attempt += 1) {
     let res: Response;
     try {
-      res = await fetch(`${apiUrl()}/emails/batch`, {
+      res = await fetch(`${apiUrl()}${path}`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
@@ -90,18 +88,11 @@ async function postBatch(
         await wait(1000 * (attempt + 1));
         continue;
       }
-      return emails.map(() => ({
-        error: 'Could not reach the email service.',
-      }));
+      return { error: 'Could not reach the email service.' };
     }
 
     const body = await res.json().catch(() => null);
-    if (res.ok) {
-      const ids: Array<{ id?: string }> = body?.data ?? [];
-      return emails.map((_, i) =>
-        ids[i]?.id ? { id: ids[i].id as string } : { error: 'No id returned.' },
-      );
-    }
+    if (res.ok) return { body };
     if ((res.status === 429 || res.status >= 500) && attempt < 2) {
       const retryAfter = Number(res.headers.get('retry-after'));
       await wait(
@@ -111,12 +102,65 @@ async function postBatch(
       );
       continue;
     }
-    const message =
-      (typeof body?.message === 'string' && body.message) ||
-      `The email service answered ${res.status}.`;
-    return emails.map(() => ({ error: message }));
+    return {
+      error:
+        (typeof body?.message === 'string' && body.message) ||
+        `The email service answered ${res.status}.`,
+    };
   }
-  return emails.map(() => ({ error: 'The email service is busy.' }));
+  return { error: 'The email service is busy.' };
+}
+
+const toPayload = (email: OutgoingEmail) => ({
+  from: email.from,
+  to: [email.to],
+  subject: email.subject,
+  text: email.text,
+  html: email.html,
+  ...(email.replyTo ? { reply_to: email.replyTo } : {}),
+  ...(email.tags?.length ? { tags: email.tags } : {}),
+  ...(email.attachments?.length
+    ? {
+        attachments: email.attachments.map((a) => ({
+          filename: a.filename,
+          content: Buffer.from(a.content, 'utf8').toString('base64'),
+          content_type: a.contentType,
+        })),
+      }
+    : {}),
+});
+
+async function postBatch(
+  emails: OutgoingEmail[],
+  idempotencyKey: string,
+): Promise<SendResult[]> {
+  const { body, error } = await postToResend(
+    '/emails/batch',
+    emails.map(toPayload),
+    idempotencyKey,
+  );
+  if (error) return emails.map(() => ({ error }));
+  const ids: Array<{ id?: string }> = body?.data ?? [];
+  return emails.map((_, i) =>
+    ids[i]?.id ? { id: ids[i].id as string } : { error: 'No id returned.' },
+  );
+}
+
+/**
+ * Sends one email on its own. Unlike `sendEmails` it can carry attachments,
+ * which Resend's batch endpoint doesn't take.
+ */
+export async function sendEmail(
+  email: OutgoingEmail,
+  idempotencyKey: string,
+): Promise<SendResult> {
+  const { body, error } = await postToResend(
+    '/emails',
+    toPayload(email),
+    idempotencyKey,
+  );
+  if (error) return { error };
+  return body?.id ? { id: String(body.id) } : { error: 'No id returned.' };
 }
 
 /**

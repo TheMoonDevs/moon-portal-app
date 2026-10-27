@@ -2,6 +2,8 @@ import type { NextRequest } from 'next/server';
 
 import { hiringEmailSettings } from '@/lib/hiring/email';
 import { parseTemplateInput } from '@/lib/hiring/emailServer';
+import { originOf } from '@/lib/mcp/tokens';
+import { getOrCreateProfile, meetLink } from '@/lib/meet/server';
 import { db } from '@/lib/mongodb/db-client';
 import {
   fail,
@@ -21,8 +23,12 @@ const MAX_TEMPLATES = 50;
  */
 export async function GET(request: NextRequest) {
   const companyId = request.nextUrl.searchParams.get('companyId');
-  const { response } = await requireCompanyPermission(companyId, 'hiring:read');
-  if (response) return response;
+  const { response, user } = await requireCompanyPermission(
+    companyId,
+    'hiring:read',
+  );
+  if (response || !user)
+    return response ?? fail(401, 'Authentication required.');
 
   const templates: HiringEmailTemplate[] =
     await db.hiringEmailTemplate.findMany({
@@ -30,7 +36,15 @@ export async function GET(request: NextRequest) {
       orderBy: { name: 'asc' },
     });
   const { configured, from, tracksDelivery } = hiringEmailSettings();
-  return ok({ templates, sending: { configured, from, tracksDelivery } });
+  // For previews of {{meetingLink}}; made on first use like the Meet page.
+  const meetingLink = meetLink(
+    originOf(request),
+    (await getOrCreateProfile(user.id)).code,
+  );
+  return ok({
+    templates,
+    sending: { configured, from, tracksDelivery, meetingLink },
+  });
 }
 
 /** Saves a template: `{ companyId, name, subject, body, moveTo? }`. */

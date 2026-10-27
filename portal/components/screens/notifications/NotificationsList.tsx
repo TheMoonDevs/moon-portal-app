@@ -7,6 +7,8 @@ import React, { useState } from 'react';
 import ToolTip from '@/components/elements/ToolTip';
 import { useNotifications } from '@/utils/hooks/useNotifications';
 
+import { MeetRequestActions } from './MeetRequestActions';
+
 export interface INotification extends Omit<Notification, 'notificationData'> {
   notificationData: INotificationData;
 }
@@ -14,6 +16,9 @@ export interface INotification extends Omit<Notification, 'notificationData'> {
 export interface INotificationData {
   actions: IAction[];
   actionDone: boolean;
+  /** `MEET_REQUEST`: a meeting request the user can answer in place. */
+  kind?: string;
+  bookingId?: string;
 }
 
 export interface IAction {
@@ -38,6 +43,7 @@ const NotificationsList = () => {
     handleMarkAllAsRead,
     removeNotification,
     clearAllNotifications,
+    refresh,
   } = useNotifications();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [confirmingClear, setConfirmingClear] = useState(false);
@@ -205,22 +211,33 @@ const NotificationsList = () => {
                       <p className="whitespace-pre-wrap text-sm text-gray-500">
                         {notification.description}
                       </p>
-                      {!notification.notificationData?.actionDone && (
-                        <div className="flex flex-wrap gap-2">
-                          {notification.notificationData?.actions?.map(
-                            (action: IAction, index: number) => (
-                              <Link
-                                key={`${index}-${notification.id}-action`}
-                                className="rounded bg-blue-600 px-3 py-1 text-sm text-white transition hover:bg-blue-700"
-                                href={action?.trigger}
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                {action.title}
-                              </Link>
-                            ),
-                          )}
-                        </div>
-                      )}
+                      {!notification.notificationData?.actionDone &&
+                        notification.notificationData?.kind ===
+                          'MEET_REQUEST' &&
+                        notification.notificationData.bookingId && (
+                          <MeetRequestActions
+                            bookingId={notification.notificationData.bookingId}
+                            onDone={refresh}
+                          />
+                        )}
+                      {!notification.notificationData?.actionDone &&
+                        notification.notificationData?.kind !==
+                          'MEET_REQUEST' && (
+                          <div className="flex flex-wrap gap-2">
+                            {notification.notificationData?.actions?.map(
+                              (action: IAction, index: number) => (
+                                <Link
+                                  key={`${index}-${notification.id}-action`}
+                                  className="rounded bg-blue-600 px-3 py-1 text-sm text-white transition hover:bg-blue-700"
+                                  href={action?.trigger}
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  {action.title}
+                                </Link>
+                              ),
+                            )}
+                          </div>
+                        )}
                     </div>
                   )}
                 </div>

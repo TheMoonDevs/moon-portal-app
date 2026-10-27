@@ -901,7 +901,7 @@ export const HIRING_TOOLS: Tool[] = [
   {
     name: 'email_applicants',
     title: 'Email applicants',
-    description: `Emails applicants of one company, each their own copy with {{placeholders}} filled in, from careers@ the company's domain with replies going to the person. Give a template (from list_email_templates) or a subject and body; a template's stage suggestion is used unless you set moveTo. ALWAYS call with dryRun true first, show the person the subject, a preview and how many people it goes to, and send (dryRun false) only after they say yes: emails can't be unsent. Anyone sent the same subject in the last 30 minutes is skipped.`,
+    description: `Emails applicants of one company, each their own copy with {{placeholders}} filled in, from careers@ the company's domain with replies going to the person. {{meetingLink}} puts in the person's own booking link (prefilled for each candidate) so candidates can pick an interview time. Give a template (from list_email_templates) or a subject and body; a template's stage suggestion is used unless you set moveTo. ALWAYS call with dryRun true first, show the person the subject, a preview and how many people it goes to, and send (dryRun false) only after they say yes: emails can't be unsent. Anyone sent the same subject in the last 30 minutes is skipped.`,
     inputSchema: {
       type: 'object',
       properties: {
@@ -941,7 +941,7 @@ export const HIRING_TOOLS: Tool[] = [
       openWorldHint: true,
     },
     visible: canHire,
-    run: async (user, args) => {
+    run: async (user, args, context) => {
       const applications = await findApplications(
         user,
         args?.applicationIds,
@@ -970,7 +970,11 @@ export const HIRING_TOOLS: Tool[] = [
 
       try {
         if (args?.dryRun !== false) {
-          const emails = await renderHiringEmails(user, applications, send);
+          const emails = await renderHiringEmails(
+            { ...user, origin: context.origin },
+            applications,
+            send,
+          );
           return {
             dryRun: true,
             recipients: applications.length,
@@ -988,9 +992,14 @@ export const HIRING_TOOLS: Tool[] = [
             }),
           };
         }
-        const result = await deliverHiringEmails(user, applications, send, {
-          skipRecentMs: REPEAT_WINDOW_MS,
-        });
+        const result = await deliverHiringEmails(
+          { ...user, origin: context.origin },
+          applications,
+          send,
+          {
+            skipRecentMs: REPEAT_WINDOW_MS,
+          },
+        );
         return {
           sent: result.sent,
           failed: result.failures,

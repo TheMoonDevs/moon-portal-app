@@ -6,6 +6,7 @@ import {
   parseHiringSend,
 } from '@/lib/hiring/sendEmails';
 import { requireApplicationPermission } from '@/lib/hiring/server';
+import { originOf } from '@/lib/mcp/tokens';
 import { db } from '@/lib/mongodb/db-client';
 import { fail, ok, requireCompanyPermission } from '@/lib/workspace/server';
 import type { HiringEmail, JobApplication } from '@/models/hiring';
@@ -62,7 +63,13 @@ export async function POST(request: Request) {
     return response ?? fail(401, 'Authentication required.');
 
   try {
-    return ok(await deliverHiringEmails(user, applications, send));
+    return ok(
+      await deliverHiringEmails(
+        { ...user, origin: originOf(request) },
+        applications,
+        send,
+      ),
+    );
   } catch (err) {
     if (err instanceof HiringSendError) return fail(err.status, err.message);
     throw err;

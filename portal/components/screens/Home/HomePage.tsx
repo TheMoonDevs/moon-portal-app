@@ -17,6 +17,7 @@ import { InWorkSection } from './InWorkSection';
 import { LeaderboardSection } from './LeaderboardSection';
 import { ProfileSection } from './ProfileSection';
 import { ProjectsSection } from './ProjectsSection';
+import { ShortcutsSection } from './ShortcutsSection';
 import { StartSection } from './StartSection';
 import { TasksSection } from './TasksSection';
 
@@ -78,6 +79,7 @@ export const HomePage = () => {
         <div className="flex w-full flex-col pb-2 pt-3 md:py-0">
           {!isTabletOrMore && <FocusMode />}
         </div>
+        <ShortcutsSection />
         <StartSection />
       </div>
       <div className="grid w-full grid-cols-3 max-sm:grid-cols-1">
