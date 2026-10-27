@@ -13,6 +13,7 @@ import {
   AdminButton,
   AdminModal,
   EmptyState,
+  Icon,
 } from '../../Admin/shared/AdminUI';
 import type { ProjectRow } from '../../Admin/Workspace/AdminProjects';
 import {
@@ -63,6 +64,39 @@ const Ring = ({
   );
 };
 
+/** − and + for progress no task tracks; − only takes back what + added. */
+const Stepper = ({
+  manual,
+  busy,
+  onChange,
+}: {
+  manual: number;
+  busy: boolean;
+  onChange: (add: number) => void;
+}) => (
+  <span className="inline-flex shrink-0 items-center gap-1">
+    {[
+      { add: -1, icon: 'remove', label: 'Take back one added by hand' },
+      { add: 1, icon: 'add', label: 'Add one done outside tasks' },
+    ].map((b) => (
+      <button
+        key={b.add}
+        type="button"
+        title={b.label}
+        aria-label={b.label}
+        disabled={busy || (b.add < 0 && manual <= 0)}
+        onClick={() => onChange(b.add)}
+        className="flex size-6 items-center justify-center rounded-full border border-white/10 text-neutral-300 transition hover:bg-white/10 hover:text-white disabled:pointer-events-none disabled:opacity-30"
+      >
+        <Icon name={b.icon} className="text-[14px]" />
+      </button>
+    ))}
+  </span>
+);
+
+const byHand = (manual?: number) =>
+  manual ? ` · ${manual} added by hand` : '';
+
 /** The project's standing targets and how this period is going. */
 export const GoalsSection = ({
   project,
@@ -78,6 +112,7 @@ export const GoalsSection = ({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<GoalDraft[]>([]);
   const [saving, setSaving] = useState(false);
+  const [bumping, setBumping] = useState<string | null>(null);
   const goals = project.goals ?? [];
   const color = project.color || '#10b981';
 
@@ -102,11 +137,28 @@ export const GoalsSection = ({
     setEditing(true);
   };
 
+  /** Adds (or takes back) progress done outside tasks. */
+  const bump = async (goalId: string, partId: string | null, add: number) => {
+    setBumping(`${goalId}:${partId ?? ''}`);
+    try {
+      await PortalSdk.postData(`/api/projects/${project.id}/goals/progress`, {
+        goalId,
+        partId,
+        add,
+      });
+      onSaved();
+    } catch (err) {
+      toast.error(errorText(err));
+    } finally {
+      setBumping(null);
+    }
+  };
+
   return (
     <SectionShell
       icon="track_changes"
       title="Goals"
-      description="What the project must deliver, again and again. Done tasks linked to a goal fill it up."
+      description="What the project must deliver, again and again. Finished tasks fill the goal they fit; use + for work no task tracks."
       actions={
         canEdit && (
           <AdminButton size="sm" icon="edit" onClick={open}>
@@ -178,18 +230,34 @@ export const GoalsSection = ({
                         {p?.done ?? 0}
                       </span>{' '}
                       of {goal.target} {PERIOD_LABELS[goal.period]}
+                      {byHand(p?.manual)}
                     </p>
                   </div>
+                  {canEdit && !goal.parts?.length && (
+                    <Stepper
+                      manual={p?.manual ?? 0}
+                      busy={bumping === `${goal.id}:`}
+                      onChange={(add) => bump(goal.id, null, add)}
+                    />
+                  )}
                 </div>
 
                 {p?.parts && (
                   <div className="flex flex-col gap-2">
                     {p.parts.map((part) => (
                       <div key={part.id}>
-                        <div className="mb-1 flex justify-between text-xs">
+                        <div className="mb-1 flex items-center justify-between gap-2 text-xs">
                           <span className="text-neutral-300">{part.label}</span>
-                          <span className="text-neutral-500">
+                          <span className="flex items-center gap-2 text-neutral-500">
                             {part.done}/{part.target}
+                            {byHand(part.manual)}
+                            {canEdit && (
+                              <Stepper
+                                manual={part.manual ?? 0}
+                                busy={bumping === `${goal.id}:${part.id}`}
+                                onChange={(add) => bump(goal.id, part.id, add)}
+                              />
+                            )}
                           </span>
                         </div>
                         <div className="h-1.5 overflow-hidden rounded-full bg-white/[0.06]">

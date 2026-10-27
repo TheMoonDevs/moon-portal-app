@@ -2,7 +2,9 @@ import { db } from '@/lib/mongodb/db-client';
 import type { SessionUser } from '@/lib/permissions/server';
 import { syncTaskPoints } from '@/lib/progress/server';
 import { isOnTeam } from '@/lib/worklogs/linker';
+import { fitGoal } from '@/lib/workspace/goalFit';
 import { syncGoalSchedules } from '@/lib/workspace/goalSchedules';
+import { updateGoalProgress } from '@/lib/workspace/goalTally';
 import { moveProject } from '@/lib/workspace/moveProject';
 import {
   PERIOD_LABELS,
@@ -291,7 +293,7 @@ export async function createTask(
     input.assignees,
   )) ?? [user.id];
   const now = new Date().toISOString();
-  const task: Task = await db.task.create({
+  const made: Task = await db.task.create({
     data: {
       companyId: project.companyId,
       projectId: project.id,
@@ -304,12 +306,14 @@ export async function createTask(
       forDate,
       goalId,
       goalPartId,
+      ...(input.goal ? { goalChecked: true } : {}),
       scheduleId: await scheduleFor(project.id, goalId, forDate),
       createdById: user.id,
       createdAt: now,
       updatedAt: now,
     },
   });
+  const task = await fitGoal(made);
   await syncTaskPoints(task);
   return task;
 }
@@ -649,6 +653,69 @@ export const WORKSPACE_TOOLS: Tool[] = [
     },
   },
   {
+    name: 'update_goal_progress',
+    title: 'Update goal progress',
+    description:
+      'Adds progress to a goal by hand, for work no task tracks (followers gained, a reel posted from a phone, a sale). Use add for how much more was done (negative to take some back), or done to set the total for the period; done tasks always count on their own, and finished tasks are matched to goals automatically. date picks the period (default today). A goal with parts needs the part.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        project: { type: 'string', description: 'Project id or exact name.' },
+        goal: { type: 'string', description: 'Goal id or title.' },
+        goalPart: { type: 'string', description: 'Part label of the goal.' },
+        add: { type: 'integer', description: 'How much to add, e.g. 1.' },
+        done: {
+          type: 'integer',
+          minimum: 0,
+          description: "The period's total, instead of add.",
+        },
+        date: { type: 'string', description: 'YYYY-MM-DD (optional).' },
+      },
+      required: ['project', 'goal'],
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false },
+    run: async (user, args) => {
+      const project = await findProject(user, args?.project, 'projects:edit');
+      const { goalId, goalPartId } = resolveGoal(
+        project,
+        args?.goal,
+        args?.goalPart,
+      );
+      const goal = project.goals!.find((g) => g.id === goalId)!;
+      if (goal.parts?.length && !goalPartId)
+        throw new ToolError(
+          `Say which part of "${goal.title}": ${goal.parts.map((p) => p.label).join(', ')}.`,
+        );
+      const add = Number.isInteger(args?.add)
+        ? (args.add as number)
+        : undefined;
+      const done = Number.isInteger(args?.done)
+        ? (args.done as number)
+        : undefined;
+      if (add === undefined && done === undefined)
+        throw new ToolError('Give add (how much more) or done (the total).');
+      const day = asDay(args?.date);
+      if (day === undefined) throw new ToolError('Use YYYY-MM-DD for dates.');
+      const progress = await updateGoalProgress(project, user.id, {
+        goal,
+        partId: goalPartId,
+        ...(done !== undefined ? { done } : { add }),
+        ...(day && { day }),
+      });
+      return {
+        project: project.name,
+        goal: goal.title,
+        done: progress.done,
+        target: progress.target,
+        byHand: progress.manual,
+        period: `${progress.from} to ${progress.to}`,
+        ...(progress.parts && {
+          parts: progress.parts.map((p) => `${p.label}: ${p.done}/${p.target}`),
+        }),
+      };
+    },
+  },
+  {
     name: 'update_task',
     title: 'Change a task',
     description:
@@ -709,14 +776,18 @@ export const WORKSPACE_TOOLS: Tool[] = [
           data[key] = day;
         }
       if (args?.goal !== undefined && project)
-        Object.assign(data, resolveGoal(project, args.goal, args.goalPart));
+        Object.assign(data, resolveGoal(project, args.goal, args.goalPart), {
+          goalChecked: true,
+        });
       if (args?.major !== undefined)
         data.size = args.major ? TASK_SIZE.MAJOR : TASK_SIZE.MINOR;
       if (!Object.keys(data).length) throw new ToolError('Say what to change.');
-      const updated: Task = await db.task.update({
-        where: { id: task.id },
-        data: { ...data, updatedAt: new Date().toISOString() },
-      });
+      const updated = await fitGoal(
+        await db.task.update({
+          where: { id: task.id },
+          data: { ...data, updatedAt: new Date().toISOString() },
+        }),
+      );
       await syncTaskPoints(updated);
       return { task: await describeTask(updated, project) };
     },
@@ -841,13 +912,15 @@ export async function taskForPoint(
       point.status === 'done' &&
       found.status !== TASK_STATUS.DONE
     ) {
-      const done: Task = await db.task.update({
-        where: { id: found.id },
-        data: {
-          ...statusChange(found, TASK_STATUS.DONE),
-          updatedAt: new Date().toISOString(),
-        },
-      });
+      const done = await fitGoal(
+        await db.task.update({
+          where: { id: found.id },
+          data: {
+            ...statusChange(found, TASK_STATUS.DONE),
+            updatedAt: new Date().toISOString(),
+          },
+        }),
+      );
       await syncTaskPoints(done);
       return { task: done, created: false, completed: true, project };
     }

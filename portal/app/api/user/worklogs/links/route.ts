@@ -11,6 +11,7 @@ import {
   sectionLines,
   trackLines,
 } from '@/lib/worklogs/timeline';
+import { taskLines } from '@/lib/workspace/lineTasks';
 import { toDay } from '@/lib/workspace/projects';
 import { settleScheduledLines } from '@/lib/workspace/scheduleRuns';
 import type { WorklogLink, WorkLogs } from '@/models/worklogs';
@@ -51,13 +52,24 @@ export async function POST(request: Request) {
 
   const candidates = await linkCandidates(user);
   const existing = (worklog.links ?? []) as WorklogLink[];
-  // Done lines about a scheduled task finish it for their day.
-  const links = await settleScheduledLines(
+  const projectIds = candidates.projects.map((p) => p.id);
+  const day = /^\d{4}-\d{2}-\d{2}$/.test(worklog.date ?? '')
+    ? worklog.date!
+    : toDay();
+  // Done lines about a scheduled task finish it for their day; other
+  // running lines get a task of their own, or the open one for the work.
+  const links = await taskLines(
     user.id,
     worklog.works,
-    await linkLines(worklogLines(worklog.works), existing, candidates),
-    candidates.projects.map((p) => p.id),
-    /^\d{4}-\d{2}-\d{2}$/.test(worklog.date ?? '') ? worklog.date! : toDay(),
+    await settleScheduledLines(
+      user.id,
+      worklog.works,
+      await linkLines(worklogLines(worklog.works), existing, candidates),
+      projectIds,
+      day,
+    ),
+    projectIds,
+    day,
   );
   const events = trackLines(worklog.works, worklog.timeline as PointEvent[]);
   const timeline = appendEvents(worklog.timeline as PointEvent[], events);

@@ -164,6 +164,10 @@ export type Task = Loose<
     scheduleId?: Nullable<string>;
     /** Set when the task was made from a step of a plan. */
     planId?: Nullable<string>;
+    /** The worklog line this task was made from; it follows that line. */
+    fromLine?: Nullable<string>;
+    /** Its goal was set by hand or already looked for; not picked again. */
+    goalChecked?: boolean;
     createdById: string;
   }
 >;
@@ -293,6 +297,23 @@ export type ProjectPage = Loose<
   }
 >;
 
+/**
+ * Goal progress added by hand, for work no task tracks (followers gained,
+ * reels posted elsewhere): one row per goal (or part) and period.
+ */
+export type GoalTally = Loose<
+  BaseModel & {
+    companyId: string;
+    projectId: string;
+    goalId: string;
+    goalPartId?: Nullable<string>;
+    /** First day of the period it counts in, YYYY-MM-DD. */
+    from: string;
+    amount: number;
+    updatedById: string;
+  }
+>;
+
 export const companySchemas = createCrudSchemas<Company>();
 export const companyRoleSchemas = createCrudSchemas<CompanyRole>();
 export const companyMemberSchemas = createCrudSchemas<CompanyMember>();
@@ -302,3 +323,4 @@ export const taskScheduleSchemas = createCrudSchemas<TaskSchedule>();
 export const projectResultSchemas = createCrudSchemas<ProjectResult>();
 export const planSchemas = createCrudSchemas<Plan>();
 export const projectPageSchemas = createCrudSchemas<ProjectPage>();
+export const goalTallySchemas = createCrudSchemas<GoalTally>();

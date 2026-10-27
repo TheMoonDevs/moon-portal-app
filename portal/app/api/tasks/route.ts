@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 
 import { db } from '@/lib/mongodb/db-client';
 import { syncTaskPoints } from '@/lib/progress/server';
+import { fitGoal } from '@/lib/workspace/goalFit';
 import { runDueSchedules } from '@/lib/workspace/schedules';
 import {
   asDay,
@@ -72,7 +73,7 @@ export async function POST(request: Request) {
   const forDate = asDay(body.forDate);
   if (forDate === undefined) return fail(400, 'Use YYYY-MM-DD for the date.');
   const now = nowIso();
-  const task = await db.task.create({
+  let task = await db.task.create({
     data: {
       companyId: project.companyId,
       projectId: project.id,
@@ -84,12 +85,15 @@ export async function POST(request: Request) {
       dueDate: body.dueDate || null,
       forDate,
       ...goalLink(project, body),
+      // A goal picked (or left empty) by hand is not looked for again.
+      ...('goalId' in body && { goalChecked: true }),
       completedAt: status === TASK_STATUS.DONE ? now : null,
       createdById: user.id,
       createdAt: now,
       updatedAt: now,
     },
   });
+  task = await fitGoal(task);
   await syncTaskPoints(task);
   return ok({ task }, { status: 201 });
 }

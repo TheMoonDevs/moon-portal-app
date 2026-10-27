@@ -11,6 +11,9 @@ import { syncTaskPoints } from '@/lib/progress/server';
 import { isOnTeam } from '@/lib/worklogs/linker';
 import { PERSONAL_COMPANY } from '@/lib/worklogs/personal';
 import { carryOpenPoints } from '@/lib/worklogs/points';
+import { fitGoal } from '@/lib/workspace/goalFit';
+import { tallyRowsFor } from '@/lib/workspace/goalTally';
+import type { DoneTask } from '@/lib/workspace/projects';
 import { goalHistory, toDay } from '@/lib/workspace/projects';
 import { runDueSchedules } from '@/lib/workspace/schedules';
 import { getPublicUsers, getWorkspaceForUser } from '@/lib/workspace/server';
@@ -105,7 +108,7 @@ export const TOOLS: Tool[] = [
         },
       });
       const byId = new Map(projects.map((p) => [p.id, p]));
-      const goalTasks: Task[] = await db.task.findMany({
+      const goalTasks: DoneTask[] = await db.task.findMany({
         where: {
           projectId: { in: projects.map((p) => p.id) },
           status: TASK_STATUS.DONE,
@@ -121,6 +124,8 @@ export const TOOLS: Tool[] = [
           forDate: true,
         },
       });
+      // Progress added by hand counts with the tasks.
+      goalTasks.push(...(await tallyRowsFor(projects.map((p) => p.id))));
       const myTasks: Task[] = await db.task.findMany({
         where: {
           companyId: { in: companyIds },
@@ -186,7 +191,7 @@ export const TOOLS: Tool[] = [
   {
     name: 'log_work',
     title: 'Log work points',
-    description: `Writes work points into the "Claude" section of the person's worklog for the day, so they can follow progress in the portal. Keep it to 2-3 points per session, one per deliverable the person would name in a standup (e.g. "Lyric video for the new song", "Thumbnails and YouTube pack for it"). Never a new point for a revision, version, round, fix or sub-step: update the existing point instead, naming it with point (its key from loggedToday, or its text) and saying what happened in note ("v6 rendered, 3 notes fixed"); every update goes on the point's timeline, which shows how long it took from start to finish. Log a point when you start it (doing), add notes as it moves, and end it with done, not_done or blocked; same text also updates the line instead of adding another. Use waiting when you need the person's permission or input. Keep each point one short line about the outcome, in plain words, never secrets or credentials. Name the project (and task) when you know it, or only the company for company work on none of its projects; otherwise the portal links it. When the person already typed a line for the same work (typedToday in get_context), set typedLine to its text so the two are linked as one point. Work can only be logged to projects the person leads or is on the team of (onTeam in get_context). When the project has no task for the work yet, name the task (or the goal it counts towards) and the portal creates it, already done for a done point; set completeTask to finish an existing task too. Work done early for a later week: set forDate to the day it was scheduled for, so it counts towards that week's goal (the line is still logged today). A done point about a scheduled task finishes that task's run for its day (or the next run not done yet); set forDate when it was for another day. Set personal for the person's own private work (not for any company): only they will ever see it.`,
+    description: `Writes work points into the "Claude" section of the person's worklog for the day, so they can follow progress in the portal. Keep it to 2-3 points per session, one per deliverable the person would name in a standup (e.g. "Lyric video for the new song", "Thumbnails and YouTube pack for it"). Never a new point for a revision, version, round, fix or sub-step: update the existing point instead, naming it with point (its key from loggedToday, or its text) and saying what happened in note ("v6 rendered, 3 notes fixed"); every update goes on the point's timeline, which shows how long it took from start to finish. Log a point when you start it (doing), add notes as it moves, and end it with done, not_done or blocked; same text also updates the line instead of adding another. Use waiting when you need the person's permission or input. Keep each point one short line about the outcome, in plain words, never secrets or credentials. Name the project (and task) when you know it, or only the company for company work on none of its projects; otherwise the portal links it. When the person already typed a line for the same work (typedToday in get_context), set typedLine to its text so the two are linked as one point. Work can only be logged to projects the person leads or is on the team of (onTeam in get_context). Every point in a project gets a task: the open one for the same work, or a new one the portal makes (name the task or the goal it counts towards to choose); a done point finishes its task, and set completeTask to finish a major task too. Finished tasks count towards the goal they fit by themselves. Work done early for a later week: set forDate to the day it was scheduled for, so it counts towards that week's goal (the line is still logged today). A done point about a scheduled task finishes that task's run for its day (or the next run not done yet); set forDate when it was for another day. Set personal for the person's own private work (not for any company): only they will ever see it.`,
     inputSchema: {
       type: 'object',
       properties: {
@@ -521,13 +526,15 @@ export const TOOLS: Tool[] = [
         ].includes(status)
       )
         throw new ToolError('Unknown status.');
-      const updated: Task = await db.task.update({
-        where: { id: task.id },
-        data: {
-          ...statusChange(task, status),
-          updatedAt: new Date().toISOString(),
-        },
-      });
+      const updated = await fitGoal(
+        await db.task.update({
+          where: { id: task.id },
+          data: {
+            ...statusChange(task, status),
+            updatedAt: new Date().toISOString(),
+          },
+        }),
+      );
       await syncTaskPoints(updated);
       return { task: { id: updated.id, title: updated.title, status } };
     },

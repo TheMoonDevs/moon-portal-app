@@ -111,20 +111,53 @@ export function sanitizeGoals(
 export type GoalProgress = {
   goalId: string;
   done: number;
+  /** How much of `done` was added by hand. */
+  manual: number;
   target: number;
   percent: number;
   from: string;
   to: string;
-  parts?: { id: string; label: string; done: number; target: number }[];
+  parts?: {
+    id: string;
+    label: string;
+    done: number;
+    manual: number;
+    target: number;
+  }[];
 };
 
-type DoneTask = {
+/** A done task, or progress added by hand (`amount`, counted on forDate). */
+export type DoneTask = {
   status: string;
   goalId?: string | null;
   goalPartId?: string | null;
   forDate?: string | null;
   completedAt?: unknown;
+  amount?: number;
 };
+
+/** Progress added by hand, in the shape goals count. */
+export const tallyRows = (
+  tallies: {
+    goalId: string;
+    goalPartId?: string | null;
+    from: string;
+    amount: number;
+  }[],
+): DoneTask[] =>
+  tallies.map((t) => ({
+    status: 'DONE',
+    goalId: t.goalId,
+    goalPartId: t.goalPartId ?? null,
+    forDate: t.from,
+    amount: t.amount,
+  }));
+
+const sum = (rows: DoneTask[], manualOnly = false) =>
+  rows.reduce(
+    (n, r) => n + (r.amount !== undefined ? r.amount : manualOnly ? 0 : 1),
+    0,
+  );
 
 /**
  * The day a done task counts for: the day it was scheduled for, so work
@@ -149,17 +182,20 @@ function progressIn(
     const day = countsOn(t);
     return !!day && day >= from && day <= to;
   });
-  const parts = goal.parts?.map((p) => ({
-    ...p,
-    done: inPeriod.filter((t) => t.goalPartId === p.id).length,
-  }));
+  const parts = goal.parts?.map((p) => {
+    const mine = inPeriod.filter((t) => t.goalPartId === p.id);
+    return { ...p, done: sum(mine), manual: sum(mine, true) };
+  });
   // With parts, extra work on one part does not make up for another.
   const done = parts
     ? parts.reduce((n, p) => n + Math.min(p.done, p.target), 0)
-    : inPeriod.length;
+    : sum(inPeriod);
   return {
     goalId: goal.id,
     done,
+    manual: parts
+      ? parts.reduce((n, p) => n + p.manual, 0)
+      : sum(inPeriod, true),
     target: goal.target,
     percent: Math.min(100, Math.round((done / goal.target) * 100)),
     from,
