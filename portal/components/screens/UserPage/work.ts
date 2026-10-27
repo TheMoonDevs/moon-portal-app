@@ -305,6 +305,10 @@ export type ActorSummary = {
   done: number;
   /** Median time from start to done, for points that finished. */
   typicalMs: number | null;
+  /** Time from start to done, added up over the points that finished. */
+  totalMs: number;
+  /** How many finished points have a start and an end. */
+  timed: number;
   waitingMs: number;
   blockedMs: number;
 };
@@ -317,12 +321,15 @@ export function timingSummary(points: WorkPoint[]): {
 } {
   const of = (list: WorkPoint[]): ActorSummary => {
     const timings = list.map((p) => timingOf(p)).filter(Boolean) as Timing[];
+    const finished = timings
+      .filter((t) => t.finished)
+      .map((t) => t.end - t.start);
     return {
       points: list.length,
       done: list.filter(isDone).length,
-      typicalMs: median(
-        timings.filter((t) => t.finished).map((t) => t.end - t.start),
-      ),
+      typicalMs: median(finished),
+      totalMs: finished.reduce((a, b) => a + b, 0),
+      timed: finished.length,
       waitingMs: sum(timings, (t) => t.waitingMs),
       blockedMs: sum(timings, (t) => t.blockedMs),
     };

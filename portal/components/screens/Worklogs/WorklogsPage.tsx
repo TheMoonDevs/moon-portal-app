@@ -21,7 +21,7 @@ import {
 import { setLogsList } from '@/utils/redux/worklogs/worklogs.slice';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
-import { WorkLogsHelper } from './WorklogsHelper';
+import { carryOpenPoints, WorkLogsHelper } from './WorklogsHelper';
 import TodoTab from './WorklogTabs/TodoTab';
 import WorklogBuff from './WorklogTabs/WorklogBuff';
 import WorklogTips from './WorklogTabs/WorklogTips';
@@ -188,7 +188,10 @@ export const WorklogsPage = () => {
 
   useEffect(() => {
     if (!user?.id) return;
-    PortalSdk.getData(`/api/user/worklogs?userId=${user.id}`, null)
+    carryOpenPoints()
+      .then(() =>
+        PortalSdk.getData(`/api/user/worklogs?userId=${user.id}`, null),
+      )
       .then((data) => {
         // console.log(data);
         setYearLogData(data);

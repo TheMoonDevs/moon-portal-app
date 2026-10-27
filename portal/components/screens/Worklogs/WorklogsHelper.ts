@@ -2,6 +2,7 @@ import dayjs from 'dayjs';
 
 import type { WorkLogPoints } from '@/utils/@types/interfaces';
 import { LOGLINKTYPE } from '@/utils/@types/interfaces';
+import { PortalSdk } from '@/utils/services/PortalSdk';
 
 const MARKDOWN_PLACHELODER = `* `;
 export const DEFAULT_MARKDOWN_DATA: WorkLogPoints[] = [
@@ -37,4 +38,22 @@ export const WorkLogsHelper = {
  */
 export const worklogSaves = {
   queue: Promise.resolve() as Promise<unknown>,
+};
+
+const carried = new Map<string, Promise<unknown>>();
+
+/**
+ * Moves points still open on earlier days into today, once per day for this
+ * page. Days load after it, so they show where the points went.
+ */
+export const carryOpenPoints = () => {
+  const today = dayjs().format('YYYY-MM-DD');
+  if (!carried.has(today))
+    carried.set(
+      today,
+      PortalSdk.postData('/api/user/worklogs/carry', { today }).catch(
+        () => undefined,
+      ),
+    );
+  return carried.get(today)!;
 };

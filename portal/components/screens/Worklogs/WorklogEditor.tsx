@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 
 import CustomDrawer from '@/components/elements/Drawer';
 import { emojiForShortcut, replaceEmojiCodes } from '@/lib/worklogs/emoji';
+import type { PointEvent } from '@/lib/worklogs/timeline';
 import type { WorkLogPoints } from '@/utils/@types/interfaces';
 import type { LOGLINKTYPE } from '@/utils/@types/interfaces';
 import { MdxAppEditor } from '@/utils/configure/MdxAppEditor';
@@ -35,6 +36,7 @@ import { WorklogLinks } from './WorklogLinks';
 import { DEFAULT_MARKDOWN_DATA, worklogSaves } from './WorklogsHelper';
 import EmojiLegend from './WorklogTabs/EmojiLegend';
 import TodoTab from './WorklogTabs/TodoTab';
+import { WorkPoints } from './WorkPoints';
 
 export const MARKDOWN_PLACHELODER = `* `;
 
@@ -273,6 +275,15 @@ export const WorklogEditor = ({
     },
     [workLog, serverLog, editWorkLogs, markdownDatas, user?.id, dispatch],
   );
+
+  /** Saves anything still unsaved, then waits for every save to land. */
+  const flushSaves = () =>
+    (workLog &&
+    serverLog &&
+    JSON.stringify(workLog) !== JSON.stringify(serverLog)
+      ? saveWorkLog(workLog as any)
+      : Promise.resolve()
+    ).then(() => worklogSaves.queue.catch(() => undefined));
 
   // Switching days swaps this editor out; save whatever is still unsaved.
   const latest = useRef({ workLog, serverLog, saveWorkLog });
@@ -774,6 +785,16 @@ export const WorklogEditor = ({
             </div>
           </div>
         ))}
+      {serverLog?.id && workLog && (
+        <WorkPoints
+          worklogId={serverLog.id}
+          date={serverLog.date}
+          works={markdownDatas}
+          timeline={(serverLog as { timeline?: PointEvent[] }).timeline}
+          beforeChange={flushSaves}
+          onChanged={refreshWorklogs}
+        />
+      )}
       {serverLog?.id && (
         <WorklogLinks
           key={serverLog.id}

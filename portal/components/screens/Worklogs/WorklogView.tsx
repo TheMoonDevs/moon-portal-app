@@ -9,7 +9,11 @@ import { useUser } from '@/utils/hooks/useUser';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import { WorklogEditor } from './WorklogEditor';
-import { worklogSaves, WorkLogsHelper } from './WorklogsHelper';
+import {
+  carryOpenPoints,
+  worklogSaves,
+  WorkLogsHelper,
+} from './WorklogsHelper';
 
 export const WorklogView = ({
   date,
@@ -111,6 +115,7 @@ export const WorklogView = ({
     setLoading(true);
     worklogSaves.queue
       .catch(() => undefined)
+      .then(carryOpenPoints)
       .then(() => PortalSdk.getData(`/api/user/worklogs${query}`, null))
       .then((data) => {
         if (seq !== requestSeq.current) return;

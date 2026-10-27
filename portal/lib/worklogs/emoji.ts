@@ -15,6 +15,7 @@ export const EMOJI_LEGEND = [
   { code: ':bulb:', emoji: '💡', label: 'New idea', key: '7' },
   { code: ':question:', emoji: '❓', label: 'Need clarification', key: '8' },
   { code: ':star:', emoji: '⭐', label: 'High priority', key: '9' },
+  { code: ':moved:', emoji: '➡️', label: 'Moved to a later day', key: '0' },
 ] as const;
 
 /** Replaces `:check:` style codes with their emoji. */
