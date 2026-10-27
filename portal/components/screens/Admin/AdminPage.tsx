@@ -311,7 +311,7 @@ export const AdminPage = () => {
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/logo/logo_white.png"
+          src="/brand/portal-logo.svg"
           alt="Portal"
           className="size-8 shrink-0 object-contain"
         />

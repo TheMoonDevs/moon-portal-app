@@ -15,7 +15,7 @@ export const LogoutPage = () => {
         <div className="flex grow flex-col items-center justify-center gap-4">
           <div className="rounded-full p-4">
             <Image
-              src="/logo/logo_white.png"
+              src="/brand/portal-logo.svg"
               alt="Portal"
               width={80}
               height={80}

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="100.18 100.18 799.63 799.63" width="2048" height="2048">
+  <title>Portal</title>
+  <circle cx="500" cy="500" r="353" fill="none" stroke="#f2f0e8" stroke-width="34.4"/>
+  <path d="M500 375h103a22 22 0 0 1 22 22v206a22 22 0 0 1 -22 22h-206a22 22 0 0 1 -22 -22v-206a22 22 0 0 1 22 -22Z" fill="#f2f0e8"/>
+</svg>
