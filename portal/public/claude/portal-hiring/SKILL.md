@@ -17,7 +17,8 @@ tab, so anything you change shows up there.
   of the apply page (who you are and what the role is, in a few lines).
   `details` holds the rest of the job post (requirements, responsibilities,
   pay, perks) further down the page; use "- " bullets and a short heading
-  line above each list. `notes` is private to the hiring team (budget, who
+  line above each list. **Bold** and `##` headings in a pasted post show as
+  they are, so keep the user's formatting. `notes` is private to the hiring team (budget, who
   interviews, what to look for). When the user pastes a whole job post,
   split it this way and show them the split.
 - To create one, draft the title, texts and questions with the user
