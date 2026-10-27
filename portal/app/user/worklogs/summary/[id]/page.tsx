@@ -1,19 +1,8 @@
-import { Bottombar } from '@/components/global/Bottombar';
-import { PageAccess } from '@/components/global/PageAccess';
-import { WorklogSummaryByUserId } from '@/components/screens/Worklogs/WorklogSummary/WorklogSummaryByUserId';
-import media from '@/styles/media';
+import { redirect } from 'next/navigation';
 
-export default function WorklogViewPage({
-  params,
-}: {
-  params: {
-    id: string;
-  };
-}) {
-  return (
-    <PageAccess isAuthRequired={true}>
-      <WorklogSummaryByUserId userId={params.id} />
-      <Bottombar visibleOnlyOn={media.moreTablet} />
-    </PageAccess>
-  );
+import { APP_ROUTES } from '@/utils/constants/appInfo';
+
+/** The worklog summary became the person's page. */
+export default function OldSummaryPage({ params }: { params: { id: string } }) {
+  redirect(`${APP_ROUTES.user}/${params.id}`);
 }

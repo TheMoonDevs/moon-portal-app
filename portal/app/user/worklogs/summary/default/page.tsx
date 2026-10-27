@@ -1,5 +1,8 @@
-import { DefaultWorklogSummary } from '@/components/screens/Worklogs/WorklogSummary/DefaultWorklogSummary';
+import { redirect } from 'next/navigation';
 
-export default async function WorklogViewPage() {
-  return <DefaultWorklogSummary />;
+import { APP_ROUTES } from '@/utils/constants/appInfo';
+
+/** The worklog summary became the person's page. */
+export default function OldSummaryPage() {
+  redirect(APP_ROUTES.user);
 }

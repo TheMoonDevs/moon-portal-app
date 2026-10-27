@@ -11,7 +11,8 @@ export enum APP_ROUTES {
   plans = '/plans',
   projects = '/projects',
   meet = '/meet',
-  userWorklogSummary = '/user/worklogs/summary',
+  /** A person's page: /user for your own, /user/<id> for someone's. */
+  user = '/user',
 }
 
 export enum LOCAL_STORAGE {
