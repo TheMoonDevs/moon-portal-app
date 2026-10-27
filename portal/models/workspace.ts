@@ -161,6 +161,8 @@ export type Task = Loose<
     goalPartId?: Nullable<string>;
     /** Set when a schedule created the task. */
     scheduleId?: Nullable<string>;
+    /** Set when the task was made from a step of a plan. */
+    planId?: Nullable<string>;
     createdById: string;
   }
 >;
@@ -210,6 +212,53 @@ export type ProjectResult = Loose<
   }
 >;
 
+export enum PLAN_STATUS {
+  /** Just an idea, nothing decided yet. */
+  IDEA = 'IDEA',
+  /** Decided; the steps are being done. */
+  ACTIVE = 'ACTIVE',
+  DONE = 'DONE',
+  DROPPED = 'DROPPED',
+}
+
+/**
+ * One step of a plan: what, for which project (optional), by whom and by
+ * when. A step with a project can be made into a task; it then follows the
+ * task's status.
+ */
+export type PlanStep = {
+  id: string;
+  text: string;
+  notes?: Nullable<string>;
+  projectId?: Nullable<string>;
+  assigneeIds: string[];
+  /** YYYY-MM-DD */
+  dueOn?: Nullable<string>;
+  done?: boolean;
+  taskId?: Nullable<string>;
+};
+
+/**
+ * A plan in a company: mostly ideas at first. It needs no project; steps
+ * can name projects across the company as the plan firms up.
+ */
+export type Plan = Loose<
+  BaseModel & {
+    companyId: string;
+    title: string;
+    notes?: Nullable<string>;
+    status: PLAN_STATUS;
+    /** YYYY-MM-DD */
+    startOn?: Nullable<string>;
+    /** YYYY-MM-DD: when it should be done by. */
+    endOn?: Nullable<string>;
+    ownerId: string;
+    memberIds: string[];
+    steps: PlanStep[];
+    createdById: string;
+  }
+>;
+
 export const companySchemas = createCrudSchemas<Company>();
 export const companyRoleSchemas = createCrudSchemas<CompanyRole>();
 export const companyMemberSchemas = createCrudSchemas<CompanyMember>();
@@ -217,3 +266,4 @@ export const projectSchemas = createCrudSchemas<Project>();
 export const taskSchemas = createCrudSchemas<Task>();
 export const taskScheduleSchemas = createCrudSchemas<TaskSchedule>();
 export const projectResultSchemas = createCrudSchemas<ProjectResult>();
+export const planSchemas = createCrudSchemas<Plan>();

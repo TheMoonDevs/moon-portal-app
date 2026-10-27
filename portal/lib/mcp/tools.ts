@@ -21,6 +21,7 @@ import {
 } from '@/models/workspace';
 
 import { HIRING_TOOLS } from './hiring';
+import { PLAN_TOOLS } from './plans';
 import { companiesWith, type Tool, ToolError } from './shared';
 import type { PointInput, PointStatus } from './worklog';
 import { claudeLines, logPoints, POINT_STATUSES, todayFor } from './worklog';
@@ -495,6 +496,7 @@ export const TOOLS: Tool[] = [
     },
   },
   ...WORKSPACE_TOOLS,
+  ...PLAN_TOOLS,
   ...HIRING_TOOLS,
 ];
 
