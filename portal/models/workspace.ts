@@ -32,6 +32,13 @@ export enum PROJECT_STATUS {
   ARCHIVED = 'ARCHIVED',
 }
 
+/** How much work a project takes to keep going. */
+export enum PROJECT_EFFORT {
+  LOW = 'LOW',
+  MEDIUM = 'MEDIUM',
+  HIGH = 'HIGH',
+}
+
 export enum TASK_STATUS {
   TODO = 'TODO',
   IN_PROGRESS = 'IN_PROGRESS',
@@ -62,6 +69,8 @@ export type ProjectGoal = {
   title: string;
   target: number;
   period: GoalPeriod;
+  /** The day the goal was set, YYYY-MM-DD; earlier periods do not count. */
+  since?: string;
   parts?: { id: string; label: string; target: number }[];
 };
 
@@ -120,6 +129,9 @@ export type Project = Loose<
     logo?: Nullable<string>;
     brandKit?: Nullable<BrandKit>;
     goals?: ProjectGoal[];
+    effort?: Nullable<PROJECT_EFFORT>;
+    /** The project this one belongs under, in the same company. */
+    parentId?: Nullable<string>;
     leadIds: string[];
     memberIds: string[];
     createdById: string;
@@ -134,8 +146,15 @@ export type Task = Loose<
     description?: Nullable<string>;
     size: TASK_SIZE;
     status: TASK_STATUS;
+    /** Everyone on the task; each gets its points when it is done. */
     assigneeIds: string[];
     dueDate?: Nullable<string>;
+    /**
+     * The day the task is scheduled for, YYYY-MM-DD. Goals count it in that
+     * day's period even when it is done early; its points still go to the
+     * day it was done.
+     */
+    forDate?: Nullable<string>;
     completedAt?: Nullable<DateValue>;
     /** The project goal this task counts towards. */
     goalId?: Nullable<string>;

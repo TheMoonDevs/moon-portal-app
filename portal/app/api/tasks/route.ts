@@ -4,6 +4,7 @@ import { db } from '@/lib/mongodb/db-client';
 import { syncTaskPoints } from '@/lib/progress/server';
 import { runDueSchedules } from '@/lib/workspace/schedules';
 import {
+  asDay,
   asStringArray,
   fail,
   goalLink,
@@ -68,6 +69,8 @@ export async function POST(request: Request) {
   const status = Object.values(TASK_STATUS).includes(body.status)
     ? body.status
     : TASK_STATUS.TODO;
+  const forDate = asDay(body.forDate);
+  if (forDate === undefined) return fail(400, 'Use YYYY-MM-DD for the date.');
   const now = nowIso();
   const task = await db.task.create({
     data: {
@@ -79,6 +82,7 @@ export async function POST(request: Request) {
       status,
       assigneeIds: asStringArray(body.assigneeIds),
       dueDate: body.dueDate || null,
+      forDate,
       ...goalLink(project, body),
       completedAt: status === TASK_STATUS.DONE ? now : null,
       createdById: user.id,

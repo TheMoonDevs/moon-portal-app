@@ -1,6 +1,7 @@
 import { db } from '@/lib/mongodb/db-client';
 import { syncTaskPoints } from '@/lib/progress/server';
 import {
+  asDay,
   asStringArray,
   fail,
   goalLink,
@@ -23,6 +24,7 @@ const EDITABLE = [
   'status',
   'assigneeIds',
   'dueDate',
+  'forDate',
   'goalId',
   'goalPartId',
 ] as const;
@@ -67,6 +69,11 @@ export async function PATCH(request: Request, { params }: Params) {
   }
   if ('assigneeIds' in data) data.assigneeIds = asStringArray(data.assigneeIds);
   if ('dueDate' in data) data.dueDate = data.dueDate || null;
+  if ('forDate' in data) {
+    const forDate = asDay(data.forDate);
+    if (forDate === undefined) return fail(400, 'Use YYYY-MM-DD for the date.');
+    data.forDate = forDate;
+  }
   if ('goalId' in data || 'goalPartId' in data) {
     const project = await db.project.findFirst({
       where: { id: task.projectId },

@@ -52,8 +52,19 @@ const clampInt = (v: unknown, min: number, max: number, fallback: number) => {
 
 const PERIODS: GoalPeriod[] = ['day', 'week', 'month'];
 
-/** Keeps well-formed goals only; gives new goals and parts an id. */
-export function sanitizeGoals(input: unknown): ProjectGoal[] {
+const DAY = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Keeps well-formed goals only; gives new goals and parts an id. A goal
+ * keeps the day it was set: from the input, else from `previous` (the
+ * stored goals), else `oldSince` for a goal that existed before that day
+ * was kept, else today.
+ */
+export function sanitizeGoals(
+  input: unknown,
+  previous: ProjectGoal[] = [],
+  oldSince?: string | null,
+): ProjectGoal[] {
   if (!Array.isArray(input)) return [];
   return input
     .slice(0, 20)
@@ -79,6 +90,13 @@ export function sanitizeGoals(input: unknown): ProjectGoal[] {
       return {
         id: typeof g.id === 'string' && g.id ? g.id : shortId(),
         title: title.slice(0, 120),
+        since:
+          typeof g.since === 'string' && DAY.test(g.since)
+            ? g.since
+            : (previous.find((p) => p.id === g.id)?.since ??
+              (previous.some((p) => p.id === g.id) && oldSince
+                ? oldSince
+                : toDay())),
         period: PERIODS.includes(g.period) ? g.period : 'week',
         // With parts, the target is their sum.
         target: parts.length
@@ -104,8 +122,51 @@ type DoneTask = {
   status: string;
   goalId?: string | null;
   goalPartId?: string | null;
+  forDate?: string | null;
   completedAt?: unknown;
 };
+
+/**
+ * The day a done task counts for: the day it was scheduled for, so work
+ * done early fills the right week, or else the day it was done.
+ */
+export const countsOn = (t: DoneTask) =>
+  t.forDate && DAY.test(t.forDate)
+    ? t.forDate
+    : t.completedAt
+      ? toDay(new Date(t.completedAt as string))
+      : null;
+
+/** One goal's progress in the period from `from` to `to`. */
+function progressIn(
+  goal: ProjectGoal,
+  tasks: DoneTask[],
+  from: string,
+  to: string,
+): GoalProgress {
+  const inPeriod = tasks.filter((t) => {
+    if (t.status !== 'DONE' || t.goalId !== goal.id) return false;
+    const day = countsOn(t);
+    return !!day && day >= from && day <= to;
+  });
+  const parts = goal.parts?.map((p) => ({
+    ...p,
+    done: inPeriod.filter((t) => t.goalPartId === p.id).length,
+  }));
+  // With parts, extra work on one part does not make up for another.
+  const done = parts
+    ? parts.reduce((n, p) => n + Math.min(p.done, p.target), 0)
+    : inPeriod.length;
+  return {
+    goalId: goal.id,
+    done,
+    target: goal.target,
+    percent: Math.min(100, Math.round((done / goal.target) * 100)),
+    from,
+    to,
+    ...(parts && { parts }),
+  };
+}
 
 /** Done tasks linked to each goal within that goal's current period. */
 export function goalProgress(
@@ -115,30 +176,40 @@ export function goalProgress(
 ): GoalProgress[] {
   return goals.map((goal) => {
     const { from, to } = periodRange(goal.period, today);
-    const inPeriod = tasks.filter((t) => {
-      if (t.status !== 'DONE' || t.goalId !== goal.id || !t.completedAt)
-        return false;
-      const day = toDay(new Date(t.completedAt as string));
-      return day >= from && day <= to;
-    });
-    const parts = goal.parts?.map((p) => ({
-      ...p,
-      done: inPeriod.filter((t) => t.goalPartId === p.id).length,
-    }));
-    // With parts, extra work on one part does not make up for another.
-    const done = parts
-      ? parts.reduce((n, p) => n + Math.min(p.done, p.target), 0)
-      : inPeriod.length;
-    return {
-      goalId: goal.id,
-      done,
-      target: goal.target,
-      percent: Math.min(100, Math.round((done / goal.target) * 100)),
-      from,
-      to,
-      ...(parts && { parts }),
-    };
+    return progressIn(goal, tasks, from, to);
   });
+}
+
+export type GoalPeriodResult = GoalProgress & {
+  /** Met the target; null while the period is still running. */
+  met: boolean | null;
+};
+
+/**
+ * A goal's last `count` periods, oldest first and ending with the current
+ * one: met when its tasks reached the target, missed when the period ended
+ * short. Periods before `since` (when the goal was set) are left out.
+ */
+export function goalHistory(
+  goal: ProjectGoal,
+  tasks: DoneTask[],
+  count = 6,
+  today: string = toDay(),
+  since?: string | null,
+): GoalPeriodResult[] {
+  const out: GoalPeriodResult[] = [];
+  let day = today;
+  for (let i = 0; i < count; i++) {
+    const { from, to } = periodRange(goal.period, day);
+    if (since && to < since) break;
+    const p = progressIn(goal, tasks, from, to);
+    out.unshift({
+      ...p,
+      met: p.done >= p.target ? true : to < today ? false : null,
+    });
+    day = addDays(from, -1);
+  }
+  return out;
 }
 
 /* -------------------------------- Schedules ------------------------------- */

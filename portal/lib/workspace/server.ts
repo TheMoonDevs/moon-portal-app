@@ -20,7 +20,11 @@ import type {
   CompanyRole,
   ProjectGoal,
 } from '@/models/workspace';
-import { COMPANY_STATUS, MEMBER_STATUS } from '@/models/workspace';
+import {
+  COMPANY_STATUS,
+  MEMBER_STATUS,
+  PROJECT_EFFORT,
+} from '@/models/workspace';
 
 /* ------------------------------- responses ------------------------------- */
 
@@ -373,4 +377,63 @@ export function goalLink(
   const goal = (project?.goals ?? []).find((g) => g.id === body.goalId);
   const part = goal?.parts?.find((p) => p.id === body.goalPartId);
   return { goalId: goal?.id ?? null, goalPartId: part?.id ?? null };
+}
+
+/* ------------------------------ project tree ------------------------------ */
+
+const DAY = /^\d{4}-\d{2}-\d{2}$/;
+
+/** A YYYY-MM-DD day, null for empty, undefined when malformed. */
+export const asDay = (value: unknown): string | null | undefined =>
+  value === null || value === undefined || value === ''
+    ? null
+    : typeof value === 'string' && DAY.test(value)
+      ? value
+      : undefined;
+
+export const asEffort = (value: unknown): PROJECT_EFFORT | null | undefined =>
+  value === null || value === undefined || value === ''
+    ? null
+    : Object.values(PROJECT_EFFORT).includes(value as PROJECT_EFFORT)
+      ? (value as PROJECT_EFFORT)
+      : undefined;
+
+/**
+ * Checks a parent for a project: same company, not the project itself and
+ * not one of its own sub-projects. Returns the parent id (null for none),
+ * or an error to show.
+ */
+export async function checkParent(
+  companyId: string,
+  projectId: string | null,
+  parentId: unknown,
+): Promise<{ parentId: string | null; error?: string }> {
+  if (parentId === null || parentId === undefined || parentId === '')
+    return { parentId: null };
+  if (typeof parentId !== 'string')
+    return { parentId: null, error: 'Unknown parent project.' };
+  if (parentId === projectId)
+    return { parentId: null, error: 'A project cannot be its own parent.' };
+  const projects: { id: string; parentId?: string | null }[] =
+    await db.project.findMany({
+      where: { companyId },
+      select: { parentId: true },
+    });
+  const byId = new Map(projects.map((p) => [p.id, p]));
+  if (!byId.has(parentId))
+    return {
+      parentId: null,
+      error: 'The parent must be a project in the same company.',
+    };
+  // Walk up from the parent: meeting this project means a loop.
+  let at: string | null | undefined = parentId;
+  for (let i = 0; at && i < 50; i++) {
+    if (at === projectId)
+      return {
+        parentId: null,
+        error: 'That parent is already under this project.',
+      };
+    at = byId.get(at)?.parentId;
+  }
+  return { parentId };
 }
