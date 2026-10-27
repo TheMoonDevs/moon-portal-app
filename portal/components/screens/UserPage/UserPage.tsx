@@ -11,8 +11,11 @@ import type {
   AgendaData,
   PagePerson,
   WorkData,
+  WorkPoint,
 } from '@/lib/people/types';
 import { cn } from '@/lib/utils';
+import type { PointStatus } from '@/lib/worklogs/timeline';
+import { POINT_STATUSES } from '@/lib/worklogs/timeline';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
 import { useUser } from '@/utils/hooks/useUser';
 import { PortalSdk } from '@/utils/services/PortalSdk';
@@ -27,7 +30,7 @@ import {
 import { CompanyMark, errorText } from '../Admin/Workspace/shared';
 import { ActivityGrid } from './ActivityGrid';
 import { AgendaPanel } from './AgendaPanel';
-import { type Period, periodOf } from './work';
+import { lastDay, type Period, periodOf } from './work';
 import { WorkView } from './WorkView';
 
 /*
@@ -187,6 +190,26 @@ export const UserPage = ({ userId }: { userId?: string }) => {
     }
   };
 
+  // One click on a point's status, on your own page.
+  const setPointStatus = async (point: WorkPoint, status: PointStatus) => {
+    try {
+      await PortalSdk.patchData('/api/user/worklogs/points', {
+        date: lastDay(point),
+        key: point.key,
+        status,
+      });
+      const res = await PortalSdk.getData(
+        `/api/people/${personId}/work?from=${period.from}&to=${period.to}`,
+        null,
+      );
+      setWork(res.data);
+      toast.success(`${POINT_STATUSES[status].emoji} ${point.text}`);
+    } catch (err) {
+      toast.error(errorText(err, 'Could not change that point.'));
+      throw err;
+    }
+  };
+
   if (error)
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-neutral-950 md:left-16">
@@ -240,7 +263,12 @@ export const UserPage = ({ userId }: { userId?: string }) => {
 
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
           <div className={cn('min-w-0', tab !== 'work' && 'hidden lg:block')}>
-            <WorkView data={work} period={period} onPeriod={setPeriod} />
+            <WorkView
+              data={work}
+              period={period}
+              onPeriod={setPeriod}
+              onPointStatus={isSelf ? setPointStatus : undefined}
+            />
           </div>
           <aside
             className={cn(

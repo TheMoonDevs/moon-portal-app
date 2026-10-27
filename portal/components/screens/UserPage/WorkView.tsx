@@ -3,10 +3,11 @@
 import dayjs from 'dayjs';
 import { AnimatePresence, motion } from 'framer-motion';
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { createContext, useContext, useMemo, useState } from 'react';
 
 import type { WorkData, WorkPoint } from '@/lib/people/types';
 import { cn } from '@/lib/utils';
+import type { PointStatus } from '@/lib/worklogs/timeline';
 import { POINT_STATUSES } from '@/lib/worklogs/timeline';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
 
@@ -84,28 +85,70 @@ const dayText = (day: string) => {
   return d.format('ddd D MMM');
 };
 
-/** When a point ran, in a few words: "10:20 · 2h 15m", "going 40m". */
+/**
+ * When a point started and how long it took from start to done:
+ * "10:20 · took 2h 15m", or "10:20 · running 40m" while it is still open.
+ */
 function timingText(point: WorkPoint) {
   const t = timingOf(point);
   if (!t) return null;
   const span = t.end - t.start;
-  const startText = dayjs(t.start).format('HH:mm');
-  const parts = [startText];
-  if (t.finished && span >= 60000) parts.push(formatMs(span));
-  else if (!t.finished && span >= 60000 && point.status === 'doing')
-    parts.push(`going ${formatMs(span)}`);
+  const open =
+    point.status && ['doing', 'waiting', 'blocked'].includes(point.status);
   return {
-    main: parts.join(' · '),
-    waited: t.waitingMs >= 60000 ? formatMs(t.waitingMs) : null,
+    start: dayjs(t.start).format('HH:mm'),
+    took:
+      span < 60000
+        ? null
+        : t.finished
+          ? `took ${formatMs(span)}`
+          : open
+            ? `running ${formatMs(span)}`
+            : null,
   };
 }
+
+const STATUS_KEYS = Object.keys(POINT_STATUSES) as PointStatus[];
+
+/** Set on your own page: changes a point's status in one click. */
+export const PointStatusContext = createContext<
+  ((point: WorkPoint, status: PointStatus) => Promise<void>) | null
+>(null);
 
 const PointRow = ({ point }: { point: WorkPoint }) => {
   const timing = timingText(point);
   const days = point.dates;
+  const setStatus = useContext(PointStatusContext);
+  const [picking, setPicking] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const pick = async (status: PointStatus) => {
+    if (!setStatus || status === point.status) return setPicking(false);
+    setBusy(true);
+    try {
+      await setStatus(point, status);
+      setPicking(false);
+    } finally {
+      setBusy(false);
+    }
+  };
   return (
     <li className="group flex items-start gap-2.5 py-1">
-      <StatusIcon status={point.status} />
+      {setStatus ? (
+        <button
+          type="button"
+          aria-label="Change status"
+          title={`${point.status ? POINT_STATUSES[point.status].label : 'No status'} · click to change`}
+          onClick={() => setPicking(!picking)}
+          className={cn(
+            'rounded-md',
+            picking ? 'bg-white/[0.08]' : 'hover:bg-white/[0.06]',
+          )}
+        >
+          <StatusIcon status={point.status} />
+        </button>
+      ) : (
+        <StatusIcon status={point.status} />
+      )}
       <div className="min-w-0 flex-1">
         <p
           className={cn(
@@ -130,13 +173,38 @@ const PointRow = ({ point }: { point: WorkPoint }) => {
               ? `${dayjs(days[0]).format('ddd D')} → ${dayText(lastDay(point))}`
               : dayText(days[0])}
           </span>
-          {timing && <span className="tabular-nums">{timing.main}</span>}
-          {timing?.waited && (
-            <span className="text-violet-300/80">
-              waited {timing.waited} for input
+          {timing && <span className="tabular-nums">{timing.start}</span>}
+          {timing?.took && (
+            <span className="font-medium tabular-nums text-neutral-300">
+              {timing.took}
             </span>
           )}
         </p>
+        {picking && setStatus && (
+          <div className="mt-1.5 flex flex-wrap gap-1">
+            {STATUS_KEYS.map((s) => (
+              <button
+                key={s}
+                type="button"
+                disabled={busy}
+                onClick={() => pick(s)}
+                className={cn(
+                  'flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] transition-colors disabled:opacity-50',
+                  point.status === s
+                    ? 'border-white/30 bg-white/10 text-white'
+                    : 'border-white/10 text-neutral-400 hover:border-white/25 hover:text-neutral-200',
+                )}
+              >
+                <Icon
+                  name={STATUS_STYLE[s].icon}
+                  filled
+                  className={cn('text-[13px]', STATUS_STYLE[s].className)}
+                />
+                {POINT_STATUSES[s].label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </li>
   );
@@ -422,8 +490,8 @@ const Metric = ({
 );
 
 /**
- * How long work takes from start to done: overall, and split into work the
- * person did by hand and work their bot did.
+ * How long work takes from its start to done: added up over the period, per
+ * point, and split into work the person did by hand and work their bot did.
  */
 const TimingCard = ({ points }: { points: WorkPoint[] }) => {
   const { all, hands, bot } = timingSummary(points);
@@ -452,10 +520,11 @@ const TimingCard = ({ points }: { points: WorkPoint[] }) => {
         {label}
         <span className="ml-1.5 tabular-nums text-neutral-500">
           {s.done}/{s.points} done
+          {s.typicalMs != null && ` · ${formatMs(s.typicalMs)} each`}
         </span>
       </p>
       <p className="shrink-0 text-xs font-semibold tabular-nums text-white">
-        {s.typicalMs != null ? formatMs(s.typicalMs) : '–'}
+        {s.timed ? formatMs(s.totalMs) : '–'}
       </p>
     </div>
   );
@@ -463,12 +532,15 @@ const TimingCard = ({ points }: { points: WorkPoint[] }) => {
     <div className="grid gap-4 rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4 sm:grid-cols-[180px_1fr]">
       <div>
         <p className="text-[11px] font-medium text-neutral-500">
-          Typical time to finish
+          Execution time
         </p>
         <p className="mt-0.5 text-2xl font-semibold tabular-nums tracking-tight text-white">
-          {all.typicalMs != null ? formatMs(all.typicalMs) : '–'}
+          {all.timed ? formatMs(all.totalMs) : '–'}
         </p>
-        <p className="text-[11px] text-neutral-500">from start to done</p>
+        <p className="text-[11px] text-neutral-500">
+          start to done, {all.timed} {all.timed === 1 ? 'point' : 'points'}
+          {all.typicalMs != null && ` · ${formatMs(all.typicalMs)} each`}
+        </p>
       </div>
       <div className="min-w-0 sm:border-l sm:border-white/[0.06] sm:pl-5">
         <Row
@@ -483,18 +555,9 @@ const TimingCard = ({ points }: { points: WorkPoint[] }) => {
           s={bot}
           tone="bg-orange-400/15 text-orange-300"
         />
-        {(bot.waitingMs >= 60000 || all.blockedMs >= 60000) && (
-          <p className="mt-1 flex flex-wrap gap-x-3 pl-[34px] text-[11px]">
-            {bot.waitingMs >= 60000 && (
-              <span className="text-violet-300/80">
-                Bot waited {formatMs(bot.waitingMs)} for input
-              </span>
-            )}
-            {all.blockedMs >= 60000 && (
-              <span className="text-rose-300/80">
-                Blocked {formatMs(all.blockedMs)}
-              </span>
-            )}
+        {all.blockedMs >= 60000 && (
+          <p className="mt-1 pl-[34px] text-[11px] text-rose-300/80">
+            Blocked {formatMs(all.blockedMs)}
           </p>
         )}
       </div>
@@ -524,10 +587,13 @@ export const WorkView = ({
   data,
   period,
   onPeriod,
+  onPointStatus,
 }: {
   data: WorkData | null;
   period: Period;
   onPeriod: (p: Period) => void;
+  /** On your own page: sets a point's status. */
+  onPointStatus?: (point: WorkPoint, status: PointStatus) => Promise<void>;
 }) => {
   const [mode, setMode] = useState<Mode>('projects');
   const groups = useMemo(() => (data ? groupWork(data) : []), [data]);
@@ -555,146 +621,149 @@ export const WorkView = ({
   );
 
   return (
-    <div className="flex flex-col gap-5">
-      {/* Period */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            aria-label="Previous"
-            onClick={() => onPeriod(shiftPeriod(period, -1))}
-            className="flex size-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-white/[0.06] hover:text-white"
-          >
-            <Icon name="chevron_left" className="text-[20px]" />
-          </button>
-          <button
-            type="button"
-            aria-label="Next"
-            disabled={isCurrent}
-            onClick={() => onPeriod(shiftPeriod(period, 1))}
-            className="flex size-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-white/[0.06] hover:text-white disabled:pointer-events-none disabled:opacity-30"
-          >
-            <Icon name="chevron_right" className="text-[20px]" />
-          </button>
+    <PointStatusContext.Provider value={onPointStatus ?? null}>
+      <div className="flex flex-col gap-5">
+        {/* Period */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              aria-label="Previous"
+              onClick={() => onPeriod(shiftPeriod(period, -1))}
+              className="flex size-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-white/[0.06] hover:text-white"
+            >
+              <Icon name="chevron_left" className="text-[20px]" />
+            </button>
+            <button
+              type="button"
+              aria-label="Next"
+              disabled={isCurrent}
+              onClick={() => onPeriod(shiftPeriod(period, 1))}
+              className="flex size-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-white/[0.06] hover:text-white disabled:pointer-events-none disabled:opacity-30"
+            >
+              <Icon name="chevron_right" className="text-[20px]" />
+            </button>
+          </div>
+          <div className="min-w-0 flex-1">
+            <h2 className="whitespace-nowrap text-lg font-semibold leading-tight tracking-tight text-white">
+              {label.title}
+            </h2>
+            {label.range && (
+              <p className="text-xs text-neutral-500">{label.range}</p>
+            )}
+          </div>
+          <Segmented
+            className="w-full sm:w-auto [&>button]:flex-1 [&>button]:justify-center"
+            value={period.kind}
+            onChange={(kind) => onPeriod(periodOf(kind, dayjs()))}
+            options={PERIODS}
+          />
         </div>
-        <div className="min-w-0 flex-1">
-          <h2 className="whitespace-nowrap text-lg font-semibold leading-tight tracking-tight text-white">
-            {label.title}
-          </h2>
-          {label.range && (
-            <p className="text-xs text-neutral-500">{label.range}</p>
-          )}
-        </div>
-        <Segmented
-          className="w-full sm:w-auto [&>button]:flex-1 [&>button]:justify-center"
-          value={period.kind}
-          onChange={(kind) => onPeriod(periodOf(kind, dayjs()))}
-          options={PERIODS}
-        />
-      </div>
 
-      {/* Numbers */}
-      <div className="grid grid-cols-2 gap-4 rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4 sm:grid-cols-4">
-        <Metric
-          label="Points"
-          value={data ? points.length : '–'}
-          hint={
-            data && points.some((p) => p.byClaude)
-              ? `${points.filter((p) => p.byClaude).length} by bot`
-              : undefined
-          }
-        />
-        <Metric
-          label="Done"
-          value={data ? points.filter(isDone).length : '–'}
-          hint={
-            data && points.length
-              ? `${Math.round((points.filter(isDone).length / points.length) * 100)}% of points`
-              : undefined
-          }
-        />
-        <Metric
-          label="Tasks closed"
-          value={data ? data.doneTasks.length : '–'}
-        />
-        {period.kind === 'day' ? (
+        {/* Numbers */}
+        <div className="grid grid-cols-2 gap-4 rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4 sm:grid-cols-4">
           <Metric
-            label="At work"
-            value={
-              data && dayHours ? formatMs(dayHours.end - dayHours.start) : '–'
-            }
+            label="Points"
+            value={data ? points.length : '–'}
             hint={
-              dayHours
-                ? `${dayjs(dayHours.start).format('HH:mm')} – ${dayjs(dayHours.end).format('HH:mm')}`
+              data && points.some((p) => p.byClaude)
+                ? `${points.filter((p) => p.byClaude).length} by bot`
                 : undefined
             }
           />
-        ) : (
           <Metric
-            label="Active days"
-            value={data ? activeDays : '–'}
-            hint={periodDays > 0 ? `of ${periodDays}` : undefined}
+            label="Done"
+            value={data ? points.filter(isDone).length : '–'}
+            hint={
+              data && points.length
+                ? `${Math.round((points.filter(isDone).length / points.length) * 100)}% of points`
+                : undefined
+            }
           />
-        )}
-      </div>
-
-      {data && <TimingCard points={points} />}
-      {data && <ShareBar groups={groups} />}
-
-      <div className="flex items-center justify-between gap-3 pt-1">
-        <p className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
-          {mode === 'projects' ? 'By project' : 'When it happened'}
-        </p>
-        <Segmented value={mode} onChange={setMode} options={MODES} />
-      </div>
-
-      {!data ? (
-        <div className="flex flex-col gap-2">
-          {[0, 1, 2].map((i) => (
-            <div
-              key={i}
-              className="h-16 animate-pulse rounded-2xl bg-white/[0.03]"
+          <Metric
+            label="Tasks closed"
+            value={data ? data.doneTasks.length : '–'}
+          />
+          {period.kind === 'day' ? (
+            <Metric
+              label="At work"
+              value={
+                data && dayHours ? formatMs(dayHours.end - dayHours.start) : '–'
+              }
+              hint={
+                dayHours
+                  ? `${dayjs(dayHours.start).format('HH:mm')} – ${dayjs(dayHours.end).format('HH:mm')}`
+                  : undefined
+              }
             />
-          ))}
-        </div>
-      ) : !points.length && !data.doneTasks.length ? (
-        <div className="rounded-2xl border border-dashed border-white/10 px-6 py-12 text-center">
-          <p className="text-sm text-neutral-300">
-            Nothing logged in this period
-          </p>
-          <p className="mx-auto mt-1 max-w-sm text-xs text-neutral-500">
-            Work points from the daily worklog and from your bot land here,
-            sorted by project and task.
-          </p>
-          {data.isSelf && (
-            <Link
-              href={APP_ROUTES.userWorklogs}
-              className="mt-4 inline-flex items-center gap-1 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-neutral-950 hover:bg-neutral-200"
-            >
-              Write today’s worklog
-            </Link>
+          ) : (
+            <Metric
+              label="Active days"
+              value={data ? activeDays : '–'}
+              hint={periodDays > 0 ? `of ${periodDays}` : undefined}
+            />
           )}
         </div>
-      ) : mode === 'projects' ? (
-        <div className="flex flex-col gap-7">
-          {groups.map((g, i) => (
-            <CompanySection
-              key={g.company?.id ?? 'unlinked'}
-              group={g}
-              openFirst={i === 0 ? 2 : 1}
-            />
-          ))}
-        </div>
-      ) : (
-        <DayTimeline data={data} period={period} />
-      )}
 
-      {data && data.hiddenCount > 0 && (
-        <p className="text-center text-[11px] text-neutral-600">
-          {data.hiddenCount} more {data.hiddenCount === 1 ? 'point' : 'points'}{' '}
-          in companies you are not part of.
-        </p>
-      )}
-    </div>
+        {data && <TimingCard points={points} />}
+        {data && <ShareBar groups={groups} />}
+
+        <div className="flex items-center justify-between gap-3 pt-1">
+          <p className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
+            {mode === 'projects' ? 'By project' : 'When it happened'}
+          </p>
+          <Segmented value={mode} onChange={setMode} options={MODES} />
+        </div>
+
+        {!data ? (
+          <div className="flex flex-col gap-2">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="h-16 animate-pulse rounded-2xl bg-white/[0.03]"
+              />
+            ))}
+          </div>
+        ) : !points.length && !data.doneTasks.length ? (
+          <div className="rounded-2xl border border-dashed border-white/10 px-6 py-12 text-center">
+            <p className="text-sm text-neutral-300">
+              Nothing logged in this period
+            </p>
+            <p className="mx-auto mt-1 max-w-sm text-xs text-neutral-500">
+              Work points from the daily worklog and from your bot land here,
+              sorted by project and task.
+            </p>
+            {data.isSelf && (
+              <Link
+                href={APP_ROUTES.userWorklogs}
+                className="mt-4 inline-flex items-center gap-1 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-neutral-950 hover:bg-neutral-200"
+              >
+                Write today’s worklog
+              </Link>
+            )}
+          </div>
+        ) : mode === 'projects' ? (
+          <div className="flex flex-col gap-7">
+            {groups.map((g, i) => (
+              <CompanySection
+                key={g.company?.id ?? 'unlinked'}
+                group={g}
+                openFirst={i === 0 ? 2 : 1}
+              />
+            ))}
+          </div>
+        ) : (
+          <DayTimeline data={data} period={period} />
+        )}
+
+        {data && data.hiddenCount > 0 && (
+          <p className="text-center text-[11px] text-neutral-600">
+            {data.hiddenCount} more{' '}
+            {data.hiddenCount === 1 ? 'point' : 'points'} in companies you are
+            not part of.
+          </p>
+        )}
+      </div>
+    </PointStatusContext.Provider>
   );
 };

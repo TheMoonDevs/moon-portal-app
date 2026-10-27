@@ -10,6 +10,7 @@ import type { SessionUser } from '@/lib/permissions/server';
 import { syncTaskPoints } from '@/lib/progress/server';
 import { isOnTeam } from '@/lib/worklogs/linker';
 import { PERSONAL_COMPANY } from '@/lib/worklogs/personal';
+import { carryOpenPoints } from '@/lib/worklogs/points';
 import { goalHistory, toDay } from '@/lib/workspace/projects';
 import { runDueSchedules } from '@/lib/workspace/schedules';
 import { getPublicUsers, getWorkspaceForUser } from '@/lib/workspace/server';
@@ -327,6 +328,10 @@ export const TOOLS: Tool[] = [
           tasks.push({ point: point.text, problem: error.message });
         }
       }
+      // Points still open on earlier days move into today first, so an
+      // update lands on the carried line with its history.
+      if (date === (await userToday(user)))
+        await carryOpenPoints(user.id, date);
       const logged = await logPoints(user, points, date);
       return { date, ...logged, ...(tasks.length && { tasks }) };
     },
