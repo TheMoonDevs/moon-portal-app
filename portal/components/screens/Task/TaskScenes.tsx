@@ -399,7 +399,7 @@ export const MarkScene = ({
         <h2 ref={line} className={styles.scatter} aria-label={text}>
           {Array.from(text).map((ch, i) => (
             <span key={i} data-letter="" aria-hidden="true">
-              {ch === ' ' ? ' ' : ch}
+              {ch === ' ' ? '\u00A0' : ch}
             </span>
           ))}
           {circled.map((_, i) => (

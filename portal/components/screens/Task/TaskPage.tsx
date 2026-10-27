@@ -46,6 +46,8 @@ const hand = Caveat({
 /** What a candidate's private task page may show. */
 export interface PublicTask {
   token: string;
+  /** The hiring team's preview: the form works but sends nothing. */
+  preview?: boolean;
   firstName: string;
   role: string;
   company: string;
@@ -382,6 +384,12 @@ const TaskForm = ({
       setFormError('Please fix the highlighted answers.');
       return;
     }
+    if (data.preview) {
+      setFormError(
+        'This is a preview, so nothing was sent. Candidates send their work from here.',
+      );
+      return;
+    }
 
     const body = new FormData();
     body.set('payload', JSON.stringify({ answers }));
@@ -554,7 +562,10 @@ export const TaskPage = ({ data }: { data: PublicTask }) => {
     <Shell>
       <header className={styles.top}>
         <span>{data.company.toLowerCase()}</span>
-        <span>{data.role.toLowerCase()}</span>
+        <span>
+          {data.preview && 'preview · '}
+          {data.role.toLowerCase()}
+        </span>
       </header>
       {intro ? (
         <main>
