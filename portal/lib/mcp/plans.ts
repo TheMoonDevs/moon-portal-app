@@ -4,9 +4,11 @@ import { newStep, PLAN_STATUSES } from '@/lib/workspace/plans';
 import {
   createPlan,
   deletePlan,
+  mayChangePlan,
   planChoices,
   readPlanBody,
   stepToTask,
+  teamProjectIds,
   withTasks,
 } from '@/lib/workspace/planServer';
 import { describeSchedule } from '@/lib/workspace/projects';
@@ -64,12 +66,22 @@ export async function findPlan(user: SessionUser, ref: unknown, edit = false) {
         .join(', ')}.`,
     );
   const plan = matches[0];
-  if (edit && plan.ownerId !== user.id) {
-    const editors = await companiesWith(user, 'tasks:edit');
-    if (!editors.has(plan.companyId))
-      throw new ToolError('Only the plan’s owner or a manager can change it.');
-  }
+  if (edit) await mustChangePlan(user, plan, 'tasks:edit');
   return plan;
+}
+
+/** Throws unless the person may change (or delete) the plan; see mayChangePlan. */
+async function mustChangePlan(
+  user: SessionUser,
+  plan: Plan,
+  permission: 'tasks:edit' | 'tasks:delete',
+) {
+  const allowed = await companiesWith(user, permission);
+  const teamIds = await teamProjectIds(plan.companyId, user.id);
+  if (!mayChangePlan(plan, user.id, allowed.has(plan.companyId), teamIds))
+    throw new ToolError(
+      'Only the plan’s owner, the people on its projects or a manager can do that.',
+    );
 }
 
 const projectRef = (choices: Choices, ref: unknown) => {
@@ -248,7 +260,8 @@ export const PLAN_TOOLS: Tool[] = [
     },
     annotations: { readOnlyHint: false, destructiveHint: false },
     run: async (user, args) => {
-      const company = await findCompany(user, args?.company, 'tasks:create');
+      // Any member can start a plan.
+      const company = await findCompany(user, args?.company, 'companies:read');
       const choices = await planChoices(company.id);
       const steps: PlanStep[] = [];
       for (const s of Array.isArray(args?.steps) ? args.steps.slice(0, 50) : [])
@@ -361,14 +374,21 @@ export const PLAN_TOOLS: Tool[] = [
       const problems: string[] = [];
       if (toTask.length) {
         const creators = await companiesWith(user, 'tasks:create');
-        if (!creators.has(plan.companyId))
-          problems.push('You cannot add tasks in this company.');
-        else
-          for (const id of toTask) {
-            const result = await stepToTask(plan, id, user.id);
-            if (result.plan) plan = result.plan;
-            else problems.push(result.error ?? 'Could not make the task.');
+        const teamIds = await teamProjectIds(plan.companyId, user.id);
+        for (const id of toTask) {
+          const projectId = plan.steps.find((s) => s.id === id)?.projectId;
+          if (
+            projectId &&
+            !creators.has(plan.companyId) &&
+            !teamIds.includes(projectId)
+          ) {
+            problems.push('Only the people on a project can add its tasks.');
+            continue;
           }
+          const result = await stepToTask(plan, id, user.id);
+          if (result.plan) plan = result.plan;
+          else problems.push(result.error ?? 'Could not make the task.');
+        }
       }
       return {
         plan: await planView(plan, choices),
@@ -391,13 +411,7 @@ export const PLAN_TOOLS: Tool[] = [
     annotations: { readOnlyHint: false, destructiveHint: true },
     run: async (user, args) => {
       const plan = await findPlan(user, args?.plan);
-      if (plan.ownerId !== user.id) {
-        const deleters = await companiesWith(user, 'tasks:delete');
-        if (!deleters.has(plan.companyId))
-          throw new ToolError(
-            'Only the plan’s owner or a manager can delete it.',
-          );
-      }
+      await mustChangePlan(user, plan, 'tasks:delete');
       await deletePlan(plan);
       return { deleted: plan.title };
     },

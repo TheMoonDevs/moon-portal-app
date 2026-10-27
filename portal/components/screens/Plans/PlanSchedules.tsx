@@ -35,7 +35,8 @@ import { shortDay } from './types';
 const ScheduleModal = ({
   plan,
   schedule,
-  projects,
+  projects: allProjects,
+  canAddTo,
   people,
   open,
   onOpenChange,
@@ -45,6 +46,7 @@ const ScheduleModal = ({
   /** The one being edited; null to add one. */
   schedule: TaskSchedule | null;
   projects: ProjectChoice[];
+  canAddTo: (projectId: string) => boolean;
   people: Person[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -55,18 +57,25 @@ const ScheduleModal = ({
   const [active, setActive] = useState(true);
   const [saving, setSaving] = useState(false);
   const [removing, setRemoving] = useState(false);
+  // New ones go in projects where they can add tasks.
+  const projects = schedule
+    ? allProjects
+    : allProjects.filter((p) => canAddTo(p.id));
 
   useEffect(() => {
     if (!open) return;
     setProjectId(
       schedule?.projectId ??
-        plan.steps.find((s) => s.projectId)?.projectId ??
+        plan.steps.find((s) => s.projectId && canAddTo(s.projectId))
+          ?.projectId ??
         projects[0]?.id ??
         '',
     );
     setDraft(schedule ? scheduleToDraft(schedule) : emptyScheduleDraft);
     setActive(schedule?.active ?? true);
-  }, [open, schedule, plan.steps, projects]);
+    // Fill the form when it opens, not on every change behind it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, schedule]);
 
   const project = projects.find((p) => p.id === projectId);
 
@@ -190,19 +199,23 @@ export const PlanSchedules = ({
   projects,
   people,
   canEdit,
+  canAddTo,
   onSaved,
 }: {
   plan: PlanView;
   projects: ProjectChoice[];
   people: Person[];
   canEdit: boolean;
+  /** Whether they can add (and change) tasks in a project. */
+  canAddTo: (projectId: string) => boolean;
   onSaved: () => void;
 }) => {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<TaskSchedule | null>(null);
   const projectById = new Map(projects.map((p) => [p.id, p]));
   const personById = new Map(people.map((p) => [p.id, p]));
-  if (!plan.schedules.length && !canEdit) return null;
+  const canAdd = canEdit && projects.some((p) => canAddTo(p.id));
+  if (!plan.schedules.length && !canAdd) return null;
 
   return (
     <div className="mt-8">
@@ -219,7 +232,7 @@ export const PlanSchedules = ({
             <button
               key={s.id}
               type="button"
-              disabled={!canEdit}
+              disabled={!canEdit || !canAddTo(s.projectId)}
               onClick={() => {
                 setEditing(s);
                 setOpen(true);
@@ -263,7 +276,7 @@ export const PlanSchedules = ({
           );
         })}
       </div>
-      {canEdit && (
+      {canAdd && (
         <button
           type="button"
           onClick={() => {
@@ -280,6 +293,7 @@ export const PlanSchedules = ({
         plan={plan}
         schedule={editing}
         projects={projects}
+        canAddTo={canAddTo}
         people={people}
         open={open}
         onOpenChange={setOpen}

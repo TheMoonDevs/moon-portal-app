@@ -1,3 +1,4 @@
+import { teamAllows } from '@/lib/permissions/company';
 import { hasPermission } from '@/lib/permissions/matching';
 import type { SessionUser } from '@/lib/permissions/server';
 import { getWorkspaceForUser } from '@/lib/workspace/server';
@@ -30,3 +31,18 @@ export async function companiesWith(user: SessionUser, permission: string) {
       .map((w) => [w.company.id, w.company]),
   );
 }
+
+/**
+ * Whether the person may do `permission` in a project, given what they hold
+ * in its company (undefined when they are not a member): from their company
+ * permissions, or for tasks from being on the project's team.
+ */
+export const allowsInProject = (
+  companyPermissions: string[] | undefined,
+  user: SessionUser,
+  project: { leadIds?: string[] | null; memberIds?: string[] | null },
+  permission: string,
+) =>
+  !!companyPermissions &&
+  (hasPermission(companyPermissions, permission) ||
+    teamAllows(user, project, permission));

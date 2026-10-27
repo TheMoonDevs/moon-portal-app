@@ -35,7 +35,15 @@ export type PlansData = {
   plans: PlanView[];
   projects: ProjectChoice[];
   people: Person[];
-  can: { create: boolean; editAll: boolean; deleteAll: boolean };
+  can: {
+    create: boolean;
+    editAll: boolean;
+    deleteAll: boolean;
+    /** Add tasks in every project of the company. */
+    createTasks: boolean;
+    /** Projects they lead or are on. */
+    teamProjectIds: string[];
+  };
 };
 
 /** Steps done out of all steps. */

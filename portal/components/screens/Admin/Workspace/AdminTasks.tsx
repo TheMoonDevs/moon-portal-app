@@ -238,7 +238,7 @@ export const AdminTasks = ({
   selectedProjectId: string | null;
   onSelectProject: (projectId: string | null) => void;
 }) => {
-  const { companies, can } = useWorkspace();
+  const { companies, canInProject } = useWorkspace();
   const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(false);
@@ -296,7 +296,7 @@ export const AdminTasks = ({
 
   const project = projects.find((p) => p.id === selectedProjectId) ?? null;
   const byId = useMemo(() => new Map(users.map((u) => [u.id, u])), [users]);
-  const canEdit = !!companyId && can(companyId, 'tasks:edit');
+  const canEdit = canInProject(project, 'tasks:edit');
 
   const counted = tasks.filter((t) => !SET_ASIDE.includes(t.status));
   const open = counted.filter((t) => t.status !== 'DONE');
@@ -365,7 +365,7 @@ export const AdminTasks = ({
           </NativeSelect>
         )}
         <div className="flex-1" />
-        {project && can(project.companyId, 'tasks:create') && (
+        {canInProject(project, 'tasks:create') && (
           <AdminButton
             tone="primary"
             icon="add"
@@ -552,7 +552,7 @@ export const AdminTasks = ({
                                         setFormOpen(true);
                                       }}
                                     />
-                                    {can(task.companyId, 'tasks:delete') && (
+                                    {canInProject(project, 'tasks:delete') && (
                                       <IconAction
                                         icon="delete"
                                         label="Delete task"

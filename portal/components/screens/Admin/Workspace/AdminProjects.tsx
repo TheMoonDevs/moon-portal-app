@@ -289,7 +289,7 @@ export const AdminProjects = ({
   onSelectCompany: (companyId: string) => void;
   onOpenTasks: (projectId: string) => void;
 }) => {
-  const { companies, can } = useWorkspace();
+  const { companies, can, canInProject } = useWorkspace();
   const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
@@ -680,10 +680,8 @@ export const AdminProjects = ({
           projects.find((p) => p.id === schedulesFor?.id) ?? schedulesFor
         }
         users={users}
-        canEdit={!!schedulesFor && can(schedulesFor.companyId, 'tasks:create')}
-        canDelete={
-          !!schedulesFor && can(schedulesFor.companyId, 'tasks:delete')
-        }
+        canEdit={canInProject(schedulesFor, 'tasks:create')}
+        canDelete={canInProject(schedulesFor, 'tasks:delete')}
         onOpenChange={(open) => !open && setSchedulesFor(null)}
         onSaved={load}
       />

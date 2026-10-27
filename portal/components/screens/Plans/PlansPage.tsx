@@ -351,10 +351,20 @@ export const PlansPage = () => {
 
   const plan = data?.plans.find((p) => p.id === planId) ?? null;
   const step = plan?.steps.find((s) => s.id === stepId) ?? null;
-  const canEditPlan =
-    !!plan && !!data && (data.can.editAll || plan.ownerId === user?.id);
-  const canDeletePlan =
-    !!plan && !!data && (data.can.deleteAll || plan.ownerId === user?.id);
+  // The people on a project run its tasks, and plans with a step for it.
+  const addsTasksIn = (projectId?: string | null) =>
+    !!data &&
+    !!projectId &&
+    (data.can.createTasks || data.can.teamProjectIds.includes(projectId));
+  const mine =
+    !!plan &&
+    !!data &&
+    (plan.ownerId === user?.id ||
+      plan.steps.some(
+        (s) => !!s.projectId && data.can.teamProjectIds.includes(s.projectId),
+      ));
+  const canEditPlan = mine || !!data?.can.editAll;
+  const canDeletePlan = mine || !!data?.can.deleteAll;
 
   const selectPlan = (id: string) => {
     if (planId && planId !== id) flush(planId);
@@ -508,7 +518,8 @@ export const PlansPage = () => {
             plan={plan}
             projects={data.projects}
             people={data.people}
-            canEdit={canEditPlan && data.can.create}
+            canEdit={canEditPlan}
+            canAddTo={addsTasksIn}
             onSaved={() => refreshSchedules(plan.id)}
           />
         }
@@ -541,6 +552,7 @@ export const PlansPage = () => {
       projects={data.projects}
       people={data.people}
       canEdit={canEditPlan}
+      canMakeTask={addsTasksIn(step?.projectId)}
       makingTask={makingTask}
       onChange={changeStep}
       onRemove={removeStep}

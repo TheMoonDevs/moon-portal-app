@@ -3,10 +3,11 @@ import type { SessionUser } from '@/lib/permissions/server';
 import { describeSchedule, WEEKDAYS } from '@/lib/workspace/projects';
 import { readScheduleBody } from '@/lib/workspace/scheduleInput';
 import { runDueSchedules } from '@/lib/workspace/schedules';
+import { getWorkspaceForUser } from '@/lib/workspace/server';
 import type { Project, TaskSchedule } from '@/models/workspace';
 
 import { findPlan } from './plans';
-import { companiesWith, type Tool, ToolError } from './shared';
+import { allowsInProject, type Tool, ToolError } from './shared';
 import { findProject, resolveGoal, resolvePeople } from './workspace';
 
 /*
@@ -167,18 +168,20 @@ export const SCHEDULE_TOOLS: Tool[] = [
       const schedule: TaskSchedule | null = await db.taskSchedule.findFirst({
         where: { id: String(args?.schedule ?? '') },
       });
+      if (!schedule)
+        throw new ToolError(`No scheduled task "${args?.schedule}".`);
       const permission = args?.remove ? 'tasks:delete' : 'tasks:edit';
-      const allowed = await companiesWith(user, permission);
-      if (!schedule || !allowed.has(schedule.companyId))
-        throw new ToolError(
-          schedule
-            ? 'You cannot change scheduled tasks in that company.'
-            : `No scheduled task "${args?.schedule}".`,
-        );
       const project: Project | null = await db.project.findFirst({
         where: { id: schedule.projectId },
       });
       if (!project) throw new ToolError('Its project is gone.');
+      const permissions = (await getWorkspaceForUser(user)).find(
+        (w) => w.company.id === schedule.companyId,
+      )?.permissions;
+      if (!allowsInProject(permissions, user, project, permission))
+        throw new ToolError(
+          'Only the people on its project (or a manager) can change it.',
+        );
       if (args?.remove) {
         await db.taskSchedule.delete({ where: { id: schedule.id } });
         return { removed: schedule.title };

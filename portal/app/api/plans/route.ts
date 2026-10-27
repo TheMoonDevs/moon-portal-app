@@ -6,6 +6,7 @@ import {
   createPlan,
   planChoices,
   readPlanBody,
+  teamProjectIds,
   withTasks,
 } from '@/lib/workspace/planServer';
 import { fail, ok, requireCompanyPermission } from '@/lib/workspace/server';
@@ -25,20 +26,26 @@ export async function GET(request: NextRequest) {
   if (response || !user)
     return response ?? fail(401, 'Authentication required.');
 
-  const [plans, choices] = await Promise.all([
+  const [plans, choices, teamIds] = await Promise.all([
     db.plan.findMany({
       where: { companyId },
       orderBy: { updatedAt: 'desc' },
     }),
     planChoices(companyId!),
+    teamProjectIds(companyId!, user.id),
   ]);
   return ok({
     plans: await withTasks(plans),
     ...choices,
     can: {
-      create: isAllowedInCompany(user, access, 'tasks:create'),
+      // Plans are ideas: every member can start one.
+      create: true,
       editAll: isAllowedInCompany(user, access, 'tasks:edit'),
       deleteAll: isAllowedInCompany(user, access, 'tasks:delete'),
+      /** Add tasks in every project, not only the ones they are on. */
+      createTasks: isAllowedInCompany(user, access, 'tasks:create'),
+      /** Projects they lead or are on: their tasks and plans are theirs to run. */
+      teamProjectIds: teamIds,
     },
   });
 }
@@ -46,9 +53,10 @@ export async function GET(request: NextRequest) {
 export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
   const companyId = typeof body.companyId === 'string' ? body.companyId : '';
+  // Any member can start a plan.
   const { response, user } = await requireCompanyPermission(
     companyId,
-    'tasks:create',
+    'companies:read',
   );
   if (response || !user)
     return response ?? fail(401, 'Authentication required.');

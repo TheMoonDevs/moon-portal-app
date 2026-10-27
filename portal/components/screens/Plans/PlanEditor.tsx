@@ -447,6 +447,7 @@ export const StepPanel = ({
   projects,
   people,
   canEdit,
+  canMakeTask = true,
   makingTask,
   onChange,
   onRemove,
@@ -458,6 +459,8 @@ export const StepPanel = ({
   projects: ProjectChoice[];
   people: Person[];
   canEdit: boolean;
+  /** Whether they can add tasks in the step's project. */
+  canMakeTask?: boolean;
   makingTask: boolean;
   onChange: (fields: Partial<StepView>) => void;
   onRemove: () => void;
@@ -639,19 +642,22 @@ export const StepPanel = ({
         ) : project ? (
           <div className="flex flex-col gap-2">
             <p className="text-xs text-neutral-400">
-              Ready to do it? Make it a task in {project.name}, with these
-              people and this date.
+              {canMakeTask
+                ? `Ready to do it? Make it a task in ${project.name}, with these people and this date.`
+                : `Someone on the ${project.name} team can make it a task.`}
             </p>
-            <AdminButton
-              size="sm"
-              tone="primary"
-              icon="add_task"
-              loading={makingTask}
-              disabled={!canEdit || !step.text.trim()}
-              onClick={onMakeTask}
-            >
-              Make it a task
-            </AdminButton>
+            {canMakeTask && (
+              <AdminButton
+                size="sm"
+                tone="primary"
+                icon="add_task"
+                loading={makingTask}
+                disabled={!canEdit || !step.text.trim()}
+                onClick={onMakeTask}
+              >
+                Make it a task
+              </AdminButton>
+            )}
           </div>
         ) : (
           <p className="text-xs text-neutral-500">

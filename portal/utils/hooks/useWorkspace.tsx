@@ -3,6 +3,7 @@
 import type { Company, CompanyMember } from '@db/client';
 import { useCallback, useEffect, useState } from 'react';
 
+import { teamAllows } from '@/lib/permissions/company';
 import { hasPermission } from '@/lib/permissions/matching';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
@@ -110,6 +111,30 @@ export const useWorkspace = () => {
     [companies],
   );
 
+  /**
+   * A permission inside a project: from the company, or for tasks from
+   * being on the project's team.
+   */
+  const canInProject = useCallback(
+    (
+      project:
+        | {
+            companyId: string;
+            leadIds?: string[] | null;
+            memberIds?: string[] | null;
+          }
+        | null
+        | undefined,
+      permission: string,
+    ) =>
+      !!project &&
+      (can(project.companyId, permission) ||
+        (companies.some((c) => c.company.id === project.companyId) &&
+          !!user &&
+          teamAllows(user, project, permission))),
+    [can, companies, user],
+  );
+
   const portalPermissions = data?.permissions ?? [];
   /** A portal-wide permission, e.g. `users:delete`. */
   const canPortal = useCallback(
@@ -144,6 +169,7 @@ export const useWorkspace = () => {
       managedCompanies.length > 0 ||
       hiringCompanies.length > 0,
     can,
+    canInProject,
     canPortal,
     refresh,
   };

@@ -28,6 +28,7 @@ import {
 import { errorText } from '../Workspace/shared';
 import { AdminUserBasicData } from './AdminUserBasicData';
 import { AdminUserPermissions } from './AdminUserPermissions';
+import { AdminUserReach } from './AdminUserReach';
 import { AdminUserRoles } from './AdminUserRoles';
 
 const initialUserState: User = {
@@ -211,6 +212,7 @@ export const AdminUserEditor = () => {
         return (
           <div className="flex flex-col gap-4">
             <AdminUserRoles user={user} setUser={setUser} />
+            <AdminUserReach user={user} />
             <AdminUserPermissions user={user} />
           </div>
         );
