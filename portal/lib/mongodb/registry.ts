@@ -71,6 +71,7 @@ export const modelMetaMap = defineModelRegistry({
   taskSchedule: { collection: 'TaskSchedule' },
   projectResult: { collection: 'ProjectResult' },
   plan: { collection: 'Plan' },
+  projectPage: { collection: 'ProjectPage' },
   apiToken: { collection: 'ApiToken' },
   oauthClient: { collection: 'OAuthClient' },
   oauthCode: { collection: 'OAuthCode' },

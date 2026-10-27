@@ -3,6 +3,7 @@
 import '@mantine/core/styles.css';
 import './globals.css';
 import '@/styles/portal-colors.css';
+import '@/styles/project-doc.css';
 import '@mdxeditor/editor/style.css';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
