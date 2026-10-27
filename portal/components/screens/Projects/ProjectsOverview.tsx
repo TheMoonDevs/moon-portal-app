@@ -1,28 +1,17 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { type CSSProperties, useEffect, useMemo, useState } from 'react';
 
 import { cn } from '@/lib/utils';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
 import { useUser } from '@/utils/hooks/useUser';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
-import {
-  EmptyState,
-  Icon,
-  Pill,
-  type PillTone,
-  UserAvatar,
-} from '../Admin/shared/AdminUI';
+import { EmptyState, Icon } from '../Admin/shared/AdminUI';
 import type { ProjectRow } from '../Admin/Workspace/AdminProjects';
-import {
-  AvatarStack,
-  CompanyMark,
-  ProgressBar,
-  PROJECT_STATUS_META,
-} from '../Admin/Workspace/shared';
+import { AvatarStack, CompanyMark } from '../Admin/Workspace/shared';
 import type { Person } from '../Project/types';
 
 type Company = {
@@ -35,14 +24,11 @@ type Company = {
 type OverviewProject = ProjectRow & {
   activity: {
     from: string;
-    /** Lines written on each of the last 7 days, oldest first. */
+    /** Lines logged on each of the last 7 days, oldest first. */
     days: number[];
-    lines: number;
-    done: number;
-    /** People who wrote lines this week, most recent first. */
+    /** People who logged work this week, most recent first. */
     people: string[];
     lastDate: string | null;
-    latest: { text: string; userId: string; date: string; done: boolean }[];
   };
   tasks: { open: number; overdue: number };
   today: { total: number; done: number };
@@ -54,119 +40,142 @@ type Overview = {
   users: Person[];
 };
 
-/* --------------------------------- helpers -------------------------------- */
+// Kept between visits, so coming back from a project shows the page at once.
+let cached: Overview | null = null;
 
-const todayIso = () => new Date().toISOString().slice(0, 10);
+/* --------------------------------- status --------------------------------- */
 
-/** "Today", "Yesterday", "Mon", or "12 Oct" for a YYYY-MM-DD day. */
-const dayLabel = (day?: string | null) => {
-  if (!day) return '';
-  const days = Math.round(
-    (Date.parse(todayIso()) - Date.parse(day)) / 86_400_000,
+const PULSES = {
+  moving: { label: 'Moving', dot: 'bg-emerald-400' },
+  quiet: { label: 'Quiet', dot: 'bg-amber-300' },
+  attention: { label: 'Needs a look', dot: 'bg-rose-400' },
+  paused: { label: 'Paused', dot: 'bg-neutral-500' },
+} as const;
+
+type Pulse = keyof typeof PULSES;
+
+/** How the project is doing: overdue work, work this week, or none. */
+const pulseOf = (p: OverviewProject): Pulse => {
+  if (p.status !== 'ACTIVE') return 'paused';
+  if (p.tasks.overdue) return 'attention';
+  return p.activity.days.some(Boolean) ? 'moving' : 'quiet';
+};
+
+const StatusDot = ({ pulse }: { pulse: Pulse }) => (
+  <span className="relative flex size-2 shrink-0">
+    {pulse === 'moving' && (
+      <span className="absolute inset-0 animate-ping rounded-full bg-emerald-400 opacity-40" />
+    )}
+    <span className={cn('relative size-2 rounded-full', PULSES[pulse].dot)} />
+  </span>
+);
+
+/* ------------------------------- indicators ------------------------------- */
+
+/** A ring that fills with the project's goal, or its tasks when it has none. */
+const ProgressRing = ({
+  percent,
+  color,
+  title,
+}: {
+  percent: number;
+  color: string;
+  title: string;
+}) => {
+  const r = 15;
+  const length = 2 * Math.PI * r;
+  return (
+    <span title={title} className="relative flex size-10 shrink-0">
+      <svg viewBox="0 0 40 40" className="size-10 -rotate-90">
+        <circle
+          cx="20"
+          cy="20"
+          r={r}
+          fill="none"
+          strokeWidth="3.5"
+          className="stroke-white/[0.07]"
+        />
+        <motion.circle
+          cx="20"
+          cy="20"
+          r={r}
+          fill="none"
+          stroke={color}
+          strokeWidth="3.5"
+          strokeLinecap="round"
+          strokeDasharray={length}
+          initial={{ strokeDashoffset: length }}
+          animate={{ strokeDashoffset: length * (1 - percent / 100) }}
+          transition={{ duration: 0.8, ease: 'easeOut' }}
+        />
+      </svg>
+      {percent >= 100 && (
+        <Icon
+          name="check"
+          className="absolute inset-0 m-auto size-fit text-[16px]"
+        />
+      )}
+    </span>
   );
-  if (days <= 0) return 'Today';
-  if (days === 1) return 'Yesterday';
-  const date = new Date(`${day}T00:00:00Z`);
-  return days < 7
-    ? date.toLocaleDateString(undefined, { weekday: 'short', timeZone: 'UTC' })
-    : date.toLocaleDateString(undefined, {
-        day: 'numeric',
-        month: 'short',
-        timeZone: 'UTC',
-      });
 };
 
-const firstName = (name?: string | null) => (name || 'Someone').split(' ')[0];
-
-/** One word on how the project is doing, from what happened this week. */
-const pulseOf = (p: OverviewProject): { label: string; tone: PillTone } => {
-  if (p.status !== 'ACTIVE')
-    return (
-      PROJECT_STATUS_META[p.status] ?? { label: p.status, tone: 'neutral' }
-    );
-  if (p.tasks.overdue)
-    return { label: `${p.tasks.overdue} overdue`, tone: 'danger' };
-  if (!p.activity.lines) return { label: 'Quiet', tone: 'neutral' };
-  return { label: 'Moving', tone: 'positive' };
-};
-
-/* ------------------------------- small parts ------------------------------ */
-
-/** Seven bars, one per day, the last one today. */
-const WeekBars = ({ days, color }: { days: number[]; color: string }) => {
+/** Seven segments, one per day ending today, brighter for more work. */
+const WeekStrip = ({ days, color }: { days: number[]; color: string }) => {
   const max = Math.max(1, ...days);
   return (
-    <div className="flex h-6 items-end gap-[3px]" aria-hidden>
+    <span
+      title="Worklogs, last 7 days"
+      className="flex h-2 min-w-0 flex-1 gap-1"
+    >
       {days.map((n, i) => (
         <span
           key={i}
-          className="w-1.5 rounded-sm"
-          style={{
-            height: `${n ? Math.max(18, (n / max) * 100) : 12}%`,
-            backgroundColor: n ? color : 'rgba(255,255,255,0.08)',
-            opacity: n ? 0.45 + (0.55 * (i + 1)) / days.length : 1,
-          }}
+          className="flex-1 rounded-full bg-white/[0.06]"
+          style={
+            n
+              ? { backgroundColor: color, opacity: 0.35 + 0.65 * (n / max) }
+              : {}
+          }
         />
       ))}
-    </div>
+    </span>
   );
 };
-
-const Stat = ({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: number;
-  tone?: 'danger';
-}) => (
-  <div className="min-w-0 rounded-2xl border border-white/[0.07] bg-white/[0.02] px-4 py-3">
-    <p className="truncate text-[11px] font-medium uppercase tracking-wider text-neutral-500">
-      {label}
-    </p>
-    <p
-      className={cn(
-        'mt-0.5 text-2xl font-semibold',
-        tone === 'danger' && value ? 'text-rose-300' : 'text-white',
-      )}
-    >
-      {value}
-    </p>
-  </div>
-);
 
 /* ---------------------------------- card ---------------------------------- */
 
 const ProjectCard = ({
   project,
-  company,
   people,
   isMine,
 }: {
   project: OverviewProject;
-  company?: Company;
   people: Map<string, Person>;
   isMine: boolean;
 }) => {
   const color = project.color || '#10b981';
   const pulse = pulseOf(project);
-  const { activity, tasks, today } = project;
-  const latest = activity.latest[0];
-  const writer = latest ? people.get(latest.userId) : null;
 
   const goal = project.goals?.[0];
   const goalProgress = goal
     ? project.goalProgress?.find((g) => g.goalId === goal.id)
     : null;
+  const ring =
+    goal && goalProgress
+      ? {
+          percent: goalProgress.percent,
+          title: `${goalProgress.done}/${goal.target} ${goal.title}`,
+        }
+      : {
+          percent: project.progress?.percent ?? 0,
+          title: `${project.progress?.percent ?? 0}% of tasks done`,
+        };
 
-  // People who worked on it this week first, then the rest of the team.
-  const team = Array.from(
-    new Set([
-      ...activity.people,
-      ...(project.leadIds ?? []),
-      ...(project.memberIds ?? []),
-    ]),
+  // Who worked on it this week, else its team.
+  const faces = (
+    project.activity.people.length
+      ? project.activity.people
+      : [...(project.leadIds ?? []), ...(project.memberIds ?? [])]
   )
     .map((id) => people.get(id))
     .filter((p): p is Person => !!p);
@@ -174,10 +183,10 @@ const ProjectCard = ({
   return (
     <Link
       href={`${APP_ROUTES.projects}/${project.id}`}
-      className="group flex h-full flex-col gap-4 rounded-2xl border border-white/[0.07] bg-neutral-900/40 p-4 transition-colors hover:border-white/15 hover:bg-neutral-900/80"
+      style={{ '--accent': color } as CSSProperties}
+      className="group flex flex-col gap-4 rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4 transition duration-200 hover:-translate-y-0.5 hover:border-[color:var(--accent)] hover:bg-white/[0.04] active:translate-y-0"
     >
-      {/* Who and how */}
-      <div className="flex items-start gap-3">
+      <div className="flex items-center gap-3">
         <CompanyMark
           name={project.name}
           color={project.color}
@@ -185,141 +194,94 @@ const ProjectCard = ({
           size={40}
         />
         <div className="min-w-0 flex-1">
-          <p className="truncate font-semibold text-white">{project.name}</p>
-          <p className="flex items-center gap-1.5 text-xs text-neutral-500">
-            <span className="truncate">
-              {project.description || company?.name}
+          <p className="flex items-center gap-1.5">
+            <span className="truncate font-semibold text-white">
+              {project.name}
             </span>
             {isMine && (
-              <span className="shrink-0 rounded bg-amber-400/15 px-1 text-[10px] font-semibold text-amber-300">
-                You
-              </span>
+              <Icon
+                name="person"
+                filled
+                className="shrink-0 text-[14px] text-amber-300"
+              />
             )}
           </p>
+          <p className="mt-1 flex items-center gap-1.5 text-xs text-neutral-500">
+            <StatusDot pulse={pulse} />
+            {PULSES[pulse].label}
+          </p>
         </div>
-        <Pill tone={pulse.tone}>{pulse.label}</Pill>
+        <ProgressRing percent={ring.percent} color={color} title={ring.title} />
       </div>
 
-      {/* What happened last */}
-      <div className="min-h-[40px] text-sm">
-        {latest ? (
-          <div className="flex gap-2">
-            <UserAvatar
-              src={writer?.avatar}
-              name={writer?.name}
-              size={20}
-              className="mt-0.5"
-            />
-            <p className="line-clamp-2 min-w-0 text-neutral-300">
-              <span className="font-medium text-neutral-100">
-                {firstName(writer?.name)}
-              </span>{' '}
-              {latest.text}
-              <span className="text-neutral-500">
-                {' '}
-                · {dayLabel(latest.date)}
-              </span>
-            </p>
-          </div>
-        ) : (
-          <p className="text-neutral-500">No worklogs this week.</p>
-        )}
-      </div>
-
-      {/* This week, and the goal */}
-      <div className="flex items-end gap-4">
-        <div className="flex shrink-0 items-end gap-2.5">
-          <WeekBars days={activity.days} color={color} />
-          <div className="leading-tight">
-            <p className="text-sm font-semibold text-white">
-              {activity.lines}
-              <span className="text-xs font-normal text-neutral-500">
-                {' '}
-                {activity.lines === 1 ? 'line' : 'lines'}
-              </span>
-            </p>
-            <p className="text-[11px] text-neutral-500">this week</p>
-          </div>
-        </div>
-        <div className="min-w-0 flex-1">
-          {goal && goalProgress ? (
-            <>
-              <p className="mb-1 flex justify-between gap-2 text-[11px] text-neutral-400">
-                <span className="truncate">{goal.title}</span>
-                <span className="shrink-0 text-neutral-300">
-                  {goalProgress.done}/{goal.target}
-                </span>
-              </p>
-              <ProgressBar percent={goalProgress.percent} color={color} />
-            </>
-          ) : (
-            <>
-              <p className="mb-1 flex justify-between gap-2 text-[11px] text-neutral-400">
-                <span>Tasks done</span>
-                <span className="text-neutral-300">
-                  {project.progress?.percent ?? 0}%
-                </span>
-              </p>
-              <ProgressBar
-                percent={project.progress?.percent ?? 0}
-                color={color}
-              />
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Team and what's left */}
-      <div className="mt-auto flex items-center gap-3 border-t border-white/[0.06] pt-3 text-xs text-neutral-400">
-        {team.length > 0 ? (
-          <AvatarStack users={team} max={4} />
-        ) : (
-          <span className="text-neutral-600">No team yet</span>
-        )}
-        <span className="ml-auto flex items-center gap-3">
-          {today.total > 0 && (
-            <span
-              title="Scheduled tasks for today"
-              className={cn(
-                'flex items-center gap-1',
-                today.done === today.total && 'text-emerald-300',
-              )}
-            >
-              <Icon name="event_repeat" className="text-[15px]" />
-              {today.done}/{today.total} today
-            </span>
-          )}
-          <span className="flex items-center gap-1">
-            <Icon name="radio_button_unchecked" className="text-[14px]" />
-            {tasks.open} open
-          </span>
+      <div className="flex items-center gap-4">
+        <WeekStrip days={project.activity.days} color={color} />
+        <span className="flex h-6 shrink-0 items-center">
+          {faces.length ? <AvatarStack users={faces} max={3} /> : null}
         </span>
-        <Icon
-          name="arrow_forward"
-          className="text-[16px] text-neutral-600 transition-transform group-hover:translate-x-0.5 group-hover:text-neutral-300"
-        />
       </div>
     </Link>
   );
 };
 
+const CardSkeleton = () => (
+  <div className="flex h-[124px] flex-col justify-between rounded-2xl border border-white/[0.04] bg-white/[0.02] p-4">
+    <div className="flex items-center gap-3">
+      <div className="size-10 animate-pulse rounded-xl bg-white/[0.06]" />
+      <div className="flex-1 space-y-2">
+        <div className="h-3 w-1/2 animate-pulse rounded bg-white/[0.06]" />
+        <div className="h-2.5 w-1/4 animate-pulse rounded bg-white/[0.04]" />
+      </div>
+    </div>
+    <div className="h-2 animate-pulse rounded-full bg-white/[0.04]" />
+  </div>
+);
+
 /* ---------------------------------- page ---------------------------------- */
 
+const Chip = ({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    aria-pressed={active}
+    className={cn(
+      'flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-colors',
+      active
+        ? 'bg-white text-neutral-950'
+        : 'bg-white/[0.04] text-neutral-400 hover:bg-white/[0.08] hover:text-neutral-100',
+    )}
+  >
+    {children}
+  </button>
+);
+
 /**
- * Every project the user can see, across their companies, each with what is
- * going on in it this week. A card opens the project page.
+ * Every project the user can see, across their companies, at a glance: how
+ * it is doing, how busy its week was, how far its goal is and who is on it.
+ * The details are on the project page a card opens.
  */
 export const ProjectsOverview = () => {
   const { user } = useUser();
-  const [data, setData] = useState<Overview | null>(null);
+  const [data, setData] = useState<Overview | null>(cached);
   const [failed, setFailed] = useState(false);
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [onlyMine, setOnlyMine] = useState(false);
 
   useEffect(() => {
     PortalSdk.getData('/api/projects/overview', null)
-      .then((res) => setData(res?.data ?? null))
-      .catch(() => setFailed(true));
+      .then((res) => {
+        cached = res?.data ?? null;
+        setData(cached);
+      })
+      .catch(() => setFailed(!cached));
   }, []);
 
   const people = useMemo(
@@ -329,20 +291,6 @@ export const ProjectsOverview = () => {
   const isMine = (p: OverviewProject) =>
     !!user && (p.leadIds?.includes(user.id) || p.memberIds?.includes(user.id));
 
-  const projects = useMemo(() => {
-    const rows = (data?.projects ?? []).filter(
-      (p) =>
-        (!companyId || p.companyId === companyId) && (!onlyMine || isMine(p)),
-    );
-    // Yours first, then the ones with the latest work.
-    return rows.sort(
-      (a, b) =>
-        Number(isMine(b)) - Number(isMine(a)) ||
-        (b.activity.lastDate ?? '').localeCompare(a.activity.lastDate ?? ''),
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, companyId, onlyMine, user?.id]);
-
   // Companies with at least one project, in the order the API gave them.
   const companies = useMemo(
     () =>
@@ -351,124 +299,85 @@ export const ProjectsOverview = () => {
       ),
     [data],
   );
-  const companyById = useMemo(
-    () => new Map(companies.map((c) => [c.id, c])),
-    [companies],
-  );
-  const groups = companies
-    .map((company) => ({
-      company,
-      projects: projects.filter((p) => p.companyId === company.id),
-    }))
-    .filter((g) => g.projects.length);
 
-  const totals = useMemo(() => {
-    const active = new Set<string>();
-    let lines = 0;
-    let overdue = 0;
-    for (const p of projects) {
-      p.activity.people.forEach((id) => active.add(id));
-      lines += p.activity.lines;
-      overdue += p.tasks.overdue;
-    }
-    return { active: active.size, lines, overdue };
-  }, [projects]);
+  const groups = useMemo(() => {
+    const shown = (data?.projects ?? [])
+      .filter(
+        (p) =>
+          (!companyId || p.companyId === companyId) && (!onlyMine || isMine(p)),
+      )
+      // Yours first, then the ones worked on most recently.
+      .sort(
+        (a, b) =>
+          Number(isMine(b)) - Number(isMine(a)) ||
+          (b.activity.lastDate ?? '').localeCompare(a.activity.lastDate ?? ''),
+      );
+    return companies
+      .map((company) => ({
+        company,
+        projects: shown.filter((p) => p.companyId === company.id),
+      }))
+      .filter((g) => g.projects.length);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, companies, companyId, onlyMine, user?.id]);
 
   return (
-    <div className="fixed inset-0 overflow-y-auto bg-neutral-950 pb-[88px] text-neutral-100 md:left-16 md:pb-10">
-      <div className="mx-auto max-w-6xl px-4 pt-8 md:px-8 md:pt-12">
-        <header className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-white">
-              Projects
-            </h1>
-            <p className="mt-1 text-sm text-neutral-400">
-              What&apos;s happening in every project you&apos;re part of, this
-              week.
-            </p>
-          </div>
-        </header>
+    <div className="fixed inset-0 overflow-y-auto bg-neutral-950 pb-[88px] text-neutral-100 md:left-16 md:pb-12">
+      <div className="mx-auto max-w-5xl px-4 pt-8 md:px-8 md:pt-12">
+        <h1 className="text-3xl font-bold tracking-tight text-white">
+          Projects
+        </h1>
 
-        {/* Totals */}
-        <div className="mt-6 grid grid-cols-2 gap-2 md:grid-cols-4 md:gap-3">
-          {data ? (
-            <>
-              <Stat label="Projects" value={projects.length} />
-              <Stat label="People working" value={totals.active} />
-              <Stat label="Lines this week" value={totals.lines} />
-              <Stat
-                label="Overdue tasks"
-                value={totals.overdue}
-                tone="danger"
-              />
-            </>
-          ) : (
-            [0, 1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="h-[74px] animate-pulse rounded-2xl bg-white/[0.03]"
-              />
-            ))
-          )}
-        </div>
-
-        {/* Filters */}
-        {companies.length > 0 && (
-          <div className="no-scrollbar -mx-4 mt-6 flex items-center gap-1.5 overflow-x-auto px-4 md:mx-0 md:px-0">
-            {[{ id: null, name: 'All' } as const, ...companies].map((c) => (
-              <button
-                key={c.id ?? 'all'}
-                type="button"
-                onClick={() => setCompanyId(c.id)}
-                className={cn(
-                  'flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors',
-                  companyId === c.id
-                    ? 'border-white bg-white text-neutral-950'
-                    : 'border-white/10 text-neutral-300 hover:border-white/25',
-                )}
-              >
-                {'color' in c && (
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+          {companies.length > 0 && (
+            <div className="no-scrollbar -mx-4 flex max-w-[calc(100%+2rem)] items-center gap-1.5 overflow-x-auto px-4 md:mx-0 md:px-0">
+              <Chip active={!companyId} onClick={() => setCompanyId(null)}>
+                All
+              </Chip>
+              {companies.map((c) => (
+                <Chip
+                  key={c.id}
+                  active={companyId === c.id}
+                  onClick={() => setCompanyId(c.id)}
+                >
                   <CompanyMark
                     name={c.name}
                     color={c.color}
                     logo={c.logo}
                     size={16}
                   />
-                )}
-                {c.name}
-              </button>
+                  {c.name}
+                </Chip>
+              ))}
+              <span className="mx-1 h-4 w-px shrink-0 bg-white/10" />
+              <Chip active={onlyMine} onClick={() => setOnlyMine((v) => !v)}>
+                <Icon name="person" className="text-[15px]" />
+                Mine
+              </Chip>
+            </div>
+          )}
+          {/* What the dots mean */}
+          <div className="flex items-center gap-3 text-[11px] text-neutral-500">
+            {(Object.keys(PULSES) as Pulse[]).map((key) => (
+              <span key={key} className="flex items-center gap-1.5">
+                <span
+                  className={cn('size-1.5 rounded-full', PULSES[key].dot)}
+                />
+                {PULSES[key].label}
+              </span>
             ))}
-            <span className="mx-1 h-5 w-px shrink-0 bg-white/10" />
-            <button
-              type="button"
-              onClick={() => setOnlyMine((v) => !v)}
-              aria-pressed={onlyMine}
-              className={cn(
-                'flex h-8 shrink-0 items-center gap-1 rounded-full border px-3 text-xs font-medium transition-colors',
-                onlyMine
-                  ? 'border-amber-300/40 bg-amber-400/15 text-amber-200'
-                  : 'border-white/10 text-neutral-300 hover:border-white/25',
-              )}
-            >
-              <Icon name="person" className="text-[15px]" />
-              Mine
-            </button>
           </div>
-        )}
+        </div>
 
-        {/* Projects by company */}
         {!data && !failed ? (
-          <div className="mt-8 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className="h-[248px] animate-pulse rounded-2xl bg-white/[0.03]"
-              />
+          <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {[0, 1, 2, 3, 4, 5].map((i) => (
+              <CardSkeleton key={i} />
             ))}
           </div>
         ) : failed ? (
           <EmptyState
-            icon="error"
+            icon="cloud_off"
             title="Couldn't load projects"
             description="Refresh the page to try again."
           />
@@ -485,40 +394,46 @@ export const ProjectsOverview = () => {
             }
           />
         ) : (
-          groups.map(({ company, projects: rows }) => (
-            <section key={company.id} className="mt-8">
-              <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-neutral-300">
-                <CompanyMark
-                  name={company.name}
-                  color={company.color}
-                  logo={company.logo}
-                  size={20}
-                />
-                {company.name}
-                <span className="font-normal text-neutral-600">
-                  {rows.length}
-                </span>
-              </h2>
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {rows.map((project, i) => (
-                  <motion.div
-                    key={project.id}
-                    className="min-w-0"
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: Math.min(i, 8) * 0.03 }}
-                  >
-                    <ProjectCard
-                      project={project}
-                      company={companyById.get(project.companyId)}
-                      people={people}
-                      isMine={isMine(project)}
-                    />
-                  </motion.div>
-                ))}
-              </div>
-            </section>
-          ))
+          <motion.div layout className="mt-4">
+            <AnimatePresence initial={false} mode="popLayout">
+              {groups.map(({ company, projects }) => (
+                <motion.section
+                  key={company.id}
+                  layout
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="pt-6"
+                >
+                  <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
+                    {company.name}
+                  </h2>
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    <AnimatePresence initial={false} mode="popLayout">
+                      {projects.map((project) => (
+                        <motion.div
+                          key={project.id}
+                          layout
+                          className="min-w-0"
+                          initial={{ opacity: 0, scale: 0.97 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.97 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <ProjectCard
+                            project={project}
+                            people={people}
+                            isMine={isMine(project)}
+                          />
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  </div>
+                </motion.section>
+              ))}
+            </AnimatePresence>
+          </motion.div>
         )}
       </div>
     </div>
