@@ -23,17 +23,17 @@ import { TMD_PORTAL_API_KEY } from '@/utils/constants/appInfo';
 
 import styles from './task.module.css';
 import {
+  CrowdScene,
   DreamScene,
-  FeedScene,
   FounderScene,
   HiringScene,
   ManifestoScene,
   MarkScene,
+  MarqueeScene,
   RadarScene,
   StudioScene,
   TeamScene,
   TimelineScene,
-  VoiceScene,
 } from './TaskScenes';
 
 const sans = Plus_Jakarta_Sans({
@@ -99,7 +99,7 @@ const Shell = ({
   theme = 'sketchbook',
   children,
 }: {
-  theme?: 'sketchbook' | 'signal' | 'monsoon';
+  theme?: 'sketchbook' | 'signal' | 'premiere';
   children: ReactNode;
 }) => {
   const grain = useRef<HTMLCanvasElement>(null);
@@ -131,7 +131,7 @@ const Shell = ({
 
   return (
     <div
-      className={`${styles.root} ${theme === 'sketchbook' ? '' : styles.signal} ${theme === 'monsoon' ? styles.monsoon : ''} ${sans.variable} ${mono.variable} ${hand.variable} ${display.variable}`}
+      className={`${styles.root} ${theme === 'sketchbook' ? '' : styles.signal} ${theme === 'premiere' ? styles.premiere : ''} ${sans.variable} ${mono.variable} ${hand.variable} ${display.variable}`}
     >
       <canvas
         ref={grain}
@@ -603,13 +603,15 @@ export const TaskPage = ({ data }: { data: PublicTask }) => {
         return intro.radar ? (
           <RadarScene key={key} radar={intro.radar} />
         ) : null;
-      case 'feed':
-        return intro.feed ? <FeedScene key={key} feed={intro.feed} /> : null;
-      case 'voice':
-        return intro.voice ? (
-          <VoiceScene
+      case 'crowd':
+        return intro.crowd ? (
+          <CrowdScene key={key} crowd={intro.crowd} />
+        ) : null;
+      case 'marquee':
+        return intro.marquee ? (
+          <MarqueeScene
             key={key}
-            voice={intro.voice}
+            marquee={intro.marquee}
             firstName={data.firstName}
           />
         ) : null;

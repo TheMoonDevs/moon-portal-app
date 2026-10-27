@@ -4,8 +4,8 @@ export type TaskSceneKey =
   | 'manifesto'
   | 'hiring'
   | 'radar'
-  | 'feed'
-  | 'voice'
+  | 'crowd'
+  | 'marquee'
   | 'studio'
   | 'mark'
   | 'team'
@@ -19,10 +19,10 @@ export interface TaskPageConfig {
   name: string;
   /**
    * The look: `sketchbook` is grainy paper and red marker, `signal` a night
-   * radar screen with phosphor-green ink, `monsoon` a rainy synthwave night
-   * in neon pink and cyan. Defaults to sketchbook.
+   * radar screen with phosphor-green ink, `premiere` a premiere night in
+   * marquee gold on black velvet. Defaults to sketchbook.
    */
-  theme?: 'sketchbook' | 'signal' | 'monsoon';
+  theme?: 'sketchbook' | 'signal' | 'premiere';
   /** Which scenes to show, in order. Defaults to every scene but hiring and radar. */
   scenes?: TaskSceneKey[];
   studio: {
@@ -79,33 +79,34 @@ export interface TaskPageConfig {
     blips: string[];
     found: string;
   };
-  /** A studio post going live, its numbers climbing. Shown by the feed scene. */
-  feed?: {
+  /**
+   * One fan becoming a community: dots gather into a crescent moon as the
+   * count climbs. Shown by the crowd scene.
+   */
+  crowd?: {
     kicker: string;
-    /** Its last word gets struck through, and the note answers it. */
     title: string;
-    note: string;
     body: string;
-    post: { handle: string; caption: string; time: string };
-    /** Each counts up from zero as the reader scrolls. */
-    counts: Array<{ label: string; to: number }>;
-    comments: string[];
-    payoff: string;
+    /** What the counter reads as the crowd grows, first to last. */
+    counts: string[];
+    /** A hand-written line once the moon has formed. */
+    note: string;
   };
   /**
-   * Everything the role owns, ticked off around a spinning record with the
-   * studio's name on it. Shown by the voice scene.
+   * A cinema marquee with chaser bulbs, flipping through what the studio
+   * launches. Shown by the marquee scene.
    */
-  voice?: {
+  marquee?: {
     kicker: string;
     title: string;
-    /** The record's label. */
-    core: { title: string; sub: string };
-    rows: string[];
-    /** The candidate's row: "<slot> <first name>?", circled. */
-    slot: string;
-    /** A hand-written note pointing at their row. */
-    note: string;
+    /** Words in the title circled in marker. */
+    circle: string;
+    /** Each board: a small tag over a big line. */
+    boards: Array<{ tag: string; text: string }>;
+    /** The last board's tag, over the candidate's name. */
+    starring: string;
+    /** What the role owns, crawling along the bottom like a news ticker. */
+    ticker: string[];
   };
   /** Still being confirmed; only enabled ones are shown. */
   promises: Array<{ text: string; enabled: boolean }>;

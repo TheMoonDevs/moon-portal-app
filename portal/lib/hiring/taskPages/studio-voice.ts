@@ -4,64 +4,62 @@ import { conceptArtistPage } from './concept-artist';
 import type { TaskPageConfig } from './types';
 
 /**
- * The intro for Social & PR Manager (Intern), on a rainy synthwave Mumbai in
- * neon pink and cyan. It shows who they'd join, why the studio needs a voice,
- * and everything that voice owns, from community to PR. The brief and the
- * form after it come from the opening, not from here.
+ * The intro for Social & PR Manager (Intern): premiere night for the studio's
+ * films, tracks and games, in marquee gold on black velvet. A crowd grows
+ * from one fan into a moon, and a marquee flips through everything the
+ * studio launches until it reads their name. The brief and the form after it
+ * come from the opening, not from here.
  */
 export const studioVoicePage: TaskPageConfig = {
   key: 'studio-voice',
-  name: 'Studio voice',
-  theme: 'monsoon',
+  name: 'Premiere night',
+  theme: 'premiere',
   scenes: [
     'dream',
     'manifesto',
     'studio',
-    'feed',
-    'voice',
+    'crowd',
+    'marquee',
     'mark',
     'founder',
     'timeline',
   ],
   studio: conceptArtistPage.studio,
-  feed: {
-    kicker: 'why it matters',
-    title: 'Great work dies quietly.',
-    note: 'Not on your watch.',
-    body: 'We make films, music, games and tools with AI, with developers, vibe-coders, musicians and filmmakers in one room. None of it matters if nobody hears about it.',
-    post: {
-      handle: '@thestudio',
-      caption:
-        'the studio at 2 AM: three tracks mixing, one film rendering, a game in beta.',
-      time: '2:04 AM',
-    },
+  crowd: {
+    kicker: 'the community',
+    title: 'Every crowd starts with one person who cares.',
+    body: 'Our Discord, our subreddits, the comments under every film and track. You turn viewers into a crowd, and a crowd into a community that stays.',
     counts: [
-      { label: 'views', to: 120000 },
-      { label: 'joined', to: 4200 },
-      { label: 'shares', to: 9800 },
+      '1 fan',
+      '12 in the discord',
+      '340 regulars',
+      '8,000 members',
+      'a whole moon',
     ],
-    comments: [
-      'wait, this is all made with AI??',
-      'just joined the discord, this community is unreal',
-      'when is the next drop',
-      'whoever runs this page, protect them',
-    ],
-    payoff: "You'll make them hear.",
+    note: "You'll be that one person first.",
   },
-  voice: {
+  marquee: {
     kicker: "what you'll own",
-    title: 'Not a posting job. The voice of a studio.',
-    core: { title: 'Zone Studios', sub: 'by the moon devs' },
-    rows: [
-      'YouTube channels, from first upload to growth',
-      'Our Discord and Reddit communities',
-      'PR: press, creators and collaborators',
-      'Campaigns, memes and launches',
-      'Playlists and curators for our music',
-      'The numbers, every week',
+    title: 'Films, tracks, games. Every launch needs a voice.',
+    circle: 'a voice.',
+    boards: [
+      { tag: 'now showing', text: 'AN AI SHORT FILM' },
+      { tag: 'out now', text: 'A NEW SINGLE' },
+      { tag: 'in beta', text: 'A MOBILE GAME' },
+      { tag: 'live tonight', text: 'DISCORD PREMIERE' },
+      { tag: 'in the press', text: 'ZONE STUDIOS' },
     ],
-    slot: 'The voice of the studio:',
-    note: "that's you",
+    starring: 'and starring',
+    ticker: [
+      'Community',
+      'YouTube channels',
+      'PR & press',
+      'Creators & collabs',
+      'Campaigns & memes',
+      'Premieres',
+      'Playlists & curators',
+      'The numbers, weekly',
+    ],
   },
   mark: {
     kicker: 'Your mark',
@@ -71,9 +69,9 @@ export const studioVoicePage: TaskPageConfig = {
       'Community',
       'YouTube',
       'PR & press',
+      'Premieres',
       'Campaigns',
       'Creators',
-      'Playlists',
     ],
     creditLine: 'Community & PR',
   },
