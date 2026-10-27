@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
 
 /**
  * Emails applicants of one company:
- * `{ ids, subject, body, sendId, templateId?, moveTo?, replyTo? }`.
+ * `{ ids, subject, body, sendId, templateId?, moveTo?, replyToLead? }`.
  *
  * `subject` and `body` may hold {{placeholders}}. Each applicant who was
  * emailed is moved to `moveTo` when it is given. `sendId` is made by the

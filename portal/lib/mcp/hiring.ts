@@ -396,6 +396,11 @@ const openingProperties = {
     description:
       'The person candidates will work with: a company member by name, email or user id. Empty string to clear.',
   },
+  replyToLead: {
+    type: 'boolean',
+    description:
+      "Whether candidates' replies to emails go to the hiring lead (true, the default) or to the HR inbox (false, for HR emails).",
+  },
   task: {
     type: ['object', 'null'],
     description:
@@ -553,6 +558,7 @@ export const HIRING_TOOLS: Tool[] = [
         notes: opening.notes ?? null,
         questions: (opening.fields ?? []).map(fieldView),
         hiringLead: await leadName(opening.hiringLeadId),
+        replyToLead: opening.replyToLead ?? true,
         task: taskView(opening.task),
         taskPreviewUrl: opening.task
           ? links(context.origin).taskPreview(opening.id)
@@ -596,6 +602,9 @@ export const HIRING_TOOLS: Tool[] = [
         fields: args?.questions ?? [],
         task: taskInput(args?.task) ?? null,
         hiringLeadId: (await findLead(company.id, args?.hiringLead)) ?? null,
+        ...(typeof args?.replyToLead === 'boolean' && {
+          replyToLead: args.replyToLead,
+        }),
         status: args?.publish
           ? JOB_OPENING_STATUS.OPEN
           : JOB_OPENING_STATUS.DRAFT,
@@ -619,6 +628,7 @@ export const HIRING_TOOLS: Tool[] = [
           fields: data.fields ?? [],
           task: data.task ?? null,
           hiringLeadId: data.hiringLeadId ?? null,
+          replyToLead: data.replyToLead ?? true,
           createdById: user.id,
           publishedAt: null,
           closedAt: null,
@@ -676,6 +686,7 @@ export const HIRING_TOOLS: Tool[] = [
         'details',
         'notes',
         'status',
+        'replyToLead',
       ])
         if (args?.[key] !== undefined) input[key] = args[key];
       if (args?.questions !== undefined) input.fields = args.questions;
@@ -717,6 +728,7 @@ export const HIRING_TOOLS: Tool[] = [
           ),
           questions: (updated.fields ?? []).map(fieldView),
           hiringLead: await leadName(updated.hiringLeadId),
+          replyToLead: updated.replyToLead ?? true,
           task: taskView(updated.task),
           taskPreviewUrl: updated.task
             ? links(context.origin).taskPreview(updated.id)
@@ -1084,7 +1096,7 @@ export const HIRING_TOOLS: Tool[] = [
   {
     name: 'email_applicants',
     title: 'Email applicants',
-    description: `Emails applicants of one company, each their own copy with {{placeholders}} filled in, from careers@ the company's domain with replies going to the person. {{meetingLink}} puts in the person's own booking link (prefilled for each candidate) so candidates can pick an interview time. {{taskLink}} puts in each candidate's own private task page for the opening's task (see get_job_opening); the due date counts from the first email that has it. Give a template (from list_email_templates) or a subject and body; a template's stage suggestion is used unless you set moveTo. ALWAYS call with dryRun true first, show the person the subject, a preview and how many people it goes to, and send (dryRun false) only after they say yes: emails can't be unsent. Anyone sent the same subject in the last 30 minutes is skipped.`,
+    description: `Emails applicants of one company, each their own copy with {{placeholders}} filled in, from careers@ the company's domain. Replies go to the opening's hiring lead (or the person sending, when it has none), or to the HR inbox when the opening's replyToLead is off; replyToLead here overrides that for one send. {{meetingLink}} puts in the person's own booking link (prefilled for each candidate) so candidates can pick an interview time. {{taskLink}} puts in each candidate's own private task page for the opening's task (see get_job_opening); the due date counts from the first email that has it. Give a template (from list_email_templates) or a subject and body; a template's stage suggestion is used unless you set moveTo. ALWAYS call with dryRun true first, show the person the subject, a preview and how many people it goes to, and send (dryRun false) only after they say yes: emails can't be unsent. Anyone sent the same subject in the last 30 minutes is skipped.`,
     inputSchema: {
       type: 'object',
       properties: {
@@ -1107,9 +1119,15 @@ export const HIRING_TOOLS: Tool[] = [
           description:
             'Stage to move everyone the email reached to. NONE leaves them where they are.',
         },
+        replyToLead: {
+          type: 'boolean',
+          description:
+            "True sends replies to the hiring lead, false to the HR inbox (for HR emails). Leave it out to follow each opening's setting.",
+        },
         replyTo: {
           type: 'string',
-          description: "Where replies go. Defaults to the person's email.",
+          description:
+            'An exact address for replies, only when the person asks for one. Overrides replyToLead.',
         },
         dryRun: {
           type: 'boolean',
@@ -1147,6 +1165,7 @@ export const HIRING_TOOLS: Tool[] = [
         templateId: template?.id ?? null,
         moveTo,
         replyTo: args?.replyTo,
+        replyToLead: args?.replyToLead,
         sendId: `mcp-${randomUUID()}`,
       });
       if (error) throw new ToolError(error);
@@ -1163,7 +1182,9 @@ export const HIRING_TOOLS: Tool[] = [
             recipients: applications.length,
             moveTo: send.moveTo,
             from: emails[0].from,
-            replyTo: emails[0].replyTo,
+            replyTo: Array.from(new Set(emails.map((e) => e.replyTo))).join(
+              ', ',
+            ),
             previews: emails.slice(0, 3).map((e) => ({
               to: e.to,
               subject: e.subject,

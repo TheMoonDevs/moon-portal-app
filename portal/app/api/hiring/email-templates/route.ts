@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
       where: { companyId },
       orderBy: { name: 'asc' },
     });
-  const { configured, from, tracksDelivery } = hiringEmailSettings();
+  const { configured, from, tracksDelivery, hrReplyTo } = hiringEmailSettings();
   // For previews of {{meetingLink}}; made on first use like the Meet page.
   const meetingLink = meetLink(
     originOf(request),
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
   );
   return ok({
     templates,
-    sending: { configured, from, tracksDelivery, meetingLink },
+    sending: { configured, from, tracksDelivery, hrReplyTo, meetingLink },
   });
 }
 

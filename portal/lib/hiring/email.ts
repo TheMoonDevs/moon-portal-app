@@ -13,11 +13,16 @@ import { HIRING_EMAIL_STATUS } from '@/models/hiring';
 
 const HIRING_SENDER = 'careers';
 
+/** Where replies go when an email isn't answered by the hiring lead. */
+export const HR_REPLY_TO =
+  process.env.HIRING_HR_REPLY_TO?.trim() || 'careers@themoondevs.com';
+
 export function hiringEmailSettings() {
   return {
     configured: isResendConfigured(),
     from: senderAddress(HIRING_SENDER),
     tracksDelivery: isResendWebhookConfigured(),
+    hrReplyTo: HR_REPLY_TO,
   };
 }
 

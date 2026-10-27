@@ -106,6 +106,7 @@ export async function POST(request: Request) {
       fields: data.fields ?? [],
       task: data.task ?? null,
       hiringLeadId: data.hiringLeadId ?? null,
+      replyToLead: data.replyToLead ?? true,
       createdById: user.id,
       publishedAt: null,
       closedAt: null,

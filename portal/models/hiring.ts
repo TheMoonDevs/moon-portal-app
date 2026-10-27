@@ -176,6 +176,12 @@ export type JobOpening = Loose<
     task?: Nullable<JobTask>;
     /** The person candidates work with, a member of the company. */
     hiringLeadId?: Nullable<string>;
+    /**
+     * Whether candidate emails take replies at the hiring lead's address
+     * (the default). Off sends them to the HR inbox instead. Each send can
+     * still choose otherwise.
+     */
+    replyToLead?: Nullable<boolean>;
     createdById: string;
     publishedAt?: Nullable<DateValue>;
     closedAt?: Nullable<DateValue>;

@@ -24,6 +24,7 @@ import { PortalSdk } from '@/utils/services/PortalSdk';
 import {
   AdminButton,
   AdminModal,
+  CheckBox,
   Field,
   Icon,
   IconAction,
@@ -42,6 +43,8 @@ interface SendingSettings {
   configured: boolean;
   from: string | null;
   tracksDelivery: boolean;
+  /** Where replies go when they don't go to the hiring lead. */
+  hrReplyTo?: string | null;
   /** The sender's booking link, for {{meetingLink}}. */
   meetingLink?: string | null;
 }
@@ -85,6 +88,8 @@ export const EmailComposer = ({
   companyId,
   companyName,
   role,
+  hiringLead,
+  replyToLead: openingReplyToLead,
   recipients: initialRecipients,
   canEditTemplates,
   onSent,
@@ -95,6 +100,10 @@ export const EmailComposer = ({
   companyName: string;
   /** The opening's title, for {{role}}. */
   role: string;
+  /** The opening's hiring lead, when it has one. */
+  hiringLead: { name: string; email?: string | null } | null;
+  /** The opening's setting, which each email starts from. */
+  replyToLead: boolean;
   recipients: ApplicationRow[];
   canEditTemplates: boolean;
   onSent: (result: SendResult) => void;
@@ -110,7 +119,7 @@ export const EmailComposer = ({
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
   const [moveTo, setMoveTo] = useState<APPLICATION_STAGE | ''>('');
-  const [replyTo, setReplyTo] = useState('');
+  const [replyToLead, setReplyToLead] = useState(openingReplyToLead);
 
   const [mode, setMode] = useState<'write' | 'preview'>('write');
   const [previewId, setPreviewId] = useState<string | null>(null);
@@ -137,7 +146,7 @@ export const EmailComposer = ({
     setSubject('');
     setBody('');
     setMoveTo('');
-    setReplyTo('');
+    setReplyToLead(openingReplyToLead);
     setMode('write');
     setPreviewId(initialRecipients[0]?.id ?? null);
     setConfirming(false);
@@ -291,6 +300,12 @@ export const EmailComposer = ({
       settings?.meetingLink,
     ],
   );
+  // Mirrors the server: no lead means replies come back to the sender.
+  const replyToLine = replyToLead
+    ? hiringLead?.email ||
+      (hiringLead ? hiringLead.name : user?.email) ||
+      'Your email'
+    : settings?.hrReplyTo || 'The careers inbox';
   const fromLine = settings?.from
     ? companyName
       ? `${companyName} <${settings.from}>`
@@ -324,7 +339,7 @@ export const EmailComposer = ({
         sendId,
         templateId: choice === BLANK ? null : choice,
         moveTo: moveTo || null,
-        replyTo: replyTo.trim() || null,
+        replyToLead,
       });
       const data: SendResult = res.data;
       onSent(data);
@@ -701,9 +716,7 @@ export const EmailComposer = ({
                     {previewFor?.email}
                   </dd>
                   <dt className="text-neutral-500">Reply-to</dt>
-                  <dd className="truncate text-neutral-200">
-                    {replyTo.trim() || user?.email || 'Your email'}
-                  </dd>
+                  <dd className="truncate text-neutral-200">{replyToLine}</dd>
                   <dt className="text-neutral-500">Subject</dt>
                   <dd className="text-neutral-100">
                     {preview.subject || (
@@ -740,13 +753,17 @@ export const EmailComposer = ({
                 ))}
               </NativeSelect>
             </Field>
-            <Field label="Replies go to" hint="Defaults to your email.">
-              <TextInput
-                type="email"
-                value={replyTo}
-                onChange={(e) => setReplyTo(e.target.value)}
-                placeholder={user?.email ?? 'you@company.com'}
-              />
+            <Field label="Replies go to" hint={replyToLine}>
+              <button
+                type="button"
+                role="checkbox"
+                aria-checked={replyToLead}
+                onClick={() => setReplyToLead((on) => !on)}
+                className="flex h-10 items-center gap-2 text-left text-sm text-neutral-200"
+              >
+                <CheckBox checked={replyToLead} size="sm" />
+                Reply to hiring lead
+              </button>
             </Field>
           </div>
 

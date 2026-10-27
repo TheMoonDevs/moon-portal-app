@@ -263,6 +263,7 @@ export function parseOpeningInput(body: Record<string, unknown>): {
       typeof body.hiringLeadId === 'string' && body.hiringLeadId.trim()
         ? body.hiringLeadId.trim().slice(0, 64)
         : null;
+  if ('replyToLead' in body) data.replyToLead = body.replyToLead !== false;
 
   return { data, error: null };
 }

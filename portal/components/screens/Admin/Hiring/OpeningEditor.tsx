@@ -25,6 +25,7 @@ import { PortalSdk } from '@/utils/services/PortalSdk';
 import {
   AdminButton,
   AdminModal,
+  CheckBox,
   Field,
   Icon,
   IconAction,
@@ -73,6 +74,7 @@ const emptyDraft = {
   status: JOB_OPENING_STATUS.DRAFT as JOB_OPENING_STATUS,
   fields: [] as DraftField[],
   hiringLeadId: '',
+  replyToLead: true,
   task: null as DraftTask | null,
 };
 
@@ -533,6 +535,7 @@ export const OpeningEditor = ({
             status: opening.status,
             fields: (opening.fields ?? []).map(toDraftField),
             hiringLeadId: opening.hiringLeadId ?? '',
+            replyToLead: opening.replyToLead ?? true,
             task: opening.task ? toDraftTask(opening.task) : null,
           }
         : {
@@ -756,6 +759,27 @@ export const OpeningEditor = ({
                 ))}
               </NativeSelect>
             </Field>
+            <button
+              type="button"
+              role="checkbox"
+              aria-checked={draft.replyToLead}
+              onClick={() => set('replyToLead', !draft.replyToLead)}
+              className="flex items-start gap-2 text-left text-sm text-neutral-200 md:col-span-2"
+            >
+              <CheckBox
+                checked={draft.replyToLead}
+                size="sm"
+                className="mt-0.5"
+              />
+              <span>
+                Reply to hiring lead
+                <span className="block text-xs text-neutral-500">
+                  Candidates&apos; replies go to the lead. Turn off for HR
+                  emails, so replies go to the careers inbox. You can change it
+                  on each email too.
+                </span>
+              </span>
+            </button>
             <Field
               label="Summary"
               className="md:col-span-2"
