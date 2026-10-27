@@ -14,15 +14,21 @@ import { cn } from '@/lib/utils';
 import { Icon } from '../Admin/shared/AdminUI';
 
 /**
- * Job posts are written as plain text, usually pasted from a job board: lines
- * starting with "-", "*" or "1." are bullets, and a short line on its own
- * above other text ("Core Requirements", "Perks:") is a heading.
+ * Job posts are written as plain text or light Markdown, usually pasted from
+ * a job board: lines starting with "-", "*" or "1." are bullets, a short line
+ * on its own above other text ("Core Requirements", "Perks:", "## Perks",
+ * "**Perks**") is a heading, and **text** is bold.
  */
 const BULLET = /^(?:[-*•]|\d{1,2}[.)])\s+/;
 const NUMBERED = /^\d/;
 const LINK = /(https?:\/\/[^\s<>()]+[^\s<>().,;:!?'"])/;
 /** "Stipend: ₹15,000 a month" shows its label in bold. */
 const LABEL = /^([^:]{1,24}):\s+(.+)$/;
+const MD_HEADING = /^#{1,6}\s+/;
+/** A line that is all bold, like "**Core Requirements**" or "**Stipend:**". */
+const BOLD_LINE = /^\*\*([^*]+?)\*\*\s*(:?)$/;
+/** **text**, but not "2 ** 3" or "** loose **". */
+const BOLD = /\*\*(\S(?:.*?\S)?)\*\*/;
 
 type Block =
   | { kind: 'heading'; text: string }
@@ -30,7 +36,11 @@ type Block =
   | { kind: 'paragraph'; lines: string[] };
 
 const looksLikeHeading = (line: string) =>
-  line.length <= 48 && !/[.!?,;]$/.test(line) && !LINK.test(line);
+  line.length <= 48 &&
+  !/[.!?,;]$/.test(line) &&
+  !LINK.test(line) &&
+  !LABEL.test(line) &&
+  !line.includes('**');
 
 export function jobTextBlocks(text: string): Block[] {
   const lines = text
@@ -44,8 +54,21 @@ export function jobTextBlocks(text: string): Block[] {
     paragraph = [];
   };
 
-  lines.forEach((line, i) => {
-    if (!line) return endParagraph();
+  const heading = (text: string) => {
+    endParagraph();
+    blocks.push({ kind: 'heading', text });
+  };
+
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i];
+    if (!line) {
+      endParagraph();
+      continue;
+    }
+    if (MD_HEADING.test(line)) {
+      heading(line.replace(MD_HEADING, '').replace(/\*\*|:$/g, ''));
+      continue;
+    }
     if (BULLET.test(line)) {
       endParagraph();
       const item = line.replace(BULLET, '');
@@ -54,15 +77,37 @@ export function jobTextBlocks(text: string): Block[] {
       if (last?.kind === 'list' && last.ordered === ordered)
         last.items.push(item);
       else blocks.push({ kind: 'list', ordered, items: [item] });
-      return;
+      continue;
+    }
+    const bold = BOLD_LINE.exec(line);
+    if (bold) {
+      const label = bold[1].replace(/:$/, '').trim();
+      const isLabel = bold[2] === ':' || bold[1].endsWith(':');
+      const next = lines[i + 1] ?? '';
+      // "**Stipend:**" with its value on the next line reads as one line.
+      if (
+        isLabel &&
+        next &&
+        !BULLET.test(next) &&
+        !BOLD_LINE.test(next) &&
+        !MD_HEADING.test(next)
+      ) {
+        paragraph.push(`**${label}:** ${next}`);
+        i += 1;
+        continue;
+      }
+      if (label.length <= 60 && !/[.!?]$/.test(label)) {
+        heading(label);
+        continue;
+      }
     }
     const hasMore = lines.slice(i + 1).some(Boolean);
     if (!paragraph.length && hasMore && looksLikeHeading(line)) {
-      blocks.push({ kind: 'heading', text: line.replace(/:$/, '') });
-      return;
+      heading(line.replace(/:$/, ''));
+      continue;
     }
     paragraph.push(line);
-  });
+  }
   endParagraph();
   return blocks;
 }
@@ -84,7 +129,19 @@ const withLinks = (text: string): ReactNode[] =>
     ),
   );
 
+const withBold = (text: string): ReactNode[] =>
+  text.split(BOLD).map((part, i) =>
+    i % 2 ? (
+      <strong key={i} className="font-semibold text-neutral-100">
+        {withLinks(part)}
+      </strong>
+    ) : (
+      <Fragment key={i}>{withLinks(part)}</Fragment>
+    ),
+  );
+
 const inline = (line: string): ReactNode => {
+  if (BOLD.test(line)) return withBold(line);
   const label = LABEL.exec(line);
   if (!label || LINK.test(label[1])) return withLinks(line);
   return (

@@ -292,7 +292,7 @@ const openingProperties = {
   details: {
     type: 'string',
     description:
-      'The rest of the job post, shown below the summary: requirements, responsibilities, nice-to-haves, pay and perks. Plain text; lines starting with "- " or "* " become bullets, and a short line before them becomes a heading.',
+      'The rest of the job post, shown below the summary: requirements, responsibilities, nice-to-haves, pay and perks. Plain text or light Markdown; lines starting with "- " or "* " become bullets, a short line (or a **bold** or ## line) before them becomes a heading, and **text** is bold.',
   },
   notes: {
     type: 'string',

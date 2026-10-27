@@ -407,7 +407,7 @@ export const OpeningEditor = ({
             <Field
               label="Full details"
               className="md:col-span-2"
-              hint="Shown below the summary, where candidates can read more. Start lines with - or * for bullets; a short line above them becomes a heading."
+              hint="Shown below the summary, where candidates can read more. Start lines with - or * for bullets; a short line above them becomes a heading, and **text** is bold."
             >
               <TextArea
                 value={draft.details}
