@@ -1,6 +1,8 @@
 import { db } from '@/lib/mongodb/db-client';
 import type { SessionUser } from '@/lib/permissions/server';
 import { syncTaskPoints } from '@/lib/progress/server';
+import { isOnTeam } from '@/lib/worklogs/linker';
+import { moveProject } from '@/lib/workspace/moveProject';
 import { PERIOD_LABELS, runsOn, sanitizeGoals } from '@/lib/workspace/projects';
 import {
   asDay,
@@ -470,6 +472,39 @@ export const WORKSPACE_TOOLS: Tool[] = [
     },
   },
   {
+    name: 'move_project',
+    title: 'Move a project to another company',
+    description:
+      "Moves a project, with its sub-projects, goals, tasks, scheduled tasks and results, to another of the person's companies. Confirm with the person first.",
+    inputSchema: {
+      type: 'object',
+      properties: {
+        project: { type: 'string', description: 'Project id or exact name.' },
+        company: { type: 'string', description: 'Company id or name.' },
+      },
+      required: ['project', 'company'],
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false },
+    run: async (user, args) => {
+      const project = await findProject(user, args?.project, 'projects:edit');
+      const targets = await companiesWith(user, 'projects:create');
+      const ref = text(args?.company, 200);
+      const company = Array.from(targets.values()).find(
+        (c) => c.id === ref || same(c.name, ref),
+      );
+      if (!company)
+        throw new ToolError(`No company "${ref}" where you can add projects.`);
+      if (company.id === project.companyId)
+        throw new ToolError(`${project.name} is already in ${company.name}.`);
+      const { moved } = await moveProject(project, company.id);
+      return {
+        project: project.name,
+        company: company.name,
+        ...(moved > 1 && { subProjects: moved - 1 }),
+      };
+    },
+  },
+  {
     name: 'set_goal',
     title: 'Set a goal',
     description:
@@ -709,9 +744,18 @@ export async function taskForPoint(user: SessionUser, point: PointTask) {
     if (!task) return null; // left for the linker to match by words
     const allowed = await companiesWith(user, 'tasks:read');
     if (!allowed.has(task.companyId)) return null;
-    return { task, created: false, project: null };
+    const project: Project | null = await db.project.findFirst({
+      where: { id: task.projectId },
+    });
+    // Only projects they are on the team of; the linker skips the rest too.
+    if (!project || !isOnTeam(project, user.id)) return null;
+    return { task, created: false, project };
   }
   const project = await findProject(user, point.project, 'tasks:create');
+  if (!isOnTeam(project, user.id))
+    throw new ToolError(
+      `You are not on the ${project.name} team, so work cannot be logged to it. A lead can add you in the project's settings.`,
+    );
   const title = point.task?.trim() || point.text;
   const tasks: Task[] = await db.task.findMany({
     where: {

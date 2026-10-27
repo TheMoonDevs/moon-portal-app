@@ -26,6 +26,7 @@ import {
 } from '../Admin/shared/AdminUI';
 import { CompanyPicker, errorText } from '../Admin/Workspace/shared';
 import { PlanEditor, StepPanel } from './PlanEditor';
+import { PlanSchedules } from './PlanSchedules';
 import type { PlansData, PlanView, StepView } from './types';
 import { isPast, shortDay, stepCount } from './types';
 
@@ -456,6 +457,26 @@ export const PlansPage = () => {
     }
   };
 
+  // After a scheduled task changes, fetch the plan's list of them again.
+  const refreshSchedules = async (id: string) => {
+    try {
+      const res = await PortalSdk.getData(`/api/plans/${id}`, null);
+      const fresh: PlanView | undefined = res?.data?.plan;
+      if (fresh)
+        setData(
+          (d) =>
+            d && {
+              ...d,
+              plans: d.plans.map((p) =>
+                p.id === id ? { ...p, schedules: fresh.schedules } : p,
+              ),
+            },
+        );
+    } catch (err) {
+      toast.error(errorText(err));
+    }
+  };
+
   const selectStep = (id: string | null) => {
     setStepId(id);
     if (id && !wide) setView('step');
@@ -482,6 +503,15 @@ export const PlansPage = () => {
         onDelete={() => setConfirmDelete(true)}
         onBack={wide ? undefined : () => setView('list')}
         fresh={plan.id === freshId}
+        extra={
+          <PlanSchedules
+            plan={plan}
+            projects={data.projects}
+            people={data.people}
+            canEdit={canEditPlan && data.can.create}
+            onSaved={() => refreshSchedules(plan.id)}
+          />
+        }
       />
     ) : (
       <EmptyState

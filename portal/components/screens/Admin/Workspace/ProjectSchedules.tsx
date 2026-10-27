@@ -5,60 +5,27 @@ import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import { cn } from '@/lib/utils';
-import { describeSchedule, WEEKDAYS } from '@/lib/workspace/projects';
+import { describeSchedule } from '@/lib/workspace/projects';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import {
   AdminButton,
   AdminModal,
   EmptyState,
-  Field,
   formatDate,
   IconAction,
-  NativeSelect,
-  Segmented,
   SkeletonRows,
-  TextInput,
   ToggleSwitch,
 } from '../shared/AdminUI';
 import type { ProjectRow } from './AdminProjects';
-import { errorText, GoalPicker, PeoplePicker } from './shared';
-
-type Draft = {
-  title: string;
-  every: 'day' | 'week' | 'month';
-  weekdays: number[];
-  monthDay: number;
-  count: number;
-  dueInDays: string;
-  size: 'MINOR' | 'MAJOR';
-  assigneeIds: string[];
-  goal: string;
-};
-
-const emptyDraft: Draft = {
-  title: '',
-  every: 'week',
-  weekdays: [1],
-  monthDay: 1,
-  count: 1,
-  dueInDays: '',
-  size: 'MINOR',
-  assigneeIds: [],
-  goal: '',
-};
-
-const fromSchedule = (s: TaskSchedule): Draft => ({
-  title: s.title,
-  every: s.every,
-  weekdays: s.weekdays?.length ? s.weekdays : [1],
-  monthDay: s.monthDay ?? 1,
-  count: s.count ?? 1,
-  dueInDays: s.dueInDays == null ? '' : String(s.dueInDays),
-  size: s.size as Draft['size'],
-  assigneeIds: s.assigneeIds ?? [],
-  goal: s.goalId ? `${s.goalId}:${s.goalPartId ?? ''}` : '',
-});
+import {
+  emptyScheduleDraft,
+  type ScheduleDraft,
+  scheduleDraftPayload,
+  ScheduleFields,
+  scheduleToDraft,
+} from './ScheduleFields';
+import { errorText } from './shared';
 
 /** Tasks that create themselves on a schedule. */
 export const ProjectSchedules = ({
@@ -79,7 +46,7 @@ export const ProjectSchedules = ({
   const [schedules, setSchedules] = useState<TaskSchedule[]>([]);
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState<TaskSchedule | 'new' | null>(null);
-  const [draft, setDraft] = useState<Draft>(emptyDraft);
+  const [draft, setDraft] = useState<ScheduleDraft>(emptyScheduleDraft);
   const [saving, setSaving] = useState(false);
 
   const projectId = project?.id;
@@ -105,30 +72,15 @@ export const ProjectSchedules = ({
     load();
   }, [load]);
 
-  const set = <K extends keyof Draft>(key: K, value: Draft[K]) =>
-    setDraft((d) => ({ ...d, [key]: value }));
-
   const startEdit = (s: TaskSchedule | 'new') => {
     setEditing(s);
-    setDraft(s === 'new' ? emptyDraft : fromSchedule(s));
+    setDraft(s === 'new' ? emptyScheduleDraft : scheduleToDraft(s));
   };
 
   const save = async () => {
     if (!project || !editing) return;
     if (!draft.title.trim()) return toast.error('Give the task a title.');
-    const [goalId, goalPartId] = draft.goal.split(':');
-    const payload = {
-      title: draft.title,
-      every: draft.every,
-      weekdays: draft.weekdays,
-      monthDay: draft.monthDay,
-      count: draft.count,
-      dueInDays: draft.dueInDays === '' ? null : Number(draft.dueInDays),
-      size: draft.size,
-      assigneeIds: draft.assigneeIds,
-      goalId: goalId || null,
-      goalPartId: goalPartId || null,
-    };
+    const payload = scheduleDraftPayload(draft);
     setSaving(true);
     try {
       if (editing === 'new')
@@ -207,117 +159,12 @@ export const ProjectSchedules = ({
       }
     >
       {editing ? (
-        <div className="flex flex-col gap-4">
-          <Field label="Task" required>
-            <TextInput
-              autoFocus
-              value={draft.title}
-              onChange={(e) => set('title', e.target.value)}
-              placeholder="Post a short"
-            />
-          </Field>
-          <Field label="Repeats">
-            <Segmented
-              value={draft.every}
-              onChange={(every) => set('every', every)}
-              options={[
-                { value: 'day', label: 'Every day' },
-                { value: 'week', label: 'Weekly' },
-                { value: 'month', label: 'Monthly' },
-              ]}
-            />
-          </Field>
-          {draft.every === 'week' && (
-            <Field label="On">
-              <div className="flex flex-wrap gap-1.5">
-                {WEEKDAYS.map((label, day) => {
-                  const on = draft.weekdays.includes(day);
-                  return (
-                    <button
-                      key={label}
-                      type="button"
-                      onClick={() =>
-                        set(
-                          'weekdays',
-                          on
-                            ? draft.weekdays.filter((d) => d !== day)
-                            : [...draft.weekdays, day],
-                        )
-                      }
-                      className={cn(
-                        'h-8 w-11 rounded-lg border text-xs font-medium transition-colors',
-                        on
-                          ? 'border-white/30 bg-white/[0.12] text-white'
-                          : 'border-white/[0.07] text-neutral-500 hover:text-neutral-300',
-                      )}
-                    >
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
-            </Field>
-          )}
-          {draft.every === 'month' && (
-            <Field label="Day of the month">
-              <NativeSelect
-                value={draft.monthDay}
-                onChange={(e) => set('monthDay', Number(e.target.value))}
-                className="w-28"
-              >
-                {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => (
-                  <option key={d} value={d}>
-                    {d}
-                  </option>
-                ))}
-              </NativeSelect>
-            </Field>
-          )}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field
-              label="Tasks each time"
-              hint="e.g. 3 for three shorts on each channel"
-            >
-              <TextInput
-                type="number"
-                min={1}
-                value={draft.count}
-                onChange={(e) =>
-                  set('count', Math.max(1, Number(e.target.value) || 1))
-                }
-              />
-            </Field>
-            <Field label="Due" hint="Leave empty for no due date">
-              <div className="flex items-center gap-2">
-                <TextInput
-                  type="number"
-                  min={0}
-                  value={draft.dueInDays}
-                  onChange={(e) => set('dueInDays', e.target.value)}
-                  placeholder="—"
-                  className="w-20"
-                />
-                <span className="text-xs text-neutral-500">days later</span>
-              </div>
-            </Field>
-          </div>
-          {(project?.goals?.length ?? 0) > 0 && (
-            <Field label="Counts towards">
-              <GoalPicker
-                goals={project!.goals ?? []}
-                value={draft.goal}
-                onChange={(goal) => set('goal', goal)}
-              />
-            </Field>
-          )}
-          <Field label="Assign to">
-            <PeoplePicker
-              users={users}
-              value={draft.assigneeIds}
-              onChange={(ids) => set('assigneeIds', ids)}
-            />
-          </Field>
-        </div>
+        <ScheduleFields
+          draft={draft}
+          onChange={setDraft}
+          goals={project?.goals ?? []}
+          users={users}
+        />
       ) : loading ? (
         <SkeletonRows rows={3} />
       ) : (

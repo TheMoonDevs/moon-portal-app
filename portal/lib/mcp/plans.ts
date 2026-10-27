@@ -9,6 +9,7 @@ import {
   stepToTask,
   withTasks,
 } from '@/lib/workspace/planServer';
+import { describeSchedule } from '@/lib/workspace/projects';
 import type { Plan, PlanStep } from '@/models/workspace';
 
 import { companiesWith, type Tool, ToolError } from './shared';
@@ -45,7 +46,7 @@ async function findCompany(
 }
 
 /** A plan by id or title, where the person may read (or edit) it. */
-async function findPlan(user: SessionUser, ref: unknown, edit = false) {
+export async function findPlan(user: SessionUser, ref: unknown, edit = false) {
   const wanted = typeof ref === 'string' ? ref.trim() : '';
   if (!wanted) throw new ToolError('Give the plan id or title.');
   const readable = await companiesWith(user, 'tasks:read');
@@ -143,6 +144,15 @@ async function planView(plan: Plan, choices?: Choices) {
       ...(s.dueOn && { by: s.dueOn }),
       ...(s.task && { task: s.task }),
     })),
+    ...(view.schedules.length && {
+      scheduledTasks: view.schedules.map((s) => ({
+        id: s.id,
+        title: s.title,
+        project: c.projects.find((p) => p.id === s.projectId)?.name,
+        repeats: describeSchedule(s),
+        ...(s.active ? { next: s.nextRunOn } : { paused: true }),
+      })),
+    }),
   };
 }
 

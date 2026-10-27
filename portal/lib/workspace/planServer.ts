@@ -7,6 +7,7 @@ import type {
   PlanStep,
   Project,
   Task,
+  TaskSchedule,
 } from '@/models/workspace';
 import {
   MEMBER_STATUS,
@@ -30,7 +31,13 @@ export async function planChoices(companyId: string) {
   const [projects, members]: [Project[], CompanyMember[]] = await Promise.all([
     db.project.findMany({
       where: { companyId, status: { notIn: [PROJECT_STATUS.ARCHIVED] } },
-      select: { name: true, color: true, logo: true, parentId: true },
+      select: {
+        name: true,
+        color: true,
+        logo: true,
+        parentId: true,
+        goals: true,
+      },
       orderBy: { name: 'asc' },
     }),
     db.companyMember.findMany({
@@ -51,6 +58,7 @@ export async function planChoices(companyId: string) {
       color: p.color ?? null,
       logo: p.logo ?? null,
       parentId: p.parentId ?? null,
+      goals: p.goals ?? [],
     })),
     people: people.map((u) => ({
       id: u.id,
@@ -119,22 +127,36 @@ export function readPlanBody(
 
 export type PlanView = Omit<Plan, 'steps'> & {
   steps: (PlanStep & { task?: { id: string; status: string } | null })[];
+  /** Scheduled tasks set up in the plan. */
+  schedules: TaskSchedule[];
 };
 
-/** Plans with each made-into-a-task step showing its task's status. */
+/**
+ * Plans with each made-into-a-task step showing its task's status, and the
+ * scheduled tasks set up in each.
+ */
 export async function withTasks(plans: Plan[]): Promise<PlanView[]> {
   const ids = plans.flatMap((p) =>
     (p.steps ?? []).map((s) => s.taskId).filter(Boolean),
   ) as string[];
-  const tasks: Task[] = ids.length
-    ? await db.task.findMany({
-        where: { id: { in: ids } },
-        select: { status: true },
-      })
-    : [];
+  const [tasks, schedules]: [Task[], TaskSchedule[]] = await Promise.all([
+    ids.length
+      ? db.task.findMany({
+          where: { id: { in: ids } },
+          select: { status: true },
+        })
+      : [],
+    plans.length
+      ? db.taskSchedule.findMany({
+          where: { planId: { in: plans.map((p) => p.id) } },
+          orderBy: { createdAt: 'asc' },
+        })
+      : [],
+  ]);
   const byId = new Map(tasks.map((t) => [t.id, t]));
   return plans.map((p) => ({
     ...p,
+    schedules: schedules.filter((s) => s.planId === p.id),
     steps: (p.steps ?? []).map((s) => {
       const task = s.taskId ? byId.get(s.taskId) : undefined;
       return {
@@ -213,6 +235,11 @@ export async function createPlan(
 /** Deletes a plan. Tasks made from it stay, no longer linked to it. */
 export async function deletePlan(plan: Plan) {
   await db.task.updateMany({
+    where: { planId: plan.id },
+    data: { planId: null, updatedAt: nowIso() },
+  });
+  // Its scheduled tasks keep running in their projects.
+  await db.taskSchedule.updateMany({
     where: { planId: plan.id },
     data: { planId: null, updatedAt: nowIso() },
   });

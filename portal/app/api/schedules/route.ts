@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server';
 
 import { db } from '@/lib/mongodb/db-client';
+import { requirePlan } from '@/lib/workspace/planServer';
 import { readScheduleBody } from '@/lib/workspace/scheduleInput';
 import { runDueSchedules } from '@/lib/workspace/schedules';
 import {
@@ -39,12 +40,23 @@ export async function POST(request: Request) {
   const { data, error } = readScheduleBody(body, project);
   if (error || !data) return fail(400, error ?? 'Invalid schedule.');
 
+  // Set up from a plan: the plan must be one they can edit, in this company.
+  let planId: string | null = null;
+  if (typeof body.planId === 'string' && body.planId) {
+    const { response: denied, plan } = await requirePlan(body.planId, 'edit');
+    if (denied || !plan) return denied ?? fail(404, 'Plan not found.');
+    if (plan.companyId !== project.companyId)
+      return fail(400, 'Pick a project in the plan’s company.');
+    planId = plan.id;
+  }
+
   const now = nowIso();
   const schedule = await db.taskSchedule.create({
     data: {
       ...data,
       companyId: project.companyId,
       projectId: project.id,
+      planId,
       lastRunOn: null,
       createdById: user.id,
       createdAt: now,
