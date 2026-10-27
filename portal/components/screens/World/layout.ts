@@ -6,6 +6,9 @@ import { SITES_PER_SQUARE } from '@/lib/world/state';
  * first, then each project's squares (four task buildings to a square), and
  * every four squares join into a bigger square, which is the next size up's
  * building block (Z-order). The roads between bigger squares are wider.
+ * Everyone in the town has their own plot on the town square, where they
+ * stand and their bots come to report; when the plots run out the square
+ * grows to the next size up (two squares by two, then four by four, …).
  * Square 0 sits at the front corner of the usual view, so the town grows
  * away from it and the square is never hidden. Towns sit on a grid, joined
  * by highways.
@@ -29,6 +32,8 @@ export type Area = {
 export type TownSpot = Area & {
   /** The town square: its middle and half its width. */
   plaza: { x: number; z: number; half: number };
+  /** In front of the town hall, where work outside any project is done. */
+  yard: { x: number; z: number };
   cells: Cell[];
   /** Road centre lines across the whole town, with their widths. */
   streetsX: { at: number; width: number }[];
@@ -77,8 +82,8 @@ export const squaresFor = (sites: number) =>
   Math.max(1, Math.ceil(sites / SITES_PER_SQUARE));
 
 /** The town's squares in Z-order: the town square, then each project. */
-function plan(projects: { id: string; squares: number }[]) {
-  const owner: (string | null)[] = ['plaza', 'plaza', 'plaza', 'plaza'];
+function plan(projects: { id: string; squares: number }[], plaza: number) {
+  const owner: (string | null)[] = Array(plaza).fill('plaza');
   for (const p of projects) {
     // Line projects up so two squares sit side by side and three or more
     // fill a square of squares.
@@ -97,28 +102,97 @@ export const LOTS = [
   { dx: LOT / 2, dz: LOT / 2, angle: 0 },
 ];
 
-/** People's places on the square: rows facing the usual view. */
-function crowd(n: number) {
-  const perRow = n > 18 ? 8 : 6;
-  return Array.from({ length: n }, (_, i) => {
-    const row = Math.floor(i / perRow);
-    const inRow = Math.min(perRow, n - row * perRow);
-    const u = (i - row * perRow - (inRow - 1) / 2) * 2.3;
-    const v = 5 + row * 2.3;
-    return {
-      x: (u + v) / Math.SQRT2,
-      z: (v - u) / Math.SQRT2,
-      angle: Math.PI / 4,
-    };
-  });
+/** One person's plot on the town square. */
+export const PLOT = 8;
+const PLOT_PITCH = PLOT + 1.5;
+/** The town hall's middle, in from the square's back corner. */
+export const HALL_IN = 9;
+/** From the town hall to its yard, out front. */
+const YARD_OUT = 7;
+
+/** Half the width of a town square `size` squares across. */
+const plazaHalf = (size: number) => (startOf(size - 1) + BLOCK - EDGE) / 2;
+
+/**
+ * The plots on a town square, from its middle, nearest the middle first and
+ * the front before the back. They keep clear of the flags, trees and boards
+ * round the edge, the logo in the middle, and the town hall and its yard.
+ */
+function plotsOn(half: number) {
+  const r = PLOT / 2;
+  const reach = half - 3.6 - r;
+  const n = Math.floor((reach * 2) / PLOT_PITCH) + 1;
+  const hall = -half + HALL_IN;
+  const yard = hall + YARD_OUT;
+  // How far a point is from the plot at (x, z).
+  const gap = (x: number, z: number, px: number, pz: number) =>
+    Math.hypot(
+      Math.max(0, Math.abs(px - x) - r),
+      Math.max(0, Math.abs(pz - z) - r),
+    );
+  const spots: { x: number; z: number }[] = [];
+  for (let i = 0; i < n; i++)
+    for (let j = 0; j < n; j++) {
+      const x = (i - (n - 1) / 2) * PLOT_PITCH;
+      const z = (j - (n - 1) / 2) * PLOT_PITCH;
+      if (Math.abs(x - hall) < 4 + r && Math.abs(z - hall) < 4 + r) continue;
+      if (gap(x, z, 0, 0) < 4.2) continue;
+      if (gap(x, z, yard, yard) < 2.5) continue;
+      spots.push({ x, z });
+    }
+  return spots.sort(
+    (a, b) =>
+      Math.hypot(a.x, a.z) - Math.hypot(b.x, b.z) || b.x + b.z - (a.x + a.z),
+  );
+}
+
+/** From a plot's middle, across (u) and toward the usual view (v). */
+const onPlot = (plot: { x: number; z: number }, u: number, v: number) => ({
+  x: plot.x + (u + v) / Math.SQRT2,
+  z: plot.z + (v - u) / Math.SQRT2,
+});
+
+/** Where its person stands: at the back of the plot, facing the view. */
+export const plotHome = (plot: { x: number; z: number }): Spot => ({
+  ...onPlot(plot, 0, -2.8),
+  angle: Math.PI / 4,
+});
+
+/**
+ * Where its person's bots stand to report: a row across the plot just in
+ * front of them, then one out front, far enough apart across the view that
+ * their tags don't overlap, and none right in front of their person.
+ */
+const BOT_SPOTS = [
+  [-1.5, 0],
+  [1.5, 0],
+  [-4, 0.3],
+  [4, 0.3],
+  [0, 3],
+];
+
+/** Where the `i`-th bot to come back stands on the plot. */
+export function plotSpot(plot: { x: number; z: number }, i: number) {
+  if (i < BOT_SPOTS.length) {
+    const [u, v] = BOT_SPOTS[i];
+    return onPlot(plot, u, v);
+  }
+  // Any more line up out front.
+  const j = i - BOT_SPOTS.length;
+  return onPlot(plot, (j % 2 ? 1 : -1) * 2.8, 3 + Math.floor(j / 2) * 2.8);
 }
 
 function layoutTown(world: World, townId: string) {
   const projects = world.projects
     .filter((p) => p.townId === townId)
     .sort((a, b) => a.rank - b.rank);
+  // The square grows until everyone in the town has a plot.
+  const crowd = world.people.filter((p) => p.townIds.includes(townId)).length;
+  let size = 2;
+  while (plotsOn(plazaHalf(size)).length < crowd) size *= 2;
   const owner = plan(
     projects.map((p) => ({ id: p.id, squares: squaresFor(p.sites.length) })),
+    size * size,
   );
   const grid = owner.map((_, n) => zOrder(n));
   const nx = Math.max(...grid.map((g) => g.x)) + 1;
@@ -150,11 +224,11 @@ function layoutTown(world: World, townId: string) {
         projectId: who ?? undefined,
       });
     }
-  const plazaFar = startOf(1) + BLOCK;
+  const plazaFar = startOf(size - 1) + BLOCK;
   const plaza = {
     x: toX((EDGE + plazaFar) / 2),
     z: toZ((EDGE + plazaFar) / 2),
-    half: (plazaFar - EDGE) / 2,
+    half: plazaHalf(size),
   };
   cells.unshift({ x: plaza.x, z: plaza.z, kind: 'plaza' });
 
@@ -171,6 +245,7 @@ function layoutTown(world: World, townId: string) {
     projects,
     cells,
     plaza,
+    plots: plotsOn(plaza.half),
     streetsX: lines(nx, toX),
     streetsZ: lines(nz, toZ),
     minX: toX(far(nx)),
@@ -193,6 +268,7 @@ export function layoutWorld(world: World) {
   const projects = new Map<string, Area & { cells: Cell[] }>();
   const sites = new Map<string, Spot & { projectId: string }>();
   const people = new Map<string, Spot>();
+  const plots = new Map<string, { x: number; z: number }>();
 
   world.towns.forEach((t, i) => {
     const x = ((i % cols) - (cols - 1) / 2) * spacing;
@@ -200,7 +276,9 @@ export function layoutWorld(world: World) {
     const p = plans[i];
     const cells = p.cells.map((c) => ({ ...c, x: x + c.x, z: z + c.z }));
     const plaza = { ...p.plaza, x: x + p.plaza.x, z: z + p.plaza.z };
+    const yard = -plaza.half + HALL_IN + YARD_OUT;
     towns.set(t.id, {
+      yard: { x: plaza.x + yard, z: plaza.z + yard },
       x,
       z,
       minX: x + p.minX,
@@ -242,13 +320,13 @@ export function layoutWorld(world: World) {
     }
 
     const here = world.people.filter((person) => person.townIds.includes(t.id));
-    crowd(here.length).forEach((spot, j) =>
-      people.set(`${t.id}:${here[j].id}`, {
-        x: plaza.x + spot.x,
-        z: plaza.z + spot.z,
-        angle: spot.angle,
-      }),
-    );
+    here.forEach((person, j) => {
+      const at = p.plots[j];
+      if (!at) return;
+      const plot = { x: plaza.x + at.x, z: plaza.z + at.z };
+      plots.set(`${t.id}:${person.id}`, plot);
+      people.set(`${t.id}:${person.id}`, plotHome(plot));
+    });
   });
 
   // Highways along every row and column of towns, meeting each town on its
@@ -284,6 +362,8 @@ export function layoutWorld(world: World) {
     projects,
     sites,
     people,
+    /** Each person's plot on each of their town squares. */
+    plots,
     roads,
     spacing,
     cols,
