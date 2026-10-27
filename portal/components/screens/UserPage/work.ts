@@ -14,7 +14,7 @@ import { PERSONAL_COMPANY_ID } from '@/lib/worklogs/personal';
  * tasks. Pure, so the screens stay about layout.
  */
 
-export type PeriodKind = 'week' | 'month' | 'quarter';
+export type PeriodKind = 'day' | 'week' | 'month' | 'quarter';
 
 export type Period = { kind: PeriodKind; from: string; to: string };
 
@@ -24,6 +24,7 @@ const fmt = (d: Dayjs) => d.format('YYYY-MM-DD');
 const startOfWeek = (d: Dayjs) => d.subtract((d.day() + 6) % 7, 'day');
 
 export function periodOf(kind: PeriodKind, anchor: Dayjs): Period {
+  if (kind === 'day') return { kind, from: fmt(anchor), to: fmt(anchor) };
   if (kind === 'week') {
     const start = startOfWeek(anchor);
     return { kind, from: fmt(start), to: fmt(start.add(6, 'day')) };
@@ -47,9 +48,11 @@ export function shiftPeriod(period: Period, step: number): Period {
   const unit = period.kind === 'quarter' ? 3 : 1;
   return periodOf(
     period.kind,
-    period.kind === 'week'
-      ? anchor.add(step, 'week')
-      : anchor.add(step * unit, 'month'),
+    period.kind === 'day'
+      ? anchor.add(step, 'day')
+      : period.kind === 'week'
+        ? anchor.add(step, 'week')
+        : anchor.add(step * unit, 'month'),
   );
 }
 
@@ -57,6 +60,18 @@ export function periodLabel(period: Period) {
   const from = dayjs(period.from);
   const to = dayjs(period.to);
   const current = periodOf(period.kind, dayjs());
+  if (period.kind === 'day') {
+    const date = from.format('dddd, D MMMM');
+    if (current.from === period.from) return { title: 'Today', range: date };
+    if (shiftPeriod(current, -1).from === period.from)
+      return { title: 'Yesterday', range: date };
+    return {
+      title: from.format('ddd D MMM'),
+      range: from.isSame(dayjs(), 'year')
+        ? from.format('dddd')
+        : from.format('YYYY'),
+    };
+  }
   if (current.from === period.from)
     return { title: `This ${period.kind}`, range: rangeText(from, to) };
   if (shiftPeriod(current, -1).from === period.from)
