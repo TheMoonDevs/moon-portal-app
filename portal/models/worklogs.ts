@@ -1,3 +1,5 @@
+import type { PointEvent } from '@/lib/worklogs/timeline';
+
 import {
   type BaseModel,
   createCrudSchemas,
@@ -23,6 +25,11 @@ export type WorklogLink = {
   taskId: string | null;
   confidence: number;
   source: 'auto' | 'user' | 'none';
+  /**
+   * The key of the assistant's point this line is the same work as, when the
+   * person typed it too. It shares that point's project and timeline.
+   */
+  sameAs?: string | null;
 };
 
 export type WorkLogs = Loose<
@@ -38,6 +45,8 @@ export type WorkLogs = Loose<
     links?: WorklogLink[];
     /** Times the person answered their assistant when it was waiting on them. */
     guidance?: number;
+    /** What happened to each line and when; see lib/worklogs/timeline. */
+    timeline?: PointEvent[];
   }
 >;
 
