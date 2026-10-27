@@ -523,7 +523,7 @@ export const PlansPage = () => {
   );
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-neutral-950 pb-[72px] text-neutral-100 md:left-24 md:pb-0">
+    <div className="fixed inset-0 flex flex-col bg-neutral-950 pb-[72px] text-neutral-100 md:left-16 md:pb-0">
       <header className="flex h-14 shrink-0 items-center gap-3 border-b border-white/[0.07] px-4">
         <h1 className="flex items-center gap-2 text-base font-semibold text-white">
           <Icon name="map" className="text-[20px] text-neutral-400" />

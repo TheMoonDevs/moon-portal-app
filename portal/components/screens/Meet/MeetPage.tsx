@@ -219,7 +219,7 @@ export const MeetPage = () => {
       </div>
 
       {dirty && (
-        <div className="fixed inset-x-0 bottom-20 z-20 flex justify-center px-4 md:bottom-6 md:pl-24">
+        <div className="fixed inset-x-0 bottom-20 z-20 flex justify-center px-4 md:bottom-6 md:pl-16">
           <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-neutral-900 px-4 py-2.5 shadow-2xl shadow-black/60">
             <p className="text-sm text-neutral-300">Unsaved changes</p>
             <AdminButton
