@@ -4,6 +4,7 @@ import {
   asPageContent,
   asPageTitle,
 } from '@/lib/workspace/projectPages';
+import { deletePageTree, readParent } from '@/lib/workspace/projectPageServer';
 import {
   fail,
   nowIso,
@@ -35,7 +36,10 @@ export async function GET(_request: Request, { params }: Params) {
   return ok({ page });
 }
 
-/** Saves `{ title?, emoji?, content? }`. */
+/**
+ * Saves `{ title?, emoji?, content?, parentId? }`. A new parentId moves the
+ * page (and the pages inside it) under another page, or to the top when empty.
+ */
 export async function PATCH(request: Request, { params }: Params) {
   const { response, user, page } = await requirePage(params, 'projects:edit');
   if (response || !page || !user) return response;
@@ -49,6 +53,11 @@ export async function PATCH(request: Request, { params }: Params) {
     if (content === undefined) return fail(400, 'That page is not valid.');
     data.content = content;
   }
+  if ('parentId' in body && page.kind === PROJECT_PAGE_KIND.IDEA) {
+    const parent = await readParent(page.projectId, body.parentId, page.id);
+    if (parent.error) return fail(400, parent.error);
+    data.parentId = parent.parentId;
+  }
 
   const updated = await db.projectPage.update({
     where: { id: page.id },
@@ -57,12 +66,15 @@ export async function PATCH(request: Request, { params }: Params) {
   return ok({ page: updated });
 }
 
-/** Deletes an idea. The objective stays; clear it instead. */
+/**
+ * Deletes a page with every page inside it. The objective stays; clear it
+ * instead.
+ */
 export async function DELETE(_request: Request, { params }: Params) {
   const { response, page } = await requirePage(params, 'projects:edit');
   if (response || !page) return response;
   if (page.kind === PROJECT_PAGE_KIND.OBJECTIVE)
     return fail(400, 'The objective cannot be deleted.');
-  await db.projectPage.delete({ where: { id: page.id } });
-  return ok({ deleted: page.id });
+  const deleted = await deletePageTree(page);
+  return ok({ deleted });
 }

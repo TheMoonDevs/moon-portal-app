@@ -14,7 +14,21 @@ import { DocEditor } from './DocEditor';
 import { ago } from './types';
 
 const SAVE_AFTER_MS = 700;
-const EMOJIS = ['🎯', '💡', '🚀', '✨', '🧭', '📈', '🎵', '🎬', '🛠️', '🌱'];
+const EMOJIS = [
+  '📄',
+  '🎯',
+  '💡',
+  '📚',
+  '📜',
+  '🚀',
+  '✨',
+  '🧭',
+  '📈',
+  '🎵',
+  '🎬',
+  '🛠️',
+  '🌱',
+];
 
 export type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 
@@ -130,6 +144,7 @@ export const PageDoc = ({
   bodyPlaceholder,
   defaultEmoji,
   eyebrow,
+  children,
   onSaved,
   onSaveState,
 }: {
@@ -141,6 +156,8 @@ export const PageDoc = ({
   bodyPlaceholder?: string;
   defaultEmoji: string;
   eyebrow?: React.ReactNode;
+  /** Shown under the body, such as the pages inside this one. */
+  children?: React.ReactNode;
   onSaved: (page: ProjectPage) => void;
   onSaveState?: (state: SaveState) => void;
 }) => {
@@ -232,6 +249,7 @@ export const PageDoc = ({
         placeholder={bodyPlaceholder}
         onChange={(content) => queue({ content })}
       />
+      {children}
     </motion.article>
   );
 };

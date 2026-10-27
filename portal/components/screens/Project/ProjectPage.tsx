@@ -8,6 +8,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast, Toaster } from 'sonner';
 
 import { cn } from '@/lib/utils';
+import {
+  ancestorPages,
+  childPages,
+  descendantIds,
+} from '@/lib/workspace/projectPages';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
 import { useWorkspace } from '@/utils/hooks/useWorkspace';
 import { PortalSdk } from '@/utils/services/PortalSdk';
@@ -27,15 +32,16 @@ import {
 } from '../Admin/Workspace/shared';
 import { PageDoc, SaveBadge, type SaveState } from './PageDoc';
 import { GoalsSection } from './sections/GoalsSection';
-import { IdeasGallery } from './sections/IdeasSection';
 import { KpiSection } from './sections/KpiSection';
 import { MembersSection } from './sections/MembersSection';
+import { PagesGallery, PagesInside } from './sections/PagesSection';
 import { ScheduleSection } from './sections/ScheduleSection';
 import { WorklogsSection } from './sections/WorklogsSection';
 import {
-  ideaTitle,
+  byCreation,
   isView,
   type PagesData,
+  pageTitle,
   type ProjectData,
   type ViewKey,
   VIEWS,
@@ -84,35 +90,173 @@ const NavItem = ({
   </div>
 );
 
+/** A page in the sidebar, with the pages inside it below when open. */
+const PageTreeItem = ({
+  page,
+  pages,
+  activeId,
+  open,
+  canEdit,
+  creatingIn,
+  onToggle,
+  onSelect,
+  onNewPage,
+}: {
+  page: Page;
+  pages: Page[];
+  activeId: string | null;
+  open: Set<string>;
+  canEdit: boolean;
+  /** The parent a new page is being made in, if any. */
+  creatingIn: string | null | undefined;
+  onToggle: (id: string) => void;
+  onSelect: (id: string) => void;
+  onNewPage: (parentId: string | null) => void;
+}) => {
+  const inside = childPages(pages, page.id);
+  const isOpen = open.has(page.id);
+  return (
+    <div>
+      <div className="group/page relative">
+        <NavItem
+          icon=""
+          label={pageTitle(page)}
+          active={activeId === page.id}
+          onClick={() => onSelect(page.id)}
+          badge={
+            <span className="order-first -mr-1 flex items-center gap-1">
+              <span
+                role="button"
+                tabIndex={0}
+                aria-label={isOpen ? 'Collapse page' : 'Expand page'}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggle(page.id);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.stopPropagation();
+                    onToggle(page.id);
+                  }
+                }}
+                className={cn(
+                  'flex size-4 items-center justify-center rounded text-neutral-600 hover:bg-white/[0.08] hover:text-white',
+                  !inside.length && 'opacity-0 group-hover/page:opacity-100',
+                )}
+              >
+                <motion.span
+                  animate={{ rotate: isOpen ? 90 : 0 }}
+                  className="flex"
+                >
+                  <Icon name="chevron_right" className="text-[14px]" />
+                </motion.span>
+              </span>
+              <span className="text-sm leading-none">{page.emoji || '📄'}</span>
+            </span>
+          }
+          trailing={
+            canEdit && (
+              <span
+                role="button"
+                tabIndex={0}
+                aria-label="Add a page inside"
+                title="Add a page inside"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onNewPage(page.id);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.stopPropagation();
+                    onNewPage(page.id);
+                  }
+                }}
+                className="-mr-1 flex size-5 items-center justify-center rounded text-neutral-500 opacity-0 hover:bg-white/[0.08] hover:text-white group-hover/page:opacity-100"
+              >
+                {creatingIn === page.id ? (
+                  <Spin className="size-3" />
+                ) : (
+                  <Icon name="add" className="text-[15px]" />
+                )}
+              </span>
+            )
+          }
+        />
+      </div>
+      <AnimatePresence initial={false}>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className="overflow-hidden"
+          >
+            <div className="ml-[15px] flex flex-col border-l border-white/[0.07] pl-1.5">
+              {inside.map((child) => (
+                <PageTreeItem
+                  key={child.id}
+                  page={child}
+                  pages={pages}
+                  activeId={activeId}
+                  open={open}
+                  canEdit={canEdit}
+                  creatingIn={creatingIn}
+                  onToggle={onToggle}
+                  onSelect={onSelect}
+                  onNewPage={onNewPage}
+                />
+              ))}
+              {!inside.length && (
+                <p className="px-2.5 py-1 text-xs text-neutral-600">
+                  No pages inside
+                </p>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
 const Sidebar = ({
   data,
   pages,
   companyName,
   view,
-  ideaId,
-  ideasOpen,
+  pageId,
+  pagesOpen,
+  openPages,
   canEdit,
-  creatingIdea,
-  onIdeasOpen,
+  creatingIn,
+  onPagesOpen,
+  onTogglePage,
   onSelect,
-  onNewIdea,
+  onNewPage,
 }: {
   data: ProjectData;
   pages: PagesData | null;
   companyName?: string;
   view: ViewKey;
-  ideaId: string | null;
-  ideasOpen: boolean;
+  pageId: string | null;
+  pagesOpen: boolean;
+  openPages: Set<string>;
   canEdit: boolean;
-  creatingIdea: boolean;
-  onIdeasOpen: (open: boolean) => void;
-  onSelect: (view: ViewKey, ideaId?: string | null) => void;
-  onNewIdea: () => void;
+  creatingIn: string | null | undefined;
+  onPagesOpen: (open: boolean) => void;
+  onTogglePage: (id: string) => void;
+  onSelect: (view: ViewKey, pageId?: string | null) => void;
+  onNewPage: (parentId: string | null) => void;
 }) => {
   const { project, people } = data;
   const status =
     PROJECT_STATUS_META[project.status] ?? PROJECT_STATUS_META.ACTIVE;
-  const ideas = pages?.ideas ?? [];
+  const all = useMemo(
+    () => [...(pages?.pages ?? [])].sort(byCreation),
+    [pages?.pages],
+  );
+  const top = childPages(all, null);
 
   return (
     <aside className="hidden w-[272px] shrink-0 flex-col border-r border-white/[0.07] bg-neutral-950 md:flex">
@@ -163,20 +307,20 @@ const Sidebar = ({
       <nav className="custom-scrollbar flex-1 overflow-y-auto px-2 py-3">
         <LayoutGroup id="project-nav">
           {VIEWS.map((v) =>
-            v.key === 'ideas' ? (
+            v.key === 'pages' ? (
               <div key={v.key}>
                 <NavItem
                   icon={v.icon}
                   label={v.label}
-                  active={view === 'ideas' && !ideaId}
+                  active={view === 'pages' && !pageId}
                   onClick={() => {
-                    onSelect('ideas', null);
-                    onIdeasOpen(true);
+                    onSelect('pages', null);
+                    onPagesOpen(true);
                   }}
                   badge={
-                    ideas.length > 0 && (
+                    all.length > 0 && (
                       <span className="text-[11px] text-neutral-600">
-                        {ideas.length}
+                        {all.length}
                       </span>
                     )
                   }
@@ -184,21 +328,21 @@ const Sidebar = ({
                     <span
                       role="button"
                       tabIndex={0}
-                      aria-label={ideasOpen ? 'Collapse ideas' : 'Expand ideas'}
+                      aria-label={pagesOpen ? 'Collapse pages' : 'Expand pages'}
                       onClick={(e) => {
                         e.stopPropagation();
-                        onIdeasOpen(!ideasOpen);
+                        onPagesOpen(!pagesOpen);
                       }}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           e.stopPropagation();
-                          onIdeasOpen(!ideasOpen);
+                          onPagesOpen(!pagesOpen);
                         }
                       }}
                       className="-mr-1 flex size-5 items-center justify-center rounded text-neutral-500 hover:bg-white/[0.08] hover:text-white"
                     >
                       <motion.span
-                        animate={{ rotate: ideasOpen ? 90 : 0 }}
+                        animate={{ rotate: pagesOpen ? 90 : 0 }}
                         className="flex"
                       >
                         <Icon name="chevron_right" className="text-[16px]" />
@@ -207,7 +351,7 @@ const Sidebar = ({
                   }
                 />
                 <AnimatePresence initial={false}>
-                  {ideasOpen && (
+                  {pagesOpen && (
                     <motion.div
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: 'auto', opacity: 1 }}
@@ -215,39 +359,39 @@ const Sidebar = ({
                       transition={{ duration: 0.2, ease: 'easeOut' }}
                       className="overflow-hidden"
                     >
-                      <div className="ml-[19px] flex flex-col border-l border-white/[0.07] py-1 pl-2">
-                        {ideas.map((idea) => (
-                          <NavItem
-                            key={idea.id}
-                            icon=""
-                            label={ideaTitle(idea)}
-                            active={view === 'ideas' && ideaId === idea.id}
-                            onClick={() => onSelect('ideas', idea.id)}
-                            badge={
-                              <span className="order-first -mr-1 text-sm leading-none">
-                                {idea.emoji || '💡'}
-                              </span>
-                            }
+                      <div className="ml-[19px] flex flex-col border-l border-white/[0.07] py-1 pl-1.5">
+                        {top.map((page) => (
+                          <PageTreeItem
+                            key={page.id}
+                            page={page}
+                            pages={all}
+                            activeId={view === 'pages' ? pageId : null}
+                            open={openPages}
+                            canEdit={canEdit}
+                            creatingIn={creatingIn}
+                            onToggle={onTogglePage}
+                            onSelect={(id) => onSelect('pages', id)}
+                            onNewPage={onNewPage}
                           />
                         ))}
                         {canEdit && (
                           <button
                             type="button"
-                            onClick={onNewIdea}
-                            disabled={creatingIdea}
+                            onClick={() => onNewPage(null)}
+                            disabled={creatingIn !== undefined}
                             className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs text-neutral-500 transition-colors hover:bg-white/[0.04] hover:text-neutral-200"
                           >
-                            {creatingIdea ? (
+                            {creatingIn === null ? (
                               <Spin className="size-3" />
                             ) : (
                               <Icon name="add" className="text-[15px]" />
                             )}
-                            New idea
+                            New page
                           </button>
                         )}
-                        {!canEdit && !ideas.length && (
+                        {!canEdit && !all.length && (
                           <p className="px-2.5 py-1.5 text-xs text-neutral-600">
-                            No ideas yet
+                            No pages yet
                           </p>
                         )}
                       </div>
@@ -324,21 +468,31 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
   const [error, setError] = useState<string | null>(null);
   const [pages, setPages] = useState<PagesData | null>(null);
   const [companyUsers, setCompanyUsers] = useState<User[]>([]);
-  const [ideasOpen, setIdeasOpen] = useState(true);
-  const [creatingIdea, setCreatingIdea] = useState(false);
+  const [pagesOpen, setPagesOpen] = useState(true);
+  const [openPages, setOpenPages] = useState<Set<string>>(new Set());
+  /** The parent a new page is being made in: null at the top level. */
+  const [creatingIn, setCreatingIn] = useState<string | null | undefined>();
   const [saveState, setSaveState] = useState<SaveState>('idle');
   const [deleting, setDeleting] = useState<Page | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const view: ViewKey = isView(params?.get('view'))
-    ? (params?.get('view') as ViewKey)
-    : 'objective';
-  const ideaId = view === 'ideas' ? (params?.get('idea') ?? null) : null;
+  // Links from when pages were called ideas still open them.
+  const asked = params?.get('view');
+  const view: ViewKey =
+    asked === 'ideas'
+      ? 'pages'
+      : isView(asked)
+        ? (asked as ViewKey)
+        : 'objective';
+  const pageId =
+    view === 'pages'
+      ? (params?.get('page') ?? params?.get('idea') ?? null)
+      : null;
 
   const select = useCallback(
-    (next: ViewKey, idea?: string | null) => {
+    (next: ViewKey, page?: string | null) => {
       const q = new URLSearchParams({ view: next });
-      if (idea) q.set('idea', idea);
+      if (page) q.set('page', page);
       setSaveState('idle');
       router.replace(`${pathname}?${q.toString()}`, { scroll: false });
     },
@@ -355,8 +509,13 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
 
   useEffect(() => {
     PortalSdk.getData(`/api/projects/${projectId}/pages`, null)
-      .then((res) => setPages(res?.data ?? { objective: null, ideas: [] }))
-      .catch(() => setPages({ objective: null, ideas: [] }));
+      .then((res) =>
+        setPages({
+          objective: res?.data?.objective ?? null,
+          pages: res?.data?.pages ?? [],
+        }),
+      )
+      .catch(() => setPages({ objective: null, pages: [] }));
   }, [projectId]);
 
   const companyId = data?.project.companyId;
@@ -382,50 +541,73 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
     setPages((p) => {
       if (!p) return p;
       if (page.kind === 'OBJECTIVE') return { ...p, objective: page };
-      const exists = p.ideas.some((i) => i.id === page.id);
+      const exists = p.pages.some((i) => i.id === page.id);
       return {
         ...p,
-        ideas: exists
-          ? p.ideas.map((i) => (i.id === page.id ? { ...i, ...page } : i))
-          : [page, ...p.ideas],
+        pages: exists
+          ? p.pages.map((i) => (i.id === page.id ? { ...i, ...page } : i))
+          : [page, ...p.pages],
       };
     });
   }, []);
 
-  const newIdea = async () => {
-    setCreatingIdea(true);
+  const togglePage = useCallback((id: string) => {
+    setOpenPages((open) => {
+      const next = new Set(open);
+      if (!next.delete(id)) next.add(id);
+      return next;
+    });
+  }, []);
+
+  // Opening a page deep in the tree opens the pages above it in the sidebar.
+  const allPages = pages?.pages;
+  useEffect(() => {
+    if (!pageId || !allPages) return;
+    const above = ancestorPages(allPages, pageId);
+    if (!above.length) return;
+    setOpenPages((open) =>
+      above.every((p) => open.has(p.id))
+        ? open
+        : new Set([...Array.from(open), ...above.map((p) => p.id)]),
+    );
+  }, [pageId, allPages]);
+
+  const newPage = async (parentId: string | null) => {
+    setCreatingIn(parentId);
     try {
       const res = await PortalSdk.postData(`/api/projects/${projectId}/pages`, {
         kind: 'IDEA',
         title: '',
-        emoji: '💡',
+        emoji: '📄',
+        parentId,
       });
       const page: Page = res?.data?.page;
       savePage(page);
-      setIdeasOpen(true);
-      select('ideas', page.id);
+      setPagesOpen(true);
+      if (parentId) setOpenPages((open) => new Set(open).add(parentId));
+      select('pages', page.id);
     } catch (err) {
       toast.error(errorText(err));
     } finally {
-      setCreatingIdea(false);
+      setCreatingIn(undefined);
     }
   };
 
-  const deleteIdea = async () => {
+  const deletePage = async () => {
     if (!deleting) return;
     setBusy(true);
     try {
-      await PortalSdk.deleteData(
+      const res = await PortalSdk.deleteData(
         `/api/projects/${projectId}/pages/${deleting.id}`,
         {},
       );
+      const gone = new Set<string>(res?.data?.deleted ?? [deleting.id]);
       setPages(
-        (p) =>
-          p && { ...p, ideas: p.ideas.filter((i) => i.id !== deleting.id) },
+        (p) => p && { ...p, pages: p.pages.filter((i) => !gone.has(i.id)) },
       );
       setDeleting(null);
-      select('ideas', null);
-      toast.success('Idea deleted');
+      select('pages', deleting.parentId ?? null);
+      toast.success('Page deleted');
     } catch (err) {
       toast.error(errorText(err));
     } finally {
@@ -458,8 +640,11 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
 
   const { project, tasks, people } = data;
   const canEdit = can(project.companyId, 'projects:edit');
-  const idea = pages?.ideas.find((i) => i.id === ideaId) ?? null;
-  const isDoc = view === 'objective' || (view === 'ideas' && !!idea);
+  const all = pages?.pages ?? [];
+  const page = all.find((i) => i.id === pageId) ?? null;
+  const trail = page ? ancestorPages(all, page.id) : [];
+  const nestedCount = deleting ? descendantIds(all, deleting.id).size : 0;
+  const isDoc = view === 'objective' || (view === 'pages' && !!page);
   const current = VIEWS.find((v) => v.key === view)!;
 
   const content = (() => {
@@ -481,27 +666,36 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
         ) : null;
       case 'kpi':
         return <KpiSection />;
-      case 'ideas':
-        return idea ? (
+      case 'pages':
+        return page ? (
           <PageDoc
-            key={idea.id}
+            key={page.id}
             projectId={project.id}
-            page={idea}
+            page={page}
             kind="IDEA"
             canEdit={canEdit}
-            defaultEmoji="💡"
-            titlePlaceholder="Untitled idea"
-            bodyPlaceholder="Dump the idea here. Press / for headings, lists and to-dos…"
+            defaultEmoji="📄"
+            titlePlaceholder="Untitled"
+            bodyPlaceholder="Start writing. Press / for headings, lists and to-dos…"
             onSaved={savePage}
             onSaveState={setSaveState}
-          />
+          >
+            <PagesInside
+              parent={page}
+              pages={[...all].sort(byCreation)}
+              canEdit={canEdit}
+              creating={creatingIn === page.id}
+              onOpen={(id) => select('pages', id)}
+              onCreate={() => newPage(page.id)}
+            />
+          </PageDoc>
         ) : (
-          <IdeasGallery
-            ideas={pages?.ideas ?? []}
+          <PagesGallery
+            pages={all}
             canEdit={canEdit}
-            creating={creatingIdea}
-            onOpen={(id) => select('ideas', id)}
-            onCreate={newIdea}
+            creating={creatingIn === null}
+            onOpen={(id) => select('pages', id)}
+            onCreate={() => newPage(null)}
           />
         );
       case 'goals':
@@ -549,13 +743,15 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
         pages={pages}
         companyName={companyName}
         view={view}
-        ideaId={ideaId}
-        ideasOpen={ideasOpen}
+        pageId={pageId}
+        pagesOpen={pagesOpen}
+        openPages={openPages}
         canEdit={canEdit}
-        creatingIdea={creatingIdea}
-        onIdeasOpen={setIdeasOpen}
+        creatingIn={creatingIn}
+        onPagesOpen={setPagesOpen}
+        onTogglePage={togglePage}
         onSelect={select}
-        onNewIdea={newIdea}
+        onNewPage={newPage}
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -585,25 +781,40 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
           >
             {current.label}
           </button>
-          {idea && (
+          {trail.map((above) => (
+            <span key={above.id} className="flex min-w-0 items-center gap-2">
+              <Icon
+                name="chevron_right"
+                className="text-[16px] text-neutral-700"
+              />
+              <button
+                type="button"
+                onClick={() => select('pages', above.id)}
+                className="truncate text-neutral-400 hover:text-white"
+              >
+                {pageTitle(above)}
+              </button>
+            </span>
+          ))}
+          {page && (
             <>
               <Icon
                 name="chevron_right"
                 className="text-[16px] text-neutral-700"
               />
               <span className="truncate text-neutral-400">
-                {ideaTitle(idea)}
+                {pageTitle(page)}
               </span>
             </>
           )}
           <div className="flex-1" />
           {isDoc && canEdit && <SaveBadge state={saveState} />}
-          {idea && canEdit && (
+          {page && canEdit && (
             <button
               type="button"
-              onClick={() => setDeleting(idea)}
-              aria-label="Delete idea"
-              title="Delete idea"
+              onClick={() => setDeleting(page)}
+              aria-label="Delete page"
+              title="Delete page"
               className="flex size-8 items-center justify-center rounded-lg text-neutral-500 hover:bg-white/[0.06] hover:text-rose-300"
             >
               <Icon name="delete" className="text-[18px]" />
@@ -615,7 +826,7 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
         <main className="custom-scrollbar min-h-0 flex-1 overflow-y-auto">
           <AnimatePresence mode="wait">
             <motion.div
-              key={`${view}:${ideaId ?? ''}`}
+              key={`${view}:${pageId ?? ''}`}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -630,11 +841,17 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
       <ConfirmDialog
         open={!!deleting}
         onOpenChange={(open) => !open && setDeleting(null)}
-        title={`Delete ${deleting ? ideaTitle(deleting) : 'this idea'}?`}
-        message="The draft goes away for everyone on the project."
-        confirmLabel="Delete idea"
+        title={`Delete ${deleting ? pageTitle(deleting) : 'this page'}?`}
+        message={
+          nestedCount
+            ? `It goes away for everyone on the project, with the ${nestedCount} ${
+                nestedCount === 1 ? 'page' : 'pages'
+              } inside it.`
+            : 'It goes away for everyone on the project.'
+        }
+        confirmLabel="Delete page"
         loading={busy}
-        onConfirm={deleteIdea}
+        onConfirm={deletePage}
       />
       <Toaster theme="dark" position="bottom-right" richColors />
     </div>
