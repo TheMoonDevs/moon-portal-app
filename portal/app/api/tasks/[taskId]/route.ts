@@ -1,5 +1,6 @@
 import { db } from '@/lib/mongodb/db-client';
 import { syncTaskPoints } from '@/lib/progress/server';
+import { fitGoal } from '@/lib/workspace/goalFit';
 import {
   asDay,
   asStringArray,
@@ -86,12 +87,16 @@ export async function PATCH(request: Request, { params }: Params) {
         goalPartId: 'goalPartId' in data ? data.goalPartId : task.goalPartId,
       }),
     );
+    // Set or cleared by hand: it is not picked for the task again.
+    data.goalChecked = true;
   }
 
-  const updated = await db.task.update({
-    where: { id: task.id },
-    data: { ...data, updatedAt: nowIso() },
-  });
+  const updated = await fitGoal(
+    await db.task.update({
+      where: { id: task.id },
+      data: { ...data, updatedAt: nowIso() },
+    }),
+  );
   await syncTaskPoints(updated);
   return ok({ task: updated });
 }

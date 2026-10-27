@@ -19,6 +19,7 @@ import {
   sectionLines,
   statusOf,
 } from '@/lib/worklogs/timeline';
+import { taskLines } from '@/lib/workspace/lineTasks';
 import { settleScheduledLines } from '@/lib/workspace/scheduleRuns';
 import type { WorklogLink, WorkLogs } from '@/models/worklogs';
 import type { WorkLogPoints } from '@/utils/@types/interfaces';
@@ -421,6 +422,14 @@ export async function logPoints(
     new Map(
       points.filter((p) => p.forDate).map((p) => [lineKey(p.text), p.forDate!]),
     ),
+  );
+  // Every other running point gets a task, or the open one for the work.
+  links = await taskLines(
+    user.id,
+    nextWorks,
+    links,
+    candidates.projects.map((p) => p.id),
+    date,
   );
   await db.workLogs.update({ where: { id: saved.id }, data: { links } });
 

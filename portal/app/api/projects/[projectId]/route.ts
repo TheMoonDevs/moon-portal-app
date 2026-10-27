@@ -1,7 +1,8 @@
 import { brandKitDefaults, sanitizeBrandKit } from '@/lib/brandKit';
 import { db } from '@/lib/mongodb/db-client';
+import { fitGoals } from '@/lib/workspace/goalFit';
 import { syncGoalSchedules } from '@/lib/workspace/goalSchedules';
-import { sanitizeGoals } from '@/lib/workspace/projects';
+import { addDays, sanitizeGoals, toDay } from '@/lib/workspace/projects';
 import { withProjectStats } from '@/lib/workspace/projectStats';
 import { runDueSchedules } from '@/lib/workspace/schedules';
 import {
@@ -47,11 +48,15 @@ export async function GET(_request: Request, { params }: Params) {
     return response ?? fail(401, 'Authentication required.');
 
   await runDueSchedules({ projectId: { in: [project.id] } });
-  const [tasks, [stats], people] = await Promise.all([
-    db.task.findMany({
+  // This month's finished tasks find their goals before they are counted.
+  const tasks = await fitGoals(
+    await db.task.findMany({
       where: { projectId: project.id },
       orderBy: { createdAt: 'asc' },
     }),
+    addDays(toDay(), -31),
+  );
+  const [[stats], people] = await Promise.all([
     withProjectStats([project]),
     getPublicUsers([...(project.leadIds ?? []), ...(project.memberIds ?? [])]),
   ]);

@@ -1,6 +1,8 @@
 import { db } from '@/lib/mongodb/db-client';
 import type { Project, ProjectResult, Task } from '@/models/workspace';
 
+import { tallyRowsFor } from './goalTally';
+import type { DoneTask } from './projects';
 import {
   goalHistory,
   goalProgress,
@@ -27,7 +29,7 @@ export async function withProjectStats(projects: Project[]) {
   const projectIds = projects.map((p) => p.id);
   const companyIds = Array.from(new Set(projects.map((p) => p.companyId)));
 
-  const [tasks, results] = await Promise.all([
+  const [tasks, results, tallies] = await Promise.all([
     db.task.findMany({
       where: { projectId: { in: projectIds } },
       select: {
@@ -51,6 +53,7 @@ export async function withProjectStats(projects: Project[]) {
         date: true,
       },
     }) as Promise<ProjectResult[]>,
+    tallyRowsFor(projectIds),
   ]);
   const progress = summarizeTasks(tasks);
 
@@ -76,7 +79,12 @@ export async function withProjectStats(projects: Project[]) {
         return row ? { metric, of: rows.length, ...row } : null;
       })
       .filter(Boolean);
-    const mine = tasks.filter((t) => t.projectId === p.id);
+    const goalIds = new Set((p.goals ?? []).map((g) => g.id));
+    // Done tasks and progress added by hand.
+    const mine: DoneTask[] = [
+      ...tasks.filter((t) => t.projectId === p.id),
+      ...tallies.filter((t) => goalIds.has(t.goalId ?? '')),
+    ];
     const created = p.createdAt ? toDay(new Date(p.createdAt as string)) : null;
     return {
       ...p,

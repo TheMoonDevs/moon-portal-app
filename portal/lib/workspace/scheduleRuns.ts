@@ -6,6 +6,7 @@ import type { WorklogLink } from '@/models/worklogs';
 import type { Task, TaskSchedule } from '@/models/workspace';
 import { TASK_STATUS } from '@/models/workspace';
 
+import { fitGoal } from './goalFit';
 import { addDays, nextRunOnOrAfter, toDay } from './projects';
 
 /*
@@ -202,17 +203,19 @@ export function matchSchedule(
 
 /* -------------------------------- finishing -------------------------------- */
 
-async function finish(task: Task, userId: string) {
-  const done: Task = await db.task.update({
-    where: { id: task.id },
-    data: {
-      status: TASK_STATUS.DONE,
-      completedAt: new Date().toISOString(),
-      // Whoever did it shares the task's points.
-      assigneeIds: Array.from(new Set([...(task.assigneeIds ?? []), userId])),
-      updatedAt: new Date().toISOString(),
-    },
-  });
+export async function finish(task: Task, userId: string) {
+  const done = await fitGoal(
+    await db.task.update({
+      where: { id: task.id },
+      data: {
+        status: TASK_STATUS.DONE,
+        completedAt: new Date().toISOString(),
+        // Whoever did it shares the task's points.
+        assigneeIds: Array.from(new Set([...(task.assigneeIds ?? []), userId])),
+        updatedAt: new Date().toISOString(),
+      },
+    }),
+  );
   await syncTaskPoints(done);
   return done;
 }
