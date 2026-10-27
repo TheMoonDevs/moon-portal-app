@@ -8,13 +8,13 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { isValidContent } from '@/lib/progress/buff';
 import { cn } from '@/lib/utils';
+import { latestPerDay } from '@/lib/worklogs/days';
 import media from '@/styles/media';
 import { MdxAppEditor } from '@/utils/configure/MdxAppEditor';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import { UserAvatar } from '../Admin/shared/AdminUI';
-import { getLatestWorklogPerDate } from '../Worklogs/WorklogSummary/WorklogSummaryView';
 
 export interface LeaderboardPerson {
   rank: number;
@@ -80,7 +80,7 @@ const useRecentLogs = (userId: string | undefined) => {
       ),
     ).then((parts) => {
       if (!live) return;
-      const days = getLatestWorklogPerDate(parts.flat())
+      const days = latestPerDay(parts.flat())
         .filter((log) => log.date && contentOf(log).length > 0)
         .sort((a, b) => ((a.date ?? '') < (b.date ?? '') ? 1 : -1));
       setLogs(days);
@@ -389,10 +389,10 @@ export const PersonWorklogsDrawer = ({
 
           <footer className="border-t border-neutral-200 bg-white p-3">
             <Link
-              href={`${APP_ROUTES.userWorklogSummary}/${person.user.id}`}
+              href={`${APP_ROUTES.user}/${person.user.id}`}
               className="flex items-center justify-center gap-1.5 rounded-lg bg-neutral-900 py-2.5 text-sm font-semibold text-white hover:bg-neutral-700"
             >
-              Full history and stats
+              Open their page
               <span className="material-symbols-outlined !text-base">
                 arrow_forward
               </span>
