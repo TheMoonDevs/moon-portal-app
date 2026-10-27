@@ -154,6 +154,13 @@ export const PROJECT_STATUS_META: Record<
   ARCHIVED: { label: 'Archived', tone: 'neutral' },
 };
 
+/** How much work a project takes, shown as a small label. */
+export const EFFORT_META: Record<string, { label: string; icon: string }> = {
+  LOW: { label: 'Low effort', icon: 'signal_cellular_1_bar' },
+  MEDIUM: { label: 'Medium effort', icon: 'signal_cellular_3_bar' },
+  HIGH: { label: 'High effort', icon: 'signal_cellular_4_bar' },
+};
+
 export const TASK_STATUS_META: Record<
   string,
   { label: string; tone: PillTone; icon: string }

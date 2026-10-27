@@ -51,6 +51,7 @@ const emptyDraft = {
   size: 'MINOR',
   status: 'TODO',
   dueDate: '',
+  forDate: '',
   goal: '',
   assigneeIds: [] as string[],
 };
@@ -85,6 +86,7 @@ const TaskForm = ({
             size: task.size,
             status: task.status,
             dueDate: task.dueDate ?? '',
+            forDate: task.forDate ?? '',
             goal: task.goalId ? `${task.goalId}:${task.goalPartId ?? ''}` : '',
             assigneeIds: task.assigneeIds ?? [],
           }
@@ -106,6 +108,7 @@ const TaskForm = ({
       const payload = {
         ...rest,
         dueDate: draft.dueDate || null,
+        forDate: (goalId && draft.forDate) || null,
         goalId: goalId || null,
         goalPartId: goalPartId || null,
       };
@@ -193,13 +196,24 @@ const TaskForm = ({
             />
           </Field>
         )}
+        {draft.goal && (
+          <Field
+            label="Planned for"
+            hint="Optional. Doing it early? Pick the day it was planned for and it counts in that week's goal."
+          >
+            <DateInput
+              value={draft.forDate}
+              onChange={(e) => set('forDate', e.target.value)}
+            />
+          </Field>
+        )}
         <Field label="Details">
           <TextArea
             value={draft.description}
             onChange={(e) => set('description', e.target.value)}
           />
         </Field>
-        <Field label="Assignees">
+        <Field label="People" hint="Everyone on the task gets its points.">
           <PeoplePicker
             users={users}
             value={draft.assigneeIds}
@@ -493,6 +507,15 @@ export const AdminTasks = ({
                                         className="text-[13px]"
                                       />
                                       {goalName(task)}
+                                    </span>
+                                  )}
+                                  {task.forDate && task.goalId && (
+                                    <span className="flex items-center gap-1">
+                                      <Icon
+                                        name="event_upcoming"
+                                        className="text-[13px]"
+                                      />
+                                      for {formatDate(task.forDate)}
                                     </span>
                                   )}
                                   {task.dueDate && (

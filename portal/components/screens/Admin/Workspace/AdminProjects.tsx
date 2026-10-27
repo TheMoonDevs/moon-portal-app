@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 
 import {
   formatMetric,
+  type GoalPeriodResult,
   type GoalProgress,
   metricLabel,
   PERIOD_LABELS,
@@ -21,6 +22,7 @@ import {
   ConfirmDialog,
   EmptyState,
   Field,
+  Icon,
   IconAction,
   NativeSelect,
   Panel,
@@ -39,6 +41,7 @@ import {
   ColorPicker,
   CompanyMark,
   CompanyPicker,
+  EFFORT_META,
   errorText,
   NeedsCompany,
   PeoplePicker,
@@ -55,6 +58,8 @@ export type ProjectRow = Project & {
     percent: number;
   };
   goalProgress: GoalProgress[];
+  /** Recent periods of each goal, oldest first, by goal id. */
+  goalHistory?: Record<string, GoalPeriodResult[]>;
   standings: (ProjectStanding & { metric: string; of: number })[];
 };
 
@@ -64,6 +69,8 @@ const emptyDraft = {
   status: 'ACTIVE',
   color: '#0ea5e9',
   logo: '',
+  effort: 'MEDIUM',
+  parentId: '',
   goals: [] as GoalDraft[],
   leadIds: [] as string[],
   memberIds: [] as string[],
@@ -74,6 +81,7 @@ const ProjectForm = ({
   onOpenChange,
   companyId,
   project,
+  projects,
   users,
   onSaved,
 }: {
@@ -81,6 +89,8 @@ const ProjectForm = ({
   onOpenChange: (open: boolean) => void;
   companyId: string;
   project: ProjectRow | null;
+  /** The company's projects, to pick a parent from. */
+  projects: ProjectRow[];
   users: User[];
   onSaved: () => void;
 }) => {
@@ -97,6 +107,8 @@ const ProjectForm = ({
             status: project.status,
             color: project.color ?? '#0ea5e9',
             logo: project.logo ?? '',
+            effort: project.effort ?? 'MEDIUM',
+            parentId: project.parentId ?? '',
             goals: project.goals ?? [],
             leadIds: project.leadIds ?? [],
             memberIds: project.memberIds ?? [],
@@ -110,6 +122,21 @@ const ProjectForm = ({
     value: (typeof emptyDraft)[K],
   ) => setDraft((d) => ({ ...d, [key]: value }));
 
+  // A project cannot sit under itself or one of its own sub-projects.
+  const parents = useMemo(() => {
+    if (!project) return projects;
+    const under = new Set([project.id]);
+    for (let grew = true; grew; ) {
+      grew = false;
+      for (const p of projects)
+        if (p.parentId && under.has(p.parentId) && !under.has(p.id)) {
+          under.add(p.id);
+          grew = true;
+        }
+    }
+    return projects.filter((p) => !under.has(p.id));
+  }, [project, projects]);
+
   const save = async () => {
     if (!draft.name.trim()) return toast.error('Give the project a name.');
     setSaving(true);
@@ -117,6 +144,7 @@ const ProjectForm = ({
       const payload = {
         ...draft,
         logo: draft.logo || null,
+        parentId: draft.parentId || null,
         goals: goalsForSave(draft.goals),
       };
       if (project)
@@ -192,6 +220,34 @@ const ProjectForm = ({
         </Field>
         <Field label="Color">
           <ColorPicker value={draft.color} onChange={(c) => set('color', c)} />
+        </Field>
+        <Field label="Effort" hint="How much work it takes to keep going.">
+          <NativeSelect
+            value={draft.effort}
+            onChange={(e) => set('effort', e.target.value)}
+          >
+            {Object.entries(EFFORT_META).map(([key, meta]) => (
+              <option key={key} value={key}>
+                {meta.label}
+              </option>
+            ))}
+          </NativeSelect>
+        </Field>
+        <Field
+          label="Part of"
+          hint="Optional. A bigger project this one sits under."
+        >
+          <NativeSelect
+            value={draft.parentId}
+            onChange={(e) => set('parentId', e.target.value)}
+          >
+            <option value="">None</option>
+            {parents.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </NativeSelect>
         </Field>
         <Field
           label="Goals"
@@ -269,7 +325,25 @@ export const AdminProjects = ({
   }, [load]);
 
   const byId = useMemo(() => new Map(users.map((u) => [u.id, u])), [users]);
-  const filtered = projects.filter((p) =>
+  const projectById = useMemo(
+    () => new Map(projects.map((p) => [p.id, p])),
+    [projects],
+  );
+  // Sub-projects follow their parent.
+  const ordered = useMemo(() => {
+    const out: ProjectRow[] = [];
+    const add = (p: ProjectRow) => {
+      if (out.includes(p)) return;
+      out.push(p);
+      projects.filter((c) => c.parentId === p.id).forEach(add);
+    };
+    projects
+      .filter((p) => !p.parentId || !projectById.has(p.parentId))
+      .forEach(add);
+    projects.forEach(add);
+    return out;
+  }, [projects, projectById]);
+  const filtered = ordered.filter((p) =>
     p.name.toLowerCase().includes(search.trim().toLowerCase()),
   );
 
@@ -368,6 +442,16 @@ export const AdminProjects = ({
                       <p className="truncate text-sm font-semibold text-white">
                         {project.name}
                       </p>
+                      {project.parentId &&
+                        projectById.has(project.parentId) && (
+                          <p className="flex items-center gap-1 truncate text-[11px] text-neutral-500">
+                            <Icon
+                              name="subdirectory_arrow_right"
+                              className="text-[13px]"
+                            />
+                            Part of {projectById.get(project.parentId)!.name}
+                          </p>
+                        )}
                       <p className="line-clamp-2 text-xs text-neutral-500">
                         {project.description || 'No description'}
                       </p>
@@ -380,6 +464,9 @@ export const AdminProjects = ({
                         const p = project.goalProgress?.find(
                           (g) => g.goalId === goal.id,
                         );
+                        const past = (
+                          project.goalHistory?.[goal.id] ?? []
+                        ).filter((h) => h.met !== null);
                         return (
                           <div key={goal.id}>
                             <div className="mb-1 flex items-center justify-between gap-2 text-xs">
@@ -403,6 +490,25 @@ export const AdminProjects = ({
                               percent={p?.percent ?? 0}
                               color={project.color}
                             />
+                            {past.length > 0 && (
+                              <div className="mt-1 flex items-center gap-1">
+                                {past.map((h) => (
+                                  <span
+                                    key={h.from}
+                                    title={`${h.from} to ${h.to}: ${h.done}/${h.target}, ${h.met ? 'met' : 'missed'}`}
+                                    className={
+                                      h.met
+                                        ? 'size-1.5 rounded-full bg-emerald-400'
+                                        : 'size-1.5 rounded-full bg-rose-400/80'
+                                    }
+                                  />
+                                ))}
+                                <span className="ml-1 text-[10px] text-neutral-500">
+                                  {past.filter((h) => h.met).length}/
+                                  {past.length} met
+                                </span>
+                              </div>
+                            )}
                             {p?.parts && (
                               <p className="mt-1 truncate text-[11px] text-neutral-500">
                                 {p.parts
@@ -432,6 +538,15 @@ export const AdminProjects = ({
                     )
                   )}
                   <div className="flex flex-wrap items-center gap-2 text-xs text-neutral-500">
+                    {project.effort && EFFORT_META[project.effort] && (
+                      <span className="inline-flex items-center gap-1">
+                        <Icon
+                          name={EFFORT_META[project.effort].icon}
+                          className="text-[14px]"
+                        />
+                        {EFFORT_META[project.effort].label}
+                      </span>
+                    )}
                     <span>
                       {project.progress.total - project.progress.done} open{' '}
                       {project.progress.total - project.progress.done === 1
@@ -510,6 +625,7 @@ export const AdminProjects = ({
           onOpenChange={setFormOpen}
           companyId={companyId}
           project={editing}
+          projects={projects}
           users={users}
           onSaved={load}
         />

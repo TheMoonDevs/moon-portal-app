@@ -6,7 +6,9 @@ import { sanitizeGoals } from '@/lib/workspace/projects';
 import { withProjectStats } from '@/lib/workspace/projectStats';
 import { runDueSchedules } from '@/lib/workspace/schedules';
 import {
+  asEffort,
   asStringArray,
+  checkParent,
   fail,
   getWorkspaceForUser,
   nowIso,
@@ -16,7 +18,7 @@ import {
   slugify,
 } from '@/lib/workspace/server';
 import type { Project } from '@/models/workspace';
-import { PROJECT_STATUS } from '@/models/workspace';
+import { PROJECT_EFFORT, PROJECT_STATUS } from '@/models/workspace';
 
 export const dynamic = 'force-dynamic';
 
@@ -75,6 +77,10 @@ export async function POST(request: Request) {
   const status = Object.values(PROJECT_STATUS).includes(body.status)
     ? body.status
     : PROJECT_STATUS.ACTIVE;
+  const effort = asEffort(body.effort);
+  if (effort === undefined) return fail(400, 'Effort is LOW, MEDIUM or HIGH.');
+  const parent = await checkParent(companyId, null, body.parentId);
+  if (parent.error) return fail(400, parent.error);
 
   const now = nowIso();
   const project = await db.project.create({
@@ -90,6 +96,8 @@ export async function POST(request: Request) {
       leadIds: asStringArray(body.leadIds),
       memberIds: asStringArray(body.memberIds),
       goals: sanitizeGoals(body.goals),
+      effort: effort ?? PROJECT_EFFORT.MEDIUM,
+      parentId: parent.parentId,
       createdById: user.id,
       createdAt: now,
       updatedAt: now,

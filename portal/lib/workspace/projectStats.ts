@@ -1,7 +1,13 @@
 import { db } from '@/lib/mongodb/db-client';
 import type { Project, ProjectResult, Task } from '@/models/workspace';
 
-import { goalProgress, metricsWithData, rankProjects } from './projects';
+import {
+  goalHistory,
+  goalProgress,
+  metricsWithData,
+  rankProjects,
+  toDay,
+} from './projects';
 import { summarizeTasks } from './server';
 
 const EMPTY_PROGRESS = {
@@ -30,6 +36,7 @@ export async function withProjectStats(projects: Project[]) {
         size: true,
         goalId: true,
         goalPartId: true,
+        forDate: true,
         completedAt: true,
       },
     }) as Promise<Task[]>,
@@ -69,12 +76,17 @@ export async function withProjectStats(projects: Project[]) {
         return row ? { metric, of: rows.length, ...row } : null;
       })
       .filter(Boolean);
+    const mine = tasks.filter((t) => t.projectId === p.id);
+    const created = p.createdAt ? toDay(new Date(p.createdAt as string)) : null;
     return {
       ...p,
       progress: progress[p.id] ?? EMPTY_PROGRESS,
-      goalProgress: goalProgress(
-        p.goals ?? [],
-        tasks.filter((t) => t.projectId === p.id),
+      goalProgress: goalProgress(p.goals ?? [], mine),
+      goalHistory: Object.fromEntries(
+        (p.goals ?? []).map((g) => [
+          g.id,
+          goalHistory(g, mine, 6, toDay(), g.since ?? created),
+        ]),
       ),
       standings,
     };

@@ -9,21 +9,33 @@ import { db } from '@/lib/mongodb/db-client';
 import type { SessionUser } from '@/lib/permissions/server';
 import { syncTaskPoints } from '@/lib/progress/server';
 import { PERSONAL_COMPANY } from '@/lib/worklogs/personal';
-import { goalProgress, PERIOD_LABELS } from '@/lib/workspace/projects';
+import { goalHistory, toDay } from '@/lib/workspace/projects';
 import { runDueSchedules } from '@/lib/workspace/schedules';
-import { getWorkspaceForUser } from '@/lib/workspace/server';
-import type { Project, Task } from '@/models/workspace';
+import { getPublicUsers, getWorkspaceForUser } from '@/lib/workspace/server';
+import type { CompanyMember, Project, Task } from '@/models/workspace';
 import {
+  MEMBER_STATUS,
   OPEN_TASK_STATUSES,
   PROJECT_STATUS,
-  TASK_SIZE,
   TASK_STATUS,
 } from '@/models/workspace';
 
 import { HIRING_TOOLS } from './hiring';
+import { PLAN_TOOLS } from './plans';
 import { companiesWith, type Tool, ToolError } from './shared';
 import type { PointInput, PointStatus } from './worklog';
 import { claudeLines, logPoints, POINT_STATUSES, todayFor } from './worklog';
+import {
+  createTask,
+  describeTask,
+  findProject,
+  findTask,
+  goalSummary,
+  type PointTask,
+  statusChange,
+  taskForPoint,
+  WORKSPACE_TOOLS,
+} from './workspace';
 
 /*
  * The tools the portal's MCP server offers an assistant acting for one
@@ -40,55 +52,14 @@ async function userToday(user: SessionUser) {
   return todayFor(record?.timezone);
 }
 
-async function findTask(user: SessionUser, ref: unknown, permission: string) {
-  if (typeof ref !== 'string' || !ref.trim())
-    throw new ToolError('Give the task id (from get_context or find_tasks).');
-  const allowed = await companiesWith(user, permission);
-  const task: Task | null = await db.task.findFirst({
-    where: { id: ref.trim() },
-  });
-  if (!task) throw new ToolError(`No task with id "${ref}".`);
-  if (!allowed.has(task.companyId))
-    throw new ToolError(
-      `You do not have permission to change tasks in that company.`,
-    );
-  return task;
-}
-
-async function findProject(user: SessionUser, ref: unknown) {
-  if (typeof ref !== 'string' || !ref.trim())
-    throw new ToolError('Give a project id or name.');
-  const allowed = await companiesWith(user, 'tasks:create');
-  const projects: Project[] = allowed.size
-    ? await db.project.findMany({
-        where: {
-          companyId: { in: Array.from(allowed.keys()) },
-          status: { notIn: [PROJECT_STATUS.ARCHIVED] },
-        },
-      })
-    : [];
-  const wanted = ref.trim().toLowerCase();
-  const matches = projects.filter(
-    (p) => p.id === ref.trim() || p.name.trim().toLowerCase() === wanted,
-  );
-  if (matches.length === 1) return matches[0];
-  if (matches.length > 1)
-    throw new ToolError(
-      `More than one project is called "${ref}". Use its id: ${matches
-        .map((p) => `${p.id} (${allowed.get(p.companyId)?.name})`)
-        .join(', ')}.`,
-    );
-  throw new ToolError(
-    `No project "${ref}" where you can add tasks. Call get_context to see your projects.`,
-  );
-}
-
 const taskView = (t: Task, projects: Map<string, Project>) => ({
   id: t.id,
   title: t.title,
   status: t.status,
   project: projects.get(t.projectId)?.name ?? null,
   dueDate: t.dueDate ?? null,
+  ...(t.forDate && { forDate: t.forDate }),
+  ...((t.assigneeIds?.length ?? 0) > 1 && { shared: true }),
 });
 
 export const TOOLS: Tool[] = [
@@ -96,7 +67,7 @@ export const TOOLS: Tool[] = [
     name: 'get_context',
     title: 'Get my portal context',
     description:
-      "The person's companies, projects (with goals and this period's progress), their open tasks, and what has been logged in the Claude section today. Everyone also has a Personal company for private work only they can see. Call this first in a session so you can link work to the right project and task.",
+      "The person's companies (with their people, for sharing tasks), projects (effort, parent project, goals with this period's progress and whether recent periods were met), their open tasks, and what has been logged in the Claude section today. Everyone also has a Personal company for private work only they can see. Call this first in a session so you can link work to the right project, task and goal.",
     inputSchema: { type: 'object', properties: {} },
     annotations: { readOnlyHint: true },
     run: async (user) => {
@@ -135,6 +106,7 @@ export const TOOLS: Tool[] = [
           goalId: true,
           goalPartId: true,
           completedAt: true,
+          forDate: true,
         },
       });
       const myTasks: Task[] = await db.task.findMany({
@@ -147,25 +119,49 @@ export const TOOLS: Tool[] = [
         take: 50,
       });
 
+      const members: CompanyMember[] = await db.companyMember.findMany({
+        where: { companyId: { in: companyIds }, status: MEMBER_STATUS.ACTIVE },
+        select: { userId: true, companyId: true },
+      });
+      const users: { id: string; name?: string; email?: string }[] =
+        await getPublicUsers(members.map((m) => m.userId));
+      const people = new Map(users.map((u) => [u.id, u]));
+      const day = (d: unknown) =>
+        d ? new Date(d as string).toISOString().slice(0, 10) : null;
+
       return {
         today,
         companies: [
-          ...companies.map((c) => ({ id: c.id, name: c.name })),
+          ...companies.map((c) => ({
+            id: c.id,
+            name: c.name,
+            people: members
+              .filter((m) => m.companyId === c.id)
+              .map((m) => people.get(m.userId))
+              .filter(Boolean)
+              .map((u) => ({ name: u!.name, email: u!.email })),
+          })),
           PERSONAL_COMPANY,
         ],
-        projects: projects.map((p) => {
-          const progress = goalProgress(p.goals ?? [], goalTasks);
-          return {
-            id: p.id,
-            name: p.name,
-            company: companies.find((c) => c.id === p.companyId)?.name,
-            goals: (p.goals ?? []).map((g, i) => ({
-              title: g.title,
-              target: `${g.target} ${PERIOD_LABELS[g.period]}`,
-              done: progress[i]?.done ?? 0,
-            })),
-          };
-        }),
+        projects: projects.map((p) => ({
+          id: p.id,
+          name: p.name,
+          company: companies.find((c) => c.id === p.companyId)?.name,
+          effort: p.effort ?? null,
+          ...(p.parentId && { parent: byId.get(p.parentId)?.name ?? null }),
+          goals: (p.goals ?? []).map((g) =>
+            goalSummary(
+              g,
+              goalHistory(
+                g,
+                goalTasks,
+                4,
+                toDay(),
+                g.since ?? day(p.createdAt),
+              ),
+            ),
+          ),
+        })),
         myTasks: myTasks
           .filter((t) => byId.has(t.projectId))
           .map((t) => taskView(t, byId)),
@@ -176,7 +172,7 @@ export const TOOLS: Tool[] = [
   {
     name: 'log_work',
     title: 'Log work points',
-    description: `Writes work points into the "Claude" section of the person's worklog for the day, so they can follow progress in the portal. Log a point when you start a piece of work (doing) and log it again with the same text when it ends (done, not_done or blocked); same text updates the line instead of adding another. Use waiting when you need the person's permission or input. Keep each point one short line about the outcome, in plain words, never secrets or credentials. Name the project (and task) when you know it; otherwise the portal links it. Set personal for the person's own private work (not for any company): only they will ever see it.`,
+    description: `Writes work points into the "Claude" section of the person's worklog for the day, so they can follow progress in the portal. Log a point when you start a piece of work (doing) and log it again with the same text when it ends (done, not_done or blocked); same text updates the line instead of adding another. Use waiting when you need the person's permission or input. Keep each point one short line about the outcome, in plain words, never secrets or credentials. Name the project (and task) when you know it; otherwise the portal links it. When the project has no task for the work yet, name the task (or the goal it counts towards) and the portal creates it, already done for a done point; set completeTask to finish an existing task too. Work done early for a later week: set forDate to the day it was scheduled for, so it counts towards that week's goal (the line is still logged today). Set personal for the person's own private work (not for any company): only they will ever see it.`,
     inputSchema: {
       type: 'object',
       properties: {
@@ -203,7 +199,26 @@ export const TOOLS: Tool[] = [
               },
               task: {
                 type: 'string',
-                description: 'Task id or exact title (optional).',
+                description:
+                  'Task id or exact title (optional). With a project named, a title the project does not have yet becomes a new task.',
+              },
+              goal: {
+                type: 'string',
+                description:
+                  'Goal id or title this work counts towards (optional). With no task named, the point becomes a task for it.',
+              },
+              goalPart: {
+                type: 'string',
+                description: 'Part of the goal, e.g. a channel (optional).',
+              },
+              forDate: {
+                type: 'string',
+                description:
+                  'YYYY-MM-DD the work was scheduled for, when done early (optional).',
+              },
+              completeTask: {
+                type: 'boolean',
+                description: 'With status done: also mark the named task done.',
               },
               personal: {
                 type: 'boolean',
@@ -224,7 +239,7 @@ export const TOOLS: Tool[] = [
     },
     annotations: { readOnlyHint: false, destructiveHint: false },
     run: async (user, args) => {
-      const points: PointInput[] = (
+      const points: (PointInput & PointTask)[] = (
         Array.isArray(args?.points) ? args.points : []
       )
         .slice(0, 20)
@@ -234,9 +249,17 @@ export const TOOLS: Tool[] = [
           project: typeof p?.project === 'string' ? p.project : undefined,
           task: typeof p?.task === 'string' ? p.task : undefined,
           personal: p?.personal === true,
+          goal: typeof p?.goal === 'string' ? p.goal : undefined,
+          goalPart: typeof p?.goalPart === 'string' ? p.goalPart : undefined,
+          forDate:
+            typeof p?.forDate === 'string' && DAY.test(p.forDate)
+              ? p.forDate
+              : undefined,
+          completeTask: p?.completeTask === true,
         }))
         .filter(
-          (p: PointInput) => p.text.replace(/[^\p{L}\p{N}]/gu, '').length >= 3,
+          (p: PointInput & PointTask) =>
+            p.text.replace(/[^\p{L}\p{N}]/gu, '').length >= 3,
         );
       if (!points.length)
         throw new ToolError('Give at least one point with some text.');
@@ -244,8 +267,30 @@ export const TOOLS: Tool[] = [
         typeof args?.date === 'string' && DAY.test(args.date)
           ? args.date
           : await userToday(user);
+      // Find or create each point's task first, so the line links to it.
+      const tasks: Record<string, unknown>[] = [];
+      for (const point of points) {
+        if (point.personal) continue;
+        try {
+          const found = await taskForPoint(user, point);
+          if (!found) continue;
+          point.place = {
+            companyId: found.task.companyId,
+            projectId: found.task.projectId,
+            taskId: found.task.id,
+          };
+          if (found.created || found.completed)
+            tasks.push({
+              ...(await describeTask(found.task, found.project)),
+              ...(found.created ? { created: true } : { completed: true }),
+            });
+        } catch (error) {
+          if (!(error instanceof ToolError)) throw error;
+          tasks.push({ point: point.text, problem: error.message });
+        }
+      }
       const logged = await logPoints(user, points, date);
-      return { date, logged };
+      return { date, logged, ...(tasks.length && { tasks }) };
     },
   },
   {
@@ -344,18 +389,11 @@ export const TOOLS: Tool[] = [
         ].includes(status)
       )
         throw new ToolError('Unknown status.');
-      const now = new Date().toISOString();
       const updated: Task = await db.task.update({
         where: { id: task.id },
         data: {
-          status,
-          completedAt:
-            status === TASK_STATUS.DONE
-              ? task.status === TASK_STATUS.DONE
-                ? task.completedAt
-                : now
-              : null,
-          updatedAt: now,
+          ...statusChange(task, status),
+          updatedAt: new Date().toISOString(),
         },
       });
       await syncTaskPoints(updated);
@@ -366,7 +404,7 @@ export const TOOLS: Tool[] = [
     name: 'add_task',
     title: 'Add a task',
     description:
-      'Adds a task to a project, assigned to the person. Use it for follow-up work the person asked you to track.',
+      'Adds a task to a project. It is assigned to the person unless you name others; a task can be shared by several people, and everyone on it gets its points when it is done. Link it to a goal so it counts towards it, and set forDate to the day it is scheduled for (the goal period it counts in; work done early still counts for that day).',
     inputSchema: {
       type: 'object',
       properties: {
@@ -377,40 +415,39 @@ export const TOOLS: Tool[] = [
           type: 'boolean',
           description: 'True for a big piece of work (counts more points).',
         },
+        assignees: {
+          type: 'array',
+          items: { type: 'string' },
+          description:
+            'Everyone on the task: "me", names or emails from get_context. Defaults to the person.',
+        },
+        status: {
+          type: 'string',
+          enum: [
+            TASK_STATUS.TODO,
+            TASK_STATUS.IN_PROGRESS,
+            TASK_STATUS.IN_REVIEW,
+            TASK_STATUS.DONE,
+          ],
+        },
+        goal: { type: 'string', description: 'Goal id or title (optional).' },
+        goalPart: {
+          type: 'string',
+          description: 'Part of the goal (optional).',
+        },
+        forDate: { type: 'string', description: 'YYYY-MM-DD (optional).' },
+        dueDate: { type: 'string', description: 'YYYY-MM-DD (optional).' },
       },
       required: ['project', 'title'],
     },
     annotations: { readOnlyHint: false, destructiveHint: false },
     run: async (user, args) => {
       const project = await findProject(user, args?.project);
-      const title =
-        typeof args?.title === 'string' ? args.title.trim().slice(0, 200) : '';
-      if (!title) throw new ToolError('Give the task a title.');
-      const now = new Date().toISOString();
-      const task: Task = await db.task.create({
-        data: {
-          companyId: project.companyId,
-          projectId: project.id,
-          title,
-          description:
-            typeof args?.description === 'string'
-              ? args.description.slice(0, 4000)
-              : null,
-          size: args?.major ? TASK_SIZE.MAJOR : TASK_SIZE.MINOR,
-          status: TASK_STATUS.TODO,
-          assigneeIds: [user.id],
-          dueDate: null,
-          completedAt: null,
-          goalId: null,
-          goalPartId: null,
-          createdById: user.id,
-          createdAt: now,
-          updatedAt: now,
-        },
+      const task = await createTask(user, project, {
+        ...args,
+        title: args?.title,
       });
-      return {
-        task: { id: task.id, title: task.title, project: project.name },
-      };
+      return { task: await describeTask(task, project) };
     },
   },
   {
@@ -458,6 +495,8 @@ export const TOOLS: Tool[] = [
       return { look: result.look, lock: lockMessage(result.lock!) };
     },
   },
+  ...WORKSPACE_TOOLS,
+  ...PLAN_TOOLS,
   ...HIRING_TOOLS,
 ];
 

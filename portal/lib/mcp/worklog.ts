@@ -118,10 +118,13 @@ export type PointInput = {
   task?: string;
   /** Personal work: private to the person, under their Personal company. */
   personal?: boolean;
+  /** Where the point goes when the caller already found its task. */
+  place?: { companyId: string; projectId: string; taskId: string | null };
 };
 
 /** Finds a project or task by id or by name (case and spacing ignored). */
 function resolvePlace(point: PointInput, c: LinkCandidates) {
+  if (point.place) return point.place;
   const same = (a: string, b: string) =>
     a.trim().toLowerCase() === b.trim().toLowerCase();
   const task = point.task

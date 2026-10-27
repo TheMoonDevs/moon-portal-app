@@ -2,7 +2,9 @@ import { brandKitDefaults, sanitizeBrandKit } from '@/lib/brandKit';
 import { db } from '@/lib/mongodb/db-client';
 import { sanitizeGoals } from '@/lib/workspace/projects';
 import {
+  asEffort,
   asStringArray,
+  checkParent,
   fail,
   nowIso,
   ok,
@@ -28,6 +30,8 @@ const EDITABLE = [
   'leadIds',
   'memberIds',
   'goals',
+  'effort',
+  'parentId',
 ] as const;
 
 export async function GET(_request: Request, { params }: Params) {
@@ -82,7 +86,29 @@ export async function PATCH(request: Request, { params }: Params) {
     if (!(data.logo ?? project.logo) && defaults.logo)
       data.logo = defaults.logo;
   }
-  if ('goals' in data) data.goals = sanitizeGoals(data.goals);
+  if ('goals' in data)
+    data.goals = sanitizeGoals(
+      data.goals,
+      project.goals ?? [],
+      project.createdAt
+        ? new Date(project.createdAt as string).toISOString().slice(0, 10)
+        : null,
+    );
+  if ('effort' in data) {
+    const effort = asEffort(data.effort);
+    if (effort === undefined)
+      return fail(400, 'Effort is LOW, MEDIUM or HIGH.');
+    data.effort = effort;
+  }
+  if ('parentId' in data) {
+    const parent = await checkParent(
+      project.companyId,
+      project.id,
+      data.parentId,
+    );
+    if (parent.error) return fail(400, parent.error);
+    data.parentId = parent.parentId;
+  }
   if ('leadIds' in data) data.leadIds = asStringArray(data.leadIds);
   if ('memberIds' in data) data.memberIds = asStringArray(data.memberIds);
 

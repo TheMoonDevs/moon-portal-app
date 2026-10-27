@@ -32,6 +32,13 @@ export enum PROJECT_STATUS {
   ARCHIVED = 'ARCHIVED',
 }
 
+/** How much work a project takes to keep going. */
+export enum PROJECT_EFFORT {
+  LOW = 'LOW',
+  MEDIUM = 'MEDIUM',
+  HIGH = 'HIGH',
+}
+
 export enum TASK_STATUS {
   TODO = 'TODO',
   IN_PROGRESS = 'IN_PROGRESS',
@@ -62,6 +69,8 @@ export type ProjectGoal = {
   title: string;
   target: number;
   period: GoalPeriod;
+  /** The day the goal was set, YYYY-MM-DD; earlier periods do not count. */
+  since?: string;
   parts?: { id: string; label: string; target: number }[];
 };
 
@@ -120,6 +129,9 @@ export type Project = Loose<
     logo?: Nullable<string>;
     brandKit?: Nullable<BrandKit>;
     goals?: ProjectGoal[];
+    effort?: Nullable<PROJECT_EFFORT>;
+    /** The project this one belongs under, in the same company. */
+    parentId?: Nullable<string>;
     leadIds: string[];
     memberIds: string[];
     createdById: string;
@@ -134,14 +146,23 @@ export type Task = Loose<
     description?: Nullable<string>;
     size: TASK_SIZE;
     status: TASK_STATUS;
+    /** Everyone on the task; each gets its points when it is done. */
     assigneeIds: string[];
     dueDate?: Nullable<string>;
+    /**
+     * The day the task is scheduled for, YYYY-MM-DD. Goals count it in that
+     * day's period even when it is done early; its points still go to the
+     * day it was done.
+     */
+    forDate?: Nullable<string>;
     completedAt?: Nullable<DateValue>;
     /** The project goal this task counts towards. */
     goalId?: Nullable<string>;
     goalPartId?: Nullable<string>;
     /** Set when a schedule created the task. */
     scheduleId?: Nullable<string>;
+    /** Set when the task was made from a step of a plan. */
+    planId?: Nullable<string>;
     createdById: string;
   }
 >;
@@ -191,6 +212,53 @@ export type ProjectResult = Loose<
   }
 >;
 
+export enum PLAN_STATUS {
+  /** Just an idea, nothing decided yet. */
+  IDEA = 'IDEA',
+  /** Decided; the steps are being done. */
+  ACTIVE = 'ACTIVE',
+  DONE = 'DONE',
+  DROPPED = 'DROPPED',
+}
+
+/**
+ * One step of a plan: what, for which project (optional), by whom and by
+ * when. A step with a project can be made into a task; it then follows the
+ * task's status.
+ */
+export type PlanStep = {
+  id: string;
+  text: string;
+  notes?: Nullable<string>;
+  projectId?: Nullable<string>;
+  assigneeIds: string[];
+  /** YYYY-MM-DD */
+  dueOn?: Nullable<string>;
+  done?: boolean;
+  taskId?: Nullable<string>;
+};
+
+/**
+ * A plan in a company: mostly ideas at first. It needs no project; steps
+ * can name projects across the company as the plan firms up.
+ */
+export type Plan = Loose<
+  BaseModel & {
+    companyId: string;
+    title: string;
+    notes?: Nullable<string>;
+    status: PLAN_STATUS;
+    /** YYYY-MM-DD */
+    startOn?: Nullable<string>;
+    /** YYYY-MM-DD: when it should be done by. */
+    endOn?: Nullable<string>;
+    ownerId: string;
+    memberIds: string[];
+    steps: PlanStep[];
+    createdById: string;
+  }
+>;
+
 export const companySchemas = createCrudSchemas<Company>();
 export const companyRoleSchemas = createCrudSchemas<CompanyRole>();
 export const companyMemberSchemas = createCrudSchemas<CompanyMember>();
@@ -198,3 +266,4 @@ export const projectSchemas = createCrudSchemas<Project>();
 export const taskSchemas = createCrudSchemas<Task>();
 export const taskScheduleSchemas = createCrudSchemas<TaskSchedule>();
 export const projectResultSchemas = createCrudSchemas<ProjectResult>();
+export const planSchemas = createCrudSchemas<Plan>();

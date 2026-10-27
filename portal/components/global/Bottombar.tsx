@@ -19,6 +19,7 @@ import NotificationModal from './NotificationModal';
 const NAVIGATION_OPTIONS = [
   { name: 'Home', path: APP_ROUTES.home, icon: 'perm_identity' },
   { name: 'Worklogs', path: APP_ROUTES.userWorklogs, icon: 'task_alt' },
+  { name: 'Plans', path: APP_ROUTES.plans, icon: 'map' },
   { name: 'World', path: APP_ROUTES.world, icon: 'public' },
   {
     name: 'Notifications',

@@ -41,7 +41,13 @@ export async function runDueSchedules(
 
     const now = new Date().toISOString();
     const count = Math.max(1, schedule.count || 1);
-    const tasks = runs.slice(-MAX_CATCH_UP_RUNS).flatMap((runOn) =>
+    const kept = runs.slice(-MAX_CATCH_UP_RUNS);
+    // Tasks already made for a run, e.g. done early, are not made again.
+    const early: { forDate?: string | null }[] = await db.task.findMany({
+      where: { scheduleId: schedule.id, forDate: { in: kept } },
+      select: { forDate: true },
+    });
+    const tasks = kept.flatMap((runOn) =>
       Array.from({ length: count }, (_, i) => ({
         companyId: schedule.companyId,
         projectId: schedule.projectId,
@@ -59,10 +65,11 @@ export async function runDueSchedules(
         goalId: schedule.goalId ?? null,
         goalPartId: schedule.goalPartId ?? null,
         scheduleId: schedule.id,
+        forDate: runOn,
         createdById: schedule.createdById,
         createdAt: now,
         updatedAt: now,
-      })),
+      })).slice(early.filter((t) => t.forDate === runOn).length),
     );
     if (tasks.length) {
       await db.task.createMany({ data: tasks });
