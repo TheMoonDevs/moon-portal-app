@@ -487,7 +487,7 @@ export const WorldPage = () => {
           : null;
 
   return (
-    <div className="fixed inset-0 bg-[#eef1f5] pb-[72px] md:left-24 md:pb-0">
+    <div className="fixed inset-0 bg-[#eef1f5] pb-[72px] md:left-16 md:pb-0">
       <div className="relative size-full">
         {world && world.towns.length > 0 && (
           <WorldScene

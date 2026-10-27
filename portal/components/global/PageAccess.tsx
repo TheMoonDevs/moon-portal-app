@@ -60,7 +60,7 @@ export const PageAccess = ({
   }, [isGuarded, status, isGoogleVerified, isAccessSatisfied, router]);
 
   const content = hasBottombar ? (
-    <div className="md:pl-24">{children}</div>
+    <div className="md:pl-16">{children}</div>
   ) : (
     <>{children}</>
   );
