@@ -32,7 +32,7 @@ import {
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import { WorklogLinks } from './WorklogLinks';
-import { DEFAULT_MARKDOWN_DATA } from './WorklogsHelper';
+import { DEFAULT_MARKDOWN_DATA, worklogSaves } from './WorklogsHelper';
 import EmojiLegend from './WorklogTabs/EmojiLegend';
 import TodoTab from './WorklogTabs/TodoTab';
 
@@ -132,6 +132,8 @@ export const WorklogEditor = ({
   handleNextMonthClick,
   fetchXTasksForDay,
   fetchOptions,
+  onPrevDay,
+  onNextDay,
 }: {
   loading: boolean;
   editWorkLogs: WorkLogs | null;
@@ -142,6 +144,8 @@ export const WorklogEditor = ({
   handleNextMonthClick?: () => void;
   fetchXTasksForDay: (date: string) => Promise<WorkLogs | null>;
   fetchOptions: { label: string; dateIdx: number }[];
+  onPrevDay?: () => void;
+  onNextDay?: () => void;
 }) => {
   const dispatch = useAppDispatch();
   const { user } = useUser();
@@ -206,25 +210,17 @@ export const WorklogEditor = ({
     }
   }, [saving, isAutoSaved, isSavingModalOpen]);
 
+  // Bumped each time a log is loaded, so the editors remount with its text.
+  const [revision, setRevision] = useState(0);
   useEffect(() => {
-    if (!user) return;
-    if (!editWorkLogs) {
-      setWorkLog({
-        id: '',
-        userId: user?.id,
-        logType: 'dayLog',
-        title: `${dayjs().format('MMMM DD')}  - ${dayjs().format('dddd')}`,
-        date: dayjs().format('YYYY-MM-DD'),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        works: markdownDatas as any[],
-      });
-      return;
-    }
+    // Nothing is editable until this day's log has loaded: typing into a
+    // placeholder used to save onto today instead of the day on screen.
+    if (!editWorkLogs) return;
     isAuotSaving.current = false;
     setWorkLog(editWorkLogs);
     setServerLog(editWorkLogs);
     setMarkdownDatas(editWorkLogs.works as any[]);
+    setRevision((r) => r + 1);
     isAuotSaving.current = true;
   }, [editWorkLogs]);
 
@@ -232,48 +228,83 @@ export const WorklogEditor = ({
     (
       _workLog: { works: WorkLogPoints[] } | null,
       workData?: WorkLogPoints[],
-    ) => {
-      if (!user?.id) return;
+    ): Promise<void> => {
+      if (!user?.id) return Promise.resolve();
       const worklogToSave = _workLog ?? workLog;
-      if (!worklogToSave) return;
-      //   console.log({
-      //     ..._workLog,
-      //     userId: _user?.id,
-      //     works: _workLog.works || markdownDatas,
-      //   });
+      // The day (and log type) always come from the log this editor loaded,
+      // whatever copy is being saved.
+      const base = serverLog ?? editWorkLogs;
+      if (!worklogToSave || !base) return Promise.resolve();
+      const works = workData ? workData : worklogToSave.works || markdownDatas;
+      const worksAtSave = JSON.stringify(workLog?.works);
       setSaving(true);
-      //let _worklog: WorkLogs | null = workLog ? { ...workLog } : null;
-      PortalSdk.putData(`/api/user/worklogs`, {
-        ...worklogToSave,
-        userId: user?.id,
-        works: workData ? workData : worklogToSave.works || markdownDatas,
-        updatedAt: new Date(),
-      })
+      // Saves run one after another, so a later one never lands first.
+      const run = worklogSaves.queue
+        .catch(() => undefined)
+        .then(() =>
+          PortalSdk.putData(`/api/user/worklogs`, {
+            ...worklogToSave,
+            logType: base.logType,
+            date: base.date,
+            userId: user?.id,
+            works,
+            updatedAt: new Date(),
+          }),
+        )
         .then((data) => {
           setSaving(false);
-          if (!data?.data?.workLogs) return;
-          setWorkLog(data?.data?.workLogs);
-          setServerLog(data?.data?.workLogs);
-          dispatch(updateLogs(data?.data?.workLogs));
-          console.log('saved', data?.data?.workLogs);
+          const saved = data?.data?.workLogs;
+          if (!saved) return;
+          setServerLog(saved);
+          // Keep anything typed while the save was in flight; it saves next.
+          setWorkLog((current) =>
+            current && JSON.stringify(current.works) !== worksAtSave
+              ? { ...saved, works: current.works }
+              : saved,
+          );
+          dispatch(updateLogs(saved));
         })
         .catch((err) => {
           setSaving(false);
           console.log(err);
         });
+      worklogSaves.queue = run;
+      return run;
     },
-    [workLog, markdownDatas, user?.id, dispatch],
+    [workLog, serverLog, editWorkLogs, markdownDatas, user?.id, dispatch],
   );
 
-  const changeMarkData = (
-    content: string,
-    bd_index: number,
-    _markdownDat: WorkLogPoints,
-    _fullpoints: WorkLogPoints[],
-  ) => {
-    // console.log(content);
+  // Switching days swaps this editor out; save whatever is still unsaved.
+  const latest = useRef({ workLog, serverLog, saveWorkLog });
+  latest.current = { workLog, serverLog, saveWorkLog };
+  useEffect(
+    () => () => {
+      const { workLog: wl, serverLog: sl, saveWorkLog: save } = latest.current;
+      if (wl && sl && JSON.stringify(wl) !== JSON.stringify(sl))
+        save(wl as any);
+      dispatch(setEdiotrSaving(false));
+    },
+    [dispatch],
+  );
+
+  useEffect(() => {
+    if (isAutoSaved || loading) return;
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [isAutoSaved, loading]);
+
+  // The editors keep the onChange they mounted with, so read the latest
+  // sections from a ref rather than from that render.
+  const markdownDatasRef = useRef(markdownDatas);
+  markdownDatasRef.current = markdownDatas;
+
+  const changeMarkData = (content: string, _markdownDat: WorkLogPoints) => {
     const new_content = replaceEmojiCodes(content);
-    const new_md = _fullpoints.map((_md) => {
+    const new_md = markdownDatasRef.current.map((_md) => {
       if (_md.link_id === _markdownDat.link_id) {
         return {
           ..._md,
@@ -283,7 +314,7 @@ export const WorklogEditor = ({
       }
       return _md;
     });
-    // console.log(new_content);
+    markdownDatasRef.current = new_md;
     setMarkdownDatas(new_md);
     setWorkLog((wl: any) => ({
       ...wl,
@@ -545,28 +576,34 @@ export const WorklogEditor = ({
                         key={option.dateIdx}
                         className="flex cursor-pointer items-center gap-2 rounded-lg p-2 text-sm hover:bg-neutral-100"
                         onClick={() => {
+                          if (saving) {
+                            toast.warning('Saving... Please Wait!');
+                            return;
+                          }
                           setImporting((prev) => ({
                             ...prev,
                             importing: true,
                             loader: true,
                           }));
-                          if (saving) {
-                            toast.warning('Saving... Please Wait!');
-                            return;
-                          }
+                          const done = () =>
+                            setImporting((prev) => ({
+                              ...prev,
+                              importing: false,
+                            }));
                           fetchXTasksForDay(
                             dayjs(workLog?.date)
                               .subtract(option.dateIdx, 'day')
                               .format('YYYY-MM-DD'),
                           ).then((updatedWorkLog) => {
-                            const newWorks = updatedWorkLog?.works as any;
-                            saveWorkLog(updatedWorkLog as any, newWorks);
                             setShowPopup(false);
-                            setImporting((prev) => ({
-                              ...prev,
-                              importing: false,
-                            }));
-                            refreshWorklogs();
+                            if (!updatedWorkLog) return done();
+                            saveWorkLog(
+                              updatedWorkLog as any,
+                              updatedWorkLog.works as any,
+                            ).then(() => {
+                              done();
+                              refreshWorklogs();
+                            });
                           });
                         }}
                       >
@@ -593,14 +630,44 @@ export const WorklogEditor = ({
         </div>
       )}
       <div className="p-4">
-        <div className="flex w-full items-center justify-between">
-          <input
-            disabled
-            type="text"
-            className="bg-transparent text-2xl outline-none"
-            placeholder="Jotdown a new project/task/goal..."
-            value={workLog?.title || 'March 27 - Sunday'}
-          />
+        <div className="flex w-full items-center justify-between gap-2">
+          {workLog ? (
+            <input
+              disabled
+              type="text"
+              className="min-w-0 grow bg-transparent text-2xl outline-none"
+              placeholder="Jotdown a new project/task/goal..."
+              value={workLog.title ?? ''}
+            />
+          ) : (
+            <div className="h-8 w-56 animate-pulse rounded-md bg-neutral-100" />
+          )}
+          {(onPrevDay || onNextDay) && (
+            <div className="flex shrink-0 items-center gap-1">
+              <IconButton
+                size="small"
+                aria-label="Previous day"
+                title="Previous day"
+                disabled={!onPrevDay}
+                onClick={onPrevDay}
+              >
+                <span className="material-icons !text-xl text-neutral-700">
+                  chevron_left
+                </span>
+              </IconButton>
+              <IconButton
+                size="small"
+                aria-label="Next day"
+                title="Next day"
+                disabled={!onNextDay}
+                onClick={onNextDay}
+              >
+                <span className="material-icons !text-xl text-neutral-700">
+                  chevron_right
+                </span>
+              </IconButton>
+            </div>
+          )}
         </div>
         <div className="relative flex items-start justify-between">
           <div className="item-center mt-3 flex gap-2 text-xs leading-3 text-neutral-500">
@@ -630,97 +697,86 @@ export const WorklogEditor = ({
         </div>
         <div className={`h-[${compactView ? '1em' : '3em'}]`}></div>
       </div>
-      {markdownDatas.map((_markdownDat, bd_index) => (
-        <div
-          key={_markdownDat.link_id}
-          className="grow-1 flex flex-col items-stretch"
-        >
-          <p className="mb-2 px-4 text-[0.8em] uppercase tracking-widest text-neutral-500">
-            {_markdownDat.title} - {getStatsOfContent(_markdownDat.content)}
-            {getPrivateLineCount(_markdownDat.content) > 0 && (
-              <span className="ml-2 rounded bg-amber-100 px-2 py-0.5 text-[10px] font-semibold tracking-normal text-amber-700">
-                <span className="material-symbols-outlined mr-1 !text-[10px]">
-                  lock
-                </span>
-                {getPrivateLineCount(_markdownDat.content)} private
-              </span>
-            )}
-          </p>
-          <div
-            className="relative mb-3 flex flex-row items-stretch px-4"
-            onKeyDown={(e) => {
-              // Alt+1…9 for every emoji in the legend, Ctrl+Space, Ctrl+Q and
-              // Ctrl+P for ✅, ❌ and 🟡.
-              const emoji = emojiForShortcut(e);
-              if (emoji) {
-                e.preventDefault();
-                insertToContent(emoji, bd_index);
-              }
-            }}
-          >
-            {_markdownDat.content && (
-              <MdxAppEditor
-                // autoFocus={bd_index === 0 ? true : false}
-                ref={
-                  bd_index < markdownRefs.current.length
-                    ? markdownRefs.current[bd_index]
-                    : null
-                }
-                key={
-                  loading
-                    ? 'uninit'
-                    : workLog?.id +
-                      '-' +
-                      _markdownDat.link_id +
-                      '-' +
-                      workLog?.title
-                }
-                editorKey={
-                  loading
-                    ? 'uninit'
-                    : workLog?.id +
-                      '-' +
-                      _markdownDat.link_id +
-                      '-' +
-                      workLog?.title
-                }
-                markdown={
-                  _markdownDat.content.trim().length != 0
-                    ? _markdownDat.content
-                    : MARKDOWN_PLACHELODER
-                }
-                className="h-full grow"
-                contentEditableClassName={`mdx_ce ${
-                  _markdownDat.content.trim() == MARKDOWN_PLACHELODER.trim()
-                    ? ' mdx_uninit '
-                    : ''
-                } leading-1 imp-p-0 grow w-full h-full`}
-                onChange={(content: any) => {
-                  changeMarkData(
-                    content,
-                    bd_index,
-                    _markdownDat,
-                    markdownDatas,
-                  );
-                  //   debounceSaveWorkLogsMarkdownData(
-                  //     content,
-                  //     _markdownDat,s
-                  //     markdownDatas
-                  //   );
-                }}
-              />
-            )}
-            {(_markdownDat.content.trim().length <= 0 ||
-              _markdownDat.content.trim() === MARKDOWN_PLACHELODER.trim()) &&
-              !loading && (
-                <span className="mdx_placeholder">Jotdown your thougts...</span>
-              )}
-            {/* <p>{_markdownDat.content}</p> */}
-          </div>
+      {!workLog && (
+        <div className="flex flex-col gap-3 px-4">
+          <div className="h-3 w-24 animate-pulse rounded bg-neutral-100" />
+          <div className="h-24 animate-pulse rounded-lg bg-neutral-100" />
         </div>
-      ))}
+      )}
+      {workLog &&
+        markdownDatas.map((_markdownDat, bd_index) => (
+          <div
+            key={_markdownDat.link_id}
+            className="grow-1 flex flex-col items-stretch"
+          >
+            <p className="mb-2 px-4 text-[0.8em] uppercase tracking-widest text-neutral-500">
+              {_markdownDat.title} - {getStatsOfContent(_markdownDat.content)}
+              {getPrivateLineCount(_markdownDat.content) > 0 && (
+                <span className="ml-2 rounded bg-amber-100 px-2 py-0.5 text-[10px] font-semibold tracking-normal text-amber-700">
+                  <span className="material-symbols-outlined mr-1 !text-[10px]">
+                    lock
+                  </span>
+                  {getPrivateLineCount(_markdownDat.content)} private
+                </span>
+              )}
+            </p>
+            <div
+              className="relative mb-3 flex flex-row items-stretch px-4"
+              onKeyDown={(e) => {
+                // Alt+1…9 for every emoji in the legend, Ctrl+Space, Ctrl+Q and
+                // Ctrl+P for ✅, ❌ and 🟡.
+                const emoji = emojiForShortcut(e);
+                if (emoji) {
+                  e.preventDefault();
+                  insertToContent(emoji, bd_index);
+                }
+              }}
+            >
+              {_markdownDat.content && (
+                <MdxAppEditor
+                  // autoFocus={bd_index === 0 ? true : false}
+                  ref={
+                    bd_index < markdownRefs.current.length
+                      ? markdownRefs.current[bd_index]
+                      : null
+                  }
+                  key={`${revision}-${_markdownDat.link_id}`}
+                  editorKey={`${revision}-${_markdownDat.link_id}`}
+                  markdown={
+                    _markdownDat.content.trim().length != 0
+                      ? _markdownDat.content
+                      : MARKDOWN_PLACHELODER
+                  }
+                  className="h-full grow"
+                  contentEditableClassName={`mdx_ce ${
+                    _markdownDat.content.trim() == MARKDOWN_PLACHELODER.trim()
+                      ? ' mdx_uninit '
+                      : ''
+                  } leading-1 imp-p-0 grow w-full h-full`}
+                  onChange={(content: any) => {
+                    changeMarkData(content, _markdownDat);
+                    //   debounceSaveWorkLogsMarkdownData(
+                    //     content,
+                    //     _markdownDat,s
+                    //     markdownDatas
+                    //   );
+                  }}
+                />
+              )}
+              {(_markdownDat.content.trim().length <= 0 ||
+                _markdownDat.content.trim() === MARKDOWN_PLACHELODER.trim()) &&
+                !loading && (
+                  <span className="mdx_placeholder">
+                    Jotdown your thougts...
+                  </span>
+                )}
+              {/* <p>{_markdownDat.content}</p> */}
+            </div>
+          </div>
+        ))}
       {serverLog?.id && (
         <WorklogLinks
+          key={serverLog.id}
           worklogId={serverLog.id}
           version={String(serverLog.updatedAt ?? '')}
         />

@@ -203,12 +203,18 @@ export const WorklogLinks = ({
   const [claudeKeys, setClaudeKeys] = useState<string[]>([]);
   const [open, setOpen] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout>>();
+  const loadedFor = useRef<string | null>(null);
+  const latestRequest = useRef(0);
 
   const relink = useCallback(async () => {
+    const request = ++latestRequest.current;
     try {
       const res = await PortalSdk.postData('/api/user/worklogs/links', {
         worklogId,
       });
+      // A newer relink (or another day) has replaced this one.
+      if (request !== latestRequest.current) return;
+      loadedFor.current = worklogId;
       setLinks(res?.data?.links ?? []);
       setTimeline(res?.data?.timeline ?? []);
       setClaudeKeys(res?.data?.claudeKeys ?? []);
@@ -223,9 +229,12 @@ export const WorklogLinks = ({
 
   useEffect(() => {
     clearTimeout(timer.current);
-    timer.current = setTimeout(relink, LINK_DELAY_MS);
+    // A newly opened day shows its links at once; after that, wait for
+    // typing to settle.
+    const delay = loadedFor.current === worklogId ? LINK_DELAY_MS : 0;
+    timer.current = setTimeout(relink, delay);
     return () => clearTimeout(timer.current);
-  }, [relink, version]);
+  }, [relink, version, worklogId]);
 
   const pick = async (
     link: WorklogLink,
