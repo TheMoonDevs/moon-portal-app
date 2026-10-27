@@ -4,81 +4,85 @@ import { conceptArtistPage } from './concept-artist';
 import type { TaskPageConfig } from './types';
 
 /**
- * The intro for Social & PR Manager (Intern): launch night for a song, on a
- * rainy synthwave Mumbai in neon pink and cyan. A post goes live and its
- * numbers climb, then the song finds its playlists. The brief and the form
- * after it come from the opening, not from here.
+ * The intro for Social & PR Manager (Intern), on a rainy synthwave Mumbai in
+ * neon pink and cyan. It shows who they'd join, why the studio needs a voice,
+ * and everything that voice owns, from community to PR. The brief and the
+ * form after it come from the opening, not from here.
  */
-export const launchNightPage: TaskPageConfig = {
-  key: 'launch-night',
-  name: 'Launch night',
+export const studioVoicePage: TaskPageConfig = {
+  key: 'studio-voice',
+  name: 'Studio voice',
   theme: 'monsoon',
   scenes: [
     'dream',
     'manifesto',
+    'studio',
     'feed',
-    'playlist',
+    'voice',
     'mark',
     'founder',
     'timeline',
   ],
   studio: conceptArtistPage.studio,
   feed: {
-    kicker: 'the job, really',
+    kicker: 'why it matters',
     title: 'Great work dies quietly.',
     note: 'Not on your watch.',
-    body: 'Every song we make starts at zero plays, zero followers and zero rupees. Someone has to make the city stop scrolling.',
+    body: 'We make films, music, games and tools with AI, with developers, vibe-coders, musicians and filmmakers in one room. None of it matters if nobody hears about it.',
     post: {
-      handle: '@you',
+      handle: '@thestudio',
       caption:
-        'POV: the last train leaves at 2:04 AM and the city is underwater.',
+        'the studio at 2 AM: three tracks mixing, one film rendering, a game in beta.',
       time: '2:04 AM',
     },
     counts: [
       { label: 'views', to: 120000 },
-      { label: 'shares', to: 4200 },
-      { label: 'saves', to: 9800 },
+      { label: 'joined', to: 4200 },
+      { label: 'shares', to: 9800 },
     ],
     comments: [
-      'the city pop drop at 0:41 😭',
-      'which anime is this from??',
-      'playing this on the 2am local, perfect',
-      'when does the full song drop',
+      'wait, this is all made with AI??',
+      'just joined the discord, this community is unreal',
+      'when is the next drop',
+      'whoever runs this page, protect them',
     ],
-    payoff: 'That someone is you.',
+    payoff: "You'll make them hear.",
   },
-  playlist: {
-    kicker: 'where it lands',
-    title: 'From one post to the playlists people fall asleep to.',
-    track: { title: 'Mumbai 66', artist: 'Zone Studios' },
+  voice: {
+    kicker: "what you'll own",
+    title: 'Not a posting job. The voice of a studio.',
+    core: { title: 'Zone Studios', sub: 'by the moon devs' },
     rows: [
-      'Late Night City Pop',
-      'Synthwave for the Rain',
-      'Anime Lo-fi, 2 AM',
-      'Mumbai After Dark',
+      'YouTube channels, from first upload to growth',
+      'Our Discord and Reddit communities',
+      'PR: press, creators and collaborators',
+      'Campaigns, memes and launches',
+      'Playlists and curators for our music',
+      'The numbers, every week',
     ],
-    slot: 'Pitched by',
+    slot: 'The voice of the studio:',
+    note: "that's you",
   },
   mark: {
     kicker: 'Your mark',
-    title: 'Every film, every track, every drop.',
-    accent: 'You decide how the world hears about it.',
+    title: 'Every film, track and game we make.',
+    accent: 'The world hears about it through you.',
     credits: [
-      'Music releases',
-      'Anime shorts',
-      'YouTube channels',
-      'Discord community',
-      'Reddit drops',
-      'Playlist pitches',
+      'Community',
+      'YouTube',
+      'PR & press',
+      'Campaigns',
+      'Creators',
+      'Playlists',
     ],
-    creditLine: 'Launched by',
+    creditLine: 'Community & PR',
   },
   team: { ...conceptArtistPage.team, joining: 'Social & PR Intern' },
   founder: conceptArtistPage.founder,
   timeline: {
     steps: [
       { when: 'Day 1', what: 'You join the studio.' },
-      { when: 'Week 2', what: 'Your first campaign goes live.' },
+      { when: 'Week 2', what: 'You run your first campaign.' },
       {
         when: 'Month 3',
         what: 'Full-time offer, ₹4L to ₹6L a year.',
@@ -90,8 +94,8 @@ export const launchNightPage: TaskPageConfig = {
 };
 
 /** The first brief for this page; HR can load it in the editor and change it. */
-export const launchNightStarterTask: JobTask = {
-  page: 'launch-night',
+export const studioVoiceStarterTask: JobTask = {
+  page: 'studio-voice',
   brief:
     'A girl chases the last train across a flooded Mumbai at 2 AM. The song is synthwave, and the look is anime film meets city pop. It’s called “Mumbai 66”.\n\nNobody knows it exists yet. Your job is to change that, starting with zero rupees and zero followers.',
   effort: 'About 3 to 4 hours',

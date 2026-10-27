@@ -1178,13 +1178,13 @@ export const FeedScene = ({
   );
 };
 
-/* ---------------------------- playlist (monsoon) --------------------------- */
+/* ------------------------------ voice (monsoon) ----------------------------- */
 
-export const PlaylistScene = ({
-  playlist,
+export const VoiceScene = ({
+  voice,
   firstName,
 }: {
-  playlist: NonNullable<TaskPageConfig['playlist']>;
+  voice: NonNullable<TaskPageConfig['voice']>;
   firstName: string;
 }) => {
   const sec = useRef<HTMLElement>(null);
@@ -1220,7 +1220,7 @@ export const PlaylistScene = ({
     const still = prefersReducedMotion();
     const at = (a: number, len: number) => (still ? 1 : clamp((p - a) / len));
     title.current?.type(at(0, 0.14));
-    playlist.rows.forEach((_, i) => {
+    voice.rows.forEach((_, i) => {
       const el = rows.current[i];
       const k = at(0.2 + i * 0.1, 0.05);
       if (el) {
@@ -1248,7 +1248,7 @@ export const PlaylistScene = ({
     const c = size / 2;
     const R = size * 0.27;
     const time = still ? 0 : t / 1000;
-    // Louder as more playlists pick it up.
+    // Louder with every part of the job ticked off.
     const loud = 0.25 + at(0.18, 0.6) * 0.75;
     const bars = 96;
     for (let i = 0; i < bars; i += 1) {
@@ -1298,11 +1298,11 @@ export const PlaylistScene = ({
     g.arc(0, 0, R * 0.36, 0, Math.PI * 2);
     g.fill();
     g.fillStyle = '#0d0a1f';
-    g.font = `700 ${Math.round(R * 0.11)}px sans-serif`;
+    g.font = `700 ${Math.round(R * Math.min(0.11, 1.1 / voice.core.title.length))}px sans-serif`;
     g.textAlign = 'center';
-    g.fillText(playlist.track.title.toUpperCase(), 0, -R * 0.08);
+    g.fillText(voice.core.title.toUpperCase(), 0, -R * 0.08);
     g.font = `500 ${Math.round(R * 0.07)}px monospace`;
-    g.fillText(playlist.track.artist.toLowerCase(), 0, R * 0.1);
+    g.fillText(voice.core.sub.toLowerCase(), 0, R * 0.1);
     g.beginPath();
     g.arc(0, 0, R * 0.035, 0, Math.PI * 2);
     g.fill();
@@ -1312,18 +1312,18 @@ export const PlaylistScene = ({
   return (
     <section ref={sec} className={styles.sec} style={{ height: '300vh' }}>
       <div className={styles.pin}>
-        <div className={styles.playlist}>
+        <div className={styles.voice}>
           <canvas ref={canvas} className={styles.record} aria-hidden="true" />
           <div>
-            <div className={styles.kicker}>{playlist.kicker}</div>
+            <div className={styles.kicker}>{voice.kicker}</div>
             <Typed
               ref={title}
               as="h2"
               seed={53}
-              segments={[{ text: playlist.title }]}
+              segments={[{ text: voice.title }]}
             />
             <ol className={styles.lists}>
-              {playlist.rows.map((name, i) => (
+              {voice.rows.map((name, i) => (
                 <li
                   key={name}
                   ref={(el) => {
@@ -1344,8 +1344,8 @@ export const PlaylistScene = ({
                 </li>
               ))}
               <li ref={mine} data-mine="">
-                <span>{String(playlist.rows.length + 1).padStart(2, '0')}</span>
-                {playlist.slot} {firstName}?
+                <span>{String(voice.rows.length + 1).padStart(2, '0')}</span>
+                {voice.slot} {firstName}?
                 <svg className={styles.mineRing} aria-hidden="true">
                   <path ref={ring} className={styles.stroke} />
                 </svg>
@@ -1362,7 +1362,7 @@ export const PlaylistScene = ({
                   d="M56 36 C 44 30, 30 22, 10 8 M10 8 L 22 9 M10 8 L 13 20"
                 />
               </svg>
-              your pitch lands here
+              {voice.note}
             </div>
           </div>
         </div>

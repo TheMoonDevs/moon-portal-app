@@ -5,7 +5,7 @@ export type TaskSceneKey =
   | 'hiring'
   | 'radar'
   | 'feed'
-  | 'playlist'
+  | 'voice'
   | 'studio'
   | 'mark'
   | 'team'
@@ -79,7 +79,7 @@ export interface TaskPageConfig {
     blips: string[];
     found: string;
   };
-  /** A post going live, its numbers climbing. Shown by the feed scene. */
+  /** A studio post going live, its numbers climbing. Shown by the feed scene. */
   feed?: {
     kicker: string;
     /** Its last word gets struck through, and the note answers it. */
@@ -92,15 +92,20 @@ export interface TaskPageConfig {
     comments: string[];
     payoff: string;
   };
-  /** A song finding its playlists. Shown by the playlist scene. */
-  playlist?: {
+  /**
+   * Everything the role owns, ticked off around a spinning record with the
+   * studio's name on it. Shown by the voice scene.
+   */
+  voice?: {
     kicker: string;
     title: string;
-    track: { title: string; artist: string };
-    /** Playlists it lands on; the candidate's pitch is the last one. */
+    /** The record's label. */
+    core: { title: string; sub: string };
     rows: string[];
-    /** The candidate's row: "<slot> <first name>?". */
+    /** The candidate's row: "<slot> <first name>?", circled. */
     slot: string;
+    /** A hand-written note pointing at their row. */
+    note: string;
   };
   /** Still being confirmed; only enabled ones are shown. */
   promises: Array<{ text: string; enabled: boolean }>;

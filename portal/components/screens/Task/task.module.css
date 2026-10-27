@@ -1170,7 +1170,7 @@ textarea.input {
   text-shadow: 0 2px 24px rgba(7, 5, 26, 0.9);
 }
 .feed h2,
-.playlist h2 {
+.voice h2 {
   position: relative;
   margin: 14px 0 0;
   font-weight: 700;
@@ -1320,8 +1320,8 @@ textarea.input {
   }
 }
 
-/* playlist */
-.playlist {
+/* voice */
+.voice {
   width: min(100%, 1180px);
   display: grid;
   gap: 8px;
@@ -1391,7 +1391,7 @@ textarea.input {
   overflow: visible;
 }
 @media (min-width: 900px) {
-  .playlist {
+  .voice {
     grid-template-columns: 1fr 1fr;
     column-gap: 56px;
   }
@@ -1400,7 +1400,7 @@ textarea.input {
   }
 }
 @media (max-width: 899px) {
-  .playlist h2 {
+  .voice h2 {
     font-size: clamp(26px, 7vw, 40px);
   }
   .lists li {

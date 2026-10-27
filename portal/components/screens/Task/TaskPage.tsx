@@ -29,11 +29,11 @@ import {
   HiringScene,
   ManifestoScene,
   MarkScene,
-  PlaylistScene,
   RadarScene,
   StudioScene,
   TeamScene,
   TimelineScene,
+  VoiceScene,
 } from './TaskScenes';
 
 const sans = Plus_Jakarta_Sans({
@@ -605,11 +605,11 @@ export const TaskPage = ({ data }: { data: PublicTask }) => {
         ) : null;
       case 'feed':
         return intro.feed ? <FeedScene key={key} feed={intro.feed} /> : null;
-      case 'playlist':
-        return intro.playlist ? (
-          <PlaylistScene
+      case 'voice':
+        return intro.voice ? (
+          <VoiceScene
             key={key}
-            playlist={intro.playlist}
+            voice={intro.voice}
             firstName={data.firstName}
           />
         ) : null;
