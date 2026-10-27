@@ -113,18 +113,22 @@ const botEmoji = (bot: WorldBot) =>
           ? STATUS_EMOJI.doing
           : '💤';
 
-const botTagHtml = (bot: WorldBot, hex: string) => {
+const botTagHtml = (bot: WorldBot, hex: string, compact: boolean) => {
   const pct = bot.progress.total
     ? Math.round((bot.progress.done / bot.progress.total) * 100)
     : 0;
+  // Back with its owner, whose name is right there: just how it's doing.
+  if (compact)
+    return `<div class="flex items-center gap-0.5 whitespace-nowrap"><span>${botEmoji(bot)}</span><span class="font-semibold text-neutral-700">${bot.progress.done}/${bot.progress.total}</span></div>`;
   return `<div class="flex items-center gap-1 whitespace-nowrap">${badge(bot.ownerAvatar ?? null, bot.ownerName, hex, 18, true, true)}<span>${botEmoji(bot)}</span><span class="font-semibold">${escape(bot.ownerName)}</span><span class="text-neutral-500">${bot.progress.done}/${bot.progress.total}</span></div><div class="mt-1 h-1 w-full overflow-hidden rounded-full bg-neutral-200"><div class="h-full rounded-full" style="width:${pct}%;background:${BOT_STATE_COLOR[bot.state]}"></div></div>`;
 };
 
 /**
  * A bot's little life: it hops along the roads, types away at its
- * building, now and then spins or looks around, jumps and waves when it
- * needs its owner, dances when done, shakes its head when blocked and
- * dozes when asleep. And it blinks.
+ * building, now and then spins or looks around, hops round and round in
+ * front of its owner, jumping and waving, when it needs them, dances about
+ * its spot when done, paces and shakes its head when blocked and dozes when asleep. And
+ * it blinks.
  */
 /** True when it has just reached the end of its road. */
 function act(b: BotEntity, t: number, dt: number) {
@@ -154,11 +158,31 @@ function act(b: BotEntity, t: number, dt: number) {
     wiggle = Math.sin(k * 14) * 0.3;
     arrived = b.travelled >= pathLength(b.path);
   } else {
-    const dx = b.target.x - g.position.x;
-    const dz = b.target.z - g.position.z;
+    const state = b.bot.state;
+    let gx = b.target.x;
+    let gz = b.target.z;
+    let speed = 3;
+    if (state === 'waiting' && b.owner) {
+      // Urgent: hops round and round its spot, fast.
+      gx += Math.cos(k * 2.4) * 0.5;
+      gz += Math.sin(k * 2.4) * 0.5;
+      speed = 4;
+    } else if (state === 'done' && b.owner) {
+      // Happy: wanders round its spot.
+      gx += Math.cos(k * 0.7) * 0.4;
+      gz += Math.sin(k * 0.9) * 0.4;
+      speed = 1.6;
+    } else if (state === 'blocked') {
+      // Paces up and down.
+      gx += Math.sin(k * 0.8) * 0.9;
+      gz -= Math.sin(k * 0.8) * 0.9;
+      speed = 1.4;
+    }
+    const dx = gx - g.position.x;
+    const dz = gz - g.position.z;
     const dist = Math.hypot(dx, dz);
     if (dist > 0.05) {
-      const step = Math.min(dist, dt * 3);
+      const step = Math.min(dist, dt * speed);
       g.position.x += (dx / dist) * step;
       g.position.z += (dz / dist) * step;
     }
@@ -166,7 +190,6 @@ function act(b: BotEntity, t: number, dt: number) {
     if (dist > 0.4) turn(g, Math.atan2(dx, dz), dt * 8);
     else turn(g, b.face, dt * 4);
 
-    const state = b.bot.state;
     if (state === 'working') {
       // Busy at the building, with a hop and a spin now and then.
       const phase = k % 7;
@@ -185,7 +208,7 @@ function act(b: BotEntity, t: number, dt: number) {
         look = Math.sin((phase - 3) * 4) * 0.7;
     } else if (state === 'waiting') {
       // Jumping and waving: over here!
-      y = 0.12 + Math.abs(Math.sin(k * 5)) * 0.42;
+      y = 0.12 + Math.abs(Math.sin(k * 5)) * 0.9;
       arms = [
         0,
         2.6 + Math.sin(k * 10) * 0.3,
@@ -257,6 +280,8 @@ type BotEntity = {
   /** Where it stands once it gets there, and which way it looks. */
   target: THREE.Vector3;
   face: number;
+  /** Where its owner stands, while it is back with them. */
+  owner: { x: number; z: number } | null;
   /** The roads it is travelling, while it travels. */
   path: { x: number; z: number }[] | null;
   travelled: number;
@@ -1130,7 +1155,8 @@ export const WorldScene = ({
       const plot = ownerPlot(bot);
       let target: THREE.Vector3;
       let face = work.face;
-      if (goesToOwner(bot.state) && plot) {
+      const home = goesToOwner(bot.state) && plot && owner ? owner : null;
+      if (home && plot) {
         // On their owner's plot, each on its own spot, turned to you so you
         // see it jump and wave.
         const at = plotSpot(plot, slot(`owner:${bot.townId}:${bot.ownerId}`));
@@ -1172,6 +1198,7 @@ export const WorldScene = ({
           label,
           target,
           face,
+          owner: home,
           path: null,
           travelled: 0,
           trail: null,
@@ -1184,7 +1211,14 @@ export const WorldScene = ({
       entity.bot = bot;
       entity.target = target;
       entity.face = face;
-      entity.label.inner.innerHTML = botTagHtml(bot, accent);
+      entity.owner = home;
+      entity.label.inner.innerHTML = botTagHtml(bot, accent, !!home);
+      Object.assign(entity.label.inner.style, {
+        minWidth: home ? '0' : '',
+        padding: home ? '1px 6px' : '',
+        borderRadius: home ? '999px' : '',
+        boxShadow: home ? `0 0 0 2px ${BOT_STATE_COLOR[bot.state]}` : '',
+      });
       if (!entity.path) {
         entity.light.color.set(BOT_STATE_COLOR[bot.state]);
         entity.light.emissive.set(BOT_STATE_COLOR[bot.state]);

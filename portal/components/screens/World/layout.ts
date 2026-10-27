@@ -103,8 +103,8 @@ export const LOTS = [
 ];
 
 /** One person's plot on the town square. */
-export const PLOT = 5;
-const PLOT_PITCH = PLOT + 0.8;
+export const PLOT = 8;
+const PLOT_PITCH = PLOT + 1.5;
 /** The town hall's middle, in from the square's back corner. */
 export const HALL_IN = 9;
 /** From the town hall to its yard, out front. */
@@ -135,8 +135,7 @@ function plotsOn(half: number) {
     for (let j = 0; j < n; j++) {
       const x = (i - (n - 1) / 2) * PLOT_PITCH;
       const z = (j - (n - 1) / 2) * PLOT_PITCH;
-      if (Math.abs(x - hall) < 4.6 + r && Math.abs(z - hall) < 4.6 + r)
-        continue;
+      if (Math.abs(x - hall) < 4 + r && Math.abs(z - hall) < 4 + r) continue;
       if (gap(x, z, 0, 0) < 4.2) continue;
       if (gap(x, z, yard, yard) < 2.5) continue;
       spots.push({ x, z });
@@ -155,17 +154,21 @@ const onPlot = (plot: { x: number; z: number }, u: number, v: number) => ({
 
 /** Where its person stands: at the back of the plot, facing the view. */
 export const plotHome = (plot: { x: number; z: number }): Spot => ({
-  ...onPlot(plot, 0, -1.2),
+  ...onPlot(plot, 0, -2.8),
   angle: Math.PI / 4,
 });
 
-/** Where its people's bots stand to report, in front of and beside them. */
+/**
+ * Where its person's bots stand to report: a row across the plot just in
+ * front of them, then one out front, far enough apart across the view that
+ * their tags don't overlap, and none right in front of their person.
+ */
 const BOT_SPOTS = [
-  [-1.3, 0.5],
-  [1.3, 0.5],
-  [0, 1.6],
-  [-2.1, -0.5],
-  [2.1, -0.5],
+  [-1.5, 0],
+  [1.5, 0],
+  [-4, 0.3],
+  [4, 0.3],
+  [0, 3],
 ];
 
 /** Where the `i`-th bot to come back stands on the plot. */
@@ -176,7 +179,7 @@ export function plotSpot(plot: { x: number; z: number }, i: number) {
   }
   // Any more line up out front.
   const j = i - BOT_SPOTS.length;
-  return onPlot(plot, ((j % 3) - 1) * 1.3, 2.7 + Math.floor(j / 3) * 1.2);
+  return onPlot(plot, (j % 2 ? 1 : -1) * 2.8, 3 + Math.floor(j / 2) * 2.8);
 }
 
 function layoutTown(world: World, townId: string) {
