@@ -216,11 +216,20 @@ export const extOf = (name: string) =>
 export const kindOf = (name: string): BrandAssetKind =>
   EXT_KIND[extOf(name)] ?? 'other';
 
-/** Files a brand folder may hold that are not brand material (source code…). */
+/**
+ * Folders a brand folder may hold that are not brand material: `graphics/`
+ * is the kit's source (scenes, reference frames, raw sounds), at any depth.
+ */
+export const isSkippedBrandDir = (name: string) =>
+  name.startsWith('.') || /^(graphics|node_modules|__MACOSX)$/i.test(name);
+
+/** Paths a brand folder import never reads or uploads. */
 export const isIgnoredBrandPath = (path: string) =>
-  /(^|\/)(\.|node_modules\/|__MACOSX\/)/.test(path) ||
-  /\.(tsx?|jsx?|mjs|cjs|map|lock|DS_Store)$/i.test(path) ||
-  /(^|\/)(package(-lock)?\.json|tsconfig\.json)$/i.test(path);
+  path.split('/').slice(0, -1).some(isSkippedBrandDir) || /(^|\/)\./.test(path);
+
+/** Only media is uploaded from a brand folder: images, video, audio, fonts. */
+export const isBrandMediaFile = (name: string) =>
+  ['image', 'video', 'audio', 'font'].includes(kindOf(name));
 
 const WEIGHTS: Record<string, number> = {
   thin: 100,
