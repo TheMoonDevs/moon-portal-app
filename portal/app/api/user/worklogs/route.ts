@@ -76,13 +76,14 @@ export async function PUT(request: Request) {
   if (denied) return denied;
 
   try {
-    // Links (kept by /api/user/worklogs/links) and the guidance count (kept
-    // by the MCP server) are never written here, so an autosave with an older
-    // copy cannot undo them.
+    // Links and the timeline (kept by /api/user/worklogs/links) and the
+    // guidance count (kept by the MCP server) are never written here, so an
+    // autosave with an older copy cannot undo them.
     const {
       id,
       links: _links,
       guidance: _guidance,
+      timeline: _timeline,
       ...rest
     } = await request.json();
     const { userId, logType, date } = rest ?? {};

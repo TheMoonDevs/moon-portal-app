@@ -5,6 +5,12 @@ import { enforcePermission, getSessionUser } from '@/lib/permissions/server';
 import { worklogLines } from '@/lib/worklogs/lines';
 import { linkCandidates, linkLines } from '@/lib/worklogs/linker';
 import { isPersonalLink } from '@/lib/worklogs/personal';
+import type { PointEvent } from '@/lib/worklogs/timeline';
+import {
+  appendEvents,
+  sectionLines,
+  trackLines,
+} from '@/lib/worklogs/timeline';
 import type { WorklogLink, WorkLogs } from '@/models/worklogs';
 
 export const dynamic = 'force-dynamic';
@@ -32,7 +38,9 @@ async function ownWorklog(worklogId: unknown) {
 /**
  * Brings a worklog's links up to date with its lines: new lines are linked to
  * a project (and task) when that is clear, and left for the person when not.
- * Returns the links and the projects and tasks they can pick from.
+ * New lines and status changes the person made are added to the timeline.
+ * Returns the links, the timeline, which lines are the assistant's, and the
+ * projects and tasks they can pick from.
  */
 export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
@@ -46,16 +54,28 @@ export async function POST(request: Request) {
     existing,
     candidates,
   );
-  if (JSON.stringify(links) !== JSON.stringify(existing)) {
-    await db.workLogs.update({ where: { id: worklog.id }, data: { links } });
+  const events = trackLines(worklog.works, worklog.timeline as PointEvent[]);
+  const timeline = appendEvents(worklog.timeline as PointEvent[], events);
+  if (JSON.stringify(links) !== JSON.stringify(existing) || events.length) {
+    await db.workLogs.update({
+      where: { id: worklog.id },
+      data: { links, timeline },
+    });
   }
+  const claudeKeys = sectionLines(worklog.works)
+    .filter((l) => l.claude)
+    .map((l) => l.key);
   return NextResponse.json({
     status: 'success',
-    data: { links, ...candidates },
+    data: { links, timeline, claudeKeys, ...candidates },
   });
 }
 
-/** The person places one line: `{ worklogId, key, projectId, taskId }`. */
+/**
+ * The person places one line: `{ worklogId, key, projectId, taskId }`, or
+ * marks a line they typed as the same work as one of their assistant's
+ * points: `{ worklogId, key, sameAs }` (null to unlink).
+ */
 export async function PATCH(request: Request) {
   const body = await request.json().catch(() => ({}));
   const { response, user, worklog } = await ownWorklog(body.worklogId);
@@ -69,6 +89,39 @@ export async function PATCH(request: Request) {
       400,
       'Private lines stay in Personal. Remove "p:" to link it to a project.',
     );
+
+  if ('sameAs' in body) {
+    const claude = sectionLines(worklog.works).filter((l) => l.claude);
+    if (claude.some((l) => l.key === body.key))
+      return fail(400, 'Link one of your own lines to a Claude point.');
+    const target = body.sameAs
+      ? links.find(
+          (l) => l.key === body.sameAs && claude.some((c) => c.key === l.key),
+        )
+      : null;
+    if (body.sameAs && !target)
+      return fail(404, 'That Claude point has changed. Try again.');
+    const updated: WorklogLink = target
+      ? {
+          ...link,
+          sameAs: target.key,
+          // It is the same work, so it goes where the point went.
+          ...(target.source !== 'none' && {
+            companyId: target.companyId,
+            projectId: target.projectId,
+            taskId: target.taskId,
+            confidence: 1,
+            source: 'user',
+          }),
+        }
+      : { ...link, sameAs: null };
+    const next = links.map((l) => (l.key === link.key ? updated : l));
+    await db.workLogs.update({
+      where: { id: worklog.id },
+      data: { links: next },
+    });
+    return NextResponse.json({ status: 'success', data: { links: next } });
+  }
 
   const candidates = await linkCandidates(user);
   const project = candidates.projects.find((p) => p.id === body.projectId);
