@@ -4,6 +4,8 @@ export type TaskSceneKey =
   | 'manifesto'
   | 'hiring'
   | 'radar'
+  | 'feed'
+  | 'playlist'
   | 'studio'
   | 'mark'
   | 'team'
@@ -17,9 +19,10 @@ export interface TaskPageConfig {
   name: string;
   /**
    * The look: `sketchbook` is grainy paper and red marker, `signal` a night
-   * radar screen with phosphor-green ink. Defaults to sketchbook.
+   * radar screen with phosphor-green ink, `monsoon` a rainy synthwave night
+   * in neon pink and cyan. Defaults to sketchbook.
    */
-  theme?: 'sketchbook' | 'signal';
+  theme?: 'sketchbook' | 'signal' | 'monsoon';
   /** Which scenes to show, in order. Defaults to every scene but hiring and radar. */
   scenes?: TaskSceneKey[];
   studio: {
@@ -75,6 +78,27 @@ export interface TaskPageConfig {
     /** Blips on the screen; the last one gets circled. */
     blips: string[];
     found: string;
+  };
+  /** A post going live, its numbers climbing. Shown by the feed scene. */
+  feed?: {
+    kicker: string;
+    title: string;
+    body: string;
+    post: { handle: string; caption: string; time: string };
+    /** Each counts up from zero as the reader scrolls. */
+    counts: Array<{ label: string; to: number }>;
+    comments: string[];
+    payoff: string;
+  };
+  /** A song finding its playlists. Shown by the playlist scene. */
+  playlist?: {
+    kicker: string;
+    title: string;
+    track: { title: string; artist: string };
+    /** Playlists it lands on; the candidate's pitch is the last one. */
+    rows: string[];
+    /** The candidate's row: "<slot> <first name>?". */
+    slot: string;
   };
   /** Still being confirmed; only enabled ones are shown. */
   promises: Array<{ text: string; enabled: boolean }>;

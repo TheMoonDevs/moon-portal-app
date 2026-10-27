@@ -24,10 +24,12 @@ import { TMD_PORTAL_API_KEY } from '@/utils/constants/appInfo';
 import styles from './task.module.css';
 import {
   DreamScene,
+  FeedScene,
   FounderScene,
   HiringScene,
   ManifestoScene,
   MarkScene,
+  PlaylistScene,
   RadarScene,
   StudioScene,
   TeamScene,
@@ -97,7 +99,7 @@ const Shell = ({
   theme = 'sketchbook',
   children,
 }: {
-  theme?: 'sketchbook' | 'signal';
+  theme?: 'sketchbook' | 'signal' | 'monsoon';
   children: ReactNode;
 }) => {
   const grain = useRef<HTMLCanvasElement>(null);
@@ -129,7 +131,7 @@ const Shell = ({
 
   return (
     <div
-      className={`${styles.root} ${theme === 'signal' ? styles.signal : ''} ${sans.variable} ${mono.variable} ${hand.variable} ${display.variable}`}
+      className={`${styles.root} ${theme === 'sketchbook' ? '' : styles.signal} ${theme === 'monsoon' ? styles.monsoon : ''} ${sans.variable} ${mono.variable} ${hand.variable} ${display.variable}`}
     >
       <canvas
         ref={grain}
@@ -600,6 +602,16 @@ export const TaskPage = ({ data }: { data: PublicTask }) => {
       case 'radar':
         return intro.radar ? (
           <RadarScene key={key} radar={intro.radar} />
+        ) : null;
+      case 'feed':
+        return intro.feed ? <FeedScene key={key} feed={intro.feed} /> : null;
+      case 'playlist':
+        return intro.playlist ? (
+          <PlaylistScene
+            key={key}
+            playlist={intro.playlist}
+            firstName={data.firstName}
+          />
         ) : null;
       case 'studio':
         return <StudioScene key={key} studio={intro.studio} />;

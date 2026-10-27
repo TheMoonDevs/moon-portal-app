@@ -860,3 +860,181 @@ export const RadarScene = ({
     </section>
   );
 };
+
+/* ------------------------------ feed (monsoon) ----------------------------- */
+
+const compact = (n: number) =>
+  n >= 1000 ? `${(n / 1000).toFixed(n >= 100000 ? 0 : 1)}K` : `${n}`;
+
+export const FeedScene = ({
+  feed,
+}: {
+  feed: NonNullable<TaskPageConfig['feed']>;
+}) => {
+  const sec = useRef<HTMLElement>(null);
+  const title = useRef<TypedHandle>(null);
+  const counts = useRef<Array<HTMLElement | null>>([]);
+  const comments = useRef<Array<HTMLLIElement | null>>([]);
+  const payoff = useRef<HTMLParagraphElement>(null);
+  const live = useRef<HTMLSpanElement>(null);
+
+  useScrollFrame(sec, (p) => {
+    const done = prefersReducedMotion();
+    const at = (a: number, len: number) => (done ? 1 : clamp((p - a) / len));
+    title.current?.type(at(0, 0.18));
+    if (live.current) live.current.style.opacity = `${at(0.2, 0.04)}`;
+    // Numbers climb slowly, then all at once, the way a post takes off.
+    const k = at(0.22, 0.48) ** 2.4;
+    feed.counts.forEach((c, i) => {
+      const el = counts.current[i];
+      if (el) el.textContent = compact(Math.round(c.to * k));
+    });
+    feed.comments.forEach((_, i) => {
+      const el = comments.current[i];
+      if (!el) return;
+      const c = at(0.36 + i * 0.09, 0.05);
+      el.style.opacity = `${c}`;
+      el.style.transform = `translateY(${(1 - c) * 12}px)`;
+    });
+    if (payoff.current) {
+      const c = at(0.8, 0.08);
+      payoff.current.style.opacity = `${c}`;
+      payoff.current.style.transform = `translateY(${(1 - c) * 14}px)`;
+    }
+  });
+
+  return (
+    <section ref={sec} className={styles.sec} style={{ height: '320vh' }}>
+      <div className={styles.pin}>
+        <div className={styles.feed}>
+          <div>
+            <div className={styles.kicker}>{feed.kicker}</div>
+            <Typed
+              ref={title}
+              as="h2"
+              seed={41}
+              segments={[{ text: feed.title }]}
+            />
+            <p className={styles.feedBody}>{feed.body}</p>
+            <p ref={payoff} className={styles.payoff} style={{ opacity: 0 }}>
+              {feed.payoff}
+            </p>
+          </div>
+          <figure className={styles.phone} aria-label="A post going live">
+            <header>
+              <b>{feed.post.handle}</b>
+              <span>{feed.post.time}</span>
+              <span ref={live} className={styles.live} style={{ opacity: 0 }}>
+                live
+              </span>
+            </header>
+            <div className={styles.shot} aria-hidden="true">
+              <i />
+            </div>
+            <figcaption>{feed.post.caption}</figcaption>
+            <dl>
+              {feed.counts.map((c, i) => (
+                <div key={c.label}>
+                  <dt>{c.label}</dt>
+                  <dd
+                    ref={(el) => {
+                      counts.current[i] = el;
+                    }}
+                  >
+                    0
+                  </dd>
+                </div>
+              ))}
+            </dl>
+            <ol>
+              {feed.comments.map((text, i) => (
+                <li
+                  key={text}
+                  ref={(el) => {
+                    comments.current[i] = el;
+                  }}
+                  style={{ opacity: 0 }}
+                >
+                  {text}
+                </li>
+              ))}
+            </ol>
+          </figure>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+/* ---------------------------- playlist (monsoon) --------------------------- */
+
+export const PlaylistScene = ({
+  playlist,
+  firstName,
+}: {
+  playlist: NonNullable<TaskPageConfig['playlist']>;
+  firstName: string;
+}) => {
+  const sec = useRef<HTMLElement>(null);
+  const bar = useRef<HTMLDivElement>(null);
+  const rows = useRef<Array<HTMLLIElement | null>>([]);
+  const mine = useRef<HTMLLIElement>(null);
+
+  useScrollFrame(sec, (p) => {
+    const done = prefersReducedMotion();
+    const at = (a: number, len: number) => (done ? 1 : clamp((p - a) / len));
+    if (bar.current) bar.current.style.transform = `scaleX(${at(0.05, 0.85)})`;
+    playlist.rows.forEach((_, i) => {
+      const el = rows.current[i];
+      if (!el) return;
+      const k = at(0.18 + i * 0.1, 0.06);
+      el.style.opacity = `${k}`;
+      el.style.transform = `translateX(${(1 - k) * -18}px)`;
+    });
+    if (mine.current) {
+      const k = at(0.66, 0.1);
+      mine.current.style.opacity = `${k}`;
+      mine.current.style.transform = `scale(${0.96 + k * 0.04})`;
+    }
+  });
+
+  return (
+    <section ref={sec} className={styles.sec} style={{ height: '260vh' }}>
+      <div className={styles.pin}>
+        <div className={styles.playlist}>
+          <div className={styles.kicker}>{playlist.kicker}</div>
+          <h2>{playlist.title}</h2>
+          <div className={styles.player}>
+            <span className={styles.disc} aria-hidden="true" />
+            <div>
+              <b>{playlist.track.title}</b>
+              <span>{playlist.track.artist}</span>
+              <div className={styles.progress} aria-hidden="true">
+                <div ref={bar} />
+              </div>
+            </div>
+          </div>
+          <ol className={styles.lists}>
+            {playlist.rows.map((name, i) => (
+              <li
+                key={name}
+                ref={(el) => {
+                  rows.current[i] = el;
+                }}
+                style={{ opacity: 0 }}
+              >
+                <span>{String(i + 1).padStart(2, '0')}</span>
+                {name}
+                <small>added</small>
+              </li>
+            ))}
+            <li ref={mine} data-mine="" style={{ opacity: 0 }}>
+              <span>{String(playlist.rows.length + 1).padStart(2, '0')}</span>
+              {playlist.slot} {firstName}?<small>your pitch</small>
+            </li>
+          </ol>
+        </div>
+      </div>
+    </section>
+  );
+};
