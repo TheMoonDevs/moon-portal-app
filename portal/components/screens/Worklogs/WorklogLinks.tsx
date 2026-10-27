@@ -19,11 +19,13 @@ import { PortalSdk } from '@/utils/services/PortalSdk';
 /** Waits for typing to settle before asking the server to link new lines. */
 const LINK_DELAY_MS = 4000;
 const NOT_PROJECT = '__none';
+/** The picker's value for a company's work on none of its projects. */
+const COMPANY_PREFIX = 'company:';
 
 const ProjectDot = ({
   project,
 }: {
-  project?: LinkCandidates['projects'][number];
+  project?: { logo?: string | null; color?: string | null };
 }) =>
   project?.logo ? (
     // eslint-disable-next-line @next/next/no-img-element
@@ -35,7 +37,11 @@ const ProjectDot = ({
     />
   );
 
-/** A project (and task) picker for one line. */
+/** A line on a company but none of its projects. */
+const onCompanyOnly = (l: WorklogLink) =>
+  !l.projectId && !!l.companyId && !isPersonalLink(l);
+
+/** A project (and task) picker for one line, or the company on its own. */
 const LinePicker = ({
   link,
   candidates,
@@ -43,34 +49,50 @@ const LinePicker = ({
 }: {
   link: WorklogLink;
   candidates: LinkCandidates;
-  onPick: (projectId: string | null, taskId: string | null) => void;
+  onPick: (
+    projectId: string | null,
+    taskId: string | null,
+    companyId?: string | null,
+  ) => void;
 }) => {
-  const companies = useMemo(() => {
-    const map = new Map<string, LinkCandidates['projects']>();
-    for (const p of candidates.projects)
-      map.set(p.companyName, [...(map.get(p.companyName) ?? []), p]);
-    return Array.from(map.entries());
-  }, [candidates.projects]);
+  const companies = useMemo(
+    () =>
+      candidates.companies.map((company) => ({
+        company,
+        projects: candidates.projects.filter((p) => p.companyId === company.id),
+      })),
+    [candidates.companies, candidates.projects],
+  );
   const tasks = candidates.tasks.filter((t) => t.projectId === link.projectId);
+  const value = link.projectId
+    ? link.projectId
+    : onCompanyOnly(link)
+      ? `${COMPANY_PREFIX}${link.companyId}`
+      : link.source === 'user'
+        ? NOT_PROJECT
+        : '';
 
   return (
     <div className="flex flex-wrap items-center gap-1.5">
       <select
         aria-label="Project"
-        value={link.projectId ?? (link.source === 'user' ? NOT_PROJECT : '')}
-        onChange={(e) =>
-          onPick(
-            e.target.value === NOT_PROJECT ? null : e.target.value || null,
-            null,
-          )
-        }
+        value={value}
+        onChange={(e) => {
+          const v = e.target.value;
+          if (v.startsWith(COMPANY_PREFIX))
+            onPick(null, null, v.slice(COMPANY_PREFIX.length));
+          else onPick(v === NOT_PROJECT ? null : v || null, null);
+        }}
         className="h-7 rounded-md border border-neutral-200 bg-white px-1.5 text-xs text-neutral-700"
       >
         {!link.projectId && link.source !== 'user' && (
           <option value="">Pick a project…</option>
         )}
-        {companies.map(([company, projects]) => (
-          <optgroup key={company} label={company}>
+        {companies.map(({ company, projects }) => (
+          <optgroup key={company.id} label={company.name}>
+            <option value={`${COMPANY_PREFIX}${company.id}`}>
+              General ({company.name})
+            </option>
             {projects.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
@@ -78,7 +100,7 @@ const LinePicker = ({
             ))}
           </optgroup>
         ))}
-        <option value={NOT_PROJECT}>Not project work</option>
+        <option value={NOT_PROJECT}>Not company work</option>
       </select>
       {link.projectId && tasks.length > 0 && (
         <select
@@ -198,6 +220,7 @@ export const WorklogLinks = ({
   const [candidates, setCandidates] = useState<LinkCandidates>({
     projects: [],
     tasks: [],
+    companies: [],
   });
   const [timeline, setTimeline] = useState<PointEvent[]>([]);
   const [claudeKeys, setClaudeKeys] = useState<string[]>([]);
@@ -221,6 +244,7 @@ export const WorklogLinks = ({
       setCandidates({
         projects: res?.data?.projects ?? [],
         tasks: res?.data?.tasks ?? [],
+        companies: res?.data?.companies ?? [],
       });
     } catch {
       // Linking is a helper; the worklog itself is already saved.
@@ -240,6 +264,7 @@ export const WorklogLinks = ({
     link: WorklogLink,
     projectId: string | null,
     taskId: string | null,
+    companyId: string | null = null,
   ) => {
     const before = links;
     const project = candidates.projects.find((p) => p.id === projectId);
@@ -249,7 +274,7 @@ export const WorklogLinks = ({
           ? {
               ...l,
               projectId,
-              companyId: project?.companyId ?? null,
+              companyId: project?.companyId ?? companyId,
               taskId,
               source: 'user',
               confidence: 1,
@@ -263,6 +288,7 @@ export const WorklogLinks = ({
         key: link.key,
         projectId,
         taskId,
+        companyId,
       });
     } catch {
       setLinks(before);
@@ -345,7 +371,7 @@ export const WorklogLinks = ({
           <LinePicker
             link={link}
             candidates={candidates}
-            onPick={(p, t) => pick(link, p, t)}
+            onPick={(p, t, c) => pick(link, p, t, c)}
           />
         </div>
       </li>
@@ -362,9 +388,26 @@ export const WorklogLinks = ({
       lines: links.filter((l) => l.projectId === project.id),
     }))
     .filter((g) => g.lines.length);
-  if (!byProject.length && !unplaced.length && !personal.length) return null;
+  const byCompany = candidates.companies
+    .map((company) => ({
+      company,
+      lines: links.filter(
+        (l) => onCompanyOnly(l) && l.companyId === company.id,
+      ),
+    }))
+    .filter((g) => g.lines.length);
+  if (
+    !byProject.length &&
+    !byCompany.length &&
+    !unplaced.length &&
+    !personal.length
+  )
+    return null;
 
-  const openGroup = byProject.find((g) => g.project.id === open);
+  const companyKey = (id: string) => `${COMPANY_PREFIX}${id}`;
+  const openLines =
+    byProject.find((g) => g.project.id === open)?.lines ??
+    byCompany.find((g) => companyKey(g.company.id) === open)?.lines;
 
   return (
     <div className="mx-4 mb-6 mt-2 flex flex-col gap-2 border-t border-neutral-100 pt-3">
@@ -387,6 +430,28 @@ export const WorklogLinks = ({
           >
             <ProjectDot project={project} />
             {project.name}
+            <span className="text-neutral-400">{lines.length}</span>
+          </button>
+        ))}
+        {byCompany.map(({ company, lines }) => (
+          <button
+            key={company.id}
+            type="button"
+            onClick={() =>
+              setOpen(
+                open === companyKey(company.id) ? null : companyKey(company.id),
+              )
+            }
+            title={`${company.name}: work on none of its projects`}
+            className={cn(
+              'flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors',
+              open === companyKey(company.id)
+                ? 'border-neutral-400 bg-neutral-100 text-neutral-900'
+                : 'border-neutral-200 text-neutral-600 hover:border-neutral-300',
+            )}
+          >
+            <ProjectDot project={company} />
+            {company.name} · General
             <span className="text-neutral-400">{lines.length}</span>
           </button>
         ))}
@@ -427,16 +492,17 @@ export const WorklogLinks = ({
         </ul>
       )}
 
-      {openGroup && (
+      {openLines && (
         <ul className="flex flex-col gap-1.5 rounded-lg bg-neutral-50 p-2">
-          {openGroup.lines.map(lineRow)}
+          {openLines.map(lineRow)}
         </ul>
       )}
 
       {unplaced.length > 0 && (
         <div className="flex flex-col gap-1.5 rounded-lg border border-amber-200 bg-amber-50 p-2">
           <p className="text-xs font-medium text-amber-800">
-            Which project {unplaced.length === 1 ? 'is this' : 'are these'} for?
+            Which project or company{' '}
+            {unplaced.length === 1 ? 'is this' : 'are these'} for?
           </p>
           <ul className="flex flex-col gap-1.5">{unplaced.map(lineRow)}</ul>
         </div>

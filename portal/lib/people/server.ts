@@ -293,9 +293,13 @@ export async function loadWork(
       isPersonal: true,
     });
   // Companies the viewer is in that the person no longer is, but has work in.
-  const missing = projects
-    .map((p) => p.companyId)
-    .filter((id) => !companies.some((c) => c.id === id));
+  const missing = [
+    ...projects.map((p) => p.companyId),
+    ...all.map((p) => p.companyId),
+  ].filter(
+    (id): id is string =>
+      !!id && id !== PERSONAL_COMPANY.id && !companies.some((c) => c.id === id),
+  );
   if (missing.length) {
     const extra: Company[] = await db.company.findMany({
       where: { id: { in: Array.from(new Set(missing)) } },

@@ -111,11 +111,17 @@ export type PointInput = {
   text: string;
   status: PointStatus;
   project?: string;
+  /** For company work that is on none of its projects. */
+  company?: string;
   task?: string;
   /** Personal work: private to the person, under their Personal company. */
   personal?: boolean;
   /** Where the point goes when the caller already found its task. */
-  place?: { companyId: string; projectId: string; taskId: string | null };
+  place?: {
+    companyId: string;
+    projectId: string | null;
+    taskId: string | null;
+  };
   /** What just happened, added to the point's timeline. */
   note?: string;
   /** An existing point to update (its key or its text), whatever `text` says. */
@@ -160,7 +166,10 @@ async function earlierPoint(userId: string, date: string, keys: string[]) {
   return null;
 }
 
-/** Finds a project or task by id or by name (case and spacing ignored). */
+/**
+ * Finds a project or task by id or by name (case and spacing ignored), or
+ * the company when the work is on none of its projects.
+ */
 function resolvePlace(point: PointInput, c: LinkCandidates) {
   if (point.place) return point.place;
   const same = (a: string, b: string) =>
@@ -173,12 +182,29 @@ function resolvePlace(point: PointInput, c: LinkCandidates) {
         (p) => p.id === point.project || same(p.name, point.project!),
       )
     : c.projects.find((p) => p.id === task?.projectId);
-  if (!project) return null;
+  if (!project) {
+    // A company named on its own, or in place of a project.
+    const name = point.company ?? point.project;
+    const company = name
+      ? c.companies.find((x) => x.id === name || same(x.name, name))
+      : undefined;
+    return company
+      ? { companyId: company.id, projectId: null, taskId: null }
+      : null;
+  }
   return {
     companyId: project.companyId,
     projectId: project.id,
     taskId: task && task.projectId === project.id ? task.id : null,
   };
+}
+
+/** Where a line went, as names: its project, or its company alone. */
+function placeNames(link: WorklogLink | undefined, c: LinkCandidates) {
+  const project = c.projects.find((p) => p.id === link?.projectId);
+  if (project) return { project: project.name };
+  const company = c.companies.find((x) => x.id === link?.companyId);
+  return { project: null, ...(company && { company: company.name }) };
 }
 
 /**
@@ -207,7 +233,7 @@ function linkTyped(links: WorklogLink[], works: unknown, points: PointInput[]) {
             projectId: target?.projectId ?? l.projectId,
             taskId: target?.taskId ?? l.taskId,
             confidence: 1,
-            source: target?.projectId ? 'user' : l.source,
+            source: target?.companyId ? 'user' : l.source,
           }
         : l,
     );
@@ -402,10 +428,11 @@ export async function logPoints(
   return {
     logged: results.map((r) => {
       const link = links.find((l) => l.key === r.key);
-      const project = candidates.projects.find((p) => p.id === link?.projectId);
       return {
         ...r,
-        project: r.personal ? PERSONAL_COMPANY.name : (project?.name ?? null),
+        ...(r.personal
+          ? { project: PERSONAL_COMPANY.name }
+          : placeNames(link, candidates)),
       };
     }),
     ...(linkedTyped.length && { linkedTyped }),
@@ -591,10 +618,9 @@ export async function tidyPoints(
         text: normalizeLine(p.text),
         status: p.status,
         merged: old.filter((l) => newKeyOf.get(l.key) === key).length,
-        project: p.personal
-          ? PERSONAL_COMPANY.name
-          : (candidates.projects.find((c) => c.id === link?.projectId)?.name ??
-            null),
+        ...(p.personal
+          ? { project: PERSONAL_COMPANY.name }
+          : placeNames(link, candidates)),
       };
     }),
     ...(drop.length && { dropped: drop.length }),

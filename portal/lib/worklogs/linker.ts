@@ -21,15 +21,22 @@ export type LinkCandidates = {
     goals: string[];
   })[];
   tasks: Pick<Task, 'id' | 'title' | 'projectId' | 'companyId'>[];
+  /** Companies the person belongs to: work that is on none of the projects. */
+  companies: {
+    id: string;
+    name: string;
+    color?: string | null;
+    logo?: string | null;
+  }[];
 };
 
 /** Whether the person leads the project or is on its team. */
 export const isOnTeam = isOnProjectTeam;
 
 /**
- * The projects and open tasks a user's lines may link to: projects they
- * lead or are on the team of, in companies they belong to (and the open
- * tasks in them, theirs first).
+ * The companies, projects and open tasks a user's lines may link to: the
+ * companies they belong to, the projects there they lead or are on the team
+ * of, and the open tasks in them, theirs first.
  */
 export async function linkCandidates(
   user: SessionUser,
@@ -37,7 +44,7 @@ export async function linkCandidates(
   const workspace = await getWorkspaceForUser(user);
   const mine = workspace.filter((w) => w.member);
   const companies = (mine.length ? mine : workspace).map((w) => w.company);
-  if (!companies.length) return { projects: [], tasks: [] };
+  if (!companies.length) return { projects: [], tasks: [], companies: [] };
 
   const projects: Project[] = (
     await db.project.findMany({
@@ -89,6 +96,12 @@ export async function linkCandidates(
       projectId: t.projectId,
       companyId: t.companyId,
     })),
+    companies: companies.map((c) => ({
+      id: c.id,
+      name: c.name,
+      color: c.color ?? null,
+      logo: c.logo ?? null,
+    })),
   };
 }
 
@@ -136,6 +149,7 @@ const NONE: Guess = {
 
 /** Name and task-title matching. Returns null when it cannot tell. */
 function matchByName(text: string, c: LinkCandidates): Guess | null {
+  const byCompany = c.companies.filter((x) => containsPhrase(text, x.name));
   const byName = c.projects.filter((p) => containsPhrase(text, p.name));
   const task = c.tasks
     .map((t) => ({ t, score: overlap(text, t.title) }))
@@ -158,11 +172,29 @@ function matchByName(text: string, c: LinkCandidates): Guess | null {
       confidence: 0.8,
       source: 'auto',
     };
+  // Named the company but none of its projects: company-wide work.
+  if (byCompany.length === 1 && !byName.length)
+    return {
+      companyId: byCompany[0].id,
+      projectId: null,
+      taskId: null,
+      confidence: 0.75,
+      source: 'auto',
+    };
   // Only one place this could go.
   if (c.projects.length === 1)
     return {
       companyId: c.projects[0].companyId,
       projectId: c.projects[0].id,
+      taskId: null,
+      confidence: 0.7,
+      source: 'auto',
+    };
+  // One company and none of its projects to pick from.
+  if (!c.projects.length && c.companies.length === 1)
+    return {
+      companyId: c.companies[0].id,
+      projectId: null,
       taskId: null,
       confidence: 0.7,
       source: 'auto',
@@ -179,7 +211,12 @@ async function matchWithGemini(
   c: LinkCandidates,
 ): Promise<Map<string, Guess>> {
   const out = new Map<string, Guess>();
-  if (!lines.length || !c.projects.length || !geminiKey()) return out;
+  if (
+    !lines.length ||
+    !(c.projects.length || c.companies.length) ||
+    !geminiKey()
+  )
+    return out;
 
   const model = new GoogleGenerativeAI(geminiKey()).getGenerativeModel({
     model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
@@ -192,6 +229,7 @@ async function matchWithGemini(
           type: SchemaType.OBJECT,
           properties: {
             line: { type: SchemaType.INTEGER },
+            companyId: { type: SchemaType.STRING, nullable: true },
             projectId: { type: SchemaType.STRING, nullable: true },
             taskId: { type: SchemaType.STRING, nullable: true },
             confidence: { type: SchemaType.NUMBER },
@@ -202,26 +240,31 @@ async function matchWithGemini(
     },
   });
 
-  const prompt = `You file a person's work log lines under the project they belong to.
+  const prompt = `You file a person's work log lines under the project they belong to, or under the company when the work is for the company but on none of its projects.
+Companies (id, name):
+${c.companies.map((x) => `- ${x.id} | ${x.name}`).join('\n') || '- none'}
 Projects (id, name, company, goals):
-${c.projects
-  .map(
-    (p) =>
-      `- ${p.id} | ${p.name} | ${p.companyName}${p.goals.length ? ` | goals: ${p.goals.join('; ')}` : ''}`,
-  )
-  .join('\n')}
+${
+  c.projects
+    .map(
+      (p) =>
+        `- ${p.id} | ${p.name} | ${p.companyName}${p.goals.length ? ` | goals: ${p.goals.join('; ')}` : ''}`,
+    )
+    .join('\n') || '- none'
+}
 Open tasks (id, project id, title):
 ${c.tasks.map((t) => `- ${t.id} | ${t.projectId} | ${t.title}`).join('\n') || '- none'}
 
 Work log lines:
 ${lines.map((l, i) => `${i}. ${l.text}`).join('\n')}
 
-For every line return its project id, the task id if the line is clearly about that task, and your confidence from 0 to 1. Use null and a low confidence when the line is not about any of these projects (for example meetings, admin, personal notes) or when you cannot tell.`;
+For every line return its project id, the task id if the line is clearly about that task, and your confidence from 0 to 1. When the line is clearly work for one of the companies but on none of its projects (for example company admin, hiring, team meetings), return that company id with a null project id. Use nulls and a low confidence for personal notes or when you cannot tell.`;
 
   try {
     const result = await model.generateContent(prompt);
     const rows = JSON.parse(result.response.text()) as {
       line: number;
+      companyId?: string | null;
       projectId?: string | null;
       taskId?: string | null;
       confidence: number;
@@ -229,7 +272,21 @@ For every line return its project id, the task id if the line is clearly about t
     for (const row of Array.isArray(rows) ? rows : []) {
       const line = lines[row.line];
       const project = c.projects.find((p) => p.id === row.projectId);
-      if (!line || !project || !(row.confidence >= MIN_CONFIDENCE)) continue;
+      const company = project
+        ? undefined
+        : c.companies.find((x) => x.id === row.companyId);
+      if (!line || !(row.confidence >= MIN_CONFIDENCE)) continue;
+      if (company) {
+        out.set(line.key, {
+          companyId: company.id,
+          projectId: null,
+          taskId: null,
+          confidence: Math.min(1, row.confidence),
+          source: 'auto',
+        });
+        continue;
+      }
+      if (!project) continue;
       const task = c.tasks.find(
         (t) => t.id === row.taskId && t.projectId === project.id,
       );

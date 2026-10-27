@@ -276,10 +276,13 @@ const countText = (g: { points: number; done: number; closedTasks: number }) =>
 const ProjectCard = ({
   group,
   companyColor,
+  noProjectName,
   defaultOpen,
 }: {
   group: ProjectGroup;
   companyColor?: string | null;
+  /** What the card for the company's work on none of its projects is called. */
+  noProjectName: string;
   defaultOpen: boolean;
 }) => {
   const [open, setOpen] = useState(defaultOpen);
@@ -303,7 +306,7 @@ const ProjectCard = ({
         />
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold text-white">
-            {project?.name ?? 'Not on a project'}
+            {project?.name ?? noProjectName}
           </p>
           <p className="truncate text-[11px] text-neutral-500">
             {countText(group)}
@@ -404,6 +407,11 @@ const CompanySection = ({
           key={p.project?.id ?? 'none'}
           group={p}
           companyColor={group.company?.color}
+          noProjectName={
+            group.company && !group.company.isPersonal
+              ? 'General'
+              : 'Not on a project'
+          }
           defaultOpen={i < openFirst}
         />
       ))}
@@ -417,7 +425,11 @@ const ShareBar = ({ groups }: { groups: CompanyGroup[] }) => {
     .flatMap((c) =>
       c.projects.map((p) => ({
         id: p.project?.id ?? `${c.company?.id ?? 'none'}:other`,
-        label: p.project?.name ?? c.company?.name ?? 'Not linked',
+        label:
+          p.project?.name ??
+          (c.company && !c.company.isPersonal
+            ? `${c.company.name} · General`
+            : (c.company?.name ?? 'Not linked')),
         color: p.project
           ? colorFor(p.project.id, p.project.color)
           : c.company?.isPersonal

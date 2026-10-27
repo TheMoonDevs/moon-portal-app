@@ -20,14 +20,15 @@ export type PagesData = {
   pages: ProjectPage[];
 };
 
+/** The first one is where a project opens. */
 export const VIEWS = [
+  { key: 'worklogs', label: 'Worklogs', icon: 'history_edu' },
   { key: 'objective', label: 'Objective', icon: 'flag' },
   { key: 'kpi', label: 'KPI', icon: 'monitoring' },
   { key: 'pages', label: 'Pages', icon: 'description' },
   { key: 'goals', label: 'Goals', icon: 'track_changes' },
   { key: 'schedule', label: 'Task Schedule', icon: 'calendar_month' },
   { key: 'members', label: 'Members', icon: 'group' },
-  { key: 'worklogs', label: 'Worklogs', icon: 'history_edu' },
 ] as const;
 
 export type ViewKey = (typeof VIEWS)[number]['key'];

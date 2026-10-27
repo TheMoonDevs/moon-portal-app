@@ -185,9 +185,14 @@ export async function planOptimise(user: SessionUser, worklogId: string) {
 
   const links = (worklog.links ?? []) as WorklogLink[];
   const candidates = await linkCandidates(user);
+  // A line on no project but linked to its company carries the company's name.
   const projectOf = (key: string) => {
-    const id = links.find((l) => l.key === key)?.projectId;
-    return candidates.projects.find((p) => p.id === id)?.name ?? null;
+    const link = links.find((l) => l.key === key);
+    return (
+      candidates.projects.find((p) => p.id === link?.projectId)?.name ??
+      candidates.companies.find((c) => c.id === link?.companyId)?.name ??
+      null
+    );
   };
   const moved = new Set(movedClaudeLines(worklog.works).map((l) => l.key));
   const lines: Line[] = sectionLines(worklog.works)
