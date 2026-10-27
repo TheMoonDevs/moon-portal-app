@@ -65,6 +65,7 @@ export async function runDueSchedules(
         goalId: schedule.goalId ?? null,
         goalPartId: schedule.goalPartId ?? null,
         scheduleId: schedule.id,
+        planId: schedule.planId ?? null,
         forDate: runOn,
         createdById: schedule.createdById,
         createdAt: now,

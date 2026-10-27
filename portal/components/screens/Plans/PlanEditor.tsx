@@ -1,6 +1,7 @@
 'use client';
 
 import type { User } from '@db/client';
+import type { ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { cn } from '@/lib/utils';
@@ -93,6 +94,7 @@ export const PlanEditor = ({
   onDelete,
   onBack,
   fresh,
+  extra,
 }: {
   plan: PlanView;
   projects: ProjectChoice[];
@@ -106,6 +108,8 @@ export const PlanEditor = ({
   onBack?: () => void;
   /** Just created: put the cursor in the title. */
   fresh?: boolean;
+  /** Shown under the steps, e.g. the plan's scheduled tasks. */
+  extra?: ReactNode;
 }) => {
   const [adding, setAdding] = useState('');
   const [byProject, setByProject] = useState(false);
@@ -427,6 +431,7 @@ export const PlanEditor = ({
             />
           </div>
         )}
+        {extra}
       </div>
     </div>
   );

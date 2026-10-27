@@ -1,4 +1,9 @@
-import type { Plan, PlanStep } from '@/models/workspace';
+import type {
+  Plan,
+  PlanStep,
+  ProjectGoal,
+  TaskSchedule,
+} from '@/models/workspace';
 
 export type Person = {
   id: string;
@@ -13,13 +18,18 @@ export type ProjectChoice = {
   color: string | null;
   logo: string | null;
   parentId: string | null;
+  goals: ProjectGoal[];
 };
 
 export type StepView = PlanStep & {
   task?: { id: string; status: string } | null;
 };
 
-export type PlanView = Omit<Plan, 'steps'> & { steps: StepView[] };
+export type PlanView = Omit<Plan, 'steps'> & {
+  steps: StepView[];
+  /** Scheduled tasks set up in the plan. */
+  schedules: TaskSchedule[];
+};
 
 export type PlansData = {
   plans: PlanView[];

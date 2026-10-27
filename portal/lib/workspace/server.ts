@@ -102,8 +102,8 @@ export interface CompanyGuardResult {
 }
 
 /**
- * Requires a signed-in user who holds `permission` inside `companyId`, either
- * from their own user-level permissions or from their roles in that company.
+ * Requires a signed-in member of `companyId` who holds `permission` there,
+ * from their roles in the company or their own user-level permissions.
  */
 export async function requireCompanyPermission(
   companyId: string | null | undefined,
@@ -119,10 +119,11 @@ export async function requireCompanyPermission(
     };
   }
   const company = await db.company.findFirst({ where: { id: companyId } });
-  if (!company) {
+  const access = company ? await getCompanyAccess(user.id, companyId) : null;
+  // Only members can see or open a company; to anyone else it does not exist.
+  if (!company || !access?.member) {
     return { response: fail(404, 'Company not found.'), user, access: null };
   }
-  const access = await getCompanyAccess(user.id, companyId);
   if (!isAllowedInCompany(user, access, permission)) {
     return { response: permissionDeniedResponse(permission), user, access };
   }
@@ -148,8 +149,8 @@ export interface WorkspaceCompany {
 }
 
 /**
- * The companies a user can see, each with the company permissions they hold
- * there. Users with `companies:read` at user level see every company.
+ * The companies a user belongs to, each with the company permissions they
+ * hold there. Only members see a company, whatever their portal role.
  */
 export async function getWorkspaceForUser(
   user: SessionUser,
@@ -158,23 +159,16 @@ export async function getWorkspaceForUser(
   const memberships: CompanyMember[] = await db.companyMember.findMany({
     where: { userId: user.id, status: MEMBER_STATUS.ACTIVE },
   });
-  const seesAll = isAllowedInCompany(user, null, 'companies:read');
-
   const statusFilter = includeArchived ? {} : { status: COMPANY_STATUS.ACTIVE };
-  const companies: Company[] = seesAll
+  const companies: Company[] = memberships.length
     ? await db.company.findMany({
-        where: statusFilter,
+        where: {
+          ...statusFilter,
+          id: { in: memberships.map((m) => m.companyId) },
+        },
         orderBy: { name: 'asc' },
       })
-    : memberships.length
-      ? await db.company.findMany({
-          where: {
-            ...statusFilter,
-            id: { in: memberships.map((m) => m.companyId) },
-          },
-          orderBy: { name: 'asc' },
-        })
-      : [];
+    : [];
 
   const companyIds = companies.map((c) => c.id);
   const roles: CompanyRole[] = companyIds.length

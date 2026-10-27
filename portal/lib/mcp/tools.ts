@@ -8,6 +8,7 @@ import { getLook, saveLook } from '@/lib/avatar/server';
 import { db } from '@/lib/mongodb/db-client';
 import type { SessionUser } from '@/lib/permissions/server';
 import { syncTaskPoints } from '@/lib/progress/server';
+import { isOnTeam } from '@/lib/worklogs/linker';
 import { PERSONAL_COMPANY } from '@/lib/worklogs/personal';
 import { goalHistory, toDay } from '@/lib/workspace/projects';
 import { runDueSchedules } from '@/lib/workspace/schedules';
@@ -22,6 +23,7 @@ import {
 
 import { HIRING_TOOLS } from './hiring';
 import { PLAN_TOOLS } from './plans';
+import { SCHEDULE_TOOLS } from './schedules';
 import { companiesWith, type Tool, ToolError } from './shared';
 import type { PointInput, PointStatus } from './worklog';
 import { claudeLines, logPoints, POINT_STATUSES, todayFor } from './worklog';
@@ -148,6 +150,7 @@ export const TOOLS: Tool[] = [
           name: p.name,
           company: companies.find((c) => c.id === p.companyId)?.name,
           effort: p.effort ?? null,
+          onTeam: isOnTeam(p, user.id),
           ...(p.parentId && { parent: byId.get(p.parentId)?.name ?? null }),
           goals: (p.goals ?? []).map((g) =>
             goalSummary(
@@ -172,7 +175,7 @@ export const TOOLS: Tool[] = [
   {
     name: 'log_work',
     title: 'Log work points',
-    description: `Writes work points into the "Claude" section of the person's worklog for the day, so they can follow progress in the portal. Log a point when you start a piece of work (doing) and log it again with the same text when it ends (done, not_done or blocked); same text updates the line instead of adding another. Use waiting when you need the person's permission or input. Keep each point one short line about the outcome, in plain words, never secrets or credentials. Name the project (and task) when you know it; otherwise the portal links it. When the project has no task for the work yet, name the task (or the goal it counts towards) and the portal creates it, already done for a done point; set completeTask to finish an existing task too. Work done early for a later week: set forDate to the day it was scheduled for, so it counts towards that week's goal (the line is still logged today). Set personal for the person's own private work (not for any company): only they will ever see it.`,
+    description: `Writes work points into the "Claude" section of the person's worklog for the day, so they can follow progress in the portal. Log a point when you start a piece of work (doing) and log it again with the same text when it ends (done, not_done or blocked); same text updates the line instead of adding another. Use waiting when you need the person's permission or input. Keep each point one short line about the outcome, in plain words, never secrets or credentials. Name the project (and task) when you know it; otherwise the portal links it. Work can only be logged to projects the person leads or is on the team of (onTeam in get_context). When the project has no task for the work yet, name the task (or the goal it counts towards) and the portal creates it, already done for a done point; set completeTask to finish an existing task too. Work done early for a later week: set forDate to the day it was scheduled for, so it counts towards that week's goal (the line is still logged today). Set personal for the person's own private work (not for any company): only they will ever see it.`,
     inputSchema: {
       type: 'object',
       properties: {
@@ -497,6 +500,7 @@ export const TOOLS: Tool[] = [
   },
   ...WORKSPACE_TOOLS,
   ...PLAN_TOOLS,
+  ...SCHEDULE_TOOLS,
   ...HIRING_TOOLS,
 ];
 

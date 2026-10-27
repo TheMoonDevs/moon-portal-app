@@ -15,7 +15,7 @@ import { COMPANY_STATUS, MEMBER_STATUS } from '@/models/workspace';
 
 export const dynamic = 'force-dynamic';
 
-/** Companies the caller can see (all of them for admins). */
+/** The companies the caller is a member of. */
 export async function GET(request: NextRequest) {
   const { response, user } = await requireUser();
   if (response || !user)

@@ -21,9 +21,18 @@ export type LinkCandidates = {
   tasks: Pick<Task, 'id' | 'title' | 'projectId' | 'companyId'>[];
 };
 
+/** Whether the person leads the project or is on its team. */
+export const isOnTeam = (
+  project: { leadIds?: string[] | null; memberIds?: string[] | null },
+  userId: string,
+) =>
+  (project.leadIds ?? []).includes(userId) ||
+  (project.memberIds ?? []).includes(userId);
+
 /**
- * The projects and open tasks a user's lines may link to: projects in the
- * companies they belong to (and tasks in them, theirs first).
+ * The projects and open tasks a user's lines may link to: projects they
+ * lead or are on the team of, in companies they belong to (and the open
+ * tasks in them, theirs first).
  */
 export async function linkCandidates(
   user: SessionUser,
@@ -33,12 +42,14 @@ export async function linkCandidates(
   const companies = (mine.length ? mine : workspace).map((w) => w.company);
   if (!companies.length) return { projects: [], tasks: [] };
 
-  const projects: Project[] = await db.project.findMany({
-    where: {
-      companyId: { in: companies.map((c) => c.id) },
-      status: { notIn: [PROJECT_STATUS.ARCHIVED] },
-    },
-  });
+  const projects: Project[] = (
+    await db.project.findMany({
+      where: {
+        companyId: { in: companies.map((c) => c.id) },
+        status: { notIn: [PROJECT_STATUS.ARCHIVED] },
+      },
+    })
+  ).filter((p: Project) => isOnTeam(p, user.id));
   const tasks: Task[] = projects.length
     ? await db.task.findMany({
         where: {

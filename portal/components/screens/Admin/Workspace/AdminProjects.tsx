@@ -300,6 +300,8 @@ export const AdminProjects = ({
   const [resultsFor, setResultsFor] = useState<ProjectRow | null>(null);
   const [schedulesFor, setSchedulesFor] = useState<ProjectRow | null>(null);
   const [busy, setBusy] = useState(false);
+  const [moving, setMoving] = useState<ProjectRow | null>(null);
+  const [moveTo, setMoveTo] = useState('');
 
   const companyId = selectedCompanyId;
 
@@ -346,6 +348,32 @@ export const AdminProjects = ({
   const filtered = ordered.filter((p) =>
     p.name.toLowerCase().includes(search.trim().toLowerCase()),
   );
+
+  // Companies a project can move to: any other where they can add projects.
+  const moveTargets = companies.filter(
+    (c) => c.company.id !== companyId && can(c.company.id, 'projects:create'),
+  );
+
+  const move = async () => {
+    if (!moving || !moveTo) return;
+    setBusy(true);
+    try {
+      const res = await PortalSdk.postData(`/api/projects/${moving.id}/move`, {
+        companyId: moveTo,
+      });
+      const name = companies.find((c) => c.company.id === moveTo)?.company.name;
+      const moved = res?.data?.moved ?? 1;
+      toast.success(
+        `Moved to ${name}${moved > 1 ? ` with ${moved - 1} sub-project${moved > 2 ? 's' : ''}` : ''}`,
+      );
+      setMoving(null);
+      load();
+    } catch (err) {
+      toast.error(errorText(err));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const archive = async () => {
     if (!archiving) return;
@@ -585,6 +613,17 @@ export const AdminProjects = ({
                         label="Results"
                         onClick={() => setResultsFor(project)}
                       />
+                      {can(project.companyId, 'projects:edit') &&
+                        moveTargets.length > 0 && (
+                          <IconAction
+                            icon="drive_file_move"
+                            label="Move to another company"
+                            onClick={() => {
+                              setMoveTo(moveTargets[0].company.id);
+                              setMoving(project);
+                            }}
+                          />
+                        )}
                       {can(project.companyId, 'projects:edit') && (
                         <IconAction
                           icon="palette"
@@ -656,6 +695,32 @@ export const AdminProjects = ({
         initial={branding?.brandKit}
         onSaved={load}
       />
+      <AdminModal
+        open={!!moving}
+        onOpenChange={(open) => !open && setMoving(null)}
+        size="sm"
+        icon="drive_file_move"
+        title={`Move ${moving?.name ?? 'project'}`}
+        description="Its goals, tasks, scheduled tasks, results and sub-projects go with it."
+        footer={
+          <>
+            <AdminButton tone="ghost" size="sm" onClick={() => setMoving(null)}>
+              Cancel
+            </AdminButton>
+            <AdminButton tone="primary" size="sm" loading={busy} onClick={move}>
+              Move
+            </AdminButton>
+          </>
+        }
+      >
+        <Field label="To">
+          <CompanyPicker
+            companies={moveTargets}
+            value={moveTo}
+            onChange={setMoveTo}
+          />
+        </Field>
+      </AdminModal>
       <ConfirmDialog
         open={!!archiving}
         onOpenChange={(open) => !open && setArchiving(null)}

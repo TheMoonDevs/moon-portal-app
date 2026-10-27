@@ -193,6 +193,8 @@ export type TaskSchedule = Loose<
     /** Next run date, YYYY-MM-DD. */
     nextRunOn: string;
     lastRunOn?: Nullable<string>;
+    /** The plan it was set up in; its tasks are linked to that plan. */
+    planId?: Nullable<string>;
     createdById: string;
   }
 >;
