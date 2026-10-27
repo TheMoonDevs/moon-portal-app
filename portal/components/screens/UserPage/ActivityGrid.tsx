@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 
 /*
  * Six months of worklogs at a glance: a square per day, brighter the more
- * points were logged. Picking a square opens that week.
+ * points were logged. Picking a square opens that day.
  */
 
 const LEVELS = [
