@@ -12,8 +12,9 @@ import { isPoint, rowKey } from './rows';
 import type { LinkedTask } from './useDayLog';
 
 /*
- * How the day's rows show: grouped by project, the assistant's lines under
- * the point they are part of, and where each point came from. Pure.
+ * How the day's rows show: one sheet in the order they were written, each
+ * point with the project it is in, the assistant's lines under the point
+ * they are part of, and where each point came from. Pure.
  */
 
 export type PointView = {
@@ -25,6 +26,8 @@ export type PointView = {
   subs: SubView[];
   /** An assistant's point with nowhere to go yet: it asks with a "?". */
   asks: boolean;
+  /** Where the point is: its project, company, or nowhere yet. */
+  place: Place;
 };
 
 export type SubView = {
@@ -32,6 +35,8 @@ export type SubView = {
   link: WorklogLink | null;
   events: PointEvent[];
 };
+
+export type Place = Omit<GroupView, 'points'>;
 
 export type GroupView = {
   /** `p:<projectId>`, `c:<companyId>`, `none` or `personal`. */
@@ -44,6 +49,13 @@ export type GroupView = {
   section: string;
   companyId?: string;
   points: PointView[];
+};
+
+const NO_PLACE: Place = {
+  id: 'none',
+  kind: 'none',
+  name: 'Not on a project yet',
+  section: 'general',
 };
 
 const PROJECT_SECTIONS_EXCLUDED = new Set(['general', 'claude']);
@@ -103,6 +115,7 @@ export function buildDay({
       origin: isPoint(row) ? originFor(row, link) : null,
       subs: [],
       asks: false,
+      place: NO_PLACE,
     });
   }
 
@@ -134,6 +147,7 @@ export function buildDay({
       origin: originFor(row, link),
       subs: [],
       asks: !link?.taskId,
+      place: NO_PLACE,
     });
   }
 
@@ -199,6 +213,7 @@ export function buildDay({
     const view = views.get(row.id);
     if (!view) continue;
     const group = groupFor(view);
+    view.place = { ...group, points: undefined } as Place;
     const seen = groups.get(group.id) ?? group;
     seen.points.push(view);
     groups.set(group.id, seen);
@@ -214,5 +229,9 @@ export function buildDay({
           : 3;
   const list = Array.from(groups.values()).sort((a, b) => rank(a) - rank(b));
   const points = list.flatMap((g) => g.points).filter((p) => isPoint(p.row));
-  return { groups: list, points };
+  // Every point one after another, as written.
+  const sheet = shown
+    .map((row) => views.get(row.id))
+    .filter((v): v is PointView => !!v);
+  return { groups: list, points, sheet };
 }

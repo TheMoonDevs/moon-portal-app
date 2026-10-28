@@ -5,8 +5,9 @@ import { WorklogViewPageWrapper } from '@/components/screens/Worklogs/WorklogVie
 import media from '@/styles/media';
 
 /**
- * Older links to one worklog. A day's log opens the worklog page on that
- * day; other kinds of log (and `classic=1`) keep the markdown editor.
+ * One worklog on its own page, as a phone opens a day. A day's log opens on
+ * the day sheet; other kinds of log (and `classic=1`) keep the markdown
+ * editor.
  */
 export default function WorklogViewPage({
   params,
@@ -21,7 +22,7 @@ export default function WorklogViewPage({
   if (dayLog && !searchParams?.classic)
     return (
       <PageAccess isAuthRequired={true}>
-        <DayLogPage initialDate={searchParams?.date} />
+        <DayLogPage initialDate={searchParams?.date} layout="day" />
         <Bottombar visible={true} />
       </PageAccess>
     );

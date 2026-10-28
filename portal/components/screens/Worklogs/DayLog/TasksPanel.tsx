@@ -79,14 +79,14 @@ const TaskRow = ({
   };
   return (
     <div>
-      <div className="group flex items-start gap-2.5 rounded-lg px-2 py-1.5 hover:bg-white/[0.03]">
+      <div className="group flex items-start gap-2.5 rounded-lg px-2 py-1.5 hover:bg-white/[0.03] auto-light:hover:bg-black/[0.03]">
         <button
           type="button"
           aria-label="Mark the task done"
           title="Mark the task done"
           disabled={!!busy}
           onClick={() => run('done', onDone)}
-          className="mt-0.5 text-[18px] text-neutral-600 hover:text-emerald-400"
+          className="mt-0.5 text-[18px] text-neutral-600 hover:text-emerald-400 auto-light:text-neutral-400 auto-light:hover:text-emerald-600"
         >
           {busy === 'done' ? (
             <Spin className="size-4" />
@@ -103,11 +103,16 @@ const TaskRow = ({
               <Icon name="subdirectory_arrow_right" className="text-[12px]" />
               <span className="truncate">After {after.title}</span>
               {after.status === 'DONE' && (
-                <Icon name="check" className="text-[12px] text-emerald-400" />
+                <Icon
+                  name="check"
+                  className="text-[12px] text-emerald-400 auto-light:text-emerald-600"
+                />
               )}
             </p>
           )}
-          <p className="text-sm leading-6 text-neutral-100">{task.title}</p>
+          <p className="text-sm leading-6 text-neutral-100 auto-light:text-neutral-900">
+            {task.title}
+          </p>
           <p className="flex flex-wrap items-center gap-x-2 text-[11px] text-neutral-500">
             {project && (
               <span className="flex min-w-0 items-center gap-1.5">
@@ -119,7 +124,11 @@ const TaskRow = ({
               </span>
             )}
             {when && (
-              <span className={cn(when.late && 'text-rose-300')}>
+              <span
+                className={cn(
+                  when.late && 'text-rose-300 auto-light:text-rose-700',
+                )}
+              >
                 {when.text}
               </span>
             )}
@@ -134,10 +143,10 @@ const TaskRow = ({
           title="Add a follow-up task: the next step after this one"
           onClick={() => setFollowing((v) => !v)}
           className={cn(
-            'mt-0.5 size-7 shrink-0 items-center justify-center rounded-md text-neutral-500 hover:bg-white/[0.08] hover:text-white',
+            'mt-0.5 size-7 shrink-0 items-center justify-center rounded-md text-neutral-500 hover:bg-white/[0.08] hover:text-white auto-light:hover:bg-black/[0.08] auto-light:hover:text-neutral-950',
             // Only on hover (or focus) on wider screens, so titles keep the room.
             following
-              ? 'flex bg-white/[0.08] text-white'
+              ? 'flex bg-white/[0.08] text-white auto-light:bg-black/[0.08] auto-light:text-neutral-950'
               : 'flex md:hidden md:group-focus-within:flex md:group-hover:flex',
           )}
         >
@@ -146,7 +155,7 @@ const TaskRow = ({
         {onDay ? (
           <span
             title="Already a point on this day"
-            className="mt-1 text-[16px] text-emerald-400/70"
+            className="mt-1 text-[16px] text-emerald-400/70 auto-light:text-emerald-600/70"
           >
             <Icon name="playlist_add_check" />
           </span>
@@ -156,7 +165,7 @@ const TaskRow = ({
             disabled={!!busy}
             onClick={() => run('add', onAdd)}
             title="Put it on this day"
-            className="mt-0.5 flex h-7 shrink-0 items-center gap-1 rounded-md border border-white/10 px-2 text-[11px] font-medium text-neutral-300 hover:bg-white/[0.08] hover:text-white md:hidden md:group-focus-within:flex md:group-hover:flex"
+            className="mt-0.5 flex h-7 shrink-0 items-center gap-1 rounded-md border border-white/10 px-2 text-[11px] font-medium text-neutral-300 hover:bg-white/[0.08] hover:text-white auto-light:border-black/10 auto-light:text-neutral-700 auto-light:hover:bg-black/[0.08] auto-light:hover:text-neutral-950 md:hidden md:group-focus-within:flex md:group-hover:flex"
           >
             {busy === 'add' ? (
               <Spin className="size-3" />
@@ -168,7 +177,7 @@ const TaskRow = ({
         )}
       </div>
       {following && (
-        <div className="mb-1 ml-9 mr-2 flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-1.5">
+        <div className="mb-1 ml-9 mr-2 flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-1.5 auto-light:border-black/10 auto-light:bg-black/[0.03]">
           <Icon
             name="subdirectory_arrow_right"
             className="text-[14px] text-neutral-500"
@@ -182,7 +191,7 @@ const TaskRow = ({
               if (e.key === 'Escape') setFollowing(false);
             }}
             placeholder="Next step after this…"
-            className="min-w-0 flex-1 bg-transparent text-sm text-neutral-100 placeholder:text-neutral-600 focus:outline-none"
+            className="min-w-0 flex-1 bg-transparent text-sm text-neutral-100 placeholder:text-neutral-600 focus:outline-none auto-light:text-neutral-900 auto-light:placeholder:text-neutral-400"
           />
           {saving && <Spin className="size-3" />}
         </div>
@@ -276,7 +285,9 @@ export const TasksPanel = ({
           <h4 className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
             {title}
           </h4>
-          <span className="text-[11px] text-neutral-600">{list.length}</span>
+          <span className="text-[11px] text-neutral-600 auto-light:text-neutral-400">
+            {list.length}
+          </span>
           {extra}
         </div>
         {list.map((t) => (
@@ -297,11 +308,7 @@ export const TasksPanel = ({
 
   const SHOW = 8;
   return (
-    <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-3">
-      <div className="mb-3 flex items-center justify-between px-2">
-        <h3 className="text-sm font-semibold text-white">Your tasks</h3>
-        <span className="text-[11px] text-neutral-500">{all.length} open</span>
-      </div>
+    <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-3 auto-light:border-black/10 auto-light:bg-white">
       {!tasks ? (
         <div className="flex justify-center py-6">
           <Spin className="size-4" />
@@ -322,7 +329,7 @@ export const TasksPanel = ({
               <button
                 type="button"
                 onClick={() => add(missing.map((t) => t.id))}
-                className="ml-auto text-[11px] font-medium text-sky-300 hover:text-sky-200"
+                className="ml-auto text-[11px] font-medium text-sky-300 hover:text-sky-200 auto-light:text-sky-700 auto-light:hover:text-sky-700"
               >
                 Add all {missing.length}
               </button>
@@ -334,7 +341,7 @@ export const TasksPanel = ({
             <button
               type="button"
               onClick={() => setShowAll((v) => !v)}
-              className="px-2 text-left text-xs text-neutral-500 hover:text-neutral-300"
+              className="px-2 text-left text-xs text-neutral-500 hover:text-neutral-300 auto-light:hover:text-neutral-700"
             >
               {showAll ? 'Show fewer' : `Show all ${rest.length}`}
             </button>

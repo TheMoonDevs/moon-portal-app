@@ -16,17 +16,17 @@ export const ORIGIN_STYLE: Record<
   planned: {
     bar: 'bg-sky-400',
     dot: 'bg-sky-400',
-    tag: 'border-sky-500/20 bg-sky-500/10 text-sky-300',
+    tag: 'border-sky-500/20 bg-sky-500/10 text-sky-300 auto-light:text-sky-700',
   },
   unexpected: {
     bar: 'bg-amber-400',
     dot: 'bg-amber-400',
-    tag: 'border-amber-500/20 bg-amber-500/10 text-amber-300',
+    tag: 'border-amber-500/20 bg-amber-500/10 text-amber-300 auto-light:text-amber-700',
   },
   delayed: {
     bar: 'bg-rose-400',
     dot: 'bg-rose-400',
-    tag: 'border-rose-500/20 bg-rose-500/10 text-rose-300',
+    tag: 'border-rose-500/20 bg-rose-500/10 text-rose-300 auto-light:text-rose-700',
   },
 };
 
@@ -65,7 +65,7 @@ export const OriginBar = ({
   const total = ORIGIN_KEYS.reduce((n, k) => n + counts[k], 0);
   return (
     <div className={className}>
-      <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
+      <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06] auto-light:bg-black/[0.06]">
         {total > 0 &&
           ORIGIN_KEYS.map((k) =>
             counts[k] ? (
@@ -82,11 +82,11 @@ export const OriginBar = ({
           <span
             key={k}
             title={POINT_ORIGINS[k].hint}
-            className="flex items-center gap-1.5 text-neutral-400"
+            className="flex items-center gap-1.5 text-neutral-400 auto-light:text-neutral-500"
           >
             <span className={cn('size-2 rounded-full', ORIGIN_STYLE[k].dot)} />
             {POINT_ORIGINS[k].label}
-            <span className="font-semibold tabular-nums text-neutral-100">
+            <span className="font-semibold tabular-nums text-neutral-100 auto-light:text-neutral-900">
               {counts[k]}
             </span>
             {done && counts[k] > 0 && (

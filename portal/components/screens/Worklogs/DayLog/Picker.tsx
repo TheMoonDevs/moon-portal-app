@@ -95,14 +95,14 @@ export const PickerList = ({
         }
       }}
     >
-      <div className="flex items-center gap-2 border-b border-white/[0.07] px-3">
+      <div className="flex items-center gap-2 border-b border-white/[0.07] px-3 auto-light:border-black/10">
         <Icon name="search" className="text-[16px] text-neutral-500" />
         <input
           autoFocus={autoFocus}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={placeholder}
-          className="h-10 flex-1 bg-transparent text-sm placeholder:text-neutral-600 focus:outline-none"
+          className="h-10 flex-1 bg-transparent text-sm placeholder:text-neutral-600 focus:outline-none auto-light:placeholder:text-neutral-400"
         />
       </div>
       <div
@@ -136,13 +136,15 @@ export const PickerList = ({
                 onClick={() => onPick(option)}
                 className={cn(
                   'flex w-full items-start gap-2 rounded-lg px-2.5 py-1.5 text-left text-sm',
-                  i === active ? 'bg-white/[0.08]' : 'hover:bg-white/[0.04]',
+                  i === active
+                    ? 'bg-white/[0.08] auto-light:bg-black/[0.08]'
+                    : 'hover:bg-white/[0.04] auto-light:hover:bg-black/[0.04]',
                 )}
               >
                 {option.icon ? (
                   <Icon
                     name={option.icon}
-                    className="mt-0.5 text-[15px] text-neutral-400"
+                    className="mt-0.5 text-[15px] text-neutral-400 auto-light:text-neutral-500"
                   />
                 ) : (
                   <span
@@ -163,7 +165,7 @@ export const PickerList = ({
           );
         })}
       </div>
-      <p className="border-t border-white/[0.07] px-3 py-1.5 text-[10px] text-neutral-600">
+      <p className="border-t border-white/[0.07] px-3 py-1.5 text-[10px] text-neutral-600 auto-light:border-black/10 auto-light:text-neutral-400">
         Type to filter · ↑↓ to move · Enter to pick · Esc to close
       </p>
     </div>
@@ -194,7 +196,7 @@ export const Picker = ({
           align={align}
           sideOffset={6}
           collisionPadding={12}
-          className="z-[1300] w-[min(340px,calc(100vw-24px))] overflow-hidden rounded-xl border border-white/10 bg-neutral-900 text-neutral-100 shadow-2xl shadow-black/50"
+          className="auto-theme z-[1300] w-[min(340px,calc(100vw-24px))] overflow-hidden rounded-xl border border-white/10 bg-neutral-900 text-neutral-100 shadow-2xl shadow-black/50 auto-light:border-black/10 auto-light:bg-white auto-light:text-neutral-900 auto-light:shadow-black/10"
         >
           {open && (
             <PickerList
