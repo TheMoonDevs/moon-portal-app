@@ -93,6 +93,8 @@ export async function PATCH(request: Request, { params }: Params) {
   ) {
     return fail(400, 'Unknown project status.');
   }
+  if (project.isCore && data.status === PROJECT_STATUS.ARCHIVED)
+    return fail(400, "The company's CORE project can't be archived.");
   if ('brandKit' in data) {
     const kit = sanitizeBrandKit(data.brandKit);
     data.brandKit = kit;
@@ -145,6 +147,8 @@ export async function DELETE(_request: Request, { params }: Params) {
   );
   if (response || !project)
     return response ?? fail(401, 'Authentication required.');
+  if (project.isCore)
+    return fail(400, "The company's CORE project can't be archived.");
 
   const updated = await db.project.update({
     where: { id: project.id },
