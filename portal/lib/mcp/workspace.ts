@@ -7,6 +7,11 @@ import { syncGoalSchedules } from '@/lib/workspace/goalSchedules';
 import { updateGoalProgress } from '@/lib/workspace/goalTally';
 import { moveProject } from '@/lib/workspace/moveProject';
 import {
+  canCreateDirectly,
+  createProject,
+  requestProject,
+} from '@/lib/workspace/projectRequests';
+import {
   PERIOD_LABELS,
   runsOn,
   sanitizeGoals,
@@ -23,7 +28,6 @@ import {
   checkParent,
   getPublicUsers,
   getWorkspaceForUser,
-  slugify,
 } from '@/lib/workspace/server';
 import type {
   CompanyMember,
@@ -42,6 +46,12 @@ import {
 } from '@/models/workspace';
 
 import { allowsInProject, companiesWith, type Tool, ToolError } from './shared';
+
+/** What the person may do in a company. */
+async function permissionsIn(user: SessionUser, companyId: string) {
+  const workspace = await getWorkspaceForUser(user);
+  return workspace.find((w) => w.company.id === companyId)?.permissions ?? [];
+}
 
 /*
  * Tools for running the workspace from a conversation: projects (effort and
@@ -371,7 +381,7 @@ export const WORKSPACE_TOOLS: Tool[] = [
     name: 'create_project',
     title: 'Create a project',
     description:
-      'Creates a project in one of the person\'s companies. Effort is how much work it takes to keep going (LOW, MEDIUM or HIGH). A project can sit under a parent project of the same company, e.g. "Lyrics videos" under "Music channel". Confirm the name with the person first.',
+      'Creates a project in one of the person\'s companies, with them as its lead. Effort is how much work it takes to keep going (LOW, MEDIUM or HIGH). A project can sit under a parent project of the same company, e.g. "Lyrics videos" under "Music channel". Company owners create projects straight away and leads of a project add sub-projects under it; anyone else sends a request (say why in note) that an owner approves. Confirm the name with the person first.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -382,6 +392,11 @@ export const WORKSPACE_TOOLS: Tool[] = [
         parent: {
           type: 'string',
           description: 'Parent project id or name (optional).',
+        },
+        note: {
+          type: 'string',
+          description:
+            'Why the project is needed, shown to whoever approves a request.',
         },
       },
       required: ['company', 'name'],
@@ -407,27 +422,34 @@ export const WORKSPACE_TOOLS: Tool[] = [
         : null;
       if (parent && parent.companyId !== company.id)
         throw new ToolError('The parent must be in the same company.');
-      const now = new Date().toISOString();
-      const project: Project = await db.project.create({
-        data: {
-          companyId: company.id,
-          name,
-          slug: slugify(name),
-          description: text(args?.description, 4000) || null,
-          status: PROJECT_STATUS.ACTIVE,
-          color: null,
-          icon: null,
-          logo: null,
-          leadIds: [user.id],
-          memberIds: [],
-          goals: [],
-          effort: effort ?? PROJECT_EFFORT.MEDIUM,
-          parentId: parent?.id ?? null,
-          createdById: user.id,
-          createdAt: now,
-          updatedAt: now,
-        },
-      });
+      const input = {
+        companyId: company.id,
+        name,
+        description: text(args?.description, 4000) || null,
+        leadIds: [user.id],
+        effort: effort ?? PROJECT_EFFORT.MEDIUM,
+        parentId: parent?.id ?? null,
+      };
+      // Owners, and leads of the parent, create it; others ask for it.
+      const access = { rolePermissions: await permissionsIn(user, company.id) };
+      if (
+        !(await canCreateDirectly(user, access, company.id, input.parentId))
+      ) {
+        const request = await requestProject(
+          { ...input, note: text(args?.note, 1000) || null },
+          user,
+        );
+        return {
+          requested: {
+            id: request.id,
+            name: request.name,
+            company: company.name,
+            parent: parent?.name ?? null,
+          },
+          note: 'Only company owners (or leads of the parent project) create projects straight away, so this was sent to them as a request. The person becomes its lead once it is approved.',
+        };
+      }
+      const project = await createProject(input, user.id);
       return {
         project: {
           id: project.id,

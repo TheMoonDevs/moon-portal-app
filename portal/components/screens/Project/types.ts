@@ -12,6 +12,15 @@ export type ProjectData = {
   tasks: Task[];
   /** The project's leads and team. */
   people: Person[];
+  /** The company's projects, to find the one above and the ones under. */
+  tree?: {
+    id: string;
+    companyId: string;
+    name: string;
+    color?: string | null;
+    parentId?: string | null;
+    leadIds?: string[] | null;
+  }[];
 };
 
 export type PagesData = {

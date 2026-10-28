@@ -141,6 +141,40 @@ export type Project = Loose<
   }
 >;
 
+export enum PROJECT_REQUEST_STATUS {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  DECLINED = 'DECLINED',
+  /** The person who asked took it back. */
+  WITHDRAWN = 'WITHDRAWN',
+}
+
+/**
+ * A project someone asked for but may not create themselves. Approving it
+ * creates the project, with the person who asked as its lead.
+ */
+export type ProjectRequest = Loose<
+  BaseModel & {
+    companyId: string;
+    name: string;
+    description?: Nullable<string>;
+    color?: Nullable<string>;
+    effort?: Nullable<PROJECT_EFFORT>;
+    /** The project it would sit under. */
+    parentId?: Nullable<string>;
+    /** Why it is needed, for whoever approves it. */
+    note?: Nullable<string>;
+    status: PROJECT_REQUEST_STATUS;
+    requestedById: string;
+    reviewedById?: Nullable<string>;
+    reviewedAt?: Nullable<DateValue>;
+    /** Shown to the person who asked, e.g. why it was declined. */
+    reviewNote?: Nullable<string>;
+    /** The project made when it was approved. */
+    projectId?: Nullable<string>;
+  }
+>;
+
 export type Task = Loose<
   BaseModel & {
     companyId: string;
@@ -320,6 +354,7 @@ export const companySchemas = createCrudSchemas<Company>();
 export const companyRoleSchemas = createCrudSchemas<CompanyRole>();
 export const companyMemberSchemas = createCrudSchemas<CompanyMember>();
 export const projectSchemas = createCrudSchemas<Project>();
+export const projectRequestSchemas = createCrudSchemas<ProjectRequest>();
 export const taskSchemas = createCrudSchemas<Task>();
 export const taskScheduleSchemas = createCrudSchemas<TaskSchedule>();
 export const projectResultSchemas = createCrudSchemas<ProjectResult>();
