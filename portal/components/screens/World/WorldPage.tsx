@@ -18,9 +18,9 @@ import type {
 import {
   BOT_STATE_COLOR,
   BOT_STATE_LABEL,
+  FLOORS,
+  goalTowers,
   GUIDANCE_WEIGHT,
-  LEVEL_STEP,
-  siteLevel,
   STATUS_EMOJI,
 } from '@/lib/world/state';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
@@ -211,27 +211,38 @@ const BotList = ({
   </div>
 );
 
-const LevelTag = ({ done, color }: { done: number; color: string }) => {
-  const { tier, level } = siteLevel(done);
-  return (
-    <span className="flex shrink-0 items-center gap-1 text-xs">
-      <span
-        className="rounded-full px-1.5 font-semibold text-white"
-        style={{ backgroundColor: color }}
-      >
-        {tier ? `Lv ${level}` : 'Building'}
-      </span>
-      {tier > 0 && (
-        <span className="text-amber-500">{'★'.repeat(Math.min(tier, 4))}</span>
-      )}
-    </span>
-  );
+/** How a lot is doing, in a few words. */
+const siteSummary = (site: WorldSite) => {
+  if (site.kind === 'homes')
+    return `${site.done}/${site.done + site.open} done this week`;
+  if (site.kind === 'target')
+    return site.achieved
+      ? 'Reached'
+      : `${Math.round(site.done).toLocaleString()} of ${(site.target ?? 0).toLocaleString()}`;
+  const { total } = goalTowers(site.done);
+  return `${total} ${total === 1 ? 'building' : 'buildings'} · ${site.done} floors`;
 };
 
-/** A project's task buildings, busiest first. */
+const LevelTag = ({ site }: { site: WorldSite }) => (
+  <span
+    className="shrink-0 rounded-full px-1.5 text-xs font-semibold text-white"
+    style={{ backgroundColor: site.color }}
+  >
+    {site.kind === 'homes'
+      ? '🏠'
+      : site.kind === 'target'
+        ? site.achieved
+          ? '🏆'
+          : `${site.percent ?? 0}%`
+        : site.missed
+          ? '⚠️ missed'
+          : `${site.period?.done ?? 0}/${site.period?.target ?? 0}`}
+  </span>
+);
+
+/** A project's lots: goals, targets and this week's houses. */
 const SiteList = ({
   project,
-  color,
   onOpen,
 }: {
   project: WorldProject;
@@ -247,49 +258,92 @@ const SiteList = ({
             className="flex w-full items-center gap-2 rounded-lg p-1 text-left text-sm hover:bg-neutral-100"
           >
             <span className="min-w-0 flex-1 truncate">{x.name}</span>
-            <span className="text-xs text-neutral-400">{x.done}×</span>
-            <LevelTag done={x.done} color={color} />
+            <span className="text-xs text-neutral-400">{siteSummary(x)}</span>
+            <LevelTag site={x} />
           </button>
         </li>
       ))}
     </ul>
   ) : (
     <p className="text-sm text-neutral-500">
-      No tasks yet. Each kind of task becomes a building here.
+      No goals or tasks this week yet. Each goal becomes buildings here, and
+      tasks for no goal small houses.
     </p>
   );
 
-/** A task building: its level, and how far to the next. */
-const SiteCard = ({ site, color }: { site: WorldSite; color: string }) => {
-  const { tier, level, nextAt } = siteLevel(site.done);
-  const unit = tier ? LEVEL_STEP ** (tier - 1) : 1;
-  const from = tier ? level * unit : 0;
-  const pct = ((site.done - from) / Math.max(nextAt - from, 1)) * 100;
-  const upgrade = tier && level === LEVEL_STEP - 1;
+/** A lot: how its goal or houses are doing. */
+const SiteCard = ({ site }: { site: WorldSite; color: string }) => {
+  const bar = (pct: number) => (
+    <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-neutral-200">
+      <div
+        className="h-full rounded-full"
+        style={{ width: `${Math.min(100, pct)}%`, backgroundColor: site.color }}
+      />
+    </div>
+  );
+  if (site.kind === 'homes')
+    return (
+      <div className="mt-3">
+        <ul className="flex flex-col gap-1">
+          {(site.houses ?? []).map((h) => (
+            <li key={h.id} className="flex items-center gap-2 text-sm">
+              <span>{h.done ? '🏠' : '🏗️'}</span>
+              <span className="min-w-0 flex-1 truncate">{h.title}</span>
+              {h.major && (
+                <span className="text-[10px] text-neutral-400">big</span>
+              )}
+            </li>
+          ))}
+        </ul>
+        <p className="mt-2 text-[11px] text-neutral-400">
+          Tasks for no goal are small houses, built as they get done. They stay
+          for the week; next week makes room for new ones.
+        </p>
+      </div>
+    );
+  if (site.kind === 'target')
+    return (
+      <div className="mt-3">
+        <div className="flex items-center justify-between">
+          <LevelTag site={site} />
+          <span className="text-xs text-neutral-500">{siteSummary(site)}</span>
+        </div>
+        {bar(site.percent ?? 0)}
+        <p className="mt-2 text-[11px] text-neutral-400">
+          The record tower grows toward the gold ring as the total climbs, and
+          wears a trophy once it gets there.
+          {site.records?.length
+            ? ` It stands on ${site.records.length} earlier ${site.records.length === 1 ? 'record' : 'records'} (${site.records.map((r) => r.toLocaleString()).join(', ')}).`
+            : ''}
+        </p>
+      </div>
+    );
+  const { total } = goalTowers(site.done);
+  const floor = site.done % FLOORS;
   return (
     <div className="mt-3">
       <div className="flex items-center justify-between">
-        <LevelTag done={site.done} color={color} />
+        <LevelTag site={site} />
         <span className="text-xs text-neutral-500">
-          Done {site.done}× · {site.open} open
+          {site.period?.label}: {site.period?.done}/{site.period?.target}
         </span>
       </div>
-      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-neutral-200">
-        <div
-          className="h-full rounded-full"
-          style={{ width: `${pct}%`, backgroundColor: color }}
-        />
-      </div>
+      {bar(site.period?.percent ?? 0)}
       <p className="mt-1 text-[11px] text-neutral-500">
-        {nextAt - site.done} more to{' '}
-        {upgrade
-          ? `upgrade to ${'★'.repeat(tier + 1)}`
-          : `level ${tier ? level + 1 : 1}`}
-        {tier > 1 && ` · each level is ${unit} now`}
+        {total} {total === 1 ? 'building' : 'buildings'} · {site.done} floors ·{' '}
+        {FLOORS - floor} more to{' '}
+        {floor || !site.done ? 'finish this one' : 'start the next'}
+        {site.streak ? ` · ${site.streak} in a row met` : ''}
       </p>
+      {site.missed && (
+        <p className="mt-1 text-[11px] font-medium text-rose-600">
+          The last period was missed, so the newest building is cracked. Meet
+          this one to set it right.
+        </p>
+      )}
       <p className="mt-2 text-[11px] text-neutral-400">
-        The same task done again is the same building: every time adds to its
-        height. The blue line is the way there from you.
+        Every task done for this goal adds a floor; ten floors finish a building
+        and the next one starts. The blue line is the way there from you.
       </p>
     </div>
   );
@@ -319,15 +373,17 @@ const GoTo = ({
       icon: 'grid_view',
     })),
     ...world.projects.flatMap((p) =>
-      p.sites.map((x) => {
-        const { tier, level } = siteLevel(x.done);
-        return {
-          pick: { type: 'site' as const, id: x.id },
-          title: x.name,
-          hint: `${p.name} · ${tier ? `Lv ${level}` : 'being built'}`,
-          icon: 'apartment',
-        };
-      }),
+      p.sites.map((x) => ({
+        pick: { type: 'site' as const, id: x.id },
+        title: x.name,
+        hint: `${p.name} · ${siteSummary(x)}`,
+        icon:
+          x.kind === 'homes'
+            ? 'cottage'
+            : x.kind === 'target'
+              ? 'emoji_events'
+              : 'apartment',
+      })),
     ),
     ...world.people.map((p) => ({
       pick: { type: 'person' as const, id: p.id },
@@ -670,7 +726,9 @@ export const WorldPage = () => {
                     `Town · ${Math.round(town.weekPoints)} points this week`}
                   {project &&
                     `#${project.rank} in ${townOf(project.townId)?.name} · by ${project.rankedBy.toLowerCase()}`}
-                  {site && siteProject && `Task building · ${siteProject.name}`}
+                  {site &&
+                    siteProject &&
+                    `${site.kind === 'homes' ? 'This week’s houses' : site.kind === 'target' ? 'Record tower' : 'Goal buildings'} · ${siteProject.name}`}
                   {bot &&
                     `${BOT_STATE_LABEL[bot.state]}${projectOf(bot.projectId) ? ` · ${siteOf(bot.siteId)?.name ?? projectOf(bot.projectId)!.name}` : ''}`}
                   {person && (person.title ?? 'Person')}
@@ -735,7 +793,7 @@ export const WorldPage = () => {
 
             {project && (
               <>
-                <Section title="Task buildings">
+                <Section title="Goals and houses">
                   <SiteList
                     project={project}
                     color={cardColor}

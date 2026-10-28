@@ -74,7 +74,10 @@ export function clay(
 }
 
 const geometries = new Map<string, THREE.BufferGeometry>();
-const shape = <T extends THREE.BufferGeometry>(key: string, make: () => T) => {
+export const shape = <T extends THREE.BufferGeometry>(
+  key: string,
+  make: () => T,
+) => {
   let g = geometries.get(key);
   if (!g) {
     g = make();
@@ -93,13 +96,13 @@ export const roundBox = (w: number, h: number, d: number, r = 0.12) =>
       : new THREE.BoxGeometry(w, h, d);
   });
 
-const cylinder = (top: number, bottom: number, h: number, seg = 24) =>
+export const cylinder = (top: number, bottom: number, h: number, seg = 24) =>
   shape(
     `cyl${r2(top)},${r2(bottom)},${r2(h)},${seg}`,
     () => new THREE.CylinderGeometry(top, bottom, h, seg),
   );
 
-const sphere = (r: number, seg = 20, half = false) =>
+export const sphere = (r: number, seg = 20, half = false) =>
   shape(
     `sph${r2(r)},${seg},${half}`,
     () =>
@@ -115,7 +118,7 @@ const sphere = (r: number, seg = 20, half = false) =>
   );
 
 /** A triangular prism: the triangle across x (base `w`, peak `h`), `d` deep. */
-const prism = (w: number, h: number, d: number, right = false) =>
+export const prism = (w: number, h: number, d: number, right = false) =>
   shape(`prism${r2(w)},${r2(h)},${r2(d)},${right}`, () => {
     const s = new THREE.Shape();
     s.moveTo(-w / 2, 0);
@@ -938,12 +941,12 @@ const capsule = (r: number, len: number) =>
     `cap${r2(r)},${r2(len)}`,
     () => new THREE.CapsuleGeometry(r, len, 4, 12),
   );
-const cone = (r: number, h: number, seg = 16) =>
+export const cone = (r: number, h: number, seg = 16) =>
   shape(
     `cone${r2(r)},${r2(h)},${seg}`,
     () => new THREE.ConeGeometry(r, h, seg),
   );
-const torus = (r: number, tube: number, arc = Math.PI * 2, sides = 24) =>
+export const torus = (r: number, tube: number, arc = Math.PI * 2, sides = 24) =>
   shape(
     `torus${r2(r)},${r2(tube)},${r2(arc)},${sides}`,
     () => new THREE.TorusGeometry(r, tube, 8, sides, arc),
@@ -2229,7 +2232,7 @@ export function bot(accent: string, badge?: THREE.Material): Bot {
 /* ------------------------------ directions ------------------------------ */
 
 const glowMaterials = new Map<string, THREE.MeshBasicMaterial>();
-const glow = (hex: string, opacity = 0.9) => {
+export const glow = (hex: string, opacity = 0.9) => {
   const key = `${hex}|${opacity}`;
   let m = glowMaterials.get(key);
   if (!m) {

@@ -2,13 +2,15 @@ import type { Look } from '@/lib/avatar/look';
 import { brandKitDefaults } from '@/lib/brandKit';
 
 /*
- * The world: companies are towns, projects are squares in them, and each
- * kind of task in a project is a building that grows a level every time the
- * task is done. Every person has a bot for each project their Claude worked
+ * The world: companies are towns, projects are squares in them, each goal
+ * is a row of buildings that grows a floor per task done for it, each
+ * target a record tower, and the week's other tasks are small houses. Every person has a bot for each project their Claude worked
  * on today. Pure: used by the API and by the 3D scene.
  */
 
 export type BotState = 'waiting' | 'blocked' | 'working' | 'done' | 'asleep';
+
+export type BotTool = 'crane' | 'hammer' | 'laptop';
 
 export type PointStatus = 'doing' | 'done' | 'not_done' | 'blocked' | 'waiting';
 
@@ -38,8 +40,12 @@ export type WorldBot = {
   townId: string;
   /** null: work not tied to a project, done around the town hall. */
   projectId: string | null;
-  /** The task building it works at, when its work is linked to a task. */
+  /** The lot it works at, when its work is linked to a task. */
   siteId: string | null;
+  /** The house it works on, on a homes lot. */
+  houseId: string | null;
+  /** What it works with: a crane on big tasks, a hammer on others. */
+  tool: BotTool;
   state: BotState;
   current: string | null;
   points: BotPoint[];
@@ -62,17 +68,48 @@ export type WorldPerson = {
   guidance: number;
 };
 
+/** A task from this week that counts towards no goal: a small house. */
+export type WorldHouse = {
+  id: string;
+  title: string;
+  done: boolean;
+  /** A big task: a bigger house, and a crane while it is worked on. */
+  major: boolean;
+};
+
+export type SiteKind = 'goal' | 'target' | 'homes';
+
 /**
- * One kind of task in a project, e.g. "Publish a lyric video": the same task
- * done again and again is one building that grows with every time.
+ * A lot in a project square. A repeating goal is a row of buildings that
+ * grow a floor per task done for it, a new building every ten floors, and
+ * crack when its last period was missed. A target goal is the record tower,
+ * as tall as it is near its number, standing on the targets it reached
+ * before. Tasks for no goal are small houses, four to a lot, kept for the
+ * week they were for: next week the homes make way for new ones.
  */
 export type WorldSite = {
   id: string;
   name: string;
-  /** Times done, ever. */
+  kind: SiteKind;
+  /** Its own bright colour. */
+  color: string;
+  /** Goal: tasks done for it ever. Target: its running total. Homes: houses done. */
   done: number;
-  /** Open right now. */
+  /** Open tasks for it right now. */
   open: number;
+  /** Repeating goal: this period. */
+  period?: { label: string; done: number; target: number; percent: number };
+  /** Repeating goal: the last period that ended was missed. */
+  missed?: boolean;
+  /** Repeating goal: periods met in a row, up to the last one that ended. */
+  streak?: number;
+  /** Target goal: the number to reach, how near it is, and reached before. */
+  target?: number;
+  percent?: number;
+  achieved?: boolean;
+  records?: number[];
+  /** Homes: this week's tasks for no goal. */
+  houses?: WorldHouse[];
 };
 
 export type WorldProject = {
@@ -112,6 +149,39 @@ export type World = {
 
 /** Task buildings to a project square. */
 export const SITES_PER_SQUARE = 4;
+
+/** Houses on one homes lot. */
+export const HOUSES_PER_LOT = 4;
+
+/** Floors in one goal building: past this a new one is started. */
+export const FLOORS = 10;
+
+/** A repeating goal's buildings: full ones and the one going up. */
+export function goalTowers(done: number) {
+  const full = Math.floor(done / FLOORS);
+  const rest = done % FLOORS;
+  return { full, rest, total: full + (rest || !full ? 1 : 0) };
+}
+
+/** Bright, friendly colours for buildings, picked by id. */
+export const CANDY = [
+  '#60a5fa',
+  '#f472b6',
+  '#34d399',
+  '#fbbf24',
+  '#a78bfa',
+  '#fb7185',
+  '#22d3ee',
+  '#fb923c',
+  '#4ade80',
+  '#818cf8',
+];
+
+export const candyOf = (id: string) =>
+  CANDY[
+    (Array.from(id).reduce((n, c) => (n * 31 + c.charCodeAt(0)) | 0, 7) >>> 0) %
+      CANDY.length
+  ];
 
 /** Levels in a tier: past this a building upgrades, and levels cost 10×. */
 export const LEVEL_STEP = 10;
