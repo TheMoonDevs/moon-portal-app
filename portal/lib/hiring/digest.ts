@@ -2,34 +2,68 @@ import { fromHeader, sendEmail, senderAddress } from '@/lib/email/resend';
 import { db } from '@/lib/mongodb/db-client';
 import { localClock } from '@/lib/push/dayReminders';
 import type { JobApplication, JobOpening } from '@/models/hiring';
-import { APPLICATION_STAGE, JOB_OPENING_STATUS } from '@/models/hiring';
+import {
+  APPLICATION_STAGE,
+  HIRING_DIGEST_FREQUENCY,
+  JOB_OPENING_STATUS,
+} from '@/models/hiring';
 import { MEMBER_STATUS } from '@/models/workspace';
 
+import {
+  DEFAULT_DIGEST_FREQUENCY,
+  DIGEST_FREQUENCY_LABELS,
+  isDigestFrequency,
+} from './digestFrequency';
 import { hiringEmailSettings } from './email';
 import { escapeHtml } from './emailTemplates';
 import { taskDueAt } from './tasks';
 
 /*
- * The hiring digest: every other morning each hiring lead gets one email
- * covering every opening they lead, with how many tasks wait for review,
- * how many applicants wait to be screened, and links straight to them.
- * Run by /api/cron/hiring-digest (see vercel.json) each morning; it sends on
- * every other day, counted in DIGEST_TIMEZONE, so the rhythm holds across
- * month ends. Leads with nothing to review or screen get no email.
+ * The hiring digest: each hiring lead gets one email covering every opening
+ * they lead, with the tasks waiting for review (linked) and a count of
+ * everyone else in the pipeline. Run by /api/cron/hiring-digest (see
+ * vercel.json) each morning; each lead picks how often in Settings → Hiring
+ * preferences (every 2 days by default). Leads with nothing to review or
+ * screen get no email that morning, and the next one goes out once there is.
  */
 
 const DIGEST_TIMEZONE = process.env.DEFAULT_TIMEZONE || 'Asia/Kolkata';
-const EVERY_DAYS = 2;
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+const EVERY_DAYS: Partial<Record<HIRING_DIGEST_FREQUENCY, number>> = {
+  DAILY: 1,
+  EVERY_2_DAYS: 2,
+  EVERY_3_DAYS: 3,
+};
+
+/**
+ * Whether a lead's digest is due on `date` (YYYY-MM-DD), given the day the
+ * last one went out. Weekly goes on Mondays and monthly on the 1st.
+ */
+export function isDigestDue(
+  frequency: HIRING_DIGEST_FREQUENCY,
+  date: string,
+  sentOn?: string | null,
+) {
+  if (sentOn === date) return false;
+  const day = new Date(`${date}T00:00:00Z`);
+  if (frequency === HIRING_DIGEST_FREQUENCY.WEEKLY)
+    return day.getUTCDay() === 1;
+  if (frequency === HIRING_DIGEST_FREQUENCY.MONTHLY)
+    return day.getUTCDate() === 1;
+  const every = EVERY_DAYS[frequency];
+  if (!every) return false;
+  if (!sentOn) return true;
+  return (
+    Math.round((day.getTime() - Date.parse(`${sentOn}T00:00:00Z`)) / DAY_MS) >=
+    every
+  );
+}
 
 export const portalOrigin = () =>
   (
     process.env.NEXT_PUBLIC_APP_BASE_URL || 'https://portal.themoondevs.com'
   ).replace(/\/$/, '');
-
-/** Whether `date` (YYYY-MM-DD) is a digest day. */
-export const isDigestDay = (date: string) =>
-  Math.floor(Date.parse(`${date}T00:00:00Z`) / DAY_MS) % EVERY_DAYS === 0;
 
 const openingLink = (origin: string, o: Pick<JobOpening, 'id' | 'companyId'>) =>
   `${origin}/admin?tab=hiring&company=${o.companyId}&opening=${o.id}`;
@@ -68,7 +102,13 @@ interface OpeningDigest {
 type Totals = Record<'review' | 'screen' | 'onTask' | 'interview', number>;
 
 export interface LeadDigest {
-  lead: { id: string; name: string; email: string };
+  lead: {
+    id: string;
+    name: string;
+    email: string;
+    frequency: HIRING_DIGEST_FREQUENCY;
+    sentOn: string | null;
+  };
   openings: OpeningDigest[];
   totals: Totals;
 }
@@ -113,7 +153,13 @@ export async function buildDigests(now = new Date()): Promise<LeadDigest[]> {
       },
     }) as Promise<JobApplication[]>,
     db.user.findMany({ where: { id: { in: leadIds } } }) as Promise<
-      Array<{ id: string; name?: string | null; email?: string | null }>
+      Array<{
+        id: string;
+        name?: string | null;
+        email?: string | null;
+        hiringDigest?: string | null;
+        hiringDigestSentOn?: string | null;
+      }>
     >,
     db.company.findMany({ where: { id: { in: companyIds } } }) as Promise<
       Array<{ id: string; name?: string | null }>
@@ -190,7 +236,15 @@ export async function buildDigests(now = new Date()): Promise<LeadDigest[]> {
       (a, b) => b.review.length - a.review.length || b.screen - a.screen,
     );
     digests.push({
-      lead: { id: lead.id, name: lead.name ?? '', email: lead.email },
+      lead: {
+        id: lead.id,
+        name: lead.name ?? '',
+        email: lead.email,
+        frequency: isDigestFrequency(lead.hiringDigest)
+          ? lead.hiringDigest
+          : DEFAULT_DIGEST_FREQUENCY,
+        sentOn: lead.hiringDigestSentOn ?? null,
+      },
       openings: rows,
       totals,
     });
@@ -202,12 +256,15 @@ export async function buildDigests(now = new Date()): Promise<LeadDigest[]> {
 
 const firstName = (name: string) => name.trim().split(/\s+/)[0] || 'there';
 
+/** One green, lighter to darker along the pipeline, like GitHub's graph. */
+const ACCENT = '#216e39';
+
 /** The pipeline columns every opening shows, in order. */
 const COLUMNS: Array<{ key: keyof Totals; label: string; color: string }> = [
-  { key: 'screen', label: 'To screen', color: '#0ea5e9' },
-  { key: 'onTask', label: 'On task', color: '#f59e0b' },
-  { key: 'review', label: 'To review', color: '#6366f1' },
-  { key: 'interview', label: 'Interview', color: '#f97316' },
+  { key: 'screen', label: 'To screen', color: '#9be9a8' },
+  { key: 'onTask', label: 'On task', color: '#40c463' },
+  { key: 'review', label: 'To review', color: '#30a14e' },
+  { key: 'interview', label: 'Interview', color: '#216e39' },
 ];
 
 const count = (r: OpeningDigest, key: keyof Totals) =>
@@ -243,13 +300,16 @@ export function digestText(d: LeadDigest, origin = portalOrigin()) {
       `Hiring: ${origin}/admin?tab=hiring`,
     ].join('\n'),
   );
+  out.push(
+    `${DIGEST_FREQUENCY_LABELS[d.lead.frequency]}, for the openings you lead. Change how often: ${origin}/settings#hiring`,
+  );
   return out.join('\n\n');
 }
 
 export function digestHtml(d: LeadDigest, origin = portalOrigin()) {
   const e = escapeHtml;
   const link = (href: string, text: string, style = '') =>
-    `<a href="${e(href)}" style="color:#2563eb;text-decoration:none;${style}">${e(text)}</a>`;
+    `<a href="${e(href)}" style="color:${ACCENT};text-decoration:none;${style}">${e(text)}</a>`;
   const muted = (text: string) =>
     `<span style="color:#a1a1aa">${e(text)}</span>`;
 
@@ -292,33 +352,33 @@ export function digestHtml(d: LeadDigest, origin = portalOrigin()) {
           )
           .join(
             ' &nbsp; ',
-          )}${r.pastDue ? ` &nbsp; <span style="color:#e11d48">${r.pastDue} past due</span>` : ''}</div></div>`,
+          )}${r.pastDue ? ` &nbsp; <b style="color:#18181b">${r.pastDue} past due</b>` : ''}</div></div>`,
     )
     .join('');
 
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:24px 12px;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif"><div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:12px;padding:28px 24px;color:#18181b;font-size:15px;line-height:1.5">
 <p style="margin:0 0 14px">Hi ${e(firstName(d.lead.name))}, here's your hiring at a glance.</p>
 <table role="presentation" width="100%" cellspacing="6" cellpadding="0" style="margin:0 -6px 18px"><tr>${tiles}</tr></table>
-${reviewRows ? `<p style="margin:0 0 4px;font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#6366f1">Tasks to review</p><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 20px">${reviewRows}</table>` : ''}
+${reviewRows ? `<p style="margin:0 0 4px;font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:${ACCENT}">Tasks to review</p><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 20px">${reviewRows}</table>` : ''}
 <p style="margin:0;font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#71717a">Your openings</p>
 ${openingRows}
-</div><p style="max-width:560px;margin:16px auto 0;text-align:center;color:#a1a1aa;font-size:12px;line-height:1.5">Every other morning, for the openings you lead.</p></body></html>`;
+</div><p style="max-width:560px;margin:16px auto 0;text-align:center;color:#a1a1aa;font-size:12px;line-height:1.5">${e(DIGEST_FREQUENCY_LABELS[d.lead.frequency])}, for the openings you lead. ${link(`${origin}/settings#hiring`, 'Change how often', 'color:#71717a;text-decoration:underline')}</p></body></html>`;
 }
 
 /* -------------------------------- sending -------------------------------- */
 
 export interface DigestRun {
   date: string;
-  digestDay: boolean;
   sent: Array<{ to: string; subject: string; id?: string; error?: string }>;
-  /** Filled for a dry run: what each lead would get. */
+  /** Filled for a dry run: what each lead would get today. */
   preview?: Array<{ to: string; subject: string; text: string }>;
 }
 
 /**
- * Sends today's digests when today is a digest day (or `force`). A dry run
- * sends nothing and returns what would go out. Sending twice on one day
- * never sends twice: each email's idempotency key is the lead and the date.
+ * Sends the digests due today by each lead's chosen frequency (`force` sends
+ * to every lead not set to off). A dry run sends nothing and returns what
+ * would go out. Running twice on one day never sends twice: the day sent is
+ * kept on the lead, and each email's idempotency key is the lead and date.
  */
 export async function runHiringDigest({
   now = new Date(),
@@ -326,11 +386,13 @@ export async function runHiringDigest({
   dryRun = false,
 } = {}): Promise<DigestRun> {
   const { date } = localClock(DIGEST_TIMEZONE, now);
-  const digestDay = isDigestDay(date);
-  const run: DigestRun = { date, digestDay, sent: [] };
-  if (!digestDay && !force && !dryRun) return run;
+  const run: DigestRun = { date, sent: [] };
 
-  const digests = await buildDigests(now);
+  const digests = (await buildDigests(now)).filter(
+    (d) =>
+      d.lead.frequency !== HIRING_DIGEST_FREQUENCY.OFF &&
+      (force || isDigestDue(d.lead.frequency, date, d.lead.sentOn)),
+  );
   if (dryRun) {
     run.preview = digests.map((d) => ({
       to: d.lead.email,
@@ -355,6 +417,11 @@ export async function runHiringDigest({
       },
       `hiring-digest-${d.lead.id}-${date}`,
     );
+    if (result.id)
+      await db.user.update({
+        where: { id: d.lead.id },
+        data: { hiringDigestSentOn: date },
+      });
     run.sent.push({ to: d.lead.email, subject, ...result });
   }
   return run;

@@ -38,6 +38,18 @@ export enum APPLICATION_STAGE {
   REJECTED = 'REJECTED',
 }
 
+/** How often a hiring lead gets the digest of the openings they lead. */
+export enum HIRING_DIGEST_FREQUENCY {
+  DAILY = 'DAILY',
+  EVERY_2_DAYS = 'EVERY_2_DAYS',
+  EVERY_3_DAYS = 'EVERY_3_DAYS',
+  /** Mondays. */
+  WEEKLY = 'WEEKLY',
+  /** The 1st of each month. */
+  MONTHLY = 'MONTHLY',
+  OFF = 'OFF',
+}
+
 export enum FORM_FIELD_TYPE {
   SHORT_TEXT = 'SHORT_TEXT',
   LONG_TEXT = 'LONG_TEXT',

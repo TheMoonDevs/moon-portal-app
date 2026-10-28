@@ -5,11 +5,12 @@ import { runHiringDigest } from '@/lib/hiring/digest';
 export const dynamic = 'force-dynamic';
 
 /**
- * The every-other-morning hiring digest to each hiring lead. vercel.json
- * runs it daily at 02:30 UTC (08:00 IST) and it sends on every other day.
+ * The hiring digest to each hiring lead. vercel.json runs it daily at 02:30
+ * UTC (08:00 IST); each lead gets it as often as their Hiring preferences say
+ * (every 2 days by default).
  * When CRON_SECRET is set, Vercel sends it as a bearer token and other
  * callers are refused. With the secret, `?dryRun=1` returns what would go
- * out without sending and `?force=1` sends on an off day; a dry run shows
+ * out without sending and `?force=1` sends to every lead not set to off, due or not; a dry run shows
  * applicant names, so it is refused while no secret is set.
  */
 export async function GET(request: Request) {

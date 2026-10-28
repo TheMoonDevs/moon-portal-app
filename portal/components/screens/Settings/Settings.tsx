@@ -9,8 +9,13 @@ import { toast, Toaster } from 'sonner';
 
 import LogoutConfirmationDialog from '@/components/global/LogoutConfirmationDialog';
 import PushSubscriptionToggleButton from '@/components/global/PushSubscriptionToggleButton';
+import {
+  DEFAULT_DIGEST_FREQUENCY,
+  DIGEST_FREQUENCY_LABELS,
+} from '@/lib/hiring/digestFrequency';
 import { normalizeUsername } from '@/lib/users/username';
 import { cn } from '@/lib/utils';
+import { HIRING_DIGEST_FREQUENCY } from '@/models/hiring';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
 import { uploadAvatar } from '@/utils/helpers/uploads';
 import { useUser } from '@/utils/hooks/useUser';
@@ -30,6 +35,7 @@ const SECTIONS = [
   { id: 'companies', label: 'Companies', icon: 'domain' },
   { id: 'claude', label: 'Claude', icon: 'smart_toy' },
   { id: 'notifications', label: 'Notifications', icon: 'notifications' },
+  { id: 'hiring', label: 'Hiring', icon: 'work' },
 ];
 
 const Card = ({
@@ -401,8 +407,74 @@ const NotificationsCard = () => (
   </Card>
 );
 
+const HiringCard = () => {
+  const [digest, setDigest] = useState<HIRING_DIGEST_FREQUENCY | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    PortalSdk.getData('/api/user/hiring-preferences', null)
+      .then((res) => setDigest(res?.data?.digest ?? DEFAULT_DIGEST_FREQUENCY))
+      .catch(() => setDigest(DEFAULT_DIGEST_FREQUENCY));
+  }, []);
+
+  const save = async (next: HIRING_DIGEST_FREQUENCY) => {
+    const previous = digest;
+    setDigest(next);
+    setSaving(true);
+    try {
+      await PortalSdk.putData('/api/user/hiring-preferences', {
+        digest: next,
+      });
+      toast.success(
+        next === HIRING_DIGEST_FREQUENCY.OFF
+          ? 'Hiring digest turned off'
+          : `Hiring digest: ${DIGEST_FREQUENCY_LABELS[next].toLowerCase()}`,
+      );
+    } catch (err: any) {
+      setDigest(previous);
+      toast.error(err?.error ?? 'Could not save your hiring preferences.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Card
+      id="hiring"
+      title="Hiring preferences"
+      description="For the job openings where you are the hiring lead."
+    >
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-sm text-neutral-900">Hiring digest email</p>
+          <p className="text-sm text-neutral-500">
+            Tasks waiting for your review and where everyone else stands, at
+            8:00 am IST. Skipped when nothing needs you.
+          </p>
+        </div>
+        <select
+          className={cn(inputClass, 'sm:w-56')}
+          value={digest ?? ''}
+          disabled={!digest || saving}
+          onChange={(e) => save(e.target.value as HIRING_DIGEST_FREQUENCY)}
+        >
+          {!digest && <option value="">Loading…</option>}
+          {Object.values(HIRING_DIGEST_FREQUENCY).map((value) => (
+            <option key={value} value={value}>
+              {DIGEST_FREQUENCY_LABELS[value]}
+            </option>
+          ))}
+        </select>
+      </div>
+    </Card>
+  );
+};
+
 const Settings = () => {
   const { user } = useUser();
+  const { hiringCompanies } = useWorkspace();
+  const canHire = hiringCompanies.length > 0;
+  const sections = SECTIONS.filter((s) => s.id !== 'hiring' || canHire);
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [active, setActive] = useState(SECTIONS[0].id);
 
@@ -415,12 +487,13 @@ const Settings = () => {
       },
       { rootMargin: '-20% 0px -70% 0px' },
     );
-    SECTIONS.forEach(({ id }) => {
+    sections.forEach(({ id }) => {
       const el = document.getElementById(id);
       if (el) observer.observe(el);
     });
     return () => observer.disconnect();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canHire]);
 
   return (
     <div className="min-h-screen bg-neutral-100 pb-32 text-neutral-800">
@@ -430,7 +503,7 @@ const Settings = () => {
             Settings
           </p>
           <nav className="flex flex-col gap-0.5">
-            {SECTIONS.map((section) => (
+            {sections.map((section) => (
               <a
                 key={section.id}
                 href={`#${section.id}`}
@@ -474,6 +547,7 @@ const Settings = () => {
           <CompaniesCard />
           <ClaudeCard />
           <NotificationsCard />
+          {canHire && <HiringCard />}
 
           <button
             onClick={() => setLogoutOpen(true)}
