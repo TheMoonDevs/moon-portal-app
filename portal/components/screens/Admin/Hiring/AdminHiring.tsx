@@ -51,7 +51,13 @@ const LIVE_INTERVAL_MS = 15_000;
 
 type StageFilter = 'ALL' | APPLICATION_STAGE;
 
-type ApplicantLink = { id: string; companyId: string; openingId: string };
+/** An applicant to open, or (without `id`) an opening, optionally at a stage. */
+type ApplicantLink = {
+  id: string | null;
+  companyId: string;
+  openingId: string;
+  stage?: APPLICATION_STAGE | null;
+};
 
 const OpeningCard = ({
   opening,
@@ -321,7 +327,8 @@ export const AdminHiring = ({
   // `?tab=hiring&company=<id>&opening=<id>&application=<id>` opens that
   // applicant: pick their company, then their opening, then show them once
   // the opening's applicants load. Older links carry only the application,
-  // so its company and opening are looked up first.
+  // so its company and opening are looked up first. Without `application`
+  // the link opens the opening, listing one stage when `stage` is set.
   const [linked, setLinked] = useState<ApplicantLink | null>(null);
   const linkRead = useRef(false);
 
@@ -330,7 +337,15 @@ export const AdminHiring = ({
     const id = params.get('application');
     const linkCompanyId = params.get('company');
     const linkOpeningId = params.get('opening');
+    const linkStage = params.get('stage');
     if (!id) {
+      if (linkCompanyId && linkOpeningId)
+        setLinked({
+          id: null,
+          companyId: linkCompanyId,
+          openingId: linkOpeningId,
+          stage: APPLICATION_STAGES.find((s) => s === linkStage) ?? null,
+        });
       linkRead.current = true;
       return;
     }
@@ -373,7 +388,11 @@ export const AdminHiring = ({
     // Wait for this company's openings, not the ones still on screen.
     if (openingsLoading || openingsFor !== linked.companyId) return;
     if (!openings.some((o) => o.id === linked.openingId)) {
-      toast.error("That applicant's opening is archived.");
+      toast.error(
+        linked.id
+          ? "That applicant's opening is archived."
+          : 'That opening is archived.',
+      );
       setLinked(null);
       return;
     }
@@ -382,8 +401,14 @@ export const AdminHiring = ({
       return;
     }
     if (applicationsLoading || applicationsFor !== linked.openingId) return;
-    if (applications.some((a) => a.id === linked.id)) setDetailId(linked.id);
-    else toast.error('That applicant is no longer in this opening.');
+    if (linked.stage) {
+      setView('list');
+      setStageFilter(linked.stage);
+    }
+    if (linked.id) {
+      if (applications.some((a) => a.id === linked.id)) setDetailId(linked.id);
+      else toast.error('That applicant is no longer in this opening.');
+    }
     setLinked(null);
   }, [
     linked,
@@ -404,7 +429,7 @@ export const AdminHiring = ({
   useEffect(() => {
     if (linked || !linkRead.current) return;
     const url = new URL(window.location.href);
-    for (const key of ['company', 'opening', 'application'])
+    for (const key of ['company', 'opening', 'application', 'stage'])
       url.searchParams.delete(key);
     if (detailId && companyId && openingId) {
       url.searchParams.set('company', companyId);

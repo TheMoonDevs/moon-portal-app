@@ -30,6 +30,8 @@ export enum APPLICATION_STAGE {
   APPLIED = 'APPLIED',
   SHORTLISTED = 'SHORTLISTED',
   TASK = 'TASK',
+  /** The candidate sent their task back; it waits for the team to review. */
+  TASK_REVIEW = 'TASK_REVIEW',
   INTERVIEW = 'INTERVIEW',
   OFFER = 'OFFER',
   HIRED = 'HIRED',

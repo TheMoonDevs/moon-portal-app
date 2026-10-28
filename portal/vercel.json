@@ -2,6 +2,7 @@
   "crons": [
     { "path": "/api/cron/schedules", "schedule": "0 1 * * *" },
     { "path": "/api/cron/day-reminders", "schedule": "0 17 * * *" },
-    { "path": "/api/cron/day-reminders", "schedule": "0 3 * * *" }
+    { "path": "/api/cron/day-reminders", "schedule": "0 3 * * *" },
+    { "path": "/api/cron/hiring-digest", "schedule": "30 2 * * *" }
   ]
 }

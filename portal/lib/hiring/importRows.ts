@@ -274,6 +274,8 @@ export function stageFromText(value: unknown): APPLICATION_STAGE | null {
   if (/offer/.test(text)) return APPLICATION_STAGE.OFFER;
   if (/interview|round|call\b|meeting/.test(text))
     return APPLICATION_STAGE.INTERVIEW;
+  if (/(task|assignment|assessment).*(submitted|received|review)/.test(text))
+    return APPLICATION_STAGE.TASK_REVIEW;
   if (/task|assignment|assessment|test|challenge/.test(text))
     return APPLICATION_STAGE.TASK;
   if (/shortlist|selected|screened|qualified/.test(text))

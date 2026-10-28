@@ -441,7 +441,7 @@ export const ApplicantDetail = ({
                       ? `Applied, imported by ${nameOf(event.byUserId)}${event.text ? ` from ${event.text}` : ''}`
                       : 'Applied'
                     : event.type === 'STAGE_CHANGED' && event.to
-                      ? `${nameOf(event.byUserId)} moved them to ${STAGE_META[event.to]?.label ?? event.to}`
+                      ? `${event.byUserId ? `${nameOf(event.byUserId)} moved them` : 'Moved'} to ${STAGE_META[event.to]?.label ?? event.to}`
                       : event.type === 'EMAIL'
                         ? `${nameOf(event.byUserId)} emailed “${event.text}”`
                         : event.type === 'TASK_SUBMITTED'

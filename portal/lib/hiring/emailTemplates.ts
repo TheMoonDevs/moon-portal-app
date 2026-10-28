@@ -191,7 +191,7 @@ export const hasBracketNotes = (text: string) => /\[[^\]\n]{3,}\]/.test(text);
 
 /* ---------------------------------- HTML ---------------------------------- */
 
-const escapeHtml = (value: string) =>
+export const escapeHtml = (value: string) =>
   value
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
