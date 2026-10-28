@@ -200,6 +200,9 @@ export const DayLogPage = ({
   const [laterOpen, setLaterOpen] = useState(false);
   const [myTasks, setMyTasks] = useState<MyTask[] | null>(null);
   const [taskProjects, setTaskProjects] = useState<TaskProject[]>([]);
+  const [previousTasks, setPreviousTasks] = useState<
+    { id: string; title: string; status: string }[]
+  >([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [focusRequest, setFocusRequest] = useState<string | null>(null);
 
@@ -218,6 +221,7 @@ export const DayLogPage = ({
       .then((res) => {
         setMyTasks(res?.data?.tasks ?? []);
         setTaskProjects(res?.data?.projects ?? []);
+        setPreviousTasks(res?.data?.previous ?? []);
       })
       .catch(() => setMyTasks([]));
   }, []);
@@ -560,6 +564,7 @@ export const DayLogPage = ({
             <TasksPanel
               tasks={myTasks}
               projects={taskProjects}
+              previous={previousTasks}
               date={date}
               onDayIds={onDayIds}
               onAdd={editable ? day.addTasks : async () => 0}

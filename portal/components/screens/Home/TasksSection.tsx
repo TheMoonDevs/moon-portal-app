@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import { cn } from '@/lib/utils';
+import { useUser } from '@/utils/hooks/useUser';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
 const SHOW = 6;
@@ -35,21 +36,65 @@ const dueLabel = (day?: string | null) => {
   };
 };
 
-/** Open tasks assigned to the user; ticking one marks it done. */
+type Previous = Pick<Task, 'id' | 'title' | 'status'>;
+
+/**
+ * Open tasks assigned to the user; ticking one marks it done, and the + on
+ * one adds a follow-up: the next step, linked to it.
+ */
 export const TasksSection = () => {
+  const { user } = useUser();
   const [tasks, setTasks] = useState<Task[] | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [previous, setPrevious] = useState<Previous[]>([]);
   const [expanded, setExpanded] = useState(false);
   const [doneIds, setDoneIds] = useState<string[]>([]);
+  const [following, setFollowing] = useState<string | null>(null);
+  const [next, setNext] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const load = useCallback(() => {
     PortalSdk.getData('/api/me/tasks', null)
       .then((res) => {
         setTasks(res?.data?.tasks ?? []);
         setProjects(res?.data?.projects ?? []);
+        setPrevious(res?.data?.previous ?? []);
       })
       .catch(() => setTasks([]));
   }, []);
+
+  const addFollowUp = async (task: Task) => {
+    const title = next.trim();
+    if (!title || saving) return;
+    setSaving(true);
+    try {
+      await PortalSdk.postData('/api/tasks', {
+        projectId: task.projectId,
+        title,
+        followsId: task.id,
+        assigneeIds: user?.id ? [user.id] : [],
+      });
+      toast.success(`Follow-up added: ${title}`);
+      setNext('');
+      setFollowing(null);
+      load();
+    } catch (err) {
+      toast.error(
+        (err as any)?.response?.data?.error ?? 'Could not add the follow-up.',
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+  const afterOf = (task: Task): Previous | null => {
+    const id = (task as Task & { followsId?: string | null }).followsId;
+    if (!id) return null;
+    return (
+      tasks?.find((t) => t.id === id) ??
+      previous.find((t) => t.id === id) ??
+      null
+    );
+  };
 
   useEffect(() => {
     load();
@@ -93,56 +138,112 @@ export const TasksSection = () => {
             const due = dueLabel(task.dueDate);
             const ahead = aheadLabel(task.forDate);
             const done = doneIds.includes(task.id);
+            const after = afterOf(task);
             return (
-              <div key={task.id} className="flex items-start gap-3 p-3">
-                <button
-                  type="button"
-                  aria-label="Mark as done"
-                  disabled={done}
-                  onClick={() => complete(task)}
-                  className={cn(
-                    'mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors',
-                    done
-                      ? 'border-green-500 bg-green-500 text-white'
-                      : 'border-neutral-300 hover:border-green-500',
-                  )}
-                >
-                  {done && (
-                    <span className="material-symbols-outlined text-[14px]">
-                      check
-                    </span>
-                  )}
-                </button>
-                <div className="min-w-0 flex-1">
-                  <p
+              <div key={task.id}>
+                <div className="group flex items-start gap-3 p-3">
+                  <button
+                    type="button"
+                    aria-label="Mark as done"
+                    disabled={done}
+                    onClick={() => complete(task)}
                     className={cn(
-                      'text-sm text-neutral-900',
-                      done && 'text-neutral-400 line-through',
+                      'mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors',
+                      done
+                        ? 'border-green-500 bg-green-500 text-white'
+                        : 'border-neutral-300 hover:border-green-500',
                     )}
                   >
-                    {task.title}
-                  </p>
-                  <p className="flex items-center gap-1.5 truncate text-xs text-neutral-500">
-                    {project && (
-                      <span
-                        className="size-2 shrink-0 rounded-full"
-                        style={{ backgroundColor: project.color || '#a3a3a3' }}
-                      />
-                    )}
-                    <span className="truncate">{project?.name}</span>
-                    {ahead && <span className="shrink-0">· for {ahead}</span>}
-                    {due && (
-                      <span
-                        className={cn(
-                          'shrink-0',
-                          due.late && 'font-medium text-red-500',
-                        )}
-                      >
-                        · {due.text}
+                    {done && (
+                      <span className="material-symbols-outlined text-[14px]">
+                        check
                       </span>
                     )}
-                  </p>
+                  </button>
+                  <div className="min-w-0 flex-1">
+                    {after && (
+                      <p
+                        className="flex min-w-0 items-center gap-1 text-[11px] text-neutral-400"
+                        title="Follows on from this task"
+                      >
+                        <span className="material-symbols-outlined text-[12px]">
+                          subdirectory_arrow_right
+                        </span>
+                        <span className="truncate">After {after.title}</span>
+                      </p>
+                    )}
+                    <p
+                      className={cn(
+                        'text-sm text-neutral-900',
+                        done && 'text-neutral-400 line-through',
+                      )}
+                    >
+                      {task.title}
+                    </p>
+                    <p className="flex items-center gap-1.5 truncate text-xs text-neutral-500">
+                      {project && (
+                        <span
+                          className="size-2 shrink-0 rounded-full"
+                          style={{
+                            backgroundColor: project.color || '#a3a3a3',
+                          }}
+                        />
+                      )}
+                      <span className="truncate">{project?.name}</span>
+                      {ahead && <span className="shrink-0">· for {ahead}</span>}
+                      {due && (
+                        <span
+                          className={cn(
+                            'shrink-0',
+                            due.late && 'font-medium text-red-500',
+                          )}
+                        >
+                          · {due.text}
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    aria-label="Add a follow-up task"
+                    title="Add a follow-up task: the next step after this one"
+                    onClick={() => {
+                      setNext('');
+                      setFollowing(following === task.id ? null : task.id);
+                    }}
+                    className={cn(
+                      'flex size-6 shrink-0 items-center justify-center rounded-md text-neutral-400 transition-opacity hover:bg-neutral-100 hover:text-neutral-900 focus:opacity-100 group-hover:opacity-100 max-md:opacity-100',
+                      following === task.id
+                        ? 'bg-neutral-100 text-neutral-900 opacity-100'
+                        : 'opacity-0',
+                    )}
+                  >
+                    <span className="material-symbols-outlined text-[16px]">
+                      add
+                    </span>
+                  </button>
                 </div>
+                {following === task.id && (
+                  <div className="mx-3 mb-3 flex items-center gap-2 rounded-lg border border-neutral-200 px-2.5 py-1.5">
+                    <span className="material-symbols-outlined text-[14px] text-neutral-400">
+                      subdirectory_arrow_right
+                    </span>
+                    <input
+                      autoFocus
+                      value={next}
+                      onChange={(e) => setNext(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') addFollowUp(task);
+                        if (e.key === 'Escape') setFollowing(null);
+                      }}
+                      placeholder="Next step after this…"
+                      className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-neutral-400"
+                    />
+                    {saving && (
+                      <span className="size-3 animate-spin rounded-full border-y-2 border-neutral-500" />
+                    )}
+                  </div>
+                )}
               </div>
             );
           })

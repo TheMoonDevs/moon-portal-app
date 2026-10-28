@@ -239,6 +239,11 @@ export type Task = Loose<
     fromLine?: Nullable<string>;
     /** Its goal was set by hand or already looked for; not picked again. */
     goalChecked?: boolean;
+    /**
+     * The task this one follows on from, in the same project: a chain of
+     * steps, each made from the one before.
+     */
+    followsId?: Nullable<string>;
     createdById: string;
   }
 >;

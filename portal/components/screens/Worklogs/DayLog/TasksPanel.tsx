@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { cn } from '@/lib/utils';
+import { useUser } from '@/utils/hooks/useUser';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import { Icon, Spin } from '../../Admin/shared/AdminUI';
@@ -41,82 +42,150 @@ const TaskRow = ({
   project,
   date,
   onDay,
+  after,
   onAdd,
   onDone,
+  onFollowUp,
 }: {
   task: MyTask;
   project?: TaskProject;
   date: string;
   onDay: boolean;
+  /** The task it follows on from. */
+  after?: { title: string; status: string } | null;
   onAdd: () => Promise<unknown>;
   onDone: () => Promise<unknown>;
+  onFollowUp: (title: string) => Promise<boolean>;
 }) => {
   const [busy, setBusy] = useState<'add' | 'done' | null>(null);
+  const [following, setFollowing] = useState(false);
+  const [next, setNext] = useState('');
+  const [saving, setSaving] = useState(false);
+  const addFollowUp = async () => {
+    const title = next.trim();
+    if (!title || saving) return;
+    setSaving(true);
+    const made = await onFollowUp(title);
+    setSaving(false);
+    if (made) {
+      setNext('');
+      setFollowing(false);
+    }
+  };
   const when = whenLabel(task, date);
   const run = (kind: 'add' | 'done', fn: () => Promise<unknown>) => {
     setBusy(kind);
     fn().finally(() => setBusy(null));
   };
   return (
-    <div className="group flex items-start gap-2.5 rounded-lg px-2 py-1.5 hover:bg-white/[0.03]">
-      <button
-        type="button"
-        aria-label="Mark the task done"
-        title="Mark the task done"
-        disabled={!!busy}
-        onClick={() => run('done', onDone)}
-        className="mt-0.5 text-[18px] text-neutral-600 hover:text-emerald-400"
-      >
-        {busy === 'done' ? (
-          <Spin className="size-4" />
-        ) : (
-          <Icon name="radio_button_unchecked" />
-        )}
-      </button>
-      <div className="min-w-0 flex-1">
-        <p className="text-sm leading-6 text-neutral-100">{task.title}</p>
-        <p className="flex flex-wrap items-center gap-x-2 text-[11px] text-neutral-500">
-          {project && (
-            <span className="flex min-w-0 items-center gap-1.5">
-              <span
-                className="size-1.5 shrink-0 rounded-full"
-                style={{ backgroundColor: project.color || '#a3a3a3' }}
-              />
-              <span className="truncate">{project.name}</span>
-            </span>
-          )}
-          {when && (
-            <span className={cn(when.late && 'text-rose-300')}>
-              {when.text}
-            </span>
-          )}
-          {task.status !== 'TODO' && (
-            <span>{TASK_STATUS_META[task.status]?.label ?? task.status}</span>
-          )}
-        </p>
-      </div>
-      {onDay ? (
-        <span
-          title="Already a point on this day"
-          className="mt-1 text-[16px] text-emerald-400/70"
-        >
-          <Icon name="playlist_add_check" />
-        </span>
-      ) : (
+    <div>
+      <div className="group flex items-start gap-2.5 rounded-lg px-2 py-1.5 hover:bg-white/[0.03]">
         <button
           type="button"
+          aria-label="Mark the task done"
+          title="Mark the task done"
           disabled={!!busy}
-          onClick={() => run('add', onAdd)}
-          title="Put it on this day"
-          className="mt-0.5 flex h-7 shrink-0 items-center gap-1 rounded-md border border-white/10 px-2 text-[11px] font-medium text-neutral-300 opacity-0 transition-opacity hover:bg-white/[0.08] hover:text-white focus:opacity-100 group-hover:opacity-100 max-md:opacity-100"
+          onClick={() => run('done', onDone)}
+          className="mt-0.5 text-[18px] text-neutral-600 hover:text-emerald-400"
         >
-          {busy === 'add' ? (
-            <Spin className="size-3" />
+          {busy === 'done' ? (
+            <Spin className="size-4" />
           ) : (
-            <Icon name="add" className="text-[14px]" />
+            <Icon name="radio_button_unchecked" />
           )}
-          Add
         </button>
+        <div className="min-w-0 flex-1">
+          {after && (
+            <p
+              className="flex min-w-0 items-center gap-1 text-[11px] text-neutral-500"
+              title="Follows on from this task"
+            >
+              <Icon name="subdirectory_arrow_right" className="text-[12px]" />
+              <span className="truncate">After {after.title}</span>
+              {after.status === 'DONE' && (
+                <Icon name="check" className="text-[12px] text-emerald-400" />
+              )}
+            </p>
+          )}
+          <p className="text-sm leading-6 text-neutral-100">{task.title}</p>
+          <p className="flex flex-wrap items-center gap-x-2 text-[11px] text-neutral-500">
+            {project && (
+              <span className="flex min-w-0 items-center gap-1.5">
+                <span
+                  className="size-1.5 shrink-0 rounded-full"
+                  style={{ backgroundColor: project.color || '#a3a3a3' }}
+                />
+                <span className="truncate">{project.name}</span>
+              </span>
+            )}
+            {when && (
+              <span className={cn(when.late && 'text-rose-300')}>
+                {when.text}
+              </span>
+            )}
+            {task.status !== 'TODO' && (
+              <span>{TASK_STATUS_META[task.status]?.label ?? task.status}</span>
+            )}
+          </p>
+        </div>
+        <button
+          type="button"
+          aria-label="Add a follow-up task"
+          title="Add a follow-up task: the next step after this one"
+          onClick={() => setFollowing((v) => !v)}
+          className={cn(
+            'mt-0.5 size-7 shrink-0 items-center justify-center rounded-md text-neutral-500 hover:bg-white/[0.08] hover:text-white',
+            // Only on hover (or focus) on wider screens, so titles keep the room.
+            following
+              ? 'flex bg-white/[0.08] text-white'
+              : 'flex md:hidden md:group-focus-within:flex md:group-hover:flex',
+          )}
+        >
+          <Icon name="add" className="text-[16px]" />
+        </button>
+        {onDay ? (
+          <span
+            title="Already a point on this day"
+            className="mt-1 text-[16px] text-emerald-400/70"
+          >
+            <Icon name="playlist_add_check" />
+          </span>
+        ) : (
+          <button
+            type="button"
+            disabled={!!busy}
+            onClick={() => run('add', onAdd)}
+            title="Put it on this day"
+            className="mt-0.5 flex h-7 shrink-0 items-center gap-1 rounded-md border border-white/10 px-2 text-[11px] font-medium text-neutral-300 hover:bg-white/[0.08] hover:text-white md:hidden md:group-focus-within:flex md:group-hover:flex"
+          >
+            {busy === 'add' ? (
+              <Spin className="size-3" />
+            ) : (
+              <Icon name="event_available" className="text-[14px]" />
+            )}
+            Day
+          </button>
+        )}
+      </div>
+      {following && (
+        <div className="mb-1 ml-9 mr-2 flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-1.5">
+          <Icon
+            name="subdirectory_arrow_right"
+            className="text-[14px] text-neutral-500"
+          />
+          <input
+            autoFocus
+            value={next}
+            onChange={(e) => setNext(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') addFollowUp();
+              if (e.key === 'Escape') setFollowing(false);
+            }}
+            placeholder="Next step after this…"
+            className="min-w-0 flex-1 bg-transparent text-sm text-neutral-100 placeholder:text-neutral-600 focus:outline-none"
+          />
+          {saving && <Spin className="size-3" />}
+        </div>
       )}
     </div>
   );
@@ -127,11 +196,14 @@ export const TasksPanel = ({
   projects,
   date,
   onDayIds,
+  previous = [],
   onAdd,
   onChanged,
 }: {
   tasks: MyTask[] | null;
   projects: TaskProject[];
+  /** Tasks the open ones follow on from, when not open themselves. */
+  previous?: { id: string; title: string; status: string }[];
   date: string;
   /** Tasks already points on this day. */
   onDayIds: Set<string>;
@@ -162,6 +234,33 @@ export const TasksPanel = ({
       toast.error('Could not update the task.');
     }
   };
+  const { user } = useUser();
+  const afterOf = (t: MyTask) => {
+    if (!t.followsId) return null;
+    return (
+      all.find((x) => x.id === t.followsId) ??
+      previous.find((x) => x.id === t.followsId) ??
+      null
+    );
+  };
+  const followUp = async (task: MyTask, title: string) => {
+    try {
+      await PortalSdk.postData('/api/tasks', {
+        projectId: task.projectId,
+        title,
+        followsId: task.id,
+        assigneeIds: user?.id ? [user.id] : [],
+      });
+      toast.success(`Follow-up added: ${title}`);
+      onChanged();
+      return true;
+    } catch (err) {
+      toast.error(
+        (err as any)?.response?.data?.error ?? 'Could not add the follow-up.',
+      );
+      return false;
+    }
+  };
   const add = async (ids: string[]) => {
     const added = await onAdd(ids);
     if (added)
@@ -187,8 +286,10 @@ export const TasksPanel = ({
             project={projectOf(t.projectId)}
             date={date}
             onDay={onDayIds.has(t.id)}
+            after={afterOf(t)}
             onAdd={() => add([t.id])}
             onDone={() => done(t)}
+            onFollowUp={(title) => followUp(t, title)}
           />
         ))}
       </div>

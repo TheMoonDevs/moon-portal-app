@@ -12,7 +12,10 @@ import { OPEN_TASK_STATUSES, PROJECT_STATUS } from '@/models/workspace';
 
 export const dynamic = 'force-dynamic';
 
-/** Open tasks assigned to the caller, across their companies. */
+/**
+ * Open tasks assigned to the caller, across their companies, with the tasks
+ * they follow on from.
+ */
 export async function GET() {
   const { response, user } = await requireUser();
   if (response || !user)
@@ -51,5 +54,19 @@ export async function GET() {
       })
     : [];
   const live = new Set(projects.map((p) => p.id));
-  return ok({ tasks: tasks.filter((t) => live.has(t.projectId)), projects });
+  // The tasks these follow on from, for their "after" line.
+  const followIds = Array.from(
+    new Set(tasks.map((t) => t.followsId).filter((id): id is string => !!id)),
+  );
+  const previous: Pick<Task, 'id' | 'title' | 'status'>[] = followIds.length
+    ? await db.task.findMany({
+        where: { id: { in: followIds } },
+        select: { id: true, title: true, status: true },
+      })
+    : [];
+  return ok({
+    tasks: tasks.filter((t) => live.has(t.projectId)),
+    projects,
+    previous,
+  });
 }

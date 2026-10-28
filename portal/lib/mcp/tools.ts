@@ -576,6 +576,11 @@ export const TOOLS: Tool[] = [
         },
         forDate: { type: 'string', description: 'YYYY-MM-DD (optional).' },
         dueDate: { type: 'string', description: 'YYYY-MM-DD (optional).' },
+        follows: {
+          type: 'string',
+          description:
+            'Id or exact title of the task in the same project this one follows on from (optional), e.g. "Upload" after "Edit the video".',
+        },
       },
       required: ['project', 'title'],
     },

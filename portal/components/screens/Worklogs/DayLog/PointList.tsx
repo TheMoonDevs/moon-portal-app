@@ -33,6 +33,8 @@ export type MyTask = {
   companyId: string;
   dueDate?: string | null;
   forDate?: string | null;
+  /** The task this one follows on from. */
+  followsId?: string | null;
 };
 
 const STATUS_KEYS = Object.keys(POINT_STATUSES) as PointStatus[];
