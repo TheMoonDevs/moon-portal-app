@@ -150,7 +150,8 @@ export async function PATCH(request: Request, { params }: Params) {
     data: { ...data, updatedAt: nowIso() },
   });
   // New goals set up their scheduled tasks; changed ones update them.
-  if ('goals' in data)
+  // Goals make their tasks; their people follow the team.
+  if ('goals' in data || 'leadIds' in data || 'memberIds' in data)
     await syncGoalSchedules(updated, project.goals ?? [], user.id);
   return ok({ project: updated });
 }

@@ -36,7 +36,6 @@ export const VIEWS = [
   { key: 'kpi', label: 'KPI', icon: 'monitoring' },
   { key: 'pages', label: 'Pages', icon: 'description' },
   { key: 'goals', label: 'Goals', icon: 'track_changes' },
-  { key: 'schedule', label: 'Task Schedule', icon: 'calendar_month' },
   { key: 'members', label: 'Members', icon: 'group' },
 ] as const;
 

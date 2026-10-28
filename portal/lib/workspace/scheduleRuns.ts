@@ -210,8 +210,9 @@ export async function finish(task: Task, userId: string) {
       data: {
         status: TASK_STATUS.DONE,
         completedAt: new Date().toISOString(),
-        // Whoever did it shares the task's points.
+        // Whoever did it shares the task's points, and moved its goal.
         assigneeIds: Array.from(new Set([...(task.assigneeIds ?? []), userId])),
+        completedByIds: [userId],
         updatedAt: new Date().toISOString(),
       },
     }),

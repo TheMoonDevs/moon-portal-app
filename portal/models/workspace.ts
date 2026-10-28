@@ -61,18 +61,48 @@ export const OPEN_TASK_STATUSES = [
 export type GoalPeriod = 'day' | 'week' | 'month';
 
 /**
- * A standing target for a project, e.g. "2 songs released per week".
- * Progress is the number of done tasks linked to it in the current period.
- * `parts` splits the target, e.g. 9 shorts as 3 + 3 + 3 across channels.
+ * - `scheduled`: a target every day, week or month ("2 releases a week").
+ *   It makes its own dated tasks, and each period is met or missed.
+ * - `target`: one number to reach ("100 subscribers"). Progress adds up
+ *   from when it was set; reaching it makes it an achievement.
+ */
+export type GoalKind = 'scheduled' | 'target';
+
+/**
+ * A goal of a project. Progress is the done tasks linked to it (plus any
+ * added by hand): in the current period for a scheduled goal, or all
+ * together since it was set for a target goal.
+ * `parts` splits a scheduled target, e.g. 9 shorts as 3 + 3 + 3 across
+ * channels.
  */
 export type ProjectGoal = {
   id: string;
   title: string;
+  /** Scheduled when left out (goals from before there were kinds). */
+  kind?: GoalKind;
+  /** Per period for a scheduled goal; the number to reach for a target. */
   target: number;
   period: GoalPeriod;
-  /** The day the goal was set, YYYY-MM-DD; earlier periods do not count. */
+  /** The day the goal was set, YYYY-MM-DD; earlier work does not count. */
   since?: string;
   parts?: { id: string; label: string; target: number }[];
+  /**
+   * Scheduled goals: the weekdays (0 Sunday to 6) its tasks are for, in a
+   * weekly goal, e.g. [5] for "for Fri". Empty: one batch on Monday.
+   */
+  days?: number[];
+  /** Scheduled monthly goals: the day of the month, 1 to 28. */
+  monthDay?: number | null;
+  /** Scheduled goals make their tasks unless this is false. */
+  makeTasks?: boolean;
+  /** Who it is for; empty for the whole project team. */
+  assigneeIds?: string[];
+  /** Target goals: when the target was first reached. */
+  achievedAt?: string | null;
+  /** Target goals: the one it raised the bar on, e.g. 100 before 1000. */
+  previousId?: string | null;
+  /** The plan it was set up in, if any; its tasks link to that plan. */
+  planId?: string | null;
 };
 
 export enum TASK_SIZE {
@@ -193,6 +223,11 @@ export type Task = Loose<
      */
     forDate?: Nullable<string>;
     completedAt?: Nullable<DateValue>;
+    /**
+     * Who finished it; their work moves its goal. Older tasks have none,
+     * and their assignees count instead.
+     */
+    completedByIds?: string[];
     /** The project goal this task counts towards. */
     goalId?: Nullable<string>;
     goalPartId?: Nullable<string>;
@@ -236,8 +271,13 @@ export type TaskSchedule = Loose<
     lastRunOn?: Nullable<string>;
     /** The plan it was set up in; its tasks are linked to that plan. */
     planId?: Nullable<string>;
-    /** Set up for its goal when the goal was added; see goalSchedules. */
+    /**
+     * Run by its goal: the goal sets its days, count and people. Every
+     * schedule is one now; older ones were moved into goals.
+     */
     fromGoal?: boolean;
+    /** When an older schedule was moved into a goal. */
+    migratedAt?: Nullable<string>;
     createdById: string;
   }
 >;

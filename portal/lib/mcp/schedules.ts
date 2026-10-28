@@ -1,90 +1,55 @@
 import { db } from '@/lib/mongodb/db-client';
-import type { SessionUser } from '@/lib/permissions/server';
-import { describeSchedule, WEEKDAYS } from '@/lib/workspace/projects';
-import { readScheduleBody } from '@/lib/workspace/scheduleInput';
-import { runDueSchedules } from '@/lib/workspace/schedules';
-import { getWorkspaceForUser } from '@/lib/workspace/server';
-import type { Project, TaskSchedule } from '@/models/workspace';
+import { addGoal, changeGoal } from '@/lib/workspace/goals';
+import type { ProjectGoal, TaskSchedule } from '@/models/workspace';
 
 import { findPlan } from './plans';
-import { allowsInProject, type Tool, ToolError } from './shared';
-import { findProject, resolveGoal, resolvePeople } from './workspace';
+import { type Tool, ToolError } from './shared';
+import { findProject, goalFields, goalView, resolveGoal } from './workspace';
 
 /*
- * Scheduled tasks: repeating work that creates its own tasks in a project,
- * set up on the project or in a plan.
+ * Repeating work. There is no separate task schedule any more: a scheduled
+ * goal makes its own dated tasks. These tools keep their old names so
+ * assistants that know them still work, and act on repeating goals.
  */
 
-const scheduleView = (s: TaskSchedule, project?: Project | null) => ({
-  id: s.id,
-  title: s.title,
-  ...(project && { project: project.name }),
-  repeats: describeSchedule(s),
-  ...(s.active ? { next: s.nextRunOn } : { paused: true }),
-  ...(s.planId && { planId: s.planId }),
-});
-
-/** "Mon", "monday" or 1 to the day number. */
-const weekday = (d: unknown) => {
-  if (typeof d === 'number' && d >= 0 && d <= 6) return d;
-  const name = String(d).trim().slice(0, 3).toLowerCase();
-  const i = WEEKDAYS.findIndex((w) => w.toLowerCase() === name);
-  if (i < 0) throw new ToolError(`Unknown day "${d}". Use Mon, Tue … Sun.`);
-  return i;
-};
-
-/** The schedule fields the assistant passed, in the API's shape. */
-async function scheduleBody(user: SessionUser, project: Project, args: any) {
-  const body: Record<string, unknown> = {};
-  for (const key of ['title', 'every', 'monthDay', 'count', 'dueInDays'])
-    if (args?.[key] !== undefined) body[key] = args[key];
-  if (args?.days !== undefined)
-    body.weekdays = (Array.isArray(args.days) ? args.days : [args.days]).map(
-      weekday,
-    );
-  if (args?.people !== undefined)
-    body.assigneeIds = await resolvePeople(
-      user,
-      project.companyId,
-      args.people,
-    );
-  if (args?.goal !== undefined)
-    Object.assign(body, resolveGoal(project, args.goal, args.goalPart));
-  if (args?.major !== undefined) body.size = args.major ? 'MAJOR' : 'MINOR';
-  if (typeof args?.active === 'boolean') body.active = args.active;
-  return body;
-}
-
 const FIELDS = {
-  title: { type: 'string', description: 'The task it creates.' },
+  title: { type: 'string', description: 'What repeats, e.g. "Post a short".' },
   every: { type: 'string', enum: ['day', 'week', 'month'] },
   days: {
     type: 'array',
     items: { type: 'string' },
-    description: 'For weekly: days such as ["Mon", "Thu"].',
+    description: 'For weekly: the days its tasks are for, e.g. ["Mon", "Thu"].',
   },
   monthDay: { type: 'integer', description: 'For monthly: 1 to 28.' },
   count: {
     type: 'integer',
     description: 'Tasks each time, e.g. 3 for three shorts.',
   },
-  dueInDays: { type: 'integer', description: 'Due this many days later.' },
   people: {
     type: 'array',
     items: { type: 'string' },
-    description: 'Who gets the tasks: "me", names or emails.',
+    description:
+      'Who gets the tasks: "me", names or emails. Leave out for the whole team.',
   },
-  goal: { type: 'string', description: 'Goal the tasks count towards.' },
-  goalPart: { type: 'string' },
-  major: { type: 'boolean' },
+};
+
+/** The goal's per-period target for `count` tasks on each of its days. */
+const targetFor = (args: any, goal?: ProjectGoal) => {
+  const count = Number.isInteger(args?.count) ? args.count : undefined;
+  if (count === undefined) return undefined;
+  const every = args?.every ?? goal?.period ?? 'week';
+  const days = Array.isArray(args?.days)
+    ? args.days.length
+    : (goal?.days?.length ?? 0);
+  return every === 'week' ? count * Math.max(1, days) : count;
 };
 
 export const SCHEDULE_TOOLS: Tool[] = [
   {
     name: 'list_schedules',
-    title: 'List scheduled tasks',
+    title: 'List repeating goals',
     description:
-      'The scheduled (repeating) tasks of a project, with how often they run and when next.',
+      "A project's repeating (scheduled) goals: what they make, on which days, for whom, and the next run.",
     inputSchema: {
       type: 'object',
       properties: { project: { type: 'string' } },
@@ -94,107 +59,130 @@ export const SCHEDULE_TOOLS: Tool[] = [
     run: async (user, args) => {
       const project = await findProject(user, args?.project, 'tasks:read');
       const schedules: TaskSchedule[] = await db.taskSchedule.findMany({
-        where: { projectId: project.id },
-        orderBy: { createdAt: 'asc' },
+        where: { projectId: project.id, active: true },
       });
-      return { schedules: schedules.map((s) => scheduleView(s, project)) };
+      return {
+        goals: (project.goals ?? [])
+          .filter((g) => g.kind !== 'target')
+          .map((g) => ({
+            ...goalView(g),
+            next:
+              schedules
+                .filter((s) => s.goalId === g.id)
+                .map((s) => s.nextRunOn)
+                .sort()[0] ?? null,
+          })),
+      };
     },
   },
   {
     name: 'add_schedule',
-    title: 'Schedule a repeating task',
+    title: 'Add repeating work',
     description:
-      'Sets up a task that creates itself in a project on a schedule, e.g. "Post a short" 3 times every Mon and Thu. Name a plan to set it up in that plan (it shows there, not as a step). Weekly needs days.',
+      'Sets up repeating work in a project, e.g. "Post a short" 3 times every Mon and Thu. It is a repeating goal (the same as set_goal with kind scheduled): it makes its own dated tasks on those days, and they count towards it. Name a plan to link it to that plan. With goal, it gives that existing goal these days instead.',
     inputSchema: {
       type: 'object',
       properties: {
         project: { type: 'string', description: 'Project id or exact name.' },
         plan: {
           type: 'string',
-          description: 'Plan id or title to set it up in (optional).',
+          description: 'Plan id or title to link it to (optional).',
+        },
+        goal: {
+          type: 'string',
+          description: 'An existing goal to put on these days (optional).',
         },
         ...FIELDS,
       },
-      required: ['project', 'title', 'every'],
+      required: ['project'],
     },
     annotations: { readOnlyHint: false, destructiveHint: false },
     run: async (user, args) => {
-      const project = await findProject(user, args?.project, 'tasks:create');
-      let planId: string | null = null;
+      const project = await findProject(user, args?.project, 'projects:edit');
+      const { goalId } = resolveGoal(project, args?.goal);
+      const existing = project.goals?.find((g) => g.id === goalId);
+      const fields = await goalFields(
+        user,
+        project,
+        {
+          ...args,
+          kind: 'scheduled',
+          period: args?.every ?? existing?.period,
+          target: targetFor(args, existing),
+          makeTasks: true,
+        },
+        existing,
+      );
       if (args?.plan) {
         const plan = await findPlan(user, args.plan, true);
         if (plan.companyId !== project.companyId)
           throw new ToolError('The project must be in the plan’s company.');
-        planId = plan.id;
+        fields.planId = plan.id;
       }
-      const body = await scheduleBody(user, project, args);
-      if (!body.assigneeIds) body.assigneeIds = [user.id];
-      const { data, error } = readScheduleBody(body, project);
-      if (error || !data) throw new ToolError(error ?? 'Invalid schedule.');
-      const now = new Date().toISOString();
-      const schedule: TaskSchedule = await db.taskSchedule.create({
-        data: {
-          ...data,
-          companyId: project.companyId,
-          projectId: project.id,
-          planId,
-          lastRunOn: null,
-          createdById: user.id,
-          createdAt: now,
-          updatedAt: now,
-        },
-      });
-      await runDueSchedules({ projectId: { in: [project.id] } });
-      return { schedule: scheduleView(schedule, project) };
+      if (existing) {
+        const goal = await changeGoal(project, existing.id, fields, user.id);
+        return { project: project.name, goal: goal && goalView(goal) };
+      }
+      if (!fields.title) throw new ToolError('Say what repeats (title).');
+      const { goal } = await addGoal(
+        project,
+        { target: 1, period: 'week', ...fields },
+        user.id,
+      );
+      return { project: project.name, goal: goal && goalView(goal) };
     },
   },
   {
     name: 'update_schedule',
-    title: 'Change a scheduled task',
+    title: 'Change repeating work',
     description:
-      'Changes a scheduled task (find its id with list_schedules or list_plans): what it creates, how often, who gets it, or pause it with active false. Set remove to stop it for good; tasks it already made stay.',
+      'Changes a repeating goal (by goal id or title, or the id of its schedule from list_plans): its title, days, tasks each time, or who gets them. active false stops it making tasks, true starts again. remove stops it for good (the goal stays and can still be ticked off by hand; use remove_goal to drop the goal). Tasks it already made stay.',
     inputSchema: {
       type: 'object',
       properties: {
-        schedule: { type: 'string', description: 'Schedule id.' },
+        project: { type: 'string', description: 'Project id or exact name.' },
+        goal: { type: 'string', description: 'Goal id or title.' },
+        schedule: { type: 'string', description: 'Schedule id (instead).' },
         ...FIELDS,
         active: { type: 'boolean' },
         remove: { type: 'boolean' },
       },
-      required: ['schedule'],
     },
-    annotations: { readOnlyHint: false, destructiveHint: true },
+    annotations: { readOnlyHint: false, destructiveHint: false },
     run: async (user, args) => {
-      const schedule: TaskSchedule | null = await db.taskSchedule.findFirst({
-        where: { id: String(args?.schedule ?? '') },
-      });
-      if (!schedule)
-        throw new ToolError(`No scheduled task "${args?.schedule}".`);
-      const permission = args?.remove ? 'tasks:delete' : 'tasks:edit';
-      const project: Project | null = await db.project.findFirst({
-        where: { id: schedule.projectId },
-      });
-      if (!project) throw new ToolError('Its project is gone.');
-      const permissions = (await getWorkspaceForUser(user)).find(
-        (w) => w.company.id === schedule.companyId,
-      )?.permissions;
-      if (!allowsInProject(permissions, user, project, permission))
-        throw new ToolError(
-          'Only the people on its project (or a manager) can change it.',
-        );
-      if (args?.remove) {
-        await db.taskSchedule.delete({ where: { id: schedule.id } });
-        return { removed: schedule.title };
+      let projectRef = args?.project;
+      let goalRef = args?.goal;
+      if (args?.schedule) {
+        const schedule: TaskSchedule | null = await db.taskSchedule.findFirst({
+          where: { id: String(args.schedule) },
+        });
+        if (!schedule?.goalId)
+          throw new ToolError(`No repeating work "${args.schedule}".`);
+        projectRef = schedule.projectId;
+        goalRef = schedule.goalId;
       }
-      const body = await scheduleBody(user, project, args);
-      const { data, error } = readScheduleBody(body, project, schedule);
-      if (error || !data) throw new ToolError(error ?? 'Invalid schedule.');
-      const updated: TaskSchedule = await db.taskSchedule.update({
-        where: { id: schedule.id },
-        data: { ...data, updatedAt: new Date().toISOString() },
-      });
-      await runDueSchedules({ projectId: { in: [project.id] } });
-      return { schedule: scheduleView(updated, project) };
+      if (!projectRef || !goalRef)
+        throw new ToolError('Name the project and goal (or a schedule id).');
+      const project = await findProject(user, projectRef, 'projects:edit');
+      const { goalId } = resolveGoal(project, goalRef);
+      const existing = project.goals!.find((g) => g.id === goalId)!;
+      const fields = await goalFields(
+        user,
+        project,
+        {
+          ...args,
+          period: args?.every,
+          target: targetFor(args, existing),
+          makeTasks: args?.remove
+            ? false
+            : typeof args?.active === 'boolean'
+              ? args.active
+              : undefined,
+        },
+        existing,
+      );
+      const goal = await changeGoal(project, existing.id, fields, user.id);
+      return { project: project.name, goal: goal && goalView(goal) };
     },
   },
 ];

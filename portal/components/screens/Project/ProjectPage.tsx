@@ -36,7 +36,6 @@ import { GoalsSection } from './sections/GoalsSection';
 import { KpiSection } from './sections/KpiSection';
 import { MembersSection } from './sections/MembersSection';
 import { PagesGallery, PagesInside } from './sections/PagesSection';
-import { ScheduleSection } from './sections/ScheduleSection';
 import { WorklogsSection } from './sections/WorklogsSection';
 import {
   byCreation,
@@ -536,14 +535,17 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
   const [deleting, setDeleting] = useState<Page | null>(null);
   const [busy, setBusy] = useState(false);
 
-  // Links from when pages were called ideas still open them.
+  // Links from when pages were called ideas, and from the task schedule
+  // (now part of goals), still open the right place.
   const asked = params?.get('view');
   const view: ViewKey =
     asked === 'ideas'
       ? 'pages'
-      : isView(asked)
-        ? (asked as ViewKey)
-        : VIEWS[0].key;
+      : asked === 'schedule'
+        ? 'goals'
+        : isView(asked)
+          ? (asked as ViewKey)
+          : VIEWS[0].key;
   const pageId =
     view === 'pages'
       ? (params?.get('page') ?? params?.get('idea') ?? null)
@@ -763,21 +765,11 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
           <GoalsSection
             project={project}
             tasks={tasks}
-            canEdit={canEdit}
-            onSaved={load}
-          />
-        );
-      case 'schedule':
-        return (
-          <ScheduleSection
-            project={project}
-            tasks={tasks}
             people={people}
             companyUsers={companyUsers}
-            canCreate={canInProject(project, 'tasks:create')}
-            canEdit={canInProject(project, 'tasks:edit')}
-            canDelete={canInProject(project, 'tasks:delete')}
-            onTasksChange={load}
+            canEdit={canEdit}
+            canTick={canInProject(project, 'tasks:edit')}
+            onSaved={load}
           />
         );
       case 'members':

@@ -3,7 +3,7 @@ import type { SessionUser } from '@/lib/permissions/server';
 import { syncTaskPoints } from '@/lib/progress/server';
 import { isOnTeam } from '@/lib/worklogs/linker';
 import { fitGoal } from '@/lib/workspace/goalFit';
-import { syncGoalSchedules } from '@/lib/workspace/goalSchedules';
+import { addGoal, changeGoal, removeGoal } from '@/lib/workspace/goals';
 import { updateGoalProgress } from '@/lib/workspace/goalTally';
 import { moveProject } from '@/lib/workspace/moveProject';
 import {
@@ -12,10 +12,11 @@ import {
   requestProject,
 } from '@/lib/workspace/projectRequests';
 import {
+  describeGoalSchedule,
   PERIOD_LABELS,
   runsOn,
-  sanitizeGoals,
   toDay,
+  WEEKDAYS,
 } from '@/lib/workspace/projects';
 import {
   completeScheduleRun,
@@ -45,6 +46,7 @@ import {
   TASK_STATUS,
 } from '@/models/workspace';
 
+import { findPlan } from './plans';
 import { allowsInProject, companiesWith, type Tool, ToolError } from './shared';
 
 /** What the person may do in a company. */
@@ -250,16 +252,33 @@ async function scheduleFor(
   return matches.length === 1 ? matches[0].id : null;
 }
 
-/** Status fields for moving a task to `status`. */
-export const statusChange = (task: Task | null, status: TASK_STATUS) => ({
-  status,
-  completedAt:
-    status === TASK_STATUS.DONE
-      ? task?.status === TASK_STATUS.DONE
+/**
+ * Status fields for moving a task to `status`; `by` is who did it, recorded
+ * when it is finished.
+ */
+export const statusChange = (
+  task: Task | null,
+  status: TASK_STATUS,
+  by?: string,
+) => {
+  const wasDone = task?.status === TASK_STATUS.DONE;
+  const done = status === TASK_STATUS.DONE;
+  return {
+    status,
+    completedAt: done
+      ? wasDone
         ? task.completedAt
         : new Date().toISOString()
       : null,
-});
+    completedByIds: done
+      ? wasDone
+        ? (task.completedByIds ?? [])
+        : by
+          ? [by]
+          : []
+      : [],
+  };
+};
 
 const TASK_STATUSES: TASK_STATUS[] = Object.values(TASK_STATUS).filter(
   (s) => s !== TASK_STATUS.ARCHIVED,
@@ -310,7 +329,7 @@ export async function createTask(
       title,
       description: text(input.description, 4000) || null,
       size: input.major ? TASK_SIZE.MAJOR : TASK_SIZE.MINOR,
-      ...statusChange(null, status),
+      ...statusChange(null, status, user.id),
       assigneeIds,
       dueDate,
       forDate,
@@ -347,33 +366,75 @@ export async function describeTask(task: Task, project?: Project | null) {
 const PERIODS: GoalPeriod[] = ['day', 'week', 'month'];
 const EFFORTS = Object.values(PROJECT_EFFORT);
 
-const goalView = (g: ProjectGoal) => ({
+/** A goal as the assistant reads it. */
+export const goalView = (g: ProjectGoal, people?: Map<string, string>) => ({
   id: g.id,
   title: g.title,
-  target: `${g.target} ${PERIOD_LABELS[g.period]}`,
+  kind: g.kind ?? 'scheduled',
+  target:
+    g.kind === 'target'
+      ? `${g.target} in total`
+      : `${g.target} ${PERIOD_LABELS[g.period]}`,
+  ...(g.kind !== 'target' && {
+    tasks: g.makeTasks === false ? 'makes no tasks' : describeGoalSchedule(g),
+  }),
+  for: g.assigneeIds?.length
+    ? g.assigneeIds.map((id) => people?.get(id) ?? id)
+    : 'whole team',
+  ...(g.achievedAt && { reached: g.achievedAt }),
+  ...(g.planId && { planId: g.planId }),
   ...(g.parts?.length && {
     parts: g.parts.map((p) => `${p.label}: ${p.target}`),
   }),
 });
 
-async function saveGoals(
+/** "Mon", "monday" or 1 to the day number. */
+const weekday = (d: unknown) => {
+  if (typeof d === 'number' && d >= 0 && d <= 6) return d;
+  const name = String(d).trim().slice(0, 3).toLowerCase();
+  const i = WEEKDAYS.findIndex((w) => w.toLowerCase() === name);
+  if (i < 0) throw new ToolError(`Unknown day "${d}". Use Mon, Tue … Sun.`);
+  return i;
+};
+
+/** The goal fields the assistant passed, in a goal's shape. */
+export async function goalFields(
   user: SessionUser,
   project: Project,
-  goals: unknown[],
-) {
-  const created = project.createdAt
-    ? new Date(project.createdAt as string).toISOString().slice(0, 10)
-    : null;
-  const updated: Project = await db.project.update({
-    where: { id: project.id },
-    data: {
-      goals: sanitizeGoals(goals, project.goals ?? [], created),
-      updatedAt: new Date().toISOString(),
-    },
-  });
-  // New goals set up their scheduled tasks; changed ones update them.
-  await syncGoalSchedules(updated, project.goals ?? [], user.id);
-  return updated;
+  args: any,
+  existing?: ProjectGoal,
+): Promise<Partial<ProjectGoal>> {
+  const out: Partial<ProjectGoal> = {};
+  if (args?.kind !== undefined) {
+    if (!['scheduled', 'target'].includes(args.kind))
+      throw new ToolError('Kind is scheduled or target.');
+    out.kind = args.kind;
+  }
+  if (args?.title !== undefined) out.title = text(args.title, 120);
+  if (args?.target !== undefined) out.target = Number(args.target);
+  if (args?.period !== undefined) {
+    if (!PERIODS.includes(args.period))
+      throw new ToolError('Period is day, week or month.');
+    out.period = args.period;
+  }
+  if (args?.days !== undefined)
+    out.days = (Array.isArray(args.days) ? args.days : [args.days]).map(
+      weekday,
+    );
+  if (args?.monthDay !== undefined) out.monthDay = Number(args.monthDay);
+  if (typeof args?.makeTasks === 'boolean') out.makeTasks = args.makeTasks;
+  if (args?.people !== undefined)
+    out.assigneeIds =
+      (await resolvePeople(user, project.companyId, args.people)) ?? [];
+  if (Array.isArray(args?.parts))
+    out.parts = args.parts.map((p: any) => ({
+      // Keep a part's id when its label stays, so linked tasks still count.
+      id: existing?.parts?.find((x) => same(x.label, String(p?.label ?? '')))
+        ?.id as string,
+      label: p?.label,
+      target: p?.target,
+    }));
+  return out;
 }
 
 export const WORKSPACE_TOOLS: Tool[] = [
@@ -576,7 +637,7 @@ export const WORKSPACE_TOOLS: Tool[] = [
     name: 'set_goal',
     title: 'Set a goal',
     description:
-      'Adds a goal to a project, or changes one (match it by id or title). A goal is a target per day, week or month, e.g. "Release lyrics videos", 3 per week. Every done task linked to the goal counts in the period of the day it was scheduled for, so work done early for next week fills next week. A period that ends short counts as missed. Parts split a target, e.g. 9 shorts as 3 per channel. A new goal also sets up a scheduled task that makes its tasks at the start of each period (one per part); change its days with update_schedule.',
+      'Adds a goal to a project, or changes one (match it by id or title). Two kinds. scheduled (the default): a target per day, week or month, e.g. "Release lyrics videos", 3 per week; it makes its own dated tasks ("for Fri 30") on its days (days, e.g. ["Fri"] for weekly; none means one batch on Monday due by Sunday; monthDay for monthly), unless makeTasks is false. Every done task linked to it counts in the period of the day it was for, so work done early for a later week fills that week, and a period that ends short counts as missed. Parts split a scheduled target, e.g. 9 shorts as 3 per channel. target: one number to reach, e.g. 1000 subscribers; it adds up from when it was set (update_goal_progress with done sets the total) and is kept as an achievement once reached. people: who it is for ("me", names or emails); leave out for the whole team, which is the usual for targets. plan links a repeating goal to a plan.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -586,9 +647,32 @@ export const WORKSPACE_TOOLS: Tool[] = [
           description:
             'Id or title of the goal to change; leave out to add one.',
         },
+        kind: { type: 'string', enum: ['scheduled', 'target'] },
         title: { type: 'string' },
-        target: { type: 'integer', minimum: 1 },
+        target: {
+          type: 'integer',
+          minimum: 1,
+          description:
+            'Per period for scheduled; the number to reach for target.',
+        },
         period: { type: 'string', enum: PERIODS },
+        days: {
+          type: 'array',
+          items: { type: 'string' },
+          description:
+            'Weekly scheduled goals: the days its tasks are for, e.g. ["Mon", "Thu"].',
+        },
+        monthDay: { type: 'integer', description: 'Monthly: 1 to 28.' },
+        makeTasks: {
+          type: 'boolean',
+          description: 'Scheduled goals: false to make no tasks.',
+        },
+        people: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Who it is for; empty for the whole team.',
+        },
+        plan: { type: 'string', description: 'Plan id or title (optional).' },
         parts: {
           type: 'array',
           items: {
@@ -616,37 +700,24 @@ export const WORKSPACE_TOOLS: Tool[] = [
         );
       if (!existing && !text(args?.title, 120))
         throw new ToolError('Give the new goal a title.');
-      if (args?.period !== undefined && !PERIODS.includes(args.period))
-        throw new ToolError('Period is day, week or month.');
-      const parts = Array.isArray(args?.parts)
-        ? args.parts.map((p: any) => ({
-            // Keep a part's id when its label stays, so linked tasks still count.
-            id: existing?.parts?.find((x) =>
-              same(x.label, String(p?.label ?? '')),
-            )?.id,
-            label: p?.label,
-            target: p?.target,
-          }))
-        : existing?.parts;
-      const next = {
-        ...existing,
-        title: text(args?.title, 120) || existing?.title,
-        target: args?.target ?? existing?.target ?? 1,
-        period: args?.period ?? existing?.period ?? 'week',
-        parts,
-      };
-      const updated = await saveGoals(
-        user,
-        project,
-        existing
-          ? goals.map((g) => (g.id === existing.id ? next : g))
-          : [...goals, next],
-      );
+      const fields = await goalFields(user, project, args, existing);
+      if (args?.plan) {
+        const plan = await findPlan(user, args.plan, true);
+        if (plan.companyId !== project.companyId)
+          throw new ToolError('The project must be in the plan’s company.');
+        fields.planId = plan.id;
+      }
       const saved = existing
-        ? updated.goals?.find((g) => g.id === existing.id)
-        : updated.goals?.[updated.goals.length - 1];
+        ? await changeGoal(project, existing.id, fields, user.id)
+        : (
+            await addGoal(
+              project,
+              { target: 1, period: 'week', ...fields },
+              user.id,
+            )
+          ).goal;
       return {
-        project: updated.name,
+        project: project.name,
         goal: saved ? goalView(saved) : null,
         added: !existing,
       };
@@ -670,11 +741,7 @@ export const WORKSPACE_TOOLS: Tool[] = [
       const project = await findProject(user, args?.project, 'projects:edit');
       const { goalId } = resolveGoal(project, args?.goal);
       const goal = project.goals?.find((g) => g.id === goalId);
-      await saveGoals(
-        user,
-        project,
-        (project.goals ?? []).filter((g) => g.id !== goalId),
-      );
+      await removeGoal(project, goalId!, user.id);
       return { project: project.name, removed: goal?.title };
     },
   },
@@ -682,7 +749,7 @@ export const WORKSPACE_TOOLS: Tool[] = [
     name: 'update_goal_progress',
     title: 'Update goal progress',
     description:
-      'Adds progress to a goal by hand, for work no task tracks (followers gained, a reel posted from a phone, a sale). Use add for how much more was done (negative to take some back), or done to set the total for the period; done tasks always count on their own, and finished tasks are matched to goals automatically. date picks the period (default today). A goal with parts needs the part.',
+      'Adds progress to a goal by hand, for work no task tracks (followers gained, a reel posted from a phone, a sale). Use add for how much more was done (negative to take some back), or done to set the total for the period (for a target goal, the running total, e.g. done 640 for 640 subscribers); done tasks always count on their own, and finished tasks are matched to goals automatically. date picks the period (default today). A goal with parts needs the part.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -786,7 +853,7 @@ export const WORKSPACE_TOOLS: Tool[] = [
       if (args?.status !== undefined) {
         if (!TASK_STATUSES.includes(args.status))
           throw new ToolError('Unknown status.');
-        Object.assign(data, statusChange(task, args.status));
+        Object.assign(data, statusChange(task, args.status, user.id));
       }
       if (args?.assignees !== undefined)
         data.assigneeIds = await resolvePeople(
@@ -942,7 +1009,7 @@ export async function taskForPoint(
         await db.task.update({
           where: { id: found.id },
           data: {
-            ...statusChange(found, TASK_STATUS.DONE),
+            ...statusChange(found, TASK_STATUS.DONE, user.id),
             updatedAt: new Date().toISOString(),
           },
         }),

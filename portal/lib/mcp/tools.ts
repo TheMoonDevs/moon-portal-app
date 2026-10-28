@@ -530,7 +530,7 @@ export const TOOLS: Tool[] = [
         await db.task.update({
           where: { id: task.id },
           data: {
-            ...statusChange(task, status),
+            ...statusChange(task, status, user.id),
             updatedAt: new Date().toISOString(),
           },
         }),

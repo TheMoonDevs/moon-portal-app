@@ -2,6 +2,7 @@ import { db } from '@/lib/mongodb/db-client';
 import type { TaskSchedule } from '@/models/workspace';
 
 import { addDays, nextRunOnOrAfter, toDay } from './projects';
+import { moveSchedulesIntoGoals } from './scheduleMigration';
 import { scheduleTask } from './scheduleRuns';
 
 /** A schedule that was missed for a while creates at most this many runs. */
@@ -24,6 +25,8 @@ export async function runDueSchedules(
     companyId?: { in: string[] };
   } = {},
 ) {
+  // Older schedules become goals first (once); goals run them from then.
+  await moveSchedulesIntoGoals(where);
   const today = toDay();
   const due: TaskSchedule[] = await db.taskSchedule.findMany({
     where: {

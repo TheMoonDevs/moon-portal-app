@@ -1,88 +1,102 @@
 import { db } from '@/lib/mongodb/db-client';
-import type {
-  GoalPeriod,
-  Project,
-  ProjectGoal,
-  ScheduleEvery,
-  TaskSchedule,
-} from '@/models/workspace';
+import type { Project, ProjectGoal, TaskSchedule } from '@/models/workspace';
 import { TASK_SIZE } from '@/models/workspace';
 
-import { nextRunOnOrAfter, toDay } from './projects';
+import { goalRule, isTarget, nextRunOnOrAfter, toDay } from './projects';
 import { runDueSchedules } from './schedules';
 
 /*
- * Goals and scheduled tasks go together. A new goal sets up a scheduled
- * task that makes its tasks at the start of each period, counting towards
- * it: one for the goal, or one per part when it has parts ("3 shorts on each
- * channel"). A changed target or period changes that scheduled task, and a
- * removed goal (or part) stops it; the tasks it made stay. A scheduled task
- * someone set up for the goal themselves is left alone, and one they removed
- * is not brought back.
+ * A scheduled goal makes its own dated tasks: there is no separate task
+ * schedule any more, the goal is the schedule. Underneath, each scheduled
+ * goal (or each part of one) runs one TaskSchedule that the goal fully
+ * decides: its days, how many tasks each run makes, who they are for (the
+ * goal's people, or the whole team) and the plan they link to. Changing the
+ * goal changes it; a target goal, a goal that makes no tasks, or a removed
+ * goal or part stops it. The tasks already made always stay.
  */
 
-const RULES: Record<
-  GoalPeriod,
-  {
-    every: ScheduleEvery;
-    weekdays: number[];
-    monthDay: number | null;
-    dueInDays: number | null;
-  }
-> = {
-  day: { every: 'day', weekdays: [], monthDay: null, dueInDays: 0 },
-  // Made on Monday, due by Sunday.
-  week: { every: 'week', weekdays: [1], monthDay: null, dueInDays: 6 },
-  month: { every: 'month', weekdays: [], monthDay: 1, dueInDays: null },
-};
-
-type Unit = { partId: string | null; title: string; count: number };
+type Unit = { partId: string | null; title: string; target: number };
 
 const unitsOf = (goal: ProjectGoal): Unit[] =>
   goal.parts?.length
     ? goal.parts.map((p) => ({
         partId: p.id,
         title: `${goal.title}: ${p.label}`,
-        count: p.target,
+        target: p.target,
       }))
-    : [{ partId: null, title: goal.title, count: goal.target }];
+    : [{ partId: null, title: goal.title, target: goal.target }];
 
 const sameUnit = (s: TaskSchedule, goalId: string, partId: string | null) =>
   s.goalId === goalId && (s.goalPartId ?? null) === partId;
 
-/** Keeps the project's goal schedules in step after its goals changed. */
+const makesTasks = (goal: ProjectGoal) =>
+  !isTarget(goal) && goal.makeTasks !== false;
+
+/** Who a goal's tasks are for: its people, else the whole team. */
+export const goalPeople = (project: Project, goal: ProjectGoal) =>
+  goal.assigneeIds?.length
+    ? goal.assigneeIds
+    : Array.from(
+        new Set([...(project.leadIds ?? []), ...(project.memberIds ?? [])]),
+      );
+
+const sameList = (a: number[] | string[] = [], b: number[] | string[] = []) =>
+  a.length === b.length && a.every((x, i) => x === b[i]);
+
+/** Keeps the project's goal schedules in step with its goals and team. */
 export async function syncGoalSchedules(
   project: Project,
-  before: ProjectGoal[],
+  _before: ProjectGoal[],
   userId: string,
 ) {
-  const after = project.goals ?? [];
+  const goals = project.goals ?? [];
   const schedules: TaskSchedule[] = await db.taskSchedule.findMany({
-    where: { projectId: project.id },
+    where: { projectId: project.id, fromGoal: true },
   });
   const now = new Date().toISOString();
   const today = toDay();
+  const kept = new Set<string>();
   let changed = false;
 
-  for (const goal of after) {
-    const old = before.find((g) => g.id === goal.id);
-    const rule = RULES[goal.period] ?? RULES.week;
-    const periodChanged = !!old && old.period !== goal.period;
+  for (const goal of goals.filter(makesTasks)) {
+    const people = goalPeople(project, goal);
     for (const unit of unitsOf(goal)) {
-      const count = Math.min(50, Math.max(1, unit.count));
-      const mine = schedules.find(
-        (s) => s.fromGoal && sameUnit(s, goal.id, unit.partId),
-      );
+      const rule = goalRule(goal, unit.target);
+      const count = Math.min(50, rule.count);
+      const mine = schedules.find((s) => sameUnit(s, goal.id, unit.partId));
+      const want = {
+        title: unit.title,
+        assigneeIds: people,
+        every: rule.every,
+        weekdays: rule.weekdays,
+        monthDay: rule.monthDay,
+        dueInDays: rule.dueInDays,
+        count,
+        planId: goal.planId ?? mine?.planId ?? null,
+      };
       if (mine) {
-        if (mine.title === unit.title && mine.count === count && !periodChanged)
+        kept.add(mine.id);
+        const sameDays =
+          mine.every === rule.every &&
+          sameList(mine.weekdays ?? [], rule.weekdays) &&
+          (mine.monthDay ?? null) === rule.monthDay;
+        if (
+          sameDays &&
+          mine.active &&
+          mine.title === want.title &&
+          mine.count === count &&
+          (mine.dueInDays ?? null) === rule.dueInDays &&
+          (mine.planId ?? null) === want.planId &&
+          sameList(mine.assigneeIds ?? [], people)
+        )
           continue;
         await db.taskSchedule.update({
           where: { id: mine.id },
           data: {
-            title: unit.title,
-            count,
-            ...(periodChanged && {
-              ...rule,
+            ...want,
+            active: true,
+            // New days: the next run is the first of them from today.
+            ...((!sameDays || !mine.active) && {
               nextRunOn: nextRunOnOrAfter(rule, today),
             }),
             updatedAt: now,
@@ -91,45 +105,35 @@ export async function syncGoalSchedules(
         changed = true;
         continue;
       }
-      // Only a new goal, or a new part of one, sets one up.
-      const isNew =
-        !old ||
-        (!!unit.partId && !old.parts?.some((p) => p.id === unit.partId));
-      if (!isNew || schedules.some((s) => sameUnit(s, goal.id, unit.partId)))
-        continue;
-      await db.taskSchedule.create({
+      const created: TaskSchedule = await db.taskSchedule.create({
         data: {
           companyId: project.companyId,
           projectId: project.id,
-          title: unit.title,
+          ...want,
           description: null,
           size: TASK_SIZE.MINOR,
-          assigneeIds: [],
           goalId: goal.id,
           goalPartId: unit.partId,
-          ...rule,
-          count,
           active: true,
-          // This period's tasks are made now; then at each period's start.
-          nextRunOn: today,
+          // This period's tasks are made now, then on each run day.
+          nextRunOn:
+            rule.every === 'week' && rule.dueInDays === 0
+              ? nextRunOnOrAfter(rule, today)
+              : today,
           lastRunOn: null,
-          planId: null,
           fromGoal: true,
           createdById: userId,
           createdAt: now,
           updatedAt: now,
         },
       });
+      kept.add(created.id);
       changed = true;
     }
   }
 
-  // Goals and parts that went: their goal schedules stop.
-  const gone = schedules.filter((s) => {
-    if (!s.fromGoal) return false;
-    const goal = after.find((g) => g.id === s.goalId);
-    return !goal || !unitsOf(goal).some((u) => sameUnit(s, goal.id, u.partId));
-  });
+  // Goals, parts and kinds that no longer make tasks: theirs stop.
+  const gone = schedules.filter((s) => !kept.has(s.id));
   if (gone.length) {
     await db.taskSchedule.deleteMany({
       where: { id: { in: gone.map((s) => s.id) } },

@@ -3,7 +3,7 @@ import type { GoalTally, Project, ProjectGoal, Task } from '@/models/workspace';
 import { TASK_STATUS } from '@/models/workspace';
 
 import type { DoneTask } from './projects';
-import { goalProgress, periodRange, tallyRows, toDay } from './projects';
+import { goalProgress, goalWindow, tallyRows, toDay } from './projects';
 
 /*
  * Progress added by hand, for goals tasks cannot track (followers gained,
@@ -38,7 +38,8 @@ export async function updateGoalProgress(
 ) {
   const { goal, partId } = input;
   const day = input.day ?? toDay();
-  const { from } = periodRange(goal.period, day);
+  // A target goal keeps one running total, from the day it was set.
+  const { from } = goalWindow(goal, day);
   const where = {
     projectId: project.id,
     goalId: goal.id,
@@ -59,6 +60,8 @@ export async function updateGoalProgress(
         goalPartId: true,
         forDate: true,
         completedAt: true,
+        completedByIds: true,
+        assigneeIds: true,
       },
     }),
   ]);

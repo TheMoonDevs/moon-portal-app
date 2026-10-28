@@ -387,7 +387,7 @@ const ProjectCard = ({
                   {goals.map(({ goal, progress }) => (
                     <TipRow
                       key={goal.id}
-                      label={`${goal.title} ${PERIOD_NOW[goal.period] ?? ''}`}
+                      label={`${goal.title} ${goal.kind === 'target' ? 'in total' : (PERIOD_NOW[goal.period] ?? '')}`}
                       value={`${progress?.done ?? 0}/${goal.target}`}
                     />
                   ))}

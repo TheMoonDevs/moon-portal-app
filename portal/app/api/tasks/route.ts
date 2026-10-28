@@ -88,6 +88,7 @@ export async function POST(request: Request) {
       // A goal picked (or left empty) by hand is not looked for again.
       ...('goalId' in body && { goalChecked: true }),
       completedAt: status === TASK_STATUS.DONE ? now : null,
+      completedByIds: status === TASK_STATUS.DONE ? [user.id] : [],
       createdById: user.id,
       createdAt: now,
       updatedAt: now,

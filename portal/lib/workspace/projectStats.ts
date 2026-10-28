@@ -5,7 +5,9 @@ import { tallyRowsFor } from './goalTally';
 import type { DoneTask } from './projects';
 import {
   goalHistory,
+  type GoalProgress,
   goalProgress,
+  isTarget,
   metricsWithData,
   rankProjects,
   toDay,
@@ -19,6 +21,35 @@ const EMPTY_PROGRESS = {
   majorDone: 0,
   percent: 0,
 };
+
+/**
+ * Target goals reached for the first time become achievements: the day is
+ * kept, so they stay reached if a number is corrected later. Returns the
+ * goals as they are now.
+ */
+function markAchievements(project: Project, progress: GoalProgress[]) {
+  const goals = project.goals ?? [];
+  const today = toDay();
+  const fresh = goals.filter(
+    (g) =>
+      isTarget(g) &&
+      !g.achievedAt &&
+      (progress.find((p) => p.goalId === g.id)?.percent ?? 0) >= 100,
+  );
+  if (!fresh.length) return goals;
+  const next = goals.map((g) =>
+    fresh.includes(g) ? { ...g, achievedAt: today } : g,
+  );
+  db.project
+    .update({
+      where: { id: project.id },
+      data: { goals: next, updatedAt: new Date().toISOString() },
+    })
+    .catch((err: unknown) =>
+      console.error('[goals] could not keep an achievement', err),
+    );
+  return next;
+}
 
 /**
  * Adds task progress, goal progress and result standings to projects.
@@ -40,6 +71,8 @@ export async function withProjectStats(projects: Project[]) {
         goalPartId: true,
         forDate: true,
         completedAt: true,
+        completedByIds: true,
+        assigneeIds: true,
       },
     }) as Promise<Task[]>,
     // Every project of these companies takes part in the ranking.
@@ -86,10 +119,13 @@ export async function withProjectStats(projects: Project[]) {
       ...tallies.filter((t) => goalIds.has(t.goalId ?? '')),
     ];
     const created = p.createdAt ? toDay(new Date(p.createdAt as string)) : null;
+    const reached = goalProgress(p.goals ?? [], mine);
+    const achieved = markAchievements(p, reached);
     return {
       ...p,
+      goals: achieved,
       progress: progress[p.id] ?? EMPTY_PROGRESS,
-      goalProgress: goalProgress(p.goals ?? [], mine),
+      goalProgress: reached,
       goalHistory: Object.fromEntries(
         (p.goals ?? []).map((g) => [
           g.id,

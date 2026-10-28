@@ -42,7 +42,6 @@ import { ImageField } from '../shared/ImageField';
 import { BrandKitEditor } from './BrandKitEditor';
 import { type GoalDraft, GoalsEditor, goalsForSave } from './GoalsEditor';
 import { ProjectRanking, ProjectResults } from './ProjectResults';
-import { ProjectSchedules } from './ProjectSchedules';
 import {
   AvatarStack,
   ColorPicker,
@@ -276,11 +275,12 @@ const ProjectForm = ({
         </Field>
         <Field
           label="Goals"
-          hint="What the project must deliver, again and again. Tasks linked to a goal fill it up."
+          hint="Repeating goals make their own dated tasks; targets add up until reached. Tasks linked to a goal fill it up."
           className="md:col-span-2"
         >
           <GoalsEditor
             value={draft.goals}
+            users={users}
             onChange={(goals) => set('goals', goals)}
           />
         </Field>
@@ -323,7 +323,6 @@ export const AdminProjects = ({
   const [archiving, setArchiving] = useState<ProjectRow | null>(null);
   const [branding, setBranding] = useState<ProjectRow | null>(null);
   const [resultsFor, setResultsFor] = useState<ProjectRow | null>(null);
-  const [schedulesFor, setSchedulesFor] = useState<ProjectRow | null>(null);
   const [busy, setBusy] = useState(false);
   const [moving, setMoving] = useState<ProjectRow | null>(null);
   const [moveTo, setMoveTo] = useState('');
@@ -556,7 +555,9 @@ export const AdminProjects = ({
                               <span className="truncate text-neutral-300">
                                 {goal.target} {goal.title}{' '}
                                 <span className="text-neutral-500">
-                                  {PERIOD_LABELS[goal.period]}
+                                  {goal.kind === 'target'
+                                    ? 'in total'
+                                    : PERIOD_LABELS[goal.period]}
                                 </span>
                               </span>
                               <span
@@ -664,11 +665,6 @@ export const AdminProjects = ({
                         onClick={() => startNew(project.id)}
                       />
                       <IconAction
-                        icon="event_repeat"
-                        label="Scheduled tasks"
-                        onClick={() => setSchedulesFor(project)}
-                      />
-                      <IconAction
                         icon="insights"
                         label="Results"
                         onClick={() => setResultsFor(project)}
@@ -744,16 +740,6 @@ export const AdminProjects = ({
         project={projects.find((p) => p.id === resultsFor?.id) ?? resultsFor}
         canEdit={!!resultsFor && can(resultsFor.companyId, 'projects:edit')}
         onOpenChange={(open) => !open && setResultsFor(null)}
-        onSaved={load}
-      />
-      <ProjectSchedules
-        project={
-          projects.find((p) => p.id === schedulesFor?.id) ?? schedulesFor
-        }
-        users={users}
-        canEdit={canInProject(schedulesFor, 'tasks:create')}
-        canDelete={canInProject(schedulesFor, 'tasks:delete')}
-        onOpenChange={(open) => !open && setSchedulesFor(null)}
         onSaved={load}
       />
       <BrandKitEditor
