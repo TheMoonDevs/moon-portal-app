@@ -8,6 +8,7 @@ import { db } from '@/lib/mongodb/db-client';
 import { hasPermission } from '@/lib/permissions/matching';
 import type { SessionUser } from '@/lib/permissions/server';
 import { latestPerDay } from '@/lib/worklogs/days';
+import { dayStartMs, originOf } from '@/lib/worklogs/origin';
 import { isPersonalLink, PERSONAL_COMPANY } from '@/lib/worklogs/personal';
 import {
   eventsFor,
@@ -209,7 +210,21 @@ export async function loadWork(
     const links = new Map(
       ((log.links ?? []) as WorklogLink[]).map((l) => [l.key, l]),
     );
-    for (const line of sectionLines(log.works)) {
+    const lines = sectionLines(log.works);
+    // The person's point each of the assistant's lines is a sub-log of: the
+    // one picked for it, the typed line linked to it, or the one on its task.
+    const parentOf = (key: string, taskId?: string | null) => {
+      const own = links.get(key)?.parentKey;
+      if (own && lines.some((l) => l.key === own && !l.claude)) return own;
+      const typed = lines.find(
+        (l) =>
+          !l.claude &&
+          (links.get(l.key)?.sameAs === key ||
+            (!!taskId && links.get(l.key)?.taskId === taskId)),
+      );
+      return typed?.key ?? null;
+    };
+    for (const line of lines) {
       const link = links.get(line.key);
       const personal = line.isPrivate || (link ? isPersonalLink(link) : false);
       if (personal && !isSelf) continue;
@@ -240,6 +255,10 @@ export async function loadWork(
         startedAt: span?.startedAt ?? null,
         finishedAt: span?.finishedAt ?? null,
         events,
+        parentKey: line.claude
+          ? parentOf(line.key, personal ? null : link?.taskId)
+          : null,
+        origin: null,
       });
     }
   }
@@ -280,6 +299,23 @@ export async function loadWork(
   const linkedTasks: Task[] = taskIds.length
     ? await db.task.findMany({ where: { id: { in: taskIds } } })
     : [];
+
+  // Planned, unexpected or delayed, by the person's own days.
+  const owner = await db.user.findFirst({
+    where: { id: person.id },
+    select: { timezone: true },
+  });
+  const taskById = new Map(linkedTasks.map((t) => [t.id, t]));
+  for (const point of all) {
+    const day = point.dates[0];
+    point.origin = originOf({
+      day,
+      startMs: dayStartMs(day, owner?.timezone),
+      events: point.events,
+      task: point.taskId ? taskById.get(point.taskId) : null,
+      days: point.dates,
+    });
+  }
   const projects = await loadProjects([
     ...all.map((p) => p.projectId as string),
     ...doneTasks.map((t) => t.projectId),

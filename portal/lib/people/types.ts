@@ -4,6 +4,7 @@
  * database.
  */
 
+import type { PointOrigin } from '@/lib/worklogs/origin';
 import type { PointEvent, PointStatus } from '@/lib/worklogs/timeline';
 import type { PLAN_STATUS, ScheduleEvery } from '@/models/workspace';
 
@@ -64,6 +65,16 @@ export type WorkPoint = {
   finishedAt?: string | null;
   /** What happened to it and when, oldest first. */
   events: PointEvent[];
+  /**
+   * The assistant's lines only: the person's point it is a sub-log of, on
+   * the same day.
+   */
+  parentKey?: string | null;
+  /**
+   * Planned before its first day began, unexpected, or delayed from an
+   * earlier day; null for older lines with nothing to tell by.
+   */
+  origin?: PointOrigin | null;
 };
 
 export type WorkData = {

@@ -30,6 +30,11 @@ export type WorklogLink = {
    * person typed it too. It shares that point's project and timeline.
    */
   sameAs?: string | null;
+  /**
+   * An assistant's line only: the key of the person's point it is a sub-log
+   * of, picked by the person when the assistant could not tell.
+   */
+  parentKey?: string | null;
 };
 
 export type WorkLogs = Loose<
@@ -49,6 +54,11 @@ export type WorkLogs = Loose<
     timeline?: PointEvent[];
     /** Claude points tidied away, so an older editor copy cannot bring them back. */
     removedClaudeKeys?: string[];
+    /**
+     * Tasks already put on this day as points, so one taken off again is not
+     * added back.
+     */
+    addedTaskIds?: string[];
   }
 >;
 

@@ -11,9 +11,11 @@ import { addDays, toDay } from './projects';
 import { finish, matchSchedule } from './scheduleRuns';
 
 /*
- * Every running work point is a task. A point that is under way, done,
- * blocked or waiting, and placed in a project, is linked to that project's
- * open task for the same work, or a task is made for it. A task made from a
+ * A work point is a task, and a task is a work point. A point that is under
+ * way, done, blocked or waiting, and placed in a project, is linked to that
+ * project's open task for the same work, or a task is made for it. So is a
+ * point written down for today or a later day before it starts (a plan): it
+ * becomes a task to do, for that day. A task made from a
  * point follows it: done when the point is ticked off, open again when it is
  * not. A point about an existing minor task finishes it too; a major task
  * takes many points, so it is only marked in progress. Scheduled tasks are
@@ -27,6 +29,9 @@ const MAX_NEW = 10;
 
 /** Days back a worklog still makes tasks; older days are history. */
 const DAYS_BACK = 7;
+
+/** Days ahead a plan still makes tasks. */
+const DAYS_AHEAD = 14;
 
 const OPEN = [TASK_STATUS.TODO, TASK_STATUS.IN_PROGRESS, TASK_STATUS.IN_REVIEW];
 
@@ -67,7 +72,7 @@ async function inProgress(task: Task) {
 /** Brings a task in step with the point linked to it. */
 async function follow(
   task: Task,
-  status: PointStatus,
+  status: PointStatus | null,
   key: string,
   userId: string,
 ) {
@@ -78,6 +83,8 @@ async function follow(
     task.status === TASK_STATUS.IGNORED
   )
     return task;
+  // Only planned: nothing has happened to it yet.
+  if (!status) return task;
   if (status === 'done') {
     if (task.status === TASK_STATUS.DONE) return task;
     if (mine || task.size !== TASK_SIZE.MAJOR) return finish(task, userId);
@@ -102,14 +109,19 @@ export async function taskLines(
   day: string = toDay(),
 ): Promise<WorklogLink[]> {
   const today = toDay();
-  if (day < addDays(today, -DAYS_BACK) || day > today) return links;
+  if (day < addDays(today, -DAYS_BACK) || day > addDays(today, DAYS_AHEAD))
+    return links;
+  // A plan made today or for later; past days only count work that moved.
+  const planned = (status: PointStatus | null) => !status && day >= today;
+  // Nothing can have happened yet on a day still ahead.
+  const ahead = day > today;
   const byKey = new Map(links.map((l) => [l.key, l]));
   const lines = sectionLines(works).filter((l) => {
     const link = byKey.get(l.key);
     return (
       !l.isPrivate &&
-      !!l.status &&
-      RUNNING.includes(l.status) &&
+      (planned(l.status) ||
+        (!ahead && !!l.status && RUNNING.includes(l.status))) &&
       !!link?.projectId &&
       !isPersonalLink(link) &&
       projectIds.includes(link.projectId)
@@ -211,11 +223,12 @@ export async function taskLines(
           title: line.text.slice(0, 200),
           description: null,
           size: TASK_SIZE.MINOR,
-          status: TASK_STATUS.IN_PROGRESS,
+          status: line.status ? TASK_STATUS.IN_PROGRESS : TASK_STATUS.TODO,
           assigneeIds: [userId],
           dueDate: null,
-          // A point from an earlier day counts for that day.
-          forDate: day === today ? null : day,
+          // A point from an earlier day counts for that day; a plan is
+          // for its day.
+          forDate: day === today && line.status ? null : day,
           completedAt: null,
           goalId: null,
           goalPartId: null,
@@ -229,7 +242,7 @@ export async function taskLines(
       open.push(task);
     }
     // Finishing a task also finds the goal it fills.
-    next.set(line.key, await follow(task, line.status!, line.key, userId));
+    next.set(line.key, await follow(task, line.status, line.key, userId));
   }
 
   return links.map((l) => {
