@@ -20,8 +20,6 @@ import { taskDueAt } from './tasks';
 
 const DIGEST_TIMEZONE = process.env.DEFAULT_TIMEZONE || 'Asia/Kolkata';
 const EVERY_DAYS = 2;
-/** Names listed per section before "and N more". */
-const LIST_LIMIT = 6;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export const portalOrigin = () =>
@@ -33,12 +31,8 @@ export const portalOrigin = () =>
 export const isDigestDay = (date: string) =>
   Math.floor(Date.parse(`${date}T00:00:00Z`) / DAY_MS) % EVERY_DAYS === 0;
 
-const openingLink = (
-  origin: string,
-  o: Pick<JobOpening, 'id' | 'companyId'>,
-  stage?: APPLICATION_STAGE,
-) =>
-  `${origin}/admin?tab=hiring&company=${o.companyId}&opening=${o.id}${stage ? `&stage=${stage}` : ''}`;
+const openingLink = (origin: string, o: Pick<JobOpening, 'id' | 'companyId'>) =>
+  `${origin}/admin?tab=hiring&company=${o.companyId}&opening=${o.id}`;
 
 const applicantLink = (
   origin: string,
@@ -61,29 +55,27 @@ type Person = { name: string; href: string; when: string };
 interface OpeningDigest {
   opening: JobOpening;
   company: string;
-  /** Sent their task back, oldest first. */
+  /** Sent their task back, oldest first: the only list with names. */
   review: Person[];
-  /** New applicants, oldest first so nobody waits longest. */
-  screen: Person[];
+  /** The rest are counts. */
+  screen: number;
   /** Task emailed, not sent back yet. */
-  waitingOnTask: number;
+  onTask: number;
   pastDue: number;
   interview: number;
-  /** Since the last digest. */
-  newApplicants: number;
-  newTasks: number;
 }
+
+type Totals = Record<'review' | 'screen' | 'onTask' | 'interview', number>;
 
 export interface LeadDigest {
   lead: { id: string; name: string; email: string };
   openings: OpeningDigest[];
-  totals: { review: number; screen: number; waitingOnTask: number };
+  totals: Totals;
 }
 
 /** What each hiring lead's digest would say right now. */
 export async function buildDigests(now = new Date()): Promise<LeadDigest[]> {
   const origin = portalOrigin();
-  const since = now.getTime() - EVERY_DAYS * DAY_MS;
 
   const openings: JobOpening[] = await db.jobOpening.findMany({
     where: {
@@ -116,7 +108,6 @@ export async function buildDigests(now = new Date()): Promise<LeadDigest[]> {
         openingId: true,
         name: true,
         stage: true,
-        submittedAt: true,
         taskSentAt: true,
         taskSubmission: true,
       },
@@ -147,11 +138,6 @@ export async function buildDigests(now = new Date()): Promise<LeadDigest[]> {
   }
 
   const time = (value: unknown) => new Date(String(value ?? '')).getTime() || 0;
-  const person = (a: JobApplication, at: unknown): Person => ({
-    name: a.name,
-    href: applicantLink(origin, a),
-    when: daysAgo(at, now),
-  });
 
   const digests: LeadDigest[] = [];
   for (const lead of leads) {
@@ -164,47 +150,44 @@ export async function buildDigests(now = new Date()): Promise<LeadDigest[]> {
       const apps = byOpening.get(opening.id) ?? [];
       const inStage = (stage: APPLICATION_STAGE) =>
         apps.filter((a) => a.stage === stage);
-      const review = inStage(APPLICATION_STAGE.TASK_REVIEW).sort(
-        (a, b) =>
-          time(a.taskSubmission?.submittedAt) -
-          time(b.taskSubmission?.submittedAt),
-      );
-      const screen = inStage(APPLICATION_STAGE.APPLIED).sort(
-        (a, b) => time(a.submittedAt) - time(b.submittedAt),
-      );
-      const waiting = inStage(APPLICATION_STAGE.TASK).filter(
+      const onTask = inStage(APPLICATION_STAGE.TASK).filter(
         (a) => !a.taskSubmission,
       );
       return {
         opening,
         company: companyName.get(opening.companyId) ?? '',
-        review: review.map((a) => person(a, a.taskSubmission?.submittedAt)),
-        screen: screen.map((a) => person(a, a.submittedAt)),
-        waitingOnTask: waiting.length,
-        pastDue: waiting.filter((a) => {
+        review: inStage(APPLICATION_STAGE.TASK_REVIEW)
+          .sort(
+            (a, b) =>
+              time(a.taskSubmission?.submittedAt) -
+              time(b.taskSubmission?.submittedAt),
+          )
+          .map((a) => ({
+            name: a.name,
+            href: applicantLink(origin, a),
+            when: daysAgo(a.taskSubmission?.submittedAt, now),
+          })),
+        screen: inStage(APPLICATION_STAGE.APPLIED).length,
+        onTask: onTask.length,
+        pastDue: onTask.filter((a) => {
           const due = taskDueAt(opening.task, a.taskSentAt);
           return !!due && due < now;
         }).length,
         interview: inStage(APPLICATION_STAGE.INTERVIEW).length,
-        newApplicants: screen.filter((a) => time(a.submittedAt) >= since)
-          .length,
-        newTasks: review.filter(
-          (a) => time(a.taskSubmission?.submittedAt) >= since,
-        ).length,
       };
     });
-    const totals = {
-      review: rows.reduce((n, r) => n + r.review.length, 0),
-      screen: rows.reduce((n, r) => n + r.screen.length, 0),
-      waitingOnTask: rows.reduce((n, r) => n + r.waitingOnTask, 0),
+    const sum = (pick: (r: OpeningDigest) => number) =>
+      rows.reduce((n, r) => n + pick(r), 0);
+    const totals: Totals = {
+      review: sum((r) => r.review.length),
+      screen: sum((r) => r.screen),
+      onTask: sum((r) => r.onTask),
+      interview: sum((r) => r.interview),
     };
     if (!totals.review && !totals.screen) continue;
-    // Most to do first.
+    // Most to review first, then most to screen.
     rows.sort(
-      (a, b) =>
-        b.review.length * 2 +
-        b.screen.length -
-        (a.review.length * 2 + a.screen.length),
+      (a, b) => b.review.length - a.review.length || b.screen - a.screen,
     );
     digests.push({
       lead: { id: lead.id, name: lead.name ?? '', email: lead.email },
@@ -219,110 +202,107 @@ export async function buildDigests(now = new Date()): Promise<LeadDigest[]> {
 
 const firstName = (name: string) => name.trim().split(/\s+/)[0] || 'there';
 
+/** The pipeline columns every opening shows, in order. */
+const COLUMNS: Array<{ key: keyof Totals; label: string; color: string }> = [
+  { key: 'screen', label: 'To screen', color: '#0ea5e9' },
+  { key: 'onTask', label: 'On task', color: '#f59e0b' },
+  { key: 'review', label: 'To review', color: '#6366f1' },
+  { key: 'interview', label: 'Interview', color: '#f97316' },
+];
+
+const count = (r: OpeningDigest, key: keyof Totals) =>
+  key === 'review' ? r.review.length : r[key];
+
 export function digestSubject({ totals }: LeadDigest) {
   const parts = [
     totals.review && `${plural(totals.review, 'task')} to review`,
-    totals.screen && `${plural(totals.screen, 'applicant')} to screen`,
+    totals.screen && `${totals.screen} to screen`,
   ].filter(Boolean);
   return `Hiring: ${parts.join(', ')}`;
 }
 
-const openingTitle = (r: OpeningDigest) =>
-  r.company ? `${r.opening.title} · ${r.company}` : r.opening.title;
-
-/** One line per state that isn't a list of names. */
-const otherLines = (r: OpeningDigest) =>
-  [
-    r.waitingOnTask &&
-      `${plural(r.waitingOnTask, 'candidate')} working on the task${r.pastDue ? ` (${r.pastDue} past the due date)` : ''}`,
-    r.interview && `${r.interview} in interview`,
-  ].filter((line): line is string => !!line);
-
-const newLine = (r: OpeningDigest) => {
-  const parts = [
-    r.newApplicants && `${r.newApplicants} applied`,
-    r.newTasks && `${plural(r.newTasks, 'task')} sent back`,
-  ].filter(Boolean);
-  return parts.length ? `Since the last digest: ${parts.join(', ')}.` : '';
-};
-
 export function digestText(d: LeadDigest, origin = portalOrigin()) {
-  const out: string[] = [
-    `Hi ${firstName(d.lead.name)},`,
-    `Here's where your openings stand: ${digestSubject(d).replace(/^Hiring: /, '')}.`,
-  ];
-  for (const r of d.openings) {
-    const block = [openingTitle(r), newLine(r)].filter(Boolean);
-    const list = (
-      people: Person[],
-      label: string,
-      stage: APPLICATION_STAGE,
-    ) => {
-      if (!people.length) return;
-      block.push(`${label} (${people.length}):`);
-      for (const p of people.slice(0, LIST_LIMIT))
-        block.push(`- ${p.name}, ${p.when}: ${p.href}`);
-      if (people.length > LIST_LIMIT)
-        block.push(
-          `- and ${people.length - LIST_LIMIT} more: ${openingLink(origin, r.opening, stage)}`,
-        );
-    };
-    list(r.review, 'Tasks to review', APPLICATION_STAGE.TASK_REVIEW);
-    list(r.screen, 'To screen', APPLICATION_STAGE.APPLIED);
-    block.push(...otherLines(r));
-    if (!r.review.length && !r.screen.length)
-      block.push('Nothing waiting on you here.');
-    block.push(`Open: ${openingLink(origin, r.opening)}`);
-    out.push(block.join('\n'));
+  const out: string[] = [`Hi ${firstName(d.lead.name)},`];
+  const toReview = d.openings.filter((r) => r.review.length);
+  if (toReview.length) {
+    const lines = ['Tasks to review:'];
+    for (const r of toReview)
+      for (const p of r.review)
+        lines.push(`- ${p.name} (${r.opening.title}), ${p.when}: ${p.href}`);
+    out.push(lines.join('\n'));
   }
-  out.push('You get this every other morning for the openings you lead.');
+  out.push(
+    [
+      'Your openings:',
+      ...d.openings.map(
+        (r) =>
+          `- ${r.opening.title}: ${COLUMNS.filter((c) => count(r, c.key))
+            .map((c) => `${count(r, c.key)} ${c.label.toLowerCase()}`)
+            .join(', ')}${r.pastDue ? ` (${r.pastDue} past due)` : ''}`,
+      ),
+      `Hiring: ${origin}/admin?tab=hiring`,
+    ].join('\n'),
+  );
   return out.join('\n\n');
 }
 
 export function digestHtml(d: LeadDigest, origin = portalOrigin()) {
   const e = escapeHtml;
-  const link = (href: string, text: string) =>
-    `<a href="${e(href)}" style="color:#2563eb;text-decoration:none">${e(text)}</a>`;
-  const stat = (n: number, label: string) =>
-    `<td style="padding:12px;background:#f4f4f5;border-radius:10px;text-align:center;width:33%"><div style="font-size:22px;font-weight:700;color:#18181b">${n}</div><div style="font-size:12px;color:#71717a">${e(label)}</div></td>`;
+  const link = (href: string, text: string, style = '') =>
+    `<a href="${e(href)}" style="color:#2563eb;text-decoration:none;${style}">${e(text)}</a>`;
+  const muted = (text: string) =>
+    `<span style="color:#a1a1aa">${e(text)}</span>`;
 
-  const sections = d.openings.map((r) => {
-    const list = (
-      people: Person[],
-      label: string,
-      stage: APPLICATION_STAGE,
-    ) => {
-      if (!people.length) return '';
-      const items = people
-        .slice(0, LIST_LIMIT)
-        .map(
-          (p) =>
-            `<li style="margin:0 0 4px">${link(p.href, p.name)} <span style="color:#a1a1aa">· ${e(p.when)}</span></li>`,
+  const tiles = COLUMNS.map(
+    (c) =>
+      `<td style="padding:10px 4px;background:#f4f4f5;border-radius:10px;text-align:center;width:25%;border-top:3px solid ${c.color}"><div style="font-size:22px;font-weight:700;line-height:1.2">${d.totals[c.key]}</div><div style="font-size:12px;color:#71717a">${c.label}</div></td>`,
+  ).join('');
+
+  const reviewRows = d.openings
+    .flatMap((r) =>
+      r.review.map(
+        (p) =>
+          `<tr><td style="padding:8px 0;border-bottom:1px solid #f4f4f5">${link(p.href, p.name, 'font-weight:600')}<br>${muted(r.opening.title)}</td><td style="padding:8px 0;border-bottom:1px solid #f4f4f5;text-align:right;white-space:nowrap;font-size:13px">${muted(p.when)}</td></tr>`,
+      ),
+    )
+    .join('');
+
+  // One stacked bar per opening, segments sized by count.
+  const bar = (r: OpeningDigest) => {
+    const total = COLUMNS.reduce((n, c) => n + count(r, c.key), 0);
+    if (!total)
+      return `<div style="height:8px;border-radius:4px;background:#f4f4f5"></div>`;
+    const cells = COLUMNS.filter((c) => count(r, c.key))
+      .map(
+        (c) =>
+          `<td style="height:8px;background:${c.color};width:${(count(r, c.key) / total) * 100}%"></td>`,
+      )
+      .join('');
+    return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-radius:4px;overflow:hidden"><tr>${cells}</tr></table>`;
+  };
+  const openingRows = d.openings
+    .map(
+      (r) =>
+        `<div style="padding:10px 0;border-bottom:1px solid #f4f4f5"><div style="font-size:14px;font-weight:600;margin:0 0 6px">${link(openingLink(origin, r.opening), r.opening.title, 'color:#18181b')}</div>${bar(r)}<div style="font-size:12px;color:#71717a;margin-top:6px">${COLUMNS.filter(
+          (c) => count(r, c.key),
         )
-        .join('');
-      const more =
-        people.length > LIST_LIMIT
-          ? `<li style="margin:0 0 4px">${link(openingLink(origin, r.opening, stage), `and ${people.length - LIST_LIMIT} more`)}</li>`
-          : '';
-      return `<p style="margin:12px 0 4px;font-weight:600">${link(openingLink(origin, r.opening, stage), `${label} (${people.length})`)}</p><ul style="margin:0;padding-left:20px">${items}${more}</ul>`;
-    };
-    const fresh = newLine(r);
-    const others = otherLines(r);
-    return `<div style="border-top:1px solid #e4e4e7;padding:20px 0 4px">
-<p style="margin:0;font-size:16px;font-weight:700">${link(openingLink(origin, r.opening), r.opening.title)}${r.company ? ` <span style="font-weight:400;color:#a1a1aa">· ${e(r.company)}</span>` : ''}</p>
-${fresh ? `<p style="margin:4px 0 0;color:#71717a;font-size:13px">${e(fresh)}</p>` : ''}
-${list(r.review, 'Tasks to review', APPLICATION_STAGE.TASK_REVIEW)}
-${list(r.screen, 'To screen', APPLICATION_STAGE.APPLIED)}
-${others.length ? `<p style="margin:12px 0 0;color:#52525b;font-size:14px">${others.map(e).join('<br>')}</p>` : ''}
-${!r.review.length && !r.screen.length ? '<p style="margin:8px 0 0;color:#a1a1aa;font-size:14px">Nothing waiting on you here.</p>' : ''}
-</div>`;
-  });
+          .map(
+            (c) =>
+              `<span style="white-space:nowrap"><span style="display:inline-block;width:8px;height:8px;border-radius:4px;background:${c.color}"></span> ${count(r, c.key)} ${c.label.toLowerCase()}</span>`,
+          )
+          .join(
+            ' &nbsp; ',
+          )}${r.pastDue ? ` &nbsp; <span style="color:#e11d48">${r.pastDue} past due</span>` : ''}</div></div>`,
+    )
+    .join('');
 
-  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:24px 12px;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif"><div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:12px;padding:32px 28px;color:#18181b;font-size:15px;line-height:1.6">
-<p style="margin:0 0 16px">Hi ${e(firstName(d.lead.name))}, here's where your openings stand.</p>
-<table role="presentation" width="100%" cellspacing="6" cellpadding="0" style="margin:0 -6px 12px"><tr>${stat(d.totals.review, 'tasks to review')}${stat(d.totals.screen, 'to screen')}${stat(d.totals.waitingOnTask, 'working on the task')}</tr></table>
-${sections.join('')}
-</div><p style="max-width:560px;margin:16px auto 0;text-align:center;color:#a1a1aa;font-size:12px;line-height:1.5">You get this every other morning for the openings you lead.</p></body></html>`;
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:24px 12px;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif"><div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:12px;padding:28px 24px;color:#18181b;font-size:15px;line-height:1.5">
+<p style="margin:0 0 14px">Hi ${e(firstName(d.lead.name))}, here's your hiring at a glance.</p>
+<table role="presentation" width="100%" cellspacing="6" cellpadding="0" style="margin:0 -6px 18px"><tr>${tiles}</tr></table>
+${reviewRows ? `<p style="margin:0 0 4px;font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#6366f1">Tasks to review</p><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 20px">${reviewRows}</table>` : ''}
+<p style="margin:0;font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#71717a">Your openings</p>
+${openingRows}
+</div><p style="max-width:560px;margin:16px auto 0;text-align:center;color:#a1a1aa;font-size:12px;line-height:1.5">Every other morning, for the openings you lead.</p></body></html>`;
 }
 
 /* -------------------------------- sending -------------------------------- */
