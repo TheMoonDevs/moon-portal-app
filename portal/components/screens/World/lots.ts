@@ -31,7 +31,7 @@ import {
  * when the last period was missed); a target's record tower, a tiered glass
  * skyscraper that rises toward its number; and the week's small houses for
  * tasks that are for no goal. Also the tools bots work with, the rewards
- * that pop up when something is done, and the rounded blocks.
+ * that pop up when something is done.
  */
 
 /** One floor of a goal building, in world units. */
@@ -60,26 +60,8 @@ const starShape = (r: number) =>
     return geo;
   });
 
-/** Where a goal's buildings stand on its lot: oldest at the back. */
-const TOWER_SPOTS: [number, number, number][][] = [
-  [],
-  [[0, 0, 0.62]],
-  [
-    [-2.2, -1.2, 0.46],
-    [2.2, 1.2, 0.46],
-  ],
-  [
-    [-2.3, -2.3, 0.4],
-    [2.3, -2.3, 0.4],
-    [0, 2.3, 0.4],
-  ],
-  [
-    [-2.3, -2.3, 0.4],
-    [2.3, -2.3, 0.4],
-    [-2.3, 2.3, 0.4],
-    [2.3, 2.3, 0.4],
-  ],
-];
+/** How big a goal building stands on its lot. */
+const GOAL_SCALE = 0.85;
 
 /** The looks a goal's buildings take, in turn. */
 const KINDS: BuildingKind[] = ['tower', 'factory', 'silos', 'lab', 'warehouse'];
@@ -165,47 +147,45 @@ function goalBuilding(
 }
 
 /**
- * A repeating goal's lot: its last four buildings, the newest at the front
- * where bots work on it. Returns where the newest one's top is.
+ * One of a repeating goal's lots: its `index`-th building, each on a lot
+ * of its own. The newest is the one going up, where bots work on it.
  */
-export function goalLot(site: WorldSite, accent: string, sign: THREE.Material) {
+export function goalLot(
+  site: WorldSite,
+  index: number,
+  accent: string,
+  sign: THREE.Material,
+) {
   const g = new THREE.Group();
-  const anims: Animated[] = [];
   const { full, rest, total } = goalTowers(site.done);
-  const shown = Math.min(total, 4);
-  const first = total - shown;
-  let height = 0;
-  let top = { x: 0, y: 4, z: 0 };
-  TOWER_SPOTS[shown].forEach(([x, z, scale], i) => {
-    const index = first + i;
-    const latest = i === shown - 1;
-    const floors = index < full ? FLOORS : rest;
-    const made = goalBuilding(
-      KINDS[(hash(site.id) + index) % KINDS.length],
-      floors,
-      scale,
-      accent,
-      sign,
-      {
-        growing: latest && floors < FLOORS,
-        broken: latest && !!site.missed,
-        seed: index + (hash(site.id) % 10),
-      },
-    );
-    made.group.position.set(x, 0, z);
-    g.add(made.group);
-    anims.push(...made.anims);
-    height = Math.max(height, made.top);
-    if (latest) top = { x, y: made.top, z };
-  });
-  if (site.missed)
+  const latest = index === total - 1;
+  const floors = index < full ? FLOORS : rest;
+  const made = goalBuilding(
+    KINDS[(hash(site.id) + index) % KINDS.length],
+    floors,
+    GOAL_SCALE,
+    accent,
+    sign,
+    {
+      growing: latest && floors < FLOORS,
+      broken: latest && !!site.missed,
+      seed: index + (hash(site.id) % 10),
+    },
+  );
+  g.add(made.group);
+  if (latest && site.missed)
     for (const [x, z, s] of [
-      [3.6, 3.4, 0.5],
-      [2.6, 4.1, 0.35],
-      [4.1, 2.2, 0.4],
+      [3.9, 3.6, 0.5],
+      [2.9, 4.4, 0.35],
+      [4.4, 2.4, 0.4],
     ])
       block(g, s, s * 0.6, s, CLAY_SHADE, x, 0, z, 0.06).rotation.y = x;
-  return { group: g, anims, height, top };
+  return {
+    group: g,
+    anims: made.anims,
+    height: made.top,
+    top: { x: 0, y: made.top, z: 0 },
+  };
 }
 
 const glasses = new Map<string, THREE.MeshStandardMaterial>();
@@ -378,10 +358,9 @@ export function trophy(scale = 1) {
 
 /** Where a house stands on a homes lot. */
 export const HOUSE_SPOTS = [
-  [-2.4, -2.4],
-  [2.4, -2.4],
-  [-2.4, 2.4],
-  [2.4, 2.4],
+  [-2.6, -2.4],
+  [2.6, -2.4],
+  [0, 2.6],
 ];
 
 /**
@@ -658,77 +637,4 @@ export function bounce(o: THREE.Object3D): Effect {
       return age < 0.8;
     },
   };
-}
-
-/* -------------------------------- roads --------------------------------- */
-
-type Point = { x: number; z: number };
-
-/** Rounds every corner of a path into a curve of radius about `r`. */
-export function smooth(points: Point[], r = 2.6) {
-  if (points.length < 3) return points;
-  const out: Point[] = [points[0]];
-  for (let i = 1; i < points.length - 1; i++) {
-    const a = points[i - 1];
-    const b = points[i];
-    const c = points[i + 1];
-    const ab = Math.hypot(b.x - a.x, b.z - a.z);
-    const bc = Math.hypot(c.x - b.x, c.z - b.z);
-    const k = Math.min(r, ab / 2, bc / 2);
-    if (k < 0.05) {
-      out.push(b);
-      continue;
-    }
-    const p0 = {
-      x: b.x + ((a.x - b.x) / ab) * k,
-      z: b.z + ((a.z - b.z) / ab) * k,
-    };
-    const p2 = {
-      x: b.x + ((c.x - b.x) / bc) * k,
-      z: b.z + ((c.z - b.z) / bc) * k,
-    };
-    for (let s = 0; s <= 8; s++) {
-      const t = s / 8;
-      const u = 1 - t;
-      out.push({
-        x: u * u * p0.x + 2 * u * t * b.x + t * t * p2.x,
-        z: u * u * p0.z + 2 * u * t * b.z + t * t * p2.z,
-      });
-    }
-  }
-  out.push(points[points.length - 1]);
-  return out;
-}
-
-/** A rounded rectangle lying on the ground. */
-export function plate(w: number, d: number, r: number, hex: string, y: number) {
-  const geo = shape(`plate${w.toFixed(2)},${d.toFixed(2)},${r}`, () => {
-    const s = new THREE.Shape();
-    const x0 = -w / 2;
-    const z0 = -d / 2;
-    const k = Math.min(r, w / 2, d / 2);
-    s.moveTo(x0 + k, z0);
-    s.lineTo(x0 + w - k, z0);
-    s.quadraticCurveTo(x0 + w, z0, x0 + w, z0 + k);
-    s.lineTo(x0 + w, z0 + d - k);
-    s.quadraticCurveTo(x0 + w, z0 + d, x0 + w - k, z0 + d);
-    s.lineTo(x0 + k, z0 + d);
-    s.quadraticCurveTo(x0, z0 + d, x0, z0 + d - k);
-    s.lineTo(x0, z0 + k);
-    s.quadraticCurveTo(x0, z0, x0 + k, z0);
-    const g = new THREE.ShapeGeometry(s, 8);
-    g.rotateX(Math.PI / 2);
-    return g;
-  });
-  const m = new THREE.Mesh(
-    geo,
-    new THREE.MeshStandardMaterial({
-      color: hex,
-      roughness: 1,
-      side: THREE.DoubleSide,
-    }),
-  );
-  m.position.y = y;
-  m.receiveShadow = true;
-  return m;
 }

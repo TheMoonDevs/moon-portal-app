@@ -54,7 +54,7 @@ import {
 
 const LEADERS = 5;
 /** Homes lots per project: this week's tasks for no goal. */
-const MAX_HOME_LOTS = 4;
+const MAX_HOME_LOTS = 10;
 
 type WorldTask = Pick<
   Task,

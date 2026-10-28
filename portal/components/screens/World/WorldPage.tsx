@@ -336,7 +336,7 @@ const SiteCard = ({ site }: { site: WorldSite; color: string }) => {
         {site.streak ? ` · ${site.streak} in a row met` : ''}
       </p>
       {site.missed && (
-        <p className="mt-1 text-[11px] font-medium text-rose-600">
+        <p className="mt-1 text-[11px] font-medium text-neutral-500">
           The last period was missed, so the newest building is cracked. Meet
           this one to set it right.
         </p>
@@ -767,7 +767,7 @@ export const WorldPage = () => {
                             <Badge
                               src={b.brand?.logo ?? b.logo}
                               name={b.name}
-                              color={accentOf(b)}
+                              color={accentOf(town)}
                               round={false}
                             />
                             <span className="min-w-0 flex-1 truncate">

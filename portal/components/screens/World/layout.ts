@@ -1,9 +1,10 @@
 import type { World } from '@/lib/world/state';
-import { SITES_PER_SQUARE } from '@/lib/world/state';
+import { LOTS_PER_SQUARE, siteLots } from '@/lib/world/state';
 
 /*
  * Where everything stands. A town grows square by square: the town square
- * first, then each project's squares (four task buildings to a square), and
+ * first, then each project's squares (three buildings to a square, one on
+ * each lot, with the fourth corner a garden), and
  * every four squares join into a bigger square, which is the next size up's
  * building block (Z-order). The roads between bigger squares are wider.
  * Everyone in the town has their own plot on the town square, where they
@@ -41,10 +42,10 @@ export type TownSpot = Area & {
 };
 export type Road = { x1: number; z1: number; x2: number; z2: number };
 
-/** One task building's lot. */
-export const LOT = 10;
-/** One square: two lots by two. */
-export const BLOCK = LOT * 2;
+/** One building's lot. */
+export const LOT = 12;
+/** One square: room for two lots by two, with space between them. */
+export const BLOCK = 30;
 const EDGE = 4;
 const GAP = 34;
 
@@ -77,9 +78,9 @@ function zOrder(n: number) {
   return { x, y };
 }
 
-/** The squares a project needs for its task buildings. */
-export const squaresFor = (sites: number) =>
-  Math.max(1, Math.ceil(sites / SITES_PER_SQUARE));
+/** The squares a project needs for its lots. */
+export const squaresFor = (lots: number) =>
+  Math.max(1, Math.ceil(lots / LOTS_PER_SQUARE));
 
 /** The town's squares in Z-order: the town square, then each project. */
 function plan(projects: { id: string; squares: number }[], plaza: number) {
@@ -94,13 +95,20 @@ function plan(projects: { id: string; squares: number }[], plaza: number) {
   return owner;
 }
 
-/** Lots in a square, back first: the busiest building stands at the back. */
+/** From a square's middle to a lot's. */
+const LOT_AT = BLOCK / 4 + 0.5;
+
+/**
+ * Lots in a square, back first: the busiest building stands at the back.
+ * The front corner, toward the usual view, is left as a garden.
+ */
 export const LOTS = [
-  { dx: -LOT / 2, dz: -LOT / 2, angle: Math.PI },
-  { dx: LOT / 2, dz: -LOT / 2, angle: Math.PI },
-  { dx: -LOT / 2, dz: LOT / 2, angle: 0 },
-  { dx: LOT / 2, dz: LOT / 2, angle: 0 },
+  { dx: -LOT_AT, dz: -LOT_AT, angle: Math.PI },
+  { dx: LOT_AT, dz: -LOT_AT, angle: Math.PI },
+  { dx: -LOT_AT, dz: LOT_AT, angle: 0 },
 ];
+/** The garden corner of a square. */
+export const GARDEN = { dx: LOT_AT, dz: LOT_AT };
 
 /** One person's plot on the town square. */
 export const PLOT = 8;
@@ -191,7 +199,10 @@ function layoutTown(world: World, townId: string) {
   let size = 2;
   while (plotsOn(plazaHalf(size)).length < crowd) size *= 2;
   const owner = plan(
-    projects.map((p) => ({ id: p.id, squares: squaresFor(p.sites.length) })),
+    projects.map((p) => ({
+      id: p.id,
+      squares: squaresFor(p.sites.reduce((n, s) => n + siteLots(s), 0)),
+    })),
     size * size,
   );
   const grid = owner.map((_, n) => zOrder(n));
@@ -266,7 +277,9 @@ export function layoutWorld(world: World) {
 
   const towns = new Map<string, TownSpot>();
   const projects = new Map<string, Area & { cells: Cell[] }>();
-  const sites = new Map<string, Spot & { projectId: string }>();
+  // Each site's lots, oldest building first; the site itself is placed at
+  // its newest building, where bots work.
+  const sites = new Map<string, Spot & { projectId: string; lots: Spot[] }>();
   const people = new Map<string, Spot>();
   const plots = new Map<string, { x: number; z: number }>();
 
@@ -304,19 +317,25 @@ export function layoutWorld(world: World) {
         maxZ: Math.max(...zs) + BLOCK / 2,
         cells: mine,
       });
-      // Busiest buildings in the back squares, four to a square.
+      // Busiest buildings in the back squares, three to a square.
       const ordered = [...mine].sort((a, b) => a.x + a.z - (b.x + b.z));
-      project.sites.forEach((site, k) => {
-        const cell = ordered[Math.floor(k / SITES_PER_SQUARE)];
-        const lot = LOTS[k % SITES_PER_SQUARE];
-        if (!cell) return;
-        sites.set(site.id, {
-          x: cell.x + lot.dx,
-          z: cell.z + lot.dz,
-          angle: lot.angle,
-          projectId: project.id,
-        });
-      });
+      let k = 0;
+      for (const site of project.sites) {
+        const spots: Spot[] = [];
+        for (let n = siteLots(site); n > 0; n--, k++) {
+          const cell = ordered[Math.floor(k / LOTS_PER_SQUARE)];
+          const lot = LOTS[k % LOTS_PER_SQUARE];
+          if (cell)
+            spots.push({
+              x: cell.x + lot.dx,
+              z: cell.z + lot.dz,
+              angle: lot.angle,
+            });
+        }
+        const newest = spots[spots.length - 1];
+        if (newest)
+          sites.set(site.id, { ...newest, projectId: project.id, lots: spots });
+      }
     }
 
     const here = world.people.filter((person) => person.townIds.includes(t.id));

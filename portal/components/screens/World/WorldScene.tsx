@@ -28,6 +28,7 @@ import * as art from './art';
 import type { TownSpot } from './layout';
 import {
   BLOCK,
+  GARDEN,
   HALL_IN,
   layoutWorld,
   LOT,
@@ -136,6 +137,59 @@ const tallyOf = (bot: WorldBot) => ({
   done: bot.points.filter((p) => p.status === 'done').length,
 });
 
+/** Car colours: white and greys, now and then the company's colour. */
+const CAR_COLORS = ['#ffffff', '#ffffff', '#e5e7eb', '#cbd5e1', '#94a3b8'];
+
+/**
+ * Cars driving up and down a straight road, each in its own lane, looping
+ * from one end to the other.
+ */
+function cars(
+  parent: THREE.Object3D,
+  anims: art.Animated[],
+  road: {
+    horizontal: boolean;
+    from: number;
+    length: number;
+    cx: number;
+    cz: number;
+    y: number;
+    width: number;
+  },
+  count: number,
+  rand: () => number,
+  accent?: string,
+) {
+  const { horizontal, from, length, cx, cz, y, width } = road;
+  for (let k = 0; k < count; k++) {
+    const hex =
+      accent && rand() < 0.25
+        ? art.tint(accent, 0.15)
+        : CAR_COLORS[Math.floor(rand() * CAR_COLORS.length)];
+    const car = art.car(hex);
+    car.scale.setScalar(1.25);
+    parent.add(car);
+    const dir = k % 2 ? 1 : -1;
+    const offset = rand();
+    const speed = 3.5 + rand() * 2;
+    const lane = dir * width * 0.24;
+    car.rotation.y = horizontal
+      ? dir > 0
+        ? 0
+        : Math.PI
+      : dir > 0
+        ? -Math.PI / 2
+        : Math.PI / 2;
+    anims.push((t) => {
+      let f = (offset + (t * speed) / length) % 1;
+      if (dir < 0) f = 1 - f;
+      const p = from + f * length;
+      if (horizontal) car.position.set(p, y, cz + lane);
+      else car.position.set(cx - lane, y, p);
+    });
+  }
+}
+
 /** A lot's label: what it is and how it is doing. */
 const siteTagHtml = (site: WorldSite) => {
   const chip = (text: string) =>
@@ -146,7 +200,7 @@ const siteTagHtml = (site: WorldSite) => {
     return `${escape(site.name)}${chip(site.achieved ? 'Record' : `${Math.round(site.done).toLocaleString()} / ${(site.target ?? 0).toLocaleString()}`)}${site.records?.length ? ` <span class="text-amber-500">${'★'.repeat(Math.min(site.records.length, 4))}</span>` : ''}`;
   const { total } = goalTowers(site.done);
   const p = site.period;
-  return `${escape(site.name)}${chip(`${p ? `${p.done}/${p.target}` : ''} · ${total === 1 ? '' : `${total} bldg · `}${site.done % 10 || (site.done ? 10 : 0)}F`)}${site.missed ? ' <span class="text-rose-500">missed</span>' : ''}`;
+  return `${escape(site.name)}${chip(`${p ? `${p.done}/${p.target}` : ''} · ${total === 1 ? '' : `${total} bldg · `}${site.done % 10 || (site.done ? 10 : 0)}F`)}${site.missed ? ' <span class="text-neutral-400">missed</span>' : ''}`;
 };
 
 /**
@@ -733,38 +787,13 @@ export const WorldScene = ({
           horizontal ? cz : from + d,
           y + 0.01,
         );
-      const rand = seeded(`road${i}`);
-      for (let k = 0; k < Math.max(1, Math.floor(length / 25)); k++) {
-        const car = art.car(
-          rand() < 0.5
-            ? '#ffffff'
-            : art.tint(
-                ['#60a5fa', '#f87171', '#fbbf24', '#34d399'][
-                  Math.floor(rand() * 4)
-                ],
-                0.2,
-              ),
-        );
-        s.statics.add(car);
-        const dir = k % 2 ? 1 : -1;
-        const offset = rand();
-        const speed = 3.5 + rand() * 2;
-        const lane = dir * 1.05;
-        car.rotation.y = horizontal
-          ? dir > 0
-            ? 0
-            : Math.PI
-          : dir > 0
-            ? -Math.PI / 2
-            : Math.PI / 2;
-        s.anims.push((t) => {
-          let f = (offset + (t * speed) / length) % 1;
-          if (dir < 0) f = 1 - f;
-          const p = from + f * length;
-          if (horizontal) car.position.set(p, y, cz + lane);
-          else car.position.set(cx - lane, y, p);
-        });
-      }
+      cars(
+        s.statics,
+        s.anims,
+        { horizontal, from, length, cx, cz, y, width: 4.4 },
+        Math.max(1, Math.floor(length / 25)),
+        seeded(`road${i}`),
+      );
     }
 
     for (const town of w.towns) buildTown(town, layout, townRank.get(town.id)!);
@@ -810,17 +839,6 @@ export const WorldScene = ({
     // Roads between the squares: the ones between bigger squares are wider
     // and in the company's colour, with a dashed middle line.
     const light = art.tint(accent, 0.62);
-    // Under the squares, road everywhere: each square is a rounded block,
-    // so every corner curves.
-    art.strip(
-      g,
-      spot.maxX - spot.minX,
-      spot.maxZ - spot.minZ,
-      light,
-      cx,
-      cz,
-      0.018,
-    );
     const roads = [
       ...spot.streetsX.map((r) => ({ ...r, vertical: true })),
       ...spot.streetsZ.map((r) => ({ ...r, vertical: false })),
@@ -837,6 +855,35 @@ export const WorldScene = ({
         r.vertical ? cz : r.at,
         big ? 0.026 : 0.022,
       );
+      // A car or two on every road, more on the wide ones, but none across
+      // the town square: a road through it only has cars up to its edge.
+      const p = spot.plaza;
+      const across = r.vertical ? p.x : p.z;
+      const along = r.vertical ? p.z : p.x;
+      let start = r.vertical ? spot.minZ : spot.minX;
+      let end = start + length;
+      if (Math.abs(r.at - across) < p.half) {
+        if (along - p.half - start >= end - (along + p.half))
+          end = along - p.half;
+        else start = along + p.half;
+      }
+      if (end - start > 8)
+        cars(
+          g,
+          s.anims,
+          {
+            horizontal: !r.vertical,
+            from: start,
+            length: end - start,
+            cx: r.at,
+            cz: r.at,
+            y: 0.03,
+            width: r.width,
+          },
+          Math.max(1, Math.round((end - start) / (big ? 30 : 45))),
+          rand,
+          accent,
+        );
       if (!big) continue;
       const from = r.vertical ? spot.minZ : spot.minX;
       for (let d = 2; d < length - 1; d += 4)
@@ -877,11 +924,16 @@ export const WorldScene = ({
 
     // Spare squares are parks.
     for (const cell of spot.cells.filter((c) => c.kind === 'park')) {
-      const lawn = lots.plate(BLOCK, BLOCK, 5, art.tint(accent, 0.86), 0.045);
-      lawn.position.x = cell.x;
-      lawn.position.z = cell.z;
-      g.add(lawn);
-      for (let i = 0; i < 7; i++)
+      art.strip(
+        g,
+        BLOCK - 1,
+        BLOCK - 1,
+        art.tint(accent, 0.86),
+        cell.x,
+        cell.z,
+        0.015,
+      );
+      for (let i = 0; i < 12; i++)
         art.tree(
           g,
           accent,
@@ -896,10 +948,12 @@ export const WorldScene = ({
     plaza.position.set(spot.plaza.x, 0, spot.plaza.z);
     g.add(plaza);
     const half = spot.plaza.half;
-    plaza.add(lots.plate(half * 2, half * 2, 7, accent, 0.027));
-    plaza.add(
-      lots.plate(half * 2 - 0.9, half * 2 - 0.9, 6.6, '#fbfbfc', 0.031),
-    );
+    art.strip(plaza, half * 2, half * 2, '#fbfbfc', 0, 0, 0.034);
+    const edge = half - 0.5;
+    art.strip(plaza, half * 2 - 1, 0.4, accent, 0, edge, 0.04);
+    art.strip(plaza, half * 2 - 1, 0.4, accent, 0, -edge, 0.04);
+    art.strip(plaza, 0.4, half * 2 - 1, accent, edge, 0, 0.04);
+    art.strip(plaza, 0.4, half * 2 - 1, accent, -edge, 0, 0.04);
     art.groundLogo(plaza, town.name, brand.logo, brand, 3.8);
 
     const sign = art.logoSign(town.name, brand.logo, brand);
@@ -1045,104 +1099,119 @@ export const WorldScene = ({
     const town = w.towns.find((t) => t.id === project.townId);
     if (!area || !town) return;
     const accent = brandOf(town).primary;
-    const brand = brandOf(project);
+    // Only the company's colours: the project brings just its logo.
+    const brand = { ...brandOf(town), logo: brandOf(project).logo };
     const sign = art.logoSign(project.name, brand.logo, brand);
     const rand = seeded(project.id);
     const g = new THREE.Group();
     g.userData.pick = { type: 'project', id: project.id };
     s.statics.add(g);
 
-    // The project's ground: a rounded block edged in its own colour.
+    // The project's ground, edged in the company's colour.
     const width = area.maxX - area.minX;
     const depth = area.maxZ - area.minZ;
     const x = (area.minX + area.maxX) / 2;
     const z = (area.minZ + area.maxZ) / 2;
-    const edge = lots.plate(
-      width + 0.8,
-      depth + 0.8,
-      5.4,
-      brand.primary,
-      0.027,
-    );
-    const ground = lots.plate(width, depth, 5, '#f4f6f9', 0.031);
-    edge.position.set(x, edge.position.y, z);
-    ground.position.set(x, ground.position.y, z);
-    g.add(edge, ground);
+    art.strip(g, width + 0.8, depth + 0.8, accent, x, z, 0.024);
+    art.strip(g, width, depth, '#f1f3f6', x, z, 0.028);
     // Its flag at the front corner.
     s.anims.push(
       art.flagPole(
         g,
         art.flagMaterial(project.name, brand.logo, brand),
-        area.maxX - 1.6,
-        area.maxZ - 1.6,
+        area.maxX - 0.8,
+        area.maxZ - 0.8,
         rand() * 6,
       ),
     );
 
     let tallest = 0;
+    const used = new Set<string>();
     project.sites.forEach((site) => {
       const spot = layout.sites.get(site.id);
       if (!spot) return;
-      const lot = new THREE.Group();
-      lot.position.set(spot.x, 0, spot.z);
-      lot.rotation.y = spot.angle;
-      lot.userData.pick = { type: 'site', id: site.id };
-      g.add(lot);
-      lot.add(lots.plate(LOT - 1.2, LOT - 1.2, 1.6, '#fafbfc', 0.034));
-      const made =
-        site.kind === 'goal'
-          ? lots.goalLot(site, accent, sign)
-          : site.kind === 'target'
-            ? lots.recordTower(site, accent)
-            : lots.homesLot(site, accent);
-      lot.add(made.group);
-      s.anims.push(...made.anims);
-      tallest = Math.max(tallest, made.height);
-      lot.updateMatrixWorld(true);
-      const top =
-        'top' in made
-          ? new THREE.Vector3(made.top.x, made.top.y, made.top.z)
-          : new THREE.Vector3(0, made.height, 0);
-      s.lots.set(site.id, {
-        group: made.group,
-        top: lot.localToWorld(top),
-      });
-      if ('houses' in made)
-        for (const [id, h] of Array.from(made.houses.entries()))
-          s.houses.set(
-            id,
-            lot.localToWorld(new THREE.Vector3(h.x, h.top, h.z)),
-          );
+      spot.lots.forEach((at, i) => {
+        used.add(`${at.x},${at.z}`);
+        const newest = i === spot.lots.length - 1;
+        const lot = new THREE.Group();
+        lot.position.set(at.x, 0, at.z);
+        lot.rotation.y = at.angle;
+        lot.userData.pick = { type: 'site', id: site.id };
+        g.add(lot);
+        art.strip(lot, LOT, LOT, '#fafbfc', 0, 0, 0.032);
+        const made =
+          site.kind === 'goal'
+            ? lots.goalLot(site, i, accent, sign)
+            : site.kind === 'target'
+              ? lots.recordTower(site, accent)
+              : lots.homesLot(site, accent);
+        lot.add(made.group);
+        s.anims.push(...made.anims);
+        tallest = Math.max(tallest, made.height);
+        if (!newest) return;
+        lot.updateMatrixWorld(true);
+        const top =
+          'top' in made
+            ? new THREE.Vector3(made.top.x, made.top.y, made.top.z)
+            : new THREE.Vector3(0, made.height, 0);
+        s.lots.set(site.id, {
+          group: made.group,
+          top: lot.localToWorld(top),
+        });
+        if ('houses' in made)
+          for (const [id, h] of Array.from(made.houses.entries()))
+            s.houses.set(
+              id,
+              lot.localToWorld(new THREE.Vector3(h.x, h.top, h.z)),
+            );
 
-      const label = tag(
-        'pointer-events-none whitespace-nowrap rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-semibold text-neutral-800 shadow',
-        siteTagHtml(site),
-      );
-      label.obj.position.set(0, made.height + 1.2, 0);
-      lot.add(label.obj);
-      s.labels.push({ obj: label.obj, kind: 'site' });
+        const label = tag(
+          'pointer-events-none whitespace-nowrap rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-semibold text-neutral-800 shadow',
+          siteTagHtml(site),
+        );
+        label.obj.position.set(0, made.height + 1.2, 0);
+        lot.add(label.obj);
+        s.labels.push({ obj: label.obj, kind: 'site' });
+      });
     });
 
-    // Empty lots get a few trees.
-    const used = project.sites.length;
-    area.cells.forEach((cell, ci) => {
-      for (let k = 0; k < LOTS.length; k++) {
-        const index = ci * LOTS.length + k;
-        if (index < used) continue;
+    // Each square's front corner is a garden, and empty lots get trees.
+    for (const cell of area.cells) {
+      art.strip(
+        g,
+        LOT,
+        LOT,
+        art.tint(accent, 0.86),
+        cell.x + GARDEN.dx,
+        cell.z + GARDEN.dz,
+        0.03,
+      );
+      for (let i = 0; i < 3; i++)
+        art.tree(
+          g,
+          accent,
+          cell.x + GARDEN.dx + (rand() - 0.5) * 7,
+          cell.z + GARDEN.dz + (rand() - 0.5) * 7,
+          rand,
+        );
+      for (const lot of LOTS) {
+        const lx = cell.x + lot.dx;
+        const lz = cell.z + lot.dz;
+        if (used.has(`${lx},${lz}`)) continue;
         for (let i = 0; i < 2; i++)
           art.tree(
             g,
             accent,
-            cell.x + LOTS[k].dx + (rand() - 0.5) * 5,
-            cell.z + LOTS[k].dz + (rand() - 0.5) * 5,
+            lx + (rand() - 0.5) * 7,
+            lz + (rand() - 0.5) * 7,
             rand,
           );
       }
-    });
+    }
 
     const label = tag(
       'pointer-events-none flex items-center gap-1.5 whitespace-nowrap rounded-full bg-white/95 py-0.5 pl-0.5 pr-2.5 text-xs font-semibold text-neutral-800 shadow-md',
-      `${badge(brand.logo, project.name, brand.primary, 22)}<span class="rounded-full px-1.5 text-[10px] font-bold text-white" style="background:${accent}">#${project.rank}</span>${escape(project.name)}`,
+      `${badge(brand.logo, project.name, accent, 22)}<span class="rounded-full px-1.5 text-[10px] font-bold text-white" style="background:${accent}">#${project.rank}</span>${escape(project.name)}`,
     );
     label.obj.position.set(x, Math.max(tallest, 6) + 3.5, z);
     g.add(label.obj);
@@ -1184,7 +1253,7 @@ export const WorldScene = ({
         rows: mine.map((p) => ({
           label: p.name,
           value: p.weekPoints,
-          hex: brandOf(p).primary,
+          hex: brand.primary,
           image: brandOf(p).logo,
           note: `#${p.rank} · ${Math.round(p.weekPoints)} pts`,
         })),
@@ -1253,7 +1322,7 @@ export const WorldScene = ({
     const to = { x: b.target.x, z: b.target.z };
     if (Math.hypot(from.x - to.x, from.z - to.z) < 2) return;
     if (b.trail) s.scene.remove(b.trail);
-    b.path = lots.smooth(route(town, from, to));
+    b.path = route(town, from, to);
     b.travelled = 0;
     const line = art.routeLine(b.path, TRANSIT, 0.45);
     b.trail = line.group;

@@ -84,7 +84,7 @@ export type SiteKind = 'goal' | 'target' | 'homes';
  * grow a floor per task done for it, a new building every ten floors, and
  * crack when its last period was missed. A target goal is the record tower,
  * as tall as it is near its number, standing on the targets it reached
- * before. Tasks for no goal are small houses, four to a lot, kept for the
+ * before. Tasks for no goal are small houses, three to a lot, kept for the
  * week they were for: next week the homes make way for new ones.
  */
 export type WorldSite = {
@@ -147,11 +147,14 @@ export type World = {
   bots: WorldBot[];
 };
 
-/** Task buildings to a project square. */
-export const SITES_PER_SQUARE = 4;
+/**
+ * Lots to a project square, one building on each: a square never holds
+ * more than three, and a project that needs more takes more squares.
+ */
+export const LOTS_PER_SQUARE = 3;
 
 /** Houses on one homes lot. */
-export const HOUSES_PER_LOT = 4;
+export const HOUSES_PER_LOT = 3;
 
 /** Floors in one goal building: past this a new one is started. */
 export const FLOORS = 10;
@@ -162,6 +165,10 @@ export function goalTowers(done: number) {
   const rest = done % FLOORS;
   return { full, rest, total: full + (rest || !full ? 1 : 0) };
 }
+
+/** The lots a site takes: one per goal building, one otherwise. */
+export const siteLots = (site: Pick<WorldSite, 'kind' | 'done'>) =>
+  site.kind === 'goal' ? goalTowers(site.done).total : 1;
 
 /** Levels in a tier: past this a building upgrades, and levels cost 10×. */
 export const LEVEL_STEP = 10;
