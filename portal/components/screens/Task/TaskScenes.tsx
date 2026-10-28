@@ -523,7 +523,7 @@ export const FounderScene = ({
     <section
       ref={sec}
       className={`${styles.sec} ${styles.dark}`}
-      style={{ height: '260vh' }}
+      style={{ height: '180vh' }}
     >
       <div className={styles.pin}>
         <div className={styles.meTxt}>
@@ -1092,6 +1092,9 @@ export const MarqueeScene = ({
       const h = el.offsetHeight + 36;
       svg.setAttribute('width', `${w}`);
       svg.setAttribute('height', `${h}`);
+      // The board is centred in its wrap, so the ring follows it there.
+      svg.style.left = `${el.offsetLeft - 20}px`;
+      svg.style.top = `${el.offsetTop - 18}px`;
       path.setAttribute('d', scribble('circle', w - 24, h - 24, seeded(8)));
       primeStroke(path);
     };
@@ -1108,7 +1111,7 @@ export const MarqueeScene = ({
 
     const b = Math.min(
       boards.length - 1,
-      Math.floor(at(0.16, 0.66) * boards.length),
+      Math.floor(at(0.2, 0.4) * boards.length),
     );
     if (b !== shown.current.board) shown.current = { board: b, at: t };
     const since = still ? 1e9 : t - shown.current.at;
@@ -1119,7 +1122,7 @@ export const MarqueeScene = ({
     if (cue.current) {
       if (cue.current.textContent !== line.cue)
         cue.current.textContent = line.cue;
-      const c = clamp((since - 500) / 400);
+      const c = Math.min(clamp((since - 500) / 400), at(0.5, 0.15));
       cue.current.style.opacity = `${c}`;
       cue.current.style.transform = `rotate(-2deg) translateY(${(1 - c) * 8}px)`;
     }
@@ -1139,11 +1142,11 @@ export const MarqueeScene = ({
     // A press camera goes off every time the board changes.
     if (flash.current)
       flash.current.style.opacity = `${still ? 0 : Math.max(0, 0.55 - since / 400)}`;
-    drawStroke(ring.current, b === boards.length - 1 ? at(0.86, 0.08) : 0);
+    drawStroke(ring.current, b === boards.length - 1 ? at(0.7, 0.15) : 0);
   });
 
   return (
-    <section ref={sec} className={styles.sec} style={{ height: '260vh' }}>
+    <section ref={sec} className={styles.sec} style={{ height: '180vh' }}>
       <div className={styles.pin}>
         <div ref={flash} className={styles.flash} aria-hidden="true" />
         <div className={styles.marquee}>

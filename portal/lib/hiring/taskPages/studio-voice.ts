@@ -43,23 +43,7 @@ export const studioVoicePage: TaskPageConfig = {
     kicker: "what you'll own",
     title: 'Films, tracks, games. Every launch has someone backstage.',
     circle: 'backstage.',
-    boards: [
-      {
-        tag: 'now showing',
-        text: 'AN AI SHORT FILM',
-        cue: 'cue: 40 creators DMed',
-      },
-      {
-        tag: 'out now',
-        text: 'A NEW SINGLE',
-        cue: 'cue: 12 curators pitched',
-      },
-      {
-        tag: 'in beta',
-        text: 'A MOBILE GAME',
-        cue: 'cue: memes out, Discord pinged',
-      },
-    ],
+    boards: [],
     finale: {
       tag: 'tonight',
       text: 'HOUSEFULL',
