@@ -386,6 +386,18 @@ const C = {
   accent: '#4ade80',
 };
 
+/** Pipeline stages per opening, from grey (early) to bright green (late). */
+const PIPELINE: Array<{
+  label: string;
+  shade: string;
+  count: (r: OpeningDigest) => number;
+}> = [
+  { label: 'to screen', shade: '#525252', count: (r) => r.screen },
+  { label: 'on task', shade: '#a3a3a3', count: (r) => r.onTask },
+  { label: 'to review', shade: '#16a34a', count: (r) => r.review.length },
+  { label: 'interview', shade: '#4ade80', count: (r) => r.interview },
+];
+
 export function digestHtml(d: LeadDigest, origin = portalOrigin()) {
   const e = escapeHtml;
   const label = (title: string, n?: number) =>
@@ -415,8 +427,34 @@ export function digestHtml(d: LeadDigest, origin = portalOrigin()) {
           : '',
     ),
   );
+  // Each opening's pipeline as one thin bar, grey early on and greener as
+  // candidates get further, with a dot of the same shade by each count.
+  const progress = (r: OpeningDigest) => {
+    const parts = PIPELINE.map((p) => ({ ...p, n: p.count(r) })).filter(
+      (p) => p.n,
+    );
+    const total = parts.reduce((n, p) => n + p.n, 0);
+    const bar = total
+      ? `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:6px 0 4px;border-radius:3px;overflow:hidden"><tr>${parts
+          .map(
+            (p) =>
+              `<td style="height:6px;line-height:6px;font-size:0;background:${p.shade};width:${((p.n / total) * 100).toFixed(1)}%">&nbsp;</td>`,
+          )
+          .join('')}</tr></table>`
+      : `<div style="margin:6px 0 4px;height:6px;border-radius:3px;background:${C.line}"></div>`;
+    const legend = parts
+      .map(
+        (p) =>
+          `<span style="white-space:nowrap"><span style="display:inline-block;width:7px;height:7px;border-radius:2px;background:${p.shade}"></span>&nbsp;${p.n} ${p.label}</span>`,
+      )
+      .join(' &nbsp; ');
+    const pastDue = r.pastDue
+      ? ` &nbsp; <span style="color:${C.muted}">${r.pastDue} past due</span>`
+      : '';
+    return bar + (legend || 'No one in progress') + pastDue;
+  };
   const openings = d.openings.map((r) =>
-    row(r.opening.title, openingLink(origin, r.opening), e(openingLine(r))),
+    row(r.opening.title, openingLink(origin, r.opening), progress(r)),
   );
 
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"><meta name="supported-color-schemes" content="dark"></head><body style="margin:0;padding:20px 10px;background:${C.page};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" bgcolor="${C.page}"><tr><td align="center"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:480px;background:${C.card};border:1px solid ${C.line};border-radius:14px"><tr><td style="padding:20px 20px 14px">
