@@ -448,8 +448,8 @@ const HiringCard = () => {
         <div>
           <p className="text-sm text-neutral-900">Hiring digest email</p>
           <p className="text-sm text-neutral-500">
-            Tasks waiting for your review and where everyone else stands, at
-            8:00 am IST. Skipped when nothing needs you.
+            Tasks to review, upcoming interviews and where everyone else stands,
+            at 8:00 am IST. Skipped when nothing needs you.
           </p>
         </div>
         <select

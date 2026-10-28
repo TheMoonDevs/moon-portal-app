@@ -7,6 +7,11 @@ import {
   HIRING_DIGEST_FREQUENCY,
   JOB_OPENING_STATUS,
 } from '@/models/hiring';
+import {
+  ACTIVE_MEET_STATUSES,
+  MEET_BOOKING_STATUS,
+  type MeetBooking,
+} from '@/models/meet';
 import { MEMBER_STATUS } from '@/models/workspace';
 
 import {
@@ -20,11 +25,12 @@ import { taskDueAt } from './tasks';
 
 /*
  * The hiring digest: each hiring lead gets one email covering every opening
- * they lead, with the tasks waiting for review (linked) and a count of
- * everyone else in the pipeline. Run by /api/cron/hiring-digest (see
- * vercel.json) each morning; each lead picks how often in Settings → Hiring
- * preferences (every 2 days by default). Leads with nothing to review or
- * screen get no email that morning, and the next one goes out once there is.
+ * they lead: the tasks waiting for review and the interviews booked in the
+ * next two weeks (each linked), and a count of everyone else per opening.
+ * Run by /api/cron/hiring-digest (see vercel.json) each morning; each lead
+ * picks how often in Settings → Hiring preferences (every 2 days by
+ * default). Leads with nothing to review, screen or interview get no email
+ * that morning, and the next one goes out once there is.
  */
 
 const DIGEST_TIMEZONE = process.env.DEFAULT_TIMEZONE || 'Asia/Kolkata';
@@ -84,14 +90,19 @@ const daysAgo = (value: unknown, now: Date) => {
 const plural = (n: number, one: string, many = `${one}s`) =>
   `${n} ${n === 1 ? one : many}`;
 
-type Person = { name: string; href: string; when: string };
+type Person = { name: string; href: string; sub: string };
+
+type Interview = Person & {
+  start: string;
+  /** The candidate asked for this time and it needs the host's answer. */
+  needsAnswer: boolean;
+  joinUrl: string | null;
+};
 
 interface OpeningDigest {
   opening: JobOpening;
-  company: string;
-  /** Sent their task back, oldest first: the only list with names. */
+  /** Sent their task back, oldest first. */
   review: Person[];
-  /** The rest are counts. */
   screen: number;
   /** Task emailed, not sent back yet. */
   onTask: number;
@@ -99,18 +110,39 @@ interface OpeningDigest {
   interview: number;
 }
 
-type Totals = Record<'review' | 'screen' | 'onTask' | 'interview', number>;
-
 export interface LeadDigest {
   lead: {
     id: string;
     name: string;
     email: string;
+    timezone: string;
     frequency: HIRING_DIGEST_FREQUENCY;
     sentOn: string | null;
   };
   openings: OpeningDigest[];
-  totals: Totals;
+  /** Interviews booked in the next two weeks, soonest first. */
+  interviews: Interview[];
+  totals: { review: number; screen: number; onTask: number };
+}
+
+const INTERVIEW_WINDOW_DAYS = 14;
+
+/** "Thu 29 Oct · 10:00–10:30" in `tz`. */
+export function formatSlot(start: string, end: string, tz: string) {
+  const day = new Date(start).toLocaleDateString('en-GB', {
+    timeZone: tz,
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  });
+  const time = (iso: string) =>
+    new Date(iso).toLocaleTimeString('en-GB', {
+      timeZone: tz,
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    });
+  return `${day.replace(',', '')} · ${time(start)}–${time(end)}`;
 }
 
 /** What each hiring lead's digest would say right now. */
@@ -129,16 +161,18 @@ export async function buildDigests(now = new Date()): Promise<LeadDigest[]> {
     new Set(openings.map((o) => o.hiringLeadId as string)),
   );
   const companyIds = Array.from(new Set(openings.map((o) => o.companyId)));
-  const [applications, leads, companies, members] = await Promise.all([
+  const [applications, leads, members, bookings] = await Promise.all([
     db.jobApplication.findMany({
       where: {
         openingId: { in: openings.map((o) => o.id) },
         stage: {
           in: [
             APPLICATION_STAGE.APPLIED,
+            APPLICATION_STAGE.SHORTLISTED,
             APPLICATION_STAGE.TASK,
             APPLICATION_STAGE.TASK_REVIEW,
             APPLICATION_STAGE.INTERVIEW,
+            APPLICATION_STAGE.OFFER,
           ],
         },
       },
@@ -157,12 +191,10 @@ export async function buildDigests(now = new Date()): Promise<LeadDigest[]> {
         id: string;
         name?: string | null;
         email?: string | null;
+        timezone?: string | null;
         hiringDigest?: string | null;
         hiringDigestSentOn?: string | null;
       }>
-    >,
-    db.company.findMany({ where: { id: { in: companyIds } } }) as Promise<
-      Array<{ id: string; name?: string | null }>
     >,
     db.companyMember.findMany({
       where: {
@@ -172,9 +204,21 @@ export async function buildDigests(now = new Date()): Promise<LeadDigest[]> {
       },
       select: { companyId: true, userId: true },
     }) as Promise<Array<{ companyId: string; userId: string }>>,
+    db.meetBooking.findMany({
+      where: {
+        companyId: { in: companyIds },
+        applicationId: { notIn: [null, ''] },
+        status: { in: ACTIVE_MEET_STATUSES },
+        end: { gt: now.toISOString() },
+        start: {
+          lt: new Date(
+            now.getTime() + INTERVIEW_WINDOW_DAYS * DAY_MS,
+          ).toISOString(),
+        },
+      },
+    }) as Promise<MeetBooking[]>,
   ]);
 
-  const companyName = new Map(companies.map((c) => [c.id, c.name ?? '']));
   const isMember = new Set(members.map((m) => `${m.companyId}:${m.userId}`));
   const byOpening = new Map<string, JobApplication[]>();
   for (const a of applications) {
@@ -182,16 +226,19 @@ export async function buildDigests(now = new Date()): Promise<LeadDigest[]> {
     list.push(a);
     byOpening.set(a.openingId, list);
   }
+  const applicationById = new Map(applications.map((a) => [a.id, a]));
 
   const time = (value: unknown) => new Date(String(value ?? '')).getTime() || 0;
 
   const digests: LeadDigest[] = [];
   for (const lead of leads) {
     if (!lead.email) continue;
+    const timezone = lead.timezone || DIGEST_TIMEZONE;
     const led = openings.filter(
       (o) =>
         o.hiringLeadId === lead.id && isMember.has(`${o.companyId}:${lead.id}`),
     );
+    const titleOf = new Map(led.map((o) => [o.id, o.title]));
     const rows: OpeningDigest[] = led.map((opening) => {
       const apps = byOpening.get(opening.id) ?? [];
       const inStage = (stage: APPLICATION_STAGE) =>
@@ -201,7 +248,6 @@ export async function buildDigests(now = new Date()): Promise<LeadDigest[]> {
       );
       return {
         opening,
-        company: companyName.get(opening.companyId) ?? '',
         review: inStage(APPLICATION_STAGE.TASK_REVIEW)
           .sort(
             (a, b) =>
@@ -211,7 +257,7 @@ export async function buildDigests(now = new Date()): Promise<LeadDigest[]> {
           .map((a) => ({
             name: a.name,
             href: applicantLink(origin, a),
-            when: daysAgo(a.taskSubmission?.submittedAt, now),
+            sub: `${opening.title} · sent ${daysAgo(a.taskSubmission?.submittedAt, now)}`,
           })),
         screen: inStage(APPLICATION_STAGE.APPLIED).length,
         onTask: onTask.length,
@@ -222,16 +268,34 @@ export async function buildDigests(now = new Date()): Promise<LeadDigest[]> {
         interview: inStage(APPLICATION_STAGE.INTERVIEW).length,
       };
     });
+    const interviews: Interview[] = bookings
+      .flatMap((b) => {
+        const a = applicationById.get(b.applicationId ?? '');
+        if (!a || !titleOf.has(a.openingId)) return [];
+        return [
+          {
+            name: a.name,
+            href: applicantLink(origin, a),
+            sub: `${formatSlot(b.start, b.end, timezone)} · ${titleOf.get(a.openingId)}`,
+            start: b.start,
+            needsAnswer: b.status === MEET_BOOKING_STATUS.PENDING,
+            joinUrl:
+              b.status === MEET_BOOKING_STATUS.CONFIRMED
+                ? (b.meetingUrl ?? null)
+                : null,
+          },
+        ];
+      })
+      .sort((a, b) => time(a.start) - time(b.start));
+
     const sum = (pick: (r: OpeningDigest) => number) =>
       rows.reduce((n, r) => n + pick(r), 0);
-    const totals: Totals = {
+    const totals = {
       review: sum((r) => r.review.length),
       screen: sum((r) => r.screen),
       onTask: sum((r) => r.onTask),
-      interview: sum((r) => r.interview),
     };
-    if (!totals.review && !totals.screen) continue;
-    // Most to review first, then most to screen.
+    if (!totals.review && !totals.screen && !interviews.length) continue;
     rows.sort(
       (a, b) => b.review.length - a.review.length || b.screen - a.screen,
     );
@@ -240,12 +304,14 @@ export async function buildDigests(now = new Date()): Promise<LeadDigest[]> {
         id: lead.id,
         name: lead.name ?? '',
         email: lead.email,
+        timezone,
         frequency: isDigestFrequency(lead.hiringDigest)
           ? lead.hiringDigest
           : DEFAULT_DIGEST_FREQUENCY,
         sentOn: lead.hiringDigestSentOn ?? null,
       },
       openings: rows,
+      interviews,
       totals,
     });
   }
@@ -254,115 +320,115 @@ export async function buildDigests(now = new Date()): Promise<LeadDigest[]> {
 
 /* -------------------------------- the email ------------------------------- */
 
-const firstName = (name: string) => name.trim().split(/\s+/)[0] || 'there';
-
-/** One green, lighter to darker along the pipeline, like GitHub's graph. */
-const ACCENT = '#216e39';
-
-/** The pipeline columns every opening shows, in order. */
-const COLUMNS: Array<{ key: keyof Totals; label: string; color: string }> = [
-  { key: 'screen', label: 'To screen', color: '#9be9a8' },
-  { key: 'onTask', label: 'On task', color: '#40c463' },
-  { key: 'review', label: 'To review', color: '#30a14e' },
-  { key: 'interview', label: 'Interview', color: '#216e39' },
-];
-
-const count = (r: OpeningDigest, key: keyof Totals) =>
-  key === 'review' ? r.review.length : r[key];
-
-export function digestSubject({ totals }: LeadDigest) {
+export function digestSubject({ totals, interviews }: LeadDigest) {
   const parts = [
     totals.review && `${plural(totals.review, 'task')} to review`,
+    interviews.length && plural(interviews.length, 'interview'),
     totals.screen && `${totals.screen} to screen`,
   ].filter(Boolean);
   return `Hiring: ${parts.join(', ')}`;
 }
 
+/** "8 to screen · 4 on task · 1 past due", leaving out zeros. */
+const openingLine = (r: OpeningDigest) =>
+  [
+    r.screen && `${r.screen} to screen`,
+    r.onTask && `${r.onTask} on task`,
+    r.pastDue && `${r.pastDue} past due`,
+    r.review.length && `${r.review.length} to review`,
+    r.interview && `${r.interview} in interview`,
+  ]
+    .filter(Boolean)
+    .join(' · ') || 'No one in progress';
+
 export function digestText(d: LeadDigest, origin = portalOrigin()) {
-  const out: string[] = [`Hi ${firstName(d.lead.name)},`];
-  const toReview = d.openings.filter((r) => r.review.length);
-  if (toReview.length) {
-    const lines = ['Tasks to review:'];
-    for (const r of toReview)
-      for (const p of r.review)
-        lines.push(`- ${p.name} (${r.opening.title}), ${p.when}: ${p.href}`);
-    out.push(lines.join('\n'));
-  }
-  out.push(
-    [
-      'Your openings:',
-      ...d.openings.map(
-        (r) =>
-          `- ${r.opening.title}: ${COLUMNS.filter((c) => count(r, c.key))
-            .map((c) => `${count(r, c.key)} ${c.label.toLowerCase()}`)
-            .join(', ')}${r.pastDue ? ` (${r.pastDue} past due)` : ''}`,
+  const section = (title: string, lines: string[]) =>
+    lines.length ? [title, ...lines].join('\n') : '';
+  return [
+    `Hi ${firstName(d.lead.name)},`,
+    section(
+      `To review (${d.totals.review})`,
+      d.openings.flatMap((r) =>
+        r.review.map((p) => `- ${p.name}, ${p.sub}: ${p.href}`),
       ),
-      `Hiring: ${origin}/admin?tab=hiring`,
-    ].join('\n'),
-  );
-  out.push(
-    `${DIGEST_FREQUENCY_LABELS[d.lead.frequency]}, for the openings you lead. Change how often: ${origin}/settings#hiring`,
-  );
-  return out.join('\n\n');
+    ),
+    section(
+      `Interviews (${d.interviews.length})`,
+      d.interviews.map(
+        (i) =>
+          `- ${i.name}, ${i.sub}${i.needsAnswer ? ' (needs your answer)' : ''}: ${i.href}`,
+      ),
+    ),
+    section(
+      'Openings',
+      d.openings.map((r) => `- ${r.opening.title}: ${openingLine(r)}`),
+    ),
+    `${DIGEST_FREQUENCY_LABELS[d.lead.frequency]}. Change how often: ${origin}/settings#hiring`,
+  ]
+    .filter(Boolean)
+    .join('\n\n');
 }
+
+const firstName = (name: string) => name.trim().split(/\s+/)[0] || 'there';
+
+/*
+ * The HTML follows the user page: a quiet dark card, small grey section
+ * labels with a count, and two-line rows (name, then a grey line under it).
+ * Greys only, with one green for what needs the lead.
+ */
+const C = {
+  page: '#0a0a0a',
+  card: '#141414',
+  line: '#262626',
+  text: '#fafafa',
+  muted: '#a3a3a3',
+  faint: '#737373',
+  accent: '#4ade80',
+};
 
 export function digestHtml(d: LeadDigest, origin = portalOrigin()) {
   const e = escapeHtml;
-  const link = (href: string, text: string, style = '') =>
-    `<a href="${e(href)}" style="color:${ACCENT};text-decoration:none;${style}">${e(text)}</a>`;
-  const muted = (text: string) =>
-    `<span style="color:#a1a1aa">${e(text)}</span>`;
+  const label = (title: string, n?: number) =>
+    `<tr><td style="padding:20px 0 6px;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:${C.muted}">${e(title)}${n === undefined ? '' : `<span style="color:${C.faint};letter-spacing:0;font-weight:400"> &nbsp;${n}</span>`}</td></tr>`;
+  const row = (title: string, href: string | null, sub: string, aside = '') =>
+    `<tr><td style="padding:7px 0"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td style="font-size:14px;line-height:1.35">${href ? `<a href="${e(href)}" style="color:${C.text};text-decoration:none">${e(title)}</a>` : `<span style="color:${C.text}">${e(title)}</span>`}<div style="font-size:12px;color:${C.faint};margin-top:2px">${sub}</div></td>${aside ? `<td style="text-align:right;vertical-align:top;white-space:nowrap;padding-left:8px">${aside}</td>` : ''}</tr></table></td></tr>`;
+  const pill = (text: string, href?: string | null) =>
+    href
+      ? `<a href="${e(href)}" style="display:inline-block;font-size:11px;padding:2px 8px;border-radius:6px;background:#14532d;color:${C.accent};text-decoration:none">${e(text)}</a>`
+      : `<span style="font-size:11px;color:${C.accent}">${e(text)}</span>`;
 
-  const tiles = COLUMNS.map(
-    (c) =>
-      `<td style="padding:10px 4px;background:#f4f4f5;border-radius:10px;text-align:center;width:25%;border-top:3px solid ${c.color}"><div style="font-size:22px;font-weight:700;line-height:1.2">${d.totals[c.key]}</div><div style="font-size:12px;color:#71717a">${c.label}</div></td>`,
-  ).join('');
+  const stat = (n: number, text: string, first = false) =>
+    `<td style="padding:0 0 0 ${first ? 0 : 16}px;vertical-align:top"><div style="font-size:11px;color:${C.muted}">${e(text)}</div><div style="font-size:22px;font-weight:600;color:${n ? C.text : C.faint};line-height:1.3">${n}</div></td>`;
 
-  const reviewRows = d.openings
-    .flatMap((r) =>
-      r.review.map(
-        (p) =>
-          `<tr><td style="padding:8px 0;border-bottom:1px solid #f4f4f5">${link(p.href, p.name, 'font-weight:600')}<br>${muted(r.opening.title)}</td><td style="padding:8px 0;border-bottom:1px solid #f4f4f5;text-align:right;white-space:nowrap;font-size:13px">${muted(p.when)}</td></tr>`,
-      ),
-    )
-    .join('');
+  const review = d.openings.flatMap((r) =>
+    r.review.map((p) => row(p.name, p.href, e(p.sub))),
+  );
+  const interviews = d.interviews.map((i) =>
+    row(
+      i.name,
+      i.href,
+      e(i.sub),
+      i.joinUrl
+        ? pill('Join', i.joinUrl)
+        : i.needsAnswer
+          ? pill('Needs your answer')
+          : '',
+    ),
+  );
+  const openings = d.openings.map((r) =>
+    row(r.opening.title, openingLink(origin, r.opening), e(openingLine(r))),
+  );
 
-  // One stacked bar per opening, segments sized by count.
-  const bar = (r: OpeningDigest) => {
-    const total = COLUMNS.reduce((n, c) => n + count(r, c.key), 0);
-    if (!total)
-      return `<div style="height:8px;border-radius:4px;background:#f4f4f5"></div>`;
-    const cells = COLUMNS.filter((c) => count(r, c.key))
-      .map(
-        (c) =>
-          `<td style="height:8px;background:${c.color};width:${(count(r, c.key) / total) * 100}%"></td>`,
-      )
-      .join('');
-    return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-radius:4px;overflow:hidden"><tr>${cells}</tr></table>`;
-  };
-  const openingRows = d.openings
-    .map(
-      (r) =>
-        `<div style="padding:10px 0;border-bottom:1px solid #f4f4f5"><div style="font-size:14px;font-weight:600;margin:0 0 6px">${link(openingLink(origin, r.opening), r.opening.title, 'color:#18181b')}</div>${bar(r)}<div style="font-size:12px;color:#71717a;margin-top:6px">${COLUMNS.filter(
-          (c) => count(r, c.key),
-        )
-          .map(
-            (c) =>
-              `<span style="white-space:nowrap"><span style="display:inline-block;width:8px;height:8px;border-radius:4px;background:${c.color}"></span> ${count(r, c.key)} ${c.label.toLowerCase()}</span>`,
-          )
-          .join(
-            ' &nbsp; ',
-          )}${r.pastDue ? ` &nbsp; <b style="color:#18181b">${r.pastDue} past due</b>` : ''}</div></div>`,
-    )
-    .join('');
-
-  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:24px 12px;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif"><div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:12px;padding:28px 24px;color:#18181b;font-size:15px;line-height:1.5">
-<p style="margin:0 0 14px">Hi ${e(firstName(d.lead.name))}, here's your hiring at a glance.</p>
-<table role="presentation" width="100%" cellspacing="6" cellpadding="0" style="margin:0 -6px 18px"><tr>${tiles}</tr></table>
-${reviewRows ? `<p style="margin:0 0 4px;font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:${ACCENT}">Tasks to review</p><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 20px">${reviewRows}</table>` : ''}
-<p style="margin:0;font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#71717a">Your openings</p>
-${openingRows}
-</div><p style="max-width:560px;margin:16px auto 0;text-align:center;color:#a1a1aa;font-size:12px;line-height:1.5">${e(DIGEST_FREQUENCY_LABELS[d.lead.frequency])}, for the openings you lead. ${link(`${origin}/settings#hiring`, 'Change how often', 'color:#71717a;text-decoration:underline')}</p></body></html>`;
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"><meta name="supported-color-schemes" content="dark"></head><body style="margin:0;padding:20px 10px;background:${C.page};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" bgcolor="${C.page}"><tr><td align="center"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:480px;background:${C.card};border:1px solid ${C.line};border-radius:14px"><tr><td style="padding:20px 20px 14px">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+<tr><td style="font-size:16px;font-weight:600;color:${C.text}">Hiring<span style="font-weight:400;color:${C.faint}"> &nbsp;·&nbsp; ${e(firstName(d.lead.name))}</span></td></tr>
+<tr><td style="padding-top:14px"><table role="presentation" cellspacing="0" cellpadding="0"><tr>${stat(d.totals.review, 'To review', true)}${stat(d.interviews.length, 'Interviews')}${stat(d.totals.screen, 'To screen')}${stat(d.totals.onTask, 'On task')}</tr></table></td></tr>
+${review.length ? label('To review', review.length) + review.join('') : ''}
+${interviews.length ? label('Interviews', interviews.length) + interviews.join('') : ''}
+${label('Openings', openings.length)}${openings.join('')}
+</table></td></tr></table>
+<p style="max-width:480px;margin:12px auto 0;font-size:11px;color:${C.faint}">${e(DIGEST_FREQUENCY_LABELS[d.lead.frequency])} &nbsp;·&nbsp; <a href="${e(`${origin}/settings#hiring`)}" style="color:${C.faint}">Change how often</a></p>
+</td></tr></table></body></html>`;
 }
 
 /* -------------------------------- sending -------------------------------- */
