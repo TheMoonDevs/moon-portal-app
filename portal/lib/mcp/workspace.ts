@@ -529,6 +529,10 @@ export const WORKSPACE_TOOLS: Tool[] = [
     annotations: { readOnlyHint: false, destructiveHint: false },
     run: async (user, args) => {
       const project = await findProject(user, args?.project, 'projects:edit');
+      if (project.isCore)
+        throw new ToolError(
+          `${project.name} is its company's CORE project and stays with it.`,
+        );
       const targets = await companiesWith(user, 'projects:create');
       const ref = text(args?.company, 200);
       const company = Array.from(targets.values()).find(

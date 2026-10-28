@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 
 import { db } from '@/lib/mongodb/db-client';
 import { requireSuperAdmin } from '@/lib/permissions/server';
+import { ensureCoreProject } from '@/lib/workspace/coreProject';
 import {
   fail,
   getWorkspaceForUser,
@@ -61,6 +62,7 @@ export async function POST(request: Request) {
   });
 
   await seedCompanyRoles(company.id);
+  await ensureCoreProject(company.id, user.id);
 
   // The creator, and an optional owner picked in the form, start as owners.
   const ownerIds = Array.from(

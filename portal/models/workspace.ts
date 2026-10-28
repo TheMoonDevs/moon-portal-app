@@ -133,6 +133,8 @@ export type Project = Loose<
     effort?: Nullable<PROJECT_EFFORT>;
     /** The project this one belongs under, in the same company. */
     parentId?: Nullable<string>;
+    /** The company's CORE project, made with the company. One per company. */
+    isCore?: boolean;
     leadIds: string[];
     memberIds: string[];
     createdById: string;

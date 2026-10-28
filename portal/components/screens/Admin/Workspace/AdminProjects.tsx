@@ -614,6 +614,7 @@ export const AdminProjects = ({
                         onClick={() => setResultsFor(project)}
                       />
                       {can(project.companyId, 'projects:edit') &&
+                        !project.isCore &&
                         moveTargets.length > 0 && (
                           <IconAction
                             icon="drive_file_move"
@@ -641,14 +642,15 @@ export const AdminProjects = ({
                           }}
                         />
                       )}
-                      {can(project.companyId, 'projects:delete') && (
-                        <IconAction
-                          icon="archive"
-                          label="Archive project"
-                          tone="danger"
-                          onClick={() => setArchiving(project)}
-                        />
-                      )}
+                      {can(project.companyId, 'projects:delete') &&
+                        !project.isCore && (
+                          <IconAction
+                            icon="archive"
+                            label="Archive project"
+                            tone="danger"
+                            onClick={() => setArchiving(project)}
+                          />
+                        )}
                     </div>
                   </div>
                 </Panel>
