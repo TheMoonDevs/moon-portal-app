@@ -1143,7 +1143,7 @@ export const MarqueeScene = ({
   });
 
   return (
-    <section ref={sec} className={styles.sec} style={{ height: '420vh' }}>
+    <section ref={sec} className={styles.sec} style={{ height: '260vh' }}>
       <div className={styles.pin}>
         <div ref={flash} className={styles.flash} aria-hidden="true" />
         <div className={styles.marquee}>
@@ -1207,20 +1207,6 @@ export const MarqueeScene = ({
           >
             {boards[0].cue}
           </p>
-        </div>
-        <div className={styles.ticker} aria-label={marquee.ticker.join(', ')}>
-          <div aria-hidden="true">
-            {[0, 1].map((copy) => (
-              <span key={copy}>
-                {marquee.ticker.map((item) => (
-                  <span key={item}>
-                    {item}
-                    <b>✦</b>
-                  </span>
-                ))}
-              </span>
-            ))}
-          </div>
         </div>
       </div>
     </section>
