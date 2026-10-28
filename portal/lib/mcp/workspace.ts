@@ -1000,6 +1000,25 @@ export async function taskForPoint(
     tasks.find((t) => same(t.title, title) && t.status !== TASK_STATUS.DONE) ??
     tasks.find((t) => same(t.title, title));
   if (found) {
+    // The goal the point names wins over the one picked for the task.
+    if (point.goal) {
+      const link = resolveGoal(project, point.goal, point.goalPart);
+      if (
+        link.goalId !== found.goalId ||
+        link.goalPartId !== (found.goalPartId ?? null)
+      )
+        Object.assign(
+          found,
+          await db.task.update({
+            where: { id: found.id },
+            data: {
+              ...link,
+              goalChecked: true,
+              updatedAt: new Date().toISOString(),
+            },
+          }),
+        );
+    }
     if (
       point.completeTask &&
       point.status === 'done' &&

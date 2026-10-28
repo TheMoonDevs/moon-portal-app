@@ -19,6 +19,12 @@ export type LinkCandidates = {
   projects: (Pick<Project, 'id' | 'name' | 'companyId' | 'color' | 'logo'> & {
     companyName: string;
     goals: string[];
+    /** The goals a line's task can count towards. */
+    goalOptions: {
+      id: string;
+      title: string;
+      parts?: { id: string; label: string }[];
+    }[];
   })[];
   tasks: Pick<Task, 'id' | 'title' | 'projectId' | 'companyId'>[];
   /** Companies the person belongs to: work that is on none of the projects. */
@@ -89,6 +95,13 @@ export async function linkCandidates(
       logo: p.logo,
       companyName: companies.find((c) => c.id === p.companyId)?.name ?? '',
       goals: (p.goals ?? []).map((g) => g.title),
+      goalOptions: (p.goals ?? []).map((g) => ({
+        id: g.id,
+        title: g.title,
+        ...(g.parts?.length && {
+          parts: g.parts.map((x) => ({ id: x.id, label: x.label })),
+        }),
+      })),
     })),
     tasks: sortedTasks.slice(0, 150).map((t) => ({
       id: t.id,
