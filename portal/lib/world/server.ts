@@ -47,7 +47,6 @@ import {
   botProgress,
   botState,
   brandOf,
-  candyOf,
   currentPoint,
   GUIDANCE_WEIGHT,
   HOUSES_PER_LOT,
@@ -104,6 +103,8 @@ function sitesOf(
   tallies: DoneTask[],
   today: string,
   week: { from: string; to: string },
+  /** The town's brand colour, which everything in it wears. */
+  color: string,
 ): WorldSite[] {
   const goals = project.goals ?? [];
   const rows = [...(tasks as DoneTask[]), ...tallies];
@@ -128,7 +129,7 @@ function sitesOf(
         id,
         name: goal.title,
         kind: 'target',
-        color: candyOf(goal.id),
+        color,
         done: p.done,
         open,
         target: goal.target,
@@ -146,7 +147,7 @@ function sitesOf(
       id,
       name: goal.title,
       kind: 'goal',
-      color: candyOf(goal.id),
+      color,
       done: rows
         .filter((r) => r.status === TASK_STATUS.DONE && r.goalId === goal.id)
         .reduce((n, r) => n + (r.amount ?? 1), 0),
@@ -185,7 +186,7 @@ function sitesOf(
       id: `${project.id}:homes:${i / HOUSES_PER_LOT}`,
       name: 'This week’s tasks',
       kind: 'homes',
-      color: candyOf(`${project.id}${i}`),
+      color,
       done: lot.filter((h) => h.done).length,
       open: lot.filter((h) => !h.done).length,
       houses: lot,
@@ -412,6 +413,7 @@ export async function buildWorld(viewer: SessionUser): Promise<World> {
           ),
           today,
           week,
+          townBrand.get(town.id)!.primary,
         ),
       }),
     );

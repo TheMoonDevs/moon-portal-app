@@ -138,14 +138,15 @@ const tallyOf = (bot: WorldBot) => ({
 
 /** A lot's label: what it is and how it is doing. */
 const siteTagHtml = (site: WorldSite) => {
-  const dot = `<span class="mr-1 inline-block size-2 rounded-full align-middle" style="background:${site.color}"></span>`;
+  const chip = (text: string) =>
+    ` <span class="ml-0.5 rounded-full px-1 text-white" style="background:${site.color}">${text}</span>`;
   if (site.kind === 'homes')
-    return `${dot}🏠 This week · ${site.done}/${site.done + site.open} done`;
+    return `This week${chip(`${site.done}/${site.done + site.open} done`)}`;
   if (site.kind === 'target')
-    return `${dot}${site.achieved ? '🏆' : '🎯'} ${escape(site.name)} <span class="text-neutral-500">${Math.round(site.done).toLocaleString()}/${(site.target ?? 0).toLocaleString()}</span>${site.records?.length ? ` <span class="text-amber-500">${'★'.repeat(Math.min(site.records.length, 4))}</span>` : ''}`;
+    return `${escape(site.name)}${chip(site.achieved ? 'Record' : `${Math.round(site.done).toLocaleString()} / ${(site.target ?? 0).toLocaleString()}`)}${site.records?.length ? ` <span class="text-amber-500">${'★'.repeat(Math.min(site.records.length, 4))}</span>` : ''}`;
   const { total } = goalTowers(site.done);
   const p = site.period;
-  return `${dot}${site.missed ? '⚠️ ' : ''}${escape(site.name)} <span class="text-neutral-500">${p ? `${p.done}/${p.target}` : ''}</span> <span class="rounded-full px-1 text-white" style="background:${site.color}">🏢 ${total} · ${site.done % 10 || (site.done ? 10 : 0)}F</span>`;
+  return `${escape(site.name)}${chip(`${p ? `${p.done}/${p.target}` : ''} · ${total === 1 ? '' : `${total} bldg · `}${site.done % 10 || (site.done ? 10 : 0)}F`)}${site.missed ? ' <span class="text-rose-500">missed</span>' : ''}`;
 };
 
 /**
@@ -704,33 +705,36 @@ export const WorldScene = ({
         .map((t, i) => [t.id, i + 1]),
     );
 
-    // Highways between the towns, curving through the fields, with cars.
+    // Highways between the towns, with cars.
     for (const [i, r] of layout.roads.entries()) {
-      const length = Math.hypot(r.x2 - r.x1, r.z2 - r.z1);
+      const horizontal = r.x1 !== r.x2;
+      const length = Math.abs(horizontal ? r.x2 - r.x1 : r.z2 - r.z1);
       if (length < 1) continue;
+      const cx = (r.x1 + r.x2) / 2;
+      const cz = (r.z1 + r.z2) / 2;
       const y = -0.58;
-      const path = lots.bend(
-        { x: r.x1, z: r.z1 },
-        { x: r.x2, z: r.z2 },
-        Math.min(9, length * 0.12) * (i % 2 ? 1 : -1),
+      art.strip(
+        s.statics,
+        horizontal ? length : 4.4,
+        horizontal ? 4.4 : length,
+        art.ASPHALT,
+        cx,
+        cz,
+        y,
       );
-      const total = pathLength(path);
-      s.statics.add(lots.ribbon(path, 4.4, art.ASPHALT, y));
-      for (let d = 2; d < total - 1; d += 4) {
-        const at = art.along(path, d);
-        const dash = art.strip(
+      const from = horizontal ? Math.min(r.x1, r.x2) : Math.min(r.z1, r.z2);
+      for (let d = 2; d < length - 1; d += 4)
+        art.strip(
           s.statics,
-          0.22,
-          1.6,
+          horizontal ? 1.6 : 0.22,
+          horizontal ? 0.22 : 1.6,
           '#ffffff',
-          at.x,
-          at.z,
+          horizontal ? from + d : cx,
+          horizontal ? cz : from + d,
           y + 0.01,
         );
-        dash.rotation.y = at.angle;
-      }
       const rand = seeded(`road${i}`);
-      for (let k = 0; k < Math.max(1, Math.floor(total / 25)); k++) {
+      for (let k = 0; k < Math.max(1, Math.floor(length / 25)); k++) {
         const car = art.car(
           rand() < 0.5
             ? '#ffffff'
@@ -745,18 +749,20 @@ export const WorldScene = ({
         const dir = k % 2 ? 1 : -1;
         const offset = rand();
         const speed = 3.5 + rand() * 2;
+        const lane = dir * 1.05;
+        car.rotation.y = horizontal
+          ? dir > 0
+            ? 0
+            : Math.PI
+          : dir > 0
+            ? -Math.PI / 2
+            : Math.PI / 2;
         s.anims.push((t) => {
-          let f = (offset + (t * speed) / total) % 1;
+          let f = (offset + (t * speed) / length) % 1;
           if (dir < 0) f = 1 - f;
-          const at = art.along(path, f * total);
-          // Keep to its side of the road.
-          const side = dir * 1.05;
-          car.position.set(
-            at.x + Math.cos(at.angle) * side,
-            y,
-            at.z - Math.sin(at.angle) * side,
-          );
-          car.rotation.y = at.angle - Math.PI / 2 + (dir < 0 ? Math.PI : 0);
+          const p = from + f * length;
+          if (horizontal) car.position.set(p, y, cz + lane);
+          else car.position.set(cx - lane, y, p);
         });
       }
     }
@@ -871,7 +877,7 @@ export const WorldScene = ({
 
     // Spare squares are parks.
     for (const cell of spot.cells.filter((c) => c.kind === 'park')) {
-      const lawn = lots.plate(BLOCK, BLOCK, 5, '#c7ecd2', 0.045);
+      const lawn = lots.plate(BLOCK, BLOCK, 5, art.tint(accent, 0.86), 0.045);
       lawn.position.x = cell.x;
       lawn.position.z = cell.z;
       g.add(lawn);
@@ -1040,6 +1046,7 @@ export const WorldScene = ({
     if (!area || !town) return;
     const accent = brandOf(town).primary;
     const brand = brandOf(project);
+    const sign = art.logoSign(project.name, brand.logo, brand);
     const rand = seeded(project.id);
     const g = new THREE.Group();
     g.userData.pick = { type: 'project', id: project.id };
@@ -1081,21 +1088,13 @@ export const WorldScene = ({
       lot.rotation.y = spot.angle;
       lot.userData.pick = { type: 'site', id: site.id };
       g.add(lot);
-      lot.add(
-        lots.plate(
-          LOT - 1.2,
-          LOT - 1.2,
-          1.6,
-          site.kind === 'homes' ? '#e8f5e9' : '#fafbfc',
-          0.034,
-        ),
-      );
+      lot.add(lots.plate(LOT - 1.2, LOT - 1.2, 1.6, '#fafbfc', 0.034));
       const made =
         site.kind === 'goal'
-          ? lots.goalLot(site, accent)
+          ? lots.goalLot(site, accent, sign)
           : site.kind === 'target'
-            ? lots.recordTower(site)
-            : lots.homesLot(site);
+            ? lots.recordTower(site, accent)
+            : lots.homesLot(site, accent);
       lot.add(made.group);
       s.anims.push(...made.anims);
       tallest = Math.max(tallest, made.height);
@@ -1119,7 +1118,6 @@ export const WorldScene = ({
         'pointer-events-none whitespace-nowrap rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-semibold text-neutral-800 shadow',
         siteTagHtml(site),
       );
-      label.inner.style.boxShadow = `0 0 0 2px ${site.color}`;
       label.obj.position.set(0, made.height + 1.2, 0);
       lot.add(label.obj);
       s.labels.push({ obj: label.obj, kind: 'site' });

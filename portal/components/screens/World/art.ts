@@ -710,7 +710,7 @@ export function building(
 }
 
 /** A lot being built on: a slab, scaffolding and a crane. */
-function construction(accent: string, seed: number) {
+export function construction(accent: string, seed: number) {
   const g = new THREE.Group();
   const anims: Animated[] = [];
   block(g, 6, 0.3, 6, CLAY_SHADE, 0, 0, 0, 0.08);

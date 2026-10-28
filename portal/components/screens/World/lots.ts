@@ -1,191 +1,44 @@
 import * as THREE from 'three';
 
 import type { WorldHouse, WorldSite } from '@/lib/world/state';
-import { candyOf, FLOORS, goalTowers } from '@/lib/world/state';
+import { FLOORS, goalTowers } from '@/lib/world/state';
 
-import type { Animated } from './art';
+import type { Animated, BuildingKind } from './art';
 import {
   block,
+  building,
   CLAY,
   clay,
   CLAY_SHADE,
+  construction,
   cylinder,
   glow,
+  hash,
   INK,
   mesh,
   prism,
   roundBox,
   shade,
   shape,
-  sphere,
   tint,
   torus,
 } from './art';
 
 /*
- * What stands on a project's lots, in bright colours: a repeating goal's
- * buildings (a floor per task, a new building every ten floors, cracked
- * when the last period was missed), a target's record tower, and the week's
- * small houses for tasks that are for no goal. Also the tools bots work
- * with, the rewards that pop up when something is done, and the curved
- * roads.
+ * What stands on a project's lots, in the world's own look (white clay and
+ * the town's brand colour): a repeating goal's buildings, which gain a
+ * floor per task and start a new one every ten floors (and lean and crack
+ * when the last period was missed); a target's record tower, a tiered glass
+ * skyscraper that rises toward its number; and the week's small houses for
+ * tasks that are for no goal. Also the tools bots work with, the rewards
+ * that pop up when something is done, and the rounded blocks.
  */
 
 /** One floor of a goal building, in world units. */
-const FLOOR_H = 0.82;
-const GROUND_H = 1.3;
+const FLOOR_H = 0.62;
 const GOLD = '#f5b301';
-const gold = () => clay(GOLD, { metal: 0.5, rough: 0.35 });
-const WOOD = '#d6b07c';
-
-/** Where a goal's buildings stand on its lot: oldest at the back. */
-const TOWER_SPOTS: [number, number, number][][] = [
-  [],
-  [[0, 0, 5]],
-  [
-    [-2.1, -1.2, 3.8],
-    [2.1, 1.2, 3.8],
-  ],
-  [
-    [-2.3, -2.3, 3.4],
-    [2.3, -2.3, 3.4],
-    [0, 2.3, 3.4],
-  ],
-  [
-    [-2.3, -2.3, 3.4],
-    [2.3, -2.3, 3.4],
-    [-2.3, 2.3, 3.4],
-    [2.3, 2.3, 3.4],
-  ],
-];
-
-/** A goal building: a ground floor and `floors` coloured floors. */
-function tower(
-  g: THREE.Object3D,
-  floors: number,
-  w: number,
-  hex: string,
-  accent: string,
-  opts: { growing: boolean; broken: boolean; seed: number },
-  anims: Animated[],
-) {
-  const t = new THREE.Group();
-  g.add(t);
-  const body = opts.broken ? shade(tint(hex, 0.35), 0.25) : hex;
-  const glass = opts.broken ? '#cbd5e1' : tint(hex, 0.78);
-  block(t, w + 0.7, 0.25, w + 0.7, CLAY, 0, 0, 0, 0.12);
-  if (floors <= 0) {
-    // Just started: a slab and scaffolding.
-    block(t, w, 0.4, w, CLAY_SHADE, 0, 0.25, 0, 0.08);
-    scaffold(t, w, 0.65, 2, accent);
-    return { group: t, top: 2.8 };
-  }
-  // The ground floor: white, with a coloured door and awning.
-  block(t, w, GROUND_H, w, CLAY, 0, 0.25, 0, 0.14);
-  block(t, w * 0.36, 0.85, 0.1, shade(body, 0.15), 0, 0.25, w / 2, 0.03);
-  block(t, w * 0.55, 0.12, 0.55, body, 0, 1.15, w / 2 + 0.2, 0.04);
-  let y = 0.25 + GROUND_H;
-  for (let i = 0; i < floors; i++) {
-    block(t, w, FLOOR_H, w, body, 0, y, 0, 0.1);
-    // A band of windows round each floor.
-    block(t, w + 0.06, FLOOR_H * 0.42, w + 0.06, glass, 0, y + 0.2, 0, 0.04);
-    y += FLOOR_H;
-  }
-  if (!opts.growing) {
-    // Finished: a roof with a rim, a water tank and a star.
-    block(t, w + 0.25, 0.3, w + 0.25, CLAY, 0, y, 0, 0.1);
-    block(t, w + 0.3, 0.12, w + 0.3, accent, 0, y + 0.3, 0, 0.04);
-    mesh(
-      t,
-      cylinder(0.45, 0.45, 0.7, 16),
-      clay(CLAY),
-      -w * 0.22,
-      y + 0.77,
-      -w * 0.2,
-    );
-    mesh(t, sphere(0.45, 16, true), clay(body), -w * 0.22, y + 1.12, -w * 0.2);
-    y += 0.42;
-    if (floors >= FLOORS && !opts.broken) {
-      const star = mesh(t, starShape(0.42), gold(), w * 0.2, y + 0.75, w * 0.2);
-      anims.push((tt) => (star.rotation.y = tt * 1.2 + opts.seed));
-      y += 1.3;
-    }
-  } else {
-    // Going up: scaffolding for the next floor.
-    scaffold(t, w, y, FLOOR_H * 1.4, accent);
-    y += FLOOR_H * 1.4;
-  }
-  if (opts.broken) {
-    // Missed: it leans, cracks and drops bits of itself.
-    t.rotation.z = 0.09;
-    t.rotation.x = -0.05;
-    const crack = clay('#334155');
-    const face = w / 2 + 0.06;
-    // A zigzag crack down the front and down one side.
-    for (const side of [0, 1]) {
-      let cx = side ? w * 0.1 : -w * 0.15;
-      for (let cy = y - 0.4; cy > 0.9; cy -= 0.55) {
-        const nx = cx + (Math.round(cy * 10) % 2 ? 0.35 : -0.35);
-        const seg = block(t, 0.12, 0.64, 0.06, '#334155', 0, cy - 0.6, 0, 0.01);
-        seg.material = crack;
-        if (side) {
-          seg.position.set(face, cy - 0.3, (cx + nx) / 2);
-          seg.rotation.set(Math.atan2(nx - cx, 0.55), Math.PI / 2, 0);
-        } else {
-          seg.position.set((cx + nx) / 2, cy - 0.3, face);
-          seg.rotation.z = Math.atan2(nx - cx, 0.55);
-        }
-        cx = nx;
-      }
-    }
-    for (const [x, z, s] of [
-      [w * 0.6, w * 0.45, 0.5],
-      [w * 0.75, -w * 0.1, 0.35],
-      [-w * 0.55, w * 0.62, 0.4],
-    ])
-      block(g, s, s * 0.7, s, shade(body, 0.1), x, 0, z, 0.06).rotation.y = x;
-  }
-  return { group: t, top: y };
-}
-
-/** Thin poles and planks round a floor going up. */
-function scaffold(
-  g: THREE.Object3D,
-  w: number,
-  from: number,
-  h: number,
-  accent: string,
-) {
-  const pole = clay(WOOD);
-  const d = w / 2 + 0.15;
-  for (const [x, z] of [
-    [-d, -d],
-    [d, -d],
-    [-d, d],
-    [d, d],
-  ])
-    mesh(g, roundBox(0.1, h, 0.1, 0.02), pole, x, from + h / 2, z);
-  for (const y of [from + h * 0.45, from + h])
-    for (const [bw, bd, x, z] of [
-      [w + 0.4, 0.08, 0, -d],
-      [w + 0.4, 0.08, 0, d],
-      [0.08, w + 0.4, -d, 0],
-      [0.08, w + 0.4, d, 0],
-    ])
-      mesh(g, roundBox(bw, 0.08, bd, 0.02), pole, x, y, z);
-  // A safety net on the front.
-  block(
-    g,
-    w * 0.7,
-    h * 0.5,
-    0.04,
-    tint(accent, 0.5),
-    0,
-    from + h * 0.2,
-    d,
-    0.01,
-  );
-}
+const gold = () => clay(GOLD, { metal: 0.6, rough: 0.3 });
+const WOOD = '#c8a77a';
 
 const starShape = (r: number) =>
   shape(`bigstar${r}`, () => {
@@ -207,11 +60,115 @@ const starShape = (r: number) =>
     return geo;
   });
 
+/** Where a goal's buildings stand on its lot: oldest at the back. */
+const TOWER_SPOTS: [number, number, number][][] = [
+  [],
+  [[0, 0, 0.62]],
+  [
+    [-2.2, -1.2, 0.46],
+    [2.2, 1.2, 0.46],
+  ],
+  [
+    [-2.3, -2.3, 0.4],
+    [2.3, -2.3, 0.4],
+    [0, 2.3, 0.4],
+  ],
+  [
+    [-2.3, -2.3, 0.4],
+    [2.3, -2.3, 0.4],
+    [-2.3, 2.3, 0.4],
+    [2.3, 2.3, 0.4],
+  ],
+];
+
+/** The looks a goal's buildings take, in turn. */
+const KINDS: BuildingKind[] = ['tower', 'factory', 'silos', 'lab', 'warehouse'];
+
+/** Thin poles and planks round a floor going up. */
+function scaffold(
+  g: THREE.Object3D,
+  w: number,
+  from: number,
+  h: number,
+  accent: string,
+) {
+  const pole = clay(tint(accent, 0.25));
+  const d = w / 2;
+  for (const [x, z] of [
+    [-d, -d],
+    [d, -d],
+    [-d, d],
+    [d, d],
+  ])
+    mesh(g, roundBox(0.1, h, 0.1, 0.02), pole, x, from + h / 2, z);
+  for (const y of [from + h * 0.5, from + h])
+    for (const [bw, bd, x, z] of [
+      [w, 0.08, 0, -d],
+      [w, 0.08, 0, d],
+      [0.08, w, -d, 0],
+      [0.08, w, d, 0],
+    ])
+      mesh(g, roundBox(bw, 0.08, bd, 0.02), clay(CLAY_SHADE), x, y, z);
+}
+
+/**
+ * One goal building: the world's own buildings, as tall as its floors.
+ * The newest grows scaffolding while it goes up; a missed period leaves it
+ * leaning, cracked and dropping bits of itself.
+ */
+function goalBuilding(
+  kind: BuildingKind,
+  floors: number,
+  scale: number,
+  accent: string,
+  sign: THREE.Material,
+  opts: { growing: boolean; broken: boolean; seed: number },
+) {
+  const g = new THREE.Group();
+  if (floors <= 0) {
+    const made = construction(accent, opts.seed);
+    made.group.scale.setScalar(scale * 1.25);
+    g.add(made.group);
+    return { group: g, anims: made.anims, top: 7.5 * scale * 1.25 };
+  }
+  const height = 2.2 + floors * FLOOR_H;
+  const made = building(kind, height / scale, accent, sign, opts.seed);
+  made.group.scale.setScalar(scale);
+  g.add(made.group);
+  let top = new THREE.Box3().setFromObject(g).max.y;
+  if (opts.growing) {
+    scaffold(g, 8.4 * scale * 0.8, top - FLOOR_H, FLOOR_H * 1.6, accent);
+    top += FLOOR_H * 0.6;
+  }
+  if (opts.broken) {
+    g.rotation.z = 0.07;
+    g.rotation.x = -0.04;
+    const crack = clay('#475569');
+    const w = 8.4 * scale * 0.72;
+    for (const side of [0, 1]) {
+      let cx = side ? w * 0.1 : -w * 0.12;
+      for (let y = top - 0.6; y > 1; y -= 0.6) {
+        const nx = cx + (Math.round(y * 10) % 2 ? 0.3 : -0.3);
+        const seg = mesh(g, roundBox(0.09, 0.66, 0.05, 0.01), crack);
+        if (side) {
+          seg.position.set(w / 2 + 0.05, y - 0.3, (cx + nx) / 2);
+          seg.rotation.set(Math.atan2(nx - cx, 0.6), Math.PI / 2, 0);
+        } else {
+          seg.position.set((cx + nx) / 2, y - 0.3, w / 2 + 0.05);
+          seg.rotation.z = Math.atan2(nx - cx, 0.6);
+        }
+        cx = nx;
+      }
+    }
+  }
+  return { group: g, anims: made.anims, top };
+}
+
 /**
  * A repeating goal's lot: its last four buildings, the newest at the front
  * where bots work on it. Returns where the newest one's top is.
  */
-export function goalLot(site: WorldSite, accent: string) {
+export function goalLot(site: WorldSite, accent: string, sign: THREE.Material) {
   const g = new THREE.Group();
   const anims: Animated[] = [];
   const { full, rest, total } = goalTowers(site.done);
@@ -219,105 +176,188 @@ export function goalLot(site: WorldSite, accent: string) {
   const first = total - shown;
   let height = 0;
   let top = { x: 0, y: 4, z: 0 };
-  TOWER_SPOTS[shown].forEach(([x, z, w], i) => {
+  TOWER_SPOTS[shown].forEach(([x, z, scale], i) => {
     const index = first + i;
     const latest = i === shown - 1;
     const floors = index < full ? FLOORS : rest;
-    const made = tower(
-      g,
+    const made = goalBuilding(
+      KINDS[(hash(site.id) + index) % KINDS.length],
       floors,
-      w,
-      // Older buildings a little paler.
-      latest ? site.color : tint(site.color, 0.25 + (shown - 1 - i) * 0.08),
+      scale,
       accent,
+      sign,
       {
         growing: latest && floors < FLOORS,
         broken: latest && !!site.missed,
-        seed: index,
+        seed: index + (hash(site.id) % 10),
       },
-      anims,
     );
     made.group.position.set(x, 0, z);
+    g.add(made.group);
+    anims.push(...made.anims);
     height = Math.max(height, made.top);
     if (latest) top = { x, y: made.top, z };
   });
-  // Flowers along the front of a goal on a streak.
-  if ((site.streak ?? 0) >= 2)
-    for (let i = 0; i < Math.min(site.streak!, 6); i++)
-      mesh(
-        g,
-        sphere(0.22, 10),
-        clay(['#f472b6', '#facc15', '#fb7185'][i % 3]),
-        -3.6 + i * 1.4,
-        0.25,
-        4.3,
-      );
+  if (site.missed)
+    for (const [x, z, s] of [
+      [3.6, 3.4, 0.5],
+      [2.6, 4.1, 0.35],
+      [4.1, 2.2, 0.4],
+    ])
+      block(g, s, s * 0.6, s, CLAY_SHADE, x, 0, z, 0.06).rotation.y = x;
   return { group: g, anims, height, top };
 }
 
+const glasses = new Map<string, THREE.MeshStandardMaterial>();
 /**
- * A target's record tower: as tall as it is near its number, under a gold
- * ring at the height it is going for, on a plinth for each target reached
- * before it. Reached, it wears a turning trophy.
+ * Curtain-wall glass in the brand colour: panes in a fine white grid, a
+ * little lighter toward the top of each pane, like the sky in them.
  */
-export function recordTower(site: WorldSite) {
+function glassOf(accent: string) {
+  let m = glasses.get(accent);
+  if (m) return m;
+  const c = document.createElement('canvas');
+  c.width = 128;
+  c.height = 128;
+  const ctx = c.getContext('2d')!;
+  const panes = 4;
+  const size = 128 / panes;
+  for (let i = 0; i < panes; i++)
+    for (let j = 0; j < panes; j++) {
+      const grad = ctx.createLinearGradient(0, j * size, 0, (j + 1) * size);
+      grad.addColorStop(0, tint(accent, 0.45));
+      grad.addColorStop(1, tint(accent, 0.05));
+      ctx.fillStyle = grad;
+      ctx.fillRect(i * size, j * size, size, size);
+    }
+  ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+  ctx.lineWidth = 3;
+  for (let k = 0; k <= panes; k++) {
+    ctx.beginPath();
+    ctx.moveTo(k * size, 0);
+    ctx.lineTo(k * size, 128);
+    ctx.moveTo(0, k * size);
+    ctx.lineTo(128, k * size);
+    ctx.stroke();
+  }
+  const map = new THREE.CanvasTexture(c);
+  map.colorSpace = THREE.SRGBColorSpace;
+  map.wrapS = map.wrapT = THREE.RepeatWrapping;
+  map.repeat.set(4, 1);
+  m = new THREE.MeshStandardMaterial({
+    map,
+    roughness: 0.2,
+    metalness: 0.25,
+  });
+  glasses.set(accent, m);
+  return m;
+}
+
+/**
+ * A target's record tower: a tiered glass skyscraper in the brand colour,
+ * built up to how near it is to its number, with the rest of it drawn in
+ * outline above. Reached, it is whole, with a glowing spire. Every target
+ * reached before is a step of its podium.
+ */
+export function recordTower(site: WorldSite, accent: string) {
   const g = new THREE.Group();
   const anims: Animated[] = [];
-  const records = (site.records ?? []).slice(-4);
+  const glass = glassOf(accent);
+  const frame = clay('#ffffff', { rough: 0.5 });
+  // The podium: a step for every record before this one.
   let y = 0;
-  records.forEach((_, i) => {
-    const r = 4.3 - i * 0.45;
-    mesh(g, cylinder(r, r + 0.1, 0.45, 40), clay(CLAY), 0, y + 0.225, 0);
-    // A gold band round its side, below the top so they never overlap.
-    mesh(g, cylinder(r + 0.03, r + 0.13, 0.14, 40), gold(), 0, y + 0.22, 0);
+  const steps = Math.max(1, Math.min(4, (site.records?.length ?? 0) + 1));
+  for (let i = 0; i < steps; i++) {
+    const w = 7.4 - i * 0.9;
+    block(g, w, 0.45, w, i % 2 ? CLAY_SHADE : CLAY, 0, y, 0, 0.1);
+    if (i < steps - 1 || steps > 1)
+      block(g, w + 0.04, 0.08, w + 0.04, accent, 0, y + 0.3, 0, 0.02);
     y += 0.45;
-  });
-  if (!records.length) {
-    mesh(g, cylinder(3.4, 3.6, 0.35, 40), clay(CLAY), 0, 0.175, 0);
-    y = 0.35;
   }
-  const full = 12;
-  const k = Math.max(0.06, Math.min(1, (site.percent ?? 0) / 100));
-  const h = full * k;
-  const body = clay(site.color, { rough: 0.35, metal: 0.15 });
-  mesh(g, cylinder(1.9, 2.2, h, 8), body, 0, y + h / 2, 0);
-  for (let b = 1; b < h; b += 1.1)
-    mesh(
+  // The shaft and its base.
+  block(g, 3.4, 1.6, 3.4, CLAY, 0, y, 0, 0.12);
+  for (const x of [-1.1, 0, 1.1])
+    block(g, 0.5, 1.1, 0.06, accent, x, y, 1.72, 0.03);
+  y += 1.6;
+  // Eight tiers flaring outward, like the stacked boxes of a pagoda.
+  const TIERS = 8;
+  const tierH = 1.15;
+  const built = site.achieved
+    ? TIERS
+    : Math.max(1, Math.floor((TIERS * (site.percent ?? 0)) / 100));
+  const tier = shape('recordTier', () => {
+    const geo = new THREE.CylinderGeometry(1.75, 1.35, tierH, 4, 1);
+    geo.rotateY(Math.PI / 4);
+    return geo;
+  });
+  const rim = shape('recordRim', () => {
+    const geo = new THREE.CylinderGeometry(1.8, 1.8, 0.1, 4, 1);
+    geo.rotateY(Math.PI / 4);
+    return geo;
+  });
+  const outline = new THREE.LineBasicMaterial({
+    color: accent,
+    transparent: true,
+    opacity: 0.45,
+  });
+  const edges = shape('recordTierEdges', () => new THREE.EdgesGeometry(tier));
+  let reached = y;
+  for (let i = 0; i < TIERS; i++) {
+    const at = y + i * tierH + tierH / 2;
+    if (i < built) {
+      const t = mesh(g, tier, glass, 0, at, 0);
+      t.castShadow = true;
+      mesh(g, rim, frame, 0, at + tierH / 2, 0);
+      reached = at + tierH / 2;
+    } else {
+      const ghost = new THREE.LineSegments(edges, outline);
+      ghost.position.set(0, at, 0);
+      g.add(ghost);
+    }
+  }
+  const crownAt = y + TIERS * tierH;
+  if (site.achieved) {
+    // The crown, a slim spire and a light at its tip.
+    const cap = shape('recordCap', () => {
+      const geo = new THREE.CylinderGeometry(0.75, 1.2, 1.4, 4, 1);
+      geo.rotateY(Math.PI / 4);
+      return geo;
+    });
+    mesh(g, cap, glass, 0, crownAt + 0.7, 0);
+    mesh(g, cylinder(0.35, 0.5, 0.8, 16), frame, 0, crownAt + 1.8, 0);
+    mesh(g, cylinder(0.04, 0.14, 3.2, 8), frame, 0, crownAt + 3.8, 0);
+    const tip = mesh(
       g,
-      cylinder(1.93, 2.24 - (b / h) * 0.3, 0.3, 8),
-      clay(tint(site.color, 0.75)),
+      cylinder(0.12, 0.12, 0.12, 10),
+      clay(GOLD, { glow: 1.2 }),
       0,
-      y + b,
+      crownAt + 5.45,
       0,
     );
-  // Where it is going: a faint outline to the top and a gold ring there.
-  const ghost = new THREE.Mesh(
-    cylinder(1.9, 2.2, full, 8),
-    new THREE.MeshBasicMaterial({
-      color: site.color,
-      transparent: true,
-      opacity: 0.12,
-      depthWrite: false,
-    }),
-  );
-  ghost.position.y = y + full / 2;
-  g.add(ghost);
-  const top = y + (site.achieved ? h : full);
-  if (site.achieved) {
-    const cup = trophy();
-    cup.position.y = y + h;
-    g.add(cup);
-    anims.push((t) => (cup.rotation.y = t * 0.8));
-  } else {
-    const ring = mesh(g, torus(2.5, 0.12, Math.PI * 2, 40), gold(), 0, top, 0);
-    ring.rotation.x = Math.PI / 2;
-    anims.push((t) => (ring.position.y = top + Math.sin(t * 1.5) * 0.15));
+    anims.push((t) => tip.scale.setScalar(1 + Math.sin(t * 3) * 0.3));
+    return {
+      group: g,
+      anims,
+      height: crownAt + 5.6,
+      top: { x: 0, y: crownAt + 5.6, z: 0 },
+    };
   }
+  // Where it is going: a thin gold ring at the top of the outline.
+  const ring = mesh(
+    g,
+    torus(1.6, 0.05, Math.PI * 2, 48),
+    gold(),
+    0,
+    crownAt,
+    0,
+  );
+  ring.rotation.x = Math.PI / 2;
+  anims.push((t) => (ring.rotation.z = t * 0.4));
   return {
     group: g,
     anims,
-    height: top + (site.achieved ? 3 : 1),
-    top: { x: 0, y: y + h, z: 0 },
+    height: crownAt + 0.6,
+    top: { x: 0, y: reached, z: 0 },
   };
 }
 
@@ -344,32 +384,45 @@ export const HOUSE_SPOTS = [
   [2.4, 2.4],
 ];
 
-/** A small house: done, with its roof on; open, still being framed. */
-function house(h: WorldHouse) {
+/**
+ * A small house in white clay with a roof in the town's colour: done, it
+ * is finished; open, it is still being framed.
+ */
+function house(h: WorldHouse, accent: string) {
   const g = new THREE.Group();
-  const hex = candyOf(h.id);
   const w = h.major ? 3.4 : 2.8;
   const d = h.major ? 3 : 2.5;
-  const wall = h.major ? 2.4 : 1.5;
+  const wall = h.major ? 2.3 : 1.5;
   block(g, w + 0.5, 0.2, d + 0.5, CLAY_SHADE, 0, 0, 0, 0.08);
   if (h.done) {
-    block(g, w, wall, d, tint(hex, 0.82), 0, 0.2, 0, 0.1);
+    block(g, w, wall, d, CLAY, 0, 0.2, 0, 0.1);
     const roof = mesh(
       g,
-      prism(d + 0.4, 1.1, w + 0.4),
-      clay(hex),
+      prism(d + 0.4, 1, w + 0.4),
+      clay(accent),
       0,
       0.2 + wall,
       0,
     );
     roof.rotation.y = Math.PI / 2;
-    block(g, 0.6, 1, 0.08, shade(hex, 0.25), -w * 0.18, 0.2, d / 2, 0.03);
+    block(
+      g,
+      w + 0.45,
+      0.1,
+      d + 0.45,
+      tint(accent, 0.3),
+      0,
+      0.2 + wall - 0.1,
+      0,
+      0.02,
+    );
+    block(g, 0.6, 1, 0.08, accent, -w * 0.18, 0.2, d / 2, 0.03);
     block(
       g,
       0.6,
-      0.5,
+      0.45,
       0.06,
-      '#bfdbfe',
+      tint(accent, 0.12),
       w * 0.22,
       0.2 + wall * 0.45,
       d / 2,
@@ -379,11 +432,11 @@ function house(h: WorldHouse) {
       block(
         g,
         0.6,
-        0.5,
+        0.45,
         0.06,
-        '#bfdbfe',
+        tint(accent, 0.12),
         -w * 0.18,
-        0.2 + wall * 0.68,
+        0.2 + wall * 0.7,
         d / 2,
         0.03,
       );
@@ -394,58 +447,45 @@ function house(h: WorldHouse) {
       0.35,
       CLAY,
       w * 0.25,
-      0.2 + wall + 0.3,
+      0.2 + wall + 0.25,
       -d * 0.15,
       0.05,
     );
-    return { group: g, top: 0.2 + wall + 1.3 };
+    return { group: g, top: 0.2 + wall + 1.2 };
   }
-  // Being built: a frame of posts and beams, and the walls half up.
-  block(g, w, wall * 0.4, d, tint(hex, 0.7), 0, 0.2, 0, 0.06);
-  const post = clay(WOOD);
+  // Being built: the walls half up inside scaffolding.
+  block(g, w, wall * 0.45, d, CLAY, 0, 0.2, 0, 0.06);
+  const pole = clay(tint(accent, 0.25));
   for (const [x, z] of [
-    [-w / 2, -d / 2],
-    [w / 2, -d / 2],
-    [-w / 2, d / 2],
-    [w / 2, d / 2],
+    [-w / 2 - 0.1, -d / 2 - 0.1],
+    [w / 2 + 0.1, -d / 2 - 0.1],
+    [-w / 2 - 0.1, d / 2 + 0.1],
+    [w / 2 + 0.1, d / 2 + 0.1],
   ])
-    mesh(g, roundBox(0.12, wall, 0.12, 0.02), post, x, 0.2 + wall / 2, z);
+    mesh(g, roundBox(0.1, wall, 0.1, 0.02), pole, x, 0.2 + wall / 2, z);
   for (const [bw, bd, x, z] of [
-    [w, 0.1, 0, -d / 2],
-    [w, 0.1, 0, d / 2],
-    [0.1, d, -w / 2, 0],
-    [0.1, d, w / 2, 0],
+    [w + 0.2, 0.08, 0, -d / 2 - 0.1],
+    [w + 0.2, 0.08, 0, d / 2 + 0.1],
+    [0.08, d + 0.2, -w / 2 - 0.1, 0],
+    [0.08, d + 0.2, w / 2 + 0.1, 0],
   ])
-    mesh(g, roundBox(bw, 0.1, bd, 0.02), post, x, 0.2 + wall, z);
-  // A traffic cone out front.
-  mesh(
-    g,
-    cylinder(0.02, 0.2, 0.5, 10),
-    clay('#f97316'),
-    w / 2 + 0.3,
-    0.45,
-    d / 2 + 0.3,
-  );
+    mesh(g, roundBox(bw, 0.08, bd, 0.02), clay(CLAY_SHADE), x, 0.2 + wall, z);
   return { group: g, top: 0.2 + wall + 0.4 };
 }
 
 /** A homes lot: this week's tasks for no goal, as houses. */
-export function homesLot(site: WorldSite) {
+export function homesLot(site: WorldSite, accent: string) {
   const g = new THREE.Group();
   const houses = new Map<string, { x: number; z: number; top: number }>();
   let height = 0;
   (site.houses ?? []).forEach((h, i) => {
     const [x, z] = HOUSE_SPOTS[i] ?? HOUSE_SPOTS[0];
-    const made = house(h);
+    const made = house(h, accent);
     made.group.position.set(x, 0, z);
-    made.group.rotation.y = ((i % 2 ? 1 : -1) * Math.PI) / 18;
     g.add(made.group);
     houses.set(h.id, { x, z, top: made.top });
     height = Math.max(height, made.top);
   });
-  // A little path between them.
-  block(g, 0.9, 0.04, 9, '#ffffff', 0, 0.02, 0, 0.02);
-  block(g, 9, 0.04, 0.9, '#ffffff', 0, 0.02, 0, 0.02);
   return { group: g, anims: [] as Animated[], height, houses };
 }
 
@@ -541,7 +581,7 @@ export function reward(
   const bits = Array.from({ length: 14 }, (_, i) => {
     const bit = new THREE.Mesh(
       roundBox(0.18, 0.18, 0.05, 0.02),
-      fading(['#f472b6', '#60a5fa', '#34d399', '#facc15'][i % 4], { metal: 0 }),
+      fading(i % 2 ? '#ffffff' : GOLD, { metal: 0.2 }),
     );
     const a = (i / 14) * Math.PI * 2;
     bit.userData.v = new THREE.Vector3(
@@ -658,56 +698,6 @@ export function smooth(points: Point[], r = 2.6) {
   }
   out.push(points[points.length - 1]);
   return out;
-}
-
-/** A gentle S-bend from `a` to `b`, so highways curve between towns. */
-export function bend(a: Point, b: Point, amp: number) {
-  const len = Math.hypot(b.x - a.x, b.z - a.z);
-  const nx = -(b.z - a.z) / (len || 1);
-  const nz = (b.x - a.x) / (len || 1);
-  const steps = Math.max(8, Math.ceil(len / 2));
-  return Array.from({ length: steps + 1 }, (_, i) => {
-    const t = i / steps;
-    // Straight where it meets a town, curving in between.
-    const off = Math.sin(t * Math.PI * 2) * amp * Math.sin(t * Math.PI);
-    return {
-      x: a.x + (b.x - a.x) * t + nx * off,
-      z: a.z + (b.z - a.z) * t + nz * off,
-    };
-  });
-}
-
-/** A flat band `width` wide along a path, on the ground at `y`. */
-export function ribbon(points: Point[], width: number, hex: string, y: number) {
-  const pos: number[] = [];
-  const idx: number[] = [];
-  points.forEach((p, i) => {
-    const a = points[Math.max(0, i - 1)];
-    const b = points[Math.min(points.length - 1, i + 1)];
-    const len = Math.hypot(b.x - a.x, b.z - a.z) || 1;
-    const nx = (-(b.z - a.z) / len) * (width / 2);
-    const nz = ((b.x - a.x) / len) * (width / 2);
-    pos.push(p.x + nx, y, p.z + nz, p.x - nx, y, p.z - nz);
-    if (i) {
-      const k = i * 2;
-      idx.push(k - 2, k - 1, k, k - 1, k + 1, k);
-    }
-  });
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-  geo.setIndex(idx);
-  geo.computeVertexNormals();
-  // Faces may point down depending on the winding: draw both sides.
-  const m = new THREE.Mesh(
-    geo,
-    new THREE.MeshStandardMaterial({
-      color: hex,
-      roughness: 1,
-      side: THREE.DoubleSide,
-    }),
-  );
-  m.receiveShadow = true;
-  return m;
 }
 
 /** A rounded rectangle lying on the ground. */

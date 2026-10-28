@@ -91,7 +91,7 @@ export type WorldSite = {
   id: string;
   name: string;
   kind: SiteKind;
-  /** Its own bright colour. */
+  /** The colour it wears: its town's brand colour. */
   color: string;
   /** Goal: tasks done for it ever. Target: its running total. Homes: houses done. */
   done: number;
@@ -162,26 +162,6 @@ export function goalTowers(done: number) {
   const rest = done % FLOORS;
   return { full, rest, total: full + (rest || !full ? 1 : 0) };
 }
-
-/** Bright, friendly colours for buildings, picked by id. */
-export const CANDY = [
-  '#60a5fa',
-  '#f472b6',
-  '#34d399',
-  '#fbbf24',
-  '#a78bfa',
-  '#fb7185',
-  '#22d3ee',
-  '#fb923c',
-  '#4ade80',
-  '#818cf8',
-];
-
-export const candyOf = (id: string) =>
-  CANDY[
-    (Array.from(id).reduce((n, c) => (n * 31 + c.charCodeAt(0)) | 0, 7) >>> 0) %
-      CANDY.length
-  ];
 
 /** Levels in a tier: past this a building upgrades, and levels cost 10×. */
 export const LEVEL_STEP = 10;
