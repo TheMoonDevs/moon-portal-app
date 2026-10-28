@@ -15,11 +15,18 @@ import type {
   JobOpening,
   TaskSubmission,
 } from '@/models/hiring';
-import { FORM_FIELD_TYPE } from '@/models/hiring';
+import { APPLICATION_STAGE, FORM_FIELD_TYPE } from '@/models/hiring';
 
 export const dynamic = 'force-dynamic';
 
 type Params = { params: { token: string } };
+
+/** Stages a task submission moves forward into Task review. */
+const BEFORE_REVIEW: APPLICATION_STAGE[] = [
+  APPLICATION_STAGE.APPLIED,
+  APPLICATION_STAGE.SHORTLISTED,
+  APPLICATION_STAGE.TASK,
+];
 
 const invalid = (errors: Record<string, string>) =>
   Response.json(
@@ -109,17 +116,31 @@ export async function POST(request: Request, { params }: Params) {
     answers: { ...answers, ...stored },
     submittedAt: now,
   };
-  const event: ApplicationEvent = {
-    type: 'TASK_SUBMITTED',
-    at: now,
-    text: application.taskSubmission ? 'Sent the task again' : null,
-  };
+  const events: ApplicationEvent[] = [
+    {
+      type: 'TASK_SUBMITTED',
+      at: now,
+      text: application.taskSubmission ? 'Sent the task again' : null,
+    },
+  ];
+  // A task sent back waits in Task review. Candidates already further on
+  // (or rejected) stay where they are.
+  const toReview = BEFORE_REVIEW.includes(application.stage);
+  if (toReview)
+    events.push({
+      type: 'STAGE_CHANGED',
+      at: now,
+      byUserId: null,
+      from: application.stage,
+      to: APPLICATION_STAGE.TASK_REVIEW,
+    });
   await db.jobApplication.update({
     where: { id: application.id },
     data: {
       taskSubmission: submission,
+      ...(toReview ? { stage: APPLICATION_STAGE.TASK_REVIEW } : {}),
       updatedAt: now,
-      history: { push: event },
+      history: { push: { $each: events } },
     },
   });
   return ok({ submitted: true, submittedAt: now }, { status: 201 });

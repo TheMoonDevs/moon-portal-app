@@ -59,7 +59,8 @@ tab, so anything you change shows up there.
   moving anyone. Say what you couldn't judge (for example a resume file,
   which you can't open; give its link instead).
 - `move_applicants` moves people between stages: APPLIED, SHORTLISTED, TASK,
-  INTERVIEW, OFFER, HIRED, REJECTED.
+  TASK_REVIEW, INTERVIEW, OFFER, HIRED, REJECTED. Candidates move to
+  TASK_REVIEW by themselves when they send their task back.
 - `add_applicant_note` keeps your summary or the user's call notes with the
   applicant. Notes are private to the hiring team.
 

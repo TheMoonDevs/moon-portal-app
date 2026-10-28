@@ -32,6 +32,12 @@ export const STAGE_META: Record<
     icon: 'assignment',
     color: '#f59e0b',
   },
+  TASK_REVIEW: {
+    label: 'Task review',
+    tone: 'info',
+    icon: 'rate_review',
+    color: '#6366f1',
+  },
   INTERVIEW: {
     label: 'Interview',
     tone: 'warning',

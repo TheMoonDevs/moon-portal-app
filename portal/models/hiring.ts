@@ -30,10 +30,24 @@ export enum APPLICATION_STAGE {
   APPLIED = 'APPLIED',
   SHORTLISTED = 'SHORTLISTED',
   TASK = 'TASK',
+  /** The candidate sent their task back; it waits for the team to review. */
+  TASK_REVIEW = 'TASK_REVIEW',
   INTERVIEW = 'INTERVIEW',
   OFFER = 'OFFER',
   HIRED = 'HIRED',
   REJECTED = 'REJECTED',
+}
+
+/** How often a hiring lead gets the digest of the openings they lead. */
+export enum HIRING_DIGEST_FREQUENCY {
+  DAILY = 'DAILY',
+  EVERY_2_DAYS = 'EVERY_2_DAYS',
+  EVERY_3_DAYS = 'EVERY_3_DAYS',
+  /** Mondays. */
+  WEEKLY = 'WEEKLY',
+  /** The 1st of each month. */
+  MONTHLY = 'MONTHLY',
+  OFF = 'OFF',
 }
 
 export enum FORM_FIELD_TYPE {

@@ -1,5 +1,6 @@
 import type { Look } from '@/lib/avatar/look';
 
+import type { HIRING_DIGEST_FREQUENCY } from './hiring';
 import {
   type BaseModel,
   createCrudSchemas,
@@ -41,6 +42,10 @@ export type User = Loose<
     avatar?: Nullable<string>;
     positionTitle?: Nullable<string>;
     timezone?: Nullable<string>;
+    /** How often they get the hiring digest; every 2 days when unset. */
+    hiringDigest?: Nullable<HIRING_DIGEST_FREQUENCY>;
+    /** The day (YYYY-MM-DD, IST) their last hiring digest went out. */
+    hiringDigestSentOn?: Nullable<string>;
     /** Their character in the World (see `lib/avatar/look.ts`). */
     look?: Nullable<Partial<Look>>;
     /** When they last saved a look; the next change waits (see the lock). */
