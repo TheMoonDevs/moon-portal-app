@@ -43,48 +43,12 @@ export const studioVoicePage: TaskPageConfig = {
     kicker: "what you'll own",
     title: 'Films, tracks, games. Every launch has someone backstage.',
     circle: 'backstage.',
-    boards: [
-      {
-        tag: 'now showing',
-        text: 'AN AI SHORT FILM',
-        cue: 'cue 1: teaser cut, 40 creators DMed',
-      },
-      {
-        tag: 'out now',
-        text: 'A NEW SINGLE',
-        cue: 'cue 2: 12 playlist curators pitched',
-      },
-      {
-        tag: 'in beta',
-        text: 'A MOBILE GAME',
-        cue: 'cue 3: memes out, beta invites shared',
-      },
-      {
-        tag: 'live tonight',
-        text: 'DISCORD PREMIERE',
-        cue: 'cue 4: countdown on, everyone pinged',
-      },
-      {
-        tag: 'in the press',
-        text: 'ZONE STUDIOS',
-        cue: 'cue 5: press note sent, story pitched',
-      },
-    ],
+    boards: [],
     finale: {
       tag: 'tonight',
       text: 'HOUSEFULL',
       cue: '{firstName}, that was you. Backstage, running the show.',
     },
-    ticker: [
-      'Community',
-      'YouTube channels',
-      'PR & press',
-      'Creators & collabs',
-      'Campaigns & memes',
-      'Premieres',
-      'Playlists & curators',
-      'The numbers, weekly',
-    ],
   },
   mark: {
     kicker: 'Your mark',

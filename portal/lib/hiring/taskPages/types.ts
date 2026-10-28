@@ -108,8 +108,6 @@ export interface TaskPageConfig {
     boards: Array<{ tag: string; text: string; cue: string }>;
     /** The last board, once the house is full. `{firstName}` in its cue is filled in. */
     finale: { tag: string; text: string; cue: string };
-    /** What the role owns, crawling along the bottom like a news ticker. */
-    ticker: string[];
   };
   /** Still being confirmed; only enabled ones are shown. */
   promises: Array<{ text: string; enabled: boolean }>;
