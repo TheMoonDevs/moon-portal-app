@@ -53,7 +53,13 @@ export type DayProject = {
   companyName?: string;
 };
 
-export type DayCompany = { id: string; name: string; color?: string | null };
+export type DayCompany = {
+  id: string;
+  name: string;
+  color?: string | null;
+  /** Its CORE project, which takes company work on no other project. */
+  coreProjectId?: string | null;
+};
 
 export type TaskMove = PointStatus | 'todo' | 'archived';
 

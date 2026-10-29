@@ -190,7 +190,11 @@ function resolvePlace(point: PointInput, c: LinkCandidates) {
       ? c.companies.find((x) => x.id === name || same(x.name, name))
       : undefined;
     return company
-      ? { companyId: company.id, projectId: null, taskId: null }
+      ? {
+          companyId: company.id,
+          projectId: company.coreProjectId ?? null,
+          taskId: null,
+        }
       : null;
   }
   return {

@@ -18,6 +18,8 @@ const MIN_CONFIDENCE = 0.6;
 export type LinkCandidates = {
   projects: (Pick<Project, 'id' | 'name' | 'companyId' | 'color' | 'logo'> & {
     companyName: string;
+    /** The company's CORE project, open to all of its members. */
+    isCore?: boolean;
     goals: string[];
     /** The goals a line's task can count towards. */
     goalOptions: {
@@ -33,11 +35,34 @@ export type LinkCandidates = {
     name: string;
     color?: string | null;
     logo?: string | null;
+    /** Its CORE project, where company work on none of the others goes. */
+    coreProjectId?: string | null;
   }[];
 };
 
-/** Whether the person leads the project or is on its team. */
-export const isOnTeam = isOnProjectTeam;
+/**
+ * Whether the person leads the project or is on its team. Everyone in a
+ * company is on its CORE project.
+ */
+export const isOnTeam = (
+  project:
+    | (Parameters<typeof isOnProjectTeam>[0] & { isCore?: boolean })
+    | null
+    | undefined,
+  userId: string,
+) => !!project?.isCore || isOnProjectTeam(project, userId);
+
+/**
+ * Company work on none of its projects goes in the company's CORE project,
+ * when it has one.
+ */
+export function inCore<
+  T extends { companyId: string | null; projectId: string | null },
+>(place: T, c: LinkCandidates): T {
+  if (!place.companyId || place.projectId) return place;
+  const core = c.companies.find((x) => x.id === place.companyId)?.coreProjectId;
+  return core ? { ...place, projectId: core } : place;
+}
 
 /**
  * The companies, projects and open tasks a user's lines may link to: the
@@ -94,6 +119,7 @@ export async function linkCandidates(
       color: p.color,
       logo: p.logo,
       companyName: companies.find((c) => c.id === p.companyId)?.name ?? '',
+      ...(p.isCore && { isCore: true }),
       goals: (p.goals ?? []).map((g) => g.title),
       goalOptions: (p.goals ?? []).map((g) => ({
         id: g.id,
@@ -114,6 +140,8 @@ export async function linkCandidates(
       name: c.name,
       color: c.color ?? null,
       logo: c.logo ?? null,
+      coreProjectId:
+        projects.find((p) => p.isCore && p.companyId === c.id)?.id ?? null,
     })),
   };
 }
@@ -163,7 +191,10 @@ const NONE: Guess = {
 /** Name and task-title matching. Returns null when it cannot tell. */
 function matchByName(text: string, c: LinkCandidates): Guess | null {
   const byCompany = c.companies.filter((x) => containsPhrase(text, x.name));
-  const byName = c.projects.filter((p) => containsPhrase(text, p.name));
+  // CORE is never matched by its name ("core" is a common word); company
+  // work reaches it through the company.
+  const named = c.projects.filter((p) => !p.isCore);
+  const byName = named.filter((p) => containsPhrase(text, p.name));
   const task = c.tasks
     .map((t) => ({ t, score: overlap(text, t.title) }))
     .filter((x) => x.score >= 0.75 && words(x.t.title).length >= 2)
@@ -195,16 +226,16 @@ function matchByName(text: string, c: LinkCandidates): Guess | null {
       source: 'auto',
     };
   // Only one place this could go.
-  if (c.projects.length === 1)
+  if (named.length === 1)
     return {
-      companyId: c.projects[0].companyId,
-      projectId: c.projects[0].id,
+      companyId: named[0].companyId,
+      projectId: named[0].id,
       taskId: null,
       confidence: 0.7,
       source: 'auto',
     };
   // One company and none of its projects to pick from.
-  if (!c.projects.length && c.companies.length === 1)
+  if (!named.length && c.companies.length === 1)
     return {
       companyId: c.companies[0].id,
       projectId: null,
@@ -261,7 +292,7 @@ ${
   c.projects
     .map(
       (p) =>
-        `- ${p.id} | ${p.name} | ${p.companyName}${p.goals.length ? ` | goals: ${p.goals.join('; ')}` : ''}`,
+        `- ${p.id} | ${p.name}${p.isCore ? " (the company's general work)" : ''} | ${p.companyName}${p.goals.length ? ` | goals: ${p.goals.join('; ')}` : ''}`,
     )
     .join('\n') || '- none'
 }
@@ -378,7 +409,7 @@ export async function linkLines(
       key: line.key,
       text: line.text,
       isPrivate: false,
-      ...guess,
+      ...inCore(guess, candidates),
     };
   });
 }
@@ -396,7 +427,7 @@ export async function guessPlaces(
   const unsure: WorklogLine[] = [];
   for (const item of items) {
     const guess = matchByName(item.text, candidates);
-    if (guess) out.set(item.key, guess);
+    if (guess) out.set(item.key, inCore(guess, candidates));
     else
       unsure.push({
         key: item.key,
@@ -405,6 +436,9 @@ export async function guessPlaces(
       });
   }
   const fromAi = await matchWithGemini(unsure, candidates);
-  for (const line of unsure) out.set(line.key, fromAi.get(line.key) ?? null);
+  for (const line of unsure) {
+    const guess = fromAi.get(line.key);
+    out.set(line.key, guess ? inCore(guess, candidates) : null);
+  }
   return out;
 }

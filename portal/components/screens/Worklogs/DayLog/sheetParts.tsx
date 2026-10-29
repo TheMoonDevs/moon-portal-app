@@ -183,13 +183,16 @@ export function placeOptions(
       group: 'Projects',
       color: p.color,
     })),
-    ...companies.map((c) => ({
-      id: `company:${c.id}`,
-      label: c.name,
-      hint: 'Company work, on none of its projects',
-      group: 'Company work',
-      icon: 'domain',
-    })),
+    // A company with a CORE project takes its company work there.
+    ...companies
+      .filter((c) => !c.coreProjectId)
+      .map((c) => ({
+        id: `company:${c.id}`,
+        label: c.name,
+        hint: 'Company work, on none of its projects',
+        group: 'Company work',
+        icon: 'domain',
+      })),
     {
       id: 'personal',
       label: 'Personal',
