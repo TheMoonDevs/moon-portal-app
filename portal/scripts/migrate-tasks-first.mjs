@@ -8,9 +8,12 @@
  *
  * - A line linked to a task joins that task; the task itself is not changed.
  * - A line carried over to a later day (➡️) is one task across those days.
- * - Other lines become new tasks, planned for their day. Unfinished ones
- *   from the last 14 days stay open (pending); older unfinished ones are
- *   archived, and can be brought back from Your tasks.
+ * - Other lines become new tasks, planned for their day. A line with no
+ *   status on a past day was a log of what was done, so it is done. Lines
+ *   marked doing, blocked, waiting or not done from the last 14 days stay
+ *   open (pending); older ones are archived, and can be brought back from
+ *   Your tasks.
+ * - Escaped spaces (&#x20;) in titles are put back as spaces.
  * - The assistant's lines go under the task of the line they were about
  *   (picked by the person, linked as the same work, or on the same task);
  *   otherwise they get a task of their own, made by Claude.
@@ -117,6 +120,14 @@ const addDays = (day, n) => {
   return d.toISOString().slice(0, 10);
 };
 
+/** Words as a title: spaces a markdown editor escaped (&#x20;) put back. */
+const cleanTitle = (text) =>
+  text
+    .replace(/&\s*#?\s*x20;|&nbsp;|&\s*#?\s*160;/gi, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/\s+/g, ' ')
+    .trim();
+
 const isoOf = (value) => (value ? new Date(value).toISOString() : null);
 
 const isPersonalLink = (link) =>
@@ -135,10 +146,15 @@ function placeOf(line, link) {
   return { companyId: null, projectId: null, placedBy: null };
 }
 
-/** A task's status and flag from its line's last status. */
-function statusFields(status, setAside, { keepOpen, doneAt, startedAt }) {
+/**
+ * A task's status and flag from its line's last status. A line with no
+ * status on a day already past was a log of what was done that day (most
+ * worklogs were written that way), so it is done; only lines marked doing,
+ * blocked, waiting or not done stay open, and only from the last 14 days.
+ */
+function statusFields(status, setAside, { keepOpen, past, doneAt, startedAt }) {
   if (setAside === 'archived') return { status: 'ARCHIVED', flag: null };
-  if (status === 'done')
+  if (status === 'done' || (!status && past && setAside !== 'moved'))
     return { status: 'DONE', flag: null, completedAt: doneAt };
   if (!keepOpen) return { status: 'ARCHIVED', flag: null };
   if (status === 'doing' || status === 'blocked' || status === 'waiting')
@@ -189,6 +205,7 @@ export function planUser({ userId, logs, tasks, fromLine, migrated, today }) {
     const dayAt =
       isoOf(log.updatedAt) ?? isoOf(log.createdAt) ?? `${date}T12:00:00.000Z`;
     const keepOpen = date >= addDays(today, -KEEP_OPEN_DAYS);
+    const past = date < today;
     const lineTask = new Map(); // key -> task, for this day
 
     const makeTask = (line, link, madeBy) => {
@@ -199,10 +216,11 @@ export function planUser({ userId, logs, tasks, fromLine, migrated, today }) {
       const startedAt = events.find((e) => e.status === 'doing')?.at ?? first;
       const task = {
         tempId: `new:${userId}:${worklogId}:${line.key}`,
-        title: line.text.slice(0, 200),
+        title: cleanTitle(line.text).slice(0, 200),
         ...placeOf(line, link),
         ...statusFields(line.status, line.setAside, {
           keepOpen,
+          past,
           doneAt,
           startedAt,
         }),
@@ -214,9 +232,9 @@ export function planUser({ userId, logs, tasks, fromLine, migrated, today }) {
         forDate: date,
         createdAt: first,
         updatedAt: dayAt,
-        completedByIds: line.status === 'done' ? [userId] : [],
         migratedFrom: { worklogId, key: line.key },
       };
+      task.completedByIds = task.status === 'DONE' ? [userId] : [];
       newTasks.push(task);
       return task;
     };
@@ -246,20 +264,19 @@ export function planUser({ userId, logs, tasks, fromLine, migrated, today }) {
           task,
           statusFields(line.status, line.setAside, {
             keepOpen,
+            past,
             doneAt,
             startedAt: task.startedAt ?? dayAt,
           }),
-          {
-            updatedAt: dayAt,
-            completedByIds: line.status === 'done' ? [userId] : [],
-          },
+          { updatedAt: dayAt },
         );
+        task.completedByIds = task.status === 'DONE' ? [userId] : [];
         if (task.id) task.changed = true;
       }
       lineTask.set(line.key, task);
       // A line moved on stays one task on the next day.
       if (line.setAside === 'moved') carried.set(line.key, task);
-      else if (line.status !== 'done') carried.set(line.key, task);
+      else if (OPEN.includes(task.status)) carried.set(line.key, task);
       else carried.delete(line.key);
 
       const events = eventsOf(line.key);
@@ -313,7 +330,7 @@ export function planUser({ userId, logs, tasks, fromLine, migrated, today }) {
         task = makeTask(line, link, 'claude');
         notes.claudeOwn += 1;
       } else notes.claudeUnder += 1;
-      if (line.setAside === 'moved' || line.status !== 'done')
+      if (line.setAside === 'moved' || OPEN.includes(task.status))
         carried.set(line.key, task);
       const isPrivate =
         !task.projectId && (!task.companyId || task.companyId === PERSONAL);
