@@ -1,15 +1,14 @@
 'use client';
 
 import { useMediaQuery } from '@mui/material';
+import dayjs from 'dayjs';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
 import { Toaster } from 'sonner';
 
 import { LoaderScreen } from '@/components/elements/Loaders';
 import media from '@/styles/media';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
 import { useUser } from '@/utils/hooks/useUser';
-import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import { CompaniesSection } from './CompaniesSection';
 import { DailySection } from './DailySection';
@@ -21,27 +20,13 @@ import { ShortcutsSection } from './ShortcutsSection';
 import { StartSection } from './StartSection';
 import { TasksSection } from './TasksSection';
 
-const today = () => new Date().toISOString().split('T')[0];
+const today = () => dayjs().format('YYYY-MM-DD');
 
-// On mobile the focus button deep-links into today's worklog, which needs its id.
+// On a phone the focus button opens today on its own page.
 const useTodaysWorklogLink = () => {
-  const { user } = useUser();
   const isMobile = useMediaQuery(media.largeMobile);
-  const [workLogId, setWorkLogId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!isMobile || !user?.id || workLogId) return;
-
-    PortalSdk.getData(
-      `/api/user/worklogs?date=${today()}&userId=${user.id}`,
-      null,
-    )
-      .then((data) => setWorkLogId(data?.data?.workLogs?.[0]?.id ?? null))
-      .catch((error) => console.error('Error fetching worklogs:', error));
-  }, [isMobile, user?.id, workLogId]);
-
-  if (!isMobile || !workLogId) return APP_ROUTES.userWorklogs;
-  return `${APP_ROUTES.userWorklogs}/${workLogId}?logType=dayLog&date=${today()}`;
+  if (!isMobile) return APP_ROUTES.userWorklogs;
+  return `${APP_ROUTES.userWorklogs}/today?logType=dayLog&date=${today()}`;
 };
 
 const FocusMode = () => {
