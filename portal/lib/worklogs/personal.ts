@@ -12,6 +12,13 @@ import { PRIVATE_LINE } from './lines';
 /** The company id every private line is linked to. */
 export const PERSONAL_COMPANY_ID = 'personal';
 
+/**
+ * A task written as personal: "p: …", "P - …" or "personal: …" (or
+ * "personal - …") at its start.
+ */
+export const PERSONAL_TITLE =
+  /^\s*(?:p\s*:|p\s+[-–—]|p[-–—]\s|personal\s*(?::|[-–—]|$))/i;
+
 /** The Personal company, the same for everyone and visible only to its owner. */
 export const PERSONAL_COMPANY = {
   id: PERSONAL_COMPANY_ID,

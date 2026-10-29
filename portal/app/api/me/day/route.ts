@@ -31,7 +31,13 @@ export async function GET(request: Request) {
   const extra = missing.length
     ? await db.project.findMany({
         where: { id: { in: missing } },
-        select: { id: true, name: true, color: true, companyId: true },
+        select: {
+          id: true,
+          name: true,
+          color: true,
+          logo: true,
+          companyId: true,
+        },
       })
     : [];
   return ok({
@@ -41,6 +47,7 @@ export async function GET(request: Request) {
         id: p.id,
         name: p.name,
         color: p.color ?? null,
+        logo: p.logo ?? null,
         companyId: p.companyId,
         companyName: p.companyName,
       })),

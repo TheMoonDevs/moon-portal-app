@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Toaster } from 'sonner';
 
+import { ThemeToggle } from '@/components/global/ThemeToggle';
 import { cn } from '@/lib/utils';
 import { sectionLines } from '@/lib/worklogs/timeline';
 import type { WorkLogs } from '@/models/worklogs';
@@ -24,7 +25,7 @@ import { Icon, Spin } from '../../Admin/shared/AdminUI';
 import TodoTab from '../WorklogTabs/TodoTab';
 import WorklogBuff from '../WorklogTabs/WorklogBuff';
 import { DayList } from './DayList';
-import { countPlaces, ProjectSummary } from './ProjectSummary';
+import { companyKeyOf, countPlaces, ProjectSummary } from './ProjectSummary';
 import { placeOf, rowStatus } from './sheetParts';
 import { TaskSheet } from './TaskSheet';
 import { useDay } from './useDay';
@@ -40,6 +41,8 @@ import { useYourTasks, YourTasks } from './YourTasks';
  */
 
 const fmt = (d: dayjs.Dayjs) => d.format('YYYY-MM-DD');
+
+const SHOW_POINTS_KEY = 'worklogs.showPoints';
 
 /** Days from a week back to two weeks ahead can be written in. */
 const editableDay = (date: string) => {
@@ -128,6 +131,23 @@ export const DayLogPage = ({
   const [sideTab, setSideTab] = useState<SideTab>('tasks');
   const [filter, setFilter] = useState<string | null>(null);
   useEffect(() => setFilter(null), [date]);
+  // Work points under tasks are hidden until the person turns them on.
+  const [showPoints, setShowPoints] = useState(false);
+  useEffect(() => {
+    try {
+      setShowPoints(localStorage.getItem(SHOW_POINTS_KEY) === '1');
+    } catch {
+      // Storage can be blocked; the choice then lasts for this visit.
+    }
+  }, []);
+  const toggleShowPoints = (show: boolean) => {
+    setShowPoints(show);
+    try {
+      localStorage.setItem(SHOW_POINTS_KEY, show ? '1' : '0');
+    } catch {
+      // Storage can be blocked; the choice then lasts for this visit.
+    }
+  };
   const [logs, setLogs] = useState<WorkLogs[] | null>(null);
   const dispatch = useAppDispatch();
   const incompleteTodos = useAppSelector(
@@ -214,15 +234,20 @@ export const DayLogPage = ({
   );
 
   const counts = useMemo(() => countPlaces(day, day.tasks), [day]);
-  const shown = useMemo(
-    () =>
-      filter
-        ? day.tasks.filter(
-            (t) => placeOf(t, day.projects, day.companies).key === filter,
-          )
-        : day.tasks,
-    [day.tasks, day.projects, day.companies, filter],
-  );
+  const shown = useMemo(() => {
+    const picked = filter
+      ? day.tasks.filter((t) => {
+          const place = placeOf(t, day.projects, day.companies);
+          return place.key === filter || companyKeyOf(place) === filter;
+        })
+      : day.tasks;
+    // Finished tasks go to the bottom (the sort keeps the order otherwise).
+    const shut = (t: (typeof picked)[number]) => {
+      const status = rowStatus(t, day.points, date);
+      return status === 'done' || status === 'archived' ? 1 : 0;
+    };
+    return [...picked].sort((a, b) => shut(a) - shut(b));
+  }, [day.tasks, day.points, day.projects, day.companies, filter, date]);
 
   const today = fmt(dayjs());
   const tomorrow = fmt(dayjs().add(1, 'day'));
@@ -290,7 +315,14 @@ export const DayLogPage = ({
         </div>
       )}
 
-      <ProjectSummary counts={counts} filter={filter} onFilter={setFilter} />
+      <ProjectSummary
+        counts={counts}
+        day={day}
+        filter={filter}
+        onFilter={setFilter}
+        showPoints={showPoints}
+        onShowPoints={toggleShowPoints}
+      />
 
       <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-2 auto-light:border-black/10 auto-light:bg-white">
         {day.loading && !day.tasks.length ? (
@@ -311,7 +343,12 @@ export const DayLogPage = ({
                   : 'Nothing on this day yet. Write a task and press Enter for the next one.'}
               </p>
             )}
-            <TaskSheet day={day} tasks={shown} editable={editable} />
+            <TaskSheet
+              day={day}
+              tasks={shown}
+              editable={editable}
+              showPoints={showPoints}
+            />
           </>
         )}
       </div>
@@ -387,7 +424,7 @@ export const DayLogPage = ({
   );
 
   return (
-    <div className="auto-theme custom-scrollbar fixed inset-0 overflow-y-auto bg-neutral-950 pb-[72px] text-neutral-100 auto-light:bg-neutral-50 auto-light:text-neutral-900 md:left-16 md:pb-0">
+    <div className="auto-theme quiet-scrollbar fixed inset-0 overflow-y-auto bg-neutral-950 pb-[72px] text-neutral-100 auto-light:bg-neutral-50 auto-light:text-neutral-900 md:left-16 md:pb-0">
       <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-3 border-b border-white/[0.07] bg-neutral-950/80 px-4 backdrop-blur-xl auto-light:border-black/10 auto-light:bg-neutral-50/80">
         {layout === 'day' ? (
           <Link
@@ -422,6 +459,7 @@ export const DayLogPage = ({
           </span>
         )}
         <div className="flex-1" />
+        <ThemeToggle />
         <Link
           href={APP_ROUTES.user}
           className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-neutral-950 transition-colors hover:bg-neutral-200 auto-light:bg-neutral-900 auto-light:text-white auto-light:hover:bg-neutral-700"
@@ -440,7 +478,7 @@ export const DayLogPage = ({
         )}
       >
         {showDays && (
-          <aside className="min-w-0 md:sticky md:top-[76px] md:row-span-2 md:max-h-[calc(100vh-96px)] md:self-start md:overflow-y-auto md:pr-1 xl:row-span-1">
+          <aside className="quiet-scrollbar min-w-0 md:sticky md:top-[76px] md:row-span-2 md:max-h-[calc(100vh-96px)] md:self-start md:overflow-y-auto md:pr-1 xl:row-span-1">
             <DayList
               month={month}
               onMonth={setMonth}
@@ -455,7 +493,7 @@ export const DayLogPage = ({
         )}
         {showDay && sheetView}
         {showDay && (
-          <aside className="min-w-0 xl:sticky xl:top-[76px] xl:max-h-[calc(100vh-96px)] xl:self-start xl:overflow-y-auto">
+          <aside className="quiet-scrollbar min-w-0 xl:sticky xl:top-[76px] xl:max-h-[calc(100vh-96px)] xl:self-start xl:overflow-y-auto">
             {side}
           </aside>
         )}

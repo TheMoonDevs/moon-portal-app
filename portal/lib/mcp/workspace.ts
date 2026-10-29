@@ -941,6 +941,8 @@ export type PointTask = {
   goalPart?: string;
   forDate?: string;
   completeTask?: boolean;
+  /** The person did this step themselves. */
+  byPerson?: boolean;
 };
 
 const STATUS_FOR_POINT: Record<string, TASK_STATUS> = {

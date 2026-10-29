@@ -183,7 +183,7 @@ export const TOOLS: Tool[] = [
   {
     name: 'log_work',
     title: 'Log work points',
-    description: `Logs work points under the person's tasks, so they can follow progress in the portal. Everything there is a task; a work point is an update under one (what you did, what happened, a status). Each point goes under a task: the one you name with point or task (an id or title from todayTasks or myTasks), else their open task with the same words, else a task in the project you name. When none fits, the portal makes a new task for it, placed in the project its words fit; the person can move your points under another task later. So for work they already have a task for, always name that task. Keep it to 2-3 tasks per session, one per deliverable the person would name in a standup (e.g. "Lyric video for the new song", "Thumbnails and YouTube pack for it"). Never a new task for a revision, version, round, fix or sub-step: log on the same task, naming it with point and saying what happened in note ("v6 rendered, 3 notes fixed"); every point goes on the task's history, which shows how long it took from start to finish. Log when you start (doing), add notes as it moves, and end it with done, not_done or blocked. A done point finishes its task; a major task stays under way unless completeTask is set. Use waiting when you need the person's permission or input. Keep each point one short line about the outcome, in plain words, never secrets or credentials. Name the project (and task) when you know it, or only the company for company work on none of its projects (it goes in the company's CORE project, which everyone in the company is on). Work can only be logged to projects the person leads or is on the team of (onTeam in get_context). Finished tasks count towards the goal they fit by themselves. Work done early for a later week: set forDate to the day it was scheduled for, so it counts towards that week's goal. A done point about a scheduled task finishes that task's run for its day (or the next run not done yet); set forDate when it was for another day. Set personal for the person's own private work (not for any company): only they will ever see it.`,
+    description: `Logs work points under the person's tasks, so they can follow progress in the portal. Everything there is a task; a work point is an update under one (what you did, what happened, a status). Each point goes under a task: the one you name with point or task (an id or title from todayTasks or myTasks), else their open task with the same words, else a task in the project you name. When none fits, the portal makes a new task for it, placed in the project its words fit; the person can move your points under another task later. So for work they already have a task for, always name that task. Keep it to 2-3 tasks per session, one per deliverable the person would name in a standup (e.g. "Lyric video for the new song", "Thumbnails and YouTube pack for it"). Never a new task for a revision, version, round, fix or sub-step: log on the same task, naming it with point and saying what happened in note ("v6 rendered, 3 notes fixed"); every point goes on the task's history, which shows how long it took from start to finish. Log when you start (doing), add notes as it moves, and end it with done, not_done or blocked. A done point finishes its task; a major task stays under way unless completeTask is set. Use waiting when you need the person's permission or input. Task names (text for a new task, task) are short and recognisable, 2-6 words the person would say out loud ("Rename Get into Zone extension", "AI Concept Artist task page"), with no counts, lists or parentheses; the detail goes in note, which can be one medium-length line about the outcome, in plain words, never secrets or credentials. Never make up a placeholder, code or random word as a task name: when nothing fits, name the deliverable properly. Log a status only when it changes: not a second doing or waiting point on a task that already has it. One waiting point says plainly what the person has to do; when they have done it (sent the picks, approved it), log that step with byPerson so it shows as theirs, then carry on. Name the project (and task) when you know it, or only the company for company work on none of its projects (it goes in the company's CORE project, which everyone in the company is on). Work can only be logged to projects the person leads or is on the team of (onTeam in get_context). Finished tasks count towards the goal they fit by themselves. Work done early for a later week: set forDate to the day it was scheduled for, so it counts towards that week's goal. A done point about a scheduled task finishes that task's run for its day (or the next run not done yet); set forDate when it was for another day. Set personal for the person's own private work (not for any company): only they will ever see it.`,
     inputSchema: {
       type: 'object',
       properties: {
@@ -197,7 +197,7 @@ export const TOOLS: Tool[] = [
               text: {
                 type: 'string',
                 description:
-                  'One line: the deliverable for a new task, e.g. "Fix login redirect on Safari", or what happened on the task point names. Can be left out when point names one.',
+                  'For a new task: its short name, 2-6 words, e.g. "Fix Safari login redirect". On the task point names: what happened. Can be left out when point names one.',
               },
               point: {
                 type: 'string',
@@ -247,6 +247,11 @@ export const TOOLS: Tool[] = [
                 type: 'string',
                 description:
                   'YYYY-MM-DD the work was scheduled for, when done early (optional).',
+              },
+              byPerson: {
+                type: 'boolean',
+                description:
+                  'True when the person did this step themselves (e.g. sent their picks, approved the draft). It shows under their icon.',
               },
               completeTask: {
                 type: 'boolean',
@@ -298,6 +303,7 @@ export const TOOLS: Tool[] = [
               ? p.forDate
               : undefined,
           completeTask: p?.completeTask === true,
+          byPerson: p?.byPerson === true,
         }))
         .filter(
           (p: PointInput & PointTask) =>

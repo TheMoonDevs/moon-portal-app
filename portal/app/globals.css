@@ -243,6 +243,33 @@ h2 {
   background-color: var(--scrollbar-track); /* color of the scrollbar track */
 }
 
+/* A thin scrollbar that stays out of the way until the area is hovered. */
+.quiet-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.quiet-scrollbar:hover {
+  scrollbar-color: rgb(128 128 128 / 0.35) transparent;
+}
+
+.quiet-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.quiet-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.quiet-scrollbar::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 6px;
+}
+
+.quiet-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: rgb(128 128 128 / 0.35);
+}
+
 /* Media queries for tablet and mobile devices */
 @media (max-width: 768px) {
   .custom-scrollbar::-webkit-scrollbar {
@@ -471,11 +498,18 @@ input[type='time']::-webkit-calendar-picker-indicator {
 
 /* The later list's editor on a worklog page in dark mode. */
 @media (prefers-color-scheme: dark) {
-  .auto-theme .mdx-auto [contenteditable] {
+  :root:not([data-theme='light']) .auto-theme .mdx-auto [contenteditable] {
     color: rgb(229 229 229);
     caret-color: white;
   }
-  .auto-theme .mdx-auto .mdx_ce li:before {
+  :root:not([data-theme='light']) .auto-theme .mdx-auto .mdx_ce li:before {
     color: rgb(163 163 163);
   }
+}
+:root[data-theme='dark'] .auto-theme .mdx-auto [contenteditable] {
+  color: rgb(229 229 229);
+  caret-color: white;
+}
+:root[data-theme='dark'] .auto-theme .mdx-auto .mdx_ce li:before {
+  color: rgb(163 163 163);
 }

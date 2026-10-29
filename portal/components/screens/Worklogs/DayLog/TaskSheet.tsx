@@ -18,6 +18,7 @@ import {
   placeInput,
   placeOf,
   placeOptions,
+  readablePoints,
   rowStatus,
   statusForKey,
   StatusIcon,
@@ -32,15 +33,6 @@ import type { Day, DayPoint, DayTask, TaskMove } from './useDay';
  */
 
 const STATUS_KEYS = Object.keys(POINT_STATUSES) as PointStatus[];
-
-const time = (iso?: string | null) => (iso ? dayjs(iso).format('HH:mm') : '');
-const when = (iso?: string | null) => {
-  if (!iso) return '';
-  const d = dayjs(iso);
-  return d.isSame(dayjs(), 'day')
-    ? d.format('HH:mm')
-    : d.format('ddd D MMM, HH:mm');
-};
 
 const isOpen = (t: DayTask) =>
   !['DONE', 'ARCHIVED', 'IGNORED'].includes(t.status);
@@ -144,7 +136,7 @@ const RowMenu = ({
   );
 };
 
-/** One work point in a task's history. */
+/** One work point in a task's history: the person's own carry their icon. */
 const PointRow = ({
   point,
   moveOptions,
@@ -154,25 +146,20 @@ const PointRow = ({
   moveOptions: PickerOption[];
   onMove?: (option: PickerOption) => void;
 }) => {
-  const bot = point.by !== 'person';
+  const mine = point.by === 'person';
   return (
     <li className="group/point flex items-start gap-2 py-0.5 text-[13px] leading-5">
-      <span className="w-[86px] shrink-0 pt-px text-[11px] tabular-nums text-neutral-600 auto-light:text-neutral-400">
-        {when(point.at)}
-      </span>
-      <span
-        title={bot ? 'Claude' : 'You'}
-        className={cn(
-          'mt-[3px] flex size-4 shrink-0 items-center justify-center rounded',
-          bot
-            ? 'bg-orange-400/10 text-orange-300 auto-light:text-orange-700'
-            : 'bg-white/[0.06] text-neutral-400 auto-light:bg-black/[0.06] auto-light:text-neutral-500',
-        )}
-      >
-        <Icon name={bot ? 'smart_toy' : 'person'} className="text-[11px]" />
-      </span>
-      {point.status && (
+      {mine ? (
+        <span
+          title="You did this"
+          className="mt-[3px] flex size-4 shrink-0 items-center justify-center rounded-full bg-sky-400/15 text-sky-300 auto-light:text-sky-700"
+        >
+          <Icon name="person" filled className="text-[11px]" />
+        </span>
+      ) : point.status ? (
         <StatusIcon status={point.status} className="mt-[3px] text-[14px]" />
+      ) : (
+        <span className="mx-1.5 mt-[9px] size-1 shrink-0 rounded-full bg-neutral-600 auto-light:bg-neutral-400" />
       )}
       <span className="min-w-0 flex-1 text-neutral-300 auto-light:text-neutral-700">
         {point.text ||
@@ -200,6 +187,53 @@ const PointRow = ({
   );
 };
 
+const span = (from: dayjs.Dayjs, to: dayjs.Dayjs) => {
+  const minutes = Math.max(0, to.diff(from, 'minute'));
+  if (minutes < 1) return 'under a minute';
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24)
+    return minutes % 60 ? `${hours}h ${minutes % 60}m` : `${hours}h`;
+  const days = Math.floor(hours / 24);
+  return hours % 24 ? `${days}d ${hours % 24}h` : `${days}d`;
+};
+
+/**
+ * How long a task has run: when it started on the left, when it ended (or
+ * now) on the right, and the time between on the bar.
+ */
+const TimeSpan = ({ task, points }: { task: DayTask; points: DayPoint[] }) => {
+  const finished = task.status === 'DONE' && !!task.completedAt;
+  // A task not started yet has no span to show.
+  const startIso =
+    task.startedAt ?? points[0]?.at ?? (finished ? task.createdAt : null);
+  if (!startIso) return null;
+  const start = dayjs(startIso);
+  const end = finished ? dayjs(task.completedAt) : dayjs();
+  const sameDay = start.isSame(end, 'day');
+  const label = (d: dayjs.Dayjs) =>
+    sameDay ? d.format('HH:mm') : d.format('ddd HH:mm');
+  return (
+    <div className="mt-1.5 flex items-center gap-2 text-[11px] tabular-nums text-neutral-500">
+      <span className="shrink-0">{label(start)}</span>
+      <div className="relative flex h-4 min-w-0 flex-1 items-center">
+        <span
+          className={cn(
+            'h-[2px] w-full rounded-full',
+            finished
+              ? 'bg-emerald-400/50 auto-light:bg-emerald-500/50'
+              : 'bg-gradient-to-r from-amber-400/50 to-amber-400/10 auto-light:from-amber-500/60 auto-light:to-amber-500/10',
+          )}
+        />
+        <span className="absolute left-1/2 -translate-x-1/2 rounded-full bg-neutral-950 px-1.5 text-neutral-400 auto-light:bg-white auto-light:text-neutral-600">
+          {span(start, end)}
+        </span>
+      </div>
+      <span className="shrink-0">{finished ? label(end) : 'now'}</span>
+    </div>
+  );
+};
+
 /** A task's details, under it when its chevron is open. */
 const Details = ({
   task,
@@ -207,12 +241,14 @@ const Details = ({
   points,
   editable,
   moveOptions,
+  showPoints,
 }: {
   task: DayTask;
   day: Day;
   points: DayPoint[];
   editable: boolean;
   moveOptions: PickerOption[];
+  showPoints: boolean;
 }) => {
   const [note, setNote] = useState('');
   const place = placeOf(task, day.projects, day.companies);
@@ -227,15 +263,13 @@ const Details = ({
   const facts: string[] = [];
   if (task.forDate && task.forDate !== day.date)
     facts.push(`Planned for ${dayjs(task.forDate).format('ddd D MMM')}`);
-  if (task.createdAt) facts.push(`Written ${when(task.createdAt)}`);
-  if (task.startedAt) facts.push(`Started ${when(task.startedAt)}`);
-  if (task.completedAt) facts.push(`Finished ${when(task.completedAt)}`);
   if (task.madeBy && task.madeBy !== 'person') facts.push('Made by Claude');
   if (task.size === 'MAJOR') facts.push('Major task');
 
   return (
     <div className="ml-[13px] mt-1 border-l border-white/[0.07] pb-2 pl-4 auto-light:border-black/10">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-neutral-500">
+      <TimeSpan task={task} points={points} />
+      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-neutral-500">
         <PlaceChip
           place={place}
           options={editable && saved ? options : undefined}
@@ -259,9 +293,9 @@ const Details = ({
           </label>
         )}
       </div>
-      {points.length > 0 && (
+      {showPoints && points.length > 0 && (
         <ul className="mt-1.5">
-          {points.map((p) => (
+          {readablePoints(points).map((p) => (
             <PointRow
               key={p.id}
               point={p}
@@ -296,11 +330,14 @@ export const TaskSheet = ({
   day,
   tasks,
   editable,
+  showPoints,
 }: {
   day: Day;
   /** The tasks shown, in order (the day's, or one project's). */
   tasks: DayTask[];
   editable: boolean;
+  /** Work points: their count after each task, and the list under it. */
+  showPoints: boolean;
 }) => {
   const inputs = useRef(new Map<string, HTMLTextAreaElement>());
   const [focusId, setFocusId] = useState<string | null>(null);
@@ -410,7 +447,7 @@ export const TaskSheet = ({
         const status = rowStatus(task, day.points, day.date);
         const shut = status === 'done' || status === 'archived';
         const expanded = open.has(task.id);
-        const bots = points.filter((p) => p.by !== 'person').length;
+        const count = showPoints ? readablePoints(points).length : 0;
         const moveOptions: PickerOption[] = tasks
           .filter((t) => t.id !== task.id && !t.draft && t.title.trim())
           .map((t) => ({
@@ -439,7 +476,7 @@ export const TaskSheet = ({
                 >
                   <StatusIcon status={status} />
                 </button>
-                <div className="min-w-0 flex-1">
+                <div className="grid min-w-0 flex-1">
                   <LineInput
                     value={task.title}
                     disabled={!editable}
@@ -452,21 +489,33 @@ export const TaskSheet = ({
                     onBlur={() => day.flush(task.id)}
                     placeholder="What are you working on?"
                     className={cn(
+                      '[grid-area:1/1]',
                       'text-neutral-100 auto-light:text-neutral-900',
                       shut &&
                         'text-neutral-500 line-through decoration-neutral-600 auto-light:text-neutral-400 auto-light:decoration-neutral-300',
                     )}
                   />
+                  {count > 0 && (
+                    // The count sits right after the words: the words are
+                    // laid out again unseen, so it lands where they end.
+                    <span
+                      aria-hidden
+                      className="pointer-events-none whitespace-pre-wrap break-words text-sm leading-6 [grid-area:1/1]"
+                    >
+                      <span className="invisible">{task.title}</span>
+                      <span
+                        className={cn(
+                          'ml-1.5 inline-block rounded px-1 align-[1px] text-[10px] font-medium tabular-nums leading-4',
+                          shut
+                            ? 'bg-white/[0.04] text-neutral-600 auto-light:bg-black/[0.04] auto-light:text-neutral-400'
+                            : 'bg-white/[0.07] text-neutral-400 auto-light:bg-black/[0.06] auto-light:text-neutral-500',
+                        )}
+                      >
+                        {count}
+                      </span>
+                    </span>
+                  )}
                 </div>
-                {!expanded && bots > 0 && (
-                  <span
-                    title={`${bots} update${bots === 1 ? '' : 's'} from Claude`}
-                    className="mt-1 flex h-5 shrink-0 items-center gap-0.5 rounded-full bg-orange-400/10 px-1.5 text-[10px] font-medium tabular-nums text-orange-300 auto-light:text-orange-700"
-                  >
-                    <Icon name="smart_toy" className="text-[11px]" />
-                    {bots}
-                  </span>
-                )}
                 {editable && !task.draft && (
                   <RowMenu
                     status={status}
@@ -498,6 +547,7 @@ export const TaskSheet = ({
                   points={points}
                   editable={editable}
                   moveOptions={moveOptions}
+                  showPoints={showPoints}
                 />
               )}
             </div>

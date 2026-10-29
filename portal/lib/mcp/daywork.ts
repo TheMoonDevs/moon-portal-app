@@ -164,13 +164,17 @@ export async function logWork(
       }
     }
     if (!task) {
-      const title = (point.task || point.text || point.point || '').trim();
+      // A new task is named by its words, never by a reference that matched
+      // nothing (an id or a made-up word).
+      const title = (point.task || point.text || '').trim();
       if (plain(title).length < 3) {
         logged.push({
           task: '',
-          title,
+          title: point.point ?? title,
           status: point.status,
-          problem: 'No task was found for it. Give the point some words.',
+          problem: point.point
+            ? `No task matches "${point.point}". Name one from todayTasks or myTasks, or give text with a short name for a new task.`
+            : 'No task was found for it. Give the point some words.',
         });
         continue;
       }
@@ -188,7 +192,6 @@ export async function logWork(
       made += 1;
     }
 
-    if (task.flag === 'waiting' && point.status !== 'waiting') guided += 1;
     const finish =
       point.status !== 'done' ||
       task.size !== TASK_SIZE.MAJOR ||
@@ -200,9 +203,19 @@ export async function logWork(
       point.note?.trim() ||
       (point.text && !same(point.text, task.title) ? point.text : '') ||
       (!finish ? 'A part of it is done' : '');
+    // The same status again with nothing new to say is not a point.
+    if (!created && !note && move === statusOfTask(task)) {
+      logged.push({
+        ...taskView(task, candidates),
+        task: task.id,
+        problem: `Already ${move}; nothing logged. Log a status only when it changes, or say what happened in note.`,
+      });
+      continue;
+    }
+    if (task.flag === 'waiting' && point.status !== 'waiting') guided += 1;
     task = await moveTask(task, move, {
       userId: user.id,
-      by: 'claude',
+      by: point.byPerson ? 'person' : 'claude',
       note,
       date,
     });
