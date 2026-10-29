@@ -1,5 +1,6 @@
 import { db } from '@/lib/mongodb/db-client';
 import type { SessionUser } from '@/lib/permissions/server';
+import { isAliasOf } from '@/lib/worklogs/aliases';
 import {
   lineKey,
   normalizeLine,
@@ -180,7 +181,10 @@ function resolvePlace(point: PointInput, c: LinkCandidates) {
     : undefined;
   const project = point.project
     ? c.projects.find(
-        (p) => p.id === point.project || same(p.name, point.project!),
+        (p) =>
+          p.id === point.project ||
+          same(p.name, point.project!) ||
+          isAliasOf(point.project!, p),
       )
     : c.projects.find((p) => p.id === task?.projectId);
   if (!project) {

@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 
 import { db } from '@/lib/mongodb/db-client';
 import { hasPermission } from '@/lib/permissions/matching';
+import { sanitizeAliases } from '@/lib/worklogs/aliases';
 import {
   canCreateDirectly,
   createProject,
@@ -93,6 +94,7 @@ export async function POST(request: Request) {
     companyId,
     name: name.slice(0, 120),
     description: typeof body.description === 'string' ? body.description : null,
+    aliases: sanitizeAliases(body.aliases),
     status,
     color: typeof body.color === 'string' ? body.color : null,
     icon: typeof body.icon === 'string' ? body.icon : null,

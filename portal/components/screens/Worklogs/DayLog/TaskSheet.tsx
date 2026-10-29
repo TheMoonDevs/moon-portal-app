@@ -13,14 +13,15 @@ import type { PickerOption } from './Picker';
 import { Picker } from './Picker';
 import type { TaskRowStatus } from './sheetParts';
 import {
-  DoingDot,
   LineInput,
   PlaceChip,
   placeInput,
   placeOf,
   placeOptions,
   readablePoints,
+  rowIcon,
   rowStatus,
+  StateDot,
   statusForKey,
   StatusIcon,
 } from './sheetParts';
@@ -498,7 +499,7 @@ export const TaskSheet = ({
                   }
                   className="mt-[3px] text-[18px] transition-transform active:scale-90"
                 >
-                  <StatusIcon status={status} />
+                  <StatusIcon status={rowIcon(status)} />
                 </button>
                 <div className="grid min-w-0 flex-1">
                   <LineInput
@@ -519,7 +520,9 @@ export const TaskSheet = ({
                         'text-neutral-500 line-through decoration-neutral-600 auto-light:text-neutral-400 auto-light:decoration-neutral-300',
                     )}
                   />
-                  {(count > 0 || status === 'doing') && (
+                  {(count > 0 ||
+                    status === 'doing' ||
+                    status === 'waiting') && (
                     // The dot and count sit right after the words: the words
                     // are laid out again unseen, so they land where they end.
                     <span
@@ -527,7 +530,7 @@ export const TaskSheet = ({
                       className="pointer-events-none whitespace-pre-wrap break-words text-sm font-medium leading-6 [grid-area:1/1]"
                     >
                       <span className="invisible">{task.title}</span>
-                      {status === 'doing' && <DoingDot />}
+                      <StateDot status={status} />
                       {count > 0 && (
                         <span
                           className={cn(

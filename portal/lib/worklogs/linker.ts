@@ -3,6 +3,7 @@ import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 import { db } from '@/lib/mongodb/db-client';
 import { isOnProjectTeam } from '@/lib/permissions/company';
 import type { SessionUser } from '@/lib/permissions/server';
+import { aliasesOf, mentionsAlias } from '@/lib/worklogs/aliases';
 import { runDueSchedules } from '@/lib/workspace/schedules';
 import { getWorkspaceForUser } from '@/lib/workspace/server';
 import type { WorklogLink } from '@/models/worklogs';
@@ -16,7 +17,10 @@ import { isPersonalLink, PERSONAL_COMPANY_ID } from './personal';
 const MIN_CONFIDENCE = 0.6;
 
 export type LinkCandidates = {
-  projects: (Pick<Project, 'id' | 'name' | 'companyId' | 'color' | 'logo'> & {
+  projects: (Pick<
+    Project,
+    'id' | 'name' | 'companyId' | 'color' | 'logo' | 'aliases'
+  > & {
     companyName: string;
     /** The company's CORE project, open to all of its members. */
     isCore?: boolean;
@@ -118,6 +122,7 @@ export async function linkCandidates(
       companyId: p.companyId,
       color: p.color,
       logo: p.logo,
+      ...(p.aliases?.length && { aliases: p.aliases }),
       companyName: companies.find((c) => c.id === p.companyId)?.name ?? '',
       ...(p.isCore && { isCore: true }),
       goals: (p.goals ?? []).map((g) => g.title),
@@ -194,7 +199,9 @@ function matchByName(text: string, c: LinkCandidates): Guess | null {
   // CORE is never matched by its name ("core" is a common word); company
   // work reaches it through the company.
   const named = c.projects.filter((p) => !p.isCore);
-  const byName = named.filter((p) => containsPhrase(text, p.name));
+  const byName = named.filter(
+    (p) => containsPhrase(text, p.name) || mentionsAlias(text, p),
+  );
   const task = c.tasks
     .map((t) => ({ t, score: overlap(text, t.title) }))
     .filter((x) => x.score >= 0.75 && words(x.t.title).length >= 2)
@@ -292,7 +299,7 @@ ${
   c.projects
     .map(
       (p) =>
-        `- ${p.id} | ${p.name}${p.isCore ? " (the company's general work)" : ''} | ${p.companyName}${p.goals.length ? ` | goals: ${p.goals.join('; ')}` : ''}`,
+        `- ${p.id} | ${p.name}${aliasesOf(p).length ? ` (also called ${aliasesOf(p).join(', ')})` : ''}${p.isCore ? " (the company's general work)" : ''} | ${p.companyName}${p.goals.length ? ` | goals: ${p.goals.join('; ')}` : ''}`,
     )
     .join('\n') || '- none'
 }

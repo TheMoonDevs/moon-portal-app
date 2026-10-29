@@ -1,5 +1,6 @@
 import { brandKitDefaults, sanitizeBrandKit } from '@/lib/brandKit';
 import { db } from '@/lib/mongodb/db-client';
+import { sanitizeAliases } from '@/lib/worklogs/aliases';
 import { fitGoals } from '@/lib/workspace/goalFit';
 import { syncGoalSchedules } from '@/lib/workspace/goalSchedules';
 import { addDays, sanitizeGoals, toDay } from '@/lib/workspace/projects';
@@ -37,6 +38,7 @@ const EDITABLE = [
   'goals',
   'effort',
   'parentId',
+  'aliases',
 ] as const;
 
 export async function GET(_request: Request, { params }: Params) {
@@ -142,6 +144,7 @@ export async function PATCH(request: Request, { params }: Params) {
     if (parent.error) return fail(400, parent.error);
     data.parentId = parent.parentId;
   }
+  if ('aliases' in data) data.aliases = sanitizeAliases(data.aliases);
   if ('leadIds' in data) data.leadIds = asStringArray(data.leadIds);
   if ('memberIds' in data) data.memberIds = asStringArray(data.memberIds);
 

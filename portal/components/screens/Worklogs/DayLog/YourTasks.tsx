@@ -11,10 +11,11 @@ import { PortalSdk } from '@/utils/services/PortalSdk';
 import { Icon, Spin } from '../../Admin/shared/AdminUI';
 import type { Place } from './sheetParts';
 import {
-  DoingDot,
   PlaceDot,
   placeOf,
+  rowIcon,
   rowStatus,
+  StateDot,
   StatusIcon,
 } from './sheetParts';
 import type { DayCompany, DayProject, DayTask } from './useDay';
@@ -91,7 +92,7 @@ const TaskRow = ({
             {busy === 'move' ? (
               <Spin className="size-4" />
             ) : (
-              <StatusIcon status={status} />
+              <StatusIcon status={rowIcon(status)} />
             )}
           </button>
         )}
@@ -118,7 +119,7 @@ const TaskRow = ({
             )}
           >
             {task.title}
-            {status === 'doing' && !archived && <DoingDot />}
+            {!archived && <StateDot status={status} />}
           </p>
           <p className="flex min-w-0 items-center gap-1.5 text-[11px] text-neutral-500">
             <PlaceDot place={place} />

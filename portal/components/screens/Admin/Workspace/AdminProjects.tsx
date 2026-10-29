@@ -72,6 +72,7 @@ export type ProjectRow = Project & {
 const emptyDraft = {
   name: '',
   description: '',
+  aliases: '',
   status: 'ACTIVE',
   color: '#0ea5e9',
   logo: '',
@@ -113,6 +114,7 @@ const ProjectForm = ({
         ? {
             name: project.name,
             description: project.description ?? '',
+            aliases: (project.aliases ?? []).join(', '),
             status: project.status,
             color: project.color ?? '#0ea5e9',
             logo: project.logo ?? '',
@@ -152,6 +154,10 @@ const ProjectForm = ({
     try {
       const payload = {
         ...draft,
+        aliases: draft.aliases
+          .split(',')
+          .map((a) => a.trim())
+          .filter(Boolean),
         logo: draft.logo || null,
         parentId: draft.parentId || null,
         goals: goalsForSave(draft.goals),
@@ -219,6 +225,17 @@ const ProjectForm = ({
           <TextArea
             value={draft.description}
             onChange={(e) => set('description', e.target.value)}
+          />
+        </Field>
+        <Field
+          label="Short names"
+          hint="Comma separated, e.g. AMZ. Tasks that use them land in this project."
+          className="md:col-span-2"
+        >
+          <TextInput
+            value={draft.aliases}
+            onChange={(e) => set('aliases', e.target.value)}
+            placeholder="AMZ"
           />
         </Field>
         <Field

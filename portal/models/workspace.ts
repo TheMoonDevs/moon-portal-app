@@ -158,6 +158,8 @@ export type Project = Loose<
     color?: Nullable<string>;
     icon?: Nullable<string>;
     logo?: Nullable<string>;
+    /** Short names it goes by, e.g. AMZ (see lib/worklogs/aliases). */
+    aliases?: string[];
     brandKit?: Nullable<BrandKit>;
     goals?: ProjectGoal[];
     effort?: Nullable<PROJECT_EFFORT>;
