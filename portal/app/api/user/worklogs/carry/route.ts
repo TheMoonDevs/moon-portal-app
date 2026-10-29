@@ -1,15 +1,14 @@
 import { NextResponse } from 'next/server';
 
 import { enforcePermission, getSessionUser } from '@/lib/permissions/server';
-import { carryOpenPoints } from '@/lib/worklogs/points';
 
 export const dynamic = 'force-dynamic';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
- * Moves the caller's points still open on earlier days into `today` (their
- * own date, YYYY-MM-DD, which may be a day off from the server's).
+ * Once moved the caller's open points from earlier days into `today`. Kept
+ * for screens still open from before; it moves nothing now.
  */
 export async function POST(request: Request) {
   const denied = await enforcePermission('worklogs:edit');
@@ -30,6 +29,7 @@ export async function POST(request: Request) {
       { status: 'fail', error: 'today must be your current date.' },
       { status: 400 },
     );
-  const result = await carryOpenPoints(user.id, today);
-  return NextResponse.json({ status: 'success', data: result });
+  // Tasks first: an unfinished task stays pending until it is done or
+  // archived, so nothing is carried any more.
+  return NextResponse.json({ status: 'success', data: { moved: 0, added: 0 } });
 }

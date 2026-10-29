@@ -1,3 +1,4 @@
+import { isMine, noteStatusChange } from '@/lib/daywork/server';
 import { db } from '@/lib/mongodb/db-client';
 import { syncTaskPoints } from '@/lib/progress/server';
 import { fitGoal } from '@/lib/workspace/goalFit';
@@ -10,6 +11,7 @@ import {
   ok,
   pick,
   requireProjectPermission,
+  requireUser,
 } from '@/lib/workspace/server';
 import type { Task } from '@/models/workspace';
 import { TASK_SIZE, TASK_STATUS } from '@/models/workspace';
@@ -33,6 +35,14 @@ const EDITABLE = [
 async function guard(taskId: string, permission: string) {
   const task: Task | null = await db.task.findFirst({ where: { id: taskId } });
   if (!task) return { response: fail(404, 'Task not found.'), task: null };
+  // A task in no project is its owner's alone.
+  if (!task.projectId) {
+    const { response, user } = await requireUser();
+    if (response || !user) return { response, task, user };
+    if (!isMine(task, user.id))
+      return { response: fail(404, 'Task not found.'), task: null, user };
+    return { response: null, task, user };
+  }
   // The project's lead and team can change its tasks too.
   const { response, user } = await requireProjectPermission(
     task.projectId,
@@ -106,6 +116,7 @@ export async function PATCH(request: Request, { params }: Params) {
     }),
   );
   await syncTaskPoints(updated);
+  await noteStatusChange(task, updated, user.id);
   return ok({ task: updated });
 }
 

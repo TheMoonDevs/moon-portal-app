@@ -140,7 +140,17 @@ const config: Config = {
       },
     },
   },
-  plugins: [require('tailwindcss-animate'), addVariablesForColors],
+  plugins: [
+    require('tailwindcss-animate'),
+    addVariablesForColors,
+    // `auto-light:` restyles a dark screen for a device set to light mode,
+    // inside an `.auto-theme` element (the `dark:` variant is class-based).
+    ({ addVariant }: any) =>
+      addVariant('auto-light', [
+        '@media (prefers-color-scheme: light) { .auto-theme & }',
+        '@media (prefers-color-scheme: light) { &.auto-theme }',
+      ]),
+  ],
 };
 
 // This plugin adds each Tailwind color as a global CSS variable, e.g. var(--gray-200).

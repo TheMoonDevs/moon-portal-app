@@ -11,7 +11,8 @@ import { sendPushToUsers } from './server';
  * A day is the person's own calendar day (midnight to midnight in their
  * timezone), the same day the worklog page writes to.
  *
- * - Evening (from 22:00): nothing logged today → "mark as rest day or log".
+ * - Evening (from 22:00): nothing logged today → "mark as rest day or log";
+ *   logged, but nothing on tomorrow yet → "plan tomorrow".
  * - Morning (from 08:00): a summary of what they have planned today.
  *
  * Each is sent at most once per person per day; the day it was last sent is
@@ -104,11 +105,49 @@ const listPreview = (items: string[], max = 3) =>
   items.slice(0, max).join(', ') +
   (items.length > max ? ` +${items.length - max} more` : '');
 
+const nextDay = (date: string) => {
+  const d = new Date(`${date}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d.toISOString().slice(0, 10);
+};
+
+/**
+ * After a logged day: a nudge to write down tomorrow's plan while it is
+ * still evening, when nothing is on tomorrow yet. What is written before the
+ * day starts counts as planned.
+ */
+async function planTomorrow(userId: string, date: string) {
+  const tomorrow = nextDay(date);
+  const [log, tasks] = await Promise.all([
+    db.workLogs.findFirst({
+      where: { userId, logType: 'dayLog', date: tomorrow },
+    }),
+    db.task.count({
+      where: {
+        assigneeIds: userId,
+        status: { in: OPEN_STATUSES },
+        OR: [{ forDate: tomorrow }, { dueDate: { startsWith: tomorrow } }],
+      },
+    }),
+  ]);
+  if (log && (log.restDay || hasContent(log))) return false;
+  await sendPushToUsers([userId], {
+    title: 'Plan tomorrow',
+    body: tasks
+      ? `${tasks} task${tasks === 1 ? ' is' : 's are'} already set for tomorrow. Add the rest of your plan before the day starts.`
+      : 'Write down what you will work on tomorrow. Anything added before the day starts counts as planned.',
+    url: worklogUrl(tomorrow),
+    tag: `plan-${tomorrow}`,
+  });
+  return true;
+}
+
 async function eveningReminder(userId: string, date: string) {
   const log = await db.workLogs.findFirst({
     where: { userId, logType: 'dayLog', date },
   });
-  if (log && (log.restDay || hasContent(log))) return false;
+  if (log && (log.restDay || hasContent(log)))
+    return planTomorrow(userId, date);
 
   await sendPushToUsers([userId], {
     title: 'No work logged today',

@@ -69,6 +69,7 @@ export const modelMetaMap = defineModelRegistry({
   project: { collection: 'Project' },
   projectRequest: { collection: 'ProjectRequest' },
   task: { collection: 'Task' },
+  workPoint: { collection: 'WorkPoint' },
   taskSchedule: { collection: 'TaskSchedule' },
   goalTally: { collection: 'GoalTally' },
   projectResult: { collection: 'ProjectResult' },

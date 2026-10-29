@@ -72,6 +72,17 @@ export async function POST(request: Request) {
     : TASK_STATUS.TODO;
   const forDate = asDay(body.forDate);
   if (forDate === undefined) return fail(400, 'Use YYYY-MM-DD for the date.');
+  // A follow-up to a task of the same project.
+  let followsId: string | null = null;
+  if (typeof body.followsId === 'string' && body.followsId) {
+    const previous = await db.task.findFirst({
+      where: { id: body.followsId, projectId: project.id },
+      select: { id: true },
+    });
+    if (!previous)
+      return fail(400, 'A follow-up goes in the same project as its task.');
+    followsId = previous.id;
+  }
   const now = nowIso();
   let task = await db.task.create({
     data: {
@@ -87,6 +98,7 @@ export async function POST(request: Request) {
       ...goalLink(project, body),
       // A goal picked (or left empty) by hand is not looked for again.
       ...('goalId' in body && { goalChecked: true }),
+      ...(followsId && { followsId }),
       completedAt: status === TASK_STATUS.DONE ? now : null,
       completedByIds: status === TASK_STATUS.DONE ? [user.id] : [],
       createdById: user.id,

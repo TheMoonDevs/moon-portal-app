@@ -6,7 +6,13 @@
 
 export const PRIVATE_LINE = /^\s*(\*\s*)?p:/i;
 
-export type WorklogLine = { key: string; text: string; isPrivate: boolean };
+export type WorklogLine = {
+  key: string;
+  text: string;
+  isPrivate: boolean;
+  /** The section it is in (its `link_id`), e.g. a project's id. */
+  section?: string;
+};
 
 const hash = (s: string) => {
   let h = 5381;
@@ -41,7 +47,12 @@ export function worklogLines(works: unknown): WorklogLine[] {
       const key = lineKey(raw);
       if (seen.has(key)) continue;
       seen.add(key);
-      out.push({ key, text, isPrivate: PRIVATE_LINE.test(raw) });
+      out.push({
+        key,
+        text,
+        isPrivate: PRIVATE_LINE.test(raw),
+        section: typeof work?.link_id === 'string' ? work.link_id : undefined,
+      });
     }
   }
   return out;

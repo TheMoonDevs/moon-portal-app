@@ -1,3 +1,4 @@
+import { noteStatusChange } from '@/lib/daywork/server';
 import { db } from '@/lib/mongodb/db-client';
 import type { SessionUser } from '@/lib/permissions/server';
 import { syncTaskPoints } from '@/lib/progress/server';
@@ -294,6 +295,8 @@ export type NewTask = {
   forDate?: unknown;
   goal?: unknown;
   goalPart?: unknown;
+  /** The task (id or exact title, same project) this one follows on from. */
+  follows?: unknown;
 };
 
 /** Creates a task in `project`; shared by add_task and log_work. */
@@ -321,6 +324,20 @@ export async function createTask(
     project.companyId,
     input.assignees,
   )) ?? [user.id];
+  const follows = text(input.follows, 200);
+  const previous: Task | null = follows
+    ? ((await db.task.findFirst({
+        where: { id: follows, projectId: project.id },
+      })) ??
+      (await db.task.findFirst({
+        where: { title: follows, projectId: project.id },
+        orderBy: { createdAt: 'desc' },
+      })))
+    : null;
+  if (follows && !previous)
+    throw new ToolError(
+      'The task it follows on from must be in the same project.',
+    );
   const now = new Date().toISOString();
   const made: Task = await db.task.create({
     data: {
@@ -336,6 +353,7 @@ export async function createTask(
       goalId,
       goalPartId,
       ...(input.goal ? { goalChecked: true } : {}),
+      ...(previous && { followsId: previous.id }),
       scheduleId: await scheduleFor(project.id, goalId, forDate),
       createdById: user.id,
       createdAt: now,
@@ -360,6 +378,7 @@ export async function describeTask(task: Task, project?: Project | null) {
     ...(task.forDate && { forDate: task.forDate }),
     ...(task.dueDate && { dueDate: task.dueDate }),
     ...(goal && { goal: goal.title }),
+    ...(task.followsId && { follows: task.followsId }),
   };
 }
 
@@ -882,6 +901,7 @@ export const WORKSPACE_TOOLS: Tool[] = [
         }),
       );
       await syncTaskPoints(updated);
+      await noteStatusChange(task, updated, user.id, 'claude');
       return { task: await describeTask(updated, project) };
     },
   },

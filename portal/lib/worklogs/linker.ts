@@ -342,7 +342,26 @@ export async function linkLines(
 
   const guesses = new Map<string, Guess>();
   const unsure: WorklogLine[] = [];
+  // A line written in a project's section belongs to that project, also
+  // when it was left unplaced before.
+  const inSection = (line: WorklogLine) =>
+    candidates.projects.find((p) => p.id === line.section);
+  for (const line of lines) {
+    const project = inSection(line);
+    const kept = known.get(line.key);
+    if (!project || line.isPrivate || (kept && kept.source !== 'none'))
+      continue;
+    known.delete(line.key);
+    guesses.set(line.key, {
+      companyId: project.companyId,
+      projectId: project.id,
+      taskId: kept?.taskId ?? null,
+      confidence: 1,
+      source: 'auto',
+    });
+  }
   for (const line of fresh) {
+    if (guesses.has(line.key)) continue;
     const guess = matchByName(line.text, candidates);
     if (guess) guesses.set(line.key, guess);
     else unsure.push(line);
@@ -362,4 +381,30 @@ export async function linkLines(
       ...guess,
     };
   });
+}
+
+/**
+ * Where each piece of work most likely belongs, from its words: a project
+ * (and its open task for the same work), or a company alone. Name matching
+ * first, Gemini for the rest; null where neither can tell.
+ */
+export async function guessPlaces(
+  items: { key: string; text: string }[],
+  candidates: LinkCandidates,
+) {
+  const out = new Map<string, Guess | null>();
+  const unsure: WorklogLine[] = [];
+  for (const item of items) {
+    const guess = matchByName(item.text, candidates);
+    if (guess) out.set(item.key, guess);
+    else
+      unsure.push({
+        key: item.key,
+        text: item.text,
+        isPrivate: false,
+      });
+  }
+  const fromAi = await matchWithGemini(unsure, candidates);
+  for (const line of unsure) out.set(line.key, fromAi.get(line.key) ?? null);
+  return out;
 }
