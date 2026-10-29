@@ -805,7 +805,17 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
           />
         );
       case 'worklogs':
-        return <WorklogsSection projectId={project.id} tasks={tasks} />;
+        return (
+          <WorklogsSection
+            projectId={project.id}
+            tasks={tasks}
+            people={people}
+            companyUsers={companyUsers}
+            canAdd={canInProject(project, 'tasks:create')}
+            canTick={canInProject(project, 'tasks:edit')}
+            onSaved={load}
+          />
+        );
     }
   })();
 
