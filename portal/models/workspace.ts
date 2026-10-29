@@ -205,9 +205,19 @@ export type ProjectRequest = Loose<
   }
 >;
 
+/**
+ * A task is the one thing a person plans and finishes; what happens on it is
+ * logged as work points under it (see WorkPoint). A task usually sits in a
+ * project. One written on someone's day sheet can also be company work on
+ * no project (`projectId` empty), personal (`companyId` "personal"), or not
+ * placed yet (both empty). Company work is seen by the company as usual;
+ * personal and unplaced tasks only by their owner.
+ */
 export type Task = Loose<
   BaseModel & {
+    /** Empty while not placed yet; "personal" for the owner's own work. */
     companyId: string;
+    /** Empty for company work on no project, personal or unplaced tasks. */
     projectId: string;
     title: string;
     description?: Nullable<string>;
@@ -239,7 +249,60 @@ export type Task = Loose<
     fromLine?: Nullable<string>;
     /** Its goal was set by hand or already looked for; not picked again. */
     goalChecked?: boolean;
+    /**
+     * The task this one follows on from, in the same project: a chain of
+     * steps, each made from the one before.
+     */
+    followsId?: Nullable<string>;
     createdById: string;
+    /** Who wrote it on their day; they can always see and change it. */
+    ownerId?: Nullable<string>;
+    /** `person`, or the bot that made it for them (e.g. `claude`). */
+    madeBy?: Nullable<string>;
+    /** When it was first under way. */
+    startedAt?: Nullable<DateValue>;
+    /**
+     * Where its place came from: `auto` guessed from its words, `user`
+     * picked by a person, `personal` kept to its owner on purpose.
+     */
+    placedBy?: Nullable<'auto' | 'user' | 'personal'>;
+    /** Its place on its owner's day sheet; earlier first. */
+    order?: Nullable<number>;
+    /** Blocked or waiting on someone, from its latest work point. */
+    flag?: Nullable<'blocked' | 'waiting'>;
+    /** Copied from a worklog line by the tasks-first migration. */
+    migratedFrom?: Nullable<{ worklogId: string; key: string }>;
+  }
+>;
+
+export type WorkPointStatus =
+  | 'doing'
+  | 'done'
+  | 'not_done'
+  | 'blocked'
+  | 'waiting';
+
+/**
+ * One entry logged about a task: something a person wrote under it, a
+ * status it moved to, or a bot's update. A task's points are its history.
+ */
+export type WorkPoint = Loose<
+  BaseModel & {
+    taskId: string;
+    /** Whose work it is. */
+    userId: string;
+    /** The day it was logged, YYYY-MM-DD, in the person's timezone. */
+    date: string;
+    text: string;
+    /** The status it moved its task to, if any. */
+    status?: Nullable<WorkPointStatus>;
+    /** `person`, `claude`, or another bot's name. */
+    by: string;
+    /** When it happened (ISO). */
+    at: string;
+    /** Only its writer sees it. */
+    isPrivate?: boolean;
+    migratedFrom?: Nullable<{ worklogId: string; key: string }>;
   }
 >;
 

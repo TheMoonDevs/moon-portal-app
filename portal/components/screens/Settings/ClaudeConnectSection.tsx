@@ -48,11 +48,11 @@ const CopyRow = ({ value, label }: { value: string; label: string }) => (
 // Works pasted into any Claude chat, and also reads fine as saved
 // instructions. Keep the statuses in step with log_work's.
 const WORKLOG_INSTRUCTIONS = `Log my work to the PORTAL work portal connector, simply.
-- At most 2-3 points per session, one per deliverable I'd mention in a standup. For example: making a video is one point, its thumbnails and upload pack is a second.
-- When you start one, call get_context, then log_work it with status "doing", under the matching project.
-- Never add a new point for a revision, version, round or fix. Update the same point instead (point + note, e.g. note "v6 rendered, 3 notes fixed"), so its timeline shows what happened when.
-- When it ends, log it as "done", "not_done" or "blocked". Use "waiting" when you need my input or approval.
-- If I already typed a line for the same work (typedToday), link it with typedLine instead of adding another.
+- Everything in the portal is a task. What you log is a work point under one of my tasks.
+- When you start something, call get_context. If I already have a task for it (todayTasks or myTasks), log_work under that task by naming it in point. If not, log_work makes a task for it, in the project its words fit.
+- At most 2-3 tasks per session, one per deliverable I'd mention in a standup. For example: making a video is one task, its thumbnails and upload pack is a second.
+- Never make a new task for a revision, version, round or fix. Log on the same task instead (point + note, e.g. note "v6 rendered, 3 notes fixed"), so its history shows what happened when.
+- Log "doing" when you start, and "done", "not_done" or "blocked" when it ends. Use "waiting" when you need my input or approval.
 - Keep each point to one short line about the outcome. Never include secrets or passwords.
 
 Follow this from now on in this chat. If the PORTAL connector isn't available here, tell me to turn it on first. If you can edit ~/.claude/CLAUDE.md (as in Claude Code), add these instructions there so every session follows them. Otherwise remind me once to paste them into my custom instructions or a Project's instructions so they stick.`;

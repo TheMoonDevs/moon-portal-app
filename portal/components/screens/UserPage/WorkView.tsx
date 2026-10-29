@@ -7,12 +7,19 @@ import { createContext, useContext, useMemo, useState } from 'react';
 
 import type { WorkData, WorkPoint } from '@/lib/people/types';
 import { cn } from '@/lib/utils';
+import type { PointOrigin } from '@/lib/worklogs/origin';
+import { countOrigins, ORIGIN_KEYS } from '@/lib/worklogs/origin';
 import type { PointStatus } from '@/lib/worklogs/timeline';
 import { POINT_STATUSES } from '@/lib/worklogs/timeline';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
 
 import { Icon, Segmented } from '../Admin/shared/AdminUI';
 import { CompanyMark, TASK_STATUS_META } from '../Admin/Workspace/shared';
+import {
+  ORIGIN_STYLE,
+  OriginBar,
+  OriginTag,
+} from '../Worklogs/DayLog/OriginBar';
 import { DayTimeline } from './DayTimeline';
 import {
   colorFor,
@@ -167,6 +174,9 @@ const PointRow = ({ point }: { point: WorkPoint }) => {
           {point.text}
         </p>
         <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-neutral-500">
+          {point.origin && !point.parentKey && (
+            <OriginTag origin={point.origin} />
+          )}
           {point.byClaude && <BotMark />}
           <span>
             {days.length > 1
@@ -265,7 +275,7 @@ const TaskBlock = ({ group, bare }: { group: TaskGroup; bare?: boolean }) => {
 
 const countText = (g: { points: number; done: number; closedTasks: number }) =>
   [
-    g.points && `${g.points} ${g.points === 1 ? 'point' : 'points'}`,
+    g.points && `${g.points} ${g.points === 1 ? 'task' : 'tasks'}`,
     g.done && `${g.done} done`,
     g.closedTasks &&
       `${g.closedTasks} ${g.closedTasks === 1 ? 'task' : 'tasks'} closed`,
@@ -550,7 +560,7 @@ const TimingCard = ({ points }: { points: WorkPoint[] }) => {
           {all.timed ? formatMs(all.totalMs) : '–'}
         </p>
         <p className="text-[11px] text-neutral-500">
-          start to done, {all.timed} {all.timed === 1 ? 'point' : 'points'}
+          start to done, {all.timed} {all.timed === 1 ? 'task' : 'tasks'}
           {all.typicalMs != null && ` · ${formatMs(all.typicalMs)} each`}
         </p>
       </div>
@@ -580,6 +590,124 @@ const TimingCard = ({ points }: { points: WorkPoint[] }) => {
 /* -------------------------------------------------------------------------- */
 /*                                    View                                    */
 /* -------------------------------------------------------------------------- */
+
+/**
+ * How the period's work came: planned before its day, unexpected, or
+ * delayed from an earlier day. The assistant's notes under a point count
+ * with that point, not on their own.
+ */
+const OriginCard = ({
+  points,
+  period,
+}: {
+  points: WorkPoint[];
+  period: Period;
+}) => {
+  const top = points.filter((p) => !p.parentKey);
+  const known = top.filter((p) => p.origin);
+  if (!known.length) return null;
+  const counts = countOrigins(top.map((p) => p.origin ?? null));
+  const done: Partial<Record<PointOrigin, number>> = {};
+  for (const p of known)
+    if (isDone(p)) done[p.origin!] = (done[p.origin!] ?? 0) + 1;
+  // Each point counts on the first day it was on.
+  const days: string[] = [];
+  if (period.kind !== 'day')
+    for (
+      let d = dayjs(period.from);
+      !d.isAfter(dayjs(period.to));
+      d = d.add(1, 'day')
+    )
+      days.push(d.format('YYYY-MM-DD'));
+  const byDay = new Map<string, Record<PointOrigin, number>>();
+  for (const p of known) {
+    const day = p.dates[0];
+    const row = byDay.get(day) ?? { planned: 0, unexpected: 0, delayed: 0 };
+    row[p.origin!] += 1;
+    byDay.set(day, row);
+  }
+  const most = Math.max(
+    1,
+    ...Array.from(byDay.values()).map(
+      (r) => r.planned + r.unexpected + r.delayed,
+    ),
+  );
+  const share = known.length
+    ? Math.round((counts.unexpected / known.length) * 100)
+    : 0;
+  return (
+    <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4">
+      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+        <p className="text-xs font-medium text-neutral-400">
+          How the {period.kind} happened
+          <span className="ml-1.5 font-normal text-neutral-600">
+            planned, unexpected and delayed
+          </span>
+        </p>
+        <p className="text-[11px] text-neutral-500">
+          {share}% of the work was unexpected
+          {counts.unknown ? ` · ${counts.unknown} older tasks not counted` : ''}
+        </p>
+      </div>
+      <OriginBar counts={counts} done={done} />
+      {days.length > 1 && (
+        <>
+          <div className="mt-4 flex h-16 items-end gap-[3px]">
+            {days.map((day) => {
+              const row = byDay.get(day);
+              const total = row
+                ? row.planned + row.unexpected + row.delayed
+                : 0;
+              return (
+                <div
+                  key={day}
+                  title={
+                    row
+                      ? `${dayjs(day).format('ddd D MMM')}: ${row.planned} planned, ${row.unexpected} unexpected, ${row.delayed} delayed`
+                      : dayjs(day).format('ddd D MMM')
+                  }
+                  className="flex h-full min-w-0 flex-1 flex-col justify-end"
+                >
+                  <div
+                    className="flex w-full flex-col-reverse overflow-hidden rounded-sm bg-white/[0.04]"
+                    style={{
+                      height: total
+                        ? `${Math.max(6, (total / most) * 100)}%`
+                        : '3px',
+                    }}
+                  >
+                    {row &&
+                      ORIGIN_KEYS.map((k) =>
+                        row[k] ? (
+                          <div
+                            key={k}
+                            className={ORIGIN_STYLE[k].bar}
+                            style={{ height: `${(row[k] / total) * 100}%` }}
+                          />
+                        ) : null,
+                      )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {period.kind === 'week' && (
+            <div className="mt-1 flex gap-[3px]">
+              {days.map((day) => (
+                <span
+                  key={day}
+                  className="flex-1 text-center text-[10px] text-neutral-600"
+                >
+                  {dayjs(day).format('dd D')}
+                </span>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
 
 const PERIODS: { value: PeriodKind; label: string }[] = [
   { value: 'day', label: 'Day' },
@@ -675,7 +803,7 @@ export const WorkView = ({
         {/* Numbers */}
         <div className="grid grid-cols-2 gap-4 rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4 sm:grid-cols-4">
           <Metric
-            label="Points"
+            label="Tasks"
             value={data ? points.length : '–'}
             hint={
               data && points.some((p) => p.byClaude)
@@ -688,7 +816,7 @@ export const WorkView = ({
             value={data ? points.filter(isDone).length : '–'}
             hint={
               data && points.length
-                ? `${Math.round((points.filter(isDone).length / points.length) * 100)}% of points`
+                ? `${Math.round((points.filter(isDone).length / points.length) * 100)}% of tasks`
                 : undefined
             }
           />
@@ -717,6 +845,7 @@ export const WorkView = ({
           )}
         </div>
 
+        {data && <OriginCard points={points} period={period} />}
         {data && <TimingCard points={points} />}
         {data && <ShareBar groups={groups} />}
 
@@ -742,8 +871,8 @@ export const WorkView = ({
               Nothing logged in this period
             </p>
             <p className="mx-auto mt-1 max-w-sm text-xs text-neutral-500">
-              Work points from the daily worklog and from your bot land here,
-              sorted by project and task.
+              Tasks from the daily worklog and from your bot land here, sorted
+              by project.
             </p>
             {data.isSelf && (
               <Link
@@ -770,9 +899,8 @@ export const WorkView = ({
 
         {data && data.hiddenCount > 0 && (
           <p className="text-center text-[11px] text-neutral-600">
-            {data.hiddenCount} more{' '}
-            {data.hiddenCount === 1 ? 'point' : 'points'} in companies you are
-            not part of.
+            {data.hiddenCount} more {data.hiddenCount === 1 ? 'task' : 'tasks'}{' '}
+            in companies you are not part of.
           </p>
         )}
       </div>

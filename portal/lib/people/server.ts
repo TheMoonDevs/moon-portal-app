@@ -8,11 +8,16 @@ import { db } from '@/lib/mongodb/db-client';
 import { hasPermission } from '@/lib/permissions/matching';
 import type { SessionUser } from '@/lib/permissions/server';
 import { latestPerDay } from '@/lib/worklogs/days';
-import { isPersonalLink, PERSONAL_COMPANY } from '@/lib/worklogs/personal';
+import { dayStartMs, originOf } from '@/lib/worklogs/origin';
 import {
-  eventsFor,
+  isPersonalLink,
+  PERSONAL_COMPANY,
+  PERSONAL_COMPANY_ID as PERSONAL_ID,
+} from '@/lib/worklogs/personal';
+import {
   type PointEvent,
   pointSpan,
+  type PointStatus,
   sectionLines,
 } from '@/lib/worklogs/timeline';
 import { withTasks } from '@/lib/workspace/planServer';
@@ -29,6 +34,7 @@ import type {
   Project,
   Task,
   TaskSchedule,
+  WorkPoint as DayPoint,
 } from '@/models/workspace';
 import {
   MEMBER_STATUS,
@@ -148,24 +154,6 @@ async function loadProjects(ids: string[]): Promise<PageProject[]> {
   return projects.map(projectView);
 }
 
-/** Most events sent for one point: its start and the latest ones. */
-const MAX_EVENTS = 24;
-
-function mergeEvents(a: PointEvent[], b: PointEvent[]): PointEvent[] {
-  const seen = new Set<string>();
-  const all = [...a, ...b]
-    .filter((e) => {
-      const id = `${e.at}|${e.status}|${e.note ?? ''}`;
-      if (seen.has(id)) return false;
-      seen.add(id);
-      return true;
-    })
-    .sort((x, y) => x.at.localeCompare(y.at));
-  return all.length > MAX_EVENTS
-    ? [all[0], ...all.slice(-(MAX_EVENTS - 1))]
-    : all;
-}
-
 async function dayLogs(personId: string, from: string, to: string) {
   const logs: WorkLogs[] = await db.workLogs.findMany({
     where: {
@@ -185,9 +173,24 @@ async function dayLogs(personId: string, from: string, to: string) {
   return latestPerDay(logs);
 }
 
+const POINT_STATUS_OF: Record<string, PointStatus> = {
+  [TASK_STATUS.DONE]: 'done',
+  [TASK_STATUS.IN_PROGRESS]: 'doing',
+  [TASK_STATUS.IN_REVIEW]: 'doing',
+};
+
+/** A task's status as a point's: blocked or waiting when flagged. */
+const statusOfTask = (task: Task, points: DayPoint[]): PointStatus | null => {
+  if (task.status !== TASK_STATUS.DONE && task.flag) return task.flag;
+  const status = POINT_STATUS_OF[task.status];
+  if (status) return status;
+  return points.at(-1)?.status === 'not_done' ? 'not_done' : null;
+};
+
 /**
- * The person's work points from `from` to `to`, grouped by line across
- * days, with the projects, tasks and companies they are linked to.
+ * The person's work from `from` to `to`: each task they planned, worked on
+ * or finished in the period is one point, its work points (theirs and their
+ * bots') its events, with the projects, tasks and companies it is in.
  */
 export async function loadWork(
   viewer: SessionUser,
@@ -196,56 +199,102 @@ export async function loadWork(
   to: string,
 ): Promise<WorkData> {
   const isSelf = viewer.id === person.id;
-  const [logs, shared] = await Promise.all([
-    dayLogs(person.id, from, to),
+  const [dayPoints, shared] = await Promise.all([
+    db.workPoint.findMany({
+      where: { userId: person.id, date: { gte: from, lte: to } },
+      orderBy: { at: 'asc' },
+      take: 5000,
+    }) as Promise<DayPoint[]>,
     sharedCompanies(viewer, person.id),
   ]);
+  const workedIds = Array.from(new Set(dayPoints.map((p) => p.taskId)));
+  const mine = { OR: [{ ownerId: person.id }, { assigneeIds: person.id }] };
+  const [worked, planned]: [Task[], Task[]] = await Promise.all([
+    workedIds.length
+      ? db.task.findMany({ where: { id: { in: workedIds } } })
+      : [],
+    db.task.findMany({
+      where: { AND: [mine, { forDate: { gte: from, lte: to } }] },
+      take: 1000,
+    }),
+  ]);
+  const tasks = new Map<string, Task>();
+  for (const t of [...worked, ...planned]) tasks.set(t.id, t);
+
   const visible = (companyId: string | null) =>
     !companyId || isSelf || shared.viewerCompanyIds.has(companyId);
+  const owner = await db.user.findFirst({
+    where: { id: person.id },
+    select: { timezone: true },
+  });
 
-  const points = new Map<string, WorkPoint>();
-  let hidden = new Set<string>();
-  for (const log of logs) {
-    const links = new Map(
-      ((log.links ?? []) as WorklogLink[]).map((l) => [l.key, l]),
-    );
-    for (const line of sectionLines(log.works)) {
-      const link = links.get(line.key);
-      const personal = line.isPrivate || (link ? isPersonalLink(link) : false);
-      if (personal && !isSelf) continue;
-      const companyId = personal
-        ? PERSONAL_COMPANY.id
-        : (link?.companyId ?? null);
-      if (!visible(companyId)) {
-        hidden.add(line.key);
-        continue;
-      }
-      const seen = points.get(line.key);
-      // A point carried into a later day brings its earlier events along.
-      const events = mergeEvents(
-        seen?.events ?? [],
-        eventsFor(log.timeline, line.key),
-      );
-      const span = pointSpan(events);
-      points.set(line.key, {
-        key: line.key,
-        text: line.text,
-        status: line.status,
-        isPrivate: personal,
-        byClaude: line.claude,
-        companyId,
-        projectId: personal ? null : (link?.projectId ?? null),
-        taskId: personal ? null : (link?.taskId ?? null),
-        dates: [...(seen?.dates ?? []), log.date as string],
-        startedAt: span?.startedAt ?? null,
-        finishedAt: span?.finishedAt ?? null,
-        events,
-      });
+  const all: WorkPoint[] = [];
+  let hidden = 0;
+  for (const task of Array.from(tasks.values())) {
+    const ownerOnly =
+      !task.projectId && (!task.companyId || task.companyId === PERSONAL_ID);
+    if (ownerOnly && !isSelf) continue;
+    // Archived without any work in the period: put away, not worked on.
+    const points = dayPoints.filter((p) => p.taskId === task.id);
+    if (
+      (task.status === TASK_STATUS.ARCHIVED ||
+        task.status === TASK_STATUS.IGNORED) &&
+      !points.length
+    )
+      continue;
+    const companyId = ownerOnly ? PERSONAL_ID : (task.companyId ?? null);
+    if (!visible(companyId)) {
+      hidden += 1;
+      continue;
     }
+    const events: PointEvent[] = points
+      .filter((p) => !p.isPrivate || isSelf)
+      .map((p) => ({
+        key: task.id,
+        at: p.at,
+        status: p.status ?? null,
+        ...(p.text && { note: p.text }),
+        by: p.by === 'person' ? ('person' as const) : ('claude' as const),
+      }));
+    const dates = Array.from(
+      new Set([
+        ...points.map((p) => p.date),
+        ...(task.forDate && task.forDate >= from && task.forDate <= to
+          ? [task.forDate]
+          : []),
+      ]),
+    ).sort();
+    if (!dates.length) continue;
+    const span = pointSpan(events);
+    all.push({
+      key: task.id,
+      text: task.title,
+      status: statusOfTask(task, points),
+      isPrivate: ownerOnly,
+      byClaude: !!task.madeBy && task.madeBy !== 'person',
+      companyId,
+      projectId: task.projectId || null,
+      taskId: task.id,
+      dates,
+      startedAt: iso(task.startedAt) ?? span?.startedAt ?? null,
+      finishedAt:
+        task.status === TASK_STATUS.DONE
+          ? (iso(task.completedAt) ?? span?.finishedAt ?? null)
+          : null,
+      createdAt: iso(task.createdAt),
+      events,
+      parentKey: null,
+      origin: originOf({
+        day: dates[0],
+        startMs: dayStartMs(dates[0], owner?.timezone),
+        events,
+        task,
+        days: dates,
+      }),
+    });
   }
-  // A line seen in a shared company on one day is not "hidden" on another.
-  hidden = new Set(Array.from(hidden).filter((k) => !points.has(k)));
 
+  // Their finished tasks in companies the viewer shares, done in the period.
   const doneTasks: Task[] = shared.taskCompanyIds.length
     ? await db.task.findMany({
         where: {
@@ -273,13 +322,9 @@ export async function loadWork(
       })
     : [];
 
-  const all = Array.from(points.values());
-  const taskIds = Array.from(
-    new Set(all.map((p) => p.taskId).filter(Boolean)),
-  ) as string[];
-  const linkedTasks: Task[] = taskIds.length
-    ? await db.task.findMany({ where: { id: { in: taskIds } } })
-    : [];
+  const linkedTasks = all
+    .map((p) => tasks.get(p.key))
+    .filter((t): t is Task => !!t && !!t.projectId);
   const projects = await loadProjects([
     ...all.map((p) => p.projectId as string),
     ...doneTasks.map((t) => t.projectId),
@@ -317,7 +362,7 @@ export async function loadWork(
     tasks: linkedTasks.map(taskView),
     projects,
     companies,
-    hiddenCount: hidden.size,
+    hiddenCount: hidden,
   };
 }
 

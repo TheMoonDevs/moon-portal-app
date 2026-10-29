@@ -2,6 +2,8 @@ export enum LOGLINKTYPE {
   GENERAL = "general",
   ENGAGEMENT = "engagement",
   ABSTRACT = "abstract",
+  /** A section for one project; its lines belong to that project. */
+  PROJECT = "project",
 }
 
 export interface WorkLogPoints {

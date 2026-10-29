@@ -30,7 +30,7 @@ import {
 import { CompanyMark, errorText } from '../Admin/Workspace/shared';
 import { ActivityGrid } from './ActivityGrid';
 import { AgendaPanel } from './AgendaPanel';
-import { lastDay, type Period, periodOf } from './work';
+import { type Period, periodOf } from './work';
 import { WorkView } from './WorkView';
 
 /*
@@ -193,10 +193,11 @@ export const UserPage = ({ userId }: { userId?: string }) => {
   // One click on a point's status, on your own page.
   const setPointStatus = async (point: WorkPoint, status: PointStatus) => {
     try {
-      await PortalSdk.patchData('/api/user/worklogs/points', {
-        date: lastDay(point),
-        key: point.key,
+      // A point is a task: the task moves, and the move is logged on it.
+      await PortalSdk.postData('/api/me/day/points', {
+        taskId: point.taskId ?? point.key,
         status,
+        text: '',
       });
       const res = await PortalSdk.getData(
         `/api/people/${personId}/work?from=${period.from}&to=${period.to}`,

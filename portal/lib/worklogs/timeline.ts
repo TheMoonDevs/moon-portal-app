@@ -21,6 +21,26 @@ export const POINT_STATUSES = {
 
 export type PointStatus = keyof typeof POINT_STATUSES;
 
+/** Marks a line on an earlier day whose work moved on to a later day. */
+export const MOVED_EMOJI = '➡️';
+
+/** Marks a point put away unfinished: it stops moving to the next day. */
+export const ARCHIVED_EMOJI = '🗄️';
+
+/**
+ * Whether a line was moved on to a later day or archived: either way it is
+ * not open work on its day any more.
+ */
+export function setAsideOf(line: string): 'moved' | 'archived' | null {
+  const words = line
+    .replace(PRIVATE_LINE, '')
+    .replace(/^\s*[*\-+]\s*/, '')
+    .trimStart();
+  if (words.startsWith('➡')) return 'moved';
+  if (words.startsWith('🗄')) return 'archived';
+  return null;
+}
+
 const STATUS_BY_EMOJI = Object.fromEntries(
   Object.entries(POINT_STATUSES).map(([k, v]) => [v.emoji, k]),
 ) as Record<string, PointStatus>;
@@ -105,6 +125,8 @@ export function sectionLines(works: unknown) {
     status: PointStatus | null;
     isPrivate: boolean;
     claude: boolean;
+    /** Moved on to a later day, or archived. */
+    setAside: 'moved' | 'archived' | null;
   }[] = [];
   const seen = new Set<string>();
   for (const work of works) {
@@ -121,6 +143,7 @@ export function sectionLines(works: unknown) {
         status: statusOf(raw),
         isPrivate: PRIVATE_LINE.test(raw),
         claude: work?.link_id === CLAUDE_SECTION_ID,
+        setAside: setAsideOf(raw),
       });
     }
   }
