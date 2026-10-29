@@ -92,11 +92,56 @@ function companyBadges(counts: PlaceCount[], day: Day): Badge[] {
   return Array.from(badges.values());
 }
 
+/** Colors for parts with none, or one another part already uses. */
+const PART_COLORS = [
+  '#60a5fa',
+  '#f472b6',
+  '#34d399',
+  '#fb923c',
+  '#a78bfa',
+  '#facc15',
+  '#22d3ee',
+  '#f87171',
+  '#a3e635',
+  '#e879f9',
+];
+
+/**
+ * A color for each part of the bar, none the same: a project keeps its own
+ * color unless an earlier part has it, else it takes one from its key.
+ */
+export function partColors(counts: PlaceCount[]) {
+  const used = new Set<string>();
+  const colors = new Map<string, string>();
+  for (const { place } of counts) {
+    if (place.kind === 'none') {
+      colors.set(place.key, '#a3a3a3');
+      continue;
+    }
+    let color = place.color?.toLowerCase();
+    if (!color || used.has(color)) {
+      let h = 0;
+      for (let i = 0; i < place.key.length; i++)
+        h = (h * 31 + place.key.charCodeAt(i)) | 0;
+      const start = Math.abs(h) % PART_COLORS.length;
+      color =
+        Array.from(
+          { length: PART_COLORS.length },
+          (_, i) => PART_COLORS[(start + i) % PART_COLORS.length],
+        ).find((c) => !used.has(c)) ?? PART_COLORS[start];
+    }
+    used.add(color);
+    colors.set(place.key, color);
+  }
+  return colors;
+}
+
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 /** One project's part of the bar, and what it means on hover. */
 const Part = ({
   count,
+  color,
   day,
   active,
   dimmed,
@@ -104,6 +149,7 @@ const Part = ({
   onPick,
 }: {
   count: PlaceCount;
+  color: string;
   day: Day;
   active: boolean;
   dimmed: boolean;
@@ -111,7 +157,6 @@ const Part = ({
   onPick: () => void;
 }) => {
   const { place, done, doing, total, points } = count;
-  const color = place.color || '#a3a3a3';
   const company = place.companyId
     ? day.companies.find((c) => c.id === place.companyId)
     : undefined;
@@ -239,6 +284,7 @@ export const ProjectSummary = ({
   const total = counts.reduce((n, c) => n + c.total, 0);
   if (!total) return null;
   const badges = companyBadges(counts, day);
+  const colors = partColors(counts);
   const pick = (key: string) => onFilter(filter === key ? null : key);
   const lit = (c: PlaceCount) =>
     filter === c.place.key || filter === companyKeyOf(c.place);
@@ -287,6 +333,7 @@ export const ProjectSummary = ({
             <Part
               key={c.place.key}
               count={c}
+              color={colors.get(c.place.key)!}
               day={day}
               active={lit(c)}
               dimmed={!!filter && !lit(c)}

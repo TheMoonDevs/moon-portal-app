@@ -49,14 +49,15 @@ const CopyRow = ({ value, label }: { value: string; label: string }) => (
 // instructions. Keep the statuses in step with log_work's.
 const WORKLOG_INSTRUCTIONS = `Log my work to the PORTAL work portal connector, simply.
 - Everything in the portal is a task. What you log is a work point under one of my tasks.
-- When you start something, call get_context. If I already have a task for it (todayTasks or myTasks), log_work under that task by naming it in point. If not, log_work makes a task for it, in the project its words fit.
+- When you start something, call get_context and work out which of my tasks this session is about. Match by meaning, not just exact words: the same deliverable, project, repo or folder, or what its earlier points said. If one fits, log_work under it by naming it in point (its id), and keep using that task for the rest of the session.
+- Only make a new task when none of my tasks (todayTasks or myTasks) is the same work. log_work then makes it in the project its words fit.
 - At most 2-3 tasks per session, one per deliverable I'd mention in a standup. For example: making a video is one task, its thumbnails and upload pack is a second.
 - Never make a new task for a revision, version, round or fix. Log on the same task instead (point + note, e.g. note "v6 rendered, 3 notes fixed"), so its history shows what happened when.
 - Keep task names short and recognisable, 2-6 words I'd say out loud (e.g. "Rename Get into Zone extension"). Details go in the work points. Never make up a placeholder or random word as a task name.
 - Log "doing" when you start, and "done", "not_done" or "blocked" when it ends. Use "waiting" only when the work is truly stopped until I act (a decision, approval, file or login only I can give), saying what I need to do. Not for finishing a reply, offering options or asking whether to continue: if you can keep going, it's "doing". Don't repeat a status that hasn't changed. When I've done my part, log it with byPerson so it shows as mine.
 - Keep each point to one line about the outcome. Never include secrets or passwords.
 
-Follow this from now on in this chat. If the PORTAL connector isn't available here, tell me to turn it on first. If you can edit ~/.claude/CLAUDE.md (as in Claude Code), add these instructions there so every session follows them. Otherwise remind me once to paste them into my custom instructions or a Project's instructions so they stick.`;
+First, save these instructions where every Claude chat on this computer reads them, not just this one. In Claude Code, add them to the global ~/.claude/CLAUDE.md (not a project's CLAUDE.md), creating the file if it doesn't exist, and keep anything already there. In the Claude app, remind me once to paste them into Settings > Profile > personal preferences. Then follow them here too. If the PORTAL connector isn't available, tell me to turn it on first.`;
 
 const ago = (iso: string | null) => {
   if (!iso) return 'not used yet';
@@ -209,8 +210,8 @@ export const ClaudeConnectSection = () => {
           Tell Claude to log your work
         </span>
         <p className="mb-2 text-sm text-neutral-700">
-          Copy this message and paste it into a Claude chat. Claude starts
-          logging right away.
+          Copy this message and paste it into any Claude chat. Claude saves it
+          for every chat on that computer and starts logging right away.
         </p>
         <div className="relative rounded-lg bg-neutral-50 px-3 py-2">
           <pre className="whitespace-pre-wrap break-words pr-14 font-mono text-xs text-neutral-800">
@@ -227,11 +228,10 @@ export const ClaudeConnectSection = () => {
           </button>
         </div>
         <p className="mt-2 text-xs text-neutral-500">
-          To keep it for every chat, save it as custom instructions: on
-          claude.ai that&apos;s Settings, Profile, personal preferences, or a
-          Project&apos;s instructions. In Claude Code it goes in{' '}
-          <code>~/.claude/CLAUDE.md</code>. Turn on the Portal connector
-          wherever you use Claude too; without it the instructions do nothing.
+          Claude Code saves it in <code>~/.claude/CLAUDE.md</code>, which every
+          session on that computer reads. On claude.ai, paste it into Settings,
+          Profile, personal preferences. Turn on the Portal connector wherever
+          you use Claude too; without it the instructions do nothing.
         </p>
       </div>
 
