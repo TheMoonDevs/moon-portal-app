@@ -37,6 +37,7 @@ import { GoalsSection } from './sections/GoalsSection';
 import { KpiSection } from './sections/KpiSection';
 import { MembersSection } from './sections/MembersSection';
 import { PagesGallery, PagesInside } from './sections/PagesSection';
+import { TasksInActionSection } from './sections/TasksInActionSection';
 import { WorklogsSection } from './sections/WorklogsSection';
 import {
   byCreation,
@@ -804,9 +805,9 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
             onSaved={load}
           />
         );
-      case 'worklogs':
+      case 'tasks':
         return (
-          <WorklogsSection
+          <TasksInActionSection
             projectId={project.id}
             tasks={tasks}
             people={people}
@@ -816,6 +817,8 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
             onSaved={load}
           />
         );
+      case 'worklogs':
+        return <WorklogsSection projectId={project.id} tasks={tasks} />;
     }
   })();
 
