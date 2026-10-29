@@ -2,14 +2,11 @@
 
 import { useEffect, useState } from 'react';
 
-import { ORIGIN_KEYS, POINT_ORIGINS } from '@/lib/worklogs/origin';
-
 import { Icon } from '../../Admin/shared/AdminUI';
-import { OriginTag } from './OriginBar';
 
 /*
- * Tips for the worklog page: how to write points, its keys, and what the
- * planned, unexpected and delayed tags mean.
+ * Tips for the worklog page: how to write tasks, its keys, and where
+ * Claude's work goes.
  */
 
 const Kbd = ({ children }: { children: React.ReactNode }) => (
@@ -19,11 +16,11 @@ const Kbd = ({ children }: { children: React.ReactNode }) => (
 );
 
 const TIPS = [
-  'One short point per thing you work on.',
-  'Note every small update as it happens.',
-  'Tick a point done as you finish it.',
+  'One short task per thing you work on.',
+  'Add a note in a task’s details as things happen.',
+  'Tick a task done as you finish it. Unfinished ones stay pending until you finish or archive them.',
   'Before you stop, write tomorrow down: it counts as planned.',
-  'Pick a point’s project from the chip under it. Points in a project are its tasks.',
+  'A task is put in a project from its words. Change it from its details.',
 ];
 
 export const WorklogTips = () => {
@@ -35,9 +32,9 @@ export const WorklogTips = () => {
   }, []);
 
   const keys: [React.ReactNode, string][] = [
-    [<Kbd key="e">Enter</Kbd>, 'Next point'],
-    [<Kbd key="b">Backspace</Kbd>, 'On an empty point, takes it out'],
-    [<Kbd key="a">↑ ↓</Kbd>, 'Move between points'],
+    [<Kbd key="e">Enter</Kbd>, 'Next task'],
+    [<Kbd key="b">Backspace</Kbd>, 'On an empty task, takes it out'],
+    [<Kbd key="a">↑ ↓</Kbd>, 'Move between tasks'],
     [
       <>
         <Kbd>Ctrl</Kbd> <Kbd>Space</Kbd>
@@ -96,41 +93,16 @@ export const WorklogTips = () => {
             </li>
           ))}
         </ul>
-        <p className="mt-2 flex items-center gap-1.5 text-xs text-neutral-500">
-          <Icon name="lock" className="text-[13px]" />
-          Start a point with{' '}
-          <code className="text-neutral-300 auto-light:text-neutral-700">
-            p:
-          </code>{' '}
-          to keep it to yourself.
-        </p>
       </section>
       <section>
         <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
-          How a point came
-        </h4>
-        <ul className="flex flex-col gap-2">
-          {ORIGIN_KEYS.map((k) => (
-            <li key={k} className="flex items-start gap-2.5">
-              <OriginTag origin={k} className="mt-0.5" />
-              <span className="text-xs leading-5 text-neutral-400 auto-light:text-neutral-500">
-                {POINT_ORIGINS[k].hint}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </section>
-      <section>
-        <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
-          Claude’s notes
+          Claude’s work
         </h4>
         <p className="text-xs leading-5 text-neutral-400 auto-light:text-neutral-500">
-          What Claude logs sits under the point it belongs to. When it can’t
-          tell which, it shows a{' '}
-          <span className="rounded-full border border-violet-400/30 bg-violet-500/15 px-1.5 font-semibold text-violet-200 auto-light:text-violet-700">
-            ?
-          </span>
-          . Click it and type a few letters to pick the point.
+          What Claude logs goes under the task it is for, as notes in the task’s
+          details. When it has no task for the work, it makes one. To move a
+          note under another task, open the details and use{' '}
+          <Icon name="swap_vert" className="align-middle text-[13px]" />.
         </p>
       </section>
     </div>

@@ -10,8 +10,8 @@ import type { WorkLogs } from '@/models/worklogs';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
 
 import { Icon } from '../../Admin/shared/AdminUI';
-import { StatusIcon } from './PointList';
-import type { RowStatus } from './rows';
+import type { TaskRowStatus } from './sheetParts';
+import { StatusIcon } from './sheetParts';
 
 /*
  * The days of a month beside the open day: as cards with each day's first
@@ -19,7 +19,7 @@ import type { RowStatus } from './rows';
  * opens on its own page.
  */
 
-type Line = { text: string; status: RowStatus };
+type Line = { text: string; status: TaskRowStatus };
 type View = 'list' | 'calendar';
 
 const VIEW_KEY = 'worklogs.daysView';

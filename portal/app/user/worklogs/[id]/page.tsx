@@ -6,8 +6,7 @@ import media from '@/styles/media';
 
 /**
  * One worklog on its own page, as a phone opens a day. A day's log opens on
- * the day sheet; other kinds of log (and `classic=1`) keep the markdown
- * editor.
+ * the day sheet; other kinds of log keep the markdown editor.
  */
 export default function WorklogViewPage({
   params,
@@ -16,10 +15,10 @@ export default function WorklogViewPage({
   params: {
     id: string;
   };
-  searchParams?: { logType?: string; date?: string; classic?: string };
+  searchParams?: { logType?: string; date?: string };
 }) {
   const dayLog = !searchParams?.logType || searchParams.logType === 'dayLog';
-  if (dayLog && !searchParams?.classic)
+  if (dayLog)
     return (
       <PageAccess isAuthRequired={true}>
         <DayLogPage initialDate={searchParams?.date} layout="day" />

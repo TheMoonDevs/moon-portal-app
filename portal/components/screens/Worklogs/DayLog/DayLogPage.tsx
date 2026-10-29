@@ -8,7 +8,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Toaster } from 'sonner';
 
 import { cn } from '@/lib/utils';
-import { countOrigins, type PointOrigin } from '@/lib/worklogs/origin';
 import { sectionLines } from '@/lib/worklogs/timeline';
 import type { WorkLogs } from '@/models/worklogs';
 import media from '@/styles/media';
@@ -25,20 +24,16 @@ import { Icon, Spin } from '../../Admin/shared/AdminUI';
 import TodoTab from '../WorklogTabs/TodoTab';
 import WorklogBuff from '../WorklogTabs/WorklogBuff';
 import { DayList } from './DayList';
-import { OriginBar } from './OriginBar';
-import type { PickerOption } from './Picker';
-import type { MyTask } from './PointList';
-import { PointList } from './PointList';
-import { isPoint } from './rows';
-import type { TaskProject } from './TasksPanel';
-import { TasksPanel } from './TasksPanel';
-import { useDayLog } from './useDayLog';
-import { buildDay } from './view';
+import { countPlaces, ProjectSummary } from './ProjectSummary';
+import { placeOf, rowStatus } from './sheetParts';
+import { TaskSheet } from './TaskSheet';
+import { useDay } from './useDay';
 import { WorklogTips } from './WorklogTips';
+import { useYourTasks, YourTasks } from './YourTasks';
 
 /*
  * The worklog page. The days of a month on the left (as cards or a
- * calendar), the open day in the middle as one sheet of points, and the
+ * calendar), the open day in the middle as one sheet of tasks, and the
  * month's badge with the person's tasks, their later list and tips on the
  * right. On a phone the days come first and a day opens on its own page.
  * It follows the device's light or dark setting.
@@ -91,11 +86,11 @@ const PlanTomorrow = ({
         <p className="text-sm font-medium text-white auto-light:text-neutral-950">
           {count === 0
             ? 'Plan tomorrow before you finish'
-            : `${count} point${count === 1 ? '' : 's'} planned for tomorrow`}
+            : `${count} task${count === 1 ? '' : 's'} planned for tomorrow`}
         </p>
         <p className="text-xs text-neutral-500">
-          Anything written down before the day starts counts as planned. What
-          comes up during the day shows as unexpected.
+          Tasks written down before the day starts count as planned. What comes
+          up during the day counts as unexpected.
         </p>
       </div>
       <button
@@ -128,13 +123,11 @@ export const DayLogPage = ({
       : fmt(dayjs()),
   );
   const [month, setMonth] = useState(() => dayjs(date).startOf('month'));
-  const day = useDayLog(date);
+  const day = useDay(date);
+  const yourTasks = useYourTasks(day.version);
   const [sideTab, setSideTab] = useState<SideTab>('tasks');
-  const [myTasks, setMyTasks] = useState<MyTask[] | null>(null);
-  const [taskProjects, setTaskProjects] = useState<TaskProject[]>([]);
-  const [previousTasks, setPreviousTasks] = useState<
-    { id: string; title: string; status: string }[]
-  >([]);
+  const [filter, setFilter] = useState<string | null>(null);
+  useEffect(() => setFilter(null), [date]);
   const [logs, setLogs] = useState<WorkLogs[] | null>(null);
   const dispatch = useAppDispatch();
   const incompleteTodos = useAppSelector(
@@ -171,46 +164,47 @@ export const DayLogPage = ({
     [router, layout],
   );
 
-  const loadTasks = useCallback(() => {
-    PortalSdk.getData('/api/me/tasks', null)
-      .then((res) => {
-        setMyTasks(res?.data?.tasks ?? []);
-        setTaskProjects(res?.data?.projects ?? []);
-        setPreviousTasks(res?.data?.previous ?? []);
-      })
-      .catch(() => setMyTasks([]));
-  }, []);
-  useEffect(loadTasks, [loadTasks, day.version]);
-
-  // Every day's log, for the days on the left and the month's badge.
+  // Every day's log, for the days on the left and the month's badge. They
+  // are written from the tasks, so they are read again a little after a
+  // change.
   useEffect(() => {
     if (!user?.id) return;
-    PortalSdk.getData(
-      `/api/user/worklogs?userId=${user.id}&logType=dayLog`,
-      null,
-    )
-      .then((res) => setLogs((res?.data?.workLogs ?? []) as WorkLogs[]))
-      .catch(() => setLogs([]));
-  }, [user?.id]);
+    const timer = setTimeout(
+      () =>
+        PortalSdk.getData(
+          `/api/user/worklogs?userId=${user.id}&logType=dayLog`,
+          null,
+        )
+          .then((res) => setLogs((res?.data?.workLogs ?? []) as WorkLogs[]))
+          .catch(() => setLogs((l) => l ?? [])),
+      day.version ? 2000 : 0,
+    );
+    return () => clearTimeout(timer);
+  }, [user?.id, day.version]);
 
   // The open day as it is being written.
   const liveLines = useMemo(
     () =>
       day.loading
         ? null
-        : day.rows
-            .filter((r) => !r.filler && isPoint(r))
-            .map((r) => ({ text: r.text, status: r.status })),
-    [day.rows, day.loading],
+        : day.tasks
+            .filter((t) => t.title.trim())
+            .map((t) => {
+              const status = rowStatus(t, day.points, date);
+              return {
+                text: t.title,
+                status: status === 'archived' ? null : status,
+              };
+            }),
+    [day.tasks, day.points, day.loading, date],
   );
   const byDate = useMemo(() => {
     const map = new Map<string, WorkLogs>();
     // Newest first, so the latest copy of a day wins.
     for (const log of logs ?? [])
       if (log.date && !map.has(log.date)) map.set(log.date, log);
-    if (day.log?.date && !day.loading) map.set(day.log.date, day.log);
     return map;
-  }, [logs, day.log, day.loading]);
+  }, [logs]);
   const monthLogs = useMemo(
     () =>
       Array.from(byDate.values()).filter((l) =>
@@ -219,68 +213,15 @@ export const DayLogPage = ({
     [byDate, month],
   );
 
-  const { points, sheet } = useMemo(
+  const counts = useMemo(() => countPlaces(day, day.tasks), [day]);
+  const shown = useMemo(
     () =>
-      buildDay({
-        rows: day.rows,
-        byKey: day.linkByKey,
-        timeline: day.timeline,
-        linkedTasks: day.linkedTasks,
-        candidates: day.candidates,
-        date,
-      }),
-    [
-      day.rows,
-      day.linkByKey,
-      day.timeline,
-      day.linkedTasks,
-      day.candidates,
-      date,
-    ],
-  );
-
-  const originCounts = countOrigins(points.map((p) => p.origin));
-  const doneByOrigin: Partial<Record<PointOrigin, number>> = {};
-  for (const p of points)
-    if (p.origin && p.row.status === 'done')
-      doneByOrigin[p.origin] = (doneByOrigin[p.origin] ?? 0) + 1;
-  const doneCount = points.filter((p) => p.row.status === 'done').length;
-
-  const moveOptions = useMemo<PickerOption[]>(() => {
-    const companies = new Map(
-      day.candidates.companies.map((c) => [c.id, c.name]),
-    );
-    return [
-      ...day.candidates.projects.map((p) => ({
-        id: `project:${p.id}`,
-        label: p.name,
-        hint: companies.get(p.companyId) ?? p.companyName,
-        group: 'Projects',
-        color: p.color,
-      })),
-      ...day.candidates.companies.map((c) => ({
-        id: `company:${c.id}`,
-        label: c.name,
-        hint: 'Company work, on none of its projects',
-        group: 'Company work',
-        icon: 'domain',
-      })),
-      {
-        id: 'none',
-        label: 'Not company work',
-        hint: 'Stays off every project',
-        group: 'Other',
-        icon: 'block',
-      },
-    ];
-  }, [day.candidates]);
-
-  const onDayIds = useMemo(
-    () =>
-      new Set(
-        day.links.map((l) => l.taskId).filter((id): id is string => !!id),
-      ),
-    [day.links],
+      filter
+        ? day.tasks.filter(
+            (t) => placeOf(t, day.projects, day.companies).key === filter,
+          )
+        : day.tasks,
+    [day.tasks, day.projects, day.companies, filter],
   );
 
   const today = fmt(dayjs());
@@ -335,9 +276,8 @@ export const DayLogPage = ({
         <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-sky-400/20 bg-sky-500/[0.07] px-3.5 py-2.5 text-xs text-sky-200 auto-light:text-sky-700">
           <Icon name="event_upcoming" className="mt-px text-[16px]" />
           <span>
-            You are planning ahead. Points written here before the day starts
-            count as planned, and each one in a project becomes a task for that
-            day.
+            You are planning ahead. Tasks written here before the day starts
+            count as planned for it.
           </span>
         </div>
       )}
@@ -350,25 +290,10 @@ export const DayLogPage = ({
         </div>
       )}
 
-      {points.length > 0 && (
-        <div className="mb-4 rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4 auto-light:border-black/10 auto-light:bg-white">
-          <div className="mb-3 flex items-baseline justify-between gap-3">
-            <p className="text-xs font-medium uppercase tracking-wider text-neutral-500">
-              How the day came
-            </p>
-            <p className="text-xs text-neutral-500">
-              <span className="font-semibold tabular-nums text-neutral-100 auto-light:text-neutral-900">
-                {doneCount}/{points.length}
-              </span>{' '}
-              done
-            </p>
-          </div>
-          <OriginBar counts={originCounts} done={doneByOrigin} />
-        </div>
-      )}
+      <ProjectSummary counts={counts} filter={filter} onFilter={setFilter} />
 
       <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-2 auto-light:border-black/10 auto-light:bg-white">
-        {day.loading && !day.rows.length ? (
+        {day.loading && !day.tasks.length ? (
           <div className="flex flex-col gap-2 p-1">
             {[0, 1, 2].map((i) => (
               <div
@@ -379,20 +304,14 @@ export const DayLogPage = ({
           </div>
         ) : (
           <>
-            {sheet.length === 0 && (
+            {shown.length === 0 && (
               <p className="px-2 pb-1 pt-2 text-sm text-neutral-500">
                 {ahead
-                  ? 'Nothing planned for this day yet. Write the plan down, one point per line.'
-                  : 'Nothing on this day yet. Write a point and press Enter for the next one.'}
+                  ? 'Nothing planned for this day yet. Write the plan down, one task per line.'
+                  : 'Nothing on this day yet. Write a task and press Enter for the next one.'}
               </p>
             )}
-            <PointList
-              day={day}
-              sheet={sheet}
-              myTasks={myTasks ?? []}
-              projectsForMove={moveOptions}
-              editable={editable}
-            />
+            <TaskSheet day={day} tasks={shown} editable={editable} />
           </>
         )}
       </div>
@@ -404,16 +323,9 @@ export const DayLogPage = ({
       )}
 
       <p className="mt-6 px-2 text-[11px] leading-5 text-neutral-600 auto-light:text-neutral-400">
-        Enter adds the next point · Backspace on an empty point takes it out ·
-        Ctrl+Space done · Ctrl+P doing · Ctrl+Q not done · start a point with{' '}
-        <code className="text-neutral-400 auto-light:text-neutral-500">p:</code>{' '}
-        to keep it private ·{' '}
-        <Link
-          href={`${APP_ROUTES.userWorklogs}?classic=1`}
-          className="underline decoration-neutral-700 underline-offset-2 hover:text-neutral-400 auto-light:decoration-neutral-300 auto-light:hover:text-neutral-500"
-        >
-          classic editor
-        </Link>
+        Enter adds the next task · Backspace on an empty task takes it out ·
+        Ctrl+Space done · Ctrl+P doing · Ctrl+Q not done · the arrow on the
+        right of a task shows its details and notes
       </p>
     </div>
   );
@@ -441,9 +353,9 @@ export const DayLogPage = ({
               )}
             >
               {t.label}
-              {t.value === 'tasks' && myTasks && myTasks.length > 0 && (
+              {t.value === 'tasks' && !!yourTasks.tasks?.length && (
                 <span className="text-[11px] tabular-nums text-neutral-500">
-                  {myTasks.length}
+                  {yourTasks.tasks.length}
                 </span>
               )}
               {t.dot && (
@@ -453,15 +365,13 @@ export const DayLogPage = ({
           ))}
         </div>
         {sideTab === 'tasks' && (
-          <TasksPanel
-            tasks={myTasks}
-            projects={taskProjects}
-            previous={previousTasks}
+          <YourTasks
+            data={yourTasks}
+            companies={day.companies}
             date={date}
-            onDayIds={onDayIds}
-            onAdd={editable ? day.addTasks : async () => 0}
+            canPlan={editable}
             onChanged={() => {
-              loadTasks();
+              yourTasks.reload();
               day.reload();
             }}
           />
@@ -504,11 +414,7 @@ export const DayLogPage = ({
               <>
                 <Spin className="size-3" /> Saving
               </>
-            ) : day.dirty ? (
-              <>
-                <Icon name="edit" className="text-[13px]" /> Editing
-              </>
-            ) : day.log?.id ? (
+            ) : day.version > 0 ? (
               <>
                 <Icon name="cloud_done" className="text-[14px]" /> Saved
               </>
