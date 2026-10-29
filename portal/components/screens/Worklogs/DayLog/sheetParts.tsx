@@ -1,5 +1,6 @@
 'use client';
 
+import dayjs from 'dayjs';
 import { useEffect, useRef } from 'react';
 
 import { cn } from '@/lib/utils';
@@ -151,6 +152,23 @@ export const statusForKey = (e: React.KeyboardEvent): PointStatus | null => {
   }
   return null;
 };
+
+/**
+ * A task that moved on from a past day: still open, or finished on a later
+ * day. On that day it is put away; it changes on today or in Your tasks.
+ */
+export function movedOn(
+  task: Pick<DayTask, 'status' | 'completedAt' | 'draft'>,
+  date: string,
+  today: string | null,
+) {
+  if (!today || date >= today || task.draft) return false;
+  if (task.status === 'DONE')
+    return (
+      !!task.completedAt && dayjs(task.completedAt).format('YYYY-MM-DD') > date
+    );
+  return !['ARCHIVED', 'IGNORED'].includes(task.status);
+}
 
 /** A task row's icon: under way and waiting keep the open circle. */
 export const rowIcon = (status: TaskRowStatus): TaskRowStatus =>

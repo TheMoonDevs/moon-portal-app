@@ -1,3 +1,4 @@
+import { mergeCopies } from '@/lib/daywork/duplicates';
 import { isDay, loadDay } from '@/lib/daywork/server';
 import { db } from '@/lib/mongodb/db-client';
 import { linkCandidates } from '@/lib/worklogs/linker';
@@ -17,6 +18,8 @@ export async function GET(request: Request) {
   const date = new URL(request.url).searchParams.get('date');
   if (!isDay(date)) return fail(400, 'Use YYYY-MM-DD for the date.');
 
+  // Copies of one task (left by the old carry-over) become one task first.
+  await mergeCopies(user.id).catch(() => 0);
   const [day, candidates] = await Promise.all([
     loadDay(user.id, date),
     linkCandidates(user),

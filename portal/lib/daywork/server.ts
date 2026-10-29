@@ -36,13 +36,32 @@ const DAY = /^\d{4}-\d{2}-\d{2}$/;
 export const isDay = (value: unknown): value is string =>
   typeof value === 'string' && DAY.test(value);
 
-/** The person's own today, in their timezone. */
-export async function todayOf(userId: string) {
+async function timezoneOf(userId: string): Promise<string | null> {
   const user = await db.user.findFirst({
     where: { id: userId },
     select: { timezone: true },
   });
-  return localClock(user?.timezone, new Date()).date;
+  return user?.timezone ?? null;
+}
+
+/** The person's own today, in their timezone. */
+export async function todayOf(userId: string) {
+  return localClock(await timezoneOf(userId), new Date()).date;
+}
+
+/** When a day starts and ends in the person's timezone, as UTC ISO times. */
+export function dayRange(timezone: string | null, date: string) {
+  const noon = new Date(`${date}T12:00:00Z`);
+  const local = localClock(timezone, noon);
+  const offset =
+    Date.parse(`${local.date}T00:00:00Z`) +
+    local.minutes * 60000 -
+    noon.getTime();
+  const start = Date.parse(`${date}T00:00:00Z`) - offset;
+  return {
+    start: new Date(start).toISOString(),
+    end: new Date(start + 86400000 - 1).toISOString(),
+  };
 }
 
 /** Their own work: written by them, or theirs to do. */
@@ -367,7 +386,10 @@ async function orderAfter(
  */
 export async function loadDay(userId: string, date: string) {
   const user = { id: userId };
-  const today = await todayOf(userId);
+  const timezone = await timezoneOf(userId);
+  const today = localClock(timezone, new Date()).date;
+  // Finished on this day in the person's own timezone, not UTC's.
+  const range = dayRange(timezone, date);
   const dayPoints: WorkPoint[] = await db.workPoint.findMany({
     where: { userId: user.id, date },
     orderBy: { at: 'asc' },
@@ -376,7 +398,7 @@ export async function loadDay(userId: string, date: string) {
   const pointTaskIds = Array.from(new Set(dayPoints.map((p) => p.taskId)));
   const ors: Record<string, unknown>[] = [
     { forDate: date },
-    { completedAt: { gte: `${date}T00:00:00`, lte: `${date}T23:59:59.999Z` } },
+    { completedAt: { gte: range.start, lte: range.end } },
   ];
   if (date === today)
     ors.push({

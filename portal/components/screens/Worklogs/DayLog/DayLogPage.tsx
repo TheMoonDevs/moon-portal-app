@@ -26,7 +26,7 @@ import TodoTab from '../WorklogTabs/TodoTab';
 import WorklogBuff from '../WorklogTabs/WorklogBuff';
 import { DayList } from './DayList';
 import { companyKeyOf, countPlaces, ProjectSummary } from './ProjectSummary';
-import { placeOf, rowStatus } from './sheetParts';
+import { movedOn, placeOf, rowStatus } from './sheetParts';
 import { TaskSheet } from './TaskSheet';
 import { useDay } from './useDay';
 import { WorklogTips } from './WorklogTips';
@@ -244,10 +244,22 @@ export const DayLogPage = ({
     // Finished tasks go to the bottom (the sort keeps the order otherwise).
     const shut = (t: (typeof picked)[number]) => {
       const status = rowStatus(t, day.points, date);
-      return status === 'done' || status === 'archived' ? 1 : 0;
+      return status === 'done' ||
+        status === 'archived' ||
+        movedOn(t, date, day.today)
+        ? 1
+        : 0;
     };
     return [...picked].sort((a, b) => shut(a) - shut(b));
-  }, [day.tasks, day.points, day.projects, day.companies, filter, date]);
+  }, [
+    day.tasks,
+    day.points,
+    day.projects,
+    day.companies,
+    day.today,
+    filter,
+    date,
+  ]);
 
   const today = fmt(dayjs());
   const tomorrow = fmt(dayjs().add(1, 'day'));

@@ -274,6 +274,8 @@ export type Task = Loose<
     flag?: Nullable<'blocked' | 'waiting'>;
     /** Copied from a worklog line by the tasks-first migration. */
     migratedFrom?: Nullable<{ worklogId: string; key: string }>;
+    /** Archived as a copy of this task (lib/daywork/duplicates). */
+    mergedInto?: Nullable<string>;
   }
 >;
 
