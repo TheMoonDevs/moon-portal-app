@@ -32,6 +32,7 @@ import {
 } from '../Admin/Workspace/shared';
 import { NewProjectDialog } from '../Projects/NewProjectDialog';
 import { PageDoc, SaveBadge, type SaveState } from './PageDoc';
+import { ProjectDetailsDialog } from './ProjectDetailsDialog';
 import { GoalsSection } from './sections/GoalsSection';
 import { KpiSection } from './sections/KpiSection';
 import { MembersSection } from './sections/MembersSection';
@@ -235,6 +236,7 @@ const Sidebar = ({
   onSelect,
   onNewPage,
   onNewSub,
+  onEditDetails,
 }: {
   data: ProjectData;
   pages: PagesData | null;
@@ -250,6 +252,8 @@ const Sidebar = ({
   onSelect: (view: ViewKey, pageId?: string | null) => void;
   onNewPage: (parentId: string | null) => void;
   onNewSub: () => void;
+  /** Opens the project's details; only for people who may edit them. */
+  onEditDetails?: () => void;
 }) => {
   const { project, people } = data;
   const tree = data.tree ?? [];
@@ -295,7 +299,23 @@ const Sidebar = ({
               <p className="truncate text-xs text-neutral-500">{companyName}</p>
             )}
           </div>
+          {onEditDetails && (
+            <button
+              type="button"
+              onClick={onEditDetails}
+              aria-label="Edit project details"
+              title="Edit project details and brand kit"
+              className="flex size-8 shrink-0 items-center justify-center rounded-lg text-neutral-500 transition-colors hover:bg-white/[0.06] hover:text-white"
+            >
+              <Icon name="edit" className="text-[17px]" />
+            </button>
+          )}
         </div>
+        {project.description && (
+          <p className="mt-3 line-clamp-3 text-xs leading-relaxed text-neutral-400">
+            {project.description}
+          </p>
+        )}
         <div className="mt-3 flex items-center gap-2">
           <Pill tone={status.tone}>{status.label}</Pill>
           {people.length > 0 && <AvatarStack users={people} max={5} />}
@@ -534,6 +554,7 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
   const [saveState, setSaveState] = useState<SaveState>('idle');
   const [deleting, setDeleting] = useState<Page | null>(null);
   const [busy, setBusy] = useState(false);
+  const [editingDetails, setEditingDetails] = useState(false);
 
   // Links from when pages were called ideas, and from the task schedule
   // (now part of goals), still open the right place.
@@ -805,6 +826,7 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
         onSelect={select}
         onNewPage={newPage}
         onNewSub={() => setAddingSub(true)}
+        onEditDetails={canEdit ? () => setEditingDetails(true) : undefined}
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -873,6 +895,17 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
               <Icon name="delete" className="text-[18px]" />
             </button>
           )}
+          {canEdit && (
+            <button
+              type="button"
+              onClick={() => setEditingDetails(true)}
+              aria-label="Edit project details"
+              title="Edit project details and brand kit"
+              className="flex size-8 shrink-0 items-center justify-center rounded-lg text-neutral-500 hover:bg-white/[0.06] hover:text-white md:hidden"
+            >
+              <Icon name="edit" className="text-[18px]" />
+            </button>
+          )}
         </header>
         <MobileNav view={view} onSelect={(v) => select(v)} />
 
@@ -918,6 +951,14 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
           else load();
         }}
       />
+      {canEdit && (
+        <ProjectDetailsDialog
+          open={editingDetails}
+          onOpenChange={setEditingDetails}
+          data={data}
+          onSaved={load}
+        />
+      )}
       <Toaster theme="dark" position="bottom-right" richColors />
     </div>
   );
