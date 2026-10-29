@@ -31,6 +31,7 @@ export type PagesData = {
 
 /** The first one is where a project opens. */
 export const VIEWS = [
+  { key: 'tasks', label: 'Tasks in Action', icon: 'bolt' },
   { key: 'worklogs', label: 'Worklogs', icon: 'history_edu' },
   { key: 'objective', label: 'Objective', icon: 'flag' },
   { key: 'kpi', label: 'KPI', icon: 'monitoring' },

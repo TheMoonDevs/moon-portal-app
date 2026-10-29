@@ -37,6 +37,7 @@ import { GoalsSection } from './sections/GoalsSection';
 import { KpiSection } from './sections/KpiSection';
 import { MembersSection } from './sections/MembersSection';
 import { PagesGallery, PagesInside } from './sections/PagesSection';
+import { TasksInActionSection } from './sections/TasksInActionSection';
 import { WorklogsSection } from './sections/WorklogsSection';
 import {
   byCreation,
@@ -801,6 +802,18 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
             people={people}
             companyUsers={companyUsers}
             canEdit={canEdit}
+            onSaved={load}
+          />
+        );
+      case 'tasks':
+        return (
+          <TasksInActionSection
+            projectId={project.id}
+            tasks={tasks}
+            people={people}
+            companyUsers={companyUsers}
+            canAdd={canInProject(project, 'tasks:create')}
+            canTick={canInProject(project, 'tasks:edit')}
             onSaved={load}
           />
         );

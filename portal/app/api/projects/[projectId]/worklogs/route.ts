@@ -30,10 +30,13 @@ const doneKeys = (works: unknown) => {
   return keys;
 };
 
+const isDay = (v: string | null): v is string =>
+  !!v && /^\d{4}-\d{2}-\d{2}$/.test(v);
+
 /**
- * Worklog lines linked to the project over the last `?days=` (30 by
- * default), one entry per person per day, newest first. Private lines never
- * show here.
+ * Worklog lines linked to the project from `?from=` to `?to=` (YYYY-MM-DD),
+ * or over the last `?days=` (30 by default), one entry per person per day,
+ * newest first. Private lines never show here.
  */
 export async function GET(request: NextRequest, { params }: Params) {
   const { response, project } = await requireProjectPermission(
@@ -43,17 +46,24 @@ export async function GET(request: NextRequest, { params }: Params) {
   if (response || !project)
     return response ?? fail(401, 'Authentication required.');
 
-  const asked = Number(request.nextUrl.searchParams.get('days'));
+  const search = request.nextUrl.searchParams;
+  const asked = Number(search.get('days'));
   const days = Math.min(MAX_DAYS, Math.max(1, asked || 30));
-  const from = dayjs()
-    .subtract(days - 1, 'day')
-    .format('YYYY-MM-DD');
+  const askedFrom = search.get('from');
+  const askedTo = search.get('to');
+  const ranged = isDay(askedFrom) && isDay(askedTo) && askedFrom <= askedTo;
+  const from = ranged
+    ? askedFrom
+    : dayjs()
+        .subtract(days - 1, 'day')
+        .format('YYYY-MM-DD');
+  const to = ranged ? askedTo : null;
 
   const logs: WorkLogs[] = await db.workLogs.findMany({
     where: {
       'links.projectId': project.id,
       logType: 'dayLog',
-      date: { gte: from },
+      date: to ? { gte: from, lte: to } : { gte: from },
     },
     select: { userId: true, date: true, works: true, links: true },
     orderBy: { date: 'desc' },
@@ -75,5 +85,5 @@ export async function GET(request: NextRequest, { params }: Params) {
     .filter((e) => e.lines.length);
 
   const users = await getPublicUsers(entries.map((e) => e.userId as string));
-  return ok({ from, days, entries, users });
+  return ok({ from, to, days, entries, users });
 }

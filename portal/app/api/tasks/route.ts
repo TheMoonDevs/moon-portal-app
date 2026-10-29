@@ -1,5 +1,6 @@
 import type { NextRequest } from 'next/server';
 
+import { renderDays } from '@/lib/daywork/server';
 import { db } from '@/lib/mongodb/db-client';
 import { syncTaskPoints } from '@/lib/progress/server';
 import { fitGoal } from '@/lib/workspace/goalFit';
@@ -108,5 +109,10 @@ export async function POST(request: Request) {
   });
   task = await fitGoal(task);
   await syncTaskPoints(task);
+  // A task for a day goes on the day sheet of everyone on it.
+  if (forDate)
+    await Promise.all(
+      (task.assigneeIds ?? []).map((id: string) => renderDays(id, [forDate])),
+    );
   return ok({ task }, { status: 201 });
 }

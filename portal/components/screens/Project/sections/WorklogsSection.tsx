@@ -9,6 +9,13 @@ import { cn } from '@/lib/utils';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import { Icon, Segmented, UserAvatar } from '../../Admin/shared/AdminUI';
+import {
+  type Period,
+  type PeriodKind,
+  periodLabel,
+  periodOf,
+  shiftPeriod,
+} from '../../UserPage/work';
 import type { Person } from '../types';
 import { SectionShell, Stat } from './SectionShell';
 
@@ -16,10 +23,19 @@ type Line = { key: string; text: string; taskId: string | null; done: boolean };
 type Entry = { id: string; date: string; userId: string; lines: Line[] };
 type Data = { entries: Entry[]; users: Person[] };
 
-const RANGES = [
-  { value: '7', label: '7 days' },
-  { value: '30', label: '30 days' },
-  { value: '90', label: '90 days' },
+const PERIODS: { value: PeriodKind; label: string }[] = [
+  { value: 'day', label: 'Day' },
+  { value: 'week', label: 'Week' },
+  { value: 'month', label: 'Month' },
+  { value: 'quarter', label: 'Quarter' },
+];
+
+type Ticks = 'all' | 'done' | 'open';
+
+const TICKS: { value: Ticks; label: string }[] = [
+  { value: 'all', label: 'All lines' },
+  { value: 'done', label: 'Ticked off' },
+  { value: 'open', label: 'Not ticked' },
 ];
 
 const dayLabel = (date: string) => {
@@ -37,34 +53,152 @@ export const WorklogsSection = ({
   projectId: string;
   tasks: Task[];
 }) => {
-  const [range, setRange] = useState('30');
+  const [period, setPeriod] = useState<Period>(() => periodOf('week', dayjs()));
+  const [person, setPerson] = useState<string | null>(null);
+  const [ticks, setTicks] = useState<Ticks>('all');
+  const [search, setSearch] = useState('');
   const [data, setData] = useState<Data | null>(null);
 
   useEffect(() => {
     setData(null);
-    PortalSdk.getData(`/api/projects/${projectId}/worklogs?days=${range}`, null)
+    PortalSdk.getData(
+      `/api/projects/${projectId}/worklogs?from=${period.from}&to=${period.to}`,
+      null,
+    )
       .then((res) => setData(res?.data ?? { entries: [], users: [] }))
       .catch(() => setData({ entries: [], users: [] }));
-  }, [projectId, range]);
+  }, [projectId, period.from, period.to]);
+
+  // Lines that pass the filters; a person's day with none left is hidden.
+  const entries = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return (data?.entries ?? [])
+      .filter((e) => !person || e.userId === person)
+      .map((e) => ({
+        ...e,
+        lines: e.lines.filter(
+          (l) =>
+            (ticks === 'all' || (ticks === 'done') === l.done) &&
+            (!q || l.text.toLowerCase().includes(q)),
+        ),
+      }))
+      .filter((e) => e.lines.length);
+  }, [data, person, ticks, search]);
 
   const byDay = useMemo(() => {
     const out = new Map<string, Entry[]>();
-    for (const e of data?.entries ?? [])
-      out.set(e.date, [...(out.get(e.date) ?? []), e]);
+    for (const e of entries) out.set(e.date, [...(out.get(e.date) ?? []), e]);
     return Array.from(out.entries());
+  }, [entries]);
+
+  // Everyone who logged on the project in the period, most lines first.
+  const writers = useMemo(() => {
+    const count = new Map<string, number>();
+    for (const e of data?.entries ?? [])
+      count.set(e.userId, (count.get(e.userId) ?? 0) + e.lines.length);
+    return Array.from(count.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([id]) => id);
   }, [data]);
 
   const userOf = (id: string) => data?.users.find((u) => u.id === id);
   const taskOf = (id: string | null) => tasks.find((t) => t.id === id);
-  const lines = data?.entries.flatMap((e) => e.lines) ?? [];
+  const lines = entries.flatMap((e) => e.lines);
+  const label = periodLabel(period);
+  const isCurrent = periodOf(period.kind, dayjs()).from === period.from;
 
   return (
     <SectionShell
       icon="history_edu"
       title="Worklogs"
       description="Lines from everyone’s worklogs that went to this project. Private lines never show here."
-      actions={<Segmented value={range} onChange={setRange} options={RANGES} />}
     >
+      {/* Period, as on the user page */}
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            aria-label="Previous"
+            onClick={() => setPeriod(shiftPeriod(period, -1))}
+            className="flex size-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-white/[0.06] hover:text-white"
+          >
+            <Icon name="chevron_left" className="text-[20px]" />
+          </button>
+          <button
+            type="button"
+            aria-label="Next"
+            disabled={isCurrent}
+            onClick={() => setPeriod(shiftPeriod(period, 1))}
+            className="flex size-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-white/[0.06] hover:text-white disabled:pointer-events-none disabled:opacity-30"
+          >
+            <Icon name="chevron_right" className="text-[20px]" />
+          </button>
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="whitespace-nowrap text-lg font-semibold leading-tight tracking-tight text-white">
+            {label.title}
+          </p>
+          {label.range && (
+            <p className="text-xs text-neutral-500">{label.range}</p>
+          )}
+        </div>
+        <Segmented
+          className="w-full sm:w-auto [&>button]:flex-1 [&>button]:justify-center"
+          value={period.kind}
+          onChange={(kind) => setPeriod(periodOf(kind, dayjs()))}
+          options={PERIODS}
+        />
+      </div>
+
+      {/* Who, which lines, and words */}
+      <div className="mb-6 flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setPerson(null)}
+            className={cn(
+              'h-8 rounded-full px-3 text-xs font-medium transition-colors',
+              !person
+                ? 'bg-white text-neutral-950'
+                : 'bg-white/[0.05] text-neutral-400 hover:text-white',
+            )}
+          >
+            Everyone
+          </button>
+          {writers.map((id) => {
+            const user = userOf(id);
+            const on = person === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setPerson(on ? null : id)}
+                title={user?.name || undefined}
+                className={cn(
+                  'flex h-8 items-center gap-1.5 rounded-full pl-1 pr-3 text-xs font-medium transition-colors',
+                  on
+                    ? 'bg-white text-neutral-950'
+                    : 'bg-white/[0.05] text-neutral-400 hover:text-white',
+                )}
+              >
+                <UserAvatar src={user?.avatar} name={user?.name} size={24} />
+                {user?.name?.split(' ')[0] || 'Someone'}
+              </button>
+            );
+          })}
+        </div>
+        <div className="flex-1" />
+        <label className="flex h-8 w-full items-center gap-1.5 rounded-lg border border-white/[0.07] bg-neutral-900/60 px-2.5 text-xs text-neutral-400 focus-within:border-white/20 sm:w-48">
+          <Icon name="search" className="text-[16px]" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search lines…"
+            className="min-w-0 flex-1 bg-transparent text-neutral-200 outline-none placeholder:text-neutral-500"
+          />
+        </label>
+        <Segmented value={ticks} onChange={setTicks} options={TICKS} />
+      </div>
       <div className="mb-8 grid grid-cols-3 gap-3">
         <Stat label="Lines" value={data ? lines.length : '–'} />
         <Stat
@@ -73,7 +207,7 @@ export const WorklogsSection = ({
         />
         <Stat
           label="People"
-          value={data ? new Set(data.entries.map((e) => e.userId)).size : '–'}
+          value={data ? new Set(entries.map((e) => e.userId)).size : '–'}
         />
       </div>
 
@@ -88,7 +222,11 @@ export const WorklogsSection = ({
         </div>
       ) : byDay.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-white/10 px-6 py-14 text-center">
-          <p className="text-sm text-neutral-300">No worklog lines yet</p>
+          <p className="text-sm text-neutral-300">
+            {data?.entries.length
+              ? 'No lines match these filters'
+              : 'No worklog lines in this period'}
+          </p>
           <p className="mx-auto mt-1 max-w-sm text-xs text-neutral-500">
             When people write about this project in their worklog, the lines
             land here.
