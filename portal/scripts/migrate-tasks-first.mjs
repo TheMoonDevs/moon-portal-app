@@ -417,8 +417,10 @@ const main = async () => {
   };
   const rows = [];
 
-  for (const userId of userIds.filter(Boolean)) {
-    const all = await Logs.find({ userId, logType: 'dayLog' })
+  for (const logUserId of userIds.filter(Boolean)) {
+    // Tasks and work points keep it as a string, as the portal reads them.
+    const userId = String(logUserId);
+    const all = await Logs.find({ userId: logUserId, logType: 'dayLog' })
       .sort({ date: 1 })
       .toArray();
     // Only the latest copy of each day counts, as on every screen.
