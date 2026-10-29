@@ -1,17 +1,15 @@
 import dayjs from 'dayjs';
 
 import { db } from '@/lib/mongodb/db-client';
+import { FINISH_POINTS } from '@/lib/progress/buff';
 import { publicWorklog } from '@/lib/worklogs/personal';
 import type { Badge, PointEntry, UserBadge } from '@/models/progress';
 import { BADGE_METRIC, POINT_SOURCE } from '@/models/progress';
-import type { Task } from '@/models/workspace';
+import type { Task, WorkPoint } from '@/models/workspace';
 import { TASK_SIZE, TASK_STATUS } from '@/models/workspace';
 
 /** Points for finishing a task, per assignee. */
-export const TASK_POINTS: Record<TASK_SIZE, number> = {
-  [TASK_SIZE.MAJOR]: 3,
-  [TASK_SIZE.MINOR]: 1,
-};
+export const TASK_POINTS: Record<TASK_SIZE, number> = FINISH_POINTS;
 
 /**
  * Keeps the ledger in step with a task: one entry per assignee while the task
@@ -43,6 +41,39 @@ export async function syncTaskPoints(task: Task | null, taskId?: string) {
       updatedAt: now,
     })),
   });
+}
+
+/**
+ * People's work points logged between two days (YYYY-MM-DD, inclusive) and
+ * the tasks they are under, for workScore.
+ */
+export async function workInRange(
+  userIds: string[],
+  from: string,
+  to: string,
+): Promise<{
+  points: Pick<WorkPoint, 'userId' | 'taskId' | 'date' | 'status' | 'text'>[];
+  tasks: Map<string, Pick<Task, 'id' | 'size' | 'status' | 'companyId'>>;
+}> {
+  if (!userIds.length) return { points: [], tasks: new Map() };
+  const points = await db.workPoint.findMany({
+    where: { userId: { in: userIds }, date: { gte: from, lte: to } },
+    select: {
+      userId: true,
+      taskId: true,
+      date: true,
+      status: true,
+      text: true,
+    },
+  });
+  const ids = Array.from(new Set(points.map((p: WorkPoint) => p.taskId)));
+  const tasks: Pick<Task, 'id' | 'size' | 'status' | 'companyId'>[] = ids.length
+    ? await db.task.findMany({
+        where: { id: { in: ids } },
+        select: { id: true, size: true, status: true, companyId: true },
+      })
+    : [];
+  return { points, tasks: new Map(tasks.map((t) => [t.id, t])) };
 }
 
 /* -------------------------------- metrics -------------------------------- */
