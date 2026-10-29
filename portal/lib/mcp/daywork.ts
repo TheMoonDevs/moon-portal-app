@@ -91,6 +91,62 @@ async function findMine(userId: string, ref: string): Promise<Task | null> {
   );
 }
 
+const STOP = new Set(
+  'the and for with from into onto of to in on at by an my our new task work make made do doing done add update fix this that it its'.split(
+    ' ',
+  ),
+);
+
+/** A title's meaningful words, roughly stemmed. */
+const keywords = (text: string) =>
+  new Set(
+    text
+      .toLowerCase()
+      .split(/[^\p{L}\p{N}]+/u)
+      .filter((w) => w && !STOP.has(w))
+      .map((w) => w.replace(/(ing|ed|es|s)$/, '') || w),
+  );
+
+/**
+ * The person's open task that is plainly the same work as `text`: every
+ * word of the shorter title is in the other, and there are at least two.
+ * Keeps a session on the task it belongs to when the words differ a little.
+ */
+async function findSimilar(userId: string, text: string) {
+  const want = keywords(text);
+  if (want.size < 2) return null;
+  const since = new Date(Date.now() - 21 * 86400000).toISOString();
+  const open: Task[] = await db.task.findMany({
+    where: {
+      AND: [
+        mineWhere(userId),
+        {
+          status: {
+            notIn: [
+              TASK_STATUS.DONE,
+              TASK_STATUS.ARCHIVED,
+              TASK_STATUS.IGNORED,
+            ],
+          },
+        },
+        { updatedAt: { gte: since } },
+      ],
+    },
+    orderBy: { updatedAt: 'desc' },
+    take: 200,
+  });
+  let best: { task: Task; shared: number } | null = null;
+  for (const task of open) {
+    if (task.scheduleId) continue;
+    const have = keywords(task.title ?? '');
+    const shared = Array.from(want).filter((w) => have.has(w)).length;
+    const within = shared === Math.min(want.size, have.size);
+    if (shared >= 2 && within && (!best || shared > best.shared))
+      best = { task, shared };
+  }
+  return best?.task ?? null;
+}
+
 /** Where a new task goes, from what the assistant said. */
 function placeFor(point: PointInput, c: LinkCandidates) {
   if (point.personal) return { personal: true as const };
@@ -106,6 +162,7 @@ type Logged = {
   title: string;
   status: string;
   created?: boolean;
+  matched?: string;
   completed?: boolean;
   project?: string | null;
   company?: string;
@@ -136,6 +193,13 @@ export async function logWork(
       if (!task && ref?.trim()) task = await findMine(user.id, ref);
     }
     if (!task && point.text) task = await findMine(user.id, point.text);
+    // Nearly the same words as an open task: the same work.
+    let similar = false;
+    for (const ref of [point.task, point.text]) {
+      if (task || point.goal || !ref?.trim()) continue;
+      task = await findSimilar(user.id, ref);
+      similar = !!task;
+    }
     // A project named: its task, found or made (a scheduled task's run).
     if (
       !task &&
@@ -223,6 +287,9 @@ export async function logWork(
       ...taskView(task, candidates),
       task: task.id,
       ...(created && { created: true }),
+      ...(similar && {
+        matched: `Logged under your open task "${task.title}", which is the same work. Name it with point from now on.`,
+      }),
       ...(move === 'done' && { completed: true }),
       ...(problems.length && { problem: problems.join(' ') }),
     });
