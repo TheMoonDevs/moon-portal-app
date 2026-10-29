@@ -12,7 +12,7 @@ import {
 } from '@/lib/workspace/server';
 import type { PointEntry } from '@/models/progress';
 import type { CompanyMember } from '@/models/workspace';
-import { MEMBER_STATUS } from '@/models/workspace';
+import { MEMBER_STATUS, TASK_STATUS } from '@/models/workspace';
 
 export const dynamic = 'force-dynamic';
 
@@ -78,10 +78,8 @@ export async function GET(request: NextRequest) {
     .filter((user: { status?: string }) => user.status === 'ACTIVE')
     .map((user: { id: string }): Row => {
       const mine = entries.filter((e) => e.userId === user.id);
-      const score = workScore(
-        work.points.filter((p) => p.userId === user.id),
-        companyTasks,
-      );
+      const theirPoints = work.points.filter((p) => p.userId === user.id);
+      const score = workScore(theirPoints, companyTasks);
       const taskPoints = mine.reduce((sum, e) => sum + (e.points || 0), 0);
       // Finishing is in the ledger already; the days of work are added.
       const fromWork = score.taskDays;
@@ -92,8 +90,18 @@ export async function GET(request: NextRequest) {
         taskPoints,
         worklogPoints: fromWork,
         buff: buff && { title: buff.title, src: buff.src },
-        tasksDone: new Set(mine.filter((e) => e.taskId).map((e) => e.taskId))
-          .size,
+        // Finished in the ledger, or marked done on a day of the month
+        // (worklogs from before tasks have no ledger entries).
+        tasksDone: new Set([
+          ...mine.filter((e) => e.taskId).map((e) => e.taskId as string),
+          ...theirPoints
+            .filter(
+              (p) =>
+                p.status === 'done' &&
+                companyTasks.get(p.taskId)?.status === TASK_STATUS.DONE,
+            )
+            .map((p) => p.taskId),
+        ]).size,
         worklogDays: score.days,
       };
     })

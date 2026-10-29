@@ -293,13 +293,16 @@ export function planUser({ userId, logs, tasks, fromLine, migrated, today }) {
           isPrivate,
           migratedFrom: { worklogId, key: line.key },
         });
-      // Worked on this day with no history: one point says so.
-      if (!events.length && (existing || line.status))
+      // Worked on this day with no history: one point says so, so the day
+      // counts wherever work is scored.
+      if (!events.length)
         pushPoint(task, {
           userId,
           date,
-          text: line.status ? '' : 'On the day’s worklog',
-          status: line.setAside ? null : line.status,
+          text: line.status || !existing ? '' : 'On the day’s worklog',
+          status: line.setAside
+            ? null
+            : (line.status ?? (task.status === 'DONE' ? 'done' : null)),
           by: 'person',
           at: dayAt,
           isPrivate,
