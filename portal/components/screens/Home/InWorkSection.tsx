@@ -9,11 +9,7 @@ import { APP_ROUTES } from '@/utils/constants/appInfo';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import type { TaskRowStatus } from '../Worklogs/DayLog/sheetParts';
-import {
-  placeOf,
-  readablePoints,
-  rowStatus,
-} from '../Worklogs/DayLog/sheetParts';
+import { placeOf, rowStatus } from '../Worklogs/DayLog/sheetParts';
 import type {
   DayCompany,
   DayPoint,
@@ -85,14 +81,10 @@ export const InWorkSection = ({ visible }: { visible?: boolean }) => {
     if (!day) return { open: [], done: 0 };
     const rows = day.tasks.map((task) => {
       const status = rowStatus(task, day.points, date);
-      const points = readablePoints(
-        day.points.filter((p) => p.taskId === task.id),
-      );
       return {
         task,
         status,
         place: placeOf(task, day.projects, day.companies),
-        last: points.at(-1)?.text.trim() || '',
       };
     });
     return {
@@ -139,47 +131,33 @@ export const InWorkSection = ({ visible }: { visible?: boolean }) => {
               </p>
             ) : (
               <ul>
-                {open.map(({ task, status, place, last }) => (
+                {open.map(({ task, status, place }) => (
                   <li key={task.id}>
                     <Link
                       href={APP_ROUTES.userWorklogs}
                       className="flex gap-2.5 px-4 py-2 hover:bg-neutral-50"
                     >
                       <StatusMark status={status} />
-                      <div className="min-w-0 flex-1">
-                        <p
-                          className={cn(
-                            'text-sm text-neutral-900',
-                            status === 'doing' && 'font-semibold',
-                          )}
-                        >
-                          {task.title}
-                          {status && LABEL[status] && (
-                            <span className="ml-1.5 text-xs font-normal text-neutral-500">
-                              {LABEL[status]}
-                            </span>
-                          )}
-                        </p>
-                        <p className="flex items-center gap-1.5 truncate text-xs text-neutral-500">
-                          {place.kind !== 'none' && (
-                            <>
-                              <span
-                                className="size-1.5 shrink-0 rounded-full"
-                                style={{
-                                  backgroundColor: place.color || '#a3a3a3',
-                                }}
-                              />
-                              <span className="shrink-0">{place.name}</span>
-                            </>
-                          )}
-                          {last && (
-                            <span className="truncate">
-                              {place.kind !== 'none' && '· '}
-                              {last}
-                            </span>
-                          )}
-                        </p>
-                      </div>
+                      <p
+                        className={cn(
+                          'min-w-0 flex-1 truncate text-sm text-neutral-900',
+                          status === 'doing' && 'font-semibold',
+                        )}
+                      >
+                        {task.title}
+                        {status && LABEL[status] && (
+                          <span className="ml-1.5 text-xs font-normal text-neutral-500">
+                            {LABEL[status]}
+                          </span>
+                        )}
+                      </p>
+                      {place.kind !== 'none' && (
+                        <span
+                          title={place.name}
+                          className="mt-[7px] size-1.5 shrink-0 rounded-full"
+                          style={{ backgroundColor: place.color || '#a3a3a3' }}
+                        />
+                      )}
                     </Link>
                   </li>
                 ))}

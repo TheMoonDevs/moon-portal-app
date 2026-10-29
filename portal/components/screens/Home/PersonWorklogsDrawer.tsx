@@ -1,16 +1,14 @@
 'use client';
 
-import type { WorkLogs } from '@db/client';
 import { Drawer, useMediaQuery } from '@mui/material';
 import dayjs from 'dayjs';
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { isValidContent } from '@/lib/progress/buff';
+import type { WorkData, WorkPoint } from '@/lib/people/types';
 import { cn } from '@/lib/utils';
-import { latestPerDay } from '@/lib/worklogs/days';
+import { MOVED_EMOJI, POINT_STATUSES } from '@/lib/worklogs/timeline';
 import media from '@/styles/media';
-import { MdxAppEditor } from '@/utils/configure/MdxAppEditor';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
@@ -35,23 +33,24 @@ const MEDALS = ['🥇', '🥈', '🥉'];
 const STRIP_DAYS = 28;
 const PAGE = 7;
 
-const contentOf = (log: WorkLogs) =>
-  ((log.works as { content?: string }[] | null) ?? [])
-    .map((w) => (typeof w?.content === 'string' ? w.content : ''))
-    .filter(isValidContent);
+/** One line of a day: a task the person had on it. */
+type DayLine = {
+  key: string;
+  text: string;
+  /** Its status that day: moved on to a later day, or the task's own. */
+  mark: string;
+  done: boolean;
+  isPrivate: boolean;
+  byClaude: boolean;
+};
 
-/** ✅ lines out of all lines across a day's sections. */
-const dayStats = (sections: string[]) =>
-  sections.reduce(
-    (acc, content) => {
-      const lines = content.split('\n').filter((l) => isValidContent(l));
-      return {
-        done: acc.done + lines.filter((l) => l.includes('✅')).length,
-        total: acc.total + lines.length,
-      };
-    },
-    { done: 0, total: 0 },
-  );
+/** A day's lines, in sections by project as the worklog had them. */
+type Day = {
+  date: string;
+  sections: { title: string; lines: DayLine[] }[];
+  done: number;
+  total: number;
+};
 
 const dayLabel = (date: string) => {
   const d = dayjs(date);
@@ -60,49 +59,96 @@ const dayLabel = (date: string) => {
   return d.format('ddd, D MMM');
 };
 
-/** Day logs from the start of last month to today, newest first. */
-const useRecentLogs = (userId: string | undefined) => {
-  const [logs, setLogs] = useState<WorkLogs[] | null>(null);
+/** The person's tasks as days of lines, newest day first. */
+function workDays(data: WorkData): Day[] {
+  const projects = new Map(data.projects.map((p) => [p.id, p.name]));
+  const companies = new Map(data.companies.map((c) => [c.id, c]));
+  const sectionOf = (p: WorkPoint) => {
+    if (p.projectId && projects.has(p.projectId))
+      return projects.get(p.projectId)!;
+    const company = p.companyId ? companies.get(p.companyId) : null;
+    if (company && !company.isPersonal) return company.name;
+    return p.isPrivate ? 'Personal' : 'General';
+  };
+  const byDate = new Map<string, Map<string, DayLine[]>>();
+  for (const p of data.points) {
+    const last = p.dates[p.dates.length - 1];
+    for (const date of p.dates) {
+      const moved = date !== last;
+      const line: DayLine = {
+        key: `${p.key}-${date}`,
+        text: p.text,
+        mark: moved
+          ? MOVED_EMOJI
+          : p.status
+            ? POINT_STATUSES[p.status].emoji
+            : '',
+        done: !moved && p.status === 'done',
+        isPrivate: p.isPrivate,
+        byClaude: p.byClaude,
+      };
+      const sections = byDate.get(date) ?? new Map<string, DayLine[]>();
+      const title = sectionOf(p);
+      sections.set(title, [...(sections.get(title) ?? []), line]);
+      byDate.set(date, sections);
+    }
+  }
+  return Array.from(byDate.entries())
+    .sort(([a], [b]) => (a < b ? 1 : -1))
+    .map(([date, sections]) => {
+      const lines = Array.from(sections.values()).flat();
+      return {
+        date,
+        sections: Array.from(sections.entries())
+          // General first, Personal last, projects by name between.
+          .sort(([a], [b]) => {
+            const rank = (t: string) =>
+              t === 'General' ? 0 : t === 'Personal' ? 2 : 1;
+            return rank(a) - rank(b) || a.localeCompare(b);
+          })
+          .map(([title, lines]) => ({ title, lines })),
+        done: lines.filter((l) => l.done).length,
+        total: lines.length,
+      };
+    });
+}
+
+/** Their tasks from the start of last month to today, as days. */
+const useRecentDays = (userId: string | undefined) => {
+  const [days, setDays] = useState<Day[] | null>(null);
 
   useEffect(() => {
     if (!userId) return;
     let live = true;
-    setLogs(null);
-    const months = [dayjs(), dayjs().subtract(1, 'month')];
-    Promise.all(
-      months.map((m) =>
-        PortalSdk.getData(
-          `/api/user/worklogs/summary?userId=${userId}&logType=dayLog&year=${m.format('YYYY')}&month=${m.format('MM')}`,
-          null,
-        )
-          .then((res) => (res?.data?.workLogs ?? []) as WorkLogs[])
-          .catch(() => [] as WorkLogs[]),
-      ),
-    ).then((parts) => {
-      if (!live) return;
-      const days = latestPerDay(parts.flat())
-        .filter((log) => log.date && contentOf(log).length > 0)
-        .sort((a, b) => ((a.date ?? '') < (b.date ?? '') ? 1 : -1));
-      setLogs(days);
-    });
+    setDays(null);
+    const from = dayjs().subtract(1, 'month').startOf('month');
+    PortalSdk.getData(
+      `/api/people/${userId}/work?from=${from.format('YYYY-MM-DD')}&to=${dayjs().format('YYYY-MM-DD')}`,
+      null,
+    )
+      .then((res) => (res?.data ?? null) as WorkData | null)
+      .catch(() => null)
+      .then((data) => {
+        if (live) setDays(data ? workDays(data) : []);
+      });
     return () => {
       live = false;
     };
   }, [userId]);
 
-  return logs;
+  return days;
 };
 
 const ActivityStrip = ({
-  logs,
+  days: logged,
   onPick,
 }: {
-  logs: WorkLogs[];
+  days: Day[];
   onPick: (date: string) => void;
 }) => {
   const byDate = useMemo(
-    () => new Map(logs.map((l) => [l.date, dayStats(contentOf(l))])),
-    [logs],
+    () => new Map(logged.map((d) => [d.date, d])),
+    [logged],
   );
   const days = Array.from({ length: STRIP_DAYS }, (_, i) =>
     dayjs()
@@ -154,44 +200,58 @@ const ActivityStrip = ({
   );
 };
 
-const DayCard = ({ log }: { log: WorkLogs }) => {
-  const sections = contentOf(log);
-  const { done, total } = dayStats(sections);
-  return (
-    <article
-      data-date={log.date}
-      className="scroll-mt-4 rounded-xl border border-neutral-200 bg-white p-3"
-    >
-      <header className="mb-1 flex items-center justify-between">
-        <h5 className="text-sm font-semibold text-neutral-900">
-          {dayLabel(log.date ?? '')}
-        </h5>
-        {total > 0 && (
-          <span
-            className={cn(
-              'rounded-full px-2 py-0.5 text-[11px] font-semibold',
-              done === total
-                ? 'bg-emerald-50 text-emerald-700'
-                : 'bg-neutral-100 text-neutral-600',
-            )}
-          >
-            {done}/{total} done
-          </span>
+const DayCard = ({ day }: { day: Day }) => (
+  <article
+    data-date={day.date}
+    className="scroll-mt-4 rounded-xl border border-neutral-200 bg-white p-3"
+  >
+    <header className="mb-1 flex items-center justify-between">
+      <h5 className="text-sm font-semibold text-neutral-900">
+        {dayLabel(day.date)}
+      </h5>
+      <span
+        className={cn(
+          'rounded-full px-2 py-0.5 text-[11px] font-semibold',
+          day.done === day.total
+            ? 'bg-emerald-50 text-emerald-700'
+            : 'bg-neutral-100 text-neutral-600',
         )}
-      </header>
-      {sections.map((content, i) => (
-        <MdxAppEditor
-          key={`${log.id}-${i}`}
-          readOnly
-          markdown={content}
-          editorKey={`peek-${log.id}-${i}`}
-          contentEditableClassName="summary_mdx flex flex-col gap-2 !py-1 text-sm [&>p:has(>br:only-child)]:hidden [&>p:empty]:hidden"
-          className="z-1"
-        />
-      ))}
-    </article>
-  );
-};
+      >
+        {day.done}/{day.total} done
+      </span>
+    </header>
+    {day.sections.map((section) => (
+      <section key={section.title} className="mt-2 first:mt-1">
+        {day.sections.length > 1 && (
+          <h6 className="mb-0.5 text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
+            {section.title}
+          </h6>
+        )}
+        <ul className="list-disc space-y-1.5 pl-5 text-sm text-neutral-800 marker:text-neutral-400">
+          {section.lines.map((line) => (
+            <li key={line.key} className="leading-6">
+              {line.isPrivate && (
+                <span
+                  title="Only they see this"
+                  className="material-symbols-outlined mr-1 align-[-3px] !text-[14px] text-neutral-400"
+                >
+                  lock
+                </span>
+              )}
+              {line.mark && <span className="mr-1">{line.mark}</span>}
+              {line.text}
+              {line.byClaude && (
+                <span className="ml-1.5 rounded bg-neutral-100 px-1 text-[10px] text-neutral-500">
+                  bot
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      </section>
+    ))}
+  </article>
+);
 
 /**
  * A teammate's recent worklogs, opened from the leaderboard. Arrows (or the
@@ -212,7 +272,7 @@ export const PersonWorklogsDrawer = ({
 }) => {
   const isMobile = useMediaQuery(media.largeMobile);
   const person = index === null ? null : people[index];
-  const logs = useRecentLogs(person?.user.id);
+  const logs = useRecentDays(person?.user.id);
   const [shown, setShown] = useState(PAGE);
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -349,7 +409,7 @@ export const PersonWorklogsDrawer = ({
 
             <div className="mt-3">
               {logs ? (
-                <ActivityStrip logs={logs} onPick={jumpTo} />
+                <ActivityStrip days={logs} onPick={jumpTo} />
               ) : (
                 <div className="h-8 animate-pulse rounded bg-neutral-100" />
               )}
@@ -372,7 +432,7 @@ export const PersonWorklogsDrawer = ({
             ) : (
               <>
                 {logs.slice(0, shown).map((log) => (
-                  <DayCard key={log.id} log={log} />
+                  <DayCard key={log.date} day={log} />
                 ))}
                 {shown < logs.length && (
                   <button
