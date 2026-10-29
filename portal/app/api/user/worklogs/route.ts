@@ -112,6 +112,12 @@ export async function PUT(request: Request) {
             where: { userId: rest.userId, logType, date },
           })
         : null);
+    // A day kept as tasks is written from them, never by hand.
+    if (stored?.tasksFirst)
+      return NextResponse.json(
+        { status: 'fail', error: 'This day is kept as tasks now. Reload.' },
+        { status: 409 },
+      );
     if (stored && 'works' in rest)
       rest.works = keepClaudeSection(
         rest.works,

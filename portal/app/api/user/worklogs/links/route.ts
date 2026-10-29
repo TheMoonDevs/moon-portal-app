@@ -43,6 +43,9 @@ async function ownWorklog(worklogId: unknown) {
   if (!worklog) return { response: fail(404, 'Worklog not found.') };
   if (worklog.userId !== user.id)
     return { response: fail(403, 'You can only link your own worklogs.') };
+  // A day kept as tasks is written from them: its lines link themselves.
+  if (worklog.tasksFirst)
+    return { response: fail(409, 'This day is kept as tasks now. Reload.') };
   return { user, worklog };
 }
 

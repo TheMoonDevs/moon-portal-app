@@ -50,6 +50,8 @@ export async function PUT(request: Request) {
   if (!worklog) return fail(404, 'Worklog not found.');
   if (worklog.userId !== user.id)
     return fail(403, 'You can only optimise your own worklog.');
+  if (worklog.tasksFirst)
+    return fail(409, 'This day is kept as tasks now. Reload.');
 
   const points = groups.map((g: any) => ({
     text: typeof g?.text === 'string' ? g.text.trim().slice(0, 200) : '',

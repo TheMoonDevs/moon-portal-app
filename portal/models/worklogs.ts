@@ -59,6 +59,11 @@ export type WorkLogs = Loose<
      * added back.
      */
     addedTaskIds?: string[];
+    /**
+     * Written from the person's tasks and work points (tasks first), not
+     * typed: it is a copy for the screens that still read worklogs.
+     */
+    tasksFirst?: boolean;
   }
 >;
 

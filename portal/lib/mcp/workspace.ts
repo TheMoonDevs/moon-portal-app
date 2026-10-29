@@ -1,3 +1,4 @@
+import { noteStatusChange } from '@/lib/daywork/server';
 import { db } from '@/lib/mongodb/db-client';
 import type { SessionUser } from '@/lib/permissions/server';
 import { syncTaskPoints } from '@/lib/progress/server';
@@ -900,6 +901,7 @@ export const WORKSPACE_TOOLS: Tool[] = [
         }),
       );
       await syncTaskPoints(updated);
+      await noteStatusChange(task, updated, user.id, 'claude');
       return { task: await describeTask(updated, project) };
     },
   },

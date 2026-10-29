@@ -382,3 +382,29 @@ export async function linkLines(
     };
   });
 }
+
+/**
+ * Where each piece of work most likely belongs, from its words: a project
+ * (and its open task for the same work), or a company alone. Name matching
+ * first, Gemini for the rest; null where neither can tell.
+ */
+export async function guessPlaces(
+  items: { key: string; text: string }[],
+  candidates: LinkCandidates,
+) {
+  const out = new Map<string, Guess | null>();
+  const unsure: WorklogLine[] = [];
+  for (const item of items) {
+    const guess = matchByName(item.text, candidates);
+    if (guess) out.set(item.key, guess);
+    else
+      unsure.push({
+        key: item.key,
+        text: item.text,
+        isPrivate: false,
+      });
+  }
+  const fromAi = await matchWithGemini(unsure, candidates);
+  for (const line of unsure) out.set(line.key, fromAi.get(line.key) ?? null);
+  return out;
+}

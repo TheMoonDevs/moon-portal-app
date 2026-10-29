@@ -5,12 +5,12 @@ import {
   LOOK_STYLES,
 } from '@/lib/avatar/look';
 import { getLook, saveLook } from '@/lib/avatar/server';
+import { noteStatusChange } from '@/lib/daywork/server';
 import { db } from '@/lib/mongodb/db-client';
 import type { SessionUser } from '@/lib/permissions/server';
 import { syncTaskPoints } from '@/lib/progress/server';
 import { isOnTeam } from '@/lib/worklogs/linker';
 import { PERSONAL_COMPANY } from '@/lib/worklogs/personal';
-import { carryOpenPoints } from '@/lib/worklogs/points';
 import { fitGoal } from '@/lib/workspace/goalFit';
 import { tallyRowsFor } from '@/lib/workspace/goalTally';
 import type { DoneTask } from '@/lib/workspace/projects';
@@ -25,20 +25,15 @@ import {
   TASK_STATUS,
 } from '@/models/workspace';
 
+import type { TidyInput } from './daywork';
+import { logWork, tidyTasks, todayTasks } from './daywork';
 import { HIRING_TOOLS } from './hiring';
 import { PAGE_TOOLS } from './pages';
 import { PLAN_TOOLS } from './plans';
 import { SCHEDULE_TOOLS } from './schedules';
 import { companiesWith, type Tool, ToolError } from './shared';
-import type { PointInput, PointStatus, TidyPoint } from './worklog';
-import {
-  claudeLines,
-  logPoints,
-  POINT_STATUSES,
-  tidyPoints,
-  todayFor,
-  typedLines,
-} from './worklog';
+import type { PointInput, PointStatus } from './worklog';
+import { POINT_STATUSES, todayFor } from './worklog';
 import {
   createTask,
   describeTask,
@@ -47,7 +42,6 @@ import {
   goalSummary,
   type PointTask,
   statusChange,
-  taskForPoint,
   WORKSPACE_TOOLS,
 } from './workspace';
 
@@ -81,7 +75,7 @@ export const TOOLS: Tool[] = [
     name: 'get_context',
     title: 'Get my portal context',
     description:
-      "The person's companies (with their people, for sharing tasks), projects (effort, parent project, goals with this period's progress and whether recent periods were met), their open tasks, and what has been logged in the Claude section today. Everyone also has a Personal company for private work only they can see. Call this first in a session so you can link work to the right project, task and goal.",
+      "The person's companies (with their people, for sharing tasks), projects (effort, parent project, goals with this period's progress and whether recent periods were met), their open tasks, and their day (todayTasks): the tasks planned for today, still pending from before, or worked on today, with who logged on each last. Everything in the portal is a task; what you log goes under one as a work point. Everyone also has a Personal company for private work only they can see. Call this first in a session so you can log under the right task, project and goal.",
     inputSchema: { type: 'object', properties: {} },
     annotations: { readOnlyHint: true },
     run: async (user) => {
@@ -96,8 +90,7 @@ export const TOOLS: Tool[] = [
           companies: [PERSONAL_COMPANY],
           projects: [],
           myTasks: [],
-          loggedToday: await claudeLines(user.id, today),
-          typedToday: await typedLines(user.id, today),
+          todayTasks: await todayTasks(user, today),
         };
 
       await runDueSchedules({ companyId: { in: companyIds } });
@@ -183,15 +176,14 @@ export const TOOLS: Tool[] = [
         myTasks: myTasks
           .filter((t) => byId.has(t.projectId))
           .map((t) => taskView(t, byId)),
-        loggedToday: await claudeLines(user.id, today),
-        typedToday: await typedLines(user.id, today),
+        todayTasks: await todayTasks(user, today),
       };
     },
   },
   {
     name: 'log_work',
     title: 'Log work points',
-    description: `Writes work points into the "Claude" section of the person's worklog for the day, so they can follow progress in the portal. Keep it to 2-3 points per session, one per deliverable the person would name in a standup (e.g. "Lyric video for the new song", "Thumbnails and YouTube pack for it"). Never a new point for a revision, version, round, fix or sub-step: update the existing point instead, naming it with point (its key from loggedToday, or its text) and saying what happened in note ("v6 rendered, 3 notes fixed"); every update goes on the point's timeline, which shows how long it took from start to finish. Log a point when you start it (doing), add notes as it moves, and end it with done, not_done or blocked; same text also updates the line instead of adding another. Use waiting when you need the person's permission or input. Keep each point one short line about the outcome, in plain words, never secrets or credentials. Name the project (and task) when you know it, or only the company for company work on none of its projects; otherwise the portal links it. When the person already typed a line for the same work (typedToday in get_context), set typedLine to its text so the two are linked as one point. On the worklog page your points show as sub-logs under the person's own point (task) for the same work, so always name the task or set typedLine when you can; a point the portal cannot place under one shows a question mark for the person to pick. Work can only be logged to projects the person leads or is on the team of (onTeam in get_context). Every point in a project gets a task: the open one for the same work, or a new one the portal makes (name the task or the goal it counts towards to choose); a done point finishes its task, and set completeTask to finish a major task too. Finished tasks count towards the goal they fit by themselves. Work done early for a later week: set forDate to the day it was scheduled for, so it counts towards that week's goal (the line is still logged today). A done point about a scheduled task finishes that task's run for its day (or the next run not done yet); set forDate when it was for another day. Set personal for the person's own private work (not for any company): only they will ever see it.`,
+    description: `Logs work points under the person's tasks, so they can follow progress in the portal. Everything there is a task; a work point is an update under one (what you did, what happened, a status). Each point goes under a task: the one you name with point or task (an id or title from todayTasks or myTasks), else their open task with the same words, else a task in the project you name. When none fits, the portal makes a new task for it, placed in the project its words fit; the person can move your points under another task later. So for work they already have a task for, always name that task. Keep it to 2-3 tasks per session, one per deliverable the person would name in a standup (e.g. "Lyric video for the new song", "Thumbnails and YouTube pack for it"). Never a new task for a revision, version, round, fix or sub-step: log on the same task, naming it with point and saying what happened in note ("v6 rendered, 3 notes fixed"); every point goes on the task's history, which shows how long it took from start to finish. Log when you start (doing), add notes as it moves, and end it with done, not_done or blocked. A done point finishes its task; a major task stays under way unless completeTask is set. Use waiting when you need the person's permission or input. Keep each point one short line about the outcome, in plain words, never secrets or credentials. Name the project (and task) when you know it, or only the company for company work on none of its projects. Work can only be logged to projects the person leads or is on the team of (onTeam in get_context). Finished tasks count towards the goal they fit by themselves. Work done early for a later week: set forDate to the day it was scheduled for, so it counts towards that week's goal. A done point about a scheduled task finishes that task's run for its day (or the next run not done yet); set forDate when it was for another day. Set personal for the person's own private work (not for any company): only they will ever see it.`,
     inputSchema: {
       type: 'object',
       properties: {
@@ -205,22 +197,22 @@ export const TOOLS: Tool[] = [
               text: {
                 type: 'string',
                 description:
-                  'One line naming the deliverable, e.g. "Fix login redirect on Safari". Can be left out when point names an existing one.',
+                  'One line: the deliverable for a new task, e.g. "Fix login redirect on Safari", or what happened on the task point names. Can be left out when point names one.',
               },
               point: {
                 type: 'string',
                 description:
-                  'An existing point to update: its key (loggedToday) or text. Keeps its words; use note for what happened.',
+                  'The task to log under: its id (todayTasks or myTasks) or title. Keeps its words; use note for what happened.',
               },
               note: {
                 type: 'string',
                 description:
-                  'What just happened, for the point\'s timeline, e.g. "v6 rendered" (optional).',
+                  'What just happened, for the task\'s history, e.g. "v6 rendered" (optional).',
               },
               typedLine: {
                 type: 'string',
                 description:
-                  'Text of a line the person typed for the same work (typedToday), to link it to this point (optional).',
+                  'Title of a task the person wrote for the same work (todayTasks), to log under it (optional, same as point).',
               },
               status: {
                 type: 'string',
@@ -240,7 +232,7 @@ export const TOOLS: Tool[] = [
               task: {
                 type: 'string',
                 description:
-                  'Task id or exact title (optional). With a project named, a title the project does not have yet becomes a new task.',
+                  'Task id or exact title (optional). With a project named, a title the project does not have yet becomes a new task there.',
               },
               goal: {
                 type: 'string',
@@ -258,7 +250,7 @@ export const TOOLS: Tool[] = [
               },
               completeTask: {
                 type: 'boolean',
-                description: 'With status done: also mark the named task done.',
+                description: 'With status done: also finish a major task.',
               },
               personal: {
                 type: 'boolean',
@@ -317,40 +309,13 @@ export const TOOLS: Tool[] = [
         typeof args?.date === 'string' && DAY.test(args.date)
           ? args.date
           : await userToday(user);
-      // Find or create each point's task first, so the line links to it.
-      const tasks: Record<string, unknown>[] = [];
-      for (const point of points) {
-        if (point.personal || !point.text) continue;
-        try {
-          const found = await taskForPoint(user, point, date);
-          if (!found) continue;
-          point.place = {
-            companyId: found.task.companyId,
-            projectId: found.task.projectId,
-            taskId: found.task.id,
-          };
-          if (found.created || found.completed)
-            tasks.push({
-              ...(await describeTask(found.task, found.project)),
-              ...(found.created ? { created: true } : { completed: true }),
-            });
-        } catch (error) {
-          if (!(error instanceof ToolError)) throw error;
-          tasks.push({ point: point.text, problem: error.message });
-        }
-      }
-      // Points still open on earlier days move into today first, so an
-      // update lands on the carried line with its history.
-      if (date === (await userToday(user)))
-        await carryOpenPoints(user.id, date);
-      const logged = await logPoints(user, points, date);
-      return { date, ...logged, ...(tasks.length && { tasks }) };
+      return logWork(user, points, date);
     },
   },
   {
     name: 'tidy_points',
     title: 'Tidy a day of work points',
-    description: `Rewrites a day's Claude points as fewer ones, when a day was logged in too many small points (a line per version, round or fix). Each new point lists the existing points it replaces in merge (their keys from loggedToday, or their texts); points that should go entirely are listed in drop. Every existing point must be merged or dropped. Merged points' history moves onto the new point, with their words kept as notes on its timeline. Show the person the new list and get their OK before calling this.`,
+    description: `Turns tasks you made on a day into fewer ones, when work was logged as too many small tasks (one per version, round or fix). Each new task lists the tasks of yours it replaces in merge (ids or titles from todayTasks with madeBy); the first keeps going under the new title, the others' points move onto it and they are archived. Tasks listed in drop are archived. Tasks the person wrote are never touched. Show the person the new list and get their OK before calling this.`,
     inputSchema: {
       type: 'object',
       properties: {
@@ -361,21 +326,15 @@ export const TOOLS: Tool[] = [
           items: {
             type: 'object',
             properties: {
-              text: { type: 'string', description: 'The new point, one line.' },
+              text: {
+                type: 'string',
+                description: 'The new task title, one line.',
+              },
               status: { type: 'string', enum: STATUS_KEYS },
               merge: {
                 type: 'array',
                 items: { type: 'string' },
-                description: 'Keys or texts of the points it replaces.',
-              },
-              project: {
-                type: 'string',
-                description: 'Project id or exact name (optional).',
-              },
-              typedLine: {
-                type: 'string',
-                description:
-                  'Text of a line the person typed for the same work, to link (optional).',
+                description: 'Ids or titles of your tasks it replaces.',
               },
             },
             required: ['text', 'status', 'merge'],
@@ -384,7 +343,8 @@ export const TOOLS: Tool[] = [
         drop: {
           type: 'array',
           items: { type: 'string' },
-          description: 'Keys or texts of points to remove without merging.',
+          description:
+            'Ids or titles of your tasks to archive without merging.',
         },
         date: {
           type: 'string',
@@ -396,30 +356,22 @@ export const TOOLS: Tool[] = [
     },
     annotations: { readOnlyHint: false, destructiveHint: true },
     run: async (user, args) => {
-      const points: TidyPoint[] = (
+      const points: TidyInput[] = (
         Array.isArray(args?.points) ? args.points : []
       )
         .slice(0, 30)
         .map((p: any) => ({
-          text: typeof p?.text === 'string' ? p.text.trim().slice(0, 300) : '',
+          text: typeof p?.text === 'string' ? p.text.trim().slice(0, 200) : '',
           status: STATUS_KEYS.includes(p?.status) ? p.status : 'done',
           merge: Array.isArray(p?.merge)
             ? p.merge.filter((m: unknown) => typeof m === 'string')
             : [],
-          project: typeof p?.project === 'string' ? p.project : undefined,
-          typedLine:
-            typeof p?.typedLine === 'string'
-              ? p.typedLine.slice(0, 300)
-              : undefined,
         }));
       if (
         !points.length ||
         points.some((p) => p.text.replace(/[^\p{L}\p{N}]/gu, '').length < 3)
       )
-        throw new ToolError('Give each new point some text.');
-      const keys = new Set(points.map((p) => p.text.toLowerCase()));
-      if (keys.size < points.length)
-        throw new ToolError('Two new points have the same text.');
+        throw new ToolError('Give each new task a title.');
       const drop: string[] = Array.isArray(args?.drop)
         ? args.drop.filter((d: unknown) => typeof d === 'string')
         : [];
@@ -427,7 +379,7 @@ export const TOOLS: Tool[] = [
         typeof args?.date === 'string' && DAY.test(args.date)
           ? args.date
           : await userToday(user);
-      return tidyPoints(user, points, drop, date);
+      return tidyTasks(user, points, drop, date);
     },
   },
   {
@@ -536,6 +488,7 @@ export const TOOLS: Tool[] = [
         }),
       );
       await syncTaskPoints(updated);
+      await noteStatusChange(task, updated, user.id, 'claude');
       return { task: { id: updated.id, title: updated.title, status } };
     },
   },

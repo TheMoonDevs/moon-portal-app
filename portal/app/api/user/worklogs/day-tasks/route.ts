@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 
+import { db } from '@/lib/mongodb/db-client';
 import { enforcePermission, getSessionUser } from '@/lib/permissions/server';
 import { addTasksToDay } from '@/lib/worklogs/dayTasks';
 
@@ -37,6 +38,13 @@ export async function POST(request: Request) {
   if (!taskIds.length && body?.due !== true)
     return fail(400, 'Name the tasks, or ask for the ones due.');
 
+  // A day kept as tasks shows them already.
+  const log = await db.workLogs.findFirst({
+    where: { userId: user.id, logType: 'dayLog', date },
+    select: { tasksFirst: true },
+  });
+  if (log?.tasksFirst)
+    return fail(409, 'This day is kept as tasks now. Reload.');
   const result = await addTasksToDay(user.id, date, {
     taskIds,
     due: body?.due === true,
