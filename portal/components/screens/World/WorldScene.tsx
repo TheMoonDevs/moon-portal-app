@@ -888,32 +888,22 @@ export const WorldScene = ({
         r.vertical ? cz : r.at,
         big ? 0.026 : 0.022,
       );
-      // A car or two on every road, more on the wide ones, but none across
-      // the town square: a road through it only has cars up to its edge.
-      const p = spot.plaza;
-      const across = r.vertical ? p.x : p.z;
-      const along = r.vertical ? p.z : p.x;
-      let start = r.vertical ? spot.minZ : spot.minX;
-      let end = start + length;
-      if (Math.abs(r.at - across) < p.half) {
-        if (along - p.half - start >= end - (along + p.half))
-          end = along - p.half;
-        else start = along + p.half;
-      }
-      if (end - start > 8)
+      // Cars only take the open roads, a car or two each, more on the
+      // wide ones: squares are for bots, on foot.
+      if (r.open)
         cars(
           g,
           s.anims,
           {
             horizontal: !r.vertical,
-            from: start,
-            length: end - start,
+            from: r.vertical ? spot.minZ : spot.minX,
+            length,
             cx: r.at,
             cz: r.at,
             y: 0.03,
             width: r.width,
           },
-          Math.max(1, Math.round((end - start) / (big ? 30 : 45))),
+          Math.max(1, Math.round(length / (big ? 30 : 45))),
           rand,
           accent,
         );

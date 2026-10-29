@@ -36,10 +36,15 @@ export type TownSpot = Area & {
   /** In front of the town hall, where work outside any project is done. */
   yard: { x: number; z: number };
   cells: Cell[];
-  /** Road centre lines across the whole town, with their widths. */
-  streetsX: { at: number; width: number }[];
-  streetsZ: { at: number; width: number }[];
+  /**
+   * Road centre lines across the whole town, with their widths. A road is
+   * open when no square's paving (the town square or a project's ground)
+   * covers any of it: only open roads carry cars.
+   */
+  streetsX: Street[];
+  streetsZ: Street[];
 };
+export type Street = { at: number; width: number; open: boolean };
 export type Road = { x1: number; z1: number; x2: number; z2: number };
 
 /** One building's lot. */
@@ -300,8 +305,8 @@ export function layoutWorld(world: World) {
       maxZ: z + p.maxZ,
       plaza,
       cells,
-      streetsX: p.streetsX.map((s) => ({ ...s, at: x + s.at })),
-      streetsZ: p.streetsZ.map((s) => ({ ...s, at: z + s.at })),
+      streetsX: p.streetsX.map((s) => ({ ...s, at: x + s.at, open: true })),
+      streetsZ: p.streetsZ.map((s) => ({ ...s, at: z + s.at, open: true })),
     });
 
     for (const project of p.projects) {
@@ -337,6 +342,27 @@ export function layoutWorld(world: World) {
           sites.set(site.id, { ...newest, projectId: project.id, lots: spots });
       }
     }
+
+    // Roads under the town square or a project's ground are paved over.
+    const spot = towns.get(t.id)!;
+    const covers: Area[] = [
+      {
+        ...plaza,
+        minX: plaza.x - plaza.half,
+        maxX: plaza.x + plaza.half,
+        minZ: plaza.z - plaza.half,
+        maxZ: plaza.z + plaza.half,
+      },
+      ...p.projects.map((project) => projects.get(project.id)!),
+    ];
+    for (const street of spot.streetsX)
+      street.open = !covers.some(
+        (c) => street.at > c.minX + 0.5 && street.at < c.maxX - 0.5,
+      );
+    for (const street of spot.streetsZ)
+      street.open = !covers.some(
+        (c) => street.at > c.minZ + 0.5 && street.at < c.maxZ - 0.5,
+      );
 
     const here = world.people.filter((person) => person.townIds.includes(t.id));
     here.forEach((person, j) => {
@@ -393,8 +419,8 @@ export function layoutWorld(world: World) {
 }
 
 /**
- * The way along the roads from `a` to `b` in a town: out to the nearest
- * road, along it, across on a cross road, and in again.
+ * The way along the roads from `a` to `b` in a town: on foot out to the
+ * nearest open road, along it, across on a cross road, and in again.
  */
 export function route(
   town: TownSpot,
@@ -406,15 +432,21 @@ export function route(
       (best, l) => (Math.abs(l.at - v) < Math.abs(best - v) ? l.at : best),
       lines[0].at,
     );
-  const za = nearest(town.streetsZ, a.z);
-  const zb = nearest(town.streetsZ, b.z);
+  const open = (lines: Street[]) => {
+    const out = lines.filter((l) => l.open);
+    return out.length ? out : lines;
+  };
+  const streetsX = open(town.streetsX);
+  const streetsZ = open(town.streetsZ);
+  const za = nearest(streetsZ, a.z);
+  const zb = nearest(streetsZ, b.z);
   const points = [
     { x: a.x, z: a.z },
     { x: a.x, z: za },
   ];
   if (Math.abs(za - zb) < 0.01) points.push({ x: b.x, z: za });
   else {
-    const xv = nearest(town.streetsX, (a.x + b.x) / 2);
+    const xv = nearest(streetsX, (a.x + b.x) / 2);
     points.push({ x: xv, z: za }, { x: xv, z: zb }, { x: b.x, z: zb });
   }
   points.push({ x: b.x, z: b.z });
