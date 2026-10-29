@@ -372,6 +372,13 @@ export function planUser({ userId, logs, tasks, fromLine, migrated, today }) {
 
 /* ---------------------------------- run ---------------------------------- */
 
+const chunks = (items, size = 1000) => {
+  const out = [];
+  for (let i = 0; i < items.length; i += size)
+    out.push(items.slice(i, i + size));
+  return out;
+};
+
 const main = async () => {
   const args = process.argv.slice(2);
   const apply = args.includes('--apply');
@@ -392,8 +399,9 @@ const main = async () => {
   const Points = db.collection('WorkPoint');
   const today = new Date().toISOString().slice(0, 10);
 
+  // Worklogs keep userId as an ObjectId.
   const userIds = onlyUser
-    ? [onlyUser]
+    ? [ObjectId.isValid(onlyUser) ? new ObjectId(onlyUser) : onlyUser]
     : await Logs.distinct('userId', { logType: 'dayLog' });
   const totals = {
     people: 0,
@@ -483,20 +491,35 @@ const main = async () => {
         );
 
     if (!apply) continue;
+    // Writes go in batches per person: one read of what an earlier run
+    // already wrote, then a few big writes, instead of a round trip a row.
     // Tasks first, so points can point at them.
     const realId = new Map();
+    const madeBefore = new Map(
+      (
+        await Tasks.find(
+          { ownerId: userId, 'migratedFrom.key': { $type: 'string' } },
+          { projection: { migratedFrom: 1 } },
+        ).toArray()
+      ).map((t) => [
+        `${t.migratedFrom.worklogId}|${t.migratedFrom.key}`,
+        String(t._id),
+      ]),
+    );
+    const toInsert = [];
     for (const t of plan.newTasks) {
-      const found = await Tasks.findOne({
-        ownerId: userId,
-        'migratedFrom.worklogId': t.migratedFrom.worklogId,
-        'migratedFrom.key': t.migratedFrom.key,
-      });
+      const found = madeBefore.get(
+        `${t.migratedFrom.worklogId}|${t.migratedFrom.key}`,
+      );
       if (found) {
-        realId.set(t.tempId, String(found._id));
+        realId.set(t.tempId, found);
         continue;
       }
       const { tempId, changed: _c, ...doc } = t;
-      const res = await Tasks.insertOne({
+      const _id = new ObjectId();
+      realId.set(tempId, String(_id));
+      toInsert.push({
+        _id,
         ...doc,
         description: null,
         dueDate: null,
@@ -506,14 +529,16 @@ const main = async () => {
         startedAt: doc.startedAt ?? null,
         completedAt: doc.completedAt ?? null,
       });
-      realId.set(tempId, String(res.insertedId));
     }
+    for (const docs of chunks(toInsert))
+      await Tasks.insertMany(docs, { ordered: false });
     // Earlier runs' tasks carried on to a newer day.
-    for (const t of migrated.values())
-      if (t.changed)
-        await Tasks.updateOne(
-          { _id: t._id },
-          {
+    const carriedOn = Array.from(migrated.values())
+      .filter((t) => t.changed)
+      .map((t) => ({
+        updateOne: {
+          filter: { _id: t._id },
+          update: {
             $set: {
               status: t.status,
               flag: t.flag ?? null,
@@ -521,44 +546,70 @@ const main = async () => {
               updatedAt: t.updatedAt,
             },
           },
-        );
+        },
+      }));
+    if (carriedOn.length) await Tasks.bulkWrite(carriedOn, { ordered: false });
+
+    const pointKey = (p) =>
+      [
+        p.taskId,
+        p.at,
+        p.migratedFrom.worklogId,
+        p.migratedFrom.key,
+        p.status ?? null,
+        p.text,
+      ].join('|');
+    const pointsBefore = new Set(
+      (
+        await Points.find(
+          { userId, 'migratedFrom.key': { $type: 'string' } },
+          {
+            projection: { taskId: 1, at: 1, migratedFrom: 1, status: 1, text: 1 },
+          },
+        ).toArray()
+      ).map(pointKey),
+    );
+    const newPoints = [];
     for (const p of plan.points) {
-      const taskId = realId.get(p.task) ?? p.task;
-      const exists = await Points.findOne({
-        taskId,
-        at: p.at,
-        'migratedFrom.worklogId': p.migratedFrom.worklogId,
-        'migratedFrom.key': p.migratedFrom.key,
-        status: p.status,
-        text: p.text,
-      });
-      if (exists) continue;
       const { task: _t, ...doc } = p;
-      await Points.insertOne({
+      const point = {
         ...doc,
-        taskId,
+        taskId: realId.get(p.task) ?? p.task,
         createdAt: p.at,
         updatedAt: p.at,
-      });
+      };
+      if (!pointsBefore.has(pointKey(point))) newPoints.push(point);
     }
+    for (const docs of chunks(newPoints))
+      await Points.insertMany(docs, { ordered: false });
+
     // Each worklog keeps what it was, and is written from tasks from now on.
-    for (const m of plan.marks) {
+    const migratedAt = new Date().toISOString();
+    const marks = plan.marks.map((m) => {
       const log = logs.find((l) => String(l._id) === m.worklogId);
-      await Logs.updateOne(
-        { _id: log._id, tasksFirst: { $ne: true } },
-        {
-          $set: {
-            tasksFirst: true,
-            beforeTasks: {
-              works: log.works ?? [],
-              links: log.links ?? [],
-              timeline: log.timeline ?? [],
-              migratedAt: new Date().toISOString(),
+      return {
+        updateOne: {
+          filter: { _id: log._id, tasksFirst: { $ne: true } },
+          update: {
+            $set: {
+              tasksFirst: true,
+              beforeTasks: {
+                works: log.works ?? [],
+                links: log.links ?? [],
+                timeline: log.timeline ?? [],
+                migratedAt,
+              },
             },
           },
         },
+      };
+    });
+    for (const ops of chunks(marks, 200))
+      await Logs.bulkWrite(ops, { ordered: false });
+    if (verbose)
+      console.log(
+        `  ${userId}: wrote ${toInsert.length} tasks, ${newPoints.length} work points, marked ${marks.length} days`,
       );
-    }
   }
 
   console.log(
