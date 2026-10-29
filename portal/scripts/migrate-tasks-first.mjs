@@ -293,13 +293,16 @@ export function planUser({ userId, logs, tasks, fromLine, migrated, today }) {
           isPrivate,
           migratedFrom: { worklogId, key: line.key },
         });
-      // Worked on this day with no history: one point says so.
-      if (!events.length && (existing || line.status))
+      // Worked on this day with no history: one point says so, so the day
+      // counts wherever work is scored.
+      if (!events.length)
         pushPoint(task, {
           userId,
           date,
-          text: line.status ? '' : 'On the day’s worklog',
-          status: line.setAside ? null : line.status,
+          text: line.status || !existing ? '' : 'On the day’s worklog',
+          status: line.setAside
+            ? null
+            : (line.status ?? (task.status === 'DONE' ? 'done' : null)),
           by: 'person',
           at: dayAt,
           isPrivate,
@@ -417,8 +420,10 @@ const main = async () => {
   };
   const rows = [];
 
-  for (const userId of userIds.filter(Boolean)) {
-    const all = await Logs.find({ userId, logType: 'dayLog' })
+  for (const logUserId of userIds.filter(Boolean)) {
+    // Tasks and work points keep it as a string, as the portal reads them.
+    const userId = String(logUserId);
+    const all = await Logs.find({ userId: logUserId, logType: 'dayLog' })
       .sort({ date: 1 })
       .toArray();
     // Only the latest copy of each day counts, as on every screen.

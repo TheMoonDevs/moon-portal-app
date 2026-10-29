@@ -3,7 +3,7 @@
 import dayjs from 'dayjs';
 import { AnimatePresence, motion } from 'framer-motion';
 import Link from 'next/link';
-import { createContext, useContext, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
 import type { WorkData, WorkPoint } from '@/lib/people/types';
 import { cn } from '@/lib/utils';
@@ -122,7 +122,14 @@ export const PointStatusContext = createContext<
   ((point: WorkPoint, status: PointStatus) => Promise<void>) | null
 >(null);
 
-const PointRow = ({ point }: { point: WorkPoint }) => {
+const PointRow = ({
+  point,
+  aside,
+}: {
+  point: WorkPoint;
+  /** Shown at the end of the title line. */
+  aside?: React.ReactNode;
+}) => {
   const timing = timingText(point);
   const days = point.dates;
   const setStatus = useContext(PointStatusContext);
@@ -157,22 +164,25 @@ const PointRow = ({ point }: { point: WorkPoint }) => {
         <StatusIcon status={point.status} />
       )}
       <div className="min-w-0 flex-1">
-        <p
-          className={cn(
-            'text-[13px] leading-5',
-            point.status === 'not_done'
-              ? 'text-neutral-500 line-through decoration-neutral-700'
-              : 'text-neutral-200',
-          )}
-        >
-          {point.isPrivate && (
-            <Icon
-              name="lock"
-              className="mr-1 align-[-2px] text-[13px] text-neutral-500"
-            />
-          )}
-          {point.text}
-        </p>
+        <div className="flex items-start gap-2">
+          <p
+            className={cn(
+              'min-w-0 flex-1 text-[13px] leading-5',
+              point.status === 'not_done'
+                ? 'text-neutral-500 line-through decoration-neutral-700'
+                : 'text-neutral-200',
+            )}
+          >
+            {point.isPrivate && (
+              <Icon
+                name="lock"
+                className="mr-1 align-[-2px] text-[13px] text-neutral-500"
+              />
+            )}
+            {point.text}
+          </p>
+          {aside}
+        </div>
         <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-neutral-500">
           {point.origin && !point.parentKey && (
             <OriginTag origin={point.origin} />
@@ -220,10 +230,34 @@ const PointRow = ({ point }: { point: WorkPoint }) => {
   );
 };
 
+const sameWords = (a: string, b: string) =>
+  a.trim().toLowerCase() === b.trim().toLowerCase();
+
+const ClosedChip = ({ at }: { at?: string | null }) => (
+  <span className="shrink-0 rounded-full bg-emerald-500/10 px-2 py-px text-[10px] font-medium text-emerald-300">
+    Closed {dayjs(at).format('D MMM')}
+  </span>
+);
+
 const TaskBlock = ({ group, bare }: { group: TaskGroup; bare?: boolean }) => {
   const meta = group.task
     ? (TASK_STATUS_META[group.task.status] ?? TASK_STATUS_META.TODO)
     : null;
+  // A task that is just its one point: one row, not the title twice.
+  const only = group.points.length === 1 ? group.points[0] : null;
+  if (group.task && only && sameWords(only.text, group.task.title))
+    return (
+      <ul className="py-1.5">
+        <PointRow
+          point={only}
+          aside={
+            group.closed ? (
+              <ClosedChip at={group.task.completedAt} />
+            ) : undefined
+          }
+        />
+      </ul>
+    );
   return (
     <div className="py-2">
       <div className={cn('mb-0.5 flex items-center gap-2', bare && 'hidden')}>
@@ -249,11 +283,7 @@ const TaskBlock = ({ group, bare }: { group: TaskGroup; bare?: boolean }) => {
         >
           {group.task?.title ?? 'Other work'}
         </p>
-        {group.closed && (
-          <span className="shrink-0 rounded-full bg-emerald-500/10 px-2 py-px text-[10px] font-medium text-emerald-300">
-            Closed {dayjs(group.task?.completedAt).format('D MMM')}
-          </span>
-        )}
+        {group.closed && <ClosedChip at={group.task?.completedAt} />}
         {!group.closed && meta && group.task?.status !== 'TODO' && (
           <span className="shrink-0 text-[10px] text-neutral-500">
             {meta.label}
@@ -296,6 +326,11 @@ const ProjectCard = ({
   defaultOpen: boolean;
 }) => {
   const [open, setOpen] = useState(defaultOpen);
+  // Follows "Expand all" / "Collapse all", and can still be toggled after.
+  const expandAll = useContext(ExpandAllContext);
+  useEffect(() => {
+    if (expandAll) setOpen(expandAll.open);
+  }, [expandAll]);
   const project = group.project;
   const color = project
     ? colorFor(project.id, project.color)
@@ -374,13 +409,10 @@ const ProjectCard = ({
   );
 };
 
-const CompanySection = ({
-  group,
-  openFirst,
-}: {
-  group: CompanyGroup;
-  openFirst: number;
-}) => (
+/** The last "Expand all" or "Collapse all", new each click. */
+const ExpandAllContext = createContext<{ open: boolean } | null>(null);
+
+const CompanySection = ({ group }: { group: CompanyGroup }) => (
   <section>
     <div className="mb-2.5 flex items-center gap-2">
       {group.company ? (
@@ -412,7 +444,7 @@ const CompanySection = ({
       </span>
     </div>
     <div className="flex flex-col gap-2">
-      {group.projects.map((p, i) => (
+      {group.projects.map((p) => (
         <ProjectCard
           key={p.project?.id ?? 'none'}
           group={p}
@@ -422,7 +454,7 @@ const CompanySection = ({
               ? 'General'
               : 'Not on a project'
           }
-          defaultOpen={i < openFirst}
+          defaultOpen={false}
         />
       ))}
     </div>
@@ -736,6 +768,9 @@ export const WorkView = ({
   onPointStatus?: (point: WorkPoint, status: PointStatus) => Promise<void>;
 }) => {
   const [mode, setMode] = useState<Mode>('projects');
+  const [expandAll, setExpandAll] = useState<{ open: boolean } | null>(null);
+  // Reset with the period, so its projects start collapsed again.
+  useEffect(() => setExpandAll(null), [period.from, period.kind]);
   const groups = useMemo(() => (data ? groupWork(data) : []), [data]);
   const label = periodLabel(period);
   const isCurrent = periodOf(period.kind, dayjs()).from === period.from;
@@ -853,7 +888,22 @@ export const WorkView = ({
           <p className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
             {mode === 'projects' ? 'By project' : 'When it happened'}
           </p>
-          <Segmented value={mode} onChange={setMode} options={MODES} />
+          <div className="flex items-center gap-2">
+            {mode === 'projects' && points.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setExpandAll({ open: !expandAll?.open })}
+                className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs text-neutral-400 hover:bg-white/[0.06] hover:text-white"
+              >
+                <Icon
+                  name={expandAll?.open ? 'unfold_less' : 'unfold_more'}
+                  className="text-[16px]"
+                />
+                {expandAll?.open ? 'Collapse all' : 'Expand all'}
+              </button>
+            )}
+            <Segmented value={mode} onChange={setMode} options={MODES} />
+          </div>
         </div>
 
         {!data ? (
@@ -884,15 +934,13 @@ export const WorkView = ({
             )}
           </div>
         ) : mode === 'projects' ? (
-          <div className="flex flex-col gap-7">
-            {groups.map((g, i) => (
-              <CompanySection
-                key={g.company?.id ?? 'unlinked'}
-                group={g}
-                openFirst={i === 0 ? 2 : 1}
-              />
-            ))}
-          </div>
+          <ExpandAllContext.Provider value={expandAll}>
+            <div className="flex flex-col gap-7">
+              {groups.map((g) => (
+                <CompanySection key={g.company?.id ?? 'unlinked'} group={g} />
+              ))}
+            </div>
+          </ExpandAllContext.Provider>
         ) : (
           <DayTimeline data={data} period={period} />
         )}
