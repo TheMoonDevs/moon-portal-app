@@ -80,6 +80,7 @@ export type NewProject = {
   companyId: string;
   name: string;
   description?: string | null;
+  aliases?: string[];
   status?: PROJECT_STATUS;
   color?: string | null;
   icon?: string | null;
@@ -100,6 +101,7 @@ export async function createProject(input: NewProject, userId: string) {
       name: input.name,
       slug: slugify(input.name),
       description: input.description ?? null,
+      ...(input.aliases?.length && { aliases: input.aliases }),
       status: input.status ?? PROJECT_STATUS.ACTIVE,
       color: input.color ?? null,
       icon: input.icon ?? null,

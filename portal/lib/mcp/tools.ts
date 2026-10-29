@@ -9,6 +9,7 @@ import { noteStatusChange } from '@/lib/daywork/server';
 import { db } from '@/lib/mongodb/db-client';
 import type { SessionUser } from '@/lib/permissions/server';
 import { syncTaskPoints } from '@/lib/progress/server';
+import { aliasesOf } from '@/lib/worklogs/aliases';
 import { isOnTeam } from '@/lib/worklogs/linker';
 import { PERSONAL_COMPANY } from '@/lib/worklogs/personal';
 import { fitGoal } from '@/lib/workspace/goalFit';
@@ -156,6 +157,7 @@ export const TOOLS: Tool[] = [
         projects: projects.map((p) => ({
           id: p.id,
           name: p.name,
+          ...(aliasesOf(p).length && { aliases: aliasesOf(p) }),
           company: companies.find((c) => c.id === p.companyId)?.name,
           effort: p.effort ?? null,
           onTeam: isOnTeam(p, user.id),
@@ -183,7 +185,7 @@ export const TOOLS: Tool[] = [
   {
     name: 'log_work',
     title: 'Log work points',
-    description: `Logs work points under the person's tasks, so they can follow progress in the portal. Everything there is a task; a work point is an update under one (what you did, what happened, a status). Each point goes under a task: the one you name with point or task (an id or title from todayTasks or myTasks), else their open task with the same words, else a task in the project you name. When none fits, the portal makes a new task for it, placed in the project its words fit; the person can move your points under another task later. So for work they already have a task for, always name that task. Keep it to 2-3 tasks per session, one per deliverable the person would name in a standup (e.g. "Lyric video for the new song", "Thumbnails and YouTube pack for it"). Never a new task for a revision, version, round, fix or sub-step: log on the same task, naming it with point and saying what happened in note ("v6 rendered, 3 notes fixed"); every point goes on the task's history, which shows how long it took from start to finish. Log when you start (doing), add notes as it moves, and end it with done, not_done or blocked. A done point finishes its task; a major task stays under way unless completeTask is set. Use waiting when you need the person's permission or input. Task names (text for a new task, task) are short and recognisable, 2-6 words the person would say out loud ("Rename Get into Zone extension", "AI Concept Artist task page"), with no counts, lists or parentheses; the detail goes in note, which can be one medium-length line about the outcome, in plain words, never secrets or credentials. Never make up a placeholder, code or random word as a task name: when nothing fits, name the deliverable properly. Log a status only when it changes: not a second doing or waiting point on a task that already has it. One waiting point says plainly what the person has to do; when they have done it (sent the picks, approved it), log that step with byPerson so it shows as theirs, then carry on. Name the project (and task) when you know it, or only the company for company work on none of its projects (it goes in the company's CORE project, which everyone in the company is on). Work can only be logged to projects the person leads or is on the team of (onTeam in get_context). Finished tasks count towards the goal they fit by themselves. Work done early for a later week: set forDate to the day it was scheduled for, so it counts towards that week's goal. A done point about a scheduled task finishes that task's run for its day (or the next run not done yet); set forDate when it was for another day. Set personal for the person's own private work (not for any company): only they will ever see it.`,
+    description: `Logs work points under the person's tasks, so they can follow progress in the portal. Everything there is a task; a work point is an update under one (what you did, what happened, a status). Each point goes under a task: the one you name with point or task (an id or title from todayTasks or myTasks), else their open task with the same words, else a task in the project you name. When none fits, the portal makes a new task for it, placed in the project its words fit; the person can move your points under another task later. So for work they already have a task for, always name that task. Keep it to 2-3 tasks per session, one per deliverable the person would name in a standup (e.g. "Lyric video for the new song", "Thumbnails and YouTube pack for it"). Never a new task for a revision, version, round, fix or sub-step: log on the same task, naming it with point and saying what happened in note ("v6 rendered, 3 notes fixed"); every point goes on the task's history, which shows how long it took from start to finish. Log when you start (doing), add notes as it moves, and end it with done, not_done or blocked. A done point finishes its task; a major task stays under way unless completeTask is set. Use waiting only when waiting means the work is truly stopped until the person acts (a decision, an approval, a file or login only they can give); never for finishing a turn, offering options, asking whether to continue, or work you can carry on with. When you can keep going, log doing. Task names (text for a new task, task) are short and recognisable, 2-6 words the person would say out loud ("Rename Get into Zone extension", "AI Concept Artist task page"), with no counts, lists or parentheses; the detail goes in note, which can be one medium-length line about the outcome, in plain words, never secrets or credentials. Never make up a placeholder, code or random word as a task name: when nothing fits, name the deliverable properly. Log a status only when it changes: not a second doing or waiting point on a task that already has it. One waiting point says plainly what the person has to do; when they have done it (sent the picks, approved it), log that step with byPerson so it shows as theirs, then carry on. Name the project (and task) when you know it, or only the company for company work on none of its projects (it goes in the company's CORE project, which everyone in the company is on). Work can only be logged to projects the person leads or is on the team of (onTeam in get_context). Finished tasks count towards the goal they fit by themselves. Work done early for a later week: set forDate to the day it was scheduled for, so it counts towards that week's goal. A done point about a scheduled task finishes that task's run for its day (or the next run not done yet); set forDate when it was for another day. Set personal for the person's own private work (not for any company): only they will ever see it.`,
     inputSchema: {
       type: 'object',
       properties: {
@@ -218,11 +220,12 @@ export const TOOLS: Tool[] = [
                 type: 'string',
                 enum: STATUS_KEYS,
                 description:
-                  'doing, done, not_done (dropped or failed), blocked, or waiting (on the person).',
+                  'doing, done, not_done (dropped or failed), blocked (stopped by something else), or waiting (stopped until the person acts; not for a finished turn or an optional question).',
               },
               project: {
                 type: 'string',
-                description: 'Project id or exact name (optional).',
+                description:
+                  'Project id, exact name or one of its aliases (optional).',
               },
               company: {
                 type: 'string',

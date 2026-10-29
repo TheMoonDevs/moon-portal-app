@@ -61,18 +61,24 @@ export const StatusIcon = ({
   status: TaskRowStatus;
   className?: string;
 }) => {
-  // Under way: still an open circle, with a small yellow dot below it.
-  if (status === 'doing')
+  // Under way or waiting on the person: a dot, yellow or blue. On a task's
+  // row the circle stays open and the dot sits after its words (StateDot).
+  if (status === 'doing' || status === 'waiting')
     return (
-      <span className="relative inline-flex">
-        <Icon
-          name="radio_button_unchecked"
+      <span
+        className={cn(
+          'inline-flex size-[1em] items-center justify-center',
+          className,
+        )}
+      >
+        <span
           className={cn(
-            'text-neutral-500 auto-light:text-neutral-400',
-            className,
+            'size-[0.4em] rounded-full',
+            status === 'doing'
+              ? 'bg-amber-400 auto-light:bg-amber-500'
+              : 'bg-sky-400 auto-light:bg-sky-500',
           )}
         />
-        <span className="absolute -bottom-[5px] left-1/2 size-[5px] -translate-x-1/2 rounded-full bg-amber-400 auto-light:bg-amber-500" />
       </span>
     );
   if (!status)
@@ -143,6 +149,47 @@ export const statusForKey = (e: React.KeyboardEvent): PointStatus | null => {
       )[digit ?? ''] ?? null
     );
   }
+  return null;
+};
+
+/** A task row's icon: under way and waiting keep the open circle. */
+export const rowIcon = (status: TaskRowStatus): TaskRowStatus =>
+  status === 'doing' || status === 'waiting' ? null : status;
+
+/**
+ * The dot after a task's words: yellow while it is under way, a rippling
+ * blue while it waits on the person.
+ */
+export const StateDot = ({
+  status,
+  className,
+}: {
+  status: TaskRowStatus;
+  className?: string;
+}) => {
+  if (status === 'doing')
+    return (
+      <span
+        title="Under way"
+        className={cn(
+          'ml-1.5 inline-block size-1.5 rounded-full bg-amber-400 align-middle auto-light:bg-amber-500',
+          className,
+        )}
+      />
+    );
+  if (status === 'waiting')
+    return (
+      <span
+        title="Waiting on you"
+        className={cn(
+          'relative ml-1.5 inline-flex size-1.5 align-middle',
+          className,
+        )}
+      >
+        <span className="absolute inset-0 animate-ping rounded-full bg-sky-400 opacity-75" />
+        <span className="relative size-1.5 rounded-full bg-sky-400 auto-light:bg-sky-500" />
+      </span>
+    );
   return null;
 };
 

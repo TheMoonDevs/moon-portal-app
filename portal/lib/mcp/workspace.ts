@@ -2,6 +2,7 @@ import { noteStatusChange } from '@/lib/daywork/server';
 import { db } from '@/lib/mongodb/db-client';
 import type { SessionUser } from '@/lib/permissions/server';
 import { syncTaskPoints } from '@/lib/progress/server';
+import { isAliasOf, sanitizeAliases } from '@/lib/worklogs/aliases';
 import { isOnTeam } from '@/lib/worklogs/linker';
 import { fitGoal } from '@/lib/workspace/goalFit';
 import { addGoal, changeGoal, removeGoal } from '@/lib/workspace/goals';
@@ -89,16 +90,20 @@ export async function findProject(
         },
       })
     : [];
-  const matches = projects.filter(
-    (p) =>
-      (p.id === ref.trim() || same(p.name, ref)) &&
-      allowsInProject(
-        byCompany.get(p.companyId)?.permissions,
-        user,
-        p,
-        permission,
-      ),
+  const allowed = (p: Project) =>
+    allowsInProject(
+      byCompany.get(p.companyId)?.permissions,
+      user,
+      p,
+      permission,
+    );
+  const byName = projects.filter(
+    (p) => (p.id === ref.trim() || same(p.name, ref)) && allowed(p),
   );
+  // Else a short name it goes by (AMZ for Anime Music Zone).
+  const matches = byName.length
+    ? byName
+    : projects.filter((p) => isAliasOf(ref, p) && allowed(p));
   if (matches.length === 1) return matches[0];
   if (matches.length > 1)
     throw new ToolError(
@@ -468,6 +473,12 @@ export const WORKSPACE_TOOLS: Tool[] = [
         company: { type: 'string', description: 'Company id or name.' },
         name: { type: 'string' },
         description: { type: 'string' },
+        aliases: {
+          type: 'array',
+          items: { type: 'string' },
+          description:
+            'Short names the person uses for it, e.g. ["AMZ"] for Anime Music Zone (optional). Initials of a name of three words or more are known already.',
+        },
         effort: { type: 'string', enum: EFFORTS },
         parent: {
           type: 'string',
@@ -506,6 +517,7 @@ export const WORKSPACE_TOOLS: Tool[] = [
         companyId: company.id,
         name,
         description: text(args?.description, 4000) || null,
+        aliases: sanitizeAliases(args?.aliases),
         leadIds: [user.id],
         effort: effort ?? PROJECT_EFFORT.MEDIUM,
         parentId: parent?.id ?? null,
@@ -545,7 +557,7 @@ export const WORKSPACE_TOOLS: Tool[] = [
     name: 'update_project',
     title: 'Update a project',
     description:
-      "Changes a project's effort (LOW, MEDIUM or HIGH), its parent project (empty string to take it out from under one), status or description.",
+      "Changes a project's effort (LOW, MEDIUM or HIGH), its parent project (empty string to take it out from under one), status, description or aliases (the short names the person uses for it, e.g. AMZ, so their tasks land in it).",
     inputSchema: {
       type: 'object',
       properties: {
@@ -559,6 +571,12 @@ export const WORKSPACE_TOOLS: Tool[] = [
           ),
         },
         description: { type: 'string' },
+        aliases: {
+          type: 'array',
+          items: { type: 'string' },
+          description:
+            'The full list of short names for it (replaces the old list; [] clears it).',
+        },
       },
       required: ['project'],
     },
@@ -596,9 +614,11 @@ export const WORKSPACE_TOOLS: Tool[] = [
       }
       if (typeof args?.description === 'string')
         data.description = text(args.description, 4000) || null;
+      if (args?.aliases !== undefined)
+        data.aliases = sanitizeAliases(args.aliases);
       if (!Object.keys(data).length)
         throw new ToolError(
-          'Say what to change: effort, parent, status or description.',
+          'Say what to change: effort, parent, status, description or aliases.',
         );
       const updated: Project = await db.project.update({
         where: { id: project.id },
@@ -610,6 +630,7 @@ export const WORKSPACE_TOOLS: Tool[] = [
           name: updated.name,
           effort: updated.effort ?? null,
           status: updated.status,
+          ...(updated.aliases?.length && { aliases: updated.aliases }),
           ...(parentName !== undefined && { parent: parentName }),
         },
       };
