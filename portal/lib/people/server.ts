@@ -13,6 +13,7 @@ import {
   isPersonalLink,
   PERSONAL_COMPANY,
   PERSONAL_COMPANY_ID as PERSONAL_ID,
+  PERSONAL_TITLE,
 } from '@/lib/worklogs/personal';
 import {
   type PointEvent,
@@ -231,8 +232,12 @@ export async function loadWork(
   const all: WorkPoint[] = [];
   let hidden = 0;
   for (const task of Array.from(tasks.values())) {
+    // Personal work is theirs alone. Work not placed in a project yet (most
+    // lines from the old worklogs) is shown, as those lines always were.
+    const unplaced = !task.projectId && !task.companyId;
     const ownerOnly =
-      !task.projectId && (!task.companyId || task.companyId === PERSONAL_ID);
+      (!task.projectId && task.companyId === PERSONAL_ID) ||
+      (unplaced && PERSONAL_TITLE.test(task.title));
     if (ownerOnly && !isSelf) continue;
     // Archived without any work in the period: put away, not worked on.
     const points = dayPoints.filter((p) => p.taskId === task.id);
@@ -248,7 +253,8 @@ export async function loadWork(
       continue;
     }
     const events: PointEvent[] = points
-      .filter((p) => !p.isPrivate || isSelf)
+      // A point's privacy follows its task's place when it was written.
+      .filter((p) => !p.isPrivate || isSelf || !ownerOnly)
       .map((p) => ({
         key: task.id,
         at: p.at,
