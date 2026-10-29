@@ -45,8 +45,8 @@ import * as lots from './lots';
  * MUI's), seen from above at an angle like a strategy game. Companies are
  * towns in their brand colours, joined by highways. A town grows square by
  * square: the town square, where everyone has a plot to stand on, with the
- * town hall and the leaderboards, then a square of four task buildings per four kinds of
- * task in each project. Bots travel the roads (glowing blue while they do)
+ * town hall and the leaderboards, then squares of up to three buildings for the goals and
+ * tasks of each project. Bots travel the roads (driving, and glowing grey while they do)
  * to the building they work at, and back to their owner's plot when they
  * are done or need permission. Everything is drawn from simple shapes in art.ts, so
  * there are no models to download.
@@ -57,10 +57,14 @@ export type Pick = {
   id: string;
 };
 
-/** Bots glow this while they travel. */
-const TRANSIT = '#2563eb';
-/** Bots walk to their work and back, slowly enough to watch. */
+/** Bots glow this while they travel, and their routes are drawn in it. */
+const TRANSIT = '#94a3b8';
+/** Bots walk out to the road and in from it, slowly enough to watch. */
 const TRANSIT_SPEED = 6.5;
+/** On the road they drive. */
+const DRIVE_SPEED = 13;
+/** How far along the road a bot takes to hop in or out of its car. */
+const HOP = 1.2;
 
 /** World units from top to bottom of the screen at zoom 1. */
 const VIEW = 60;
@@ -226,12 +230,27 @@ function act(b: BotEntity, t: number, dt: number) {
   let squint = 1;
   let wiggle = Math.sin(k * 3) * 0.15;
 
+  // Out of its car: full size. In it: gone, with the car in its place.
+  let size = 1;
   if (b.path) {
-    // Walking along the roads with a little bob, glowing blue.
-    b.travelled += dt * TRANSIT_SPEED;
+    // Walks out to the road, pops into its car, drives, pops out at the
+    // other end and walks in.
+    const d = b.travelled;
+    const inside = b.ride ? Math.min(d - b.ride.from, b.ride.to - d) : -1;
+    b.travelled += dt * (inside > HOP ? DRIVE_SPEED : TRANSIT_SPEED);
     const at = art.along(b.path, b.travelled);
     g.position.set(at.x, 0, at.z);
     turn(g, at.angle, dt * 8);
+    size = inside > 0 ? Math.max(0, 1 - inside / (HOP * 0.5)) : 1;
+    const car = inside > 0 ? Math.min(1, inside / HOP) : 0;
+    b.car.visible = car > 0;
+    if (car > 0) {
+      // A little overshoot as it pops in.
+      const pop = 1 + Math.sin(car * Math.PI) * 0.25;
+      b.car.scale.setScalar(1.3 * car * pop);
+      b.car.position.set(at.x, 0.03, at.z);
+      b.car.rotation.y = at.angle - Math.PI / 2;
+    }
     y = 0.14 + Math.abs(Math.sin(b.travelled * 2.4)) * 0.16;
     lean = 0.12;
     const step = Math.sin(b.travelled * 2.4);
@@ -347,6 +366,8 @@ function act(b: BotEntity, t: number, dt: number) {
     }
   }
 
+  if (!b.path) b.car.visible = false;
+  g.scale.setScalar(1.25 * size);
   b.hammer.visible =
     !b.path && b.bot.state === 'working' && b.bot.tool === 'hammer';
   if (squint > 0.2 && k % 3.7 < 0.12) squint = 0.1;
@@ -388,6 +409,10 @@ type BotEntity = {
   /** The roads it is travelling, while it travels. */
   path: { x: number; z: number }[] | null;
   travelled: number;
+  /** Where on its path it gets in its car and out again, if it drives. */
+  ride: { from: number; to: number } | null;
+  /** Its car, out on the road while it drives. */
+  car: THREE.Group;
   trail: THREE.Object3D | null;
   seed: number;
   /** In its hand while it hammers. */
@@ -602,6 +627,13 @@ export const WorldScene = ({
         camera,
       );
       for (const hit of ray.intersectObjects(scene.children, true)) {
+        // Batched trees and ground know what each of theirs stood in.
+        const picks = hit.object.userData.picks as (Pick | null)[] | undefined;
+        if (picks && hit.instanceId !== undefined) {
+          const pick = picks[hit.instanceId];
+          if (pick) return onPickRef.current(pick);
+          continue;
+        }
         let o: THREE.Object3D | null = hit.object;
         while (o && !o.userData.pick) o = o.parent;
         if (o) return onPickRef.current(o.userData.pick as Pick);
@@ -798,6 +830,7 @@ export const WorldScene = ({
 
     for (const town of w.towns) buildTown(town, layout, townRank.get(town.id)!);
     for (const p of w.projects) buildProject(p, layout);
+    art.batch(s.statics);
 
     drawBoards();
     syncBots();
@@ -1307,6 +1340,8 @@ export const WorldScene = ({
   /** A bot reached the end of its road. */
   const arrive = (b: BotEntity) => {
     b.path = null;
+    b.ride = null;
+    b.car.visible = false;
     if (b.trail) {
       state.current?.scene.remove(b.trail);
       b.trail = null;
@@ -1315,7 +1350,7 @@ export const WorldScene = ({
     b.light.emissive.set(BOT_STATE_COLOR[b.bot.state]);
   };
 
-  /** Sends a bot along the roads to its target, glowing blue on the way. */
+  /** Sends a bot along the roads to its target, driving most of the way. */
   const travel = (b: BotEntity, town: TownSpot) => {
     const s = state.current!;
     const from = { x: b.group.position.x, z: b.group.position.z };
@@ -1324,6 +1359,12 @@ export const WorldScene = ({
     if (b.trail) s.scene.remove(b.trail);
     b.path = route(town, from, to);
     b.travelled = 0;
+    // It drives the roads between the first and last turn, when that's far
+    // enough to bother.
+    const n = b.path.length;
+    const from0 = pathLength(b.path.slice(0, 2));
+    const to0 = pathLength(b.path.slice(0, n - 1));
+    b.ride = n >= 4 && to0 - from0 > HOP * 4 ? { from: from0, to: to0 } : null;
     const line = art.routeLine(b.path, TRANSIT, 0.45);
     b.trail = line.group;
     s.scene.add(line.group);
@@ -1525,6 +1566,9 @@ export const WorldScene = ({
         const start = owner ?? work;
         drone.group.position.set(start.x, 0, start.z);
         s.scene.add(drone.group);
+        const car = art.car(art.tint(accent, 0.15));
+        car.visible = false;
+        s.scene.add(car);
         const tool = lots.hammer();
         tool.position.y = -0.42;
         tool.visible = false;
@@ -1540,6 +1584,8 @@ export const WorldScene = ({
           owner: home,
           path: null,
           travelled: 0,
+          ride: null,
+          car,
           trail: null,
           seed: (art.hash(bot.id) % 1000) / 100,
           hammer: tool,
@@ -1600,6 +1646,7 @@ export const WorldScene = ({
       entity.label.obj.element.remove();
       if (entity.trail) s.scene.remove(entity.trail);
       if (entity.crane) s.scene.remove(entity.crane.group);
+      s.scene.remove(entity.car);
       s.scene.remove(entity.group);
       s.bots.delete(id);
     }
@@ -1617,7 +1664,7 @@ export const WorldScene = ({
   /* ------------------------ routes and directions ----------------------- */
 
   /**
-   * For a person: blue routes from them to all their bots' work at once,
+   * For a person: grey routes from them to all their bots' work at once,
    * with pings where each works. For a project, task building or bot: the
    * way there from you.
    */

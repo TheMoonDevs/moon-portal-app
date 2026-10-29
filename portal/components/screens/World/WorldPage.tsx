@@ -343,7 +343,7 @@ const SiteCard = ({ site }: { site: WorldSite; color: string }) => {
       )}
       <p className="mt-2 text-[11px] text-neutral-400">
         Every task done for this goal adds a floor; ten floors finish a building
-        and the next one starts. The blue line is the way there from you.
+        and the next one starts. The grey line is the way there from you.
       </p>
     </div>
   );
@@ -679,7 +679,7 @@ export const WorldPage = () => {
               </span>
             ))}
             <span className="flex items-center gap-1">
-              <span className="inline-block size-2 rounded-full bg-blue-600" />
+              <span className="inline-block size-2 rounded-full bg-slate-400" />
               On the road
             </span>
           </div>
@@ -810,7 +810,7 @@ export const WorldPage = () => {
                   />
                 </Section>
                 <p className="mt-3 text-[11px] text-neutral-400">
-                  The blue line is the way there from you.
+                  The grey line is the way there from you.
                 </p>
               </>
             )}

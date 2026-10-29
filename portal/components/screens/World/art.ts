@@ -179,8 +179,56 @@ export function strip(
   );
   m.position.set(x, y, z);
   m.receiveShadow = true;
+  m.userData.batch = true;
   parent.add(m);
   return m;
+}
+
+/**
+ * Draws everything under `root` marked for it (trees and ground strips,
+ * hundreds of them in a big town) as one instanced mesh per shape and
+ * colour, so the world stays smooth however far it grows. Clicks still
+ * reach what each one stood in: `userData.picks[instanceId]`. `root` must
+ * sit at the origin.
+ */
+export function batch(root: THREE.Object3D) {
+  root.updateMatrixWorld(true);
+  type Item = { matrix: THREE.Matrix4; pick: unknown };
+  const buckets = new Map<
+    string,
+    { mesh: THREE.Mesh; items: Item[]; cast: boolean }
+  >();
+  const marked: THREE.Object3D[] = [];
+  root.traverse((o) => {
+    if (o.userData.batch) marked.push(o);
+  });
+  for (const o of marked) {
+    let up: THREE.Object3D | null = o;
+    while (up && !up.userData.pick) up = up.parent;
+    const pick = up?.userData.pick ?? null;
+    o.traverse((m) => {
+      if (!(m instanceof THREE.Mesh) || Array.isArray(m.material)) return;
+      const key = `${m.geometry.uuid}|${m.material.uuid}`;
+      let b = buckets.get(key);
+      if (!b) buckets.set(key, (b = { mesh: m, items: [], cast: false }));
+      b.items.push({ matrix: m.matrixWorld.clone(), pick });
+      b.cast ||= m.castShadow;
+    });
+  }
+  for (const o of marked) o.removeFromParent();
+  for (const { mesh: m, items, cast } of Array.from(buckets.values())) {
+    const many = new THREE.InstancedMesh(
+      m.geometry,
+      m.material as THREE.Material,
+      items.length,
+    );
+    items.forEach((it, i) => many.setMatrixAt(i, it.matrix));
+    many.computeBoundingSphere();
+    many.castShadow = cast;
+    many.receiveShadow = true;
+    many.userData.picks = items.map((it) => it.pick);
+    root.add(many);
+  }
 }
 
 /* -------------------------------- logos --------------------------------- */
@@ -872,6 +920,7 @@ export function tree(
 ) {
   const g = new THREE.Group();
   g.position.set(x, 0, z);
+  g.userData.batch = true;
   const s = 0.75 + rand() * 0.6;
   g.scale.setScalar(s);
   parent.add(g);
