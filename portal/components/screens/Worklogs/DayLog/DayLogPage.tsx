@@ -42,7 +42,7 @@ import { useYourTasks, YourTasks } from './YourTasks';
 
 const fmt = (d: dayjs.Dayjs) => d.format('YYYY-MM-DD');
 
-const SHOW_POINTS_KEY = 'worklogs.showPoints';
+const SHOW_POINTS_KEY = 'worklogs.points';
 
 /** Days from a week back to two weeks ahead can be written in. */
 const editableDay = (date: string) => {
@@ -131,11 +131,11 @@ export const DayLogPage = ({
   const [sideTab, setSideTab] = useState<SideTab>('tasks');
   const [filter, setFilter] = useState<string | null>(null);
   useEffect(() => setFilter(null), [date]);
-  // Work points under tasks are hidden until the person turns them on.
-  const [showPoints, setShowPoints] = useState(false);
+  // Work points under tasks show unless the person turned them off.
+  const [showPoints, setShowPoints] = useState(true);
   useEffect(() => {
     try {
-      setShowPoints(localStorage.getItem(SHOW_POINTS_KEY) === '1');
+      setShowPoints(localStorage.getItem(SHOW_POINTS_KEY) !== '0');
     } catch {
       // Storage can be blocked; the choice then lasts for this visit.
     }

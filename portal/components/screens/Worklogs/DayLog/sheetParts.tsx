@@ -61,19 +61,16 @@ export const StatusIcon = ({
   status: TaskRowStatus;
   className?: string;
 }) => {
-  // Under way: still an open circle, with a small yellow dot below it.
+  // Under way: still an open circle; the yellow dot sits after its words.
   if (status === 'doing')
     return (
-      <span className="relative inline-flex">
-        <Icon
-          name="radio_button_unchecked"
-          className={cn(
-            'text-neutral-500 auto-light:text-neutral-400',
-            className,
-          )}
-        />
-        <span className="absolute -bottom-[5px] left-1/2 size-[5px] -translate-x-1/2 rounded-full bg-amber-400 auto-light:bg-amber-500" />
-      </span>
+      <Icon
+        name="radio_button_unchecked"
+        className={cn(
+          'text-neutral-500 auto-light:text-neutral-400',
+          className,
+        )}
+      />
     );
   if (!status)
     return (
@@ -145,6 +142,17 @@ export const statusForKey = (e: React.KeyboardEvent): PointStatus | null => {
   }
   return null;
 };
+
+/** The small yellow dot after an under-way task's words. */
+export const DoingDot = ({ className }: { className?: string }) => (
+  <span
+    title="Under way"
+    className={cn(
+      'ml-1.5 inline-block size-1.5 rounded-full bg-amber-400 align-middle auto-light:bg-amber-500',
+      className,
+    )}
+  />
+);
 
 /* -------------------------------------------------------------------------- */
 

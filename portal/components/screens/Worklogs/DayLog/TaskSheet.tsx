@@ -13,6 +13,7 @@ import type { PickerOption } from './Picker';
 import { Picker } from './Picker';
 import type { TaskRowStatus } from './sheetParts';
 import {
+  DoingDot,
   LineInput,
   PlaceChip,
   placeInput,
@@ -434,6 +435,28 @@ export const TaskSheet = ({
   );
   const firstToday = tasks.find((t) => !pendingIds.has(t.id))?.id;
 
+  // New tasks are written above the finished ones.
+  const shutAt = tasks.findIndex((t) => {
+    const status = rowStatus(t, day.points, day.date);
+    return status === 'done' || status === 'archived';
+  });
+  const addRow = editable && (
+    <div className="flex items-center gap-2.5 rounded-lg px-2 py-1">
+      <Icon
+        name="add"
+        className="text-[18px] text-neutral-600 auto-light:text-neutral-400"
+      />
+      <input
+        value={adding}
+        onChange={(e) => setAdding(e.target.value)}
+        onKeyDown={(e) => e.key === 'Enter' && addFromInput()}
+        onBlur={addFromInput}
+        placeholder={tasks.length ? 'Add a task' : 'Write the first task'}
+        className="flex-1 bg-transparent text-sm font-medium text-neutral-100 placeholder:font-normal placeholder:text-neutral-600 focus:outline-none auto-light:text-neutral-900 auto-light:placeholder:text-neutral-400"
+      />
+    </div>
+  );
+
   const heading = (text: string) => (
     <p className="px-2 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
       {text}
@@ -458,6 +481,7 @@ export const TaskSheet = ({
           }));
         return (
           <div key={task.rowKey ?? task.id}>
+            {index === shutAt && addRow}
             {index === 0 &&
               pendingIds.size > 0 &&
               heading('Pending from before')}
@@ -490,29 +514,32 @@ export const TaskSheet = ({
                     placeholder="What are you working on?"
                     className={cn(
                       '[grid-area:1/1]',
-                      'text-neutral-100 auto-light:text-neutral-900',
+                      'font-medium text-white auto-light:text-neutral-950',
                       shut &&
                         'text-neutral-500 line-through decoration-neutral-600 auto-light:text-neutral-400 auto-light:decoration-neutral-300',
                     )}
                   />
-                  {count > 0 && (
-                    // The count sits right after the words: the words are
-                    // laid out again unseen, so it lands where they end.
+                  {(count > 0 || status === 'doing') && (
+                    // The dot and count sit right after the words: the words
+                    // are laid out again unseen, so they land where they end.
                     <span
                       aria-hidden
-                      className="pointer-events-none whitespace-pre-wrap break-words text-sm leading-6 [grid-area:1/1]"
+                      className="pointer-events-none whitespace-pre-wrap break-words text-sm font-medium leading-6 [grid-area:1/1]"
                     >
                       <span className="invisible">{task.title}</span>
-                      <span
-                        className={cn(
-                          'ml-1.5 inline-block rounded px-1 align-[1px] text-[10px] font-medium tabular-nums leading-4',
-                          shut
-                            ? 'bg-white/[0.04] text-neutral-600 auto-light:bg-black/[0.04] auto-light:text-neutral-400'
-                            : 'bg-white/[0.07] text-neutral-400 auto-light:bg-black/[0.06] auto-light:text-neutral-500',
-                        )}
-                      >
-                        {count}
-                      </span>
+                      {status === 'doing' && <DoingDot />}
+                      {count > 0 && (
+                        <span
+                          className={cn(
+                            'ml-1.5 inline-block rounded px-1 align-[1px] text-[10px] font-medium tabular-nums leading-4',
+                            shut
+                              ? 'bg-white/[0.04] text-neutral-600 auto-light:bg-black/[0.04] auto-light:text-neutral-400'
+                              : 'bg-white/[0.07] text-neutral-400 auto-light:bg-black/[0.06] auto-light:text-neutral-500',
+                          )}
+                        >
+                          {count}
+                        </span>
+                      )}
                     </span>
                   )}
                 </div>
@@ -554,23 +581,7 @@ export const TaskSheet = ({
           </div>
         );
       })}
-
-      {editable && (
-        <div className="flex items-center gap-2.5 rounded-lg px-2 py-1">
-          <Icon
-            name="add"
-            className="text-[18px] text-neutral-600 auto-light:text-neutral-400"
-          />
-          <input
-            value={adding}
-            onChange={(e) => setAdding(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && addFromInput()}
-            onBlur={addFromInput}
-            placeholder={tasks.length ? 'Add a task' : 'Write the first task'}
-            className="flex-1 bg-transparent text-sm text-neutral-100 placeholder:text-neutral-600 focus:outline-none auto-light:text-neutral-900 auto-light:placeholder:text-neutral-400"
-          />
-        </div>
-      )}
+      {shutAt === -1 && addRow}
     </div>
   );
 };
