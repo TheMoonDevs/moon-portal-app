@@ -14,6 +14,7 @@ import { Picker } from './Picker';
 import type { TaskRowStatus } from './sheetParts';
 import {
   LineInput,
+  movedOn,
   PlaceChip,
   placeInput,
   placeOf,
@@ -439,7 +440,11 @@ export const TaskSheet = ({
   // New tasks are written above the finished ones.
   const shutAt = tasks.findIndex((t) => {
     const status = rowStatus(t, day.points, day.date);
-    return status === 'done' || status === 'archived';
+    return (
+      status === 'done' ||
+      status === 'archived' ||
+      movedOn(t, day.date, day.today)
+    );
   });
   const addRow = editable && (
     <div className="flex items-center gap-2.5 rounded-lg px-2 py-1">
@@ -469,7 +474,9 @@ export const TaskSheet = ({
       {tasks.map((task, index) => {
         const points = pointsOf(task.id);
         const status = rowStatus(task, day.points, day.date);
-        const shut = status === 'done' || status === 'archived';
+        const moved = movedOn(task, day.date, day.today);
+        const shut = status === 'done' || status === 'archived' || moved;
+        const canEdit = editable && !moved;
         const expanded = open.has(task.id);
         const count = showPoints ? readablePoints(points).length : 0;
         const moveOptions: PickerOption[] = tasks
@@ -491,20 +498,31 @@ export const TaskSheet = ({
               <div className="flex items-start gap-2.5">
                 <button
                   type="button"
-                  disabled={!editable || (task.draft && !task.title.trim())}
+                  disabled={!canEdit || (task.draft && !task.title.trim())}
                   aria-label={status === 'done' ? 'Mark not done' : 'Mark done'}
-                  title="Done (Ctrl+Space)"
+                  title={
+                    moved
+                      ? 'Moved on from this day. Change it on today or in Your tasks.'
+                      : 'Done (Ctrl+Space)'
+                  }
                   onClick={() =>
                     day.move(task.id, status === 'done' ? 'todo' : 'done')
                   }
                   className="mt-[3px] text-[18px] transition-transform active:scale-90"
                 >
-                  <StatusIcon status={rowIcon(status)} />
+                  {moved ? (
+                    <Icon
+                      name="arrow_circle_right"
+                      className="text-neutral-600 auto-light:text-neutral-400"
+                    />
+                  ) : (
+                    <StatusIcon status={rowIcon(status)} />
+                  )}
                 </button>
                 <div className="grid min-w-0 flex-1">
                   <LineInput
                     value={task.title}
-                    disabled={!editable}
+                    disabled={!canEdit}
                     inputRef={(el) => {
                       if (el) inputs.current.set(task.id, el);
                       else inputs.current.delete(task.id);
@@ -521,8 +539,8 @@ export const TaskSheet = ({
                     )}
                   />
                   {(count > 0 ||
-                    status === 'doing' ||
-                    status === 'waiting') && (
+                    (!moved &&
+                      (status === 'doing' || status === 'waiting'))) && (
                     // The dot and count sit right after the words: the words
                     // are laid out again unseen, so they land where they end.
                     <span
@@ -530,7 +548,7 @@ export const TaskSheet = ({
                       className="pointer-events-none whitespace-pre-wrap break-words text-sm font-medium leading-6 [grid-area:1/1]"
                     >
                       <span className="invisible">{task.title}</span>
-                      <StateDot status={status} />
+                      {!moved && <StateDot status={status} />}
                       {count > 0 && (
                         <span
                           className={cn(
@@ -546,7 +564,7 @@ export const TaskSheet = ({
                     </span>
                   )}
                 </div>
-                {editable && !task.draft && (
+                {canEdit && !task.draft && (
                   <RowMenu
                     status={status}
                     onMove={(to) => day.move(task.id, to)}
@@ -575,7 +593,7 @@ export const TaskSheet = ({
                   task={task}
                   day={day}
                   points={points}
-                  editable={editable}
+                  editable={canEdit}
                   moveOptions={moveOptions}
                   showPoints={showPoints}
                 />
