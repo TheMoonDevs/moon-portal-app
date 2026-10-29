@@ -74,7 +74,10 @@ export function clay(
 }
 
 const geometries = new Map<string, THREE.BufferGeometry>();
-const shape = <T extends THREE.BufferGeometry>(key: string, make: () => T) => {
+export const shape = <T extends THREE.BufferGeometry>(
+  key: string,
+  make: () => T,
+) => {
   let g = geometries.get(key);
   if (!g) {
     g = make();
@@ -93,13 +96,13 @@ export const roundBox = (w: number, h: number, d: number, r = 0.12) =>
       : new THREE.BoxGeometry(w, h, d);
   });
 
-const cylinder = (top: number, bottom: number, h: number, seg = 24) =>
+export const cylinder = (top: number, bottom: number, h: number, seg = 24) =>
   shape(
     `cyl${r2(top)},${r2(bottom)},${r2(h)},${seg}`,
     () => new THREE.CylinderGeometry(top, bottom, h, seg),
   );
 
-const sphere = (r: number, seg = 20, half = false) =>
+export const sphere = (r: number, seg = 20, half = false) =>
   shape(
     `sph${r2(r)},${seg},${half}`,
     () =>
@@ -115,7 +118,7 @@ const sphere = (r: number, seg = 20, half = false) =>
   );
 
 /** A triangular prism: the triangle across x (base `w`, peak `h`), `d` deep. */
-const prism = (w: number, h: number, d: number, right = false) =>
+export const prism = (w: number, h: number, d: number, right = false) =>
   shape(`prism${r2(w)},${r2(h)},${r2(d)},${right}`, () => {
     const s = new THREE.Shape();
     s.moveTo(-w / 2, 0);
@@ -176,8 +179,56 @@ export function strip(
   );
   m.position.set(x, y, z);
   m.receiveShadow = true;
+  m.userData.batch = true;
   parent.add(m);
   return m;
+}
+
+/**
+ * Draws everything under `root` marked for it (trees and ground strips,
+ * hundreds of them in a big town) as one instanced mesh per shape and
+ * colour, so the world stays smooth however far it grows. Clicks still
+ * reach what each one stood in: `userData.picks[instanceId]`. `root` must
+ * sit at the origin.
+ */
+export function batch(root: THREE.Object3D) {
+  root.updateMatrixWorld(true);
+  type Item = { matrix: THREE.Matrix4; pick: unknown };
+  const buckets = new Map<
+    string,
+    { mesh: THREE.Mesh; items: Item[]; cast: boolean }
+  >();
+  const marked: THREE.Object3D[] = [];
+  root.traverse((o) => {
+    if (o.userData.batch) marked.push(o);
+  });
+  for (const o of marked) {
+    let up: THREE.Object3D | null = o;
+    while (up && !up.userData.pick) up = up.parent;
+    const pick = up?.userData.pick ?? null;
+    o.traverse((m) => {
+      if (!(m instanceof THREE.Mesh) || Array.isArray(m.material)) return;
+      const key = `${m.geometry.uuid}|${m.material.uuid}`;
+      let b = buckets.get(key);
+      if (!b) buckets.set(key, (b = { mesh: m, items: [], cast: false }));
+      b.items.push({ matrix: m.matrixWorld.clone(), pick });
+      b.cast ||= m.castShadow;
+    });
+  }
+  for (const o of marked) o.removeFromParent();
+  for (const { mesh: m, items, cast } of Array.from(buckets.values())) {
+    const many = new THREE.InstancedMesh(
+      m.geometry,
+      m.material as THREE.Material,
+      items.length,
+    );
+    items.forEach((it, i) => many.setMatrixAt(i, it.matrix));
+    many.computeBoundingSphere();
+    many.castShadow = cast;
+    many.receiveShadow = true;
+    many.userData.picks = items.map((it) => it.pick);
+    root.add(many);
+  }
 }
 
 /* -------------------------------- logos --------------------------------- */
@@ -707,7 +758,7 @@ export function building(
 }
 
 /** A lot being built on: a slab, scaffolding and a crane. */
-function construction(accent: string, seed: number) {
+export function construction(accent: string, seed: number) {
   const g = new THREE.Group();
   const anims: Animated[] = [];
   block(g, 6, 0.3, 6, CLAY_SHADE, 0, 0, 0, 0.08);
@@ -869,6 +920,7 @@ export function tree(
 ) {
   const g = new THREE.Group();
   g.position.set(x, 0, z);
+  g.userData.batch = true;
   const s = 0.75 + rand() * 0.6;
   g.scale.setScalar(s);
   parent.add(g);
@@ -938,12 +990,12 @@ const capsule = (r: number, len: number) =>
     `cap${r2(r)},${r2(len)}`,
     () => new THREE.CapsuleGeometry(r, len, 4, 12),
   );
-const cone = (r: number, h: number, seg = 16) =>
+export const cone = (r: number, h: number, seg = 16) =>
   shape(
     `cone${r2(r)},${r2(h)},${seg}`,
     () => new THREE.ConeGeometry(r, h, seg),
   );
-const torus = (r: number, tube: number, arc = Math.PI * 2, sides = 24) =>
+export const torus = (r: number, tube: number, arc = Math.PI * 2, sides = 24) =>
   shape(
     `torus${r2(r)},${r2(tube)},${r2(arc)},${sides}`,
     () => new THREE.TorusGeometry(r, tube, 8, sides, arc),
@@ -2229,7 +2281,7 @@ export function bot(accent: string, badge?: THREE.Material): Bot {
 /* ------------------------------ directions ------------------------------ */
 
 const glowMaterials = new Map<string, THREE.MeshBasicMaterial>();
-const glow = (hex: string, opacity = 0.9) => {
+export const glow = (hex: string, opacity = 0.9) => {
   const key = `${hex}|${opacity}`;
   let m = glowMaterials.get(key);
   if (!m) {

@@ -19,6 +19,7 @@ export const PERMISSION_ACTIONS = [
   'execute',
   'grant',
   'revoke',
+  'approve',
 ] as const;
 
 export type PermissionAction = (typeof PERMISSION_ACTIONS)[number];
@@ -66,8 +67,9 @@ export const PERMISSION_RESOURCES: ResourceDefinition[] = [
   {
     key: 'projects',
     label: 'Projects',
-    description: 'Projects inside a company.',
-    actions: ['read', 'create', 'edit', 'delete'],
+    description:
+      'Projects inside a company. Without `approve`, a new top-level project is sent as a request; `approve` creates projects straight away and approves or declines requests. Leads of a project add sub-projects under it without asking.',
+    actions: ['read', 'create', 'edit', 'delete', 'approve'],
     scope: 'company',
   },
   {

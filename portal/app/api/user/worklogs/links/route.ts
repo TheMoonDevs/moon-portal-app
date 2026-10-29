@@ -15,6 +15,7 @@ import { taskLines } from '@/lib/workspace/lineTasks';
 import { toDay } from '@/lib/workspace/projects';
 import { settleScheduledLines } from '@/lib/workspace/scheduleRuns';
 import type { WorklogLink, WorkLogs } from '@/models/worklogs';
+import type { Task } from '@/models/workspace';
 
 export const dynamic = 'force-dynamic';
 
@@ -82,9 +83,27 @@ export async function POST(request: Request) {
   const claudeKeys = sectionLines(worklog.works)
     .filter((l) => l.claude)
     .map((l) => l.key);
+  // The tasks lines are on, done ones too, with the goal each counts towards.
+  const taskIds = Array.from(
+    new Set(links.map((l) => l.taskId).filter((id): id is string => !!id)),
+  );
+  const linkedTasks: Task[] = taskIds.length
+    ? await db.task.findMany({
+        where: { id: { in: taskIds } },
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          projectId: true,
+          goalId: true,
+          goalPartId: true,
+          goalChecked: true,
+        },
+      })
+    : [];
   return NextResponse.json({
     status: 'success',
-    data: { links, timeline, claudeKeys, ...candidates },
+    data: { links, timeline, claudeKeys, linkedTasks, ...candidates },
   });
 }
 

@@ -4,11 +4,17 @@ import { db } from '@/lib/mongodb/db-client';
 import type { SessionUser } from '@/lib/permissions/server';
 import { lineKey, normalizeLine, PRIVATE_LINE } from '@/lib/worklogs/lines';
 import { isPersonalLink } from '@/lib/worklogs/personal';
+import { tallyRowsFor } from '@/lib/workspace/goalTally';
+import type { DoneTask } from '@/lib/workspace/projects';
 import {
+  goalHistory,
+  goalProgress,
+  isTarget,
   metricLabel,
   metricsWithData,
   periodRange,
   rankProjects,
+  toDay,
 } from '@/lib/workspace/projects';
 import { getWorkspaceForUser } from '@/lib/workspace/server';
 import type { PointEntry } from '@/models/progress';
@@ -18,15 +24,20 @@ import type {
   Project,
   ProjectResult,
   Task,
-  TaskSchedule,
 } from '@/models/workspace';
-import { MEMBER_STATUS, PROJECT_STATUS, TASK_STATUS } from '@/models/workspace';
+import {
+  MEMBER_STATUS,
+  PROJECT_STATUS,
+  TASK_SIZE,
+  TASK_STATUS,
+} from '@/models/workspace';
 
 import type {
   BotPoint,
   LeaderRow,
   World,
   WorldBot,
+  WorldHouse,
   WorldPerson,
   WorldProject,
   WorldSite,
@@ -38,61 +49,157 @@ import {
   brandOf,
   currentPoint,
   GUIDANCE_WEIGHT,
+  HOUSES_PER_LOT,
 } from './state';
 
 const LEADERS = 5;
-/** Task buildings shown per project, the most done first. */
-const MAX_SITES = 36;
+/** Homes lots per project: this week's tasks for no goal. */
+const MAX_HOME_LOTS = 10;
+
+type WorldTask = Pick<
+  Task,
+  | 'id'
+  | 'projectId'
+  | 'title'
+  | 'status'
+  | 'size'
+  | 'goalId'
+  | 'goalPartId'
+  | 'forDate'
+  | 'completedAt'
+  | 'completedByIds'
+  | 'assigneeIds'
+  | 'createdAt'
+  | 'updatedAt'
+>;
+
+const dayOf = (v: unknown) => (v ? toDay(new Date(v as string)) : null);
+
+const OPEN_TASK = (t: WorldTask) =>
+  t.status !== TASK_STATUS.DONE &&
+  t.status !== TASK_STATUS.ARCHIVED &&
+  t.status !== TASK_STATUS.IGNORED;
 
 /**
- * Which kind of task this is: tasks from the same schedule or for the same
- * goal are one kind, and otherwise tasks with the same title once numbers
- * are left out ("Lyric video 12" and "Lyric video 13").
+ * A task for no goal that belongs to this week: for a day in it, done in
+ * it, or still open and made or worked on in it.
  */
-const kindOf = (
-  t: Pick<Task, 'scheduleId' | 'goalId' | 'goalPartId' | 'title'>,
-) =>
-  t.scheduleId
-    ? `s-${t.scheduleId}`
-    : t.goalId
-      ? `g-${t.goalId}-${t.goalPartId ?? ''}`
-      : `t-${(t.title ?? '')
-          .toLowerCase()
-          .replace(/[^\p{L}]+/gu, ' ')
-          .trim()}`;
+const thisWeek = (t: WorldTask, week: { from: string; to: string }) => {
+  const inWeek = (d: string | null) => !!d && d >= week.from && d <= week.to;
+  if (t.forDate) return inWeek(t.forDate);
+  if (t.status === TASK_STATUS.DONE) return inWeek(dayOf(t.completedAt));
+  return (
+    OPEN_TASK(t) && (inWeek(dayOf(t.createdAt)) || inWeek(dayOf(t.updatedAt)))
+  );
+};
 
-/** A project's kinds of task as buildings, most done first. */
+/**
+ * A project's lots: its repeating goals, its targets, then this week's
+ * tasks for no goal as houses, four to a lot.
+ */
 function sitesOf(
   project: Project,
-  tasks: Task[],
-  schedules: Map<string, string>,
+  tasks: WorldTask[],
+  tallies: DoneTask[],
+  today: string,
+  week: { from: string; to: string },
+  /** The town's brand colour, which everything in it wears. */
+  color: string,
 ): WorldSite[] {
-  const sites = new Map<string, WorldSite>();
-  for (const t of tasks) {
-    const id = `${project.id}:${kindOf(t)}`;
-    let site = sites.get(id);
-    if (!site) {
-      const goal = project.goals?.find((g) => g.id === t.goalId);
-      const part = goal?.parts?.find((p) => p.id === t.goalPartId);
-      site = {
+  const goals = project.goals ?? [];
+  const rows = [...(tasks as DoneTask[]), ...tallies];
+  const progress = goalProgress(goals, rows, today);
+  const sites: WorldSite[] = [];
+  for (const goal of goals) {
+    const mine = tasks.filter((t) => t.goalId === goal.id);
+    const open = mine.filter(OPEN_TASK).length;
+    const p = progress.find((x) => x.goalId === goal.id)!;
+    const id = `${project.id}:goal:${goal.id}`;
+    if (isTarget(goal)) {
+      if (goal.achievedAt && goals.some((g) => g.previousId === goal.id))
+        continue; // shown under the target that raised it
+      const records: number[] = [];
+      for (
+        let prev = goals.find((g) => g.id === goal.previousId);
+        prev;
+        prev = goals.find((g) => g.id === prev!.previousId)
+      )
+        records.unshift(prev.target);
+      sites.push({
         id,
-        name:
-          (t.scheduleId && schedules.get(t.scheduleId)) ||
-          (goal ? `${goal.title}${part ? ` · ${part.label}` : ''}` : '') ||
-          t.title.replace(/\s*#?\d+\s*$/, '') ||
-          'Task',
-        done: 0,
-        open: 0,
-      };
-      sites.set(id, site);
+        name: goal.title,
+        kind: 'target',
+        color,
+        done: p.done,
+        open,
+        target: goal.target,
+        percent: p.percent,
+        achieved: !!p.achieved,
+        records,
+      });
+      continue;
     }
-    if (t.status === TASK_STATUS.DONE) site.done += 1;
-    else site.open += 1;
+    const history = goalHistory(goal, rows, 8, today, goal.since);
+    const ended = history.filter((h) => h.met !== null);
+    let streak = 0;
+    for (let i = ended.length - 1; i >= 0 && ended[i].met; i--) streak += 1;
+    sites.push({
+      id,
+      name: goal.title,
+      kind: 'goal',
+      color,
+      done: rows
+        .filter((r) => r.status === TASK_STATUS.DONE && r.goalId === goal.id)
+        .reduce((n, r) => n + (r.amount ?? 1), 0),
+      open,
+      period: {
+        label: PERIOD_NOW[goal.period] ?? 'now',
+        done: p.done,
+        target: p.target,
+        percent: p.percent,
+      },
+      missed: ended.length > 0 && ended[ended.length - 1].met === false,
+      streak,
+    });
   }
-  return Array.from(sites.values())
-    .sort((a, b) => b.done - a.done || b.open - a.open)
-    .slice(0, MAX_SITES);
+
+  // This week's tasks for no goal, newest first, done ones too.
+  const goalIds = new Set(goals.map((g) => g.id));
+  const houses = tasks
+    .filter((t) => !(t.goalId && goalIds.has(t.goalId)) && thisWeek(t, week))
+    .sort((a, b) =>
+      String(b.updatedAt ?? '').localeCompare(String(a.updatedAt ?? '')),
+    )
+    .slice(0, MAX_HOME_LOTS * HOUSES_PER_LOT)
+    .map(
+      (t): WorldHouse => ({
+        id: t.id,
+        title: t.title,
+        done: t.status === TASK_STATUS.DONE,
+        major: t.size === TASK_SIZE.MAJOR,
+      }),
+    )
+    .reverse();
+  for (let i = 0; i < houses.length; i += HOUSES_PER_LOT) {
+    const lot = houses.slice(i, i + HOUSES_PER_LOT);
+    sites.push({
+      id: `${project.id}:homes:${i / HOUSES_PER_LOT}`,
+      name: 'This week’s tasks',
+      kind: 'homes',
+      color,
+      done: lot.filter((h) => h.done).length,
+      open: lot.filter((h) => !h.done).length,
+      houses: lot,
+    });
+  }
+  return sites;
 }
+
+const PERIOD_NOW: Record<string, string> = {
+  day: 'Today',
+  week: 'This week',
+  month: 'This month',
+};
 
 const meaningful = (line: string) =>
   normalizeLine(line).replace(/[^\p{L}\p{N}]/gu, '').length >= 3;
@@ -183,12 +290,12 @@ export async function buildWorld(viewer: SessionUser): Promise<World> {
   const week = periodRange('week', today);
 
   const projectIds = projects.map((p) => p.id);
-  const [logs, entries, results, tasks, schedules]: [
+  const [logs, entries, results, tasks, tallies]: [
     WorkLogs[],
     PointEntry[],
     ProjectResult[],
-    Task[],
-    TaskSchedule[],
+    WorldTask[],
+    DoneTask[],
   ] = await Promise.all([
     db.workLogs.findMany({
       where: {
@@ -218,25 +325,26 @@ export async function buildWorld(viewer: SessionUser): Promise<World> {
             },
           },
           select: {
+            id: true,
             projectId: true,
             title: true,
             status: true,
-            scheduleId: true,
+            size: true,
             goalId: true,
             goalPartId: true,
+            forDate: true,
+            completedAt: true,
+            completedByIds: true,
+            assigneeIds: true,
+            createdAt: true,
+            updatedAt: true,
           },
         })
       : [],
-    projectIds.length
-      ? db.taskSchedule.findMany({
-          where: { projectId: { in: projectIds } },
-          select: { title: true },
-        })
-      : [],
+    projectIds.length ? tallyRowsFor(projectIds) : [],
   ]);
 
   const projectById = new Map(projects.map((p) => [p.id, p]));
-  const scheduleTitles = new Map(schedules.map((s) => [s.id, s.title]));
   const taskById = new Map(tasks.map((t) => [t.id, t]));
   const townsOf = (userId: string) =>
     companyIds.filter((id) =>
@@ -300,7 +408,12 @@ export async function buildWorld(viewer: SessionUser): Promise<World> {
         sites: sitesOf(
           p,
           tasks.filter((t) => t.projectId === p.id),
-          scheduleTitles,
+          tallies.filter(
+            (r) => !!r.goalId && p.goals?.some((g) => g.id === r.goalId),
+          ),
+          today,
+          week,
+          townBrand.get(town.id)!.primary,
         ),
       }),
     );
@@ -328,6 +441,32 @@ export async function buildWorld(viewer: SessionUser): Promise<World> {
       leaderboard: top(scores, names, avatars),
     };
   });
+
+  // Where each task is in the world: its goal's lot, or its house.
+  const placeOf = new Map<string, { siteId: string; houseId: string | null }>();
+  for (const p of worldProjects)
+    for (const site of p.sites) {
+      for (const h of site.houses ?? [])
+        placeOf.set(h.id, { siteId: site.id, houseId: h.id });
+      if (site.kind !== 'homes') {
+        const goalId = site.id.split(':goal:')[1];
+        for (const t of tasks)
+          if (t.projectId === p.id && t.goalId === goalId)
+            placeOf.set(t.id, { siteId: site.id, houseId: null });
+      }
+    }
+  // A raised target's tasks go to the target that raised it.
+  for (const p of projects)
+    for (const g of p.goals ?? []) {
+      const next = p.goals?.find((x) => x.previousId === g.id);
+      if (!next) continue;
+      for (const t of tasks)
+        if (t.goalId === g.id && !placeOf.has(t.id))
+          placeOf.set(t.id, {
+            siteId: `${p.id}:goal:${next.id}`,
+            houseId: null,
+          });
+    }
 
   // Today: people, and one bot per person per project their Claude worked on.
   const people: WorldPerson[] = [];
@@ -366,6 +505,7 @@ export async function buildWorld(viewer: SessionUser): Promise<World> {
 
     const links = (log?.links ?? []) as WorklogLink[];
     const groups = new Map<string, BotPoint[]>();
+    // Each point's task.
     const siteOfLine = new Map<BotPoint, string>();
     for (const raw of sectionLines(
       works.find((w) => w?.link_id === CLAUDE_SECTION_ID)?.content,
@@ -379,8 +519,7 @@ export async function buildWorld(viewer: SessionUser): Promise<World> {
         status: statusOf(raw),
       };
       const task = link?.taskId ? taskById.get(link.taskId) : undefined;
-      if (task && task.projectId === key)
-        siteOfLine.set(point, `${key}:${kindOf(task)}`);
+      if (task && task.projectId === key) siteOfLine.set(point, task.id);
       groups.set(key, [...(groups.get(key) ?? []), point]);
     }
     for (const [projectId, points] of Array.from(groups.entries())) {
@@ -391,6 +530,8 @@ export async function buildWorld(viewer: SessionUser): Promise<World> {
       const linked = points.filter((pt) => siteOfLine.has(pt));
       const at =
         linked.find((pt) => pt.text === current) ?? linked[linked.length - 1];
+      const task = at ? taskById.get(siteOfLine.get(at)!) : undefined;
+      const place = task ? placeOf.get(task.id) : undefined;
       bots.push({
         id: `${u.id}:${projectId || 'town'}`,
         ownerId: u.id,
@@ -398,7 +539,13 @@ export async function buildWorld(viewer: SessionUser): Promise<World> {
         ownerAvatar: u.avatar ?? null,
         townId: project?.companyId ?? homes[0],
         projectId: project?.id ?? null,
-        siteId: at ? siteOfLine.get(at)! : null,
+        siteId: place?.siteId ?? null,
+        houseId: place?.houseId ?? null,
+        tool: !task
+          ? 'laptop'
+          : task.size === TASK_SIZE.MAJOR
+            ? 'crane'
+            : 'hammer',
         state,
         current,
         points,

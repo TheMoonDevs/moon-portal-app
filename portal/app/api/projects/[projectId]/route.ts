@@ -56,9 +56,24 @@ export async function GET(_request: Request, { params }: Params) {
     }),
     addDays(toDay(), -31),
   );
-  const [[stats], people] = await Promise.all([
+  const [[stats], people, tree] = await Promise.all([
     withProjectStats([project]),
     getPublicUsers([...(project.leadIds ?? []), ...(project.memberIds ?? [])]),
+    // The company's projects, for the one above and the ones under it.
+    db.project.findMany({
+      where: {
+        companyId: project.companyId,
+        status: { notIn: [PROJECT_STATUS.ARCHIVED] },
+      },
+      select: {
+        companyId: true,
+        name: true,
+        color: true,
+        parentId: true,
+        leadIds: true,
+      },
+      orderBy: { createdAt: 'asc' },
+    }),
   ]);
   return ok({
     project: {
@@ -67,6 +82,7 @@ export async function GET(_request: Request, { params }: Params) {
     },
     tasks,
     people,
+    tree,
   });
 }
 
@@ -134,7 +150,8 @@ export async function PATCH(request: Request, { params }: Params) {
     data: { ...data, updatedAt: nowIso() },
   });
   // New goals set up their scheduled tasks; changed ones update them.
-  if ('goals' in data)
+  // Goals make their tasks; their people follow the team.
+  if ('goals' in data || 'leadIds' in data || 'memberIds' in data)
     await syncGoalSchedules(updated, project.goals ?? [], user.id);
   return ok({ project: updated });
 }

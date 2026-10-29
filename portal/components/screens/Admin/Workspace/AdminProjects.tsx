@@ -4,6 +4,7 @@ import type { Project, User } from '@db/client';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
+import { leadsAbove } from '@/lib/workspace/projectProgress';
 import {
   formatMetric,
   type GoalPeriodResult,
@@ -12,9 +13,15 @@ import {
   PERIOD_LABELS,
   type ProjectStanding,
 } from '@/lib/workspace/projects';
+import { useUser } from '@/utils/hooks/useUser';
 import { useWorkspace } from '@/utils/hooks/useWorkspace';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
+import { NewProjectDialog } from '../../Projects/NewProjectDialog';
+import {
+  ProjectRequests,
+  type RequestsData,
+} from '../../Projects/ProjectRequests';
 import {
   AdminButton,
   AdminModal,
@@ -35,7 +42,6 @@ import { ImageField } from '../shared/ImageField';
 import { BrandKitEditor } from './BrandKitEditor';
 import { type GoalDraft, GoalsEditor, goalsForSave } from './GoalsEditor';
 import { ProjectRanking, ProjectResults } from './ProjectResults';
-import { ProjectSchedules } from './ProjectSchedules';
 import {
   AvatarStack,
   ColorPicker,
@@ -81,6 +87,7 @@ const ProjectForm = ({
   onOpenChange,
   companyId,
   project,
+  parentId,
   projects,
   users,
   onSaved,
@@ -89,6 +96,8 @@ const ProjectForm = ({
   onOpenChange: (open: boolean) => void;
   companyId: string;
   project: ProjectRow | null;
+  /** For a new project: the project it goes under. */
+  parentId?: string | null;
   /** The company's projects, to pick a parent from. */
   projects: ProjectRow[];
   users: User[];
@@ -113,9 +122,9 @@ const ProjectForm = ({
             leadIds: project.leadIds ?? [],
             memberIds: project.memberIds ?? [],
           }
-        : emptyDraft,
+        : { ...emptyDraft, parentId: parentId ?? '' },
     );
-  }, [open, project]);
+  }, [open, project, parentId]);
 
   const set = <K extends keyof typeof emptyDraft>(
     key: K,
@@ -147,10 +156,19 @@ const ProjectForm = ({
         parentId: draft.parentId || null,
         goals: goalsForSave(draft.goals),
       };
+      let message = 'Project updated';
       if (project)
         await PortalSdk.patchData(`/api/projects/${project.id}`, payload);
-      else await PortalSdk.postData('/api/projects', { ...payload, companyId });
-      toast.success(project ? 'Project updated' : 'Project created');
+      else {
+        const res = await PortalSdk.postData('/api/projects', {
+          ...payload,
+          companyId,
+        });
+        message = res?.data?.request
+          ? 'Request sent for approval'
+          : 'Project created';
+      }
+      toast.success(message);
       onSaved();
       onOpenChange(false);
     } catch (err) {
@@ -166,7 +184,13 @@ const ProjectForm = ({
       onOpenChange={onOpenChange}
       size="lg"
       icon="folder_open"
-      title={project ? 'Edit project' : 'New project'}
+      title={
+        project
+          ? 'Edit project'
+          : parentId
+            ? `New sub-project of ${projects.find((p) => p.id === parentId)?.name ?? 'project'}`
+            : 'New project'
+      }
       footer={
         <>
           <AdminButton
@@ -251,11 +275,12 @@ const ProjectForm = ({
         </Field>
         <Field
           label="Goals"
-          hint="What the project must deliver, again and again. Tasks linked to a goal fill it up."
+          hint="Repeating goals make their own dated tasks; targets add up until reached. Tasks linked to a goal fill it up."
           className="md:col-span-2"
         >
           <GoalsEditor
             value={draft.goals}
+            users={users}
             onChange={(goals) => set('goals', goals)}
           />
         </Field>
@@ -298,10 +323,16 @@ export const AdminProjects = ({
   const [archiving, setArchiving] = useState<ProjectRow | null>(null);
   const [branding, setBranding] = useState<ProjectRow | null>(null);
   const [resultsFor, setResultsFor] = useState<ProjectRow | null>(null);
-  const [schedulesFor, setSchedulesFor] = useState<ProjectRow | null>(null);
   const [busy, setBusy] = useState(false);
   const [moving, setMoving] = useState<ProjectRow | null>(null);
   const [moveTo, setMoveTo] = useState('');
+  const { user } = useUser();
+  const [requests, setRequests] = useState<RequestsData | null>(null);
+  /** A new project (under parentId) the person may only ask for. */
+  const [asking, setAsking] = useState<{ parentId: string | null } | null>(
+    null,
+  );
+  const [newParent, setNewParent] = useState<string | null>(null);
 
   const companyId = selectedCompanyId;
 
@@ -314,6 +345,11 @@ export const AdminProjects = ({
         null,
       );
       setProjects(res?.data?.projects ?? []);
+      const asked = await PortalSdk.getData(
+        `/api/projects/requests?companyId=${companyId}`,
+        null,
+      ).catch(() => null);
+      setRequests(asked?.data ?? null);
     } catch (err) {
       toast.error(errorText(err, 'Could not load projects.'));
     } finally {
@@ -375,6 +411,21 @@ export const AdminProjects = ({
     }
   };
 
+  /**
+   * Opens the full form when the person may create the project, or the
+   * request form when it needs an owner's approval.
+   */
+  const startNew = (parentId: string | null) => {
+    if (!companyId) return;
+    const direct =
+      can(companyId, 'projects:approve') ||
+      (!!user && !!parentId && leadsAbove(projects, parentId).has(user.id));
+    if (!direct) return setAsking({ parentId });
+    setEditing(null);
+    setNewParent(parentId);
+    setFormOpen(true);
+  };
+
   const archive = async () => {
     if (!archiving) return;
     setBusy(true);
@@ -405,15 +456,10 @@ export const AdminProjects = ({
           className="min-w-[200px] flex-1"
         />
         {companyId && can(companyId, 'projects:create') && (
-          <AdminButton
-            tone="primary"
-            icon="add"
-            onClick={() => {
-              setEditing(null);
-              setFormOpen(true);
-            }}
-          >
-            New project
+          <AdminButton tone="primary" icon="add" onClick={() => startNew(null)}>
+            {can(companyId, 'projects:approve')
+              ? 'New project'
+              : 'Ask for a project'}
           </AdminButton>
         )}
       </div>
@@ -436,6 +482,14 @@ export const AdminProjects = ({
         </Panel>
       ) : (
         <>
+          {!search && requests && (
+            <ProjectRequests
+              data={requests}
+              companyName={() => ''}
+              projectName={(id) => projectById.get(id)?.name}
+              onChanged={load}
+            />
+          )}
           {!search && (
             <ProjectRanking projects={projects} onOpen={setResultsFor} />
           )}
@@ -501,7 +555,9 @@ export const AdminProjects = ({
                               <span className="truncate text-neutral-300">
                                 {goal.target} {goal.title}{' '}
                                 <span className="text-neutral-500">
-                                  {PERIOD_LABELS[goal.period]}
+                                  {goal.kind === 'target'
+                                    ? 'in total'
+                                    : PERIOD_LABELS[goal.period]}
                                 </span>
                               </span>
                               <span
@@ -604,9 +660,9 @@ export const AdminProjects = ({
                         onClick={() => onOpenTasks(project.id)}
                       />
                       <IconAction
-                        icon="event_repeat"
-                        label="Scheduled tasks"
-                        onClick={() => setSchedulesFor(project)}
+                        icon="account_tree"
+                        label="Add a sub-project"
+                        onClick={() => startNew(project.id)}
                       />
                       <IconAction
                         icon="insights"
@@ -666,25 +722,24 @@ export const AdminProjects = ({
           onOpenChange={setFormOpen}
           companyId={companyId}
           project={editing}
+          parentId={newParent}
           projects={projects}
           users={users}
           onSaved={load}
         />
       )}
+      <NewProjectDialog
+        open={!!asking}
+        onOpenChange={(open) => !open && setAsking(null)}
+        projects={projects}
+        companyId={companyId}
+        parentId={asking?.parentId}
+        onDone={load}
+      />
       <ProjectResults
         project={projects.find((p) => p.id === resultsFor?.id) ?? resultsFor}
         canEdit={!!resultsFor && can(resultsFor.companyId, 'projects:edit')}
         onOpenChange={(open) => !open && setResultsFor(null)}
-        onSaved={load}
-      />
-      <ProjectSchedules
-        project={
-          projects.find((p) => p.id === schedulesFor?.id) ?? schedulesFor
-        }
-        users={users}
-        canEdit={canInProject(schedulesFor, 'tasks:create')}
-        canDelete={canInProject(schedulesFor, 'tasks:delete')}
-        onOpenChange={(open) => !open && setSchedulesFor(null)}
         onSaved={load}
       />
       <BrandKitEditor

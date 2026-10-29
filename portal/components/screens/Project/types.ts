@@ -12,6 +12,15 @@ export type ProjectData = {
   tasks: Task[];
   /** The project's leads and team. */
   people: Person[];
+  /** The company's projects, to find the one above and the ones under. */
+  tree?: {
+    id: string;
+    companyId: string;
+    name: string;
+    color?: string | null;
+    parentId?: string | null;
+    leadIds?: string[] | null;
+  }[];
 };
 
 export type PagesData = {
@@ -27,7 +36,6 @@ export const VIEWS = [
   { key: 'kpi', label: 'KPI', icon: 'monitoring' },
   { key: 'pages', label: 'Pages', icon: 'description' },
   { key: 'goals', label: 'Goals', icon: 'track_changes' },
-  { key: 'schedule', label: 'Task Schedule', icon: 'calendar_month' },
   { key: 'members', label: 'Members', icon: 'group' },
 ] as const;
 

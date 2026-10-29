@@ -34,16 +34,16 @@ async function guard(taskId: string, permission: string) {
   const task: Task | null = await db.task.findFirst({ where: { id: taskId } });
   if (!task) return { response: fail(404, 'Task not found.'), task: null };
   // The project's lead and team can change its tasks too.
-  const { response } = await requireProjectPermission(
+  const { response, user } = await requireProjectPermission(
     task.projectId,
     permission,
   );
-  return { response, task };
+  return { response, task, user };
 }
 
 export async function PATCH(request: Request, { params }: Params) {
-  const { response, task } = await guard(params.taskId, 'tasks:edit');
-  if (response || !task)
+  const { response, task, user } = await guard(params.taskId, 'tasks:edit');
+  if (response || !task || !user)
     return response ?? fail(401, 'Authentication required.');
 
   const body = await request.json().catch(() => ({}));
@@ -65,9 +65,17 @@ export async function PATCH(request: Request, { params }: Params) {
       return fail(400, 'Unknown task status.');
     }
     const nowDone = data.status === TASK_STATUS.DONE;
-    if (nowDone && task.status !== TASK_STATUS.DONE)
+    if (nowDone && task.status !== TASK_STATUS.DONE) {
       data.completedAt = nowIso();
-    if (!nowDone) data.completedAt = null;
+      // Whoever marks it done did it, unless they say who.
+      data.completedByIds = asStringArray(body.completedByIds).length
+        ? asStringArray(body.completedByIds)
+        : [user.id];
+    }
+    if (!nowDone) {
+      data.completedAt = null;
+      data.completedByIds = [];
+    }
   }
   if ('assigneeIds' in data) data.assigneeIds = asStringArray(data.assigneeIds);
   if ('dueDate' in data) data.dueDate = data.dueDate || null;

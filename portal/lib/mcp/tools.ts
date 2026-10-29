@@ -245,7 +245,7 @@ export const TOOLS: Tool[] = [
               goal: {
                 type: 'string',
                 description:
-                  'Goal id or title this work counts towards (optional). With no task named, the point becomes a task for it.',
+                  'Goal id or title this work counts towards (optional). With no task named, the point becomes a task for it; naming it for an existing task moves that task to this goal (to fix a wrong automatic link).',
               },
               goalPart: {
                 type: 'string',
@@ -530,7 +530,7 @@ export const TOOLS: Tool[] = [
         await db.task.update({
           where: { id: task.id },
           data: {
-            ...statusChange(task, status),
+            ...statusChange(task, status, user.id),
             updatedAt: new Date().toISOString(),
           },
         }),

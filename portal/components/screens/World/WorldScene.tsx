@@ -14,12 +14,13 @@ import type {
   WorldBot,
   WorldBrand,
   WorldProject,
+  WorldSite,
   WorldTown,
 } from '@/lib/world/state';
 import {
   BOT_STATE_COLOR,
+  goalTowers,
   goesToOwner,
-  siteLevel,
   STATUS_EMOJI,
 } from '@/lib/world/state';
 
@@ -27,6 +28,7 @@ import * as art from './art';
 import type { TownSpot } from './layout';
 import {
   BLOCK,
+  GARDEN,
   HALL_IN,
   layoutWorld,
   LOT,
@@ -36,14 +38,15 @@ import {
   route,
   seeded,
 } from './layout';
+import * as lots from './lots';
 
 /*
  * The world in plain three.js (no React renderer, whose JSX types clash with
  * MUI's), seen from above at an angle like a strategy game. Companies are
  * towns in their brand colours, joined by highways. A town grows square by
  * square: the town square, where everyone has a plot to stand on, with the
- * town hall and the leaderboards, then a square of four task buildings per four kinds of
- * task in each project. Bots travel the roads (glowing blue while they do)
+ * town hall and the leaderboards, then squares of up to three buildings for the goals and
+ * tasks of each project. Bots travel the roads (driving, and glowing grey while they do)
  * to the building they work at, and back to their owner's plot when they
  * are done or need permission. Everything is drawn from simple shapes in art.ts, so
  * there are no models to download.
@@ -54,9 +57,14 @@ export type Pick = {
   id: string;
 };
 
-/** Bots glow this while they travel. */
-const TRANSIT = '#2563eb';
-const TRANSIT_SPEED = 24;
+/** Bots glow this while they travel, and their routes are drawn in it. */
+const TRANSIT = '#94a3b8';
+/** Bots walk out to the road and in from it, slowly enough to watch. */
+const TRANSIT_SPEED = 6.5;
+/** On the road they drive. */
+const DRIVE_SPEED = 13;
+/** How far along the road a bot takes to hop in or out of its car. */
+const HOP = 1.2;
 
 /** World units from top to bottom of the screen at zoom 1. */
 const VIEW = 60;
@@ -120,7 +128,83 @@ const botTagHtml = (bot: WorldBot, hex: string, compact: boolean) => {
   // Back with its owner, whose name is right there: just how it's doing.
   if (compact)
     return `<div class="flex items-center gap-0.5 whitespace-nowrap"><span>${botEmoji(bot)}</span><span class="font-semibold text-neutral-700">${bot.progress.done}/${bot.progress.total}</span></div>`;
-  return `<div class="flex items-center gap-1 whitespace-nowrap">${badge(bot.ownerAvatar ?? null, bot.ownerName, hex, 18, true, true)}<span>${botEmoji(bot)}</span><span class="font-semibold">${escape(bot.ownerName)}</span><span class="text-neutral-500">${bot.progress.done}/${bot.progress.total}</span></div><div class="mt-1 h-1 w-full overflow-hidden rounded-full bg-neutral-200"><div class="h-full rounded-full" style="width:${pct}%;background:${BOT_STATE_COLOR[bot.state]}"></div></div>`;
+  const tool =
+    bot.state === 'working'
+      ? ({ crane: '🏗️', hammer: '🔨', laptop: '💻' }[bot.tool] ?? '')
+      : '';
+  return `<div class="flex items-center gap-1 whitespace-nowrap">${badge(bot.ownerAvatar ?? null, bot.ownerName, hex, 18, true, true)}<span>${botEmoji(bot)}${tool}</span><span class="font-semibold">${escape(bot.ownerName)}</span><span class="text-neutral-500">${bot.progress.done}/${bot.progress.total}</span></div><div class="mt-1 h-1 w-full overflow-hidden rounded-full bg-neutral-200"><div class="h-full rounded-full" style="width:${pct}%;background:${BOT_STATE_COLOR[bot.state]}"></div></div>`;
+};
+
+/** A bot's points and done points, to see what is new. */
+const tallyOf = (bot: WorldBot) => ({
+  points: bot.points.length,
+  done: bot.points.filter((p) => p.status === 'done').length,
+});
+
+/** Car colours: white and greys, now and then the company's colour. */
+const CAR_COLORS = ['#ffffff', '#ffffff', '#e5e7eb', '#cbd5e1', '#94a3b8'];
+
+/**
+ * Cars driving up and down a straight road, each in its own lane, looping
+ * from one end to the other.
+ */
+function cars(
+  parent: THREE.Object3D,
+  anims: art.Animated[],
+  road: {
+    horizontal: boolean;
+    from: number;
+    length: number;
+    cx: number;
+    cz: number;
+    y: number;
+    width: number;
+  },
+  count: number,
+  rand: () => number,
+  accent?: string,
+) {
+  const { horizontal, from, length, cx, cz, y, width } = road;
+  for (let k = 0; k < count; k++) {
+    const hex =
+      accent && rand() < 0.25
+        ? art.tint(accent, 0.15)
+        : CAR_COLORS[Math.floor(rand() * CAR_COLORS.length)];
+    const car = art.car(hex);
+    car.scale.setScalar(1.25);
+    parent.add(car);
+    const dir = k % 2 ? 1 : -1;
+    const offset = rand();
+    const speed = 3.5 + rand() * 2;
+    const lane = dir * width * 0.24;
+    car.rotation.y = horizontal
+      ? dir > 0
+        ? 0
+        : Math.PI
+      : dir > 0
+        ? -Math.PI / 2
+        : Math.PI / 2;
+    anims.push((t) => {
+      let f = (offset + (t * speed) / length) % 1;
+      if (dir < 0) f = 1 - f;
+      const p = from + f * length;
+      if (horizontal) car.position.set(p, y, cz + lane);
+      else car.position.set(cx - lane, y, p);
+    });
+  }
+}
+
+/** A lot's label: what it is and how it is doing. */
+const siteTagHtml = (site: WorldSite) => {
+  const chip = (text: string) =>
+    ` <span class="ml-0.5 rounded-full px-1 text-white" style="background:${site.color}">${text}</span>`;
+  if (site.kind === 'homes')
+    return `This week${chip(`${site.done}/${site.done + site.open} done`)}`;
+  if (site.kind === 'target')
+    return `${escape(site.name)}${chip(site.achieved ? 'Record' : `${Math.round(site.done).toLocaleString()} / ${(site.target ?? 0).toLocaleString()}`)}${site.records?.length ? ` <span class="text-amber-500">${'★'.repeat(Math.min(site.records.length, 4))}</span>` : ''}`;
+  const { total } = goalTowers(site.done);
+  const p = site.period;
+  return `${escape(site.name)}${chip(`${p ? `${p.done}/${p.target}` : ''} · ${total === 1 ? '' : `${total} bldg · `}${site.done % 10 || (site.done ? 10 : 0)}F`)}${site.missed ? ' <span class="text-neutral-400">missed</span>' : ''}`;
 };
 
 /**
@@ -146,16 +230,32 @@ function act(b: BotEntity, t: number, dt: number) {
   let squint = 1;
   let wiggle = Math.sin(k * 3) * 0.15;
 
+  // Out of its car: full size. In it: gone, with the car in its place.
+  let size = 1;
   if (b.path) {
-    // Racing along the roads in little hops, glowing blue.
-    b.travelled += dt * TRANSIT_SPEED;
+    // Walks out to the road, pops into its car, drives, pops out at the
+    // other end and walks in.
+    const d = b.travelled;
+    const inside = b.ride ? Math.min(d - b.ride.from, b.ride.to - d) : -1;
+    b.travelled += dt * (inside > HOP ? DRIVE_SPEED : TRANSIT_SPEED);
     const at = art.along(b.path, b.travelled);
     g.position.set(at.x, 0, at.z);
-    turn(g, at.angle, dt * 12);
-    y = 0.15 + Math.abs(Math.sin(b.travelled * 0.9)) * 0.55;
-    lean = 0.28;
-    arms = [0.7, 0.2, 0.7, -0.2];
-    wiggle = Math.sin(k * 14) * 0.3;
+    turn(g, at.angle, dt * 8);
+    size = inside > 0 ? Math.max(0, 1 - inside / (HOP * 0.5)) : 1;
+    const car = inside > 0 ? Math.min(1, inside / HOP) : 0;
+    b.car.visible = car > 0;
+    if (car > 0) {
+      // A little overshoot as it pops in.
+      const pop = 1 + Math.sin(car * Math.PI) * 0.25;
+      b.car.scale.setScalar(1.3 * car * pop);
+      b.car.position.set(at.x, 0.03, at.z);
+      b.car.rotation.y = at.angle - Math.PI / 2;
+    }
+    y = 0.14 + Math.abs(Math.sin(b.travelled * 2.4)) * 0.16;
+    lean = 0.12;
+    const step = Math.sin(b.travelled * 2.4);
+    arms = [step * 0.6, 0.15, -step * 0.6, -0.15];
+    wiggle = Math.sin(k * 6) * 0.2;
     arrived = b.travelled >= pathLength(b.path);
   } else {
     const state = b.bot.state;
@@ -190,7 +290,27 @@ function act(b: BotEntity, t: number, dt: number) {
     if (dist > 0.4) turn(g, Math.atan2(dx, dz), dt * 8);
     else turn(g, b.face, dt * 4);
 
-    if (state === 'working') {
+    if (state === 'working' && b.bot.tool === 'hammer' && dist < 0.4) {
+      // Hammering away: up, then down hard, and again.
+      const beat = (k * 1.6) % 1;
+      const swing =
+        beat < 0.7 ? -2.7 + beat * 0.6 : -2.3 + ((beat - 0.7) / 0.3) * 1.9;
+      arms = [-0.5, 0.25, swing, -0.1];
+      lean = beat > 0.75 ? 0.18 : 0.04;
+      nod = beat > 0.8 ? 0.12 : 0;
+      y = 0.12;
+    } else if (state === 'working' && b.bot.tool === 'crane' && dist < 0.4) {
+      // At the crane's controls, working the levers and looking up.
+      arms = [
+        -0.9 + Math.sin(k * 3) * 0.3,
+        0.1,
+        -0.9 + Math.sin(k * 3 + 1.4) * 0.3,
+        -0.1,
+      ];
+      nod = -0.25;
+      look = Math.sin(k * 0.35) * 0.6;
+      y = 0.12;
+    } else if (state === 'working') {
       // Busy at the building, with a hop and a spin now and then.
       const phase = k % 7;
       arms = [
@@ -246,6 +366,10 @@ function act(b: BotEntity, t: number, dt: number) {
     }
   }
 
+  if (!b.path) b.car.visible = false;
+  g.scale.setScalar(1.25 * size);
+  b.hammer.visible =
+    !b.path && b.bot.state === 'working' && b.bot.tool === 'hammer';
   if (squint > 0.2 && k % 3.7 < 0.12) squint = 0.1;
   P.body.position.y = y;
   P.body.rotation.set(lean, spin, sway);
@@ -285,8 +409,18 @@ type BotEntity = {
   /** The roads it is travelling, while it travels. */
   path: { x: number; z: number }[] | null;
   travelled: number;
+  /** Where on its path it gets in its car and out again, if it drives. */
+  ride: { from: number; to: number } | null;
+  /** Its car, out on the road while it drives. */
+  car: THREE.Group;
   trail: THREE.Object3D | null;
   seed: number;
+  /** In its hand while it hammers. */
+  hammer: THREE.Group;
+  /** Put up next to its work while it works a big task. */
+  crane: { group: THREE.Group; anim: art.Animated } | null;
+  /** Points and done points last time, for the +1s. */
+  tally: { points: number; done: number };
 };
 
 type PersonEntity = {
@@ -343,6 +477,14 @@ export const WorldScene = ({
     ring: THREE.Mesh;
     aspect: number;
     placed: boolean;
+    /** Each lot's group and where the reward for it pops up. */
+    lots: Map<string, { group: THREE.Object3D; top: THREE.Vector3 }>;
+    /** Each house's top, for its reward. */
+    houses: Map<string, THREE.Vector3>;
+    /** Rewards, bounces and +1s playing out. */
+    effects: lots.Effect[];
+    /** What each lot and house had done last time, to celebrate news. */
+    seen: Map<string, string> | null;
   } | null>(null);
   const onPickRef = useRef(onPick);
   onPickRef.current = onPick;
@@ -447,6 +589,10 @@ export const WorldScene = ({
       ring,
       aspect: 1.6,
       placed: false,
+      lots: new Map(),
+      houses: new Map(),
+      effects: [],
+      seen: null,
     };
 
     const resize = () => {
@@ -481,6 +627,13 @@ export const WorldScene = ({
         camera,
       );
       for (const hit of ray.intersectObjects(scene.children, true)) {
+        // Batched trees and ground know what each of theirs stood in.
+        const picks = hit.object.userData.picks as (Pick | null)[] | undefined;
+        if (picks && hit.instanceId !== undefined) {
+          const pick = picks[hit.instanceId];
+          if (pick) return onPickRef.current(pick);
+          continue;
+        }
         let o: THREE.Object3D | null = hit.object;
         while (o && !o.userData.pick) o = o.parent;
         if (o) return onPickRef.current(o.userData.pick as Pick);
@@ -512,6 +665,14 @@ export const WorldScene = ({
 
       for (const a of s.anims) a(t, dt);
       for (const a of s.overlayAnims) a(t, dt);
+      s.effects = s.effects.filter((e) => {
+        if (e.step(dt)) return true;
+        e.group.traverse((o) => {
+          if (o instanceof CSS2DObject) o.element.remove();
+        });
+        e.group.removeFromParent();
+        return false;
+      });
 
       // People stroll about their spot, and wave when a bot waits on them.
       for (const p of Array.from(s.people.values())) {
@@ -553,7 +714,14 @@ export const WorldScene = ({
             : Math.max(0, Math.sin(t * 3 + p.phase)) * 0.04;
       }
 
-      for (const b of Array.from(s.bots.values())) if (act(b, t, dt)) arrive(b);
+      for (const b of Array.from(s.bots.values())) {
+        if (act(b, t, dt)) arrive(b);
+        if (b.crane) {
+          // Up once the bot gets there.
+          b.crane.group.visible = !b.path;
+          b.crane.anim(t, dt);
+        }
+      }
 
       // More detail the closer you are.
       const view = VIEW / camera.zoom;
@@ -614,6 +782,8 @@ export const WorldScene = ({
     s.anims = [];
     s.boards.clear();
     s.people.clear();
+    s.lots.clear();
+    s.houses.clear();
 
     const townRank = new Map(
       [...w.towns]
@@ -649,42 +819,18 @@ export const WorldScene = ({
           horizontal ? cz : from + d,
           y + 0.01,
         );
-      const rand = seeded(`road${i}`);
-      for (let k = 0; k < Math.max(1, Math.floor(length / 25)); k++) {
-        const car = art.car(
-          rand() < 0.5
-            ? '#ffffff'
-            : art.tint(
-                ['#60a5fa', '#f87171', '#fbbf24', '#34d399'][
-                  Math.floor(rand() * 4)
-                ],
-                0.2,
-              ),
-        );
-        s.statics.add(car);
-        const dir = k % 2 ? 1 : -1;
-        const offset = rand();
-        const speed = 3.5 + rand() * 2;
-        const lane = dir * 1.05;
-        car.rotation.y = horizontal
-          ? dir > 0
-            ? 0
-            : Math.PI
-          : dir > 0
-            ? -Math.PI / 2
-            : Math.PI / 2;
-        s.anims.push((t) => {
-          let f = (offset + (t * speed) / length) % 1;
-          if (dir < 0) f = 1 - f;
-          const p = from + f * length;
-          if (horizontal) car.position.set(p, y, cz + lane);
-          else car.position.set(cx - lane, y, p);
-        });
-      }
+      cars(
+        s.statics,
+        s.anims,
+        { horizontal, from, length, cx, cz, y, width: 4.4 },
+        Math.max(1, Math.floor(length / 25)),
+        seeded(`road${i}`),
+      );
     }
 
     for (const town of w.towns) buildTown(town, layout, townRank.get(town.id)!);
     for (const p of w.projects) buildProject(p, layout);
+    art.batch(s.statics);
 
     drawBoards();
     syncBots();
@@ -742,6 +888,25 @@ export const WorldScene = ({
         r.vertical ? cz : r.at,
         big ? 0.026 : 0.022,
       );
+      // Cars only take the open roads, a car or two each, more on the
+      // wide ones: squares are for bots, on foot.
+      if (r.open)
+        cars(
+          g,
+          s.anims,
+          {
+            horizontal: !r.vertical,
+            from: r.vertical ? spot.minZ : spot.minX,
+            length,
+            cx: r.at,
+            cz: r.at,
+            y: 0.03,
+            width: r.width,
+          },
+          Math.max(1, Math.round(length / (big ? 30 : 45))),
+          rand,
+          accent,
+        );
       if (!big) continue;
       const from = r.vertical ? spot.minZ : spot.minX;
       for (let d = 2; d < length - 1; d += 4)
@@ -791,7 +956,7 @@ export const WorldScene = ({
         cell.z,
         0.015,
       );
-      for (let i = 0; i < 7; i++)
+      for (let i = 0; i < 12; i++)
         art.tree(
           g,
           accent,
@@ -943,7 +1108,10 @@ export const WorldScene = ({
     }
   };
 
-  /** A project: its squares, and a building for each kind of task. */
+  /**
+   * A project: its squares, with its goals' buildings, its record towers
+   * and this week's houses.
+   */
   const buildProject = (
     project: WorldProject,
     layout: ReturnType<typeof layoutWorld>,
@@ -954,19 +1122,20 @@ export const WorldScene = ({
     const town = w.towns.find((t) => t.id === project.townId);
     if (!area || !town) return;
     const accent = brandOf(town).primary;
-    const brand = brandOf(project);
+    // Only the company's colours: the project brings just its logo.
+    const brand = { ...brandOf(town), logo: brandOf(project).logo };
     const sign = art.logoSign(project.name, brand.logo, brand);
     const rand = seeded(project.id);
     const g = new THREE.Group();
     g.userData.pick = { type: 'project', id: project.id };
     s.statics.add(g);
 
-    // The project's ground, edged in its own colour.
+    // The project's ground, edged in the company's colour.
     const width = area.maxX - area.minX;
     const depth = area.maxZ - area.minZ;
     const x = (area.minX + area.maxX) / 2;
     const z = (area.minZ + area.maxZ) / 2;
-    art.strip(g, width + 0.8, depth + 0.8, brand.primary, x, z, 0.024);
+    art.strip(g, width + 0.8, depth + 0.8, accent, x, z, 0.024);
     art.strip(g, width, depth, '#f1f3f6', x, z, 0.028);
     // Its flag at the front corner.
     s.anims.push(
@@ -980,50 +1149,92 @@ export const WorldScene = ({
     );
 
     let tallest = 0;
+    const used = new Set<string>();
     project.sites.forEach((site) => {
       const spot = layout.sites.get(site.id);
       if (!spot) return;
-      const { tier, level } = siteLevel(site.done);
-      const lot = new THREE.Group();
-      lot.position.set(spot.x, 0, spot.z);
-      lot.rotation.y = spot.angle;
-      lot.userData.pick = { type: 'site', id: site.id };
-      g.add(lot);
-      art.strip(lot, LOT - 1.2, LOT - 1.2, '#fafbfc', 0, 0, 0.032);
-      const made = art.site(site.id, tier, level, accent, sign);
-      lot.add(made.group);
-      s.anims.push(...made.anims);
-      tallest = Math.max(tallest, made.height);
-      const stars = '★'.repeat(Math.min(tier, 4));
-      const label = tag(
-        'pointer-events-none whitespace-nowrap rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-semibold text-neutral-800 shadow',
-        `${escape(site.name)} <span class="ml-0.5 rounded-full px-1 text-white" style="background:${accent}">${tier ? `Lv ${level}` : 'Building'}</span>${stars ? ` <span class="text-amber-500">${stars}</span>` : ''}`,
-      );
-      label.obj.position.set(0, made.height + 1.2, 0);
-      lot.add(label.obj);
-      s.labels.push({ obj: label.obj, kind: 'site' });
+      spot.lots.forEach((at, i) => {
+        used.add(`${at.x},${at.z}`);
+        const newest = i === spot.lots.length - 1;
+        const lot = new THREE.Group();
+        lot.position.set(at.x, 0, at.z);
+        lot.rotation.y = at.angle;
+        lot.userData.pick = { type: 'site', id: site.id };
+        g.add(lot);
+        art.strip(lot, LOT, LOT, '#fafbfc', 0, 0, 0.032);
+        const made =
+          site.kind === 'goal'
+            ? lots.goalLot(site, i, accent, sign)
+            : site.kind === 'target'
+              ? lots.recordTower(site, accent)
+              : lots.homesLot(site, accent);
+        lot.add(made.group);
+        s.anims.push(...made.anims);
+        tallest = Math.max(tallest, made.height);
+        if (!newest) return;
+        lot.updateMatrixWorld(true);
+        const top =
+          'top' in made
+            ? new THREE.Vector3(made.top.x, made.top.y, made.top.z)
+            : new THREE.Vector3(0, made.height, 0);
+        s.lots.set(site.id, {
+          group: made.group,
+          top: lot.localToWorld(top),
+        });
+        if ('houses' in made)
+          for (const [id, h] of Array.from(made.houses.entries()))
+            s.houses.set(
+              id,
+              lot.localToWorld(new THREE.Vector3(h.x, h.top, h.z)),
+            );
+
+        const label = tag(
+          'pointer-events-none whitespace-nowrap rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-semibold text-neutral-800 shadow',
+          siteTagHtml(site),
+        );
+        label.obj.position.set(0, made.height + 1.2, 0);
+        lot.add(label.obj);
+        s.labels.push({ obj: label.obj, kind: 'site' });
+      });
     });
 
-    // Empty lots get a few trees.
-    const used = project.sites.length;
-    area.cells.forEach((cell, ci) => {
-      for (let k = 0; k < LOTS.length; k++) {
-        const index = ci * LOTS.length + k;
-        if (index < used) continue;
+    // Each square's front corner is a garden, and empty lots get trees.
+    for (const cell of area.cells) {
+      art.strip(
+        g,
+        LOT,
+        LOT,
+        art.tint(accent, 0.86),
+        cell.x + GARDEN.dx,
+        cell.z + GARDEN.dz,
+        0.03,
+      );
+      for (let i = 0; i < 3; i++)
+        art.tree(
+          g,
+          accent,
+          cell.x + GARDEN.dx + (rand() - 0.5) * 7,
+          cell.z + GARDEN.dz + (rand() - 0.5) * 7,
+          rand,
+        );
+      for (const lot of LOTS) {
+        const lx = cell.x + lot.dx;
+        const lz = cell.z + lot.dz;
+        if (used.has(`${lx},${lz}`)) continue;
         for (let i = 0; i < 2; i++)
           art.tree(
             g,
             accent,
-            cell.x + LOTS[k].dx + (rand() - 0.5) * 5,
-            cell.z + LOTS[k].dz + (rand() - 0.5) * 5,
+            lx + (rand() - 0.5) * 7,
+            lz + (rand() - 0.5) * 7,
             rand,
           );
       }
-    });
+    }
 
     const label = tag(
       'pointer-events-none flex items-center gap-1.5 whitespace-nowrap rounded-full bg-white/95 py-0.5 pl-0.5 pr-2.5 text-xs font-semibold text-neutral-800 shadow-md',
-      `${badge(brand.logo, project.name, brand.primary, 22)}<span class="rounded-full px-1.5 text-[10px] font-bold text-white" style="background:${accent}">#${project.rank}</span>${escape(project.name)}`,
+      `${badge(brand.logo, project.name, accent, 22)}<span class="rounded-full px-1.5 text-[10px] font-bold text-white" style="background:${accent}">#${project.rank}</span>${escape(project.name)}`,
     );
     label.obj.position.set(x, Math.max(tallest, 6) + 3.5, z);
     g.add(label.obj);
@@ -1065,7 +1276,7 @@ export const WorldScene = ({
         rows: mine.map((p) => ({
           label: p.name,
           value: p.weekPoints,
-          hex: brandOf(p).primary,
+          hex: brand.primary,
           image: brandOf(p).logo,
           note: `#${p.rank} · ${Math.round(p.weekPoints)} pts`,
         })),
@@ -1080,6 +1291,20 @@ export const WorldScene = ({
   const workGround = (bot: WorldBot) => {
     const L = state.current!.layout!;
     const site = bot.siteId ? L.sites.get(bot.siteId) : null;
+    const house = bot.houseId ? state.current!.houses.get(bot.houseId) : null;
+    if (site && house) {
+      // Beside its house, facing it.
+      const out = new THREE.Vector3(
+        house.x - site.x,
+        0,
+        house.z - site.z,
+      ).normalize();
+      return {
+        x: house.x + out.x * 2.1,
+        z: house.z + out.z * 2.1,
+        face: Math.atan2(-out.x, -out.z),
+      };
+    }
     if (site)
       return {
         x: site.x + Math.sin(site.angle) * (LOT / 2 + 1),
@@ -1105,6 +1330,8 @@ export const WorldScene = ({
   /** A bot reached the end of its road. */
   const arrive = (b: BotEntity) => {
     b.path = null;
+    b.ride = null;
+    b.car.visible = false;
     if (b.trail) {
       state.current?.scene.remove(b.trail);
       b.trail = null;
@@ -1113,7 +1340,7 @@ export const WorldScene = ({
     b.light.emissive.set(BOT_STATE_COLOR[b.bot.state]);
   };
 
-  /** Sends a bot along the roads to its target, glowing blue on the way. */
+  /** Sends a bot along the roads to its target, driving most of the way. */
   const travel = (b: BotEntity, town: TownSpot) => {
     const s = state.current!;
     const from = { x: b.group.position.x, z: b.group.position.z };
@@ -1122,11 +1349,150 @@ export const WorldScene = ({
     if (b.trail) s.scene.remove(b.trail);
     b.path = route(town, from, to);
     b.travelled = 0;
+    // It drives the roads between the first and last turn, when that's far
+    // enough to bother.
+    const n = b.path.length;
+    const from0 = pathLength(b.path.slice(0, 2));
+    const to0 = pathLength(b.path.slice(0, n - 1));
+    b.ride = n >= 4 && to0 - from0 > HOP * 4 ? { from: from0, to: to0 } : null;
     const line = art.routeLine(b.path, TRANSIT, 0.45);
     b.trail = line.group;
     s.scene.add(line.group);
     b.light.color.set(TRANSIT);
     b.light.emissive.set(TRANSIT);
+  };
+
+  /** Words that float up from `parent` and fade: +1, Floor 4, … */
+  const floatUp = (
+    parent: THREE.Object3D,
+    y: number,
+    delay: number,
+    hex: string,
+    text: string,
+    big = false,
+  ) => {
+    const s = state.current;
+    if (!s) return;
+    const t = tag(
+      `pointer-events-none select-none whitespace-nowrap rounded-full font-black shadow-lg ${big ? 'bg-white/95 px-2.5 py-0.5 text-sm' : 'px-2 py-0.5 text-base text-white'}`,
+      escape(text),
+    );
+    Object.assign(
+      t.inner.style,
+      big ? { color: hex, opacity: '0' } : { background: hex, opacity: '0' },
+    );
+    const holder = new THREE.Group();
+    holder.add(t.obj);
+    parent.add(holder);
+    const life = big ? 2.4 : 1.6;
+    let age = -delay;
+    s.effects.push({
+      group: holder,
+      step: (dt) => {
+        age += dt;
+        if (age < 0) return true;
+        const k = age / life;
+        t.obj.position.y = y + k * (big ? 2.5 : 2);
+        t.inner.style.opacity = String(
+          k < 0.15 ? k / 0.15 : Math.max(0, 1 - (k - 0.65) / 0.35),
+        );
+        t.inner.style.transform = `scale(${k < 0.15 ? 0.6 + (k / 0.15) * 0.6 : 1.2 - Math.min(0.2, (k - 0.15) * 0.8)})`;
+        return age < life;
+      },
+    });
+  };
+  const plusOne = (
+    parent: THREE.Object3D,
+    y: number,
+    delay: number,
+    hex: string,
+  ) => floatUp(parent, y, delay, hex, '+1');
+
+  /** A reward over a spot in the world. */
+  const pop = (
+    kind: 'star' | 'trophy' | 'coin',
+    at: THREE.Vector3,
+    words?: string,
+    hex = '#b45309',
+  ) => {
+    const s = state.current;
+    if (!s) return;
+    const e = lots.reward(kind, at);
+    s.scene.add(e.group);
+    s.effects.push(e);
+    if (words) {
+      const holder = new THREE.Group();
+      holder.position.copy(at);
+      s.scene.add(holder);
+      floatUp(holder, 2.5, 0.3, hex, words, true);
+      // Take the holder away with its words.
+      s.effects.push({ group: holder, step: () => holder.children.length > 0 });
+    }
+  };
+
+  /**
+   * Celebrates what got done since last time: a goal building gains a
+   * floor (or a new building), a target is reached, a house is finished.
+   */
+  const celebrate = () => {
+    const s = state.current;
+    if (!s?.layout) return;
+    const w = worldRef.current;
+    const next = new Map<string, string>();
+    for (const p of w.projects)
+      for (const site of p.sites) {
+        next.set(site.id, `${site.done}|${site.achieved ? 1 : 0}`);
+        for (const h of site.houses ?? [])
+          next.set(`h:${h.id}`, h.done ? '1' : '0');
+      }
+    for (const p of w.people) next.set(`p:${p.id}`, String(p.ownPoints));
+    const before = s.seen;
+    s.seen = next;
+    if (!before) return;
+    // A +1 over each person for every line they wrote themselves.
+    for (const e of Array.from(s.people.values())) {
+      const person = w.people.find((x) => x.id === e.personId);
+      const was = before.get(`p:${e.personId}`);
+      const gained =
+        person && was !== undefined ? person.ownPoints - Number(was) : 0;
+      for (let i = 0; i < Math.min(gained, 5); i++)
+        plusOne(e.art.group, 3.2, i * 0.35, '#eab308');
+    }
+    for (const p of w.projects)
+      for (const site of p.sites) {
+        const lot = s.lots.get(site.id);
+        if (!lot) continue;
+        if (site.kind === 'homes') {
+          for (const h of site.houses ?? []) {
+            const at = s.houses.get(h.id);
+            if (h.done && before.get(`h:${h.id}`) === '0' && at)
+              pop('coin', at, 'Task done!', '#059669');
+          }
+          continue;
+        }
+        const was = before.get(site.id);
+        if (was === undefined) continue;
+        const [done0, reached0] = was.split('|').map(Number);
+        if (site.kind === 'target') {
+          if (site.achieved && !reached0)
+            pop('trophy', lot.top, `🏆 ${site.name}: record!`);
+          else if (site.done > done0)
+            pop('coin', lot.top, `+${site.done - done0}`);
+          else continue;
+        } else if (site.done > done0) {
+          const floor = site.done % 10 || 10;
+          pop(
+            'star',
+            lot.top,
+            floor === 10
+              ? '🏢 Building complete!'
+              : floor === 1 && site.done > 1
+                ? '🏗️ New building!'
+                : `⬆ Floor ${floor}`,
+          );
+        } else continue;
+        s.effects.push(lots.bounce(lot.group));
+      }
   };
 
   const syncBots = () => {
@@ -1190,6 +1556,13 @@ export const WorldScene = ({
         const start = owner ?? work;
         drone.group.position.set(start.x, 0, start.z);
         s.scene.add(drone.group);
+        const car = art.car(art.tint(accent, 0.15));
+        car.visible = false;
+        s.scene.add(car);
+        const tool = lots.hammer();
+        tool.position.y = -0.42;
+        tool.visible = false;
+        drone.arms[1].add(tool);
         entity = {
           bot,
           group: drone.group,
@@ -1201,10 +1574,42 @@ export const WorldScene = ({
           owner: home,
           path: null,
           travelled: 0,
+          ride: null,
+          car,
           trail: null,
           seed: (art.hash(bot.id) % 1000) / 100,
+          hammer: tool,
+          crane: null,
+          tally: tallyOf(bot),
         };
         s.bots.set(bot.id, entity);
+      }
+      // A +1 for every new point, and for every point done.
+      const now = tallyOf(bot);
+      const gained =
+        Math.max(0, now.points - entity.tally.points) +
+        Math.max(0, now.done - entity.tally.done);
+      entity.tally = now;
+      for (let i = 0; i < Math.min(gained, 5); i++)
+        plusOne(entity.group, 2.6, i * 0.35, accent);
+      // Big tasks get a crane by the work while the bot is on it.
+      const wantsCrane =
+        bot.state === 'working' && bot.tool === 'crane' && !home;
+      if (wantsCrane && !entity.crane) {
+        entity.crane = lots.crane(entity.seed);
+        s.scene.add(entity.crane.group);
+      } else if (!wantsCrane && entity.crane) {
+        s.scene.remove(entity.crane.group);
+        entity.crane = null;
+      }
+      if (entity.crane) {
+        // Beside the bot, out of the way of the building.
+        const side = work.face + Math.PI / 2;
+        entity.crane.group.position.set(
+          work.x + Math.sin(side) * 3.2,
+          0,
+          work.z + Math.cos(side) * 3.2,
+        );
       }
       const moved =
         entity.target.distanceTo(target) > 2 || entity.bot.state !== bot.state;
@@ -1230,6 +1635,8 @@ export const WorldScene = ({
       if (seen.has(id)) continue;
       entity.label.obj.element.remove();
       if (entity.trail) s.scene.remove(entity.trail);
+      if (entity.crane) s.scene.remove(entity.crane.group);
+      s.scene.remove(entity.car);
       s.scene.remove(entity.group);
       s.bots.delete(id);
     }
@@ -1247,7 +1654,7 @@ export const WorldScene = ({
   /* ------------------------ routes and directions ----------------------- */
 
   /**
-   * For a person: blue routes from them to all their bots' work at once,
+   * For a person: grey routes from them to all their bots' work at once,
    * with pings where each works. For a project, task building or bot: the
    * way there from you.
    */
@@ -1399,7 +1806,17 @@ export const WorldScene = ({
       p.name,
       p.rank,
       p.brand,
-      p.sites.map((x) => [x.id, x.name, siteLevel(x.done).level]),
+      p.sites.map((x) => [
+        x.id,
+        x.name,
+        x.color,
+        x.done,
+        x.missed,
+        x.achieved,
+        x.percent,
+        x.records,
+        x.houses?.map((h) => [h.id, h.done]),
+      ]),
     ]),
     world.people.map((p) => [p.id, p.name, p.avatar, p.townIds, p.look]),
   ]);
@@ -1411,6 +1828,7 @@ export const WorldScene = ({
     syncBots();
     drawBoards();
     drawOverlay();
+    celebrate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [world]);
 

@@ -14,6 +14,8 @@ import {
   pointSpan,
 } from '@/lib/worklogs/timeline';
 import type { WorklogLink } from '@/models/worklogs';
+import type { Task } from '@/models/workspace';
+import { TASK_STATUS } from '@/models/workspace';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
 /** Waits for typing to settle before asking the server to link new lines. */
@@ -21,6 +23,78 @@ const LINK_DELAY_MS = 4000;
 const NOT_PROJECT = '__none';
 /** The picker's value for a company's work on none of its projects. */
 const COMPANY_PREFIX = 'company:';
+/** Joins a goal and its part in the goal picker's value. */
+const PART_SEP = '::';
+
+/** A task a line is on, with the goal it counts towards. */
+type LinkedTask = Pick<
+  Task,
+  | 'id'
+  | 'title'
+  | 'status'
+  | 'projectId'
+  | 'goalId'
+  | 'goalPartId'
+  | 'goalChecked'
+>;
+
+/**
+ * The goal a line's task counts towards. Finished tasks find their goal by
+ * themselves; this is for setting it early or putting it right.
+ */
+const GoalPicker = ({
+  task,
+  goals,
+  onPick,
+}: {
+  task: LinkedTask;
+  goals: LinkCandidates['projects'][number]['goalOptions'];
+  onPick: (goalId: string | null, goalPartId: string | null) => void;
+}) => {
+  const value = task.goalId
+    ? task.goalPartId
+      ? `${task.goalId}${PART_SEP}${task.goalPartId}`
+      : task.goalId
+    : '';
+  const unpicked =
+    !task.goalId && !task.goalChecked && task.status !== TASK_STATUS.DONE;
+  return (
+    <select
+      aria-label="Goal it counts towards"
+      title="The goal this task counts towards. It is picked by itself when the task is done; change it if it is wrong."
+      value={value}
+      onChange={(e) => {
+        const [goalId, partId] = e.target.value.split(PART_SEP);
+        onPick(goalId || null, partId || null);
+      }}
+      className={cn(
+        'h-7 max-w-[200px] rounded-md border px-1.5 text-xs',
+        task.goalId
+          ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+          : 'border-neutral-200 bg-white text-neutral-500',
+      )}
+    >
+      <option value="">
+        {unpicked ? 'Goal: picked when done' : 'Counts towards no goal'}
+      </option>
+      {goals.map((g) =>
+        g.parts?.length ? (
+          <optgroup key={g.id} label={g.title}>
+            {g.parts.map((p) => (
+              <option key={p.id} value={`${g.id}${PART_SEP}${p.id}`}>
+                Goal: {g.title} · {p.label}
+              </option>
+            ))}
+          </optgroup>
+        ) : (
+          <option key={g.id} value={g.id}>
+            Goal: {g.title}
+          </option>
+        ),
+      )}
+    </select>
+  );
+};
 
 const ProjectDot = ({
   project,
@@ -45,14 +119,23 @@ const onCompanyOnly = (l: WorklogLink) =>
 const LinePicker = ({
   link,
   candidates,
+  linkedTask,
   onPick,
+  onGoal,
 }: {
   link: WorklogLink;
   candidates: LinkCandidates;
+  /** The task the line is on, open or done. */
+  linkedTask?: LinkedTask;
   onPick: (
     projectId: string | null,
     taskId: string | null,
     companyId?: string | null,
+  ) => void;
+  onGoal: (
+    task: LinkedTask,
+    goalId: string | null,
+    goalPartId: string | null,
   ) => void;
 }) => {
   const companies = useMemo(
@@ -63,7 +146,16 @@ const LinePicker = ({
       })),
     [candidates.companies, candidates.projects],
   );
-  const tasks = candidates.tasks.filter((t) => t.projectId === link.projectId);
+  const open = candidates.tasks.filter((t) => t.projectId === link.projectId);
+  // A done task is not offered, but the line on it still shows it.
+  const tasks =
+    linkedTask &&
+    linkedTask.projectId === link.projectId &&
+    !open.some((t) => t.id === linkedTask.id)
+      ? [linkedTask, ...open]
+      : open;
+  const goals =
+    candidates.projects.find((p) => p.id === link.projectId)?.goalOptions ?? [];
   const value = link.projectId
     ? link.projectId
     : onCompanyOnly(link)
@@ -113,9 +205,17 @@ const LinePicker = ({
           {tasks.map((t) => (
             <option key={t.id} value={t.id}>
               {t.title}
+              {'status' in t && t.status === TASK_STATUS.DONE ? ' (done)' : ''}
             </option>
           ))}
         </select>
+      )}
+      {linkedTask && link.taskId === linkedTask.id && goals.length > 0 && (
+        <GoalPicker
+          task={linkedTask}
+          goals={goals}
+          onPick={(goalId, partId) => onGoal(linkedTask, goalId, partId)}
+        />
       )}
     </div>
   );
@@ -223,6 +323,7 @@ export const WorklogLinks = ({
     companies: [],
   });
   const [timeline, setTimeline] = useState<PointEvent[]>([]);
+  const [linkedTasks, setLinkedTasks] = useState<LinkedTask[]>([]);
   const [claudeKeys, setClaudeKeys] = useState<string[]>([]);
   const [open, setOpen] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout>>();
@@ -241,6 +342,7 @@ export const WorklogLinks = ({
       setLinks(res?.data?.links ?? []);
       setTimeline(res?.data?.timeline ?? []);
       setClaudeKeys(res?.data?.claudeKeys ?? []);
+      setLinkedTasks(res?.data?.linkedTasks ?? []);
       setCandidates({
         projects: res?.data?.projects ?? [],
         tasks: res?.data?.tasks ?? [],
@@ -290,9 +392,33 @@ export const WorklogLinks = ({
         taskId,
         companyId,
       });
+      // Picks up the task the line is on now, and its goal.
+      if (taskId) relink();
     } catch {
       setLinks(before);
       toast.error('Could not save that. Try again.');
+    }
+  };
+
+  const setGoal = async (
+    task: LinkedTask,
+    goalId: string | null,
+    goalPartId: string | null,
+  ) => {
+    const before = linkedTasks;
+    setLinkedTasks((all) =>
+      all.map((t) =>
+        t.id === task.id ? { ...t, goalId, goalPartId, goalChecked: true } : t,
+      ),
+    );
+    try {
+      await PortalSdk.patchData(`/api/tasks/${task.id}`, {
+        goalId,
+        goalPartId,
+      });
+    } catch {
+      setLinkedTasks(before);
+      toast.error('Could not change the goal. Try again.');
     }
   };
 
@@ -371,7 +497,9 @@ export const WorklogLinks = ({
           <LinePicker
             link={link}
             candidates={candidates}
+            linkedTask={linkedTasks.find((t) => t.id === link.taskId)}
             onPick={(p, t, c) => pick(link, p, t, c)}
+            onGoal={setGoal}
           />
         </div>
       </li>

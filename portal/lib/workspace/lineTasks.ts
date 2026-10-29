@@ -56,6 +56,7 @@ async function inProgress(task: Task) {
     data: {
       status: TASK_STATUS.IN_PROGRESS,
       completedAt: null,
+      completedByIds: [],
       updatedAt: new Date().toISOString(),
     },
   });

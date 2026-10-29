@@ -30,12 +30,12 @@ import {
   errorText,
   PROJECT_STATUS_META,
 } from '../Admin/Workspace/shared';
+import { NewProjectDialog } from '../Projects/NewProjectDialog';
 import { PageDoc, SaveBadge, type SaveState } from './PageDoc';
 import { GoalsSection } from './sections/GoalsSection';
 import { KpiSection } from './sections/KpiSection';
 import { MembersSection } from './sections/MembersSection';
 import { PagesGallery, PagesInside } from './sections/PagesSection';
-import { ScheduleSection } from './sections/ScheduleSection';
 import { WorklogsSection } from './sections/WorklogsSection';
 import {
   byCreation,
@@ -234,6 +234,7 @@ const Sidebar = ({
   onTogglePage,
   onSelect,
   onNewPage,
+  onNewSub,
 }: {
   data: ProjectData;
   pages: PagesData | null;
@@ -248,8 +249,12 @@ const Sidebar = ({
   onTogglePage: (id: string) => void;
   onSelect: (view: ViewKey, pageId?: string | null) => void;
   onNewPage: (parentId: string | null) => void;
+  onNewSub: () => void;
 }) => {
   const { project, people } = data;
+  const tree = data.tree ?? [];
+  const parent = tree.find((p) => p.id === project.parentId);
+  const subs = tree.filter((p) => p.parentId === project.id);
   const status =
     PROJECT_STATUS_META[project.status] ?? PROJECT_STATUS_META.ACTIVE;
   const all = useMemo(
@@ -278,7 +283,17 @@ const Sidebar = ({
             <p className="truncate text-[15px] font-semibold text-white">
               {project.name}
             </p>
-            <p className="truncate text-xs text-neutral-500">{companyName}</p>
+            {parent ? (
+              <Link
+                href={`${APP_ROUTES.projects}/${parent.id}`}
+                className="flex items-center gap-0.5 truncate text-xs text-neutral-500 hover:text-neutral-200"
+              >
+                <Icon name="subdirectory_arrow_right" className="text-[13px]" />
+                <span className="truncate">{parent.name}</span>
+              </Link>
+            ) : (
+              <p className="truncate text-xs text-neutral-500">{companyName}</p>
+            )}
           </div>
         </div>
         <div className="mt-3 flex items-center gap-2">
@@ -417,6 +432,49 @@ const Sidebar = ({
             ),
           )}
         </LayoutGroup>
+
+        <div className="mt-4 border-t border-white/[0.06] pt-3">
+          <p className="flex items-center justify-between px-2.5 pb-1 text-[11px] font-semibold uppercase tracking-wider text-neutral-600">
+            Sub-projects
+            <button
+              type="button"
+              onClick={onNewSub}
+              aria-label="New sub-project"
+              title="New sub-project"
+              className="flex size-5 items-center justify-center rounded text-neutral-500 hover:bg-white/[0.08] hover:text-white"
+            >
+              <Icon name="add" className="text-[16px]" />
+            </button>
+          </p>
+          {subs.map((sub) => (
+            <Link
+              key={sub.id}
+              href={`${APP_ROUTES.projects}/${sub.id}`}
+              className="flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-sm text-neutral-400 transition-colors hover:bg-white/[0.04] hover:text-neutral-100"
+            >
+              <span
+                className="size-2 shrink-0 rounded-full"
+                style={{ backgroundColor: sub.color || '#737373' }}
+              />
+              <span className="flex-1 truncate">{sub.name}</span>
+              {tree.some((p) => p.parentId === sub.id) && (
+                <Icon
+                  name="account_tree"
+                  className="text-[14px] text-neutral-600"
+                />
+              )}
+            </Link>
+          ))}
+          {!subs.length && (
+            <button
+              type="button"
+              onClick={onNewSub}
+              className="w-full rounded-lg px-2.5 py-1.5 text-left text-xs text-neutral-600 hover:bg-white/[0.04] hover:text-neutral-300"
+            >
+              Split this project into smaller ones
+            </button>
+          )}
+        </div>
       </nav>
     </aside>
   );
@@ -465,6 +523,7 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
   const { companies, can, canInProject } = useWorkspace();
 
   const [data, setData] = useState<ProjectData | null>(null);
+  const [addingSub, setAddingSub] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pages, setPages] = useState<PagesData | null>(null);
   const [companyUsers, setCompanyUsers] = useState<User[]>([]);
@@ -476,14 +535,17 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
   const [deleting, setDeleting] = useState<Page | null>(null);
   const [busy, setBusy] = useState(false);
 
-  // Links from when pages were called ideas still open them.
+  // Links from when pages were called ideas, and from the task schedule
+  // (now part of goals), still open the right place.
   const asked = params?.get('view');
   const view: ViewKey =
     asked === 'ideas'
       ? 'pages'
-      : isView(asked)
-        ? (asked as ViewKey)
-        : VIEWS[0].key;
+      : asked === 'schedule'
+        ? 'goals'
+        : isView(asked)
+          ? (asked as ViewKey)
+          : VIEWS[0].key;
   const pageId =
     view === 'pages'
       ? (params?.get('page') ?? params?.get('idea') ?? null)
@@ -703,21 +765,11 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
           <GoalsSection
             project={project}
             tasks={tasks}
-            canEdit={canEdit}
-            onSaved={load}
-          />
-        );
-      case 'schedule':
-        return (
-          <ScheduleSection
-            project={project}
-            tasks={tasks}
             people={people}
             companyUsers={companyUsers}
-            canCreate={canInProject(project, 'tasks:create')}
-            canEdit={canInProject(project, 'tasks:edit')}
-            canDelete={canInProject(project, 'tasks:delete')}
-            onTasksChange={load}
+            canEdit={canEdit}
+            canTick={canInProject(project, 'tasks:edit')}
+            onSaved={load}
           />
         );
       case 'members':
@@ -752,6 +804,7 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
         onTogglePage={togglePage}
         onSelect={select}
         onNewPage={newPage}
+        onNewSub={() => setAddingSub(true)}
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -852,6 +905,18 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
         confirmLabel="Delete page"
         loading={busy}
         onConfirm={deletePage}
+      />
+      <NewProjectDialog
+        open={addingSub}
+        onOpenChange={setAddingSub}
+        projects={data.tree ?? []}
+        companyId={project.companyId}
+        parentId={project.id}
+        onDone={(result) => {
+          if (result.kind === 'created')
+            router.push(`${APP_ROUTES.projects}/${result.projectId}`);
+          else load();
+        }}
       />
       <Toaster theme="dark" position="bottom-right" richColors />
     </div>

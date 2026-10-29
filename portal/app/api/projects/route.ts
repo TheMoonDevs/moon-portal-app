@@ -2,8 +2,11 @@ import type { NextRequest } from 'next/server';
 
 import { db } from '@/lib/mongodb/db-client';
 import { hasPermission } from '@/lib/permissions/matching';
-import { syncGoalSchedules } from '@/lib/workspace/goalSchedules';
-import { sanitizeGoals } from '@/lib/workspace/projects';
+import {
+  canCreateDirectly,
+  createProject,
+  requestProject,
+} from '@/lib/workspace/projectRequests';
 import { withProjectStats } from '@/lib/workspace/projectStats';
 import { runDueSchedules } from '@/lib/workspace/schedules';
 import {
@@ -12,14 +15,12 @@ import {
   checkParent,
   fail,
   getWorkspaceForUser,
-  nowIso,
   ok,
   requireCompanyPermission,
   requireUser,
-  slugify,
 } from '@/lib/workspace/server';
 import type { Project } from '@/models/workspace';
-import { PROJECT_EFFORT, PROJECT_STATUS } from '@/models/workspace';
+import { PROJECT_STATUS } from '@/models/workspace';
 
 export const dynamic = 'force-dynamic';
 
@@ -62,10 +63,15 @@ export async function GET(request: NextRequest) {
   return ok({ projects: await withProjectStats(projects) });
 }
 
+/**
+ * Creates a project, or sends a request for it when the caller may not
+ * create it themselves (see projectRequests): 201 with `project`, or 202
+ * with `request`.
+ */
 export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
   const companyId = typeof body.companyId === 'string' ? body.companyId : '';
-  const { response, user } = await requireCompanyPermission(
+  const { response, user, access } = await requireCompanyPermission(
     companyId,
     'projects:create',
   );
@@ -83,27 +89,35 @@ export async function POST(request: Request) {
   const parent = await checkParent(companyId, null, body.parentId);
   if (parent.error) return fail(400, parent.error);
 
-  const now = nowIso();
-  const project = await db.project.create({
-    data: {
-      companyId,
-      name,
-      slug: slugify(name),
-      description: body.description ?? null,
-      status,
-      color: body.color ?? null,
-      icon: body.icon ?? null,
-      logo: typeof body.logo === 'string' && body.logo ? body.logo : null,
-      leadIds: asStringArray(body.leadIds),
-      memberIds: asStringArray(body.memberIds),
-      goals: sanitizeGoals(body.goals),
-      effort: effort ?? PROJECT_EFFORT.MEDIUM,
-      parentId: parent.parentId,
-      createdById: user.id,
-      createdAt: now,
-      updatedAt: now,
-    },
-  });
-  await syncGoalSchedules(project, [], user.id);
+  const input = {
+    companyId,
+    name: name.slice(0, 120),
+    description: typeof body.description === 'string' ? body.description : null,
+    status,
+    color: typeof body.color === 'string' ? body.color : null,
+    icon: typeof body.icon === 'string' ? body.icon : null,
+    logo: typeof body.logo === 'string' ? body.logo : null,
+    // Whoever makes it leads it, unless they named the leads.
+    leadIds: asStringArray(body.leadIds).length ? body.leadIds : [user.id],
+    memberIds: body.memberIds,
+    goals: body.goals,
+    effort,
+    parentId: parent.parentId,
+  };
+
+  if (!(await canCreateDirectly(user, access, companyId, parent.parentId))) {
+    const sent = await requestProject(
+      {
+        ...input,
+        note:
+          typeof body.note === 'string'
+            ? body.note.trim().slice(0, 1000)
+            : null,
+      },
+      user,
+    );
+    return ok({ request: sent }, { status: 202 });
+  }
+  const project = await createProject(input, user.id);
   return ok({ project }, { status: 201 });
 }

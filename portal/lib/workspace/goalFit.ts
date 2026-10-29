@@ -104,13 +104,13 @@ async function goalsByGemini(
       },
     },
   });
-  const prompt = `A project has goals: targets that repeat every day, week or month. Each finished task that directly delivers one unit of a goal counts towards it (one released video for "Release 3 lyric videos a week"). Tasks that only help along the way (a thumbnail, a meeting, a fix) count towards no goal.
+  const prompt = `A project has goals: targets that repeat every day, week or month, and one-off totals to reach. Each finished task that directly delivers one unit of a goal counts towards it (one released video for "Release 3 lyric videos a week"). Tasks that only help along the way (a thumbnail, a meeting, a fix) count towards no goal.
 
 Goals (id, title, target, parts as id: label):
 ${goals
   .map(
     (g) =>
-      `- ${g.id} | ${g.title} | ${g.target} a ${g.period}${
+      `- ${g.id} | ${g.title} | ${g.target} ${g.kind === 'target' ? 'in total' : `a ${g.period}`}${
         g.parts?.length
           ? ` | parts: ${g.parts.map((p) => `${p.id}: ${p.label}`).join('; ')}`
           : ''
