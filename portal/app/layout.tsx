@@ -15,8 +15,9 @@ import localFont from 'next/font/local';
 import { ToastsContainer } from '@/components/elements/Toast';
 import { PermissionDeniedToaster } from '@/components/global/PermissionDeniedToaster';
 import { ServiceWorkerProvider } from '@/components/global/ServiceWorkerProvider';
-import { APP_BASE_URL } from '@/utils/constants/appInfo';
+import { THEME_SCRIPT } from '@/lib/theme';
 import { MUIThemeRegistry } from '@/styles/provider';
+import { APP_BASE_URL } from '@/utils/constants/appInfo';
 import { ReduxProvider } from '@/utils/redux/provider';
 import NextAuthProvider from '@/utils/services/NextAuthProvider';
 
@@ -62,8 +63,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={montserrat.variable}>
+    <html lang="en" className={montserrat.variable} suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
         <link
           href="https://fonts.googleapis.com/icon?family=Material+Icons&display=block"
           rel="stylesheet"

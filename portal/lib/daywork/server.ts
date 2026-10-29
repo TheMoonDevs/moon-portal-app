@@ -4,7 +4,7 @@ import { syncTaskPoints } from '@/lib/progress/server';
 import { localClock } from '@/lib/push/dayReminders';
 import type { LinkCandidates } from '@/lib/worklogs/linker';
 import { guessPlaces, linkCandidates } from '@/lib/worklogs/linker';
-import { PERSONAL_COMPANY_ID } from '@/lib/worklogs/personal';
+import { PERSONAL_COMPANY_ID, PERSONAL_TITLE } from '@/lib/worklogs/personal';
 import { fitGoal } from '@/lib/workspace/goalFit';
 import type { Task, WorkPoint, WorkPointStatus } from '@/models/workspace';
 import { OPEN_TASK_STATUSES, TASK_SIZE, TASK_STATUS } from '@/models/workspace';
@@ -235,24 +235,37 @@ export function placeFields(
 }
 
 /**
- * Places tasks that were not placed by hand from their words: a project,
- * or a company alone. Returns the tasks as saved.
+ * Places tasks that were not placed by hand from their words: Personal when
+ * written so ("p: …", "P - …", "personal: …"), else a project, or a company
+ * alone. Returns the tasks as saved.
  */
 export async function placeByWords(
   tasks: Task[],
   candidates: LinkCandidates,
 ): Promise<Task[]> {
-  const open = tasks.filter(
+  const unplaced = tasks.filter((t) => !t.placedBy || t.placedBy === 'auto');
+  const out = new Map(tasks.map((t) => [t.id, t]));
+  for (const task of unplaced.filter((t) => PERSONAL_TITLE.test(t.title)))
+    out.set(
+      task.id,
+      await db.task.update({
+        where: { id: task.id },
+        data: {
+          ...placeFields({ personal: true }, candidates)!,
+          updatedAt: nowIso(),
+        },
+      }),
+    );
+  const open = unplaced.filter(
     (t) =>
-      t.title.replace(/[^\p{L}\p{N}]/gu, '').length >= 3 &&
-      (!t.placedBy || t.placedBy === 'auto'),
+      !PERSONAL_TITLE.test(t.title) &&
+      t.title.replace(/[^\p{L}\p{N}]/gu, '').length >= 3,
   );
-  if (!open.length) return tasks;
+  if (!open.length) return tasks.map((t) => out.get(t.id) ?? t);
   const guesses = await guessPlaces(
     open.map((t) => ({ key: t.id, text: t.title })),
     candidates,
   );
-  const out = new Map(tasks.map((t) => [t.id, t]));
   for (const task of open) {
     const guess = guesses.get(task.id);
     const companyId = guess?.companyId ?? null;

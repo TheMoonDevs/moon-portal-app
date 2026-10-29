@@ -145,10 +145,14 @@ const config: Config = {
     addVariablesForColors,
     // `auto-light:` restyles a dark screen for a device set to light mode,
     // inside an `.auto-theme` element (the `dark:` variant is class-based).
+    // A theme picked in the portal (data-theme on <html>) wins over the
+    // device's.
     ({ addVariant }: any) =>
       addVariant('auto-light', [
-        '@media (prefers-color-scheme: light) { .auto-theme & }',
-        '@media (prefers-color-scheme: light) { &.auto-theme }',
+        '@media (prefers-color-scheme: light) { :root:not([data-theme=dark]) .auto-theme & }',
+        '@media (prefers-color-scheme: light) { :root:not([data-theme=dark]) &.auto-theme }',
+        ':root[data-theme=light] .auto-theme &',
+        ':root[data-theme=light] &.auto-theme',
       ]),
   ],
 };

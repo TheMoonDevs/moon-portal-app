@@ -49,6 +49,7 @@ export type DayProject = {
   id: string;
   name: string;
   color?: string | null;
+  logo?: string | null;
   companyId: string;
   companyName?: string;
 };
@@ -57,6 +58,7 @@ export type DayCompany = {
   id: string;
   name: string;
   color?: string | null;
+  logo?: string | null;
   /** Its CORE project, which takes company work on no other project. */
   coreProjectId?: string | null;
 };

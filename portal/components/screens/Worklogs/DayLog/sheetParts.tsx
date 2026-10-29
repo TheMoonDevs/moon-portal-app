@@ -61,6 +61,20 @@ export const StatusIcon = ({
   status: TaskRowStatus;
   className?: string;
 }) => {
+  // Under way: still an open circle, with a small yellow dot below it.
+  if (status === 'doing')
+    return (
+      <span className="relative inline-flex">
+        <Icon
+          name="radio_button_unchecked"
+          className={cn(
+            'text-neutral-500 auto-light:text-neutral-400',
+            className,
+          )}
+        />
+        <span className="absolute -bottom-[5px] left-1/2 size-[5px] -translate-x-1/2 rounded-full bg-amber-400 auto-light:bg-amber-500" />
+      </span>
+    );
   if (!status)
     return (
       <Icon
@@ -100,6 +114,14 @@ export function rowStatus(
   return last?.status === 'not_done' ? 'not_done' : null;
 }
 
+/**
+ * A task's work points worth reading: the ones that say something. A bare
+ * status (doing, waiting) shows only when it is the latest, since the task's
+ * icon already tells the rest.
+ */
+export const readablePoints = (points: DayPoint[]) =>
+  points.filter((p, i) => p.text.trim() || i === points.length - 1);
+
 /** Status keys while typing: the same as the old editor's emoji keys. */
 export const statusForKey = (e: React.KeyboardEvent): PointStatus | null => {
   if (e.ctrlKey && !e.altKey && !e.metaKey) {
@@ -134,6 +156,9 @@ export type Place = {
   color?: string | null;
   /** Placed by the portal from its words, not by the person. */
   auto?: boolean;
+  logo?: string | null;
+  /** The company it is in, for a project or company work. */
+  companyId?: string;
 };
 
 export const PERSONAL_ID = 'personal';
@@ -151,6 +176,8 @@ export function placeOf(
       kind: 'project',
       name: project?.name ?? 'Project',
       color: project?.color,
+      logo: project?.logo,
+      companyId: project?.companyId,
       auto,
     };
   }
@@ -163,6 +190,8 @@ export function placeOf(
       kind: 'company',
       name: company?.name ?? 'Company',
       color: company?.color,
+      logo: company?.logo,
+      companyId: task.companyId,
       auto,
     };
   }
@@ -218,6 +247,37 @@ export function placeInput(option: PickerOption): PlaceInput {
   if (option.id === 'personal') return { personal: true };
   return { none: true };
 }
+
+/** A project's or company's logo, or its first letter in its colour. */
+export const PlaceLogo = ({
+  place,
+  className,
+}: {
+  place: Pick<Place, 'name' | 'color' | 'logo' | 'kind'>;
+  className?: string;
+}) =>
+  place.logo ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={place.logo}
+      alt=""
+      className={cn('size-4 shrink-0 rounded object-cover', className)}
+    />
+  ) : (
+    <span
+      className={cn(
+        'flex size-4 shrink-0 items-center justify-center rounded text-[9px] font-bold uppercase text-white',
+        className,
+      )}
+      style={{ backgroundColor: place.color || '#525252' }}
+    >
+      {place.kind === 'personal' ? (
+        <Icon name="lock" className="text-[10px]" />
+      ) : (
+        place.name.slice(0, 1)
+      )}
+    </span>
+  );
 
 export const PlaceDot = ({ place }: { place: Place }) =>
   place.kind === 'personal' ? (
