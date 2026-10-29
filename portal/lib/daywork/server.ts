@@ -224,8 +224,13 @@ export function placeFields(
       : null;
   }
   const company = candidates.companies.find((c) => c.id === place.companyId);
+  // Company work goes in its CORE project.
   return company
-    ? { companyId: company.id, projectId: null as any, placedBy: 'user' }
+    ? {
+        companyId: company.id,
+        projectId: (company.coreProjectId ?? null) as any,
+        placedBy: 'user',
+      }
     : null;
 }
 
