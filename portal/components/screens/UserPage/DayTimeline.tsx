@@ -3,6 +3,7 @@
 import dayjs from 'dayjs';
 import { motion } from 'framer-motion';
 import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 import type { WorkData, WorkPoint } from '@/lib/people/types';
 import { cn } from '@/lib/utils';
@@ -12,14 +13,27 @@ import { Icon } from '../Admin/shared/AdminUI';
 import { colorFor, formatMs, type Period, timingOf } from './work';
 
 /*
- * When work happened: one row per day, hours across, a bar for each point
- * from its start to its finish. Bot work is striped; time it spent waiting
- * for input is shaded.
+ * When work happened: one row per day, hours across, a bar for each task
+ * from its first update to its last. Each update is a mark on the bar (the
+ * start, notes, done), with what happened on hover; a task written down
+ * during the day has a + where it came up. Bot work is striped; time spent
+ * waiting for input is shaded.
  */
 
 const HOUR = 3600000;
 const LANE = 12;
 const LANE_GAP = 4;
+
+const MARK_COLOR: Record<string, string> = {
+  done: '#34d399',
+  doing: '#fbbf24',
+  not_done: '#fb7185',
+  blocked: '#fb7185',
+  waiting: '#a78bfa',
+};
+
+/** A tooltip, placed on the page (not in the chart, which scrolls). */
+type Tip = { x: number; y: number; lines: string[] };
 
 type Bar = {
   point: WorkPoint;
@@ -52,6 +66,7 @@ export const DayTimeline = ({
   period: Period;
 }) => {
   const [focus, setFocus] = useState<string | null>(null);
+  const [tip, setTip] = useState<Tip | null>(null);
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 60000);
@@ -196,7 +211,7 @@ export const DayTimeline = ({
                   </p>
                   <p className="text-[10px] text-neutral-600">
                     {bars.length
-                      ? `${new Set(bars.map((b) => b.point.key)).size} pts`
+                      ? `${new Set(bars.map((b) => b.point.key)).size} tasks`
                       : 'nothing yet'}
                   </p>
                 </div>
@@ -271,12 +286,127 @@ export const DayTimeline = ({
                       </motion.button>
                     );
                   })}
+                  {bars.map((bar, i) => {
+                    const top = 8 + bar.lane * (LANE + LANE_GAP) + LANE / 2;
+                    const dim = focus && focus !== bar.point.key;
+                    const dayEvents = bar.point.events.filter(
+                      (e) => dayjs(e.at).format('YYYY-MM-DD') === day,
+                    );
+                    const created = bar.point.createdAt
+                      ? Date.parse(bar.point.createdAt)
+                      : NaN;
+                    const addedToday =
+                      !Number.isNaN(created) &&
+                      dayjs(created).format('YYYY-MM-DD') === day;
+                    const show = (el: HTMLElement, lines: string[]) => {
+                      const r = el.getBoundingClientRect();
+                      setTip({ x: r.left + r.width / 2, y: r.bottom, lines });
+                    };
+                    return (
+                      <span key={`m:${bar.point.key}:${i}`}>
+                        {addedToday && (
+                          <button
+                            type="button"
+                            aria-label="Written down during the day"
+                            onMouseEnter={(ev) =>
+                              show(ev.currentTarget, [
+                                `Written down ${dayjs(created).format('HH:mm')}`,
+                                bar.point.text,
+                              ])
+                            }
+                            onMouseLeave={() => setTip(null)}
+                            onFocus={(ev) =>
+                              show(ev.currentTarget, [
+                                `Written down ${dayjs(created).format('HH:mm')}`,
+                                bar.point.text,
+                              ])
+                            }
+                            onBlur={() => setTip(null)}
+                            className="absolute z-20 flex size-3.5 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-sky-400 text-[11px] font-bold leading-none text-neutral-950 transition-opacity"
+                            style={{
+                              left: `${x(day, created)}%`,
+                              top,
+                              opacity: dim ? 0.25 : 1,
+                            }}
+                          >
+                            +
+                          </button>
+                        )}
+                        {dayEvents.map((e, j) => {
+                          const left = x(day, Date.parse(e.at));
+                          const lines = [
+                            `${dayjs(e.at).format('HH:mm')} · ${
+                              e.status
+                                ? POINT_STATUSES[e.status].label
+                                : e.by === 'claude'
+                                  ? 'Update from Claude'
+                                  : 'Note'
+                            }`,
+                            ...(e.note ? [e.note] : []),
+                            bar.point.text,
+                          ];
+                          return (
+                            <button
+                              key={`${e.at}:${j}`}
+                              type="button"
+                              aria-label={lines.join('. ')}
+                              onMouseEnter={(ev) => {
+                                setFocus(bar.point.key);
+                                show(ev.currentTarget, lines);
+                              }}
+                              onMouseLeave={() => setTip(null)}
+                              onFocus={(ev) => show(ev.currentTarget, lines)}
+                              onBlur={() => setTip(null)}
+                              className="absolute z-10 size-2 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-neutral-950 transition-opacity"
+                              style={{
+                                left: `${left}%`,
+                                top,
+                                opacity: dim ? 0.25 : 1,
+                                backgroundColor: e.status
+                                  ? MARK_COLOR[e.status]
+                                  : e.by === 'claude'
+                                    ? '#fdba74'
+                                    : '#e5e5e5',
+                              }}
+                            />
+                          );
+                        })}
+                      </span>
+                    );
+                  })}
                 </div>
               </div>
             );
           })}
         </div>
       </div>
+
+      {tip &&
+        createPortal(
+          <div
+            role="tooltip"
+            className="pointer-events-none fixed z-[1400] max-w-[280px] -translate-x-1/2 rounded-lg border border-white/10 bg-neutral-900 px-2.5 py-1.5 text-[11px] leading-4 text-neutral-200 shadow-xl shadow-black/40"
+            style={{
+              left: Math.min(window.innerWidth - 150, Math.max(150, tip.x)),
+              top: tip.y + 8,
+            }}
+          >
+            <p className="font-medium text-white">{tip.lines[0]}</p>
+            {tip.lines.slice(1).map((l, k) => (
+              <p
+                key={k}
+                className={cn(
+                  k === tip.lines.length - 2
+                    ? 'truncate text-neutral-500'
+                    : 'text-neutral-300',
+                )}
+              >
+                {l}
+              </p>
+            ))}
+          </div>,
+          document.body,
+        )}
 
       {/* The point under the pointer, or a key to the chart */}
       <div className="flex min-h-[52px] items-center gap-3 border-t border-white/[0.06] px-4 py-2.5">
@@ -309,6 +439,17 @@ export const DayTimeline = ({
             <span className="inline-flex items-center gap-1.5">
               <span className="h-2.5 w-5 rounded-[3px] ring-1 ring-inset ring-white/40" />
               Not done yet
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="size-2 rounded-full bg-amber-400" />
+              <span className="size-2 rounded-full bg-emerald-400" />
+              An update (hover for it)
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="flex size-3.5 items-center justify-center rounded-full bg-sky-400 text-[11px] font-bold leading-none text-neutral-950">
+                +
+              </span>
+              Written down during the day
             </span>
             {untimed > 0 && (
               <span className="text-neutral-600">

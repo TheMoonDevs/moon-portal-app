@@ -46,8 +46,9 @@ export type PageTask = {
 };
 
 /**
- * One work point (a worklog line) in the period. A point carried over to
- * later days shows up once, with every day it was on.
+ * One task worked on, planned or finished in the period, with its work
+ * points as events. A task on several days shows up once, with every day
+ * it was on.
  */
 export type WorkPoint = {
   key: string;
@@ -63,6 +64,8 @@ export type WorkPoint = {
   /** When it started and, if it has, finished (ISO times). */
   startedAt?: string | null;
   finishedAt?: string | null;
+  /** When the task was written down (ISO). */
+  createdAt?: string | null;
   /** What happened to it and when, oldest first. */
   events: PointEvent[];
   /**

@@ -275,7 +275,7 @@ const TaskBlock = ({ group, bare }: { group: TaskGroup; bare?: boolean }) => {
 
 const countText = (g: { points: number; done: number; closedTasks: number }) =>
   [
-    g.points && `${g.points} ${g.points === 1 ? 'point' : 'points'}`,
+    g.points && `${g.points} ${g.points === 1 ? 'task' : 'tasks'}`,
     g.done && `${g.done} done`,
     g.closedTasks &&
       `${g.closedTasks} ${g.closedTasks === 1 ? 'task' : 'tasks'} closed`,
@@ -560,7 +560,7 @@ const TimingCard = ({ points }: { points: WorkPoint[] }) => {
           {all.timed ? formatMs(all.totalMs) : '–'}
         </p>
         <p className="text-[11px] text-neutral-500">
-          start to done, {all.timed} {all.timed === 1 ? 'point' : 'points'}
+          start to done, {all.timed} {all.timed === 1 ? 'task' : 'tasks'}
           {all.typicalMs != null && ` · ${formatMs(all.typicalMs)} each`}
         </p>
       </div>
@@ -639,13 +639,14 @@ const OriginCard = ({
     <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4">
       <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
         <p className="text-xs font-medium text-neutral-400">
-          Planned, unexpected and delayed
+          How the {period.kind} happened
+          <span className="ml-1.5 font-normal text-neutral-600">
+            planned, unexpected and delayed
+          </span>
         </p>
         <p className="text-[11px] text-neutral-500">
           {share}% of the work was unexpected
-          {counts.unknown
-            ? ` · ${counts.unknown} older points not counted`
-            : ''}
+          {counts.unknown ? ` · ${counts.unknown} older tasks not counted` : ''}
         </p>
       </div>
       <OriginBar counts={counts} done={done} />
@@ -802,7 +803,7 @@ export const WorkView = ({
         {/* Numbers */}
         <div className="grid grid-cols-2 gap-4 rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4 sm:grid-cols-4">
           <Metric
-            label="Points"
+            label="Tasks"
             value={data ? points.length : '–'}
             hint={
               data && points.some((p) => p.byClaude)
@@ -815,7 +816,7 @@ export const WorkView = ({
             value={data ? points.filter(isDone).length : '–'}
             hint={
               data && points.length
-                ? `${Math.round((points.filter(isDone).length / points.length) * 100)}% of points`
+                ? `${Math.round((points.filter(isDone).length / points.length) * 100)}% of tasks`
                 : undefined
             }
           />
@@ -870,8 +871,8 @@ export const WorkView = ({
               Nothing logged in this period
             </p>
             <p className="mx-auto mt-1 max-w-sm text-xs text-neutral-500">
-              Work points from the daily worklog and from your bot land here,
-              sorted by project and task.
+              Tasks from the daily worklog and from your bot land here, sorted
+              by project.
             </p>
             {data.isSelf && (
               <Link
@@ -898,9 +899,8 @@ export const WorkView = ({
 
         {data && data.hiddenCount > 0 && (
           <p className="text-center text-[11px] text-neutral-600">
-            {data.hiddenCount} more{' '}
-            {data.hiddenCount === 1 ? 'point' : 'points'} in companies you are
-            not part of.
+            {data.hiddenCount} more {data.hiddenCount === 1 ? 'task' : 'tasks'}{' '}
+            in companies you are not part of.
           </p>
         )}
       </div>
