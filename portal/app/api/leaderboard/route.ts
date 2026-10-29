@@ -2,12 +2,8 @@ import dayjs from 'dayjs';
 import type { NextRequest } from 'next/server';
 
 import { db } from '@/lib/mongodb/db-client';
-import {
-  getBuffLevelAndTitle,
-  worklogPointsForCompany,
-} from '@/lib/progress/buff';
-import { hasContent } from '@/lib/progress/server';
-import { publicWorklog } from '@/lib/worklogs/personal';
+import { getBuffLevelAndTitle, workScore } from '@/lib/progress/buff';
+import { workInRange } from '@/lib/progress/server';
 import {
   fail,
   getPublicUsers,
@@ -22,9 +18,9 @@ export const dynamic = 'force-dynamic';
 
 /**
  * A company's leaderboard for one month (`?companyId=&month=YYYY-MM`, this
- * month by default): every active member with their points (worklog lines
- * plus tasks finished in that company), their monthly worklog buff, tasks
- * finished and days they wrote a worklog.
+ * month by default): every active member with their points (a point for
+ * each day they worked on one of the company's tasks, plus tasks finished
+ * in it), their monthly buff, tasks finished and days they worked.
  */
 export async function GET(request: NextRequest) {
   const companyId = request.nextUrl.searchParams.get('companyId');
@@ -52,24 +48,21 @@ export async function GET(request: NextRequest) {
     return ok({ month: month.format('YYYY-MM'), rows: [] });
   }
 
-  const [entries, allLogs, users] = await Promise.all([
+  const [entries, work, users] = await Promise.all([
     db.pointEntry.findMany({
       where: { companyId, date: { gte: from, lte: to } },
     }) as Promise<PointEntry[]>,
-    db.workLogs.findMany({
-      where: {
-        userId: { in: userIds },
-        logType: 'dayLog',
-        date: { gte: from, lte: to },
-      },
-      select: { userId: true, date: true, works: true, links: true },
-    }),
+    workInRange(userIds, from, to),
     getPublicUsers(userIds),
   ]);
 
-  // Personal (`p:`) lines are only their writer's: they add no points and
-  // a day with nothing else on it is not a worklog day here.
-  const logs = allLogs.map(publicWorklog);
+  // The company's tasks, and tasks not placed yet (as unlinked worklog
+  // lines counted everywhere before). Personal tasks count for no company.
+  const companyTasks = new Map(
+    Array.from(work.tasks).filter(
+      ([, t]) => t.companyId === companyId || !t.companyId,
+    ),
+  );
 
   type Row = {
     user: { id: string };
@@ -85,23 +78,23 @@ export async function GET(request: NextRequest) {
     .filter((user: { status?: string }) => user.status === 'ACTIVE')
     .map((user: { id: string }): Row => {
       const mine = entries.filter((e) => e.userId === user.id);
-      const myLogs = logs.filter(
-        (l: { userId: string; works?: unknown }) =>
-          l.userId === user.id && hasContent(l),
+      const score = workScore(
+        work.points.filter((p) => p.userId === user.id),
+        companyTasks,
       );
-      const days = new Set(myLogs.map((l: { date: string }) => l.date));
       const taskPoints = mine.reduce((sum, e) => sum + (e.points || 0), 0);
-      const fromWorklogs = worklogPointsForCompany(myLogs, companyId);
-      const buff = fromWorklogs > 0 ? getBuffLevelAndTitle(fromWorklogs) : null;
+      // Finishing is in the ledger already; the days of work are added.
+      const fromWork = score.taskDays;
+      const buff = score.points > 0 ? getBuffLevelAndTitle(score.points) : null;
       return {
         user,
-        points: taskPoints + fromWorklogs,
+        points: taskPoints + fromWork,
         taskPoints,
-        worklogPoints: fromWorklogs,
+        worklogPoints: fromWork,
         buff: buff && { title: buff.title, src: buff.src },
         tasksDone: new Set(mine.filter((e) => e.taskId).map((e) => e.taskId))
           .size,
-        worklogDays: days.size,
+        worklogDays: score.days,
       };
     })
     .sort(

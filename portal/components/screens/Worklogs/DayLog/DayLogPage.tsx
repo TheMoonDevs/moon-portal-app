@@ -184,7 +184,7 @@ export const DayLogPage = ({
     [router, layout],
   );
 
-  // Every day's log, for the days on the left and the month's badge. They
+  // Every day's log, for the days on the left. They
   // are written from the tasks, so they are read again a little after a
   // change.
   useEffect(() => {
@@ -225,13 +225,6 @@ export const DayLogPage = ({
       if (log.date && !map.has(log.date)) map.set(log.date, log);
     return map;
   }, [logs]);
-  const monthLogs = useMemo(
-    () =>
-      Array.from(byDate.values()).filter((l) =>
-        dayjs(l.date).isSame(month, 'month'),
-      ),
-    [byDate, month],
-  );
 
   const counts = useMemo(() => countPlaces(day, day.tasks), [day]);
   const shown = useMemo(() => {
@@ -386,7 +379,7 @@ export const DayLogPage = ({
   ];
   const side = (
     <div className="flex min-w-0 flex-col gap-4">
-      <WorklogBuff filteredLogs={monthLogs as any} monthTab={month.month()} />
+      <WorklogBuff month={month.format('YYYY-MM')} version={day.version} />
       <div>
         <div className="mb-3 flex gap-1 border-b border-white/[0.07] auto-light:border-black/10">
           {sideTabs.map((t) => (

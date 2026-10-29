@@ -1,5 +1,8 @@
+import dayjs from 'dayjs';
+
 import { db } from '@/lib/mongodb/db-client';
-import { worklogPoints } from '@/lib/progress/buff';
+import { workScore } from '@/lib/progress/buff';
+import { workInRange } from '@/lib/progress/server';
 
 import type { Look, LookLock } from './look';
 import {
@@ -13,20 +16,21 @@ import {
 
 const DAY = 24 * 60 * 60 * 1000;
 
-/** Work points (worklog lines and task points) earned after `day`. */
+/** Points (days of work on tasks, and tasks finished) earned after `day`. */
 async function pointsAfter(userId: string, day: string) {
-  const [logs, entries] = await Promise.all([
-    db.workLogs.findMany({
-      where: { userId, logType: 'dayLog', date: { gt: day } },
-      select: { works: true },
-    }),
+  const [work, entries] = await Promise.all([
+    workInRange(
+      [userId],
+      dayjs(day).add(1, 'day').format('YYYY-MM-DD'),
+      '9999-12-31',
+    ),
     db.pointEntry.findMany({
       where: { userId, date: { gt: day } },
       select: { points: true },
     }),
   ]);
   return (
-    worklogPoints(logs) +
+    workScore(work.points, work.tasks).taskDays +
     entries.reduce(
       (n: number, e: { points?: number }) => n + (e.points || 0),
       0,
