@@ -170,6 +170,7 @@ export function useDay(date: string) {
         forDate: dateRef.current,
         ...(place && 'projectId' in place && { projectId: place.projectId }),
         ...(place && 'companyId' in place && { companyId: place.companyId }),
+        ...(place && 'personal' in place && { companyId: 'personal' }),
       };
       (draft as any).afterId = afterId ?? null;
       (draft as any).place = place ?? null;

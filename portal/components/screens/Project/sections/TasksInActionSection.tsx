@@ -24,6 +24,7 @@ import {
   UserAvatar,
 } from '../../Admin/shared/AdminUI';
 import { AvatarStack, errorText } from '../../Admin/Workspace/shared';
+import { DatePopover, shortDay } from '../../Worklogs/DayLog/DatePopover';
 import type { Person } from '../types';
 import { SectionShell, Stat } from './SectionShell';
 
@@ -84,7 +85,8 @@ const lastActive = (t: Task, points: Point[]) =>
 
 /**
  * A line to write a new task on. It is the writer's own unless they switch
- * it to someone else, and it goes on that person's day sheet for today.
+ * it to someone else. It has no day unless one is picked on its "for" chip,
+ * which puts it on that person's day sheet for that day.
  */
 const NewTask = ({
   projectId,
@@ -100,6 +102,7 @@ const NewTask = ({
 }) => {
   const [title, setTitle] = useState('');
   const [assignee, setAssignee] = useState<Who>(me);
+  const [forDate, setForDate] = useState<string | null>(null);
   const [picking, setPicking] = useState(false);
   const [search, setSearch] = useState('');
   const [saving, setSaving] = useState(false);
@@ -121,13 +124,15 @@ const NewTask = ({
         projectId,
         title: text,
         assigneeIds: [assignee.id],
-        forDate: dayjs().format('YYYY-MM-DD'),
+        forDate,
       });
       onAdded(res?.data?.task);
       setTitle('');
       if (assignee.id !== me.id)
         toast.success(
-          `Added to ${assignee.name?.split(' ')[0] || 'their'}’s day`,
+          forDate
+            ? `Added to ${assignee.name?.split(' ')[0] || 'their'}’s day`
+            : `Added for ${assignee.name?.split(' ')[0] || 'them'}`,
         );
       input.current?.focus();
     } catch (err) {
@@ -160,6 +165,26 @@ const NewTask = ({
             : 'Add a task for yourself…'
         }
         className="h-9 min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-neutral-500"
+      />
+      <DatePopover
+        value={forDate}
+        onPick={setForDate}
+        autoTheme={false}
+        trigger={
+          <button
+            type="button"
+            title={forDate ? 'Change its day' : 'Give it a day'}
+            className={cn(
+              'flex h-9 shrink-0 items-center gap-1 whitespace-nowrap rounded-xl px-2 text-xs transition-colors',
+              forDate
+                ? 'bg-white/[0.06] text-neutral-200 hover:bg-white/[0.1]'
+                : 'text-neutral-500 hover:bg-white/[0.06] hover:text-white',
+            )}
+          >
+            <Icon name="event" className="text-[16px]" />
+            for {forDate ? shortDay(forDate) : '—'}
+          </button>
+        }
       />
       <Popover
         open={picking}
