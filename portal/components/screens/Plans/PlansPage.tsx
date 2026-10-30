@@ -1,20 +1,18 @@
 'use client';
 
 import { useMediaQuery } from '@mui/material';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Panel as ResizablePanel,
   PanelGroup,
   PanelResizeHandle,
 } from 'react-resizable-panels';
-import { toast, Toaster } from 'sonner';
+import { Toaster } from 'sonner';
 
 import { cn } from '@/lib/utils';
 import { PLAN_STATUS_META } from '@/lib/workspace/plans';
 import { PLAN_STATUS } from '@/models/workspace';
-import { useUser } from '@/utils/hooks/useUser';
 import { useWorkspace } from '@/utils/hooks/useWorkspace';
-import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import {
   AdminButton,
@@ -24,29 +22,14 @@ import {
   SearchInput,
   Spin,
 } from '../Admin/shared/AdminUI';
-import { CompanyPicker, errorText } from '../Admin/Workspace/shared';
+import { CompanyPicker } from '../Admin/Workspace/shared';
 import { PlanEditor, StepPanel } from './PlanEditor';
 import { PlanSchedules } from './PlanSchedules';
-import type { PlansData, PlanView, StepView } from './types';
+import type { PlansData, StepView } from './types';
 import { isPast, shortDay, stepCount } from './types';
+import { usePlans } from './usePlans';
 
 const COMPANY_KEY = 'plans:company';
-const SAVE_AFTER_MS = 700;
-
-/** What a save sends: the plan's own fields, not the tasks' status. */
-const payload = (plan: PlanView) => ({
-  title: plan.title.trim() || 'Untitled plan',
-  notes: plan.notes ?? null,
-  status: plan.status,
-  startOn: plan.startOn ?? null,
-  endOn: plan.endOn ?? null,
-  ownerId: plan.ownerId,
-  memberIds: plan.memberIds ?? [],
-  steps: plan.steps
-    .filter((s) => s.text.trim())
-    .map(({ task: _task, ...s }) => s),
-});
-
 const readStored = () => {
   try {
     return localStorage.getItem(COMPANY_KEY);
@@ -207,7 +190,6 @@ const Handle = () => (
 );
 
 export const PlansPage = () => {
-  const { user } = useUser();
   const { companies, loading: loadingWorkspace } = useWorkspace();
   const wide = useMediaQuery('(min-width: 1024px)');
   const readable = useMemo(
@@ -216,13 +198,8 @@ export const PlansPage = () => {
   );
 
   const [companyId, setCompanyId] = useState<string | null>(null);
-  const [data, setData] = useState<PlansData | null>(null);
-  const [loading, setLoading] = useState(false);
   const [planId, setPlanId] = useState<string | null>(null);
   const [stepId, setStepId] = useState<string | null>(null);
-  const [saveState, setSaveState] = useState<'saved' | 'saving' | 'error'>(
-    'saved',
-  );
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -231,8 +208,8 @@ export const PlansPage = () => {
   // On a phone one panel shows at a time.
   const [view, setView] = useState<'list' | 'plan' | 'step'>('list');
 
-  const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
-  const pending = useRef(new Map<string, PlanView>());
+  const plans = usePlans(companyId);
+  const { data, loading, saveState, change, flush } = plans;
 
   // Start in the company used last, else the first one.
   useEffect(() => {
@@ -244,18 +221,6 @@ export const PlansPage = () => {
     );
   }, [readable, companyId]);
 
-  const load = useCallback(async (id: string) => {
-    setLoading(true);
-    try {
-      const res = await PortalSdk.getData(`/api/plans?companyId=${id}`, null);
-      setData(res?.data ?? null);
-    } catch (err) {
-      toast.error(errorText(err, 'Could not load plans.'));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
     if (!companyId) return;
     try {
@@ -263,108 +228,16 @@ export const PlansPage = () => {
     } catch {
       /* not saved; fine */
     }
-    setData(null);
     setPlanId(null);
     setStepId(null);
     setView('list');
-    load(companyId);
-  }, [companyId, load]);
-
-  const persist = useCallback(async (id: string) => {
-    const plan = pending.current.get(id);
-    if (!plan) return;
-    pending.current.delete(id);
-    setSaveState('saving');
-    try {
-      const res = await PortalSdk.patchData(`/api/plans/${id}`, payload(plan));
-      const saved: PlanView | undefined = res?.data?.plan;
-      // Take the tasks' status from the server; keep what is being typed.
-      if (saved)
-        setData(
-          (d) =>
-            d && {
-              ...d,
-              plans: d.plans.map((p) =>
-                p.id !== id
-                  ? p
-                  : {
-                      ...p,
-                      steps: p.steps.map((s) => {
-                        const fresh = saved.steps.find((x) => x.id === s.id);
-                        return fresh?.task
-                          ? { ...s, task: fresh.task, done: fresh.done }
-                          : s;
-                      }),
-                    },
-              ),
-            },
-        );
-      setSaveState(pending.current.size ? 'saving' : 'saved');
-    } catch (err) {
-      setSaveState('error');
-      toast.error(errorText(err, 'Could not save the plan.'));
-    }
-  }, []);
-
-  const flush = useCallback(
-    async (id: string) => {
-      clearTimeout(timers.current.get(id));
-      await persist(id);
-    },
-    [persist],
-  );
-
-  // Save anything waiting when leaving the page.
-  useEffect(() => {
-    const map = pending.current;
-    const save = () => map.forEach((_p, id) => flush(id));
-    window.addEventListener('beforeunload', save);
-    return () => {
-      window.removeEventListener('beforeunload', save);
-      save();
-    };
-  }, [flush]);
-
-  const change = useCallback(
-    (id: string, update: (plan: PlanView) => PlanView) => {
-      setData((d) => {
-        if (!d) return d;
-        return {
-          ...d,
-          plans: d.plans.map((p) => {
-            if (p.id !== id) return p;
-            const next = { ...update(p), updatedAt: new Date().toISOString() };
-            pending.current.set(id, next);
-            return next;
-          }),
-        };
-      });
-      setSaveState('saving');
-      clearTimeout(timers.current.get(id));
-      timers.current.set(
-        id,
-        setTimeout(() => persist(id), SAVE_AFTER_MS),
-      );
-    },
-    [persist],
-  );
+  }, [companyId]);
 
   const plan = data?.plans.find((p) => p.id === planId) ?? null;
   const step = plan?.steps.find((s) => s.id === stepId) ?? null;
-  // The people on a project run its tasks, and plans with a step for it.
-  const addsTasksIn = (projectId?: string | null) =>
-    !!data &&
-    !!projectId &&
-    (data.can.createTasks || data.can.teamProjectIds.includes(projectId));
-  const mine =
-    !!plan &&
-    !!data &&
-    (plan.ownerId === user?.id ||
-      plan.steps.some(
-        (s) => !!s.projectId && data.can.teamProjectIds.includes(s.projectId),
-      ));
-  const canEditPlan = mine || !!data?.can.editAll;
-  const canDeletePlan = mine || !!data?.can.deleteAll;
+  const { addsTasksIn } = plans;
+  const canEditPlan = !!plan && plans.canEdit(plan);
+  const canDeletePlan = !!plan && plans.canDelete(plan);
 
   const selectPlan = (id: string) => {
     if (planId && planId !== id) flush(planId);
@@ -374,45 +247,24 @@ export const PlansPage = () => {
   };
 
   const createPlan = async () => {
-    if (!companyId) return;
     setCreating(true);
-    try {
-      const res = await PortalSdk.postData('/api/plans', {
-        companyId,
-        title: 'New plan',
-        status: PLAN_STATUS.IDEA,
-      });
-      const created: PlanView = res?.data?.plan;
-      setData((d) => d && { ...d, plans: [created, ...d.plans] });
-      selectPlan(created.id);
-      setFreshId(created.id);
-    } catch (err) {
-      toast.error(errorText(err));
-    } finally {
-      setCreating(false);
-    }
+    const created = await plans.create();
+    setCreating(false);
+    if (!created) return;
+    selectPlan(created.id);
+    setFreshId(created.id);
   };
 
   const deletePlan = async () => {
     if (!plan) return;
     setDeleting(true);
-    try {
-      clearTimeout(timers.current.get(plan.id));
-      pending.current.delete(plan.id);
-      await PortalSdk.deleteData(`/api/plans/${plan.id}`, {});
-      setData(
-        (d) => d && { ...d, plans: d.plans.filter((p) => p.id !== plan.id) },
-      );
-      setPlanId(null);
-      setStepId(null);
-      setView('list');
-      setConfirmDelete(false);
-      toast.success('Plan deleted');
-    } catch (err) {
-      toast.error(errorText(err));
-    } finally {
-      setDeleting(false);
-    }
+    const gone = await plans.remove(plan.id);
+    setDeleting(false);
+    if (!gone) return;
+    setPlanId(null);
+    setStepId(null);
+    setView('list');
+    setConfirmDelete(false);
   };
 
   const changeStep = (fields: Partial<StepView>) =>
@@ -436,55 +288,8 @@ export const PlansPage = () => {
   const makeTask = async () => {
     if (!plan || !step) return;
     setMakingTask(true);
-    try {
-      await flush(plan.id);
-      const res = await PortalSdk.postData(
-        `/api/plans/${plan.id}/steps/${step.id}/task`,
-        {},
-      );
-      const saved: PlanView = res?.data?.plan;
-      setData(
-        (d) =>
-          d && {
-            ...d,
-            plans: d.plans.map((p) =>
-              p.id !== saved.id
-                ? p
-                : {
-                    ...p,
-                    steps: p.steps.map(
-                      (s) => saved.steps.find((x) => x.id === s.id) ?? s,
-                    ),
-                  },
-            ),
-          },
-      );
-      toast.success('Added to the project’s tasks');
-    } catch (err) {
-      toast.error(errorText(err));
-    } finally {
-      setMakingTask(false);
-    }
-  };
-
-  // After a scheduled task changes, fetch the plan's list of them again.
-  const refreshSchedules = async (id: string) => {
-    try {
-      const res = await PortalSdk.getData(`/api/plans/${id}`, null);
-      const fresh: PlanView | undefined = res?.data?.plan;
-      if (fresh)
-        setData(
-          (d) =>
-            d && {
-              ...d,
-              plans: d.plans.map((p) =>
-                p.id === id ? { ...p, schedules: fresh.schedules } : p,
-              ),
-            },
-        );
-    } catch (err) {
-      toast.error(errorText(err));
-    }
+    await plans.makeTask(plan.id, step.id);
+    setMakingTask(false);
   };
 
   const selectStep = (id: string | null) => {
@@ -520,7 +325,7 @@ export const PlansPage = () => {
             people={data.people}
             canEdit={canEditPlan}
             canAddTo={addsTasksIn}
-            onSaved={() => refreshSchedules(plan.id)}
+            onSaved={() => plans.refreshSchedules(plan.id)}
           />
         }
       />
