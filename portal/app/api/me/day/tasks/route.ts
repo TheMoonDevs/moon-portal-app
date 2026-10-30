@@ -57,14 +57,16 @@ export async function GET() {
 
 /**
  * A new task on the caller's day sheet: `{date, title, afterId?, place?,
- * status?}`. Without a place it is placed from its words.
+ * status?}`. Without a place it is placed from its words. A `date` of null
+ * makes a task with no day yet, for later.
  */
 export async function POST(request: Request) {
   const { response, user } = await requireUser();
   if (response || !user)
     return response ?? fail(401, 'Authentication required.');
   const body = await request.json().catch(() => ({}));
-  if (!isDay(body.date)) return fail(400, 'Use YYYY-MM-DD for the date.');
+  if (body.date !== null && !isDay(body.date))
+    return fail(400, 'Use YYYY-MM-DD for the date.');
   const title = typeof body.title === 'string' ? body.title : '';
   const task = await createDayTask(user, {
     title,
