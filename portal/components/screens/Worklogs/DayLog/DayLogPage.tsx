@@ -24,6 +24,7 @@ import { PortalSdk } from '@/utils/services/PortalSdk';
 import { Icon, Spin } from '../../Admin/shared/AdminUI';
 import TodoTab from '../WorklogTabs/TodoTab';
 import WorklogBuff from '../WorklogTabs/WorklogBuff';
+import { DatePopover } from './DatePopover';
 import { DayList } from './DayList';
 import { DaySummary } from './DaySummary';
 import { Picker } from './Picker';
@@ -414,6 +415,23 @@ export const DayLogPage = ({
           >
             <Icon name="chevron_left" className="text-[20px]" />
           </button>
+          {!showDays && (
+            // On a phone the days list is a page away: jump to any day here.
+            <DatePopover
+              value={date}
+              clearable={false}
+              onPick={(d) => d && pick(d)}
+              trigger={
+                <button
+                  type="button"
+                  aria-label="Pick a day"
+                  className="flex size-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-white/[0.06] hover:text-white data-[state=open]:bg-white/[0.06] auto-light:text-neutral-500 auto-light:hover:bg-black/[0.06] auto-light:hover:text-neutral-950"
+                >
+                  <Icon name="calendar_month" className="text-[19px]" />
+                </button>
+              }
+            />
+          )}
           <button
             type="button"
             aria-label="Next day"
@@ -443,14 +461,17 @@ export const DayLogPage = ({
         </div>
       )}
 
-      <ProjectSummary
-        counts={counts}
-        day={day}
-        filter={filter}
-        onFilter={setFilter}
-        showPoints={showPoints}
-        onShowPoints={toggleShowPoints}
-      />
+      {/* The project bar is left out on a phone, for room. */}
+      {wide && (
+        <ProjectSummary
+          counts={counts}
+          day={day}
+          filter={filter}
+          onFilter={setFilter}
+          showPoints={showPoints}
+          onShowPoints={toggleShowPoints}
+        />
+      )}
 
       <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-2 auto-light:border-black/10 auto-light:bg-white">
         {day.loading && !day.tasks.length ? (
