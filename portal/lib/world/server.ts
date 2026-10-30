@@ -1,9 +1,7 @@
 import { lookOf } from '@/lib/avatar/look';
-import { CLAUDE_SECTION_ID, statusOf, todayFor } from '@/lib/mcp/worklog';
+import { todayFor } from '@/lib/mcp/worklog';
 import { db } from '@/lib/mongodb/db-client';
 import type { SessionUser } from '@/lib/permissions/server';
-import { lineKey, normalizeLine, PRIVATE_LINE } from '@/lib/worklogs/lines';
-import { isPersonalLink } from '@/lib/worklogs/personal';
 import { tallyRowsFor } from '@/lib/workspace/goalTally';
 import type { DoneTask } from '@/lib/workspace/projects';
 import {
@@ -18,12 +16,12 @@ import {
 } from '@/lib/workspace/projects';
 import { getWorkspaceForUser } from '@/lib/workspace/server';
 import type { PointEntry } from '@/models/progress';
-import type { WorklogLink, WorkLogs } from '@/models/worklogs';
 import type {
   CompanyMember,
   Project,
   ProjectResult,
   Task,
+  WorkPoint,
 } from '@/models/workspace';
 import {
   MEMBER_STATUS,
@@ -201,12 +199,6 @@ const PERIOD_NOW: Record<string, string> = {
   month: 'This month',
 };
 
-const meaningful = (line: string) =>
-  normalizeLine(line).replace(/[^\p{L}\p{N}]/gu, '').length >= 3;
-
-const sectionLines = (content: unknown) =>
-  (typeof content === 'string' ? content : '').split('\n').filter(meaningful);
-
 /** Adds `n` to `map[a][b]`. */
 const bump = (
   map: Map<string, Map<string, number>>,
@@ -290,19 +282,20 @@ export async function buildWorld(viewer: SessionUser): Promise<World> {
   const week = periodRange('week', today);
 
   const projectIds = projects.map((p) => p.id);
-  const [logs, entries, results, tasks, tallies]: [
-    WorkLogs[],
+  const [weekPoints, entries, results, tasks, tallies]: [
+    WorkPoint[],
     PointEntry[],
     ProjectResult[],
     WorldTask[],
     DoneTask[],
   ] = await Promise.all([
-    db.workLogs.findMany({
+    db.workPoint.findMany({
       where: {
         userId: { in: userIds },
-        logType: 'dayLog',
         date: { gte: week.from, lte: today },
       },
+      orderBy: { at: 'asc' },
+      take: 20000,
     }),
     db.pointEntry.findMany({
       where: {
@@ -351,24 +344,36 @@ export async function buildWorld(viewer: SessionUser): Promise<World> {
       members.some((m) => m.userId === userId && m.companyId === id),
     );
 
-  // This week's points: worklog lines linked to a project, and task points.
+  // The tasks this week's work points are under, wherever they are.
+  const pointTaskIds = Array.from(new Set(weekPoints.map((p) => p.taskId)));
+  const pointTasks: Pick<Task, 'id' | 'projectId' | 'title' | 'size'>[] =
+    pointTaskIds.length
+      ? await db.task.findMany({
+          where: { id: { in: pointTaskIds } },
+          select: { id: true, projectId: true, title: true, size: true },
+        })
+      : [];
+  const pointTaskById = new Map(pointTasks.map((t) => [t.id, t]));
+  // A point under a task that is gone counts for nothing.
+  const livePoints = weekPoints.filter((p) => pointTaskById.has(p.taskId));
+
+  // This week's points: each task a person worked on in a project, once a
+  // day, and task points.
   const byProject = new Map<string, Map<string, number>>();
+  const worked = new Set<string>();
+  for (const point of livePoints) {
+    const projectId = pointTaskById.get(point.taskId)?.projectId;
+    if (point.isPrivate || !projectId || !projectById.has(projectId)) continue;
+    const key = `${point.userId}|${point.taskId}|${point.date}`;
+    if (worked.has(key)) continue;
+    worked.add(key);
+    bump(byProject, projectId, point.userId, 1);
+  }
+  const guidance = guidanceIn(livePoints);
   const guidanceByUser = new Map<string, number>();
-  for (const log of logs) {
-    const userId = log.userId as string;
-    guidanceByUser.set(
-      userId,
-      (guidanceByUser.get(userId) ?? 0) + (log.guidance ?? 0),
-    );
-    for (const link of (log.links ?? []) as WorklogLink[]) {
-      if (
-        isPersonalLink(link) ||
-        !link.projectId ||
-        !projectById.has(link.projectId)
-      )
-        continue;
-      bump(byProject, link.projectId, userId, 1);
-    }
+  for (const [key, n] of Array.from(guidance.entries())) {
+    const userId = key.split('|')[0];
+    guidanceByUser.set(userId, (guidanceByUser.get(userId) ?? 0) + n);
   }
   for (const e of entries)
     if (e.projectId) bump(byProject, e.projectId, e.userId, e.points);
@@ -479,8 +484,13 @@ export async function buildWorld(viewer: SessionUser): Promise<World> {
         ? [companyIds[0]]
         : [];
     if (!homes.length) continue;
-    const log = logs.find((l) => l.userId === u.id && l.date === today);
-    const works = Array.isArray(log?.works) ? (log!.works as any[]) : [];
+    const todays = livePoints.filter(
+      (p) => p.userId === u.id && p.date === today,
+    );
+    // Private points count only for their writer.
+    const own = todays.filter(
+      (p) => p.by === 'person' && (u.id === viewer.id || !p.isPrivate),
+    );
     people.push({
       id: u.id,
       name: names.get(u.id)!,
@@ -489,36 +499,25 @@ export async function buildWorld(viewer: SessionUser): Promise<World> {
       look: lookOf(u.id, u.look),
       isMe: u.id === viewer.id,
       townIds: homes,
-      // Private (p:) lines count only for their writer.
-      ownPoints: works
-        .filter((w) => w?.link_id !== CLAUDE_SECTION_ID)
-        .reduce(
-          (n, w) =>
-            n +
-            sectionLines(w?.content).filter(
-              (line) => u.id === viewer.id || !PRIVATE_LINE.test(line),
-            ).length,
-          0,
-        ),
-      guidance: log?.guidance ?? 0,
+      // One a task they worked on themselves today.
+      ownPoints: new Set(own.map((p) => p.taskId)).size,
+      guidance: guidance.get(`${u.id}|${today}`) ?? 0,
     });
 
-    const links = (log?.links ?? []) as WorklogLink[];
     const groups = new Map<string, BotPoint[]>();
     // Each point's task.
     const siteOfLine = new Map<BotPoint, string>();
-    for (const raw of sectionLines(
-      works.find((w) => w?.link_id === CLAUDE_SECTION_ID)?.content,
-    )) {
-      if (PRIVATE_LINE.test(raw)) continue;
-      const link = links.find((l) => l.key === lineKey(raw));
-      const projectId = link?.projectId;
+    for (const raw of todays) {
+      if (raw.by === 'person' || raw.isPrivate) continue;
+      const of = pointTaskById.get(raw.taskId);
+      const projectId = of?.projectId;
       const key = projectId && projectById.has(projectId) ? projectId : '';
       const point: BotPoint = {
-        text: normalizeLine(raw),
-        status: statusOf(raw),
+        text: (raw.text || of?.title || '').trim(),
+        status: (raw.status as BotPoint['status']) ?? null,
       };
-      const task = link?.taskId ? taskById.get(link.taskId) : undefined;
+      if (!point.text) continue;
+      const task = taskById.get(raw.taskId);
       if (task && task.projectId === key) siteOfLine.set(point, task.id);
       groups.set(key, [...(groups.get(key) ?? []), point]);
     }
@@ -555,4 +554,22 @@ export async function buildWorld(viewer: SessionUser): Promise<World> {
   }
 
   return { date: today, towns, projects: worldProjects, people, bots };
+}
+
+/**
+ * Times each person guided their assistant, per day (`userId|date`): a
+ * point that moved a task on after it was waiting on them.
+ */
+function guidanceIn(points: WorkPoint[]) {
+  const out = new Map<string, number>();
+  const waiting = new Set<string>();
+  for (const point of points) {
+    if (point.status === 'waiting') waiting.add(point.taskId);
+    else if (point.status && waiting.has(point.taskId)) {
+      waiting.delete(point.taskId);
+      const key = `${point.userId}|${point.date}`;
+      out.set(key, (out.get(key) ?? 0) + 1);
+    }
+  }
+  return out;
 }

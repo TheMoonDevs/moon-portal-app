@@ -1,5 +1,4 @@
 import { db } from '@/lib/mongodb/db-client';
-import type { WorklogLink } from '@/models/worklogs';
 import type { Project } from '@/models/workspace';
 
 /**
@@ -26,7 +25,7 @@ async function projectTree(project: Project) {
 
 /**
  * Moves a project, with its sub-projects, to another company. Its goals,
- * tasks, schedules, results, points and worklog links go with it; it leaves
+ * tasks, schedules, results and points go with it; it leaves
  * its old parent. Steps of plans in the old company that named it keep their
  * tasks but lose the project, since a plan's projects are its company's.
  */
@@ -53,22 +52,6 @@ export async function moveProject(project: Project, companyId: string) {
     db.projectPage.updateMany({ where, data: { companyId } }),
     db.pointEntry.updateMany({ where, data: { companyId } }),
   ]);
-
-  // Worklog lines linked to the project now count for the new company.
-  const logs: { id: string; links?: WorklogLink[] }[] =
-    await db.workLogs.findMany({
-      where: { 'links.projectId': { in: ids } },
-      select: { links: true },
-    });
-  for (const log of logs)
-    await db.workLogs.update({
-      where: { id: log.id },
-      data: {
-        links: (log.links ?? []).map((l) =>
-          l.projectId && ids.includes(l.projectId) ? { ...l, companyId } : l,
-        ),
-      },
-    });
 
   const plans: { id: string; steps?: { projectId?: string | null }[] }[] =
     await db.plan.findMany({

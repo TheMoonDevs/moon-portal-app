@@ -1,6 +1,6 @@
+import { projectWork } from '@/lib/daywork/server';
 import { db } from '@/lib/mongodb/db-client';
 import { hasPermission } from '@/lib/permissions/matching';
-import { isPersonalLink } from '@/lib/worklogs/personal';
 import { addDays, toDay } from '@/lib/workspace/projects';
 import { withProjectStats } from '@/lib/workspace/projectStats';
 import { runDueSchedules } from '@/lib/workspace/schedules';
@@ -11,13 +11,12 @@ import {
   ok,
   requireUser,
 } from '@/lib/workspace/server';
-import type { WorklogLink, WorkLogs } from '@/models/worklogs';
 import type { Project, Task } from '@/models/workspace';
 import { PROJECT_STATUS, TASK_STATUS } from '@/models/workspace';
 
 export const dynamic = 'force-dynamic';
 
-/** Days of worklog activity each project shows. */
+/** Days of work activity each project shows. */
 const DAYS = 7;
 
 const CLOSED = [TASK_STATUS.DONE, TASK_STATUS.ARCHIVED, TASK_STATUS.IGNORED];
@@ -60,17 +59,9 @@ export async function GET() {
 
   const today = toDay();
   const from = addDays(today, -(DAYS - 1));
-  const [withStats, logs, openTasks] = await Promise.all([
+  const [withStats, work, openTasks] = await Promise.all([
     withProjectStats(projects),
-    db.workLogs.findMany({
-      where: {
-        'links.projectId': { in: ids },
-        logType: 'dayLog',
-        date: { gte: from },
-      },
-      select: { userId: true, date: true, links: true },
-      orderBy: { date: 'desc' },
-    }) as Promise<WorkLogs[]>,
+    projectWork(ids, from),
     db.task.findMany({
       where: { projectId: { in: ids }, status: { notIn: CLOSED } },
       select: { projectId: true, dueDate: true, forDate: true },
@@ -91,17 +82,13 @@ export async function GET() {
     const perDay = days.map(() => 0);
     const people: string[] = [];
     let lastDate: string | null = null;
-    // Logs come newest first, so people are in that order too.
-    for (const log of logs) {
-      const lines = ((log.links ?? []) as WorklogLink[]).filter(
-        (l) => l.projectId === project.id && !isPersonalLink(l),
-      ).length;
-      if (!lines) continue;
-      const userId = log.userId as string;
-      lastDate ??= log.date as string;
-      const dayIndex = days.indexOf(log.date as string);
-      if (dayIndex >= 0) perDay[dayIndex] += lines;
-      if (!people.includes(userId)) people.push(userId);
+    // Work comes newest first, so people are in that order too.
+    for (const line of work) {
+      if (line.projectId !== project.id) continue;
+      lastDate ??= line.date;
+      const dayIndex = days.indexOf(line.date);
+      if (dayIndex >= 0) perDay[dayIndex] += 1;
+      if (!people.includes(line.userId)) people.push(line.userId);
     }
 
     const open = openTasks.filter((t) => t.projectId === project.id);

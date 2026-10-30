@@ -45,9 +45,13 @@ const Tasks = db.collection('Task');
 const Points = db.collection('WorkPoint');
 
 const latest = async (col, filter, field) =>
-  (await col.find(filter).sort({ [field]: -1 }).limit(1).toArray())[0]?.[
-    field
-  ] ?? '-';
+  (
+    await col
+      .find(filter)
+      .sort({ [field]: -1 })
+      .limit(1)
+      .toArray()
+  )[0]?.[field] ?? '-';
 
 const logs = { userId: { $in: both }, logType: 'dayLog' };
 console.log(

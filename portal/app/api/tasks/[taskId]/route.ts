@@ -2,7 +2,7 @@ import {
   deleteTask,
   isMine,
   noteStatusChange,
-  renderTaskDays,
+  workerOf,
 } from '@/lib/daywork/server';
 import { db } from '@/lib/mongodb/db-client';
 import { syncTaskPoints } from '@/lib/progress/server';
@@ -85,7 +85,7 @@ export async function PATCH(request: Request, { params }: Params) {
       // Whoever marks it done did it, unless they say who.
       data.completedByIds = asStringArray(body.completedByIds).length
         ? asStringArray(body.completedByIds)
-        : [user.id];
+        : [workerOf(task, user.id)];
     }
     if (!nowDone) {
       data.completedAt = null;
@@ -122,14 +122,6 @@ export async function PATCH(request: Request, { params }: Params) {
   );
   await syncTaskPoints(updated);
   await noteStatusChange(task, updated, user.id);
-  // Its line on everyone's day follows its new words, people and day.
-  await renderTaskDays(updated, [task.forDate]);
-  if (
-    (task.assigneeIds ?? []).some(
-      (id: string) => !(updated.assigneeIds ?? []).includes(id),
-    )
-  )
-    await renderTaskDays(task, [task.forDate, updated.forDate]);
   return ok({ task: updated });
 }
 

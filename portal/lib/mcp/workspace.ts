@@ -1,6 +1,6 @@
 import {
+  isMine,
   noteStatusChange,
-  renderTaskDays,
   stillNamedByWords,
 } from '@/lib/daywork/server';
 import { db } from '@/lib/mongodb/db-client';
@@ -284,7 +284,10 @@ export const statusChange = (
       ? wasDone
         ? (task.completedByIds ?? [])
         : by
-          ? [by]
+          ? // Someone ticking off a task they are not on did not do it.
+            !task || isMine(task, by)
+            ? [by]
+            : (task.assigneeIds ?? [])
           : []
       : [],
   };
@@ -927,7 +930,6 @@ export const WORKSPACE_TOOLS: Tool[] = [
       );
       await syncTaskPoints(updated);
       await noteStatusChange(task, updated, user.id, 'claude');
-      await renderTaskDays(updated, [task.forDate]);
       return { task: await describeTask(updated, project) };
     },
   },

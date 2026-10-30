@@ -2,6 +2,7 @@ import { USERSTATUS } from '@db/client';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
+import { deletePersonalWork } from '@/lib/daywork/server';
 import { db } from '@/lib/mongodb/db-client';
 import { isAllowed } from '@/lib/permissions/defaults';
 import {
@@ -357,8 +358,9 @@ export async function PUT(request: Request) {
 }
 
 /**
- * Delete a user for good. Their company memberships go with them; their
- * worklogs stay, so company history keeps its numbers.
+ * Delete a user for good. Their company memberships and the work only they
+ * could see go with them; their company tasks and points stay, so company
+ * history keeps its numbers.
  */
 export async function DELETE(request: NextRequest) {
   const { response, user: actor } = await checkPermission('users:delete');
@@ -386,6 +388,7 @@ export async function DELETE(request: NextRequest) {
 
   await db.companyMember.deleteMany({ where: { userId: id } });
   await db.userBadge.deleteMany({ where: { userId: id } });
+  await deletePersonalWork(id);
   await db.user.delete({ where: { id } });
   return NextResponse.json({ status: 'success', data: { id } });
 }

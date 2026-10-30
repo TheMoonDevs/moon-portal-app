@@ -1,15 +1,13 @@
 /**
  * Clears what tasks deleted before lib/daywork/server.ts#deleteTask left
- * behind: their work points, their lines in the worklogs, and plan steps or
- * follow-on tasks that still name them. Safe to run again: it only touches
+ * behind: their work points, and plan steps or follow-on tasks that still
+ * name them. Safe to run again: it only touches
  * records that name a task that is no longer there.
  *
  *   node scripts/clean-deleted-tasks.mjs          # lists what it would do
  *   node scripts/clean-deleted-tasks.mjs --apply  # does it
  *
- * Reads DATABASE_URL from the environment or portal/.env. A day written
- * from tasks (tasksFirst) loses the deleted task's line here and is written
- * whole again the next time its day changes.
+ * Reads DATABASE_URL from the environment or portal/.env.
  */
 import 'dotenv/config';
 
@@ -22,29 +20,11 @@ if (!url) {
   process.exit(1);
 }
 
-// The same line keys as lib/worklogs/lines.ts.
-const PRIVATE_LINE = /^\s*(\*\s*)?p:/i;
-const hash = (s) => {
-  let h = 5381;
-  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
-  return (h >>> 0).toString(36);
-};
-const normalizeLine = (line) =>
-  line
-    .replace(PRIVATE_LINE, '')
-    .replace(/^\s*[*\-+]\s*/, '')
-    .replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}]/gu, ' ')
-    .replace(/[`*_~>#]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-const lineKey = (line) => hash(normalizeLine(line).toLowerCase());
-
 const client = new MongoClient(url);
 await client.connect();
 const db = client.db();
 const Tasks = db.collection('Task');
 const Points = db.collection('WorkPoint');
-const Logs = db.collection('WorkLogs');
 const Plans = db.collection('Plan');
 
 const asId = (id) => {
@@ -79,58 +59,6 @@ const deadPoints = deadPointTasks.size
 console.log(`Work points under a deleted task: ${deadPoints}`);
 if (apply && deadPoints)
   await Points.deleteMany({ taskId: { $in: Array.from(deadPointTasks) } });
-
-// Worklog lines linked to a deleted task.
-const logs = await Logs.find({
-  logType: 'dayLog',
-  'links.taskId': { $type: 'string' },
-}).toArray();
-const deadLinkTasks = await gone(
-  logs.flatMap((l) => (l.links ?? []).map((x) => x.taskId)),
-);
-let lines = 0;
-let days = 0;
-for (const log of logs) {
-  const keys = new Set(
-    (log.links ?? [])
-      .filter((l) => l.taskId && deadLinkTasks.has(String(l.taskId)))
-      .map((l) => l.key),
-  );
-  if (!keys.size) continue;
-  days += 1;
-  lines += keys.size;
-  console.log(
-    `  ${log.date} ${log.userId}: ${(log.links ?? [])
-      .filter((l) => keys.has(l.key))
-      .map((l) => `"${l.text}"`)
-      .join(', ')}`,
-  );
-  if (!apply) continue;
-  const works = (Array.isArray(log.works) ? log.works : []).map((work) =>
-    typeof work?.content === 'string'
-      ? {
-          ...work,
-          content:
-            work.content
-              .split('\n')
-              .filter((raw) => !keys.has(lineKey(raw)))
-              .join('\n') || '* ',
-        }
-      : work,
-  );
-  await Logs.updateOne(
-    { _id: log._id },
-    {
-      $set: {
-        works,
-        links: (log.links ?? []).filter((l) => !keys.has(l.key)),
-        timeline: (log.timeline ?? []).filter((e) => !keys.has(e.key)),
-        updatedAt: new Date(),
-      },
-    },
-  );
-}
-console.log(`Worklog lines of a deleted task: ${lines} on ${days} days`);
 
 // Follow-on tasks and plan steps naming a deleted task.
 const follows = await Tasks.find(

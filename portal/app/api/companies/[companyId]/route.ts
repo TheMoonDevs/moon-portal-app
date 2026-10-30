@@ -72,7 +72,7 @@ export async function PATCH(request: Request, { params }: Params) {
   return ok({ company });
 }
 
-/** Companies are archived, never hard-deleted, so worklogs keep their links. */
+/** Companies are archived, never hard-deleted, so tasks keep their links. */
 export async function DELETE(_request: Request, { params }: Params) {
   const { response } = await requireSuperAdmin();
   if (response) return response;

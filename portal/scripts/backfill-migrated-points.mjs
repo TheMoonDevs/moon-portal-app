@@ -79,8 +79,7 @@ const docs = missing.map((t) => {
     status: t.status === 'DONE' ? 'done' : null,
     by: t.madeBy === 'claude' ? 'claude' : 'person',
     at,
-    isPrivate:
-      !t.projectId && (!t.companyId || t.companyId === 'personal'),
+    isPrivate: !t.projectId && (!t.companyId || t.companyId === 'personal'),
     migratedFrom: { ...t.migratedFrom, backfilled: true },
     createdAt: at,
     updatedAt: at,

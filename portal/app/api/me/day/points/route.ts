@@ -4,7 +4,6 @@ import {
   isDay,
   isMine,
   moveTask,
-  renderDays,
   TASK_MOVES,
   todayOf,
 } from '@/lib/daywork/server';
@@ -42,6 +41,5 @@ export async function POST(request: Request) {
   }
   if (!text) return fail(400, 'Write what happened.');
   const point = await addPoint({ task, userId: user.id, date, text });
-  await renderDays(user.id, [date]);
   return ok({ point, task });
 }

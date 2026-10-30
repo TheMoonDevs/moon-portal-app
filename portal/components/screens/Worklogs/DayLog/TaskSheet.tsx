@@ -8,6 +8,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import type { PointStatus } from '@/lib/worklogs/timeline';
 import { POINT_STATUSES } from '@/lib/worklogs/timeline';
+import { useAppSelector } from '@/utils/redux/store';
 
 import { Icon } from '../../Admin/shared/AdminUI';
 import { DatePopover, quickDays, shortDay } from './DatePopover';
@@ -222,10 +223,13 @@ const PointRow = ({
   point,
   moveOptions,
   onMove,
+  onDelete,
 }: {
   point: DayPoint;
   moveOptions: PickerOption[];
   onMove?: (option: PickerOption) => void;
+  /** Only for the person's own points. */
+  onDelete?: () => void;
 }) => {
   const mine = point.by === 'person';
   return (
@@ -263,6 +267,22 @@ const PointRow = ({
             </button>
           }
         />
+      )}
+      {onDelete && (
+        <button
+          type="button"
+          title="Delete this point"
+          aria-label="Delete this point"
+          onClick={() => {
+            if (
+              window.confirm('Delete this work point? This cannot be undone.')
+            )
+              onDelete();
+          }}
+          className="shrink-0 rounded px-1 text-neutral-600 opacity-0 hover:text-rose-400 focus:opacity-100 group-hover/point:opacity-100 auto-light:text-neutral-400 auto-light:hover:text-rose-600 max-md:opacity-100"
+        >
+          <Icon name="delete" className="text-[14px]" />
+        </button>
       )}
     </li>
   );
@@ -332,6 +352,10 @@ const Details = ({
   showPoints: boolean;
 }) => {
   const [note, setNote] = useState('');
+  // Bare statuses are hidden unless asked for, e.g. to delete a wrong one.
+  const [allPoints, setAllPoints] = useState(false);
+  const hidden = points.length - readablePoints(points).length;
+  const myId = useAppSelector((state) => state.auth.user?.id);
   const place = placeOf(task, day.projects, day.companies);
   const options = placeOptions(day.projects, day.companies);
   const saved = !task.draft;
@@ -384,7 +408,7 @@ const Details = ({
       </div>
       {showPoints && points.length > 0 && (
         <ul className="mt-1.5">
-          {readablePoints(points).map((p) => (
+          {(allPoints ? points : readablePoints(points)).map((p) => (
             <PointRow
               key={p.id}
               point={p}
@@ -392,8 +416,22 @@ const Details = ({
               onMove={
                 editable ? (o) => day.movePoint(p.id, o.id.slice(5)) : undefined
               }
+              onDelete={
+                p.userId === myId ? () => day.deletePoint(p.id) : undefined
+              }
             />
           ))}
+          {hidden > 0 && (
+            <li>
+              <button
+                type="button"
+                onClick={() => setAllPoints((v) => !v)}
+                className="mt-0.5 text-[11px] text-neutral-500 hover:text-neutral-300 auto-light:hover:text-neutral-700"
+              >
+                {allPoints ? 'Show fewer' : `Show all ${points.length} points`}
+              </button>
+            </li>
+          )}
         </ul>
       )}
       {saved && (

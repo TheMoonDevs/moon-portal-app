@@ -569,7 +569,13 @@ const main = async () => {
         await Points.find(
           { userId, 'migratedFrom.key': { $type: 'string' } },
           {
-            projection: { taskId: 1, at: 1, migratedFrom: 1, status: 1, text: 1 },
+            projection: {
+              taskId: 1,
+              at: 1,
+              migratedFrom: 1,
+              status: 1,
+              text: 1,
+            },
           },
         ).toArray()
       ).map(pointKey),

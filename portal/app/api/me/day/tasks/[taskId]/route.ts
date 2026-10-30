@@ -7,9 +7,7 @@ import {
   placeByWords,
   placeFields,
   readPlace,
-  renderDays,
   TASK_MOVES,
-  todayOf,
 } from '@/lib/daywork/server';
 import { db } from '@/lib/mongodb/db-client';
 import { syncTaskPoints } from '@/lib/progress/server';
@@ -89,12 +87,6 @@ export async function PATCH(request: Request, { params }: Params) {
       userId: user.id,
       note: typeof body.note === 'string' ? body.note : undefined,
     });
-  else
-    await renderDays(user.id, [
-      await todayOf(user.id),
-      task.forDate,
-      updated.forDate,
-    ]);
   return ok({ task: updated });
 }
 

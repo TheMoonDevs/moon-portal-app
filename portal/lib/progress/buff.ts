@@ -5,7 +5,6 @@
  * before tasks. Pure, so the browser and the server agree.
  */
 
-import { lineKey, PRIVATE_LINE } from '@/lib/worklogs/lines';
 import type { Task, WorkPoint } from '@/models/workspace';
 import { TASK_SIZE, TASK_STATUS } from '@/models/workspace';
 
@@ -160,61 +159,3 @@ export const getColorsForBuffLevel = (level: BUFF_LEVEL) => {
       return ['#e0e0e0', '#9e9e9e'];
   }
 };
-
-export const isValidContent = (content: string) => {
-  const trimmed = content.trim();
-  return trimmed.length > 0 && /[a-zA-Z0-9]/.test(trimmed);
-};
-
-/** One point per line of a worklog section. */
-export const getPoints = (content: string) =>
-  (content?.match(/\n/g) || []).length + 1;
-
-/** Points across a set of worklogs (usually one person's month). */
-export const worklogPoints = (logs: { works?: unknown }[]) =>
-  logs.reduce((total, log) => {
-    const works = Array.isArray(log.works) ? log.works : [];
-    return (
-      total +
-      works.reduce((sum: number, work: any) => {
-        const content = typeof work?.content === 'string' ? work.content : '';
-        return isValidContent(content) ? sum + getPoints(content) : sum;
-      }, 0)
-    );
-  }, 0);
-
-/**
- * Points for one company's leaderboard. A line linked to another company
- * counts there instead; lines not linked yet count everywhere, as before.
- * Private (`p:`) lines are Personal and never count for a company.
- */
-export const worklogPointsForCompany = (
-  logs: {
-    works?: unknown;
-    links?: { key: string; companyId: string | null }[] | null;
-  }[],
-  companyId: string,
-) =>
-  logs.reduce((total, log) => {
-    const elsewhere = new Set(
-      (log.links ?? [])
-        .filter((l) => l.companyId && l.companyId !== companyId)
-        .map((l) => l.key),
-    );
-    const works = Array.isArray(log.works) ? log.works : [];
-    return (
-      total +
-      works.reduce((sum: number, work: any) => {
-        const content = typeof work?.content === 'string' ? work.content : '';
-        if (!isValidContent(content)) return sum;
-        const skipped = content
-          .split('\n')
-          .filter(
-            (line: string) =>
-              PRIVATE_LINE.test(line) ||
-              (elsewhere.size > 0 && elsewhere.has(lineKey(line))),
-          ).length;
-        return sum + Math.max(0, getPoints(content) - skipped);
-      }, 0)
-    );
-  }, 0);

@@ -7,7 +7,6 @@ import {
   mineWhere,
   moveTask,
   PERSONAL,
-  renderDays,
   stillNamedByWords,
 } from '@/lib/daywork/server';
 import { db } from '@/lib/mongodb/db-client';
@@ -15,7 +14,6 @@ import type { SessionUser } from '@/lib/permissions/server';
 import type { LinkCandidates } from '@/lib/worklogs/linker';
 import { linkCandidates } from '@/lib/worklogs/linker';
 import { PERSONAL_COMPANY } from '@/lib/worklogs/personal';
-import type { WorkLogs } from '@/models/worklogs';
 import type { Task, WorkPoint } from '@/models/workspace';
 import { TASK_SIZE, TASK_STATUS } from '@/models/workspace';
 
@@ -184,7 +182,6 @@ export async function logWork(
 ) {
   const candidates = await linkCandidates(user);
   const logged: Logged[] = [];
-  let guided = 0;
   let made = 0;
   for (const point of points) {
     const problems: string[] = [];
@@ -196,9 +193,16 @@ export async function logWork(
     if (!task && point.text) task = await findMine(user.id, point.text);
     // Nearly the same words as an open task: the same work.
     let similar = false;
+    // A project named rules out a near match in another project.
+    const named = point.project
+      ? candidates.projects.find(
+          (p) => p.id === point.project || same(p.name, point.project!),
+        )
+      : undefined;
     for (const ref of [point.task, point.text]) {
       if (task || point.goal || !ref?.trim()) continue;
-      task = await findSimilar(user.id, ref);
+      const near = await findSimilar(user.id, ref);
+      task = near && (!named || near.projectId === named.id) ? near : null;
       similar = !!task;
     }
     // A project named: its task, found or made (a scheduled task's run).
@@ -277,7 +281,6 @@ export async function logWork(
       });
       continue;
     }
-    if (task.flag === 'waiting' && point.status !== 'waiting') guided += 1;
     task = await moveTask(task, move, {
       userId: user.id,
       by: point.byPerson ? 'person' : 'claude',
@@ -296,19 +299,6 @@ export async function logWork(
     });
   }
 
-  if (guided) {
-    // Each point that was waiting on the person and moved on is a time
-    // they guided their assistant.
-    const log: WorkLogs | null = await db.workLogs.findFirst({
-      where: { userId: user.id, logType: 'dayLog', date },
-      orderBy: { updatedAt: 'desc' },
-    });
-    if (log)
-      await db.workLogs.update({
-        where: { id: log.id },
-        data: { guidance: (log.guidance ?? 0) + guided },
-      });
-  }
   const mine = made
     ? await db.task.count({
         where: { ownerId: user.id, madeBy: 'claude', forDate: date },
@@ -424,7 +414,6 @@ export async function tidyTasks(
       note: 'Dropped when tidying',
       date,
     });
-  await renderDays(user.id, [date]);
   const candidates = await linkCandidates(user);
   return {
     date,

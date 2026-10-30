@@ -1,16 +1,13 @@
 import dayjs from 'dayjs';
 import type { NextRequest } from 'next/server';
 
-import { db } from '@/lib/mongodb/db-client';
-import { lineKey } from '@/lib/worklogs/lines';
-import { isPersonalLink } from '@/lib/worklogs/personal';
+import { projectWork } from '@/lib/daywork/server';
 import {
   fail,
   getPublicUsers,
   ok,
   requireProjectPermission,
 } from '@/lib/workspace/server';
-import type { WorklogLink, WorkLogs } from '@/models/worklogs';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,25 +15,13 @@ type Params = { params: { projectId: string } };
 
 const MAX_DAYS = 90;
 
-/** Keys of the lines ticked off (✅) in a worklog's sections. */
-const doneKeys = (works: unknown) => {
-  const keys = new Set<string>();
-  if (!Array.isArray(works)) return keys;
-  for (const work of works) {
-    const content = typeof work?.content === 'string' ? work.content : '';
-    for (const raw of content.split('\n'))
-      if (raw.includes('✅')) keys.add(lineKey(raw));
-  }
-  return keys;
-};
-
 const isDay = (v: string | null): v is string =>
   !!v && /^\d{4}-\d{2}-\d{2}$/.test(v);
 
 /**
- * Worklog lines linked to the project from `?from=` to `?to=` (YYYY-MM-DD),
- * or over the last `?days=` (30 by default), one entry per person per day,
- * newest first. Private lines never show here.
+ * The project's tasks people worked on from `?from=` to `?to=`
+ * (YYYY-MM-DD), or over the last `?days=` (30 by default), one entry per
+ * person per day, newest first. Private points never show here.
  */
 export async function GET(request: NextRequest, { params }: Params) {
   const { response, project } = await requireProjectPermission(
@@ -59,31 +44,37 @@ export async function GET(request: NextRequest, { params }: Params) {
         .format('YYYY-MM-DD');
   const to = ranged ? askedTo : null;
 
-  const logs: WorkLogs[] = await db.workLogs.findMany({
-    where: {
-      'links.projectId': project.id,
-      logType: 'dayLog',
-      date: to ? { gte: from, lte: to } : { gte: from },
-    },
-    select: { userId: true, date: true, works: true, links: true },
-    orderBy: { date: 'desc' },
-  });
-
-  const entries = logs
-    .map((log) => {
-      const done = doneKeys(log.works);
-      const lines = ((log.links ?? []) as WorklogLink[])
-        .filter((l) => l.projectId === project.id && !isPersonalLink(l))
-        .map((l) => ({
-          key: l.key,
-          text: l.text,
-          taskId: l.taskId,
-          done: done.has(l.key),
-        }));
-      return { id: log.id, date: log.date, userId: log.userId, lines };
-    })
-    .filter((e) => e.lines.length);
-
-  const users = await getPublicUsers(entries.map((e) => e.userId as string));
+  const byDay = new Map<
+    string,
+    {
+      id: string;
+      date: string;
+      userId: string;
+      lines: {
+        key: string;
+        text: string;
+        taskId: string | null;
+        done: boolean;
+      }[];
+    }
+  >();
+  for (const line of await projectWork([project.id], from, to)) {
+    const id = `${line.userId}:${line.date}`;
+    const entry = byDay.get(id) ?? {
+      id,
+      date: line.date,
+      userId: line.userId,
+      lines: [],
+    };
+    entry.lines.push({
+      key: line.taskId,
+      text: line.text,
+      taskId: line.taskId,
+      done: line.done,
+    });
+    byDay.set(id, entry);
+  }
+  const entries = Array.from(byDay.values());
+  const users = await getPublicUsers(entries.map((e) => e.userId));
   return ok({ from, to, days, entries, users });
 }

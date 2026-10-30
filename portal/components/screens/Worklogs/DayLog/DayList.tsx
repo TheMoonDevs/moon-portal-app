@@ -5,8 +5,6 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 
 import { cn } from '@/lib/utils';
-import { sectionLines } from '@/lib/worklogs/timeline';
-import type { WorkLogs } from '@/models/worklogs';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
 
 import { Icon } from '../../Admin/shared/AdminUI';
@@ -25,8 +23,8 @@ type View = 'list' | 'calendar';
 const VIEW_KEY = 'worklogs.daysView';
 const fmt = (d: dayjs.Dayjs) => d.format('YYYY-MM-DD');
 
-const dayHref = (date: string, log?: WorkLogs) =>
-  `${APP_ROUTES.userWorklogs}/${log?.id || 'new'}?logType=dayLog&date=${date}`;
+const dayHref = (date: string) =>
+  `${APP_ROUTES.userWorklogs}/new?logType=dayLog&date=${date}`;
 
 /** How a day looks: open, today, written, missed or still to come. */
 const dayState = (date: string, lines: number) => {
@@ -66,14 +64,12 @@ const STATE_STYLE = {
 
 const DayCard = ({
   date,
-  log,
   lines,
   selected,
   onPick,
   opensPage,
 }: {
   date: string;
-  log?: WorkLogs;
   lines: Line[];
   selected: boolean;
   onPick: () => void;
@@ -133,7 +129,7 @@ const DayCard = ({
     </>
   );
   return opensPage ? (
-    <Link href={dayHref(date, log)} className={className} data-date={date}>
+    <Link href={dayHref(date)} className={className} data-date={date}>
       {body}
     </Link>
   ) : (
@@ -151,14 +147,12 @@ const DayCard = ({
 const Calendar = ({
   month,
   linesOf,
-  byDate,
   selected,
   onPick,
   opensPage,
 }: {
   month: dayjs.Dayjs;
   linesOf: (date: string) => Line[];
-  byDate: Map<string, WorkLogs>;
   selected: string;
   onPick: (date: string) => void;
   opensPage: boolean;
@@ -221,7 +215,7 @@ const Calendar = ({
           return opensPage ? (
             <Link
               key={date}
-              href={dayHref(date, byDate.get(date))}
+              href={dayHref(date)}
               className={className}
               title={title}
             >
@@ -259,7 +253,7 @@ const Calendar = ({
 export const DayList = ({
   month,
   onMonth,
-  byDate,
+  days: lineDays,
   loading,
   selected,
   liveLines,
@@ -268,7 +262,8 @@ export const DayList = ({
 }: {
   month: dayjs.Dayjs;
   onMonth: (month: dayjs.Dayjs) => void;
-  byDate: Map<string, WorkLogs>;
+  /** Each day's lines, from its tasks. */
+  days: Record<string, Line[]>;
   loading: boolean;
   selected: string;
   /** The open day as it is being written, or null while it loads. */
@@ -294,12 +289,7 @@ export const DayList = ({
   };
 
   const linesOf = (date: string): Line[] =>
-    date === selected && liveLines
-      ? liveLines
-      : sectionLines(byDate.get(date)?.works).map((l) => ({
-          text: l.text,
-          status: l.status,
-        }));
+    date === selected && liveLines ? liveLines : (lineDays[date] ?? []);
 
   const today = dayjs().startOf('day');
   // Months up to the one two weeks ahead, where planning reaches.
@@ -316,7 +306,7 @@ export const DayList = ({
       return (
         !d.isAfter(today.add(2, 'day'), 'day') ||
         date === selected ||
-        sectionLines(byDate.get(date)?.works).length > 0
+        (lineDays[date]?.length ?? 0) > 0
       );
     })
     .reverse();
@@ -390,7 +380,6 @@ export const DayList = ({
         <Calendar
           month={month}
           linesOf={linesOf}
-          byDate={byDate}
           selected={selected}
           onPick={onPick}
           opensPage={opensPage}
@@ -416,7 +405,6 @@ export const DayList = ({
               <DayCard
                 key={date}
                 date={date}
-                log={byDate.get(date)}
                 lines={linesOf(date)}
                 selected={!opensPage && date === selected}
                 onPick={() => onPick(date)}

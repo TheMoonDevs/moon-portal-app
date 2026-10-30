@@ -1,4 +1,4 @@
-import { isMine, moveTask, renderDays } from '@/lib/daywork/server';
+import { isMine, moveTask, settleFromPoints } from '@/lib/daywork/server';
 import { db } from '@/lib/mongodb/db-client';
 import { fail, ok, requireUser } from '@/lib/workspace/server';
 import type { Task, WorkPoint } from '@/models/workspace';
@@ -50,6 +50,7 @@ export async function PATCH(request: Request, { params }: Params) {
       date: point.date,
       log: false,
     });
+  if (from && point.status) await settleFromPoints(from, point);
   if (
     from &&
     from.madeBy &&
@@ -62,6 +63,26 @@ export async function PATCH(request: Request, { params }: Params) {
       note: `Its work moved to "${to.title}"`,
       date: point.date,
     });
-  await renderDays(user.id, [point.date]);
   return ok({ point: moved });
+}
+
+/**
+ * Deletes one of the caller's work points, e.g. one logged on the wrong
+ * task or twice. Its task goes back to the status its other points give it.
+ */
+export async function DELETE(_request: Request, { params }: Params) {
+  const { response, user } = await requireUser();
+  if (response || !user)
+    return response ?? fail(401, 'Authentication required.');
+  const point: WorkPoint | null = await db.workPoint.findFirst({
+    where: { id: params.pointId },
+  });
+  if (!point || point.userId !== user.id)
+    return fail(404, 'Work point not found.');
+  await db.workPoint.deleteMany({ where: { id: point.id } });
+  const task: Task | null = await db.task.findFirst({
+    where: { id: point.taskId },
+  });
+  const settled = task ? await settleFromPoints(task, point) : null;
+  return ok({ point, task: settled });
 }

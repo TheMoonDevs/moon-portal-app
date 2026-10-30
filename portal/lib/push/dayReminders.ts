@@ -1,5 +1,5 @@
 import { db } from '@/lib/mongodb/db-client';
-import { hasContent } from '@/lib/progress/server';
+import { isRestDay } from '@/lib/worklogs/restDay';
 import { USERSTATUS } from '@/models/shared/enums';
 import type { Task } from '@/models/workspace';
 import { TASK_STATUS } from '@/models/workspace';
@@ -118,9 +118,13 @@ const nextDay = (date: string) => {
  */
 async function planTomorrow(userId: string, date: string) {
   const tomorrow = nextDay(date);
-  const [log, tasks] = await Promise.all([
-    db.workLogs.findFirst({
-      where: { userId, logType: 'dayLog', date: tomorrow },
+  const [rest, planned, tasks] = await Promise.all([
+    isRestDay(userId, tomorrow),
+    db.task.count({
+      where: {
+        OR: [{ ownerId: userId }, { assigneeIds: userId }],
+        forDate: tomorrow,
+      },
     }),
     db.task.count({
       where: {
@@ -130,7 +134,7 @@ async function planTomorrow(userId: string, date: string) {
       },
     }),
   ]);
-  if (log && (log.restDay || hasContent(log))) return false;
+  if (rest || planned) return false;
   await sendPushToUsers([userId], {
     title: 'Plan tomorrow',
     body: tasks
@@ -143,11 +147,11 @@ async function planTomorrow(userId: string, date: string) {
 }
 
 async function eveningReminder(userId: string, date: string) {
-  const log = await db.workLogs.findFirst({
-    where: { userId, logType: 'dayLog', date },
-  });
-  if (log && (log.restDay || hasContent(log)))
-    return planTomorrow(userId, date);
+  const [rest, logged] = await Promise.all([
+    isRestDay(userId, date),
+    db.workPoint.count({ where: { userId, date } }),
+  ]);
+  if (rest || logged) return planTomorrow(userId, date);
 
   await sendPushToUsers([userId], {
     title: 'No work logged today',

@@ -6,12 +6,8 @@ import type { SessionUser } from '@/lib/permissions/server';
 import { aliasesOf, mentionsAlias } from '@/lib/worklogs/aliases';
 import { runDueSchedules } from '@/lib/workspace/schedules';
 import { getWorkspaceForUser } from '@/lib/workspace/server';
-import type { WorklogLink } from '@/models/worklogs';
 import type { Project, Task } from '@/models/workspace';
 import { OPEN_TASK_STATUSES, PROJECT_STATUS } from '@/models/workspace';
-
-import type { WorklogLine } from './lines';
-import { isPersonalLink, PERSONAL_COMPANY_ID } from './personal';
 
 /** Below this the line is left for the person to place. */
 const MIN_CONFIDENCE = 0.6;
@@ -174,23 +170,15 @@ const overlap = (line: string, title: string) => {
   return t.filter((w) => l.has(w)).length / t.length;
 };
 
-type Guess = Omit<WorklogLink, 'key' | 'text' | 'isPrivate'>;
+/** A piece of work to place: a task's id and its words. */
+type PlaceItem = { key: string; text: string };
 
-/** Where every private line goes: the person's own Personal company. */
-const PERSONAL: Guess = {
-  companyId: PERSONAL_COMPANY_ID,
-  projectId: null,
-  taskId: null,
-  confidence: 1,
-  source: 'auto',
-};
-
-const NONE: Guess = {
-  companyId: null,
-  projectId: null,
-  taskId: null,
-  confidence: 0,
-  source: 'none',
+type Guess = {
+  companyId: string | null;
+  projectId: string | null;
+  taskId: string | null;
+  confidence: number;
+  source: 'auto' | 'user' | 'none';
 };
 
 /** Name and task-title matching. Returns null when it cannot tell. */
@@ -258,7 +246,7 @@ const geminiKey = () =>
 
 /** Asks Gemini to place the lines name matching could not. */
 async function matchWithGemini(
-  lines: WorklogLine[],
+  lines: PlaceItem[],
   c: LinkCandidates,
 ): Promise<Map<string, Guess>> {
   const out = new Map<string, Guess>();
@@ -357,71 +345,6 @@ For every line return its project id, the task id if the line is clearly about t
 }
 
 /**
- * Links for the current lines of a worklog. Lines already linked keep their
- * link (and anything the person chose always stays); new lines are matched
- * by name first and by Gemini after. Private lines always go to Personal.
- */
-export async function linkLines(
-  lines: WorklogLine[],
-  existing: WorklogLink[],
-  candidates: LinkCandidates,
-): Promise<WorklogLink[]> {
-  // A line that stopped being private is placed again from scratch.
-  const known = new Map(
-    existing
-      .filter((l) => {
-        const line = lines.find((x) => x.key === l.key);
-        return !line || line.isPrivate || !isPersonalLink(l);
-      })
-      .map((l) => [l.key, l]),
-  );
-  // Private lines are never matched, and never sent to Gemini.
-  const fresh = lines.filter((l) => !l.isPrivate && !known.has(l.key));
-
-  const guesses = new Map<string, Guess>();
-  const unsure: WorklogLine[] = [];
-  // A line written in a project's section belongs to that project, also
-  // when it was left unplaced before.
-  const inSection = (line: WorklogLine) =>
-    candidates.projects.find((p) => p.id === line.section);
-  for (const line of lines) {
-    const project = inSection(line);
-    const kept = known.get(line.key);
-    if (!project || line.isPrivate || (kept && kept.source !== 'none'))
-      continue;
-    known.delete(line.key);
-    guesses.set(line.key, {
-      companyId: project.companyId,
-      projectId: project.id,
-      taskId: kept?.taskId ?? null,
-      confidence: 1,
-      source: 'auto',
-    });
-  }
-  for (const line of fresh) {
-    if (guesses.has(line.key)) continue;
-    const guess = matchByName(line.text, candidates);
-    if (guess) guesses.set(line.key, guess);
-    else unsure.push(line);
-  }
-  const fromAi = await matchWithGemini(unsure, candidates);
-
-  return lines.map((line) => {
-    if (line.isPrivate)
-      return { key: line.key, text: line.text, isPrivate: true, ...PERSONAL };
-    const kept = known.get(line.key);
-    if (kept) return { ...kept, text: line.text, isPrivate: false };
-    const guess = guesses.get(line.key) ?? fromAi.get(line.key) ?? NONE;
-    return {
-      key: line.key,
-      text: line.text,
-      isPrivate: false,
-      ...inCore(guess, candidates),
-    };
-  });
-}
-
-/**
  * Where each piece of work most likely belongs, from its words: a project
  * (and its open task for the same work), or a company alone. Name matching
  * first, Gemini for the rest; null where neither can tell.
@@ -431,16 +354,11 @@ export async function guessPlaces(
   candidates: LinkCandidates,
 ) {
   const out = new Map<string, Guess | null>();
-  const unsure: WorklogLine[] = [];
+  const unsure: PlaceItem[] = [];
   for (const item of items) {
     const guess = matchByName(item.text, candidates);
     if (guess) out.set(item.key, inCore(guess, candidates));
-    else
-      unsure.push({
-        key: item.key,
-        text: item.text,
-        isPrivate: false,
-      });
+    else unsure.push({ key: item.key, text: item.text });
   }
   const fromAi = await matchWithGemini(unsure, candidates);
   for (const line of unsure) {

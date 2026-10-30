@@ -1,13 +1,10 @@
 import { db } from '@/lib/mongodb/db-client';
 import { syncTaskPoints } from '@/lib/progress/server';
-import { isPersonalLink } from '@/lib/worklogs/personal';
-import { sectionLines } from '@/lib/worklogs/timeline';
-import type { WorklogLink } from '@/models/worklogs';
 import type { Task, TaskSchedule } from '@/models/workspace';
 import { TASK_STATUS } from '@/models/workspace';
 
 import { fitGoal } from './goalFit';
-import { addDays, nextRunOnOrAfter, toDay } from './projects';
+import { addDays, nextRunOnOrAfter } from './projects';
 
 /*
  * Scheduled tasks and work points. A done point about a scheduled task
@@ -267,81 +264,4 @@ export async function completeScheduleRun(
     return finish(created, userId);
   }
   return null;
-}
-
-/**
- * Finishes scheduled tasks for a day's done lines. A done line linked to a
- * scheduled task, or whose words match one of the person's schedules, counts
- * for the run of the day it names or the day it was written (`day`);
- * `named` gives a line's day when the caller knows it. The line is then
- * linked to that task, so it is only ever counted once. Returns the links.
- */
-export async function settleScheduledLines(
-  userId: string,
-  works: unknown,
-  links: WorklogLink[],
-  projectIds: string[],
-  day: string = toDay(),
-  named: Map<string, string> = new Map(),
-): Promise<WorklogLink[]> {
-  const done = sectionLines(works).filter(
-    (l) => l.status === 'done' && !l.isPrivate,
-  );
-  if (!done.length || !projectIds.length) return links;
-  const byKey = new Map(links.map((l) => [l.key, l]));
-  const taskIds = done
-    .map((l) => byKey.get(l.key)?.taskId)
-    .filter((id): id is string => !!id);
-  const [linked, schedules]: [Task[], TaskSchedule[]] = await Promise.all([
-    taskIds.length
-      ? db.task.findMany({ where: { id: { in: taskIds } } })
-      : Promise.resolve([]),
-    db.taskSchedule.findMany({
-      where: { projectId: { in: projectIds }, active: true },
-    }),
-  ]);
-  if (!schedules.length) return links;
-  const taskById = new Map(linked.map((t) => [t.id, t]));
-
-  let next = links;
-  for (const line of done) {
-    const link = byKey.get(line.key);
-    if (!link || isPersonalLink(link)) continue;
-    // The person said it is not project work.
-    if (link.source === 'user' && !link.projectId) continue;
-    const task = link.taskId ? taskById.get(link.taskId) : undefined;
-    // Linked to another task, or already counted for a run.
-    if (link.taskId && (!task?.scheduleId || task.status === TASK_STATUS.DONE))
-      continue;
-    const schedule = task
-      ? schedules.find((s) => s.id === task.scheduleId)
-      : matchSchedule(
-          line.text,
-          schedules.filter(
-            (s) => !link.projectId || s.projectId === link.projectId,
-          ),
-          link.projectId,
-        );
-    if (!schedule) continue;
-    const when = named.get(line.key) ?? dayMentioned(line.text, day);
-    // The linked run is the one, unless the line names another day.
-    const finished =
-      task && (!when || when === task.forDate)
-        ? await finish(task, userId)
-        : await completeScheduleRun(schedule, when ?? day, !!when, userId);
-    if (!finished) continue;
-    next = next.map((l) =>
-      l.key === line.key
-        ? {
-            ...l,
-            companyId: finished.companyId,
-            projectId: finished.projectId,
-            taskId: finished.id,
-            confidence: Math.max(l.confidence, 0.85),
-            source: l.source === 'user' ? 'user' : 'auto',
-          }
-        : l,
-    );
-  }
-  return next;
 }
