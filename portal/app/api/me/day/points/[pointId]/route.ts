@@ -41,13 +41,14 @@ export async function PATCH(request: Request, { params }: Params) {
       updatedAt: new Date().toISOString(),
     },
   });
-  // A status it carried now speaks for its new task.
+  // A status it carried now speaks for its new task; the point itself
+  // says so, so no second point is logged.
   if (point.status)
     await moveTask(to, point.status, {
       userId: user.id,
       by: point.by,
       date: point.date,
-      note: '',
+      log: false,
     });
   if (
     from &&

@@ -2,10 +2,13 @@ import { db } from '@/lib/mongodb/db-client';
 import type { SessionUser } from '@/lib/permissions/server';
 import { syncTaskPoints } from '@/lib/progress/server';
 import { localClock } from '@/lib/push/dayReminders';
+import { lineKey } from '@/lib/worklogs/lines';
 import type { LinkCandidates } from '@/lib/worklogs/linker';
 import { guessPlaces, linkCandidates } from '@/lib/worklogs/linker';
 import { PERSONAL_COMPANY_ID, PERSONAL_TITLE } from '@/lib/worklogs/personal';
+import type { PointEvent } from '@/lib/worklogs/timeline';
 import { fitGoal } from '@/lib/workspace/goalFit';
+import type { WorkLogs } from '@/models/worklogs';
 import type { Task, WorkPoint, WorkPointStatus } from '@/models/workspace';
 import { OPEN_TASK_STATUSES, TASK_SIZE, TASK_STATUS } from '@/models/workspace';
 
@@ -82,6 +85,17 @@ export const mineWhere = (userId: string) => ({
 const nowIso = () => new Date().toISOString();
 
 /**
+ * A finished task the same words still name: one finished in the last day.
+ * Words that match an older finished task are new work (a daily habit), so
+ * they get a task of their own instead of opening the old one again and
+ * taking it off the day it was finished.
+ */
+export const stillNamedByWords = (task: Task) =>
+  task.status !== TASK_STATUS.DONE ||
+  (!!task.completedAt &&
+    Date.now() - new Date(task.completedAt as any).getTime() < 86400000);
+
+/**
  * Moves a task: to do, under way, blocked or waiting, done, not done (it
  * stays open) or archived, with a work point that says so. The day sheets
  * it is on are written again for the screens that still read them.
@@ -96,6 +110,8 @@ export async function moveTask(
     note?: string;
     /** The day the point is logged on; the person's today by default. */
     date?: string;
+    /** False when a point that says so is already on the task. */
+    log?: boolean;
   },
 ): Promise<Task> {
   const { userId } = options;
@@ -144,7 +160,10 @@ export async function moveTask(
     if (done) updated = await fitGoal(updated);
     await syncTaskPoints(updated);
   }
-  if (to !== 'todo' || task.status !== TASK_STATUS.TODO)
+  if (
+    options.log !== false &&
+    (to !== 'todo' || task.status !== TASK_STATUS.TODO)
+  )
     await addPoint({
       task: updated,
       userId,
@@ -468,6 +487,129 @@ export async function renderDays(
   for (const date of unique) await renderDay(userId, date).catch(() => null);
 }
 
+/** Everyone whose day a task is on: its owner, maker and assignees. */
+export const peopleOf = (task: Task) =>
+  Array.from(
+    new Set(
+      [task.ownerId, task.createdById, ...(task.assigneeIds ?? [])].filter(
+        (id): id is string => !!id,
+      ),
+    ),
+  );
+
+/** Writes again the day sheets of everyone on a task, for those days. */
+export async function renderTaskDays(
+  task: Task,
+  dates: (string | null | undefined)[],
+) {
+  for (const userId of peopleOf(task))
+    await renderDays(userId, [await todayOf(userId), task.forDate, ...dates]);
+}
+
+/**
+ * Deletes a task for good, with everything that hangs off it: its work
+ * points, its points on the ledger, its lines in the worklogs (written
+ * again from tasks, or taken out of a day typed before tasks), and the
+ * plan step or follow-on task that named it.
+ */
+export async function deleteTask(task: Task) {
+  const points: WorkPoint[] = await db.workPoint.findMany({
+    where: { taskId: task.id },
+    select: { userId: true, date: true },
+  });
+  await db.task.delete({ where: { id: task.id } });
+  await db.workPoint.deleteMany({ where: { taskId: task.id } });
+  await syncTaskPoints(null, task.id);
+  await db.task.updateMany({
+    where: { followsId: task.id },
+    data: { followsId: null },
+  });
+  const plans: { id: string; steps?: { taskId?: string | null }[] }[] =
+    await db.plan.findMany({ where: { 'steps.taskId': task.id } });
+  for (const plan of plans)
+    await db.plan.update({
+      where: { id: plan.id },
+      data: {
+        steps: (plan.steps ?? []).map((s) =>
+          s.taskId === task.id ? { ...s, taskId: null } : s,
+        ),
+        updatedAt: nowIso(),
+      },
+    });
+
+  await dropTaskLines(task);
+  // Each person's days it was on: planned, worked on, finished.
+  const days = new Map<string, Set<string>>();
+  const add = (userId: string, date?: string | null) => {
+    if (!isDay(date)) return;
+    days.set(userId, (days.get(userId) ?? new Set()).add(date));
+  };
+  for (const userId of peopleOf(task)) {
+    add(userId, task.forDate);
+    if (task.completedAt)
+      add(
+        userId,
+        localClock(await timezoneOf(userId), new Date(task.completedAt as any))
+          .date,
+      );
+  }
+  for (const point of points) add(point.userId, point.date);
+  for (const [userId, dates] of Array.from(days.entries()))
+    await renderDays(userId, [await todayOf(userId), ...Array.from(dates)]);
+}
+
+/**
+ * Takes a deleted task's lines out of the days typed before tasks, which
+ * are never written again from tasks: the lines linked to it, or the one
+ * it was copied from.
+ */
+async function dropTaskLines(task: Task) {
+  const logs: WorkLogs[] = await db.workLogs.findMany({
+    where: {
+      logType: 'dayLog',
+      OR: [
+        { 'links.taskId': task.id },
+        ...(task.migratedFrom?.worklogId
+          ? [{ id: task.migratedFrom.worklogId }]
+          : []),
+      ],
+    },
+  });
+  for (const log of logs) {
+    if (log.tasksFirst) continue;
+    const keys = new Set(
+      (log.links ?? []).filter((l) => l.taskId === task.id).map((l) => l.key),
+    );
+    if (task.migratedFrom?.worklogId === log.id)
+      keys.add(task.migratedFrom.key);
+    if (!keys.size) continue;
+    const works = (Array.isArray(log.works) ? log.works : []).map(
+      (work: any) =>
+        typeof work?.content === 'string'
+          ? {
+              ...work,
+              content:
+                work.content
+                  .split('\n')
+                  .filter((raw: string) => !keys.has(lineKey(raw)))
+                  .join('\n') || '* ',
+            }
+          : work,
+    );
+    await db.workLogs.update({
+      where: { id: log.id },
+      data: {
+        works,
+        links: (log.links ?? []).filter((l) => !keys.has(l.key)),
+        timeline: ((log.timeline ?? []) as PointEvent[]).filter(
+          (e) => !keys.has(e.key),
+        ),
+        updatedAt: new Date(),
+      },
+    });
+  }
+}
+
 /**
  * For a task's status changed elsewhere (the task screens, a bot's task
  * tools): the move goes on its history, and its days are written again.
@@ -502,4 +644,6 @@ export async function noteStatusChange(
     by,
   });
   await renderDays(userId, [date, after.forDate]);
+  // Its line shows its new status on the days of everyone on it too.
+  await renderTaskDays(after, [before.forDate]);
 }

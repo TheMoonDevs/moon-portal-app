@@ -59,11 +59,17 @@ export function taskLine(task: Task) {
 export async function renderDay(userId: string, date: string) {
   // Imported here, as the day's loader imports this file.
   const { loadDay } = await import('./server');
-  const existing: WorkLogs | null = await db.workLogs.findFirst({
+  const copies: WorkLogs[] = await db.workLogs.findMany({
     where: { userId, logType: 'dayLog', date },
     orderBy: { updatedAt: 'desc' },
   });
+  const existing = copies[0] ?? null;
   if (existing && !existing.tasksFirst) return existing;
+  // Two writes at once can each make the day: one copy is kept, or the
+  // screens that read worklogs show its lines twice.
+  for (const extra of copies.slice(1))
+    if (extra.tasksFirst)
+      await db.workLogs.deleteMany({ where: { id: extra.id } });
 
   const { tasks, points } = await loadDay(userId, date);
   const mine = tasks.filter((t) => t.title.trim());
@@ -102,7 +108,10 @@ export async function renderDay(userId: string, date: string) {
   ];
   // The bots' points of the day, as their own lines.
   const taskOf = new Map(mine.map((t) => [t.id, t]));
-  const botPoints = dayPoints.filter((p) => p.by !== 'person');
+  // Only under a task that is still there: a deleted one's points are gone.
+  const botPoints = dayPoints.filter(
+    (p) => p.by !== 'person' && taskOf.has(p.taskId),
+  );
   if (botPoints.length)
     works.push({
       link_type: LOGLINKTYPE.GENERAL,

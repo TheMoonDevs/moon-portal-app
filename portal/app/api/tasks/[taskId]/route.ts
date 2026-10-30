@@ -1,4 +1,9 @@
-import { isMine, noteStatusChange } from '@/lib/daywork/server';
+import {
+  deleteTask,
+  isMine,
+  noteStatusChange,
+  renderTaskDays,
+} from '@/lib/daywork/server';
 import { db } from '@/lib/mongodb/db-client';
 import { syncTaskPoints } from '@/lib/progress/server';
 import { fitGoal } from '@/lib/workspace/goalFit';
@@ -117,6 +122,14 @@ export async function PATCH(request: Request, { params }: Params) {
   );
   await syncTaskPoints(updated);
   await noteStatusChange(task, updated, user.id);
+  // Its line on everyone's day follows its new words, people and day.
+  await renderTaskDays(updated, [task.forDate]);
+  if (
+    (task.assigneeIds ?? []).some(
+      (id: string) => !(updated.assigneeIds ?? []).includes(id),
+    )
+  )
+    await renderTaskDays(task, [task.forDate, updated.forDate]);
   return ok({ task: updated });
 }
 
@@ -124,7 +137,6 @@ export async function DELETE(_request: Request, { params }: Params) {
   const { response, task } = await guard(params.taskId, 'tasks:delete');
   if (response || !task)
     return response ?? fail(401, 'Authentication required.');
-  await db.task.delete({ where: { id: task.id } });
-  await syncTaskPoints(null, task.id);
+  await deleteTask(task);
   return ok({ task });
 }

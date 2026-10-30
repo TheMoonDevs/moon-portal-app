@@ -1,5 +1,6 @@
 import type { TaskMove } from '@/lib/daywork/server';
 import {
+  deleteTask,
   isDay,
   isMine,
   moveTask,
@@ -109,7 +110,6 @@ export async function DELETE(_request: Request, { params }: Params) {
   const logged = await db.workPoint.count({ where: { taskId: task.id } });
   if (logged || task.status !== 'TODO')
     return fail(409, 'This task has work on it. Archive it instead.');
-  await db.task.delete({ where: { id: task.id } });
-  await renderDays(user.id, [await todayOf(user.id), task.forDate]);
+  await deleteTask(task);
   return ok({ task });
 }

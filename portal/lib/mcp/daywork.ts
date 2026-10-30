@@ -8,6 +8,7 @@ import {
   moveTask,
   PERSONAL,
   renderDays,
+  stillNamedByWords,
 } from '@/lib/daywork/server';
 import { db } from '@/lib/mongodb/db-client';
 import type { SessionUser } from '@/lib/permissions/server';
@@ -86,7 +87,7 @@ async function findMine(userId: string, ref: string): Promise<Task | null> {
   });
   return (
     tasks.find((t) => same(t.title, ref) && t.status !== TASK_STATUS.DONE) ??
-    tasks.find((t) => same(t.title, ref)) ??
+    tasks.find((t) => same(t.title, ref) && stillNamedByWords(t)) ??
     null
   );
 }
