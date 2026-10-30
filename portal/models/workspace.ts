@@ -310,6 +310,15 @@ export type WorkPoint = Loose<
   }
 >;
 
+/** A day a person marked as a rest day: nothing to log on it. */
+export type RestDay = Loose<
+  BaseModel & {
+    userId: string;
+    /** YYYY-MM-DD, in the person's timezone. */
+    date: string;
+  }
+>;
+
 export type ScheduleEvery = 'day' | 'week' | 'month';
 
 /** Creates the same task(s) on a repeating schedule. */

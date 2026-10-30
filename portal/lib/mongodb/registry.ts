@@ -51,7 +51,6 @@ function defineModelRegistry<T extends Record<string, ModelDefinition>>(
 export const modelMetaMap = defineModelRegistry({
   user: { collection: 'User' },
   role: { collection: 'Role' },
-  workLogs: { collection: 'WorkLogs', objectIdFields: ['userId'] },
   docMarkdown: { collection: 'DocMarkdown' },
   notification: {
     collection: 'Notification',
@@ -70,6 +69,7 @@ export const modelMetaMap = defineModelRegistry({
   projectRequest: { collection: 'ProjectRequest' },
   task: { collection: 'Task' },
   workPoint: { collection: 'WorkPoint' },
+  restDay: { collection: 'RestDay' },
   taskSchedule: { collection: 'TaskSchedule' },
   goalTally: { collection: 'GoalTally' },
   projectResult: { collection: 'ProjectResult' },

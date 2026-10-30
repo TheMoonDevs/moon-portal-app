@@ -1,4 +1,5 @@
 export * from './connections';
+export * from './docMarkdown';
 export * from './hiring';
 export * from './meet';
 export * from './notifications';
@@ -7,5 +8,4 @@ export * from './progress';
 export * from './shared/base';
 export * from './shared/enums';
 export * from './users';
-export * from './worklogs';
 export * from './workspace';

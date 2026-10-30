@@ -7,10 +7,8 @@
 import { db } from '@/lib/mongodb/db-client';
 import { hasPermission } from '@/lib/permissions/matching';
 import type { SessionUser } from '@/lib/permissions/server';
-import { latestPerDay } from '@/lib/worklogs/days';
 import { dayStartMs, originOf } from '@/lib/worklogs/origin';
 import {
-  isPersonalLink,
   PERSONAL_COMPANY,
   PERSONAL_COMPANY_ID as PERSONAL_ID,
   PERSONAL_TITLE,
@@ -19,7 +17,6 @@ import {
   type PointEvent,
   pointSpan,
   type PointStatus,
-  sectionLines,
 } from '@/lib/worklogs/timeline';
 import { withTasks } from '@/lib/workspace/planServer';
 import { addDays, toDay } from '@/lib/workspace/projects';
@@ -27,7 +24,6 @@ import { runDueSchedules } from '@/lib/workspace/schedules';
 import { getWorkspaceForUser } from '@/lib/workspace/server';
 import type { MeetBooking } from '@/models/meet';
 import { ACTIVE_MEET_STATUSES } from '@/models/meet';
-import type { WorklogLink, WorkLogs } from '@/models/worklogs';
 import type {
   Company,
   CompanyMember,
@@ -153,25 +149,6 @@ async function loadProjects(ids: string[]): Promise<PageProject[]> {
     select: { id: true, name: true, companyId: true, color: true, logo: true },
   });
   return projects.map(projectView);
-}
-
-async function dayLogs(personId: string, from: string, to: string) {
-  const logs: WorkLogs[] = await db.workLogs.findMany({
-    where: {
-      userId: personId,
-      logType: 'dayLog',
-      date: { gte: from, lte: to },
-    },
-    select: {
-      date: true,
-      works: true,
-      links: true,
-      timeline: true,
-      updatedAt: true,
-    },
-    orderBy: { date: 'asc' },
-  });
-  return latestPerDay(logs);
 }
 
 const POINT_STATUS_OF: Record<string, PointStatus> = {
@@ -380,20 +357,17 @@ export async function loadActivity(
 ): Promise<ActivityData> {
   const to = toDay();
   const from = addDays(to, -(days - 1));
-  const logs = await dayLogs(personId, from, to);
   const isSelf = viewer.id === personId;
+  const points: Pick<DayPoint, 'date' | 'isPrivate'>[] =
+    await db.workPoint.findMany({
+      where: { userId: personId, date: { gte: from, lte: to } },
+      select: { date: true, isPrivate: true },
+      take: 20000,
+    });
   const out: Record<string, number> = {};
-  for (const log of logs) {
-    const links = new Map(
-      ((log.links ?? []) as WorklogLink[]).map((l) => [l.key, l]),
-    );
-    const count = sectionLines(log.works).filter((line) => {
-      if (isSelf) return true;
-      const link = links.get(line.key);
-      return !line.isPrivate && !(link && isPersonalLink(link));
-    }).length;
-    if (count) out[log.date as string] = count;
-  }
+  for (const point of points)
+    if (isSelf || !point.isPrivate)
+      out[point.date] = (out[point.date] ?? 0) + 1;
   return { from, to, days: out };
 }
 

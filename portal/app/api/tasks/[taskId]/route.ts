@@ -1,4 +1,9 @@
-import { isMine, noteStatusChange } from '@/lib/daywork/server';
+import {
+  deleteTask,
+  isMine,
+  noteStatusChange,
+  workerOf,
+} from '@/lib/daywork/server';
 import { db } from '@/lib/mongodb/db-client';
 import { syncTaskPoints } from '@/lib/progress/server';
 import { fitGoal } from '@/lib/workspace/goalFit';
@@ -80,7 +85,7 @@ export async function PATCH(request: Request, { params }: Params) {
       // Whoever marks it done did it, unless they say who.
       data.completedByIds = asStringArray(body.completedByIds).length
         ? asStringArray(body.completedByIds)
-        : [user.id];
+        : [workerOf(task, user.id)];
     }
     if (!nowDone) {
       data.completedAt = null;
@@ -124,7 +129,6 @@ export async function DELETE(_request: Request, { params }: Params) {
   const { response, task } = await guard(params.taskId, 'tasks:delete');
   if (response || !task)
     return response ?? fail(401, 'Authentication required.');
-  await db.task.delete({ where: { id: task.id } });
-  await syncTaskPoints(null, task.id);
+  await deleteTask(task);
   return ok({ task });
 }

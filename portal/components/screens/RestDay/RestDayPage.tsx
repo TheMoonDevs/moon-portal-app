@@ -26,7 +26,7 @@ export const RestDayPage = () => {
   const markRestDay = useCallback(async () => {
     setState('saving');
     try {
-      await PortalSdk.postData('/api/user/worklogs/rest-day', { date });
+      await PortalSdk.postData('/api/me/day/rest-day', { date });
       setState('done');
     } catch (error) {
       console.error(error);

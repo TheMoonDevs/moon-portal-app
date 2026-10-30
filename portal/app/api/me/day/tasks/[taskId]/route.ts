@@ -1,14 +1,13 @@
 import type { TaskMove } from '@/lib/daywork/server';
 import {
+  deleteTask,
   isDay,
   isMine,
   moveTask,
   placeByWords,
   placeFields,
   readPlace,
-  renderDays,
   TASK_MOVES,
-  todayOf,
 } from '@/lib/daywork/server';
 import { db } from '@/lib/mongodb/db-client';
 import { syncTaskPoints } from '@/lib/progress/server';
@@ -88,12 +87,6 @@ export async function PATCH(request: Request, { params }: Params) {
       userId: user.id,
       note: typeof body.note === 'string' ? body.note : undefined,
     });
-  else
-    await renderDays(user.id, [
-      await todayOf(user.id),
-      task.forDate,
-      updated.forDate,
-    ]);
   return ok({ task: updated });
 }
 
@@ -109,7 +102,6 @@ export async function DELETE(_request: Request, { params }: Params) {
   const logged = await db.workPoint.count({ where: { taskId: task.id } });
   if (logged || task.status !== 'TODO')
     return fail(409, 'This task has work on it. Archive it instead.');
-  await db.task.delete({ where: { id: task.id } });
-  await renderDays(user.id, [await todayOf(user.id), task.forDate]);
+  await deleteTask(task);
   return ok({ task });
 }

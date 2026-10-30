@@ -2,7 +2,7 @@ import { db } from '@/lib/mongodb/db-client';
 import type { Task, WorkPoint } from '@/models/workspace';
 import { TASK_STATUS } from '@/models/workspace';
 
-import { CLOSED_STATUSES, renderDays } from './server';
+import { CLOSED_STATUSES } from './server';
 
 /*
  * Copies of one task. Before tasks first, carrying a day over could write an
@@ -62,7 +62,6 @@ export async function mergeCopies(userId: string, force = false) {
   }
 
   let merged = 0;
-  const days = new Set<string>();
   for (const group of Array.from(groups.values())) {
     if (group.length < 2) continue;
     let first = group[0];
@@ -78,16 +77,15 @@ export async function mergeCopies(userId: string, force = false) {
         first = copy;
         continue;
       }
-      first = await fold(first, copy, days);
+      first = await fold(first, copy);
       merged += 1;
     }
   }
-  if (days.size) await renderDays(userId, Array.from(days));
   return merged;
 }
 
 /** Puts a copy's points under the first task and archives the copy. */
-async function fold(first: Task, copy: Task, days: Set<string>) {
+async function fold(first: Task, copy: Task) {
   const at = new Date().toISOString();
   const points: WorkPoint[] = await db.workPoint.findMany({
     where: { taskId: copy.id },
@@ -96,7 +94,6 @@ async function fold(first: Task, copy: Task, days: Set<string>) {
     first.status === TASK_STATUS.DONE &&
     ms(first.completedAt as any) <= ms(point.at as any);
   for (const point of points) {
-    days.add(point.date as string);
     // A bare status on the copy after the first was finished says nothing
     // new, and would only show the finished task on another day.
     if (!point.text?.trim() && doneBefore(point))
@@ -126,7 +123,5 @@ async function fold(first: Task, copy: Task, days: Set<string>) {
     where: { id: copy.id },
     data: { status: TASK_STATUS.ARCHIVED, mergedInto: first.id, updatedAt: at },
   });
-  for (const day of [first.forDate, copy.forDate])
-    if (day) days.add(day as string);
   return kept;
 }

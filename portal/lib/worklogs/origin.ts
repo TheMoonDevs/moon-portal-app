@@ -34,7 +34,7 @@ export const POINT_ORIGINS: Record<
 export const ORIGIN_KEYS = Object.keys(POINT_ORIGINS) as PointOrigin[];
 
 /** The note on a point's event when it moved on to a later day. */
-export const CARRIED_NOTE = 'Carried over';
+const CARRIED_NOTE = 'Carried over';
 
 const DEFAULT_TIMEZONE = 'Asia/Kolkata';
 

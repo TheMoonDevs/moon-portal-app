@@ -2,7 +2,7 @@ import dayjs from 'dayjs';
 
 import { db } from '@/lib/mongodb/db-client';
 import { FINISH_POINTS } from '@/lib/progress/buff';
-import { publicWorklog } from '@/lib/worklogs/personal';
+import { localClock } from '@/lib/push/dayReminders';
 import type { Badge, PointEntry, UserBadge } from '@/models/progress';
 import { BADGE_METRIC, POINT_SOURCE } from '@/models/progress';
 import type { Task, WorkPoint } from '@/models/workspace';
@@ -25,7 +25,16 @@ export async function syncTaskPoints(task: Task | null, taskId?: string) {
   if (!task || task.status !== TASK_STATUS.DONE) return;
   const assignees = task.assigneeIds ?? [];
   if (!assignees.length) return;
-  const date = dayjs(task.completedAt ?? undefined).format('YYYY-MM-DD');
+  // The day it was finished for whoever finished it, as their days run.
+  const finisher = task.completedByIds?.[0] ?? assignees[0];
+  const who = await db.user.findFirst({
+    where: { id: finisher },
+    select: { timezone: true },
+  });
+  const date = localClock(
+    who?.timezone,
+    task.completedAt ? new Date(task.completedAt as any) : new Date(),
+  ).date;
   const now = new Date().toISOString();
   await db.pointEntry.createMany({
     data: assignees.map((userId) => ({
@@ -78,15 +87,6 @@ export async function workInRange(
 
 /* -------------------------------- metrics -------------------------------- */
 
-/** Whether a worklog has any written line. */
-export const hasContent = (worklog: { works?: unknown }) =>
-  Array.isArray(worklog.works) &&
-  worklog.works.some(
-    (w: any) =>
-      typeof w?.content === 'string' &&
-      w.content.replace(/[\s*\-#]/g, '').length > 0,
-  );
-
 /** Longest run of consecutive calendar days in a sorted, unique list. */
 export function longestStreak(dates: string[]): number {
   let best = 0;
@@ -102,24 +102,18 @@ export function longestStreak(dates: string[]): number {
 }
 
 /**
- * Sorted unique days on which the user wrote something in their worklog.
- * Badges are public, so personal (`p:`) lines alone do not make a day.
+ * Sorted unique days on which the user logged work. Badges are public, so
+ * private points alone do not make a day.
  */
 export async function worklogDays(userId: string): Promise<string[]> {
-  const logs = await db.workLogs.findMany({
-    where: { userId, logType: 'dayLog' },
-    select: { date: true, works: true },
-  });
+  const points: Pick<WorkPoint, 'date' | 'isPrivate'>[] =
+    await db.workPoint.findMany({
+      where: { userId },
+      select: { date: true, isPrivate: true },
+    });
   return Array.from(
-    new Set(
-      logs
-        .filter(
-          (l: { date?: string | null; works?: unknown }) =>
-            !!l.date && hasContent(publicWorklog(l)),
-        )
-        .map((l: { date: string }) => l.date),
-    ),
-  ).sort() as string[];
+    new Set(points.filter((p) => p.date && !p.isPrivate).map((p) => p.date)),
+  ).sort();
 }
 
 export type Metrics = Record<BADGE_METRIC, number>;

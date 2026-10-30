@@ -413,6 +413,22 @@ export function useDay(date: string) {
     [idOf, track, load],
   );
 
+  /** Deletes one of the person's own work points, e.g. a wrong or doubled one. */
+  const deletePoint = useCallback(
+    async (pointId: string) => {
+      setPoints((ps) => ps.filter((p) => p.id !== pointId));
+      await track(async () => {
+        try {
+          await PortalSdk.deleteData(`/api/me/day/points/${pointId}`, {});
+        } catch (e) {
+          toast.error(errorOf(e, 'Could not delete it.'));
+        }
+      });
+      load(true);
+    },
+    [track, load],
+  );
+
   /** Takes a row out: a draft or an untouched task goes, others are archived. */
   const remove = useCallback(
     async (id: string) => {
@@ -458,6 +474,7 @@ export function useDay(date: string) {
     place,
     planFor,
     movePoint,
+    deletePoint,
     remove,
   };
 }

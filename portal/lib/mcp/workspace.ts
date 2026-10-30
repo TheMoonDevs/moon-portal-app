@@ -1,4 +1,8 @@
-import { noteStatusChange } from '@/lib/daywork/server';
+import {
+  isMine,
+  noteStatusChange,
+  stillNamedByWords,
+} from '@/lib/daywork/server';
 import { db } from '@/lib/mongodb/db-client';
 import type { SessionUser } from '@/lib/permissions/server';
 import { syncTaskPoints } from '@/lib/progress/server';
@@ -280,7 +284,10 @@ export const statusChange = (
       ? wasDone
         ? (task.completedByIds ?? [])
         : by
-          ? [by]
+          ? // Someone ticking off a task they are not on did not do it.
+            !task || isMine(task, by)
+            ? [by]
+            : (task.assigneeIds ?? [])
           : []
       : [],
   };
@@ -1041,7 +1048,7 @@ export async function taskForPoint(
     tasks.find((t) => t.id === title) ??
     // An open task first, so a repeated title picks up the current one.
     tasks.find((t) => same(t.title, title) && t.status !== TASK_STATUS.DONE) ??
-    tasks.find((t) => same(t.title, title));
+    tasks.find((t) => same(t.title, title) && stillNamedByWords(t));
   if (found) {
     // The goal the point names wins over the one picked for the task.
     if (point.goal) {

@@ -32,6 +32,6 @@ export async function POST(request: Request) {
     );
   }
 
-  const workLog = await markRestDay(user.id, date);
-  return NextResponse.json({ status: 'success', data: { workLog } });
+  const restDay = await markRestDay(user.id, date);
+  return NextResponse.json({ status: 'success', data: { restDay } });
 }

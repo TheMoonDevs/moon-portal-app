@@ -8,9 +8,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Toaster } from 'sonner';
 
 import { ThemeToggle } from '@/components/global/ThemeToggle';
+import type { DayLine } from '@/lib/daywork/server';
 import { cn } from '@/lib/utils';
-import { sectionLines } from '@/lib/worklogs/timeline';
-import type { WorkLogs } from '@/models/worklogs';
 import media from '@/styles/media';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
 import { useUser } from '@/utils/hooks/useUser';
@@ -194,7 +193,7 @@ export const DayLogPage = ({
   };
   // Projects picked in the Projects view to add a task in.
   const [extraPlaces, setExtraPlaces] = useState<string[]>([]);
-  const [logs, setLogs] = useState<WorkLogs[] | null>(null);
+  const [days, setDays] = useState<Record<string, DayLine[]> | null>(null);
   const dispatch = useAppDispatch();
   const incompleteTodos = useAppSelector(
     (state) => state.laterTodos.incompleteTodos,
@@ -230,23 +229,26 @@ export const DayLogPage = ({
     [router, layout],
   );
 
-  // Every day's log, for the days on the left. They
-  // are written from the tasks, so they are read again a little after a
-  // change.
+  // The month's days on the left (and tomorrow, for its plan), from the
+  // tasks; read again a little after a change.
   useEffect(() => {
     if (!user?.id) return;
+    const from = fmt(month.startOf('month'));
+    const end = fmt(month.endOf('month'));
+    const next = fmt(dayjs().add(1, 'day'));
+    const to =
+      next > end && dayjs(next).diff(month.startOf('month'), 'day') < 62
+        ? next
+        : end;
     const timer = setTimeout(
       () =>
-        PortalSdk.getData(
-          `/api/user/worklogs?userId=${user.id}&logType=dayLog`,
-          null,
-        )
-          .then((res) => setLogs((res?.data?.workLogs ?? []) as WorkLogs[]))
-          .catch(() => setLogs((l) => l ?? [])),
-      day.version ? 2000 : 0,
+        PortalSdk.getData(`/api/me/days?from=${from}&to=${to}`, null)
+          .then((res) => setDays(res?.data?.days ?? {}))
+          .catch(() => setDays((d) => d ?? {})),
+      day.version ? 1000 : 0,
     );
     return () => clearTimeout(timer);
-  }, [user?.id, day.version]);
+  }, [user?.id, day.version, month]);
 
   // The open day as it is being written.
   const liveLines = useMemo(
@@ -264,13 +266,6 @@ export const DayLogPage = ({
             }),
     [day.tasks, day.points, day.loading, date],
   );
-  const byDate = useMemo(() => {
-    const map = new Map<string, WorkLogs>();
-    // Newest first, so the latest copy of a day wins.
-    for (const log of logs ?? [])
-      if (log.date && !map.has(log.date)) map.set(log.date, log);
-    return map;
-  }, [logs]);
 
   const counts = useMemo(() => countPlaces(day, day.tasks), [day]);
   const shown = useMemo(
@@ -286,7 +281,7 @@ export const DayLogPage = ({
 
   const today = fmt(dayjs());
   const tomorrow = fmt(dayjs().add(1, 'day'));
-  const tomorrowCount = sectionLines(byDate.get(tomorrow)?.works).length;
+  const tomorrowCount = days?.[tomorrow]?.length ?? 0;
   const heading = dayHeading(date);
   const editable = editableDay(date);
   const ahead = date > today;
@@ -735,8 +730,8 @@ export const DayLogPage = ({
             <DayList
               month={month}
               onMonth={setMonth}
-              byDate={byDate}
-              loading={!logs}
+              days={days ?? {}}
+              loading={!days}
               selected={date}
               liveLines={liveLines}
               onPick={pick}
