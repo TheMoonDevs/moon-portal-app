@@ -31,12 +31,15 @@ import {
   PROJECT_STATUS_META,
 } from '../Admin/Workspace/shared';
 import { NewProjectDialog } from '../Projects/NewProjectDialog';
+import type { PlanView } from '../Plans/types';
+import { usePlans } from '../Plans/usePlans';
 import { PageDoc, SaveBadge, type SaveState } from './PageDoc';
 import { ProjectDetailsDialog } from './ProjectDetailsDialog';
 import { GoalsSection } from './sections/GoalsSection';
 import { KpiSection } from './sections/KpiSection';
 import { MembersSection } from './sections/MembersSection';
 import { PagesGallery, PagesInside } from './sections/PagesSection';
+import { plansFor, PlansSection } from './sections/PlansSection';
 import { TasksInActionSection } from './sections/TasksInActionSection';
 import { WorklogsSection } from './sections/WorklogsSection';
 import {
@@ -222,6 +225,14 @@ const PageTreeItem = ({
   );
 };
 
+/** A plan's status as a dot in the sidebar. */
+const PLAN_DOT: Record<string, string> = {
+  IDEA: 'bg-amber-300/80',
+  ACTIVE: 'bg-sky-400',
+  DONE: 'bg-emerald-400',
+  DROPPED: 'bg-neutral-600',
+};
+
 const Sidebar = ({
   data,
   pages,
@@ -238,6 +249,13 @@ const Sidebar = ({
   onNewPage,
   onNewSub,
   onEditDetails,
+  plans,
+  planId,
+  plansOpen,
+  canAddPlan,
+  creatingPlan,
+  onPlansOpen,
+  onNewPlan,
 }: {
   data: ProjectData;
   pages: PagesData | null;
@@ -255,6 +273,14 @@ const Sidebar = ({
   onNewSub: () => void;
   /** Opens the project's details; only for people who may edit them. */
   onEditDetails?: () => void;
+  /** The company's plans with a step for this project; null while loading. */
+  plans: PlanView[] | null;
+  planId: string | null;
+  plansOpen: boolean;
+  canAddPlan: boolean;
+  creatingPlan: boolean;
+  onPlansOpen: (open: boolean) => void;
+  onNewPlan: () => void;
 }) => {
   const { project, people } = data;
   const tree = data.tree ?? [];
@@ -435,6 +461,106 @@ const Sidebar = ({
                   )}
                 </AnimatePresence>
               </div>
+            ) : v.key === 'plans' ? (
+              <div key={v.key}>
+                <NavItem
+                  icon={v.icon}
+                  label={v.label}
+                  active={view === 'plans' && !planId}
+                  onClick={() => {
+                    onSelect('plans', null);
+                    onPlansOpen(true);
+                  }}
+                  badge={
+                    !!plans?.length && (
+                      <span className="text-[11px] text-neutral-600">
+                        {plans.length}
+                      </span>
+                    )
+                  }
+                  trailing={
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      aria-label={plansOpen ? 'Collapse plans' : 'Expand plans'}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onPlansOpen(!plansOpen);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.stopPropagation();
+                          onPlansOpen(!plansOpen);
+                        }
+                      }}
+                      className="-mr-1 flex size-5 items-center justify-center rounded text-neutral-500 hover:bg-white/[0.08] hover:text-white"
+                    >
+                      <motion.span
+                        animate={{ rotate: plansOpen ? 90 : 0 }}
+                        className="flex"
+                      >
+                        <Icon name="chevron_right" className="text-[16px]" />
+                      </motion.span>
+                    </span>
+                  }
+                />
+                <AnimatePresence initial={false}>
+                  {plansOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2, ease: 'easeOut' }}
+                      className="overflow-hidden"
+                    >
+                      <div className="ml-[19px] flex flex-col border-l border-white/[0.07] py-1 pl-1.5">
+                        {plans === null && (
+                          <p className="flex items-center gap-2 px-2.5 py-1.5 text-xs text-neutral-600">
+                            <Spin className="size-3" /> Loading plans
+                          </p>
+                        )}
+                        {plans?.map((plan) => (
+                          <NavItem
+                            key={plan.id}
+                            icon=""
+                            label={plan.title || 'Untitled plan'}
+                            active={view === 'plans' && planId === plan.id}
+                            onClick={() => onSelect('plans', plan.id)}
+                            badge={
+                              <span
+                                className={cn(
+                                  'order-first -mr-1 size-1.5 shrink-0 rounded-full',
+                                  PLAN_DOT[plan.status] ?? 'bg-neutral-600',
+                                )}
+                              />
+                            }
+                          />
+                        ))}
+                        {canAddPlan && (
+                          <button
+                            type="button"
+                            onClick={onNewPlan}
+                            disabled={creatingPlan}
+                            className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs text-neutral-500 transition-colors hover:bg-white/[0.04] hover:text-neutral-200"
+                          >
+                            {creatingPlan ? (
+                              <Spin className="size-3" />
+                            ) : (
+                              <Icon name="add" className="text-[15px]" />
+                            )}
+                            New plan
+                          </button>
+                        )}
+                        {!canAddPlan && plans?.length === 0 && (
+                          <p className="px-2.5 py-1.5 text-xs text-neutral-600">
+                            No plans yet
+                          </p>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             ) : (
               <NavItem
                 key={v.key}
@@ -556,6 +682,10 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
   const [deleting, setDeleting] = useState<Page | null>(null);
   const [busy, setBusy] = useState(false);
   const [editingDetails, setEditingDetails] = useState(false);
+  const [plansOpen, setPlansOpen] = useState(true);
+  const [creatingPlan, setCreatingPlan] = useState(false);
+  /** Plans made here, listed even before they have a step for the project. */
+  const [madeHere, setMadeHere] = useState<Set<string>>(new Set());
 
   // Links from when pages were called ideas, and from the task schedule
   // (now part of goals), still open the right place.
@@ -572,11 +702,13 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
     view === 'pages'
       ? (params?.get('page') ?? params?.get('idea') ?? null)
       : null;
+  const planId = view === 'plans' ? (params?.get('plan') ?? null) : null;
 
+  /** Opens a view, and a page or plan in it. */
   const select = useCallback(
-    (next: ViewKey, page?: string | null) => {
+    (next: ViewKey, id?: string | null) => {
       const q = new URLSearchParams({ view: next });
-      if (page) q.set('page', page);
+      if (id) q.set(next === 'plans' ? 'plan' : 'page', id);
       setSaveState('idle');
       router.replace(`${pathname}?${q.toString()}`, { scroll: false });
     },
@@ -615,6 +747,27 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
       )
       .catch(() => setCompanyUsers([]));
   }, [companyId]);
+
+  const plans = usePlans(companyId);
+  const linkedPlans = useMemo(
+    () => (plans.data ? plansFor(plans.data.plans, projectId, madeHere) : null),
+    [plans.data, projectId, madeHere],
+  );
+
+  const keepPlan = useCallback(
+    (plan: PlanView) => setMadeHere((ids) => new Set(ids).add(plan.id)),
+    [],
+  );
+
+  const newPlan = async () => {
+    setCreatingPlan(true);
+    const created = await plans.create();
+    setCreatingPlan(false);
+    if (!created) return;
+    keepPlan(created);
+    setPlansOpen(true);
+    select('plans', created.id);
+  };
 
   const companyName = useMemo(
     () => companies.find((c) => c.company.id === companyId)?.company.name,
@@ -730,6 +883,7 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
   const nestedCount = deleting ? descendantIds(all, deleting.id).size : 0;
   const isDoc = view === 'objective' || (view === 'pages' && !!page);
   const current = VIEWS.find((v) => v.key === view)!;
+  const openPlan = linkedPlans?.find((p) => p.id === planId) ?? null;
 
   const content = (() => {
     switch (view) {
@@ -814,11 +968,23 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
             companyUsers={companyUsers}
             canAdd={canInProject(project, 'tasks:create')}
             canTick={canInProject(project, 'tasks:edit')}
+            canDelete={canInProject(project, 'tasks:delete')}
             onSaved={load}
           />
         );
       case 'worklogs':
         return <WorklogsSection projectId={project.id} tasks={tasks} />;
+      case 'plans':
+        return (
+          <PlansSection
+            projectId={project.id}
+            plans={plans}
+            linked={linkedPlans ?? []}
+            planId={planId}
+            onOpen={(id) => select('plans', id)}
+            onCreated={keepPlan}
+          />
+        );
     }
   })();
 
@@ -840,6 +1006,13 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
         onNewPage={newPage}
         onNewSub={() => setAddingSub(true)}
         onEditDetails={canEdit ? () => setEditingDetails(true) : undefined}
+        plans={linkedPlans}
+        planId={planId}
+        plansOpen={plansOpen}
+        canAddPlan={!!plans.data?.can.create}
+        creatingPlan={creatingPlan}
+        onPlansOpen={setPlansOpen}
+        onNewPlan={newPlan}
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -895,8 +1068,20 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
               </span>
             </>
           )}
+          {openPlan && (
+            <>
+              <Icon
+                name="chevron_right"
+                className="text-[16px] text-neutral-700"
+              />
+              <span className="truncate text-neutral-400">
+                {openPlan.title || 'Untitled plan'}
+              </span>
+            </>
+          )}
           <div className="flex-1" />
           {isDoc && canEdit && <SaveBadge state={saveState} />}
+          {openPlan && <SaveBadge state={plans.saveState} />}
           {page && canEdit && (
             <button
               type="button"
@@ -925,7 +1110,8 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
         <main className="custom-scrollbar min-h-0 flex-1 overflow-y-auto">
           <AnimatePresence mode="wait">
             <motion.div
-              key={`${view}:${pageId ?? ''}`}
+              key={`${view}:${pageId ?? planId ?? ''}`}
+              className={cn(openPlan && 'h-full')}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}

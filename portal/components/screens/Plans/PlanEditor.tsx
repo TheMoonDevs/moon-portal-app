@@ -95,6 +95,7 @@ export const PlanEditor = ({
   onBack,
   fresh,
   extra,
+  newStepProjectId,
 }: {
   plan: PlanView;
   projects: ProjectChoice[];
@@ -110,6 +111,8 @@ export const PlanEditor = ({
   fresh?: boolean;
   /** Shown under the steps, e.g. the plan's scheduled tasks. */
   extra?: ReactNode;
+  /** The project new steps are for, e.g. on that project's page. */
+  newStepProjectId?: string;
 }) => {
   const [adding, setAdding] = useState('');
   const [byProject, setByProject] = useState(false);
@@ -139,7 +142,13 @@ export const PlanEditor = ({
   const addStep = () => {
     const text = adding.trim();
     if (!text) return;
-    onChange((p) => ({ ...p, steps: [...p.steps, newStep({ text })] }));
+    onChange((p) => ({
+      ...p,
+      steps: [
+        ...p.steps,
+        newStep({ text, projectId: newStepProjectId ?? null }),
+      ],
+    }));
     setAdding('');
   };
 

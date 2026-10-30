@@ -17,6 +17,7 @@ import { useUser } from '@/utils/hooks/useUser';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import {
+  ConfirmDialog,
   Icon,
   Pill,
   Segmented,
@@ -71,6 +72,19 @@ const dayLabel = (date?: string | null) => {
 };
 
 const isOpen = (t: Task) => OPEN.includes(t.status);
+
+/** The statuses a task can be set to here. */
+const STATUS_CHOICES: { value: string; label: string; icon: string }[] = [
+  { value: 'TODO', label: 'To do', icon: 'radio_button_unchecked' },
+  { value: 'IN_PROGRESS', label: 'In progress', icon: 'progress_activity' },
+  { value: 'IN_REVIEW', label: 'In review', icon: 'rate_review' },
+  { value: 'DONE', label: 'Done', icon: 'check_circle' },
+  { value: 'IGNORED', label: 'Not doing', icon: 'block' },
+];
+
+type TaskFields = Partial<
+  Pick<Task, 'title' | 'description' | 'status' | 'assigneeIds' | 'forDate'>
+>;
 
 /** Newest work first: when it was finished, or last touched. */
 const lastActive = (t: Task, points: Point[]) =>
@@ -263,6 +277,234 @@ const NewTask = ({
 };
 
 /* -------------------------------------------------------------------------- */
+/*                                Edit a task                                 */
+/* -------------------------------------------------------------------------- */
+
+const chip =
+  'flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg bg-white/[0.04] px-2.5 text-xs text-neutral-300 transition-colors hover:bg-white/[0.08] hover:text-white';
+
+/** Who a task is for: any number of people, picked from a list. */
+const AssigneePicker = ({
+  value,
+  people,
+  userOf,
+  onChange,
+}: {
+  value: string[];
+  people: Who[];
+  userOf: (id: string) => Who | undefined;
+  onChange: (ids: string[]) => void;
+}) => {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const chosen = value.map(userOf).filter(Boolean) as Who[];
+  const matches = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return people.filter((p) => !q || p.name?.toLowerCase().includes(q));
+  }, [people, search]);
+
+  const toggle = (id: string) =>
+    onChange(
+      value.includes(id) ? value.filter((x) => x !== id) : [...value, id],
+    );
+
+  return (
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) setSearch('');
+      }}
+    >
+      <PopoverTrigger asChild>
+        <button type="button" title="Who it is for" className={chip}>
+          {chosen.length ? (
+            <AvatarStack users={chosen} max={3} />
+          ) : (
+            <Icon name="person_add" className="text-[16px]" />
+          )}
+          <span className="max-w-[140px] truncate">
+            {chosen.length === 0
+              ? 'Nobody'
+              : chosen.length === 1
+                ? chosen[0].name || 'Unnamed'
+                : `${chosen.length} people`}
+          </span>
+          <Icon name="expand_more" className="text-[16px]" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        className="w-64 border-white/10 bg-neutral-900 p-1.5 text-neutral-200"
+      >
+        <input
+          autoFocus
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Assign to…"
+          className="mb-1 h-8 w-full rounded-lg bg-white/[0.05] px-2.5 text-sm outline-none placeholder:text-neutral-500"
+        />
+        <div className="custom-scrollbar max-h-64 overflow-y-auto">
+          {matches.map((p) => {
+            const on = value.includes(p.id);
+            return (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => toggle(p.id)}
+                className={cn(
+                  'flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-white/[0.06]',
+                  on && 'bg-white/[0.06]',
+                )}
+              >
+                <UserAvatar src={p.avatar} name={p.name} size={22} />
+                <span className="min-w-0 flex-1 truncate">
+                  {p.name || 'Unnamed'}
+                </span>
+                {on && (
+                  <Icon name="check" className="text-[16px] text-sky-300" />
+                )}
+              </button>
+            );
+          })}
+          {!matches.length && (
+            <p className="px-2 py-3 text-center text-xs text-neutral-500">
+              Nobody matches that.
+            </p>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+};
+
+/**
+ * Everything about a task, changed in place: each change saves on its own,
+ * the title and notes when you leave them.
+ */
+const TaskEditor = ({
+  task,
+  people,
+  userOf,
+  canDelete,
+  onUpdate,
+  onDelete,
+}: {
+  task: Task;
+  people: Who[];
+  userOf: (id: string) => Who | undefined;
+  canDelete: boolean;
+  onUpdate: (fields: TaskFields) => void;
+  onDelete: () => void;
+}) => {
+  const [title, setTitle] = useState(task.title);
+  const [notes, setNotes] = useState(task.description ?? '');
+
+  useEffect(() => setTitle(task.title), [task.title]);
+  useEffect(() => setNotes(task.description ?? ''), [task.description]);
+
+  const saveTitle = () => {
+    const text = title.trim();
+    if (!text) return setTitle(task.title);
+    if (text !== task.title) onUpdate({ title: text });
+  };
+  const saveNotes = () => {
+    const text = notes.trim();
+    if (text !== (task.description ?? '').trim())
+      onUpdate({ description: text || null });
+  };
+  const status =
+    STATUS_CHOICES.find((s) => s.value === task.status) ?? STATUS_CHOICES[0];
+
+  return (
+    <div className="mb-4 flex flex-col gap-3">
+      <input
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        onBlur={saveTitle}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') e.currentTarget.blur();
+          if (e.key === 'Escape') {
+            setTitle(task.title);
+            e.currentTarget.blur();
+          }
+        }}
+        maxLength={200}
+        aria-label="Task title"
+        className="h-9 w-full rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 text-sm font-medium text-white outline-none focus:border-white/20"
+      />
+      <div className="flex flex-wrap items-center gap-2">
+        <label className={cn(chip, 'relative cursor-pointer')}>
+          <Icon name={status.icon} className="text-[16px]" />
+          {status.label}
+          <Icon name="expand_more" className="text-[16px]" />
+          <select
+            value={status.value}
+            onChange={(e) =>
+              onUpdate({ status: e.target.value as Task['status'] })
+            }
+            aria-label="Status"
+            className="absolute inset-0 cursor-pointer opacity-0 [&>option]:bg-neutral-900"
+          >
+            {STATUS_CHOICES.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <DatePopover
+          value={task.forDate ?? null}
+          onPick={(forDate) => onUpdate({ forDate })}
+          clearable
+          autoTheme={false}
+          align="start"
+          trigger={
+            <button
+              type="button"
+              title={task.forDate ? 'Change its day' : 'Give it a day'}
+              className={chip}
+            >
+              <Icon name="event" className="text-[16px]" />
+              for {task.forDate ? shortDay(task.forDate) : '—'}
+            </button>
+          }
+        />
+        <AssigneePicker
+          value={task.assigneeIds ?? []}
+          people={people}
+          userOf={userOf}
+          onChange={(assigneeIds) => onUpdate({ assigneeIds })}
+        />
+        <div className="flex-1" />
+        {canDelete && (
+          <button
+            type="button"
+            onClick={onDelete}
+            className={cn(
+              chip,
+              'bg-transparent text-neutral-500 hover:bg-rose-500/10 hover:text-rose-300',
+            )}
+          >
+            <Icon name="delete" className="text-[16px]" />
+            Delete
+          </button>
+        )}
+      </div>
+      <textarea
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+        onBlur={saveNotes}
+        rows={notes ? 3 : 1}
+        placeholder="Add notes…"
+        aria-label="Notes"
+        className="w-full resize-y rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-2 text-sm text-neutral-300 outline-none placeholder:text-neutral-600 focus:border-white/20"
+      />
+    </div>
+  );
+};
+
+/* -------------------------------------------------------------------------- */
 /*                                  A task row                                */
 /* -------------------------------------------------------------------------- */
 
@@ -270,14 +512,25 @@ const TaskRow = ({
   task,
   points,
   userOf,
+  people: assignable,
   canTick,
+  canEdit,
+  canDelete,
   onTick,
+  onUpdate,
+  onDelete,
 }: {
   task: Task;
   points: Point[];
   userOf: (id: string) => Who | undefined;
+  /** Who it can be given to. */
+  people: Who[];
   canTick: boolean;
+  canEdit: boolean;
+  canDelete: boolean;
   onTick: (task: Task) => void;
+  onUpdate: (task: Task, fields: TaskFields) => void;
+  onDelete: (task: Task) => void;
 }) => {
   const [open, setOpen] = useState(false);
   const done = task.status === 'DONE';
@@ -384,7 +637,17 @@ const TaskRow = ({
             className="overflow-hidden"
           >
             <div className="border-t border-white/[0.05] px-4 py-3 pl-11">
-              {task.description && (
+              {canEdit && (
+                <TaskEditor
+                  task={task}
+                  people={assignable}
+                  userOf={userOf}
+                  canDelete={canDelete}
+                  onUpdate={(fields) => onUpdate(task, fields)}
+                  onDelete={() => onDelete(task)}
+                />
+              )}
+              {!canEdit && task.description && (
                 <p className="mb-3 whitespace-pre-wrap text-sm text-neutral-400">
                   {task.description}
                 </p>
@@ -444,6 +707,7 @@ export const TasksInActionSection = ({
   companyUsers,
   canAdd,
   canTick,
+  canDelete,
   onSaved,
 }: {
   projectId: string;
@@ -453,7 +717,9 @@ export const TasksInActionSection = ({
   /** Everyone in the company, to give a task to. */
   companyUsers: Person[];
   canAdd: boolean;
+  /** Tick off and change tasks. */
   canTick: boolean;
+  canDelete: boolean;
   onSaved: () => void;
 }) => {
   const { user } = useUser();
@@ -461,6 +727,8 @@ export const TasksInActionSection = ({
   const [whose, setWhose] = useState<Whose>('everyone');
   const [data, setData] = useState<Data | null>(null);
   const [local, setLocal] = useState<Task[]>(tasks);
+  const [removing, setRemoving] = useState<Task | null>(null);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => setLocal(tasks), [tasks]);
 
@@ -584,6 +852,39 @@ export const TasksInActionSection = ({
     }
   };
 
+  const update = async (task: Task, fields: TaskFields) => {
+    setLocal((all) =>
+      all.map((t) => (t.id === task.id ? ({ ...t, ...fields } as Task) : t)),
+    );
+    try {
+      const res = await PortalSdk.patchData(`/api/tasks/${task.id}`, fields);
+      const saved: Task | undefined = res?.data?.task;
+      if (saved)
+        setLocal((all) => all.map((t) => (t.id === saved.id ? saved : t)));
+      onSaved();
+      if ('status' in fields) loadPoints();
+    } catch (err) {
+      setLocal((all) => all.map((t) => (t.id === task.id ? task : t)));
+      toast.error(errorText(err));
+    }
+  };
+
+  const remove = async () => {
+    if (!removing) return;
+    setBusy(true);
+    try {
+      await PortalSdk.deleteData(`/api/tasks/${removing.id}`, {});
+      setLocal((all) => all.filter((t) => t.id !== removing.id));
+      setRemoving(null);
+      toast.success('Task deleted');
+      onSaved();
+    } catch (err) {
+      toast.error(errorText(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const shown = groups.filter((g) => g.tasks.length);
 
   return (
@@ -662,8 +963,13 @@ export const TasksInActionSection = ({
                     task={task}
                     points={pointsOf.get(task.id) ?? []}
                     userOf={userOf}
+                    people={assignable}
                     canTick={canTick}
+                    canEdit={canTick}
+                    canDelete={canDelete}
                     onTick={tick}
+                    onUpdate={update}
+                    onDelete={setRemoving}
                   />
                 ))}
               </ul>
@@ -676,6 +982,15 @@ export const TasksInActionSection = ({
           )}
         </div>
       )}
+      <ConfirmDialog
+        open={!!removing}
+        onOpenChange={(open) => !open && setRemoving(null)}
+        title={`Delete ${removing?.title ?? 'this task'}?`}
+        message="The task goes away for everyone on the project."
+        confirmLabel="Delete task"
+        loading={busy}
+        onConfirm={remove}
+      />
     </SectionShell>
   );
 };
