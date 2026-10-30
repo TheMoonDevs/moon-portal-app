@@ -652,7 +652,9 @@ export const DayLogPage = ({
         {showDay && (
           <nav
             aria-label="Views"
-            className="flex shrink-0 items-center gap-0.5 rounded-lg border border-white/[0.07] bg-white/[0.03] p-0.5 auto-light:border-black/10 auto-light:bg-black/[0.03]"
+            // In the middle of the header: between the back arrow and the
+            // theme switch on a phone, in the middle of the page from sm up.
+            className="mx-auto flex shrink-0 items-center gap-0.5 rounded-lg border border-white/[0.07] bg-white/[0.03] p-0.5 auto-light:border-black/10 auto-light:bg-black/[0.03] sm:absolute sm:left-1/2 sm:-translate-x-1/2"
           >
             {VIEWS.map((v) => (
               <button
@@ -685,7 +687,7 @@ export const DayLogPage = ({
             ) : null}
           </span>
         )}
-        <div className="flex-1" />
+        <div className={cn('flex-1', showDay && 'max-sm:hidden')} />
         <ThemeToggle />
         <Link
           href={APP_ROUTES.user}
