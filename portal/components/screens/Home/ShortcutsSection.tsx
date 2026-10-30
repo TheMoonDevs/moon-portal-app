@@ -8,6 +8,8 @@ import { APP_ROUTES } from '@/utils/constants/appInfo';
  */
 const SHORTCUTS = [
   { label: 'Meet', icon: 'calendar_month', href: APP_ROUTES.meet },
+  // Looking back over the person's days and work: their User page.
+  { label: 'Retrospect', icon: 'history', href: APP_ROUTES.user },
 ];
 
 export const ShortcutsSection = () => (

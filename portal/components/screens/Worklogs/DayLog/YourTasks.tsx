@@ -9,6 +9,7 @@ import { useUser } from '@/utils/hooks/useUser';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import { Icon, Spin } from '../../Admin/shared/AdminUI';
+import { DateBadge, DatePopover } from './DatePopover';
 import type { Place } from './sheetParts';
 import {
   PlaceDot,
@@ -21,15 +22,37 @@ import {
 import type { DayCompany, DayProject, DayTask } from './useDay';
 
 /*
- * The person's tasks beside the day: the ones pending today, the ones
- * pending from before, the next seven days, the rest folded away, and the
- * archived ones to bring back. A task can be put on the open day, ticked
- * off, or followed by a next step.
+ * The person's upcoming tasks beside the day: the ones not on today or
+ * left from before (those are on the day's sheet), in the order they were
+ * added or by their day, and the archived ones to bring back. A task can be
+ * given a day, ticked off, or followed by a next step.
  */
 
 type Task = DayTask & { followsId?: string | null; dueDate?: string | null };
 
 const dayOf = (t: Task) => t.forDate || t.dueDate?.slice(0, 10) || null;
+
+type Sort = 'added' | 'day';
+const SORT_KEY = 'worklogs.yourTasks.sort';
+
+/** Tasks not on today or before: on a later day, or on none yet. */
+export const upcomingOf = <T extends Task>(tasks: T[], today: string) =>
+  tasks.filter((t) => {
+    const d = dayOf(t);
+    return !d || d > today;
+  });
+
+const addedAt = (t: Task) => t.createdAt ?? '';
+
+const sortUpcoming = (tasks: Task[], sort: Sort) =>
+  tasks
+    .slice()
+    .sort((a, b) =>
+      sort === 'day'
+        ? (dayOf(a) ?? '9999').localeCompare(dayOf(b) ?? '9999') ||
+          addedAt(a).localeCompare(addedAt(b))
+        : addedAt(a).localeCompare(addedAt(b)),
+    );
 
 const TaskRow = ({
   task,
@@ -44,10 +67,11 @@ const TaskRow = ({
 }: {
   task: Task;
   place: Place;
+  /** The day open on the page, offered first when picking a day. */
   date: string;
   canPlan: boolean;
   after?: { title: string; status: string } | null;
-  onPlan: () => Promise<unknown>;
+  onPlan: (date: string | null) => Promise<unknown>;
   onMove: (to: 'done' | 'todo') => Promise<unknown>;
   onFollowUp?: (title: string) => Promise<boolean>;
   archived?: boolean;
@@ -71,7 +95,7 @@ const TaskRow = ({
       setFollowing(false);
     }
   };
-  const onDay = task.forDate === date;
+  const day = dayOf(task);
   const status = rowStatus(task);
   return (
     <div>
@@ -143,6 +167,45 @@ const TaskRow = ({
           </button>
         ) : (
           <>
+            {
+              <DatePopover
+                value={task.forDate ?? null}
+                extra={[
+                  { label: 'Today', date: dayjs().format('YYYY-MM-DD') },
+                  ...(canPlan ? [{ label: 'The open day', date }] : []),
+                ]}
+                onPick={(d) => run('plan', () => onPlan(d))}
+                trigger={
+                  <button
+                    type="button"
+                    disabled={!!busy}
+                    aria-label={day ? 'Change its day' : 'Give it a day'}
+                    title={
+                      day
+                        ? `For ${dayjs(day).format('dddd D MMMM')}`
+                        : 'Give it a day'
+                    }
+                    className={cn(
+                      'mt-0.5 h-8 w-8 shrink-0 items-center justify-center rounded-md text-neutral-400 hover:bg-white/[0.08] hover:text-white data-[state=open]:flex data-[state=open]:bg-white/[0.08] auto-light:text-neutral-500 auto-light:hover:bg-black/[0.08] auto-light:hover:text-neutral-950 auto-light:data-[state=open]:bg-black/[0.08]',
+                      day
+                        ? 'flex'
+                        : 'flex md:hidden md:group-focus-within:flex md:group-hover:flex',
+                    )}
+                  >
+                    {busy === 'plan' ? (
+                      <Spin className="size-3" />
+                    ) : day ? (
+                      <DateBadge
+                        date={day}
+                        className="text-neutral-200 auto-light:text-neutral-800"
+                      />
+                    ) : (
+                      <Icon name="calendar_month" className="text-[17px]" />
+                    )}
+                  </button>
+                }
+              />
+            }
             {onFollowUp && (
               <button
                 type="button"
@@ -150,39 +213,14 @@ const TaskRow = ({
                 title="Add a follow-up task: the next step after this one"
                 onClick={() => setFollowing((v) => !v)}
                 className={cn(
-                  'mt-0.5 size-7 shrink-0 items-center justify-center rounded-md text-neutral-500 hover:bg-white/[0.08] hover:text-white auto-light:hover:bg-black/[0.08] auto-light:hover:text-neutral-950',
+                  'mt-0.5 size-8 shrink-0 items-center justify-center rounded-md text-neutral-500 hover:bg-white/[0.08] hover:text-white auto-light:hover:bg-black/[0.08] auto-light:hover:text-neutral-950',
                   following
                     ? 'flex bg-white/[0.08] text-white auto-light:bg-black/[0.08] auto-light:text-neutral-950'
                     : 'flex md:hidden md:group-focus-within:flex md:group-hover:flex',
                 )}
               >
-                <Icon name="add" className="text-[16px]" />
+                <Icon name="add" className="text-[17px]" />
               </button>
-            )}
-            {onDay ? (
-              <span
-                title="On this day"
-                className="mt-1 text-[16px] text-emerald-400/70 auto-light:text-emerald-600/70"
-              >
-                <Icon name="playlist_add_check" />
-              </span>
-            ) : (
-              canPlan && (
-                <button
-                  type="button"
-                  disabled={!!busy}
-                  onClick={() => run('plan', onPlan)}
-                  title={`Plan it for ${dayjs(date).format('ddd D MMM')}`}
-                  className="mt-0.5 flex h-7 shrink-0 items-center gap-1 rounded-md border border-white/10 px-2 text-[11px] font-medium text-neutral-300 hover:bg-white/[0.08] hover:text-white auto-light:border-black/10 auto-light:text-neutral-700 auto-light:hover:bg-black/[0.08] auto-light:hover:text-neutral-950 md:hidden md:group-focus-within:flex md:group-hover:flex"
-                >
-                  {busy === 'plan' ? (
-                    <Spin className="size-3" />
-                  ) : (
-                    <Icon name="event_available" className="text-[14px]" />
-                  )}
-                  Day
-                </button>
-              )
             )}
           </>
         )}
@@ -246,31 +284,26 @@ export const YourTasks = ({
   onChanged: () => void;
 }) => {
   const { user } = useUser();
-  const [showOthers, setShowOthers] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
+  const [sort, setSort] = useState<Sort>('added');
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(SORT_KEY) === 'day') setSort('day');
+    } catch {
+      // Storage can be blocked; the choice then lasts for this visit.
+    }
+  }, []);
+  const pickSort = (next: Sort) => {
+    setSort(next);
+    try {
+      localStorage.setItem(SORT_KEY, next);
+    } catch {
+      // Storage can be blocked; the choice then lasts for this visit.
+    }
+  };
   const { tasks, archived, projects, today } = data;
   const all = tasks ?? [];
-  const week = dayjs(today).add(7, 'day').format('YYYY-MM-DD');
-
-  const pendingToday = all.filter((t) => dayOf(t) === today);
-  const pendingBefore = all
-    .filter((t) => {
-      const d = dayOf(t);
-      return !!d && d < today;
-    })
-    .sort((a, b) => dayOf(a)!.localeCompare(dayOf(b)!));
-  const future = all
-    .filter((t) => {
-      const d = dayOf(t);
-      return !!d && d > today && d <= week;
-    })
-    .sort((a, b) => dayOf(a)!.localeCompare(dayOf(b)!));
-  const others = all.filter(
-    (t) =>
-      !pendingToday.includes(t) &&
-      !pendingBefore.includes(t) &&
-      !future.includes(t),
-  );
+  const upcoming = sortUpcoming(upcomingOf(all, today), sort);
 
   const placeFor = (t: Task) => placeOf(t, projects, companies);
   const afterOf = (t: Task) =>
@@ -289,14 +322,16 @@ export const YourTasks = ({
       toast.error('Could not update the task.');
     }
   };
-  const plan = async (task: Task) => {
+  const plan = async (task: Task, forDate: string | null) => {
     try {
-      await PortalSdk.patchData(`/api/me/day/tasks/${task.id}`, {
-        forDate: date,
-      });
+      await PortalSdk.patchData(`/api/me/day/tasks/${task.id}`, { forDate });
+      if (forDate && forDate <= today)
+        toast.success(
+          `On ${forDate === today ? 'today' : dayjs(forDate).format('ddd D MMM')}: ${task.title}`,
+        );
       onChanged();
     } catch {
-      toast.error('Could not plan it.');
+      toast.error('Could not change its day.');
     }
   };
   const followUp = async (task: Task, title: string) => {
@@ -325,7 +360,7 @@ export const YourTasks = ({
       canPlan={canPlan}
       after={afterOf(t)}
       archived={isArchived}
-      onPlan={() => plan(t)}
+      onPlan={(d) => plan(t, d)}
       onMove={(to) => move(t, to)}
       onFollowUp={
         t.projectId && !isArchived ? (title) => followUp(t, title) : undefined
@@ -362,58 +397,58 @@ export const YourTasks = ({
     </button>
   );
 
-  // The next seven days, a subtitle for each.
-  const futureDays = Array.from(new Set(future.map((t) => dayOf(t)!)));
-
   return (
     <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-3 auto-light:border-black/10 auto-light:bg-white">
       {!tasks ? (
         <div className="flex justify-center py-6">
           <Spin className="size-4" />
         </div>
-      ) : all.length === 0 && archived.length === 0 ? (
+      ) : upcoming.length === 0 && archived.length === 0 ? (
         <p className="px-2 pb-2 text-sm text-neutral-500">
-          Nothing pending. Tasks you write on a day, and tasks assigned to you,
-          show here.
+          Nothing upcoming. Tasks you plan for later days, and tasks with no day
+          yet, show here.
         </p>
       ) : (
         <div className="flex flex-col gap-4">
-          {pendingToday.length > 0 && (
-            <div>
-              {heading('Pending today', pendingToday.length)}
-              {pendingToday.map((t) => row(t))}
+          <div>
+            <div className="mb-1 flex items-center gap-2 px-2">
+              <h4 className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
+                Upcoming
+              </h4>
+              <span className="text-[11px] text-neutral-600 auto-light:text-neutral-400">
+                {upcoming.length}
+              </span>
+              <div
+                role="group"
+                aria-label="Sort by"
+                className="ml-auto flex items-center gap-0.5 rounded-md bg-white/[0.04] p-0.5 auto-light:bg-black/[0.04]"
+              >
+                {(
+                  [
+                    ['added', 'Added', 'Sort by when they were added'],
+                    ['day', 'Day', 'Sort by their day, soonest first'],
+                  ] as const
+                ).map(([value, label, title]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    title={title}
+                    aria-pressed={sort === value}
+                    onClick={() => pickSort(value)}
+                    className={cn(
+                      'rounded px-1.5 py-0.5 text-[11px] font-medium transition-colors',
+                      sort === value
+                        ? 'bg-white/[0.1] text-neutral-100 auto-light:bg-white auto-light:text-neutral-900 auto-light:shadow-sm'
+                        : 'text-neutral-500 hover:text-neutral-300 auto-light:hover:text-neutral-700',
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
-          )}
-          {pendingBefore.length > 0 && (
-            <div>
-              {heading('Pending from before', pendingBefore.length)}
-              {pendingBefore.map((t) => row(t))}
-            </div>
-          )}
-          {future.length > 0 && (
-            <div>
-              {heading('Future', future.length)}
-              {futureDays.map((d) => (
-                <div key={d}>
-                  <p className="mt-1 px-2 text-[11px] text-neutral-500">
-                    {dayjs(d).diff(dayjs(today), 'day') === 1
-                      ? 'Tomorrow'
-                      : dayjs(d).format('dddd, D MMM')}
-                  </p>
-                  {future.filter((t) => dayOf(t) === d).map((t) => row(t))}
-                </div>
-              ))}
-            </div>
-          )}
-          {others.length > 0 && (
-            <div>
-              {heading('Others', others.length, {
-                open: showOthers,
-                onToggle: () => setShowOthers((v) => !v),
-              })}
-              {showOthers && others.map((t) => row(t))}
-            </div>
-          )}
+            {upcoming.map((t) => row(t))}
+          </div>
           {archived.length > 0 && (
             <div>
               {heading('Archived', archived.length, {

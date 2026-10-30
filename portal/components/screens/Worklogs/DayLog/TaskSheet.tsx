@@ -2,6 +2,7 @@
 
 import * as Popover from '@radix-ui/react-popover';
 import dayjs from 'dayjs';
+import type { ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { cn } from '@/lib/utils';
@@ -9,6 +10,7 @@ import type { PointStatus } from '@/lib/worklogs/timeline';
 import { POINT_STATUSES } from '@/lib/worklogs/timeline';
 
 import { Icon } from '../../Admin/shared/AdminUI';
+import { DatePopover, quickDays, shortDay } from './DatePopover';
 import type { PickerOption } from './Picker';
 import { Picker } from './Picker';
 import type { TaskRowStatus } from './sheetParts';
@@ -26,7 +28,7 @@ import {
   statusForKey,
   StatusIcon,
 } from './sheetParts';
-import type { Day, DayPoint, DayTask, TaskMove } from './useDay';
+import type { Day, DayPoint, DayTask, PlaceInput, TaskMove } from './useDay';
 
 /*
  * The day's tasks on one sheet, written like the steps of a plan: Enter
@@ -37,17 +39,83 @@ import type { Day, DayPoint, DayTask, TaskMove } from './useDay';
 
 const STATUS_KEYS = Object.keys(POINT_STATUSES) as PointStatus[];
 
-const isOpen = (t: DayTask) =>
+export const isOpen = (t: DayTask) =>
   !['DONE', 'ARCHIVED', 'IGNORED'].includes(t.status);
 
-/** A task's menu: its status, archiving, and taking it out. */
+/** Move to: a later day, from the task's menu. */
+const MoveToMenu = ({
+  current,
+  onPlan,
+  className,
+}: {
+  current?: string | null;
+  onPlan: (date: string) => void;
+  className: string;
+}) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <Popover.Root open={open} onOpenChange={setOpen}>
+      <Popover.Trigger asChild>
+        <button
+          type="button"
+          onMouseEnter={() => setOpen(true)}
+          className={cn(
+            className,
+            open && 'bg-white/[0.06] auto-light:bg-black/[0.06]',
+          )}
+        >
+          <Icon
+            name="event_upcoming"
+            className="text-[16px] text-neutral-400 auto-light:text-neutral-500"
+          />
+          <span className="flex-1">Move to</span>
+          <Icon name="chevron_right" className="text-[16px] text-neutral-500" />
+        </button>
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content
+          side="right"
+          align="start"
+          sideOffset={6}
+          collisionPadding={12}
+          onMouseLeave={() => setOpen(false)}
+          className="auto-theme z-[1310] w-52 rounded-xl border border-white/10 bg-neutral-900 p-1 text-sm text-neutral-200 shadow-2xl shadow-black/50 auto-light:border-black/10 auto-light:bg-white auto-light:text-neutral-800 auto-light:shadow-black/10"
+        >
+          {quickDays().map((o) => (
+            <button
+              key={o.label}
+              type="button"
+              disabled={o.date === current}
+              onClick={() => {
+                setOpen(false);
+                onPlan(o.date);
+              }}
+              className={cn(className, 'disabled:opacity-40')}
+            >
+              <span className="flex-1">{o.label}</span>
+              <span className="text-xs tabular-nums text-neutral-500">
+                {dayjs(o.date).format('ddd D MMM')}
+              </span>
+            </button>
+          ))}
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
+  );
+};
+
+/** A task's menu: its status, moving it to a later day, archiving, and taking it out. */
 const RowMenu = ({
   status,
+  forDate,
   onMove,
+  onPlan,
   onRemove,
 }: {
   status: TaskRowStatus;
+  forDate?: string | null;
   onMove: (to: TaskMove) => void;
+  onPlan?: (date: string) => void;
   onRemove?: () => void;
 }) => {
   const [open, setOpen] = useState(false);
@@ -106,6 +174,16 @@ const RowMenu = ({
             </button>
           ))}
           <div className="my-1 border-t border-white/[0.07] auto-light:border-black/10" />
+          {onPlan && (
+            <MoveToMenu
+              current={forDate}
+              className={item}
+              onPlan={(date) => {
+                setOpen(false);
+                onPlan(date);
+              }}
+            />
+          )}
           <button
             type="button"
             onClick={() => {
@@ -264,7 +342,12 @@ const Details = ({
     day.addNote(task.id, text);
   };
   const facts: string[] = [];
-  if (task.forDate && task.forDate !== day.date)
+  // An open task shows its day on the Plan for chip instead.
+  if (
+    task.forDate &&
+    task.forDate !== day.date &&
+    !(editable && saved && isOpen(task))
+  )
     facts.push(`Planned for ${dayjs(task.forDate).format('ddd D MMM')}`);
   if (task.madeBy && task.madeBy !== 'person') facts.push('Made by Claude');
   if (task.size === 'MAJOR') facts.push('Major task');
@@ -282,18 +365,21 @@ const Details = ({
           <span key={f}>{f}</span>
         ))}
         {editable && saved && isOpen(task) && (
-          <label className="flex items-center gap-1 hover:text-neutral-300 auto-light:hover:text-neutral-700">
-            <Icon name="event" className="text-[13px]" />
-            <span>Plan for</span>
-            <input
-              type="date"
-              value={task.forDate ?? ''}
-              onChange={(e) =>
-                e.target.value && day.planFor(task.id, e.target.value)
-              }
-              className="bg-transparent text-[11px] text-neutral-400 [color-scheme:dark] focus:outline-none auto-light:text-neutral-600 auto-light:[color-scheme:light]"
-            />
-          </label>
+          <DatePopover
+            value={task.forDate ?? null}
+            clearable={false}
+            align="start"
+            onPick={(date) => date && day.planFor(task.id, date)}
+            trigger={
+              <button
+                type="button"
+                className="flex items-center gap-1 rounded px-1 hover:bg-white/[0.06] hover:text-neutral-300 auto-light:hover:bg-black/[0.06] auto-light:hover:text-neutral-700"
+              >
+                <Icon name="event" className="text-[13px]" />
+                Plan for {task.forDate ? shortDay(task.forDate) : 'a day'}
+              </button>
+            }
+          />
         )}
       </div>
       {showPoints && points.length > 0 && (
@@ -329,15 +415,78 @@ const Details = ({
   );
 };
 
+/** A part of the sheet: its tasks, under a heading, with a line to add one. */
+export type SheetGroup = {
+  key: string;
+  title?: ReactNode;
+  tasks: DayTask[];
+  /** A line to add a task at the end, put in this place (or by its words). */
+  add?: { place: PlaceInput | null; placeholder?: string } | null;
+  /** Finished tasks: shown quieter. */
+  quiet?: boolean;
+};
+
+export const SheetHeading = ({ children }: { children: ReactNode }) => (
+  <div className="flex items-center gap-1.5 px-2 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
+    {children}
+  </div>
+);
+
+/** The line at the end of a group to write a new task on. */
+const AddRow = ({
+  day,
+  place,
+  placeholder,
+}: {
+  day: Day;
+  place: PlaceInput | null;
+  placeholder: string;
+}) => {
+  const [adding, setAdding] = useState('');
+  const addFromInput = () => {
+    const text = adding.trim();
+    if (!text) return;
+    const id = day.addDraft(null, place);
+    day.editTitle(id, text);
+    setAdding('');
+  };
+  return (
+    <div className="flex items-center gap-2.5 rounded-lg px-2 py-1">
+      <Icon
+        name="add"
+        className="text-[18px] text-neutral-600 auto-light:text-neutral-400"
+      />
+      <input
+        value={adding}
+        onChange={(e) => setAdding(e.target.value)}
+        onKeyDown={(e) => e.key === 'Enter' && addFromInput()}
+        onBlur={addFromInput}
+        placeholder={placeholder}
+        className="flex-1 bg-transparent text-sm font-medium text-neutral-100 placeholder:font-normal placeholder:text-neutral-600 focus:outline-none auto-light:text-neutral-900 auto-light:placeholder:text-neutral-400"
+      />
+    </div>
+  );
+};
+
+/** Where a task's next line goes: where it is, when a person put it there. */
+const placeAfter = (task: DayTask): PlaceInput | null =>
+  task.placedBy === 'user' && task.projectId
+    ? { projectId: task.projectId }
+    : task.placedBy === 'user' && task.companyId
+      ? { companyId: task.companyId }
+      : task.placedBy === 'personal'
+        ? { personal: true }
+        : null;
+
 export const TaskSheet = ({
   day,
-  tasks,
+  groups,
   editable,
   showPoints,
 }: {
   day: Day;
-  /** The tasks shown, in order (the day's, or one project's). */
-  tasks: DayTask[];
+  /** The parts of the sheet, in order, each with its tasks in order. */
+  groups: SheetGroup[];
   editable: boolean;
   /** Work points: their count after each task, and the list under it. */
   showPoints: boolean;
@@ -345,7 +494,8 @@ export const TaskSheet = ({
   const inputs = useRef(new Map<string, HTMLTextAreaElement>());
   const [focusId, setFocusId] = useState<string | null>(null);
   const [open, setOpen] = useState<Set<string>>(new Set());
-  const [adding, setAdding] = useState('');
+
+  const tasks = useMemo(() => groups.flatMap((g) => g.tasks), [groups]);
 
   useEffect(() => {
     if (!focusId) return;
@@ -372,6 +522,7 @@ export const TaskSheet = ({
     e: React.KeyboardEvent<HTMLTextAreaElement>,
     task: DayTask,
     status: TaskRowStatus,
+    group: SheetGroup,
   ) => {
     const el = e.currentTarget;
     const key = statusForKey(e);
@@ -383,16 +534,9 @@ export const TaskSheet = ({
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       day.flush(task.id);
-      // The next task goes in the same place when it was put there by hand.
-      const place =
-        task.placedBy === 'user' && task.projectId
-          ? { projectId: task.projectId }
-          : task.placedBy === 'user' && task.companyId
-            ? { companyId: task.companyId }
-            : task.placedBy === 'personal'
-              ? ({ personal: true } as const)
-              : null;
-      setFocusId(day.addDraft(task.id, place));
+      // The next task goes in the group's place, or where this one was put
+      // by hand.
+      setFocusId(day.addDraft(task.id, group.add?.place ?? placeAfter(task)));
       return;
     }
     if (e.key === 'Backspace' && !task.title) {
@@ -418,191 +562,158 @@ export const TaskSheet = ({
     }
   };
 
-  const addFromInput = () => {
-    const text = adding.trim();
-    if (!text) return;
-    const id = day.addDraft(null, null);
-    day.editTitle(id, text);
-    setAdding('');
-  };
-
-  // On today, the tasks left from earlier days come first, under their own
-  // heading.
-  const pendingIds = new Set(
-    day.date === day.today
-      ? tasks
-          .filter((t) => t.forDate && t.forDate < day.date && isOpen(t))
-          .map((t) => t.id)
-      : [],
-  );
-  const firstToday = tasks.find((t) => !pendingIds.has(t.id))?.id;
-
-  // New tasks are written above the finished ones.
-  const shutAt = tasks.findIndex((t) => {
-    const status = rowStatus(t, day.points, day.date);
+  const row = (task: DayTask, group: SheetGroup) => {
+    const points = pointsOf(task.id);
+    const status = rowStatus(task, day.points, day.date);
+    const moved = movedOn(task, day.date, day.today);
+    const shut = status === 'done' || status === 'archived' || moved;
+    const canEdit = editable && !moved;
+    const expanded = open.has(task.id);
+    const count = showPoints ? readablePoints(points).length : 0;
+    const moveOptions: PickerOption[] = tasks
+      .filter((t) => t.id !== task.id && !t.draft && t.title.trim())
+      .map((t) => ({
+        id: `task:${t.id}`,
+        label: t.title,
+        hint: placeOf(t, day.projects, day.companies).name,
+        group: 'Tasks on this day',
+      }));
     return (
-      status === 'done' ||
-      status === 'archived' ||
-      movedOn(t, day.date, day.today)
+      <div
+        key={task.rowKey ?? task.id}
+        className="group rounded-lg px-2 py-1 transition-colors focus-within:bg-white/[0.04] hover:bg-white/[0.03] auto-light:focus-within:bg-black/[0.04] auto-light:hover:bg-black/[0.03]"
+      >
+        <div className="flex items-start gap-2.5">
+          <button
+            type="button"
+            disabled={!canEdit || (task.draft && !task.title.trim())}
+            aria-label={status === 'done' ? 'Mark not done' : 'Mark done'}
+            title={
+              moved
+                ? 'Moved on from this day. Change it on today or in Your tasks.'
+                : 'Done (Ctrl+Space)'
+            }
+            onClick={() =>
+              day.move(task.id, status === 'done' ? 'todo' : 'done')
+            }
+            className="mt-[3px] text-[18px] transition-transform active:scale-90"
+          >
+            {moved ? (
+              <Icon
+                name="arrow_circle_right"
+                className="text-neutral-600 auto-light:text-neutral-400"
+              />
+            ) : (
+              <StatusIcon status={rowIcon(status)} />
+            )}
+          </button>
+          <div className="grid min-w-0 flex-1">
+            <LineInput
+              value={task.title}
+              disabled={!canEdit}
+              inputRef={(el) => {
+                if (el) inputs.current.set(task.id, el);
+                else inputs.current.delete(task.id);
+              }}
+              onChange={(text) => day.editTitle(task.id, text)}
+              onKeyDown={(e) => onKey(e, task, status, group)}
+              onBlur={() => day.flush(task.id)}
+              placeholder="What are you working on?"
+              className={cn(
+                '[grid-area:1/1]',
+                'font-medium text-white auto-light:text-neutral-950',
+                // Finished tasks stay where they were written, unstruck;
+                // only the finished part of a sheet shows them quieter.
+                shut &&
+                  group.quiet &&
+                  'text-neutral-400 auto-light:text-neutral-500',
+              )}
+            />
+            {(count > 0 ||
+              (!moved && (status === 'doing' || status === 'waiting'))) && (
+              // The dot and count sit right after the words: the words
+              // are laid out again unseen, so they land where they end.
+              <span
+                aria-hidden
+                className="pointer-events-none whitespace-pre-wrap break-words text-sm font-medium leading-6 [grid-area:1/1]"
+              >
+                <span className="invisible">{task.title}</span>
+                {!moved && <StateDot status={status} />}
+                {count > 0 && (
+                  <span
+                    className={cn(
+                      'ml-1.5 inline-block rounded px-1 align-[1px] text-[10px] font-medium tabular-nums leading-4',
+                      shut
+                        ? 'bg-white/[0.04] text-neutral-600 auto-light:bg-black/[0.04] auto-light:text-neutral-400'
+                        : 'bg-white/[0.07] text-neutral-400 auto-light:bg-black/[0.06] auto-light:text-neutral-500',
+                    )}
+                  >
+                    {count}
+                  </span>
+                )}
+              </span>
+            )}
+          </div>
+          {canEdit && !task.draft && (
+            <RowMenu
+              status={status}
+              forDate={task.forDate}
+              onMove={(to) => day.move(task.id, to)}
+              onPlan={
+                isOpen(task) ? (date) => day.planFor(task.id, date) : undefined
+              }
+              onRemove={() => day.remove(task.id)}
+            />
+          )}
+          <button
+            type="button"
+            aria-label={expanded ? 'Hide details' : 'Show details'}
+            aria-expanded={expanded}
+            onClick={() => toggle(task.id)}
+            disabled={task.draft}
+            className="flex size-7 shrink-0 items-center justify-center rounded-md text-neutral-500 hover:bg-white/[0.06] hover:text-neutral-200 disabled:opacity-0 auto-light:hover:bg-black/[0.06] auto-light:hover:text-neutral-800"
+          >
+            <Icon
+              name="expand_more"
+              className={cn(
+                'text-[18px] transition-transform',
+                expanded && 'rotate-180',
+              )}
+            />
+          </button>
+        </div>
+        {expanded && (
+          <Details
+            task={task}
+            day={day}
+            points={points}
+            editable={canEdit}
+            moveOptions={moveOptions}
+            showPoints={showPoints}
+          />
+        )}
+      </div>
     );
-  });
-  const addRow = editable && (
-    <div className="flex items-center gap-2.5 rounded-lg px-2 py-1">
-      <Icon
-        name="add"
-        className="text-[18px] text-neutral-600 auto-light:text-neutral-400"
-      />
-      <input
-        value={adding}
-        onChange={(e) => setAdding(e.target.value)}
-        onKeyDown={(e) => e.key === 'Enter' && addFromInput()}
-        onBlur={addFromInput}
-        placeholder={tasks.length ? 'Add a task' : 'Write the first task'}
-        className="flex-1 bg-transparent text-sm font-medium text-neutral-100 placeholder:font-normal placeholder:text-neutral-600 focus:outline-none auto-light:text-neutral-900 auto-light:placeholder:text-neutral-400"
-      />
-    </div>
-  );
-
-  const heading = (text: string) => (
-    <p className="px-2 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
-      {text}
-    </p>
-  );
+  };
 
   return (
     <div className="flex flex-col">
-      {tasks.map((task, index) => {
-        const points = pointsOf(task.id);
-        const status = rowStatus(task, day.points, day.date);
-        const moved = movedOn(task, day.date, day.today);
-        const shut = status === 'done' || status === 'archived' || moved;
-        const canEdit = editable && !moved;
-        const expanded = open.has(task.id);
-        const count = showPoints ? readablePoints(points).length : 0;
-        const moveOptions: PickerOption[] = tasks
-          .filter((t) => t.id !== task.id && !t.draft && t.title.trim())
-          .map((t) => ({
-            id: `task:${t.id}`,
-            label: t.title,
-            hint: placeOf(t, day.projects, day.companies).name,
-            group: 'Tasks on this day',
-          }));
-        return (
-          <div key={task.rowKey ?? task.id}>
-            {index === shutAt && addRow}
-            {index === 0 &&
-              pendingIds.size > 0 &&
-              heading('Pending from before')}
-            {pendingIds.size > 0 && task.id === firstToday && heading('Today')}
-            <div className="group rounded-lg px-2 py-1 transition-colors focus-within:bg-white/[0.04] hover:bg-white/[0.03] auto-light:focus-within:bg-black/[0.04] auto-light:hover:bg-black/[0.03]">
-              <div className="flex items-start gap-2.5">
-                <button
-                  type="button"
-                  disabled={!canEdit || (task.draft && !task.title.trim())}
-                  aria-label={status === 'done' ? 'Mark not done' : 'Mark done'}
-                  title={
-                    moved
-                      ? 'Moved on from this day. Change it on today or in Your tasks.'
-                      : 'Done (Ctrl+Space)'
-                  }
-                  onClick={() =>
-                    day.move(task.id, status === 'done' ? 'todo' : 'done')
-                  }
-                  className="mt-[3px] text-[18px] transition-transform active:scale-90"
-                >
-                  {moved ? (
-                    <Icon
-                      name="arrow_circle_right"
-                      className="text-neutral-600 auto-light:text-neutral-400"
-                    />
-                  ) : (
-                    <StatusIcon status={rowIcon(status)} />
-                  )}
-                </button>
-                <div className="grid min-w-0 flex-1">
-                  <LineInput
-                    value={task.title}
-                    disabled={!canEdit}
-                    inputRef={(el) => {
-                      if (el) inputs.current.set(task.id, el);
-                      else inputs.current.delete(task.id);
-                    }}
-                    onChange={(text) => day.editTitle(task.id, text)}
-                    onKeyDown={(e) => onKey(e, task, status)}
-                    onBlur={() => day.flush(task.id)}
-                    placeholder="What are you working on?"
-                    className={cn(
-                      '[grid-area:1/1]',
-                      'font-medium text-white auto-light:text-neutral-950',
-                      shut &&
-                        'text-neutral-500 line-through decoration-neutral-600 auto-light:text-neutral-400 auto-light:decoration-neutral-300',
-                    )}
-                  />
-                  {(count > 0 ||
-                    (!moved &&
-                      (status === 'doing' || status === 'waiting'))) && (
-                    // The dot and count sit right after the words: the words
-                    // are laid out again unseen, so they land where they end.
-                    <span
-                      aria-hidden
-                      className="pointer-events-none whitespace-pre-wrap break-words text-sm font-medium leading-6 [grid-area:1/1]"
-                    >
-                      <span className="invisible">{task.title}</span>
-                      {!moved && <StateDot status={status} />}
-                      {count > 0 && (
-                        <span
-                          className={cn(
-                            'ml-1.5 inline-block rounded px-1 align-[1px] text-[10px] font-medium tabular-nums leading-4',
-                            shut
-                              ? 'bg-white/[0.04] text-neutral-600 auto-light:bg-black/[0.04] auto-light:text-neutral-400'
-                              : 'bg-white/[0.07] text-neutral-400 auto-light:bg-black/[0.06] auto-light:text-neutral-500',
-                          )}
-                        >
-                          {count}
-                        </span>
-                      )}
-                    </span>
-                  )}
-                </div>
-                {canEdit && !task.draft && (
-                  <RowMenu
-                    status={status}
-                    onMove={(to) => day.move(task.id, to)}
-                    onRemove={() => day.remove(task.id)}
-                  />
-                )}
-                <button
-                  type="button"
-                  aria-label={expanded ? 'Hide details' : 'Show details'}
-                  aria-expanded={expanded}
-                  onClick={() => toggle(task.id)}
-                  disabled={task.draft}
-                  className="flex size-7 shrink-0 items-center justify-center rounded-md text-neutral-500 hover:bg-white/[0.06] hover:text-neutral-200 disabled:opacity-0 auto-light:hover:bg-black/[0.06] auto-light:hover:text-neutral-800"
-                >
-                  <Icon
-                    name="expand_more"
-                    className={cn(
-                      'text-[18px] transition-transform',
-                      expanded && 'rotate-180',
-                    )}
-                  />
-                </button>
-              </div>
-              {expanded && (
-                <Details
-                  task={task}
-                  day={day}
-                  points={points}
-                  editable={canEdit}
-                  moveOptions={moveOptions}
-                  showPoints={showPoints}
-                />
-              )}
-            </div>
-          </div>
-        );
-      })}
-      {shutAt === -1 && addRow}
+      {groups.map((group) => (
+        <div key={group.key}>
+          {group.title && <SheetHeading>{group.title}</SheetHeading>}
+          {group.tasks.map((task) => row(task, group))}
+          {editable && group.add && (
+            <AddRow
+              day={day}
+              place={group.add.place}
+              placeholder={
+                group.add.placeholder ??
+                (tasks.length ? 'Add a task' : 'Write the first task')
+              }
+            />
+          )}
+        </div>
+      ))}
     </div>
   );
 };

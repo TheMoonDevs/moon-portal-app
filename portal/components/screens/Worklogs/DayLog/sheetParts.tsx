@@ -263,6 +263,34 @@ export function placeOf(
   return { key: 'none', kind: 'none', name: 'No project' };
 }
 
+/** A place from its key (`project:<id>`, `company:<id>`, `personal`, `none`). */
+export const placeOfKey = (
+  key: string,
+  projects: DayProject[],
+  companies: DayCompany[],
+): Place =>
+  placeOf(
+    key.startsWith('project:')
+      ? { projectId: key.slice(8) }
+      : key.startsWith('company:')
+        ? { companyId: key.slice(8) }
+        : key === 'personal'
+          ? { companyId: PERSONAL_ID }
+          : {},
+    projects,
+    companies,
+  );
+
+/** What puts a new task in a place. */
+export const placeInputOf = (place: Place): PlaceInput =>
+  place.kind === 'project'
+    ? { projectId: place.key.slice(8) }
+    : place.kind === 'company'
+      ? { companyId: place.key.slice(8) }
+      : place.kind === 'personal'
+        ? { personal: true }
+        : { none: true };
+
 /** Where a task can go, for the picker. */
 export function placeOptions(
   projects: DayProject[],

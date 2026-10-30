@@ -1,6 +1,6 @@
 'use client';
 
-import type { Project, Task } from '@db/client';
+import type { Task } from '@db/client';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -10,34 +10,6 @@ import { PortalSdk } from '@/utils/services/PortalSdk';
 
 const SHOW = 6;
 
-/** "Wed 28" for a task scheduled for a day still ahead. */
-const aheadLabel = (day?: string | null) => {
-  const today = new Date().toISOString().slice(0, 10);
-  if (!day || day <= today) return null;
-  return new Date(`${day}T00:00:00Z`).toLocaleDateString(undefined, {
-    weekday: 'short',
-    day: 'numeric',
-    timeZone: 'UTC',
-  });
-};
-
-const dueLabel = (day?: string | null) => {
-  if (!day) return null;
-  const today = new Date().toISOString().slice(0, 10);
-  if (day < today) return { text: 'Overdue', late: true };
-  if (day === today) return { text: 'Due today', late: true };
-  return {
-    text: new Date(`${day}T00:00:00Z`).toLocaleDateString(undefined, {
-      month: 'short',
-      day: 'numeric',
-      timeZone: 'UTC',
-    }),
-    late: false,
-  };
-};
-
-type Previous = Pick<Task, 'id' | 'title' | 'status'>;
-
 /**
  * Open tasks assigned to the user; ticking one marks it done, and the + on
  * one adds a follow-up: the next step, linked to it.
@@ -45,8 +17,6 @@ type Previous = Pick<Task, 'id' | 'title' | 'status'>;
 export const TasksSection = () => {
   const { user } = useUser();
   const [tasks, setTasks] = useState<Task[] | null>(null);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [previous, setPrevious] = useState<Previous[]>([]);
   const [expanded, setExpanded] = useState(false);
   const [doneIds, setDoneIds] = useState<string[]>([]);
   const [following, setFollowing] = useState<string | null>(null);
@@ -57,8 +27,6 @@ export const TasksSection = () => {
     PortalSdk.getData('/api/me/tasks', null)
       .then((res) => {
         setTasks(res?.data?.tasks ?? []);
-        setProjects(res?.data?.projects ?? []);
-        setPrevious(res?.data?.previous ?? []);
       })
       .catch(() => setTasks([]));
   }, []);
@@ -86,16 +54,6 @@ export const TasksSection = () => {
       setSaving(false);
     }
   };
-  const afterOf = (task: Task): Previous | null => {
-    const id = (task as Task & { followsId?: string | null }).followsId;
-    if (!id) return null;
-    return (
-      tasks?.find((t) => t.id === id) ??
-      previous.find((t) => t.id === id) ??
-      null
-    );
-  };
-
   useEffect(() => {
     load();
   }, [load]);
@@ -120,7 +78,6 @@ export const TasksSection = () => {
     .slice()
     .sort((a, b) => (a.dueDate || '9999').localeCompare(b.dueDate || '9999'));
   const shown = expanded ? sorted : sorted.slice(0, SHOW);
-  const projectOf = (id: string) => projects.find((p) => p.id === id);
 
   return (
     <div className="mt-6">
@@ -134,11 +91,7 @@ export const TasksSection = () => {
           </p>
         ) : (
           shown.map((task) => {
-            const project = projectOf(task.projectId);
-            const due = dueLabel(task.dueDate);
-            const ahead = aheadLabel(task.forDate);
             const done = doneIds.includes(task.id);
-            const after = afterOf(task);
             return (
               <div key={task.id}>
                 <div className="group flex items-start gap-3 p-3">
@@ -161,17 +114,6 @@ export const TasksSection = () => {
                     )}
                   </button>
                   <div className="min-w-0 flex-1">
-                    {after && (
-                      <p
-                        className="flex min-w-0 items-center gap-1 text-[11px] text-neutral-400"
-                        title="Follows on from this task"
-                      >
-                        <span className="material-symbols-outlined text-[12px]">
-                          subdirectory_arrow_right
-                        </span>
-                        <span className="truncate">After {after.title}</span>
-                      </p>
-                    )}
                     <p
                       className={cn(
                         'text-sm text-neutral-900',
@@ -179,28 +121,6 @@ export const TasksSection = () => {
                       )}
                     >
                       {task.title}
-                    </p>
-                    <p className="flex items-center gap-1.5 truncate text-xs text-neutral-500">
-                      {project && (
-                        <span
-                          className="size-2 shrink-0 rounded-full"
-                          style={{
-                            backgroundColor: project.color || '#a3a3a3',
-                          }}
-                        />
-                      )}
-                      <span className="truncate">{project?.name}</span>
-                      {ahead && <span className="shrink-0">· for {ahead}</span>}
-                      {due && (
-                        <span
-                          className={cn(
-                            'shrink-0',
-                            due.late && 'font-medium text-red-500',
-                          )}
-                        >
-                          · {due.text}
-                        </span>
-                      )}
                     </p>
                   </div>
                   <button
