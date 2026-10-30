@@ -317,7 +317,8 @@ export async function createDayTask(
   user: SessionUser,
   input: {
     title: string;
-    date: string;
+    /** Its day; none keeps it for later, in Your tasks' Upcoming. */
+    date: string | null;
     place?: PlaceInput | null;
     afterId?: string | null;
     by?: string;
@@ -352,7 +353,7 @@ export async function createDayTask(
     task = await moveTask(task, input.status, {
       userId: user.id,
       by: input.by,
-      date: input.date,
+      date: input.date ?? undefined,
     });
   else await renderDays(user.id, [input.date]);
   return task;
@@ -361,7 +362,7 @@ export async function createDayTask(
 /** An order number that puts a new task right after another on a day. */
 async function orderAfter(
   userId: string,
-  date: string,
+  date: string | null,
   afterId?: string | null,
 ): Promise<number> {
   const day: Task[] = await db.task.findMany({

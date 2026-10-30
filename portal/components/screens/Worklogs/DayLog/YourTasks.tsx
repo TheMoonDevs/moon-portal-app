@@ -249,6 +249,79 @@ const TaskRow = ({
   );
 };
 
+/**
+ * A line at the end of Upcoming to write a new task on. It has no day
+ * unless one is picked; its project comes from its words, as on the sheet.
+ */
+const NewTaskRow = ({ onAdded }: { onAdded: () => void }) => {
+  const [title, setTitle] = useState('');
+  const [forDate, setForDate] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const add = async () => {
+    const text = title.trim();
+    if (!text || saving) return;
+    setSaving(true);
+    try {
+      await PortalSdk.postData('/api/me/day/tasks', {
+        title: text,
+        date: forDate,
+      });
+      setTitle('');
+      onAdded();
+    } catch (err) {
+      toast.error((err as any)?.error ?? 'Could not add the task.');
+    } finally {
+      setSaving(false);
+    }
+  };
+  return (
+    <div className="group flex items-center gap-2.5 rounded-lg px-2 py-1">
+      {saving ? (
+        <Spin className="size-4" />
+      ) : (
+        <Icon
+          name="add"
+          className="text-[18px] text-neutral-600 auto-light:text-neutral-400"
+        />
+      )}
+      <input
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        onKeyDown={(e) => e.key === 'Enter' && add()}
+        maxLength={200}
+        placeholder="Add a task"
+        className="min-w-0 flex-1 bg-transparent text-sm font-medium text-neutral-100 placeholder:font-normal placeholder:text-neutral-600 focus:outline-none auto-light:text-neutral-900 auto-light:placeholder:text-neutral-400"
+      />
+      <DatePopover
+        value={forDate}
+        onPick={setForDate}
+        extra={[{ label: 'Today', date: dayjs().format('YYYY-MM-DD') }]}
+        trigger={
+          <button
+            type="button"
+            aria-label={forDate ? 'Change its day' : 'Give it a day'}
+            title={
+              forDate
+                ? `For ${dayjs(forDate).format('dddd D MMMM')}`
+                : 'Give it a day'
+            }
+            className="flex size-8 shrink-0 items-center justify-center rounded-md text-neutral-500 hover:bg-white/[0.08] hover:text-white data-[state=open]:bg-white/[0.08] auto-light:hover:bg-black/[0.08] auto-light:hover:text-neutral-950"
+          >
+            {forDate ? (
+              <DateBadge
+                date={forDate}
+                className="text-neutral-200 auto-light:text-neutral-800"
+              />
+            ) : (
+              <Icon name="calendar_month" className="text-[17px]" />
+            )}
+          </button>
+        }
+      />
+    </div>
+  );
+};
+
 /** The person's tasks, read again whenever `version` changes. */
 export function useYourTasks(version: number) {
   const [tasks, setTasks] = useState<Task[] | null>(null);
@@ -403,11 +476,6 @@ export const YourTasks = ({
         <div className="flex justify-center py-6">
           <Spin className="size-4" />
         </div>
-      ) : upcoming.length === 0 && archived.length === 0 ? (
-        <p className="px-2 pb-2 text-sm text-neutral-500">
-          Nothing upcoming. Tasks you plan for later days, and tasks with no day
-          yet, show here.
-        </p>
       ) : (
         <div className="flex flex-col gap-4">
           <div>
@@ -448,6 +516,13 @@ export const YourTasks = ({
               </div>
             </div>
             {upcoming.map((t) => row(t))}
+            {upcoming.length === 0 && (
+              <p className="px-2 pb-1 text-sm text-neutral-500">
+                Nothing upcoming. Tasks for later days, and tasks with no day
+                yet, show here.
+              </p>
+            )}
+            <NewTaskRow onAdded={onChanged} />
           </div>
           {archived.length > 0 && (
             <div>
