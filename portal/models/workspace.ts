@@ -276,6 +276,22 @@ export type Task = Loose<
     migratedFrom?: Nullable<{ worklogId: string; key: string }>;
     /** Archived as a copy of this task (lib/daywork/duplicates). */
     mergedInto?: Nullable<string>;
+    /**
+     * Its goal's day passed with it unfinished, and someone moved it to
+     * another day or merged it into a later task (lib/workspace/goalCarry).
+     * It is IGNORED and stays on `day` as the goal's failed day.
+     */
+    goalMissed?: Nullable<{
+      day: string;
+      at: string;
+      byId: string;
+      /** The new task it carried on as. */
+      movedTo?: Nullable<string>;
+      /** The later task its words and notes went into. */
+      mergedInto?: Nullable<string>;
+    }>;
+    /** The goal day this task was moved on from, when it was postponed. */
+    carriedFrom?: Nullable<string>;
   }
 >;
 

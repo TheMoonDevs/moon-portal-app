@@ -33,6 +33,14 @@ export type DayTask = {
   goalPartId?: string | null;
   /** The goal schedule whose run it stands for. */
   scheduleId?: string | null;
+  /** Its goal missed its day, and it was moved on or merged. */
+  goalMissed?: {
+    day: string;
+    movedTo?: string | null;
+    mergedInto?: string | null;
+  } | null;
+  /** The goal day it was moved on from. */
+  carriedFrom?: string | null;
   /** Only on the page: not saved yet. */
   draft?: boolean;
   /** Only on the page: the row's key while it is open, kept once saved. */

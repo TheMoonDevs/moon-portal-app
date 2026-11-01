@@ -111,6 +111,26 @@ const MoveToMenu = ({
   );
 };
 
+/** A red star: the goal this task was for missed its day. */
+const MissedStar = ({
+  missed,
+}: {
+  missed: NonNullable<DayTask['goalMissed']>;
+}) => (
+  <span
+    title={`Goal missed on ${dayjs(missed.day).format('ddd D MMM')}${
+      missed.movedTo
+        ? '; moved on to another day'
+        : missed.mergedInto
+          ? '; merged into a later task'
+          : ''
+    }`}
+    className="pointer-events-auto ml-1.5 inline-flex cursor-help align-[-2px]"
+  >
+    <Icon name="star" filled className="text-[14px] text-rose-400" />
+  </span>
+);
+
 /**
  * A task's menu: its status, moving it to a later day, linking it to a
  * goal, archiving, and taking it out.
@@ -732,6 +752,7 @@ export const TaskSheet = ({
               )}
             />
             {(count > 0 ||
+              !!task.goalMissed ||
               linked ||
               unplaced ||
               goalOpen ||
@@ -755,18 +776,24 @@ export const TaskSheet = ({
                     {count}
                   </span>
                 )}
-                {(linked || goalOpen) && (
-                  <GoalLink
-                    task={task}
-                    day={day}
-                    editable={canEdit}
-                    open={goalOpen}
-                    picking={!!goalUi?.picking}
-                    onOpenChange={(o) =>
-                      setGoalUi(o ? { id: task.id, picking: false } : null)
-                    }
-                    onPicking={(picking) => setGoalUi({ id: task.id, picking })}
-                  />
+                {task.goalMissed ? (
+                  <MissedStar missed={task.goalMissed} />
+                ) : (
+                  (linked || goalOpen) && (
+                    <GoalLink
+                      task={task}
+                      day={day}
+                      editable={canEdit}
+                      open={goalOpen}
+                      picking={!!goalUi?.picking}
+                      onOpenChange={(o) =>
+                        setGoalUi(o ? { id: task.id, picking: false } : null)
+                      }
+                      onPicking={(picking) =>
+                        setGoalUi({ id: task.id, picking })
+                      }
+                    />
+                  )
                 )}
                 {unplaced && <UnplacedMark />}
               </span>

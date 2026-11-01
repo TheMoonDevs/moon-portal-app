@@ -20,6 +20,7 @@ export type ProjectData = {
     color?: string | null;
     parentId?: string | null;
     leadIds?: string[] | null;
+    isCore?: boolean | null;
   }[];
 };
 
@@ -33,11 +34,11 @@ export type PagesData = {
 export const VIEWS = [
   { key: 'tasks', label: 'Tasks in Action', icon: 'bolt' },
   { key: 'worklogs', label: 'Worklogs', icon: 'history_edu' },
+  { key: 'goals', label: 'Goals', icon: 'track_changes' },
   { key: 'objective', label: 'Objective', icon: 'flag' },
   { key: 'kpi', label: 'KPI', icon: 'monitoring' },
+  { key: 'plans', label: 'Project Plans', icon: 'map' },
   { key: 'pages', label: 'Pages', icon: 'description' },
-  { key: 'plans', label: 'Plans', icon: 'map' },
-  { key: 'goals', label: 'Goals', icon: 'track_changes' },
   { key: 'members', label: 'Members', icon: 'group' },
 ] as const;
 

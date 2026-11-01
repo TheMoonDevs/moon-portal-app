@@ -33,6 +33,8 @@ export async function GET(request: NextRequest) {
   const companyId = request.nextUrl.searchParams.get('companyId');
   const includeArchived =
     request.nextUrl.searchParams.get('includeArchived') === 'true';
+  // Just enough to name and find each project, e.g. for a project switcher.
+  const lite = request.nextUrl.searchParams.get('lite') === 'true';
 
   let companyIds: string[];
   if (companyId) {
@@ -59,7 +61,20 @@ export async function GET(request: NextRequest) {
       ...(!includeArchived && { status: { notIn: [PROJECT_STATUS.ARCHIVED] } }),
     },
     orderBy: { createdAt: 'desc' },
+    ...(lite && {
+      select: {
+        id: true,
+        companyId: true,
+        name: true,
+        color: true,
+        logo: true,
+        parentId: true,
+        isCore: true,
+        status: true,
+      },
+    }),
   });
+  if (lite) return ok({ projects });
   await runDueSchedules({ projectId: { in: projects.map((p) => p.id) } });
   return ok({ projects: await withProjectStats(projects) });
 }
