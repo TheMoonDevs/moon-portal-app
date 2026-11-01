@@ -54,8 +54,10 @@ export function projectFamily(
 
 /** What a step's input can point at, checked by the caller. */
 export type StepRefs = {
-  /** Projects the step may name. */
+  /** Projects a new pick may name. */
   projectIds: Set<string>;
+  /** Every project of the company: a step keeps one it already had. */
+  allProjectIds?: Set<string>;
   peopleIds: Set<string>;
   /** Tasks the step may link to, with the project each is in. */
   tasks: Map<string, string>;
@@ -91,7 +93,10 @@ export function sanitizeSteps(
             ? s.taskId
             : null;
       let projectId =
-        typeof s.projectId === 'string' && refs.projectIds.has(s.projectId)
+        typeof s.projectId === 'string' &&
+        (refs.projectIds.has(s.projectId) ||
+          (s.projectId === before?.projectId &&
+            !!refs.allProjectIds?.has(s.projectId)))
           ? s.projectId
           : null;
       if (taskId && refs.tasks.has(taskId))

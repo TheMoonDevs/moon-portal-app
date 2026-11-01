@@ -139,19 +139,25 @@ export async function readPlanBody(
       ? (previous?.steps ?? [])
       : null;
   if (steps) {
-    // A project plan names only its project and the ones under it.
+    // A project plan's new picks stay in its project and the ones under
+    // it; steps that were already for another project keep it.
+    const before = new Map(
+      (previous?.steps ?? []).map((s) => [s.id, s.projectId]),
+    );
     if (
       linkedTo &&
       steps.some(
         (s) =>
           typeof s?.projectId === 'string' &&
           s.projectId &&
-          !projectIds.has(s.projectId),
+          !projectIds.has(s.projectId) &&
+          before.get(s?.id) !== s.projectId &&
+          !(typeof s?.taskId === 'string' && s.taskId),
       )
     )
       return {
         error:
-          'Some steps are for projects outside the linked project. Move or remove them first.',
+          'A project plan’s steps can only be for its project and the ones under it.',
       };
     // Tasks the steps link to: in the company, and in the plan's projects.
     const wanted = Array.from(
@@ -172,6 +178,7 @@ export async function readPlanBody(
       : [];
     data.steps = sanitizeSteps(steps, previous?.steps ?? [], {
       projectIds,
+      allProjectIds,
       peopleIds,
       tasks: new Map(
         tasks

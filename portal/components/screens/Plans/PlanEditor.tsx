@@ -5,11 +5,7 @@ import type { ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { cn } from '@/lib/utils';
-import {
-  newStep,
-  PLAN_STATUS_META,
-  projectFamily,
-} from '@/lib/workspace/plans';
+import { newStep, PLAN_STATUS_META } from '@/lib/workspace/plans';
 import { PLAN_STATUS } from '@/models/workspace';
 
 import {
@@ -264,16 +260,6 @@ export const PlanEditor = ({
     setAdding('');
   };
 
-  // A project plan's link can move only to a project that holds all its
-  // steps' projects.
-  const stepProjectIds = Array.from(
-    new Set(plan.steps.map((s) => s.projectId).filter(Boolean)),
-  ) as string[];
-  const cannotLinkTo = (p: ProjectChoice) => {
-    const family = projectFamily(projects, p.id);
-    return stepProjectIds.some((id) => !family.has(id));
-  };
-
   // Steps in plan order, or grouped under their project.
   const groups = useMemo(() => {
     if (!byProject) return [{ key: 'all', project: null, steps: plan.steps }];
@@ -343,28 +329,26 @@ export const PlanEditor = ({
             className="flex items-center gap-1.5"
             title={
               plan.projectId
-                ? 'A project plan: its steps stay in this project and the ones under it.'
-                : 'A grand plan: its steps can be for any of the company’s projects.'
+                ? 'Linked to this project: new steps stay in it and the projects under it. Pick None to make it a grand plan.'
+                : 'A grand plan: its steps can be for any of the company’s projects. Pick a project to link it.'
             }
           >
             <Icon
               name={plan.projectId ? 'link' : 'hub'}
               className="text-[15px] text-neutral-500"
             />
-            <span className="text-neutral-500">
-              {plan.projectId ? 'Project plan' : 'Grand plan'}
-            </span>
+            <span className="text-neutral-500">Project</span>
             <select
               value={plan.projectId ?? ''}
               disabled={!canEdit || lockLink}
               onChange={(e) => set('projectId', e.target.value || null)}
-              className="max-w-[200px] cursor-pointer truncate bg-transparent font-medium text-neutral-200 focus:outline-none disabled:cursor-default [&>option]:bg-neutral-900"
+              className="max-w-[200px] cursor-pointer truncate rounded-md bg-transparent px-1 py-0.5 font-medium text-neutral-200 hover:bg-white/[0.05] focus:outline-none disabled:cursor-default disabled:hover:bg-transparent [&>option]:bg-neutral-900"
             >
-              <option value="">Any project</option>
+              <option value="">None (grand plan)</option>
               {plan.projectId && !linkedProject && (
                 <option value={plan.projectId}>A project</option>
               )}
-              <ProjectOptions projects={projects} disabled={cannotLinkTo} />
+              <ProjectOptions projects={projects} />
             </select>
           </label>
           <label className="flex items-center gap-1.5">
