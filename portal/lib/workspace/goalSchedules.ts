@@ -2,7 +2,14 @@ import { db } from '@/lib/mongodb/db-client';
 import type { Project, ProjectGoal, TaskSchedule } from '@/models/workspace';
 import { TASK_SIZE } from '@/models/workspace';
 
-import { goalRule, isTarget, nextRunOnOrAfter, toDay } from './projects';
+import { clearRunsAhead } from './goalRuns';
+import {
+  goalRule,
+  isTarget,
+  nextRunOnOrAfter,
+  runsOn,
+  toDay,
+} from './projects';
 import { runDueSchedules } from './schedules';
 
 /*
@@ -12,7 +19,9 @@ import { runDueSchedules } from './schedules';
  * decides: its days, how many tasks each run makes, who they are for (the
  * goal's people, or the whole team) and the plan they link to. Changing the
  * goal changes it; a target goal, a goal that makes no tasks, or a removed
- * goal or part stops it. The tasks already made always stay.
+ * goal or part stops it. Tasks already made stay, except untouched ones
+ * still ahead for runs that will no longer happen (new days, or a goal
+ * that stopped), which are cleared.
  */
 
 type Unit = { partId: string | null; title: string; target: number };
@@ -90,6 +99,9 @@ export async function syncGoalSchedules(
           sameList(mine.assigneeIds ?? [], people)
         )
           continue;
+        // Runs ahead on days it no longer runs on are cleared.
+        if (!sameDays)
+          await clearRunsAhead([mine], (_s, day) => runsOn(rule, day));
         await db.taskSchedule.update({
           where: { id: mine.id },
           data: {
@@ -135,6 +147,7 @@ export async function syncGoalSchedules(
   // Goals, parts and kinds that no longer make tasks: theirs stop.
   const gone = schedules.filter((s) => !kept.has(s.id));
   if (gone.length) {
+    await clearRunsAhead(gone);
     await db.taskSchedule.deleteMany({
       where: { id: { in: gone.map((s) => s.id) } },
     });
