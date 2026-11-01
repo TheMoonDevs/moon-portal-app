@@ -508,7 +508,7 @@ export const ProjectsOverview = () => {
           </aside>
         )}
         <div className="min-w-0 flex-1 overflow-y-auto pb-[88px] md:pb-12">
-          <div className="mx-auto max-w-5xl px-4 pt-8 md:px-8 md:pt-12">
+          <div className="mx-auto max-w-6xl px-4 pt-8 md:px-8 md:pt-12">
             <div className="flex items-center justify-between gap-4">
               <h1 className="text-3xl font-bold tracking-tight text-white">
                 Projects
@@ -623,9 +623,6 @@ export const ProjectsOverview = () => {
                       transition={{ duration: 0.2 }}
                       className="pt-6"
                     >
-                      <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
-                        {company.name}
-                      </h2>
                       <CompanyMonth
                         company={company}
                         projects={tops}
