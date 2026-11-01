@@ -103,7 +103,9 @@ export interface ApplicationEvent {
     | 'NOTE'
     | 'EMAIL'
     | 'TASK_SUBMITTED'
-    | 'TASK_EXTENDED';
+    | 'TASK_EXTENDED'
+    | 'SCORECARD'
+    | 'ONBOARDED';
   at: string;
   byUserId?: Nullable<string>;
   from?: Nullable<APPLICATION_STAGE>;
@@ -137,6 +139,53 @@ export interface ApplicationLastEmail {
   status: HIRING_EMAIL_STATUS;
   at: string;
   templateId?: Nullable<string>;
+}
+
+/**
+ * Marks that keep a candidate in the talent pool after their opening: the
+ * screening tiers (top pick, sounds genuine, maybe) and "keep on file" for
+ * people rejected this time but worth asking again. See lib/hiring/pool.
+ */
+export type ApplicationTag = 'TOP' | 'GENUINE' | 'MAYBE' | 'KEEP';
+
+/** One requirement rated on a scorecard, 1 (weak) to 4 (strong). */
+export interface ScorecardRating {
+  requirement: string;
+  rating: number;
+}
+
+/** An interviewer's verdict after a call. */
+export type ScorecardVerdict = 'STRONG_YES' | 'YES' | 'NO' | 'STRONG_NO';
+
+/**
+ * What an interviewer thought after a call, saved on the applicant. One per
+ * interviewer per booking; saving again replaces it.
+ */
+export interface Scorecard {
+  id: string;
+  byUserId: string;
+  /** The Meet booking the call was, when it came from one. */
+  bookingId?: Nullable<string>;
+  /** The opening's screening requirements, each rated. */
+  ratings: ScorecardRating[];
+  verdict: ScorecardVerdict;
+  notes?: Nullable<string>;
+  at: string;
+}
+
+/** What onboarding a hire set up, so it isn't done twice. */
+export interface ApplicationOnboarding {
+  /** Their portal account. */
+  userId: string;
+  /** Whether the account was made for them, rather than found. */
+  createdAccount: boolean;
+  projectId?: Nullable<string>;
+  /** Their first-week buddy, the opening's hiring lead by default. */
+  buddyId?: Nullable<string>;
+  /** The first-week checklist, as tasks on their project. */
+  taskIds: string[];
+  byUserId: string;
+  at: string;
 }
 
 /** One thing a candidate makes for the task. */
@@ -203,6 +252,8 @@ export type JobOpening = Loose<
     task?: Nullable<JobTask>;
     /** The person candidates work with, a member of the company. */
     hiringLeadId?: Nullable<string>;
+    /** The project a hire joins; onboarding adds them to it. */
+    projectId?: Nullable<string>;
     /**
      * Whether candidate emails take replies at the hiring lead's address
      * (the default). Off sends them to the HR inbox instead. Each send can
@@ -239,6 +290,17 @@ export type JobApplication = Loose<
      */
     taskDueOverride?: Nullable<string>;
     taskSubmission?: Nullable<TaskSubmission>;
+    /**
+     * Where they found the opening, from the apply link's `?ref=` (e.g.
+     * `linkedin`), or how they got here (`import`, `pool`).
+     */
+    source?: Nullable<string>;
+    /** Talent pool marks, see ApplicationTag. */
+    tags?: ApplicationTag[];
+    scorecards?: Scorecard[];
+    onboarding?: Nullable<ApplicationOnboarding>;
+    /** The application they were added from, out of the talent pool. */
+    pooledFromId?: Nullable<string>;
   }
 >;
 

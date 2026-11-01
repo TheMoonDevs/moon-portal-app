@@ -6,16 +6,20 @@ import { toast } from 'sonner';
 
 import { answerText, APPLICATION_STAGES } from '@/lib/hiring/forms';
 import { linkParts, onlyLinks } from '@/lib/hiring/links';
+import { POOL_TAGS } from '@/lib/hiring/pool';
+import { sourceLabel } from '@/lib/hiring/sources';
 import { applicationDueAt } from '@/lib/hiring/tasks';
 import { cn } from '@/lib/utils';
 import {
-  type APPLICATION_STAGE,
+  APPLICATION_STAGE,
   type ApplicationFile,
+  type ApplicationTag,
   FORM_FIELD_TYPE,
   type FormField,
   type HiringEmail,
   type JobTask,
 } from '@/models/hiring';
+import { useUser } from '@/utils/hooks/useUser';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import {
@@ -36,6 +40,8 @@ import {
   STAGE_META,
   timeAgo,
 } from './hiringMeta';
+import { OnboardHire } from './OnboardHire';
+import { ScorecardForm, ScorecardList } from './Scorecards';
 
 const AnswerLink = ({ href, label }: { href: string; label?: string }) => (
   <a
@@ -459,6 +465,7 @@ export const ApplicantDetail = ({
   application,
   fields,
   task,
+  screening,
   users,
   canEdit,
   onClose,
@@ -470,6 +477,8 @@ export const ApplicantDetail = ({
   fields: FormField[];
   /** The opening's task, when it has one. */
   task?: JobTask | null;
+  /** The opening's screening requirements, rated on scorecards. */
+  screening?: string | null;
   users: User[];
   canEdit: boolean;
   onClose: () => void;
@@ -482,10 +491,15 @@ export const ApplicantDetail = ({
   const [notes, setNotes] = useState('');
   const [savingNotes, setSavingNotes] = useState(false);
   const [moving, setMoving] = useState<APPLICATION_STAGE | null>(null);
+  const [tagging, setTagging] = useState<ApplicationTag | null>(null);
+  const [scoring, setScoring] = useState(false);
+  const { user: me } = useUser();
 
   useEffect(() => {
     setNotes(application?.notes ?? '');
   }, [application?.id, application?.notes]);
+
+  useEffect(() => setScoring(false), [application?.id]);
 
   if (!application) return null;
 
@@ -506,6 +520,21 @@ export const ApplicantDetail = ({
       toast.error(errorText(err));
     } finally {
       setMoving(null);
+    }
+  };
+
+  const toggleTag = async (tag: ApplicationTag) => {
+    const current = application.tags ?? [];
+    const next = current.includes(tag)
+      ? current.filter((t) => t !== tag)
+      : [...current, tag];
+    setTagging(tag);
+    try {
+      await patch({ tags: next });
+    } catch (err) {
+      toast.error(errorText(err));
+    } finally {
+      setTagging(null);
     }
   };
 
@@ -539,6 +568,14 @@ export const ApplicantDetail = ({
           <Pill tone={stage.tone} icon={stage.icon}>
             {stage.label}
           </Pill>
+          {application.source && (
+            <span
+              className="text-xs text-neutral-500"
+              title="Where they came from"
+            >
+              via {sourceLabel(application.source)}
+            </span>
+          )}
           <span className="flex items-center gap-1 text-sm text-neutral-300">
             <a href={`mailto:${application.email}`} className="hover:underline">
               {application.email}
@@ -581,6 +618,39 @@ export const ApplicantDetail = ({
           </Field>
         )}
 
+        {canEdit && application.stage === APPLICATION_STAGE.HIRED && (
+          <OnboardHire
+            application={application}
+            users={users}
+            onUpdated={onUpdated}
+          />
+        )}
+
+        <Field
+          label="Talent pool"
+          hint="Tagged people stay in the talent pool after this opening, to ask about future ones."
+        >
+          <div className="flex flex-wrap gap-2">
+            {POOL_TAGS.map((t) => {
+              const on = (application.tags ?? []).includes(t.value);
+              return (
+                <AdminButton
+                  key={t.value}
+                  size="sm"
+                  tone={on ? 'primary' : 'secondary'}
+                  icon={t.icon}
+                  title={t.hint}
+                  disabled={!canEdit || (!!tagging && tagging !== t.value)}
+                  loading={tagging === t.value}
+                  onClick={() => toggleTag(t.value)}
+                >
+                  {t.label}
+                </AdminButton>
+              );
+            })}
+          </div>
+        </Field>
+
         <div className="flex flex-col divide-y divide-white/[0.05] rounded-xl border border-white/[0.07]">
           {fields.length === 0 && (
             <p className="px-4 py-3 text-sm text-neutral-500">
@@ -608,6 +678,44 @@ export const ApplicantDetail = ({
             onUpdated={onUpdated}
             onRemind={canEdit ? onRemind : undefined}
           />
+        )}
+
+        {(application.stage === APPLICATION_STAGE.INTERVIEW ||
+          (application.scorecards ?? []).length > 0) && (
+          <Field label="Scorecards">
+            <div className="flex flex-col gap-3">
+              <ScorecardList
+                scorecards={application.scorecards ?? []}
+                users={users}
+              />
+              {scoring ? (
+                <div className="rounded-xl border border-white/[0.07] p-4">
+                  <ScorecardForm
+                    application={application}
+                    screening={screening}
+                    onCancel={() => setScoring(false)}
+                    onSaved={(updated) => {
+                      onUpdated(updated);
+                      setScoring(false);
+                    }}
+                  />
+                </div>
+              ) : (
+                <AdminButton
+                  size="sm"
+                  icon="rate_review"
+                  className="self-start"
+                  onClick={() => setScoring(true)}
+                >
+                  {(application.scorecards ?? []).some(
+                    (c) => c.byUserId === me?.id && !c.bookingId,
+                  )
+                    ? 'Edit my scorecard'
+                    : 'Add a scorecard'}
+                </AdminButton>
+              )}
+            </div>
+          </Field>
         )}
 
         <Field label="Notes" hint="Only your hiring team sees these.">
@@ -655,7 +763,11 @@ export const ApplicantDetail = ({
                           ? 'bg-emerald-400'
                           : event.type === 'TASK_EXTENDED'
                             ? 'bg-amber-400'
-                            : 'bg-white/30',
+                            : event.type === 'SCORECARD'
+                              ? 'bg-violet-300'
+                              : event.type === 'ONBOARDED'
+                                ? 'bg-emerald-300'
+                                : 'bg-white/30',
                   )}
                 />
                 <span className="flex-1">
@@ -671,7 +783,10 @@ export const ApplicantDetail = ({
                           ? event.text || 'Sent their task'
                           : event.type === 'TASK_EXTENDED'
                             ? `${nameOf(event.byUserId)}: ${event.text}`
-                            : event.text}
+                            : event.type === 'SCORECARD' ||
+                                event.type === 'ONBOARDED'
+                              ? `${nameOf(event.byUserId)} ${(event.text ?? '').replace(/^./, (c) => c.toLowerCase())}`
+                              : event.text}
                 </span>
                 <span className="text-neutral-600">{timeAgo(event.at)}</span>
               </li>

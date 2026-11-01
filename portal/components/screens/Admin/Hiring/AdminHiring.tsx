@@ -33,17 +33,25 @@ import {
 import { CompanyPicker, errorText, NeedsCompany } from '../Workspace/shared';
 import { ApplicantDetail } from './ApplicantDetail';
 import { EmailComposer } from './EmailComposer';
+import { HiringEmails } from './HiringEmails';
+import { HiringInterviews } from './HiringInterviews';
 import {
   type ApplicationRow,
   applyUrl,
+  type ComposeOpening,
   EMAIL_STATUS_META,
+  type HiringSectionProps,
   OPENING_STATUS_META,
   type OpeningRow,
   STAGE_META,
   taskPreviewUrl,
   timeAgo,
 } from './hiringMeta';
+import { HiringPool } from './HiringPool';
+import { HiringQueue } from './HiringQueue';
 import { HiringSkills } from './HiringSkills';
+import { HiringSources } from './HiringSources';
+import { HiringTeam } from './HiringTeam';
 import { ImportApplicants } from './ImportApplicants';
 import { OpeningEditor } from './OpeningEditor';
 
@@ -51,6 +59,31 @@ import { OpeningEditor } from './OpeningEditor';
 const LIVE_INTERVAL_MS = 15_000;
 
 type StageFilter = 'ALL' | APPLICATION_STAGE;
+
+/** The Hiring tab's sections, in the order the switch shows them. */
+const SECTIONS = [
+  { value: 'openings', label: 'Openings', icon: 'work' },
+  { value: 'queue', label: 'Review queue', icon: 'inbox' },
+  { value: 'interviews', label: 'Interviews', icon: 'forum' },
+  { value: 'pool', label: 'Talent pool', icon: 'diversity_3' },
+  { value: 'emails', label: 'Emails', icon: 'mail' },
+  { value: 'sources', label: 'Sources', icon: 'campaign' },
+  { value: 'team', label: 'Team', icon: 'groups' },
+  { value: 'skills', label: 'Skills', icon: 'psychology' },
+] as const;
+
+type Section = (typeof SECTIONS)[number]['value'];
+
+const isSection = (value: unknown): value is Section =>
+  SECTIONS.some((s) => s.value === value);
+
+/** The composer opened from a section other than the board. */
+type ExternalCompose = {
+  recipients: ApplicationRow[];
+  opening: ComposeOpening;
+  template?: string | null;
+  onSent?: (applications: ApplicationRow[]) => void;
+};
 
 /** An applicant to open, or (without `id`) an opening, optionally at a stage. */
 type ApplicantLink = {
@@ -224,19 +257,21 @@ export const AdminHiring = ({
   /** A template to start the composer with, e.g. the task reminder. */
   const [composeTemplate, setComposeTemplate] = useState<string | null>(null);
   const [importOpen, setImportOpen] = useState(false);
-  /** Openings and their applicants, or the team's Claude skills. */
-  const [section, setSection] = useState<'openings' | 'skills'>('openings');
+  /** Which part of hiring is on screen; Openings is the board. */
+  const [section, setSection] = useState<Section>('openings');
+  const [externalCompose, setExternalCompose] =
+    useState<ExternalCompose | null>(null);
 
-  // `?tab=hiring&section=skills` opens the skills.
+  // `?tab=hiring&section=queue` (or skills, team, …) opens that section.
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get('section') === 'skills')
-      setSection('skills');
+    const value = new URLSearchParams(window.location.search).get('section');
+    if (isSection(value)) setSection(value);
   }, []);
 
-  const switchSection = (next: 'openings' | 'skills') => {
+  const switchSection = (next: Section) => {
     setSection(next);
     const url = new URL(window.location.href);
-    if (next === 'skills') url.searchParams.set('section', 'skills');
+    if (next !== 'openings') url.searchParams.set('section', next);
     else url.searchParams.delete('section');
     window.history.replaceState(null, '', url.toString());
   };
@@ -582,6 +617,35 @@ export const AdminHiring = ({
       return next;
     });
 
+  const leadFor = (leadId?: string | null) => {
+    if (!leadId) return null;
+    const lead = users.find((u) => u.id === leadId);
+    return {
+      id: leadId,
+      name: lead?.name || 'The hiring lead',
+      email: lead?.email ?? null,
+    };
+  };
+
+  /** What every section other than the board gets. */
+  const sectionProps: HiringSectionProps | null = companyId
+    ? {
+        companyId,
+        companyName,
+        canEdit,
+        users,
+        openApplicant: (a) => {
+          switchSection('openings');
+          setLinked({
+            id: a.id,
+            companyId: a.companyId,
+            openingId: a.openingId,
+          });
+        },
+        compose: (input) => setExternalCompose(input),
+      }
+    : null;
+
   /* --------------------------------- render -------------------------------- */
 
   if (!hiringCompanies.length)
@@ -599,14 +663,6 @@ export const AdminHiring = ({
           value={companyId}
           onChange={onSelectCompany}
         />
-        <Segmented
-          value={section}
-          onChange={switchSection}
-          options={[
-            { value: 'openings', label: 'Openings', icon: 'work' },
-            { value: 'skills', label: 'Skills', icon: 'psychology' },
-          ]}
-        />
         <div className="flex-1" />
         {companyId &&
           section === 'openings' &&
@@ -623,11 +679,32 @@ export const AdminHiring = ({
             </AdminButton>
           )}
       </div>
+      <div className="custom-scrollbar -mx-1 overflow-x-auto px-1 pb-1">
+        <Segmented
+          value={section}
+          onChange={switchSection}
+          options={SECTIONS.map((s) => ({ ...s }))}
+        />
+      </div>
 
       {!companyId ? (
         <NeedsCompany text="Choose a company to see its openings." />
       ) : section === 'skills' ? (
         <HiringSkills companyId={companyId} canEdit={canEdit} users={users} />
+      ) : section !== 'openings' && sectionProps ? (
+        section === 'queue' ? (
+          <HiringQueue {...sectionProps} />
+        ) : section === 'interviews' ? (
+          <HiringInterviews {...sectionProps} />
+        ) : section === 'pool' ? (
+          <HiringPool {...sectionProps} />
+        ) : section === 'emails' ? (
+          <HiringEmails {...sectionProps} />
+        ) : section === 'sources' ? (
+          <HiringSources {...sectionProps} />
+        ) : (
+          <HiringTeam {...sectionProps} />
+        )
       ) : openingsLoading && !openings.length ? (
         <Panel>
           <SkeletonRows rows={4} />
@@ -1115,6 +1192,7 @@ export const AdminHiring = ({
         application={detail}
         fields={opening?.fields ?? []}
         task={opening?.task ?? null}
+        screening={opening?.screening ?? null}
         users={users}
         canEdit={canEdit}
         onClose={() => setDetailId(null)}
@@ -1163,6 +1241,26 @@ export const AdminHiring = ({
           onSent={(result) => {
             replaceApplications(result.applications);
             if (!result.failed) setSelected(new Set());
+          }}
+        />
+      )}
+      {companyId && externalCompose && (
+        <EmailComposer
+          open
+          onOpenChange={(open) => !open && setExternalCompose(null)}
+          companyId={companyId}
+          companyName={companyName}
+          role={externalCompose.opening.title}
+          hiringLead={leadFor(externalCompose.opening.hiringLeadId)}
+          users={users}
+          initialTemplate={externalCompose.template ?? null}
+          replyToLead={externalCompose.opening.replyToLead ?? true}
+          recipients={externalCompose.recipients}
+          canEditTemplates={canEdit}
+          onSent={(result) => {
+            externalCompose.onSent?.(result.applications);
+            if (externalCompose.opening.id === openingId)
+              replaceApplications(result.applications);
           }}
         />
       )}

@@ -167,6 +167,7 @@ export async function importApplications(
         email: applicant.email,
         answers,
         stage,
+        source: 'import',
         notes: notes || null,
         history,
         submittedAt,

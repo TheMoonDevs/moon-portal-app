@@ -5,6 +5,7 @@ import {
   isRateLimited,
   storeApplicationFile,
 } from '@/lib/hiring/server';
+import { normalizeSource } from '@/lib/hiring/sources';
 import { db } from '@/lib/mongodb/db-client';
 import { fail, nowIso, ok } from '@/lib/workspace/server';
 import type { ApplicationAnswer, JobOpening } from '@/models/hiring';
@@ -106,6 +107,8 @@ export async function POST(request: Request, { params }: Params) {
       email: applicant.email,
       answers: { ...answers, ...stored },
       stage: APPLICATION_STAGE.APPLIED,
+      // The apply link's ?ref=, e.g. linkedin.
+      source: normalizeSource(payload.source),
       notes: null,
       history: [{ type: 'SUBMITTED', at: now, to: APPLICATION_STAGE.APPLIED }],
       submittedAt: now,
