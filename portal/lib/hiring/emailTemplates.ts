@@ -142,7 +142,112 @@ We've added you to it already, so there's no form to fill in again. If it sounds
 {{sender}}
 {{company}}`,
   },
+  // The applicant panel's Quick actions use these five.
+  {
+    key: 'reject-not-fit',
+    name: 'Reject: not a fit',
+    icon: 'person_off',
+    moveTo: APPLICATION_STAGE.REJECTED,
+    subject: 'Your application for {{role}} at {{company}}',
+    body: `Hi {{firstName}},
+
+Thank you for applying for the {{role}} role at {{company}} and for taking the time to share your work with us.
+
+We've looked through your application carefully, and we've decided not to move forward this time. This role needs a particular mix of skills and experience, and we didn't see a close enough fit for what we need right now.
+
+We'll keep your details on file and will reach out if a role comes up that suits you better.
+
+Thanks again, and we wish you all the best.
+
+{{sender}}
+{{company}}`,
+  },
+  {
+    key: 'reject-no-task',
+    name: 'Reject: task not sent',
+    icon: 'assignment_late',
+    moveTo: APPLICATION_STAGE.REJECTED,
+    subject: 'Your application for {{role}} at {{company}}',
+    body: `Hi {{firstName}},
+
+Thank you for your interest in the {{role}} role at {{company}}.
+
+We sent you a short task as the next step, and it was due on {{taskDue}}. Since we haven't received it, we're closing your application for this role. We're looking for people who are keen to take the next step with us, and the task is how we get to see your work.
+
+If something got in the way, or the timing just wasn't right, you're welcome to apply again for a future opening.
+
+We wish you all the best.
+
+{{sender}}
+{{company}}`,
+  },
+  {
+    key: 'reject-after-interview',
+    name: 'Reject: after interview',
+    icon: 'forum',
+    moveTo: APPLICATION_STAGE.REJECTED,
+    subject: 'Following up on your interview for {{role}}',
+    body: `Hi {{firstName}},
+
+Thank you for speaking with us about the {{role}} role at {{company}}. We really enjoyed the conversation and learning about your work.
+
+After a lot of thought, we've decided to move forward with another candidate whose experience is a closer match for what this role needs right now. It was a close decision, and it says nothing about the effort and care you put in.
+
+We'd love to stay in touch. We'll keep your details on file and think of you first when a role opens up that fits.
+
+Thank you again for your time, and all the best.
+
+{{sender}}
+{{company}}`,
+  },
+  {
+    key: 'send-task',
+    name: 'Send task',
+    icon: 'assignment',
+    moveTo: APPLICATION_STAGE.TASK,
+    subject: 'We liked your work: next step for {{role}} at {{company}}',
+    body: `Hi {{firstName}},
+
+Thanks for applying for the {{role}} role at {{company}}. We went through your application and really liked what we saw, so we'd like to invite you to the next step: a short task.
+
+You'll find the brief, and the place to send your work, on your own task page:
+{{taskLink}}
+
+Please send it by {{taskDue}}. If anything is unclear, or you need a little more time, just reply to this email.
+
+We're looking forward to seeing what you make.
+
+{{sender}}
+{{company}}`,
+  },
+  {
+    key: 'deadline-extended',
+    name: 'Deadline extended',
+    icon: 'more_time',
+    moveTo: null,
+    subject: 'More time for your {{role}} task at {{company}}',
+    body: `Hi {{firstName}},
+
+Good news: we've given you 3 more days for your task for the {{role}} role. It's now due by {{taskDue}}.
+
+Your brief, and the place to send your work, are still here:
+{{taskLink}}
+
+If you've already started, great. If anything is holding you up, just reply and let us know.
+
+{{sender}}
+{{company}}`,
+  },
 ];
+
+/** The applicant panel's Quick actions, by the starter each one sends. */
+export const QUICK_ACTION_TEMPLATES = {
+  rejectNotFit: 'starter:reject-not-fit',
+  rejectNoTask: 'starter:reject-no-task',
+  rejectAfterInterview: 'starter:reject-after-interview',
+  sendTask: 'starter:send-task',
+  deadlineExtended: 'starter:deadline-extended',
+} as const;
 
 export const starterById = (templateId?: string | null) =>
   templateId?.startsWith(STARTER_PREFIX)

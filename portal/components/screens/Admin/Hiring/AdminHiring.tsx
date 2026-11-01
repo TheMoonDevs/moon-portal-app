@@ -6,9 +6,10 @@ import { toast } from 'sonner';
 
 import { answerText, APPLICATION_STAGES } from '@/lib/hiring/forms';
 import { TASK_PAGES } from '@/lib/hiring/taskPages';
+import { TASK_SETS, type TaskSet, taskSetOf } from '@/lib/hiring/taskSets';
 import { cn } from '@/lib/utils';
 import {
-  type APPLICATION_STAGE,
+  APPLICATION_STAGE,
   FORM_FIELD_TYPE,
   JOB_OPENING_STATUS,
 } from '@/models/hiring';
@@ -78,6 +79,13 @@ const isSection = (value: unknown): value is Section =>
   SECTIONS.some((s) => s.value === value);
 
 /** The composer opened from a section other than the board. */
+/** An applicant opened from another section, shown over it. */
+type FloatingDetail = {
+  application: ApplicationRow;
+  opening: OpeningRow;
+  onUpdated?: (application: ApplicationRow) => void;
+};
+
 type ExternalCompose = {
   recipients: ApplicationRow[];
   opening: ComposeOpening;
@@ -185,12 +193,24 @@ const ApplicantCard = ({
         {timeAgo(application.submittedAt)}
         {application.lastEmail && <EmailMark email={application.lastEmail} />}
       </p>
-      {application.taskSubmission && (
+      {application.taskSubmission ? (
         <span className="mt-1.5 inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-[10px] text-emerald-300">
           <Icon name="task_alt" className="text-[12px]" />
           Task submitted
         </span>
-      )}
+      ) : application.taskOpens?.count ? (
+        <span
+          title={`First opened ${timeAgo(application.taskOpens.firstAt)}, last ${timeAgo(application.taskOpens.lastAt)}`}
+          className="mt-1.5 inline-flex items-center gap-1 rounded-md bg-violet-500/10 px-1.5 py-0.5 text-[10px] text-violet-300"
+        >
+          <Icon name="visibility" className="text-[12px]" />
+          Opened task
+          {application.taskOpens.count > 1
+            ? ` ${application.taskOpens.count}×`
+            : ''}{' '}
+          · {timeAgo(application.taskOpens.lastAt)}
+        </span>
+      ) : null}
     </button>
   </div>
 );
@@ -244,6 +264,8 @@ export const AdminHiring = ({
 
   const [view, setView] = useState<'board' | 'list'>('board');
   const [stageFilter, setStageFilter] = useState<StageFilter>('ALL');
+  /** In the list's Task stage: one of its sets, or all of them. */
+  const [taskSet, setTaskSet] = useState<'ALL' | TaskSet>('ALL');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkStage, setBulkStage] = useState<APPLICATION_STAGE | ''>('');
@@ -261,6 +283,7 @@ export const AdminHiring = ({
   const [section, setSection] = useState<Section>('openings');
   const [externalCompose, setExternalCompose] =
     useState<ExternalCompose | null>(null);
+  const [floating, setFloating] = useState<FloatingDetail | null>(null);
 
   // `?tab=hiring&section=queue` (or skills, team, …) opens that section.
   useEffect(() => {
@@ -583,10 +606,21 @@ export const AdminHiring = ({
     );
   }, [applications, search]);
 
-  const visible =
+  const inStage =
     stageFilter === 'ALL'
       ? searched
       : searched.filter((a) => a.stage === stageFilter);
+  const taskSetCounts = useMemo(() => {
+    const counts = { PAST_DUE: 0, CHECKED: 0, INBOX: 0, FAILED: 0 };
+    for (const a of searched)
+      if (a.stage === APPLICATION_STAGE.TASK)
+        counts[taskSetOf(a, opening?.task)] += 1;
+    return counts as Record<TaskSet, number>;
+  }, [searched, opening?.task]);
+  const visible =
+    stageFilter === APPLICATION_STAGE.TASK && taskSet !== 'ALL'
+      ? inStage.filter((a) => taskSetOf(a, opening?.task) === taskSet)
+      : inStage;
 
   const stageCounts = useMemo(() => {
     const counts = Object.fromEntries(
@@ -627,6 +661,40 @@ export const AdminHiring = ({
     };
   };
 
+  /**
+   * Opens an applicant over the section you're in (the queue, the pool…),
+   * so closing it brings you back to the same place.
+   */
+  const openInPlace = async (
+    a: Pick<ApplicationRow, 'id' | 'openingId'>,
+    onUpdated?: (application: ApplicationRow) => void,
+  ) => {
+    try {
+      const [appRes, openingRes] = await Promise.all([
+        PortalSdk.getData(`/api/hiring/applications/${a.id}`, null),
+        openings.some((o) => o.id === a.openingId)
+          ? null
+          : PortalSdk.getData(`/api/hiring/openings/${a.openingId}`, null),
+      ]);
+      const opening: OpeningRow | undefined =
+        openings.find((o) => o.id === a.openingId) ?? openingRes?.data?.opening;
+      if (!appRes?.data?.application || !opening) return;
+      setFloating({ application: appRes.data.application, opening, onUpdated });
+    } catch (err) {
+      toast.error(errorText(err, 'Could not open that applicant.'));
+    }
+  };
+
+  const updateFloating = (updated: ApplicationRow) => {
+    setFloating((current) =>
+      current && current.application.id === updated.id
+        ? { ...current, application: updated }
+        : current,
+    );
+    floating?.onUpdated?.(updated);
+    if (updated.openingId === openingId) replaceApplications([updated]);
+  };
+
   /** What every section other than the board gets. */
   const sectionProps: HiringSectionProps | null = companyId
     ? {
@@ -634,14 +702,7 @@ export const AdminHiring = ({
         companyName,
         canEdit,
         users,
-        openApplicant: (a) => {
-          switchSection('openings');
-          setLinked({
-            id: a.id,
-            companyId: a.companyId,
-            openingId: a.openingId,
-          });
-        },
+        openApplicant: (a, onUpdated) => openInPlace(a, onUpdated),
         compose: (input) => setExternalCompose(input),
       }
     : null;
@@ -1038,16 +1099,56 @@ export const AdminHiring = ({
                           </span>
                         </div>
                         <div className="custom-scrollbar flex max-h-[60vh] min-h-[80px] flex-col gap-2 overflow-y-auto">
-                          {rows.map((a) => (
-                            <ApplicantCard
-                              key={a.id}
-                              application={a}
-                              selected={selected.has(a.id)}
-                              canEdit={canEdit}
-                              onToggle={() => toggle(a.id)}
-                              onOpen={() => setDetailId(a.id)}
-                            />
-                          ))}
+                          {stage === APPLICATION_STAGE.TASK
+                            ? TASK_SETS.map((set) => {
+                                const inSet = rows.filter(
+                                  (a) =>
+                                    taskSetOf(a, opening.task) === set.value,
+                                );
+                                if (!inSet.length) return null;
+                                return (
+                                  <div
+                                    key={set.value}
+                                    className="flex flex-col gap-2"
+                                  >
+                                    <p
+                                      title={set.hint}
+                                      className="flex items-center gap-1.5 px-1 pt-1 text-[10px] font-medium uppercase tracking-wide text-neutral-500"
+                                    >
+                                      <span style={{ color: set.color }}>
+                                        <Icon
+                                          name={set.icon}
+                                          className="text-[13px]"
+                                        />
+                                      </span>
+                                      <span className="flex-1">
+                                        {set.label}
+                                      </span>
+                                      {inSet.length}
+                                    </p>
+                                    {inSet.map((a) => (
+                                      <ApplicantCard
+                                        key={a.id}
+                                        application={a}
+                                        selected={selected.has(a.id)}
+                                        canEdit={canEdit}
+                                        onToggle={() => toggle(a.id)}
+                                        onOpen={() => setDetailId(a.id)}
+                                      />
+                                    ))}
+                                  </div>
+                                );
+                              })
+                            : rows.map((a) => (
+                                <ApplicantCard
+                                  key={a.id}
+                                  application={a}
+                                  selected={selected.has(a.id)}
+                                  canEdit={canEdit}
+                                  onToggle={() => toggle(a.id)}
+                                  onOpen={() => setDetailId(a.id)}
+                                />
+                              ))}
                         </div>
                       </div>
                     );
@@ -1069,6 +1170,26 @@ export const AdminHiring = ({
                         })),
                       ]}
                     />
+                    {stageFilter === APPLICATION_STAGE.TASK && (
+                      <Segmented
+                        value={taskSet}
+                        onChange={setTaskSet}
+                        className="mt-2 max-w-full overflow-x-auto"
+                        options={[
+                          {
+                            value: 'ALL',
+                            label: 'Every task',
+                            count: stageCounts.TASK,
+                          },
+                          ...TASK_SETS.map((t) => ({
+                            value: t.value,
+                            label: t.label,
+                            icon: t.icon,
+                            count: taskSetCounts[t.value],
+                          })),
+                        ]}
+                      />
+                    )}
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full min-w-[640px] text-left text-sm">
@@ -1213,7 +1334,50 @@ export const AdminHiring = ({
               }
             : undefined
         }
+        onCompose={
+          detail
+            ? (template) => {
+                setComposeTemplate(template);
+                setComposeIds([detail.id]);
+              }
+            : undefined
+        }
       />
+      {floating && (
+        <ApplicantDetail
+          application={floating.application}
+          fields={floating.opening.fields ?? []}
+          task={floating.opening.task ?? null}
+          screening={floating.opening.screening ?? null}
+          users={users}
+          canEdit={canEdit}
+          onClose={() => setFloating(null)}
+          onUpdated={updateFloating}
+          onEmail={() =>
+            setExternalCompose({
+              recipients: [floating.application],
+              opening: floating.opening,
+              onSent: (rows) => rows.forEach(updateFloating),
+            })
+          }
+          onRemind={() =>
+            setExternalCompose({
+              recipients: [floating.application],
+              opening: floating.opening,
+              template: 'starter:reminder',
+              onSent: (rows) => rows.forEach(updateFloating),
+            })
+          }
+          onCompose={(template) =>
+            setExternalCompose({
+              recipients: [floating.application],
+              opening: floating.opening,
+              template,
+              onSent: (rows) => rows.forEach(updateFloating),
+            })
+          }
+        />
+      )}
       {companyId && opening && (
         <EmailComposer
           open={!!composeIds && composeRecipients.length > 0}

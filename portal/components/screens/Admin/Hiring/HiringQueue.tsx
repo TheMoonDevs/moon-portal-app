@@ -3,6 +3,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
+import {
+  QUICK_ACTION_TEMPLATES,
+  starterById,
+} from '@/lib/hiring/emailTemplates';
 import type { QueueItem, QueueKind, QueueOpening } from '@/lib/hiring/queue';
 import { cn } from '@/lib/utils';
 import { PortalSdk } from '@/utils/services/PortalSdk';
@@ -133,6 +137,41 @@ export const HiringQueue = ({
   const visible =
     kind === 'ALL' ? inOpening : inOpening.filter((i) => i.kind === kind);
 
+  /** Emails them that they have 3 more days, straight from the toast. */
+  const sendExtended = async (item: QueueItem) => {
+    const template = starterById(QUICK_ACTION_TEMPLATES.deadlineExtended);
+    const opening = openingOf.get(item.application.openingId);
+    if (!template) return;
+    const first = item.application.name.split(/\s+/)[0];
+    const sending = toast.loading(`Emailing ${first}…`);
+    try {
+      const res = await PortalSdk.postData('/api/hiring/emails', {
+        ids: [item.application.id],
+        subject: template.subject,
+        body: template.body,
+        sendId: newSendId(),
+        templateId: QUICK_ACTION_TEMPLATES.deadlineExtended,
+        moveTo: null,
+        replyToLead: opening?.replyToLead ?? true,
+        meetingLinkFrom: null,
+      });
+      if (res?.data?.failed)
+        toast.error(
+          res.data.failures?.[0]?.error ?? `Could not email ${first}.`,
+          { id: sending },
+        );
+      else
+        toast.success(`Told ${first} about their new due date`, {
+          id: sending,
+        });
+      load(true);
+    } catch (err) {
+      toast.error(errorText(err, `Could not email ${first}.`), {
+        id: sending,
+      });
+    }
+  };
+
   const extend = async (item: QueueItem) => {
     const key = `${item.kind}:${item.application.id}`;
     setBusy(key);
@@ -142,7 +181,15 @@ export const HiringQueue = ({
         { extendTask: { days: 3 } },
       );
       toast.success(
-        `${item.application.name.split(/\s+/)[0]} has 3 more days. Send a reminder to tell them.`,
+        `${item.application.name.split(/\s+/)[0]} has 3 more days`,
+        {
+          description: 'Send them a reminder with the new due date?',
+          duration: 12000,
+          action: {
+            label: 'Send reminder',
+            onClick: () => sendExtended(item),
+          },
+        },
       );
       load(true);
     } catch (err) {
@@ -272,7 +319,7 @@ export const HiringQueue = ({
                   </span>
                   <button
                     type="button"
-                    onClick={() => openApplicant(a)}
+                    onClick={() => openApplicant(a, () => load(true))}
                     className="min-w-0 flex-1 text-left"
                   >
                     <span className="flex flex-wrap items-center gap-2">
@@ -294,7 +341,7 @@ export const HiringQueue = ({
                       tone="ghost"
                       className="hidden sm:inline-flex"
                       icon="open_in_new"
-                      onClick={() => openApplicant(a)}
+                      onClick={() => openApplicant(a, () => load(true))}
                     >
                       Open
                     </AdminButton>

@@ -587,6 +587,21 @@ const DEFAULT_SCENES: TaskSceneKey[] = [
 ];
 
 export const TaskPage = ({ data }: { data: PublicTask }) => {
+  // Tell the team the link landed: once per tab, never for the preview.
+  useEffect(() => {
+    if (data.preview) return;
+    const key = `task-opened:${data.token}`;
+    try {
+      if (sessionStorage.getItem(key)) return;
+      sessionStorage.setItem(key, '1');
+    } catch {
+      // Storage blocked; the server still ignores quick repeats.
+    }
+    fetch(`/api/hiring/task/${data.token}`, {
+      method: 'PUT',
+      headers: { tmd_portal_api_key: TMD_PORTAL_API_KEY },
+    }).catch(() => {});
+  }, [data.preview, data.token]);
   const intro = data.task.page ? TASK_PAGES[data.task.page] : null;
   const scene = (key: TaskSceneKey) => {
     if (!intro) return null;

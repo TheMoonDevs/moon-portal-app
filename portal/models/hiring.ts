@@ -105,7 +105,8 @@ export interface ApplicationEvent {
     | 'TASK_SUBMITTED'
     | 'TASK_EXTENDED'
     | 'SCORECARD'
-    | 'ONBOARDED';
+    | 'ONBOARDED'
+    | 'TASK_OPENED';
   at: string;
   byUserId?: Nullable<string>;
   from?: Nullable<APPLICATION_STAGE>;
@@ -290,6 +291,8 @@ export type JobApplication = Loose<
      */
     taskDueOverride?: Nullable<string>;
     taskSubmission?: Nullable<TaskSubmission>;
+    /** How often they opened their task page, and when first and last. */
+    taskOpens?: Nullable<TaskOpens>;
     /**
      * Where they found the opening, from the apply link's `?ref=` (e.g.
      * `linkedin`), or how they got here (`import`, `pool`).
@@ -303,6 +306,13 @@ export type JobApplication = Loose<
     pooledFromId?: Nullable<string>;
   }
 >;
+
+/** Visits to a candidate's /task/<token> page, counted once per browser tab. */
+export interface TaskOpens {
+  count: number;
+  firstAt: string;
+  lastAt: string;
+}
 
 /** A reusable email a company writes for its candidates. */
 export type HiringEmailTemplate = Loose<

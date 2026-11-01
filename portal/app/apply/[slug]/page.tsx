@@ -52,9 +52,14 @@ const loadOpening = cache(
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const opening = await loadOpening(params.slug);
   if (!opening) return { title: 'Opening not found' };
+  const title = `${opening.title} · ${opening.company.name}`;
+  const description = `We’re hiring. Apply for ${opening.title} at ${opening.company.name}.`;
+  // The image itself comes from opengraph-image.tsx next to this page.
   return {
-    title: `${opening.title} · ${opening.company.name}`,
-    description: `Apply for ${opening.title} at ${opening.company.name}.`,
+    title,
+    description,
+    openGraph: { title, description, type: 'website' },
+    twitter: { card: 'summary_large_image', title, description },
   };
 }
 

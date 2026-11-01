@@ -4,6 +4,7 @@ import type { User } from '@db/client';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
+import { QUICK_ACTION_TEMPLATES } from '@/lib/hiring/emailTemplates';
 import { answerText, APPLICATION_STAGES } from '@/lib/hiring/forms';
 import { linkParts, onlyLinks } from '@/lib/hiring/links';
 import { POOL_TAGS } from '@/lib/hiring/pool';
@@ -253,6 +254,31 @@ const TaskSection = ({
               {application.taskDueOverride ? ' (extended)' : ''}
             </span>
           )}
+          {link && !sent && (
+            <span
+              className={cn(
+                'flex items-center gap-1',
+                application.taskOpens?.count
+                  ? 'text-violet-300'
+                  : 'text-neutral-500',
+              )}
+              title={
+                application.taskOpens
+                  ? `First opened ${formatDate(application.taskOpens.firstAt)}`
+                  : 'Counted when they open their task page'
+              }
+            >
+              <Icon
+                name={
+                  application.taskOpens?.count ? 'visibility' : 'visibility_off'
+                }
+                className="text-[14px]"
+              />
+              {application.taskOpens?.count
+                ? `Opened ${application.taskOpens.count === 1 ? 'once' : `${application.taskOpens.count} times`}, last ${timeAgo(application.taskOpens.lastAt)}`
+                : 'Not opened yet'}
+            </span>
+          )}
           {sent && (
             <Pill tone="positive" icon="task_alt">
               Submitted {timeAgo(sent.submittedAt)}
@@ -471,6 +497,7 @@ export const ApplicantDetail = ({
   onUpdated,
   onEmail,
   onRemind,
+  onCompose,
 }: {
   application: ApplicationRow | null;
   fields: FormField[];
@@ -486,19 +513,25 @@ export const ApplicantDetail = ({
   onEmail?: () => void;
   /** Opens the composer with the task reminder for this applicant. */
   onRemind?: () => void;
+  /** Opens the composer for this applicant with a template picked. */
+  onCompose?: (templateId: string) => void;
 }) => {
   const [notes, setNotes] = useState('');
   const [savingNotes, setSavingNotes] = useState(false);
   const [moving, setMoving] = useState<APPLICATION_STAGE | null>(null);
   const [tagging, setTagging] = useState<ApplicationTag | null>(null);
   const [scoring, setScoring] = useState(false);
+  const [extending, setExtending] = useState(false);
   const { user: me } = useUser();
 
   useEffect(() => {
     setNotes(application?.notes ?? '');
   }, [application?.id, application?.notes]);
 
-  useEffect(() => setScoring(false), [application?.id]);
+  useEffect(() => {
+    setScoring(false);
+    setExtending(false);
+  }, [application?.id]);
 
   if (!application) return null;
 
@@ -534,6 +567,22 @@ export const ApplicantDetail = ({
       toast.error(errorText(err));
     } finally {
       setTagging(null);
+    }
+  };
+
+  /** Quick action: 3 more days, then the email that tells them. */
+  const extendAndNotify = async () => {
+    setExtending(true);
+    try {
+      await patch({ extendTask: { days: 3 } });
+      toast.success(
+        `${application.name.split(/\s+/)[0]} has 3 more days. Check the email and send it.`,
+      );
+      onCompose?.(QUICK_ACTION_TEMPLATES.deadlineExtended);
+    } catch (err) {
+      toast.error(errorText(err));
+    } finally {
+      setExtending(false);
     }
   };
 
@@ -592,6 +641,68 @@ export const ApplicantDetail = ({
             </AdminButton>
           )}
         </div>
+
+        {canEdit && onCompose && (
+          <Field
+            label="Quick actions"
+            hint="Each one opens its email for you to check before it’s sent. The rejections move them to Rejected, and Send task moves them to Task."
+          >
+            <div className="flex flex-wrap gap-2">
+              <AdminButton
+                size="sm"
+                icon="person_off"
+                onClick={() => onCompose(QUICK_ACTION_TEMPLATES.rejectNotFit)}
+              >
+                Reject (Not fit)
+              </AdminButton>
+              <AdminButton
+                size="sm"
+                icon="assignment_late"
+                disabled={!application.taskSentAt}
+                title={
+                  application.taskSentAt
+                    ? undefined
+                    : 'They haven’t been sent a task yet.'
+                }
+                onClick={() => onCompose(QUICK_ACTION_TEMPLATES.rejectNoTask)}
+              >
+                Reject (Task not submitted)
+              </AdminButton>
+              <AdminButton
+                size="sm"
+                icon="forum"
+                onClick={() =>
+                  onCompose(QUICK_ACTION_TEMPLATES.rejectAfterInterview)
+                }
+              >
+                Reject (Post interview)
+              </AdminButton>
+              <AdminButton
+                size="sm"
+                icon="assignment"
+                disabled={!task}
+                title={task ? undefined : 'Add a task to this opening first.'}
+                onClick={() => onCompose(QUICK_ACTION_TEMPLATES.sendTask)}
+              >
+                Send task
+              </AdminButton>
+              <AdminButton
+                size="sm"
+                icon="more_time"
+                loading={extending}
+                disabled={!task || !application.taskSentAt}
+                title={
+                  task && application.taskSentAt
+                    ? 'Adds 3 days to their due date, then opens the email that tells them.'
+                    : 'They haven’t been sent a task yet.'
+                }
+                onClick={extendAndNotify}
+              >
+                Extend deadline
+              </AdminButton>
+            </div>
+          </Field>
+        )}
 
         {canEdit && (
           <Field label="Move to">
@@ -761,7 +872,9 @@ export const ApplicantDetail = ({
                               ? 'bg-violet-300'
                               : event.type === 'ONBOARDED'
                                 ? 'bg-emerald-300'
-                                : 'bg-white/30',
+                                : event.type === 'TASK_OPENED'
+                                  ? 'bg-violet-400'
+                                  : 'bg-white/30',
                   )}
                 />
                 <span className="flex-1">
@@ -773,14 +886,16 @@ export const ApplicantDetail = ({
                       ? `${event.byUserId ? `${nameOf(event.byUserId)} moved them` : 'Moved'} to ${STAGE_META[event.to]?.label ?? event.to}`
                       : event.type === 'EMAIL'
                         ? `${nameOf(event.byUserId)} emailed “${event.text}”`
-                        : event.type === 'TASK_SUBMITTED'
-                          ? event.text || 'Sent their task'
-                          : event.type === 'TASK_EXTENDED'
-                            ? `${nameOf(event.byUserId)}: ${event.text}`
-                            : event.type === 'SCORECARD' ||
-                                event.type === 'ONBOARDED'
-                              ? `${nameOf(event.byUserId)} ${(event.text ?? '').replace(/^./, (c) => c.toLowerCase())}`
-                              : event.text}
+                        : event.type === 'TASK_OPENED'
+                          ? 'Opened their task link'
+                          : event.type === 'TASK_SUBMITTED'
+                            ? event.text || 'Sent their task'
+                            : event.type === 'TASK_EXTENDED'
+                              ? `${nameOf(event.byUserId)}: ${event.text}`
+                              : event.type === 'SCORECARD' ||
+                                  event.type === 'ONBOARDED'
+                                ? `${nameOf(event.byUserId)} ${(event.text ?? '').replace(/^./, (c) => c.toLowerCase())}`
+                                : event.text}
                 </span>
                 <span className="text-neutral-600">{timeAgo(event.at)}</span>
               </li>
