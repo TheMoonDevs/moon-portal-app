@@ -1,4 +1,4 @@
-import type { JobApplication, JobOpening } from '@db/client';
+import type { JobApplication, JobOpening, User } from '@db/client';
 
 import {
   type APPLICATION_STAGE,
@@ -189,4 +189,59 @@ export const timeAgo = (value?: string | Date | null) => {
     day: 'numeric',
     month: 'short',
   });
+};
+
+/* ------------------------------ menu sections ----------------------------- */
+
+/** The opening an email is about, for the composer outside the board. */
+export type ComposeOpening = {
+  id: string;
+  title: string;
+  hiringLeadId?: string | null;
+  replyToLead?: boolean | null;
+};
+
+/** What the hiring tab gives each of its sections. */
+export interface HiringSectionProps {
+  companyId: string;
+  companyName: string;
+  canEdit: boolean;
+  users: User[];
+  /** Opens one applicant on their opening's board. */
+  openApplicant: (
+    a: Pick<ApplicationRow, 'id' | 'companyId' | 'openingId'>,
+  ) => void;
+  /** Opens the composer for these applicants of one opening. */
+  compose: (input: {
+    recipients: ApplicationRow[];
+    opening: ComposeOpening;
+    template?: string | null;
+    /** Called with the updated applicants once sent. */
+    onSent?: (applications: ApplicationRow[]) => void;
+  }) => void;
+}
+
+export const DAY_MS = 86400000;
+
+/** "Mon 3 Nov" in the viewer's timezone. */
+export const shortDay = (value: string | Date) =>
+  new Date(value).toLocaleDateString(undefined, {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  });
+
+/** "10:30" in the viewer's timezone. */
+export const shortTime = (value: string | Date) =>
+  new Date(value).toLocaleTimeString(undefined, {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+/** How long ago, in whole days: "today", "1 day", "5 days". */
+export const daysSince = (value?: string | Date | null) => {
+  if (!value) return '';
+  const days = Math.floor((Date.now() - new Date(value).getTime()) / DAY_MS);
+  if (Number.isNaN(days)) return '';
+  return days <= 0 ? 'today' : days === 1 ? '1 day' : `${days} days`;
 };

@@ -1,3 +1,4 @@
+import { sanitizeTags } from '@/lib/hiring/pool';
 import {
   extendTaskDeadline,
   isStage,
@@ -25,8 +26,9 @@ export async function GET(_request: Request, { params }: Params) {
 }
 
 /**
- * Changes the stage and/or HR's notes, or gives the candidate more time for
- * their task: `{ stage?, notes?, extendTask?: { dueAt? | days? } }`.
+ * Changes the stage, HR's notes or the talent pool tags, or gives the
+ * candidate more time for their task:
+ * `{ stage?, notes?, tags?, extendTask?: { dueAt? | days? } }`.
  */
 export async function PATCH(request: Request, { params }: Params) {
   const { response, application, user } = await requireApplicationPermission(
@@ -47,6 +49,12 @@ export async function PATCH(request: Request, { params }: Params) {
     updated = await db.jobApplication.update({
       where: { id: application.id },
       data: { notes: notes || null, updatedAt: nowIso() },
+    });
+  }
+  if ('tags' in body) {
+    updated = await db.jobApplication.update({
+      where: { id: application.id },
+      data: { tags: sanitizeTags(body.tags), updatedAt: nowIso() },
     });
   }
   if (body.extendTask && typeof body.extendTask === 'object') {

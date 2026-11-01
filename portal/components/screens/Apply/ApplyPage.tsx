@@ -294,7 +294,13 @@ export const ApplyPage = ({ opening }: { opening: PublicOpening }) => {
     }
 
     const body = new FormData();
-    body.set('payload', JSON.stringify({ name, email, answers, website }));
+    // Which share link they came from (?ref=linkedin), for the team's sources.
+    const source =
+      new URLSearchParams(window.location.search).get('ref') || null;
+    body.set(
+      'payload',
+      JSON.stringify({ name, email, answers, website, source }),
+    );
     for (const [id, file] of Object.entries(files))
       if (file) body.set(`file:${id}`, file);
 

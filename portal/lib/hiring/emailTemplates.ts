@@ -127,6 +127,21 @@ Welcome aboard, we hope!
 {{sender}}
 {{company}}`,
   },
+  {
+    key: 'thought-of-you',
+    name: 'We thought of you',
+    icon: 'auto_awesome',
+    moveTo: null,
+    subject: 'A new role at {{company}}: {{role}}',
+    body: `Hi {{firstName}},
+
+You applied to {{company}} a while ago, and we kept your details on file because we liked what we saw. We've just opened a {{role}} role and thought of you.
+
+We've added you to it already, so there's no form to fill in again. If it sounds interesting, just reply to this email and we'll tell you about the next step. If the timing isn't right, no problem at all.
+
+{{sender}}
+{{company}}`,
+  },
 ];
 
 export const starterById = (templateId?: string | null) =>
