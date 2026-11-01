@@ -86,7 +86,7 @@ const Glance = ({
         <p className="mt-2 text-sm text-neutral-300">
           {count.total
             ? `${count.done} of ${count.total} steps done`
-            : 'No steps yet. Type / in a step to pick what it is: text, a to-do, a task or a goal.'}
+            : 'No steps yet. Type / in a step to pick what it is: text, a task or a goal.'}
         </p>
         {count.total > 0 && (
           <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/[0.07]">
@@ -240,6 +240,16 @@ const TaskBox = ({
           onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
         />
       </Field>
+      <Field label="Details">
+        <TextArea
+          value={draft.description}
+          disabled={!canEdit}
+          onChange={(e) =>
+            setDraft((d) => ({ ...d, description: e.target.value }))
+          }
+          placeholder="What it takes, links, anything that helps"
+        />
+      </Field>
       <div className="grid grid-cols-2 gap-3">
         <Field label="Status">
           <NativeSelect
@@ -284,16 +294,6 @@ const TaskBox = ({
             }
           />
         )}
-      </Field>
-      <Field label="Details">
-        <TextArea
-          value={draft.description}
-          disabled={!canEdit}
-          onChange={(e) =>
-            setDraft((d) => ({ ...d, description: e.target.value }))
-          }
-          placeholder="What it takes, links, anything that helps"
-        />
       </Field>
       {canEdit && (
         <AdminButton
@@ -541,6 +541,16 @@ export const StepPanel = ({
 
   const kind = stepKind(step);
   const linked = !!(step.taskId || step.goalId);
+  /** Back to a plain step; the task or goal stays where it is. */
+  const unlink = () =>
+    onChange({
+      kind: kind === 'goal' ? 'task' : kind,
+      taskId: null,
+      goalId: null,
+      task: null,
+      goal: null,
+      text: step.task?.title ?? step.goal?.title ?? step.text,
+    });
   const setKind = (next: PlanStepKind) => {
     if (next === kind) return;
     const fields: Partial<EditorStep> = { kind: next };
@@ -571,15 +581,29 @@ export const StepPanel = ({
         <IconAction icon="close" label="Close" onClick={onClose} />
       </div>
 
-      {!linked && (
+      {/* The step and its details, just below it */}
+      <div className="flex flex-col gap-1.5">
+        {linked ? (
+          <p className="text-base font-medium text-white">
+            {step.task?.title ?? step.goal?.title ?? step.text}
+          </p>
+        ) : (
+          <GrowingText
+            value={step.text}
+            onChange={(text) => onChange({ text })}
+            disabled={!canEdit}
+            placeholder={KIND_META[kind].hint}
+            className="text-base font-medium text-white placeholder:text-neutral-600"
+          />
+        )}
         <GrowingText
-          value={step.text}
-          onChange={(text) => onChange({ text })}
+          value={step.notes ?? ''}
+          onChange={(notes) => onChange({ notes })}
           disabled={!canEdit}
-          placeholder={KIND_META[kind].hint}
-          className="text-base font-medium text-white placeholder:text-neutral-600"
+          placeholder={canEdit ? 'Add details…' : 'No details'}
+          className="min-h-[40px] text-sm leading-relaxed text-neutral-300 placeholder:text-neutral-600"
         />
-      )}
+      </div>
 
       {/* Task steps: the task itself, editable here */}
       {kind === 'task' && step.task && (
@@ -605,7 +629,7 @@ export const StepPanel = ({
         />
       )}
 
-      {/* Text, to-dos and tasks not made yet: the step's own fields */}
+      {/* Text and tasks not made yet: the step's own fields */}
       {!linked && kind !== 'goal' && (
         <>
           {kind !== 'info' && (
@@ -655,14 +679,6 @@ export const StepPanel = ({
               </Field>
             </>
           )}
-          <Field label="Notes">
-            <TextArea
-              value={step.notes ?? ''}
-              disabled={!canEdit}
-              onChange={(e) => onChange({ notes: e.target.value })}
-              placeholder="Anything that helps"
-            />
-          </Field>
           {kind === 'task' && canEdit && (
             <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-3">
               <p className="mb-2 text-xs text-neutral-400">
@@ -735,9 +751,9 @@ export const StepPanel = ({
         {canEdit && linked && (
           <button
             type="button"
-            onClick={() => setKind('todo')}
+            onClick={unlink}
             className="flex items-center gap-1.5 text-xs text-neutral-500 hover:text-neutral-200"
-            title="Make it a plain to-do again; the task or goal stays"
+            title="Make it a plain step again; the task or goal stays"
           >
             <Icon name="link_off" className="text-[15px]" />
             Unlink

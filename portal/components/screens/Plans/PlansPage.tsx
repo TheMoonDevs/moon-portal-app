@@ -24,6 +24,7 @@ import {
   Spin,
 } from '../Admin/shared/AdminUI';
 import { PlanEditor, StepPanel } from './PlanEditor';
+import { PlansTimeline } from './PlansTimeline';
 import type { PlansData, PlanView, StepView } from './types';
 import { isPast, shortDay, stepCount } from './types';
 import { ALL_COMPANIES, usePlans } from './usePlans';
@@ -296,12 +297,38 @@ export const PlansPage = () => {
   const canEditPlan = !!plan && plans.canEdit(plan);
   const canDeletePlan = !!plan && plans.canDelete(plan);
 
-  const selectPlan = (id: string) => {
+  // The address names the open plan and step: /plans?plan_id=…&step_id=…
+  const setAddress = (plan: string | null, step: string | null) => {
+    const url = new URL(window.location.href);
+    if (plan) url.searchParams.set('plan_id', plan);
+    else url.searchParams.delete('plan_id');
+    if (plan && step) url.searchParams.set('step_id', step);
+    else url.searchParams.delete('step_id');
+    window.history.replaceState(window.history.state, '', url);
+  };
+
+  const selectPlan = (id: string | null, step: string | null = null) => {
     if (planId && planId !== id) flush(planId);
     setPlanId(id);
-    setStepId(null);
-    setView('plan');
+    setStepId(step);
+    setView(step && !wide ? 'step' : id ? 'plan' : 'list');
+    setAddress(id, step);
   };
+
+  // Open the plan (and step) the address names, once the plans are in.
+  const [opened, setOpened] = useState(false);
+  useEffect(() => {
+    if (opened || !data) return;
+    setOpened(true);
+    const params = new URLSearchParams(window.location.search);
+    const want = params.get('plan_id');
+    const found = want && data.plans.find((p) => p.id === want);
+    if (!found) return;
+    const step = params.get('step_id');
+    setPlanId(found.id);
+    setStepId(found.steps.some((s) => s.id === step) ? step : null);
+    setView('plan');
+  }, [data, opened]);
 
   /** A new plan; with every company shown, `inCompany` says where. */
   const createPlan = async (inCompany?: string) => {
@@ -326,9 +353,7 @@ export const PlansPage = () => {
     const gone = await plans.remove(plan.id);
     setDeleting(false);
     if (!gone) return;
-    setPlanId(null);
-    setStepId(null);
-    setView('list');
+    selectPlan(null);
     setConfirmDelete(false);
   };
 
@@ -360,6 +385,7 @@ export const PlansPage = () => {
   const selectStep = (id: string | null) => {
     setStepId(id);
     if (id && !wide) setView('step');
+    setAddress(planId, id);
   };
 
   /* ------------------------------- panels ------------------------------- */
@@ -398,12 +424,13 @@ export const PlansPage = () => {
         fresh={plan.id === freshId}
         addsTasksIn={plans.addsTasksIn}
         onMakeTask={(stepId) => plans.makeTask(plan.id, stepId)}
-        onAddNote={(stepId, text) => plans.addNote(plan.id, stepId, text)}
       />
+    ) : data?.plans.length ? (
+      <PlansTimeline data={data} onOpen={(id, step) => selectPlan(id, step)} />
     ) : (
       <EmptyState
         icon="lightbulb"
-        title={data?.plans.length ? 'Pick a plan' : 'No plans yet'}
+        title="No plans yet"
         description="A plan can start as just an idea. A grand plan can span many projects; link it to one project to make it that project's plan. Steps can be plain text, tasks (type / to link one) or goals."
         action={
           plans.canCreate && (
@@ -421,7 +448,7 @@ export const PlansPage = () => {
       />
     );
 
-  const side = plan && data && choices && (
+  const side = plan && step && data && choices && (
     <StepPanel
       plan={plan}
       step={step}
@@ -439,7 +466,7 @@ export const PlansPage = () => {
       }
       onRefresh={() => plans.refresh(plan.id)}
       onClose={() => {
-        setStepId(null);
+        selectStep(null);
         if (!wide) setView('plan');
       }}
     />
@@ -545,7 +572,7 @@ export const PlansPage = () => {
             <ResizablePanel defaultSize={50} minSize={30}>
               {editor}
             </ResizablePanel>
-            {plan && (
+            {side && (
               <>
                 <Handle />
                 <ResizablePanel defaultSize={28} minSize={20} maxSize={45}>

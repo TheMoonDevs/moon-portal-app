@@ -262,7 +262,6 @@ export const PlansSection = ({
       newStepProjectId={projectId}
       addsTasksIn={plans.addsTasksIn}
       onMakeTask={(stepId) => plans.makeTask(plan.id, stepId)}
-      onAddNote={(stepId, text) => plans.addNote(plan.id, stepId, text)}
     />
   );
 
@@ -292,9 +291,11 @@ export const PlansSection = ({
       {wide ? (
         <>
           <div className="min-w-0 flex-1">{editor}</div>
-          <div className="w-[340px] shrink-0 border-l border-white/[0.07]">
-            {side}
-          </div>
+          {step && (
+            <div className="w-[340px] shrink-0 border-l border-white/[0.07]">
+              {side}
+            </div>
+          )}
         </>
       ) : (
         <div className="min-w-0 flex-1">{step ? side : editor}</div>

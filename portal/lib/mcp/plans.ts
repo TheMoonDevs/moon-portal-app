@@ -276,9 +276,9 @@ const STEP_SCHEMA = {
   properties: {
     kind: {
       type: 'string',
-      enum: ['info', 'todo', 'task', 'goal'],
+      enum: ['info', 'task', 'goal'],
       description:
-        'info: plain text (a thought, decision or heading, nothing to tick off); todo (default): a step to tick off; task: a task in its project (makeTask creates it); goal: a project goal (goal or newGoal). Set by task, makeTask, goal and newGoal too.',
+        'info: plain text (a thought, decision or heading, nothing to tick off); task (default): something to do, ticked off on the plan until makeTask makes it a task in its project; goal: a project goal (goal or newGoal). Set by task, makeTask, goal and newGoal too.',
     },
     text: {
       type: 'string',

@@ -405,7 +405,8 @@ export enum PLAN_STATUS {
  * task's status; a goal step is done when the goal is met.
  */
 /** What a plan step is: a line of text, a to-do, a task or a goal. */
-export type PlanStepKind = 'info' | 'todo' | 'task' | 'goal';
+/** A step: plain text, a task (to tick off, or made into a project task) or a goal. */
+export type PlanStepKind = 'info' | 'task' | 'goal';
 
 export type PlanStep = {
   id: string;
