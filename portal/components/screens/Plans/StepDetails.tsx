@@ -33,6 +33,7 @@ import {
   PeoplePicker,
   TASK_STATUS_META,
 } from '../Admin/Workspace/shared';
+import { DeleteStepDialog } from './DeleteStepDialog';
 import {
   goalLine,
   GoalStar,
@@ -40,6 +41,7 @@ import {
   ProjectDot,
   ProjectOptions,
 } from './planBits';
+import { PlansTimeline } from './PlansTimeline';
 import {
   linkFields,
   LinkMenu,
@@ -60,10 +62,12 @@ const Glance = ({
   plan,
   projects,
   people,
+  onOpenStep,
 }: {
   plan: PlanView;
   projects: ProjectChoice[];
   people: Person[];
+  onOpenStep?: (stepId: string) => void;
 }) => {
   const byProject = new Map<string, number>();
   const byPerson = new Map<string, number>();
@@ -79,6 +83,11 @@ const Glance = ({
   const count = stepCount(plan);
   return (
     <div className="flex h-full flex-col gap-6 overflow-y-auto p-5">
+      <PlansTimeline
+        inPlan
+        data={{ plans: [plan], projects }}
+        onOpen={(_planId, stepId) => stepId && onOpenStep?.(stepId)}
+      />
       <div>
         <p className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
           At a glance
@@ -491,6 +500,8 @@ export const StepPanel = ({
   onAddNote,
   onRefresh,
   onClose,
+  onOpenStep,
+  onDeleteTask,
 }: {
   plan: PlanView;
   step: EditorStep | null;
@@ -509,10 +520,15 @@ export const StepPanel = ({
   /** Loads the plans again, after a task or goal changed. */
   onRefresh: () => Promise<void>;
   onClose: () => void;
+  /** Opens a step here, e.g. from the timeline. */
+  onOpenStep?: (stepId: string) => void;
+  /** Deletes the step's task and the step. */
+  onDeleteTask?: () => Promise<boolean>;
 }) => {
   const canName = stepProjects ?? projects;
   const [linkQuery, setLinkQuery] = useState<string | null>(null);
   const [active, setActive] = useState(0);
+  const [asking, setAsking] = useState(false);
   const taken = useMemo(
     () =>
       new Set(
@@ -537,7 +553,15 @@ export const StepPanel = ({
     setLinkQuery(null);
   };
 
-  if (!step) return <Glance plan={plan} projects={projects} people={people} />;
+  if (!step)
+    return (
+      <Glance
+        plan={plan}
+        projects={projects}
+        people={people}
+        onOpenStep={onOpenStep}
+      />
+    );
 
   const kind = stepKind(step);
   const linked = !!(step.taskId || step.goalId);
@@ -762,15 +786,29 @@ export const StepPanel = ({
         {canEdit && (
           <button
             type="button"
-            onClick={onRemove}
+            onClick={() =>
+              step.taskId && onDeleteTask ? setAsking(true) : onRemove()
+            }
             className="flex items-center gap-1.5 text-xs text-neutral-500 hover:text-rose-300"
           >
             <Icon name="delete" className="text-[15px]" />
-            Remove step
-            {linked && ' (its task or goal stays)'}
+            {step.taskId && onDeleteTask
+              ? 'Delete step…'
+              : linked
+                ? 'Remove step (its goal stays)'
+                : 'Remove step'}
           </button>
         )}
       </div>
+      {onDeleteTask && (
+        <DeleteStepDialog
+          open={asking}
+          title={step.task?.title ?? step.text}
+          onClose={() => setAsking(false)}
+          onRemoveStep={onRemove}
+          onDeleteTask={onDeleteTask}
+        />
+      )}
     </div>
   );
 };

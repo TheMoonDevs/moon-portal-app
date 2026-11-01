@@ -249,6 +249,29 @@ export const usePlans = (companyId: string | null | undefined) => {
     [flush],
   );
 
+  /** Deletes the task a step links to, and the step. */
+  const deleteStepTask = useCallback(
+    async (planId: string, stepId: string) => {
+      const plan =
+        pending.current.get(planId) ?? data?.plans.find((p) => p.id === planId);
+      const taskId = plan?.steps.find((s) => s.id === stepId)?.taskId;
+      if (!taskId) return false;
+      try {
+        await PortalSdk.deleteData(`/api/tasks/${taskId}`, {});
+        change(planId, (p) => ({
+          ...p,
+          steps: p.steps.filter((s) => s.id !== stepId),
+        }));
+        toast.success('Step and task deleted');
+        return true;
+      } catch (err) {
+        toast.error(errorText(err, 'Could not delete the task.'));
+        return false;
+      }
+    },
+    [data, change],
+  );
+
   /**
    * Saves what is waiting, then loads everything again: after a step's task
    * or goal was changed from the plan.
@@ -342,6 +365,7 @@ export const usePlans = (companyId: string | null | undefined) => {
     makeTask,
     refreshSchedules,
     addNote,
+    deleteStepTask,
     refresh,
     addsTasksIn,
     canEdit,

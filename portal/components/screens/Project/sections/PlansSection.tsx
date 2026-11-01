@@ -223,6 +223,12 @@ export const PlansSection = ({
     setStepId(null);
   };
 
+  const deleteStepTask = async (id: string) => {
+    const done = await plans.deleteStepTask(plan.id, id);
+    if (done && stepId === id) setStepId(null);
+    return done;
+  };
+
   const makeTask = async () => {
     if (!step) return;
     setMakingTask(true);
@@ -264,6 +270,7 @@ export const PlansSection = ({
       newStepProjectId={projectId}
       addsTasksIn={plans.addsTasksIn}
       onMakeTask={(stepId) => plans.makeTask(plan.id, stepId)}
+      onDeleteTask={(id) => deleteStepTask(id)}
     />
   );
 
@@ -285,6 +292,10 @@ export const PlansSection = ({
       }
       onRefresh={() => plans.refresh(plan.id)}
       onClose={() => setStepId(null)}
+      onOpenStep={setStepId}
+      onDeleteTask={() =>
+        step ? deleteStepTask(step.id) : Promise.resolve(false)
+      }
     />
   );
 
@@ -293,11 +304,9 @@ export const PlansSection = ({
       {wide ? (
         <>
           <div className="min-w-0 flex-1">{editor}</div>
-          {step && (
-            <div className="w-[340px] shrink-0 border-l border-white/[0.07]">
-              {side}
-            </div>
-          )}
+          <div className="w-[340px] shrink-0 border-l border-white/[0.07]">
+            {side}
+          </div>
         </>
       ) : (
         <div className="min-w-0 flex-1">{step ? side : editor}</div>

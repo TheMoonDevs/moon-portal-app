@@ -24,7 +24,6 @@ import {
   Spin,
 } from '../Admin/shared/AdminUI';
 import { PlanEditor, StepPanel } from './PlanEditor';
-import { PlansTimeline } from './PlansTimeline';
 import type { PlansData, PlanView, StepView } from './types';
 import { isPast, shortDay, stepCount } from './types';
 import { ALL_COMPANIES, usePlans } from './usePlans';
@@ -382,6 +381,14 @@ export const PlansPage = () => {
     setMakingTask(false);
   };
 
+  /** Deletes a step and the task it links to. */
+  const deleteStepTask = async (id: string) => {
+    if (!plan) return false;
+    const done = await plans.deleteStepTask(plan.id, id);
+    if (done && stepId === id) selectStep(null);
+    return done;
+  };
+
   const selectStep = (id: string | null) => {
     setStepId(id);
     if (id && !wide) setView('step');
@@ -424,13 +431,12 @@ export const PlansPage = () => {
         fresh={plan.id === freshId}
         addsTasksIn={plans.addsTasksIn}
         onMakeTask={(stepId) => plans.makeTask(plan.id, stepId)}
+        onDeleteTask={(stepId) => deleteStepTask(stepId)}
       />
-    ) : data?.plans.length ? (
-      <PlansTimeline data={data} onOpen={(id, step) => selectPlan(id, step)} />
     ) : (
       <EmptyState
         icon="lightbulb"
-        title="No plans yet"
+        title={data?.plans.length ? 'Pick a plan' : 'No plans yet'}
         description="A plan can start as just an idea. A grand plan can span many projects; link it to one project to make it that project's plan. Steps can be plain text, tasks (type / to link one) or goals."
         action={
           plans.canCreate && (
@@ -448,7 +454,7 @@ export const PlansPage = () => {
       />
     );
 
-  const side = plan && step && data && choices && (
+  const side = plan && data && choices && (
     <StepPanel
       plan={plan}
       step={step}
@@ -465,6 +471,10 @@ export const PlansPage = () => {
         step ? plans.addNote(plan.id, step.id, text) : Promise.resolve(false)
       }
       onRefresh={() => plans.refresh(plan.id)}
+      onOpenStep={selectStep}
+      onDeleteTask={() =>
+        step ? deleteStepTask(step.id) : Promise.resolve(false)
+      }
       onClose={() => {
         selectStep(null);
         if (!wide) setView('plan');

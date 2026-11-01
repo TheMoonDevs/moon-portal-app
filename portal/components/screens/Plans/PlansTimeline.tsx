@@ -11,7 +11,7 @@ import type { PlansData, PlanView, StepView } from './types';
 import { shortDay, stepKind } from './types';
 
 /*
- * When no plan is open: how the plans work out, day by day, as a calendar
+ * In a plan's sidebar when no step is open (inPlan), or for many plans: how the plans work out, day by day, as a calendar
  * grid (a column per week, a row per weekday). Each day counts the tasks due
  * then, the runs of repeating goals and the plans that end; under it, a lane
  * per plan shows its weeks.
@@ -56,14 +56,24 @@ const goalDays = (goal: ProjectGoal, from: Date, to: Date) => {
 };
 
 /** Everything dated in the open plans, from `from` to `to`. */
-const itemsOf = (data: PlansData, from: Date, to: Date): Item[] => {
+type TimelineData = Pick<PlansData, 'plans' | 'projects'>;
+
+const itemsOf = (
+  data: TimelineData,
+  from: Date,
+  to: Date,
+  withClosed: boolean,
+): Item[] => {
   const goals = new Map(
     data.projects.flatMap((p) => (p.goals ?? []).map((g) => [g.id, g])),
   );
   const today = parse(iso(new Date()));
   const items: Item[] = [];
   for (const plan of data.plans) {
-    if (plan.status === PLAN_STATUS.DONE || plan.status === PLAN_STATUS.DROPPED)
+    if (
+      !withClosed &&
+      (plan.status === PLAN_STATUS.DONE || plan.status === PLAN_STATUS.DROPPED)
+    )
       continue;
     const end = plan.endOn ? parse(plan.endOn) : to;
     for (const step of plan.steps) {
@@ -122,9 +132,12 @@ const shade = (n: number) =>
 export const PlansTimeline = ({
   data,
   onOpen,
+  inPlan = false,
 }: {
-  data: PlansData;
+  data: TimelineData;
   onOpen: (planId: string, stepId?: string) => void;
+  /** One plan, in its sidebar: smaller, no plan names or lanes. */
+  inPlan?: boolean;
 }) => {
   const today = iso(new Date());
   const [picked, setPicked] = useState<string | null>(null);
@@ -136,7 +149,8 @@ export const PlansTimeline = ({
     const ends = data.plans
       .filter(
         (p) =>
-          p.status !== PLAN_STATUS.DONE && p.status !== PLAN_STATUS.DROPPED,
+          inPlan ||
+          (p.status !== PLAN_STATUS.DONE && p.status !== PLAN_STATUS.DROPPED),
       )
       .flatMap((p) => [
         p.endOn,
@@ -147,7 +161,7 @@ export const PlansTimeline = ({
     const count = Math.min(
       39,
       Math.max(
-        16,
+        inPlan ? 12 : 16,
         Math.ceil((last.getTime() - first.getTime()) / DAY_MS / 7) + 2,
       ),
     );
@@ -155,7 +169,7 @@ export const PlansTimeline = ({
       Array.from({ length: 7 }, (_, d) => iso(addDays(first, w * 7 + d))),
     );
     const to = addDays(first, count * 7 - 1);
-    const items = itemsOf(data, first, to).filter(
+    const items = itemsOf(data, first, to, inPlan).filter(
       (i) => i.day >= weeks[0][0] && i.day <= weeks.at(-1)![6],
     );
     const byDay = new Map<string, Item[]>();
@@ -177,7 +191,7 @@ export const PlansTimeline = ({
           : -1,
       }));
     return { weeks, items, byDay, lanes };
-  }, [data, today]);
+  }, [data, today, inPlan]);
 
   const months = weeks.map((days, w) => {
     const d = parse(days[0]);
@@ -202,17 +216,31 @@ export const PlansTimeline = ({
     )?.color || '#525252';
 
   return (
-    <div className="h-full overflow-y-auto px-5 py-6 sm:px-8">
-      <h2 className="text-lg font-semibold text-white">
-        How the plans work out
-      </h2>
-      <p className="mt-1 text-xs text-neutral-500">
-        Tasks due, repeating goals and plan ends, day by day, across the open
-        plans shown. Pick a day to see it; pick a plan to open it.
-      </p>
+    <div className={cn(!inPlan && 'h-full overflow-y-auto px-5 py-6 sm:px-8')}>
+      {inPlan ? (
+        <>
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
+            How the plan works out
+          </h3>
+          <p className="mt-1 text-[11px] text-neutral-500">
+            Tasks due, repeating goals and the plan’s end, day by day. Pick a
+            day to see it.
+          </p>
+        </>
+      ) : (
+        <>
+          <h2 className="text-lg font-semibold text-white">
+            How the plans work out
+          </h2>
+          <p className="mt-1 text-xs text-neutral-500">
+            Tasks due, repeating goals and plan ends, day by day, across the
+            open plans shown. Pick a day to see it; pick a plan to open it.
+          </p>
+        </>
+      )}
 
       {/* The calendar */}
-      <div className="mt-5 overflow-x-auto pb-2">
+      <div className={cn('overflow-x-auto pb-2', inPlan ? 'mt-3' : 'mt-5')}>
         <div className="inline-flex flex-col gap-1">
           <div className="flex gap-[3px] pl-8 text-[10px] text-neutral-500">
             {months.map((m, w) => (
@@ -343,9 +371,11 @@ export const PlansTimeline = ({
                   style={{ backgroundColor: projectColor(i.step) }}
                 />
               )}
-              <span className="max-w-[160px] shrink-0 truncate text-[11px] text-neutral-500">
-                {i.plan.title}
-              </span>
+              {!inPlan && (
+                <span className="max-w-[160px] shrink-0 truncate text-[11px] text-neutral-500">
+                  {i.plan.title}
+                </span>
+              )}
               {!picked && (
                 <span className="w-14 shrink-0 text-right text-[11px] text-neutral-500">
                   {shortDay(i.day)}
@@ -364,7 +394,7 @@ export const PlansTimeline = ({
       </div>
 
       {/* A lane per plan */}
-      {lanes.length > 0 && (
+      {!inPlan && lanes.length > 0 && (
         <div className="mt-6">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
             By plan, week by week
