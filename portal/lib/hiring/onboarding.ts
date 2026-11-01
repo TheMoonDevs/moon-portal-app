@@ -1,3 +1,9 @@
+/*
+ * TODO(onboarding): not wired up yet. Nothing calls this module: the API
+ * route (/api/hiring/applications/:id/onboard) and the Onboard card in the
+ * applicant panel come back once onboarding is wrapped up.
+ */
+
 import { randomInt } from 'crypto';
 
 import { db } from '@/lib/mongodb/db-client';

@@ -1,5 +1,11 @@
 'use client';
 
+/*
+ * TODO(onboarding): not shown anywhere yet. It calls
+ * /api/hiring/applications/:id/onboard, which comes back with it; see
+ * lib/hiring/onboarding.ts.
+ */
+
 import type { User } from '@db/client';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';

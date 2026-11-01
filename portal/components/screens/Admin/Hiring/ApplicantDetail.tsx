@@ -40,7 +40,6 @@ import {
   STAGE_META,
   timeAgo,
 } from './hiringMeta';
-import { OnboardHire } from './OnboardHire';
 import { ScorecardForm, ScorecardList } from './Scorecards';
 
 const AnswerLink = ({ href, label }: { href: string; label?: string }) => (
@@ -618,13 +617,8 @@ export const ApplicantDetail = ({
           </Field>
         )}
 
-        {canEdit && application.stage === APPLICATION_STAGE.HIRED && (
-          <OnboardHire
-            application={application}
-            users={users}
-            onUpdated={onUpdated}
-          />
-        )}
+        {/* TODO(onboarding): show <OnboardHire> here at the Hired stage once
+            onboarding is wrapped up. See lib/hiring/onboarding.ts. */}
 
         <Field
           label="Talent pool"
