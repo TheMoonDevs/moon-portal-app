@@ -4,6 +4,8 @@ import { db } from '@/lib/mongodb/db-client';
 import type { Project, ProjectGoal, Task } from '@/models/workspace';
 import { TASK_STATUS } from '@/models/workspace';
 
+import { attachToRun } from './goalRuns';
+
 /*
  * Goals pick up the work that fills them. When a task with no goal is done,
  * the goal (or part of one) it delivers towards is found for it: by Gemini,
@@ -167,7 +169,7 @@ export async function fitGoals(tasks: Task[], since?: string): Promise<Task[]> {
               since)),
     )
     .slice(-MAX_TASKS);
-  if (!open.length) return tasks;
+  if (!open.length) return attachRuns(tasks);
   const projectIds = Array.from(new Set(open.map((t) => t.projectId)));
   const projects: Project[] = await db.project.findMany({
     where: { id: { in: projectIds } },
@@ -196,6 +198,44 @@ export async function fitGoals(tasks: Task[], since?: string): Promise<Task[]> {
       );
     }
   }
+  return attachRuns(tasks.map((t) => updated.get(t.id) ?? t));
+}
+
+/** Only tasks changed this recently take a goal's run on their own. */
+const RECENT_MS = 36 * 3600 * 1000;
+
+/**
+ * Tasks linked to a scheduled goal that are not on one of its runs yet take
+ * the run they stand for (lib/workspace/goalRuns), so the goal does not
+ * also make a task of its own for it. Only recently changed ones: older
+ * ones are left as they are.
+ */
+async function attachRuns(tasks: Task[]): Promise<Task[]> {
+  const recent = (t: Task) =>
+    Date.now() - new Date((t.updatedAt ?? t.createdAt) as string).getTime() <
+    RECENT_MS;
+  const loose = tasks.filter(
+    (t) =>
+      t.goalId &&
+      t.projectId &&
+      !t.scheduleId &&
+      t.status !== TASK_STATUS.ARCHIVED &&
+      t.status !== TASK_STATUS.IGNORED &&
+      recent(t),
+  );
+  if (!loose.length) return tasks;
+  const projects: Project[] = await db.project.findMany({
+    where: { id: { in: Array.from(new Set(loose.map((t) => t.projectId))) } },
+  });
+  const scheduled = (t: Task) => {
+    const goal = projects
+      .find((p) => p.id === t.projectId)
+      ?.goals?.find((g) => g.id === t.goalId);
+    return !!goal && goal.kind !== 'target' && goal.makeTasks !== false;
+  };
+  const updated = new Map<string, Task>();
+  for (const task of loose.filter(scheduled))
+    updated.set(task.id, await attachToRun(task, { ahead: true }));
   return tasks.map((t) => updated.get(t.id) ?? t);
 }
 

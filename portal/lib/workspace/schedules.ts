@@ -1,6 +1,7 @@
 import { db } from '@/lib/mongodb/db-client';
 import type { TaskSchedule } from '@/models/workspace';
 
+import { runOf, runTasks } from './goalRuns';
 import { addDays, nextRunOnOrAfter, toDay } from './projects';
 import { moveSchedulesIntoGoals } from './scheduleMigration';
 import { scheduleTask } from './scheduleRuns';
@@ -67,15 +68,18 @@ export async function runDueSchedules(
     const now = new Date().toISOString();
     const count = Math.max(1, schedule.count || 1);
     const kept = runs.slice(-MAX_CATCH_UP_RUNS);
-    // Tasks already made for a run, e.g. done early, are not made again.
-    const early: { forDate?: string | null }[] = await db.task.findMany({
-      where: { scheduleId: schedule.id, forDate: { in: kept } },
-      select: { forDate: true },
-    });
+    // A run that already has its tasks is not made again: ones done early
+    // for it, or others linked to the goal for that day (by hand, by
+    // Claude, or matched by their words).
+    const early = await runTasks(
+      schedule,
+      kept[0],
+      addDays(kept[kept.length - 1], 62),
+    );
     const tasks = kept.flatMap((runOn) =>
       Array.from({ length: count }, (_, i) =>
         scheduleTask(schedule, runOn, i, now),
-      ).slice(early.filter((t) => t.forDate === runOn).length),
+      ).slice(early.filter((t) => runOf(schedule, t) === runOn).length),
     );
     if (tasks.length) {
       await db.task.createMany({ data: tasks });

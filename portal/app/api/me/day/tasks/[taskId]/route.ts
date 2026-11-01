@@ -12,7 +12,8 @@ import {
 import { db } from '@/lib/mongodb/db-client';
 import { syncTaskPoints } from '@/lib/progress/server';
 import { linkCandidates } from '@/lib/worklogs/linker';
-import { fail, ok, requireUser } from '@/lib/workspace/server';
+import { attachToRun, releaseRun } from '@/lib/workspace/goalRuns';
+import { fail, goalLink, ok, requireUser } from '@/lib/workspace/server';
 import type { Task } from '@/models/workspace';
 
 export const dynamic = 'force-dynamic';
@@ -33,8 +34,52 @@ async function ownTask(taskId: string) {
 }
 
 /**
+ * Links a task to one of its project's goals (`{goalId, goalPartId?,
+ * runOn?}`), or unlinks it (`null`). Linked to a scheduled goal, it takes
+ * the run it stands for (or the run on `runOn`) instead of the task the
+ * goal made for it.
+ */
+async function linkGoal(
+  task: Task,
+  goal: unknown,
+): Promise<{ task: Task } | { error: string }> {
+  const want = (goal ?? null) as {
+    goalId?: unknown;
+    goalPartId?: unknown;
+    runOn?: unknown;
+  } | null;
+  if (want && typeof want !== 'object') return { error: 'Unknown goal.' };
+  let link = {
+    goalId: null as string | null,
+    goalPartId: null as string | null,
+  };
+  if (want?.goalId) {
+    const project = task.projectId
+      ? await db.project.findFirst({ where: { id: task.projectId } })
+      : null;
+    link = goalLink(project, want);
+    if (!link.goalId)
+      return { error: "That goal is not in this task's project." };
+  }
+  const runOn =
+    typeof want?.runOn === 'string' && isDay(want.runOn) ? want.runOn : null;
+  const same =
+    link.goalId === (task.goalId ?? null) &&
+    link.goalPartId === (task.goalPartId ?? null);
+  let updated = same ? task : await releaseRun(task);
+  if (!same)
+    updated = await db.task.update({
+      where: { id: task.id },
+      data: { ...link, goalChecked: true, updatedAt: new Date().toISOString() },
+    });
+  if (link.goalId && (!same || runOn))
+    updated = await attachToRun(updated, { runOn, ahead: true });
+  return { task: updated };
+}
+
+/**
  * Changes a task on the caller's day: `{title?, status?, note?, place?,
- * forDate?}`. A new title places it again from its words unless a person
+ * forDate?, goal?}`. A new title places it again from its words unless a person
  * picked its place.
  */
 export async function PATCH(request: Request, { params }: Params) {
@@ -81,6 +126,19 @@ export async function PATCH(request: Request, { params }: Params) {
         },
       });
     }
+  }
+  // Moved to another project without a goal named: its old goal stays
+  // behind.
+  const goal =
+    'goal' in body
+      ? body.goal
+      : updated.goalId && updated.projectId !== task.projectId
+        ? null
+        : undefined;
+  if (goal !== undefined) {
+    const linked = await linkGoal(updated, goal);
+    if ('error' in linked) return fail(400, linked.error);
+    updated = linked.task;
   }
   if (TASK_MOVES.includes(body.status))
     updated = await moveTask(updated, body.status as TaskMove, {
