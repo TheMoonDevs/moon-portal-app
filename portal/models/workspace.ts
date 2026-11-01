@@ -404,8 +404,13 @@ export enum PLAN_STATUS {
  * task linked with "/"), or a goal of a project. A task step follows the
  * task's status; a goal step is done when the goal is met.
  */
+/** What a plan step is: a line of text, a to-do, a task or a goal. */
+export type PlanStepKind = 'info' | 'todo' | 'task' | 'goal';
+
 export type PlanStep = {
   id: string;
+  /** Left out on steps from before kinds: a to-do, or what it links to. */
+  kind?: PlanStepKind;
   text: string;
   notes?: Nullable<string>;
   projectId?: Nullable<string>;

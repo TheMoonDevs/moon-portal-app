@@ -18,7 +18,13 @@ import {
   TASK_STATUS,
 } from '@/models/workspace';
 
-import { PLAN_STATUSES, planDay, projectFamily, sanitizeSteps } from './plans';
+import {
+  kindOf,
+  PLAN_STATUSES,
+  planDay,
+  projectFamily,
+  sanitizeSteps,
+} from './plans';
 import { goalProgress, tallyRows } from './projects';
 import {
   fail,
@@ -208,9 +214,21 @@ export type StepGoal = {
   met: boolean;
 };
 
+/** A task step's task, enough to show and edit it beside the plan. */
+export type StepTask = {
+  id: string;
+  status: string;
+  title: string;
+  description: string | null;
+  projectId: string;
+  assigneeIds: string[];
+  dueDate: string | null;
+  forDate: string | null;
+};
+
 export type PlanView = Omit<Plan, 'steps'> & {
   steps: (PlanStep & {
-    task?: { id: string; status: string; title: string } | null;
+    task?: StepTask | null;
     goal?: StepGoal | null;
   })[];
   /** Scheduled tasks set up in the plan. */
@@ -268,28 +286,55 @@ async function stepGoals(plans: Plan[]) {
 }
 
 /**
- * Plans with each task step showing its task's status, each goal step
- * where its goal stands, and the scheduled tasks set up in each.
+ * Plans with each task step showing its task, each goal step where its goal
+ * stands, and the scheduled tasks set up in each. A repeating goal set up
+ * for the plan before goals were steps shows as a goal step at the end.
  */
-export async function withTasks(plans: Plan[]): Promise<PlanView[]> {
+export async function withTasks(input: Plan[]): Promise<PlanView[]> {
+  const schedules: TaskSchedule[] = input.length
+    ? await db.taskSchedule.findMany({
+        where: { planId: { in: input.map((p) => p.id) } },
+        orderBy: { createdAt: 'asc' },
+      })
+    : [];
+  const plans = input.map((p) => {
+    const steps = p.steps ?? [];
+    const named = new Set(steps.map((s) => s.goalId).filter(Boolean));
+    const extra: PlanStep[] = [];
+    for (const sc of schedules)
+      if (sc.planId === p.id && sc.goalId && !named.has(sc.goalId)) {
+        named.add(sc.goalId);
+        extra.push({
+          id: `g${sc.goalId}`.slice(0, 20),
+          kind: 'goal',
+          text: sc.title,
+          notes: null,
+          projectId: sc.projectId,
+          assigneeIds: [],
+          dueOn: null,
+          done: false,
+          taskId: null,
+          goalId: sc.goalId,
+        });
+      }
+    return extra.length ? { ...p, steps: [...steps, ...extra] } : p;
+  });
   const ids = plans.flatMap((p) =>
     (p.steps ?? []).map((s) => s.taskId).filter(Boolean),
   ) as string[];
-  const [tasks, schedules, goals]: [
-    Task[],
-    TaskSchedule[],
-    Map<string, StepGoal>,
-  ] = await Promise.all([
+  const [tasks, goals]: [Task[], Map<string, StepGoal>] = await Promise.all([
     ids.length
       ? db.task.findMany({
           where: { id: { in: ids } },
-          select: { status: true, title: true },
-        })
-      : [],
-    plans.length
-      ? db.taskSchedule.findMany({
-          where: { planId: { in: plans.map((p) => p.id) } },
-          orderBy: { createdAt: 'asc' },
+          select: {
+            status: true,
+            title: true,
+            description: true,
+            projectId: true,
+            assigneeIds: true,
+            dueDate: true,
+            forDate: true,
+          },
         })
       : [],
     stepGoals(plans),
@@ -304,9 +349,19 @@ export async function withTasks(plans: Plan[]): Promise<PlanView[]> {
       const goal = s.goalId ? goals.get(s.goalId) : undefined;
       return {
         ...s,
+        kind: kindOf(s),
         goalId: s.goalId ?? null,
         task: task
-          ? { id: task.id, status: task.status, title: task.title }
+          ? {
+              id: task.id,
+              status: task.status,
+              title: task.title,
+              description: task.description ?? null,
+              projectId: task.projectId,
+              assigneeIds: task.assigneeIds ?? [],
+              dueDate: task.dueDate ? String(task.dueDate).slice(0, 10) : null,
+              forDate: task.forDate ?? null,
+            }
           : null,
         goal: goal ?? null,
         // A task step is done when its task is; a goal step when it is met.
@@ -472,7 +527,7 @@ export async function stepToTask(plan: Plan, stepId: string, userId: string) {
     where: { id: plan.id },
     data: {
       steps: plan.steps.map((s) =>
-        s.id === stepId ? { ...s, taskId: task.id } : s,
+        s.id === stepId ? { ...s, kind: 'task' as const, taskId: task.id } : s,
       ),
       updatedAt: now,
     },

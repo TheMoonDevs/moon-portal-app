@@ -231,6 +231,38 @@ export const usePlans = (companyId: string | null | undefined) => {
     [flush],
   );
 
+  /** Adds a note to the task a step links to. */
+  const addNote = useCallback(
+    async (planId: string, stepId: string, text: string) => {
+      try {
+        await flush(planId);
+        await PortalSdk.postData(`/api/plans/${planId}/steps/${stepId}/note`, {
+          text,
+        });
+        toast.success('Note added to the task');
+        return true;
+      } catch (err) {
+        toast.error(errorText(err, 'Could not add the note.'));
+        return false;
+      }
+    },
+    [flush],
+  );
+
+  /**
+   * Saves what is waiting, then loads everything again: after a step's task
+   * or goal was changed from the plan.
+   */
+  const refresh = useCallback(
+    async (planId: string) => {
+      // Let a change made just before land in the plan first.
+      await new Promise((r) => setTimeout(r, 50));
+      await flush(planId);
+      if (companyId) await load(companyId);
+    },
+    [flush, load, companyId],
+  );
+
   // After a scheduled task changes, fetch the plan's list of them again.
   const refreshSchedules = useCallback(async (id: string) => {
     try {
@@ -309,6 +341,8 @@ export const usePlans = (companyId: string | null | undefined) => {
     remove,
     makeTask,
     refreshSchedules,
+    addNote,
+    refresh,
     addsTasksIn,
     canEdit,
     canDelete,

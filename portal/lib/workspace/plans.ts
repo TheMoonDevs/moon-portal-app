@@ -1,4 +1,4 @@
-import type { PlanStep } from '@/models/workspace';
+import type { PlanStep, PlanStepKind } from '@/models/workspace';
 import { PLAN_STATUS } from '@/models/workspace';
 
 /*
@@ -20,6 +20,18 @@ export const PLAN_STATUS_META: Record<
 };
 
 export const PLAN_STATUSES = Object.values(PLAN_STATUS);
+
+export const STEP_KINDS: PlanStepKind[] = ['info', 'todo', 'task', 'goal'];
+
+/** A step's kind: as set, else from what it links to (older steps). */
+export const kindOf = (s: Pick<PlanStep, 'kind' | 'taskId' | 'goalId'>) =>
+  s.taskId
+    ? 'task'
+    : s.goalId
+      ? 'goal'
+      : s.kind && STEP_KINDS.includes(s.kind)
+        ? s.kind
+        : 'todo';
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const shortId = () => Math.random().toString(36).slice(2, 10);
@@ -80,7 +92,12 @@ export function sanitizeSteps(
   return input
     .slice(0, 100)
     .map((s): PlanStep | null => {
-      const stepText = text(s?.text, 300);
+      // A task or goal step can wait for its words; others need them.
+      const stepText =
+        text(s?.text, 300) ||
+        (s?.kind === 'task' || s?.kind === 'goal' || s?.taskId || s?.goalId
+          ? 'Untitled'
+          : '');
       if (!stepText) return null;
       const id =
         typeof s.id === 'string' && s.id ? s.id.slice(0, 20) : shortId();
@@ -110,6 +127,7 @@ export function sanitizeSteps(
           : null;
       return {
         id,
+        kind: kindOf({ kind: s.kind, taskId, goalId }),
         text: stepText,
         notes: text(s.notes, 4000) || null,
         projectId,
@@ -135,6 +153,7 @@ export function sanitizeSteps(
 /** A new, empty step. */
 export const newStep = (fields: Partial<PlanStep> = {}): PlanStep => ({
   id: shortId(),
+  kind: 'todo',
   text: '',
   notes: null,
   projectId: null,
