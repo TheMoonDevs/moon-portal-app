@@ -29,6 +29,7 @@ import {
 import type { TidyInput } from './daywork';
 import { logWork, tidyTasks, todayTasks } from './daywork';
 import { HIRING_TOOLS } from './hiring';
+import { ONBOARDING_TOOLS } from './onboarding';
 import { PAGE_TOOLS } from './pages';
 import { PLAN_TOOLS } from './plans';
 import { SCHEDULE_TOOLS } from './schedules';
@@ -606,6 +607,7 @@ export const TOOLS: Tool[] = [
   ...PAGE_TOOLS,
   ...SCHEDULE_TOOLS,
   ...HIRING_TOOLS,
+  ...ONBOARDING_TOOLS,
 ];
 
 /** What tools/list returns: the tools this person can use. */

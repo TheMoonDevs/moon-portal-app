@@ -10,7 +10,16 @@ export const POOL_TAGS: Array<{
   label: string;
   icon: string;
   hint: string;
+  /** Set by the portal (moving someone to Hired), not by hand. */
+  auto?: boolean;
 }> = [
+  {
+    value: 'HIRED',
+    label: 'Hired',
+    icon: 'verified',
+    hint: 'Joined the team from this opening. Their onboarding is in the Onboarding tab.',
+    auto: true,
+  },
   {
     value: 'TOP',
     label: 'Top pick',
@@ -39,6 +48,9 @@ export const POOL_TAGS: Array<{
 
 export const isPoolTag = (value: unknown): value is ApplicationTag =>
   POOL_TAGS.some((t) => t.value === value);
+
+/** The tags people set by hand on an applicant. */
+export const MANUAL_POOL_TAGS = POOL_TAGS.filter((t) => !t.auto);
 
 /** Known tags from an untrusted list, each once, in the usual order. */
 export const sanitizeTags = (value: unknown): ApplicationTag[] => {

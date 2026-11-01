@@ -51,6 +51,12 @@ export type User = Loose<
     /** When they last saved a look; the next change waits (see the lock). */
     lookSetAt?: Nullable<Date | string>;
     status: USERSTATUS;
+    /**
+     * Set while a new hire is onboarding or on trial: they can use the portal
+     * but cannot connect Claude (MCP tokens and app connections) until they
+     * are fully hired.
+     */
+    claudeLocked?: Nullable<boolean>;
     /** Full access to everything (the `*` permission). */
     isAdmin?: boolean;
     /** Portal-wide roles (see the `Role` collection). */

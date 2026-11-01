@@ -3,6 +3,7 @@ export * from './docMarkdown';
 export * from './hiring';
 export * from './meet';
 export * from './notifications';
+export * from './onboarding';
 export * from './platform';
 export * from './progress';
 export * from './shared/base';

@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { CODE_TTL_MS, isAllowedRedirect } from '@/lib/mcp/oauth';
 import { randomSecret, sha256 } from '@/lib/mcp/tokens';
 import { db } from '@/lib/mongodb/db-client';
+import { CLAUDE_LOCKED_MESSAGE, isClaudeLocked } from '@/lib/onboarding/claude';
 import { getSessionUser } from '@/lib/permissions/server';
 import type { OAuthClient } from '@/models/connections';
 
@@ -30,6 +31,7 @@ export async function GET(request: Request) {
     params.get('redirect_uri'),
   );
   if (!client) return fail(400, 'This connection link is not valid.');
+  if (await isClaudeLocked(user.id)) return fail(403, CLAUDE_LOCKED_MESSAGE);
   return NextResponse.json({
     status: 'success',
     data: {
@@ -53,6 +55,14 @@ export async function POST(request: Request) {
   const back = new URL(body.redirect_uri);
   if (typeof body.state === 'string')
     back.searchParams.set('state', body.state);
+  if (body.approve && (await isClaudeLocked(user.id))) {
+    back.searchParams.set('error', 'access_denied');
+    back.searchParams.set('error_description', CLAUDE_LOCKED_MESSAGE);
+    return NextResponse.json({
+      status: 'success',
+      data: { redirect: back.href },
+    });
+  }
 
   if (!body.approve) {
     back.searchParams.set('error', 'access_denied');

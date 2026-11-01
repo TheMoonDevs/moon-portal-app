@@ -1,5 +1,6 @@
 import { createApiToken } from '@/lib/mcp/tokens';
 import { db } from '@/lib/mongodb/db-client';
+import { CLAUDE_LOCKED_MESSAGE, isClaudeLocked } from '@/lib/onboarding/claude';
 import { fail, nowIso, ok, requireUser } from '@/lib/workspace/server';
 import type { ApiToken } from '@/models/connections';
 
@@ -38,6 +39,7 @@ export async function GET() {
 export async function POST(request: Request) {
   const { response, user } = await requireUser();
   if (response || !user) return response ?? fail(401, 'Sign in first.');
+  if (await isClaudeLocked(user.id)) return fail(403, CLAUDE_LOCKED_MESSAGE);
   const body = await request.json().catch(() => ({}));
   const name =
     typeof body.name === 'string' && body.name.trim()

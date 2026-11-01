@@ -388,8 +388,14 @@ export async function moveApplication(
     from: application.stage,
     to: stage,
   };
+  // Hired people stay in the talent pool, marked Hired.
+  const tags = application.tags ?? [];
+  const hiredTag =
+    stage === APPLICATION_STAGE.HIRED && !tags.includes('HIRED')
+      ? { tags: [...tags, 'HIRED' as const] }
+      : {};
   return db.jobApplication.update({
     where: { id: application.id },
-    data: { stage, updatedAt: at, history: { push: event } },
+    data: { stage, ...hiredTag, updatedAt: at, history: { push: event } },
   });
 }

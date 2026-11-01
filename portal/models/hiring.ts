@@ -147,7 +147,7 @@ export interface ApplicationLastEmail {
  * screening tiers (top pick, sounds genuine, maybe) and "keep on file" for
  * people rejected this time but worth asking again. See lib/hiring/pool.
  */
-export type ApplicationTag = 'TOP' | 'GENUINE' | 'MAYBE' | 'KEEP';
+export type ApplicationTag = 'TOP' | 'GENUINE' | 'MAYBE' | 'KEEP' | 'HIRED';
 
 /** One requirement rated on a scorecard, 1 (weak) to 4 (strong). */
 export interface ScorecardRating {
@@ -171,21 +171,6 @@ export interface Scorecard {
   ratings: ScorecardRating[];
   verdict: ScorecardVerdict;
   notes?: Nullable<string>;
-  at: string;
-}
-
-/** What onboarding a hire set up, so it isn't done twice. */
-export interface ApplicationOnboarding {
-  /** Their portal account. */
-  userId: string;
-  /** Whether the account was made for them, rather than found. */
-  createdAccount: boolean;
-  projectId?: Nullable<string>;
-  /** Their first-week buddy, the opening's hiring lead by default. */
-  buddyId?: Nullable<string>;
-  /** The first-week checklist, as tasks on their project. */
-  taskIds: string[];
-  byUserId: string;
   at: string;
 }
 
@@ -301,7 +286,8 @@ export type JobApplication = Loose<
     /** Talent pool marks, see ApplicationTag. */
     tags?: ApplicationTag[];
     scorecards?: Scorecard[];
-    onboarding?: Nullable<ApplicationOnboarding>;
+    /** Their onboarding (see models/onboarding), once it has started. */
+    onboardingId?: Nullable<string>;
     /** The application they were added from, out of the talent pool. */
     pooledFromId?: Nullable<string>;
   }
