@@ -7,7 +7,12 @@ import { cn } from '@/lib/utils';
 import { PLAN_STATUS_META } from '@/lib/workspace/plans';
 import { PLAN_STATUS } from '@/models/workspace';
 
-import { AdminButton, ConfirmDialog, Spin } from '../../Admin/shared/AdminUI';
+import {
+  AdminButton,
+  ConfirmDialog,
+  Icon,
+  Spin,
+} from '../../Admin/shared/AdminUI';
 import { PlanEditor, StepPanel } from '../../Plans/PlanEditor';
 import { PlanSchedules } from '../../Plans/PlanSchedules';
 import type { PlanView, StepView } from '../../Plans/types';
@@ -17,7 +22,7 @@ import { SectionShell } from './SectionShell';
 
 type Plans = ReturnType<typeof usePlans>;
 
-/** Plans with a step or a scheduled task for the project. */
+/** Plans linked to the project, or with a step or a scheduled task for it. */
 export const plansFor = (
   plans: PlanView[],
   projectId: string,
@@ -26,6 +31,7 @@ export const plansFor = (
   plans.filter(
     (p) =>
       keep.has(p.id) ||
+      p.projectId === projectId ||
       p.steps.some((s) => s.projectId === projectId) ||
       (p.schedules ?? []).some((s) => s.projectId === projectId),
   );
@@ -42,6 +48,7 @@ const PlanCard = ({
   const count = stepCount(plan);
   const here = plan.steps.filter((s) => s.projectId === projectId);
   const status = PLAN_STATUS_META[plan.status as PLAN_STATUS];
+  const grand = plan.projectId !== projectId;
   return (
     <button
       type="button"
@@ -52,6 +59,19 @@ const PlanCard = ({
         <span className="min-w-0 flex-1 truncate text-sm font-medium text-neutral-100">
           {plan.title || 'Untitled plan'}
         </span>
+        {grand && (
+          <span
+            className="flex shrink-0 items-center gap-1 text-[11px] text-violet-300/80"
+            title={
+              plan.projectId
+                ? 'Linked to another project, with a step for this one'
+                : 'A grand plan across projects, with a step for this one'
+            }
+          >
+            <Icon name="hub" className="text-[13px]" />
+            {plan.projectId ? 'Other project' : 'Grand plan'}
+          </span>
+        )}
         <span className="shrink-0 rounded-full bg-white/[0.06] px-2 py-0.5 text-[11px] text-neutral-400">
           {status?.label}
         </span>
@@ -128,7 +148,8 @@ export const PlansSection = ({
 
   const create = async () => {
     setCreating(true);
-    const created = await plans.create();
+    // A plan made on a project's page is that project's plan.
+    const created = await plans.create({ projectId });
     setCreating(false);
     if (!created) return;
     onCreated(created);
@@ -141,9 +162,9 @@ export const PlansSection = ({
       <SectionShell
         icon="map"
         title="Project Plans"
-        description="The company’s plans with a step for this project. Open one to change it, just like on the plans page."
+        description="This project’s plans, and grand plans with a step for it. Open one to change it, just like on the plans page."
         actions={
-          data.can.create && (
+          plans.canCreate && (
             <AdminButton
               tone="primary"
               size="sm"
@@ -173,8 +194,8 @@ export const PlansSection = ({
               No plans for this project
             </p>
             <p className="mx-auto mt-1 max-w-sm text-xs text-neutral-500">
-              A plan shows here once one of its steps is for this project. Steps
-              you add to a plan made here are for this project.
+              A plan made here is linked to this project. Grand plans show here
+              too once one of their steps is for it.
             </p>
           </div>
         )}
@@ -183,6 +204,7 @@ export const PlansSection = ({
 
   const canEdit = plans.canEdit(plan);
   const canDelete = plans.canDelete(plan);
+  const choices = plans.choicesFor(plan);
 
   const changeStep = (fields: Partial<StepView>) =>
     step &&
@@ -227,8 +249,9 @@ export const PlansSection = ({
     <PlanEditor
       key={plan.id}
       plan={plan}
-      projects={data.projects}
-      people={data.people}
+      projects={choices.projects}
+      stepProjects={choices.stepProjects}
+      people={choices.people}
       canEdit={canEdit}
       canDelete={canDelete}
       selectedStepId={stepId}
@@ -241,8 +264,8 @@ export const PlansSection = ({
       extra={
         <PlanSchedules
           plan={plan}
-          projects={data.projects}
-          people={data.people}
+          projects={choices.stepProjects}
+          people={choices.people}
           canEdit={canEdit}
           canAddTo={plans.addsTasksIn}
           onSaved={() => plans.refreshSchedules(plan.id)}
@@ -255,8 +278,9 @@ export const PlansSection = ({
     <StepPanel
       plan={plan}
       step={step}
-      projects={data.projects}
-      people={data.people}
+      projects={choices.projects}
+      stepProjects={choices.stepProjects}
+      people={choices.people}
       canEdit={canEdit}
       canMakeTask={plans.addsTasksIn(step?.projectId)}
       makingTask={makingTask}

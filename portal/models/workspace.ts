@@ -400,8 +400,9 @@ export enum PLAN_STATUS {
 
 /**
  * One step of a plan: what, for which project (optional), by whom and by
- * when. A step with a project can be made into a task; it then follows the
- * task's status.
+ * when. A step is plain text, a task (made from the step, or an existing
+ * task linked with "/"), or a goal of a project. A task step follows the
+ * task's status; a goal step is done when the goal is met.
  */
 export type PlanStep = {
   id: string;
@@ -413,15 +414,21 @@ export type PlanStep = {
   dueOn?: Nullable<string>;
   done?: boolean;
   taskId?: Nullable<string>;
+  /** A goal of the step's project (projectId). */
+  goalId?: Nullable<string>;
 };
 
 /**
- * A plan in a company: mostly ideas at first. It needs no project; steps
- * can name projects across the company as the plan firms up.
+ * A plan in a company: mostly ideas at first. A grand plan has no project;
+ * its steps can name any of the company's projects. A project plan is
+ * linked to one project (projectId), and its steps stay inside that
+ * project and its sub-projects.
  */
 export type Plan = Loose<
   BaseModel & {
     companyId: string;
+    /** The project it is linked to; empty for a grand plan. */
+    projectId?: Nullable<string>;
     title: string;
     notes?: Nullable<string>;
     status: PLAN_STATUS;

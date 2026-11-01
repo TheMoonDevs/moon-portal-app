@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
+import { projectFamily } from '@/lib/workspace/plans';
 import { PLAN_STATUS } from '@/models/workspace';
 import { useUser } from '@/utils/hooks/useUser';
 import { PortalSdk } from '@/utils/services/PortalSdk';
@@ -16,6 +17,7 @@ export type PlanSaveState = 'saved' | 'saving' | 'error';
 
 /** What a save sends: the plan's own fields, not the tasks' status. */
 const payload = (plan: PlanView) => ({
+  projectId: plan.projectId ?? null,
   title: plan.title.trim() || 'Untitled plan',
   notes: plan.notes ?? null,
   status: plan.status,
@@ -25,12 +27,16 @@ const payload = (plan: PlanView) => ({
   memberIds: plan.memberIds ?? [],
   steps: plan.steps
     .filter((s) => s.text.trim())
-    .map(({ task: _task, ...s }) => s),
+    .map(({ task: _task, goal: _goal, ...s }) => s),
 });
 
+/** Every company they can read. */
+export const ALL_COMPANIES = 'all';
+
 /**
- * A company's plans, saved a moment after each change. Used by the plans
- * page and by a project's page, which shows the plans with a step for it.
+ * Plans of one company, or of every company (ALL_COMPANIES), saved a
+ * moment after each change. Used by the plans page and by a project's
+ * page, which shows the plans linked to it or with a step for it.
  */
 export const usePlans = (companyId: string | null | undefined) => {
   const { user } = useUser();
@@ -44,7 +50,10 @@ export const usePlans = (companyId: string | null | undefined) => {
   const load = useCallback(async (id: string) => {
     setLoading(true);
     try {
-      const res = await PortalSdk.getData(`/api/plans?companyId=${id}`, null);
+      const res = await PortalSdk.getData(
+        id === ALL_COMPANIES ? '/api/plans' : `/api/plans?companyId=${id}`,
+        null,
+      );
       setData(res?.data ?? null);
     } catch (err) {
       toast.error(errorText(err, 'Could not load plans.'));
@@ -66,7 +75,7 @@ export const usePlans = (companyId: string | null | undefined) => {
     try {
       const res = await PortalSdk.patchData(`/api/plans/${id}`, payload(plan));
       const saved: PlanView | undefined = res?.data?.plan;
-      // Take the tasks' status from the server; keep what is being typed.
+      // Take tasks and goals from the server; keep what is being typed.
       if (saved)
         setData(
           (d) =>
@@ -79,9 +88,17 @@ export const usePlans = (companyId: string | null | undefined) => {
                       ...p,
                       steps: p.steps.map((s) => {
                         const fresh = saved.steps.find((x) => x.id === s.id);
-                        return fresh?.task
-                          ? { ...s, task: fresh.task, done: fresh.done }
-                          : s;
+                        if (!fresh) return s;
+                        const linked = !!(fresh.task || fresh.goal);
+                        return {
+                          ...s,
+                          projectId: fresh.taskId
+                            ? fresh.projectId
+                            : s.projectId,
+                          task: fresh.task ?? null,
+                          goal: fresh.goal ?? null,
+                          done: linked ? fresh.done : s.done,
+                        };
                       }),
                     },
               ),
@@ -137,16 +154,21 @@ export const usePlans = (companyId: string | null | undefined) => {
     [persist],
   );
 
-  /** Makes a plan; `fields` can start it with steps. */
+  /**
+   * Makes a plan; `fields` can start it with steps or link it to a project.
+   * With every company loaded, `fields.companyId` says which one.
+   */
   const create = useCallback(
     async (fields: Partial<PlanView> = {}) => {
-      if (!companyId) return null;
+      const inCompany =
+        fields.companyId ?? (companyId !== ALL_COMPANIES ? companyId : null);
+      if (!inCompany) return null;
       try {
         const res = await PortalSdk.postData('/api/plans', {
-          companyId,
           title: 'New plan',
           status: PLAN_STATUS.IDEA,
           ...fields,
+          companyId: inCompany,
         });
         const created: PlanView = res?.data?.plan;
         setData((d) => d && { ...d, plans: [created, ...d.plans] });
@@ -229,19 +251,53 @@ export const usePlans = (companyId: string | null | undefined) => {
     }
   }, []);
 
-  // The people on a project run its tasks, and plans with a step for it.
-  const addsTasksIn = (projectId?: string | null) =>
-    !!data &&
-    !!projectId &&
-    (data.can.createTasks || data.can.teamProjectIds.includes(projectId));
-  const isMine = (plan: PlanView) =>
-    !!data &&
-    (plan.ownerId === user?.id ||
-      plan.steps.some(
-        (s) => !!s.projectId && data.can.teamProjectIds.includes(s.projectId),
-      ));
-  const canEdit = (plan: PlanView) => isMine(plan) || !!data?.can.editAll;
-  const canDelete = (plan: PlanView) => isMine(plan) || !!data?.can.deleteAll;
+  const companyOf = (projectId?: string | null) =>
+    data?.projects.find((p) => p.id === projectId)?.companyId;
+  // The people on a project run its tasks, and plans linked to it or with a
+  // step for it.
+  const addsTasksIn = (projectId?: string | null) => {
+    const can = data?.can[companyOf(projectId) ?? ''];
+    return (
+      !!can &&
+      !!projectId &&
+      (can.createTasks || can.teamProjectIds.includes(projectId))
+    );
+  };
+  const isMine = (plan: PlanView) => {
+    const team = data?.can[plan.companyId]?.teamProjectIds ?? [];
+    return (
+      plan.ownerId === user?.id ||
+      (!!plan.projectId && team.includes(plan.projectId)) ||
+      plan.steps.some((s) => !!s.projectId && team.includes(s.projectId))
+    );
+  };
+  const canEdit = (plan: PlanView) =>
+    isMine(plan) || !!data?.can[plan.companyId]?.editAll;
+  const canDelete = (plan: PlanView) =>
+    isMine(plan) || !!data?.can[plan.companyId]?.deleteAll;
+  const canCreate = !!data && Object.values(data.can).some((c) => c.create);
+
+  /**
+   * The projects and people a plan can name: its company's, and for a
+   * project plan only its project and the ones under it (`stepProjects`).
+   */
+  const choicesFor = (plan: PlanView) => {
+    const projects = (data?.projects ?? []).filter(
+      (p) => p.companyId === plan.companyId,
+    );
+    const family = plan.projectId
+      ? projectFamily(projects, plan.projectId)
+      : null;
+    return {
+      projects,
+      stepProjects: family
+        ? projects.filter((p) => family.has(p.id))
+        : projects,
+      people: (data?.people ?? []).filter((p) =>
+        p.companyIds.includes(plan.companyId),
+      ),
+    };
+  };
 
   return {
     data,
@@ -256,5 +312,7 @@ export const usePlans = (companyId: string | null | undefined) => {
     addsTasksIn,
     canEdit,
     canDelete,
+    canCreate,
+    choicesFor,
   };
 };

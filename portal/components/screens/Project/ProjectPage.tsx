@@ -771,7 +771,8 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
 
   const newPlan = async () => {
     setCreatingPlan(true);
-    const created = await plans.create();
+    // Linked to this project; it can be made a grand plan later.
+    const created = await plans.create({ projectId });
     setCreatingPlan(false);
     if (!created) return;
     keepPlan(created);
@@ -1021,7 +1022,7 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
         plans={linkedPlans}
         planId={planId}
         plansOpen={plansOpen}
-        canAddPlan={!!plans.data?.can.create}
+        canAddPlan={plans.canCreate}
         creatingPlan={creatingPlan}
         onPlansOpen={setPlansOpen}
         onNewPlan={newPlan}

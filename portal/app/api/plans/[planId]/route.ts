@@ -25,7 +25,7 @@ export async function PATCH(request: Request, { params }: Params) {
   if (response || !plan) return response ?? fail(404, 'Plan not found.');
 
   const body = await request.json().catch(() => ({}));
-  const { data, error } = readPlanBody(
+  const { data, error } = await readPlanBody(
     body,
     await planChoices(plan.companyId),
     plan,

@@ -19,24 +19,15 @@ import {
   ConfirmDialog,
   EmptyState,
   Icon,
+  NativeSelect,
   SearchInput,
   Spin,
 } from '../Admin/shared/AdminUI';
-import { CompanyPicker } from '../Admin/Workspace/shared';
 import { PlanEditor, StepPanel } from './PlanEditor';
 import { PlanSchedules } from './PlanSchedules';
-import type { PlansData, StepView } from './types';
+import type { PlansData, PlanView, StepView } from './types';
 import { isPast, shortDay, stepCount } from './types';
-import { usePlans } from './usePlans';
-
-const COMPANY_KEY = 'plans:company';
-const readStored = () => {
-  try {
-    return localStorage.getItem(COMPANY_KEY);
-  } catch {
-    return null;
-  }
-};
+import { ALL_COMPANIES, usePlans } from './usePlans';
 
 /* -------------------------------------------------------------------------- */
 /*                                The plan list                               */
@@ -48,37 +39,83 @@ const GROUPS: { label: string; statuses: PLAN_STATUS[] }[] = [
   { label: 'Finished', statuses: [PLAN_STATUS.DONE, PLAN_STATUS.DROPPED] },
 ];
 
+type Kind = 'all' | 'grand' | 'project';
+const KINDS: { value: Kind; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'grand', label: 'Grand' },
+  { value: 'project', label: 'Project' },
+];
+
 const PlanList = ({
   data,
   selectedId,
   onSelect,
+  showCompany,
 }: {
   data: PlansData;
   selectedId: string | null;
   onSelect: (id: string) => void;
+  /** Name each plan's company, when several are listed. */
+  showCompany: boolean;
 }) => {
   const [search, setSearch] = useState('');
+  const [kind, setKind] = useState<Kind>('all');
   const [showFinished, setShowFinished] = useState(false);
   const projectById = useMemo(
     () => new Map(data.projects.map((p) => [p.id, p])),
     [data.projects],
   );
+  const companyById = useMemo(
+    () => new Map(data.companies.map((c) => [c.id, c])),
+    [data.companies],
+  );
   const q = search.trim().toLowerCase();
+  const matchesKind = (p: PlanView) =>
+    kind === 'all' || (kind === 'grand') === !p.projectId;
   const shown = data.plans.filter(
     (p) =>
-      !q ||
-      p.title.toLowerCase().includes(q) ||
-      (p.notes ?? '').toLowerCase().includes(q),
+      matchesKind(p) &&
+      (!q ||
+        p.title.toLowerCase().includes(q) ||
+        (p.notes ?? '').toLowerCase().includes(q) ||
+        (!!p.projectId &&
+          (projectById.get(p.projectId)?.name ?? '')
+            .toLowerCase()
+            .includes(q))),
   );
 
   return (
     <div className="flex h-full flex-col">
-      <div className="p-3">
+      <div className="flex flex-col gap-2 p-3">
         <SearchInput
           value={search}
           onChange={setSearch}
           placeholder="Search plans…"
         />
+        <div className="flex items-center gap-1">
+          {KINDS.map((k) => (
+            <button
+              key={k.value}
+              type="button"
+              onClick={() => setKind(k.value)}
+              title={
+                k.value === 'grand'
+                  ? 'Plans across many projects'
+                  : k.value === 'project'
+                    ? 'Plans linked to one project'
+                    : undefined
+              }
+              className={cn(
+                'rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors',
+                kind === k.value
+                  ? 'bg-white/[0.1] text-white'
+                  : 'text-neutral-500 hover:bg-white/[0.04] hover:text-neutral-300',
+              )}
+            >
+              {k.label}
+            </button>
+          ))}
+        </div>
       </div>
       <div className="flex-1 overflow-y-auto px-2 pb-6">
         {GROUPS.map((group) => {
@@ -110,6 +147,9 @@ const PlanList = ({
                   const projectIds = Array.from(
                     new Set(plan.steps.map((s) => s.projectId).filter(Boolean)),
                   ) as string[];
+                  const linked = plan.projectId
+                    ? projectById.get(plan.projectId)
+                    : undefined;
                   return (
                     <button
                       key={plan.id}
@@ -125,8 +165,36 @@ const PlanList = ({
                       <span className="truncate text-sm font-medium text-neutral-100">
                         {plan.title || 'Untitled plan'}
                       </span>
-                      <span className="flex items-center gap-2 text-[11px] text-neutral-500">
-                        {projectIds.length > 0 && (
+                      <span className="flex min-w-0 items-center gap-2 text-[11px] text-neutral-500">
+                        {showCompany && (
+                          <span className="max-w-[90px] shrink-0 truncate text-neutral-400">
+                            {companyById.get(plan.companyId)?.name}
+                          </span>
+                        )}
+                        {linked ? (
+                          <span
+                            className="flex min-w-0 items-center gap-1 truncate rounded-full bg-white/[0.05] px-1.5 py-px text-neutral-300"
+                            title="Project plan"
+                          >
+                            <span
+                              className="size-1.5 shrink-0 rounded-full"
+                              style={{
+                                backgroundColor: linked.color || '#525252',
+                              }}
+                            />
+                            <span className="truncate">{linked.name}</span>
+                          </span>
+                        ) : (
+                          projectIds.length > 1 && (
+                            <span
+                              className="flex shrink-0 items-center gap-0.5 text-violet-300/80"
+                              title="Grand plan"
+                            >
+                              <Icon name="hub" className="text-[12px]" />
+                            </span>
+                          )
+                        )}
+                        {!linked && projectIds.length > 0 && (
                           <span className="flex items-center gap-0.5">
                             {projectIds.slice(0, 4).map((id) => (
                               <span
@@ -158,7 +226,7 @@ const PlanList = ({
                           </span>
                         )}
                         {!count.total && !plan.endOn && (
-                          <span>
+                          <span className="truncate">
                             {PLAN_STATUS_META[plan.status as PLAN_STATUS]?.hint}
                           </span>
                         )}
@@ -197,7 +265,9 @@ export const PlansPage = () => {
     [companies],
   );
 
-  const [companyId, setCompanyId] = useState<string | null>(null);
+  // Every company's plans at first.
+  const [companyId, setCompanyId] = useState<string>(ALL_COMPANIES);
+  const [pickingCompany, setPickingCompany] = useState(false);
   const [planId, setPlanId] = useState<string | null>(null);
   const [stepId, setStepId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -211,27 +281,15 @@ export const PlansPage = () => {
   const plans = usePlans(companyId);
   const { data, loading, saveState, change, flush } = plans;
 
-  // Start in the company used last, else the first one.
   useEffect(() => {
-    if (companyId || !readable.length) return;
-    const stored = readStored();
-    setCompanyId(
-      readable.find((c) => c.company.id === stored)?.company.id ??
-        readable[0].company.id,
-    );
-  }, [readable, companyId]);
-
-  useEffect(() => {
-    if (!companyId) return;
-    try {
-      localStorage.setItem(COMPANY_KEY, companyId);
-    } catch {
-      /* not saved; fine */
-    }
     setPlanId(null);
     setStepId(null);
     setView('list');
   }, [companyId]);
+
+  const showAll = companyId === ALL_COMPANIES;
+  const loaded = data?.companies ?? [];
+  const creatable = loaded.filter((c) => data?.can[c.id]?.create);
 
   const plan = data?.plans.find((p) => p.id === planId) ?? null;
   const step = plan?.steps.find((s) => s.id === stepId) ?? null;
@@ -246,9 +304,17 @@ export const PlansPage = () => {
     setView('plan');
   };
 
-  const createPlan = async () => {
+  /** A new plan; with every company shown, `inCompany` says where. */
+  const createPlan = async (inCompany?: string) => {
+    const where =
+      inCompany ?? (showAll ? creatable[0]?.id : companyId) ?? undefined;
+    if (showAll && !inCompany && creatable.length > 1) {
+      setPickingCompany(true);
+      return;
+    }
+    setPickingCompany(false);
     setCreating(true);
-    const created = await plans.create();
+    const created = await plans.create({ companyId: where });
     setCreating(false);
     if (!created) return;
     selectPlan(created.id);
@@ -300,16 +366,29 @@ export const PlansPage = () => {
   /* ------------------------------- panels ------------------------------- */
 
   const list = data && (
-    <PlanList data={data} selectedId={planId} onSelect={selectPlan} />
+    <PlanList
+      data={data}
+      selectedId={planId}
+      onSelect={selectPlan}
+      showCompany={showAll && loaded.length > 1}
+    />
   );
 
+  const choices = plan ? plans.choicesFor(plan) : null;
+
   const editor =
-    plan && data ? (
+    plan && data && choices ? (
       <PlanEditor
         key={plan.id}
         plan={plan}
-        projects={data.projects}
-        people={data.people}
+        projects={choices.projects}
+        stepProjects={choices.stepProjects}
+        companyName={
+          showAll && loaded.length > 1
+            ? loaded.find((c) => c.id === plan.companyId)?.name
+            : undefined
+        }
+        people={choices.people}
         canEdit={canEditPlan}
         canDelete={canDeletePlan}
         selectedStepId={stepId}
@@ -321,8 +400,8 @@ export const PlansPage = () => {
         extra={
           <PlanSchedules
             plan={plan}
-            projects={data.projects}
-            people={data.people}
+            projects={choices.stepProjects}
+            people={choices.people}
             canEdit={canEditPlan}
             canAddTo={addsTasksIn}
             onSaved={() => plans.refreshSchedules(plan.id)}
@@ -333,14 +412,14 @@ export const PlansPage = () => {
       <EmptyState
         icon="lightbulb"
         title={data?.plans.length ? 'Pick a plan' : 'No plans yet'}
-        description="A plan can start as just an idea. Add steps when it firms up: what, for which project, who and by when."
+        description="A plan can start as just an idea. A grand plan can span many projects; link it to one project to make it that project's plan. Steps can be plain text, tasks (type / to link one) or goals."
         action={
-          data?.can.create && (
+          plans.canCreate && (
             <AdminButton
               tone="primary"
               icon="add"
               loading={creating}
-              onClick={createPlan}
+              onClick={() => createPlan()}
             >
               New plan
             </AdminButton>
@@ -350,12 +429,13 @@ export const PlansPage = () => {
       />
     );
 
-  const side = plan && data && (
+  const side = plan && data && choices && (
     <StepPanel
       plan={plan}
       step={step}
-      projects={data.projects}
-      people={data.people}
+      projects={choices.projects}
+      stepProjects={choices.stepProjects}
+      people={choices.people}
       canEdit={canEditPlan}
       canMakeTask={addsTasksIn(step?.projectId)}
       makingTask={makingTask}
@@ -377,15 +457,22 @@ export const PlansPage = () => {
           Plans
         </h1>
         {readable.length > 1 && (
-          <CompanyPicker
-            companies={readable}
+          <NativeSelect
+            aria-label="Company"
             value={companyId}
-            onChange={(id) => {
+            onChange={(e) => {
               if (planId) flush(planId);
-              setCompanyId(id);
+              setCompanyId(e.target.value);
             }}
-            className="h-9 min-w-[160px]"
-          />
+            className="h-9 w-auto min-w-[150px]"
+          >
+            <option value={ALL_COMPANIES}>Show all</option>
+            {readable.map(({ company }) => (
+              <option key={company.id} value={company.id}>
+                {company.name}
+              </option>
+            ))}
+          </NativeSelect>
         )}
         <div className="flex-1" />
         {plan && (
@@ -403,16 +490,41 @@ export const PlansPage = () => {
             )}
           </span>
         )}
-        {data?.can.create && (
-          <AdminButton
-            tone="primary"
-            size="sm"
-            icon="add"
-            loading={creating}
-            onClick={createPlan}
-          >
-            New plan
-          </AdminButton>
+        {plans.canCreate && (
+          <div className="relative">
+            <AdminButton
+              tone="primary"
+              size="sm"
+              icon="add"
+              loading={creating}
+              onClick={() =>
+                pickingCompany ? setPickingCompany(false) : createPlan()
+              }
+            >
+              New plan
+            </AdminButton>
+            {pickingCompany && (
+              <div className="absolute right-0 top-11 z-30 w-56 rounded-xl border border-white/10 bg-neutral-900 p-1.5 shadow-2xl">
+                <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
+                  New plan in
+                </p>
+                {creatable.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => createPlan(c.id)}
+                    className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm text-neutral-200 hover:bg-white/[0.06]"
+                  >
+                    <span
+                      className="size-2 rounded-full"
+                      style={{ backgroundColor: c.color || '#525252' }}
+                    />
+                    <span className="truncate">{c.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         )}
       </header>
 

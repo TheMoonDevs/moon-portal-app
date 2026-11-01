@@ -24,8 +24,15 @@ import {
   PeoplePicker,
   TASK_STATUS_META,
 } from '../Admin/Workspace/shared';
+import {
+  linkFields,
+  LinkMenu,
+  menuKeys,
+  type StepLink,
+  useStepLinks,
+} from './StepLinks';
 import type { Person, PlanView, ProjectChoice, StepView } from './types';
-import { isPast, shortDay, stepCount } from './types';
+import { isPast, shortDay, stepCount, stepKind } from './types';
 
 const ProjectDot = ({ project }: { project?: ProjectChoice }) => (
   <span
@@ -78,6 +85,63 @@ const GrowingText = ({
   );
 };
 
+/** Projects as a tree: each under its parent, with its depth. */
+const projectTree = (projects: ProjectChoice[]) => {
+  const ids = new Set(projects.map((p) => p.id));
+  const out: { project: ProjectChoice; depth: number }[] = [];
+  const walk = (parentId: string | null, depth: number) =>
+    projects
+      .filter((p) =>
+        parentId
+          ? p.parentId === parentId
+          : !p.parentId || !ids.has(p.parentId),
+      )
+      .forEach((p) => {
+        out.push({ project: p, depth });
+        walk(p.id, depth + 1);
+      });
+  walk(null, 0);
+  return out;
+};
+
+/** Options for a project select, sub-projects indented under theirs. */
+const ProjectOptions = ({
+  projects,
+  disabled,
+}: {
+  projects: ProjectChoice[];
+  disabled?: (p: ProjectChoice) => boolean;
+}) => (
+  <>
+    {projectTree(projects).map(({ project, depth }) => (
+      <option
+        key={project.id}
+        value={project.id}
+        disabled={disabled?.(project)}
+      >
+        {`${'\u00a0\u00a0'.repeat(depth)}${depth ? '└ ' : ''}${project.name}`}
+      </option>
+    ))}
+  </>
+);
+
+const findProject = (projects: ProjectChoice[], id: string) =>
+  projects.find((p) => p.id === id);
+
+/** A goal step's star and where the goal stands. */
+const GoalStar = ({ met }: { met: boolean }) => (
+  <Icon
+    name="star"
+    filled={met}
+    className={cn('text-[18px]', met ? 'text-amber-300' : 'text-neutral-600')}
+  />
+);
+
+const goalLine = (goal: NonNullable<StepView['goal']>) =>
+  `${goal.done.toLocaleString()}/${goal.target.toLocaleString()}${
+    goal.kind === 'scheduled' ? ` this ${goal.period}` : ''
+  }`;
+
 /* -------------------------------------------------------------------------- */
 /*                                  The plan                                  */
 /* -------------------------------------------------------------------------- */
@@ -96,9 +160,19 @@ export const PlanEditor = ({
   fresh,
   extra,
   newStepProjectId,
+  stepProjects,
+  companyName,
+  lockLink,
 }: {
   plan: PlanView;
+  /** The plan's company's projects. */
   projects: ProjectChoice[];
+  /** The projects its steps can name; all of `projects` for a grand plan. */
+  stepProjects?: ProjectChoice[];
+  /** Shown when plans of several companies are listed together. */
+  companyName?: string;
+  /** Keep the project link as it is, e.g. on that project's page. */
+  lockLink?: boolean;
   people: Person[];
   canEdit: boolean;
   canDelete: boolean;
@@ -115,7 +189,30 @@ export const PlanEditor = ({
   newStepProjectId?: string;
 }) => {
   const [adding, setAdding] = useState('');
+  const [active, setActive] = useState(0);
   const [byProject, setByProject] = useState(false);
+  const canName = stepProjects ?? projects;
+  // "/" at the start of the step box searches tasks and goals to link.
+  const linking = adding.startsWith('/');
+  const taken = useMemo(
+    () =>
+      new Set(
+        plan.steps.flatMap((s) => [s.taskId, s.goalId]).filter(Boolean),
+      ) as Set<string>,
+    [plan.steps],
+  );
+  const links = useStepLinks({
+    enabled: canEdit && linking,
+    companyId: plan.companyId,
+    rootId: plan.projectId,
+    projects: canName,
+    query: adding.slice(1),
+    taken,
+  });
+  useEffect(() => setActive(0), [adding]);
+  const linkedProject = plan.projectId
+    ? findProject(projects, plan.projectId)
+    : undefined;
   const [pickingPeople, setPickingPeople] = useState(false);
   const projectById = useMemo(
     () => new Map(projects.map((p) => [p.id, p])),
@@ -141,13 +238,24 @@ export const PlanEditor = ({
 
   const addStep = () => {
     const text = adding.trim();
-    if (!text) return;
+    if (!text || linking) return;
     onChange((p) => ({
       ...p,
       steps: [
         ...p.steps,
-        newStep({ text, projectId: newStepProjectId ?? null }),
+        newStep({
+          text,
+          projectId: newStepProjectId ?? p.projectId ?? null,
+        }),
       ],
+    }));
+    setAdding('');
+  };
+
+  const addLink = (link: StepLink) => {
+    onChange((p) => ({
+      ...p,
+      steps: [...p.steps, { ...newStep(), ...linkFields(link) }],
     }));
     setAdding('');
   };
@@ -189,6 +297,12 @@ export const PlanEditor = ({
             }))}
             className={cn(!canEdit && 'pointer-events-none opacity-70')}
           />
+          {companyName && (
+            <span className="hidden items-center gap-1 truncate text-xs text-neutral-500 sm:flex">
+              <Icon name="domain" className="text-[14px]" />
+              {companyName}
+            </span>
+          )}
           <div className="flex-1" />
           {canDelete && (
             <IconAction
@@ -211,6 +325,32 @@ export const PlanEditor = ({
 
         {/* Who and by when. */}
         <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-neutral-400">
+          <label
+            className="flex items-center gap-1.5"
+            title={
+              plan.projectId
+                ? 'Linked to this project: new steps stay in it and the projects under it. Pick None to make it a grand plan.'
+                : 'A grand plan: its steps can be for any of the company’s projects. Pick a project to link it.'
+            }
+          >
+            <Icon
+              name={plan.projectId ? 'link' : 'hub'}
+              className="text-[15px] text-neutral-500"
+            />
+            <span className="text-neutral-500">Project</span>
+            <select
+              value={plan.projectId ?? ''}
+              disabled={!canEdit || lockLink}
+              onChange={(e) => set('projectId', e.target.value || null)}
+              className="max-w-[200px] cursor-pointer truncate rounded-md bg-transparent px-1 py-0.5 font-medium text-neutral-200 hover:bg-white/[0.05] focus:outline-none disabled:cursor-default disabled:hover:bg-transparent [&>option]:bg-neutral-900"
+            >
+              <option value="">None (grand plan)</option>
+              {plan.projectId && !linkedProject && (
+                <option value={plan.projectId}>A project</option>
+              )}
+              <ProjectOptions projects={projects} />
+            </select>
+          </label>
           <label className="flex items-center gap-1.5">
             <Icon name="person" className="text-[15px] text-neutral-500" />
             <span className="text-neutral-500">Owner</span>
@@ -331,6 +471,7 @@ export const PlanEditor = ({
                     .map((id) => personById.get(id))
                     .filter(Boolean) as Person[];
                   const selected = step.id === selectedStepId;
+                  const kind = stepKind(step);
                   return (
                     <div
                       key={step.id}
@@ -340,48 +481,105 @@ export const PlanEditor = ({
                         selected ? 'bg-white/[0.06]' : 'hover:bg-white/[0.03]',
                       )}
                     >
-                      <button
-                        type="button"
-                        aria-label={step.done ? 'Mark not done' : 'Mark done'}
-                        disabled={!canEdit || !!step.task}
-                        title={
-                          step.task ? 'Done when its task is done' : undefined
-                        }
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setStep(step.id, { done: !step.done });
-                        }}
-                        className={cn(
-                          'mt-0.5 text-[18px]',
-                          step.done
-                            ? 'text-emerald-400'
-                            : 'text-neutral-600 hover:text-neutral-400',
-                        )}
-                      >
-                        <Icon
-                          name={
-                            step.done
-                              ? 'check_circle'
-                              : 'radio_button_unchecked'
+                      {kind === 'goal' ? (
+                        <span
+                          className="mt-0.5"
+                          title={
+                            step.goal?.met
+                              ? 'Goal met'
+                              : 'Turns gold when the goal is met'
                           }
-                          filled={step.done}
-                        />
-                      </button>
-                      <div className="min-w-0 flex-1">
-                        <GrowingText
-                          value={step.text}
-                          onChange={(text) => setStep(step.id, { text })}
-                          onFocus={() => onSelectStep(step.id)}
-                          disabled={!canEdit}
+                        >
+                          <GoalStar met={!!step.goal?.met} />
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          aria-label={step.done ? 'Mark not done' : 'Mark done'}
+                          disabled={!canEdit || kind === 'task'}
+                          title={
+                            kind === 'task'
+                              ? 'Done when its task is done'
+                              : undefined
+                          }
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setStep(step.id, { done: !step.done });
+                          }}
                           className={cn(
-                            'text-sm leading-6',
+                            'mt-0.5 text-[18px]',
                             step.done
-                              ? 'text-neutral-500 line-through'
-                              : 'text-neutral-100',
+                              ? 'text-emerald-400'
+                              : 'text-neutral-600 hover:text-neutral-400',
                           )}
-                        />
-                        {(project || step.dueOn || step.task) && (
+                        >
+                          <Icon
+                            name={
+                              step.done
+                                ? 'check_circle'
+                                : 'radio_button_unchecked'
+                            }
+                            filled={step.done}
+                          />
+                        </button>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        {kind === 'text' ? (
+                          <GrowingText
+                            value={step.text}
+                            onChange={(text) => setStep(step.id, { text })}
+                            onFocus={() => onSelectStep(step.id)}
+                            disabled={!canEdit}
+                            className={cn(
+                              'text-sm leading-6',
+                              step.done
+                                ? 'text-neutral-500 line-through'
+                                : 'text-neutral-100',
+                            )}
+                          />
+                        ) : (
+                          <p
+                            className={cn(
+                              'text-sm leading-6',
+                              step.done && kind === 'task'
+                                ? 'text-neutral-500 line-through'
+                                : 'text-neutral-100',
+                            )}
+                          >
+                            {step.task?.title ?? step.goal?.title ?? step.text}
+                          </p>
+                        )}
+                        {(project || step.dueOn || kind !== 'text') && (
                           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-neutral-500">
+                            {kind === 'task' && (
+                              <span className="flex items-center gap-1 text-sky-300/80">
+                                <Icon name="link" className="text-[12px]" />
+                                {step.task
+                                  ? (TASK_STATUS_META[step.task.status]
+                                      ?.label ?? 'Task')
+                                  : 'Task'}
+                              </span>
+                            )}
+                            {kind === 'goal' && (
+                              <span className="flex items-center gap-1.5 text-amber-200/80">
+                                Goal
+                                {step.goal && (
+                                  <>
+                                    <span className="text-neutral-400">
+                                      {goalLine(step.goal)}
+                                    </span>
+                                    <span className="h-1 w-12 overflow-hidden rounded-full bg-white/[0.08]">
+                                      <span
+                                        className="block h-full rounded-full bg-amber-300"
+                                        style={{
+                                          width: `${step.goal.percent}%`,
+                                        }}
+                                      />
+                                    </span>
+                                  </>
+                                )}
+                              </span>
+                            )}
                             {project && !byProject && (
                               <span className="flex items-center gap-1.5">
                                 <ProjectDot project={project} />
@@ -399,13 +597,6 @@ export const PlanEditor = ({
                               >
                                 <Icon name="event" className="text-[12px]" />
                                 {shortDay(step.dueOn)}
-                              </span>
-                            )}
-                            {step.task && (
-                              <span className="flex items-center gap-1">
-                                <Icon name="task_alt" className="text-[12px]" />
-                                {TASK_STATUS_META[step.task.status]?.label ??
-                                  'Task'}
                               </span>
                             )}
                           </div>
@@ -428,16 +619,41 @@ export const PlanEditor = ({
         </div>
 
         {canEdit && (
-          <div className="mt-1 flex items-center gap-2.5 rounded-lg px-2 py-1.5">
-            <Icon name="add" className="text-[18px] text-neutral-600" />
-            <input
-              value={adding}
-              onChange={(e) => setAdding(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && addStep()}
-              onBlur={addStep}
-              placeholder="Add a step: what needs doing?"
-              className="flex-1 bg-transparent text-sm text-neutral-100 placeholder:text-neutral-600 focus:outline-none"
-            />
+          <div className="relative mt-1">
+            <div className="flex items-center gap-2.5 rounded-lg px-2 py-1.5">
+              <Icon
+                name={linking ? 'link' : 'add'}
+                className="text-[18px] text-neutral-600"
+              />
+              <input
+                value={adding}
+                onChange={(e) => setAdding(e.target.value)}
+                onKeyDown={(e) => {
+                  if (
+                    linking &&
+                    menuKeys(e, links.items, active, setActive, addLink, () =>
+                      setAdding(''),
+                    )
+                  )
+                    return;
+                  if (e.key === 'Enter') addStep();
+                }}
+                onBlur={() => (linking ? setAdding('') : addStep())}
+                placeholder="Add a step, or type / to link a task or goal"
+                className="flex-1 bg-transparent text-sm text-neutral-100 placeholder:text-neutral-600 focus:outline-none"
+              />
+            </div>
+            {linking && (
+              <LinkMenu
+                items={links.items}
+                loading={links.loading}
+                active={active}
+                projects={canName}
+                onPick={addLink}
+                onHover={setActive}
+                className="absolute inset-x-0 top-full z-20 mt-1"
+              />
+            )}
           </div>
         )}
         {extra}
@@ -462,10 +678,13 @@ export const StepPanel = ({
   onRemove,
   onMakeTask,
   onClose,
+  stepProjects,
 }: {
   plan: PlanView;
   step: StepView | null;
   projects: ProjectChoice[];
+  /** The projects the step can name; all of `projects` for a grand plan. */
+  stepProjects?: ProjectChoice[];
   people: Person[];
   canEdit: boolean;
   /** Whether they can add tasks in the step's project. */
@@ -478,6 +697,33 @@ export const StepPanel = ({
 }) => {
   const projectById = new Map(projects.map((p) => [p.id, p]));
   const personById = new Map(people.map((p) => [p.id, p]));
+  const canName = stepProjects ?? projects;
+  const [linkQuery, setLinkQuery] = useState<string | null>(null);
+  const [active, setActive] = useState(0);
+  const taken = useMemo(
+    () =>
+      new Set(
+        plan.steps.flatMap((s) => [s.taskId, s.goalId]).filter(Boolean),
+      ) as Set<string>,
+    [plan.steps],
+  );
+  const links = useStepLinks({
+    enabled: canEdit && linkQuery !== null,
+    companyId: plan.companyId,
+    rootId: plan.projectId,
+    projects: canName,
+    query: linkQuery ?? '',
+    taken,
+  });
+  useEffect(() => {
+    setLinkQuery(null);
+    setActive(0);
+  }, [step?.id]);
+  const pickLink = (link: StepLink) => {
+    // The step keeps its notes, people and date.
+    onChange(linkFields(link));
+    setLinkQuery(null);
+  };
 
   if (!step) {
     // The plan at a glance: which projects and people it involves.
@@ -561,38 +807,144 @@ export const StepPanel = ({
           </div>
         )}
         <p className="text-xs text-neutral-600">
-          Pick a step to give it a project, people and a date.
+          Pick a step to give it a project, people and a date, or to link it to
+          a task or goal.
         </p>
       </div>
     );
   }
 
   const project = step.projectId ? projectById.get(step.projectId) : undefined;
+  const kind = stepKind(step);
   return (
     <div className="flex h-full flex-col gap-5 overflow-y-auto p-5">
       <div className="flex items-start gap-2">
-        <GrowingText
-          value={step.text}
-          onChange={(text) => onChange({ text })}
-          disabled={!canEdit}
-          className="flex-1 text-base font-medium text-white"
-        />
+        {kind === 'text' ? (
+          <GrowingText
+            value={step.text}
+            onChange={(text) => onChange({ text })}
+            disabled={!canEdit}
+            className="flex-1 text-base font-medium text-white"
+          />
+        ) : (
+          <p className="flex-1 text-base font-medium text-white">
+            {step.task?.title ?? step.goal?.title ?? step.text}
+          </p>
+        )}
         <IconAction icon="close" label="Close" onClick={onClose} />
       </div>
+
+      {/* What the step is: plain text, a linked task or a goal. */}
+      {kind === 'text' ? (
+        canEdit && (
+          <div className="relative">
+            {linkQuery === null ? (
+              <button
+                type="button"
+                onClick={() => setLinkQuery('')}
+                className="flex items-center gap-1.5 text-xs text-neutral-400 hover:text-neutral-200"
+              >
+                <Icon name="link" className="text-[15px]" />
+                Link a task or goal
+              </button>
+            ) : (
+              <>
+                <input
+                  autoFocus
+                  value={linkQuery}
+                  onChange={(e) => {
+                    setLinkQuery(e.target.value);
+                    setActive(0);
+                  }}
+                  onKeyDown={(e) =>
+                    menuKeys(e, links.items, active, setActive, pickLink, () =>
+                      setLinkQuery(null),
+                    )
+                  }
+                  onBlur={() => setLinkQuery(null)}
+                  placeholder="Search tasks and goals…"
+                  className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-sm text-neutral-100 placeholder:text-neutral-600 focus:outline-none"
+                />
+                <LinkMenu
+                  items={links.items}
+                  loading={links.loading}
+                  active={active}
+                  projects={canName}
+                  onPick={pickLink}
+                  onHover={setActive}
+                  className="absolute inset-x-0 top-full z-20 mt-1"
+                />
+              </>
+            )}
+          </div>
+        )
+      ) : (
+        <div className="flex items-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2 text-xs text-neutral-400">
+          {kind === 'goal' ? (
+            <>
+              <GoalStar met={!!step.goal?.met} />
+              <span className="flex-1">
+                A goal of {project?.name ?? 'a project'}
+                {step.goal && (
+                  <span className="text-neutral-300">
+                    {' '}
+                    · {goalLine(step.goal)}
+                  </span>
+                )}
+              </span>
+            </>
+          ) : (
+            <>
+              <Icon name="link" className="text-[16px] text-sky-300/80" />
+              <span className="flex-1">
+                A task in {project?.name ?? 'a project'}
+              </span>
+              {step.task && (
+                <Pill
+                  tone={TASK_STATUS_META[step.task.status]?.tone ?? 'neutral'}
+                >
+                  {TASK_STATUS_META[step.task.status]?.label ??
+                    step.task.status}
+                </Pill>
+              )}
+            </>
+          )}
+          {canEdit && (
+            <button
+              type="button"
+              onClick={() =>
+                onChange({
+                  taskId: null,
+                  goalId: null,
+                  task: null,
+                  goal: null,
+                  text: step.task?.title ?? step.goal?.title ?? step.text,
+                  done: !!step.done,
+                })
+              }
+              className="ml-1 text-neutral-500 hover:text-neutral-200"
+              title="Make it plain text again; the task or goal stays"
+            >
+              Unlink
+            </button>
+          )}
+        </div>
+      )}
 
       <label className="flex flex-col gap-1.5">
         <span className="text-xs font-medium text-neutral-400">Project</span>
         <NativeSelect
           value={step.projectId ?? ''}
-          disabled={!canEdit || !!step.task}
+          disabled={!canEdit || kind !== 'text' || !!step.task}
           onChange={(e) => onChange({ projectId: e.target.value || null })}
         >
           <option value="">No project yet</option>
-          {projects.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
+          {step.projectId && !canName.some((p) => p.id === step.projectId) && (
+            <option value={step.projectId}>
+              {projectById.get(step.projectId)?.name ?? 'A project'}
             </option>
-          ))}
+          )}
+          <ProjectOptions projects={canName} />
         </NativeSelect>
       </label>
 
@@ -639,41 +991,45 @@ export const StepPanel = ({
         />
       </label>
 
-      <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-3">
-        {step.task ? (
-          <div className="flex items-center gap-2 text-sm text-neutral-300">
-            <Icon name="task_alt" className="text-[18px] text-emerald-400" />
-            <span className="flex-1">It is a task in {project?.name}</span>
-            <Pill tone={TASK_STATUS_META[step.task.status]?.tone ?? 'neutral'}>
-              {TASK_STATUS_META[step.task.status]?.label ?? step.task.status}
-            </Pill>
-          </div>
-        ) : project ? (
-          <div className="flex flex-col gap-2">
-            <p className="text-xs text-neutral-400">
-              {canMakeTask
-                ? `Ready to do it? Make it a task in ${project.name}, with these people and this date.`
-                : `Someone on the ${project.name} team can make it a task.`}
-            </p>
-            {canMakeTask && (
-              <AdminButton
-                size="sm"
-                tone="primary"
-                icon="add_task"
-                loading={makingTask}
-                disabled={!canEdit || !step.text.trim()}
-                onClick={onMakeTask}
+      {kind === 'text' && (
+        <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-3">
+          {step.task ? (
+            <div className="flex items-center gap-2 text-sm text-neutral-300">
+              <Icon name="task_alt" className="text-[18px] text-emerald-400" />
+              <span className="flex-1">It is a task in {project?.name}</span>
+              <Pill
+                tone={TASK_STATUS_META[step.task.status]?.tone ?? 'neutral'}
               >
-                Make it a task
-              </AdminButton>
-            )}
-          </div>
-        ) : (
-          <p className="text-xs text-neutral-500">
-            Pick a project when you are ready, and the step can become a task.
-          </p>
-        )}
-      </div>
+                {TASK_STATUS_META[step.task.status]?.label ?? step.task.status}
+              </Pill>
+            </div>
+          ) : project ? (
+            <div className="flex flex-col gap-2">
+              <p className="text-xs text-neutral-400">
+                {canMakeTask
+                  ? `Ready to do it? Make it a task in ${project.name}, with these people and this date.`
+                  : `Someone on the ${project.name} team can make it a task.`}
+              </p>
+              {canMakeTask && (
+                <AdminButton
+                  size="sm"
+                  tone="primary"
+                  icon="add_task"
+                  loading={makingTask}
+                  disabled={!canEdit || !step.text.trim()}
+                  onClick={onMakeTask}
+                >
+                  Make it a task
+                </AdminButton>
+              )}
+            </div>
+          ) : (
+            <p className="text-xs text-neutral-500">
+              Pick a project when you are ready, and the step can become a task.
+            </p>
+          )}
+        </div>
+      )}
 
       {canEdit && (
         <button
