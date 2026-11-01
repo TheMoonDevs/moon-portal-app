@@ -33,6 +33,7 @@ import {
 import type { PlanView } from '../Plans/types';
 import { usePlans } from '../Plans/usePlans';
 import { NewProjectDialog } from '../Projects/NewProjectDialog';
+import type { DocLinks } from './DocEditor';
 import { PageDoc, SaveBadge, type SaveState } from './PageDoc';
 import { ProjectDetailsDialog } from './ProjectDetailsDialog';
 import { ProjectSwitcher } from './ProjectSwitcher';
@@ -820,7 +821,14 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
     );
   }, [pageId, allPages]);
 
-  const newPage = async (parentId: string | null) => {
+  /**
+   * Makes a page in `parentId` (the top level when null) and opens it, or
+   * with `stay`, only returns it (the "/page" command links it first).
+   */
+  const newPage = async (
+    parentId: string | null,
+    { stay = false }: { stay?: boolean } = {},
+  ): Promise<Page | null> => {
     setCreatingIn(parentId);
     try {
       const res = await PortalSdk.postData(`/api/projects/${projectId}/pages`, {
@@ -833,13 +841,34 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
       savePage(page);
       setPagesOpen(true);
       if (parentId) setOpenPages((open) => new Set(open).add(parentId));
-      select('pages', page.id);
+      if (!stay) select('pages', page.id);
+      return page;
     } catch (err) {
       toast.error(errorText(err));
+      return null;
     } finally {
       setCreatingIn(undefined);
     }
   };
+
+  /** What a page's editor can link to, and "/page" to make one inside it. */
+  const linksFor = (parentId: string | null, canMake: boolean): DocLinks => ({
+    pages: (pages?.pages ?? []).map((p) => ({
+      id: p.id,
+      title: pageTitle(p),
+      emoji: p.emoji,
+    })),
+    currentId: parentId,
+    open: (id) => select('pages', id),
+    create: canMake
+      ? async () => {
+          const made = await newPage(parentId, { stay: true });
+          return made
+            ? { id: made.id, title: pageTitle(made), emoji: made.emoji }
+            : null;
+        }
+      : undefined,
+  });
 
   const deletePage = async () => {
     if (!deleting) return;
@@ -913,6 +942,7 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
             bodyPlaceholder="Why does this project exist, and what does done look like? Press / for blocks…"
             onSaved={savePage}
             onSaveState={setSaveState}
+            links={linksFor(null, canEdit)}
           />
         ) : null;
       case 'kpi':
@@ -927,9 +957,10 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
             canEdit={canEdit}
             defaultEmoji="📄"
             titlePlaceholder="Untitled"
-            bodyPlaceholder="Start writing. Press / for headings, lists and to-dos…"
+            bodyPlaceholder="Start writing. Press / for blocks, or /page for a page inside…"
             onSaved={savePage}
             onSaveState={setSaveState}
+            links={linksFor(page.id, canEdit)}
           >
             <PagesInside
               parent={page}

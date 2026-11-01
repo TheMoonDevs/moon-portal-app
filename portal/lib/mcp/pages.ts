@@ -167,7 +167,7 @@ export const PAGE_TOOLS: Tool[] = [
     name: 'create_page',
     title: 'Create a project page',
     description:
-      'Adds a page to a project, at the top or inside another page (parent). Write the body in Markdown: headings, lists, to-dos (- [ ]), quotes, code, bold, italic and links.',
+      'Adds a page to a project, at the top or inside another page (parent). Write the body in Markdown: headings, lists, to-dos (- [ ]), quotes, code, tables, images, bold, italic and links; plus <aside>💡 callouts</aside>, <details><summary>toggles</summary>…</details>, <iframe src="link"></iframe> embeds (YouTube, Loom, Figma, Google Docs…), <page id="…">Title</page> links to other pages, and [TOC].',
     inputSchema: {
       type: 'object',
       properties: {

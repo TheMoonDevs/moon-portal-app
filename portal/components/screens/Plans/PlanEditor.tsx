@@ -1,10 +1,12 @@
 'use client';
 
 import type { User } from '@db/client';
+import type { JSONContent } from '@tiptap/react';
 import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
 
 import { cn } from '@/lib/utils';
+import { docToMarkdown, markdownToDoc } from '@/lib/workspace/pageMarkdown';
 import { PLAN_STATUS_META } from '@/lib/workspace/plans';
 import { PLAN_STATUS } from '@/models/workspace';
 
@@ -15,6 +17,7 @@ import {
   Segmented,
 } from '../Admin/shared/AdminUI';
 import { AvatarStack, PeoplePicker } from '../Admin/Workspace/shared';
+import { DocEditor } from '../Project/DocEditor';
 import { findProject, GrowingText, ProjectOptions } from './planBits';
 import { StepsEditor } from './StepsEditor';
 import type { Person, PlanView, ProjectChoice } from './types';
@@ -90,6 +93,16 @@ export const PlanEditor = ({
   const members = (plan.memberIds ?? [])
     .map((id) => personById.get(id))
     .filter(Boolean) as Person[];
+
+  // Read once per plan: the editor keeps its own document after that.
+  const notesDoc = useMemo(
+    () =>
+      plan.notes
+        ? (markdownToDoc(plan.notes, { breaks: true }) as JSONContent)
+        : null,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [plan.id],
+  );
 
   const set = <K extends keyof PlanView>(key: K, value: PlanView[K]) =>
     onChange((p) => ({ ...p, [key]: value }));
@@ -237,12 +250,15 @@ export const PlanEditor = ({
           )}
         </div>
 
-        <GrowingText
-          value={plan.notes ?? ''}
-          onChange={(notes) => set('notes', notes)}
-          placeholder="Ideas, thoughts, links… a plan can be just this."
-          disabled={!canEdit}
-          className="mt-5 min-h-[60px] text-sm leading-relaxed text-neutral-300 placeholder:text-neutral-600"
+        {/* The idea: a Notion-like page, kept as Markdown in the plan. */}
+        <DocEditor
+          key={plan.id}
+          variant="compact"
+          className="mt-5"
+          content={notesDoc}
+          editable={canEdit}
+          placeholder="Ideas, thoughts, links… a plan can be just this. Press / for blocks."
+          onChange={(doc) => set('notes', docToMarkdown(doc) || null)}
         />
 
         {/* Steps */}
