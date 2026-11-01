@@ -5,6 +5,11 @@ import dayjs from 'dayjs';
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import type { PointStatus } from '@/lib/worklogs/timeline';
 import { POINT_STATUSES } from '@/lib/worklogs/timeline';
@@ -12,6 +17,7 @@ import { useAppSelector } from '@/utils/redux/store';
 
 import { Icon } from '../../Admin/shared/AdminUI';
 import { DatePopover, quickDays, shortDay } from './DatePopover';
+import { GoalLink, goalOfTask } from './GoalLink';
 import type { PickerOption } from './Picker';
 import { Picker } from './Picker';
 import type { TaskRowStatus } from './sheetParts';
@@ -125,19 +131,28 @@ const MissedStar = ({
   </span>
 );
 
-/** A task's menu: its status, moving it to a later day, archiving, and taking it out. */
+/**
+ * A task's menu: its status, moving it to a later day, linking it to a
+ * goal, archiving, and taking it out.
+ */
 const RowMenu = ({
   status,
   forDate,
   onMove,
   onPlan,
   onRemove,
+  goalLinked,
+  onLinkGoal,
 }: {
   status: TaskRowStatus;
   forDate?: string | null;
   onMove: (to: TaskMove) => void;
   onPlan?: (date: string) => void;
   onRemove?: () => void;
+  /** Whether it counts towards a goal already. */
+  goalLinked?: boolean;
+  /** Opens the list of goals to link it to. */
+  onLinkGoal?: () => void;
 }) => {
   const [open, setOpen] = useState(false);
   const item =
@@ -204,6 +219,23 @@ const RowMenu = ({
                 onPlan(date);
               }}
             />
+          )}
+          {onLinkGoal && (
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                // After the menu closes, so the goal list keeps the focus.
+                setTimeout(onLinkGoal, 0);
+              }}
+              className={item}
+            >
+              <Icon
+                name="star"
+                className="text-[16px] text-neutral-400 auto-light:text-neutral-500"
+              />
+              {goalLinked ? 'Link to another goal' : 'Link to a goal'}
+            </button>
           )}
           <button
             type="button"
@@ -526,6 +558,28 @@ const AddRow = ({
   );
 };
 
+/** After a task in no project: a question mark that says so. */
+const UnplacedMark = () => (
+  <Tooltip>
+    <TooltipTrigger asChild>
+      <span
+        tabIndex={0}
+        aria-label="Not linked to any project"
+        className="pointer-events-auto ml-1.5 inline-flex size-4 cursor-help items-center justify-center rounded-full bg-white/[0.07] align-[1px] text-[10px] font-semibold leading-none text-neutral-400 auto-light:bg-black/[0.06] auto-light:text-neutral-500"
+      >
+        ?
+      </span>
+    </TooltipTrigger>
+    <TooltipContent
+      side="top"
+      sideOffset={4}
+      className="z-[1300] bg-neutral-800 text-neutral-100 [&_svg]:bg-neutral-800 [&_svg]:fill-neutral-800"
+    >
+      Not linked to any project
+    </TooltipContent>
+  </Tooltip>
+);
+
 /** Where a task's next line goes: where it is, when a person put it there. */
 const placeAfter = (task: DayTask): PlaceInput | null =>
   task.placedBy === 'user' && task.projectId
@@ -552,6 +606,11 @@ export const TaskSheet = ({
   const inputs = useRef(new Map<string, HTMLTextAreaElement>());
   const [focusId, setFocusId] = useState<string | null>(null);
   const [open, setOpen] = useState<Set<string>>(new Set());
+  // The task whose goal popover is open, and whether it lists goals to pick.
+  const [goalUi, setGoalUi] = useState<{
+    id: string;
+    picking: boolean;
+  } | null>(null);
 
   const tasks = useMemo(() => groups.flatMap((g) => g.tasks), [groups]);
 
@@ -628,6 +687,11 @@ export const TaskSheet = ({
     const canEdit = editable && !moved;
     const expanded = open.has(task.id);
     const count = showPoints ? readablePoints(points).length : 0;
+    const linked = !!goalOfTask(task, day.projects);
+    const goalOpen = goalUi?.id === task.id;
+    // In no project (and not kept personal on purpose).
+    const unplaced =
+      !task.draft && !task.projectId && task.placedBy !== 'personal';
     const moveOptions: PickerOption[] = tasks
       .filter((t) => t.id !== task.id && !t.draft && t.title.trim())
       .map((t) => ({
@@ -689,14 +753,16 @@ export const TaskSheet = ({
             />
             {(count > 0 ||
               !!task.goalMissed ||
+              linked ||
+              unplaced ||
+              goalOpen ||
               (!moved && (status === 'doing' || status === 'waiting'))) && (
-              // The dot and count sit right after the words: the words
-              // are laid out again unseen, so they land where they end.
-              <span
-                aria-hidden
-                className="pointer-events-none whitespace-pre-wrap break-words text-sm font-medium leading-6 [grid-area:1/1]"
-              >
-                <span className="invisible">{task.title}</span>
+              // The dot, count and marks sit right after the words: the
+              // words are laid out again unseen, so they land where they end.
+              <span className="pointer-events-none whitespace-pre-wrap break-words text-sm font-medium leading-6 [grid-area:1/1]">
+                <span aria-hidden className="invisible">
+                  {task.title}
+                </span>
                 {!moved && <StateDot status={status} />}
                 {count > 0 && (
                   <span
@@ -710,7 +776,26 @@ export const TaskSheet = ({
                     {count}
                   </span>
                 )}
-                {task.goalMissed && <MissedStar missed={task.goalMissed} />}
+                {task.goalMissed ? (
+                  <MissedStar missed={task.goalMissed} />
+                ) : (
+                  (linked || goalOpen) && (
+                    <GoalLink
+                      task={task}
+                      day={day}
+                      editable={canEdit}
+                      open={goalOpen}
+                      picking={!!goalUi?.picking}
+                      onOpenChange={(o) =>
+                        setGoalUi(o ? { id: task.id, picking: false } : null)
+                      }
+                      onPicking={(picking) =>
+                        setGoalUi({ id: task.id, picking })
+                      }
+                    />
+                  )
+                )}
+                {unplaced && <UnplacedMark />}
               </span>
             )}
           </div>
@@ -723,6 +808,8 @@ export const TaskSheet = ({
                 isOpen(task) ? (date) => day.planFor(task.id, date) : undefined
               }
               onRemove={() => day.remove(task.id)}
+              goalLinked={linked}
+              onLinkGoal={() => setGoalUi({ id: task.id, picking: true })}
             />
           )}
           <button

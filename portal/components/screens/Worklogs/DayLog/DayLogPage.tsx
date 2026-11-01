@@ -29,7 +29,6 @@ import { DaySummary } from './DaySummary';
 import { Picker } from './Picker';
 import { companyKeyOf, countPlaces, ProjectSummary } from './ProjectSummary';
 import {
-  movedOn,
   placeInputOf,
   PlaceLogo,
   placeOf,
@@ -59,13 +58,11 @@ const VIEW_KEY = 'worklogs.view';
 
 /**
  * How the day's sheet is laid out: the person's own tasks as written (with
- * Claude's apart), everything by what is left, by project, or a summary to
- * read.
+ * Claude's apart), by project, or a summary to read.
  */
-type View = 'default' | 'priority' | 'projects' | 'summary';
+type View = 'default' | 'projects' | 'summary';
 const VIEWS: { value: View; label: string }[] = [
   { value: 'default', label: 'Default' },
-  { value: 'priority', label: 'Priority' },
   { value: 'projects', label: 'Projects' },
   { value: 'summary', label: 'Summary' },
 ];
@@ -290,12 +287,6 @@ export const DayLogPage = ({
   const showDay = layout === 'day' || wide;
 
   // The sheet's parts for the view picked in the header.
-  const shutOf = (t: DayTask) => {
-    const status = rowStatus(t, day.points, date);
-    return (
-      status === 'done' || status === 'archived' || movedOn(t, date, day.today)
-    );
-  };
   const fromBefore = (t: DayTask) =>
     !t.draft && !!t.forDate && t.forDate < date;
   const byClaude = (t: DayTask) => !!t.madeBy && t.madeBy !== 'person';
@@ -328,21 +319,6 @@ export const DayLogPage = ({
   const claudes = shown.filter(byClaude);
   const defaultGroups = dayGroups(mine, 'mine', addHere);
   const claudeGroups = dayGroups(claudes, 'claude', null, true);
-
-  const priorityGroups = (() => {
-    const open = shown.filter((t) => !shutOf(t));
-    const shut = shown.filter(shutOf);
-    const groups = dayGroups(open, 'open', addHere);
-    if (shut.length)
-      groups.push({
-        key: 'finished',
-        title: 'Finished',
-        tasks: shut,
-        quiet: true,
-      });
-    if (groups.length > 1 && !groups[0].title) groups[0].title = dayName;
-    return groups;
-  })();
 
   const projectGroups = (() => {
     const keys = [
@@ -491,14 +467,6 @@ export const DayLogPage = ({
               <TaskSheet
                 day={day}
                 groups={defaultGroups}
-                editable={editable}
-                showPoints={showPoints}
-              />
-            )}
-            {view === 'priority' && (
-              <TaskSheet
-                day={day}
-                groups={priorityGroups}
                 editable={editable}
                 showPoints={showPoints}
               />
