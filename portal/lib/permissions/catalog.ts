@@ -88,6 +88,14 @@ export const PERMISSION_RESOURCES: ResourceDefinition[] = [
     scope: 'company',
   },
   {
+    key: 'courses',
+    label: 'Courses',
+    description:
+      'Courses a company writes for its people, such as the Portal course new hires get with their sign-in. Every member can take them; `edit` writes them.',
+    actions: ['read', 'create', 'edit', 'delete'],
+    scope: 'company',
+  },
+  {
     key: 'users',
     label: 'Users',
     description: 'People who can sign in to the Portal.',

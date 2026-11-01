@@ -14,7 +14,9 @@ import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import { AdminUsers } from './AdminUsers';
 import { AdminBadges } from './Badges/AdminBadges';
+import { AdminCourses } from './Courses/AdminCourses';
 import { AdminHiring } from './Hiring/AdminHiring';
+import { AdminOnboarding } from './Onboarding/AdminOnboarding';
 import { AdminOverview } from './Overview/AdminOverview';
 import SendNotifications from './SendNotifications';
 import { AdminCommandPalette } from './shared/AdminCommandPalette';
@@ -100,9 +102,13 @@ export const AdminPage = () => {
   useEffect(() => {
     const ids = workspace.companies.map((c) => c.company.id);
     if (companyId && ids.includes(companyId)) return;
-    let saved: string | null = null;
+    // A link can name the company (?companyId=), e.g. a new hire's onboarding.
+    let saved: string | null = new URLSearchParams(window.location.search).get(
+      'companyId',
+    );
     try {
-      saved = localStorage.getItem(COMPANY_STORAGE_KEY);
+      if (!saved || !ids.includes(saved))
+        saved = localStorage.getItem(COMPANY_STORAGE_KEY);
     } catch {
       /* storage unavailable */
     }
@@ -242,6 +248,20 @@ export const AdminPage = () => {
         return (
           <AdminHiring
             users={users}
+            selectedCompanyId={companyId}
+            onSelectCompany={selectCompany}
+          />
+        );
+      case 'onboarding':
+        return (
+          <AdminOnboarding
+            selectedCompanyId={companyId}
+            onSelectCompany={selectCompany}
+          />
+        );
+      case 'courses':
+        return (
+          <AdminCourses
             selectedCompanyId={companyId}
             onSelectCompany={selectCompany}
           />

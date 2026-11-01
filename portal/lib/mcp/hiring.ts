@@ -107,7 +107,7 @@ const links = (origin: string) => ({
 /* -------------------------------- lookups -------------------------------- */
 
 /** A company by id or name among those where the person holds `permission`. */
-async function findCompany(
+export async function findCompany(
   user: SessionUser,
   ref: unknown,
   permission: string,

@@ -7,7 +7,9 @@ export type AdminTabId =
   | 'projects'
   | 'tasks'
   | 'roles'
-  | 'hiring';
+  | 'hiring'
+  | 'onboarding'
+  | 'courses';
 
 export type AdminNavGroup = 'Workspace' | 'Companies' | 'Community';
 
@@ -94,6 +96,28 @@ export const ADMIN_TABS: AdminTab[] = [
     group: 'Companies',
     access: 'company',
     permission: 'hiring:read',
+  },
+  {
+    id: 'onboarding',
+    label: 'Onboarding',
+    icon: 'how_to_reg',
+    title: 'Onboarding',
+    description:
+      'New hires from their details form and agreements, through the trial, to their offer.',
+    group: 'Companies',
+    access: 'company',
+    permission: 'hiring:read',
+  },
+  {
+    id: 'courses',
+    label: 'Courses',
+    icon: 'school',
+    title: 'Courses',
+    description:
+      'Short courses for your people, like the Portal course new hires get with their sign-in.',
+    group: 'Companies',
+    access: 'company',
+    permission: 'courses:edit',
   },
   {
     id: 'roles',

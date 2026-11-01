@@ -6,13 +6,15 @@ import { rejectIfApiKeyMissing } from '@/middlewares/apiKey';
 import { applyCorsHeaders } from '@/middlewares/cors';
 
 // `/apply/<slug>` is where candidates fill in a job application, and
-// `/task/<token>` their take-home task. `/policies` is the codes we work by.
+// `/task/<token>` their take-home task, and `/join/<token>` a new hire's
+// onboarding (details form, agreements). `/policies` is the codes we work by.
 // `/~offline` is cached by the service worker for when there's no network.
 const PUBLIC_PAGES = [
   '/login',
   '/logout',
   '/apply',
   '/task',
+  '/join',
   '/policies',
   '/~offline',
 ];

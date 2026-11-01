@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { QUICK_ACTION_TEMPLATES } from '@/lib/hiring/emailTemplates';
 import { answerText, APPLICATION_STAGES } from '@/lib/hiring/forms';
 import { linkParts, onlyLinks } from '@/lib/hiring/links';
-import { POOL_TAGS } from '@/lib/hiring/pool';
+import { MANUAL_POOL_TAGS } from '@/lib/hiring/pool';
 import { sourceLabel } from '@/lib/hiring/sources';
 import { applicationDueAt } from '@/lib/hiring/tasks';
 import { cn } from '@/lib/utils';
@@ -728,15 +728,41 @@ export const ApplicantDetail = ({
           </Field>
         )}
 
-        {/* TODO(onboarding): show <OnboardHire> here at the Hired stage once
-            onboarding is wrapped up. See lib/hiring/onboarding.ts. */}
+        {application.stage === APPLICATION_STAGE.HIRED && (
+          <a
+            href={
+              application.onboardingId
+                ? `/admin?tab=onboarding&companyId=${application.companyId}&hire=${application.onboardingId}`
+                : `/admin?tab=onboarding&companyId=${application.companyId}&start=${application.id}`
+            }
+            className="flex items-center gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.06] px-4 py-3 transition-colors hover:border-emerald-400/40"
+          >
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-300">
+              <Icon name="how_to_reg" className="text-[20px]" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-medium text-white">
+                {application.onboardingId ? 'Onboarding' : 'Start onboarding'}
+              </span>
+              <span className="block text-xs text-neutral-400">
+                {application.onboardingId
+                  ? 'Their details, agreements and trial are in the Onboarding tab.'
+                  : 'Send them the details form to set up their portal account.'}
+              </span>
+            </span>
+            <Icon
+              name="arrow_forward"
+              className="text-[18px] text-neutral-400"
+            />
+          </a>
+        )}
 
         <Field
           label="Talent pool"
           hint="Tagged people stay in the talent pool after this opening, to ask about future ones."
         >
           <div className="flex flex-wrap gap-2">
-            {POOL_TAGS.map((t) => {
+            {MANUAL_POOL_TAGS.map((t) => {
               const on = (application.tags ?? []).includes(t.value);
               return (
                 <AdminButton
