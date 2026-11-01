@@ -19,7 +19,9 @@ import { resolvePeople } from './workspace';
 
 /*
  * Plans from a conversation: ideas in a company that firm up into steps
- * (what, which project, who, by when). A plan needs no project.
+ * (what, which project, who, by when). A grand plan needs no project; a
+ * project plan is linked to one and its steps stay inside it. Steps are
+ * plain text, an existing task, or a project goal.
  */
 
 const same = (a: string, b: string) =>
@@ -126,6 +128,59 @@ async function stepFields(
   const dueOn = dayRef(input?.dueOn);
   if (dueOn !== undefined) fields.dueOn = dueOn;
   if (typeof input?.done === 'boolean') fields.done = input.done;
+  if (input?.task !== undefined) {
+    if (input.task === null || input.task === '') fields.taskId = null;
+    else {
+      const wanted = String(input.task).trim();
+      const matches: { id: string; title: string; projectId: string }[] =
+        await db.task.findMany({
+          where: {
+            companyId,
+            OR: [
+              ...(/^[a-f0-9]{24}$/i.test(wanted) ? [{ id: wanted }] : []),
+              {
+                title: {
+                  contains: `^${wanted.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`,
+                  mode: 'insensitive',
+                },
+              },
+            ],
+          },
+          select: { title: true, projectId: true },
+          take: 5,
+        });
+      if (!matches.length) throw new ToolError(`No task "${wanted}".`);
+      if (matches.length > 1 && !matches.some((t) => t.id === wanted))
+        throw new ToolError(
+          `More than one task is called "${wanted}". Use its id: ${matches
+            .map((t) => t.id)
+            .join(', ')}.`,
+        );
+      const task = matches.find((t) => t.id === wanted) ?? matches[0];
+      fields.taskId = task.id;
+      fields.projectId = task.projectId;
+      fields.text ??= task.title;
+    }
+  }
+  if (input?.goal !== undefined) {
+    if (input.goal === null || input.goal === '') fields.goalId = null;
+    else {
+      const wanted = String(input.goal).trim();
+      const inProject = fields.projectId ?? null;
+      const found = choices.projects
+        .filter((p) => !inProject || p.id === inProject)
+        .flatMap((p) => (p.goals ?? []).map((g) => ({ g, p })))
+        .filter(({ g }) => g.id === wanted || same(g.title, wanted));
+      if (!found.length) throw new ToolError(`No goal "${wanted}".`);
+      if (found.length > 1)
+        throw new ToolError(
+          `More than one goal is called "${wanted}"; name the step's project too.`,
+        );
+      fields.goalId = found[0].g.id;
+      fields.projectId = found[0].p.id;
+      fields.text ??= found[0].g.title;
+    }
+  }
   return fields;
 }
 
@@ -139,6 +194,9 @@ async function planView(plan: Plan, choices?: Choices) {
     id: view.id,
     title: view.title,
     status: view.status,
+    linkedProject: view.projectId
+      ? (c.projects.find((p) => p.id === view.projectId)?.name ?? null)
+      : null,
     ...(view.notes && { notes: view.notes }),
     ...(view.endOn && { by: view.endOn }),
     owner: name(view.ownerId),
@@ -155,6 +213,11 @@ async function planView(plan: Plan, choices?: Choices) {
       }),
       ...(s.dueOn && { by: s.dueOn }),
       ...(s.task && { task: s.task }),
+      ...(s.goal && {
+        goal: `${s.goal.title}: ${s.goal.done}/${s.goal.target}${
+          s.goal.kind === 'scheduled' ? ` this ${s.goal.period}` : ''
+        }`,
+      }),
     })),
     ...(view.schedules.length && {
       scheduledTasks: view.schedules.map((s) => ({
@@ -183,7 +246,23 @@ const STEP_SCHEMA = {
     },
     dueOn: { type: 'string', description: 'By when, YYYY-MM-DD.' },
     notes: { type: 'string' },
+    task: {
+      type: 'string',
+      description:
+        'Link an existing task (id or exact title) instead of plain text; "" unlinks it. Find tasks with find_tasks.',
+    },
+    goal: {
+      type: 'string',
+      description:
+        'Make the step a goal of its project (goal id or title); "" for none.',
+    },
   },
+};
+
+const LINK_SCHEMA = {
+  type: 'string',
+  description:
+    'Project id or name to link the plan to (a project plan: its steps stay in that project and its sub-projects). Leave out for a grand plan across projects; "" unlinks.',
 };
 
 export const PLAN_TOOLS: Tool[] = [
@@ -240,11 +319,12 @@ export const PLAN_TOOLS: Tool[] = [
     name: 'create_plan',
     title: 'Create a plan',
     description:
-      'Creates a plan in a company. A plan can be just an idea (a title and notes) with no project; add steps as it firms up: what, which project (optional), who, by when. Status IDEA by default, ACTIVE once decided.',
+      "Creates a plan in a company. A grand plan can be just an idea (a title and notes) with no project, and its steps can name any of the company's projects; link it to a project (project) to make it that project's plan. Add steps as it firms up: plain text (what, which project, who, by when), an existing task (task) or a project goal (goal). Status IDEA by default, ACTIVE once decided.",
     inputSchema: {
       type: 'object',
       properties: {
         company: { type: 'string', description: 'Company id or name.' },
+        project: LINK_SCHEMA,
         title: { type: 'string' },
         notes: { type: 'string', description: 'The idea, in their words.' },
         status: { type: 'string', enum: PLAN_STATUSES },
@@ -266,8 +346,9 @@ export const PLAN_TOOLS: Tool[] = [
       const steps: PlanStep[] = [];
       for (const s of Array.isArray(args?.steps) ? args.steps.slice(0, 50) : [])
         steps.push(newStep(await stepFields(user, company.id, choices, s)));
-      const { data, error } = readPlanBody(
+      const { data, error } = await readPlanBody(
         {
+          projectId: projectRef(choices, args?.project) ?? null,
           title: args?.title,
           notes: args?.notes,
           status: args?.status ?? 'IDEA',
@@ -287,11 +368,12 @@ export const PLAN_TOOLS: Tool[] = [
     name: 'update_plan',
     title: 'Change a plan',
     description:
-      'Changes a plan: its title, notes, status, date, owner or people, and its steps. Add steps with addSteps; change steps with updateSteps (find each by id or exact text; set makeTask to turn a step that has a project into a task in that project); remove steps with removeSteps.',
+      'Changes a plan: its title, notes, status, date, owner or people, the project it is linked to, and its steps. Add steps with addSteps; change steps with updateSteps (find each by id or exact text; set makeTask to turn a step that has a project into a task in that project); remove steps with removeSteps.',
     inputSchema: {
       type: 'object',
       properties: {
         plan: { type: 'string', description: 'Plan id or exact title.' },
+        project: LINK_SCHEMA,
         title: { type: 'string' },
         notes: { type: 'string' },
         status: { type: 'string', enum: PLAN_STATUSES },
@@ -354,6 +436,8 @@ export const PLAN_TOOLS: Tool[] = [
         steps.push(newStep(await stepFields(user, plan.companyId, choices, s)));
 
       const body: Record<string, unknown> = { steps };
+      if (args?.project !== undefined)
+        body.projectId = projectRef(choices, args.project);
       if (args?.title !== undefined) body.title = args.title;
       if (args?.notes !== undefined) body.notes = args.notes;
       if (args?.status !== undefined) body.status = args.status;
@@ -364,7 +448,7 @@ export const PLAN_TOOLS: Tool[] = [
         )?.[0];
       if (args?.people !== undefined)
         body.memberIds = await resolvePeople(user, plan.companyId, args.people);
-      const { data, error } = readPlanBody(body, choices, plan);
+      const { data, error } = await readPlanBody(body, choices, plan);
       if (error || !data) throw new ToolError(error ?? 'Invalid plan.');
       plan = await db.plan.update({
         where: { id: plan.id },

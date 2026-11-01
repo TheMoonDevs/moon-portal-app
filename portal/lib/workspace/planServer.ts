@@ -3,6 +3,7 @@ import { isAllowedInCompany, isOnProjectTeam } from '@/lib/permissions/company';
 import { syncTaskPoints } from '@/lib/progress/server';
 import type {
   CompanyMember,
+  GoalTally,
   Plan,
   PlanStep,
   Project,
@@ -17,7 +18,8 @@ import {
   TASK_STATUS,
 } from '@/models/workspace';
 
-import { PLAN_STATUSES, planDay, sanitizeSteps } from './plans';
+import { PLAN_STATUSES, planDay, projectFamily, sanitizeSteps } from './plans';
+import { goalProgress, tallyRows } from './projects';
 import {
   fail,
   getPublicUsers,
@@ -52,8 +54,10 @@ export async function planChoices(companyId: string) {
     avatar?: string;
   }[] = await getPublicUsers(members.map((m) => m.userId));
   return {
+    companyId,
     projects: projects.map((p) => ({
       id: p.id,
+      companyId,
       name: p.name,
       color: p.color ?? null,
       logo: p.logo ?? null,
@@ -65,6 +69,7 @@ export async function planChoices(companyId: string) {
       name: u.name ?? u.email ?? 'Someone',
       email: u.email ?? null,
       avatar: u.avatar ?? null,
+      companyIds: [companyId],
     })),
   };
 }
@@ -73,15 +78,16 @@ type Choices = Awaited<ReturnType<typeof planChoices>>;
 
 /**
  * Plan fields from a request body. `previous` is the stored plan when
- * editing; fields left out of the body keep their stored value.
+ * editing; fields left out of the body keep their stored value. A project
+ * plan's steps must stay inside its project and sub-projects.
  */
-export function readPlanBody(
+export async function readPlanBody(
   body: any,
   choices: Choices,
   previous?: Plan,
-): { data?: Partial<Plan>; error?: string } {
+): Promise<{ data?: Partial<Plan>; error?: string }> {
   const has = (k: string) => body && k in body;
-  const projectIds = new Set(choices.projects.map((p) => p.id));
+  const allProjectIds = new Set(choices.projects.map((p) => p.id));
   const peopleIds = new Set(choices.people.map((p) => p.id));
   const data: Partial<Plan> = {};
   if (has('title') || !previous) {
@@ -90,6 +96,16 @@ export function readPlanBody(
     if (!title) return { error: 'Give the plan a title.' };
     data.title = title;
   }
+  if (has('projectId')) {
+    if (body.projectId && !allProjectIds.has(body.projectId))
+      return { error: 'Link the plan to a project of its company.' };
+    data.projectId = body.projectId || null;
+  }
+  const linkedTo =
+    data.projectId !== undefined ? data.projectId : previous?.projectId;
+  const projectIds = linkedTo
+    ? projectFamily(choices.projects, linkedTo)
+    : allProjectIds;
   if (has('notes'))
     data.notes =
       typeof body.notes === 'string' ? body.notes.slice(0, 20000) : null;
@@ -115,35 +131,152 @@ export function readPlanBody(
           ),
         )
       : [];
-  if (has('steps'))
-    data.steps = sanitizeSteps(
-      body.steps,
-      previous?.steps ?? [],
+  const steps: any[] | null = has('steps')
+    ? Array.isArray(body.steps)
+      ? body.steps
+      : []
+    : linkedTo && data.projectId !== undefined
+      ? (previous?.steps ?? [])
+      : null;
+  if (steps) {
+    // A project plan names only its project and the ones under it.
+    if (
+      linkedTo &&
+      steps.some(
+        (s) =>
+          typeof s?.projectId === 'string' &&
+          s.projectId &&
+          !projectIds.has(s.projectId),
+      )
+    )
+      return {
+        error:
+          'Some steps are for projects outside the linked project. Move or remove them first.',
+      };
+    // Tasks the steps link to: in the company, and in the plan's projects.
+    const wanted = Array.from(
+      new Set(
+        steps
+          .map((s) => s?.taskId)
+          .filter((id): id is string => typeof id === 'string' && !!id),
+      ),
+    );
+    const tasks: Task[] = wanted.length
+      ? await db.task.findMany({
+          where: {
+            id: { in: wanted },
+            companyId: previous?.companyId ?? choices.companyId,
+          },
+          select: { projectId: true },
+        })
+      : [];
+    data.steps = sanitizeSteps(steps, previous?.steps ?? [], {
       projectIds,
       peopleIds,
-    );
+      tasks: new Map(
+        tasks
+          .filter((t) => projectIds.has(t.projectId))
+          .map((t) => [t.id, t.projectId]),
+      ),
+      goals: new Map(
+        choices.projects.map((p) => [
+          p.id,
+          new Set((p.goals ?? []).map((g) => g.id)),
+        ]),
+      ),
+    });
+  }
   return { data };
 }
 
+/** Where a goal step's goal stands now. */
+export type StepGoal = {
+  title: string;
+  kind: 'scheduled' | 'target';
+  done: number;
+  target: number;
+  percent: number;
+  /** The period a scheduled goal counts in, e.g. "week". */
+  period: string;
+  met: boolean;
+};
+
 export type PlanView = Omit<Plan, 'steps'> & {
-  steps: (PlanStep & { task?: { id: string; status: string } | null })[];
+  steps: (PlanStep & {
+    task?: { id: string; status: string; title: string } | null;
+    goal?: StepGoal | null;
+  })[];
   /** Scheduled tasks set up in the plan. */
   schedules: TaskSchedule[];
 };
 
+/** Where each goal named by the plans' steps stands now, by goal id. */
+async function stepGoals(plans: Plan[]) {
+  const wanted = plans.flatMap((p) =>
+    (p.steps ?? []).filter((s) => s.goalId && s.projectId),
+  );
+  const out = new Map<string, StepGoal>();
+  if (!wanted.length) return out;
+  const goalIds = Array.from(new Set(wanted.map((s) => s.goalId!)));
+  const [projects, done, tallies]: [Project[], Task[], GoalTally[]] =
+    await Promise.all([
+      db.project.findMany({
+        where: {
+          id: { in: Array.from(new Set(wanted.map((s) => s.projectId!))) },
+        },
+        select: { goals: true },
+      }),
+      db.task.findMany({
+        where: { goalId: { in: goalIds }, status: TASK_STATUS.DONE },
+        select: {
+          status: true,
+          goalId: true,
+          goalPartId: true,
+          forDate: true,
+          completedAt: true,
+          completedByIds: true,
+          assigneeIds: true,
+        },
+      }),
+      db.goalTally.findMany({ where: { goalId: { in: goalIds } } }),
+    ]);
+  const goals = projects
+    .flatMap((p) => p.goals ?? [])
+    .filter((g) => goalIds.includes(g.id));
+  const progress = goalProgress(goals, [...done, ...tallyRows(tallies)]);
+  for (const g of goals) {
+    const p = progress.find((x) => x.goalId === g.id);
+    if (!p) continue;
+    out.set(g.id, {
+      title: g.title,
+      kind: p.kind,
+      done: p.done,
+      target: p.target,
+      percent: p.percent,
+      period: g.period,
+      met: p.kind === 'target' ? !!p.achieved : p.percent >= 100,
+    });
+  }
+  return out;
+}
+
 /**
- * Plans with each made-into-a-task step showing its task's status, and the
- * scheduled tasks set up in each.
+ * Plans with each task step showing its task's status, each goal step
+ * where its goal stands, and the scheduled tasks set up in each.
  */
 export async function withTasks(plans: Plan[]): Promise<PlanView[]> {
   const ids = plans.flatMap((p) =>
     (p.steps ?? []).map((s) => s.taskId).filter(Boolean),
   ) as string[];
-  const [tasks, schedules]: [Task[], TaskSchedule[]] = await Promise.all([
+  const [tasks, schedules, goals]: [
+    Task[],
+    TaskSchedule[],
+    Map<string, StepGoal>,
+  ] = await Promise.all([
     ids.length
       ? db.task.findMany({
           where: { id: { in: ids } },
-          select: { status: true },
+          select: { status: true, title: true },
         })
       : [],
     plans.length
@@ -152,18 +285,29 @@ export async function withTasks(plans: Plan[]): Promise<PlanView[]> {
           orderBy: { createdAt: 'asc' },
         })
       : [],
+    stepGoals(plans),
   ]);
   const byId = new Map(tasks.map((t) => [t.id, t]));
   return plans.map((p) => ({
     ...p,
+    projectId: p.projectId ?? null,
     schedules: schedules.filter((s) => s.planId === p.id),
     steps: (p.steps ?? []).map((s) => {
       const task = s.taskId ? byId.get(s.taskId) : undefined;
+      const goal = s.goalId ? goals.get(s.goalId) : undefined;
       return {
         ...s,
-        task: task ? { id: task.id, status: task.status } : null,
-        // A step made into a task is done when its task is.
-        done: task ? task.status === TASK_STATUS.DONE : !!s.done,
+        goalId: s.goalId ?? null,
+        task: task
+          ? { id: task.id, status: task.status, title: task.title }
+          : null,
+        goal: goal ?? null,
+        // A task step is done when its task is; a goal step when it is met.
+        done: task
+          ? task.status === TASK_STATUS.DONE
+          : goal
+            ? goal.met
+            : !!s.done,
       };
     }),
   }));
@@ -180,17 +324,18 @@ export async function teamProjectIds(companyId: string, userId: string) {
 
 /**
  * Whether the person may change (or delete) a plan: its owner, anyone on
- * the team of a project one of its steps is for, or someone whose company
+ * the team of its linked project or of a project one of its steps is for, or someone whose company
  * roles allow it (`companyAllows`), such as the company's owner.
  */
 export const mayChangePlan = (
-  plan: Pick<Plan, 'ownerId' | 'steps'>,
+  plan: Pick<Plan, 'ownerId' | 'steps' | 'projectId'>,
   userId: string,
   companyAllows: boolean,
   teamIds: string[],
 ) =>
   companyAllows ||
   plan.ownerId === userId ||
+  (!!plan.projectId && teamIds.includes(plan.projectId)) ||
   (plan.steps ?? []).some(
     (s) => !!s.projectId && teamIds.includes(s.projectId),
   );
@@ -248,6 +393,7 @@ export async function createPlan(
   const plan: Plan = await db.plan.create({
     data: {
       companyId,
+      projectId: data.projectId ?? null,
       title: data.title ?? 'Untitled plan',
       notes: data.notes ?? null,
       status: data.status ?? PLAN_STATUS.IDEA,
@@ -286,6 +432,8 @@ export async function stepToTask(plan: Plan, stepId: string, userId: string) {
   const step = (plan.steps ?? []).find((s) => s.id === stepId);
   if (!step) return { error: 'No such step in this plan.' };
   if (step.taskId) return { error: 'That step is already a task.' };
+  if (step.goalId)
+    return { error: 'That step is a goal; its goal makes the tasks.' };
   if (!step.projectId) return { error: 'Pick a project for the step first.' };
   const project: Project | null = await db.project.findFirst({
     where: { id: step.projectId, companyId: plan.companyId },

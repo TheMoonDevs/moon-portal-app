@@ -30,9 +30,9 @@ import {
   errorText,
   PROJECT_STATUS_META,
 } from '../Admin/Workspace/shared';
-import { NewProjectDialog } from '../Projects/NewProjectDialog';
 import type { PlanView } from '../Plans/types';
 import { usePlans } from '../Plans/usePlans';
+import { NewProjectDialog } from '../Projects/NewProjectDialog';
 import { PageDoc, SaveBadge, type SaveState } from './PageDoc';
 import { ProjectDetailsDialog } from './ProjectDetailsDialog';
 import { GoalsSection } from './sections/GoalsSection';
@@ -761,7 +761,8 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
 
   const newPlan = async () => {
     setCreatingPlan(true);
-    const created = await plans.create();
+    // Linked to this project; it can be made a grand plan later.
+    const created = await plans.create({ projectId });
     setCreatingPlan(false);
     if (!created) return;
     keepPlan(created);
@@ -1009,7 +1010,7 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
         plans={linkedPlans}
         planId={planId}
         plansOpen={plansOpen}
-        canAddPlan={!!plans.data?.can.create}
+        canAddPlan={plans.canCreate}
         creatingPlan={creatingPlan}
         onPlansOpen={setPlansOpen}
         onNewPlan={newPlan}

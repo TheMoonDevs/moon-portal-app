@@ -10,10 +10,13 @@ export type Person = {
   name: string;
   email: string | null;
   avatar: string | null;
+  /** The companies they are in, of the ones loaded. */
+  companyIds: string[];
 };
 
 export type ProjectChoice = {
   id: string;
+  companyId: string;
   name: string;
   color: string | null;
   logo: string | null;
@@ -21,9 +24,24 @@ export type ProjectChoice = {
   goals: ProjectGoal[];
 };
 
-export type StepView = PlanStep & {
-  task?: { id: string; status: string } | null;
+export type StepGoal = {
+  title: string;
+  kind: 'scheduled' | 'target';
+  done: number;
+  target: number;
+  percent: number;
+  period: string;
+  met: boolean;
 };
+
+export type StepView = PlanStep & {
+  task?: { id: string; status: string; title?: string } | null;
+  goal?: StepGoal | null;
+};
+
+/** What a step is: plain text, a task, or a project goal. */
+export const stepKind = (s: StepView): 'text' | 'task' | 'goal' =>
+  s.taskId ? 'task' : s.goalId ? 'goal' : 'text';
 
 export type PlanView = Omit<Plan, 'steps'> & {
   steps: StepView[];
@@ -31,19 +49,25 @@ export type PlanView = Omit<Plan, 'steps'> & {
   schedules: TaskSchedule[];
 };
 
+export type PlanCan = {
+  create: boolean;
+  editAll: boolean;
+  deleteAll: boolean;
+  /** Add tasks in every project of the company. */
+  createTasks: boolean;
+  /** Projects they lead or are on. */
+  teamProjectIds: string[];
+};
+
 export type PlansData = {
+  /** The companies loaded: one, or every one they can read. */
+  companies: { id: string; name: string; color: string | null }[];
   plans: PlanView[];
+  /** Projects of every company loaded. */
   projects: ProjectChoice[];
   people: Person[];
-  can: {
-    create: boolean;
-    editAll: boolean;
-    deleteAll: boolean;
-    /** Add tasks in every project of the company. */
-    createTasks: boolean;
-    /** Projects they lead or are on. */
-    teamProjectIds: string[];
-  };
+  /** What they may do, by company. */
+  can: Record<string, PlanCan>;
 };
 
 /** Steps done out of all steps. */
