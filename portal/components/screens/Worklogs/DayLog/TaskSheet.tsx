@@ -105,6 +105,26 @@ const MoveToMenu = ({
   );
 };
 
+/** A red star: the goal this task was for missed its day. */
+const MissedStar = ({
+  missed,
+}: {
+  missed: NonNullable<DayTask['goalMissed']>;
+}) => (
+  <span
+    title={`Goal missed on ${dayjs(missed.day).format('ddd D MMM')}${
+      missed.movedTo
+        ? '; moved on to another day'
+        : missed.mergedInto
+          ? '; merged into a later task'
+          : ''
+    }`}
+    className="pointer-events-auto ml-1.5 inline-flex cursor-help align-[-2px]"
+  >
+    <Icon name="star" filled className="text-[14px] text-rose-400" />
+  </span>
+);
+
 /** A task's menu: its status, moving it to a later day, archiving, and taking it out. */
 const RowMenu = ({
   status,
@@ -668,6 +688,7 @@ export const TaskSheet = ({
               )}
             />
             {(count > 0 ||
+              !!task.goalMissed ||
               (!moved && (status === 'doing' || status === 'waiting'))) && (
               // The dot and count sit right after the words: the words
               // are laid out again unseen, so they land where they end.
@@ -689,6 +710,7 @@ export const TaskSheet = ({
                     {count}
                   </span>
                 )}
+                {task.goalMissed && <MissedStar missed={task.goalMissed} />}
               </span>
             )}
           </div>

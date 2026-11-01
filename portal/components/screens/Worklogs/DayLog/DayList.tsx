@@ -17,7 +17,9 @@ import { StatusIcon } from './sheetParts';
  * opens on its own page.
  */
 
-type Line = { text: string; status: TaskRowStatus };
+type Line = { text: string; status: TaskRowStatus; goalMissed?: boolean };
+
+const MISSED_TITLE = 'A goal missed this day';
 type View = 'list' | 'calendar';
 
 const VIEW_KEY = 'worklogs.daysView';
@@ -102,7 +104,14 @@ const DayCard = ({
             - {dayjs(date).format('dddd')}
           </span>
         </span>
-        <Icon name={state.icon} className={cn('text-[16px]', state.tone)} />
+        <span className="flex items-center gap-1">
+          {lines.some((l) => l.goalMissed) && (
+            <span title={MISSED_TITLE} className="flex">
+              <Icon name="star" filled className="text-[14px] text-rose-400" />
+            </span>
+          )}
+          <Icon name={state.icon} className={cn('text-[16px]', state.tone)} />
+        </span>
       </div>
       {lines.length ? (
         <ul className="flex flex-col gap-0.5">
@@ -190,9 +199,19 @@ const Calendar = ({
                     : 'border-transparent text-neutral-300 auto-light:text-neutral-700',
                 ),
           );
+          const missed = lines.some((l) => l.goalMissed);
           const body = (
             <>
-              {d.date()}
+              <span className="relative">
+                {d.date()}
+                {missed && (
+                  <Icon
+                    name="star"
+                    filled
+                    className="absolute -right-3 -top-1.5 text-[10px] text-rose-400"
+                  />
+                )}
+              </span>
               <span
                 className={cn(
                   'h-1 w-4 rounded-full',
@@ -210,7 +229,7 @@ const Calendar = ({
             </>
           );
           const title = lines.length
-            ? `${lines.length} points · ${done} done`
+            ? `${lines.length} points · ${done} done${missed ? ` · ${MISSED_TITLE.toLowerCase()}` : ''}`
             : undefined;
           return opensPage ? (
             <Link

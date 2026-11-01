@@ -140,7 +140,7 @@ export const PlansSection = ({
     return (
       <SectionShell
         icon="map"
-        title="Plans"
+        title="Project Plans"
         description="The company’s plans with a step for this project. Open one to change it, just like on the plans page."
         actions={
           data.can.create && (
