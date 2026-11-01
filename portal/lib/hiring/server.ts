@@ -25,7 +25,7 @@ import {
   MAX_FILE_BYTES,
   sanitizeFields,
 } from './forms';
-import { sanitizeTask } from './tasks';
+import { applicationDueAt, extendedDueAt, sanitizeTask } from './tasks';
 
 /* -------------------------------- openings ------------------------------- */
 
@@ -226,6 +226,7 @@ const OPENING_TEXT_LIMITS = {
   description: MAX_DESCRIPTION_LENGTH,
   details: MAX_DESCRIPTION_LENGTH,
   notes: MAX_DESCRIPTION_LENGTH,
+  screening: MAX_DESCRIPTION_LENGTH,
 } as const;
 
 /**
@@ -307,6 +308,51 @@ export async function ensureTaskToken(
 
 export const taskLinkFor = (origin: string, token: string) =>
   `${origin.replace(/\/$/, '')}/task/${token}`;
+
+/**
+ * Gives one candidate a new due date for their task (`{ dueAt }` or
+ * `{ days }`, see extendedDueAt). They can send their task, or send it again,
+ * until then. Nobody is emailed; send a reminder for that.
+ */
+export async function extendTaskDeadline(
+  application: JobApplication,
+  opening: Pick<JobOpening, 'task'>,
+  input: { dueAt?: unknown; days?: unknown },
+  byUserId: string | null,
+): Promise<{
+  application: JobApplication | null;
+  from: Date | null;
+  error: string | null;
+}> {
+  if (!opening.task)
+    return {
+      application: null,
+      from: null,
+      error: 'This opening has no task to extend.',
+    };
+  const from = applicationDueAt(opening.task, application);
+  const { dueAt, error } = extendedDueAt(from, input);
+  if (error || !dueAt) return { application: null, from, error };
+  const at = nowIso();
+  const day = dueAt.toISOString().slice(0, 10);
+  const event: ApplicationEvent = {
+    type: 'TASK_EXTENDED',
+    at,
+    byUserId,
+    text: from
+      ? `Task due date moved from ${from.toISOString().slice(0, 10)} to ${day}`
+      : `Task due date set to ${day}`,
+  };
+  const updated: JobApplication = await db.jobApplication.update({
+    where: { id: application.id },
+    data: {
+      taskDueOverride: dueAt.toISOString(),
+      updatedAt: at,
+      history: { push: event },
+    },
+  });
+  return { application: updated, from, error: null };
+}
 
 /** Publish and close timestamps that follow a status change. */
 export function statusTimestamps(

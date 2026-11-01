@@ -19,8 +19,9 @@ export const EMAIL_VARIABLES = [
   { key: 'role', label: 'Role' },
   { key: 'company', label: 'Company' },
   { key: 'sender', label: 'Your name' },
-  { key: 'meetingLink', label: 'Your meeting link' },
+  { key: 'meetingLink', label: 'Meeting link' },
   { key: 'taskLink', label: 'Their task link' },
+  { key: 'taskDue', label: 'Their task due date' },
 ] as const;
 
 export type EmailVariable = (typeof EMAIL_VARIABLES)[number]['key'];
@@ -69,6 +70,23 @@ Thanks for applying for the {{role}} role at {{company}}. We enjoyed reading you
 [Describe the task here, or add a link to the brief]
 
 Please reply to this email with your work by [deadline]. If anything is unclear, just ask.
+
+{{sender}}
+{{company}}`,
+  },
+  {
+    key: 'reminder',
+    name: 'Task reminder',
+    icon: 'alarm',
+    moveTo: null,
+    subject: 'Reminder: your task for {{role}} at {{company}}',
+    body: `Hi {{firstName}},
+
+A quick reminder about the task for the {{role}} role at {{company}}. It's due by {{taskDue}}.
+
+You'll find the brief and the place to send your work here: {{taskLink}}
+
+If you need a little more time, or anything is unclear, just reply to this email.
 
 {{sender}}
 {{company}}`,
@@ -126,6 +144,7 @@ export function emailVariables({
   email,
   meetingLink,
   taskLink,
+  taskDue,
 }: {
   name: string;
   role: string;
@@ -137,6 +156,8 @@ export function emailVariables({
   meetingLink?: string | null;
   /** The candidate's private task page (/task/<token>), see lib/hiring/tasks. */
   taskLink?: string | null;
+  /** When their task is due, already written out (see formatTaskDue). */
+  taskDue?: string | null;
 }): EmailVariables {
   const fullName = name.trim();
   return {
@@ -152,12 +173,30 @@ export function emailVariables({
         }).toString()}`
       : '',
     taskLink: taskLink ?? '',
+    taskDue: taskDue ?? '',
   };
 }
 
-/** Whether a template uses the sender's booking link. */
+/**
+ * A due date as candidates read it, e.g. "Tuesday, 4 November 2026". Written
+ * in UTC, the same day the hiring tab shows and an extension is set to.
+ */
+export const formatTaskDue = (due: Date) =>
+  due.toLocaleDateString('en-GB', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+
+/** Whether a template uses a booking link. */
 export const usesMeetingLink = (...texts: string[]) =>
   texts.some((text) => /\{\{\s*meetingLink\s*\}\}/.test(text));
+
+/** Whether a template says when each candidate's task is due. */
+export const usesTaskDue = (...texts: string[]) =>
+  texts.some((text) => /\{\{\s*taskDue\s*\}\}/.test(text));
 
 /** Whether a template gives each candidate their task link. */
 export const usesTaskLink = (...texts: string[]) =>

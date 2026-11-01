@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 
 import { answerText, APPLICATION_STAGES } from '@/lib/hiring/forms';
 import { linkParts, onlyLinks } from '@/lib/hiring/links';
-import { taskDueAt } from '@/lib/hiring/tasks';
+import { applicationDueAt } from '@/lib/hiring/tasks';
 import { cn } from '@/lib/utils';
 import {
   type APPLICATION_STAGE,
@@ -27,6 +27,7 @@ import {
   Icon,
   Pill,
   TextArea,
+  TextInput,
 } from '../shared/AdminUI';
 import { errorText } from '../Workspace/shared';
 import {
@@ -103,19 +104,109 @@ const Answer = ({
   );
 };
 
+const DAY_MS = 86400000;
+const isoDay = (date: Date) => date.toISOString().slice(0, 10);
+
+/** Picks a new due date for one candidate's task. */
+const ExtendTask = ({
+  application,
+  due,
+  onUpdated,
+  onDone,
+}: {
+  application: ApplicationRow;
+  due: Date | null;
+  onUpdated: (application: ApplicationRow) => void;
+  onDone: () => void;
+}) => {
+  const now = new Date();
+  const from = due && due > now ? due : now;
+  const [day, setDay] = useState(isoDay(new Date(from.getTime() + 3 * DAY_MS)));
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const res = await PortalSdk.patchData(
+        `/api/hiring/applications/${application.id}`,
+        { extendTask: { dueAt: day } },
+      );
+      onUpdated(res.data.application);
+      toast.success(`${application.name.split(/\s+/)[0]} now has until ${day}`);
+      onDone();
+    } catch (err) {
+      toast.error(errorText(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 px-4 py-3 text-xs text-neutral-400">
+      <span>New due date</span>
+      <TextInput
+        type="date"
+        value={day}
+        min={isoDay(new Date(now.getTime() + DAY_MS))}
+        onChange={(e) => setDay(e.target.value)}
+        className="h-8 w-40 text-xs"
+      />
+      {[2, 7].map((days) => (
+        <button
+          key={days}
+          type="button"
+          onClick={() =>
+            setDay(isoDay(new Date(from.getTime() + days * DAY_MS)))
+          }
+          className="rounded-md border border-white/10 px-2 py-1 text-[11px] text-neutral-300 hover:border-white/25 hover:text-white"
+        >
+          +{days === 7 ? '1 week' : `${days} days`}
+        </button>
+      ))}
+      <span className="ml-auto flex gap-1">
+        <AdminButton size="sm" tone="ghost" onClick={onDone}>
+          Cancel
+        </AdminButton>
+        <AdminButton
+          size="sm"
+          tone="primary"
+          loading={saving}
+          disabled={!day}
+          onClick={save}
+        >
+          Extend
+        </AdminButton>
+      </span>
+      <p className="w-full text-[11px] text-neutral-500">
+        Only {application.name.split(/\s+/)[0]} gets the new date. They can send
+        their task, or send it again, until the end of that day (UTC). Nobody is
+        emailed; send a reminder to tell them.
+      </p>
+    </div>
+  );
+};
+
 /** The task: their private link, when it's due, and what they sent. */
 const TaskSection = ({
   application,
   task,
+  canEdit,
+  onUpdated,
+  onRemind,
 }: {
   application: ApplicationRow;
   task: JobTask;
+  canEdit: boolean;
+  onUpdated: (application: ApplicationRow) => void;
+  /** Opens the composer with the task reminder. */
+  onRemind?: () => void;
 }) => {
+  const [extending, setExtending] = useState(false);
   const link =
     application.taskToken && typeof window !== 'undefined'
       ? `${window.location.origin}/task/${application.taskToken}`
       : null;
-  const due = taskDueAt(task, application.taskSentAt);
+  const due = applicationDueAt(task, application);
   const sent = application.taskSubmission;
   return (
     <Field label="Task">
@@ -141,13 +232,58 @@ const TaskSection = ({
           {application.taskSentAt && (
             <span>Sent {formatDate(application.taskSentAt)}</span>
           )}
-          {due && <span>Due {formatDate(due.toISOString())}</span>}
+          {due && (
+            <span
+              className={cn(
+                due < new Date() && !sent && 'text-rose-300',
+                application.taskDueOverride && 'text-amber-200',
+              )}
+              title={
+                application.taskDueOverride
+                  ? 'Extended for this candidate'
+                  : undefined
+              }
+            >
+              Due {formatDate(due.toISOString())}
+              {application.taskDueOverride ? ' (extended)' : ''}
+            </span>
+          )}
           {sent && (
             <Pill tone="positive" icon="task_alt">
               Submitted {timeAgo(sent.submittedAt)}
             </Pill>
           )}
+          {canEdit && link && !extending && (
+            <span className="ml-auto flex gap-1">
+              <AdminButton
+                size="sm"
+                tone="ghost"
+                icon="more_time"
+                onClick={() => setExtending(true)}
+              >
+                Give more time
+              </AdminButton>
+              {onRemind && (
+                <AdminButton
+                  size="sm"
+                  tone="ghost"
+                  icon="alarm"
+                  onClick={onRemind}
+                >
+                  Remind
+                </AdminButton>
+              )}
+            </span>
+          )}
         </div>
+        {extending && (
+          <ExtendTask
+            application={application}
+            due={due}
+            onUpdated={onUpdated}
+            onDone={() => setExtending(false)}
+          />
+        )}
         {sent ? (
           task.fields.map((field) => (
             <div
@@ -170,16 +306,48 @@ const TaskSection = ({
   );
 };
 
+const newSendId = () =>
+  typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+
 const EmailLog = ({
   application,
   nameOf,
+  canEdit,
+  onUpdated,
 }: {
   application: ApplicationRow;
   nameOf: (id?: string | null) => string;
+  canEdit: boolean;
+  onUpdated: (application: ApplicationRow) => void;
 }) => {
   const [emails, setEmails] = useState<HiringEmail[] | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
+  // Two clicks to send again; the id makes a retried request send once.
+  const [armed, setArmed] = useState<{ id: string; sendId: string } | null>(
+    null,
+  );
+  const [resending, setResending] = useState(false);
   const lastEmail = application.lastEmail;
+
+  const resend = async (email: HiringEmail) => {
+    if (!armed || armed.id !== email.id) return;
+    setResending(true);
+    try {
+      const res = await PortalSdk.postData('/api/hiring/emails/resend', {
+        emailId: email.id,
+        sendId: armed.sendId,
+      });
+      onUpdated(res.data.application);
+      toast.success('Sent again');
+      setArmed(null);
+    } catch (err) {
+      toast.error(errorText(err, 'Could not send it again.'));
+    } finally {
+      setResending(false);
+    }
+  };
 
   // Reloads when a new email goes out or its delivery status changes.
   useEffect(() => {
@@ -240,6 +408,43 @@ const EmailLog = ({
                   <p className="whitespace-pre-wrap break-words rounded-lg bg-white/[0.03] p-3 text-xs leading-relaxed text-neutral-300">
                     {email.text}
                   </p>
+                  {canEdit &&
+                    (armed?.id === email.id ? (
+                      <span className="flex items-center gap-2 self-start">
+                        <span className="text-xs text-neutral-300">
+                          Send this to {application.email} again?
+                        </span>
+                        <AdminButton
+                          size="sm"
+                          tone="ghost"
+                          disabled={resending}
+                          onClick={() => setArmed(null)}
+                        >
+                          No
+                        </AdminButton>
+                        <AdminButton
+                          size="sm"
+                          tone="primary"
+                          icon="send"
+                          loading={resending}
+                          onClick={() => resend(email)}
+                        >
+                          Send again
+                        </AdminButton>
+                      </span>
+                    ) : (
+                      <AdminButton
+                        size="sm"
+                        tone="ghost"
+                        icon="forward_to_inbox"
+                        className="self-start"
+                        onClick={() =>
+                          setArmed({ id: email.id, sendId: newSendId() })
+                        }
+                      >
+                        Send again
+                      </AdminButton>
+                    ))}
                 </div>
               )}
             </li>
@@ -259,6 +464,7 @@ export const ApplicantDetail = ({
   onClose,
   onUpdated,
   onEmail,
+  onRemind,
 }: {
   application: ApplicationRow | null;
   fields: FormField[];
@@ -270,6 +476,8 @@ export const ApplicantDetail = ({
   onUpdated: (application: ApplicationRow) => void;
   /** Opens the composer for this applicant. */
   onEmail?: () => void;
+  /** Opens the composer with the task reminder for this applicant. */
+  onRemind?: () => void;
 }) => {
   const [notes, setNotes] = useState('');
   const [savingNotes, setSavingNotes] = useState(false);
@@ -392,7 +600,15 @@ export const ApplicantDetail = ({
           ))}
         </div>
 
-        {task && <TaskSection application={application} task={task} />}
+        {task && (
+          <TaskSection
+            application={application}
+            task={task}
+            canEdit={canEdit}
+            onUpdated={onUpdated}
+            onRemind={canEdit ? onRemind : undefined}
+          />
+        )}
 
         <Field label="Notes" hint="Only your hiring team sees these.">
           <TextArea
@@ -414,7 +630,12 @@ export const ApplicantDetail = ({
           )}
         </Field>
 
-        <EmailLog application={application} nameOf={nameOf} />
+        <EmailLog
+          application={application}
+          nameOf={nameOf}
+          canEdit={canEdit}
+          onUpdated={onUpdated}
+        />
 
         <Field label="History">
           <ol className="flex flex-col gap-2">
@@ -432,7 +653,9 @@ export const ApplicantDetail = ({
                         ? 'bg-violet-400'
                         : event.type === 'TASK_SUBMITTED'
                           ? 'bg-emerald-400'
-                          : 'bg-white/30',
+                          : event.type === 'TASK_EXTENDED'
+                            ? 'bg-amber-400'
+                            : 'bg-white/30',
                   )}
                 />
                 <span className="flex-1">
@@ -446,7 +669,9 @@ export const ApplicantDetail = ({
                         ? `${nameOf(event.byUserId)} emailed “${event.text}”`
                         : event.type === 'TASK_SUBMITTED'
                           ? event.text || 'Sent their task'
-                          : event.text}
+                          : event.type === 'TASK_EXTENDED'
+                            ? `${nameOf(event.byUserId)}: ${event.text}`
+                            : event.text}
                 </span>
                 <span className="text-neutral-600">{timeAgo(event.at)}</span>
               </li>

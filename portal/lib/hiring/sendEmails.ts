@@ -1,4 +1,4 @@
-import { type OutgoingEmail, sendEmails } from '@/lib/email/resend';
+import { type OutgoingEmail, sendEmail, sendEmails } from '@/lib/email/resend';
 import { getOrCreateProfile, meetLink } from '@/lib/meet/server';
 import { db } from '@/lib/mongodb/db-client';
 import { asStringArray, nowIso } from '@/lib/workspace/server';
@@ -11,6 +11,8 @@ import type {
   JobOpening,
 } from '@/models/hiring';
 import { HIRING_EMAIL_STATUS } from '@/models/hiring';
+import type { MeetProfile } from '@/models/meet';
+import { MEMBER_STATUS } from '@/models/workspace';
 
 import {
   HIRING_EMAIL_TAGS,
@@ -19,12 +21,15 @@ import {
   HR_REPLY_TO,
 } from './email';
 import {
+  emailHtml,
   emailVariables,
+  formatTaskDue,
   MAX_BODY,
   MAX_RECIPIENTS,
   MAX_SUBJECT,
   renderEmail,
   usesMeetingLink,
+  usesTaskDue,
   usesTaskLink,
 } from './emailTemplates';
 import { isValidEmail } from './forms';
@@ -34,6 +39,7 @@ import {
   moveApplication,
   taskLinkFor,
 } from './server';
+import { applicationDueAt } from './tasks';
 
 /*
  * Emailing applicants, shared by the hiring tab's composer and the Claude
@@ -65,7 +71,15 @@ export interface HiringSend {
    * Null follows each opening's own setting.
    */
   replyToLead: boolean | null;
+  /**
+   * Whose booking link fills {{meetingLink}}: `lead` for each opening's
+   * hiring lead, `sender` for the person sending (also when null), or a
+   * company member's user id.
+   */
+  meetingLinkFrom: string | null;
 }
+
+const MEETING_LINK_FROM = /^(lead|sender|[A-Za-z0-9_-]{1,64})$/;
 
 /** Checks a send from an untrusted body. */
 export function parseHiringSend(raw: Record<string, unknown>): {
@@ -85,6 +99,11 @@ export function parseHiringSend(raw: Record<string, unknown>): {
         ? raw.replyTo.trim().toLowerCase() || null
         : null,
     replyToLead: typeof raw.replyToLead === 'boolean' ? raw.replyToLead : null,
+    meetingLinkFrom:
+      typeof raw.meetingLinkFrom === 'string' &&
+      MEETING_LINK_FROM.test(raw.meetingLinkFrom)
+        ? raw.meetingLinkFrom
+        : null,
   };
   const error = !send.ids.length
     ? 'Choose at least one applicant.'
@@ -111,6 +130,90 @@ type Sender = {
   origin?: string;
 };
 
+/** Whose booking link {{meetingLink}} gives candidates of one opening. */
+export interface MeetingHost {
+  userId: string;
+  name: string;
+  link: string;
+  /** True when their booking page was just made, with the default hours. */
+  isNew: boolean;
+}
+
+/** A member's booking link, made with the default hours on first use. */
+export async function meetingHostFor(
+  origin: string,
+  userId: string,
+): Promise<MeetingHost> {
+  const existing: MeetProfile | null = await db.meetProfile.findFirst({
+    where: { userId },
+  });
+  const profile = existing ?? (await getOrCreateProfile(userId));
+  const person = (await db.user.findFirst({
+    where: { id: userId },
+    select: { name: true, email: true },
+  })) as { name?: string | null; email?: string | null } | null;
+  return {
+    userId,
+    name: person?.name || person?.email || 'A teammate',
+    link: meetLink(origin, profile.code),
+    isNew: !existing,
+  };
+}
+
+/**
+ * The booking link each opening's candidates get for {{meetingLink}}, by
+ * opening id, following `from` (see HiringSend.meetingLinkFrom).
+ */
+export async function resolveMeetingHosts(
+  sender: Sender,
+  companyId: string,
+  openings: Pick<JobOpening, 'id' | 'title' | 'hiringLeadId'>[],
+  from: string | null,
+): Promise<Map<string, MeetingHost>> {
+  const out = new Map<string, MeetingHost>();
+  if (!sender.origin) return out;
+  const hostOf = (o: Pick<JobOpening, 'title' | 'hiringLeadId'>) => {
+    if (!from || from === 'sender') return sender.id;
+    if (from === 'lead') {
+      if (!o.hiringLeadId)
+        throw new HiringSendError(
+          400,
+          `${o.title} has no hiring lead to take the meeting link from. Assign one, or use your own link.`,
+        );
+      return o.hiringLeadId;
+    }
+    return from;
+  };
+  const hostIds = new Map(openings.map((o) => [o.id, hostOf(o)]));
+  const unique = Array.from(new Set(Array.from(hostIds.values())));
+  const others = unique.filter((id) => id !== sender.id);
+  if (others.length) {
+    const members = await db.companyMember.count({
+      where: {
+        companyId,
+        userId: { in: others },
+        status: MEMBER_STATUS.ACTIVE,
+      },
+    });
+    if (members !== others.length)
+      throw new HiringSendError(
+        400,
+        'The meeting link has to be a company member’s.',
+      );
+  }
+  const hosts = new Map(
+    await Promise.all(
+      unique.map(
+        async (id) => [id, await meetingHostFor(sender.origin!, id)] as const,
+      ),
+    ),
+  );
+  hostIds.forEach((hostId, openingId) =>
+    out.set(openingId, hosts.get(hostId)!),
+  );
+  return out;
+}
+
 /** Every applicant's own copy, rendered but not sent. */
 export async function renderHiringEmails(
   sender: Sender,
@@ -120,11 +223,6 @@ export async function renderHiringEmails(
   const companyIds = Array.from(new Set(applications.map((a) => a.companyId)));
   if (companyIds.length !== 1)
     throw new HiringSendError(400, 'Email one company’s applicants at a time.');
-
-  const meetingLink =
-    sender.origin && usesMeetingLink(send.subject, send.body)
-      ? meetLink(sender.origin, (await getOrCreateProfile(sender.id)).code)
-      : null;
 
   const [company, user, openings] = await Promise.all([
     db.company.findFirst({ where: { id: companyIds[0] } }),
@@ -137,6 +235,39 @@ export async function renderHiringEmails(
   ]);
   const companyName: string = company?.name ?? '';
   const roleOf = new Map(openings.map((o) => [o.id, o.title]));
+  const openingById = new Map(openings.map((o) => [o.id, o]));
+
+  const meetingHosts = usesMeetingLink(send.subject, send.body)
+    ? await resolveMeetingHosts(
+        sender,
+        companyIds[0],
+        openings,
+        send.meetingLinkFrom,
+      )
+    : new Map<string, MeetingHost>();
+
+  // When each candidate's task is due; a first task email starts the clock.
+  const now = nowIso();
+  const taskDues = usesTaskDue(send.subject, send.body)
+    ? applications.map((a) => {
+        const due = applicationDueAt(openingById.get(a.openingId)?.task, {
+          taskSentAt: a.taskSentAt ?? now,
+          taskDueOverride: a.taskDueOverride,
+        });
+        return due ? formatTaskDue(due) : null;
+      })
+    : [];
+  const noDue = applications.filter((_, i) => taskDues.length && !taskDues[i]);
+  if (noDue.length)
+    throw new HiringSendError(
+      400,
+      `${noDue
+        .slice(0, 3)
+        .map((a) => a.name)
+        .join(
+          ', ',
+        )}${noDue.length > 3 ? ` and ${noDue.length - 3} more` : ''} ${noDue.length === 1 ? 'has' : 'have'} no task due date for {{taskDue}}. Give the task due days, or extend their task to a date.`,
+    );
 
   // Replies go to the opening's hiring lead, or the sender when it has none;
   // with that turned off they go to the HR inbox.
@@ -190,8 +321,9 @@ export async function renderHiringEmails(
         company: companyName,
         sender: user?.name || '',
         email: application.email,
-        meetingLink,
+        meetingLink: meetingHosts.get(application.openingId)?.link ?? null,
         taskLink: taskLinks[i] ?? null,
+        taskDue: taskDues[i] ?? null,
       }),
     ),
   }));
@@ -351,5 +483,103 @@ export async function deliverHiringEmails(
     };
   } finally {
     inFlight.delete(send.sendId);
+  }
+}
+
+const FOOTER_MARK = '\n\n--\n';
+
+/**
+ * Sends an email a candidate already got once more, word for word, e.g. when
+ * it bounced or they say they never saw it. It is logged as a new email.
+ * `sendId` stops a double send, as in deliverHiringEmails.
+ */
+export async function resendHiringEmail(
+  sender: Pick<Sender, 'id'>,
+  email: HiringEmail,
+  application: JobApplication,
+  sendId: string,
+): Promise<{ email: HiringEmail; application: JobApplication }> {
+  if (!hiringEmailSettings().configured)
+    throw new HiringSendError(
+      503,
+      'Email isn’t set up yet. Add RESEND_API_KEY and RESEND_DOMAIN to the portal’s environment.',
+    );
+  if (!/^[a-zA-Z0-9-]{8,64}$/.test(sendId))
+    throw new HiringSendError(400, 'sendId is required.');
+  if (
+    inFlight.has(sendId) ||
+    (await db.hiringEmail.count({ where: { sendId } }))
+  )
+    throw new HiringSendError(409, 'This email was already sent again.');
+  inFlight.add(sendId);
+
+  try {
+    // The stored text ends with the footer; the HTML shows it under the card.
+    const cut = email.text.lastIndexOf(FOOTER_MARK);
+    const body = cut >= 0 ? email.text.slice(0, cut) : email.text;
+    const footer = cut >= 0 ? email.text.slice(cut + FOOTER_MARK.length) : '';
+    // Send to the address on the application now, in case it was corrected.
+    const outgoing: OutgoingEmail = {
+      from: email.from,
+      to: application.email || email.to,
+      replyTo: email.replyTo ?? null,
+      subject: email.subject,
+      text: email.text,
+      html: emailHtml(body, footer),
+      tags: HIRING_EMAIL_TAGS,
+    };
+    const result = await sendEmail(outgoing, `hiring-${sendId}`);
+    const sentAt = nowIso();
+    const record: HiringEmail = await db.hiringEmail.create({
+      data: {
+        companyId: email.companyId,
+        openingId: email.openingId,
+        applicationId: email.applicationId,
+        sendId,
+        to: outgoing.to,
+        from: outgoing.from,
+        replyTo: outgoing.replyTo ?? null,
+        subject: outgoing.subject,
+        text: outgoing.text,
+        templateId: email.templateId ?? null,
+        status: result.id
+          ? HIRING_EMAIL_STATUS.SENT
+          : HIRING_EMAIL_STATUS.FAILED,
+        resendId: result.id ?? null,
+        error: result.error ?? null,
+        sentById: sender.id,
+        sentAt,
+        events: [],
+        createdAt: sentAt,
+        updatedAt: sentAt,
+      },
+    });
+    if (record.status === HIRING_EMAIL_STATUS.FAILED)
+      throw new HiringSendError(
+        502,
+        `It wasn’t sent: ${record.error ?? 'the email service said no.'}`,
+      );
+    const event: ApplicationEvent = {
+      type: 'EMAIL',
+      at: sentAt,
+      byUserId: sender.id,
+      text: record.subject,
+      emailId: record.id,
+      templateId: record.templateId ?? null,
+    };
+    const lastEmail: ApplicationLastEmail = {
+      id: record.id,
+      subject: record.subject,
+      status: record.status,
+      at: sentAt,
+      templateId: record.templateId ?? null,
+    };
+    const updated: JobApplication = await db.jobApplication.update({
+      where: { id: application.id },
+      data: { lastEmail, updatedAt: sentAt, history: { push: event } },
+    });
+    return { email: record, application: updated };
+  } finally {
+    inFlight.delete(sendId);
   }
 }

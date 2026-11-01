@@ -21,7 +21,7 @@ import {
 } from './digestFrequency';
 import { hiringEmailSettings } from './email';
 import { escapeHtml } from './emailTemplates';
-import { taskDueAt } from './tasks';
+import { applicationDueAt } from './tasks';
 
 /*
  * The hiring digest: each hiring lead gets one email covering every opening
@@ -183,6 +183,7 @@ export async function buildDigests(now = new Date()): Promise<LeadDigest[]> {
         name: true,
         stage: true,
         taskSentAt: true,
+        taskDueOverride: true,
         taskSubmission: true,
       },
     }) as Promise<JobApplication[]>,
@@ -262,7 +263,7 @@ export async function buildDigests(now = new Date()): Promise<LeadDigest[]> {
         screen: inStage(APPLICATION_STAGE.APPLIED).length,
         onTask: onTask.length,
         pastDue: onTask.filter((a) => {
-          const due = taskDueAt(opening.task, a.taskSentAt);
+          const due = applicationDueAt(opening.task, a);
           return !!due && due < now;
         }).length,
         interview: inStage(APPLICATION_STAGE.INTERVIEW).length,
