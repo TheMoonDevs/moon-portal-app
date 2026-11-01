@@ -509,7 +509,11 @@ export const PLAN_TOOLS: Tool[] = [
         company: { type: 'string', description: 'Company id or name.' },
         project: LINK_SCHEMA,
         title: { type: 'string' },
-        notes: { type: 'string', description: 'The idea, in their words.' },
+        notes: {
+          type: 'string',
+          description:
+            'The idea, in their words, as Markdown: headings, lists, to-dos (- [ ]), tables, quotes, code, images, and <aside>💡 callouts</aside>, <details><summary>toggles</summary>…</details> and <iframe src="link"></iframe> embeds.',
+        },
         status: { type: 'string', enum: PLAN_STATUSES },
         by: { type: 'string', description: 'Done by, YYYY-MM-DD (optional).' },
         people: {

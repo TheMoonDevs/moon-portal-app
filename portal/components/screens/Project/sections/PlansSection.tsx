@@ -4,6 +4,7 @@ import { useMediaQuery } from '@mui/material';
 import { useState } from 'react';
 
 import { cn } from '@/lib/utils';
+import { markdownToDoc } from '@/lib/workspace/pageMarkdown';
 import { PLAN_STATUS_META } from '@/lib/workspace/plans';
 import { PLAN_STATUS } from '@/models/workspace';
 
@@ -17,6 +18,7 @@ import { PlanEditor, StepPanel } from '../../Plans/PlanEditor';
 import type { PlanView, StepView } from '../../Plans/types';
 import { isPast, shortDay, stepCount } from '../../Plans/types';
 import type { usePlans } from '../../Plans/usePlans';
+import { docText } from '../types';
 import { SectionShell } from './SectionShell';
 
 type Plans = ReturnType<typeof usePlans>;
@@ -77,7 +79,7 @@ const PlanCard = ({
       </span>
       {plan.notes && (
         <span className="line-clamp-2 text-xs text-neutral-500">
-          {plan.notes}
+          {docText(markdownToDoc(plan.notes, { breaks: true }), 200)}
         </span>
       )}
       <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-neutral-500">

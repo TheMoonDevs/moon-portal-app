@@ -175,3 +175,201 @@
   outline: 2px solid rgba(125, 211, 252, 0.4);
   border-radius: 4px;
 }
+
+/* A short field in a form, such as a plan's overview. */
+.project-doc-compact {
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.project-doc-compact h1 {
+  font-size: 1.5em;
+  margin-top: 0.8em;
+}
+
+.project-doc-compact h2 {
+  font-size: 1.25em;
+  margin-top: 0.7em;
+}
+
+/* Callout */
+.project-doc .doc-callout {
+  display: flex;
+  gap: 0.6em;
+  align-items: flex-start;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 10px;
+  padding: 0.75em 1em;
+}
+
+.project-doc .doc-callout-icon {
+  font-size: 1.15em;
+  line-height: 1.5;
+  border-radius: 6px;
+  padding: 0 0.15em;
+  flex-shrink: 0;
+}
+
+.project-doc .doc-callout-icon:enabled:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.project-doc .doc-callout-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.project-doc .doc-callout-body > div > * + *,
+.project-doc .doc-toggle [data-toggle-body] > * + * {
+  margin-top: 0.35em;
+}
+
+/* Toggle */
+.project-doc .doc-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.15em;
+}
+
+.project-doc .doc-toggle-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.5em;
+  height: 1.7em;
+  border-radius: 6px;
+  color: #a3a3a3;
+  font-size: 1.25em;
+}
+
+.project-doc .doc-toggle-arrow:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+}
+
+.project-doc .doc-toggle-arrow > span {
+  transition: transform 0.15s;
+}
+
+.project-doc .doc-toggle[data-open='true'] > .doc-toggle-arrow > span {
+  transform: rotate(90deg);
+}
+
+.project-doc .doc-toggle-inner {
+  flex: 1;
+  min-width: 0;
+}
+
+.project-doc .doc-toggle [data-toggle-summary] {
+  font-weight: 500;
+}
+
+.project-doc .doc-toggle [data-toggle-body] {
+  margin-top: 0.15em;
+}
+
+/* Closed toggles hide what is inside them, however deep. */
+.project-doc .doc-toggle[data-open='false'] [data-toggle-body] {
+  display: none;
+}
+
+/* Images */
+.project-doc img.doc-image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 10px;
+  margin: 0.6em 0;
+}
+
+.project-doc img.doc-image.ProseMirror-selectednode {
+  outline: 2px solid rgba(125, 211, 252, 0.5);
+}
+
+/* Embeds, bookmarks, page links and the table of contents */
+.project-doc .doc-embed {
+  margin: 0.6em 0;
+}
+
+.project-doc .doc-embed-frame {
+  width: 100%;
+  max-height: 80vh;
+  overflow: hidden;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.project-doc .doc-embed-frame iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.project-doc .doc-bookmark {
+  display: flex;
+  align-items: center;
+  gap: 0.75em;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 0.65em 0.8em;
+  text-decoration: none;
+}
+
+.project-doc a.doc-bookmark:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.project-doc .doc-toc {
+  border-left: 2px solid rgba(255, 255, 255, 0.08);
+  padding: 0.2em 0;
+}
+
+.project-doc .is-selected {
+  outline: 2px solid rgba(125, 211, 252, 0.4);
+  border-radius: 8px;
+}
+
+/* Tables */
+.project-doc table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  margin: 0.6em 0;
+  overflow: hidden;
+}
+
+.project-doc .tableWrapper {
+  overflow-x: auto;
+}
+
+.project-doc th,
+.project-doc td {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.4em 0.6em;
+  vertical-align: top;
+  min-width: 80px;
+  position: relative;
+}
+
+.project-doc th {
+  background: rgba(255, 255, 255, 0.04);
+  color: #fff;
+  font-weight: 600;
+  text-align: left;
+}
+
+.project-doc td > p,
+.project-doc th > p {
+  margin: 0;
+}
+
+.project-doc .selectedCell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(125, 211, 252, 0.12);
+  pointer-events: none;
+}

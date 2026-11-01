@@ -114,7 +114,7 @@ export async function readPlanBody(
     : allProjectIds;
   if (has('notes'))
     data.notes =
-      typeof body.notes === 'string' ? body.notes.slice(0, 20000) : null;
+      typeof body.notes === 'string' ? body.notes.slice(0, 100_000) : null;
   if (has('status')) {
     if (!PLAN_STATUSES.includes(body.status))
       return { error: 'Unknown plan status.' };

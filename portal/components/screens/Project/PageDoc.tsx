@@ -10,7 +10,7 @@ import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import { Icon, Spin } from '../Admin/shared/AdminUI';
 import { errorText } from '../Admin/Workspace/shared';
-import { DocEditor } from './DocEditor';
+import { DocEditor, type DocLinks } from './DocEditor';
 import { ago } from './types';
 
 const SAVE_AFTER_MS = 700;
@@ -147,6 +147,7 @@ export const PageDoc = ({
   children,
   onSaved,
   onSaveState,
+  links,
 }: {
   projectId: string;
   page: ProjectPage | null;
@@ -160,6 +161,8 @@ export const PageDoc = ({
   children?: React.ReactNode;
   onSaved: (page: ProjectPage) => void;
   onSaveState?: (state: SaveState) => void;
+  /** Other pages to link to, and making pages inside this one. */
+  links?: DocLinks;
 }) => {
   const [title, setTitle] = useState(page?.title ?? '');
   const [emoji, setEmoji] = useState(page?.emoji || defaultEmoji);
@@ -248,6 +251,7 @@ export const PageDoc = ({
         editable={canEdit}
         placeholder={bodyPlaceholder}
         onChange={(content) => queue({ content })}
+        links={links}
       />
       {children}
     </motion.article>
