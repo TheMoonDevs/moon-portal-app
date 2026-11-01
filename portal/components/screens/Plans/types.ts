@@ -1,6 +1,8 @@
+import { kindOf } from '@/lib/workspace/plans';
 import type {
   Plan,
   PlanStep,
+  PlanStepKind,
   ProjectGoal,
   TaskSchedule,
 } from '@/models/workspace';
@@ -34,14 +36,24 @@ export type StepGoal = {
   met: boolean;
 };
 
+export type StepTask = {
+  id: string;
+  status: string;
+  title?: string;
+  description?: string | null;
+  projectId?: string;
+  assigneeIds?: string[];
+  dueDate?: string | null;
+  forDate?: string | null;
+};
+
 export type StepView = PlanStep & {
-  task?: { id: string; status: string; title?: string } | null;
+  task?: StepTask | null;
   goal?: StepGoal | null;
 };
 
-/** What a step is: plain text, a task, or a project goal. */
-export const stepKind = (s: StepView): 'text' | 'task' | 'goal' =>
-  s.taskId ? 'task' : s.goalId ? 'goal' : 'text';
+/** What a step is: a line of text, a to-do, a task or a goal. */
+export const stepKind = (s: StepView): PlanStepKind => kindOf(s);
 
 export type PlanView = Omit<Plan, 'steps'> & {
   steps: StepView[];
@@ -70,11 +82,12 @@ export type PlansData = {
   can: Record<string, PlanCan>;
 };
 
-/** Steps done out of all steps. */
-export const stepCount = (plan: PlanView) => ({
-  done: plan.steps.filter((s) => s.done).length,
-  total: plan.steps.length,
-});
+/** Steps done out of the steps there are to do. */
+export const stepCount = (plan: PlanView) => {
+  // Text steps are notes, not work: they are not counted.
+  const work = plan.steps.filter((s) => kindOf(s) !== 'info');
+  return { done: work.filter((s) => s.done).length, total: work.length };
+};
 
 /** "Nov 3" style day, or the year too when it is not this year. */
 export const shortDay = (day?: string | null) => {

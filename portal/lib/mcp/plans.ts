@@ -1,7 +1,7 @@
 import { db } from '@/lib/mongodb/db-client';
 import type { SessionUser } from '@/lib/permissions/server';
 import { addGoal } from '@/lib/workspace/goals';
-import { newStep, PLAN_STATUSES } from '@/lib/workspace/plans';
+import { newStep, PLAN_STATUSES, STEP_KINDS } from '@/lib/workspace/plans';
 import {
   createPlan,
   deletePlan,
@@ -129,6 +129,9 @@ async function stepFields(
   const dueOn = dayRef(input?.dueOn);
   if (dueOn !== undefined) fields.dueOn = dueOn;
   if (typeof input?.done === 'boolean') fields.done = input.done;
+  if (STEP_KINDS.includes(input?.kind)) fields.kind = input.kind;
+  else if (input?.makeTask) fields.kind = 'task';
+  else if (input?.newGoal) fields.kind = 'goal';
   if (input?.task !== undefined) {
     if (input.task === null || input.task === '') fields.taskId = null;
     else {
@@ -204,6 +207,7 @@ async function planView(plan: Plan, choices?: Choices) {
     people: (view.memberIds ?? []).map(name).filter(Boolean),
     steps: view.steps.map((s) => ({
       id: s.id,
+      kind: s.kind,
       text: s.text,
       ...(s.notes && { notes: s.notes }),
       done: !!s.done,
@@ -270,10 +274,15 @@ const NEW_GOAL_SCHEMA = {
 const STEP_SCHEMA = {
   type: 'object',
   properties: {
+    kind: {
+      type: 'string',
+      enum: ['info', 'todo', 'task', 'goal'],
+      description:
+        'info: plain text (a thought, decision or heading, nothing to tick off); todo (default): a step to tick off; task: a task in its project (makeTask creates it); goal: a project goal (goal or newGoal). Set by task, makeTask, goal and newGoal too.',
+    },
     text: {
       type: 'string',
-      description:
-        'What needs doing. A step can stay plain text: a thought, a decision or a heading of the plan.',
+      description: 'What the step says.',
     },
     project: {
       type: 'string',

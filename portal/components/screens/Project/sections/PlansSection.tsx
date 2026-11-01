@@ -14,7 +14,6 @@ import {
   Spin,
 } from '../../Admin/shared/AdminUI';
 import { PlanEditor, StepPanel } from '../../Plans/PlanEditor';
-import { PlanSchedules } from '../../Plans/PlanSchedules';
 import type { PlanView, StepView } from '../../Plans/types';
 import { isPast, shortDay, stepCount } from '../../Plans/types';
 import type { usePlans } from '../../Plans/usePlans';
@@ -261,16 +260,9 @@ export const PlansSection = ({
       onBack={back}
       fresh={plan.id === freshId}
       newStepProjectId={projectId}
-      extra={
-        <PlanSchedules
-          plan={plan}
-          projects={choices.stepProjects}
-          people={choices.people}
-          canEdit={canEdit}
-          canAddTo={plans.addsTasksIn}
-          onSaved={() => plans.refreshSchedules(plan.id)}
-        />
-      }
+      addsTasksIn={plans.addsTasksIn}
+      onMakeTask={(stepId) => plans.makeTask(plan.id, stepId)}
+      onAddNote={(stepId, text) => plans.addNote(plan.id, stepId, text)}
     />
   );
 
@@ -287,6 +279,10 @@ export const PlansSection = ({
       onChange={changeStep}
       onRemove={removeStep}
       onMakeTask={makeTask}
+      onAddNote={(text) =>
+        step ? plans.addNote(plan.id, step.id, text) : Promise.resolve(false)
+      }
+      onRefresh={() => plans.refresh(plan.id)}
       onClose={() => setStepId(null)}
     />
   );
