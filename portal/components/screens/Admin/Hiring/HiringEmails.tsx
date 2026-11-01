@@ -608,7 +608,6 @@ const SentMail = ({
                           onClick={() =>
                             openApplicant({
                               id: app.id,
-                              companyId,
                               openingId: app.openingId,
                             })
                           }

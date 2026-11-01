@@ -1,3 +1,6 @@
+import type { NextRequest } from 'next/server';
+import { getToken } from 'next-auth/jwt';
+
 import { validateAnswers } from '@/lib/hiring/forms';
 import {
   checkUpload,
@@ -13,6 +16,7 @@ import type {
   ApplicationEvent,
   JobApplication,
   JobOpening,
+  TaskOpens,
   TaskSubmission,
 } from '@/models/hiring';
 import { APPLICATION_STAGE, FORM_FIELD_TYPE } from '@/models/hiring';
@@ -27,6 +31,53 @@ const BEFORE_REVIEW: APPLICATION_STAGE[] = [
   APPLICATION_STAGE.SHORTLISTED,
   APPLICATION_STAGE.TASK,
 ];
+
+/** Visits closer together than this count once (a reload, a second tab). */
+const REOPEN_MS = 60_000;
+
+/**
+ * Notes that the candidate opened their task page, so the team can see the
+ * link landed. The page calls this once per browser tab. Visits from someone
+ * signed in to the portal (the team checking a link) are not counted.
+ */
+export async function PUT(request: NextRequest, { params }: Params) {
+  if (!TASK_TOKEN_PATTERN.test(params.token))
+    return fail(404, 'This task link does not exist.');
+  const signedIn = await getToken({
+    req: request,
+    secret: process.env.NEXTAUTH_SECRET,
+    secureCookie:
+      request.nextUrl.protocol === 'https:' ||
+      request.headers.get('x-forwarded-proto') === 'https',
+  }).catch(() => null);
+  if (signedIn) return ok({ counted: false });
+
+  const application: JobApplication | null = await db.jobApplication.findFirst({
+    where: { taskToken: params.token },
+  });
+  if (!application) return fail(404, 'This task link does not exist.');
+
+  const at = nowIso();
+  const before = application.taskOpens;
+  if (before && Date.now() - new Date(before.lastAt).getTime() < REOPEN_MS)
+    return ok({ counted: false });
+  const taskOpens: TaskOpens = {
+    count: (before?.count ?? 0) + 1,
+    firstAt: before?.firstAt ?? at,
+    lastAt: at,
+  };
+  const event: ApplicationEvent = { type: 'TASK_OPENED', at };
+  await db.jobApplication.update({
+    where: { id: application.id },
+    data: {
+      taskOpens,
+      // Only the first visit goes in the history; the count says the rest.
+      ...(!before && { history: { push: event } }),
+      updatedAt: at,
+    },
+  });
+  return ok({ counted: true });
+}
 
 const invalid = (errors: Record<string, string>) =>
   Response.json(

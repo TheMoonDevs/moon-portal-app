@@ -349,6 +349,7 @@ export const EmailComposer = ({
                 typeof window === 'undefined'
                   ? ''
                   : `${window.location.origin}/task/(their own private link)`,
+              taskDue: '(their due date)',
             }),
           )
         : null,

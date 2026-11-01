@@ -81,6 +81,8 @@ const ShareKit = ({
   const link = taggedApplyUrl(applyUrl(opening.slug), channel);
   const [text, setText] = useState('');
   const [customTag, setCustomTag] = useState('');
+  // Collapsed to the tabs and the link; the post and image open on demand.
+  const [expanded, setExpanded] = useState(false);
   const custom = normalizeSource(customTag);
 
   useEffect(() => {
@@ -101,92 +103,117 @@ const ShareKit = ({
 
   return (
     <div className="flex flex-col gap-4 p-5">
-      <Segmented
-        value={channel}
-        onChange={setChannel}
-        className="self-start"
-        options={SHARE_CHANNELS.map((c) => ({
-          value: c.key,
-          label: c.label,
-          icon: c.icon,
-        }))}
-      />
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="flex flex-col gap-3">
-          <p className="text-xs font-medium uppercase tracking-wide text-neutral-400">
-            Post
-          </p>
-          <TextArea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            rows={10}
-          />
-          <div className="flex flex-wrap items-center gap-2">
-            <CopyButton value={text} label="Copy post" />
-            <span className="text-xs text-neutral-500">Copy post</span>
-            {meta.shareUrl && (
-              <AdminButton
-                size="sm"
-                icon="share"
-                className="ml-auto"
-                onClick={() =>
-                  window.open(meta.shareUrl!(link, text), '_blank', 'noopener')
-                }
-              >
-                Open {meta.label}
-              </AdminButton>
-            )}
-          </div>
-          {meta.linkNote && (
-            <p className="text-[11px] text-amber-200/80">{meta.linkNote}</p>
-          )}
-          <p className="mt-2 text-xs font-medium uppercase tracking-wide text-neutral-400">
-            {meta.label} link
-          </p>
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+        <Segmented
+          value={channel}
+          onChange={setChannel}
+          className="self-start"
+          options={SHARE_CHANNELS.map((c) => ({
+            value: c.key,
+            label: c.label,
+            icon: c.icon,
+          }))}
+        />
+        <div className="min-w-0 flex-1">
           <LinkLine value={link} />
-          <p className="mt-2 text-xs font-medium uppercase tracking-wide text-neutral-400">
-            Another source
-          </p>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <TextInput
-              value={customTag}
-              onChange={(e) => setCustomTag(e.target.value)}
-              placeholder="e.g. college-group, referral-priya"
-              className="h-9 text-xs sm:w-60"
-            />
-            {custom && (
-              <div className="min-w-0 flex-1">
-                <LinkLine
-                  value={taggedApplyUrl(applyUrl(opening.slug), custom)}
-                />
-              </div>
-            )}
-          </div>
-        </div>
-        <div className="flex flex-col gap-3">
-          <p className="text-xs font-medium uppercase tracking-wide text-neutral-400">
-            Image
-          </p>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            key={image}
-            src={image}
-            alt={`We're hiring: ${opening.title}`}
-            className={cn(
-              'w-full rounded-xl border border-white/[0.07] bg-neutral-900',
-              format === 'wide' ? 'aspect-[1200/627]' : 'aspect-square',
-            )}
-          />
-          <a
-            href={image}
-            download={`${opening.slug}-${format}.png`}
-            className="inline-flex items-center gap-1.5 self-start text-xs text-sky-300 hover:underline"
-          >
-            <Icon name="download" className="text-[16px]" />
-            Download {format === 'wide' ? '1200×627' : '1080×1080'} PNG
-          </a>
         </div>
       </div>
+      <button
+        type="button"
+        aria-expanded={expanded}
+        onClick={() => setExpanded((v) => !v)}
+        className="flex items-center gap-1.5 self-start text-xs text-neutral-400 hover:text-neutral-200"
+      >
+        <Icon
+          name={expanded ? 'expand_less' : 'expand_more'}
+          className="text-[18px]"
+        />
+        {expanded
+          ? 'Hide the post and image'
+          : `Ready-made ${meta.label} post and image`}
+      </button>
+      {expanded && (
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="flex flex-col gap-3">
+            <p className="text-xs font-medium uppercase tracking-wide text-neutral-400">
+              Post
+            </p>
+            <TextArea
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              rows={10}
+            />
+            <div className="flex flex-wrap items-center gap-2">
+              <CopyButton value={text} label="Copy post" />
+              <span className="text-xs text-neutral-500">Copy post</span>
+              {meta.shareUrl && (
+                <AdminButton
+                  size="sm"
+                  icon="share"
+                  className="ml-auto"
+                  onClick={() =>
+                    window.open(
+                      meta.shareUrl!(link, text),
+                      '_blank',
+                      'noopener',
+                    )
+                  }
+                >
+                  Open {meta.label}
+                </AdminButton>
+              )}
+            </div>
+            {meta.linkNote && (
+              <p className="text-[11px] text-amber-200/80">{meta.linkNote}</p>
+            )}
+            <p className="mt-2 text-xs font-medium uppercase tracking-wide text-neutral-400">
+              Another source
+            </p>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <TextInput
+                value={customTag}
+                onChange={(e) => setCustomTag(e.target.value)}
+                placeholder="e.g. college-group, referral-priya"
+                className="h-9 text-xs sm:w-60"
+              />
+              {custom && (
+                <div className="min-w-0 flex-1">
+                  <LinkLine
+                    value={taggedApplyUrl(applyUrl(opening.slug), custom)}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="flex flex-col gap-3">
+            <p className="text-xs font-medium uppercase tracking-wide text-neutral-400">
+              Image
+            </p>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              key={image}
+              src={image}
+              alt={`We're hiring: ${opening.title}`}
+              className={cn(
+                'w-full rounded-xl border border-white/[0.07] bg-neutral-900',
+                format === 'wide' ? 'aspect-[1200/627]' : 'aspect-square',
+              )}
+            />
+            <a
+              href={image}
+              download={`${opening.slug}-${format}.png`}
+              className="inline-flex items-center gap-1.5 self-start text-xs text-sky-300 hover:underline"
+            >
+              <Icon name="download" className="text-[16px]" />
+              Download {format === 'wide' ? '1200×627' : '1080×1080'} PNG
+            </a>
+            <p className="text-[11px] text-neutral-500">
+              The link shows the wide card on its own when it’s shared, so
+              there’s no need to attach it.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

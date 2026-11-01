@@ -207,9 +207,13 @@ export interface HiringSectionProps {
   companyName: string;
   canEdit: boolean;
   users: User[];
-  /** Opens one applicant on their opening's board. */
+  /**
+   * Opens one applicant's panel over the current section; `onUpdated` hears
+   * about every change made there.
+   */
   openApplicant: (
-    a: Pick<ApplicationRow, 'id' | 'companyId' | 'openingId'>,
+    a: Pick<ApplicationRow, 'id' | 'openingId'>,
+    onUpdated?: (application: ApplicationRow) => void,
   ) => void;
   /** Opens the composer for these applicants of one opening. */
   compose: (input: {
