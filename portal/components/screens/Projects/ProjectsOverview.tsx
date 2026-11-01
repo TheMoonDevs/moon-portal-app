@@ -246,27 +246,26 @@ const ProjectCard = ({
             </p>
           )}
           {goals.length > 0 && (
-            <p className="text-neutral-500">
-              {goals.map((g, i) => (
-                <span key={g.id}>
-                  {i > 0 && <span className="px-1.5 text-neutral-700">·</span>}
-                  <span
+            <ul className="flex min-w-0 flex-col gap-0.5">
+              {goals.map((g) => (
+                <li
+                  key={g.id}
+                  className={cn(
+                    'flex min-w-0 items-start gap-1 break-words',
+                    g.met ? 'text-emerald-300/90' : 'text-neutral-300',
+                  )}
+                >
+                  <Icon
+                    name={g.met ? 'check' : 'track_changes'}
                     className={cn(
-                      'whitespace-nowrap',
-                      g.met ? 'text-emerald-300/90' : 'text-neutral-300',
+                      'mt-[2px] shrink-0 text-[13px]',
+                      !g.met && 'text-neutral-500',
                     )}
-                  >
-                    {g.met && (
-                      <Icon
-                        name="check"
-                        className="mr-0.5 align-[-2px] text-[13px]"
-                      />
-                    )}
-                    {g.text}
-                  </span>
-                </span>
+                  />
+                  <span className="min-w-0">{g.text}</span>
+                </li>
               ))}
-            </p>
+            </ul>
           )}
         </div>
       )}
