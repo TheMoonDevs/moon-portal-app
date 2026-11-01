@@ -8,6 +8,7 @@ import {
   claudeCodeInstallCommand,
   type HiringSkillView,
   parseSkill,
+  skillInstallPrompt,
   tipLines,
 } from '@/lib/hiring/skills';
 import { cn } from '@/lib/utils';
@@ -164,8 +165,21 @@ const SkillCard = ({
   onEdit: () => void;
   onDelete: () => void;
 }) => {
-  const [showBody, setShowBody] = useState(false);
+  const [more, setMore] = useState<'manual' | 'body' | null>(null);
+  const [copied, setCopied] = useState(false);
   const tips = tipLines(skill.tips);
+
+  const copyPrompt = async () => {
+    try {
+      await navigator.clipboard.writeText(
+        skillInstallPrompt(skill.name, skill.body, window.location.origin),
+      );
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error('Could not copy. Use “Install it by hand” instead.');
+    }
+  };
   return (
     <Panel className="flex flex-col gap-5 p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -187,7 +201,6 @@ const SkillCard = ({
           <p className="mt-1.5 text-sm text-neutral-400">{skill.description}</p>
         </div>
         <div className="flex items-center gap-1">
-          <CopyButton value={skill.body} label="Copy SKILL.md" />
           {canEdit && (
             <AdminButton size="sm" tone="ghost" icon="edit" onClick={onEdit}>
               {skill.builtIn ? 'Customise' : 'Edit'}
@@ -206,51 +219,61 @@ const SkillCard = ({
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div className="flex flex-col gap-2">
-          <h4 className="text-xs font-medium uppercase tracking-wide text-neutral-500">
-            Install
-          </h4>
-          <InstallSteps skill={skill} companyId={companyId} />
-        </div>
-        <div className="flex flex-col gap-2">
-          <h4 className="text-xs font-medium uppercase tracking-wide text-neutral-500">
-            Tips for using it
-          </h4>
-          {tips.length ? (
-            <ul className="flex flex-col gap-2">
-              {tips.map((tip, i) => (
-                <li key={i} className="flex gap-2 text-sm text-neutral-300">
-                  <Icon
-                    name="lightbulb"
-                    className="mt-0.5 text-[15px] text-amber-300"
-                  />
-                  <span>{tip}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm text-neutral-500">
-              No tips yet.{canEdit ? ' Add some in Edit.' : ''}
-            </p>
-          )}
-        </div>
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-violet-400/20 bg-violet-500/[0.06] px-4 py-3">
+        <AdminButton
+          tone="primary"
+          icon={copied ? 'check' : 'content_copy'}
+          onClick={copyPrompt}
+        >
+          {copied ? 'Copied' : 'Copy install prompt'}
+        </AdminButton>
+        <p className="min-w-0 flex-1 text-sm text-neutral-300">
+          Paste it into Claude, in the app or in Claude Code, and it installs
+          itself. Paste it again whenever the skill changes.
+        </p>
       </div>
 
-      <div>
-        <button
-          type="button"
-          onClick={() => setShowBody((v) => !v)}
-          className="flex items-center gap-1 text-xs text-neutral-400 hover:text-white"
-        >
-          <Icon
-            name={showBody ? 'expand_less' : 'expand_more'}
-            className="text-[16px]"
-          />
-          {showBody ? 'Hide' : 'Read'} the instructions Claude follows
-        </button>
-        {showBody && (
-          <pre className="mt-2 max-h-[420px] overflow-auto whitespace-pre-wrap rounded-lg border border-white/[0.07] bg-black/30 p-4 font-mono text-[11px] leading-relaxed text-neutral-300">
+      {tips.length > 0 && (
+        <ul className="flex flex-col gap-2">
+          {tips.map((tip, i) => (
+            <li key={i} className="flex gap-2 text-sm text-neutral-300">
+              <Icon
+                name="lightbulb"
+                className="mt-0.5 text-[15px] text-amber-300"
+              />
+              <span>{tip}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap gap-x-4 gap-y-1">
+          {(
+            [
+              ['manual', 'Install it by hand instead'],
+              ['body', 'Read the instructions Claude follows'],
+            ] as const
+          ).map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setMore((v) => (v === key ? null : key))}
+              className="flex items-center gap-1 text-xs text-neutral-400 hover:text-white"
+            >
+              <Icon
+                name={more === key ? 'expand_less' : 'expand_more'}
+                className="text-[16px]"
+              />
+              {label}
+            </button>
+          ))}
+        </div>
+        {more === 'manual' && (
+          <InstallSteps skill={skill} companyId={companyId} />
+        )}
+        {more === 'body' && (
+          <pre className="max-h-[420px] overflow-auto whitespace-pre-wrap rounded-lg border border-white/[0.07] bg-black/30 p-4 font-mono text-[11px] leading-relaxed text-neutral-300">
             {skill.body}
           </pre>
         )}
@@ -435,10 +458,10 @@ export const HiringSkills = ({
             Claude skills for hiring
           </h2>
           <p className="text-sm text-neutral-400">
-            A skill teaches Claude how this team hires. Install it once on your
-            own Claude, then ask for the work (&ldquo;screen the applicants for
-            the HR intern&rdquo;) and Claude follows the team&apos;s way of
-            doing it. When a skill changes here, install it again to update.
+            A skill teaches Claude how this team hires. Copy a skill&apos;s
+            install prompt and paste it into your Claude: it installs itself.
+            Then just ask for the work (&ldquo;screen the applicants for the HR
+            intern&rdquo;).
           </p>
         </div>
         {canEdit && (

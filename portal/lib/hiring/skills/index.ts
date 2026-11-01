@@ -86,3 +86,21 @@ export const tipLines = (tips: string | null | undefined) =>
     .split('\n')
     .map((t) => t.replace(/^\s*[-*]\s*/, '').trim())
     .filter(Boolean);
+
+/**
+ * One prompt that installs the skill when pasted into Claude, in the Claude
+ * app (it saves the skill, or hands back a zip to upload) or in Claude Code
+ * (it writes ~/.claude/skills/<name>/SKILL.md). Pasting it again updates it.
+ */
+export function skillInstallPrompt(name: string, body: string, origin: string) {
+  return `Please install this Claude skill for me, exactly as written below. It's called "${name}" and comes from the Skills section of our portal's Hiring tab. If I already have it, replace the old version.
+
+- In Claude Code (you can write files on my computer): save the SKILL.md below to ~/.claude/skills/${name}/SKILL.md, creating the folder. Then tell me I can use it by typing /${name} or just asking for the work.
+- In the Claude app (claude.ai, desktop or phone): save it to my skills. If you can save or propose a skill directly, do that with this exact content. If not, make a folder named ${name} with this SKILL.md inside, zip the folder as ${name}.zip, give me the file, and tell me to upload it under Settings → Capabilities → Skills → Upload skill (Customize → Skills in newer versions).
+
+Don't reword, shorten or "improve" the skill. Once it's installed, check whether you can see the Portal connector's tools (for example list_job_openings). If you can't, tell me to connect the portal first at ${origin.replace(/\/$/, '')}/settings#claude.
+
+=== BEGIN SKILL.md ===
+${body.trim()}
+=== END SKILL.md ===`;
+}
