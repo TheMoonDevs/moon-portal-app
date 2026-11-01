@@ -205,17 +205,20 @@ Thank you again for your time, and all the best.
     name: 'Send task',
     icon: 'assignment',
     moveTo: APPLICATION_STAGE.TASK,
-    subject: 'We liked your work: next step for {{role}} at {{company}}',
+    subject: '{{firstName}}, I saw your work',
     body: `Hi {{firstName}},
 
-Thanks for applying for the {{role}} role at {{company}}. We went through your application and really liked what we saw, so we'd like to invite you to the next step: a short task.
+I'm {{sender}} from {{company}}, and I'm personally hiring for our {{role}} role.
 
-You'll find the brief, and the place to send your work, on your own task page:
-{{taskLink}}
+I went through your application and had a look at your work.
 
-Please send it by {{taskDue}}. If anything is unclear, or you need a little more time, just reply to this email.
+I'm interested. If you are too, the next step is a short creative challenge. It's the only one we'll ask for, and it's built to show us how you think, not how much you can grind out.
 
-We're looking forward to seeing what you make.
+Everything is here, along with what working with us actually looks like: {{taskLink}}
+
+This link is only for you. We ask everyone we're serious about to do this, because it quickly separates people who want this role from people who are applying everywhere. If it's not for you, no hard feelings.
+
+If it is, I can't wait to see what you make.
 
 {{sender}}
 {{company}}`,
