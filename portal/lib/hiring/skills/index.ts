@@ -1,0 +1,88 @@
+/**
+ * Hiring skills: instructions that teach Claude how a team hires (screening,
+ * task emails, interviews). Hiring leads install them on their own Claude
+ * from the Skills section of the Hiring tab. Client-safe.
+ */
+
+export const MAX_SKILL_BODY = 60000;
+export const MAX_SKILL_TIPS = 4000;
+export const MAX_SKILLS = 30;
+/** What Claude accepts as a skill name; it is also the folder name. */
+export const SKILL_NAME_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
+
+/** A skill as the Skills section shows it. */
+export interface HiringSkillView {
+  /** The saved record, or null for a built-in the company hasn't changed. */
+  id: string | null;
+  name: string;
+  description: string;
+  body: string;
+  tips: string | null;
+  builtIn: boolean;
+  updatedAt?: string | null;
+  updatedById?: string | null;
+}
+
+const unquote = (value: string) => {
+  const v = value.trim();
+  if (
+    (v.startsWith('"') && v.endsWith('"')) ||
+    (v.startsWith("'") && v.endsWith("'"))
+  )
+    return v.slice(1, -1).replace(/\\"/g, '"');
+  return v;
+};
+
+/** Reads `name` and `description` from a SKILL.md's frontmatter. */
+export function parseSkill(raw: string): {
+  name: string;
+  description: string;
+  error: string | null;
+} {
+  const text = raw.replace(/\r\n/g, '\n').trim();
+  const match = /^---\n([\s\S]*?)\n---(\n|$)/.exec(text);
+  if (!match)
+    return {
+      name: '',
+      description: '',
+      error:
+        'A skill starts with frontmatter: a --- line, name: and description:, then another --- line.',
+    };
+  const field = (key: string) => {
+    const line = match[1]
+      .split('\n')
+      .find((l) => new RegExp(`^${key}\\s*:`).test(l));
+    return line ? unquote(line.slice(line.indexOf(':') + 1)) : '';
+  };
+  const name = field('name');
+  const description = field('description');
+  const error = !SKILL_NAME_PATTERN.test(name)
+    ? 'The name has to be lowercase letters, numbers and hyphens, up to 64 characters.'
+    : !description
+      ? 'Add a description: it tells Claude when to use the skill.'
+      : description.length > 1024
+        ? 'Keep the description under 1,024 characters.'
+        : !text.slice(match[0].length).trim()
+          ? 'Write the instructions below the frontmatter.'
+          : null;
+  return { name, description, error };
+}
+
+/**
+ * A command that installs the skill for Claude Code on macOS or Linux: it
+ * writes the SKILL.md into ~/.claude/skills/<name>/, replacing an older copy.
+ */
+export function claudeCodeInstallCommand(name: string, body: string) {
+  const dir = `~/.claude/skills/${name}`;
+  return `mkdir -p ${dir} && cat > ${dir}/SKILL.md <<'PORTAL_SKILL_EOF'
+${body.trim()}
+PORTAL_SKILL_EOF
+echo "Installed ${name}. Start claude and type /${name}, or just ask."`;
+}
+
+/** Tips, one per line, without empty lines. */
+export const tipLines = (tips: string | null | undefined) =>
+  (tips ?? '')
+    .split('\n')
+    .map((t) => t.replace(/^\s*[-*]\s*/, '').trim())
+    .filter(Boolean);

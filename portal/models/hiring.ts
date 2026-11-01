@@ -282,8 +282,28 @@ export type HiringEmail = Loose<
   }
 >;
 
+/**
+ * A Claude skill the company's hiring leads install on their own Claude, from
+ * the Skills section of the Hiring tab. See lib/hiring/skills.
+ */
+export type HiringSkill = Loose<
+  BaseModel & {
+    companyId: string;
+    /** From the SKILL.md frontmatter; unique within the company. */
+    name: string;
+    description: string;
+    /** The whole SKILL.md, frontmatter included. */
+    body: string;
+    /** How to get the most out of it, one tip per line. */
+    tips?: Nullable<string>;
+    createdById: string;
+    updatedById?: Nullable<string>;
+  }
+>;
+
 export const jobOpeningSchemas = createCrudSchemas<JobOpening>();
 export const jobApplicationSchemas = createCrudSchemas<JobApplication>();
 export const hiringEmailTemplateSchemas =
   createCrudSchemas<HiringEmailTemplate>();
 export const hiringEmailSchemas = createCrudSchemas<HiringEmail>();
+export const hiringSkillSchemas = createCrudSchemas<HiringSkill>();

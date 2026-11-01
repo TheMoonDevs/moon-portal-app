@@ -43,6 +43,7 @@ import {
   taskPreviewUrl,
   timeAgo,
 } from './hiringMeta';
+import { HiringSkills } from './HiringSkills';
 import { ImportApplicants } from './ImportApplicants';
 import { OpeningEditor } from './OpeningEditor';
 
@@ -223,6 +224,22 @@ export const AdminHiring = ({
   /** A template to start the composer with, e.g. the task reminder. */
   const [composeTemplate, setComposeTemplate] = useState<string | null>(null);
   const [importOpen, setImportOpen] = useState(false);
+  /** Openings and their applicants, or the team's Claude skills. */
+  const [section, setSection] = useState<'openings' | 'skills'>('openings');
+
+  // `?tab=hiring&section=skills` opens the skills.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('section') === 'skills')
+      setSection('skills');
+  }, []);
+
+  const switchSection = (next: 'openings' | 'skills') => {
+    setSection(next);
+    const url = new URL(window.location.href);
+    if (next === 'skills') url.searchParams.set('section', 'skills');
+    else url.searchParams.delete('section');
+    window.history.replaceState(null, '', url.toString());
+  };
 
   const knownIds = useRef<Set<string> | null>(null);
   const currentOpeningId = useRef<string | null>(null);
@@ -582,23 +599,35 @@ export const AdminHiring = ({
           value={companyId}
           onChange={onSelectCompany}
         />
+        <Segmented
+          value={section}
+          onChange={switchSection}
+          options={[
+            { value: 'openings', label: 'Openings', icon: 'work' },
+            { value: 'skills', label: 'Skills', icon: 'psychology' },
+          ]}
+        />
         <div className="flex-1" />
-        {companyId && can(companyId, 'hiring:create') && (
-          <AdminButton
-            tone="primary"
-            icon="add"
-            onClick={() => {
-              setEditing(null);
-              setEditorOpen(true);
-            }}
-          >
-            New opening
-          </AdminButton>
-        )}
+        {companyId &&
+          section === 'openings' &&
+          can(companyId, 'hiring:create') && (
+            <AdminButton
+              tone="primary"
+              icon="add"
+              onClick={() => {
+                setEditing(null);
+                setEditorOpen(true);
+              }}
+            >
+              New opening
+            </AdminButton>
+          )}
       </div>
 
       {!companyId ? (
         <NeedsCompany text="Choose a company to see its openings." />
+      ) : section === 'skills' ? (
+        <HiringSkills companyId={companyId} canEdit={canEdit} users={users} />
       ) : openingsLoading && !openings.length ? (
         <Panel>
           <SkeletonRows rows={4} />

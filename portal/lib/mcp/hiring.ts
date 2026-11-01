@@ -34,6 +34,11 @@ import {
   taskLinkFor,
   uniqueOpeningSlug,
 } from '@/lib/hiring/server';
+import {
+  listHiringSkills,
+  saveHiringSkill,
+  SkillError,
+} from '@/lib/hiring/skills/server';
 import { TASK_PAGES } from '@/lib/hiring/taskPages';
 import { applicationDueAt } from '@/lib/hiring/tasks';
 import { db } from '@/lib/mongodb/db-client';
@@ -1583,6 +1588,75 @@ export const HIRING_TOOLS: Tool[] = [
         was: before,
         hiringLead: await leadView(updated, context.origin),
       };
+    },
+  },
+  {
+    name: 'list_hiring_skills',
+    title: 'List hiring skills',
+    description:
+      "The Claude skills a company's hiring leads install from the Skills section of the Hiring tab (e.g. screen-applicants), with their SKILL.md and usage tips. Read one before updating it with save_hiring_skill.",
+    inputSchema: {
+      type: 'object',
+      properties: {
+        company: {
+          type: 'string',
+          description: 'Company id or name (optional).',
+        },
+      },
+    },
+    annotations: { readOnlyHint: true },
+    visible: canHire,
+    run: async (user, args, context) => {
+      const company = await findCompany(user, args?.company, 'hiring:read');
+      return {
+        company: company.name,
+        skills: await listHiringSkills(company.id),
+        skillsPage: `${context.origin}/admin?tab=hiring&section=skills`,
+      };
+    },
+  },
+  {
+    name: 'save_hiring_skill',
+    title: 'Save a hiring skill for the team',
+    description:
+      'Publishes a Claude skill to the Skills section of the Hiring tab, so every hiring lead in the company can install it on their own Claude (download for the Claude app, or a copyable command for Claude Code). Give the whole SKILL.md (frontmatter with name and description, then the instructions) and a few tips on using it, one per line. A skill with the same name is replaced, which is how to update one. Whenever you create or change a hiring skill with the person, offer to save it here too.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        company: {
+          type: 'string',
+          description: 'Company id or name (optional when they hire for one).',
+        },
+        skill: {
+          type: 'string',
+          description: 'The whole SKILL.md, frontmatter included.',
+        },
+        tips: {
+          type: 'string',
+          description:
+            'How to get the most out of it: example asks, what to set up first. One tip per line. Leave out to keep the current tips.',
+        },
+      },
+      required: ['skill'],
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false },
+    visible: canHire,
+    run: async (user, args, context) => {
+      const company = await findCompany(user, args?.company, 'hiring:edit');
+      try {
+        const { skill, created } = await saveHiringSkill(company.id, user.id, {
+          body: args?.skill,
+          tips: args?.tips,
+        });
+        return {
+          saved: skill.name,
+          created,
+          skillsPage: `${context.origin}/admin?tab=hiring&company=${company.id}&section=skills`,
+        };
+      } catch (err) {
+        if (err instanceof SkillError) throw new ToolError(err.message);
+        throw err;
+      }
     },
   },
 ];
