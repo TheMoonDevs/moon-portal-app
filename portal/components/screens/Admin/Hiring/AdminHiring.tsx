@@ -220,6 +220,8 @@ export const AdminHiring = ({
   const [archiving, setArchiving] = useState<OpeningRow | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [composeIds, setComposeIds] = useState<string[] | null>(null);
+  /** A template to start the composer with, e.g. the task reminder. */
+  const [composeTemplate, setComposeTemplate] = useState<string | null>(null);
   const [importOpen, setImportOpen] = useState(false);
 
   const knownIds = useRef<Set<string> | null>(null);
@@ -831,7 +833,10 @@ export const AdminHiring = ({
                   <AdminButton
                     size="sm"
                     icon="mail"
-                    onClick={() => setComposeIds(Array.from(selected))}
+                    onClick={() => {
+                      setComposeTemplate(null);
+                      setComposeIds(Array.from(selected));
+                    }}
                   >
                     Email
                   </AdminButton>
@@ -1085,7 +1090,22 @@ export const AdminHiring = ({
         canEdit={canEdit}
         onClose={() => setDetailId(null)}
         onUpdated={(updated) => replaceApplications([updated])}
-        onEmail={detail ? () => setComposeIds([detail.id]) : undefined}
+        onEmail={
+          detail
+            ? () => {
+                setComposeTemplate(null);
+                setComposeIds([detail.id]);
+              }
+            : undefined
+        }
+        onRemind={
+          detail
+            ? () => {
+                setComposeTemplate('starter:reminder');
+                setComposeIds([detail.id]);
+              }
+            : undefined
+        }
       />
       {companyId && opening && (
         <EmailComposer
@@ -1099,12 +1119,15 @@ export const AdminHiring = ({
               ? (() => {
                   const lead = users.find((u) => u.id === opening.hiringLeadId);
                   return {
+                    id: opening.hiringLeadId,
                     name: lead?.name || 'The hiring lead',
                     email: lead?.email ?? null,
                   };
                 })()
               : null
           }
+          users={users}
+          initialTemplate={composeTemplate}
           replyToLead={opening.replyToLead ?? true}
           recipients={composeRecipients}
           canEditTemplates={canEdit}

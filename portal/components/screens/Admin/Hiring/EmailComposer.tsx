@@ -1,5 +1,6 @@
 'use client';
 
+import type { User } from '@db/client';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -13,7 +14,9 @@ import {
   renderEmail,
   STARTER_PREFIX,
   STARTER_TEMPLATES,
+  starterById,
   unknownPlaceholders,
+  usesMeetingLink,
 } from '@/lib/hiring/emailTemplates';
 import { APPLICATION_STAGES } from '@/lib/hiring/forms';
 import { cn } from '@/lib/utils';
@@ -92,6 +95,8 @@ export const EmailComposer = ({
   replyToLead: openingReplyToLead,
   recipients: initialRecipients,
   canEditTemplates,
+  users = [],
+  initialTemplate = null,
   onSent,
 }: {
   open: boolean;
@@ -101,11 +106,15 @@ export const EmailComposer = ({
   /** The opening's title, for {{role}}. */
   role: string;
   /** The opening's hiring lead, when it has one. */
-  hiringLead: { name: string; email?: string | null } | null;
+  hiringLead: { id: string; name: string; email?: string | null } | null;
   /** The opening's setting, which each email starts from. */
   replyToLead: boolean;
   recipients: ApplicationRow[];
   canEditTemplates: boolean;
+  /** Teammates whose booking link {{meetingLink}} can use. */
+  users?: User[];
+  /** A starter to open with, e.g. `starter:reminder`. */
+  initialTemplate?: string | null;
   onSent: (result: SendResult) => void;
 }) => {
   const { user } = useUser();
@@ -120,6 +129,13 @@ export const EmailComposer = ({
   const [body, setBody] = useState('');
   const [moveTo, setMoveTo] = useState<APPLICATION_STAGE | ''>('');
   const [replyToLead, setReplyToLead] = useState(openingReplyToLead);
+  /** Whose booking link {{meetingLink}} is: `lead`, `sender` or a user id. */
+  const [meetingFrom, setMeetingFrom] = useState('sender');
+  const [otherHost, setOtherHost] = useState<{
+    userId: string;
+    name: string;
+    link: string;
+  } | null>(null);
 
   const [mode, setMode] = useState<'write' | 'preview'>('write');
   const [previewId, setPreviewId] = useState<string | null>(null);
@@ -141,12 +157,15 @@ export const EmailComposer = ({
     if (!open) return;
     setRecipients(initialRecipients);
     setShowAll(false);
-    setChoice(BLANK);
-    setBase({ subject: '', body: '' });
-    setSubject('');
-    setBody('');
-    setMoveTo('');
+    const starter = starterById(initialTemplate);
+    setChoice(starter ? `${STARTER_PREFIX}${starter.key}` : BLANK);
+    setBase({ subject: starter?.subject ?? '', body: starter?.body ?? '' });
+    setSubject(starter?.subject ?? '');
+    setBody(starter?.body ?? '');
+    setMoveTo(starter?.moveTo ?? '');
     setReplyToLead(openingReplyToLead);
+    // Interviews are with the hiring lead, so their link is the default.
+    setMeetingFrom(hiringLead ? 'lead' : 'sender');
     setMode('write');
     setPreviewId(initialRecipients[0]?.id ?? null);
     setConfirming(false);
@@ -170,6 +189,49 @@ export const EmailComposer = ({
       })
       .catch((err) => toast.error(errorText(err, 'Could not load templates.')));
   }, [open, companyId]);
+
+  // Someone else's booking link, for the preview.
+  const meetingUserId =
+    meetingFrom === 'lead'
+      ? (hiringLead?.id ?? null)
+      : meetingFrom === 'sender'
+        ? null
+        : meetingFrom;
+  const needsMeetingLink = usesMeetingLink(subject, body);
+  useEffect(() => {
+    if (!open || !needsMeetingLink || !meetingUserId) return;
+    if (meetingUserId === user?.id) return;
+    let cancelled = false;
+    PortalSdk.getData(
+      `/api/hiring/meeting-link?companyId=${companyId}&userId=${meetingUserId}`,
+      null,
+    )
+      .then((res) => !cancelled && setOtherHost(res?.data?.host ?? null))
+      .catch((err) => {
+        if (cancelled) return;
+        setOtherHost(null);
+        toast.error(errorText(err, 'Could not load their meeting link.'));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, needsMeetingLink, meetingUserId, companyId, user?.id]);
+  const meetingLink =
+    !meetingUserId || meetingUserId === user?.id
+      ? (settings?.meetingLink ?? null)
+      : otherHost?.userId === meetingUserId
+        ? otherHost.link
+        : null;
+  const meetingOptions = [
+    ...(hiringLead
+      ? [{ value: 'lead', label: `${hiringLead.name}, the hiring lead` }]
+      : []),
+    { value: 'sender', label: 'Mine' },
+    ...users
+      .filter((u) => u.id !== user?.id && u.id !== hiringLead?.id)
+      .map((u) => ({ value: u.id, label: u.name || u.email || u.id }))
+      .sort((a, b) => a.label.localeCompare(b.label)),
+  ];
 
   /* -------------------------------- templates ------------------------------- */
 
@@ -282,7 +344,7 @@ export const EmailComposer = ({
               company: companyName,
               sender: user?.name ?? '',
               email: previewFor.email,
-              meetingLink: settings?.meetingLink,
+              meetingLink,
               taskLink:
                 typeof window === 'undefined'
                   ? ''
@@ -290,15 +352,7 @@ export const EmailComposer = ({
             }),
           )
         : null,
-    [
-      previewFor,
-      subject,
-      body,
-      role,
-      companyName,
-      user?.name,
-      settings?.meetingLink,
-    ],
+    [previewFor, subject, body, role, companyName, user?.name, meetingLink],
   );
   // Mirrors the server: no lead means replies come back to the sender.
   const replyToLine = replyToLead
@@ -340,6 +394,7 @@ export const EmailComposer = ({
         templateId: choice === BLANK ? null : choice,
         moveTo: moveTo || null,
         replyToLead,
+        meetingLinkFrom: needsMeetingLink ? meetingFrom : null,
       });
       const data: SendResult = res.data;
       onSent(data);
@@ -766,6 +821,28 @@ export const EmailComposer = ({
               </button>
             </Field>
           </div>
+
+          {needsMeetingLink && (
+            <Field
+              label="Meeting link"
+              hint={
+                meetingLink
+                  ? `Candidates book a time at ${meetingLink}`
+                  : 'Loading their link…'
+              }
+            >
+              <NativeSelect
+                value={meetingFrom}
+                onChange={(e) => setMeetingFrom(e.target.value)}
+              >
+                {meetingOptions.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </NativeSelect>
+            </Field>
+          )}
 
           {(settings && !settings.configured) ||
           unknown.length > 0 ||

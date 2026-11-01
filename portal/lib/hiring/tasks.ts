@@ -77,16 +77,74 @@ export function taskDueAt(
 }
 
 /**
+ * When one candidate's task is due: their own extended date when the team
+ * gave them more time, else counted from when the task link was first emailed.
+ */
+export function applicationDueAt(
+  task: Pick<JobTask, 'dueDays'> | null | undefined,
+  application: Pick<JobApplication, 'taskSentAt' | 'taskDueOverride'>,
+): Date | null {
+  if (application.taskDueOverride) {
+    const due = new Date(application.taskDueOverride);
+    if (!Number.isNaN(due.getTime())) return due;
+  }
+  return taskDueAt(task, application.taskSentAt);
+}
+
+/** Furthest a due date can be pushed, counted from today. */
+export const MAX_EXTENSION_DAYS = 90;
+
+/**
+ * A new due date from `{ dueAt }` (a date or ISO time) or `{ days }` (added to
+ * the current due date, or to now when it has none or has passed). A bare
+ * date means the end of that day in UTC, so the candidate gets the whole day.
+ */
+export function extendedDueAt(
+  current: Date | null,
+  input: { dueAt?: unknown; days?: unknown },
+  now = new Date(),
+): { dueAt: Date | null; error: string | null } {
+  let due: Date | null = null;
+  if (typeof input.dueAt === 'string' && input.dueAt.trim()) {
+    const raw = input.dueAt.trim();
+    due = new Date(
+      /^\d{4}-\d{2}-\d{2}$/.test(raw) ? `${raw}T23:59:59.000Z` : raw,
+    );
+    if (Number.isNaN(due.getTime()))
+      return { dueAt: null, error: 'The new due date doesn’t look right.' };
+  } else if (input.days !== undefined && input.days !== null) {
+    const days = Number(input.days);
+    if (!Number.isFinite(days) || days < 1)
+      return { dueAt: null, error: 'Extend by at least one day.' };
+    const from = current && current > now ? current : now;
+    due = new Date(from.getTime() + Math.round(days) * 86400000);
+  } else {
+    return { dueAt: null, error: 'Give a new due date or a number of days.' };
+  }
+  if (due <= now)
+    return { dueAt: null, error: 'The new due date has to be in the future.' };
+  if (due.getTime() - now.getTime() > MAX_EXTENSION_DAYS * 86400000)
+    return {
+      dueAt: null,
+      error: `Keep it within ${MAX_EXTENSION_DAYS} days from today.`,
+    };
+  return { dueAt: due, error: null };
+}
+
+/**
  * Whether a candidate can send their task now. With a due date they can send
  * again until it passes; without one, or once it has passed, they send once.
  */
 export function canSubmitTask(
   task: JobTask | null | undefined,
-  application: Pick<JobApplication, 'taskSentAt' | 'taskSubmission'>,
+  application: Pick<
+    JobApplication,
+    'taskSentAt' | 'taskSubmission' | 'taskDueOverride'
+  >,
   now = new Date(),
 ): boolean {
   if (!task) return false;
   if (!application.taskSubmission) return true;
-  const due = taskDueAt(task, application.taskSentAt);
+  const due = applicationDueAt(task, application);
   return !!due && now < due;
 }

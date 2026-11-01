@@ -97,7 +97,13 @@ export type ApplicationAnswer =
   | ApplicationFile;
 
 export interface ApplicationEvent {
-  type: 'SUBMITTED' | 'STAGE_CHANGED' | 'NOTE' | 'EMAIL' | 'TASK_SUBMITTED';
+  type:
+    | 'SUBMITTED'
+    | 'STAGE_CHANGED'
+    | 'NOTE'
+    | 'EMAIL'
+    | 'TASK_SUBMITTED'
+    | 'TASK_EXTENDED';
   at: string;
   byUserId?: Nullable<string>;
   from?: Nullable<APPLICATION_STAGE>;
@@ -185,6 +191,13 @@ export type JobOpening = Loose<
     details?: Nullable<string>;
     /** The hiring team's own notes. Candidates never see them. */
     notes?: Nullable<string>;
+    /**
+     * What a candidate must show to get past screening: must-haves,
+     * deal-breakers, what a strong application looks like. Written by HR or
+     * by Claude, and read by Claude whenever it screens applicants.
+     * Candidates never see it.
+     */
+    screening?: Nullable<string>;
     status: JOB_OPENING_STATUS;
     fields: FormField[];
     task?: Nullable<JobTask>;
@@ -220,6 +233,11 @@ export type JobApplication = Loose<
     taskToken?: Nullable<string>;
     /** When the task link was first emailed; the due date counts from here. */
     taskSentAt?: Nullable<string>;
+    /**
+     * A due date set for this candidate alone, replacing the one counted
+     * from the opening's dueDays. Set when the team gives them more time.
+     */
+    taskDueOverride?: Nullable<string>;
     taskSubmission?: Nullable<TaskSubmission>;
   }
 >;

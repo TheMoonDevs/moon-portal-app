@@ -71,6 +71,7 @@ const emptyDraft = {
   description: '',
   details: '',
   notes: '',
+  screening: '',
   status: JOB_OPENING_STATUS.DRAFT as JOB_OPENING_STATUS,
   fields: [] as DraftField[],
   hiringLeadId: '',
@@ -532,6 +533,7 @@ export const OpeningEditor = ({
             description: opening.description ?? '',
             details: opening.details ?? '',
             notes: opening.notes ?? '',
+            screening: opening.screening ?? '',
             status: opening.status,
             fields: (opening.fields ?? []).map(toDraftField),
             hiringLeadId: opening.hiringLeadId ?? '',
@@ -820,6 +822,25 @@ export const OpeningEditor = ({
                 value={draft.notes}
                 onChange={(e) => set('notes', e.target.value)}
                 className="min-h-[110px]"
+              />
+            </Field>
+            <Field
+              label={
+                <>
+                  <Icon name="fact_check" className="text-[14px]" />
+                  Screening requirements
+                </>
+              }
+              className="md:col-span-2"
+              hint="What someone must show to be shortlisted. Claude reads this whenever it screens applicants for this opening, and can write it for you too. Candidates never see it."
+            >
+              <TextArea
+                value={draft.screening}
+                onChange={(e) => set('screening', e.target.value)}
+                placeholder={
+                  'Must have\n- A portfolio with at least 3 finished pieces\n- …\n\nDeal-breakers\n- …\n\nNice to have\n- …'
+                }
+                className="min-h-[140px]"
               />
             </Field>
           </div>

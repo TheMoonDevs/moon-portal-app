@@ -36,7 +36,9 @@ export async function GET(request: NextRequest) {
 
 /**
  * Emails applicants of one company:
- * `{ ids, subject, body, sendId, templateId?, moveTo?, replyToLead? }`.
+ * `{ ids, subject, body, sendId, templateId?, moveTo?, replyToLead?,
+ *   meetingLinkFrom? }`. `meetingLinkFrom` picks whose booking link fills
+ * {{meetingLink}}: `lead`, `sender` (the default) or a member's user id.
  *
  * `subject` and `body` may hold {{placeholders}}. Each applicant who was
  * emailed is moved to `moveTo` when it is given. `sendId` is made by the
