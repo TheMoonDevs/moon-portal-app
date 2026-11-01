@@ -12,6 +12,7 @@ import { fitGoal } from '@/lib/workspace/goalFit';
 import { attachToRun } from '@/lib/workspace/goalRuns';
 import { addGoal, changeGoal, removeGoal } from '@/lib/workspace/goals';
 import { updateGoalProgress } from '@/lib/workspace/goalTally';
+import { completeGoalUntil, tickGoalDay } from '@/lib/workspace/goalTicks';
 import { moveProject } from '@/lib/workspace/moveProject';
 import {
   canCreateDirectly,
@@ -835,6 +836,81 @@ export const WORKSPACE_TOOLS: Tool[] = [
           parts: progress.parts.map((p) => `${p.label}: ${p.done}/${p.target}`),
         }),
       };
+    },
+  },
+  {
+    name: 'tick_goal',
+    title: 'Tick a goal done',
+    description:
+      'Ticks a goal by hand, with or without a task linked to it. The goal can be named by its id alone (the ID shown on its card on the project page), or by title with project. until marks it done up to that day: every open task linked to it for a day up to then is finished, and a repeating goal\'s days from today to then that have no task yet get one, already done (e.g. "goal x1y2 is done until Nov 14" is until 2026-11-14). day ticks one day of a repeating goal on, or off with done false (its tasks open again).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        goal: {
+          type: 'string',
+          description: 'Goal id (enough on its own) or title.',
+        },
+        project: {
+          type: 'string',
+          description: 'Project id or exact name; needed with a goal title.',
+        },
+        until: {
+          type: 'string',
+          description: 'YYYY-MM-DD: done up to and including this day.',
+        },
+        day: {
+          type: 'string',
+          description: 'YYYY-MM-DD: tick just this day, instead of until.',
+        },
+        done: {
+          type: 'boolean',
+          description: 'With day: false ticks it off. Default true.',
+        },
+      },
+      required: ['goal'],
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false },
+    run: async (user, args) => {
+      const ref = typeof args?.goal === 'string' ? args.goal.trim() : '';
+      if (!ref)
+        throw new ToolError('Give the goal id, or its title and project.');
+      let projectRef: unknown = args?.project;
+      if (!projectRef) {
+        const owner: Project | null = await db.project.findFirst({
+          where: { 'goals.id': ref },
+        });
+        if (!owner)
+          throw new ToolError(
+            `No goal with id "${ref}". Give its project too, or copy the id from the goal's card.`,
+          );
+        projectRef = owner.id;
+      }
+      const project = await findProject(user, projectRef, 'tasks:edit');
+      const { goalId } = resolveGoal(project, ref);
+      const goal = project.goals!.find((g) => g.id === goalId)!;
+      const until = asDay(args?.until);
+      const day = asDay(args?.day);
+      if (until === undefined || day === undefined)
+        throw new ToolError('Use YYYY-MM-DD for dates.');
+      if (until) {
+        const done = await completeGoalUntil(project, goal, until, user.id);
+        return {
+          project: project.name,
+          goal: goal.title,
+          doneUntil: until,
+          tasksFinished: done.finished,
+          tasksMadeDone: done.made,
+          days: done.days,
+        };
+      }
+      if (!day) throw new ToolError('Give until (done up to a day) or day.');
+      if (goal.kind === 'target')
+        throw new ToolError(
+          'A target goal has no days to tick; use update_goal_progress, or until to finish its linked tasks.',
+        );
+      const done = args?.done !== false;
+      const result = await tickGoalDay(project, goal, day, done, user.id);
+      return { project: project.name, goal: goal.title, day, done, ...result };
     },
   },
   {

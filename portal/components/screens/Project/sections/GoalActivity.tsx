@@ -15,6 +15,8 @@ import type { ProjectGoal } from '@/models/workspace';
  */
 
 const WEEKS = 20;
+/** Weeks shown ahead, to tick upcoming days done, when days can be ticked. */
+const AHEAD = 4;
 const ROWS = ['Mon', '', 'Wed', '', 'Fri', '', ''];
 const LEVELS = [0.3, 0.55, 0.8, 1];
 
@@ -34,13 +36,29 @@ export const GoalActivity = ({
   tasks,
   color,
   className,
+  onTick,
+  onTickUntil,
 }: {
   goal: ProjectGoal;
   tasks: Task[];
   color: string;
   className?: string;
+  /** Ticks a day on (done) or off; days can be clicked when given. */
+  onTick?: (day: string, done: boolean) => Promise<void>;
+  /** Marks every day from today up to `day` done (an upcoming day's click). */
+  onTickUntil?: (day: string) => Promise<void>;
 }) => {
+  const ahead = onTick ? AHEAD : 0;
+  /** A day the goal has a task for, as its schedule says. */
+  const isRunDay = (day: string) => {
+    const d = dayjs(day);
+    if (goal.period === 'day') return true;
+    if (goal.period === 'month') return d.date() === (goal.monthDay || 1);
+    return (goal.days?.length ? goal.days : [1]).includes(d.day());
+  };
   const [hover, setHover] = useState<DayCell | null>(null);
+  const [ticking, setTicking] = useState<string | null>(null);
+  const [shift, setShift] = useState(false);
   const today = dayjs().format('YYYY-MM-DD');
   const target = goal.kind === 'target';
 
@@ -75,7 +93,7 @@ export const GoalActivity = ({
     }
     // Weeks start on Monday; the last column is this week.
     const monday = dayjs().subtract((dayjs().day() + 6) % 7, 'day');
-    const start = monday.subtract(WEEKS - 1, 'week');
+    const start = monday.subtract(WEEKS - 1 - ahead, 'week');
     const weeks: DayCell[][] = Array.from({ length: WEEKS }, (_, w) =>
       Array.from({ length: 7 }, (_, d) => {
         const day = start.add(w * 7 + d, 'day').format('YYYY-MM-DD');
@@ -96,7 +114,10 @@ export const GoalActivity = ({
       done: shown.reduce((n, c) => n + c.done, 0),
       missed: shown.reduce((n, c) => n + (c.future ? 0 : c.missed), 0),
     };
-  }, [tasks, goal.id, target, today]);
+  }, [tasks, goal.id, target, today, ahead]);
+
+  // Hovering an upcoming day previews ticking every day up to it.
+  const until = onTickUntil && hover?.future && !shift ? hover.day : null;
 
   const months = weeks.map((week, i) => {
     const first = dayjs(week[0].day);
@@ -104,17 +125,23 @@ export const GoalActivity = ({
     return !prev || first.month() !== prev.month() ? first.format('MMM') : '';
   });
 
-  const label = hover
-    ? `${dayjs(hover.day).format('ddd D MMM')}: ${
-        [
-          hover.done && `${hover.done} done`,
-          hover.missed && `${hover.missed} missed`,
-          hover.planned && `${hover.planned} planned`,
-        ]
-          .filter(Boolean)
-          .join(', ') || 'nothing'
-      }`
-    : `${done} done${missed ? ` · ${missed} missed` : ''} in ${WEEKS} weeks`;
+  const label = until
+    ? `Click: done from today until ${dayjs(until).format('ddd D MMM')} · Shift-click for just this day`
+    : hover
+      ? `${dayjs(hover.day).format('ddd D MMM')}: ${
+          [
+            hover.done && `${hover.done} done`,
+            hover.missed && `${hover.missed} missed`,
+            hover.planned && `${hover.planned} planned`,
+          ]
+            .filter(Boolean)
+            .join(', ') || 'nothing'
+        }${onTick ? (hover.done ? ' · click to tick off' : ' · click to tick') : ''}`
+      : `${done} done${missed ? ` · ${missed} missed` : ''} in ${WEEKS - ahead} weeks${
+          onTick
+            ? ' · click a day to tick it, or an upcoming one to tick every day up to it'
+            : ''
+        }`;
 
   return (
     <div className={cn('flex flex-col gap-1.5', className)}>
@@ -138,18 +165,48 @@ export const GoalActivity = ({
                 const level =
                   c.done > 0 ? LEVELS[Math.min(LEVELS.length, c.done) - 1] : 0;
                 const failed = !c.future && c.missed > 0;
+                const inRange =
+                  !!until &&
+                  c.day > today &&
+                  c.day <= until &&
+                  !c.done &&
+                  (c.planned > 0 || isRunDay(c.day));
+                const Cell = onTick ? 'button' : 'span';
                 return (
-                  <span
+                  <Cell
                     key={c.day}
-                    onMouseEnter={() => setHover(c)}
+                    {...(onTick && {
+                      type: 'button' as const,
+                      disabled: !!ticking,
+                      'aria-label': `${c.done ? 'Tick off' : 'Tick'} ${dayjs(c.day).format('D MMM')}`,
+                      onClick: (e: React.MouseEvent) => {
+                        setTicking(c.day);
+                        const run =
+                          c.future && onTickUntil && !e.shiftKey
+                            ? onTickUntil(c.day)
+                            : onTick(c.day, !c.done);
+                        run.finally(() => setTicking(null));
+                      },
+                    })}
+                    onMouseEnter={(e: React.MouseEvent) => {
+                      setShift(e.shiftKey);
+                      setHover(c);
+                    }}
+                    onMouseMove={(e: React.MouseEvent) =>
+                      e.shiftKey !== shift && setShift(e.shiftKey)
+                    }
                     onMouseLeave={() => setHover(null)}
                     className={cn(
-                      'relative size-[11px] rounded-[3px]',
+                      'relative block size-[11px] rounded-[3px]',
+                      onTick &&
+                        'cursor-pointer transition-transform hover:scale-125 hover:outline hover:outline-1 hover:outline-white/70',
+                      ticking === c.day && 'animate-pulse',
                       !level && !failed && 'bg-white/[0.05]',
                       !level && failed && 'bg-rose-400/70',
                       level && failed && 'ring-1 ring-rose-400',
                       c.planned > 0 && !level && 'ring-1 ring-white/25',
-                      c.future && !c.planned && 'opacity-40',
+                      c.future && !c.planned && !inRange && 'opacity-40',
+                      inRange && '!bg-emerald-400/60',
                       c.day === today && 'outline outline-1 outline-white/50',
                     )}
                     style={

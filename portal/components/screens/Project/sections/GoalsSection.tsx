@@ -37,6 +37,7 @@ import { Tip, TipProvider, TipRow, TipTitle } from '../../Projects/Tip';
 import type { Person } from '../types';
 import { CarryMenu } from './CarryMenu';
 import { GoalActivity } from './GoalActivity';
+import { GoalIdChip, LinkTaskButton } from './GoalTools';
 import { SectionShell } from './SectionShell';
 
 const PERIOD_WORD = { day: 'Today', week: 'This week', month: 'This month' };
@@ -197,6 +198,8 @@ const ScheduledGoal = ({
   canEdit,
   canTick,
   onTick,
+  onTickDay,
+  onTickUntil,
   onCarried,
   onEdit,
 }: {
@@ -207,6 +210,8 @@ const ScheduledGoal = ({
   canEdit: boolean;
   canTick: boolean;
   onTick: (task: Task) => void;
+  onTickDay: (goal: ProjectGoal, day: string, done: boolean) => Promise<void>;
+  onTickUntil: (goal: ProjectGoal, day: string) => Promise<void>;
   onCarried: () => void;
   onEdit: () => void;
 }) => {
@@ -274,16 +279,27 @@ const ScheduledGoal = ({
               of {goal.target} {PERIOD_LABELS[goal.period]}
             </p>
           </div>
-          {canEdit && (
-            <button
-              type="button"
-              aria-label="Edit goal"
-              onClick={onEdit}
-              className="flex size-7 items-center justify-center self-start rounded-full text-neutral-500 hover:bg-white/[0.08] hover:text-white"
-            >
-              <Icon name="edit" className="text-[16px]" />
-            </button>
-          )}
+          <div className="flex flex-wrap items-center justify-end gap-1.5 self-start">
+            <GoalIdChip goal={goal} />
+            {canTick && (
+              <LinkTaskButton
+                goal={goal}
+                goals={project.goals ?? []}
+                tasks={tasks}
+                onLinked={onCarried}
+              />
+            )}
+            {canEdit && (
+              <button
+                type="button"
+                aria-label="Edit goal"
+                onClick={onEdit}
+                className="flex size-7 items-center justify-center rounded-full text-neutral-500 hover:bg-white/[0.08] hover:text-white"
+              >
+                <Icon name="edit" className="text-[16px]" />
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-neutral-500">
@@ -452,7 +468,9 @@ const ScheduledGoal = ({
         goal={goal}
         tasks={tasks}
         color={color}
-        className="shrink-0 border-white/[0.06] max-lg:border-t max-lg:pt-4 lg:w-[330px] lg:justify-center lg:border-l lg:pl-5"
+        onTick={canTick ? (day, done) => onTickDay(goal, day, done) : undefined}
+        onTickUntil={canTick ? (day) => onTickUntil(goal, day) : undefined}
+        className="shrink-0 border-white/[0.06] max-lg:border-t max-lg:pt-4 lg:w-[340px] lg:justify-center lg:border-l lg:pl-5"
       />
     </div>
   );
@@ -466,6 +484,8 @@ const TargetGoal = ({
   tasks,
   people,
   canEdit,
+  canTick,
+  onLinked,
   onSetTotal,
   onEdit,
   onRaise,
@@ -475,6 +495,8 @@ const TargetGoal = ({
   tasks: Task[];
   people: Map<string, PersonLite>;
   canEdit: boolean;
+  canTick: boolean;
+  onLinked: () => void;
   onSetTotal: (goal: ProjectGoal, total: number) => void;
   onEdit: () => void;
   onRaise: () => void;
@@ -518,16 +540,27 @@ const TargetGoal = ({
               {fmt(goal.target)} {goal.title}
             </p>
           </div>
-          {canEdit && (
-            <button
-              type="button"
-              aria-label="Edit goal"
-              onClick={onEdit}
-              className="flex size-7 items-center justify-center rounded-full text-neutral-500 hover:bg-white/[0.08] hover:text-white"
-            >
-              <Icon name="edit" className="text-[16px]" />
-            </button>
-          )}
+          <div className="flex flex-wrap items-center justify-end gap-1.5 self-start">
+            <GoalIdChip goal={goal} />
+            {canTick && (
+              <LinkTaskButton
+                goal={goal}
+                goals={project.goals ?? []}
+                tasks={tasks}
+                onLinked={onLinked}
+              />
+            )}
+            {canEdit && (
+              <button
+                type="button"
+                aria-label="Edit goal"
+                onClick={onEdit}
+                className="flex size-7 items-center justify-center rounded-full text-neutral-500 hover:bg-white/[0.08] hover:text-white"
+              >
+                <Icon name="edit" className="text-[16px]" />
+              </button>
+            )}
+          </div>
         </div>
 
         <Tip
@@ -619,7 +652,7 @@ const TargetGoal = ({
         goal={goal}
         tasks={tasks}
         color={achieved ? '#fbbf24' : color}
-        className="shrink-0 border-white/[0.06] max-lg:border-t max-lg:pt-4 lg:w-[330px] lg:justify-center lg:border-l lg:pl-5"
+        className="shrink-0 border-white/[0.06] max-lg:border-t max-lg:pt-4 lg:w-[340px] lg:justify-center lg:border-l lg:pl-5"
       />
     </div>
   );
@@ -767,6 +800,49 @@ export const GoalsSection = ({
     }
   };
 
+  /** Ticks a goal's day on or off, whether or not a task is linked. */
+  const tickDay = async (goal: ProjectGoal, day: string, done: boolean) => {
+    try {
+      const res = await PortalSdk.postData(
+        `/api/projects/${project.id}/goals/${goal.id}/tick`,
+        { day, done },
+      );
+      const r = res?.data ?? {};
+      toast.success(
+        done
+          ? `${goal.title}: ticked ${dayjs(day).format('ddd D MMM')}`
+          : `${goal.title}: ${dayjs(day).format('ddd D MMM')} ticked off`,
+        r.made ? { description: 'No task was linked, so one was made.' } : {},
+      );
+      onSaved();
+    } catch (err) {
+      toast.error(errorText(err));
+    }
+  };
+
+  /** Marks a goal done for every day from today up to `until`. */
+  const tickUntil = async (goal: ProjectGoal, until: string) => {
+    try {
+      const res = await PortalSdk.postData(
+        `/api/projects/${project.id}/goals/${goal.id}/tick`,
+        { until },
+      );
+      const r = res?.data ?? {};
+      const n = (r.finished ?? 0) + (r.made ?? 0);
+      toast.success(
+        `${goal.title}: done until ${dayjs(until).format('ddd D MMM')}`,
+        {
+          description: n
+            ? `${n} ${n === 1 ? 'task' : 'tasks'} ticked off.`
+            : 'Nothing was left to tick.',
+        },
+      );
+      onSaved();
+    } catch (err) {
+      toast.error(errorText(err));
+    }
+  };
+
   const tick = async (task: Task) => {
     setLocal((all) => all.filter((t) => t.id !== task.id));
     try {
@@ -852,6 +928,8 @@ export const GoalsSection = ({
                       tasks={local}
                       people={people}
                       canEdit={canEdit}
+                      canTick={canTick}
+                      onLinked={onSaved}
                       onSetTotal={setTotal}
                       onEdit={() => setEditing(goal)}
                       onRaise={() =>
@@ -884,6 +962,8 @@ export const GoalsSection = ({
                       canEdit={canEdit}
                       canTick={canTick}
                       onTick={tick}
+                      onTickDay={tickDay}
+                      onTickUntil={tickUntil}
                       onCarried={onSaved}
                       onEdit={() => setEditing(goal)}
                     />
