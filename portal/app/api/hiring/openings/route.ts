@@ -102,6 +102,7 @@ export async function POST(request: Request) {
       description: data.description ?? null,
       details: data.details ?? null,
       notes: data.notes ?? null,
+      screening: data.screening ?? null,
       status: data.status,
       fields: data.fields ?? [],
       task: data.task ?? null,

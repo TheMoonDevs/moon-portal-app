@@ -85,6 +85,7 @@ export const modelMetaMap = defineModelRegistry({
   jobApplication: { collection: 'JobApplication' },
   hiringEmailTemplate: { collection: 'HiringEmailTemplate' },
   hiringEmail: { collection: 'HiringEmail' },
+  hiringSkill: { collection: 'HiringSkill' },
   meetProfile: { collection: 'MeetProfile' },
   meetBooking: { collection: 'MeetBooking' },
 });

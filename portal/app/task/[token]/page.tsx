@@ -8,9 +8,9 @@ import {
 } from '@/components/screens/Task/TaskPage';
 import { answerText } from '@/lib/hiring/forms';
 import {
+  applicationDueAt,
   canSubmitTask,
   TASK_TOKEN_PATTERN,
-  taskDueAt,
 } from '@/lib/hiring/tasks';
 import { db } from '@/lib/mongodb/db-client';
 import type { JobApplication, JobOpening } from '@/models/hiring';
@@ -38,7 +38,7 @@ const loadTask = cache(async (token: string): Promise<PublicTask | null> => {
 
   const task = opening.task;
   const sent = application.taskSubmission;
-  const due = taskDueAt(task, application.taskSentAt);
+  const due = applicationDueAt(task, application);
   const name = application.name.trim();
   return {
     token,

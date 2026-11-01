@@ -7,6 +7,7 @@ import {
 import { db } from '@/lib/mongodb/db-client';
 import { syncTaskPoints } from '@/lib/progress/server';
 import { fitGoal } from '@/lib/workspace/goalFit';
+import { attachToRun, releaseRun } from '@/lib/workspace/goalRuns';
 import {
   asDay,
   asStringArray,
@@ -114,12 +115,24 @@ export async function PATCH(request: Request, { params }: Params) {
     data.goalChecked = true;
   }
 
-  const updated = await fitGoal(
+  const goalChanged =
+    ('goalId' in data || 'goalPartId' in data) &&
+    ((data.goalId ?? null) !== (task.goalId ?? null) ||
+      (data.goalPartId ?? null) !== (task.goalPartId ?? null));
+  // A new goal: it leaves the run of the old one first.
+  const base = goalChanged ? await releaseRun(task) : task;
+  let updated = await fitGoal(
     await db.task.update({
-      where: { id: task.id },
+      where: { id: base.id },
       data: { ...data, updatedAt: nowIso() },
     }),
   );
+  // Linked by hand: it takes the run it stands for, or the one picked.
+  if (goalChanged || asDay(body.runOn))
+    updated = await attachToRun(updated, {
+      runOn: asDay(body.runOn) || null,
+      ahead: true,
+    });
   await syncTaskPoints(updated);
   await noteStatusChange(task, updated, user.id);
   return ok({ task: updated });

@@ -35,6 +35,7 @@ import { usePlans } from '../Plans/usePlans';
 import { NewProjectDialog } from '../Projects/NewProjectDialog';
 import { PageDoc, SaveBadge, type SaveState } from './PageDoc';
 import { ProjectDetailsDialog } from './ProjectDetailsDialog';
+import { ProjectSwitcher } from './ProjectSwitcher';
 import { GoalsSection } from './sections/GoalsSection';
 import { KpiSection } from './sections/KpiSection';
 import { MembersSection } from './sections/MembersSection';
@@ -285,6 +286,7 @@ const Sidebar = ({
   const { project, people } = data;
   const tree = data.tree ?? [];
   const parent = tree.find((p) => p.id === project.parentId);
+  const core = tree.find((p) => p.isCore);
   const subs = tree.filter((p) => p.parentId === project.id);
   const status =
     PROJECT_STATUS_META[project.status] ?? PROJECT_STATUS_META.ACTIVE;
@@ -321,6 +323,14 @@ const Sidebar = ({
               >
                 <Icon name="subdirectory_arrow_right" className="text-[13px]" />
                 <span className="truncate">{parent.name}</span>
+              </Link>
+            ) : core && core.id !== project.id ? (
+              <Link
+                href={`${APP_ROUTES.projects}/${core.id}`}
+                title={`Open ${companyName ?? 'the company'}'s CORE project`}
+                className="block truncate text-xs text-neutral-500 hover:text-neutral-200"
+              >
+                {companyName}
               </Link>
             ) : (
               <p className="truncate text-xs text-neutral-500">{companyName}</p>
@@ -877,6 +887,8 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
     );
 
   const { project, tasks, people } = data;
+  // The company's name opens its CORE project.
+  const coreId = data.tree?.find((p) => p.isCore)?.id;
   const canEdit = can(project.companyId, 'projects:edit');
   const all = pages?.pages ?? [];
   const page = all.find((i) => i.id === pageId) ?? null;
@@ -1026,15 +1038,23 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
             <Icon name="arrow_back" className="text-[18px]" />
           </Link>
           <span className="hidden min-w-0 items-center gap-2 md:flex">
-            <span className="truncate text-neutral-500">{companyName}</span>
+            {coreId && coreId !== project.id ? (
+              <Link
+                href={`${APP_ROUTES.projects}/${coreId}`}
+                title={`Open ${companyName ?? 'the company'}'s CORE project`}
+                className="truncate text-neutral-500 transition-colors hover:text-white"
+              >
+                {companyName}
+              </Link>
+            ) : (
+              <span className="truncate text-neutral-500">{companyName}</span>
+            )}
             <Icon
               name="chevron_right"
               className="text-[16px] text-neutral-700"
             />
           </span>
-          <span className="truncate font-medium text-neutral-200">
-            {project.name}
-          </span>
+          <ProjectSwitcher projectId={project.id} name={project.name} />
           <Icon name="chevron_right" className="text-[16px] text-neutral-700" />
           <button
             type="button"

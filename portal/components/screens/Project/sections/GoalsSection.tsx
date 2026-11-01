@@ -35,6 +35,8 @@ import {
 import { errorText } from '../../Admin/Workspace/shared';
 import { Tip, TipProvider, TipRow, TipTitle } from '../../Projects/Tip';
 import type { Person } from '../types';
+import { CarryMenu } from './CarryMenu';
+import { GoalActivity } from './GoalActivity';
 import { SectionShell } from './SectionShell';
 
 const PERIOD_WORD = { day: 'Today', week: 'This week', month: 'This month' };
@@ -90,36 +92,6 @@ const Ring = ({
     </svg>
   );
 };
-
-/** − and + for progress no task tracks; − only takes back what + added. */
-const Stepper = ({
-  manual,
-  busy,
-  onChange,
-}: {
-  manual: number;
-  busy: boolean;
-  onChange: (add: number) => void;
-}) => (
-  <span className="inline-flex shrink-0 items-center gap-1">
-    {[
-      { add: -1, icon: 'remove', label: 'Take back one added by hand' },
-      { add: 1, icon: 'add', label: 'Add one done outside tasks' },
-    ].map((b) => (
-      <button
-        key={b.add}
-        type="button"
-        title={b.label}
-        aria-label={b.label}
-        disabled={busy || (b.add < 0 && manual <= 0)}
-        onClick={() => onChange(b.add)}
-        className="flex size-6 items-center justify-center rounded-full border border-white/10 text-neutral-300 transition hover:bg-white/10 hover:text-white disabled:pointer-events-none disabled:opacity-30"
-      >
-        <Icon name={b.icon} className="text-[14px]" />
-      </button>
-    ))}
-  </span>
-);
 
 /** Who it is for: its people, or the whole team. */
 const ForWhom = ({
@@ -224,9 +196,8 @@ const ScheduledGoal = ({
   people,
   canEdit,
   canTick,
-  busy,
-  onBump,
   onTick,
+  onCarried,
   onEdit,
 }: {
   goal: ProjectGoal;
@@ -235,9 +206,8 @@ const ScheduledGoal = ({
   people: Map<string, PersonLite>;
   canEdit: boolean;
   canTick: boolean;
-  busy: string | null;
-  onBump: (goalId: string, partId: string | null, add: number) => void;
   onTick: (task: Task) => void;
+  onCarried: () => void;
   onEdit: () => void;
 }) => {
   const color = project.color || '#10b981';
@@ -258,219 +228,232 @@ const ScheduledGoal = ({
   const today = dayjs().format('YYYY-MM-DD');
 
   return (
-    <div className="flex flex-col gap-4 rounded-3xl border border-white/[0.07] bg-white/[0.02] p-5">
-      <div className="flex items-center gap-4">
-        <Tip
-          content={
-            <>
-              <TipTitle>
-                {p?.done ?? 0} of {goal.target}{' '}
-                {PERIOD_WORD[goal.period].toLowerCase()}
-              </TipTitle>
-              Done tasks linked to this goal for days in this{' '}
-              {goal.period === 'day' ? 'day' : goal.period}
-              {p?.manual ? `, plus ${p.manual} added by hand` : ''}. Work done
-              early counts for the day it was for.
-            </>
-          }
-        >
-          <span className="relative cursor-help">
-            <Ring
-              percent={percent}
-              color={percent >= 100 ? '#10b981' : color}
-            />
-            <span className="absolute inset-0 flex items-center justify-center text-sm font-semibold text-white">
-              {percent}%
+    <div className="flex flex-col gap-5 rounded-3xl border border-white/[0.07] bg-white/[0.02] p-5 lg:flex-row">
+      <div className="flex min-w-0 flex-1 flex-col gap-4">
+        <div className="flex items-center gap-4">
+          <Tip
+            content={
+              <>
+                <TipTitle>
+                  {p?.done ?? 0} of {goal.target}{' '}
+                  {PERIOD_WORD[goal.period].toLowerCase()}
+                </TipTitle>
+                Done tasks linked to this goal for days in this{' '}
+                {goal.period === 'day' ? 'day' : goal.period}
+                {p?.manual ? `, plus ${p.manual} added by hand` : ''}. Work done
+                early counts for the day it was for.
+              </>
+            }
+          >
+            <span className="relative cursor-help">
+              <Ring
+                percent={percent}
+                color={percent >= 100 ? '#10b981' : color}
+              />
+              <span className="absolute inset-0 flex items-center justify-center text-sm font-semibold text-white">
+                {percent}%
+              </span>
             </span>
-          </span>
-        </Tip>
-        <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-medium uppercase tracking-wider text-neutral-500">
-            {PERIOD_WORD[goal.period]}
-          </p>
-          <p className="truncate text-lg font-semibold text-white">
-            {goal.title}
-          </p>
-          <p className="text-sm text-neutral-400">
-            <span
-              className={cn(
-                'font-semibold',
-                percent >= 100 ? 'text-emerald-400' : 'text-white',
-              )}
-            >
-              {p?.done ?? 0}
-            </span>{' '}
-            of {goal.target} {PERIOD_LABELS[goal.period]}
-          </p>
-        </div>
-        <div className="flex flex-col items-end gap-2">
+          </Tip>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-medium uppercase tracking-wider text-neutral-500">
+              {PERIOD_WORD[goal.period]}
+            </p>
+            <p className="truncate text-lg font-semibold text-white">
+              {goal.title}
+            </p>
+            <p className="text-sm text-neutral-400">
+              <span
+                className={cn(
+                  'font-semibold',
+                  percent >= 100 ? 'text-emerald-400' : 'text-white',
+                )}
+              >
+                {p?.done ?? 0}
+              </span>{' '}
+              of {goal.target} {PERIOD_LABELS[goal.period]}
+            </p>
+          </div>
           {canEdit && (
             <button
               type="button"
               aria-label="Edit goal"
               onClick={onEdit}
-              className="flex size-7 items-center justify-center rounded-full text-neutral-500 hover:bg-white/[0.08] hover:text-white"
+              className="flex size-7 items-center justify-center self-start rounded-full text-neutral-500 hover:bg-white/[0.08] hover:text-white"
             >
               <Icon name="edit" className="text-[16px]" />
             </button>
           )}
-          {canEdit && !goal.parts?.length && (
-            <Stepper
-              manual={p?.manual ?? 0}
-              busy={busy === `${goal.id}:`}
-              onChange={(add) => onBump(goal.id, null, add)}
-            />
-          )}
         </div>
-      </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-neutral-500">
-        <span className="flex items-center gap-1.5">
-          <Icon name="event_repeat" className="text-[14px]" />
-          {goal.makeTasks === false
-            ? 'Makes no tasks'
-            : describeGoalSchedule(goal)}
-        </span>
-        <ForWhom goal={goal} people={people} />
-      </div>
-
-      {p?.parts && (
-        <div className="flex flex-col gap-2">
-          {p.parts.map((part) => (
-            <div key={part.id}>
-              <div className="mb-1 flex items-center justify-between gap-2 text-xs">
-                <span className="text-neutral-300">{part.label}</span>
-                <span className="flex items-center gap-2 text-neutral-500">
-                  {part.done}/{part.target}
-                  {canEdit && (
-                    <Stepper
-                      manual={part.manual ?? 0}
-                      busy={busy === `${goal.id}:${part.id}`}
-                      onChange={(add) => onBump(goal.id, part.id, add)}
-                    />
-                  )}
-                </span>
-              </div>
-              <div className="h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
-                <motion.div
-                  className="h-full rounded-full"
-                  style={{ backgroundColor: color }}
-                  initial={{ width: 0 }}
-                  animate={{
-                    width: `${Math.min(100, (part.done / part.target) * 100)}%`,
-                  }}
-                  transition={{ duration: 0.6 }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {coming.length > 0 && (
-        <ul className="-mx-2 flex flex-col">
-          <AnimatePresence initial={false}>
-            {shown.map((t) => {
-              const late = !!t.forDate && t.forDate < today;
-              return (
-                <motion.li
-                  key={t.id}
-                  layout
-                  initial={{ opacity: 0, y: 4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="flex items-center gap-2.5 rounded-xl px-2 py-1.5 hover:bg-white/[0.03]"
-                >
-                  <button
-                    type="button"
-                    disabled={!canTick}
-                    aria-label="Mark as done"
-                    onClick={() => onTick(t)}
-                    className="flex size-[18px] shrink-0 items-center justify-center rounded-full border-2 border-neutral-600 transition-colors enabled:hover:border-emerald-400"
-                  />
-                  <span className="min-w-0 flex-1 truncate text-sm text-neutral-200">
-                    {t.title}
-                  </span>
-                  {t.forDate && (
-                    <span
-                      className={cn(
-                        'shrink-0 text-[11px]',
-                        late ? 'text-rose-300' : 'text-neutral-500',
-                      )}
-                    >
-                      for {forDay(t.forDate)}
-                    </span>
-                  )}
-                </motion.li>
-              );
-            })}
-          </AnimatePresence>
-          {coming.length > 4 && (
-            <button
-              type="button"
-              onClick={() => setAll((v) => !v)}
-              className="self-start px-2 pt-1 text-[11px] text-neutral-500 hover:text-neutral-200"
-            >
-              {all ? 'Show fewer' : `${coming.length - 4} more coming up`}
-            </button>
-          )}
-        </ul>
-      )}
-
-      <div className="mt-auto flex items-center justify-between gap-2 border-t border-white/[0.05] pt-3 text-xs text-neutral-500">
-        <Contributors
-          progress={p}
-          people={people}
-          when={PERIOD_WORD[goal.period].toLowerCase()}
-        />
-        {history.length > 0 ? (
-          <Tip
-            content={
-              <>
-                <TipTitle>
-                  Past {goal.period === 'day' ? 'days' : `${goal.period}s`}
-                </TipTitle>
-                <div className="flex flex-col gap-0.5">
-                  {history.map((h) => (
-                    <TipRow
-                      key={h.from}
-                      color={h.met ? '#34d399' : '#fb7185'}
-                      label={
-                        h.from === h.to
-                          ? dayjs(h.from).format('D MMM')
-                          : `${dayjs(h.from).format('D MMM')} – ${dayjs(h.to).format('D MMM')}`
-                      }
-                      value={`${h.done}/${h.target}`}
-                    />
-                  ))}
-                </div>
-                <p className="mt-1.5 text-[11px] text-neutral-500">
-                  Green met the target, red fell short.
-                </p>
-              </>
-            }
-          >
-            <span className="ml-auto flex cursor-help items-center gap-1">
-              {history.map((h) => (
-                <span
-                  key={h.from}
-                  className={cn(
-                    'size-2 rounded-full',
-                    h.met ? 'bg-emerald-400' : 'bg-rose-400/80',
-                  )}
-                />
-              ))}
-              <span className="ml-1">
-                {history.filter((h) => h.met).length}/{history.length} met
-              </span>
-            </span>
-          </Tip>
-        ) : (
-          <span className="ml-auto">
-            First {goal.period === 'day' ? 'day' : goal.period}
+        <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-neutral-500">
+          <span className="flex items-center gap-1.5">
+            <Icon name="event_repeat" className="text-[14px]" />
+            {goal.makeTasks === false
+              ? 'Makes no tasks'
+              : describeGoalSchedule(goal)}
           </span>
+          <ForWhom goal={goal} people={people} />
+        </div>
+
+        {p?.parts && (
+          <div className="flex flex-col gap-2">
+            {p.parts.map((part) => (
+              <div key={part.id}>
+                <div className="mb-1 flex items-center justify-between gap-2 text-xs">
+                  <span className="text-neutral-300">{part.label}</span>
+                  <span className="text-neutral-500">
+                    {part.done}/{part.target}
+                  </span>
+                </div>
+                <div className="h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
+                  <motion.div
+                    className="h-full rounded-full"
+                    style={{ backgroundColor: color }}
+                    initial={{ width: 0 }}
+                    animate={{
+                      width: `${Math.min(100, (part.done / part.target) * 100)}%`,
+                    }}
+                    transition={{ duration: 0.6 }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
         )}
+
+        {coming.length > 0 && (
+          <ul className="-mx-2 flex flex-col">
+            <AnimatePresence initial={false}>
+              {shown.map((t) => {
+                const late = !!t.forDate && t.forDate < today;
+                return (
+                  <motion.li
+                    key={t.id}
+                    layout
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="flex items-center gap-2.5 rounded-xl px-2 py-1.5 hover:bg-white/[0.03]"
+                  >
+                    <button
+                      type="button"
+                      disabled={!canTick}
+                      aria-label="Mark as done"
+                      onClick={() => onTick(t)}
+                      className="flex size-[18px] shrink-0 items-center justify-center rounded-full border-2 border-neutral-600 transition-colors enabled:hover:border-emerald-400"
+                    />
+                    <span className="min-w-0 flex-1 truncate text-sm text-neutral-200">
+                      {t.title}
+                    </span>
+                    {t.carriedFrom && (
+                      <Tip
+                        content={`Moved on from ${forDay(t.carriedFrom)}, when the goal missed its day.`}
+                      >
+                        <span className="flex shrink-0 cursor-help items-center text-rose-300/70">
+                          <Icon name="redo" className="text-[13px]" />
+                        </span>
+                      </Tip>
+                    )}
+                    {t.forDate && (
+                      <span
+                        className={cn(
+                          'shrink-0 text-[11px]',
+                          late ? 'text-rose-300' : 'text-neutral-500',
+                        )}
+                      >
+                        for {forDay(t.forDate)}
+                      </span>
+                    )}
+                    {late && canTick && (
+                      <CarryMenu
+                        task={t}
+                        later={coming.filter(
+                          (o) =>
+                            o.id !== t.id &&
+                            !!o.forDate &&
+                            o.forDate > t.forDate!,
+                        )}
+                        onDone={onCarried}
+                      />
+                    )}
+                  </motion.li>
+                );
+              })}
+            </AnimatePresence>
+            {coming.length > 4 && (
+              <button
+                type="button"
+                onClick={() => setAll((v) => !v)}
+                className="self-start px-2 pt-1 text-[11px] text-neutral-500 hover:text-neutral-200"
+              >
+                {all ? 'Show fewer' : `${coming.length - 4} more coming up`}
+              </button>
+            )}
+          </ul>
+        )}
+
+        <div className="mt-auto flex items-center justify-between gap-2 border-t border-white/[0.05] pt-3 text-xs text-neutral-500">
+          <Contributors
+            progress={p}
+            people={people}
+            when={PERIOD_WORD[goal.period].toLowerCase()}
+          />
+          {history.length > 0 ? (
+            <Tip
+              content={
+                <>
+                  <TipTitle>
+                    Past {goal.period === 'day' ? 'days' : `${goal.period}s`}
+                  </TipTitle>
+                  <div className="flex flex-col gap-0.5">
+                    {history.map((h) => (
+                      <TipRow
+                        key={h.from}
+                        color={h.met ? '#34d399' : '#fb7185'}
+                        label={
+                          h.from === h.to
+                            ? dayjs(h.from).format('D MMM')
+                            : `${dayjs(h.from).format('D MMM')} – ${dayjs(h.to).format('D MMM')}`
+                        }
+                        value={`${h.done}/${h.target}`}
+                      />
+                    ))}
+                  </div>
+                  <p className="mt-1.5 text-[11px] text-neutral-500">
+                    Green met the target, red fell short.
+                  </p>
+                </>
+              }
+            >
+              <span className="ml-auto flex cursor-help items-center gap-1">
+                {history.map((h) => (
+                  <span
+                    key={h.from}
+                    className={cn(
+                      'size-2 rounded-full',
+                      h.met ? 'bg-emerald-400' : 'bg-rose-400/80',
+                    )}
+                  />
+                ))}
+                <span className="ml-1">
+                  {history.filter((h) => h.met).length}/{history.length} met
+                </span>
+              </span>
+            </Tip>
+          ) : (
+            <span className="ml-auto">
+              First {goal.period === 'day' ? 'day' : goal.period}
+            </span>
+          )}
+        </div>
       </div>
+      <GoalActivity
+        goal={goal}
+        tasks={tasks}
+        color={color}
+        className="shrink-0 border-white/[0.06] max-lg:border-t max-lg:pt-4 lg:w-[330px] lg:justify-center lg:border-l lg:pl-5"
+      />
     </div>
   );
 };
@@ -480,20 +463,18 @@ const ScheduledGoal = ({
 const TargetGoal = ({
   goal,
   project,
+  tasks,
   people,
   canEdit,
-  busy,
-  onBump,
   onSetTotal,
   onEdit,
   onRaise,
 }: {
   goal: ProjectGoal;
   project: ProjectRow;
+  tasks: Task[];
   people: Map<string, PersonLite>;
   canEdit: boolean;
-  busy: string | null;
-  onBump: (goalId: string, partId: string | null, add: number) => void;
   onSetTotal: (goal: ProjectGoal, total: number) => void;
   onEdit: () => void;
   onRaise: () => void;
@@ -509,93 +490,90 @@ const TargetGoal = ({
   return (
     <div
       className={cn(
-        'flex flex-col gap-3 rounded-3xl border p-5',
+        'flex flex-col gap-5 rounded-3xl border p-5 lg:flex-row',
         achieved
           ? 'border-amber-300/25 bg-amber-300/[0.04]'
           : 'border-white/[0.07] bg-white/[0.02]',
       )}
     >
-      <div className="flex items-start gap-3">
-        <span
-          className={cn(
-            'flex size-10 shrink-0 items-center justify-center rounded-xl',
-            achieved
-              ? 'bg-amber-300/15 text-amber-300'
-              : 'bg-white/[0.05] text-neutral-400',
-          )}
-        >
-          <Icon name={achieved ? 'star' : 'emoji_events'} filled={achieved} />
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-medium uppercase tracking-wider text-neutral-500">
-            {achieved
-              ? `Reached ${goal.achievedAt ? dayjs(goal.achievedAt).format('D MMM YYYY') : ''}`
-              : 'Target'}
-          </p>
-          <p className="truncate text-lg font-semibold text-white">
-            {fmt(goal.target)} {goal.title}
-          </p>
-        </div>
-        {canEdit && (
-          <button
-            type="button"
-            aria-label="Edit goal"
-            onClick={onEdit}
-            className="flex size-7 items-center justify-center rounded-full text-neutral-500 hover:bg-white/[0.08] hover:text-white"
+      <div className="flex min-w-0 flex-1 flex-col gap-3">
+        <div className="flex items-start gap-3">
+          <span
+            className={cn(
+              'flex size-10 shrink-0 items-center justify-center rounded-xl',
+              achieved
+                ? 'bg-amber-300/15 text-amber-300'
+                : 'bg-white/[0.05] text-neutral-400',
+            )}
           >
-            <Icon name="edit" className="text-[16px]" />
-          </button>
-        )}
-      </div>
-
-      <Tip
-        content={
-          <>
-            <TipTitle>
-              {fmt(done)} of {fmt(goal.target)} {goal.title}
-            </TipTitle>
-            Everything done since{' '}
-            {goal.since ? dayjs(goal.since).format('D MMM YYYY') : 'it was set'}
-            : linked tasks
-            {p?.manual ? ` and ${fmt(p.manual)} added by hand` : ''}.
-            {achieved
-              ? ' It is in the project’s record for good.'
-              : ' When it is reached it goes into the project’s record.'}
-          </>
-        }
-      >
-        <div className="cursor-help">
-          <div className="mb-1.5 flex items-baseline justify-between gap-2">
-            <span className="text-2xl font-bold tabular-nums text-white">
-              {fmt(done)}
-            </span>
-            <span className="text-xs text-neutral-500">
-              {Math.round(width)}%
-            </span>
+            <Icon name={achieved ? 'star' : 'emoji_events'} filled={achieved} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-medium uppercase tracking-wider text-neutral-500">
+              {achieved
+                ? `Reached ${goal.achievedAt ? dayjs(goal.achievedAt).format('D MMM YYYY') : ''}`
+                : 'Target'}
+            </p>
+            <p className="truncate text-lg font-semibold text-white">
+              {fmt(goal.target)} {goal.title}
+            </p>
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-white/[0.06]">
-            <motion.div
-              className="h-full rounded-full"
-              style={{ backgroundColor: achieved ? '#fbbf24' : color }}
-              initial={{ width: 0 }}
-              animate={{ width: `${width}%` }}
-              transition={{ duration: 0.8, ease: 'easeOut' }}
-            />
-          </div>
+          {canEdit && (
+            <button
+              type="button"
+              aria-label="Edit goal"
+              onClick={onEdit}
+              className="flex size-7 items-center justify-center rounded-full text-neutral-500 hover:bg-white/[0.08] hover:text-white"
+            >
+              <Icon name="edit" className="text-[16px]" />
+            </button>
+          )}
         </div>
-      </Tip>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <ForWhom goal={goal} people={people} />
-        <Contributors progress={p} people={people} when="so far" />
-        <span className="flex-1" />
-        {canEdit && !setting && (
-          <>
-            <Stepper
-              manual={p?.manual ?? 0}
-              busy={busy === `${goal.id}:`}
-              onChange={(add) => onBump(goal.id, null, add)}
-            />
+        <Tip
+          content={
+            <>
+              <TipTitle>
+                {fmt(done)} of {fmt(goal.target)} {goal.title}
+              </TipTitle>
+              Everything done since{' '}
+              {goal.since
+                ? dayjs(goal.since).format('D MMM YYYY')
+                : 'it was set'}
+              : linked tasks
+              {p?.manual ? ` and ${fmt(p.manual)} added by hand` : ''}.
+              {achieved
+                ? ' It is in the project’s record for good.'
+                : ' When it is reached it goes into the project’s record.'}
+            </>
+          }
+        >
+          <div className="cursor-help">
+            <div className="mb-1.5 flex items-baseline justify-between gap-2">
+              <span className="text-2xl font-bold tabular-nums text-white">
+                {fmt(done)}
+              </span>
+              <span className="text-xs text-neutral-500">
+                {Math.round(width)}%
+              </span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-white/[0.06]">
+              <motion.div
+                className="h-full rounded-full"
+                style={{ backgroundColor: achieved ? '#fbbf24' : color }}
+                initial={{ width: 0 }}
+                animate={{ width: `${width}%` }}
+                transition={{ duration: 0.8, ease: 'easeOut' }}
+              />
+            </div>
+          </div>
+        </Tip>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <ForWhom goal={goal} people={people} />
+          <Contributors progress={p} people={people} when="so far" />
+          <span className="flex-1" />
+          {canEdit && !setting && (
             <AdminButton
               size="sm"
               tone="ghost"
@@ -606,37 +584,43 @@ const TargetGoal = ({
             >
               Set total
             </AdminButton>
-          </>
-        )}
-        {setting && (
-          <form
-            className="flex items-center gap-1.5"
-            onSubmit={(e) => {
-              e.preventDefault();
-              const n = Math.round(Number(total));
-              if (Number.isFinite(n) && n >= 0) onSetTotal(goal, n);
-              setSetting(false);
-            }}
-          >
-            <TextInput
-              autoFocus
-              type="number"
-              min={0}
-              value={total}
-              onChange={(e) => setTotal(e.target.value)}
-              className="h-8 w-24 text-center"
-            />
-            <AdminButton size="sm" tone="primary" type="submit">
-              Save
+          )}
+          {setting && (
+            <form
+              className="flex items-center gap-1.5"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const n = Math.round(Number(total));
+                if (Number.isFinite(n) && n >= 0) onSetTotal(goal, n);
+                setSetting(false);
+              }}
+            >
+              <TextInput
+                autoFocus
+                type="number"
+                min={0}
+                value={total}
+                onChange={(e) => setTotal(e.target.value)}
+                className="h-8 w-24 text-center"
+              />
+              <AdminButton size="sm" tone="primary" type="submit">
+                Save
+              </AdminButton>
+            </form>
+          )}
+          {achieved && canEdit && (
+            <AdminButton size="sm" icon="trending_up" onClick={onRaise}>
+              Raise the bar
             </AdminButton>
-          </form>
-        )}
-        {achieved && canEdit && (
-          <AdminButton size="sm" icon="trending_up" onClick={onRaise}>
-            Raise the bar
-          </AdminButton>
-        )}
+          )}
+        </div>
       </div>
+      <GoalActivity
+        goal={goal}
+        tasks={tasks}
+        color={achieved ? '#fbbf24' : color}
+        className="shrink-0 border-white/[0.06] max-lg:border-t max-lg:pt-4 lg:w-[330px] lg:justify-center lg:border-l lg:pl-5"
+      />
     </div>
   );
 };
@@ -701,7 +685,6 @@ export const GoalsSection = ({
   const [editing, setEditing] = useState<GoalDraft | null>(null);
   const [saving, setSaving] = useState(false);
   const [removing, setRemoving] = useState(false);
-  const [bumping, setBumping] = useState<string | null>(null);
   const [local, setLocal] = useState(tasks);
   useEffect(() => setLocal(tasks), [tasks]);
 
@@ -772,25 +755,7 @@ export const GoalsSection = ({
     }
   };
 
-  /** Adds (or takes back) progress done outside tasks. */
-  const bump = async (goalId: string, partId: string | null, add: number) => {
-    setBumping(`${goalId}:${partId ?? ''}`);
-    try {
-      await PortalSdk.postData(`/api/projects/${project.id}/goals/progress`, {
-        goalId,
-        partId,
-        add,
-      });
-      onSaved();
-    } catch (err) {
-      toast.error(errorText(err));
-    } finally {
-      setBumping(null);
-    }
-  };
-
   const setTotal = async (goal: ProjectGoal, done: number) => {
-    setBumping(`${goal.id}:`);
     try {
       await PortalSdk.postData(`/api/projects/${project.id}/goals/progress`, {
         goalId: goal.id,
@@ -799,8 +764,6 @@ export const GoalsSection = ({
       onSaved();
     } catch (err) {
       toast.error(errorText(err));
-    } finally {
-      setBumping(null);
     }
   };
 
@@ -832,7 +795,7 @@ export const GoalsSection = ({
       <SectionShell
         icon="track_changes"
         title="Goals"
-        description="Repeating goals make their own dated tasks and are met or missed each period. Targets add up until they're reached and go into the project's record."
+        description="Targets add up until they're reached and go into the project's record. Repeating goals make their own dated tasks and are met or missed each period; a missed one can be moved on to another day."
         actions={
           canEdit && (
             <AdminButton
@@ -877,41 +840,18 @@ export const GoalsSection = ({
           </div>
         ) : (
           <>
-            {repeating.length > 0 && (
+            {targets.length > 0 && (
               <>
-                {heading('event_repeat', 'Repeating', KIND_META.scheduled.hint)}
-                <div className="grid items-start gap-4 md:grid-cols-2">
-                  {repeating.map((goal) => (
-                    <ScheduledGoal
+                {heading('emoji_events', 'Targets', KIND_META.target.hint)}
+                <div className="flex flex-col gap-4">
+                  {targets.map((goal) => (
+                    <TargetGoal
                       key={goal.id}
                       goal={goal}
                       project={project}
                       tasks={local}
                       people={people}
                       canEdit={canEdit}
-                      canTick={canTick}
-                      busy={bumping}
-                      onBump={bump}
-                      onTick={tick}
-                      onEdit={() => setEditing(goal)}
-                    />
-                  ))}
-                </div>
-              </>
-            )}
-            {targets.length > 0 && (
-              <>
-                {heading('emoji_events', 'Targets', KIND_META.target.hint)}
-                <div className="grid items-start gap-4 md:grid-cols-2">
-                  {targets.map((goal) => (
-                    <TargetGoal
-                      key={goal.id}
-                      goal={goal}
-                      project={project}
-                      people={people}
-                      canEdit={canEdit}
-                      busy={bumping}
-                      onBump={bump}
                       onSetTotal={setTotal}
                       onEdit={() => setEditing(goal)}
                       onRaise={() =>
@@ -925,6 +865,27 @@ export const GoalsSection = ({
                           assigneeIds: goal.assigneeIds,
                         })
                       }
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+            {repeating.length > 0 && (
+              <>
+                {heading('event_repeat', 'Repeating', KIND_META.scheduled.hint)}
+                <div className="flex flex-col gap-4">
+                  {repeating.map((goal) => (
+                    <ScheduledGoal
+                      key={goal.id}
+                      goal={goal}
+                      project={project}
+                      tasks={local}
+                      people={people}
+                      canEdit={canEdit}
+                      canTick={canTick}
+                      onTick={tick}
+                      onCarried={onSaved}
+                      onEdit={() => setEditing(goal)}
                     />
                   ))}
                 </div>

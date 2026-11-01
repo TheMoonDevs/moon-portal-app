@@ -481,6 +481,8 @@ export async function loadDay(userId: string, date: string) {
 export type DayLine = {
   text: string;
   status: WorkPointStatus | 'archived' | null;
+  /** The goal it was for missed this day (a red star on the day). */
+  goalMissed?: boolean;
 };
 
 /** How a task stands on a day, as the day sheet shows it. */
@@ -568,6 +570,7 @@ export async function loadDays(userId: string, from: string, to: string) {
           task,
           points.filter((p) => p.taskId === task.id && p.date === date),
         ),
+        ...(task.goalMissed?.day === date && { goalMissed: true }),
       }),
     );
   return days;

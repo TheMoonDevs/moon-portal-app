@@ -9,6 +9,7 @@ import { syncTaskPoints } from '@/lib/progress/server';
 import { isAliasOf, sanitizeAliases } from '@/lib/worklogs/aliases';
 import { isOnTeam } from '@/lib/worklogs/linker';
 import { fitGoal } from '@/lib/workspace/goalFit';
+import { attachToRun } from '@/lib/workspace/goalRuns';
 import { addGoal, changeGoal, removeGoal } from '@/lib/workspace/goals';
 import { updateGoalProgress } from '@/lib/workspace/goalTally';
 import { moveProject } from '@/lib/workspace/moveProject';
@@ -20,7 +21,6 @@ import {
 import {
   describeGoalSchedule,
   PERIOD_LABELS,
-  runsOn,
   toDay,
   WEEKDAYS,
 } from '@/lib/workspace/projects';
@@ -42,7 +42,6 @@ import type {
   Project,
   ProjectGoal,
   Task,
-  TaskSchedule,
 } from '@/models/workspace';
 import {
   MEMBER_STATUS,
@@ -245,24 +244,6 @@ export function resolveGoal(project: Project, ref: unknown, partRef?: unknown) {
 }
 
 /**
- * The schedule a task made ahead of time belongs to: one of the project's
- * active schedules for the same goal that runs on that day. Linking it
- * stops the schedule from making the same task again on that day.
- */
-async function scheduleFor(
-  projectId: string,
-  goalId: string | null,
-  forDate: string | null,
-) {
-  if (!goalId || !forDate) return null;
-  const schedules: TaskSchedule[] = await db.taskSchedule.findMany({
-    where: { projectId, goalId, active: true },
-  });
-  const matches = schedules.filter((s) => runsOn(s, forDate));
-  return matches.length === 1 ? matches[0].id : null;
-}
-
-/**
  * Status fields for moving a task to `status`; `by` is who did it, recorded
  * when it is finished.
  */
@@ -366,13 +347,14 @@ export async function createTask(
       goalPartId,
       ...(input.goal ? { goalChecked: true } : {}),
       ...(previous && { followsId: previous.id }),
-      scheduleId: await scheduleFor(project.id, goalId, forDate),
       createdById: user.id,
       createdAt: now,
       updatedAt: now,
     },
   });
-  const task = await fitGoal(made);
+  // Linked to a scheduled goal, it takes the run it stands for (made ahead
+  // of time, it counts for that day) instead of the goal making another.
+  const task = await attachToRun(await fitGoal(made), { ahead: true });
   await syncTaskPoints(task);
   return task;
 }

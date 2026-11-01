@@ -73,6 +73,7 @@ export async function GET(_request: Request, { params }: Params) {
         color: true,
         parentId: true,
         leadIds: true,
+        isCore: true,
       },
       orderBy: { createdAt: 'asc' },
     }),

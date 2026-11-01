@@ -355,6 +355,40 @@ export function nextRunOnOrAfter(rule: ScheduleRule, day: string) {
   return addDays(day, 1);
 }
 
+/**
+ * The run a day belongs to: the latest run on or before it whose tasks are
+ * still for that day. A run's tasks are for its own day plus `dueInDays`
+ * (a Monday batch due Sunday covers the week), or, with no due day, until
+ * the next run. Null when the day is between runs (Tue for a Mon and Thu
+ * goal).
+ */
+export function runCovering(
+  rule: ScheduleRule & { dueInDays?: number | null },
+  day: string,
+): string | null {
+  for (let i = 0; i < 62; i++) {
+    const run = addDays(day, -i);
+    if (!runsOn(rule, run)) continue;
+    const last =
+      rule.dueInDays == null
+        ? addDays(nextRunOnOrAfter(rule, addDays(run, 1)), -1)
+        : addDays(run, rule.dueInDays);
+    return last >= day ? run : null;
+  }
+  return null;
+}
+
+/** The first `n` run days on or after `from`. */
+export function runsFrom(rule: ScheduleRule, from: string, n: number) {
+  const runs: string[] = [];
+  let day = nextRunOnOrAfter(rule, from);
+  while (runs.length < n) {
+    runs.push(day);
+    day = nextRunOnOrAfter(rule, addDays(day, 1));
+  }
+  return runs;
+}
+
 export function describeSchedule(rule: ScheduleRule & { count?: number }) {
   const count = rule.count && rule.count > 1 ? `${rule.count} tasks ` : '';
   if (rule.every === 'day') return `${count}every day`;

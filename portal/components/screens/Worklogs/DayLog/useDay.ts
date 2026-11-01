@@ -28,6 +28,19 @@ export type DayTask = {
   createdAt?: string;
   startedAt?: string | null;
   completedAt?: string | null;
+  /** The project goal (and part) it counts towards. */
+  goalId?: string | null;
+  goalPartId?: string | null;
+  /** The goal schedule whose run it stands for. */
+  scheduleId?: string | null;
+  /** Its goal missed its day, and it was moved on or merged. */
+  goalMissed?: {
+    day: string;
+    movedTo?: string | null;
+    mergedInto?: string | null;
+  } | null;
+  /** The goal day it was moved on from. */
+  carriedFrom?: string | null;
   /** Only on the page: not saved yet. */
   draft?: boolean;
   /** Only on the page: the row's key while it is open, kept once saved. */
@@ -52,6 +65,28 @@ export type DayProject = {
   logo?: string | null;
   companyId: string;
   companyName?: string;
+  /** Its goals, which its tasks can be linked to. */
+  goals?: DayGoal[];
+};
+
+export type DayGoal = {
+  id: string;
+  title: string;
+  kind: 'scheduled' | 'target';
+  period: 'day' | 'week' | 'month';
+  target: number;
+  days: number[];
+  monthDay: number | null;
+  /** Scheduled goals: whether it makes its own dated tasks. */
+  makeTasks: boolean;
+  parts?: { id: string; label: string; target: number }[];
+};
+
+/** A goal to link a task to: the goal, its part, and the run day it counts for. */
+export type GoalLinkInput = {
+  goalId: string;
+  goalPartId?: string | null;
+  runOn?: string | null;
 };
 
 export type DayCompany = {
@@ -392,6 +427,21 @@ export function useDay(date: string) {
     [patch, load],
   );
 
+  /**
+   * Links a task to a goal (or unlinks it with null). A goal in another
+   * project moves the task there too.
+   */
+  const linkGoal = useCallback(
+    async (id: string, goal: GoalLinkInput | null, projectId?: string) => {
+      await patch(id, {
+        goal,
+        ...(projectId && { place: { projectId } }),
+      });
+      load(true);
+    },
+    [patch, load],
+  );
+
   const movePoint = useCallback(
     async (pointId: string, taskId: string) => {
       const real = await idOf(taskId);
@@ -473,6 +523,7 @@ export function useDay(date: string) {
     addNote,
     place,
     planFor,
+    linkGoal,
     movePoint,
     deletePoint,
     remove,
