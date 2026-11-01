@@ -11,8 +11,8 @@ import {
   ok,
   requireUser,
 } from '@/lib/workspace/server';
-import type { Project, Task } from '@/models/workspace';
-import { PROJECT_STATUS, TASK_STATUS } from '@/models/workspace';
+import type { CompanyMember, Project, Task } from '@/models/workspace';
+import { MEMBER_STATUS, PROJECT_STATUS, TASK_STATUS } from '@/models/workspace';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,6 +25,9 @@ const CLOSED = [TASK_STATUS.DONE, TASK_STATUS.ARCHIVED, TASK_STATUS.IGNORED];
  * Every project the caller can read, across their companies, with what is
  * going on in each: how much was logged on each of the last 7 days and by
  * whom, today's scheduled tasks, open and overdue tasks, and goal progress.
+ * Each project also carries this month: work logged per day, tasks finished
+ * and who did it, which the page adds up into each company's month. Each
+ * company carries its active members.
  * It sends counts only, never the words of a line, and private lines never
  * count.
  */
@@ -45,6 +48,20 @@ export async function GET() {
   }));
   if (!companies.length) return ok({ companies, projects: [], users: [] });
 
+  const members: CompanyMember[] = await db.companyMember.findMany({
+    where: {
+      companyId: { in: companies.map((c) => c.id) },
+      status: MEMBER_STATUS.ACTIVE,
+    },
+    select: { companyId: true, userId: true },
+  });
+  const withMembers = companies.map((c) => ({
+    ...c,
+    memberIds: Array.from(
+      new Set(members.filter((m) => m.companyId === c.id).map((m) => m.userId)),
+    ),
+  }));
+
   const projects: Project[] = await db.project.findMany({
     where: {
       companyId: { in: companies.map((c) => c.id) },
@@ -52,21 +69,43 @@ export async function GET() {
     },
     orderBy: { createdAt: 'desc' },
   });
-  if (!projects.length) return ok({ companies, projects: [], users: [] });
+  if (!projects.length)
+    return ok({
+      companies: withMembers,
+      projects: [],
+      users: await getPublicUsers(withMembers.flatMap((c) => c.memberIds)),
+    });
 
   const ids = projects.map((p) => p.id);
   await runDueSchedules({ projectId: { in: ids } });
 
   const today = toDay();
   const from = addDays(today, -(DAYS - 1));
-  const [withStats, work, openTasks] = await Promise.all([
+  const monthFrom = `${today.slice(0, 8)}01`;
+  const [withStats, work, openTasks, doneTasks] = await Promise.all([
     withProjectStats(projects),
-    projectWork(ids, from),
+    projectWork(ids, monthFrom < from ? monthFrom : from),
     db.task.findMany({
       where: { projectId: { in: ids }, status: { notIn: CLOSED } },
       select: { projectId: true, dueDate: true, forDate: true },
     }) as Promise<Task[]>,
+    db.task.findMany({
+      where: { projectId: { in: ids }, status: TASK_STATUS.DONE },
+      select: {
+        projectId: true,
+        size: true,
+        completedAt: true,
+        completedByIds: true,
+        assigneeIds: true,
+      },
+    }) as Promise<Task[]>,
   ]);
+  const doneThisMonth = doneTasks.filter((t) => {
+    if (!t.completedAt) return false;
+    const day = toDay(new Date(t.completedAt as string));
+    return day >= monthFrom && day <= today;
+  });
+  const monthDays = Number(today.slice(8, 10));
   // Tasks a schedule made for today, done or not.
   const todaysRuns = (
     (await db.task.findMany({
@@ -82,13 +121,35 @@ export async function GET() {
     const perDay = days.map(() => 0);
     const people: string[] = [];
     let lastDate: string | null = null;
+    // This month, per day from the 1st to today, and per person.
+    const monthPerDay = Array.from({ length: monthDays }, () => 0);
+    const monthPeople = new Map<string, { logged: number; done: number }>();
+    const person = (id: string) => {
+      const row = monthPeople.get(id) ?? { logged: 0, done: 0 };
+      monthPeople.set(id, row);
+      userIds.add(id);
+      return row;
+    };
     // Work comes newest first, so people are in that order too.
     for (const line of work) {
       if (line.projectId !== project.id) continue;
+      if (line.date >= monthFrom) {
+        monthPerDay[Number(line.date.slice(8, 10)) - 1] += 1;
+        person(line.userId).logged += 1;
+      }
       lastDate ??= line.date;
+      if (line.date < from) continue;
       const dayIndex = days.indexOf(line.date);
       if (dayIndex >= 0) perDay[dayIndex] += 1;
       if (!people.includes(line.userId)) people.push(line.userId);
+    }
+    const finished = doneThisMonth.filter((t) => t.projectId === project.id);
+    for (const task of finished) {
+      // Older tasks name no finisher; their assignees count instead.
+      const by = task.completedByIds?.length
+        ? task.completedByIds
+        : (task.assigneeIds ?? []);
+      by.forEach((id) => (person(id).done += 1));
     }
 
     const open = openTasks.filter((t) => t.projectId === project.id);
@@ -101,6 +162,16 @@ export async function GET() {
     return {
       ...project,
       activity: { from, days: perDay, people, lastDate },
+      month: {
+        from: monthFrom,
+        days: monthPerDay,
+        done: finished.length,
+        major: finished.filter((t) => t.size === 'MAJOR').length,
+        people: Array.from(monthPeople, ([userId, row]) => ({
+          userId,
+          ...row,
+        })),
+      },
       tasks: {
         open: open.length,
         overdue: open.filter((t) => t.dueDate && t.dueDate.slice(0, 10) < today)
@@ -113,6 +184,7 @@ export async function GET() {
     };
   });
 
+  withMembers.forEach((c) => c.memberIds.forEach((id) => userIds.add(id)));
   const users = await getPublicUsers(Array.from(userIds));
-  return ok({ companies, projects: overview, users });
+  return ok({ companies: withMembers, projects: overview, users });
 }
