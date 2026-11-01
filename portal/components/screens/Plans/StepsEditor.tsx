@@ -20,6 +20,7 @@ import {
   ProjectDot,
   ProjectOptions,
 } from './planBits';
+import { StepInfo } from './StepInfo';
 import { linkFields, LinkMenu, type StepLink, useStepLinks } from './StepLinks';
 import type { Person, PlanView, ProjectChoice, StepView } from './types';
 import { isPast, stepKind } from './types';
@@ -27,9 +28,11 @@ import { isPast, stepKind } from './types';
 /*
  * A plan's steps, edited like a Notion page: each step is a line, "/" opens
  * the commands (what kind of step, or a task or goal to link), Enter starts
- * the next step, Ctrl+Enter makes the step's task (or adds a note to the
- * task it links) and starts the next. Under each step sit its project,
- * date, people and type; Details opens it in full on the right.
+ * the next step, Ctrl+Enter makes the step's task and starts the next, and
+ * Shift+Enter opens the step's details under its title. The step being
+ * edited shows its project, date, people and type; Details opens it in full
+ * on the right, and the (i) at the end of a step shows it to anyone.
+ * Steps move with the handle (drag, or its menu) or Alt+↑/↓.
  */
 
 /** A step the editor holds; a new goal waits for its details. */
@@ -47,11 +50,10 @@ export const KIND_META: Record<
     icon: 'notes',
     hint: 'A note, idea or heading: nothing to tick off',
   },
-  todo: { label: 'To-do', icon: 'check_box', hint: 'A step to tick off' },
   task: {
     label: 'Task',
     icon: 'task_alt',
-    hint: 'Becomes a task in its project (Ctrl+Enter)',
+    hint: 'Something to do; Ctrl+Enter makes it a task in its project',
   },
   goal: {
     label: 'Goal',
@@ -72,7 +74,6 @@ const KIND_COMMANDS: {
   hint: string;
 }[] = [
   { kind: 'info', ...KIND_META.info },
-  { kind: 'todo', ...KIND_META.todo },
   { kind: 'task', ...KIND_META.task },
   {
     kind: 'goal',
@@ -192,7 +193,6 @@ const StepBar = ({
   onKind,
   onDetails,
   onMakeTask,
-  onAddNote,
 }: {
   step: EditorStep;
   projects: ProjectChoice[];
@@ -204,24 +204,14 @@ const StepBar = ({
   onKind: (kind: PlanStepKind) => void;
   onDetails: () => void;
   onMakeTask: () => void;
-  onAddNote: (text: string) => Promise<boolean>;
 }) => {
   const kind = stepKind(step);
   const linked = !!(step.taskId || step.goalId);
   const [picking, setPicking] = useState(false);
-  const [note, setNote] = useState('');
-  const [sending, setSending] = useState(false);
   const stepPeople = step.assigneeIds
     .map((id) => people.find((p) => p.id === id))
     .filter(Boolean) as Person[];
   const project = projects.find((p) => p.id === step.projectId);
-
-  const send = async () => {
-    if (!note.trim()) return;
-    setSending(true);
-    if (await onAddNote(note.trim())) setNote('');
-    setSending(false);
-  };
 
   return (
     <div
@@ -385,32 +375,9 @@ const StepBar = ({
         className={cn(chip, 'ml-auto')}
         title="Open the step on the right"
       >
+        <Icon name="view_sidebar" className="text-[13px]" />
         Details
-        <Icon name="chevron_right" className="text-[14px]" />
       </button>
-
-      {/* A note for the linked task */}
-      {kind === 'task' && step.task && canEdit && (
-        <div className="mt-0.5 flex w-full items-center gap-1.5 pl-1">
-          <Icon
-            name="subdirectory_arrow_right"
-            className="text-[13px] text-neutral-600"
-          />
-          <input
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                send();
-              }
-            }}
-            placeholder="Add a note to the task (Enter)"
-            className="flex-1 bg-transparent text-xs text-neutral-300 placeholder:text-neutral-600 focus:outline-none"
-          />
-          {sending && <Spin className="size-3" />}
-        </div>
-      )}
     </div>
   );
 };
@@ -430,14 +397,15 @@ export const StepsEditor = ({
   newStepProjectId,
   addsTasksIn,
   onMakeTask,
-  onAddNote,
 }: {
   plan: PlanView;
   /** The projects its steps can name. */
   projects: ProjectChoice[];
   people: Person[];
   canEdit: boolean;
+  /** The step open in the sidebar. */
   selectedStepId: string | null;
+  /** Opens a step in the sidebar (null closes it). */
   onSelectStep: (id: string | null) => void;
   onChange: (change: (plan: PlanView) => PlanView) => void;
   /** The project new steps are for, e.g. on that project's page. */
@@ -445,23 +413,42 @@ export const StepsEditor = ({
   addsTasksIn: (projectId?: string | null) => boolean;
   /** Makes the step's task; resolves when done. */
   onMakeTask: (stepId: string) => Promise<boolean>;
-  /** Adds a note to the task the step links to. */
-  onAddNote: (stepId: string, text: string) => Promise<boolean>;
 }) => {
   const steps = plan.steps as EditorStep[];
-  const boxes = useRef(new Map<string, HTMLTextAreaElement | null>());
+  const boxes = useRef(new Map<string, HTMLElement | null>());
+  const listRef = useRef<HTMLDivElement | null>(null);
   const [focusId, setFocusId] = useState<string | null>(null);
+  /** The step being edited: it shows its options. */
+  const [activeId, setActiveId] = useState<string | null>(null);
+  /** Steps whose details box is open while still empty. */
+  const [openDetails, setOpenDetails] = useState<Set<string>>(new Set());
   const [slashId, setSlashId] = useState<string | null>(null);
   const [active, setActive] = useState(0);
   const [makingId, setMakingId] = useState<string | null>(null);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dropAt, setDropAt] = useState<{
+    id: string;
+    where: 'above' | 'below';
+  } | null>(null);
 
-  // Move the cursor to a step once it shows.
+  // A click outside the steps puts the step being edited away.
+  useEffect(() => {
+    const away = (e: MouseEvent) => {
+      if (!listRef.current?.contains(e.target as Node)) setActiveId(null);
+    };
+    document.addEventListener('mousedown', away);
+    return () => document.removeEventListener('mousedown', away);
+  }, []);
+
+  // Move the cursor once the box shows: "<id>" for the title,
+  // "<id>:details" for the details box.
   useEffect(() => {
     if (!focusId) return;
     const el = boxes.current.get(focusId);
     if (el) {
       el.focus();
-      el.setSelectionRange(el.value.length, el.value.length);
+      if (el instanceof HTMLTextAreaElement)
+        el.setSelectionRange(el.value.length, el.value.length);
       setFocusId(null);
     }
   });
@@ -518,10 +505,10 @@ export const StepsEditor = ({
     fields: Partial<EditorStep> = {},
   ) => {
     const from = steps.find((s) => s.id === id);
-    const kind = from ? stepKind(from) : 'todo';
+    const kind = from ? stepKind(from) : 'task';
     const fresh: EditorStep = newStep({
-      // Keep writing the same kind of step; a goal is followed by a to-do.
-      kind: kind === 'goal' ? 'todo' : kind,
+      // Keep writing the same kind of step; a goal is followed by a task.
+      kind: kind === 'goal' ? 'task' : kind,
       projectId:
         (from && !from.taskId && !from.goalId ? from.projectId : null) ??
         newStepProjectId ??
@@ -536,6 +523,7 @@ export const StepsEditor = ({
       else list.splice(where === 'above' ? at : at + 1, 0, fresh);
       return { ...p, steps: list };
     });
+    setActiveId(fresh.id);
     setFocusId(fresh.id);
     return fresh;
   };
@@ -545,18 +533,32 @@ export const StepsEditor = ({
     onChange((p) => ({ ...p, steps: p.steps.filter((s) => s.id !== id) }));
     if (selectedStepId === id) onSelectStep(null);
     const near = steps[at - 1] ?? steps[at + 1];
-    if (focusBefore && near) setFocusId(near.id);
+    if (focusBefore && near) {
+      setActiveId(near.id);
+      setFocusId(near.id);
+    }
+  };
+
+  /** Puts step `id` next to step `to` (above or below it). */
+  const moveTo = (id: string, to: string, where: 'above' | 'below') => {
+    if (id === to) return;
+    onChange((p) => {
+      const step = p.steps.find((s) => s.id === id);
+      if (!step) return p;
+      const list = p.steps.filter((s) => s.id !== id);
+      const at = list.findIndex((s) => s.id === to);
+      if (at < 0) return p;
+      list.splice(where === 'above' ? at : at + 1, 0, step);
+      return { ...p, steps: list };
+    });
+    setActiveId(id);
   };
 
   const move = (id: string, by: -1 | 1) => {
-    onChange((p) => {
-      const at = p.steps.findIndex((s) => s.id === id);
-      const to = at + by;
-      if (at < 0 || to < 0 || to >= p.steps.length) return p;
-      const list = [...p.steps];
-      [list[at], list[to]] = [list[to], list[at]];
-      return { ...p, steps: list };
-    });
+    const at = steps.findIndex((s) => s.id === id);
+    const next = steps[at + by];
+    if (at < 0 || !next) return;
+    moveTo(id, next.id, by < 0 ? 'above' : 'below');
     setFocusId(id);
   };
 
@@ -577,6 +579,7 @@ export const StepsEditor = ({
     }
     if (kind === 'goal' && !step.goalId) {
       fields.draftGoal = goal ?? 'scheduled';
+      // A new goal is set up in the sidebar.
       onSelectStep(step.id);
     }
     setStep(step.id, fields);
@@ -601,9 +604,50 @@ export const StepsEditor = ({
     return done;
   };
 
+  const showDetails = (id: string) => {
+    setOpenDetails((set) => new Set(set).add(id));
+    setActiveId(id);
+    setFocusId(`${id}:details`);
+  };
+  const hideDetails = (id: string) =>
+    setOpenDetails((set) => {
+      const next = new Set(set);
+      next.delete(id);
+      return next;
+    });
+
   /* ------------------------------ keyboard ----------------------------- */
 
-  const onKey = (
+  /** Keys every step takes, typed in its title or on a linked step. */
+  const stepKeys = (e: React.KeyboardEvent, step: EditorStep) => {
+    if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+      e.preventDefault();
+      move(step.id, e.key === 'ArrowUp' ? -1 : 1);
+      return true;
+    }
+    if (e.key !== 'Enter') return false;
+    e.preventDefault();
+    if (e.shiftKey) {
+      // Shift+Enter: the step's details, under its title.
+      showDetails(step.id);
+      return true;
+    }
+    if (e.ctrlKey || e.metaKey) {
+      // Ctrl+Enter makes the task out of a task step, then moves on.
+      if (
+        stepKind(step) === 'task' &&
+        !step.taskId &&
+        step.projectId &&
+        step.text.trim() &&
+        addsTasksIn(step.projectId)
+      )
+        makeTask(step);
+    }
+    insert(step.id, 'below');
+    return true;
+  };
+
+  const onTitleKey = (
     e: React.KeyboardEvent<HTMLTextAreaElement>,
     step: EditorStep,
     index: number,
@@ -618,7 +662,7 @@ export const StepsEditor = ({
         e.preventDefault();
         return setActive(Math.max(0, active - 1));
       }
-      if (e.key === 'Enter' && !e.shiftKey) {
+      if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
         e.preventDefault();
         return runCommand(step, commands[active]);
       }
@@ -627,30 +671,7 @@ export const StepsEditor = ({
       e.preventDefault();
       return setSlashId(null);
     }
-    if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
-      e.preventDefault();
-      return move(step.id, e.key === 'ArrowUp' ? -1 : 1);
-    }
-    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-      e.preventDefault();
-      const kind = stepKind(step);
-      // Ctrl+Enter makes the task out of a task step, then moves on.
-      if (
-        kind === 'task' &&
-        !step.taskId &&
-        step.projectId &&
-        step.text.trim() &&
-        addsTasksIn(step.projectId)
-      )
-        makeTask(step);
-      insert(step.id, 'below');
-      return;
-    }
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      insert(step.id, 'below');
-      return;
-    }
+    if (stepKeys(e, step)) return;
     const el = e.currentTarget;
     if (e.key === 'Backspace' && !el.value && steps.length > 0) {
       e.preventDefault();
@@ -660,6 +681,35 @@ export const StepsEditor = ({
     if (e.key === 'ArrowUp' && el.selectionStart === 0 && index > 0) {
       e.preventDefault();
       setFocusId(steps[index - 1].id);
+    }
+    if (e.key === 'ArrowDown' && el.selectionEnd === el.value.length) {
+      e.preventDefault();
+      if (step.notes || openDetails.has(step.id))
+        setFocusId(`${step.id}:details`);
+      else if (index < steps.length - 1) setFocusId(steps[index + 1].id);
+    }
+  };
+
+  const onDetailsKey = (
+    e: React.KeyboardEvent<HTMLTextAreaElement>,
+    step: EditorStep,
+    index: number,
+  ) => {
+    const el = e.currentTarget;
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      insert(step.id, 'below');
+      return;
+    }
+    if (
+      e.key === 'Escape' ||
+      (e.key === 'Backspace' && !el.value) ||
+      (e.key === 'ArrowUp' && el.selectionStart === 0)
+    ) {
+      e.preventDefault();
+      if (!el.value) hideDetails(step.id);
+      setFocusId(step.id);
+      return;
     }
     if (
       e.key === 'ArrowDown' &&
@@ -674,22 +724,67 @@ export const StepsEditor = ({
   /* -------------------------------- rows -------------------------------- */
 
   return (
-    <div className="mt-2 flex flex-col">
+    <div
+      ref={listRef}
+      className="mt-2 flex flex-col"
+      onDragEnd={() => setDragId(null)}
+    >
       {steps.map((step, index) => {
         const kind = stepKind(step);
         const linked = !!(step.task || step.goal);
-        const selected = step.id === selectedStepId;
+        const inSidebar = step.id === selectedStepId;
+        const editing = step.id === activeId || inSidebar;
+        const detailsShown = !!step.notes || openDetails.has(step.id);
         return (
           <div
             key={step.id}
-            onClick={() => onSelectStep(step.id)}
+            onClick={() => setActiveId(step.id)}
+            onDragOver={(e) => {
+              if (!dragId) return;
+              e.preventDefault();
+              const box = e.currentTarget.getBoundingClientRect();
+              const where =
+                e.clientY < box.top + box.height / 2 ? 'above' : 'below';
+              if (dropAt?.id !== step.id || dropAt.where !== where)
+                setDropAt({ id: step.id, where });
+            }}
+            onDragLeave={() => setDropAt((d) => (d?.id === step.id ? null : d))}
+            onDrop={(e) => {
+              e.preventDefault();
+              if (dragId && dropAt) moveTo(dragId, dropAt.id, dropAt.where);
+              setDragId(null);
+              setDropAt(null);
+            }}
             className={cn(
               'group relative flex items-start gap-1.5 rounded-lg py-1 pl-0.5 pr-2 transition-colors',
-              selected ? 'bg-white/[0.05]' : 'hover:bg-white/[0.025]',
+              editing ? 'bg-white/[0.05]' : 'hover:bg-white/[0.025]',
+              dragId === step.id && 'opacity-40',
             )}
           >
+            {dropAt?.id === step.id && dragId && dragId !== step.id && (
+              <span
+                className={cn(
+                  'pointer-events-none absolute inset-x-2 h-0.5 rounded-full bg-sky-400',
+                  dropAt.where === 'above' ? '-top-px' : '-bottom-px',
+                )}
+              />
+            )}
             {canEdit ? (
-              <div className="mt-0.5 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100">
+              <div
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.effectAllowed = 'move';
+                  e.dataTransfer.setData('text/plain', step.id);
+                  setDragId(step.id);
+                }}
+                title="Drag to move, click for more"
+                className={cn(
+                  'mt-0.5 cursor-grab transition-opacity active:cursor-grabbing',
+                  editing
+                    ? 'opacity-100'
+                    : 'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100',
+                )}
+              >
                 <RowMenu
                   canUp={index > 0}
                   canDown={index < steps.length - 1}
@@ -722,19 +817,13 @@ export const StepsEditor = ({
                     'text-[18px]',
                     step.done
                       ? 'text-emerald-400'
-                      : kind === 'task'
-                        ? 'text-sky-400/60 hover:text-sky-300'
+                      : step.task
+                        ? 'text-sky-400/70'
                         : 'text-neutral-600 hover:text-neutral-400',
                   )}
                 >
                   <Icon
-                    name={
-                      step.done
-                        ? 'check_circle'
-                        : kind === 'task'
-                          ? 'radio_button_unchecked'
-                          : 'check_box_outline_blank'
-                    }
+                    name={step.done ? 'check_circle' : 'radio_button_unchecked'}
                     filled={step.done}
                   />
                 </button>
@@ -742,46 +831,79 @@ export const StepsEditor = ({
             </div>
 
             <div className="relative min-w-0 flex-1">
-              {linked ? (
-                <p
-                  className={cn(
-                    'py-px text-sm leading-6',
-                    step.done && kind === 'task'
-                      ? 'text-neutral-500 line-through'
-                      : 'text-neutral-100',
-                  )}
-                >
-                  {step.task?.title ?? step.goal?.title ?? step.text}
-                </p>
-              ) : (
-                <GrowingText
-                  value={step.text}
-                  boxRef={(el) => boxes.current.set(step.id, el)}
-                  onChange={(text) => {
-                    setStep(step.id, { text });
-                    setSlashId(text.startsWith('/') ? step.id : null);
-                  }}
-                  onFocus={() => onSelectStep(step.id)}
-                  onBlur={() =>
-                    setSlashId((id) => (id === step.id ? null : id))
-                  }
-                  onKeyDown={(e) => onKey(e, step, index)}
-                  disabled={!canEdit}
-                  placeholder={
-                    kind === 'goal'
-                      ? 'Name the goal, then set it up on the right'
-                      : kind === 'task'
-                        ? 'What the task is'
-                        : 'Type / for commands'
-                  }
-                  className={cn(
-                    'py-px text-sm leading-6 placeholder:text-neutral-600',
-                    kind === 'info'
-                      ? 'text-neutral-300'
-                      : step.done
+              <div className="flex items-start gap-1">
+                {linked ? (
+                  <p
+                    tabIndex={0}
+                    ref={(el) => {
+                      boxes.current.set(step.id, el);
+                    }}
+                    onFocus={() => setActiveId(step.id)}
+                    onKeyDown={(e) => {
+                      if (canEdit) stepKeys(e, step);
+                    }}
+                    className={cn(
+                      'min-w-0 flex-1 py-px text-sm leading-6 focus:outline-none',
+                      step.done && kind === 'task'
                         ? 'text-neutral-500 line-through'
                         : 'text-neutral-100',
-                  )}
+                    )}
+                  >
+                    {step.task?.title ?? step.goal?.title ?? step.text}
+                  </p>
+                ) : (
+                  <div className="min-w-0 flex-1">
+                    <GrowingText
+                      value={step.text}
+                      boxRef={(el) => boxes.current.set(step.id, el)}
+                      onChange={(text) => {
+                        setStep(step.id, { text });
+                        setSlashId(text.startsWith('/') ? step.id : null);
+                      }}
+                      onFocus={() => setActiveId(step.id)}
+                      onBlur={() =>
+                        setSlashId((id) => (id === step.id ? null : id))
+                      }
+                      onKeyDown={(e) => onTitleKey(e, step, index)}
+                      disabled={!canEdit}
+                      placeholder={
+                        kind === 'goal'
+                          ? 'Name the goal, then set it up on the right'
+                          : 'Type / for commands'
+                      }
+                      className={cn(
+                        'py-px text-sm leading-6 placeholder:text-neutral-600',
+                        kind === 'info'
+                          ? 'text-neutral-300'
+                          : step.done
+                            ? 'text-neutral-500 line-through'
+                            : 'text-neutral-100',
+                      )}
+                    />
+                  </div>
+                )}
+                <StepInfo
+                  plan={plan}
+                  step={step}
+                  projects={projects}
+                  people={people}
+                />
+              </div>
+
+              {/* Details, under the title (Shift+Enter) */}
+              {detailsShown && (
+                <GrowingText
+                  value={step.notes ?? ''}
+                  boxRef={(el) => boxes.current.set(`${step.id}:details`, el)}
+                  onChange={(notes) => setStep(step.id, { notes })}
+                  onFocus={() => setActiveId(step.id)}
+                  onBlur={() => {
+                    if (!step.notes?.trim()) hideDetails(step.id);
+                  }}
+                  onKeyDown={(e) => onDetailsKey(e, step, index)}
+                  disabled={!canEdit}
+                  placeholder="Details, links, anything that helps"
+                  className="mb-0.5 border-l border-white/10 pl-2 text-xs leading-5 text-neutral-400 placeholder:text-neutral-600"
                 />
               )}
 
@@ -853,19 +975,20 @@ export const StepsEditor = ({
                 </div>
               )}
 
-              <StepBar
-                step={step}
-                projects={projects}
-                people={people}
-                canEdit={canEdit}
-                canMakeTask={addsTasksIn(step.projectId)}
-                makingTask={makingId === step.id}
-                onChange={(fields) => setStep(step.id, fields)}
-                onKind={(k) => setKind(step, k)}
-                onDetails={() => onSelectStep(step.id)}
-                onMakeTask={() => makeTask(step)}
-                onAddNote={(text) => onAddNote(step.id, text)}
-              />
+              {editing && canEdit && (
+                <StepBar
+                  step={step}
+                  projects={projects}
+                  people={people}
+                  canEdit={canEdit}
+                  canMakeTask={addsTasksIn(step.projectId)}
+                  makingTask={makingId === step.id}
+                  onChange={(fields) => setStep(step.id, fields)}
+                  onKind={(k) => setKind(step, k)}
+                  onDetails={() => onSelectStep(inSidebar ? null : step.id)}
+                  onMakeTask={() => makeTask(step)}
+                />
+              )}
             </div>
           </div>
         );
@@ -877,11 +1000,11 @@ export const StepsEditor = ({
           onClick={() => insert(steps.at(-1)?.id ?? null, 'below')}
           className="mt-1 flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm text-neutral-600 hover:bg-white/[0.025] hover:text-neutral-400"
         >
-          <Icon name="add" className="text-[18px]" />
-          Add a step
-          <span className="text-xs text-neutral-700">
-            · type / for commands · Enter for the next · Ctrl+Enter makes the
-            task
+          <Icon name="add" className="shrink-0 text-[18px]" />
+          <span className="shrink-0">Add a step</span>
+          <span className="hidden min-w-0 truncate text-xs text-neutral-700 sm:inline">
+            · / for commands · Enter for the next · Shift+Enter for details ·
+            Ctrl+Enter makes the task
           </span>
         </button>
       )}

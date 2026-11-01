@@ -43,14 +43,11 @@ export const PlanEditor = ({
   lockLink,
   addsTasksIn,
   onMakeTask,
-  onAddNote,
 }: {
   /** Whether they can add tasks in a project. */
   addsTasksIn: (projectId?: string | null) => boolean;
   /** Makes a task step's task. */
   onMakeTask: (stepId: string) => Promise<boolean>;
-  /** Adds a note to the task a step links to. */
-  onAddNote: (stepId: string, text: string) => Promise<boolean>;
   plan: PlanView;
   /** The plan's company's projects. */
   projects: ProjectChoice[];
@@ -263,7 +260,6 @@ export const PlanEditor = ({
           newStepProjectId={newStepProjectId}
           addsTasksIn={addsTasksIn}
           onMakeTask={onMakeTask}
-          onAddNote={onAddNote}
         />
         {extra}
       </div>

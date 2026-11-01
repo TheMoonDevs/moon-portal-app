@@ -52,7 +52,7 @@ export type StepView = PlanStep & {
   goal?: StepGoal | null;
 };
 
-/** What a step is: a line of text, a to-do, a task or a goal. */
+/** What a step is: a line of text, a task (the to-dos) or a goal. */
 export const stepKind = (s: StepView): PlanStepKind => kindOf(s);
 
 export type PlanView = Omit<Plan, 'steps'> & {

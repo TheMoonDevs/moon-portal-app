@@ -21,17 +21,24 @@ export const PLAN_STATUS_META: Record<
 
 export const PLAN_STATUSES = Object.values(PLAN_STATUS);
 
-export const STEP_KINDS: PlanStepKind[] = ['info', 'todo', 'task', 'goal'];
+export const STEP_KINDS: PlanStepKind[] = ['info', 'task', 'goal'];
 
-/** A step's kind: as set, else from what it links to (older steps). */
-export const kindOf = (s: Pick<PlanStep, 'kind' | 'taskId' | 'goalId'>) =>
+/**
+ * A step's kind: as set, else from what it links to. Tasks are the to-dos,
+ * so older "todo" steps (and steps with no kind) are tasks.
+ */
+export const kindOf = (s: {
+  kind?: string | null;
+  taskId?: string | null;
+  goalId?: string | null;
+}): PlanStepKind =>
   s.taskId
     ? 'task'
     : s.goalId
       ? 'goal'
-      : s.kind && STEP_KINDS.includes(s.kind)
+      : s.kind === 'info' || s.kind === 'goal'
         ? s.kind
-        : 'todo';
+        : 'task';
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const shortId = () => Math.random().toString(36).slice(2, 10);
@@ -153,7 +160,7 @@ export function sanitizeSteps(
 /** A new, empty step. */
 export const newStep = (fields: Partial<PlanStep> = {}): PlanStep => ({
   id: shortId(),
-  kind: 'todo',
+  kind: 'task',
   text: '',
   notes: null,
   projectId: null,
