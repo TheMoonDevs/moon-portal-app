@@ -11,11 +11,9 @@ import {
   CURRENCIES,
   DOC_LABEL,
   formatDay,
-  formatMoney,
   OFFER_DOCS,
   todayIst,
   TRIAL_DAYS,
-  trialPayFor,
 } from '@/lib/onboarding/meta';
 import { cn } from '@/lib/utils';
 import {
@@ -128,38 +126,6 @@ const LivePreview = ({
   );
 };
 
-/** What the trial pays, worked out while the lead types. */
-const PaySummary = ({ terms }: { terms: TermsDraft }) => {
-  const pay = Number(terms.monthlyPay) || 0;
-  const trial = trialPayFor(pay, terms.hireType, terms.currency);
-  return (
-    <div className="grid grid-cols-3 gap-2 rounded-xl border border-white/[0.07] bg-white/[0.02] p-3 text-center">
-      <div>
-        <p className="text-[10px] uppercase tracking-wider text-neutral-500">
-          Trial
-        </p>
-        <p className="text-sm font-semibold text-white">{trial.days} days</p>
-      </div>
-      <div>
-        <p className="text-[10px] uppercase tracking-wider text-neutral-500">
-          If confirmed
-        </p>
-        <p className="text-sm font-semibold text-emerald-300">
-          {pay ? formatMoney(trial.full, terms.currency) : '—'}
-        </p>
-      </div>
-      <div>
-        <p className="text-[10px] uppercase tracking-wider text-neutral-500">
-          If it ends
-        </p>
-        <p className="text-sm font-semibold text-amber-300">
-          {pay ? formatMoney(trial.half, terms.currency) : '—'}
-        </p>
-      </div>
-    </div>
-  );
-};
-
 /** The agreement terms: what the Trial Policy and NDA are written from. */
 export const TermsFields = ({
   board,
@@ -210,7 +176,7 @@ export const TermsFields = ({
         <Field
           label="Monthly pay"
           required
-          hint="The trial payment is worked out from this."
+          hint="The Trial Policy works out the trial pay from this."
         >
           <TextInput
             inputMode="numeric"
@@ -232,7 +198,6 @@ export const TermsFields = ({
           </NativeSelect>
         </Field>
       </div>
-      <PaySummary terms={terms} />
       <div className="grid gap-3 sm:grid-cols-2">
         <Field
           label="Trial starts"
@@ -669,13 +634,6 @@ export const DecideDialog = ({
 
   if (!hire.terms) return null;
   const early = !!hire.trialEndsOn && todayIst() < hire.trialEndsOn;
-  const trial =
-    hire.trialPay ??
-    trialPayFor(
-      hire.terms.monthlyPay,
-      hire.terms.hireType,
-      hire.terms.currency,
-    );
   const first = hire.name.split(' ')[0];
   const offer = {
     role,
@@ -785,11 +743,8 @@ export const DecideDialog = ({
               )}
               <p className="text-xs text-neutral-400">
                 They get the Offer Letter and Work Agreement to sign. Claude
-                opens for them once both are signed. Trial pay owed:{' '}
-                <span className="font-medium text-emerald-300">
-                  {formatMoney(trial.full, trial.currency)}
-                </span>
-                .
+                opens for them once both are signed. Their trial is paid in
+                full, as the Trial Policy sets out.
               </p>
               <Field label="Role">
                 <TextInput
@@ -869,11 +824,7 @@ export const DecideDialog = ({
               </p>
               <p className="mt-1 text-rose-200/80">
                 As the Trial Policy says, they are still paid half the trial
-                amount:{' '}
-                <span className="font-semibold text-white">
-                  {formatMoney(trial.half, trial.currency)}
-                </span>
-                .
+                pay.
               </p>
             </div>
             <Field label="Why" hint="For the record, not sent to them.">

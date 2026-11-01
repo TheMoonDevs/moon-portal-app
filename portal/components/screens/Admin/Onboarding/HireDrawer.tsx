@@ -23,7 +23,6 @@ import {
   CopyButton,
   Icon,
   IconAction,
-  Pill,
   TextArea,
   UserAvatar,
 } from '../shared/AdminUI';
@@ -373,45 +372,6 @@ export const HireDrawer = ({
                           }}
                         />
                       </div>
-                      {hire.trialPay && (
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          <Pill
-                            tone={
-                              hire.decision?.outcome === 'ACCEPTED'
-                                ? 'positive'
-                                : 'neutral'
-                            }
-                          >
-                            {formatMoney(
-                              hire.trialPay.full,
-                              hire.trialPay.currency,
-                            )}{' '}
-                            if confirmed
-                          </Pill>
-                          <Pill
-                            tone={
-                              hire.decision?.outcome === 'REJECTED'
-                                ? 'warning'
-                                : 'neutral'
-                            }
-                          >
-                            {formatMoney(
-                              hire.trialPay.half,
-                              hire.trialPay.currency,
-                            )}{' '}
-                            if ended
-                          </Pill>
-                          {hire.decision && (
-                            <Pill tone="info" icon="payments">
-                              Owed{' '}
-                              {formatMoney(
-                                hire.decision.trialPayDue,
-                                hire.trialPay.currency,
-                              )}
-                            </Pill>
-                          )}
-                        </div>
-                      )}
                       {hire.decision?.note && (
                         <p className="mt-3 text-xs text-neutral-500">
                           “{hire.decision.note}”

@@ -82,7 +82,6 @@ export async function joinState(onboarding: Onboarding, origin: string) {
     hasOffer: onboarding.documents.some((d) => OFFER_DOCS.includes(d.kind)),
     trialStartsOn: onboarding.trialStartsOn ?? null,
     trialEndsOn: onboarding.trialEndsOn ?? null,
-    trialPay: onboarding.trialPay ?? null,
     loginUrl: hasAccess ? `${origin}/login` : null,
     courseUrl: course ? `${origin}/courses/${course.id}` : null,
   };

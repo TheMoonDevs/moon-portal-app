@@ -16,6 +16,7 @@ export const DOC_PLACEHOLDERS: Array<{ key: string; label: string }> = [
   { key: 'hireAddress', label: 'Their address' },
   { key: 'role', label: 'Their role' },
   { key: 'hireType', label: 'Intern or Full-time' },
+  { key: 'trialLength', label: 'Trial length, e.g. 2 weeks' },
   { key: 'trialDays', label: 'Trial length in days' },
   { key: 'trialStart', label: 'First trial day' },
   { key: 'trialEnd', label: 'Last trial day' },
@@ -67,11 +68,11 @@ Prepared for {{hireName}} on {{today}}
 
 ## 1. Why there is a trial
 
-Everyone who joins {{companyName}} starts with a short, paid trial. It lets both sides check that the skills, output and availability you described during hiring match the work you deliver. If what you promised is what you deliver, there is nothing more to it.
+Everyone who joins {{companyName}} starts with a short, paid trial, and no one is exempt. It lets both sides check that the skills, output and availability you described during hiring match the work you deliver. If what you promised is what you deliver, there is nothing more to it.
 
 ## 2. Your trial
 
-- **Length:** {{trialDays}} days, from {{trialStart}} to {{trialEnd}}. If your Portal access opens after {{trialStart}}, the trial starts that day instead and runs for the same number of days.
+- **Length:** {{trialLength}}, from {{trialStart}} to {{trialEnd}}. If your Portal access opens after {{trialStart}}, the trial starts that day instead and runs for the same number of days.
 - **Role:** {{role}}, starting on {{projectName}}.
 - **Where:** {{location}}.
 - **Your contact:** {{contactName}} ({{contactRole}}), {{contactEmail}} {{contactPhone}}. Ask them anything about this policy or your work.
@@ -85,10 +86,14 @@ Everyone who joins {{companyName}} starts with a short, paid trial. It lets both
 
 ## 4. Pay for the trial
 
-Your monthly pay is **{{monthlyPay}}**. The trial is paid for its days at that rate: **{{trialPayFull}}** for {{trialDays}} days.
+Your trial is paid at your monthly pay of **{{monthlyPay}}**. Two weeks are paid as half a month, and one week as a quarter of a month.
 
-- If the trial is confirmed, you are paid the full **{{trialPayFull}}**.
-- If the trial ends because the work delivered does not match what was promised during hiring, you are still paid half: **{{trialPayHalf}}**.
+- **If the trial is confirmed**, you are paid **{{trialPayFull}}** for your {{trialLength}}.
+- **If the trial ends** because the work you deliver does not match what you told us during hiring, you are paid half of that: **{{trialPayHalf}}**.
+
+For example, at ₹20,000 a month, a 2-week trial pays ₹10,000, or ₹5,000 if it ends. A 1-week trial pays ₹5,000, or ₹2,500 if it ends.
+
+**Why half?** This is our insurance against candidates who misrepresent what they can do. It is nothing to worry about: as long as you are honest about your skills and work ethically, your trial is paid in full.
 
 The trial payment is made after the trial ends, through the company's usual way of paying.
 

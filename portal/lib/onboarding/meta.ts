@@ -100,9 +100,9 @@ export const isHireType = (value: unknown): value is HIRE_TYPE =>
 export const CURRENCIES = ['INR', 'USD', 'EUR', 'GBP', 'AED', 'SGD'];
 
 /**
- * The trial payment: the monthly pay for the trial's days (a month counted
- * as 30 days), rounded to a whole amount. Half of it is owed when the trial
- * does not pass.
+ * The trial payment, counting a month as four weeks: a 2-week trial is half
+ * the monthly pay and a 1-week trial a quarter of it (₹20,000 a month gives
+ * ₹10,000 and ₹5,000). Half of that is paid when the trial ends.
  */
 export function trialPayFor(
   monthlyPay: number,
@@ -110,9 +110,15 @@ export function trialPayFor(
   currency: string,
 ): TrialPay {
   const days = TRIAL_DAYS[hireType];
-  const full = Math.round((Math.max(0, monthlyPay) * days) / 30);
+  const full = Math.round((Math.max(0, monthlyPay) * days) / 7 / 4);
   return { days, currency, full, half: Math.round(full / 2) };
 }
+
+/** "2 weeks" or "1 week". */
+export const trialLength = (hireType: HIRE_TYPE) => {
+  const weeks = Math.round(TRIAL_DAYS[hireType] / 7);
+  return `${weeks} ${weeks === 1 ? 'week' : 'weeks'}`;
+};
 
 export function formatMoney(amount: number, currency: string) {
   try {

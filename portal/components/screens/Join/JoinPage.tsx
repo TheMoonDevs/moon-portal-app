@@ -5,12 +5,7 @@ import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 
 import { DocProse } from '@/components/shared/DocProse';
 import type { JoinState } from '@/lib/onboarding/join';
-import {
-  formatDay,
-  formatMoney,
-  HIRE_TYPE_LABEL,
-  STEPS,
-} from '@/lib/onboarding/meta';
+import { formatDay, HIRE_TYPE_LABEL, STEPS } from '@/lib/onboarding/meta';
 import { cn } from '@/lib/utils';
 import { ONBOARDING_STEP } from '@/models/onboarding';
 import { TMD_PORTAL_API_KEY } from '@/utils/constants/appInfo';
@@ -923,13 +918,6 @@ const AccessCard = ({
             icon="mail"
             label="Sign in with Google as"
             value={state.signInEmail}
-          />
-        )}
-        {state.trialPay && (
-          <Fact
-            icon="payments"
-            label="Trial pay, for the full trial"
-            value={formatMoney(state.trialPay.full, state.trialPay.currency)}
           />
         )}
       </div>

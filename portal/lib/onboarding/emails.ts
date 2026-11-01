@@ -2,7 +2,7 @@ import { isResendConfigured, sendEmail } from '@/lib/email/resend';
 import { HIRING_EMAIL_TAGS, hiringFrom } from '@/lib/hiring/email';
 import { emailHtml } from '@/lib/hiring/emailTemplates';
 
-import { formatDay, formatMoney } from './meta';
+import { formatDay } from './meta';
 
 /*
  * The emails a new hire gets on the way in. They go out from the hiring
@@ -32,7 +32,6 @@ export interface OnboardingEmailContext {
   signInEmail?: string | null;
   trialStartsOn?: string | null;
   trialEndsOn?: string | null;
-  trialPayDue?: { amount: number; currency: string } | null;
 }
 
 const contactLine = (c: OnboardingEmailContext['contact']) =>
@@ -135,11 +134,9 @@ ${sign}`,
         text: `${hi}
 
 Thank you for the work you put in during your trial. We've decided not to continue, and your Portal access has now closed.
-${
-  ctx.trialPayDue
-    ? `\nAs the Trial Policy sets out, you'll be paid ${formatMoney(ctx.trialPayDue.amount, ctx.trialPayDue.currency)} for the trial.\n`
-    : ''
-}
+
+Your trial will be paid as your Trial Policy sets out.
+
 ${help}
 
 ${sign}`,

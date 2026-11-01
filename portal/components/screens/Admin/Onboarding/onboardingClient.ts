@@ -5,6 +5,7 @@ import {
   HIRE_TYPE_LABEL,
   todayIst,
   trialEndFor,
+  trialLength,
   trialPayFor,
 } from '@/lib/onboarding/meta';
 import type { HireView } from '@/lib/onboarding/view';
@@ -141,6 +142,7 @@ export function previewVariables(
     hireAddress: address || 'their address',
     role: terms.role || 'their role',
     hireType: HIRE_TYPE_LABEL[terms.hireType],
+    trialLength: trialLength(terms.hireType),
     trialDays: String(trial.days),
     trialStart: formatDay(terms.startDate),
     trialEnd: formatDay(

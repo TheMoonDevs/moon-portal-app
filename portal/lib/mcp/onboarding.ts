@@ -20,6 +20,7 @@ import {
   hireNext,
   OFFER_DOCS,
   STEP_LABEL,
+  trialLength,
   trialPayFor,
 } from '@/lib/onboarding/meta';
 import {
@@ -294,7 +295,7 @@ export const ONBOARDING_TOOLS: Tool[] = [
     name: 'send_agreements',
     title: 'Send the Trial Policy and NDA',
     description:
-      'Fills in the agreement terms and sends the Trial Policy and NDA to sign. Before the details form is back, the terms are saved and go out by themselves. Use preview: true first and show the person the trial pay and the contact named; send only after they say yes.',
+      'Fills in the agreement terms and sends the Trial Policy and NDA to sign. Before the details form is back, the terms are saved and go out by themselves. Use preview: true first and show the person the terms and the contact named; send only after they say yes.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -322,7 +323,7 @@ export const ONBOARDING_TOOLS: Tool[] = [
           const docs = await renderDocuments(o, AGREEMENT_DOCS, terms);
           return {
             preview: true,
-            trialPay: `${formatMoney(pay.full, pay.currency)} for ${pay.days} days if confirmed; ${formatMoney(pay.half, pay.currency)} if the trial ends`,
+            trialPay: `${formatMoney(pay.full, pay.currency)} for the ${trialLength(terms.hireType)} if confirmed; ${formatMoney(pay.half, pay.currency)} if the trial ends (written into the Trial Policy)`,
             documents: docs.map((d) => ({ title: d.title, body: d.body })),
           };
         }

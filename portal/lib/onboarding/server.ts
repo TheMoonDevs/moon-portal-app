@@ -54,6 +54,7 @@ import {
   OFFER_DOCS,
   todayIst,
   trialEndFor,
+  trialLength,
   trialPayFor,
 } from './meta';
 
@@ -250,6 +251,7 @@ async function docVariables(
     hireAddress: address || 'address on file',
     role: terms.role,
     hireType: HIRE_TYPE_LABEL[terms.hireType],
+    trialLength: trialLength(terms.hireType),
     trialDays: String(pay.days),
     trialStart: formatDay(start),
     trialEnd: formatDay(end),
@@ -397,7 +399,6 @@ async function emailHire(
   extra: {
     passcode?: string | null;
     courseUrl?: string;
-    trialPayDue?: { amount: number; currency: string } | null;
   } = {},
 ): Promise<{ sent: boolean; error: string | null; subject: string }> {
   const company = await companyOf(onboarding.companyId);
@@ -418,7 +419,6 @@ async function emailHire(
       signInEmail: onboarding.details?.signInEmail ?? onboarding.email,
       trialStartsOn: onboarding.trialStartsOn,
       trialEndsOn: onboarding.trialEndsOn,
-      trialPayDue: extra.trialPayDue ?? null,
     },
     `onboarding-${onboarding.id}-${kind}-${Date.now()}`,
   );
@@ -1151,9 +1151,7 @@ export async function decideTrial(
     );
     const updated = await reload(onboarding.id);
     if (input.notify === false) return { onboarding: updated };
-    const mail = await emailHire(updated, 'ended', origin, {
-      trialPayDue: { amount: pay.half, currency: pay.currency },
-    });
+    const mail = await emailHire(updated, 'ended', origin);
     if (!mail.sent)
       await logStep(
         updated,
