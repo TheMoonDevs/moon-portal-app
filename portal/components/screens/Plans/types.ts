@@ -45,6 +45,8 @@ export type StepTask = {
   assigneeIds?: string[];
   dueDate?: string | null;
   forDate?: string | null;
+  /** When it was finished, for a done task. */
+  completedAt?: string | null;
 };
 
 export type StepView = PlanStep & {

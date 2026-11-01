@@ -46,11 +46,14 @@ export const PlanEditor = ({
   lockLink,
   addsTasksIn,
   onMakeTask,
+  onDeleteTask,
 }: {
   /** Whether they can add tasks in a project. */
   addsTasksIn: (projectId?: string | null) => boolean;
   /** Makes a task step's task. */
   onMakeTask: (stepId: string) => Promise<boolean>;
+  /** Deletes a step's task and the step. */
+  onDeleteTask: (stepId: string) => Promise<boolean>;
   plan: PlanView;
   /** The plan's company's projects. */
   projects: ProjectChoice[];
@@ -276,6 +279,7 @@ export const PlanEditor = ({
           newStepProjectId={newStepProjectId}
           addsTasksIn={addsTasksIn}
           onMakeTask={onMakeTask}
+          onDeleteTask={onDeleteTask}
         />
         {extra}
       </div>

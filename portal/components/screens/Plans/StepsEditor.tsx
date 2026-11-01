@@ -13,6 +13,7 @@ import {
   PeoplePicker,
   TASK_STATUS_META,
 } from '../Admin/Workspace/shared';
+import { DeleteStepDialog } from './DeleteStepDialog';
 import {
   goalLine,
   GoalStar,
@@ -91,6 +92,19 @@ const KIND_COMMANDS: {
   },
 ];
 
+/** "Nov 3, 4:12 PM": when a step's task was done. */
+export const doneAt = (iso: string) => {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    ...(d.getFullYear() !== new Date().getFullYear() && { year: 'numeric' }),
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+};
+
 /* -------------------------------------------------------------------------- */
 /*                                 Step menu                                  */
 /* -------------------------------------------------------------------------- */
@@ -102,10 +116,13 @@ const RowMenu = ({
   onDelete,
   canUp,
   canDown,
+  deleteHint,
 }: {
   onInsert: (where: 'above' | 'below') => void;
   onMove: (by: -1 | 1) => void;
   onDelete: () => void;
+  /** Says why Delete is not here, e.g. a step linked to a task. */
+  deleteHint?: string;
   canUp: boolean;
   canDown: boolean;
 }) => {
@@ -167,7 +184,14 @@ const RowMenu = ({
               'Alt ↓',
             )}
             <div className="my-1 h-px bg-white/[0.06]" />
-            {item('delete', 'Delete step', onDelete)}
+            {deleteHint ? (
+              <p className="flex items-center gap-2 px-2 py-1.5 text-[11px] text-neutral-500">
+                <Icon name="info" className="text-[14px]" />
+                {deleteHint}
+              </p>
+            ) : (
+              item('delete', 'Delete step', onDelete)
+            )}
           </div>
         </>
       )}
@@ -397,6 +421,7 @@ export const StepsEditor = ({
   newStepProjectId,
   addsTasksIn,
   onMakeTask,
+  onDeleteTask,
 }: {
   plan: PlanView;
   /** The projects its steps can name. */
@@ -413,6 +438,8 @@ export const StepsEditor = ({
   addsTasksIn: (projectId?: string | null) => boolean;
   /** Makes the step's task; resolves when done. */
   onMakeTask: (stepId: string) => Promise<boolean>;
+  /** Deletes a step's task and the step; resolves when done. */
+  onDeleteTask: (stepId: string) => Promise<boolean>;
 }) => {
   const steps = plan.steps as EditorStep[];
   const boxes = useRef(new Map<string, HTMLElement | null>());
@@ -425,6 +452,9 @@ export const StepsEditor = ({
   const [slashId, setSlashId] = useState<string | null>(null);
   const [active, setActive] = useState(0);
   const [makingId, setMakingId] = useState<string | null>(null);
+  /** A step linked to a task, asked about before it goes. */
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const deleting = steps.find((s) => s.id === deletingId);
   const [dragId, setDragId] = useState<string | null>(null);
   const [dropAt, setDropAt] = useState<{
     id: string;
@@ -791,6 +821,11 @@ export const StepsEditor = ({
                   onInsert={(where) => insert(step.id, where)}
                   onMove={(by) => move(step.id, by)}
                   onDelete={() => remove(step.id, false)}
+                  deleteHint={
+                    step.taskId
+                      ? 'Linked to a task: delete it from Details'
+                      : undefined
+                  }
                 />
               </div>
             ) : (
@@ -840,16 +875,49 @@ export const StepsEditor = ({
                     }}
                     onFocus={() => setActiveId(step.id)}
                     onKeyDown={(e) => {
-                      if (canEdit) stepKeys(e, step);
+                      if (!canEdit) return;
+                      if (
+                        step.taskId &&
+                        (e.key === 'Backspace' || e.key === 'Delete')
+                      ) {
+                        // A task step asks first: the task may go too.
+                        e.preventDefault();
+                        setDeletingId(step.id);
+                        return;
+                      }
+                      if (
+                        !step.taskId &&
+                        (e.key === 'Backspace' || e.key === 'Delete')
+                      ) {
+                        e.preventDefault();
+                        remove(step.id);
+                        return;
+                      }
+                      stepKeys(e, step);
                     }}
-                    className={cn(
-                      'min-w-0 flex-1 py-px text-sm leading-6 focus:outline-none',
-                      step.done && kind === 'task'
-                        ? 'text-neutral-500 line-through'
-                        : 'text-neutral-100',
-                    )}
+                    className="min-w-0 flex-1 py-px text-sm leading-6 focus:outline-none"
                   >
-                    {step.task?.title ?? step.goal?.title ?? step.text}
+                    <span
+                      className={cn(
+                        step.done && kind === 'task'
+                          ? 'text-neutral-500 line-through'
+                          : 'text-neutral-100',
+                      )}
+                    >
+                      {step.task?.title ?? step.goal?.title ?? step.text}
+                    </span>
+                    {step.done && step.task?.completedAt && (
+                      <span
+                        className="ml-2 whitespace-nowrap text-[11px] text-emerald-400/80"
+                        title="When the task was done"
+                      >
+                        <Icon
+                          name="check"
+                          className="mr-0.5 align-[-2px] text-[13px]"
+                        />
+                        {doneAt(step.task.completedAt)}
+                      </span>
+                    )}
                   </p>
                 ) : (
                   <div className="min-w-0 flex-1">
@@ -993,6 +1061,24 @@ export const StepsEditor = ({
           </div>
         );
       })}
+
+      <DeleteStepDialog
+        open={!!deleting}
+        title={deleting?.task?.title ?? deleting?.text ?? ''}
+        onClose={() => setDeletingId(null)}
+        onRemoveStep={() => deleting && remove(deleting.id)}
+        onDeleteTask={async () => {
+          if (!deleting) return false;
+          const at = steps.findIndex((s) => s.id === deleting.id);
+          const near = steps[at - 1] ?? steps[at + 1];
+          const done = await onDeleteTask(deleting.id);
+          if (done && near) {
+            setActiveId(near.id);
+            setFocusId(near.id);
+          }
+          return done;
+        }}
+      />
 
       {canEdit && (
         <button

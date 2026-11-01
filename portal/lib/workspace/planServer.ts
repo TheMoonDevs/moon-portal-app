@@ -224,6 +224,8 @@ export type StepTask = {
   assigneeIds: string[];
   dueDate: string | null;
   forDate: string | null;
+  /** When it was finished, ISO, for a done task. */
+  completedAt: string | null;
 };
 
 export type PlanView = Omit<Plan, 'steps'> & {
@@ -334,6 +336,7 @@ export async function withTasks(input: Plan[]): Promise<PlanView[]> {
             assigneeIds: true,
             dueDate: true,
             forDate: true,
+            completedAt: true,
           },
         })
       : [],
@@ -361,6 +364,10 @@ export async function withTasks(input: Plan[]): Promise<PlanView[]> {
               assigneeIds: task.assigneeIds ?? [],
               dueDate: task.dueDate ? String(task.dueDate).slice(0, 10) : null,
               forDate: task.forDate ?? null,
+              completedAt:
+                task.status === TASK_STATUS.DONE && task.completedAt
+                  ? new Date(task.completedAt).toISOString()
+                  : null,
             }
           : null,
         goal: goal ?? null,
