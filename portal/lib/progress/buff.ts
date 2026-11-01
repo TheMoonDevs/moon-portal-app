@@ -10,11 +10,18 @@ import { TASK_SIZE, TASK_STATUS } from '@/models/workspace';
 
 export enum BUFF_LEVEL {
   TRUTH_SEEKER = 'TRUTH_SEEKER',
+  SEEDLING_SPROUT = 'SEEDLING_SPROUT',
   BABY_GROOT = 'BABY_GROOT',
   WORK_HULK = 'WORK_HULK',
+  NIGHT_OWL = 'NIGHT_OWL',
+  ROCKET_FOX = 'ROCKET_FOX',
+  STORM_RHINO = 'STORM_RHINO',
   VAMPIRE_LORD = 'VAMPIRE_LORD',
+  DEEP_KRAKEN = 'DEEP_KRAKEN',
   ALIEN_PREDATOR = 'ALIEN_PREDATOR',
   DEVIL = 'DEVIL',
+  PHOENIX_RISING = 'PHOENIX_RISING',
+  MOON_TITAN = 'MOON_TITAN',
 }
 
 export interface BuffInfo {
@@ -30,9 +37,16 @@ const LEVELS: BuffInfo[] = [
   {
     level: BUFF_LEVEL.TRUTH_SEEKER,
     marker: 1,
-    next: 10,
+    next: 5,
     title: 'Tiny Chirp',
     src: '/images/buff/tinyChirp.png',
+  },
+  {
+    level: BUFF_LEVEL.SEEDLING_SPROUT,
+    marker: 5,
+    next: 10,
+    title: 'Seedling Sprout',
+    src: '/images/buff/seedlingSprout.png',
   },
   {
     level: BUFF_LEVEL.BABY_GROOT,
@@ -44,16 +58,44 @@ const LEVELS: BuffInfo[] = [
   {
     level: BUFF_LEVEL.WORK_HULK,
     marker: 25,
-    next: 100,
+    next: 40,
     title: 'Work Hulk',
     src: '/images/buff/workHulk.png',
   },
   {
+    level: BUFF_LEVEL.NIGHT_OWL,
+    marker: 40,
+    next: 60,
+    title: 'Night Owl',
+    src: '/images/buff/nightOwl.png',
+  },
+  {
+    level: BUFF_LEVEL.ROCKET_FOX,
+    marker: 60,
+    next: 80,
+    title: 'Rocket Fox',
+    src: '/images/buff/rocketFox.png',
+  },
+  {
+    level: BUFF_LEVEL.STORM_RHINO,
+    marker: 80,
+    next: 100,
+    title: 'Storm Rhino',
+    src: '/images/buff/stormRhino.png',
+  },
+  {
     level: BUFF_LEVEL.VAMPIRE_LORD,
     marker: 100,
-    next: 150,
+    next: 125,
     title: 'Vampire Streak',
     src: '/images/buff/vampireLord.png',
+  },
+  {
+    level: BUFF_LEVEL.DEEP_KRAKEN,
+    marker: 125,
+    next: 150,
+    title: 'Deep Kraken',
+    src: '/images/buff/deepKraken.png',
   },
   {
     level: BUFF_LEVEL.ALIEN_PREDATOR,
@@ -68,6 +110,20 @@ const LEVELS: BuffInfo[] = [
     next: 250,
     title: 'Moon Devil',
     src: '/images/buff/moonDevil.png',
+  },
+  {
+    level: BUFF_LEVEL.PHOENIX_RISING,
+    marker: 250,
+    next: 300,
+    title: 'Phoenix Rising',
+    src: '/images/buff/phoenixRising.png',
+  },
+  {
+    level: BUFF_LEVEL.MOON_TITAN,
+    marker: 300,
+    next: 400,
+    title: 'Moon Titan',
+    src: '/images/buff/moonTitan.png',
   },
 ];
 
@@ -155,6 +211,20 @@ export const getColorsForBuffLevel = (level: BUFF_LEVEL) => {
       return ['#f44336', '#FFAB36'];
     case BUFF_LEVEL.DEVIL:
       return ['#C677FF', '#D69CFF'];
+    case BUFF_LEVEL.SEEDLING_SPROUT:
+      return ['#8BC34A', '#C5E1A5'];
+    case BUFF_LEVEL.NIGHT_OWL:
+      return ['#3F51B5', '#7986CB'];
+    case BUFF_LEVEL.ROCKET_FOX:
+      return ['#FF7043', '#26A69A'];
+    case BUFF_LEVEL.STORM_RHINO:
+      return ['#1E88E5', '#4FC3F7'];
+    case BUFF_LEVEL.DEEP_KRAKEN:
+      return ['#7E57C2', '#26C6DA'];
+    case BUFF_LEVEL.PHOENIX_RISING:
+      return ['#FF6D00', '#FFD54F'];
+    case BUFF_LEVEL.MOON_TITAN:
+      return ['#EC407A', '#CE93D8'];
     default:
       return ['#e0e0e0', '#9e9e9e'];
   }
