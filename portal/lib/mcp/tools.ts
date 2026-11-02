@@ -72,12 +72,19 @@ const taskView = (t: Task, projects: Map<string, Project>) => ({
   ...((t.assigneeIds?.length ?? 0) > 1 && { shared: true }),
 });
 
+/** The portal account this connection acts as, whatever email Claude uses. */
+const whoAmI = (user: SessionUser) => ({
+  name: user.name || `@${user.username}`,
+  ...(user.username && { username: user.username }),
+  ...(user.email && { email: user.email }),
+});
+
 export const TOOLS: Tool[] = [
   {
     name: 'get_context',
     title: 'Get my portal context',
     description:
-      "The person's companies (with their people, for sharing tasks), projects (effort, parent project, goals with this period's progress and whether recent periods were met), their open tasks, and their day (todayTasks): the tasks planned for today, still pending from before, or worked on today, with who logged on each last. Everything in the portal is a task; what you log goes under one as a work point. Everyone also has a Personal company for private work only they can see. Call this first in a session so you can log under the right task, project and goal.",
+      "The person's companies (with their people, for sharing tasks), projects (effort, parent project, goals with this period's progress and whether recent periods were met), their open tasks, and their day (todayTasks): the tasks planned for today, still pending from before, or worked on today, with who logged on each last. Everything in the portal is a task; what you log goes under one as a work point. Everyone also has a Personal company for private work only they can see. Call this first in a session so you can log under the right task, project and goal. you is the portal account this connection acts as (it can differ from the email the person uses for Claude); when the person says it is the wrong account, tell them to disconnect and reconnect the PORTAL connector and pick Use another account on the portal's connect screen.",
     inputSchema: { type: 'object', properties: {} },
     annotations: { readOnlyHint: true },
     run: async (user) => {
@@ -88,6 +95,7 @@ export const TOOLS: Tool[] = [
       const today = await userToday(user);
       if (!companyIds.length)
         return {
+          you: whoAmI(user),
           today,
           companies: [PERSONAL_COMPANY],
           projects: [],
@@ -142,6 +150,7 @@ export const TOOLS: Tool[] = [
         d ? new Date(d as string).toISOString().slice(0, 10) : null;
 
       return {
+        you: whoAmI(user),
         today,
         companies: [
           ...companies.map((c) => ({

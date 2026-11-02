@@ -36,7 +36,12 @@ export async function GET(request: Request) {
     status: 'success',
     data: {
       client: { name: client.name },
-      user: { name: user.name || `@${user.username}` },
+      user: {
+        name: user.name || `@${user.username}`,
+        // Shown so people can tell which portal account they are connecting,
+        // since it need not match the email they use for Claude.
+        email: user.email || user.googleEmail || null,
+      },
     },
   });
 }
