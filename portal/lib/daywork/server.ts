@@ -413,6 +413,9 @@ async function orderAfter(
   return next === undefined ? from + 1000 : (from + next) / 2;
 }
 
+/** A goal's task for one day: shown on that day, wherever it was ticked. */
+const onItsDayOnly = (task: Task) => !!task.goalId && isDay(task.forDate);
+
 /**
  * A person's day: the tasks on it with their points and the places they
  * can go. On today it includes every task still pending from before.
@@ -457,6 +460,16 @@ export async function loadDay(userId: string, date: string) {
         t.forDate === date ||
         pointTaskIds.includes(t.id) ||
         t.status === TASK_STATUS.DONE,
+    )
+    // A goal's task belongs to the day it is for, not the day it was
+    // ticked: elsewhere only while still open from before, or where its
+    // notes were written.
+    .filter(
+      (t) =>
+        !onItsDayOnly(t) ||
+        t.forDate === date ||
+        pointTaskIds.includes(t.id) ||
+        (date === today && !CLOSED_STATUSES.includes(t.status)),
     )
     // Someone else's task without a project is not theirs to see.
     .filter((t) => !isOwnerOnly(t) || isMine(t, user.id));
@@ -546,7 +559,7 @@ export async function loadDays(userId: string, from: string, to: string) {
   };
   for (const task of Array.from(byId.values())) {
     put(task.forDate, task.id);
-    if (task.completedAt)
+    if (task.completedAt && !onItsDayOnly(task))
       put(
         localClock(timezone, new Date(task.completedAt as any)).date,
         task.id,
