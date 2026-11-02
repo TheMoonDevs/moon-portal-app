@@ -505,6 +505,68 @@ const Details = ({
   );
 };
 
+/** Finished tasks of one goal folded into a line past this many. */
+const BUNDLE_MIN = 3;
+
+const dayLabel = (d?: string | null) =>
+  d ? dayjs(d).format('ddd D MMM') : null;
+
+/** Finished goal tasks folded into one line: "Shorts per day ×5". */
+const GoalBundle = ({
+  tasks,
+  open,
+  onToggle,
+  children,
+}: {
+  tasks: DayTask[];
+  open: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+}) => {
+  const first = dayLabel(tasks[0]?.forDate);
+  const last = dayLabel(tasks[tasks.length - 1]?.forDate);
+  const title = (tasks[0]?.title ?? '').replace(/ \(\d+\/\d+\)$/, '');
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className="group flex w-full items-start gap-2.5 rounded-lg px-2 py-1 text-left transition-colors hover:bg-white/[0.03] auto-light:hover:bg-black/[0.03]"
+      >
+        <span className="flex size-6 shrink-0 items-center justify-center">
+          <StatusIcon status="done" />
+        </span>
+        <span className="min-w-0 flex-1 text-sm font-medium leading-6 text-white auto-light:text-neutral-950">
+          {title}
+          <span className="ml-1.5 inline-block rounded bg-emerald-400/15 px-1 align-[1px] text-[10px] font-semibold tabular-nums leading-4 text-emerald-300 auto-light:text-emerald-700">
+            ×{tasks.length}
+          </span>
+          {first && (
+            <span className="ml-1.5 inline-block align-[1px] text-[11px] font-normal tabular-nums text-neutral-500 auto-light:text-neutral-400">
+              for {first === last ? first : `${first} – ${last}`}
+            </span>
+          )}
+        </span>
+        <span className="flex size-7 shrink-0 items-center justify-center rounded-md text-neutral-500 group-hover:text-neutral-200 auto-light:group-hover:text-neutral-800">
+          <Icon
+            name="expand_more"
+            className={cn(
+              'text-[18px] transition-transform',
+              open && 'rotate-180',
+            )}
+          />
+        </span>
+      </button>
+      {open && (
+        <div className="ml-4 border-l border-white/[0.06] pl-1 auto-light:border-black/[0.06]">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+};
+
 /** A part of the sheet: its tasks, under a heading, with a line to add one. */
 export type SheetGroup = {
   key: string;
@@ -679,6 +741,42 @@ export const TaskSheet = ({
     }
   };
 
+  /**
+   * More than BUNDLE_MIN finished tasks of one goal (or part) on the sheet,
+   * e.g. a week of "shorts per day" ticked at once, fold into one line
+   * where the first of them was. Unfinished ones always stay as they are.
+   */
+  const bundle = (list: DayTask[]) => {
+    const keyOf = (t: DayTask) =>
+      t.goalId && !t.draft && rowStatus(t, day.points, day.date) === 'done'
+        ? `goal:${t.goalId}:${t.goalPartId ?? ''}`
+        : null;
+    const sets = new Map<string, DayTask[]>();
+    for (const t of list) {
+      const k = keyOf(t);
+      if (k) sets.set(k, [...(sets.get(k) ?? []), t]);
+    }
+    const out: (DayTask | { key: string; bundle: DayTask[] })[] = [];
+    const placed = new Set<string>();
+    for (const t of list) {
+      const k = keyOf(t);
+      const set = k ? sets.get(k)! : null;
+      if (!k || !set || set.length <= BUNDLE_MIN) {
+        out.push(t);
+        continue;
+      }
+      if (placed.has(k)) continue;
+      placed.add(k);
+      out.push({
+        key: `${k}:${day.date}`,
+        bundle: set
+          .slice()
+          .sort((a, b) => (a.forDate ?? '').localeCompare(b.forDate ?? '')),
+      });
+    }
+    return out;
+  };
+
   const row = (task: DayTask, group: SheetGroup) => {
     const points = pointsOf(task.id);
     const status = rowStatus(task, day.points, day.date);
@@ -796,8 +894,8 @@ export const TaskSheet = ({
                   )
                 )}
                 {unplaced && <UnplacedMark />}
-                {task.goalId && task.forDate && (
-                  // A goal's task is for one day: say which.
+                {task.goalId && task.forDate && task.forDate !== day.date && (
+                  // A goal's task done on another day: say which day it was for.
                   <span className="ml-1.5 inline-block align-[1px] text-[11px] font-normal tabular-nums text-neutral-500 auto-light:text-neutral-400">
                     for {dayjs(task.forDate).format('ddd D MMM')}
                   </span>
@@ -854,7 +952,20 @@ export const TaskSheet = ({
       {groups.map((group) => (
         <div key={group.key}>
           {group.title && <SheetHeading>{group.title}</SheetHeading>}
-          {group.tasks.map((task) => row(task, group))}
+          {bundle(group.tasks).map((item) =>
+            'bundle' in item ? (
+              <GoalBundle
+                key={item.key}
+                tasks={item.bundle}
+                open={open.has(item.key)}
+                onToggle={() => toggle(item.key)}
+              >
+                {item.bundle.map((task) => row(task, group))}
+              </GoalBundle>
+            ) : (
+              row(item, group)
+            ),
+          )}
           {editable && group.add && (
             <AddRow
               day={day}
