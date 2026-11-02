@@ -2,9 +2,10 @@ import { db } from '@/lib/mongodb/db-client';
 import type { Project, ProjectGoal, TaskSchedule } from '@/models/workspace';
 import { TASK_SIZE } from '@/models/workspace';
 
-import { clearRunsAhead } from './goalRuns';
+import { clearRunsAhead, retitleRunTasks } from './goalRuns';
 import {
   goalRule,
+  goalTaskTitle,
   isTarget,
   nextRunOnOrAfter,
   runsOn,
@@ -24,16 +25,22 @@ import { runDueSchedules } from './schedules';
  * that stopped), which are cleared.
  */
 
-type Unit = { partId: string | null; title: string; target: number };
+type Unit = {
+  partId: string | null;
+  label: string | null;
+  title: string;
+  target: number;
+};
 
 const unitsOf = (goal: ProjectGoal): Unit[] =>
   goal.parts?.length
     ? goal.parts.map((p) => ({
         partId: p.id,
+        label: p.label,
         title: `${goal.title}: ${p.label}`,
         target: p.target,
       }))
-    : [{ partId: null, title: goal.title, target: goal.target }];
+    : [{ partId: null, label: null, title: goal.title, target: goal.target }];
 
 const sameUnit = (s: TaskSchedule, goalId: string, partId: string | null) =>
   s.goalId === goalId && (s.goalPartId ?? null) === partId;
@@ -75,6 +82,7 @@ export async function syncGoalSchedules(
       const mine = schedules.find((s) => sameUnit(s, goal.id, unit.partId));
       const want = {
         title: unit.title,
+        taskTitle: goalTaskTitle(project.name, goal, unit.label),
         assigneeIds: people,
         every: rule.every,
         weekdays: rule.weekdays,
@@ -93,6 +101,7 @@ export async function syncGoalSchedules(
           sameDays &&
           mine.active &&
           mine.title === want.title &&
+          mine.taskTitle === want.taskTitle &&
           mine.count === count &&
           (mine.dueInDays ?? null) === rule.dueInDays &&
           (mine.planId ?? null) === want.planId &&
@@ -102,6 +111,9 @@ export async function syncGoalSchedules(
         // Runs ahead on days it no longer runs on are cleared.
         if (!sameDays)
           await clearRunsAhead([mine], (_s, day) => runsOn(rule, day));
+        // Its open tasks take the new name (the goal or project renamed).
+        if (mine.taskTitle !== want.taskTitle)
+          await retitleRunTasks(mine, want.taskTitle);
         await db.taskSchedule.update({
           where: { id: mine.id },
           data: {

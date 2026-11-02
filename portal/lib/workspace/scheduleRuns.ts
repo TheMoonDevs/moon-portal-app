@@ -27,11 +27,11 @@ export function scheduleTask(
   now = new Date().toISOString(),
 ) {
   const count = Math.max(1, schedule.count || 1);
+  const title = schedule.taskTitle || schedule.title;
   return {
     companyId: schedule.companyId,
     projectId: schedule.projectId,
-    title:
-      count > 1 ? `${schedule.title} (${index + 1}/${count})` : schedule.title,
+    title: count > 1 ? `${title} (${index + 1}/${count})` : title,
     description: schedule.description ?? null,
     size: schedule.size,
     status: TASK_STATUS.TODO,

@@ -10,7 +10,7 @@ import type {
 import { OPEN_TASK_STATUSES, TASK_SIZE, TASK_STATUS } from '@/models/workspace';
 
 import { goalPeople } from './goalSchedules';
-import { addDays, nextRunOnOrAfter, toDay } from './projects';
+import { addDays, goalTaskTitle, nextRunOnOrAfter, toDay } from './projects';
 import { completeScheduleRun, finish, scheduleTask } from './scheduleRuns';
 
 /*
@@ -30,13 +30,14 @@ const SET_ASIDE = [TASK_STATUS.ARCHIVED, TASK_STATUS.IGNORED];
 const isOpen = (t: Task) => (OPEN_TASK_STATUSES as string[]).includes(t.status);
 
 type Unit = { partId: string | null; title: string };
-const unitsOf = (goal: ProjectGoal): Unit[] =>
+/** Each part's tasks (or the goal's), called "Project - goal per day". */
+const unitsOf = (project: Project, goal: ProjectGoal): Unit[] =>
   goal.parts?.length
     ? goal.parts.map((p) => ({
         partId: p.id,
-        title: `${goal.title}: ${p.label}`,
+        title: goalTaskTitle(project.name, goal, p.label),
       }))
-    : [{ partId: null, title: goal.title }];
+    : [{ partId: null, title: goalTaskTitle(project.name, goal) }];
 
 async function goalSchedules(projectId: string, goalId: string) {
   const schedules: TaskSchedule[] = await db.taskSchedule.findMany({
@@ -72,7 +73,7 @@ export async function tickGoalDay(
     // Nothing linked to that day: a task stands for the tick.
     const schedules = await goalSchedules(project.id, goal.id);
     const now = new Date().toISOString();
-    for (const unit of unitsOf(goal)) {
+    for (const unit of unitsOf(project, goal)) {
       const schedule = schedules.find(
         (s) => (s.goalPartId ?? null) === unit.partId,
       );
@@ -102,6 +103,7 @@ export async function tickGoalDay(
       const created: Task = await db.task.create({
         data: {
           ...base,
+          // One task stands for the day, so no "(1/3)".
           title: unit.title,
           goalChecked: true,
           madeBy: TICK_MADE_BY,

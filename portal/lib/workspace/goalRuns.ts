@@ -1,9 +1,21 @@
 import { db } from '@/lib/mongodb/db-client';
 import { syncTaskPoints } from '@/lib/progress/server';
-import type { Task, TaskSchedule, WorkPoint } from '@/models/workspace';
+import type {
+  Project,
+  Task,
+  TaskSchedule,
+  WorkPoint,
+} from '@/models/workspace';
 import { TASK_STATUS } from '@/models/workspace';
 
-import { addDays, runCovering, runsFrom, runsOn, toDay } from './projects';
+import {
+  addDays,
+  goalTaskTitle,
+  runCovering,
+  runsFrom,
+  runsOn,
+  toDay,
+} from './projects';
 import { scheduleTask } from './scheduleRuns';
 
 /*
@@ -83,8 +95,69 @@ export const runOf = (schedule: TaskSchedule, task: Task) =>
 const madeBySchedule = (schedule: TaskSchedule, task: Task) =>
   task.scheduleId === schedule.id &&
   !task.ownerId &&
-  (task.title === schedule.title ||
-    task.title.startsWith(`${schedule.title} (`));
+  [schedule.taskTitle, schedule.title].some(
+    (base) =>
+      !!base && (task.title === base || task.title.startsWith(`${base} (`)),
+  );
+
+/**
+ * Renames the open tasks a schedule made as it made them, when what its
+ * tasks are called changes ("Post short (2/3)" keeps its "(2/3)").
+ */
+export async function retitleRunTasks(
+  schedule: TaskSchedule,
+  taskTitle: string,
+) {
+  const tasks: Task[] = await db.task.findMany({
+    where: { scheduleId: schedule.id, status: { in: OPEN } },
+  });
+  const bases = [schedule.taskTitle, schedule.title]
+    .filter((b): b is string => !!b)
+    .sort((a, b) => b.length - a.length);
+  for (const task of tasks) {
+    if (!madeBySchedule(schedule, task)) continue;
+    const base = bases.find(
+      (b) => task.title === b || task.title.startsWith(`${b} (`),
+    );
+    if (!base) continue;
+    const title = taskTitle + task.title.slice(base.length);
+    if (title === task.title) continue;
+    await db.task.update({
+      where: { id: task.id },
+      data: { title, updatedAt: new Date().toISOString() },
+    });
+  }
+}
+
+/**
+ * Goal schedules from before their tasks were called "Project - goal per
+ * day": they get that name, and their open tasks with it. Runs once each.
+ */
+export async function titleGoalSchedules(where: Record<string, unknown>) {
+  const untitled: TaskSchedule[] = await db.taskSchedule.findMany({
+    where: { ...where, fromGoal: true, taskTitle: null },
+  });
+  if (!untitled.length) return;
+  const projects: Project[] = await db.project.findMany({
+    where: {
+      id: { in: Array.from(new Set(untitled.map((s) => s.projectId))) },
+    },
+  });
+  for (const schedule of untitled) {
+    const project = projects.find((p) => p.id === schedule.projectId);
+    const goal = project?.goals?.find((g) => g.id === schedule.goalId);
+    const part = goal?.parts?.find((p) => p.id === schedule.goalPartId);
+    const taskTitle = goal
+      ? goalTaskTitle(project?.name, goal, part?.label)
+      : schedule.title;
+    await db.taskSchedule.update({
+      where: { id: schedule.id },
+      data: { taskTitle },
+    });
+    if (taskTitle !== schedule.title)
+      await retitleRunTasks(schedule, taskTitle);
+  }
+}
 
 /**
  * Takes a schedule-made task out for the task that took its run: its notes

@@ -343,6 +343,12 @@ export type TaskSchedule = Loose<
     companyId: string;
     projectId: string;
     title: string;
+    /**
+     * What its tasks are called, when not its title: a goal's tasks read
+     * "Project - goal per day". The title stays the goal's words, which
+     * work lines are matched against.
+     */
+    taskTitle?: Nullable<string>;
     description?: Nullable<string>;
     size: TASK_SIZE;
     assigneeIds: string[];

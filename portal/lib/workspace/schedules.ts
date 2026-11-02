@@ -1,7 +1,7 @@
 import { db } from '@/lib/mongodb/db-client';
 import type { TaskSchedule } from '@/models/workspace';
 
-import { runOf, runTasks } from './goalRuns';
+import { runOf, runTasks, titleGoalSchedules } from './goalRuns';
 import { addDays, nextRunOnOrAfter, toDay } from './projects';
 import { moveSchedulesIntoGoals } from './scheduleMigration';
 import { scheduleTask } from './scheduleRuns';
@@ -28,6 +28,8 @@ export async function runDueSchedules(
 ) {
   // Older schedules become goals first (once); goals run them from then.
   await moveSchedulesIntoGoals(where);
+  // Goal tasks are called "Project - goal per day"; older ones get it.
+  await titleGoalSchedules(where);
   const today = toDay();
   const due: TaskSchedule[] = await db.taskSchedule.findMany({
     where: {

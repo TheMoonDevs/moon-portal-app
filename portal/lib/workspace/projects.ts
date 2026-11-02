@@ -479,6 +479,33 @@ export function describeGoalSchedule(
   }`;
 }
 
+/** How often a goal repeats: "per day", "twice a week", "3 times a week". */
+export function goalCadence(
+  goal: Pick<ProjectGoal, 'period' | 'days' | 'monthDay'>,
+) {
+  if (goal.period === 'day') return 'per day';
+  if (goal.period === 'month') return 'per month';
+  const days = new Set(goal.days ?? []).size;
+  if (days >= 7) return 'per day';
+  if (days === 2) return 'twice a week';
+  if (days > 2) return `${days} times a week`;
+  return 'per week';
+}
+
+/**
+ * What a goal's tasks are called: the project, the goal (and part) and how
+ * often it repeats, e.g. "Moon Portal - Post shorts per day".
+ */
+export function goalTaskTitle(
+  projectName: string | null | undefined,
+  goal: Pick<ProjectGoal, 'title' | 'period' | 'days' | 'monthDay'>,
+  partLabel?: string | null,
+) {
+  const what = partLabel ? `${goal.title}: ${partLabel}` : goal.title;
+  const name = projectName?.trim();
+  return `${name ? `${name} - ` : ''}${what} ${goalCadence(goal)}`;
+}
+
 /* --------------------------------- Results -------------------------------- */
 
 export const RESULT_METRICS: { key: string; label: string; money?: boolean }[] =
