@@ -798,7 +798,7 @@ export const WORKSPACE_TOOLS: Tool[] = [
     },
     annotations: { readOnlyHint: false, destructiveHint: false },
     run: async (user, args) => {
-      const project = await findProject(user, args?.project, 'projects:edit');
+      const project = await findProject(user, args?.project, 'tasks:edit');
       const { goalId, goalPartId } = resolveGoal(
         project,
         args?.goal,

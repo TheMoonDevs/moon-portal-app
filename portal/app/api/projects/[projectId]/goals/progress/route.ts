@@ -16,7 +16,7 @@ const DAY = /^\d{4}-\d{2}-\d{2}$/;
 export async function POST(request: Request, { params }: Params) {
   const { response, project, user } = await requireProjectPermission(
     params.projectId,
-    'projects:edit',
+    'tasks:edit',
   );
   if (response || !project || !user)
     return response ?? fail(401, 'Authentication required.');
