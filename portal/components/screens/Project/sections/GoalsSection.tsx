@@ -486,7 +486,7 @@ const TargetGoal = ({
   canEdit,
   canTick,
   onLinked,
-  onSetTotal,
+  onUpdate,
   onEdit,
   onRaise,
 }: {
@@ -497,7 +497,7 @@ const TargetGoal = ({
   canEdit: boolean;
   canTick: boolean;
   onLinked: () => void;
-  onSetTotal: (goal: ProjectGoal, total: number) => void;
+  onUpdate: (goal: ProjectGoal, by: { add: number } | { done: number }) => void;
   onEdit: () => void;
   onRaise: () => void;
 }) => {
@@ -606,17 +606,28 @@ const TargetGoal = ({
           <ForWhom goal={goal} people={people} />
           <Contributors progress={p} people={people} when="so far" />
           <span className="flex-1" />
-          {canEdit && !setting && (
-            <AdminButton
-              size="sm"
-              tone="ghost"
-              onClick={() => {
-                setTotal(String(done));
-                setSetting(true);
-              }}
-            >
-              Set total
-            </AdminButton>
+          {canTick && !setting && (
+            <>
+              <AdminButton
+                size="sm"
+                tone="ghost"
+                icon="add"
+                onClick={() => onUpdate(goal, { add: 1 })}
+              >
+                1
+              </AdminButton>
+              <AdminButton
+                size="sm"
+                tone="ghost"
+                icon="edit_note"
+                onClick={() => {
+                  setTotal('');
+                  setSetting(true);
+                }}
+              >
+                Update
+              </AdminButton>
+            </>
           )}
           {setting && (
             <form
@@ -624,20 +635,39 @@ const TargetGoal = ({
               onSubmit={(e) => {
                 e.preventDefault();
                 const n = Math.round(Number(total));
-                if (Number.isFinite(n) && n >= 0) onSetTotal(goal, n);
+                const how = (
+                  e.nativeEvent as SubmitEvent
+                ).submitter?.getAttribute('value');
+                if (!total.trim() || !Number.isFinite(n)) return;
+                if (how === 'set') {
+                  if (n < 0) return;
+                  onUpdate(goal, { done: n });
+                } else if (n) onUpdate(goal, { add: n });
                 setSetting(false);
               }}
             >
               <TextInput
                 autoFocus
                 type="number"
-                min={0}
                 value={total}
+                placeholder={`+ or − (now ${fmt(done)})`}
                 onChange={(e) => setTotal(e.target.value)}
-                className="h-8 w-24 text-center"
+                onKeyDown={(e) => e.key === 'Escape' && setSetting(false)}
+                className="h-8 w-36 text-center"
               />
-              <AdminButton size="sm" tone="primary" type="submit">
-                Save
+              <AdminButton size="sm" tone="primary" type="submit" value="add">
+                Add
+              </AdminButton>
+              <AdminButton size="sm" tone="ghost" type="submit" value="set">
+                Set total
+              </AdminButton>
+              <AdminButton
+                size="sm"
+                tone="ghost"
+                type="button"
+                onClick={() => setSetting(false)}
+              >
+                Cancel
               </AdminButton>
             </form>
           )}
@@ -788,12 +818,21 @@ export const GoalsSection = ({
     }
   };
 
-  const setTotal = async (goal: ProjectGoal, done: number) => {
+  /** Adds to a target's progress by hand, or sets its total. */
+  const updateTarget = async (
+    goal: ProjectGoal,
+    by: { add: number } | { done: number },
+  ) => {
     try {
       await PortalSdk.postData(`/api/projects/${project.id}/goals/progress`, {
         goalId: goal.id,
-        done,
+        ...by,
       });
+      toast.success(
+        'add' in by
+          ? `${goal.title}: ${by.add > 0 ? '+' : ''}${fmt(by.add)}`
+          : `${goal.title}: set to ${fmt(by.done)}`,
+      );
       onSaved();
     } catch (err) {
       toast.error(errorText(err));
@@ -930,7 +969,7 @@ export const GoalsSection = ({
                       canEdit={canEdit}
                       canTick={canTick}
                       onLinked={onSaved}
-                      onSetTotal={setTotal}
+                      onUpdate={updateTarget}
                       onEdit={() => setEditing(goal)}
                       onRaise={() =>
                         setEditing({
