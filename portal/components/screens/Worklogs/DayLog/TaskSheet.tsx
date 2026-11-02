@@ -796,6 +796,12 @@ export const TaskSheet = ({
                   )
                 )}
                 {unplaced && <UnplacedMark />}
+                {task.goalId && task.forDate && (
+                  // A goal's task is for one day: say which.
+                  <span className="ml-1.5 inline-block align-[1px] text-[11px] font-normal tabular-nums text-neutral-500 auto-light:text-neutral-400">
+                    for {dayjs(task.forDate).format('ddd D MMM')}
+                  </span>
+                )}
               </span>
             )}
           </div>
