@@ -1,10 +1,11 @@
 'use client';
 
 import dayjs from 'dayjs';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { cn } from '@/lib/utils';
 import { useUser } from '@/utils/hooks/useUser';
+import type { WorkspaceCompany } from '@/utils/hooks/useWorkspace';
 import { useWorkspace } from '@/utils/hooks/useWorkspace';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
@@ -15,10 +16,25 @@ import { PersonWorklogsDrawer } from './PersonWorklogsDrawer';
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 
+/** The companies the user owns (owner role, or made it) come first. */
+const ownsCompany = (c: WorkspaceCompany, userId?: string) =>
+  (c.member?.roleKeys ?? []).includes('owner') ||
+  (!!userId && c.company.createdById === userId);
+
 /** This month's leaderboard for one of the user's companies. */
 export const LeaderboardSection = () => {
   const { user } = useUser();
-  const { companies } = useWorkspace();
+  const { companies: allCompanies } = useWorkspace();
+  // Owned companies first, then the rest, each in their usual order. People
+  // are ranked by points inside each company.
+  const companies = useMemo(
+    () =>
+      [...allCompanies].sort(
+        (a, b) =>
+          Number(ownsCompany(b, user?.id)) - Number(ownsCompany(a, user?.id)),
+      ),
+    [allCompanies, user?.id],
+  );
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [rows, setRows] = useState<Row[] | null>(null);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
