@@ -2,15 +2,10 @@ import { db } from '@/lib/mongodb/db-client';
 import { addGoal, changeGoal } from '@/lib/workspace/goals';
 import type { ProjectGoal, TaskSchedule } from '@/models/workspace';
 
+import { GOAL_SCHEDULE_PROPS } from './goalSchedule';
 import { findPlan } from './plans';
 import { type Tool, ToolError } from './shared';
-import {
-  findProject,
-  GOAL_SCHEDULE_PROPS,
-  goalFields,
-  goalView,
-  resolveGoal,
-} from './workspace';
+import { findProject, goalFields, goalView, resolveGoal } from './workspace';
 
 /*
  * Repeating work. There is no separate task schedule any more: a scheduled

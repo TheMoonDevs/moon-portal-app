@@ -15,13 +15,9 @@ import {
 import { describeSchedule } from '@/lib/workspace/projects';
 import type { Plan, PlanStep } from '@/models/workspace';
 
+import { GOAL_SCHEDULE_PROPS } from './goalSchedule';
 import { companiesWith, type Tool, ToolError } from './shared';
-import {
-  findProject,
-  GOAL_SCHEDULE_PROPS,
-  goalFields,
-  resolvePeople,
-} from './workspace';
+import { findProject, goalFields, resolvePeople } from './workspace';
 
 /*
  * Plans from a conversation: ideas in a company that firm up into steps
