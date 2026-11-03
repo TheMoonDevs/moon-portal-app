@@ -414,6 +414,37 @@ async function orderAfter(
 }
 
 /**
+ * Claude's open tasks that never got a day. log_work used to make project
+ * tasks with no day, so once the day they were worked on had passed they
+ * were on no day at all, and never showed as pending from before. Each
+ * takes the day it was first worked on (or made), once.
+ */
+async function dayClaudeTasks(userId: string, timezone: string | null) {
+  const loose: Task[] = await db.task.findMany({
+    where: {
+      AND: [
+        mineWhere(userId),
+        { madeBy: 'claude', forDate: null, status: { in: OPEN_TASK_STATUSES } },
+      ],
+    },
+    take: 200,
+  });
+  if (!loose.length) return;
+  const points: WorkPoint[] = await db.workPoint.findMany({
+    where: { taskId: { in: loose.map((t) => t.id) } },
+    orderBy: { at: 'asc' },
+    take: 2000,
+  });
+  for (const task of loose) {
+    const first = points.find((p) => p.taskId === task.id)?.date;
+    const forDate = isDay(first)
+      ? first
+      : localClock(timezone, new Date(task.createdAt as any)).date;
+    await db.task.update({ where: { id: task.id }, data: { forDate } });
+  }
+}
+
+/**
  * A person's day: the tasks on it with their points and the places they
  * can go. On today it includes every task still pending from before.
  */
@@ -421,6 +452,7 @@ export async function loadDay(userId: string, date: string) {
   const user = { id: userId };
   const timezone = await timezoneOf(userId);
   const today = localClock(timezone, new Date()).date;
+  if (date === today) await dayClaudeTasks(userId, timezone);
   // Finished on this day in the person's own timezone, not UTC's.
   const range = dayRange(timezone, date);
   const dayPoints: WorkPoint[] = await db.workPoint.findMany({
@@ -513,6 +545,7 @@ export async function loadDays(userId: string, from: string, to: string) {
   const today = localClock(timezone, new Date()).date;
   const start = dayRange(timezone, from).start;
   const end = dayRange(timezone, to).end;
+  if (today >= from && today <= to) await dayClaudeTasks(userId, timezone);
   const points: WorkPoint[] = await db.workPoint.findMany({
     where: { userId, date: { gte: from, lte: to } },
     orderBy: { at: 'asc' },

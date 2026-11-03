@@ -224,7 +224,14 @@ export async function logWork(
           if (created)
             task = await db.task.update({
               where: { id: task!.id },
-              data: { ownerId: user.id, madeBy: 'claude', placedBy: 'user' },
+              data: {
+                ownerId: user.id,
+                madeBy: 'claude',
+                placedBy: 'user',
+                // On the day it is logged, so it stays pending from
+                // before until it is finished.
+                forDate: task!.forDate ?? point.forDate ?? date,
+              },
             });
         }
       } catch (error) {
