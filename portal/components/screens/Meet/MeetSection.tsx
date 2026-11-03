@@ -34,13 +34,13 @@ export const MeetSection = ({
         type="button"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-white/[0.03]"
+        className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-white/[0.03] auto-light:hover:bg-black/[0.03]"
       >
-        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-white/[0.06] text-[18px] text-neutral-300">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-white/[0.06] text-[18px] text-neutral-300 auto-light:bg-black/[0.05] auto-light:text-neutral-700">
           <Icon name={icon} />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="flex items-center gap-2 text-sm font-semibold text-neutral-100">
+          <span className="flex items-center gap-2 text-sm font-semibold text-neutral-100 auto-light:text-neutral-900">
             {title}
             {badge}
           </span>
@@ -59,7 +59,9 @@ export const MeetSection = ({
         />
       </button>
       {open && (
-        <div className="border-t border-white/[0.07] p-4">{children}</div>
+        <div className="border-t border-white/[0.07] p-4 auto-light:border-black/[0.08]">
+          {children}
+        </div>
       )}
     </Panel>
   );

@@ -53,7 +53,7 @@ const hours = (n: number) =>
     : `${n / 24} day${n === 24 ? '' : 's'}`;
 
 const timeClass =
-  'h-9 w-[96px] rounded-lg border border-white/10 bg-neutral-900/80 px-2 text-sm text-neutral-100 [color-scheme:dark] focus:border-white/25 focus:outline-none';
+  'h-9 w-[96px] rounded-lg border border-white/10 auto-light:border-black/10 bg-neutral-900/80 auto-light:bg-white px-2 text-sm text-neutral-100 auto-light:text-neutral-900 [color-scheme:dark] auto-light:[color-scheme:light] focus:border-white/25 auto-light:focus:border-black/25 focus:outline-none';
 
 const DayRow = ({
   day,
@@ -67,15 +67,15 @@ const DayRow = ({
   const on = ranges.length > 0;
   const lastEnd = ranges[ranges.length - 1]?.end ?? '09:00';
   return (
-    <div className="flex flex-wrap items-start gap-x-3 gap-y-2 border-b border-white/[0.05] py-2.5 last:border-0">
-      <label className="flex w-24 shrink-0 cursor-pointer items-center gap-2 pt-1.5 text-sm text-neutral-200">
+    <div className="flex flex-wrap items-start gap-x-3 gap-y-2 border-b border-white/[0.05] py-2.5 last:border-0 auto-light:border-black/[0.06]">
+      <label className="flex w-24 shrink-0 cursor-pointer items-center gap-2 pt-1.5 text-sm text-neutral-200 auto-light:text-neutral-800">
         <input
           type="checkbox"
           checked={on}
           onChange={(e) =>
             onChange(e.target.checked ? [{ start: '10:00', end: '18:00' }] : [])
           }
-          className="size-4 accent-white"
+          className="size-4 accent-white auto-light:accent-neutral-900"
         />
         {WEEKDAYS[day]}
       </label>
@@ -133,7 +133,9 @@ const DayRow = ({
           ))}
         </div>
       ) : (
-        <p className="pt-1.5 text-sm text-neutral-600">Unavailable</p>
+        <p className="pt-1.5 text-sm text-neutral-600 auto-light:text-neutral-400">
+          Unavailable
+        </p>
       )}
     </div>
   );
@@ -227,7 +229,7 @@ export const AvailabilityEditor = ({
                 {upcomingDaysOff.map((d) => (
                   <span
                     key={d}
-                    className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.05] py-0.5 pl-2.5 pr-1 text-xs text-neutral-200"
+                    className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.05] py-0.5 pl-2.5 pr-1 text-xs text-neutral-200 auto-light:border-black/10 auto-light:bg-black/[0.04] auto-light:text-neutral-800"
                   >
                     {new Date(`${d}T12:00:00Z`).toLocaleDateString('en-GB', {
                       weekday: 'short',
@@ -238,7 +240,7 @@ export const AvailabilityEditor = ({
                     <button
                       type="button"
                       aria-label="Remove day off"
-                      className="flex size-5 items-center justify-center rounded-full text-[14px] text-neutral-400 hover:bg-white/10 hover:text-white"
+                      className="flex size-5 items-center justify-center rounded-full text-[14px] text-neutral-400 hover:bg-white/10 hover:text-white auto-light:text-neutral-500 auto-light:hover:bg-black/[0.06] auto-light:hover:text-neutral-950"
                       onClick={() =>
                         set(
                           'daysOff',

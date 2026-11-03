@@ -68,13 +68,13 @@ const ProposePicker = ({
 
   if (!slots)
     return (
-      <div className="flex items-center gap-2 py-6 text-sm text-neutral-400">
+      <div className="flex items-center gap-2 py-6 text-sm text-neutral-400 auto-light:text-neutral-500">
         <Spin /> Finding your free times…
       </div>
     );
   if (!slots.length)
     return (
-      <p className="py-4 text-sm text-neutral-400">
+      <p className="py-4 text-sm text-neutral-400 auto-light:text-neutral-500">
         You have no free times left in your booking window. Add hours under
         Availability, or decline instead.
       </p>
@@ -91,8 +91,8 @@ const ProposePicker = ({
             className={cn(
               'shrink-0 rounded-lg border px-3 py-1.5 text-xs',
               d === day
-                ? 'border-white bg-white text-neutral-950'
-                : 'border-white/10 text-neutral-300 hover:bg-white/[0.06]',
+                ? 'border-white bg-white text-neutral-950 auto-light:border-neutral-900 auto-light:bg-neutral-900 auto-light:text-white'
+                : 'border-white/10 text-neutral-300 hover:bg-white/[0.06] auto-light:border-black/10 auto-light:text-neutral-700 auto-light:hover:bg-black/[0.05]',
             )}
           >
             {new Date(`${d}T12:00:00Z`).toLocaleDateString('en-GB', {
@@ -113,8 +113,8 @@ const ProposePicker = ({
             className={cn(
               'h-9 rounded-lg border text-sm',
               slot === value
-                ? 'border-white bg-white font-semibold text-neutral-950'
-                : 'border-white/10 text-neutral-200 hover:border-white/30',
+                ? 'border-white bg-white font-semibold text-neutral-950 auto-light:border-neutral-900 auto-light:bg-neutral-900 auto-light:text-white'
+                : 'border-white/10 text-neutral-200 hover:border-white/30 auto-light:border-black/10 auto-light:text-neutral-800 auto-light:hover:border-black/30',
             )}
           >
             {formatTime(slot, timezone)}
@@ -149,8 +149,9 @@ const BookingRow = ({
     <div
       id={`booking-${booking.id}`}
       className={cn(
-        'flex scroll-mt-4 flex-col gap-3 rounded-xl border border-white/[0.07] bg-white/[0.02] p-3 transition-colors',
-        highlighted && 'border-white/40 bg-white/[0.06]',
+        'flex scroll-mt-4 flex-col gap-3 rounded-xl border border-white/[0.07] bg-white/[0.02] p-3 transition-colors auto-light:border-black/[0.08] auto-light:bg-black/[0.02]',
+        highlighted &&
+          'border-white/40 bg-white/[0.06] auto-light:border-black/30 auto-light:bg-black/[0.05]',
       )}
     >
       <div className="min-w-0">
@@ -160,12 +161,14 @@ const BookingRow = ({
               type="button"
               onClick={onSelect}
               title="Show on the calendar"
-              className="font-medium text-white hover:underline"
+              className="font-medium text-white hover:underline auto-light:text-neutral-950"
             >
               {booking.guestName}
             </button>
           ) : (
-            <p className="font-medium text-white">{booking.guestName}</p>
+            <p className="font-medium text-white auto-light:text-neutral-950">
+              {booking.guestName}
+            </p>
           )}
           <Pill tone={expired ? 'neutral' : status.tone}>
             {expired ? 'Expired' : status.label}
@@ -176,7 +179,7 @@ const BookingRow = ({
             </Pill>
           )}
         </div>
-        <p className="mt-1 text-sm text-neutral-300">
+        <p className="mt-1 text-sm text-neutral-300 auto-light:text-neutral-700">
           {formatDay(booking.start, timezone)},{' '}
           {formatTime(booking.start, timezone)} –{' '}
           {formatTime(booking.end, timezone)}
@@ -187,7 +190,7 @@ const BookingRow = ({
             ` · asked for ${formatDay(booking.requestedStart, timezone)}, ${formatTime(booking.requestedStart, timezone)}`}
         </p>
         {booking.guestNote && (
-          <p className="mt-2 whitespace-pre-wrap text-sm text-neutral-400">
+          <p className="mt-2 whitespace-pre-wrap text-sm text-neutral-400 auto-light:text-neutral-500">
             “{booking.guestNote}”
           </p>
         )}
@@ -198,7 +201,7 @@ const BookingRow = ({
               href={booking.meetingUrl}
               target="_blank"
               rel="noreferrer"
-              className="mt-1 inline-flex items-center gap-1 text-xs text-sky-300 underline"
+              className="mt-1 inline-flex items-center gap-1 text-xs text-sky-300 underline auto-light:text-sky-700"
             >
               <Icon name="videocam" className="text-[14px]" />
               {booking.meetingUrl}
@@ -382,7 +385,7 @@ export const BookingsList = ({
       >
         <div className="flex flex-col gap-5">
           {loading ? (
-            <div className="flex items-center gap-2 py-6 text-sm text-neutral-400">
+            <div className="flex items-center gap-2 py-6 text-sm text-neutral-400 auto-light:text-neutral-500">
               <Spin /> Loading…
             </div>
           ) : !requests.length && !upcoming.length ? (
@@ -395,7 +398,7 @@ export const BookingsList = ({
             <>
               {requests.length > 0 && (
                 <div className="flex flex-col gap-2">
-                  <p className="text-xs font-medium uppercase tracking-wide text-amber-300">
+                  <p className="text-xs font-medium uppercase tracking-wide text-amber-300 auto-light:text-amber-700">
                     Requests · {requests.length}
                   </p>
                   {requests.map(row)}
@@ -403,7 +406,7 @@ export const BookingsList = ({
               )}
               {upcoming.length > 0 && (
                 <div className="flex flex-col gap-2">
-                  <p className="text-xs font-medium uppercase tracking-wide text-neutral-400">
+                  <p className="text-xs font-medium uppercase tracking-wide text-neutral-400 auto-light:text-neutral-500">
                     Upcoming
                   </p>
                   {upcoming.map(row)}
@@ -416,7 +419,7 @@ export const BookingsList = ({
               <button
                 type="button"
                 onClick={() => setShowPast((v) => !v)}
-                className="flex items-center gap-1 self-start text-xs font-medium uppercase tracking-wide text-neutral-500 hover:text-neutral-300"
+                className="flex items-center gap-1 self-start text-xs font-medium uppercase tracking-wide text-neutral-500 hover:text-neutral-300 auto-light:hover:text-neutral-800"
               >
                 <Icon
                   name={showPast ? 'expand_less' : 'expand_more'}
@@ -431,6 +434,7 @@ export const BookingsList = ({
       </MeetSection>
 
       <AdminModal
+        autoTheme
         open={!!dialog}
         onOpenChange={(open) => !open && setDialog(null)}
         icon={

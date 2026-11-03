@@ -63,20 +63,30 @@ type Placed = HostBooking & {
 
 const BOOKING_STYLE: Partial<Record<MEET_BOOKING_STATUS, string>> = {
   PENDING:
-    'border-amber-300/70 bg-amber-300/[0.16] text-amber-100 hover:bg-amber-300/25',
+    'border-amber-300/70 bg-amber-300/[0.16] text-amber-100 hover:bg-amber-300/25 auto-light:border-amber-500 auto-light:bg-amber-100 auto-light:text-amber-900 auto-light:hover:bg-amber-200',
   PROPOSED:
-    'border-sky-300/60 border-dashed bg-sky-400/[0.12] text-sky-100 hover:bg-sky-400/20',
-  CONFIRMED: 'border-white bg-white text-neutral-950 hover:bg-neutral-200',
+    'border-sky-300/60 border-dashed bg-sky-400/[0.12] text-sky-100 hover:bg-sky-400/20 auto-light:border-sky-500 auto-light:bg-sky-50 auto-light:text-sky-900 auto-light:hover:bg-sky-100',
+  CONFIRMED:
+    'border-white bg-white text-neutral-950 hover:bg-neutral-200 auto-light:border-neutral-900 auto-light:bg-neutral-900 auto-light:text-white auto-light:hover:bg-neutral-700',
 };
 
 const LEGEND = [
   { label: 'Open', className: 'border-emerald-400/40 bg-emerald-400/[0.12]' },
-  { label: 'Request', className: 'border-amber-300/70 bg-amber-300/[0.16]' },
+  {
+    label: 'Request',
+    className:
+      'border-amber-300/70 bg-amber-300/[0.16] auto-light:border-amber-500 auto-light:bg-amber-100',
+  },
   {
     label: 'New time sent',
-    className: 'border-dashed border-sky-300/60 bg-sky-400/[0.12]',
+    className:
+      'border-dashed border-sky-300/60 bg-sky-400/[0.12] auto-light:border-sky-500 auto-light:bg-sky-50',
   },
-  { label: 'Confirmed', className: 'border-white bg-white' },
+  {
+    label: 'Confirmed',
+    className:
+      'border-white bg-white auto-light:border-neutral-900 auto-light:bg-neutral-900',
+  },
 ];
 
 /**
@@ -231,15 +241,15 @@ export const MeetCalendar = ({
   const rangeLabel = `${dayLabel(week[0], { day: 'numeric', month: 'short' })} – ${dayLabel(week[6], { day: 'numeric', month: 'short', year: 'numeric' })}`;
 
   return (
-    <section className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-white/[0.07] bg-neutral-900/40">
+    <section className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-white/[0.07] bg-neutral-900/40 auto-light:border-black/[0.08] auto-light:bg-white">
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-white/[0.07] px-4 py-3">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-white/[0.07] px-4 py-3 auto-light:border-black/[0.08]">
         <div className="flex items-center gap-1">
           <button
             type="button"
             aria-label="Previous week"
             onClick={() => move(-1)}
-            className="flex size-8 items-center justify-center rounded-lg text-[20px] text-neutral-300 hover:bg-white/10"
+            className="flex size-8 items-center justify-center rounded-lg text-[20px] text-neutral-300 hover:bg-white/10 auto-light:text-neutral-700 auto-light:hover:bg-black/[0.06]"
           >
             <Icon name="chevron_left" />
           </button>
@@ -247,7 +257,7 @@ export const MeetCalendar = ({
             type="button"
             aria-label="Next week"
             onClick={() => move(1)}
-            className="flex size-8 items-center justify-center rounded-lg text-[20px] text-neutral-300 hover:bg-white/10"
+            className="flex size-8 items-center justify-center rounded-lg text-[20px] text-neutral-300 hover:bg-white/10 auto-light:text-neutral-700 auto-light:hover:bg-black/[0.06]"
           >
             <Icon name="chevron_right" />
           </button>
@@ -255,13 +265,15 @@ export const MeetCalendar = ({
             type="button"
             onClick={goToday}
             disabled={weekStart === weekStartOf(today) && day === today}
-            className="ml-1 h-8 rounded-lg border border-white/10 px-3 text-xs font-medium text-neutral-200 hover:bg-white/[0.06] disabled:opacity-40"
+            className="ml-1 h-8 rounded-lg border border-white/10 px-3 text-xs font-medium text-neutral-200 hover:bg-white/[0.06] disabled:opacity-40 auto-light:border-black/10 auto-light:text-neutral-800 auto-light:hover:bg-black/[0.05]"
           >
             Today
           </button>
         </div>
         <div className="min-w-0">
-          <h2 className="text-base font-semibold text-white">{rangeLabel}</h2>
+          <h2 className="text-base font-semibold text-white auto-light:text-neutral-950">
+            {rangeLabel}
+          </h2>
           <p className="text-xs text-neutral-500">
             {weekMeetings} meeting{weekMeetings === 1 ? '' : 's'} · {weekOpen}{' '}
             open slot{weekOpen === 1 ? '' : 's'} · times in{' '}
@@ -272,7 +284,7 @@ export const MeetCalendar = ({
           {LEGEND.map((item) => (
             <li
               key={item.label}
-              className="flex items-center gap-1.5 text-[11px] text-neutral-400"
+              className="flex items-center gap-1.5 text-[11px] text-neutral-400 auto-light:text-neutral-500"
             >
               <span
                 className={cn('size-2.5 rounded-[3px] border', item.className)}
@@ -285,7 +297,7 @@ export const MeetCalendar = ({
 
       {/* Day picker on phones */}
       {phone && (
-        <div className="grid grid-cols-7 gap-1 border-b border-white/[0.07] p-2">
+        <div className="grid grid-cols-7 gap-1 border-b border-white/[0.07] p-2 auto-light:border-black/[0.08]">
           {week.map((ymd) => {
             const count =
               (bookingsByDay.get(ymd)?.length ?? 0) +
@@ -299,16 +311,20 @@ export const MeetCalendar = ({
                 className={cn(
                   'flex flex-col items-center rounded-lg py-1.5 text-[11px]',
                   selected
-                    ? 'bg-white text-neutral-950'
-                    : 'text-neutral-400 hover:bg-white/[0.06]',
+                    ? 'bg-white text-neutral-950 auto-light:bg-neutral-900 auto-light:text-white'
+                    : 'text-neutral-400 hover:bg-white/[0.06] auto-light:text-neutral-500 auto-light:hover:bg-black/[0.05]',
                 )}
               >
                 {dayLabel(ymd, { weekday: 'narrow' })}
                 <span
                   className={cn(
                     'text-sm font-semibold',
-                    !selected && ymd === today && 'text-emerald-300',
-                    !selected && ymd !== today && 'text-neutral-100',
+                    !selected &&
+                      ymd === today &&
+                      'text-emerald-300 auto-light:text-emerald-700',
+                    !selected &&
+                      ymd !== today &&
+                      'text-neutral-100 auto-light:text-neutral-900',
                   )}
                 >
                   {dayLabel(ymd, { day: 'numeric' })}
@@ -320,10 +336,10 @@ export const MeetCalendar = ({
                       className={cn(
                         'size-1 rounded-full',
                         b.status === MEET_BOOKING_STATUS.PENDING
-                          ? 'bg-amber-300'
+                          ? 'bg-amber-300 auto-light:bg-amber-500'
                           : selected
-                            ? 'bg-neutral-900'
-                            : 'bg-white',
+                            ? 'bg-neutral-900 auto-light:bg-white'
+                            : 'bg-white auto-light:bg-neutral-900',
                       )}
                     />
                   ))}
@@ -339,14 +355,14 @@ export const MeetCalendar = ({
 
       {/* Day headers */}
       {!phone && (
-        <div className="grid grid-cols-[52px_repeat(7,minmax(0,1fr))] border-b border-white/[0.07]">
+        <div className="grid grid-cols-[52px_repeat(7,minmax(0,1fr))] border-b border-white/[0.07] auto-light:border-black/[0.08]">
           <span />
           {week.map((ymd) => {
             const open = openByDay.get(ymd)?.count ?? 0;
             return (
               <div
                 key={ymd}
-                className="flex flex-col items-center gap-0.5 border-l border-white/[0.05] py-2"
+                className="flex flex-col items-center gap-0.5 border-l border-white/[0.05] py-2 auto-light:border-black/[0.06]"
               >
                 <span className="text-[11px] uppercase tracking-wide text-neutral-500">
                   {dayLabel(ymd, { weekday: 'short' })}
@@ -355,8 +371,8 @@ export const MeetCalendar = ({
                   className={cn(
                     'flex size-7 items-center justify-center rounded-full text-sm font-semibold',
                     ymd === today
-                      ? 'bg-white text-neutral-950'
-                      : 'text-neutral-100',
+                      ? 'bg-white text-neutral-950 auto-light:bg-neutral-900 auto-light:text-white'
+                      : 'text-neutral-100 auto-light:text-neutral-900',
                   )}
                 >
                   {dayLabel(ymd, { day: 'numeric' })}
@@ -401,16 +417,16 @@ export const MeetCalendar = ({
             <div
               key={ymd}
               className={cn(
-                'relative border-l border-white/[0.05]',
+                'relative border-l border-white/[0.05] auto-light:border-black/[0.06]',
                 (past || closed) &&
-                  'bg-[repeating-linear-gradient(135deg,transparent_0_6px,rgba(255,255,255,0.025)_6px_12px)]',
+                  'bg-[repeating-linear-gradient(135deg,transparent_0_6px,rgba(255,255,255,0.025)_6px_12px)] auto-light:bg-[repeating-linear-gradient(135deg,transparent_0_6px,rgba(0,0,0,0.035)_6px_12px)]',
               )}
               style={{ height: hoursCount * HOUR_PX }}
             >
               {Array.from({ length: hoursCount }, (_, i) => (
                 <span
                   key={i}
-                  className="absolute inset-x-0 border-t border-white/[0.05]"
+                  className="absolute inset-x-0 border-t border-white/[0.05] auto-light:border-black/[0.06]"
                   style={{ top: i * HOUR_PX }}
                 />
               ))}
@@ -425,7 +441,7 @@ export const MeetCalendar = ({
                 <div
                   key={block.from}
                   title={`Open ${formatTime(new Date(block.from), tz)} – ${formatTime(new Date(block.to), tz)}`}
-                  className="absolute inset-x-1 overflow-hidden rounded-md border border-emerald-400/30 bg-emerald-400/[0.08] px-1.5 py-1"
+                  className="absolute inset-x-1 overflow-hidden rounded-md border border-emerald-400/30 bg-emerald-400/[0.08] px-1.5 py-1 auto-light:border-emerald-500/40 auto-light:bg-emerald-500/[0.08]"
                   style={{
                     top: top(ymd, block.from) + 1,
                     height: Math.max(
@@ -434,7 +450,7 @@ export const MeetCalendar = ({
                     ),
                   }}
                 >
-                  <p className="text-[10px] font-medium leading-tight text-emerald-300/90">
+                  <p className="text-[10px] font-medium leading-tight text-emerald-300/90 auto-light:text-emerald-700">
                     <span className="block">Open</span>
                     {block.to - block.from >= 60 * MINUTE && (
                       <span className="block opacity-80">
@@ -459,11 +475,11 @@ export const MeetCalendar = ({
                     onClick={() => onSelect(b.id)}
                     title={`${b.guestName} · ${formatTime(b.start, tz)} – ${formatTime(b.end, tz)}`}
                     className={cn(
-                      'absolute z-10 overflow-hidden rounded-md border px-1.5 py-1 text-left shadow-sm shadow-black/40 transition-colors',
+                      'absolute z-10 overflow-hidden rounded-md border px-1.5 py-1 text-left shadow-sm shadow-black/40 transition-colors auto-light:shadow-black/10',
                       BOOKING_STYLE[b.status],
                       b.to < now.getTime() && 'opacity-50',
                       b.id === selectedId &&
-                        'ring-2 ring-white ring-offset-2 ring-offset-neutral-950',
+                        'ring-2 ring-white ring-offset-2 ring-offset-neutral-950 auto-light:ring-neutral-900 auto-light:ring-offset-white',
                     )}
                     style={{
                       top: top(ymd, b.from) + 1,
@@ -503,11 +519,11 @@ export const MeetCalendar = ({
       </div>
 
       {phone && (
-        <ul className="flex flex-wrap items-center gap-3 border-t border-white/[0.07] px-4 py-2.5">
+        <ul className="flex flex-wrap items-center gap-3 border-t border-white/[0.07] px-4 py-2.5 auto-light:border-black/[0.08]">
           {LEGEND.map((item) => (
             <li
               key={item.label}
-              className="flex items-center gap-1.5 text-[11px] text-neutral-400"
+              className="flex items-center gap-1.5 text-[11px] text-neutral-400 auto-light:text-neutral-500"
             >
               <span
                 className={cn('size-2.5 rounded-[3px] border', item.className)}

@@ -48,12 +48,13 @@ type ButtonSize = 'sm' | 'md';
 
 const buttonTones: Record<ButtonTone, string> = {
   primary:
-    'bg-white text-neutral-950 hover:bg-neutral-200 active:bg-neutral-300 shadow-sm',
+    'bg-white text-neutral-950 hover:bg-neutral-200 active:bg-neutral-300 shadow-sm auto-light:bg-neutral-900 auto-light:text-white auto-light:hover:bg-neutral-700 auto-light:active:bg-neutral-800',
   secondary:
-    'border border-white/10 bg-white/[0.04] text-neutral-100 hover:bg-white/[0.09] hover:border-white/20',
-  ghost: 'text-neutral-300 hover:bg-white/[0.06] hover:text-white',
+    'border border-white/10 bg-white/[0.04] text-neutral-100 hover:bg-white/[0.09] hover:border-white/20 auto-light:border-black/10 auto-light:bg-white auto-light:text-neutral-800 auto-light:hover:bg-neutral-100 auto-light:hover:border-black/20',
+  ghost:
+    'text-neutral-300 hover:bg-white/[0.06] hover:text-white auto-light:text-neutral-600 auto-light:hover:bg-black/[0.05] auto-light:hover:text-neutral-950',
   danger:
-    'border border-rose-500/25 bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 hover:text-rose-200',
+    'border border-rose-500/25 bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 hover:text-rose-200 auto-light:text-rose-600 auto-light:hover:text-rose-700',
 };
 
 const buttonSizes: Record<ButtonSize, string> = {
@@ -135,7 +136,7 @@ export const IconAction = ({
       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 disabled:opacity-40',
       tone === 'danger'
         ? 'text-neutral-400 hover:bg-rose-500/15 hover:text-rose-300'
-        : 'text-neutral-400 hover:bg-white/10 hover:text-white',
+        : 'text-neutral-400 hover:bg-white/10 hover:text-white auto-light:text-neutral-500 auto-light:hover:bg-black/[0.06] auto-light:hover:text-neutral-950',
       className,
     )}
     {...props}
@@ -166,7 +167,7 @@ export const Panel = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      'rounded-2xl border border-white/[0.07] bg-neutral-900/40 backdrop-blur-sm',
+      'rounded-2xl border border-white/[0.07] bg-neutral-900/40 backdrop-blur-sm auto-light:border-black/[0.08] auto-light:bg-white',
       className,
     )}
     {...props}
@@ -285,7 +286,9 @@ export const StatCard = ({
 
 export const inputBase =
   'w-full rounded-lg border border-white/10 bg-neutral-900/80 px-3 text-sm text-neutral-100 placeholder:text-neutral-600 transition-colors ' +
-  'focus:border-white/25 focus:outline-none focus:ring-2 focus:ring-white/10 disabled:cursor-not-allowed disabled:opacity-50';
+  'focus:border-white/25 focus:outline-none focus:ring-2 focus:ring-white/10 disabled:cursor-not-allowed disabled:opacity-50 ' +
+  // Only inside an `.auto-theme` screen (see tailwind.config); admin stays dark.
+  'auto-light:border-black/10 auto-light:bg-white auto-light:text-neutral-900 auto-light:placeholder:text-neutral-400 auto-light:focus:border-black/25 auto-light:focus:ring-black/5 auto-light:[color-scheme:light]';
 
 export const TextInput = forwardRef<
   HTMLInputElement,
@@ -316,7 +319,7 @@ export const NativeSelect = forwardRef<
       ref={ref}
       className={cn(
         inputBase,
-        'h-10 cursor-pointer appearance-none pr-9 [&>option]:bg-neutral-900',
+        'h-10 cursor-pointer appearance-none pr-9 [&>option]:bg-neutral-900 auto-light:[&>option]:bg-white',
         className,
       )}
       {...props}
@@ -338,7 +341,11 @@ export const DateInput = forwardRef<
   <input
     ref={ref}
     type="date"
-    className={cn(inputBase, 'h-10 [color-scheme:dark]', className)}
+    className={cn(
+      inputBase,
+      'h-10 [color-scheme:dark] auto-light:[color-scheme:light]',
+      className,
+    )}
     {...props}
   />
 ));
@@ -365,7 +372,7 @@ export const Field = ({
     {label && (
       <label
         htmlFor={htmlFor}
-        className="flex items-center gap-1 text-xs font-medium uppercase tracking-wide text-neutral-400"
+        className="flex items-center gap-1 text-xs font-medium uppercase tracking-wide text-neutral-400 auto-light:text-neutral-500"
       >
         {label}
         {required && <span className="text-rose-400">*</span>}
@@ -378,7 +385,11 @@ export const Field = ({
         {error}
       </p>
     ) : (
-      hint && <p className="text-xs text-neutral-600">{hint}</p>
+      hint && (
+        <p className="text-xs text-neutral-600 auto-light:text-neutral-500">
+          {hint}
+        </p>
+      )
     )}
   </div>
 );
@@ -407,11 +418,16 @@ export const ToggleSwitch = ({
     className={cn(
       'flex w-full items-center justify-between gap-4 rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2.5 text-left transition-colors',
       'hover:border-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20 disabled:opacity-50',
+      'auto-light:border-black/10 auto-light:bg-neutral-50 auto-light:hover:border-black/20',
       className,
     )}
   >
     <span className="min-w-0">
-      {label && <span className="block text-sm text-neutral-200">{label}</span>}
+      {label && (
+        <span className="block text-sm text-neutral-200 auto-light:text-neutral-800">
+          {label}
+        </span>
+      )}
       {description && (
         <span className="block text-xs text-neutral-500">{description}</span>
       )}
@@ -419,7 +435,7 @@ export const ToggleSwitch = ({
     <span
       className={cn(
         'relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors',
-        checked ? 'bg-emerald-500/80' : 'bg-white/15',
+        checked ? 'bg-emerald-500/80' : 'bg-white/15 auto-light:bg-black/15',
       )}
     >
       <span
@@ -565,12 +581,17 @@ export type PillTone =
   | 'purple';
 
 const pillTones: Record<PillTone, string> = {
-  neutral: 'border-white/10 bg-white/[0.06] text-neutral-300',
-  positive: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300',
-  warning: 'border-amber-500/20 bg-amber-500/10 text-amber-300',
-  danger: 'border-rose-500/20 bg-rose-500/10 text-rose-300',
-  info: 'border-sky-500/20 bg-sky-500/10 text-sky-300',
-  purple: 'border-violet-500/20 bg-violet-500/10 text-violet-300',
+  neutral:
+    'border-white/10 bg-white/[0.06] text-neutral-300 auto-light:border-black/10 auto-light:bg-black/[0.04] auto-light:text-neutral-600',
+  positive:
+    'border-emerald-500/20 bg-emerald-500/10 text-emerald-300 auto-light:text-emerald-700',
+  warning:
+    'border-amber-500/20 bg-amber-500/10 text-amber-300 auto-light:border-amber-500/30 auto-light:text-amber-700',
+  danger:
+    'border-rose-500/20 bg-rose-500/10 text-rose-300 auto-light:text-rose-700',
+  info: 'border-sky-500/20 bg-sky-500/10 text-sky-300 auto-light:text-sky-700',
+  purple:
+    'border-violet-500/20 bg-violet-500/10 text-violet-300 auto-light:text-violet-700',
 };
 
 export const Pill = ({
@@ -665,11 +686,13 @@ export const EmptyState = ({
       className,
     )}
   >
-    <span className="flex size-14 items-center justify-center rounded-2xl border border-white/[0.07] bg-white/[0.03] text-[26px] text-neutral-600">
+    <span className="flex size-14 items-center justify-center rounded-2xl border border-white/[0.07] bg-white/[0.03] text-[26px] text-neutral-600 auto-light:border-black/[0.08] auto-light:bg-black/[0.03] auto-light:text-neutral-400">
       <Icon name={icon} />
     </span>
     <div>
-      <p className="text-sm font-medium text-neutral-300">{title}</p>
+      <p className="text-sm font-medium text-neutral-300 auto-light:text-neutral-700">
+        {title}
+      </p>
       {description && (
         <p className="mx-auto mt-1 max-w-sm text-xs text-neutral-500">
           {description}
@@ -728,6 +751,7 @@ export const AdminModal = ({
   children,
   footer,
   size = 'md',
+  autoTheme,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -737,6 +761,8 @@ export const AdminModal = ({
   children: ReactNode;
   footer?: ReactNode;
   size?: 'sm' | 'md' | 'lg';
+  /** Follow the portal's light/dark theme (screens marked `auto-theme`). */
+  autoTheme?: boolean;
 }) => {
   const widths = {
     sm: 'max-w-md',
@@ -752,19 +778,21 @@ export const AdminModal = ({
           className={cn(
             'fixed left-1/2 top-1/2 z-[61] flex max-h-[90vh] w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden',
             'rounded-2xl border border-white/10 bg-neutral-950 shadow-2xl shadow-black/60',
+            autoTheme &&
+              'auto-theme auto-light:border-black/10 auto-light:bg-white auto-light:shadow-black/15',
             'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95',
             widths[size],
           )}
         >
-          <div className="flex items-start justify-between gap-4 border-b border-white/[0.07] px-5 py-4">
+          <div className="flex items-start justify-between gap-4 border-b border-white/[0.07] px-5 py-4 auto-light:border-black/[0.07]">
             <div className="flex min-w-0 items-start gap-3">
               {icon && (
-                <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/[0.06] text-[20px] text-neutral-300">
+                <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/[0.06] text-[20px] text-neutral-300 auto-light:bg-black/[0.05] auto-light:text-neutral-600">
                   <Icon name={icon} />
                 </span>
               )}
               <div className="min-w-0">
-                <DialogPrimitive.Title className="text-base font-semibold text-white">
+                <DialogPrimitive.Title className="text-base font-semibold text-white auto-light:text-neutral-950">
                   {title}
                 </DialogPrimitive.Title>
                 {description ? (
@@ -788,7 +816,7 @@ export const AdminModal = ({
           </div>
 
           {footer && (
-            <div className="flex items-center justify-end gap-2 border-t border-white/[0.07] bg-neutral-900/40 px-5 py-3">
+            <div className="flex items-center justify-end gap-2 border-t border-white/[0.07] bg-neutral-900/40 px-5 py-3 auto-light:border-black/[0.07] auto-light:bg-neutral-50">
               {footer}
             </div>
           )}
@@ -807,6 +835,7 @@ export const ConfirmDialog = ({
   onConfirm,
   loading,
   message = 'This action cannot be undone. Please confirm you want to continue.',
+  autoTheme,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -816,8 +845,10 @@ export const ConfirmDialog = ({
   onConfirm: () => void;
   loading?: boolean;
   message?: string;
+  autoTheme?: boolean;
 }) => (
   <AdminModal
+    autoTheme={autoTheme}
     open={open}
     onOpenChange={onOpenChange}
     title={title}
@@ -846,7 +877,9 @@ export const ConfirmDialog = ({
       </>
     }
   >
-    <p className="text-sm text-neutral-400">{message}</p>
+    <p className="text-sm text-neutral-400 auto-light:text-neutral-600">
+      {message}
+    </p>
   </AdminModal>
 );
 
