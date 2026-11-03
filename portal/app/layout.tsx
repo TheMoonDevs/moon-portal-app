@@ -15,6 +15,7 @@ import localFont from 'next/font/local';
 import { ToastsContainer } from '@/components/elements/Toast';
 import { PermissionDeniedToaster } from '@/components/global/PermissionDeniedToaster';
 import { ServiceWorkerProvider } from '@/components/global/ServiceWorkerProvider';
+import { ChatProvider } from '@/components/screens/Messages/ChatProvider';
 import { THEME_SCRIPT } from '@/lib/theme';
 import { MUIThemeRegistry } from '@/styles/provider';
 import { APP_BASE_URL } from '@/utils/constants/appInfo';
@@ -85,7 +86,7 @@ export default function RootLayout({
             <MantineProvider>
               <ReduxProvider>
                 <ServiceWorkerProvider />
-                {children}
+                <ChatProvider>{children}</ChatProvider>
                 <ToastsContainer />
                 <PermissionDeniedToaster />
               </ReduxProvider>
