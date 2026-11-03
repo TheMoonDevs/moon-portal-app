@@ -11,8 +11,9 @@ import {
   describeGoalSchedule,
   type GoalProgress,
   PERIOD_LABELS,
+  PERIOD_NOUN,
 } from '@/lib/workspace/projects';
-import type { ProjectGoal } from '@/models/workspace';
+import type { GoalPeriod, ProjectGoal } from '@/models/workspace';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import {
@@ -40,7 +41,13 @@ import { GoalActivity } from './GoalActivity';
 import { GoalIdChip, LinkTaskButton } from './GoalTools';
 import { SectionShell } from './SectionShell';
 
-const PERIOD_WORD = { day: 'Today', week: 'This week', month: 'This month' };
+const PERIOD_WORD: Record<GoalPeriod, string> = {
+  day: 'Today',
+  week: 'This week',
+  fortnight: 'These 2 weeks',
+  month: 'This month',
+  quarter: 'This quarter',
+};
 const OPEN = ['TODO', 'IN_PROGRESS', 'IN_REVIEW'];
 
 type PersonLite = Pick<Person, 'id' | 'name' | 'avatar'>;
@@ -244,7 +251,7 @@ const ScheduledGoal = ({
                   {PERIOD_WORD[goal.period].toLowerCase()}
                 </TipTitle>
                 Done tasks linked to this goal for days in this{' '}
-                {goal.period === 'day' ? 'day' : goal.period}
+                {PERIOD_NOUN[goal.period]}
                 {p?.manual ? `, plus ${p.manual} added by hand` : ''}. Work done
                 early counts for the day it was for.
               </>
@@ -419,9 +426,7 @@ const ScheduledGoal = ({
             <Tip
               content={
                 <>
-                  <TipTitle>
-                    Past {goal.period === 'day' ? 'days' : `${goal.period}s`}
-                  </TipTitle>
+                  <TipTitle>Past {PERIOD_NOUN[goal.period]}s</TipTitle>
                   <div className="flex flex-col gap-0.5">
                     {history.map((h) => (
                       <TipRow
@@ -458,9 +463,7 @@ const ScheduledGoal = ({
               </span>
             </Tip>
           ) : (
-            <span className="ml-auto">
-              First {goal.period === 'day' ? 'day' : goal.period}
-            </span>
+            <span className="ml-auto">First {PERIOD_NOUN[goal.period]}</span>
           )}
         </div>
       </div>

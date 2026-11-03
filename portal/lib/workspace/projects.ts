@@ -6,6 +6,7 @@
 import type {
   GoalKind,
   GoalPeriod,
+  GoalSlot,
   ProjectGoal,
   ScheduleEvery,
 } from '@/models/workspace';
@@ -22,24 +23,70 @@ export const addDays = (day: string, n: number) => {
   return toDay(d);
 };
 
-/** First and last day of the period that contains `day` (weeks start Monday). */
-export function periodRange(period: GoalPeriod, day: string = toDay()) {
-  const d = parseDay(day);
+/** The Monday of the week that holds `day`. */
+export const mondayOf = (day: string) =>
+  addDays(day, -((parseDay(day).getUTCDay() + 6) % 7));
+
+/** Whole weeks from the week of `a` to the week of `b`. */
+const weeksBetween = (a: string, b: string) =>
+  Math.round(
+    (parseDay(mondayOf(b)).getTime() - parseDay(mondayOf(a)).getTime()) /
+      (7 * 86400000),
+  );
+
+/** Days in the month of `day`. */
+const monthLength = (day: string) => {
+  const d = parseDay(`${day.slice(0, 7)}-01`);
+  d.setUTCMonth(d.getUTCMonth() + 1);
+  d.setUTCDate(0);
+  return d.getUTCDate();
+};
+
+/**
+ * First and last day of the period that contains `day` (weeks start
+ * Monday; quarters are Jan-Mar, Apr-Jun, Jul-Sep and Oct-Dec). A
+ * fortnight is two weeks counted from the week of `anchor` (the day a
+ * fortnightly goal was set).
+ */
+export function periodRange(
+  period: GoalPeriod,
+  day: string = toDay(),
+  anchor?: string | null,
+) {
   if (period === 'day') return { from: day, to: day };
   if (period === 'week') {
-    const from = addDays(day, -((d.getUTCDay() + 6) % 7));
+    const from = mondayOf(day);
     return { from, to: addDays(from, 6) };
   }
-  const from = `${day.slice(0, 7)}-01`;
+  if (period === 'fortnight') {
+    const monday = mondayOf(day);
+    const odd = anchor ? Math.abs(weeksBetween(anchor, day)) % 2 === 1 : false;
+    const from = odd ? addDays(monday, -7) : monday;
+    return { from, to: addDays(from, 13) };
+  }
+  const month = Number(day.slice(5, 7));
+  const first = period === 'quarter' ? month - ((month - 1) % 3) : month;
+  const from = `${day.slice(0, 4)}-${String(first).padStart(2, '0')}-01`;
   const next = parseDay(from);
-  next.setUTCMonth(next.getUTCMonth() + 1);
+  next.setUTCMonth(next.getUTCMonth() + (period === 'quarter' ? 3 : 1));
   return { from, to: addDays(toDay(next), -1) };
 }
 
 export const PERIOD_LABELS: Record<GoalPeriod, string> = {
   day: 'a day',
   week: 'a week',
+  fortnight: 'every 2 weeks',
   month: 'a month',
+  quarter: 'a quarter',
+};
+
+/** The period as a noun: "day", "week", "fortnight", "month", "quarter". */
+export const PERIOD_NOUN: Record<GoalPeriod, string> = {
+  day: 'day',
+  week: 'week',
+  fortnight: 'fortnight',
+  month: 'month',
+  quarter: 'quarter',
 };
 
 /* ---------------------------------- Goals --------------------------------- */
@@ -51,7 +98,43 @@ const clampInt = (v: unknown, min: number, max: number, fallback: number) => {
   return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : fallback;
 };
 
-const PERIODS: GoalPeriod[] = ['day', 'week', 'month'];
+export const PERIODS: GoalPeriod[] = [
+  'day',
+  'week',
+  'fortnight',
+  'month',
+  'quarter',
+];
+
+/** Well-formed days of a month or quarter, at most 31, in order. */
+export function sanitizeSlots(input: unknown, quarter: boolean): GoalSlot[] {
+  if (!Array.isArray(input)) return [];
+  const out: GoalSlot[] = [];
+  for (const raw of input.slice(0, 31)) {
+    const r = raw as any;
+    const month = quarter ? clampInt(r?.month ?? 1, 1, 3, 1) : undefined;
+    let slot: GoalSlot | null = null;
+    if (r?.nth != null && r?.weekday != null)
+      slot = {
+        nth: clampInt(r.nth, 1, 5, 1),
+        weekday: clampInt(r.weekday, 0, 6, 1),
+      };
+    else if (r?.date != null) slot = { date: clampInt(r.date, 1, 31, 1) };
+    if (!slot) continue;
+    if (month) slot = { month, ...slot };
+    if (!out.some((x) => slotKey(x) === slotKey(slot!))) out.push(slot);
+  }
+  return out.sort((a, b) => slotOrder(a) - slotOrder(b));
+}
+
+const slotKey = (s: GoalSlot) =>
+  `${s.month ?? 1}:${s.date ?? ''}:${s.nth ?? ''}:${s.weekday ?? ''}`;
+
+/** Roughly where in its period a slot falls, for ordering. */
+const slotOrder = (s: GoalSlot) =>
+  ((s.month ?? 1) - 1) * 100 +
+  (s.date ?? ((s.nth ?? 1) === 5 ? 29 : ((s.nth ?? 1) - 1) * 7 + 1)) +
+  (s.weekday ?? 0) / 10;
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -105,7 +188,9 @@ export function sanitizeGoals(
           : [];
       const period: GoalPeriod = PERIODS.includes(g.period) ? g.period : 'week';
       const days =
-        !target && period === 'week' && Array.isArray(g.days)
+        !target &&
+        (period === 'week' || period === 'fortnight') &&
+        Array.isArray(g.days)
           ? Array.from(
               new Set(
                 g.days
@@ -113,6 +198,10 @@ export function sanitizeGoals(
                   .filter((d: number) => d >= 0),
               ),
             ).sort()
+          : [];
+      const slots =
+        !target && (period === 'month' || period === 'quarter')
+          ? sanitizeSlots(g.slots, period === 'quarter')
           : [];
       const assigneeIds = ids(g.assigneeIds);
       return {
@@ -130,6 +219,7 @@ export function sanitizeGoals(
           : clampInt(g.target, 1, target ? 1e9 : 10000, 1),
         ...(parts.length && { parts }),
         ...(days.length && { days }),
+        ...(slots.length && { slots }),
         ...(!target &&
           period === 'month' &&
           g.monthDay != null && { monthDay: clampInt(g.monthDay, 1, 28, 1) }),
@@ -238,7 +328,7 @@ function contributorsOf(rows: DoneTask[]) {
 export function goalWindow(goal: ProjectGoal, day: string = toDay()) {
   if (isTarget(goal))
     return { from: goal.since ?? '2000-01-01', to: '9999-12-31' };
-  return periodRange(goal.period, day);
+  return periodRange(goal.period, day, goal.since);
 }
 
 /** One goal's progress in the period from `from` to `to`. */
@@ -313,7 +403,7 @@ export function goalHistory(
   if (isTarget(goal)) return out;
   let day = today;
   for (let i = 0; i < count; i++) {
-    const { from, to } = periodRange(goal.period, day);
+    const { from, to } = periodRange(goal.period, day, goal.since);
     if (since && to < since) break;
     const p = progressIn(goal, tasks, from, to);
     out.unshift({
@@ -333,22 +423,50 @@ type ScheduleRule = {
   every: ScheduleEvery;
   weekdays?: number[] | null;
   monthDay?: number | null;
+  slots?: GoalSlot[] | null;
+  /** Fortnightly: a day in a week it runs in (it runs every other week). */
+  anchor?: string | null;
 };
+
+/** Whether a day of a month or quarter falls on `day`. */
+export function slotOn(slot: GoalSlot, day: string, quarter = false) {
+  const d = parseDay(day);
+  if (quarter && (d.getUTCMonth() % 3) + 1 !== (slot.month ?? 1)) return false;
+  const date = d.getUTCDate();
+  const last = monthLength(day);
+  if (slot.nth != null) {
+    if (d.getUTCDay() !== (slot.weekday ?? 1)) return false;
+    return slot.nth >= 5 ? date + 7 > last : Math.ceil(date / 7) === slot.nth;
+  }
+  return date === Math.min(slot.date ?? 1, last);
+}
+
+const QUARTER_START: GoalSlot[] = [{ month: 1, date: 1 }];
 
 /** Whether the schedule runs on `day`. */
 export function runsOn(rule: ScheduleRule, day: string) {
   const d = parseDay(day);
   if (rule.every === 'day') return true;
-  if (rule.every === 'week') {
+  if (rule.every === 'week' || rule.every === 'fortnight') {
     const days = rule.weekdays?.length ? rule.weekdays : [1];
-    return days.includes(d.getUTCDay());
+    if (!days.includes(d.getUTCDay())) return false;
+    return (
+      rule.every === 'week' ||
+      !rule.anchor ||
+      Math.abs(weeksBetween(rule.anchor, day)) % 2 === 0
+    );
   }
+  if (rule.every === 'quarter')
+    return (rule.slots?.length ? rule.slots : QUARTER_START).some((s) =>
+      slotOn(s, day, true),
+    );
+  if (rule.slots?.length) return rule.slots.some((s) => slotOn(s, day));
   return d.getUTCDate() === (rule.monthDay || 1);
 }
 
 /** The first run date on or after `day`. */
 export function nextRunOnOrAfter(rule: ScheduleRule, day: string) {
-  for (let i = 0; i < 62; i++) {
+  for (let i = 0; i < 400; i++) {
     const candidate = addDays(day, i);
     if (runsOn(rule, candidate)) return candidate;
   }
@@ -366,7 +484,7 @@ export function runCovering(
   rule: ScheduleRule & { dueInDays?: number | null },
   day: string,
 ): string | null {
-  for (let i = 0; i < 62; i++) {
+  for (let i = 0; i < 120; i++) {
     const run = addDays(day, -i);
     if (!runsOn(rule, run)) continue;
     const last =
@@ -389,26 +507,52 @@ export function runsFrom(rule: ScheduleRule, from: string, n: number) {
   return runs;
 }
 
-export function describeSchedule(rule: ScheduleRule & { count?: number }) {
-  const count = rule.count && rule.count > 1 ? `${rule.count} tasks ` : '';
-  if (rule.every === 'day') return `${count}every day`;
-  if (rule.every === 'week') {
-    const days = (rule.weekdays?.length ? rule.weekdays : [1])
-      .slice()
-      .sort()
-      .map((d) => WEEKDAYS[d]);
-    return `${count}every ${days.join(', ')}`;
-  }
-  const n = rule.monthDay || 1;
-  const suffix =
+export const ordinal = (n: number) =>
+  `${n}${
     n % 10 === 1 && n !== 11
       ? 'st'
       : n % 10 === 2 && n !== 12
         ? 'nd'
         : n % 10 === 3 && n !== 13
           ? 'rd'
-          : 'th';
-  return `${count}on the ${n}${suffix} of every month`;
+          : 'th'
+  }`;
+
+/** "21st", "3rd Fri", "last Mon"; in a quarter "15th of month 2". */
+export function slotLabel(slot: GoalSlot, quarter = false) {
+  const when =
+    slot.nth != null
+      ? `${slot.nth >= 5 ? 'last' : ordinal(slot.nth)} ${WEEKDAYS[slot.weekday ?? 1]}`
+      : ordinal(slot.date ?? 1);
+  return quarter ? `${when} of month ${slot.month ?? 1}` : when;
+}
+
+/** "a", "a and b", "a, b and c". */
+const listed = (items: string[]) =>
+  items.length > 1
+    ? `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`
+    : (items[0] ?? '');
+
+export function describeSchedule(rule: ScheduleRule & { count?: number }) {
+  const count = rule.count && rule.count > 1 ? `${rule.count} tasks ` : '';
+  if (rule.every === 'day') return `${count}every day`;
+  if (rule.every === 'week' || rule.every === 'fortnight') {
+    const days = (rule.weekdays?.length ? rule.weekdays : [1])
+      .slice()
+      .sort()
+      .map((d) => WEEKDAYS[d]);
+    return rule.every === 'week'
+      ? `${count}every ${days.join(', ')}`
+      : `${count}every other ${days.join(', ')}`;
+  }
+  if (rule.every === 'quarter') {
+    const slots = rule.slots?.length ? rule.slots : QUARTER_START;
+    return `${count}on the ${listed(slots.map((s) => slotLabel(s, true)))} of every quarter`;
+  }
+  const slots = rule.slots?.length
+    ? rule.slots
+    : [{ date: rule.monthDay || 1 }];
+  return `${count}on the ${listed(slots.map((s) => slotLabel(s)))} of every month`;
 }
 
 /* ------------------------------ Goal schedules ----------------------------- */
@@ -417,74 +561,119 @@ export type GoalRule = {
   every: ScheduleEvery;
   weekdays: number[];
   monthDay: number | null;
+  slots: GoalSlot[];
+  /** Fortnightly: the Monday of the week the goal was set. */
+  anchor: string | null;
   /** Tasks made each run. */
   count: number;
   dueInDays: number | null;
 };
 
+type GoalShape = Pick<
+  ProjectGoal,
+  'period' | 'days' | 'monthDay' | 'slots' | 'since'
+>;
+
 /**
  * When a scheduled goal makes its tasks, for a target of `target` a
  * period: every day; on its weekdays (the target spread over them, each
- * due that day) or else all on Monday, due by Sunday; or on its day of
- * the month.
+ * due that day) or else all on Monday, due by Sunday; every other week the
+ * same way, from the week the goal was set; on its days of the month or
+ * quarter (dates like the 21st, or weekdays like the 3rd Friday; the
+ * target spread over them, each due that day), or else all at the start
+ * of the month or quarter.
  */
-export function goalRule(
-  goal: Pick<ProjectGoal, 'period' | 'days' | 'monthDay'>,
-  target: number,
-): GoalRule {
+export function goalRule(goal: GoalShape, target: number): GoalRule {
   const n = Math.max(1, target);
+  const base = { weekdays: [], monthDay: null, slots: [], anchor: null };
   if (goal.period === 'day')
-    return {
-      every: 'day',
-      weekdays: [],
-      monthDay: null,
-      count: n,
-      dueInDays: 0,
-    };
-  if (goal.period === 'month')
-    return {
-      every: 'month',
-      weekdays: [],
-      monthDay: goal.monthDay || 1,
-      count: n,
-      dueInDays: null,
-    };
+    return { ...base, every: 'day', count: n, dueInDays: 0 };
+  if (goal.period === 'month' || goal.period === 'quarter') {
+    const slots = goal.slots?.length ? goal.slots : null;
+    if (slots)
+      return {
+        ...base,
+        every: goal.period,
+        slots,
+        count: Math.max(1, Math.ceil(n / slots.length)),
+        dueInDays: 0,
+      };
+    return goal.period === 'month'
+      ? {
+          ...base,
+          every: 'month',
+          monthDay: goal.monthDay || 1,
+          count: n,
+          dueInDays: null,
+        }
+      : {
+          ...base,
+          every: 'quarter',
+          slots: QUARTER_START,
+          count: n,
+          dueInDays: null,
+        };
+  }
+  const every = goal.period === 'fortnight' ? 'fortnight' : 'week';
+  const anchor = every === 'fortnight' ? mondayOf(goal.since || toDay()) : null;
   const days = goal.days?.length ? goal.days : null;
   return days
     ? {
-        every: 'week',
+        ...base,
+        every,
         weekdays: days,
-        monthDay: null,
+        anchor,
         count: Math.max(1, Math.ceil(n / days.length)),
         dueInDays: 0,
       }
-    : { every: 'week', weekdays: [1], monthDay: null, count: n, dueInDays: 6 };
+    : {
+        ...base,
+        every,
+        weekdays: [1],
+        anchor,
+        count: n,
+        dueInDays: every === 'week' ? 6 : 13,
+      };
 }
 
 /** "1 task each Mon and Fri", "3 tasks every Monday, due Sunday". */
-export function describeGoalSchedule(
-  goal: Pick<ProjectGoal, 'period' | 'days' | 'monthDay' | 'target'>,
-) {
+export function describeGoalSchedule(goal: GoalShape & { target: number }) {
   const rule = goalRule(goal, goal.target);
   const tasks = `${rule.count} task${rule.count === 1 ? '' : 's'}`;
   if (rule.every === 'day') return `${tasks} every day`;
-  if (rule.every === 'month')
-    return `${tasks} ${describeSchedule({ ...rule, count: 1 })}`;
+  if (rule.every === 'month' || rule.every === 'quarter') {
+    if (rule.dueInDays === 0)
+      return `${tasks} ${describeSchedule({ ...rule, count: 1 }).replace(
+        /^on /,
+        rule.slots.length > 1 ? 'on each of ' : 'on ',
+      )}`;
+    return rule.every === 'quarter'
+      ? `${tasks} at the start of every quarter, due by its end`
+      : `${tasks} ${describeSchedule({ ...rule, count: 1 })}`;
+  }
   if (rule.dueInDays === 6) return `${tasks} every Monday, due by Sunday`;
-  const names = rule.weekdays.map((d) => WEEKDAYS[d]);
-  return `${tasks} for each ${
-    names.length > 1
-      ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`
-      : names[0]
-  }`;
+  if (rule.dueInDays === 13)
+    return `${tasks} every other Monday, due by the Sunday after next`;
+  const names = listed(rule.weekdays.map((d) => WEEKDAYS[d]));
+  return rule.every === 'fortnight'
+    ? `${tasks} for each ${names}, every other week`
+    : `${tasks} for each ${names}`;
 }
 
 /** How often a goal repeats: "per day", "twice a week", "3 times a week". */
-export function goalCadence(
-  goal: Pick<ProjectGoal, 'period' | 'days' | 'monthDay'>,
-) {
+export function goalCadence(goal: GoalShape) {
   if (goal.period === 'day') return 'per day';
-  if (goal.period === 'month') return 'per month';
+  if (goal.period === 'fortnight') {
+    const days = new Set(goal.days ?? []).size;
+    return days > 1 ? `${days} times every 2 weeks` : 'every 2 weeks';
+  }
+  if (goal.period === 'month' || goal.period === 'quarter') {
+    const n = goal.slots?.length ?? 0;
+    const per = goal.period === 'month' ? 'a month' : 'a quarter';
+    if (n === 2) return `twice ${per}`;
+    if (n > 2) return `${n} times ${per}`;
+    return goal.period === 'month' ? 'per month' : 'per quarter';
+  }
   const days = new Set(goal.days ?? []).size;
   if (days >= 7) return 'per day';
   if (days === 2) return 'twice a week';
@@ -498,7 +687,7 @@ export function goalCadence(
  */
 export function goalTaskTitle(
   projectName: string | null | undefined,
-  goal: Pick<ProjectGoal, 'title' | 'period' | 'days' | 'monthDay'>,
+  goal: Pick<ProjectGoal, 'title'> & GoalShape,
   partLabel?: string | null,
 ) {
   const what = partLabel ? `${goal.title}: ${partLabel}` : goal.title;

@@ -2,6 +2,7 @@ import { db } from '@/lib/mongodb/db-client';
 import { addGoal, changeGoal } from '@/lib/workspace/goals';
 import type { ProjectGoal, TaskSchedule } from '@/models/workspace';
 
+import { GOAL_SCHEDULE_PROPS } from './goalSchedule';
 import { findPlan } from './plans';
 import { type Tool, ToolError } from './shared';
 import { findProject, goalFields, goalView, resolveGoal } from './workspace';
@@ -14,16 +15,18 @@ import { findProject, goalFields, goalView, resolveGoal } from './workspace';
 
 const FIELDS = {
   title: { type: 'string', description: 'What repeats, e.g. "Post a short".' },
-  every: { type: 'string', enum: ['day', 'week', 'month'] },
-  days: {
-    type: 'array',
-    items: { type: 'string' },
-    description: 'For weekly: the days its tasks are for, e.g. ["Mon", "Thu"].',
+  every: {
+    ...GOAL_SCHEDULE_PROPS.period,
+    description:
+      'day, week, fortnight (every other week, from the week it is set), month or quarter.',
   },
-  monthDay: { type: 'integer', description: 'For monthly: 1 to 28.' },
+  days: GOAL_SCHEDULE_PROPS.days,
+  slots: GOAL_SCHEDULE_PROPS.slots,
+  monthDay: GOAL_SCHEDULE_PROPS.monthDay,
   count: {
     type: 'integer',
-    description: 'Tasks each time, e.g. 3 for three shorts.',
+    description:
+      'Tasks each time (on each of its days, or each batch), e.g. 3 for three shorts.',
   },
   people: {
     type: 'array',
@@ -41,7 +44,14 @@ const targetFor = (args: any, goal?: ProjectGoal) => {
   const days = Array.isArray(args?.days)
     ? args.days.length
     : (goal?.days?.length ?? 0);
-  return every === 'week' ? count * Math.max(1, days) : count;
+  const slots = Array.isArray(args?.slots)
+    ? args.slots.length
+    : (goal?.slots?.length ?? 0);
+  if (every === 'week' || every === 'fortnight')
+    return count * Math.max(1, days);
+  if (every === 'month' || every === 'quarter')
+    return count * Math.max(1, slots);
+  return count;
 };
 
 export const SCHEDULE_TOOLS: Tool[] = [
@@ -79,7 +89,7 @@ export const SCHEDULE_TOOLS: Tool[] = [
     name: 'add_schedule',
     title: 'Add repeating work',
     description:
-      'Sets up repeating work in a project, e.g. "Post a short" 3 times every Mon and Thu. It is a repeating goal (the same as set_goal with kind scheduled): it makes its own dated tasks on those days, and they count towards it. Name a plan to link it to that plan. With goal, it gives that existing goal these days instead.',
+      'Sets up repeating work in a project, e.g. "Post a short" 3 times every Mon and Thu, a video every other Wed (fortnight), on the 1st and 21st of each month, on the 1st Mon and 3rd Fri (month, slots), or on the 15th of each quarter\'s 2nd month (quarter, slots ["m2 15"]). It is a repeating goal (the same as set_goal with kind scheduled): it makes its own dated tasks on those days, and they count towards it. Name a plan to link it to that plan. With goal, it gives that existing goal these days instead.',
     inputSchema: {
       type: 'object',
       properties: {

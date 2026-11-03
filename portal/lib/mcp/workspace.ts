@@ -23,7 +23,6 @@ import {
   describeGoalSchedule,
   PERIOD_LABELS,
   toDay,
-  WEEKDAYS,
 } from '@/lib/workspace/projects';
 import {
   completeScheduleRun,
@@ -39,7 +38,6 @@ import {
 } from '@/lib/workspace/server';
 import type {
   CompanyMember,
-  GoalPeriod,
   Project,
   ProjectGoal,
   Task,
@@ -52,6 +50,12 @@ import {
   TASK_STATUS,
 } from '@/models/workspace';
 
+import {
+  GOAL_SCHEDULE_PROPS,
+  parseSlot,
+  PERIODS,
+  weekday,
+} from './goalSchedule';
 import { findPlan } from './plans';
 import { allowsInProject, companiesWith, type Tool, ToolError } from './shared';
 
@@ -377,7 +381,6 @@ export async function describeTask(task: Task, project?: Project | null) {
   };
 }
 
-const PERIODS: GoalPeriod[] = ['day', 'week', 'month'];
 const EFFORTS = Object.values(PROJECT_EFFORT);
 
 /** A goal as the assistant reads it. */
@@ -402,15 +405,6 @@ export const goalView = (g: ProjectGoal, people?: Map<string, string>) => ({
   }),
 });
 
-/** "Mon", "monday" or 1 to the day number. */
-const weekday = (d: unknown) => {
-  if (typeof d === 'number' && d >= 0 && d <= 6) return d;
-  const name = String(d).trim().slice(0, 3).toLowerCase();
-  const i = WEEKDAYS.findIndex((w) => w.toLowerCase() === name);
-  if (i < 0) throw new ToolError(`Unknown day "${d}". Use Mon, Tue … Sun.`);
-  return i;
-};
-
 /** The goal fields the assistant passed, in a goal's shape. */
 export async function goalFields(
   user: SessionUser,
@@ -428,7 +422,7 @@ export async function goalFields(
   if (args?.target !== undefined) out.target = Number(args.target);
   if (args?.period !== undefined) {
     if (!PERIODS.includes(args.period))
-      throw new ToolError('Period is day, week or month.');
+      throw new ToolError('Period is day, week, fortnight, month or quarter.');
     out.period = args.period;
   }
   if (args?.days !== undefined)
@@ -436,6 +430,10 @@ export async function goalFields(
       weekday,
     );
   if (args?.monthDay !== undefined) out.monthDay = Number(args.monthDay);
+  if (args?.slots !== undefined)
+    out.slots = (Array.isArray(args.slots) ? args.slots : [args.slots]).map(
+      parseSlot,
+    );
   if (typeof args?.makeTasks === 'boolean') out.makeTasks = args.makeTasks;
   if (args?.people !== undefined)
     out.assigneeIds =
@@ -667,7 +665,7 @@ export const WORKSPACE_TOOLS: Tool[] = [
     name: 'set_goal',
     title: 'Set a goal',
     description:
-      'Adds a goal to a project, or changes one (match it by id or title). Two kinds. scheduled (the default): a target per day, week or month, e.g. "Release lyrics videos", 3 per week; it makes its own dated tasks ("for Fri 30") on its days (days, e.g. ["Fri"] for weekly; none means one batch on Monday due by Sunday; monthDay for monthly), unless makeTasks is false. Every done task linked to it counts in the period of the day it was for, so work done early for a later week fills that week, and a period that ends short counts as missed. Parts split a scheduled target, e.g. 9 shorts as 3 per channel. target: one number to reach, e.g. 1000 subscribers; it adds up from when it was set (update_goal_progress with done sets the total) and is kept as an achievement once reached. people: who it is for ("me", names or emails); leave out for the whole team, which is the usual for targets. plan links a repeating goal to a plan.',
+      'Adds a goal to a project, or changes one (match it by id or title). Two kinds. scheduled (the default): a target per day, week, fortnight, month or quarter, e.g. "Release lyrics videos", 3 per week; it makes its own dated tasks ("for Fri 30") on its days, unless makeTasks is false. Weekly: days, e.g. ["Fri"] (none means one batch on Monday due by Sunday). Fortnightly (every other week from the week it is set): days the same way, e.g. ["Wed"]. Monthly and quarterly: slots, dates or nth weekdays, e.g. ["1", "21"] or ["1st Mon", "3rd Fri"], and for a quarter ["m1 1st", "m3 last Fri"] (none means one batch at the start of the period). Every done task linked to it counts in the period of the day it was for, so work done early for a later week fills that week, and a period that ends short counts as missed. Parts split a scheduled target, e.g. 9 shorts as 3 per channel. target: one number to reach, e.g. 1000 subscribers; it adds up from when it was set (update_goal_progress with done sets the total) and is kept as an achievement once reached. people: who it is for ("me", names or emails); leave out for the whole team, which is the usual for targets. plan links a repeating goal to a plan.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -685,14 +683,7 @@ export const WORKSPACE_TOOLS: Tool[] = [
           description:
             'Per period for scheduled; the number to reach for target.',
         },
-        period: { type: 'string', enum: PERIODS },
-        days: {
-          type: 'array',
-          items: { type: 'string' },
-          description:
-            'Weekly scheduled goals: the days its tasks are for, e.g. ["Mon", "Thu"].',
-        },
-        monthDay: { type: 'integer', description: 'Monthly: 1 to 28.' },
+        ...GOAL_SCHEDULE_PROPS,
         makeTasks: {
           type: 'boolean',
           description: 'Scheduled goals: false to make no tasks.',

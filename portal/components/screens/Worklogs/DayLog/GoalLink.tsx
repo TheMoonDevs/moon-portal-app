@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import {
   addDays,
   goalRule,
+  PERIOD_LABELS,
   runCovering,
   runsFrom,
   toDay,
@@ -59,7 +60,7 @@ function runChoices(link: GoalOfTask, base: string) {
 const goalLine = (goal: DayGoal) =>
   goal.kind === 'target'
     ? `Target of ${goal.target.toLocaleString()}`
-    : `${goal.target} a ${goal.period}`;
+    : `${goal.target} ${PERIOD_LABELS[goal.period]}`;
 
 /** The goals a task can be linked to: its own project's first. */
 function goalOptions(task: DayTask, projects: DayProject[]): PickerOption[] {

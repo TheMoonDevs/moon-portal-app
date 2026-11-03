@@ -6,7 +6,7 @@
 
 import type { PointOrigin } from '@/lib/worklogs/origin';
 import type { PointEvent, PointStatus } from '@/lib/worklogs/timeline';
-import type { PLAN_STATUS, ScheduleEvery } from '@/models/workspace';
+import type { GoalSlot, PLAN_STATUS, ScheduleEvery } from '@/models/workspace';
 
 export type PagePerson = {
   id: string;
@@ -134,6 +134,8 @@ export type PageSchedule = {
   every: ScheduleEvery;
   weekdays?: number[];
   monthDay?: number | null;
+  slots?: GoalSlot[];
+  anchor?: string | null;
   count: number;
   nextRunOn: string;
 };
