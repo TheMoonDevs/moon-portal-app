@@ -87,6 +87,8 @@ export async function syncGoalSchedules(
         every: rule.every,
         weekdays: rule.weekdays,
         monthDay: rule.monthDay,
+        slots: rule.slots,
+        anchor: rule.anchor,
         dueInDays: rule.dueInDays,
         count,
         planId: goal.planId ?? mine?.planId ?? null,
@@ -96,7 +98,9 @@ export async function syncGoalSchedules(
         const sameDays =
           mine.every === rule.every &&
           sameList(mine.weekdays ?? [], rule.weekdays) &&
-          (mine.monthDay ?? null) === rule.monthDay;
+          (mine.monthDay ?? null) === rule.monthDay &&
+          JSON.stringify(mine.slots ?? []) === JSON.stringify(rule.slots) &&
+          (mine.anchor ?? null) === rule.anchor;
         if (
           sameDays &&
           mine.active &&
@@ -141,7 +145,7 @@ export async function syncGoalSchedules(
           active: true,
           // This period's tasks are made now, then on each run day.
           nextRunOn:
-            rule.every === 'week' && rule.dueInDays === 0
+            rule.every !== 'day' && rule.dueInDays === 0
               ? nextRunOnOrAfter(rule, today)
               : today,
           lastRunOn: null,

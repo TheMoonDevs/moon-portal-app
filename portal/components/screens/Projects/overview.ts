@@ -81,7 +81,9 @@ export const pulseOf = (p: OverviewProject): Pulse => {
 const PERIOD_NOW: Record<string, string> = {
   day: 'today',
   week: 'this week',
+  fortnight: 'these 2 weeks',
   month: 'this month',
+  quarter: 'this quarter',
 };
 
 const fmt = (n: number) => n.toLocaleString('en-US');

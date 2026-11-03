@@ -16,7 +16,12 @@ import { describeSchedule } from '@/lib/workspace/projects';
 import type { Plan, PlanStep } from '@/models/workspace';
 
 import { companiesWith, type Tool, ToolError } from './shared';
-import { findProject, goalFields, resolvePeople } from './workspace';
+import {
+  findProject,
+  GOAL_SCHEDULE_PROPS,
+  goalFields,
+  resolvePeople,
+} from './workspace';
 
 /*
  * Plans from a conversation: ideas in a company that firm up into steps
@@ -237,8 +242,6 @@ async function planView(plan: Plan, choices?: Choices) {
   };
 }
 
-const PERIOD_ENUM = ['day', 'week', 'month'];
-
 const NEW_GOAL_SCHEMA = {
   type: 'object',
   description:
@@ -251,13 +254,7 @@ const NEW_GOAL_SCHEMA = {
       minimum: 1,
       description: 'Per period for scheduled; the number to reach for target.',
     },
-    period: { type: 'string', enum: PERIOD_ENUM },
-    days: {
-      type: 'array',
-      items: { type: 'string' },
-      description: 'Weekly scheduled goals: e.g. ["Mon", "Thu"].',
-    },
-    monthDay: { type: 'integer', description: 'Monthly: 1 to 28.' },
+    ...GOAL_SCHEDULE_PROPS,
     makeTasks: {
       type: 'boolean',
       description: 'Scheduled goals: false to make no tasks.',

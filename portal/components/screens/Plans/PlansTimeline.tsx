@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 
 import { cn } from '@/lib/utils';
-import { isTarget } from '@/lib/workspace/projects';
+import { goalRule, isTarget, runsOn } from '@/lib/workspace/projects';
 import { PLAN_STATUS, type ProjectGoal } from '@/models/workspace';
 
 import { Icon } from '../Admin/shared/AdminUI';
@@ -41,17 +41,9 @@ const mondayOf = (d: Date) => addDays(d, -((d.getDay() + 6) % 7));
 /** The days a repeating goal's tasks are for, between `from` and `to`. */
 const goalDays = (goal: ProjectGoal, from: Date, to: Date) => {
   const out: string[] = [];
-  for (let d = from; d <= to; d = addDays(d, 1)) {
-    const on =
-      goal.period === 'day'
-        ? true
-        : goal.period === 'week'
-          ? goal.days?.length
-            ? !!goal.days?.includes(d.getDay())
-            : d.getDay() === 1
-          : d.getDate() === (goal.monthDay || 1);
-    if (on) out.push(iso(d));
-  }
+  const rule = goalRule(goal, goal.target);
+  for (let d = from; d <= to; d = addDays(d, 1))
+    if (runsOn(rule, iso(d))) out.push(iso(d));
   return out;
 };
 

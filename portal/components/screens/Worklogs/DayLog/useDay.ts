@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import type { PointStatus } from '@/lib/worklogs/timeline';
+import type { GoalPeriod, GoalSlot } from '@/models/workspace';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
 /*
@@ -73,10 +74,13 @@ export type DayGoal = {
   id: string;
   title: string;
   kind: 'scheduled' | 'target';
-  period: 'day' | 'week' | 'month';
+  period: GoalPeriod;
   target: number;
   days: number[];
   monthDay: number | null;
+  slots?: GoalSlot[];
+  /** The day it was set: a fortnightly goal runs every other week from it. */
+  since?: string;
   /** Scheduled goals: whether it makes its own dated tasks. */
   makeTasks: boolean;
   parts?: { id: string; label: string; target: number }[];

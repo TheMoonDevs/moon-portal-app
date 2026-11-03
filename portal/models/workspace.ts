@@ -58,7 +58,24 @@ export const OPEN_TASK_STATUSES = [
   TASK_STATUS.IN_REVIEW,
 ];
 
-export type GoalPeriod = 'day' | 'week' | 'month';
+/** `fortnight`: every other week, from the week the goal was set. */
+export type GoalPeriod = 'day' | 'week' | 'fortnight' | 'month' | 'quarter';
+
+/**
+ * A day a monthly or quarterly goal makes its tasks on: a date of the
+ * month ("the 21st"), or an nth weekday ("the 3rd Friday", nth 5 for the
+ * last). In a quarterly goal, `month` picks the month of the quarter.
+ */
+export type GoalSlot = {
+  /** Quarterly goals: 1 to 3, the month of the quarter (1 when left out). */
+  month?: number;
+  /** 1 to 31; past the end of a short month it is that month's last day. */
+  date?: number;
+  /** 1 to 4, or 5 for the last such weekday of the month. */
+  nth?: number;
+  /** With nth: 0 (Sunday) to 6. */
+  weekday?: number;
+};
 
 /**
  * - `scheduled`: a target every day, week or month ("2 releases a week").
@@ -88,11 +105,17 @@ export type ProjectGoal = {
   parts?: { id: string; label: string; target: number }[];
   /**
    * Scheduled goals: the weekdays (0 Sunday to 6) its tasks are for, in a
-   * weekly goal, e.g. [5] for "for Fri". Empty: one batch on Monday.
+   * weekly or fortnightly goal, e.g. [5] for "for Fri". Empty: one batch
+   * on the first Monday, due by the period's last Sunday.
    */
   days?: number[];
-  /** Scheduled monthly goals: the day of the month, 1 to 28. */
+  /** Scheduled monthly goals with no slots: the day of the month, 1 to 28. */
   monthDay?: number | null;
+  /**
+   * Scheduled monthly and quarterly goals: the days its tasks are for, the
+   * target spread over them. Empty: one batch at the start of the period.
+   */
+  slots?: GoalSlot[];
   /** Scheduled goals make their tasks unless this is false. */
   makeTasks?: boolean;
   /** Who it is for; empty for the whole project team. */
@@ -335,7 +358,7 @@ export type RestDay = Loose<
   }
 >;
 
-export type ScheduleEvery = 'day' | 'week' | 'month';
+export type ScheduleEvery = 'day' | 'week' | 'fortnight' | 'month' | 'quarter';
 
 /** Creates the same task(s) on a repeating schedule. */
 export type TaskSchedule = Loose<
@@ -359,6 +382,10 @@ export type TaskSchedule = Loose<
     weekdays?: number[];
     /** For monthly schedules: 1 to 28. */
     monthDay?: Nullable<number>;
+    /** For monthly and quarterly schedules: the days it runs on. */
+    slots?: GoalSlot[];
+    /** For fortnightly schedules: the Monday of a week it runs in. */
+    anchor?: Nullable<string>;
     /** How many tasks each run creates (e.g. 3 shorts). */
     count: number;
     /** Days after the run date that each task is due; empty for none. */

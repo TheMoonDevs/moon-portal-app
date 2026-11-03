@@ -5,10 +5,17 @@ import type { User } from '@db/client';
 import { cn } from '@/lib/utils';
 import {
   describeGoalSchedule,
+  mondayOf,
   PERIOD_LABELS,
+  toDay,
   WEEKDAYS,
 } from '@/lib/workspace/projects';
-import type { GoalKind, GoalPeriod, ProjectGoal } from '@/models/workspace';
+import type {
+  GoalKind,
+  GoalPeriod,
+  GoalSlot,
+  ProjectGoal,
+} from '@/models/workspace';
 
 import {
   AdminButton,
@@ -34,7 +41,7 @@ export const KIND_META: Record<
   scheduled: {
     label: 'Repeats',
     icon: 'event_repeat',
-    hint: 'A target every day, week or month, like “2 releases a week”. It makes its own dated tasks; each period is met or missed.',
+    hint: 'A target every day, week, 2 weeks, month or quarter, like “2 releases a week”. It makes its own dated tasks; each period is met or missed.',
   },
   target: {
     label: 'Target',
@@ -103,6 +110,151 @@ const DayPicker = ({
     })}
   </div>
 );
+
+/** "Date" or which weekday of the month a slot is. */
+const NTH_OPTIONS = [
+  { value: 0, label: 'Date' },
+  { value: 1, label: '1st' },
+  { value: 2, label: '2nd' },
+  { value: 3, label: '3rd' },
+  { value: 4, label: '4th' },
+  { value: 5, label: 'Last' },
+];
+
+const smallSelect = 'h-8 py-0 pl-2 pr-7 text-xs';
+
+/**
+ * The days of a month or quarter a goal makes its tasks on: dates (the
+ * 1st, the 21st) or weekdays (the 1st Monday, the last Friday); in a
+ * quarter, each in one of its three months. None: one batch at the start.
+ */
+const SlotsPicker = ({
+  value,
+  quarter,
+  firstDate,
+  onChange,
+}: {
+  value: GoalSlot[];
+  quarter: boolean;
+  /** The date a first slot starts on (a monthly goal's old day). */
+  firstDate: number;
+  onChange: (slots: GoalSlot[]) => void;
+}) => {
+  const set = (k: number, slot: GoalSlot) =>
+    onChange(value.map((s, m) => (m === k ? slot : s)));
+  return (
+    <div className="flex flex-col gap-1.5">
+      {value.map((slot, k) => {
+        const nth = slot.nth ?? 0;
+        const month = quarter ? { month: slot.month ?? 1 } : {};
+        return (
+          <div key={k} className="flex flex-wrap items-center gap-1.5">
+            {quarter && (
+              <NativeSelect
+                aria-label="Month of the quarter"
+                value={slot.month ?? 1}
+                onChange={(e) =>
+                  set(k, { ...slot, month: Number(e.target.value) })
+                }
+                className={cn(smallSelect, 'w-28')}
+              >
+                <option value={1}>1st month</option>
+                <option value={2}>2nd month</option>
+                <option value={3}>3rd month</option>
+              </NativeSelect>
+            )}
+            <NativeSelect
+              aria-label="Date or weekday"
+              value={nth}
+              onChange={(e) => {
+                const n = Number(e.target.value);
+                set(
+                  k,
+                  n
+                    ? { ...month, nth: n, weekday: slot.weekday ?? 1 }
+                    : { ...month, date: slot.date ?? 1 },
+                );
+              }}
+              className={cn(smallSelect, 'w-20')}
+            >
+              {NTH_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </NativeSelect>
+            {nth ? (
+              <NativeSelect
+                aria-label="Weekday"
+                value={slot.weekday ?? 1}
+                onChange={(e) =>
+                  set(k, { ...slot, weekday: Number(e.target.value) })
+                }
+                className={cn(smallSelect, 'w-20')}
+              >
+                {[1, 2, 3, 4, 5, 6, 0].map((d) => (
+                  <option key={d} value={d}>
+                    {WEEKDAYS[d]}
+                  </option>
+                ))}
+              </NativeSelect>
+            ) : (
+              <TextInput
+                aria-label="Date of the month"
+                type="number"
+                min={1}
+                max={31}
+                value={slot.date ?? 1}
+                onChange={(e) =>
+                  set(k, {
+                    ...month,
+                    date: Math.min(
+                      31,
+                      Math.max(1, Math.round(Number(e.target.value)) || 1),
+                    ),
+                  })
+                }
+                className="h-8 w-16 text-center text-xs"
+              />
+            )}
+            <span>{nth ? 'of the month' : 'day of the month'}</span>
+            <IconAction
+              icon="close"
+              label="Remove day"
+              onClick={() => onChange(value.filter((_, m) => m !== k))}
+            />
+          </div>
+        );
+      })}
+      <button
+        type="button"
+        onClick={() => {
+          const last = value[value.length - 1];
+          onChange([
+            ...value,
+            last
+              ? last.nth
+                ? { ...last, nth: Math.min(5, (last.nth ?? 1) + 2) }
+                : { ...last, date: Math.min(31, (last.date ?? 1) + 14) }
+              : { ...(quarter && { month: 1 }), date: firstDate },
+          ]);
+        }}
+        className="self-start text-xs text-neutral-400 hover:text-neutral-200"
+      >
+        {value.length
+          ? '+ Add a day'
+          : quarter
+            ? 'Pick days (else all on the quarter’s first day)'
+            : 'Pick days (else all on one day)'}
+      </button>
+      {value.some((s) => (s.date ?? 0) > 28) && (
+        <span className="text-[11px] text-neutral-600">
+          In shorter months, a date past the end falls on the last day.
+        </span>
+      )}
+    </div>
+  );
+};
 
 /**
  * One goal: what kind, the target, and for a repeating one when its tasks
@@ -181,9 +333,13 @@ export const GoalFields = ({
             aria-label="Every"
             value={goal.period}
             onChange={(e) =>
-              onChange({ period: e.target.value as GoalPeriod, days: [] })
+              onChange({
+                period: e.target.value as GoalPeriod,
+                days: [],
+                slots: [],
+              })
             }
-            className="w-32"
+            className="w-36"
           >
             {(Object.keys(PERIOD_LABELS) as GoalPeriod[]).map((p) => (
               <option key={p} value={p}>
@@ -205,37 +361,39 @@ export const GoalFields = ({
             />
             Make its tasks on their days
           </label>
-          {makesTasks && goal.period === 'week' && (
-            <div className="flex flex-wrap items-center gap-2 text-xs text-neutral-500">
-              For
-              <DayPicker
-                value={goal.days ?? []}
-                onChange={(days) => onChange({ days })}
-              />
-            </div>
-          )}
-          {makesTasks && goal.period === 'month' && (
-            <div className="flex items-center gap-2 text-xs text-neutral-500">
-              On day
-              <TextInput
-                aria-label="Day of the month"
-                type="number"
-                min={1}
-                max={28}
-                value={goal.monthDay ?? 1}
-                onChange={(e) =>
-                  onChange({
-                    monthDay: Math.min(
-                      28,
-                      Math.max(1, Math.round(Number(e.target.value)) || 1),
-                    ),
-                  })
-                }
-                className="w-16 text-center"
-              />
-              of the month
-            </div>
-          )}
+          {makesTasks &&
+            (goal.period === 'week' || goal.period === 'fortnight') && (
+              <div className="flex flex-wrap items-center gap-2 text-xs text-neutral-500">
+                For
+                <DayPicker
+                  value={goal.days ?? []}
+                  onChange={(days) => onChange({ days })}
+                />
+                {goal.period === 'fortnight' && (
+                  <span>
+                    every other week, from the week of{' '}
+                    {new Date(
+                      `${mondayOf(goal.since || toDay())}T00:00:00Z`,
+                    ).toLocaleDateString('en', {
+                      day: 'numeric',
+                      month: 'short',
+                      timeZone: 'UTC',
+                    })}
+                  </span>
+                )}
+              </div>
+            )}
+          {makesTasks &&
+            (goal.period === 'month' || goal.period === 'quarter') && (
+              <div className="flex flex-col gap-1.5 text-xs text-neutral-500">
+                <SlotsPicker
+                  value={goal.slots ?? []}
+                  quarter={goal.period === 'quarter'}
+                  firstDate={goal.monthDay || 1}
+                  onChange={(slots) => onChange({ slots })}
+                />
+              </div>
+            )}
           <p className="flex items-center gap-1.5 text-[11px] text-neutral-500">
             <Icon name="event_repeat" className="text-[13px]" />
             {makesTasks

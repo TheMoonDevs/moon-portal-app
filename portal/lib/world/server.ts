@@ -196,7 +196,9 @@ function sitesOf(
 const PERIOD_NOW: Record<string, string> = {
   day: 'Today',
   week: 'This week',
+  fortnight: 'These 2 weeks',
   month: 'This month',
+  quarter: 'This quarter',
 };
 
 /** Adds `n` to `map[a][b]`. */

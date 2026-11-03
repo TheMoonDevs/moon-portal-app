@@ -15,6 +15,8 @@ const goalsFor = (goals: ProjectGoal[]) =>
     target: g.target,
     days: g.days ?? [],
     monthDay: g.monthDay ?? null,
+    slots: g.slots ?? [],
+    since: g.since,
     makeTasks: g.makeTasks !== false,
     ...(g.parts?.length && {
       parts: g.parts.map((x) => ({

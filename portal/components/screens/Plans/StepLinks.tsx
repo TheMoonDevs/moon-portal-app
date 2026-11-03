@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import { cn } from '@/lib/utils';
-import { isTarget } from '@/lib/workspace/projects';
+import { isTarget, PERIOD_LABELS } from '@/lib/workspace/projects';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import { Icon, Spin } from '../Admin/shared/AdminUI';
@@ -132,7 +132,7 @@ export const useStepLinks = ({
             projectId: p.id,
             hint: isTarget(g)
               ? `Reach ${g.target.toLocaleString()}`
-              : `${g.target} a ${g.period}`,
+              : `${g.target} ${PERIOD_LABELS[g.period]}`,
           })),
         )
         .filter((g) => !q || g.title.toLowerCase().includes(q))

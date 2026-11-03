@@ -5,6 +5,7 @@ import dayjs from 'dayjs';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { cn } from '@/lib/utils';
+import { goalRule, runsOn } from '@/lib/workspace/projects';
 import type { ProjectGoal } from '@/models/workspace';
 
 import { Icon } from '../../Admin/shared/AdminUI';
@@ -59,12 +60,8 @@ export const GoalActivity = ({
 }) => {
   const ahead = onTickUntil ? AHEAD : 0;
   /** A day the goal has a task for, as its schedule says. */
-  const isRunDay = (day: string) => {
-    const d = dayjs(day);
-    if (goal.period === 'day') return true;
-    if (goal.period === 'month') return d.date() === (goal.monthDay || 1);
-    return (goal.days?.length ? goal.days : [1]).includes(d.day());
-  };
+  const rule = goalRule(goal, goal.target);
+  const isRunDay = (day: string) => runsOn(rule, day);
   const [open, setOpen] = useState<Open | null>(null);
   const [ticking, setTicking] = useState<string | null>(null);
   /** Hovering "done up to here" previews the days it would tick. */

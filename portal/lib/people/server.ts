@@ -519,6 +519,8 @@ export async function loadAgenda(
         every: s.every,
         weekdays: s.weekdays ?? [],
         monthDay: s.monthDay ?? null,
+        slots: s.slots ?? [],
+        anchor: s.anchor ?? null,
         count: s.count || 1,
         nextRunOn: s.nextRunOn,
       })),
