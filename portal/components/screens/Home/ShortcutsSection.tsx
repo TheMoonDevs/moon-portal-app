@@ -3,8 +3,8 @@ import Link from 'next/link';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
 
 /**
- * Quick links to tools that don't need a tab of their own. The row has room
- * for four; add new shortcuts here.
+ * Quick links to tools that don't need a tab of their own: flat black icons
+ * on small white tiles that grow to fit their label. Add new shortcuts here.
  */
 const SHORTCUTS = [
   { label: 'Meet', icon: 'calendar_month', href: APP_ROUTES.meet },
@@ -13,19 +13,17 @@ const SHORTCUTS = [
 ];
 
 export const ShortcutsSection = () => (
-  <nav aria-label="Shortcuts" className="mx-2 mt-4 grid grid-cols-4 gap-2">
+  <nav aria-label="Shortcuts" className="mx-2 mt-4 flex flex-wrap gap-2">
     {SHORTCUTS.map((shortcut) => (
       <Link
         key={shortcut.href}
         href={shortcut.href}
-        className="group flex flex-col items-center gap-1.5 rounded-[1.15em] bg-white px-2 py-3 transition-colors hover:bg-neutral-100"
+        className="group flex min-w-16 flex-col items-center gap-0.5 rounded-xl bg-white px-2.5 py-2 text-neutral-900 transition-colors hover:bg-neutral-100"
       >
-        <span className="flex size-11 items-center justify-center rounded-2xl bg-neutral-900 text-white transition-transform group-hover:scale-105">
-          <span className="material-symbols-outlined text-[22px]">
-            {shortcut.icon}
-          </span>
+        <span className="material-symbols-outlined text-[26px] leading-none transition-transform group-hover:scale-110">
+          {shortcut.icon}
         </span>
-        <span className="text-xs font-semibold text-neutral-800">
+        <span className="text-[11px] font-semibold text-neutral-800">
           {shortcut.label}
         </span>
       </Link>

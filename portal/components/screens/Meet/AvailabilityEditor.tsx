@@ -22,12 +22,11 @@ import {
   Icon,
   IconAction,
   NativeSelect,
-  Panel,
-  PanelHeader,
   TextArea,
   TextInput,
   ToggleSwitch,
 } from '../Admin/shared/AdminUI';
+import { MeetSection } from './MeetSection';
 
 export type MeetSettings = Pick<
   MeetProfile,
@@ -54,7 +53,7 @@ const hours = (n: number) =>
     : `${n / 24} day${n === 24 ? '' : 's'}`;
 
 const timeClass =
-  'h-9 w-[104px] rounded-lg border border-white/10 bg-neutral-900/80 px-2 text-sm text-neutral-100 [color-scheme:dark] focus:border-white/25 focus:outline-none';
+  'h-9 w-[96px] rounded-lg border border-white/10 bg-neutral-900/80 px-2 text-sm text-neutral-100 [color-scheme:dark] focus:border-white/25 focus:outline-none';
 
 const DayRow = ({
   day,
@@ -68,8 +67,8 @@ const DayRow = ({
   const on = ranges.length > 0;
   const lastEnd = ranges[ranges.length - 1]?.end ?? '09:00';
   return (
-    <div className="flex flex-col gap-2 border-b border-white/[0.05] py-3 last:border-0 sm:flex-row sm:items-start">
-      <label className="flex w-36 shrink-0 cursor-pointer items-center gap-2 pt-1.5 text-sm text-neutral-200">
+    <div className="flex flex-wrap items-start gap-x-3 gap-y-2 border-b border-white/[0.05] py-2.5 last:border-0">
+      <label className="flex w-24 shrink-0 cursor-pointer items-center gap-2 pt-1.5 text-sm text-neutral-200">
         <input
           type="checkbox"
           checked={on}
@@ -83,7 +82,7 @@ const DayRow = ({
       {on ? (
         <div className="flex flex-col gap-2">
           {ranges.map((range, i) => (
-            <div key={i} className="flex items-center gap-2">
+            <div key={i} className="flex items-center gap-1.5">
               <input
                 type="time"
                 value={range.start}
@@ -153,17 +152,22 @@ export const AvailabilityEditor = ({
     onChange({ ...settings, [key]: value });
   const today = dateIn(new Date(), settings.timezone);
   const upcomingDaysOff = settings.daysOff.filter((d) => d >= today);
+  const openDays = DAY_ORDER.filter((d) => settings.weekly[d]?.length).map(
+    (d) => WEEKDAYS[d].slice(0, 3),
+  );
 
   return (
-    <div className="flex flex-col gap-4">
-      <Panel>
-        <PanelHeader
-          icon="calendar_month"
-          title="When you can meet"
-          description="Guests only see times inside these hours."
-          className="border-b border-white/[0.07] p-4"
-        />
-        <div className="flex flex-col gap-4 p-4">
+    <div className="flex flex-col gap-3">
+      <MeetSection
+        icon="schedule"
+        title="When you can meet"
+        description={
+          openDays.length
+            ? `${openDays.join(', ')} · guests only see these hours`
+            : 'No hours set: guests can’t book'
+        }
+      >
+        <div className="flex flex-col gap-4">
           <Field label="Your timezone" htmlFor="meet-host-tz">
             <NativeSelect
               id="meet-host-tz"
@@ -250,15 +254,14 @@ export const AvailabilityEditor = ({
             )}
           </Field>
         </div>
-      </Panel>
+      </MeetSection>
 
-      <Panel>
-        <PanelHeader
-          icon="tune"
-          title="Meeting rules"
-          className="border-b border-white/[0.07] p-4"
-        />
-        <div className="grid gap-4 p-4 sm:grid-cols-2">
+      <MeetSection
+        icon="tune"
+        title="Meeting rules"
+        description={`${settings.durationMinutes} min meetings · ${settings.bufferMinutes} min break · ${hours(settings.minNoticeHours)} notice`}
+      >
+        <div className="grid grid-cols-2 gap-4">
           <Field label="Meeting length">
             <NativeSelect
               value={settings.durationMinutes}
@@ -320,6 +323,7 @@ export const AvailabilityEditor = ({
             </NativeSelect>
           </Field>
           <Field
+            className="col-span-2"
             label="Your meeting room"
             hint="Google Meet, Zoom or Teams link. Empty: a new Jitsi room per meeting."
           >
@@ -331,7 +335,7 @@ export const AvailabilityEditor = ({
             />
           </Field>
           <ToggleSwitch
-            className="sm:col-span-2"
+            className="col-span-2"
             checked={settings.requiresApproval}
             onChange={(v) => set('requiresApproval', v)}
             label="Approve each request"
@@ -342,15 +346,14 @@ export const AvailabilityEditor = ({
             }
           />
         </div>
-      </Panel>
+      </MeetSection>
 
-      <Panel>
-        <PanelHeader
-          icon="badge"
-          title="What guests see"
-          className="border-b border-white/[0.07] p-4"
-        />
-        <div className="flex flex-col gap-4 p-4">
+      <MeetSection
+        icon="badge"
+        title="What guests see"
+        description={settings.title || 'Title and description on your link'}
+      >
+        <div className="flex flex-col gap-4">
           <Field label="Title" hint="Leave empty for “Meet <your name>”.">
             <TextInput
               maxLength={MAX_TITLE}
@@ -369,7 +372,7 @@ export const AvailabilityEditor = ({
             />
           </Field>
         </div>
-      </Panel>
+      </MeetSection>
     </div>
   );
 };
