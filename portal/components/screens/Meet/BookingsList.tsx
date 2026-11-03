@@ -14,14 +14,13 @@ import {
   EmptyState,
   Field,
   Icon,
-  Panel,
-  PanelHeader,
   Pill,
   type PillTone,
   Spin,
   TextArea,
 } from '../Admin/shared/AdminUI';
 import { answerBooking, type HostBooking, meetApi } from './api';
+import { MeetSection } from './MeetSection';
 
 const STATUS: Record<MEET_BOOKING_STATUS, { label: string; tone: PillTone }> = {
   PENDING: { label: 'Needs your answer', tone: 'warning' },
@@ -69,13 +68,13 @@ const ProposePicker = ({
 
   if (!slots)
     return (
-      <div className="flex items-center gap-2 py-6 text-sm text-neutral-400">
+      <div className="flex items-center gap-2 py-6 text-sm text-neutral-400 auto-light:text-neutral-500">
         <Spin /> Finding your free times…
       </div>
     );
   if (!slots.length)
     return (
-      <p className="py-4 text-sm text-neutral-400">
+      <p className="py-4 text-sm text-neutral-400 auto-light:text-neutral-500">
         You have no free times left in your booking window. Add hours under
         Availability, or decline instead.
       </p>
@@ -92,8 +91,8 @@ const ProposePicker = ({
             className={cn(
               'shrink-0 rounded-lg border px-3 py-1.5 text-xs',
               d === day
-                ? 'border-white bg-white text-neutral-950'
-                : 'border-white/10 text-neutral-300 hover:bg-white/[0.06]',
+                ? 'border-white bg-white text-neutral-950 auto-light:border-neutral-900 auto-light:bg-neutral-900 auto-light:text-white'
+                : 'border-white/10 text-neutral-300 hover:bg-white/[0.06] auto-light:border-black/10 auto-light:text-neutral-700 auto-light:hover:bg-black/[0.05]',
             )}
           >
             {new Date(`${d}T12:00:00Z`).toLocaleDateString('en-GB', {
@@ -114,8 +113,8 @@ const ProposePicker = ({
             className={cn(
               'h-9 rounded-lg border text-sm',
               slot === value
-                ? 'border-white bg-white font-semibold text-neutral-950'
-                : 'border-white/10 text-neutral-200 hover:border-white/30',
+                ? 'border-white bg-white font-semibold text-neutral-950 auto-light:border-neutral-900 auto-light:bg-neutral-900 auto-light:text-white'
+                : 'border-white/10 text-neutral-200 hover:border-white/30 auto-light:border-black/10 auto-light:text-neutral-800 auto-light:hover:border-black/30',
             )}
           >
             {formatTime(slot, timezone)}
@@ -132,6 +131,7 @@ const BookingRow = ({
   highlighted,
   onApprove,
   onDialog,
+  onSelect,
   approving,
 }: {
   booking: HostBooking;
@@ -139,6 +139,7 @@ const BookingRow = ({
   highlighted: boolean;
   onApprove: () => void;
   onDialog: (kind: Dialog['kind']) => void;
+  onSelect?: () => void;
   approving: boolean;
 }) => {
   const status = STATUS[booking.status];
@@ -148,13 +149,27 @@ const BookingRow = ({
     <div
       id={`booking-${booking.id}`}
       className={cn(
-        'flex flex-col gap-3 rounded-xl border border-white/[0.07] bg-white/[0.02] p-4 sm:flex-row sm:items-center sm:justify-between',
-        highlighted && 'border-white/40 bg-white/[0.06]',
+        'flex scroll-mt-4 flex-col gap-3 rounded-xl border border-white/[0.07] bg-white/[0.02] p-3 transition-colors auto-light:border-black/[0.08] auto-light:bg-black/[0.02]',
+        highlighted &&
+          'border-white/40 bg-white/[0.06] auto-light:border-black/30 auto-light:bg-black/[0.05]',
       )}
     >
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
-          <p className="font-medium text-white">{booking.guestName}</p>
+          {onSelect ? (
+            <button
+              type="button"
+              onClick={onSelect}
+              title="Show on the calendar"
+              className="font-medium text-white hover:underline auto-light:text-neutral-950"
+            >
+              {booking.guestName}
+            </button>
+          ) : (
+            <p className="font-medium text-white auto-light:text-neutral-950">
+              {booking.guestName}
+            </p>
+          )}
           <Pill tone={expired ? 'neutral' : status.tone}>
             {expired ? 'Expired' : status.label}
           </Pill>
@@ -164,8 +179,10 @@ const BookingRow = ({
             </Pill>
           )}
         </div>
-        <p className="mt-1 text-sm text-neutral-300">
-          {formatRange(booking.start, booking.end, timezone)}
+        <p className="mt-1 text-sm text-neutral-300 auto-light:text-neutral-700">
+          {formatDay(booking.start, timezone)},{' '}
+          {formatTime(booking.start, timezone)} –{' '}
+          {formatTime(booking.end, timezone)}
         </p>
         <p className="text-xs text-neutral-500">
           {booking.guestEmail}
@@ -173,7 +190,7 @@ const BookingRow = ({
             ` · asked for ${formatDay(booking.requestedStart, timezone)}, ${formatTime(booking.requestedStart, timezone)}`}
         </p>
         {booking.guestNote && (
-          <p className="mt-2 whitespace-pre-wrap text-sm text-neutral-400">
+          <p className="mt-2 whitespace-pre-wrap text-sm text-neutral-400 auto-light:text-neutral-500">
             “{booking.guestNote}”
           </p>
         )}
@@ -184,7 +201,7 @@ const BookingRow = ({
               href={booking.meetingUrl}
               target="_blank"
               rel="noreferrer"
-              className="mt-1 inline-flex items-center gap-1 text-xs text-sky-300 underline"
+              className="mt-1 inline-flex items-center gap-1 text-xs text-sky-300 underline auto-light:text-sky-700"
             >
               <Icon name="videocam" className="text-[14px]" />
               {booking.meetingUrl}
@@ -252,13 +269,16 @@ export const BookingsList = ({
   focusId,
   openPropose,
   onChanged,
+  onSelect,
 }: {
   bookings: HostBooking[];
   timezone: string;
   loading: boolean;
+  /** The booking picked on the calendar or opened from a notification. */
   focusId: string | null;
   openPropose: boolean;
   onChanged: (booking: HostBooking) => void;
+  onSelect?: (bookingId: string) => void;
 }) => {
   const [dialog, setDialog] = useState<Dialog | null>(null);
   const [reason, setReason] = useState('');
@@ -266,17 +286,28 @@ export const BookingsList = ({
   const [busyId, setBusyId] = useState<string | null>(null);
   const [showPast, setShowPast] = useState(false);
 
+  // A booking picked on the calendar: open "Past" if it's there, then show it.
   useEffect(() => {
     if (!focusId || loading) return;
     const booking = bookings.find((b) => b.id === focusId);
-    document
-      .getElementById(`booking-${focusId}`)
-      ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    if (openPropose && booking?.status === MEET_BOOKING_STATUS.PENDING)
+    if (booking && !isUpcoming(booking)) setShowPast(true);
+    requestAnimationFrame(() =>
+      document
+        .getElementById(`booking-${focusId}`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusId, loading]);
+
+  // Opened from a notification's "New time" button.
+  useEffect(() => {
+    if (!focusId || loading || !openPropose) return;
+    const booking = bookings.find((b) => b.id === focusId);
+    if (booking?.status === MEET_BOOKING_STATUS.PENDING)
       setDialog({ kind: 'propose', booking });
     // Only when the page opens on a booking.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focusId, loading]);
+  }, [loading]);
 
   const now = Date.now();
   const isUpcoming = (b: HostBooking) =>
@@ -330,6 +361,7 @@ export const BookingsList = ({
       highlighted={b.id === focusId}
       approving={busyId === b.id && !dialog}
       onApprove={() => run(b, 'approve')}
+      onSelect={onSelect ? () => onSelect(b.id) : undefined}
       onDialog={(kind) => {
         setReason('');
         setSlot(null);
@@ -340,16 +372,20 @@ export const BookingsList = ({
 
   return (
     <>
-      <Panel>
-        <PanelHeader
-          icon="event"
-          title="Meetings"
-          description={`Times in ${timezone.replace(/_/g, ' ')}`}
-          className="border-b border-white/[0.07] p-4"
-        />
-        <div className="flex flex-col gap-5 p-4">
+      <MeetSection
+        icon="event"
+        title="Meetings"
+        defaultOpen
+        badge={
+          requests.length > 0 && (
+            <Pill tone="warning">{requests.length} to answer</Pill>
+          )
+        }
+        description={`Times in ${timezone.replace(/_/g, ' ')}`}
+      >
+        <div className="flex flex-col gap-5">
           {loading ? (
-            <div className="flex items-center gap-2 py-6 text-sm text-neutral-400">
+            <div className="flex items-center gap-2 py-6 text-sm text-neutral-400 auto-light:text-neutral-500">
               <Spin /> Loading…
             </div>
           ) : !requests.length && !upcoming.length ? (
@@ -362,7 +398,7 @@ export const BookingsList = ({
             <>
               {requests.length > 0 && (
                 <div className="flex flex-col gap-2">
-                  <p className="text-xs font-medium uppercase tracking-wide text-amber-300">
+                  <p className="text-xs font-medium uppercase tracking-wide text-amber-300 auto-light:text-amber-700">
                     Requests · {requests.length}
                   </p>
                   {requests.map(row)}
@@ -370,7 +406,7 @@ export const BookingsList = ({
               )}
               {upcoming.length > 0 && (
                 <div className="flex flex-col gap-2">
-                  <p className="text-xs font-medium uppercase tracking-wide text-neutral-400">
+                  <p className="text-xs font-medium uppercase tracking-wide text-neutral-400 auto-light:text-neutral-500">
                     Upcoming
                   </p>
                   {upcoming.map(row)}
@@ -383,7 +419,7 @@ export const BookingsList = ({
               <button
                 type="button"
                 onClick={() => setShowPast((v) => !v)}
-                className="flex items-center gap-1 self-start text-xs font-medium uppercase tracking-wide text-neutral-500 hover:text-neutral-300"
+                className="flex items-center gap-1 self-start text-xs font-medium uppercase tracking-wide text-neutral-500 hover:text-neutral-300 auto-light:hover:text-neutral-800"
               >
                 <Icon
                   name={showPast ? 'expand_less' : 'expand_more'}
@@ -395,9 +431,10 @@ export const BookingsList = ({
             </div>
           )}
         </div>
-      </Panel>
+      </MeetSection>
 
       <AdminModal
+        autoTheme
         open={!!dialog}
         onOpenChange={(open) => !open && setDialog(null)}
         icon={
