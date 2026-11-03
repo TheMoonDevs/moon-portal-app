@@ -105,6 +105,22 @@ const nextConfig = {
       topLevelAwait: true,
       layers: true,
     };
+    // Ably's browser build is already modern JavaScript, and SWC's rewrite of
+    // it breaks (`super` inside an arrow function). Ship it as it is.
+    const skipAbly = (rule) => {
+      if (!rule || typeof rule !== 'object') return;
+      if (Array.isArray(rule.oneOf)) rule.oneOf.forEach(skipAbly);
+      if (Array.isArray(rule.rules)) rule.rules.forEach(skipAbly);
+      const uses = [rule.loader, ...(Array.isArray(rule.use) ? rule.use : [rule.use])]
+        .map((use) => (typeof use === 'string' ? use : use?.loader))
+        .filter(Boolean);
+      if (!uses.some((loader) => loader.includes('next-swc-loader'))) return;
+      const ably = /[\\/]node_modules[\\/]ably[\\/]/;
+      rule.exclude = rule.exclude
+        ? [].concat(rule.exclude, ably)
+        : ably;
+    };
+    config.module.rules.forEach(skipAbly);
     // if (config.cache && !dev) {
     //   config.cache = Object.freeze({
     //     type: 'memory',

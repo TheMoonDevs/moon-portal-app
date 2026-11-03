@@ -68,6 +68,28 @@ type PushPayload = {
   actions?: { action: string; title: string }[];
   /** Where each action button goes, by its `action`. */
   actionUrls?: Record<string, string>;
+  /** A new chat message (lib/chat/server.ts). */
+  chat?: { conversationId: string; messageId: string };
+};
+
+/** Tells the server a chat message reached this device, or was read. */
+const ackChat = (conversationId: string, read = false) =>
+  fetch('/api/chat/push-ack', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ conversationId, read }),
+  }).catch(() => undefined);
+
+/** True while a portal window is in front (it shows new messages itself). */
+const portalInFront = async () => {
+  const windows = await self.clients.matchAll({
+    type: 'window',
+    includeUncontrolled: true,
+  });
+  return windows.some(
+    (client) => client.focused && client.visibilityState === 'visible',
+  );
 };
 
 const readPayload = (event: PushEvent): PushPayload => {
@@ -97,24 +119,48 @@ const syncAppBadge = async () => {
 
 self.addEventListener('push', (event) => {
   const data = readPayload(event);
-  event.waitUntil(
+  const show = () =>
     self.registration
       .showNotification(data.title || 'Portal', {
         body: data.body,
         icon: data.icon || '/icon-192x192.png',
         badge: '/icon-192x192.png',
         tag: data.tag,
-        data: { url: data.url || '/', actionUrls: data.actionUrls ?? {} },
+        // A newer message in the same chat buzzes again.
+        ...(data.chat && { renotify: true }),
+        data: {
+          url: data.url || '/',
+          actionUrls: data.actionUrls ?? {},
+          chat: data.chat ?? null,
+        },
         // `actions` is missing from TypeScript's NotificationOptions.
         ...(data.actions?.length && { actions: data.actions }),
       } as NotificationOptions)
-      .then(syncAppBadge),
+      .then(syncAppBadge);
+
+  if (!data.chat) {
+    event.waitUntil(show());
+    return;
+  }
+  // Chat message: two grey ticks for the sender, and no notification while
+  // the portal is open in front (it shows the message live).
+  const { conversationId } = data.chat;
+  event.waitUntil(
+    Promise.all([
+      ackChat(conversationId),
+      portalInFront().then((inFront) => (inFront ? undefined : show())),
+    ]),
   );
 });
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const data = event.notification.data ?? {};
+  // "Mark as read" on a chat message: blue ticks, without opening the portal.
+  if (event.action === 'chat-read' && data.chat?.conversationId) {
+    event.waitUntil(ackChat(data.chat.conversationId, true).then(syncAppBadge));
+    return;
+  }
   // A button press goes to that button's page, a tap anywhere else to `url`.
   const target = new URL(
     (event.action && data.actionUrls?.[event.action]) || data.url || '/',

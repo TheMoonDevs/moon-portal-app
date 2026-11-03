@@ -12,6 +12,8 @@ const EXEMPT_PREFIXES = [
   '/api/oauth/token',
   '/api/oauth/register',
   '/api/hiring/emails/webhook',
+  // The service worker confirms chat notifications; it can't send the key.
+  '/api/chat/push-ack',
 ];
 
 export const rejectIfApiKeyMissing = (request: NextRequest) => {

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+import { useChat } from '@/components/screens/Messages/ChatProvider';
 import media from '@/styles/media';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
 import { useNotifications } from '@/utils/hooks/useNotifications';
@@ -42,6 +43,13 @@ const NAVIGATION_OPTIONS: NavOption[] = [
   },
   { name: 'Plans', path: APP_ROUTES.plans, icon: 'map', group: 'work' },
   {
+    name: 'Messages',
+    path: APP_ROUTES.messages,
+    icon: 'chat',
+    label: 'Chats',
+    group: 'social',
+  },
+  {
     name: 'Notifications',
     path: APP_ROUTES.notifications,
     icon: 'notifications',
@@ -77,27 +85,37 @@ const MOBILE_TAB_COUNT = 4;
 const isActivePath = (path: string | null, optionPath: string) =>
   path === optionPath || (optionPath !== '/' && !!path?.startsWith(optionPath));
 
+// `unreadCount` is the alerts badge; `badges` holds counts for other links
+// by name (unread messages).
 const NavIcon = ({
   option,
   unreadCount,
+  badges,
   className,
 }: {
   option: NavOption;
   unreadCount: number;
+  badges?: Record<string, number>;
   className?: string;
-}) => (
-  <Badge
-    badgeContent={option.name === 'Notifications' ? unreadCount : 0}
-    color="error"
-    max={20}
-    invisible={!unreadCount}
-    sx={{ '& .MuiBadge-badge': { fontSize: 9, height: 16, minWidth: 16 } }}
-  >
-    <span className={`material-symbols-outlined ${className ?? ''}`}>
-      {option.icon}
-    </span>
-  </Badge>
-);
+}) => {
+  const count =
+    option.name === 'Notifications'
+      ? unreadCount
+      : (badges?.[option.name] ?? 0);
+  return (
+    <Badge
+      badgeContent={count}
+      color="error"
+      max={20}
+      invisible={!count}
+      sx={{ '& .MuiBadge-badge': { fontSize: 9, height: 16, minWidth: 16 } }}
+    >
+      <span className={`material-symbols-outlined ${className ?? ''}`}>
+        {option.icon}
+      </span>
+    </Badge>
+  );
+};
 
 // A sidebar link, styled like the admin console's nav: an icon on a quiet
 // row, a soft highlight and an edge marker when active, the name on hover.
@@ -105,11 +123,13 @@ const SidebarLink = ({
   option,
   isActive,
   unreadCount,
+  badges,
   onClick,
 }: {
   option: NavOption;
   isActive: boolean;
   unreadCount: number;
+  badges?: Record<string, number>;
   onClick: () => void;
 }) => (
   <Tooltip
@@ -145,6 +165,7 @@ const SidebarLink = ({
       <NavIcon
         option={option}
         unreadCount={unreadCount}
+        badges={badges}
         className="!text-[20px]"
       />
     </button>
@@ -161,6 +182,8 @@ export const Bottombar = ({
   const path = usePathname();
   const router = useRouter();
   const { unreadNotificationsCount } = useNotifications();
+  const { unread: unreadMessages } = useChat();
+  const badges = { Messages: unreadMessages };
   const { canOpenAdmin, hiringCompanies } = useWorkspace();
   const { user } = useUser();
 
@@ -191,6 +214,12 @@ export const Bottombar = ({
   const moreOptions = options.slice(MOBILE_TAB_COUNT);
   const isMoreActive = moreOptions.some((option) =>
     isActivePath(path, option.path),
+  );
+  // A dot on "More" when something inside it has news.
+  const moreHasNews = moreOptions.some((option) =>
+    option.name === 'Notifications'
+      ? unreadNotificationsCount > 0
+      : (badges as Record<string, number>)[option.name] > 0,
   );
 
   const handleTabClick = (option: NavOption) => {
@@ -241,6 +270,7 @@ export const Bottombar = ({
                     option={option}
                     isActive={isActivePath(path, option.path)}
                     unreadCount={unreadNotificationsCount}
+                    badges={badges}
                     onClick={() => handleTabClick(option)}
                   />
                 ))}
@@ -257,6 +287,7 @@ export const Bottombar = ({
                 option={option}
                 isActive={isActivePath(path, option.path)}
                 unreadCount={unreadNotificationsCount}
+                badges={badges}
                 onClick={() => handleTabClick(option)}
               />
             ))}
@@ -297,6 +328,7 @@ export const Bottombar = ({
                   <NavIcon
                     option={option}
                     unreadCount={unreadNotificationsCount}
+                    badges={badges}
                     className="!text-[20px]"
                   />
                   {option.name}
@@ -332,6 +364,7 @@ export const Bottombar = ({
               <NavIcon
                 option={option}
                 unreadCount={unreadNotificationsCount}
+                badges={badges}
                 className="!text-[22px]"
               />
               <span className="text-[10px] leading-none opacity-75">
@@ -348,8 +381,11 @@ export const Bottombar = ({
             isMoreActive || isMoreOpen ? 'bg-white text-black' : 'text-white'
           }`}
         >
-          <span className="material-symbols-outlined !text-[22px]">
+          <span className="material-symbols-outlined relative !text-[22px]">
             {isMoreOpen ? 'close' : 'menu'}
+            {moreHasNews && !isMoreOpen && (
+              <span className="absolute -right-0.5 top-0 size-2 rounded-full bg-red-500" />
+            )}
           </span>
           <span className="text-[10px] leading-none opacity-75">More</span>
         </button>

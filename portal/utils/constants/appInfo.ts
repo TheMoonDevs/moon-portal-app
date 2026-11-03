@@ -11,6 +11,8 @@ export enum APP_ROUTES {
   plans = '/plans',
   projects = '/projects',
   meet = '/meet',
+  /** Direct messages: /messages, /messages/<chatId> for one chat. */
+  messages = '/messages',
   /** A person's page: /user for your own, /user/<id> for someone's. */
   user = '/user',
 }

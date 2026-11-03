@@ -14,6 +14,9 @@ export type PushMessage = {
   actions?: { action: string; title: string }[];
   /** Where each button goes, by its `action`. */
   actionUrls?: Record<string, string>;
+  /** A new chat message: the service worker confirms delivery (two grey
+   * ticks) and skips the notification while the portal is in front. */
+  chat?: { conversationId: string; messageId: string };
 };
 
 type StoredSubscription = {

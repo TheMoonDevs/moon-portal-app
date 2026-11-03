@@ -22,7 +22,7 @@ Deployed on
 
 - Digital Ocean Droplet
 - [portal.themoondevs.com](http://portal.themoondevs.com)
-- Docs at in /portal folder
+- Docs at in /portal folder; the services it uses (database, storage, realtime, push, email) are listed in [portal/README.md](portal/README.md#architecture)
 
 ## Payzone App - /payzone
 
