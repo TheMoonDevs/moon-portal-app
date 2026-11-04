@@ -160,10 +160,7 @@ export const CompanyTabs = ({
           <DropdownMenuTrigger asChild>
             <button
               title={`${more.length} more`}
-              className={cn(
-                tabClass(!!pickedFromMore),
-                'min-w-0 shrink',
-              )}
+              className={cn(tabClass(!!pickedFromMore), 'min-w-0 shrink')}
             >
               {pickedFromMore ? (
                 <>
