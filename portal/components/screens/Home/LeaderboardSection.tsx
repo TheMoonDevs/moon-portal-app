@@ -20,14 +20,14 @@ export const LeaderboardSection = () => {
   const { user } = useUser();
   // In the user's order: the companies they work in most first.
   const { companies } = useWorkspace();
-  const [companyId, setCompanyId] = useState<string | null>(null);
+  // The tab the user clicked; until then the top company is shown.
+  const [picked, setPicked] = useState<string | null>(null);
+  const companyId =
+    (picked && companies.some((c) => c.company.id === picked)
+      ? picked
+      : companies[0]?.company.id) ?? null;
   const [rows, setRows] = useState<Row[] | null>(null);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (companyId && companies.some((c) => c.company.id === companyId)) return;
-    setCompanyId(companies[0]?.company.id ?? null);
-  }, [companies, companyId]);
 
   useEffect(() => {
     if (!companyId) return;
@@ -52,7 +52,7 @@ export const LeaderboardSection = () => {
       <CompanyTabs
         companies={companies}
         selectedId={companyId}
-        onSelect={setCompanyId}
+        onSelect={setPicked}
       />
 
       <div className="m-4 mt-0 overflow-hidden rounded-b-xl bg-white shadow-md">

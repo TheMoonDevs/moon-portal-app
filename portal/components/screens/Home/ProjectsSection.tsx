@@ -24,7 +24,8 @@ export const ProjectsSection = () => {
   const { companies } = useWorkspace();
   const projectPoints = useMyPoints()?.projects;
   const [projects, setProjects] = useState<ProjectRow[] | null>(null);
-  const [companyId, setCompanyId] = useState<string | null>(null);
+  // The tab the user clicked; until then the top company is shown.
+  const [picked, setPicked] = useState<string | null>(null);
 
   useEffect(() => {
     PortalSdk.getData('/api/projects', null)
@@ -46,10 +47,10 @@ export const ProjectsSection = () => {
     [companies, projects],
   );
 
-  useEffect(() => {
-    if (companyId && tabs.some((t) => t.company.id === companyId)) return;
-    setCompanyId(tabs[0]?.company.id ?? null);
-  }, [tabs, companyId]);
+  const companyId =
+    (picked && tabs.some((t) => t.company.id === picked)
+      ? picked
+      : tabs[0]?.company.id) ?? null;
 
   const rows = useMemo(
     () =>
@@ -74,7 +75,7 @@ export const ProjectsSection = () => {
         <CompanyTabs
           companies={tabs}
           selectedId={companyId}
-          onSelect={setCompanyId}
+          onSelect={setPicked}
         />
       )}
 
