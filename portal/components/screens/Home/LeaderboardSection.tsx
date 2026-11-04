@@ -68,7 +68,7 @@ export const LeaderboardSection = () => {
         ) : rows.length === 0 ? (
           <p className="p-4 text-sm text-neutral-500">No one here yet.</p>
         ) : (
-          <ol className="max-h-[70vh] divide-y divide-neutral-100 overflow-y-auto">
+          <ol className="quiet-scrollbar max-h-[70vh] divide-y divide-neutral-100 overflow-y-auto">
             {rows.map((row, i) => (
               <li key={row.user.id}>
                 <button
