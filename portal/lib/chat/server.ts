@@ -2,6 +2,7 @@ import { ObjectId } from 'mongodb';
 
 import { getMongoDb } from '@/lib/db/mongoose';
 import { db } from '@/lib/mongodb/db-client';
+import { sortByRecentPoints } from '@/lib/progress/myPoints';
 import { sendPushToUsers } from '@/lib/push/server';
 import {
   CHAT_LIMITS,
@@ -127,10 +128,13 @@ export async function contactsOf(userId: string) {
   });
   const companyIds = Array.from(new Set(mine.map((m) => m.companyId)));
   if (!companyIds.length) return new Map<string, string[]>();
-  const companies: Company[] = await db.company.findMany({
+  const found: Company[] = await db.company.findMany({
     where: { id: { in: companyIds }, status: COMPANY_STATUS.ACTIVE },
     select: { id: true, name: true },
   });
+  // Shared companies are named in the person's own order: the ones they
+  // work in most first.
+  const companies = await sortByRecentPoints(userId, found, (c) => c.id);
   const names = new Map(companies.map((c) => [c.id, c.name]));
   if (!names.size) return new Map<string, string[]>();
   const members: CompanyMember[] = await db.companyMember.findMany({
@@ -140,6 +144,10 @@ export async function contactsOf(userId: string) {
     },
     select: { userId: true, companyId: true },
   });
+  const rank = new Map(companies.map((c, i) => [c.id, i]));
+  members.sort(
+    (a, b) => (rank.get(a.companyId) ?? 0) - (rank.get(b.companyId) ?? 0),
+  );
   const contacts = new Map<string, string[]>();
   for (const m of members) {
     if (!m.userId || m.userId === userId) continue;

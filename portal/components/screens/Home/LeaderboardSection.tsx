@@ -9,7 +9,7 @@ import { useWorkspace } from '@/utils/hooks/useWorkspace';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import { UserAvatar } from '../Admin/shared/AdminUI';
-import { CompanyTabs, useCompaniesByMyPoints } from './CompanyTabs';
+import { CompanyTabs } from './CompanyTabs';
 import type { LeaderboardPerson as Row } from './PersonWorklogsDrawer';
 import { PersonWorklogsDrawer } from './PersonWorklogsDrawer';
 
@@ -18,9 +18,8 @@ const MEDALS = ['🥇', '🥈', '🥉'];
 /** This month's leaderboard for one of the user's companies. */
 export const LeaderboardSection = () => {
   const { user } = useUser();
-  const { companies: allCompanies } = useWorkspace();
-  // The companies the user earns the most points in come first.
-  const companies = useCompaniesByMyPoints(allCompanies);
+  // In the user's order: the companies they work in most first.
+  const { companies } = useWorkspace();
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [rows, setRows] = useState<Row[] | null>(null);
   const [openIndex, setOpenIndex] = useState<number | null>(null);

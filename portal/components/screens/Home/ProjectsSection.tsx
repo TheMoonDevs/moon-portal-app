@@ -11,11 +11,7 @@ import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import type { ProjectRow } from '../Admin/Workspace/AdminProjects';
 import { CompanyMark } from '../Admin/Workspace/shared';
-import {
-  CompanyTabs,
-  useCompaniesByMyPoints,
-  useMyPoints,
-} from './CompanyTabs';
+import { CompanyTabs, useMyPoints } from './CompanyTabs';
 
 /**
  * Projects in tabs per company, like the leaderboard. The projects the user
@@ -24,9 +20,8 @@ import {
  */
 export const ProjectsSection = () => {
   const { user } = useUser();
-  const { companies: allCompanies } = useWorkspace();
-  // The companies the user earns the most points in come first.
-  const companies = useCompaniesByMyPoints(allCompanies);
+  // In the user's order: the companies they work in most first.
+  const { companies } = useWorkspace();
   const projectPoints = useMyPoints()?.projects;
   const [projects, setProjects] = useState<ProjectRow[] | null>(null);
   const [companyId, setCompanyId] = useState<string | null>(null);
@@ -40,20 +35,16 @@ export const ProjectsSection = () => {
   const isMine = (p: ProjectRow) =>
     !!user && (p.leadIds?.includes(user.id) || p.memberIds?.includes(user.id));
 
-  // Companies that have projects, by the user's points in them; on equal
-  // points, the ones with the user's projects first.
-  const tabs = useMemo(() => {
-    if (!projects) return [];
-    const withProjects = companies.filter(({ company }) =>
-      projects.some((p) => p.companyId === company.id),
-    );
-    const mineIn = (id: string) =>
-      projects.some((p) => p.companyId === id && isMine(p)) ? 0 : 1;
-    return withProjects.sort(
-      (a, b) => mineIn(a.company.id) - mineIn(b.company.id),
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [companies, projects, user?.id]);
+  // Companies that have projects, in the user's order.
+  const tabs = useMemo(
+    () =>
+      projects
+        ? companies.filter(({ company }) =>
+            projects.some((p) => p.companyId === company.id),
+          )
+        : [],
+    [companies, projects],
+  );
 
   useEffect(() => {
     if (companyId && tabs.some((t) => t.company.id === companyId)) return;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import {
   DropdownMenu,
@@ -52,21 +52,6 @@ export const useMyPoints = () => {
     };
   }, []);
   return points;
-};
-
-/**
- * Companies by the user's points in them, most first; ties keep the order
- * given (so a caller can put e.g. companies with their projects first).
- */
-export const useCompaniesByMyPoints = (companies: WorkspaceCompany[]) => {
-  const points = useMyPoints()?.points;
-  return useMemo(
-    () =>
-      [...companies].sort(
-        (a, b) => (points?.[b.company.id] ?? 0) - (points?.[a.company.id] ?? 0),
-      ),
-    [companies, points],
-  );
 };
 
 const Mark = ({ company }: { company: WorkspaceCompany['company'] }) => (
