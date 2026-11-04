@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 
 import { db } from '@/lib/mongodb/db-client';
 import { hasPermission } from '@/lib/permissions/matching';
+import { recentPoints } from '@/lib/progress/myPoints';
 import { sanitizeAliases } from '@/lib/worklogs/aliases';
 import {
   canCreateDirectly,
@@ -37,17 +38,21 @@ export async function GET(request: NextRequest) {
   const lite = request.nextUrl.searchParams.get('lite') === 'true';
 
   let companyIds: string[];
+  let userId: string;
   if (companyId) {
-    const { response } = await requireCompanyPermission(
+    const { response, user } = await requireCompanyPermission(
       companyId,
       'projects:read',
     );
-    if (response) return response;
+    if (response || !user)
+      return response ?? fail(401, 'Authentication required.');
+    userId = user.id;
     companyIds = [companyId];
   } else {
     const { response, user } = await requireUser();
     if (response || !user)
       return response ?? fail(401, 'Authentication required.');
+    userId = user.id;
     const workspace = await getWorkspaceForUser(user);
     companyIds = workspace
       .filter((w) => hasPermission(w.permissions, 'projects:read'))
@@ -55,25 +60,40 @@ export async function GET(request: NextRequest) {
   }
   if (!companyIds.length) return ok({ projects: [] });
 
-  const projects: Project[] = await db.project.findMany({
-    where: {
-      companyId: { in: companyIds },
-      ...(!includeArchived && { status: { notIn: [PROJECT_STATUS.ARCHIVED] } }),
-    },
-    orderBy: { createdAt: 'desc' },
-    ...(lite && {
-      select: {
-        id: true,
-        companyId: true,
-        name: true,
-        color: true,
-        logo: true,
-        parentId: true,
-        isCore: true,
-        status: true,
-      },
-    }),
-  });
+  const [found, mine]: [Project[], Awaited<ReturnType<typeof recentPoints>>] =
+    await Promise.all([
+      db.project.findMany({
+        where: {
+          companyId: { in: companyIds },
+          ...(!includeArchived && {
+            status: { notIn: [PROJECT_STATUS.ARCHIVED] },
+          }),
+        },
+        orderBy: { createdAt: 'desc' },
+        ...(lite && {
+          select: {
+            id: true,
+            companyId: true,
+            name: true,
+            color: true,
+            logo: true,
+            parentId: true,
+            isCore: true,
+            status: true,
+          },
+        }),
+      }),
+      recentPoints(userId, companyIds),
+    ]);
+  // In the caller's company order, then the projects they work in most
+  // first, so every project list and its default pick agree.
+  const companyOrder = new Map(companyIds.map((id, i) => [id, i]));
+  const projects = [...found].sort(
+    (a, b) =>
+      (companyOrder.get(a.companyId) ?? 0) -
+        (companyOrder.get(b.companyId) ?? 0) ||
+      (mine.projects[b.id] ?? 0) - (mine.projects[a.id] ?? 0),
+  );
   if (lite) return ok({ projects });
   await runDueSchedules({ projectId: { in: projects.map((p) => p.id) } });
   return ok({ projects: await withProjectStats(projects) });

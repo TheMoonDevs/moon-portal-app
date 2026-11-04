@@ -79,6 +79,12 @@ export const NewProjectDialog = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, initialParent, initialCompany]);
 
+  // Companies can arrive after the dialog opens: start on the top one.
+  const firstOffered = offered[0]?.company.id;
+  useEffect(() => {
+    if (open && !companyId && firstOffered) setCompanyId(firstOffered);
+  }, [open, companyId, firstOffered]);
+
   const inCompany = useMemo(
     () => projects.filter((p) => p.companyId === companyId),
     [projects, companyId],

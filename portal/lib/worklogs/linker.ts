@@ -3,6 +3,7 @@ import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 import { db } from '@/lib/mongodb/db-client';
 import { isOnProjectTeam } from '@/lib/permissions/company';
 import type { SessionUser } from '@/lib/permissions/server';
+import { recentPoints } from '@/lib/progress/myPoints';
 import { aliasesOf, mentionsAlias } from '@/lib/worklogs/aliases';
 import { runDueSchedules } from '@/lib/workspace/schedules';
 import { getWorkspaceForUser } from '@/lib/workspace/server';
@@ -76,15 +77,33 @@ export async function linkCandidates(
   const mine = workspace.filter((w) => w.member);
   const companies = (mine.length ? mine : workspace).map((w) => w.company);
   if (!companies.length) return { projects: [], tasks: [], companies: [] };
+  const companyIndex = new Map(companies.map((c, i) => [c.id, i]));
+  const companyOrder = (id: string) => companyIndex.get(id) ?? companies.length;
 
-  const projects: Project[] = (
-    await db.project.findMany({
+  const [found, myPoints]: [
+    Project[],
+    Awaited<ReturnType<typeof recentPoints>>,
+  ] = await Promise.all([
+    db.project.findMany({
       where: {
         companyId: { in: companies.map((c) => c.id) },
         status: { notIn: [PROJECT_STATUS.ARCHIVED] },
       },
-    })
-  ).filter((p: Project) => isOnTeam(p, user.id));
+    }),
+    recentPoints(
+      user.id,
+      companies.map((c) => c.id),
+    ),
+  ]);
+  // In the user's company order, then the projects they work in most.
+  const projects = found
+    .filter((p: Project) => isOnTeam(p, user.id))
+    .sort(
+      (a: Project, b: Project) =>
+        companyOrder(a.companyId) - companyOrder(b.companyId) ||
+        (myPoints.projects[b.id] ?? 0) - (myPoints.projects[a.id] ?? 0) ||
+        a.name.localeCompare(b.name),
+    );
   // Today's scheduled tasks (and the next ones) exist before matching.
   if (projects.length)
     await runDueSchedules({ projectId: { in: projects.map((p) => p.id) } });

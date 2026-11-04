@@ -95,7 +95,7 @@ export const ProjectsSection = () => {
             ))}
           </div>
         ) : (
-          <ul className="max-h-[60vh] divide-y divide-neutral-100 overflow-y-auto">
+          <ul className="quiet-scrollbar max-h-[60vh] divide-y divide-neutral-100 overflow-y-auto">
             {rows.map((project) => {
               const goal = project.goals?.[0];
               const progress = goal

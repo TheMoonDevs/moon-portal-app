@@ -98,7 +98,9 @@ export const AdminPage = () => {
     if (!isAdmin && !workspace.canOpenAdmin) router.replace(APP_ROUTES.home);
   }, [adminUser, isAdmin, workspace.loading, workspace.canOpenAdmin, router]);
 
-  // Keep a company selected across the company tabs.
+  // Keep a company selected across the company tabs. A new visit opens on
+  // the top company (companies come in the user's points order); a pick is
+  // kept only for this browser tab, so an old pick doesn't stick forever.
   useEffect(() => {
     const ids = workspace.companies.map((c) => c.company.id);
     if (companyId && ids.includes(companyId)) return;
@@ -108,7 +110,7 @@ export const AdminPage = () => {
     );
     try {
       if (!saved || !ids.includes(saved))
-        saved = localStorage.getItem(COMPANY_STORAGE_KEY);
+        saved = sessionStorage.getItem(COMPANY_STORAGE_KEY);
     } catch {
       /* storage unavailable */
     }
@@ -119,7 +121,7 @@ export const AdminPage = () => {
     setCompanyId(id);
     setProjectId(null);
     try {
-      localStorage.setItem(COMPANY_STORAGE_KEY, id);
+      sessionStorage.setItem(COMPANY_STORAGE_KEY, id);
     } catch {
       /* storage unavailable */
     }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import {
   DropdownMenu,
@@ -14,8 +14,12 @@ import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import { CompanyMark } from '../Admin/Workspace/shared';
 
-/** Tabs shown before the rest go in the "+N" menu. */
-const VISIBLE_TABS = 3;
+/** Most tabs shown before the rest go in the "+N" menu. */
+const MAX_TABS = 3;
+/** Room kept for the "+N" button when some tabs don't fit. */
+const MORE_WIDTH = 56;
+/** Gap between tabs (gap-1). */
+const GAP = 4;
 
 type MyPoints = {
   /** Per company id. */
@@ -72,8 +76,9 @@ const tabClass = (active: boolean) =>
   );
 
 /**
- * A row of company tabs: the first three, then a "+N" menu for the rest.
- * A company picked from the menu shows on the menu button.
+ * A row of company tabs: as many of the first three as fit the width,
+ * then a "+N" menu for the rest. A company picked from the menu shows on
+ * the menu button. The row never scrolls.
  */
 export const CompanyTabs = ({
   companies,
@@ -84,45 +89,98 @@ export const CompanyTabs = ({
   selectedId: string | null;
   onSelect: (companyId: string) => void;
 }) => {
-  const visible = companies.slice(0, VISIBLE_TABS);
-  const more = companies.slice(VISIBLE_TABS);
+  const rowRef = useRef<HTMLDivElement>(null);
+  const measureRef = useRef<HTMLDivElement>(null);
+  const [fit, setFit] = useState(Math.min(MAX_TABS, companies.length));
+
+  useLayoutEffect(() => {
+    const row = rowRef.current;
+    const measure = measureRef.current;
+    if (!row || !measure) return;
+    const update = () => {
+      const widths = Array.from(measure.children).map(
+        (el) => (el as HTMLElement).offsetWidth,
+      );
+      const room = row.clientWidth;
+      const cap = Math.min(MAX_TABS, widths.length);
+      let n = 0;
+      let used = 0;
+      for (; n < cap; n++) {
+        const next = used + (n ? GAP : 0) + widths[n];
+        const restLeft = n + 1 < widths.length;
+        if (next + (restLeft ? GAP + MORE_WIDTH : 0) > room) break;
+        used = next;
+      }
+      setFit(Math.max(1, n));
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(row);
+    return () => ro.disconnect();
+  }, [companies]);
+
+  const visible = companies.slice(0, fit);
+  const more = companies.slice(fit);
   const pickedFromMore = more.find((c) => c.company.id === selectedId);
 
   return (
-    <div className="m-4 mb-0 mt-3 flex items-end gap-1 border-b border-neutral-200">
-      <div className="flex min-w-0 gap-1 overflow-x-auto">
-        {visible.map(({ company }) => (
-          <button
-            key={company.id}
-            onClick={() => onSelect(company.id)}
-            className={tabClass(company.id === selectedId)}
-          >
+    <div
+      ref={rowRef}
+      className="relative m-4 mb-0 mt-3 flex min-w-0 items-end gap-1 border-b border-neutral-200"
+    >
+      {/* Every tab at full width, unseen, to work out how many fit. */}
+      <div
+        ref={measureRef}
+        aria-hidden
+        className="pointer-events-none invisible absolute left-0 top-0 flex gap-1"
+      >
+        {companies.slice(0, MAX_TABS).map(({ company }) => (
+          <span key={company.id} className={tabClass(false)}>
             <Mark company={company} />
             {company.name}
-          </button>
+          </span>
         ))}
       </div>
+      {visible.map(({ company }) => (
+        <button
+          key={company.id}
+          onClick={() => onSelect(company.id)}
+          title={company.name}
+          className={cn(
+            tabClass(company.id === selectedId),
+            visible.length === 1 && 'min-w-0 shrink',
+          )}
+        >
+          <Mark company={company} />
+          <span className="truncate">{company.name}</span>
+        </button>
+      ))}
       {more.length > 0 && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
               title={`${more.length} more`}
-              className={tabClass(!!pickedFromMore)}
+              className={cn(tabClass(!!pickedFromMore), 'min-w-0 shrink')}
             >
               {pickedFromMore ? (
                 <>
                   <Mark company={pickedFromMore.company} />
-                  {pickedFromMore.company.name}
+                  <span className="truncate">
+                    {pickedFromMore.company.name}
+                  </span>
                 </>
               ) : (
                 `+${more.length}`
               )}
-              <span className="material-symbols-outlined -mr-1 !text-base">
+              <span className="material-symbols-outlined -mr-1 !text-base !leading-4">
                 expand_more
               </span>
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="max-h-72 overflow-y-auto">
+          <DropdownMenuContent
+            align="end"
+            className="quiet-scrollbar max-h-72 overflow-y-auto"
+          >
             {more.map(({ company }) => (
               <DropdownMenuItem
                 key={company.id}
