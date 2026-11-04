@@ -3,7 +3,12 @@ import dayjs from 'dayjs';
 import { db } from '@/lib/mongodb/db-client';
 import { workScore } from '@/lib/progress/buff';
 import { workInRange } from '@/lib/progress/server';
-import { getWorkspaceForUser, ok, requireUser } from '@/lib/workspace/server';
+import {
+  fail,
+  getWorkspaceForUser,
+  ok,
+  requireUser,
+} from '@/lib/workspace/server';
 import type { PointEntry } from '@/models/progress';
 
 export const dynamic = 'force-dynamic';
@@ -20,7 +25,8 @@ const WINDOW_DAYS = 90;
  */
 export async function GET() {
   const { response, user } = await requireUser();
-  if (response || !user) return response;
+  if (response || !user)
+    return response ?? fail(401, 'Authentication required.');
 
   const companies = await getWorkspaceForUser(user);
   const companyIds = companies.map((c) => c.company.id);
