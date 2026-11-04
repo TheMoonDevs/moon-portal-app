@@ -1,40 +1,26 @@
 'use client';
 
 import dayjs from 'dayjs';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { cn } from '@/lib/utils';
 import { useUser } from '@/utils/hooks/useUser';
-import type { WorkspaceCompany } from '@/utils/hooks/useWorkspace';
 import { useWorkspace } from '@/utils/hooks/useWorkspace';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import { UserAvatar } from '../Admin/shared/AdminUI';
-import { CompanyMark } from '../Admin/Workspace/shared';
+import { CompanyTabs, useCompaniesByMyPoints } from './CompanyTabs';
 import type { LeaderboardPerson as Row } from './PersonWorklogsDrawer';
 import { PersonWorklogsDrawer } from './PersonWorklogsDrawer';
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 
-/** The companies the user owns (owner role, or made it) come first. */
-const ownsCompany = (c: WorkspaceCompany, userId?: string) =>
-  (c.member?.roleKeys ?? []).includes('owner') ||
-  (!!userId && c.company.createdById === userId);
-
 /** This month's leaderboard for one of the user's companies. */
 export const LeaderboardSection = () => {
   const { user } = useUser();
   const { companies: allCompanies } = useWorkspace();
-  // Owned companies first, then the rest, each in their usual order. People
-  // are ranked by points inside each company.
-  const companies = useMemo(
-    () =>
-      [...allCompanies].sort(
-        (a, b) =>
-          Number(ownsCompany(b, user?.id)) - Number(ownsCompany(a, user?.id)),
-      ),
-    [allCompanies, user?.id],
-  );
+  // The companies the user earns the most points in come first.
+  const companies = useCompaniesByMyPoints(allCompanies);
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [rows, setRows] = useState<Row[] | null>(null);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
@@ -64,28 +50,11 @@ export const LeaderboardSection = () => {
         </span>
       </h4>
 
-      <div className="m-4 mb-0 mt-3 flex gap-1 overflow-x-auto border-b border-neutral-200">
-        {companies.map(({ company }) => (
-          <button
-            key={company.id}
-            onClick={() => setCompanyId(company.id)}
-            className={cn(
-              '-mb-px inline-flex shrink-0 items-center gap-1.5 border-b-2 px-2.5 pb-2 pt-1 text-xs font-semibold transition-colors',
-              company.id === companyId
-                ? 'border-neutral-900 text-neutral-900'
-                : 'border-transparent text-neutral-500 hover:text-neutral-800',
-            )}
-          >
-            <CompanyMark
-              name={company.name}
-              color={company.color}
-              logo={company.logo}
-              size={18}
-            />
-            {company.name}
-          </button>
-        ))}
-      </div>
+      <CompanyTabs
+        companies={companies}
+        selectedId={companyId}
+        onSelect={setCompanyId}
+      />
 
       <div className="m-4 mt-0 overflow-hidden rounded-b-xl bg-white shadow-md">
         {!rows ? (
