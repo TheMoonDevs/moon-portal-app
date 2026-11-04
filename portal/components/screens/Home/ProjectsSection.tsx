@@ -11,14 +11,23 @@ import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import type { ProjectRow } from '../Admin/Workspace/AdminProjects';
 import { CompanyMark } from '../Admin/Workspace/shared';
+import {
+  CompanyTabs,
+  useCompaniesByMyPoints,
+  useMyPoints,
+} from './CompanyTabs';
 
 /**
- * Projects in tabs per company, like the leaderboard. The user's own
- * projects come first; each row opens the project page.
+ * Projects in tabs per company, like the leaderboard. The projects the user
+ * works on most come first, then their other projects; each row opens the
+ * project page.
  */
 export const ProjectsSection = () => {
   const { user } = useUser();
-  const { companies } = useWorkspace();
+  const { companies: allCompanies } = useWorkspace();
+  // The companies the user earns the most points in come first.
+  const companies = useCompaniesByMyPoints(allCompanies);
+  const projectPoints = useMyPoints()?.projects;
   const [projects, setProjects] = useState<ProjectRow[] | null>(null);
   const [companyId, setCompanyId] = useState<string | null>(null);
 
@@ -31,7 +40,8 @@ export const ProjectsSection = () => {
   const isMine = (p: ProjectRow) =>
     !!user && (p.leadIds?.includes(user.id) || p.memberIds?.includes(user.id));
 
-  // Companies that have projects, the ones with the user's projects first.
+  // Companies that have projects, by the user's points in them; on equal
+  // points, the ones with the user's projects first.
   const tabs = useMemo(() => {
     if (!projects) return [];
     const withProjects = companies.filter(({ company }) =>
@@ -54,9 +64,13 @@ export const ProjectsSection = () => {
     () =>
       (projects ?? [])
         .filter((p) => p.companyId === companyId)
-        .sort((a, b) => Number(isMine(b)) - Number(isMine(a))),
+        .sort(
+          (a, b) =>
+            (projectPoints?.[b.id] ?? 0) - (projectPoints?.[a.id] ?? 0) ||
+            Number(isMine(b)) - Number(isMine(a)),
+        ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [projects, companyId, user?.id],
+    [projects, companyId, user?.id, projectPoints],
   );
 
   if (projects && !projects.length) return null;
@@ -66,28 +80,11 @@ export const ProjectsSection = () => {
       <h4 className="px-4 text-lg font-bold">Projects</h4>
 
       {tabs.length > 0 && (
-        <div className="m-4 mb-0 mt-3 flex gap-1 overflow-x-auto border-b border-neutral-200">
-          {tabs.map(({ company }) => (
-            <button
-              key={company.id}
-              onClick={() => setCompanyId(company.id)}
-              className={cn(
-                '-mb-px inline-flex shrink-0 items-center gap-1.5 border-b-2 px-2.5 pb-2 pt-1 text-xs font-semibold transition-colors',
-                company.id === companyId
-                  ? 'border-neutral-900 text-neutral-900'
-                  : 'border-transparent text-neutral-500 hover:text-neutral-800',
-              )}
-            >
-              <CompanyMark
-                name={company.name}
-                color={company.color}
-                logo={company.logo}
-                size={18}
-              />
-              {company.name}
-            </button>
-          ))}
-        </div>
+        <CompanyTabs
+          companies={tabs}
+          selectedId={companyId}
+          onSelect={setCompanyId}
+        />
       )}
 
       <div

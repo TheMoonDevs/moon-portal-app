@@ -62,7 +62,10 @@ export async function workInRange(
   to: string,
 ): Promise<{
   points: Pick<WorkPoint, 'userId' | 'taskId' | 'date' | 'status' | 'text'>[];
-  tasks: Map<string, Pick<Task, 'id' | 'size' | 'status' | 'companyId'>>;
+  tasks: Map<
+    string,
+    Pick<Task, 'id' | 'size' | 'status' | 'companyId' | 'projectId'>
+  >;
 }> {
   if (!userIds.length) return { points: [], tasks: new Map() };
   const points = await db.workPoint.findMany({
@@ -76,10 +79,19 @@ export async function workInRange(
     },
   });
   const ids = Array.from(new Set(points.map((p: WorkPoint) => p.taskId)));
-  const tasks: Pick<Task, 'id' | 'size' | 'status' | 'companyId'>[] = ids.length
+  const tasks: Pick<
+    Task,
+    'id' | 'size' | 'status' | 'companyId' | 'projectId'
+  >[] = ids.length
     ? await db.task.findMany({
         where: { id: { in: ids } },
-        select: { id: true, size: true, status: true, companyId: true },
+        select: {
+          id: true,
+          size: true,
+          status: true,
+          companyId: true,
+          projectId: true,
+        },
       })
     : [];
   return { points, tasks: new Map(tasks.map((t) => [t.id, t])) };
