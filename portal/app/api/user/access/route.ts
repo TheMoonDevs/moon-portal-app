@@ -9,6 +9,7 @@ import {
   requireAuthedPermission,
   rolePermissionsFor,
 } from '@/lib/permissions/server';
+import { sortByRecentPoints } from '@/lib/progress/myPoints';
 import { fail, memberPermissions, ok } from '@/lib/workspace/server';
 import type {
   Company,
@@ -96,9 +97,12 @@ export async function GET(request: NextRequest) {
     }),
   ]);
 
+  // The viewer's own order: the companies they work in most first.
+  const ordered = await sortByRecentPoints(viewer.id, companies, (c) => c.id);
+
   return ok({
     hiddenCompanies: theirs.length - shared.length,
-    companies: companies.map((company) => {
+    companies: ordered.map((company) => {
       const member = shared.find((m) => m.companyId === company.id)!;
       const held = roles.filter(
         (r) => r.companyId === company.id && member.roleKeys?.includes(r.key),

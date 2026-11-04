@@ -9,7 +9,7 @@ import { useWorkspace } from '@/utils/hooks/useWorkspace';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import { UserAvatar } from '../Admin/shared/AdminUI';
-import { CompanyTabs, useCompaniesByMyPoints } from './CompanyTabs';
+import { CompanyTabs } from './CompanyTabs';
 import type { LeaderboardPerson as Row } from './PersonWorklogsDrawer';
 import { PersonWorklogsDrawer } from './PersonWorklogsDrawer';
 
@@ -18,17 +18,16 @@ const MEDALS = ['🥇', '🥈', '🥉'];
 /** This month's leaderboard for one of the user's companies. */
 export const LeaderboardSection = () => {
   const { user } = useUser();
-  const { companies: allCompanies } = useWorkspace();
-  // The companies the user earns the most points in come first.
-  const companies = useCompaniesByMyPoints(allCompanies);
-  const [companyId, setCompanyId] = useState<string | null>(null);
+  // In the user's order: the companies they work in most first.
+  const { companies } = useWorkspace();
+  // The tab the user clicked; until then the top company is shown.
+  const [picked, setPicked] = useState<string | null>(null);
+  const companyId =
+    (picked && companies.some((c) => c.company.id === picked)
+      ? picked
+      : companies[0]?.company.id) ?? null;
   const [rows, setRows] = useState<Row[] | null>(null);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (companyId && companies.some((c) => c.company.id === companyId)) return;
-    setCompanyId(companies[0]?.company.id ?? null);
-  }, [companies, companyId]);
 
   useEffect(() => {
     if (!companyId) return;
@@ -53,7 +52,7 @@ export const LeaderboardSection = () => {
       <CompanyTabs
         companies={companies}
         selectedId={companyId}
-        onSelect={setCompanyId}
+        onSelect={setPicked}
       />
 
       <div className="m-4 mt-0 overflow-hidden rounded-b-xl bg-white shadow-md">

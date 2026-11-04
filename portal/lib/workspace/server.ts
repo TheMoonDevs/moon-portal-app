@@ -17,6 +17,7 @@ import {
   permissionDeniedResponse,
   type SessionUser,
 } from '@/lib/permissions/server';
+import { sortByRecentPoints } from '@/lib/progress/myPoints';
 import type {
   Company,
   CompanyMember,
@@ -165,10 +166,13 @@ export interface WorkspaceCompany {
 /**
  * The companies a user belongs to, each with the company permissions they
  * hold there. Only members see a company, whatever their portal role.
+ * They come in order of the user's points in each over the last 90 days,
+ * most first (then by name), so every list of companies shows the ones
+ * they work in most at the top.
  */
 export async function getWorkspaceForUser(
   user: SessionUser,
-  { includeArchived = false } = {},
+  { includeArchived = false, orderByPoints = true } = {},
 ): Promise<WorkspaceCompany[]> {
   const memberships: CompanyMember[] = await db.companyMember.findMany({
     where: { userId: user.id, status: MEMBER_STATUS.ACTIVE },
@@ -191,7 +195,11 @@ export async function getWorkspaceForUser(
       })
     : [];
 
-  return companies.map((company) => {
+  const ordered = orderByPoints
+    ? await sortByRecentPoints(user.id, companies, (c) => c.id)
+    : companies;
+
+  return ordered.map((company) => {
     const member = memberships.find((m) => m.companyId === company.id) ?? null;
     const rolePermissions = memberPermissions(
       roles.filter(
