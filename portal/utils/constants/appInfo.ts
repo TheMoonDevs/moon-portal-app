@@ -10,6 +10,8 @@ export enum APP_ROUTES {
   world = '/world',
   plans = '/plans',
   projects = '/projects',
+  /** Every goal across projects, on a calendar. */
+  goals = '/goals',
   meet = '/meet',
   /** Direct messages: /messages, /messages/<chatId> for one chat. */
   messages = '/messages',

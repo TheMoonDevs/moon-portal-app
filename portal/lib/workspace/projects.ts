@@ -415,6 +415,35 @@ export function goalHistory(
   return out;
 }
 
+/**
+ * Every period of a scheduled goal that overlaps `from` to `to`, oldest
+ * first: met, missed, or still running (null). Periods before the goal was
+ * set (`since`) are left out. A target goal has none.
+ */
+export function goalPeriodsBetween(
+  goal: ProjectGoal,
+  tasks: DoneTask[],
+  from: string,
+  to: string,
+  today: string = toDay(),
+  since: string | null = goal.since ?? null,
+): GoalPeriodResult[] {
+  const out: GoalPeriodResult[] = [];
+  if (isTarget(goal) || from > to) return out;
+  let day = from;
+  for (let i = 0; i < 400 && day <= to; i++) {
+    const range = periodRange(goal.period, day, goal.since);
+    day = addDays(range.to, 1);
+    if (since && range.to < since) continue;
+    const p = progressIn(goal, tasks, range.from, range.to);
+    out.push({
+      ...p,
+      met: p.done >= p.target ? true : range.to < today ? false : null,
+    });
+  }
+  return out;
+}
+
 /* -------------------------------- Schedules ------------------------------- */
 
 export const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];

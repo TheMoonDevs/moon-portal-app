@@ -41,6 +41,7 @@ const NAVIGATION_OPTIONS: NavOption[] = [
     icon: 'folder',
     group: 'work',
   },
+  { name: 'Goals', path: APP_ROUTES.goals, icon: 'flag', group: 'work' },
   { name: 'Plans', path: APP_ROUTES.plans, icon: 'map', group: 'work' },
   {
     name: 'Messages',
