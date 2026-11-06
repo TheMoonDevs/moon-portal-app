@@ -3,13 +3,15 @@
 import { cn } from '@/lib/utils';
 import type { GoalDay } from '@/lib/workspace/goalCalendar';
 
-import { Icon } from '../Admin/shared/AdminUI';
+import { Tip } from '../Projects/Tip';
 import type { GoalRow } from './model';
 import { card, STATE_META } from './ui';
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-/** Goals listed in a day before "+N more". */
-const SHOWN = 4;
+/** Dots a day shows before "+N". */
+const DOTS = 12;
+/** Goals the hover card lists before "+N more". */
+const LISTED = 8;
 
 const STATE_ORDER = [
   'missed',
@@ -42,9 +44,52 @@ const dayScore = (entries: DayEntry[], day: string, today: string) => {
   return { done, of: due.length };
 };
 
+/** What a day holds, shown on hover: each goal, how it went, its count. */
+const DayCard = ({ day, entries }: { day: string; entries: DayEntry[] }) => (
+  <div className="w-[240px]">
+    <p className="mb-1.5 font-semibold text-white">
+      {new Date(`${day}T12:00:00Z`).toLocaleDateString('en-GB', {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+        timeZone: 'UTC',
+      })}
+    </p>
+    {entries.length ? (
+      <ul className="flex flex-col gap-1">
+        {entries.slice(0, LISTED).map(({ row, cell }) => {
+          const meta = STATE_META[cell.state as keyof typeof STATE_META];
+          return (
+            <li key={row.key} className="flex items-center gap-2">
+              <span className={cn('size-2 shrink-0 rounded-full', meta.dot)} />
+              <span className="min-w-0 flex-1 truncate">
+                <span className="text-neutral-100">{row.label}</span>
+                <span className="text-neutral-500"> · {row.project.name}</span>
+              </span>
+              {cell.due > 1 && (
+                <span className="shrink-0 tabular-nums text-neutral-400">
+                  {Math.min(cell.done, cell.due)}/{cell.due}
+                </span>
+              )}
+            </li>
+          );
+        })}
+        {entries.length > LISTED && (
+          <li className="text-neutral-500">
+            +{entries.length - LISTED} more · click to see all
+          </li>
+        )}
+      </ul>
+    ) : (
+      <p className="text-neutral-500">Nothing due.</p>
+    )}
+  </div>
+);
+
 /**
- * A month of goals, a square per day: each goal due or worked on that day
- * as a small pill coloured by how it went. Tapping a day opens it.
+ * A month of goals, kept quiet: a dot per goal due or worked on each day,
+ * coloured by how it went. Hovering a day lists its goals; clicking it
+ * opens the day with everything about it.
  */
 export const GoalsMonth = ({
   weeks,
@@ -80,109 +125,73 @@ export const GoalsMonth = ({
         const score = dayScore(entries, day, today);
         const isToday = day === today;
         const isSelected = day === selected;
-        const extra = entries.length - SHOWN;
         return (
-          <button
-            key={day}
-            type="button"
-            onClick={() => onSelect(day)}
-            aria-label={day}
-            aria-pressed={isSelected}
-            className={cn(
-              'group relative flex min-h-[64px] flex-col gap-1 border-white/[0.05] p-1 text-left transition-colors auto-light:border-black/[0.06] md:min-h-[128px] md:p-1.5',
-              i % 7 !== 6 && 'border-r',
-              i < weeks.length * 7 - 7 && 'border-b',
-              !inMonth && 'bg-black/20 auto-light:bg-black/[0.02]',
-              isSelected
-                ? 'bg-white/[0.06] auto-light:bg-black/[0.04]'
-                : 'hover:bg-white/[0.03] auto-light:hover:bg-black/[0.02]',
-            )}
-          >
-            {isSelected && (
-              <span className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-white/40 auto-light:ring-black/30" />
-            )}
-            <span className="flex items-center justify-between gap-1">
-              <span
-                className={cn(
-                  'flex size-6 items-center justify-center rounded-full text-xs font-medium tabular-nums',
-                  isToday
-                    ? 'bg-white text-neutral-950 auto-light:bg-neutral-900 auto-light:text-white'
-                    : inMonth
-                      ? 'text-neutral-200 auto-light:text-neutral-800'
-                      : 'text-neutral-600 auto-light:text-neutral-400',
-                )}
-              >
-                {Number(day.slice(8, 10))}
-              </span>
-              {score && (
+          <Tip key={day} content={<DayCard day={day} entries={entries} />}>
+            <button
+              type="button"
+              onClick={() => onSelect(day)}
+              aria-label={day}
+              aria-pressed={isSelected}
+              className={cn(
+                'group relative flex min-h-[64px] flex-col gap-1.5 border-white/[0.05] p-1.5 text-left transition-colors auto-light:border-black/[0.06] md:min-h-[96px] md:p-2',
+                i % 7 !== 6 && 'border-r',
+                i < weeks.length * 7 - 7 && 'border-b',
+                !inMonth && 'bg-black/20 auto-light:bg-black/[0.02]',
+                isSelected
+                  ? 'bg-white/[0.06] auto-light:bg-black/[0.04]'
+                  : 'hover:bg-white/[0.03] auto-light:hover:bg-black/[0.02]',
+              )}
+            >
+              {isSelected && (
+                <span className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-white/40 auto-light:ring-black/30" />
+              )}
+              <span className="flex items-center justify-between gap-1">
                 <span
-                  title={`${score.done} of ${score.of} goals due were done`}
                   className={cn(
-                    'hidden rounded-full px-1.5 text-[10px] font-medium tabular-nums md:inline',
-                    score.done === score.of
-                      ? 'text-emerald-300 auto-light:text-emerald-700'
-                      : score.done === 0
-                        ? 'text-rose-300 auto-light:text-rose-600'
-                        : 'text-amber-200 auto-light:text-amber-700',
+                    'flex size-6 items-center justify-center rounded-full text-xs font-medium tabular-nums',
+                    isToday
+                      ? 'bg-white text-neutral-950 auto-light:bg-neutral-900 auto-light:text-white'
+                      : inMonth
+                        ? 'text-neutral-200 auto-light:text-neutral-800'
+                        : 'text-neutral-600 auto-light:text-neutral-400',
                   )}
                 >
-                  {score.done}/{score.of}
+                  {Number(day.slice(8, 10))}
                 </span>
-              )}
-            </span>
-
-            {/* Phones: a dot per goal. */}
-            <span className="flex flex-wrap gap-[3px] md:hidden">
-              {entries.slice(0, 8).map(({ row, cell }) => (
-                <span
-                  key={row.key}
-                  className={cn(
-                    'size-1.5 rounded-full',
-                    STATE_META[cell.state as keyof typeof STATE_META].dot,
-                  )}
-                />
-              ))}
-              {entries.length > 8 && (
-                <span className="text-[8px] leading-[6px] text-neutral-500">
-                  +
-                </span>
-              )}
-            </span>
-
-            {/* Wider screens: a pill per goal. */}
-            <span className="hidden min-w-0 flex-col gap-[3px] md:flex">
-              {entries.slice(0, SHOWN).map(({ row, cell }) => {
-                const meta = STATE_META[cell.state as keyof typeof STATE_META];
-                return (
+                {score && (
                   <span
-                    key={row.key}
-                    title={`${row.project.name} · ${row.goal.title} · ${meta.label}`}
                     className={cn(
-                      'flex min-w-0 items-center gap-1 overflow-hidden rounded-md py-[3px] pl-1 pr-1.5 text-[11px] leading-none',
-                      meta.pill,
+                      'hidden text-[10px] font-medium tabular-nums md:inline',
+                      score.done === score.of
+                        ? 'text-emerald-300 auto-light:text-emerald-700'
+                        : score.done === 0
+                          ? 'text-rose-300 auto-light:text-rose-600'
+                          : 'text-amber-200 auto-light:text-amber-700',
                     )}
                   >
-                    <span
-                      className="h-3 w-[3px] shrink-0 rounded-full"
-                      style={{ backgroundColor: row.color }}
-                    />
-                    <Icon name={meta.icon} className="shrink-0 text-[11px]" />
-                    <span className="truncate">{row.goal.title}</span>
-                    {cell.due > 1 && (
-                      <span className="ml-auto shrink-0 pl-1 tabular-nums opacity-70">
-                        {Math.min(cell.done, cell.due)}/{cell.due}
-                      </span>
-                    )}
+                    {score.done}/{score.of}
                   </span>
-                );
-              })}
-              {extra > 0 && (
-                <span className="px-1 text-[10px] text-neutral-500">
-                  +{extra} more
-                </span>
-              )}
-            </span>
-          </button>
+                )}
+              </span>
+              <span className="flex flex-wrap gap-1 md:gap-1.5">
+                {entries.slice(0, DOTS).map(({ row, cell }) => (
+                  <span
+                    key={row.key}
+                    className={cn(
+                      'size-1.5 rounded-full md:size-2',
+                      STATE_META[cell.state as keyof typeof STATE_META].dot,
+                      cell.state === 'planned' && 'opacity-50',
+                    )}
+                  />
+                ))}
+                {entries.length > DOTS && (
+                  <span className="text-[9px] leading-[8px] text-neutral-500">
+                    +{entries.length - DOTS}
+                  </span>
+                )}
+              </span>
+            </button>
+          </Tip>
         );
       })}
     </div>

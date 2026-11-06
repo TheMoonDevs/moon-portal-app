@@ -48,7 +48,7 @@ const GoalHead = ({ row }: { row: GoalRow }) => {
           />
         </Tip>
         <span className="truncate text-[13px] font-medium text-neutral-100 auto-light:text-neutral-900">
-          {row.goal.title}
+          {row.label}
         </span>
         {target && (
           <Icon name="flag" className="shrink-0 text-[13px] text-neutral-500" />
@@ -182,17 +182,21 @@ export const GoalsTimeline = ({
                             onClick={() => onSelect(d)}
                             title={`${fmtDay(d, { weekday: 'short' })} · ${meta?.label ?? 'Nothing due'}${c && c.due > 1 ? ` · ${Math.min(c.done, c.due)}/${c.due}` : ''}`}
                             className={cn(
-                              'flex h-[22px] items-center justify-center rounded-[5px] text-[11px]',
-                              meta
-                                ? meta.pill
-                                : 'bg-white/[0.025] auto-light:bg-black/[0.025]',
-                              d === selected &&
-                                'outline outline-1 outline-white/60 auto-light:outline-black/50',
+                              'group/cell flex h-[22px] items-center justify-center rounded-[5px]',
+                              d === selected
+                                ? 'bg-white/[0.08] auto-light:bg-black/[0.06]'
+                                : 'hover:bg-white/[0.04] auto-light:hover:bg-black/[0.04]',
                             )}
                           >
-                            {meta && state !== 'planned' && (
-                              <Icon name={meta.icon} className="text-[12px]" />
-                            )}
+                            <span
+                              className={cn(
+                                'rounded-full transition-transform group-hover/cell:scale-125',
+                                meta
+                                  ? cn('size-2.5', meta.dot)
+                                  : 'size-1 bg-white/10 auto-light:bg-black/10',
+                                state === 'planned' && 'opacity-50',
+                              )}
+                            />
                           </button>
                         );
                       })}

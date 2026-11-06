@@ -21,6 +21,10 @@ import {
 
 import type { Filters } from './GoalsFilters';
 
+/** A goal with its number first, e.g. "2 song releases". */
+export const goalLabel = (goal: { target: number; title: string }) =>
+  `${goal.target.toLocaleString('en-US')} ${goal.title}`;
+
 /** One goal, ready to draw: its project, standing and days. */
 export type GoalRow = {
   key: string;
@@ -33,6 +37,8 @@ export type GoalRow = {
   /** Who it is for: its people, else its project's team. */
   people: string[];
   cadence: string;
+  /** The goal with its number first: "2 song releases", "25,000 subscribers". */
+  label: string;
   days: Map<string, GoalDay>;
   /** Periods of the month shown (repeating goals). */
   periods: GoalPeriodResult[];
@@ -62,6 +68,7 @@ export function buildRows(
           new Set(goal.assigneeIds?.length ? goal.assigneeIds : team),
         ),
         cadence: isTarget(goal) ? 'target' : goalCadence(goal),
+        label: goalLabel(goal),
         days: goalDays(goal, data.tasks, data.tallies, days, data.today),
         periods: goalPeriodsBetween(
           goal,

@@ -175,7 +175,7 @@ export const GoalDayPanel = ({
                         {meta.label}
                       </span>
                       <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-neutral-100 auto-light:text-neutral-900">
-                        {row.goal.title}
+                        {row.label}
                       </span>
                       {cell.due > 0 && (
                         <span className="shrink-0 text-[11px] tabular-nums text-neutral-500">

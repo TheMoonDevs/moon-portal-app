@@ -171,7 +171,7 @@ export const GoalsPage = () => {
   const [month, setMonth] = useState(() => toDay().slice(0, 7));
   const [view, setView] = useState<View>('calendar');
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
-  const [selected, setSelected] = useState<string | null>(toDay());
+  const [selected, setSelected] = useState<string | null>(null);
   const [data, setData] = useState<GoalsCalendarData | null>(null);
   const [failed, setFailed] = useState(false);
   const [ready, setReady] = useState(false);
@@ -313,7 +313,7 @@ export const GoalsPage = () => {
   const isThisMonth = month === today.slice(0, 7);
   const goTo = (m: string) => {
     setMonth(m);
-    setSelected(m === today.slice(0, 7) ? today : null);
+    setSelected(null);
   };
 
   return (
@@ -510,7 +510,9 @@ export const GoalsPage = () => {
                   'grid min-w-0 items-start gap-3',
                   view === 'calendar'
                     ? 'lg:sticky lg:top-4 lg:max-h-[calc(100dvh-2rem)] lg:overflow-y-auto lg:pb-2'
-                    : 'lg:grid-cols-[minmax(0,1fr)_360px]',
+                    : selected
+                      ? 'lg:grid-cols-[minmax(0,1fr)_360px]'
+                      : 'lg:grid-cols-[360px_minmax(0,1fr)]',
                 )}
               >
                 {selected && (
