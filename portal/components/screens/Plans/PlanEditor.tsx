@@ -18,6 +18,11 @@ import {
 } from '../Admin/shared/AdminUI';
 import { AvatarStack, PeoplePicker } from '../Admin/Workspace/shared';
 import { DocEditor } from '../Project/DocEditor';
+import {
+  ShareButton,
+  type ShareChange,
+  ShareDialog,
+} from '../Project/ShareDialog';
 import { findProject, GrowingText, ProjectOptions } from './planBits';
 import { StepsEditor } from './StepsEditor';
 import type { Person, PlanView, ProjectChoice } from './types';
@@ -47,7 +52,13 @@ export const PlanEditor = ({
   addsTasksIn,
   onMakeTask,
   onDeleteTask,
+  onShare,
+  meId,
 }: {
+  /** Sets who can open the plan; left out, no Share button. */
+  onShare?: (change: ShareChange) => Promise<boolean>;
+  /** The signed-in person, kept on the list when sharing. */
+  meId?: string | null;
   /** Whether they can add tasks in a project. */
   addsTasksIn: (projectId?: string | null) => boolean;
   /** Makes a task step's task. */
@@ -83,6 +94,7 @@ export const PlanEditor = ({
     ? findProject(projects, plan.projectId)
     : undefined;
   const [pickingPeople, setPickingPeople] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const projectById = useMemo(
     () => new Map(projects.map((p) => [p.id, p])),
     [projects],
@@ -132,6 +144,13 @@ export const PlanEditor = ({
             </span>
           )}
           <div className="flex-1" />
+          {onShare && (
+            <ShareButton
+              sharing={plan.sharing}
+              canShare={canEdit}
+              onClick={() => setSharing(true)}
+            />
+          )}
           {canDelete && (
             <IconAction
               icon="delete"
@@ -283,6 +302,34 @@ export const PlanEditor = ({
         />
         {extra}
       </div>
+      {onShare && canEdit && (
+        <ShareDialog
+          open={sharing}
+          onOpenChange={setSharing}
+          itemLabel="plan"
+          title={plan.title || 'Untitled plan'}
+          everyoneTitle={
+            linkedProject
+              ? `Everyone who can open ${linkedProject.name}`
+              : `Everyone in ${companyName ?? 'the company'}`
+          }
+          everyoneHint={
+            linkedProject
+              ? 'It follows its project: anyone who can open the project can open this plan.'
+              : 'A grand plan follows its company: anyone in it can open this plan.'
+          }
+          sharing={plan.sharing}
+          people={people}
+          keepers={[
+            { id: plan.ownerId, reason: 'Owns this plan' },
+            ...(plan.createdById && plan.createdById !== plan.ownerId
+              ? [{ id: plan.createdById, reason: 'Made this plan' }]
+              : []),
+          ]}
+          meId={meId}
+          onSave={onShare}
+        />
+      )}
     </div>
   );
 };

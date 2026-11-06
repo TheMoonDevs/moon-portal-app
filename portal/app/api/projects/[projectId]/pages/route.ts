@@ -12,6 +12,8 @@ import {
   ok,
   requireProjectPermission,
 } from '@/lib/workspace/server';
+import { visiblePages } from '@/lib/workspace/sharing';
+import { sharingViewer } from '@/lib/workspace/sharingServer';
 import { PROJECT_PAGE_KIND, type ProjectPage } from '@/models/workspace';
 
 export const dynamic = 'force-dynamic';
@@ -20,14 +22,14 @@ type Params = { params: { projectId: string } };
 
 /**
  * The project's objective and its pages, most recently edited first. Pages
- * nest through `parentId`.
+ * nest through `parentId`. Only the pages shared with the person are listed.
  */
 export async function GET(_request: Request, { params }: Params) {
-  const { response, project } = await requireProjectPermission(
+  const { response, user, project } = await requireProjectPermission(
     params.projectId,
     'projects:read',
   );
-  if (response || !project)
+  if (response || !project || !user)
     return response ?? fail(401, 'Authentication required.');
 
   const pages: ProjectPage[] = await db.projectPage.findMany({
@@ -37,7 +39,10 @@ export async function GET(_request: Request, { params }: Params) {
   return ok({
     objective:
       pages.find((p) => p.kind === PROJECT_PAGE_KIND.OBJECTIVE) ?? null,
-    pages: pages.filter((p) => p.kind === PROJECT_PAGE_KIND.IDEA),
+    pages: visiblePages(
+      pages.filter((p) => p.kind === PROJECT_PAGE_KIND.IDEA),
+      await sharingViewer(user),
+    ),
   });
 }
 
@@ -68,7 +73,12 @@ export async function POST(request: Request, { params }: Params) {
   }
   const parent =
     kind === PROJECT_PAGE_KIND.IDEA
-      ? await readParent(project.id, body.parentId)
+      ? await readParent(
+          project.id,
+          body.parentId,
+          undefined,
+          await sharingViewer(user),
+        )
       : { parentId: null };
   if (parent.error) return fail(400, parent.error);
 

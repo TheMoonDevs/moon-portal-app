@@ -22,6 +22,8 @@ import { withTasks } from '@/lib/workspace/planServer';
 import { addDays, toDay } from '@/lib/workspace/projects';
 import { runDueSchedules } from '@/lib/workspace/schedules';
 import { getWorkspaceForUser } from '@/lib/workspace/server';
+import { canSeePlan } from '@/lib/workspace/sharing';
+import { sharingViewer } from '@/lib/workspace/sharingServer';
 import type { MeetBooking } from '@/models/meet';
 import { ACTIVE_MEET_STATUSES } from '@/models/meet';
 import type {
@@ -440,11 +442,14 @@ export async function loadAgenda(
       : [],
   ]);
 
+  // Restricted plans only show to the people they are shared with.
+  const looking = await sharingViewer(viewer);
   const involved = plans.filter(
     (p) =>
-      p.ownerId === person.id ||
-      (p.memberIds ?? []).includes(person.id) ||
-      (p.steps ?? []).some((s) => s.assigneeIds?.includes(person.id)),
+      canSeePlan(p, looking) &&
+      (p.ownerId === person.id ||
+        (p.memberIds ?? []).includes(person.id) ||
+        (p.steps ?? []).some((s) => s.assigneeIds?.includes(person.id))),
   );
   const views = await withTasks(involved);
 
