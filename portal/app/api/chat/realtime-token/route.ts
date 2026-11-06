@@ -14,7 +14,8 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   const chatId = request.nextUrl.searchParams.get('chat');
   return chatRoute(async (user) => {
-    let chat: { conversationId: string; partnerId: string } | null = null;
+    let chat: { conversationId: string; partnerId: string | null } | null =
+      null;
     if (chatId) {
       try {
         const { partnerId } = await requireConversation(user.id, chatId);

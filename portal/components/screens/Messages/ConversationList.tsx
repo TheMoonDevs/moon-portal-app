@@ -5,10 +5,23 @@ import { useEffect, useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
 
 import type { ChatConversation, ChatMessage } from './api';
-import { listTimeOf, previewOf } from './format';
-import { Icon, RoundButton, Spin, Ticks, UserAvatar } from './parts';
+import { listTimeOf, previewOf, systemTextOf } from './format';
+import {
+  ChatAvatar,
+  Icon,
+  ProjectTag,
+  RoundButton,
+  Spin,
+  Ticks,
+} from './parts';
 
-type Filter = 'all' | 'unread' | 'archived';
+type Filter = 'all' | 'unread' | 'groups' | 'archived';
+
+/** A sender's first name, for "Asha: see you at 5" in group rows. */
+const firstName = (name?: string | null) => (name || 'Someone').split(' ')[0];
+
+const senderName = (c: ChatConversation, id: string) =>
+  c.group?.members.find((p) => p.id === id)?.name ?? c.partner.name;
 
 /** The chats list: search, filters, and one row per chat. */
 export const ConversationList = ({
@@ -56,6 +69,7 @@ export const ConversationList = ({
   }, [q, searchMessages]);
 
   const archivedCount = conversations.filter((c) => c.archived).length;
+  const hasGroups = conversations.some((c) => c.kind !== 'direct');
 
   const shown = useMemo(() => {
     const list = conversations.filter((c) => {
@@ -63,6 +77,7 @@ export const ConversationList = ({
       if (filter === 'archived') return c.archived;
       if (c.archived) return false;
       if (filter === 'unread') return c.unread > 0;
+      if (filter === 'groups') return c.kind !== 'direct';
       return true;
     });
     return list.sort((a, b) => {
@@ -111,6 +126,7 @@ export const ConversationList = ({
             [
               ['all', 'All'],
               ['unread', 'Unread'],
+              ...(hasGroups ? [['groups', 'Groups']] : []),
               ...(archivedCount
                 ? [['archived', `Archived (${archivedCount})`]]
                 : []),
@@ -175,8 +191,10 @@ export const ConversationList = ({
                     >
                       <span className="flex justify-between text-xs text-neutral-500">
                         <span className="truncate">
-                          {m.senderId === me ? 'You' : room.partner.name} ·{' '}
-                          {room.partner.name}
+                          {m.senderId === me
+                            ? 'You'
+                            : senderName(room, m.senderId)}{' '}
+                          · {room.partner.name}
                         </span>
                         <span>{listTimeOf(m.createdAt)}</span>
                       </span>
@@ -211,7 +229,9 @@ const EmptyList = ({
         ? 'No unread messages.'
         : filter === 'archived'
           ? 'No archived chats.'
-          : 'Message anyone who works in a company with you.'}
+          : filter === 'groups'
+            ? 'No groups yet.'
+            : 'Message anyone who works in a company with you.'}
     </p>
     {filter === 'all' && (
       <button
@@ -240,6 +260,14 @@ const ConversationRow = ({
 }) => {
   const last = c.lastMessage;
   const mine = !!last && last.senderId === me;
+  const system = last?.kind === 'system';
+  // In groups, say who wrote the last message.
+  const from =
+    c.kind !== 'direct' && last && !system && !last.deletedAt
+      ? mine
+        ? 'You'
+        : firstName(senderName(c, last.senderId))
+      : null;
   return (
     <button
       type="button"
@@ -251,10 +279,13 @@ const ConversationRow = ({
           : 'hover:bg-white/[0.04] auto-light:hover:bg-black/[0.03]',
       )}
     >
-      <UserAvatar src={c.partner.avatar} name={c.partner.name} size={48} />
+      <ChatAvatar conversation={c} size={48} />
       <span className="flex min-w-0 flex-1 flex-col gap-0.5 border-b border-white/[0.05] pb-2.5 auto-light:border-black/[0.05]">
         <span className="flex items-baseline justify-between gap-2">
-          <span className="truncate font-medium">{c.partner.name}</span>
+          <span className="flex min-w-0 items-center gap-1.5">
+            <span className="truncate font-medium">{c.partner.name}</span>
+            {c.kind === 'project' && <ProjectTag />}
+          </span>
           <span
             className={cn(
               'shrink-0 text-xs',
@@ -273,14 +304,19 @@ const ConversationRow = ({
             </span>
           ) : (
             <>
-              {mine && !last.deletedAt && (
+              {mine && !last.deletedAt && !system && (
                 <Ticks message={last} className="shrink-0" />
               )}
               {last?.deletedAt && (
                 <Icon name="block" className="shrink-0 text-[15px]" />
               )}
               <span className={cn('truncate', last?.deletedAt && 'italic')}>
-                {last ? previewOf(last) : 'No messages'}
+                {from && <span>{from}: </span>}
+                {last
+                  ? system
+                    ? systemTextOf(last, me)
+                    : previewOf(last)
+                  : 'No messages'}
               </span>
             </>
           )}

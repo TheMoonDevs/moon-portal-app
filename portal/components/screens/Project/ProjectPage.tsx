@@ -30,6 +30,7 @@ import {
   errorText,
   PROJECT_STATUS_META,
 } from '../Admin/Workspace/shared';
+import { useChat } from '../Messages/ChatProvider';
 import type { PlanView } from '../Plans/types';
 import { usePlans } from '../Plans/usePlans';
 import { NewProjectDialog } from '../Projects/NewProjectDialog';
@@ -679,6 +680,7 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
   const pathname = usePathname();
   const params = useSearchParams();
   const { companies, can, canInProject } = useWorkspace();
+  const { me } = useChat();
 
   const [data, setData] = useState<ProjectData | null>(null);
   const [addingSub, setAddingSub] = useState(false);
@@ -919,6 +921,10 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
   // The company's name opens its CORE project.
   const coreId = data.tree?.find((p) => p.isCore)?.id;
   const canEdit = can(project.companyId, 'projects:edit');
+  // The project's group chat is for its team (everyone, for CORE).
+  const onTeam =
+    !!data.tree?.find((p) => p.id === project.id)?.isCore ||
+    (!!me && people.some((p) => p.id === me));
   const all = pages?.pages ?? [];
   const page = all.find((i) => i.id === pageId) ?? null;
   const trail = page ? ancestorPages(all, page.id) : [];
@@ -1133,6 +1139,18 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
           )}
           <div className="flex-1" />
           {isDoc && canEdit && <SaveBadge state={saveState} />}
+          {onTeam && (
+            <Link
+              href={`/messages?project=${encodeURIComponent(project.id)}`}
+              title="Message everyone on this project in its group chat"
+              className="flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-2 text-neutral-400 transition-colors hover:bg-white/[0.06] hover:text-white"
+            >
+              <Icon name="forum" className="text-[18px]" />
+              <span className="hidden text-xs font-medium lg:inline">
+                Group chat
+              </span>
+            </Link>
+          )}
           {openPlan && <SaveBadge state={plans.saveState} />}
           {page && canEdit && (
             <button
